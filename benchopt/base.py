@@ -36,7 +36,7 @@ def run_one_method(data_name, method_class, score, loss, parameters, max_iter):
     res = []
     list_iter = np.unique(np.logspace(0, np.log10(max_iter), 20, dtype=int))
     for n_iter in list_iter:
-        print(f"{n_iter} / {max_iter}")
+        print(f"{n_iter} / {max_iter}\r", end='', flush=True)
         t_start = time.time()
         method.run(n_iter=n_iter)
         delta_t = time.time() - t_start
@@ -69,9 +69,10 @@ def plot_benchmark(df):
     datasets = df.data.unique()
     methods = df.method.unique()
     for data in datasets:
-        plt.figure()
+        plt.figure(data)
+        df_data = df[df.data == data]
         for m in methods:
-            df_ = df[df.method == m]
+            df_ = df_data[df_data.method == m]
             plt.loglog(df_.time, df_.loss, label=m)
         plt.legend()
     plt.show()
