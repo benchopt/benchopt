@@ -50,8 +50,8 @@ def run_one_method(data_name, method_class, score, loss, parameters, max_iter):
 def run_benchmark(bench_name, max_iter=1000):
 
     module = import_module(bench_name)
-    datasets = module.datasets
-    solvers = module.solvers
+    datasets = module.DATASETS
+    solvers = module.SOLVERS
     score = module.score_result
 
     res = []

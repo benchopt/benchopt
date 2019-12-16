@@ -13,7 +13,7 @@ def score_result(X, y, lmbd, beta):
     return .5 * diff.dot(diff) + lmbd * abs(beta).sum()
 
 
-datasets = {
+DATASETS = {
     'simulated': (
         get_simulated_data, dict(n_samples=100, n_features=50000, reg=.1)
     ),
@@ -22,4 +22,4 @@ datasets = {
     )
 }
 
-solvers = [Baseline, Celer, SkLasso]
+SOLVERS = [Baseline, Celer, SkLasso]

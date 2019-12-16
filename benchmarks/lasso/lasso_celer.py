@@ -14,7 +14,7 @@ class Celer(Solver):
         n_samples = X.shape[0]
         self.lasso = Lasso(
             alpha=self.lmbd/n_samples, max_iter=1, gap_freq=10,
-            max_epochs=100000, p0=10, verbose=False, tol=1e-12, prune=0,
+            max_epochs=100000, p0=10, verbose=False, tol=1e-12, prune=True,
             fit_intercept=False, normalize=False, warm_start=False,
             positive=False
         )
