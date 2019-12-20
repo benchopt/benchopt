@@ -1,9 +1,4 @@
 
-from .lasso_celer import Celer
-from .lasso_sklearn import SkLasso
-from .baseline import Baseline
-
-
 from .datasets import get_boston_data
 from .datasets import get_simulated_data
 
@@ -21,5 +16,3 @@ DATASETS = {
         get_boston_data, dict(reg=.1)
     )
 }
-
-SOLVERS = [Baseline, Celer, SkLasso]

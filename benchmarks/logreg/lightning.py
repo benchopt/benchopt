@@ -1,11 +1,11 @@
-from sklearn.linear_model import LogisticRegression
+from lightning.classification import CDClassifier
 
 
-from benchopt.base import Solver
+from benchopt.base import BaseSolver
 
 
-class SkLogreg(Solver):
-    name = 'sklearn'
+class Solver(BaseSolver):
+    name = 'Lightning'
 
     parameters = dict(
         solvers=['saga', 'liblinear']
@@ -16,9 +16,9 @@ class SkLogreg(Solver):
         self.y = y
         self.lmbd = lmbd
 
-        self.clf = LogisticRegression(
-            solver='saga',
-            C=lmbd, penalty='l1', fit_intercept=False, tol=1e-12)
+        self.clf = CDClassifier(
+            loss='log', penalty='l1', C=1, alpha=self.lmbd,
+            tol=1e-12)
 
     def run(self, n_iter):
         self.clf.max_iter = n_iter

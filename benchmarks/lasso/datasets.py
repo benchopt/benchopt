@@ -6,9 +6,12 @@ def get_lmbd_max(X, y):
     return abs(X.T.dot(y)).max()
 
 
-def get_simulated_data(n_samples=100, n_features=5000, reg=.1):
-    X = np.random.randn(n_samples, n_features)
-    y = np.random.randn(n_samples)
+def get_simulated_data(n_samples=100, n_features=5000, reg=.1,
+                       random_state=27):
+
+    rng = np.random.RandomState(random_state)
+    X = rng.randn(n_samples, n_features)
+    y = rng.randn(n_samples)
 
     lmbd = reg * get_lmbd_max(X, y)
 

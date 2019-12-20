@@ -1,4 +1,4 @@
-from .bench_lasso import DATASETS, SOLVERS, score_result
+from .bench_lasso import DATASETS, score_result
 
 
-__all__ = ['DATASETS', 'SOLVERS', 'score_result']
+__all__ = ['DATASETS', 'score_result']

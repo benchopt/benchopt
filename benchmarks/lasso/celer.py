@@ -1,9 +1,9 @@
 from celer import Lasso
 
-from benchopt.base import Solver
+from benchopt.base import BaseSolver
 
 
-class Celer(Solver):
+class Solver(BaseSolver):
     name = 'Celer'
 
     def set_loss(self, X, y, lmbd):
@@ -24,4 +24,4 @@ class Celer(Solver):
         self.lasso.fit(self.X, self.y)
 
     def get_result(self):
-        return self.lasso.coef_
+        return self.lasso.coef_.flatten()

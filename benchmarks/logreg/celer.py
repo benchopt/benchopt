@@ -1,9 +1,9 @@
 from celer.homotopy import logreg_path
 
-from benchopt.base import Solver
+from benchopt.base import BaseSolver
 
 
-class Celer(Solver):
+class Solver(BaseSolver):
     name = 'Celer'
 
     def set_loss(self, X, y, lmbd):
