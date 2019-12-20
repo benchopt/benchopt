@@ -1,0 +1,35 @@
+cyanure:
+    pip_install: cyanure-mkl
+    bench:
+        - logreg
+        - lasso
+
+lightning:
+    pip_install: git+https://github.com/scikit-learn-contrib/lightning.git
+    bench:
+        - logreg
+        - lasso
+
+sklearn:
+    pip_install: scikit-learn
+    bench:
+        - logreg
+        - lasso
+
+cvxpy:
+    pip_install: cvxpy
+    bench:
+        - logreg
+        - lasso
+
+celer:
+    pip_install: git+https://github.com/mathurinm/celer.git
+    bench:
+        - logreg
+        - lasso
+
+blitz:
+    pip_install: blitzl1
+    bench:
+        - lasso
+        # - logreg

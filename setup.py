@@ -1,7 +1,13 @@
-
+import re
 from setuptools import find_packages, setup
 
-from benchopt import __version__
+with open('benchopt/__init__.py') as f:
+    infos = f.readlines()
+for line in infos:
+    if "__version__" in line:
+        match = re.search(r"__version__ = '([^']*)'", line)
+        __version__ = match.groups()[0]
+
 
 DISTNAME = 'benchopt'
 DESCRIPTION = "Benchmark toolkit for optimization"
@@ -21,7 +27,7 @@ setup(
     version=VERSION,
     url=URL,
     packages=find_packages(),
-    install_requires=['numpy', 'pandas', 'matplotlib'],
+    install_requires=['numpy', 'pandas', 'matplotlib', 'pyyaml', 'click'],
     entry_points={
         'console_scripts': ['benchopt = benchopt.cli:start']
     }
