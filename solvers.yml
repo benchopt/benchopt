@@ -1,40 +1,47 @@
 cyanure:
+    package_name: cyanure
     pip_install: cyanure-mkl
     bench:
         - logreg
         - lasso
 
 lightning:
+    package_name: lightning
     pip_install: git+https://github.com/scikit-learn-contrib/lightning.git
     bench:
         - logreg
         - lasso
 
 sklearn:
+    package_name: sklearn
     pip_install: scikit-learn
     bench:
         - logreg
         - lasso
 
 cvxpy:
+    package_name: cvxpy
     pip_install: cvxpy
     bench:
         - logreg
         - lasso
 
 celer:
+    package_name: celer
     pip_install: git+https://github.com/mathurinm/celer.git
     bench:
         - logreg
         - lasso
 
 blitz:
+    package_name: blitzl1
     pip_install: blitzl1
     bench:
         - lasso
         # - logreg
 
 liblinear:
+    solver_cmd: train
     sh_install: install_liblinear.sh
     bench:
        - logreg

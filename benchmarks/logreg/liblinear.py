@@ -4,6 +4,7 @@ from benchopt.base import CommandLineSolver
 
 class Solver(CommandLineSolver):
     name = "Liblinear"
+    sampling_strategy = "tolerance"
 
     def __init__(self, **parameters):
         super().__init__(**parameters)

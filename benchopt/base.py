@@ -19,6 +19,10 @@ if not os.path.exists(VENV_DIR):
     os.mkdir(VENV_DIR)
 
 
+CHECK_PIP_INSTALL_CMD = "python -c 'import {package_name}' 1>/dev/null 2>&1"
+CHECK_SOLVER_INSTALL_CMD = "type $'{solver_cmd}' 1>/dev/null 2>&1"
+
+
 mem = Memory(location=CACHE_DIR, verbose=0)
 
 
@@ -182,8 +186,8 @@ def run_benchmark(bench, max_iter=10):
     datasets = module.DATASETS
 
     solvers, *_ = get_solvers(bench)
-    solver_classes = [import_module(f"{module_name}.{solver_name}").Solver
-                      for solver_name in solvers]
+    solver_classes = [import_module(f"{module_name}.{solver_cmd}").Solver
+                      for solver_cmd in solvers]
 
     res = []
     for data_name, (get_data, args) in datasets.items():
@@ -219,13 +223,8 @@ def plot_benchmark(df):
 
 def run_benchmark_in_venv(bench, max_iter=10):
     create_bench_env(bench)
-
-    env_name = f"{VENV_DIR}/{bench}"
-    script = f"""
-        source {env_name}/bin/activate
-        benchopt run --max-iter {max_iter} {bench}
-    """
-    run_bash(script)
+    cmd = f"benchopt run --max-iter {max_iter} {bench}"
+    _run_in_bench_env(bench, cmd)
 
 
 def create_bench_env(bench):
@@ -238,12 +237,11 @@ def create_bench_env(bench):
 
     # Install the packages necessary for the benchmark's solvers with pip
     script = f"""
-        source {env_name}/bin/activate
         pip install numpy cython  # Utilities to compile some python packages
         pip install . {" ".join(pip)}
     """
     print(f"Installing venv for {bench}:....", end='', flush=True)
-    run_bash(script)
+    _run_in_bench_env(bench, script)
     print("done")
 
     # Install the packages necessary for the benchmark's solvers with pip
@@ -251,21 +249,17 @@ def create_bench_env(bench):
     #     raise NotImplementedError("Cannot install packages with bash yet.")
     for install_script in sh:
         script = f"bash install_scripts/{install_script} {env_name}"
-
-
-def run_bash(script):
-    with open("/tmp/script_bash_benchopt.sh", 'w') as f:
-        f.write(script)
-
-    os.system("bash /tmp/script_bash_benchopt.sh")
+        _run_in_bash(script)
 
 
 def get_solvers(bench):
     import yaml
 
+    # Load the name of the available solvers
     with open('solvers.yml') as f:
         all_solvers = yaml.safe_load(f)
 
+    # Get the solvers to run for bench and the install procedure
     bench_solvers = []
     pip_install = []
     sh_install = []
@@ -273,8 +267,40 @@ def get_solvers(bench):
         if bench in infos['bench']:
             bench_solvers.append(solver)
             if 'pip_install' in infos:
-                pip_install.append(infos['pip_install'])
+                if not check_package_in_env(bench, infos['package_name']):
+                    pip_install.append(infos['pip_install'])
             elif 'sh_install' in infos:
-                sh_install.append(infos['sh_install'])
+                if not check_solver_in_env(bench, infos['solver_cmd']):
+                    sh_install.append(infos['sh_install'])
 
     return bench_solvers, pip_install, sh_install
+
+
+def check_package_in_env(bench, package_name):
+    check_pip_install_cmd = CHECK_PIP_INSTALL_CMD.format(
+        package_name=package_name)
+    return _run_in_bench_env(bench, check_pip_install_cmd) == 0
+
+
+def check_solver_in_env(bench, solver_cmd):
+    check_solver_install_cmd = CHECK_SOLVER_INSTALL_CMD.format(
+        solver_cmd=solver_cmd)
+    return _run_in_bench_env(bench, check_solver_install_cmd) == 0
+
+
+def _run_in_bash(script):
+    with open("/tmp/script_bash_benchopt.sh", 'w') as f:
+        f.write(script)
+
+    return os.system("bash /tmp/script_bash_benchopt.sh")
+
+
+def _run_in_bench_env(bench, script):
+    env_name = f"{VENV_DIR}/{bench}"
+
+    bench_env_script = f"""
+    source {env_name}/bin/activate
+    {script}
+    """
+
+    return _run_in_bash(bench_env_script)
