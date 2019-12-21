@@ -5,7 +5,7 @@
    - Think about f/f_prime API?
    - Independent of python implementation?
    - Multiple datasets
-   - Easy install 
+   - Easy install
    - Easy command line interface/venv
 
 * Support
@@ -22,3 +22,6 @@
 
 - [ ] Adapt n_iter spacing to time (while loop)
 - [ ] Compute optimal solution
+- [ ] Argument in client to pass solvers to run in benchmark
+- [ ] Make CI run the benchmark and check install
+
