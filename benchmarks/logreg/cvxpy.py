@@ -9,15 +9,14 @@ cp.reductions.solvers.conic_solvers.ECOS.STATUS_MAP[-1] = 'optimal_inaccurate'
 class Solver(BaseSolver):
     name = 'cvxpy'
 
-    def set_loss(self, X, y, lmbd):
-        self.X = X
-        self.y = y
-        self.lmbd = lmbd
+    def set_loss(self, loss_parameters):
+
+        self.X, self.y, self.lmbd = loss_parameters
 
         n_features = self.X.shape[1]
         self.beta = cp.Variable(n_features)
 
-        loss = cp.sum(cp.logistic(-cp.multiply(y, X*self.beta)))
+        loss = cp.sum(cp.logistic(-cp.multiply(self.y, self.X*self.beta)))
         self.problem = cp.Problem(cp.Minimize(
             loss + self.lmbd * cp.norm(self.beta, 1)))
 

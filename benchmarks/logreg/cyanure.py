@@ -6,10 +6,8 @@ from benchopt.base import BaseSolver
 class Solver(BaseSolver):
     name = 'Cyanure'
 
-    def set_loss(self, X, y, lmbd):
-        self.X = X
-        self.y = y
-        self.lmbd = lmbd
+    def set_loss(self, loss_parameters):
+        self.X, self.y, self.lmbd = loss_parameters
 
         self.solver = BinaryClassifier(loss='logistic', penalty='l1',
                                        fit_intercept=False)

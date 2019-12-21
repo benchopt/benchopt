@@ -6,10 +6,8 @@ from benchopt.base import BaseSolver
 class Solver(BaseSolver):
     name = 'Celer'
 
-    def set_loss(self, X, y, lmbd):
-        self.X = X
-        self.y = y
-        self.lmbd = lmbd
+    def set_loss(self, loss_parameters):
+        self.X, self.y, self.lmbd = loss_parameters
 
         self.solver_parameter = dict(
             solver='celer', max_epochs=50000, p0=10, gap_freq=10,

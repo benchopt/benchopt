@@ -11,10 +11,8 @@ class Solver(BaseSolver):
         solvers=['saga', 'liblinear']
     )
 
-    def set_loss(self, X, y, lmbd):
-        self.X = X
-        self.y = y
-        self.lmbd = lmbd
+    def set_loss(self, loss_parameters):
+        self.X, self.y, self.lmbd = loss_parameters
 
         self.clf = CDRegressor(
             loss='squared', penalty='l1', C=1, alpha=self.lmbd,
@@ -25,5 +23,4 @@ class Solver(BaseSolver):
         self.clf.fit(self.X, self.y)
 
     def get_result(self):
-        print(self.clf.coef_.flatten())
         return self.clf.coef_.flatten()

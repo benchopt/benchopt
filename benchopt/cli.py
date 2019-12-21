@@ -24,30 +24,27 @@ def get_all_benchmarks():
 
 
 @main.command()
-@click.option('--bench', default='all', show_default=True,
-              help='Select a benchmark to run by its name')
+@click.argument('benchmarks', nargs=-1)
 @click.option('--max-iter', default=1000, show_default=True,
               help='Maximal number of iteration for each solver')
-def run(bench, max_iter):
+def run(benchmarks, max_iter):
     """Run benchmark."""
 
-    if bench == 'all':
-        bench = get_all_benchmarks()
-    elif isinstance(bench, str):
-        bench = [bench]
+    if benchmarks == 'all':
+        benchmarks = get_all_benchmarks()
 
-    for b in bench:
+    for b in benchmarks:
         run_benchmark(b, max_iter=max_iter)
 
 
 @main.command()
-@click.argument('benchmark', nargs=-1)
+@click.argument('benchmarks', nargs=-1)
 @click.option('--max-iter', default=1000, show_default=True,
               help='Maximal number of iteration for each solver')
-def bench(benchmark, max_iter):
+def bench(benchmarks, max_iter):
     """Run benchmark."""
 
-    if benchmark == ():
+    if benchmarks == ():
         benchmarks = get_all_benchmarks()
 
     for benchmark in benchmarks:

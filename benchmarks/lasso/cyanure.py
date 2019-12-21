@@ -6,12 +6,10 @@ from benchopt.base import BaseSolver
 class Solver(BaseSolver):
     name = 'Cyanure'
 
-    def set_loss(self, X, y, lmbd):
-        self.X = X
-        self.y = y
-        self.lmbd = lmbd
+    def set_loss(self, loss_parameters):
+        self.X, self.y, self.lmbd = loss_parameters
 
-        n_samples = X.shape[0]
+        n_samples = self.X.shape[0]
 
         self.solver = Regression(loss='square', penalty='l1',
                                  fit_intercept=False)

@@ -11,10 +11,9 @@ class Solver(BaseSolver):
         solvers=['saga', 'liblinear']
     )
 
-    def set_loss(self, X, y, lmbd):
-        self.X = X
-        self.y = y
-        self.lmbd = lmbd
+    def set_loss(self, loss_parameters):
+
+        self.X, self.y, self.lmbd = loss_parameters
 
         self.clf = CDClassifier(
             loss='log', penalty='l1', C=1, alpha=self.lmbd,

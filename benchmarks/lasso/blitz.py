@@ -1,4 +1,3 @@
-import numpy as np
 from blitzl1 import LassoProblem
 
 from benchopt.base import BaseSolver
@@ -7,10 +6,8 @@ from benchopt.base import BaseSolver
 class Solver(BaseSolver):
     name = 'Blitz'
 
-    def set_loss(self, X, y, lmbd):
-        self.X = X.astype(np.float32)
-        self.y = y.astype(np.float32)
-        self.lmbd = lmbd
+    def set_loss(self, loss_parameters):
+        self.X, self.y, self.lmbd = loss_parameters
 
         self.problem = LassoProblem(self.X, self.y)
 

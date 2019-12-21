@@ -6,12 +6,10 @@ from benchopt.base import BaseSolver
 class Solver(BaseSolver):
     name = 'Celer'
 
-    def set_loss(self, X, y, lmbd):
-        self.X = X
-        self.y = y
-        self.lmbd = lmbd
+    def set_loss(self, loss_parameters):
+        self.X, self.y, self.lmbd = loss_parameters
 
-        n_samples = X.shape[0]
+        n_samples = self.X.shape[0]
         self.lasso = Lasso(
             alpha=self.lmbd/n_samples, max_iter=1, gap_freq=10,
             max_epochs=100000, p0=10, verbose=False, tol=1e-12, prune=True,

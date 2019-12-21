@@ -33,3 +33,8 @@ blitz:
     bench:
         - lasso
         # - logreg
+
+liblinear:
+    sh_install: install_liblinear.sh
+    bench:
+       - logreg

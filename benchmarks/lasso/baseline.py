@@ -7,12 +7,10 @@ from benchopt.base import Solver
 class Baseline(Solver):
     name = 'Baseline'
 
-    def set_loss(self, X, y, lmbd):
-        self.X = X
-        self.y = y
-        self.lmbd = lmbd
+    def set_loss(self, loss_parameters):
+        self.X, self.y, self.lmbd = loss_parameters
 
-        self.L = np.linalg.norm(X.dot(X.T), ord=2)
+        self.L = np.linalg.norm(self.X.dot(self.X.T), ord=2)
 
     def run(self, n_iter):
         n_features = self.X.shape[1]
