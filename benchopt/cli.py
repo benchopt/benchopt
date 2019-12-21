@@ -44,8 +44,14 @@ def run(benchmarks, max_iter):
 def bench(benchmarks, max_iter):
     """Run benchmark."""
 
+    all_benchmarks = get_all_benchmarks()
     if benchmarks == ():
-        benchmarks = get_all_benchmarks()
+        benchmarks = all_benchmarks
+    else:
+        for benchmark in benchmarks:
+            if benchmark not in all_benchmarks:
+                raise ValueError("%s is not a valid benchmark. Should be one "
+                                 "of: %s" % (benchmark, all_benchmarks))
 
     for benchmark in benchmarks:
         # Run the benchmark in a separate venv where the solvers
