@@ -50,8 +50,8 @@ def bench(benchmarks, max_iter):
     else:
         for benchmark in benchmarks:
             if benchmark not in all_benchmarks:
-                raise ValueError("%s is not a valid benchmark. Should be one "
-                                 "of: %s" % (benchmark, all_benchmarks))
+                raise ValueError("{} is not a valid benchmark. Should be one "
+                                 "of: {}".format(benchmark, all_benchmarks))
 
     for benchmark in benchmarks:
         # Run the benchmark in a separate venv where the solvers
