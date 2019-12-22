@@ -2,6 +2,7 @@ import os
 import yaml
 import venv
 from glob import glob
+from importlib import import_module
 
 
 VENV_DIR = './.venv/'
@@ -46,6 +47,7 @@ def check_solver_in_env(bench, solver_cmd):
 
 
 def get_all_benchmarks():
+    """List all the available benchmarks."""
     benchmark_files = glob("benchmarks/*/bench*.py")
     benchmarks = []
     for benchmark_file in benchmark_files:
@@ -62,7 +64,13 @@ def check_benchmarks(benchmarks, all_benchmarks):
     )
 
 
-def get_solvers(benchmark):
+def load_benchmark_losses(benchmark):
+    module_name = f"benchmarks.{benchmark}"
+    module = import_module(module_name)
+    return module.loss_function, module.DATASETS
+
+
+def list_available_solvers(benchmark):
 
     # Load the name of the available solvers
     with open('solvers.yml') as f:
@@ -85,8 +93,17 @@ def get_solvers(benchmark):
     return benchmark_solvers, pip_install, sh_install
 
 
+def get_benchmark_solvers(benchmark):
+
+    module_name = f"benchmarks.{benchmark}.solvers"
+    solvers, *_ = list_available_solvers(benchmark)
+    solver_classes = [import_module(f"{module_name}.{solver_cmd}").Solver
+                      for solver_cmd in solvers]
+    return solver_classes
+
+
 def create_bench_env(bench):
-    solvers, pip_to_install, sh_to_install = get_solvers(bench)
+    solvers, pip_to_install, sh_to_install = list_available_solvers(bench)
 
     # Create a virtual env for the benchmark
     bench_env_dir = f"{VENV_DIR}/{bench}"

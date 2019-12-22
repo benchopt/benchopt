@@ -15,7 +15,7 @@ def get_simulated_data(n_samples=100, n_features=5000, reg=.1,
 
     lmbd = reg * get_lmbd_max(X, y)
 
-    return X, y, lmbd
+    return n_features, X, y, lmbd
 
 
 def get_boston_data(reg=.1):
@@ -23,4 +23,4 @@ def get_boston_data(reg=.1):
 
     lmbd = reg * get_lmbd_max(X, y)
 
-    return X, y, lmbd
+    return X.shape[1], X, y, lmbd

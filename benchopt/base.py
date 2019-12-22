@@ -4,17 +4,17 @@ import tempfile
 import numpy as np
 import pandas as pd
 from joblib import Memory
-from abc import ABC, abstractmethod
 import matplotlib.pyplot as plt
 from collections import namedtuple
-from importlib import import_module
+from abc import ABC, abstractmethod
 
-from .util import get_solvers
+from .util import get_benchmark_solvers
+from .util import load_benchmark_losses
 
 
 SAMPLING_STRATEGIES = ['n_iter', 'tolerance']
 
-Cost = namedtuple('Cost', 'data method n_iter time loss'.split(' '))
+Cost = namedtuple('Cost', 'data scale method n_iter time loss'.split(' '))
 
 
 CACHE_DIR = '.'
@@ -151,9 +151,13 @@ class CommandLineSolver(BaseSolver, ABC):
 
 
 @mem.cache
-def run_one_method(data_name, method_class, score, loss_parameters, parameters,
-                   max_iter):
-    method = method_class(*parameters)
+def run_one_method(data_name, solver_class, loss_function, loss_parameters,
+                   solver_parameters, max_iter):
+    # Instantiate the solver
+    method = solver_class(*solver_parameters)
+
+    # Set the loss for the solver
+    scale, *loss_parameters = loss_parameters
     method.set_loss(loss_parameters)
     res = []
     list_iter = np.unique(np.logspace(0, np.log10(max_iter), 20, dtype=int))
@@ -163,35 +167,32 @@ def run_one_method(data_name, method_class, score, loss_parameters, parameters,
         method.run(n_iter=n_iter)
         delta_t = time.time() - t_start
         beta_hat_i = method.get_result()
-        loss_value = score(*loss_parameters, beta_hat_i)
-        res.append(Cost(data=data_name, method=method.name, n_iter=n_iter,
-                        time=delta_t, loss=loss_value))
+        loss_value = loss_function(*loss_parameters, beta_hat_i)
+        res.append(Cost(data=data_name, scale=scale, method=method.name,
+                        n_iter=n_iter, time=delta_t, loss=loss_value))
     print(f"{method.name}: done".ljust(40))
     return res
 
 
 def run_benchmark(benchmark, max_iter=10):
 
-    module_name = f"benchmarks.{benchmark}"
-    module = import_module(module_name)
-    score = module.score_result
-    datasets = module.DATASETS
+    # Load the benchmark function and the datasets
+    loss_function, datasets = load_benchmark_losses(benchmark)
 
-    solvers, *_ = get_solvers(benchmark)
-    solver_classes = [import_module(f"{module_name}.{solver_cmd}").Solver
-                      for solver_cmd in solvers]
+    solver_classes = get_benchmark_solvers(benchmark)
 
     res = []
     for data_name, (get_data, args) in datasets.items():
-        loss = get_data(**args)
+        loss_parameters = get_data(**args)
         for solver in solver_classes:
-            parameters = {}
+            solver_parameters = {}
             # if solver.name in ['Blitz']:
-            #     run_one_method.call(data_name, solver, score, loss,
+            #     run_one_method.call(data_name, solver, loss_function, loss,
             #                         parameters, max_iter)
             try:
-                res.extend(run_one_method(data_name, solver, score, loss,
-                                          parameters, max_iter))
+                res.extend(run_one_method(
+                    data_name, solver, loss_function, loss_parameters,
+                    solver_parameters, max_iter))
             except Exception:
                 import traceback
                 traceback.print_exc()

@@ -1,4 +1,4 @@
-from .bench_logreg import DATASETS, score_result
+from .bench_logreg import DATASETS, loss_function
 
 
-__all__ = ['DATASETS', 'score_result']
+__all__ = ['DATASETS', 'loss_function']
