@@ -25,7 +25,6 @@ class Solver(BaseSolver):
         # )
         # self.problem = cp.Problem(cp.Maximize(
         #     log_likelihood / n_features - self.lmbd * cp.norm(self.beta, 1)))
-        self.problem.solve(verbose=True)
 
     def run(self, n_iter):
         self.problem.solve(max_iters=n_iter, verbose=False)

@@ -4,6 +4,8 @@ from lightning.regression import CDRegressor
 from benchopt.base import BaseSolver
 
 
+# TODO: lightning always fit an intercept
+#       it is thus not optimizing the same cost function
 class Solver(BaseSolver):
     name = 'Lightning'
 
