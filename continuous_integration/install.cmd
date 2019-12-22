@@ -18,11 +18,11 @@ python --version
 pip --version
 
 @rem Install dependencies with either conda or pip.
-if "%PACKAGER%" == "conda" (%CONDA_INSTALL% numpy=1.15 pytest cython)
+if "%PACKAGER%" == "conda" (%CONDA_INSTALL% numpy=1.15 pytest cython scikit-learn)
 if "%PACKAGER%" == "pip" (%PIP_INSTALL% -r dev-requirements.txt)
 
 @rem Install extra dependency
-pip install -q pytest-timeout
+%PIP_INSTALL% pytest-timeout
 
 @rem Install package
 pip install -e .

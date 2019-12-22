@@ -27,7 +27,7 @@ make_conda() {
 if [[ "$PACKAGER" == "conda" ]]; then
     TO_INSTALL="python=$VERSION_PYTHON pip pytest pytest-timeout \
                 numpy=$NUMPY_VERSION cython=$CYTHON_VERSION \
-                joblib"
+                joblib scikit-learn"
 
 	make_conda $TO_INSTALL
 
@@ -35,7 +35,7 @@ elif [[ "$PACKAGER" == "ubuntu" ]]; then
     sudo apt-get install python3-virtualenv python3-numpy cython
     python3 -m virtualenv --system-site-packages --python=python3 $VIRTUALENV
     source $VIRTUALENV/bin/activate
-    python -m pip install pytest pytest-cov cython joblib
+    python -m pip install -r dev-requirements.txt
 fi
 
 python --version
