@@ -1,10 +1,10 @@
 import numpy as np
 
 
-from benchopt.base import Solver
+from benchopt.base import BaseSolver
 
 
-class Baseline(Solver):
+class Solver(BaseSolver):
     name = 'Baseline'
 
     def set_loss(self, loss_parameters):

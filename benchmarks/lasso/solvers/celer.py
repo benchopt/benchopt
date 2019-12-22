@@ -1,10 +1,17 @@
-from celer import Lasso
-
 from benchopt.base import BaseSolver
+from benchopt.util import safe_import
+
+
+with safe_import() as solver_import:
+    from celer import Lasso
 
 
 class Solver(BaseSolver):
     name = 'Celer'
+
+    install_cmd = 'pip'
+    install_package = 'git+https://github.com/mathurinm/celer.git'
+    import_package = 'celer'
 
     def set_loss(self, loss_parameters):
         self.X, self.y, self.lmbd = loss_parameters

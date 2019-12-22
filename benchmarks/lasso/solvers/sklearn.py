@@ -1,14 +1,19 @@
 import warnings
-
-from sklearn.linear_model import Lasso
-from sklearn.exceptions import ConvergenceWarning
-
-
 from benchopt.base import BaseSolver
+from benchopt.util import safe_import
+
+
+with safe_import() as solver_import:
+    from sklearn.linear_model import Lasso
+    from sklearn.exceptions import ConvergenceWarning
 
 
 class Solver(BaseSolver):
     name = 'sklearn'
+
+    install_cmd = 'pip'
+    install_package = 'scikit-learn'
+    import_package = 'sklearn'
 
     def set_loss(self, loss_parameters):
         self.X, self.y, self.lmbd = loss_parameters

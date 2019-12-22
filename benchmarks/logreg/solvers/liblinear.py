@@ -6,6 +6,10 @@ class Solver(CommandLineSolver):
     name = "Liblinear"
     sampling_strategy = "tolerance"
 
+    install_cmd = 'bash'
+    install_script = 'install_liblinear.sh'
+    solver_cmd = 'train'
+
     def __init__(self, **parameters):
         super().__init__(**parameters)
 

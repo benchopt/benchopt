@@ -1,11 +1,19 @@
-from lightning.classification import CDClassifier
-
-
 from benchopt.base import BaseSolver
+from benchopt.util import safe_import
+
+
+with safe_import() as solver_import:
+    from lightning.classification import CDClassifier
 
 
 class Solver(BaseSolver):
     name = 'Lightning'
+
+    install_cmd = 'pip'
+    install_package = (
+        'git+https://github.com/scikit-learn-contrib/lightning.git'
+    )
+    import_package = 'lightning'
 
     parameters = dict(
         solvers=['saga', 'liblinear']

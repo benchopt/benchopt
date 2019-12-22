@@ -1,13 +1,21 @@
-from lightning.regression import CDRegressor
-
-
 from benchopt.base import BaseSolver
+from benchopt.util import safe_import
+
+
+with safe_import() as solver_import:
+    from lightning.regression import CDRegressor
 
 
 # TODO: lightning always fit an intercept
 #       it is thus not optimizing the same cost function
 class Solver(BaseSolver):
     name = 'Lightning'
+
+    install_cmd = 'pip'
+    install_package = (
+        'git+https://github.com/scikit-learn-contrib/lightning.git'
+    )
+    import_package = 'lightning'
 
     parameters = dict(
         solvers=['saga', 'liblinear']

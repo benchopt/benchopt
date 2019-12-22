@@ -1,11 +1,18 @@
-import blitzl1
-
 from benchopt.base import BaseSolver
+from benchopt.util import safe_import
+
+
+with safe_import() as solver_import:
+    import blitzl1
 
 
 class Solver(BaseSolver):
     name = 'Blitz'
     sampling_strategy = 'tolerance'
+
+    install_cmd = 'pip'
+    install_package = 'blitzl1'
+    import_package = 'blitzl1'
 
     def set_loss(self, loss_parameters):
         self.X, self.y, self.lmbd = loss_parameters

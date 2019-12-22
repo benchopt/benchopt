@@ -8,7 +8,9 @@ import matplotlib.pyplot as plt
 from collections import namedtuple
 from abc import ABC, abstractmethod
 
-from .util import get_benchmark_solvers
+from .util import check_cmd_in_env
+from .util import check_package_in_env
+from .util import get_all_solvers
 from .util import load_benchmark_losses
 
 
@@ -26,6 +28,7 @@ class BaseSolver(ABC):
     # TODO: sampling strategy with eps/tol instead for solvers that do not
     #       expose the max number of iterations
     sampling_strategy = 'n_iter'
+    install_cmd = None
 
     def __init__(self, **parameters):
         """Instantiate a solver with the given parameters."""
@@ -69,6 +72,17 @@ class BaseSolver(ABC):
     def name(self):
         """Each solver should expose its name for plotting purposes."""
         ...
+
+    @classmethod
+    def is_installed(cls, env_name=None):
+        if cls.install_cmd == 'pip':
+            return check_package_in_env(cls.import_package, env_name)
+        elif cls.install_cmd == 'sh':
+            return check_cmd_in_env(cls.solver_cmd, env_name)
+
+    # @classmethod
+    # def __str__(cls):
+    #     return cls.name
 
 
 class CommandLineSolver(BaseSolver, ABC):
@@ -179,7 +193,7 @@ def run_benchmark(benchmark, max_iter=10):
     # Load the benchmark function and the datasets
     loss_function, datasets = load_benchmark_losses(benchmark)
 
-    solver_classes = get_benchmark_solvers(benchmark)
+    solver_classes = get_all_solvers(benchmark)
 
     res = []
     for data_name, (get_data, args) in datasets.items():

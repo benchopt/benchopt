@@ -1,10 +1,17 @@
-from celer.homotopy import logreg_path
-
 from benchopt.base import BaseSolver
+from benchopt.util import safe_import
+
+
+with safe_import() as solver_import:
+    from celer.homotopy import logreg_path
 
 
 class Solver(BaseSolver):
     name = 'Celer'
+
+    install_cmd = 'pip'
+    install_package = 'git+https://github.com/mathurinm/celer.git'
+    import_package = 'celer'
 
     def set_loss(self, loss_parameters):
         self.X, self.y, self.lmbd = loss_parameters
@@ -20,4 +27,4 @@ class Solver(BaseSolver):
         self.coef_ = path[1]
 
     def get_result(self):
-        return self.coef_
+        return self.coef_.flatten()

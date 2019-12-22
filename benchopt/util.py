@@ -1,49 +1,113 @@
 import os
-import yaml
 import venv
+import pkgutil
+import tempfile
 from glob import glob
 from importlib import import_module
 
-
+DEBUG = True
 VENV_DIR = './.venv/'
+PRINT_INSTALL_ERRORS = True
 
 
 if not os.path.exists(VENV_DIR):
     os.mkdir(VENV_DIR)
 
 
-CHECK_PIP_INSTALL_CMD = "python -c 'import {package_name}' 1>/dev/null 2>&1"
-CHECK_SOLVER_INSTALL_CMD = "type $'{solver_cmd}' 1>/dev/null 2>&1"
+PIP_INSTALL_CMD = "pip install -qq {packages}"
+CHECK_PACKAGE_INSTALLED_CMD = (
+    "python -c 'import {package_name}' 1>/dev/null 2>&1"
+)
+CHECK_CMD_INSTALLED_CMD = "type $'{solver_cmd}' 1>/dev/null 2>&1"
 
 
 def _run_in_bash(script):
-    with open("/tmp/script_bash_benchopt.sh", 'w') as f:
+    """Run a bash script and return its exit code.
+
+    Parameters
+    ----------
+    script: str
+        Script to run
+
+    Return
+    ------
+    exit_code: int
+        Exit code of the script
+    """
+    # Use a TemporaryFile to make sure this file is cleaned up at
+    # the end of this function.
+    tmp = tempfile.NamedTemporaryFile(mode="w+")
+    with open(tmp.name, 'w') as f:
         f.write(script)
 
-    return os.system("bash /tmp/script_bash_benchopt.sh")
+    if DEBUG:
+        print(script)
+
+    return os.system(f"bash {tmp.name}")
 
 
-def _run_in_bench_env(bench, script):
-    bench_env_dir = f"{VENV_DIR}/{bench}"
+def _run_bash_in_env(env_name, script):
+    """Run a script in a given virtual env
 
-    bench_env_script = f"""
-        source {bench_env_dir}/bin/activate
+    Parameters
+    ----------
+    env_name: str
+        Name of the environment to run the script in
+    script: str
+        Script to run
+
+    Return
+    ------
+    exit_code: int
+        Exit code of the script
+    """
+    env_dir = f"{VENV_DIR}/{env_name}"
+
+    env_script = f"""
+        source {env_dir}/bin/activate
         {script}
     """
 
-    return _run_in_bash(bench_env_script)
+    return _run_in_bash(env_script)
 
 
-def check_package_in_env(bench, package_name):
-    check_pip_install_cmd = CHECK_PIP_INSTALL_CMD.format(
+def check_package_in_env(package_name, env_name=None):
+    """Check that a python package is installed in an environment.
+
+    Parameters
+    ----------
+    package_name : str
+        Name of the package that should be installed. This function checks that
+        this package can be imported in python.
+    env_name : str or None
+        Name of the virtual environment to check. If it is None, check in the
+        current environment.
+    """
+    check_package_installed_cmd = CHECK_PACKAGE_INSTALLED_CMD.format(
         package_name=package_name)
-    return _run_in_bench_env(bench, check_pip_install_cmd) == 0
+    if env_name is None:
+        return _run_in_bash(check_package_installed_cmd) == 0
+    return _run_bash_in_env(env_name, check_package_installed_cmd) == 0
 
 
-def check_solver_in_env(bench, solver_cmd):
-    check_solver_install_cmd = CHECK_SOLVER_INSTALL_CMD.format(
-        solver_cmd=solver_cmd)
-    return _run_in_bench_env(bench, check_solver_install_cmd) == 0
+def check_cmd_in_env(cmd_name, env_name):
+    """Check that a cmd is available in an environment.
+
+    Parameters
+    ----------
+    cmd_name : str
+        Name of the cmd that should be installed. This function checks that
+        this cmd is available on the path of the environment.
+    env_name : str or None
+        Name of the virtual environment to check. If it is None, check in the
+        current environment.
+    """
+    check_cmd_installed_cmd = CHECK_CMD_INSTALLED_CMD.format(
+        cmd_name=cmd_name)
+    if env_name is None:
+        return _run_in_bash(check_cmd_installed_cmd) == 0
+
+    return _run_bash_in_env(env_name, check_cmd_installed_cmd) == 0
 
 
 def get_all_benchmarks():
@@ -64,69 +128,105 @@ def check_benchmarks(benchmarks, all_benchmarks):
     )
 
 
+def get_benchmark_module_name(benchmark):
+    return f"benchmarks.{benchmark}"
+
+
 def load_benchmark_losses(benchmark):
-    module_name = f"benchmarks.{benchmark}"
+    module_name = get_benchmark_module_name(benchmark)
     module = import_module(module_name)
     return module.loss_function, module.DATASETS
 
 
-def list_available_solvers(benchmark):
-
-    # Load the name of the available solvers
-    with open('solvers.yml') as f:
-        all_solvers = yaml.safe_load(f)
-
-    # Get the solvers to run for benchmark and the install procedure
-    benchmark_solvers = []
-    pip_install = []
-    sh_install = []
-    for solver, infos in all_solvers.items():
-        if benchmark in infos['bench']:
-            benchmark_solvers.append(solver)
-            if 'pip_install' in infos:
-                if not check_package_in_env(benchmark, infos['package_name']):
-                    pip_install.append(infos['pip_install'])
-            elif 'sh_install' in infos:
-                if not check_solver_in_env(benchmark, infos['solver_cmd']):
-                    sh_install.append(infos['sh_install'])
-
-    return benchmark_solvers, pip_install, sh_install
+def list_solvers(benchmark):
+    submodules = pkgutil.iter_modules([f'benchmarks/{benchmark}/solvers'])
+    return [m.name for m in submodules]
 
 
-def get_benchmark_solvers(benchmark):
+def get_all_solvers(benchmark):
 
-    module_name = f"benchmarks.{benchmark}.solvers"
-    solvers, *_ = list_available_solvers(benchmark)
-    solver_classes = [import_module(f"{module_name}.{solver_cmd}").Solver
-                      for solver_cmd in solvers]
+    solver_classes = []
+    solvers = list_solvers(benchmark)
+    module_name = get_benchmark_module_name(benchmark)
+    for s in solvers:
+        solver_module_name = f"{module_name}.solvers.{s}"
+        solver_module = import_module(solver_module_name)
+
+        # Check if there where no import issues
+        installed = getattr(solver_module, 'solver_import', None)
+        installed = (installed is None or not installed.failed_import)
+
+        # Get the Solver class
+        solver_class = solver_module.Solver
+        solver_class.installed = installed
+        solver_classes.append(solver_class)
+
     return solver_classes
 
 
-def create_bench_env(bench):
-    solvers, pip_to_install, sh_to_install = list_available_solvers(bench)
+def create_venv(env_name, recreate=False):
+    """Create a virtual env with name env_name and install basic utilities"""
 
-    # Create a virtual env for the benchmark
-    bench_env_dir = f"{VENV_DIR}/{bench}"
-    if not os.path.exists(bench_env_dir):
-        print(f"Creating venv for {bench}:...", end='', flush=True)
-        venv.create(bench_env_dir, with_pip=True)
+    env_dir = f"{VENV_DIR}/{env_name}"
+
+    if not os.path.exists(env_dir) or recreate:
+        print(f"Creating venv {env_name}:...", end='', flush=True)
+        venv.create(env_dir, with_pip=True)
+        # Install benchopt as well as packages used as utilities to install
+        # other packages.
+        cmd = PIP_INSTALL_CMD.format(packages="numpy cython .")
+        assert _run_bash_in_env(env_name, cmd) == 0, (
+            "Failed to install numpy, cython and benchopt"
+        )
         print(" done")
 
+
+def install_solvers(env_name, solvers):
+    """Install the listed solvers if needed."""
+
     # Install the packages necessary for the benchmark's solvers with pip
-    script = f"""
-        pip install -qq numpy cython  # Utilities to compile python packages
-        pip install -qq . {" ".join(pip_to_install)}
-    """
-    print(f"Installing python packages for {bench}:...", end='', flush=True)
-    exit_code = _run_in_bench_env(bench, script)
-    if exit_code != 0:
-        raise RuntimeError("The installation failed in the venv")
+    pip_install_solvers = [s for s in solvers if s.install_cmd == 'pip']
+    print(f"Installing solvers {pip_install_solvers!r} with pip:...",
+          end='', flush=True)
+    pip_install = []
+    for s in pip_install_solvers:
+        if not s.is_installed(env_name):
+            pip_install.append(s.install_package)
+    if len(pip_install) > 0:
+        script = PIP_INSTALL_CMD.format(packages=' '.join(pip_install))
+        exit_code = _run_bash_in_env(env_name, script)
+        if exit_code != 0:
+            print(" errored")
+            raise RuntimeError("The installation failed in the venv")
     print(" done")
 
     # Run install script for necessary for the benchmark's solvers that cannot
     # be installed via pip
-    print(f"Running bash install script for {bench}:...", end='', flush=True)
-    for install_script in sh_to_install:
-        script = f"bash install_scripts/{install_script} {bench_env_dir}"
-        _run_in_bench_env(script)
+    sh_install_solvers = [s for s in solvers if s.install_cmd == 'bash']
+    print(f"Running bash install script for {sh_install_solvers}:...",
+          end='', flush=True)
+    for s in sh_install_solvers:
+        if not s.is_installed(env_name):
+            script = f"bash install_scripts/{s.install_script} $VIRTUAL_ENV"
+        _run_bash_in_env(env_name, script)
     print(" done")
+
+
+class safe_import():
+    def __init__(self):
+        self.failed_import = False
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        # prevent import error from propagating and tag
+        if exc_type is ImportError:
+            self.failed_import = True
+
+            if PRINT_INSTALL_ERRORS:
+                import traceback
+                traceback.print_exc()
+
+            # Prevent the error propagation
+            return True

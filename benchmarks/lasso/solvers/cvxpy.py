@@ -1,13 +1,21 @@
-import cvxpy as cp
-
 from benchopt.base import BaseSolver
+from benchopt.util import safe_import
 
-# Hack cvxpy to allow for non-error on reaching max_iter
-cp.reductions.solvers.conic_solvers.ECOS.STATUS_MAP[-1] = 'optimal_inaccurate'
+
+with safe_import() as solver_import:
+    import cvxpy as cp
+    # Hack cvxpy to be able to retrieve a sub optimal solution when
+    # reaching max_iter
+    cp.reductions.solvers.conic_solvers.ECOS.STATUS_MAP[-1] = \
+        'optimal_inaccurate'
 
 
 class Solver(BaseSolver):
     name = 'cvxpy'
+
+    install_cmd = 'pip'
+    install_package = 'cvxpy'
+    import_package = 'cvxpy'
 
     def set_loss(self, loss_parameters):
         self.X, self.y, self.lmbd = loss_parameters

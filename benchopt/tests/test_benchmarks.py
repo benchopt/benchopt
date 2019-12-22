@@ -9,7 +9,7 @@ BENCHMARKS = get_all_benchmarks()
 
 
 @pytest.mark.parametrize('benchmark_name', BENCHMARKS)
-def test_benchmark(benchmark_name):
+def test_benchmark_loss(benchmark_name):
     """Check that the loss function and the datasets are well defined."""
     loss_function, datasets = load_benchmark_losses(benchmark_name)
 

@@ -1,14 +1,21 @@
 import warnings
 
-from sklearn.exceptions import ConvergenceWarning
-from sklearn.linear_model import LogisticRegression
-
 
 from benchopt.base import BaseSolver
+from benchopt.util import safe_import
+
+
+with safe_import() as solver_import:
+    from sklearn.exceptions import ConvergenceWarning
+    from sklearn.linear_model import LogisticRegression
 
 
 class Solver(BaseSolver):
     name = 'sklearn'
+
+    install_cmd = 'pip'
+    install_package = 'scikit-learn'
+    import_package = 'sklearn'
 
     parameters = dict(
         solvers=['saga', 'liblinear']

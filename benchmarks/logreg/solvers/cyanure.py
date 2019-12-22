@@ -1,10 +1,17 @@
-from cyanure import BinaryClassifier
-
 from benchopt.base import BaseSolver
+from benchopt.util import safe_import
+
+
+with safe_import() as solver_import:
+    from cyanure import BinaryClassifier
 
 
 class Solver(BaseSolver):
     name = 'Cyanure'
+
+    install_cmd = 'pip'
+    install_package = 'cyanure-mkl'
+    import_package = 'cyanure'
 
     def set_loss(self, loss_parameters):
         self.X, self.y, self.lmbd = loss_parameters
