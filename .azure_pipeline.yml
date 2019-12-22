@@ -12,16 +12,16 @@ jobs:
       py37_conda:
         VERSION_PYTHON: '3.7'
         PACKAGER: 'conda'
+      py37_conda:
+        VERSION_PYTHON: '3.7'
+        PACKAGER: 'pip'
       py36_pip:
         VERSION_PYTHON: '3.6'
         PACKAGER: 'pip'
-      py35_conda:
-        VERSION_PYTHON: '3.5'
-        PACKAGER: 'conda'
 
 
 
-# - template: build_tools/posix.yml
+# - template: continuous_integration/posix.yml
 #   parameters:
 #     name: Linux
 #     vmImage: ubuntu-16.04
@@ -64,18 +64,11 @@ jobs:
 #         SKLEARN_SITE_JOBLIB: '1'
 #         CHECK_WARNINGS: 'true'
 
-# - template: build_tools/azure/posix.yml
-#   parameters:
-#     name: macOS
-#     vmImage: xcode9-macos10.13
-#     matrix:
-#       pylatest_conda:
-#         DISTRIB: 'conda'
-#         PYTHON_VERSION: '*'
-#         INSTALL_MKL: 'true'
-#         NUMPY_VERSION: '*'
-#         SCIPY_VERSION: '*'
-#         CYTHON_VERSION: '*'
-#         PILLOW_VERSION: '*'
-#         JOBLIB_VERSION: '*'
-#         COVERAGE: 'true'
+- template: continuous_integration/posix.yml
+  parameters:
+    name: macOS
+    vmImage: xcode9-macos10.13
+    matrix:
+      pylatest_conda:
+        VERSION_PYTHON: '*'
+        PACKAGER: 'conda'
