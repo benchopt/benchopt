@@ -1,9 +1,11 @@
-import re
 import click
-from glob import glob
 
 from benchopt import run_benchmark
-from benchopt import run_benchmark_in_venv
+
+
+from benchopt.util import _run_in_bench_env, create_bench_env
+from benchopt.util import check_benchmarks, get_all_benchmarks
+
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
@@ -12,23 +14,6 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 def main():
     """Command-line interface to benchOpt"""
     pass
-
-
-def get_all_benchmarks():
-    benchmark_files = glob("benchmarks/*/bench*.py")
-    benchmarks = []
-    for benchmark_file in benchmark_files:
-        match = re.match(r"benchmarks/([^/]*)/*", benchmark_file)
-        benchmarks.append(match.groups()[0])
-    return benchmarks
-
-
-def check_benchmarks(benchmarks, all_benchmarks):
-    unknown_benchmarks = set(benchmarks) - set(all_benchmarks)
-    assert len(unknown_benchmarks) == 0, (
-        "{} is not a valid benchmark. Should be one of: {}"
-        .format(unknown_benchmarks, all_benchmarks)
-    )
 
 
 @main.command()
@@ -46,7 +31,7 @@ def run(benchmarks, solver, max_iter):
     check_benchmarks(benchmarks, all_benchmarks)
 
     # TODO: check solvers
-    # check_solvers(benc)
+    # check_solvers(benchmarks)
 
     for b in benchmarks:
         run_benchmark(b, max_iter=max_iter)
@@ -69,8 +54,11 @@ def bench(benchmarks, max_iter):
     for benchmark in benchmarks:
         # Run the benchmark in a separate venv where the solvers
         # will be installed
-        ret_code = run_benchmark_in_venv(benchmark, max_iter=max_iter)
-        return_code[benchmark] = ret_code
+
+        create_bench_env(benchmark)
+        cmd = f"benchopt run --max-iter {max_iter} {benchmark}"
+        exit_code = _run_in_bench_env(benchmark, cmd)
+        return_code[benchmark] = exit_code
 
 
 def start():

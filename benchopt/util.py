@@ -1,6 +1,7 @@
 import os
 import yaml
 import venv
+from glob import glob
 
 
 VENV_DIR = './.venv/'
@@ -22,11 +23,11 @@ def _run_in_bash(script):
 
 
 def _run_in_bench_env(bench, script):
-    env_name = f"{VENV_DIR}/{bench}"
+    bench_env_dir = f"{VENV_DIR}/{bench}"
 
     bench_env_script = f"""
-    source {env_name}/bin/activate
-    {script}
+        source {bench_env_dir}/bin/activate
+        {script}
     """
 
     return _run_in_bash(bench_env_script)
@@ -42,6 +43,23 @@ def check_solver_in_env(bench, solver_cmd):
     check_solver_install_cmd = CHECK_SOLVER_INSTALL_CMD.format(
         solver_cmd=solver_cmd)
     return _run_in_bench_env(bench, check_solver_install_cmd) == 0
+
+
+def get_all_benchmarks():
+    benchmark_files = glob("benchmarks/*/bench*.py")
+    benchmarks = []
+    for benchmark_file in benchmark_files:
+        benchmark_name = benchmark_file.split(os.path.sep)[1]
+        benchmarks.append(benchmark_name)
+    return benchmarks
+
+
+def check_benchmarks(benchmarks, all_benchmarks):
+    unknown_benchmarks = set(benchmarks) - set(all_benchmarks)
+    assert len(unknown_benchmarks) == 0, (
+        "{} is not a valid benchmark. Should be one of: {}"
+        .format(unknown_benchmarks, all_benchmarks)
+    )
 
 
 def get_solvers(benchmark):
@@ -68,27 +86,30 @@ def get_solvers(benchmark):
 
 
 def create_bench_env(bench):
-    solvers, pip, sh = get_solvers(bench)
+    solvers, pip_to_install, sh_to_install = get_solvers(bench)
 
     # Create a virtual env for the benchmark
-    env_name = f"{VENV_DIR}/{bench}"
-    if not os.path.exists(env_name):
-        venv.create(env_name, with_pip=True)
+    bench_env_dir = f"{VENV_DIR}/{bench}"
+    if not os.path.exists(bench_env_dir):
+        print(f"Creating venv for {bench}:...", end='', flush=True)
+        venv.create(bench_env_dir, with_pip=True)
+        print(" done")
 
     # Install the packages necessary for the benchmark's solvers with pip
     script = f"""
-        pip install numpy cython  # Utilities to compile some python packages
-        pip install . {" ".join(pip)}
+        pip install -qq numpy cython  # Utilities to compile python packages
+        pip install -qq . {" ".join(pip_to_install)}
     """
-    print(f"Installing venv for {bench}:....", end='', flush=True)
+    print(f"Installing python packages for {bench}:...", end='', flush=True)
     exit_code = _run_in_bench_env(bench, script)
     if exit_code != 0:
         raise RuntimeError("The installation failed in the venv")
-    print("done")
+    print(" done")
 
-    # Install the packages necessary for the benchmark's solvers with pip
-    # if len(sh) > 0:
-    #     raise NotImplementedError("Cannot install packages with bash yet.")
-    for install_script in sh:
-        script = f"bash install_scripts/{install_script} {env_name}"
+    # Run install script for necessary for the benchmark's solvers that cannot
+    # be installed via pip
+    print(f"Running bash install script for {bench}:...", end='', flush=True)
+    for install_script in sh_to_install:
+        script = f"bash install_scripts/{install_script} {bench_env_dir}"
         _run_in_bench_env(script)
+    print(" done")

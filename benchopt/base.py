@@ -9,16 +9,16 @@ import matplotlib.pyplot as plt
 from collections import namedtuple
 from importlib import import_module
 
-from .util import _run_in_bench_env, get_solvers, create_bench_env
+from .util import get_solvers
+
+
+SAMPLING_STRATEGIES = ['n_iter', 'tolerance']
+
+Cost = namedtuple('Cost', 'data method n_iter time loss'.split(' '))
 
 
 CACHE_DIR = '.'
-
-
 mem = Memory(location=CACHE_DIR, verbose=0)
-
-
-Cost = namedtuple('Cost', 'data method n_iter time loss'.split(' '))
 
 
 class BaseSolver(ABC):
@@ -170,14 +170,14 @@ def run_one_method(data_name, method_class, score, loss_parameters, parameters,
     return res
 
 
-def run_benchmark(bench, max_iter=10):
+def run_benchmark(benchmark, max_iter=10):
 
-    module_name = f"benchmarks.{bench}"
+    module_name = f"benchmarks.{benchmark}"
     module = import_module(module_name)
     score = module.score_result
     datasets = module.DATASETS
 
-    solvers, *_ = get_solvers(bench)
+    solvers, *_ = get_solvers(benchmark)
     solver_classes = [import_module(f"{module_name}.{solver_cmd}").Solver
                       for solver_cmd in solvers]
 
@@ -186,7 +186,7 @@ def run_benchmark(bench, max_iter=10):
         loss = get_data(**args)
         for solver in solver_classes:
             parameters = {}
-            # if solver.name in ['Celer']:
+            # if solver.name in ['Blitz']:
             #     run_one_method.call(data_name, solver, score, loss,
             #                         parameters, max_iter)
             try:
@@ -211,9 +211,3 @@ def plot_benchmark(df):
             plt.loglog(df_.time, df_.loss - c_star + 1e-7, label=m)
         plt.legend()
     plt.show()
-
-
-def run_benchmark_in_venv(bench, max_iter=10):
-    create_bench_env(bench)
-    cmd = f"benchopt run --max-iter {max_iter} {bench}"
-    _run_in_bench_env(bench, cmd)
