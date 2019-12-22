@@ -1,6 +1,7 @@
 import os
 import venv
 import pkgutil
+import warnings
 import tempfile
 from glob import glob
 from importlib import import_module
@@ -143,7 +144,7 @@ def list_solvers(benchmark):
     return [m.name for m in submodules]
 
 
-def get_all_solvers(benchmark):
+def get_all_solvers(benchmark, solver_names=None):
 
     solver_classes = []
     solvers = list_solvers(benchmark)
@@ -158,8 +159,10 @@ def get_all_solvers(benchmark):
 
         # Get the Solver class
         solver_class = solver_module.Solver
+        solver_name = solver_class.name.lower()
         solver_class.installed = installed
-        solver_classes.append(solver_class)
+        if solver_names is None or solver_name in solver_names:
+            solver_classes.append(solver_class)
 
     return solver_classes
 
@@ -213,13 +216,18 @@ def install_solvers(env_name, solvers):
 
 
 class safe_import():
+    """Do not fail on ImportError and Catch the warnings"""
     def __init__(self):
         self.failed_import = False
+        self.record = warnings.catch_warnings(record=True)
 
     def __enter__(self):
+        self.record.__enter__()
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
+        self.record.__exit__(exc_type, exc_value, traceback)
+
         # prevent import error from propagating and tag
         if exc_type is ImportError:
             self.failed_import = True

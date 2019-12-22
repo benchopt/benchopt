@@ -32,10 +32,11 @@ def run(benchmarks, solver, max_iter):
     check_benchmarks(benchmarks, all_benchmarks)
 
     # TODO: check solvers
+    solver_names = None if solver == () else list(s.lower() for s in solver)
     # check_solvers(benchmarks)
 
     for benchmark in benchmarks:
-        run_benchmark(benchmark, max_iter=max_iter)
+        run_benchmark(benchmark, solver_names, max_iter=max_iter)
 
 
 @main.command()

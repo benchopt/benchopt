@@ -1,9 +1,12 @@
+import warnings
+
 from benchopt.base import BaseSolver
 from benchopt.util import safe_import
 
 
 with safe_import() as solver_import:
     from celer import Lasso
+    from celer.homotopy import ConvergenceWarning
 
 
 class Solver(BaseSolver):
@@ -16,6 +19,7 @@ class Solver(BaseSolver):
     def set_loss(self, loss_parameters):
         self.X, self.y, self.lmbd = loss_parameters
 
+        warnings.filterwarnings('ignore', category=ConvergenceWarning)
         n_samples = self.X.shape[0]
         self.lasso = Lasso(
             alpha=self.lmbd/n_samples, max_iter=1, gap_freq=10,

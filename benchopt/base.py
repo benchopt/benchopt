@@ -4,15 +4,14 @@ import tempfile
 import numpy as np
 import pandas as pd
 from joblib import Memory
-import matplotlib.pyplot as plt
 from collections import namedtuple
 from abc import ABC, abstractmethod
 
+from .viz import plot_benchmark
+from .util import get_all_solvers
 from .util import check_cmd_in_env
 from .util import check_package_in_env
-from .util import get_all_solvers
 from .util import load_benchmark_losses
-
 
 SAMPLING_STRATEGIES = ['n_iter', 'tolerance']
 
@@ -80,8 +79,9 @@ class BaseSolver(ABC):
         elif cls.install_cmd == 'sh':
             return check_cmd_in_env(cls.solver_cmd, env_name)
 
+    # @property
     # @classmethod
-    # def __str__(cls):
+    # def __name__(cls):
     #     return cls.name
 
 
@@ -154,6 +154,7 @@ class CommandLineSolver(BaseSolver, ABC):
         parameters : ndarray, shape (n_parameters,)
             The computed coefficients by the solver.
         """
+        ...
 
     def set_loss(self, loss_parameters):
         """Prepare the data"""
@@ -188,12 +189,12 @@ def run_one_method(data_name, solver_class, loss_function, loss_parameters,
     return res
 
 
-def run_benchmark(benchmark, max_iter=10):
+def run_benchmark(benchmark, solver_names=None, max_iter=10):
 
     # Load the benchmark function and the datasets
     loss_function, datasets = load_benchmark_losses(benchmark)
 
-    solver_classes = get_all_solvers(benchmark)
+    solver_classes = get_all_solvers(benchmark, solver_names)
 
     res = []
     for data_name, (get_data, args) in datasets.items():
@@ -212,17 +213,3 @@ def run_benchmark(benchmark, max_iter=10):
                 traceback.print_exc()
     df = pd.DataFrame(res)
     plot_benchmark(df)
-
-
-def plot_benchmark(df):
-    datasets = df.data.unique()
-    methods = df.method.unique()
-    for data in datasets:
-        plt.figure(data)
-        df_data = df[df.data == data]
-        c_star = df_data.loss.min()
-        for m in methods:
-            df_ = df_data[df_data.method == m]
-            plt.loglog(df_.time, df_.loss - c_star + 1e-7, label=m)
-        plt.legend()
-    plt.show()
