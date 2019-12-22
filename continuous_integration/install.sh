@@ -35,7 +35,7 @@ elif [[ "$PACKAGER" == "ubuntu" ]]; then
     sudo apt-get install python3-virtualenv
     python3 -m virtualenv --system-site-packages --python=python3 $VIRTUALENV
     source $VIRTUALENV/bin/activate
-    python -m pip install pytest pytest-cov cython joblib==$JOBLIB_VERSION
+    python -m pip install pytest pytest-cov cython joblib
 fi
 
 python --version
