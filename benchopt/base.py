@@ -9,13 +9,15 @@ from abc import ABC, abstractmethod
 
 from .viz import plot_benchmark
 from .util import get_all_solvers
-from .util import check_cmd_in_env
-from .util import check_package_in_env
+from .util import check_cmd_solver
+from .util import pip_install_in_env
+from .util import bash_install_in_env
+from .util import check_import_solver
 from .util import load_benchmark_losses
 
-SAMPLING_STRATEGIES = ['n_iter', 'tolerance']
+SAMPLING_STRATEGIES = ['iteration', 'tolerance']
 
-Cost = namedtuple('Cost', 'data scale method n_iter time loss'.split(' '))
+Cost = namedtuple('Cost', 'data scale solver n_iter time loss'.split(' '))
 
 
 CACHE_DIR = '.'
@@ -26,7 +28,20 @@ class BaseSolver(ABC):
 
     # TODO: sampling strategy with eps/tol instead for solvers that do not
     #       expose the max number of iterations
-    sampling_strategy = 'n_iter'
+    sampling_strategy = 'iteration'
+
+    # Information on how to install the solver. The value of install_cmd should
+    # be in {None, 'pip', 'bash'}. The API reads:
+    #
+    # - 'pip': The solver should have attributes `install_package` and
+    #          `import_name`. BenchOpt will pip install `$install_package`
+    #          and check it is possible to import `$import_name` in the
+    #          virtualenv.
+    #
+    # - 'bash': The solver should have attribute `install_script` and
+    #           `cmd_name`. BenchOpt will run `install_script` in a bash and
+    #           provide the virtualenv's directory as an argument. It will also
+    #           check that `cmd_name` is in the virtual_env PATH.
     install_cmd = None
 
     def __init__(self, **parameters):
@@ -75,9 +90,21 @@ class BaseSolver(ABC):
     @classmethod
     def is_installed(cls, env_name=None):
         if cls.install_cmd == 'pip':
-            return check_package_in_env(cls.import_package, env_name)
+            return check_import_solver(cls.import_name, env_name=env_name)
         elif cls.install_cmd == 'sh':
-            return check_cmd_in_env(cls.solver_cmd, env_name)
+            return check_cmd_solver(cls.cmd_name, env_name=env_name)
+        return True
+
+    @classmethod
+    def install(cls, env_name=None):
+        if not cls.is_installed(env_name=env_name):
+            print(f"Installing solver {cls.name} in {env_name}:...",
+                  end='', flush=True)
+            if cls.install_cmd == 'pip':
+                pip_install_in_env(cls.install_package, env_name=env_name)
+            elif cls.install_cmd == 'bash':
+                bash_install_in_env(cls.install_script, env_name=env_name)
+            print(" done")
 
     # @property
     # @classmethod
@@ -166,27 +193,62 @@ class CommandLineSolver(BaseSolver, ABC):
 
 
 @mem.cache
-def run_one_method(data_name, solver_class, loss_function, loss_parameters,
+def run_one_solver(data_name, solver_class, loss_function, loss_parameters,
                    solver_parameters, max_iter):
+
+    rho = 1.5
+    eps = 1e-10
+    max_tolerance = 1e-15
+
     # Instantiate the solver
-    method = solver_class(*solver_parameters)
+    solver = solver_class(*solver_parameters)
 
     # Set the loss for the solver
     scale, *loss_parameters = loss_parameters
-    method.set_loss(loss_parameters)
-    res = []
-    list_iter = np.unique(np.logspace(0, np.log10(max_iter), 20, dtype=int))
-    for n_iter in list_iter:
-        print(f"{method.name}: {n_iter} / {max_iter}\r", end='', flush=True)
+    solver.set_loss(loss_parameters)
+
+    # Sample the performances for different accuracy, either by varying the
+    # tolerance or the maximal number of iterations
+    curve = []
+    if solver.sampling_strategy == 'iteration':
+        def get_next(x): return max(x + 1, min(int(rho * x), max_iter))
+
+        def progress(x, delta):
+            return max(x / max_iter,
+                       np.log(max(delta, eps)) / np.log(eps))
+    elif solver.sampling_strategy == 'tolerance':
+        def get_next(x): return x / rho
+
+        def progress(x, delta):
+            return max(np.log(x) / np.log(max_tolerance),
+                       np.log(max(delta, eps)) / np.log(eps))
+
+    id_sample = 0
+    sample = 1
+    delta_loss = 2 * eps
+    prev_loss_value = np.inf
+
+    while (id_sample < 30 or delta_loss > eps) and (
+            solver.sampling_strategy != 'iteration' or sample <= max_iter):
+        print(f"{solver.name}: {progress(sample, delta_loss):6.1%}\r", end='',
+              flush=True)
         t_start = time.time()
-        method.run(n_iter=n_iter)
+        solver.run(sample)
         delta_t = time.time() - t_start
-        beta_hat_i = method.get_result()
+        beta_hat_i = solver.get_result()
         loss_value = loss_function(*loss_parameters, beta_hat_i)
-        res.append(Cost(data=data_name, scale=scale, method=method.name,
-                        n_iter=n_iter, time=delta_t, loss=loss_value))
-    print(f"{method.name}: done".ljust(40))
-    return res
+        curve.append(Cost(data=data_name, scale=scale, solver=solver.name,
+                          n_iter=sample, time=delta_t, loss=loss_value))
+
+        delta_loss = prev_loss_value - loss_value
+        prev_loss_value = loss_value
+        id_sample += 1
+        sample = get_next(sample)
+
+    # for n_iter in list_iter:
+    print(f"{solver.name}: done".ljust(40))
+    print(delta_loss, eps, sample)
+    return curve
 
 
 def run_benchmark(benchmark, solver_names=None, max_iter=10):
@@ -202,10 +264,10 @@ def run_benchmark(benchmark, solver_names=None, max_iter=10):
         for solver in solver_classes:
             solver_parameters = {}
             # if solver.name in ['Blitz']:
-            #     run_one_method.call(data_name, solver, loss_function, loss,
+            #     run_one_solver.call(data_name, solver, loss_function, loss,
             #                         parameters, max_iter)
             try:
-                res.extend(run_one_method(
+                res.extend(run_one_solver(
                     data_name, solver, loss_function, loss_parameters,
                     solver_parameters, max_iter))
             except Exception:

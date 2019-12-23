@@ -41,10 +41,11 @@ def run(benchmarks, solver, max_iter):
 
 @main.command()
 @click.argument('benchmarks', nargs=-1)
+@click.option('--solver', '-s', 'solver_names', multiple=True, type=str)
 @click.option('--max-iter', default=1000, show_default=True, type=int,
               help='Maximal number of iteration for each solver')
 @click.option('--recreate', '-r', is_flag=True)
-def bench(benchmarks, max_iter, recreate):
+def bench(benchmarks, solver_names, max_iter, recreate):
     """Run benchmark."""
 
     all_benchmarks = get_all_benchmarks()
@@ -63,10 +64,15 @@ def bench(benchmarks, max_iter, recreate):
 
         # Get the solvers and install them
         solvers = get_all_solvers(benchmark)
-        install_solvers(env_name=benchmark, solvers=solvers)
+        solvers = [solver for solver in solvers
+                   if solver.name.lower() in solver_names]
+        install_solvers(solvers=solvers, env_name=benchmark)
 
-        cmd = f"benchopt run --max-iter {max_iter} {benchmark}"
-        exit_code = _run_bash_in_env(benchmark, cmd)
+        solvers_option = ' '.join(['-s '+s for s in solver_names])
+        cmd = (
+            f"benchopt run --max-iter {max_iter} {solvers_option} {benchmark}"
+        )
+        exit_code = _run_bash_in_env(cmd, env_name=benchmark)
         return_code[benchmark] = exit_code
 
 
