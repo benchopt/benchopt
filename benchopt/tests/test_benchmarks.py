@@ -47,7 +47,7 @@ def test_solvers(benchmark_name, solver):
     # Check that the solver exposes a known install cmd
     if solver.install_cmd == 'pip':
         assert hasattr(solver, 'install_package')
-        assert hasattr(solver, 'import_package')
+        assert hasattr(solver, 'import_name')
     if solver.install_cmd == 'bash':
         assert hasattr(solver, 'install_script')
-        assert hasattr(solver, 'solver_cmd')
+        assert hasattr(solver, 'cmd_name')
