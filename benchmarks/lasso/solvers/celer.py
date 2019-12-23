@@ -11,10 +11,11 @@ with safe_import() as solver_import:
 
 class Solver(BaseSolver):
     name = 'Celer'
+    sampling_strategy = 'iteration'
 
     install_cmd = 'pip'
     install_package = 'git+https://github.com/mathurinm/celer.git'
-    import_package = 'celer'
+    import_name = 'celer'
 
     def set_loss(self, loss_parameters):
         self.X, self.y, self.lmbd = loss_parameters

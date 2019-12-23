@@ -13,7 +13,7 @@ class Solver(BaseSolver):
     install_package = (
         'git+https://github.com/scikit-learn-contrib/lightning.git'
     )
-    import_package = 'lightning'
+    import_name = 'lightning'
 
     parameters = dict(
         solvers=['saga', 'liblinear']

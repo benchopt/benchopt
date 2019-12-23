@@ -12,7 +12,7 @@ class Solver(BaseSolver):
 
     install_cmd = 'pip'
     install_package = 'blitzl1'
-    import_package = 'blitzl1'
+    import_name = 'blitzl1'
 
     def set_loss(self, loss_parameters):
         self.X, self.y, self.lmbd = loss_parameters
@@ -23,8 +23,8 @@ class Solver(BaseSolver):
         blitzl1.set_use_intercept(False)
         self.problem = blitzl1.LassoProblem(self.X, self.y)
 
-    def run(self, n_iter):
-        blitzl1.set_tolerance(1e-1 / n_iter)
+    def run(self, tolerance):
+        blitzl1.set_tolerance(tolerance)
         self.coef_ = self.problem.solve(self.lmbd).x
 
     def get_result(self):

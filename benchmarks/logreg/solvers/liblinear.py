@@ -3,12 +3,12 @@ from benchopt.base import CommandLineSolver
 
 
 class Solver(CommandLineSolver):
-    name = "Liblinear"
-    sampling_strategy = "tolerance"
+    name = 'Liblinear'
+    sampling_strategy = 'tolerance'
 
     install_cmd = 'bash'
     install_script = 'install_liblinear.sh'
-    solver_cmd = 'train'
+    cmd_name = 'train'
 
     def __init__(self, **parameters):
         super().__init__(**parameters)
@@ -31,9 +31,9 @@ class Solver(CommandLineSolver):
 
                 f.write(line)
 
-    def get_command_line(self, n_iter):
+    def get_command_line(self, tolerance):
         cmd = (f"train -q -s 6 -B -1 -c {1 / self.lmbd} "
-               f"-e {1e-5 / n_iter} {self.data_filename} "
+               f"-e {tolerance} {self.data_filename} "
                f"{self.model_filename}")
         return cmd
 

@@ -13,7 +13,7 @@ class Solver(BaseSolver):
 
     install_cmd = 'pip'
     install_package = 'scikit-learn'
-    import_package = 'sklearn'
+    import_name = 'sklearn'
 
     def set_loss(self, loss_parameters):
         self.X, self.y, self.lmbd = loss_parameters
