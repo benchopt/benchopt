@@ -29,7 +29,8 @@ def test_benchmark_loss(benchmark_name):
         )
 
 
-@pytest.mark.parametrize('benchmark_name, solver', SOLVERS)
+@pytest.mark.parametrize('benchmark_name, solver', SOLVERS,
+                         ids=lambda p: getattr(p, 'name', None))
 def test_solvers(benchmark_name, solver):
     """Check that all installed solvers respects the public API"""
 
