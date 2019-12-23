@@ -226,7 +226,8 @@ class safe_import():
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        self.record.__exit__(exc_type, exc_value, traceback)
+
+        silence_error = False
 
         # prevent import error from propagating and tag
         if exc_type is ImportError:
@@ -237,4 +238,7 @@ class safe_import():
                 traceback.print_exc()
 
             # Prevent the error propagation
-            return True
+            silence_error = True
+
+        self.record.__exit__(exc_type, exc_value, traceback)
+        return silence_error
