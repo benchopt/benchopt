@@ -230,7 +230,7 @@ class safe_import():
         silence_error = False
 
         # prevent import error from propagating and tag
-        if exc_type is ImportError:
+        if exc_type is not None and issubclass(exc_type, ImportError):
             self.failed_import = True
 
             if PRINT_INSTALL_ERRORS:
