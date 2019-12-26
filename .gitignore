@@ -9,4 +9,4 @@ __pycache__
 .vscode
 
 # Config files
-.benchopt.ini
+benchopt.ini

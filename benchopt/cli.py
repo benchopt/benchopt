@@ -68,7 +68,7 @@ def bench(benchmarks, solver_names, max_iter, recreate):
 
         # Get the solvers and install them
         solvers = list_benchmark_solvers(benchmark)
-        exclude = get_benchmark_setting(benchmark, 'exclude')
+        exclude = get_benchmark_setting(benchmark, 'exclude_solvers')
         solvers = filter_solvers(solvers, solver_names=solver_names,
                                  exclude=exclude)
         install_solvers(solvers=solvers, env_name=benchmark)
