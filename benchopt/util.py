@@ -6,10 +6,15 @@ import tempfile
 from glob import glob
 from importlib import import_module
 
-DEBUG = True
-VENV_DIR = './.venv/'
-PRINT_INSTALL_ERRORS = True
-ALLOW_INSTALL = os.environ.get('BENCHO_ALLOW_INSTALL', False)
+from .config import get_global_setting
+
+
+# Load global setting
+DEBUG = get_global_setting('debug')
+VENV_DIR = get_global_setting('venv_dir')
+PRINT_INSTALL_ERRORS = get_global_setting('print_install_error')
+ALLOW_INSTALL = os.environ.get('BENCHO_ALLOW_INSTALL',
+                               get_global_setting('allow_install'))
 
 
 if not os.path.exists(VENV_DIR):
@@ -169,7 +174,7 @@ def list_solvers(benchmark):
     return [m.name for m in submodules]
 
 
-def get_all_solvers(benchmark, solver_names=None):
+def list_benchmark_solvers(benchmark):
 
     solver_classes = []
     solvers = list_solvers(benchmark)
@@ -179,12 +184,22 @@ def get_all_solvers(benchmark, solver_names=None):
         solver_module = import_module(solver_module_name)
 
         # Get the Solver class
-        solver_class = solver_module.Solver
-        solver_name = solver_class.name.lower()
-        if solver_names is None or solver_name in solver_names:
-            solver_classes.append(solver_class)
+        solver_classes.append(solver_module.Solver)
 
     return solver_classes
+
+
+def filter_solvers(solvers, solver_names=None, exclude=None):
+    if exclude is not None:
+        # If a solver is explicitly included in solver_names, this takes
+        # precedence over the exclusion parameter in the config file.
+        exclude = set(exclude) - set(solver_names)
+        solvers = [s for s in solvers if s.name.lower() not in exclude]
+
+    if solver_names is not None:
+        solvers = [s for s in solvers if s.name.lower() not in solver_names]
+
+    return solvers
 
 
 def create_venv(env_name, recreate=False):

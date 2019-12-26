@@ -3,14 +3,14 @@ import numpy as np
 
 from benchopt.base import SAMPLING_STRATEGIES
 
-from benchopt.util import get_all_solvers
+from benchopt.util import list_benchmark_solvers
 from benchopt.util import get_all_benchmarks
 from benchopt.util import load_benchmark_losses
 
 
 BENCHMARKS = get_all_benchmarks()
 SOLVERS = [(benchmark, solver) for benchmark in BENCHMARKS
-           for solver in get_all_solvers(benchmark)]
+           for solver in list_benchmark_solvers(benchmark)]
 
 
 @pytest.mark.parametrize('benchmark_name', BENCHMARKS)

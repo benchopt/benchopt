@@ -7,3 +7,6 @@ __pycache__
 
 # IDE specific folders
 .vscode
+
+# Config files
+.benchopt.ini

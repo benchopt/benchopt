@@ -8,19 +8,21 @@ from collections import namedtuple
 from abc import ABC, abstractmethod
 
 from .viz import plot_benchmark
-from .util import get_all_solvers
+from .util import filter_solvers
 from .util import check_cmd_solver
 from .util import pip_install_in_env
 from .util import bash_install_in_env
 from .util import check_import_solver
 from .util import load_benchmark_losses
+from .util import list_benchmark_solvers
+from .config import get_global_setting
 
 SAMPLING_STRATEGIES = ['iteration', 'tolerance']
 
 Cost = namedtuple('Cost', 'data scale solver n_iter time loss'.split(' '))
 
 
-CACHE_DIR = '.'
+CACHE_DIR = get_global_setting('cache_dir')
 mem = Memory(location=CACHE_DIR, verbose=0)
 
 
@@ -256,7 +258,9 @@ def run_benchmark(benchmark, solver_names=None, max_iter=10):
     # Load the benchmark function and the datasets
     loss_function, datasets = load_benchmark_losses(benchmark)
 
-    solver_classes = get_all_solvers(benchmark, solver_names)
+    solver_classes = list_benchmark_solvers(benchmark)
+    solver_classes = filter_solvers(solver_classes,
+                                    solver_names=solver_names)
 
     res = []
     for data_name, (get_data, args) in datasets.items():

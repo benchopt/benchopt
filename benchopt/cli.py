@@ -3,9 +3,13 @@ import click
 from benchopt import run_benchmark
 
 
+from benchopt.util import filter_solvers
 from benchopt.util import _run_bash_in_env, create_venv
 from benchopt.util import check_benchmarks, get_all_benchmarks
-from benchopt.util import get_all_solvers, install_solvers
+from benchopt.util import list_benchmark_solvers, install_solvers
+
+
+from benchopt.config import get_benchmark_setting
 
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
@@ -63,9 +67,10 @@ def bench(benchmarks, solver_names, max_iter, recreate):
         create_venv(benchmark, recreate=recreate)
 
         # Get the solvers and install them
-        solvers = get_all_solvers(benchmark)
-        solvers = [solver for solver in solvers
-                   if solver.name.lower() in solver_names]
+        solvers = list_benchmark_solvers(benchmark)
+        exclude = get_benchmark_setting(benchmark, 'exclude')
+        solvers = filter_solvers(solvers, solver_names=solver_names,
+                                 exclude=exclude)
         install_solvers(solvers=solvers, env_name=benchmark)
 
         solvers_option = ' '.join(['-s '+s for s in solver_names])
