@@ -27,7 +27,7 @@ def get_global_setting(name):
 
 
 def get_benchmark_setting(benchmark, name):
-    result = config.get(benchmark, name, fallback=DEFAULT_BENCHMARK[name])
+    setting = config.get(benchmark, name, fallback=DEFAULT_BENCHMARK[name])
     if name == 'exclude_solvers':
-        result = re.findall("[\"']([^']+)[\"']", result)
-    return result
+        setting = re.findall("[\"']([^']+)[\"']", setting)
+    return setting

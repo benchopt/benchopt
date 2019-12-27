@@ -189,15 +189,26 @@ def list_benchmark_solvers(benchmark):
     return solver_classes
 
 
+def check_solver_name_list(name_list):
+    if name_list is None:
+        return []
+    return [name.lower() for name in name_list]
+
+
 def filter_solvers(solvers, solver_names=None, exclude=None):
-    if exclude is not None:
+
+    # Currate the list of names
+    exclude = check_solver_name_list(exclude)
+    solver_names = check_solver_name_list(solver_names)
+
+    if len(exclude) > 0:
         # If a solver is explicitly included in solver_names, this takes
         # precedence over the exclusion parameter in the config file.
         exclude = set(exclude) - set(solver_names)
         solvers = [s for s in solvers if s.name.lower() not in exclude]
 
-    if solver_names is not None:
-        solvers = [s for s in solvers if s.name.lower() not in solver_names]
+    if len(solver_names) > 0:
+        solvers = [s for s in solvers if s.name.lower() in solver_names]
 
     return solvers
 

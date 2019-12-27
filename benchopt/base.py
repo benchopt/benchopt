@@ -15,7 +15,7 @@ from .util import bash_install_in_env
 from .util import check_import_solver
 from .util import load_benchmark_losses
 from .util import list_benchmark_solvers
-from .config import get_global_setting
+from .config import get_global_setting, get_benchmark_setting
 
 SAMPLING_STRATEGIES = ['iteration', 'tolerance']
 
@@ -259,8 +259,9 @@ def run_benchmark(benchmark, solver_names=None, max_iter=10):
     loss_function, datasets = load_benchmark_losses(benchmark)
 
     solver_classes = list_benchmark_solvers(benchmark)
-    solver_classes = filter_solvers(solver_classes,
-                                    solver_names=solver_names)
+    exclude = get_benchmark_setting(benchmark, 'exclude_solvers')
+    solver_classes = filter_solvers(solver_classes, solver_names=solver_names,
+                                    exclude=exclude)
 
     res = []
     for data_name, (get_data, args) in datasets.items():
