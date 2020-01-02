@@ -14,8 +14,7 @@ class Solver(BaseSolver):
     name = 'cvxpy'
 
     install_cmd = 'pip'
-    install_package = 'cvxpy'
-    import_name = 'cvxpy'
+    package_name = 'cvxpy'
 
     def set_loss(self, loss_parameters):
         self.X, self.y, self.lmbd = loss_parameters

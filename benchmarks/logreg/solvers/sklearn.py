@@ -14,8 +14,8 @@ class Solver(BaseSolver):
     name = 'sklearn'
 
     install_cmd = 'pip'
-    install_package = 'scikit-learn'
-    import_name = 'sklearn'
+    package_name = 'scikit-learn'
+    package_import = 'sklearn'
 
     parameters = dict(
         solvers=['saga', 'liblinear']

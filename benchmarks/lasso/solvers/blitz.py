@@ -11,8 +11,10 @@ class Solver(BaseSolver):
     sampling_strategy = 'tolerance'
 
     install_cmd = 'pip'
-    install_package = 'blitzl1'
-    import_name = 'blitzl1'
+    package_name = 'blitzl1'
+    package_install = (
+        'git+https://github.com/tommoral/blitzl1.git@FIX_python_type_check'
+    )
 
     def set_loss(self, loss_parameters):
         self.X, self.y, self.lmbd = loss_parameters

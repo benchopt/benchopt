@@ -10,10 +10,10 @@ class Solver(BaseSolver):
     name = 'Lightning'
 
     install_cmd = 'pip'
-    install_package = (
+    package_name = 'lightning'
+    package_install = (
         'git+https://github.com/scikit-learn-contrib/lightning.git'
     )
-    import_name = 'lightning'
 
     parameters = dict(
         solvers=['saga', 'liblinear']

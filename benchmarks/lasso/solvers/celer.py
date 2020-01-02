@@ -14,8 +14,8 @@ class Solver(BaseSolver):
     sampling_strategy = 'iteration'
 
     install_cmd = 'pip'
-    install_package = 'git+https://github.com/mathurinm/celer.git'
-    import_name = 'celer'
+    package_name = 'celer'
+    package_install = 'git+https://github.com/mathurinm/celer.git'
 
     def set_loss(self, loss_parameters):
         self.X, self.y, self.lmbd = loss_parameters

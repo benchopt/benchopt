@@ -10,8 +10,8 @@ class Solver(BaseSolver):
     name = 'Cyanure'
 
     install_cmd = 'pip'
-    install_package = 'cyanure-mkl'
-    import_name = 'cyanure'
+    package_name = 'cyanure-mkl'
+    package_import = 'cyanure'
 
     def set_loss(self, loss_parameters):
         self.X, self.y, self.lmbd = loss_parameters

@@ -12,8 +12,8 @@ class Solver(BaseSolver):
     name = 'sklearn'
 
     install_cmd = 'pip'
-    install_package = 'scikit-learn'
-    import_name = 'sklearn'
+    package_name = 'scikit-learn'
+    package_import = 'sklearn'
 
     def set_loss(self, loss_parameters):
         self.X, self.y, self.lmbd = loss_parameters
