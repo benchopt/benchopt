@@ -23,7 +23,16 @@ DEFAULT_BENCHMARK = {
 
 
 def get_global_setting(name):
-    return config.get('benchopt', name, fallback=DEFAULT_GLOBAL[name])
+    assert name in DEFAULT_GLOBAL, f"Unkonwn config key {name}"
+
+    # TODO: get the correct type from DEFAULT_GLOBAL
+
+    if isinstance(DEFAULT_GLOBAL[name], bool):
+        setting = config.getboolean('benchopt', name,
+                                    fallback=DEFAULT_GLOBAL[name])
+    else:
+        setting = config.get('benchopt', name, fallback=DEFAULT_GLOBAL[name])
+    return setting
 
 
 def get_benchmark_setting(benchmark, name):
