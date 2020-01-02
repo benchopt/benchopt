@@ -23,20 +23,24 @@ if not os.path.exists(VENV_DIR):
 
 # Bash commands for installing and checking the solvers
 PIP_INSTALL_CMD = "pip install -qq {packages}"
+PIP_UNINSTALL_CMD = "pip uninstall -qq -y {packages}"
 BASH_INSTALL_CMD = "bash install_scripts/{install_script} {env}"
 CHECK_PACKAGE_INSTALLED_CMD = (
-    "python -c 'import {import_name}' 1>/dev/null 2>&1"
+    "python -c 'import {package_import}' 1>/dev/null 2>&1"
 )
 CHECK_CMD_INSTALLED_CMD = "type $'{cmd_name}' 1>/dev/null 2>&1"
 
 
-def _run_in_bash(script):
+def _run_in_bash(script, msg=None):
     """Run a bash script and return its exit code.
 
     Parameters
     ----------
     script: str
         Script to run
+    msg: str or None
+        If msg is not None, raise a RuntimeError with the given message if the
+        command's exit code is non-zero. Else, just return the exit code.
 
     Return
     ------
@@ -52,10 +56,13 @@ def _run_in_bash(script):
     if DEBUG:
         print(script)
 
-    return os.system(f"bash {tmp.name}")
+    exit_code = os.system(f"bash {tmp.name}")
+    if msg is not None and exit_code != 0:
+        raise RuntimeError(msg)
+    return exit_code
 
 
-def _run_bash_in_env(script, env_name=None):
+def _run_bash_in_env(script, env_name=None, msg=None):
     """Run a script in a given virtual env
 
     Parameters
@@ -63,7 +70,10 @@ def _run_bash_in_env(script, env_name=None):
     script: str
         Script to run
     env_name: str
-        Name of the environment to run the script in
+        Name of the environment to run the script in.
+    msg: str or None
+        If msg is not None, raise a RuntimeError with the given message if the
+        command's exit code is non-zero. Else, just return the exit code.
 
     Return
     ------
@@ -78,7 +88,7 @@ def _run_bash_in_env(script, env_name=None):
             {script}
         """
 
-    return _run_in_bash(script)
+    return _run_in_bash(script, msg=msg)
 
 
 def pip_install_in_env(*packages, env_name=None):
@@ -87,9 +97,18 @@ def pip_install_in_env(*packages, env_name=None):
         raise ValueError("Trying to install solver not in a virtualenv. "
                          "To allow this, set BENCHO_ALLOW_INSTALL=True.")
     cmd = PIP_INSTALL_CMD.format(packages=' '.join(packages))
-    exit_code = _run_bash_in_env(cmd, env_name=env_name)
-    if exit_code != 0:
-        raise RuntimeError(f"Failed to pip install packages {packages}")
+    _run_bash_in_env(cmd, env_name=env_name,
+                     msg=f"Failed to pip install packages {packages}")
+
+
+def pip_uninstall_in_env(*packages, env_name=None):
+    """Uninstall the packages with pip in the given environment"""
+    if env_name is None and not ALLOW_INSTALL:
+        raise ValueError("Trying to uninstall solver not in a virtualenv. "
+                         "To allow this, set BENCHO_ALLOW_INSTALL=True.")
+    cmd = PIP_UNINSTALL_CMD.format(packages=' '.join(packages))
+    _run_bash_in_env(cmd, env_name=env_name,
+                     msg=f"Failed to uninstall packages {packages}")
 
 
 def bash_install_in_env(script, env_name=None):
@@ -99,17 +118,16 @@ def bash_install_in_env(script, env_name=None):
                          "To allow this, set BENCHO_ALLOW_INSTALL=True.")
     env = "$VIRTUAL_ENV" if env_name is not None else "$HOME/.local/"
     cmd = BASH_INSTALL_CMD.format(install_script=script, env=env)
-    exit_code = _run_bash_in_env(cmd, env_name=env_name)
-    if exit_code != 0:
-        raise RuntimeError(f"Failed to run script {script}")
+    _run_bash_in_env(cmd, env_name=env_name,
+                     msg=f"Failed to run script {script}")
 
 
-def check_import_solver(import_name, env_name=None):
+def check_import_solver(package_import, env_name=None):
     """Check that a python package is installed in an environment.
 
     Parameters
     ----------
-    import_name : str
+    package_import : str
         Name of the package that should be installed. This function checks that
         this package can be imported in python.
     env_name : str or None
@@ -118,7 +136,7 @@ def check_import_solver(import_name, env_name=None):
     """
     # TODO: if env is None, check directly in the current python interpreter
     check_package_installed_cmd = CHECK_PACKAGE_INSTALLED_CMD.format(
-        import_name=import_name)
+        package_import=package_import)
     return _run_bash_in_env(check_package_installed_cmd,
                             env_name=env_name) == 0
 
@@ -195,20 +213,23 @@ def check_solver_name_list(name_list):
     return [name.lower() for name in name_list]
 
 
-def filter_solvers(solvers, solver_names=None, exclude=None):
+def filter_solvers(solvers, solver_names=None, forced_solvers=None,
+                   exclude=None):
 
     # Currate the list of names
     exclude = check_solver_name_list(exclude)
     solver_names = check_solver_name_list(solver_names)
+    forced_solvers = check_solver_name_list(forced_solvers)
 
     if len(exclude) > 0:
         # If a solver is explicitly included in solver_names, this takes
         # precedence over the exclusion parameter in the config file.
-        exclude = set(exclude) - set(solver_names)
+        exclude = set(exclude) - set(solver_names + forced_solvers)
         solvers = [s for s in solvers if s.name.lower() not in exclude]
 
     if len(solver_names) > 0:
-        solvers = [s for s in solvers if s.name.lower() in solver_names]
+        solvers = [s for s in solvers
+                   if s.name.lower() in solver_names + forced_solvers]
 
     return solvers
 
@@ -227,11 +248,12 @@ def create_venv(env_name, recreate=False):
         print(" done")
 
 
-def install_solvers(solvers, env_name=None):
+def install_solvers(solvers, forced_solvers=None, env_name=None):
     """Install the listed solvers if needed."""
 
     for solver in solvers:
-        solver.install(env_name=env_name)
+        force_install = solver.name.lower() in forced_solvers
+        solver.install(env_name=env_name, force=force_install)
 
 
 class safe_import():

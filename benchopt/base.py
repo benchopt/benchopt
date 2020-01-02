@@ -12,6 +12,7 @@ from .util import filter_solvers
 from .util import check_cmd_solver
 from .util import pip_install_in_env
 from .util import bash_install_in_env
+from .util import pip_uninstall_in_env
 from .util import check_import_solver
 from .util import load_benchmark_losses
 from .util import list_benchmark_solvers
@@ -123,7 +124,25 @@ class BaseSolver(ABC):
         return True
 
     @classmethod
-    def install(cls, env_name=None):
+    def install(cls, env_name=None, force=False):
+        """Install the solver in the given virtual env.
+
+        Parameters
+        ----------
+        env_name: str or None
+            Name of the environment where the solver should be installed. If
+            None, tries to install it in the current environment.
+        force : boolean (default: False)
+            If set to True, first tries to uninstall the solver from the
+            environment before installing it.
+
+        Return
+        ------
+        is_installed: bool
+            True if the solver is correctly installed in the environment.
+        """
+        if force:
+            cls.uninstall(env_name=env_name)
         if not cls.is_installed(env_name=env_name):
             print(f"Installing solver {cls.name} in {env_name}:...",
                   end='', flush=True)
@@ -132,6 +151,17 @@ class BaseSolver(ABC):
             elif cls.install_cmd == 'bash':
                 bash_install_in_env(cls.install_script, env_name=env_name)
             print(" done")
+        return cls.is_installed(env_name=env_name)
+
+    @classmethod
+    def uninstall(cls, env_name=None):
+        print(f"Uninstalling solver {cls.name} in {env_name}:...",
+              end='', flush=True)
+        if cls.install_cmd == 'pip':
+            pip_uninstall_in_env(cls.package_name, env_name=env_name)
+        elif cls.install_cmd == 'bash':
+            raise NotImplementedError("Uninstall not implemented for bash.")
+        print(" done")
 
     # @property
     # @classmethod
@@ -220,8 +250,11 @@ class CommandLineSolver(BaseSolver, ABC):
 
 
 @mem.cache
-def run_one_solver(data_name, solver_class, loss_function, loss_parameters,
-                   solver_parameters, max_iter):
+def run_one_solver(data_name, loss_function, loss_parameters,
+                   solver_class, solver_parameters, max_iter,
+                   n_rep=1):
+    """Minimize a loss function with the given solver for different accuracy
+    """
 
     rho = 1.5
     eps = 1e-10
@@ -278,7 +311,8 @@ def run_one_solver(data_name, solver_class, loss_function, loss_parameters,
     return curve
 
 
-def run_benchmark(benchmark, solver_names=None, max_iter=10):
+def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
+                  max_iter=10, n_rep=1):
 
     # Load the benchmark function and the datasets
     loss_function, datasets = load_benchmark_losses(benchmark)
@@ -286,20 +320,23 @@ def run_benchmark(benchmark, solver_names=None, max_iter=10):
     solver_classes = list_benchmark_solvers(benchmark)
     exclude = get_benchmark_setting(benchmark, 'exclude_solvers')
     solver_classes = filter_solvers(solver_classes, solver_names=solver_names,
+                                    forced_solvers=forced_solvers,
                                     exclude=exclude)
 
     res = []
-    for data_name, (get_data, args) in datasets.items():
-        loss_parameters = get_data(**args)
+    for data_name, (get_loss_parameters, args) in datasets.items():
+        loss_parameters = get_loss_parameters(**args)
         for solver in solver_classes:
             solver_parameters = {}
-            # if solver.name in ['Blitz']:
-            #     run_one_solver.call(data_name, solver, loss_function, loss,
-            #                         parameters, max_iter)
+            args = dict(
+                data_name=data_name,
+                loss_function=loss_function, loss_parameters=loss_parameters,
+                solver_class=solver, solver_parameters=solver_parameters,
+                max_iter=max_iter, n_rep=n_rep)
+            if solver.name.lower() in forced_solvers:
+                run_one_solver.call(**args)
             try:
-                res.extend(run_one_solver(
-                    data_name, solver, loss_function, loss_parameters,
-                    solver_parameters, max_iter))
+                res.extend(run_one_solver(**args))
             except Exception:
                 import traceback
                 traceback.print_exc()
