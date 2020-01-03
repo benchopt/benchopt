@@ -3,7 +3,6 @@ import venv
 import pkgutil
 import warnings
 import tempfile
-from glob import glob
 from importlib import import_module
 
 from .config import get_global_setting
@@ -161,12 +160,8 @@ def check_cmd_solver(cmd_name, env_name=None):
 
 def get_all_benchmarks():
     """List all the available benchmarks."""
-    benchmark_files = glob("benchmarks/*/bench*.py")
-    benchmarks = []
-    for benchmark_file in benchmark_files:
-        benchmark_name = benchmark_file.split(os.path.sep)[1]
-        benchmarks.append(benchmark_name)
-    return benchmarks
+    submodules = pkgutil.iter_modules([f'benchmarks'])
+    return [m.name for m in submodules]
 
 
 def check_benchmarks(benchmarks, all_benchmarks):
@@ -181,30 +176,49 @@ def get_benchmark_module_name(benchmark):
     return f"benchmarks.{benchmark}"
 
 
-def load_benchmark_losses(benchmark):
-    module_name = get_benchmark_module_name(benchmark)
-    module = import_module(module_name)
-    return module.loss_function, module.DATASETS
+def get_benchmark_loss(benchmark):
+    """Load the loss function defined in the given benchmark."""
+    benchmark_module_name = get_benchmark_module_name(benchmark)
+    loss_module_name = f"{benchmark_module_name}.loss"
+    module = import_module(loss_module_name)
+    return module.loss_function
 
 
-def list_solvers(benchmark):
-    submodules = pkgutil.iter_modules([f'benchmarks/{benchmark}/solvers'])
+def list_benchmark_submodule_names(benchmark, submodule='solvers'):
+    submodules = pkgutil.iter_modules([f'benchmarks/{benchmark}/{submodule}'])
     return [m.name for m in submodules]
 
 
 def list_benchmark_solvers(benchmark):
+    """List all available solver classes for a given benchmark"""
 
     solver_classes = []
-    solvers = list_solvers(benchmark)
+    solver_names = list_benchmark_submodule_names(benchmark, 'solvers')
     module_name = get_benchmark_module_name(benchmark)
-    for s in solvers:
-        solver_module_name = f"{module_name}.solvers.{s}"
+    for name in solver_names:
+        solver_module_name = f"{module_name}.solvers.{name}"
         solver_module = import_module(solver_module_name)
 
         # Get the Solver class
         solver_classes.append(solver_module.Solver)
 
     return solver_classes
+
+
+def list_benchmark_datasets(benchmark):
+    """List all available dataset classes for a given benchmark"""
+
+    dataset_classes = []
+    datasets = list_benchmark_submodule_names(benchmark, 'datasets')
+    module_name = get_benchmark_module_name(benchmark)
+    for s in datasets:
+        solver_module_name = f"{module_name}.datasets.{s}"
+        solver_module = import_module(solver_module_name)
+
+        # Get the Solver class
+        dataset_classes.append(solver_module.Dataset)
+
+    return dataset_classes
 
 
 def check_solver_name_list(name_list):

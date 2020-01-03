@@ -27,9 +27,9 @@ def main():
 @click.option('--solver', '-s', 'solver_names', multiple=True, type=str)
 @click.option('--force-solver', '-f', 'forced_solvers',
               multiple=True, type=str)
-@click.option('--max-iter', default=1000, show_default=True, type=int,
+@click.option('--max-samples', default=1000, show_default=True, type=int,
               help='Maximal number of iteration for each solver')
-def run(benchmarks, solver_names, forced_solvers, max_iter, repetition):
+def run(benchmarks, solver_names, forced_solvers, max_samples, repetition):
     """Run benchmark."""
 
     all_benchmarks = get_all_benchmarks()
@@ -40,7 +40,7 @@ def run(benchmarks, solver_names, forced_solvers, max_iter, repetition):
 
     for benchmark in benchmarks:
         run_benchmark(benchmark, solver_names, forced_solvers,
-                      max_iter=max_iter, n_rep=repetition)
+                      max_samples=max_samples, n_rep=repetition)
 
 
 @main.command()
@@ -50,9 +50,9 @@ def run(benchmarks, solver_names, forced_solvers, max_iter, repetition):
 @click.option('--solver', '-s', 'solver_names', multiple=True, type=str)
 @click.option('--force-solver', '-f', 'forced_solvers',
               multiple=True, type=str)
-@click.option('--max-iter', default=1000, show_default=True, type=int,
+@click.option('--max-samples', default=1000, show_default=True, type=int,
               help='Maximal number of iteration for each solver')
-def bench(benchmarks, solver_names, forced_solvers, max_iter, recreate,
+def bench(benchmarks, solver_names, forced_solvers, max_samples, recreate,
           repetition):
     """Run benchmark."""
 
@@ -82,7 +82,7 @@ def bench(benchmarks, solver_names, forced_solvers, max_iter, recreate,
         solvers_option = ' '.join(['-s '+s for s in solver_names])
         forced_solvers_option = ' '.join(['-f '+s for s in forced_solvers])
         cmd = (
-            f"benchopt run --max-iter {max_iter} -n {repetition} "
+            f"benchopt run --max-samples {max_samples} -n {repetition} "
             f"{solvers_option} {forced_solvers_option} {benchmark}"
         )
         exit_code = _run_bash_in_env(cmd, env_name=benchmark)

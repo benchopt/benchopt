@@ -17,7 +17,7 @@ class Solver(BaseSolver):
     )
 
     def set_loss(self, loss_parameters):
-        self.X, self.y, self.lmbd = loss_parameters
+        self.X, self.y, self.lmbd = loss_parameters.values()
 
         # n_samples = self.X.shape[0]
         # self.lmbd /= n_samples

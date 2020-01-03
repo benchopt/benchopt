@@ -22,7 +22,7 @@ class Solver(BaseSolver):
     )
 
     def set_loss(self, loss_parameters):
-        self.X, self.y, self.lmbd = loss_parameters
+        self.X, self.y, self.lmbd = loss_parameters.values()
 
         warnings.filterwarnings('ignore', category=ConvergenceWarning)
 

@@ -14,7 +14,7 @@ class Solver(BaseSolver):
     package_import = 'cyanure'
 
     def set_loss(self, loss_parameters):
-        self.X, self.y, self.lmbd = loss_parameters
+        self.X, self.y, self.lmbd = loss_parameters.values()
 
         self.solver = BinaryClassifier(loss='logistic', penalty='l1',
                                        fit_intercept=False)

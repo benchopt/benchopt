@@ -7,14 +7,14 @@ class Solver(CommandLineSolver):
     sampling_strategy = 'tolerance'
 
     install_cmd = 'bash'
-    install_script = 'install_liblinear.sh'
     cmd_name = 'train'
+    install_script = 'install_liblinear.sh'
 
     def __init__(self, **parameters):
         super().__init__(**parameters)
 
     def dump_loss(self, loss_parameters):
-        X, y, lmbd = loss_parameters
+        X, y, lmbd = loss_parameters.values()
 
         # The regularization parameter is passed directly to the command line
         # so we store it for latter.

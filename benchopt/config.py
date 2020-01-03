@@ -19,6 +19,7 @@ DEFAULT_GLOBAL = {
 
 DEFAULT_BENCHMARK = {
     'exclude_solvers': "[]",
+    'name': None
 }
 
 
@@ -35,8 +36,11 @@ def get_global_setting(name):
     return setting
 
 
-def get_benchmark_setting(benchmark, name):
-    setting = config.get(benchmark, name, fallback=DEFAULT_BENCHMARK[name])
-    if name == 'exclude_solvers':
+def get_benchmark_setting(benchmark, setting_name):
+    setting = config.get(benchmark, setting_name,
+                         fallback=DEFAULT_BENCHMARK[setting_name])
+    if setting_name == 'exclude_solvers':
         setting = re.findall("[\"']([^']+)[\"']", setting)
+    elif setting_name == 'name' and setting is None:
+        setting = benchmark
     return setting

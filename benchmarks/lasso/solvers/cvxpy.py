@@ -17,7 +17,7 @@ class Solver(BaseSolver):
     package_name = 'cvxpy'
 
     def set_loss(self, loss_parameters):
-        self.X, self.y, self.lmbd = loss_parameters
+        self.X, self.y, self.lmbd = loss_parameters.values()
 
         n_features = self.X.shape[1]
         self.beta = cp.Variable(n_features)

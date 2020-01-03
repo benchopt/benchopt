@@ -18,7 +18,7 @@ class Solver(BaseSolver):
     package_install = 'git+https://github.com/mathurinm/celer.git'
 
     def set_loss(self, loss_parameters):
-        self.X, self.y, self.lmbd = loss_parameters
+        self.X, self.y, self.lmbd = loss_parameters.values()
 
         warnings.filterwarnings('ignore', category=ConvergenceWarning)
         n_samples = self.X.shape[0]

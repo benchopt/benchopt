@@ -17,16 +17,12 @@ class Solver(BaseSolver):
         'git+https://github.com/scikit-learn-contrib/lightning.git'
     )
 
-    parameters = dict(
-        solvers=['saga', 'liblinear']
-    )
-
     def set_loss(self, loss_parameters):
-        self.X, self.y, self.lmbd = loss_parameters
+        self.X, self.y, self.lmbd = loss_parameters.values()
 
         self.clf = CDRegressor(
             loss='squared', penalty='l1', C=1, alpha=self.lmbd,
-            tol=1e-15, shrinking=False)
+            tol=1e-15)
 
     def run(self, n_iter):
         self.clf.max_iter = n_iter

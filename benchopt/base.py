@@ -1,31 +1,18 @@
 import os
-import time
 import tempfile
-import numpy as np
-import pandas as pd
-from joblib import Memory
 from collections import namedtuple
 from abc import ABC, abstractmethod
 
-from .viz import plot_benchmark
-from .util import filter_solvers
 from .util import check_cmd_solver
 from .util import pip_install_in_env
 from .util import bash_install_in_env
 from .util import pip_uninstall_in_env
 from .util import check_import_solver
-from .util import load_benchmark_losses
-from .util import list_benchmark_solvers
 from .class_property import classproperty
-from .config import get_global_setting, get_benchmark_setting
-
-SAMPLING_STRATEGIES = ['iteration', 'tolerance']
-
-Cost = namedtuple('Cost', 'data scale solver n_iter time loss'.split(' '))
 
 
-CACHE_DIR = get_global_setting('cache_dir')
-mem = Memory(location=CACHE_DIR, verbose=0)
+Cost = namedtuple('Cost', 'data scale solver sample time loss repetition'
+                  .split(' '))
 
 
 class BaseSolver(ABC):
@@ -119,7 +106,7 @@ class BaseSolver(ABC):
     def is_installed(cls, env_name=None):
         if cls.install_cmd == 'pip':
             return check_import_solver(cls.package_import, env_name=env_name)
-        elif cls.install_cmd == 'sh':
+        elif cls.install_cmd == 'bash':
             return check_cmd_solver(cls.cmd_name, env_name=env_name)
         return True
 
@@ -141,9 +128,11 @@ class BaseSolver(ABC):
         is_installed: bool
             True if the solver is correctly installed in the environment.
         """
+        # uninstall the solvers that requires a force reinstall
         if force:
             cls.uninstall(env_name=env_name)
-        if not cls.is_installed(env_name=env_name):
+
+        if force or not cls.is_installed(env_name=env_name):
             print(f"Installing solver {cls.name} in {env_name}:...",
                   end='', flush=True)
             if cls.install_cmd == 'pip':
@@ -159,8 +148,8 @@ class BaseSolver(ABC):
               end='', flush=True)
         if cls.install_cmd == 'pip':
             pip_uninstall_in_env(cls.package_name, env_name=env_name)
-        elif cls.install_cmd == 'bash':
-            raise NotImplementedError("Uninstall not implemented for bash.")
+        # elif cls.install_cmd == 'bash':
+        #     raise NotImplementedError("Uninstall not implemented for bash.")
         print(" done")
 
     # @property
@@ -249,96 +238,27 @@ class CommandLineSolver(BaseSolver, ABC):
         os.system(cmd_line)
 
 
-@mem.cache
-def run_one_solver(data_name, loss_function, loss_parameters,
-                   solver_class, solver_parameters, max_iter,
-                   n_rep=1):
-    """Minimize a loss function with the given solver for different accuracy
+class BaseDataset:
+    """Base class to define a dataset in a benchmark.
     """
 
-    rho = 1.5
-    eps = 1e-10
-    max_tolerance = 1e-15
+    @abstractmethod
+    def get_loss_parameters(self):
+        """Return the scale of the problem as well as the loss parameters.
 
-    # Instantiate the solver
-    solver = solver_class(*solver_parameters)
+        Return
+        ------
+        scale: int
+            Size of the optimized parameter. The solvers should return a
+            parameter of shape (scale,).
+        loss_parameters: dict
+            Extra parameters of the loss. The loss will be called as
+                loss(**loss_parameters, beta=beta)
+        """
+        ...
 
-    # Set the loss for the solver
-    scale, *loss_parameters = loss_parameters
-    solver.set_loss(loss_parameters)
-
-    # Sample the performances for different accuracy, either by varying the
-    # tolerance or the maximal number of iterations
-    curve = []
-    if solver.sampling_strategy == 'iteration':
-        def get_next(x): return max(x + 1, min(int(rho * x), max_iter))
-
-        def progress(x, delta):
-            return max(x / max_iter,
-                       np.log(max(delta, eps)) / np.log(eps))
-    elif solver.sampling_strategy == 'tolerance':
-        def get_next(x): return x / rho
-
-        def progress(x, delta):
-            return max(np.log(x) / np.log(max_tolerance),
-                       np.log(max(delta, eps)) / np.log(eps))
-
-    id_sample = 0
-    sample = 1
-    delta_loss = 2 * eps
-    prev_loss_value = np.inf
-
-    while (id_sample < 30 or delta_loss > eps) and (
-            solver.sampling_strategy != 'iteration' or sample <= max_iter):
-        print(f"{solver.name}: {progress(sample, delta_loss):6.1%}\r", end='',
-              flush=True)
-        t_start = time.time()
-        solver.run(sample)
-        delta_t = time.time() - t_start
-        beta_hat_i = solver.get_result()
-        loss_value = loss_function(*loss_parameters, beta_hat_i)
-        curve.append(Cost(data=data_name, scale=scale, solver=solver.name,
-                          n_iter=sample, time=delta_t, loss=loss_value))
-
-        delta_loss = prev_loss_value - loss_value
-        prev_loss_value = loss_value
-        id_sample += 1
-        sample = get_next(sample)
-
-    # for n_iter in list_iter:
-    print(f"{solver.name}: done".ljust(40))
-    print(delta_loss, eps, sample)
-    return curve
-
-
-def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
-                  max_iter=10, n_rep=1):
-
-    # Load the benchmark function and the datasets
-    loss_function, datasets = load_benchmark_losses(benchmark)
-
-    solver_classes = list_benchmark_solvers(benchmark)
-    exclude = get_benchmark_setting(benchmark, 'exclude_solvers')
-    solver_classes = filter_solvers(solver_classes, solver_names=solver_names,
-                                    forced_solvers=forced_solvers,
-                                    exclude=exclude)
-
-    res = []
-    for data_name, (get_loss_parameters, args) in datasets.items():
-        loss_parameters = get_loss_parameters(**args)
-        for solver in solver_classes:
-            solver_parameters = {}
-            args = dict(
-                data_name=data_name,
-                loss_function=loss_function, loss_parameters=loss_parameters,
-                solver_class=solver, solver_parameters=solver_parameters,
-                max_iter=max_iter, n_rep=n_rep)
-            if solver.name.lower() in forced_solvers:
-                run_one_solver.call(**args)
-            try:
-                res.extend(run_one_solver(**args))
-            except Exception:
-                import traceback
-                traceback.print_exc()
-    df = pd.DataFrame(res)
-    plot_benchmark(df)
+    @property
+    @abstractmethod
+    def name(self):
+        """Each dataset should expose its name for plotting purposes."""
+        ...

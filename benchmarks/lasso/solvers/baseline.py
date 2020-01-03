@@ -8,7 +8,7 @@ class Solver(BaseSolver):
     name = 'Baseline'
 
     def set_loss(self, loss_parameters):
-        self.X, self.y, self.lmbd = loss_parameters
+        self.X, self.y, self.lmbd = loss_parameters.values()
 
         self.L = np.linalg.norm(self.X.dot(self.X.T), ord=2)
 

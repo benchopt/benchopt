@@ -1,6 +1,9 @@
-git clone git@github.com:cjlin1/liblinear.git benchopt_liblinear
-cd benchopt_liblinear
+
+SRC_DIR=./benchopt_liblinear
+
+git clone git@github.com:cjlin1/liblinear.git $SRC_DIR
+cd $SRC_DIR
 make
-mv train ../${1:-.venv/lasso}/bin
 cd ..
-rm -rf benchopt_liblinear
+mv $SRC_DIR/train ${1:-.}/bin
+rm -rf $SRC_DIR
