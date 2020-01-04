@@ -16,8 +16,14 @@ DATASETS = [(benchmark, dataset) for benchmark in BENCHMARKS
             for dataset in list_benchmark_datasets(benchmark)]
 
 
+def class_ids(parameter):
+    if hasattr(parameter, 'name'):
+        return parameter.name.lower()
+    return None
+
+
 @pytest.mark.parametrize('benchmark_name, dataset_class', DATASETS,
-                         ids=lambda p: getattr(p, 'name', None))
+                         ids=class_ids)
 def test_benchmark_loss(benchmark_name, dataset_class):
     """Check that the loss function and the datasets are well defined."""
     loss_function = get_benchmark_loss(benchmark_name)
@@ -34,7 +40,7 @@ def test_benchmark_loss(benchmark_name, dataset_class):
 
 
 @pytest.mark.parametrize('benchmark_name, solver_class', SOLVERS,
-                         ids=lambda p: getattr(p, 'name', None))
+                         ids=class_ids)
 def test_solver_class(benchmark_name, solver_class):
     """Check that all installed solver_class respects the public API"""
 
@@ -59,7 +65,7 @@ def test_solver_class(benchmark_name, solver_class):
 
 
 @pytest.mark.parametrize('benchmark_name, dataset_class', DATASETS,
-                         ids=lambda p: getattr(p, 'name', None))
+                         ids=class_ids)
 def test_dataset_class(benchmark_name, dataset_class):
     """Check that all installed dataset_class respects the public API"""
 
