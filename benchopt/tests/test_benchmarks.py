@@ -23,12 +23,12 @@ def test_benchmark_loss(benchmark_name, dataset_class):
     loss_function = get_benchmark_loss(benchmark_name)
     parameters = {}
     dataset = dataset_class(**parameters)
-    scale, *loss_parameters = dataset.get_loss_parameters()
+    scale, loss_parameters = dataset.get_loss_parameters()
 
     # check that the reported scale si correct and that the result of
     # the loss function is a scalar
     beta_hat = np.zeros(scale)
-    assert np.isscalar(loss_function(*loss_parameters, beta_hat)), (
+    assert np.isscalar(loss_function(**loss_parameters, beta=beta_hat)), (
         "The output of the loss function should be a scalar."
     )
 
