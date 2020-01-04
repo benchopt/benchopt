@@ -19,6 +19,7 @@ DEFAULT_GLOBAL = {
 
 DEFAULT_BENCHMARK = {
     'exclude_solvers': "[]",
+    'plots': "'convergence_curve'",
     'name': None
 }
 
@@ -39,7 +40,7 @@ def get_global_setting(name):
 def get_benchmark_setting(benchmark, setting_name):
     setting = config.get(benchmark, setting_name,
                          fallback=DEFAULT_BENCHMARK[setting_name])
-    if setting_name == 'exclude_solvers':
+    if setting_name in ['exclude_solvers', 'plots']:
         setting = re.findall("[\"']([^']+)[\"']", setting)
     elif setting_name == 'name' and setting is None:
         setting = benchmark
