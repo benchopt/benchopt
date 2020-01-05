@@ -21,7 +21,7 @@ class Solver(BaseSolver):
 
         self.clf = CDClassifier(
             loss='log', penalty='l1', C=1, alpha=self.lmbd,
-            tol=0)
+            tol=0, permute=False, shrinking=False, warm_start=False)
 
     def run(self, n_iter):
         self.clf.max_iter = n_iter
