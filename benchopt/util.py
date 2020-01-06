@@ -313,7 +313,7 @@ def expand(keys, values):
     return dict(args)
 
 
-def get_parameter_product(parameters):
+def product_param(parameters):
     """Get an iterator that is the product of parameters expanded as a dict.
 
     Parameters

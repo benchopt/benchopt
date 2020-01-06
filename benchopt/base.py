@@ -11,8 +11,8 @@ from .util import check_import_solver
 from .class_property import classproperty
 
 
-Cost = namedtuple('Cost', 'data scale solver sample time objective repetition'
-                  .split(' '))
+Cost = namedtuple('Cost', 'data scale objective solver sample time obj '
+                  'idx_rep'.split(' '))
 
 
 class ParametrizedNameMixin():
@@ -72,6 +72,22 @@ class BaseSolver(ParametrizedNameMixin, ABC):
         super().__init__(**parameters)
         for k, v in parameters.items():
             setattr(self, k, v)
+
+    def _set_objective(self, **objective_parameters):
+        """Store the objective_parameters to make sure this solver is picklable
+        """
+        self.objective_parameters = objective_parameters
+        self.set_objective(**objective_parameters)
+
+    # @staticmethod
+    # def reconstruct(klass, parameters, objective_parameters):
+    #     obj = klass(**parameters)
+    #     obj.set_objective(**objective_parameters)
+    #     return obj
+
+    # def __reduce__(self):
+    #     return self.reconstruct, (self.__class__, self.parameters,
+    #                               self.objective_parameters)
 
     @abstractmethod
     def set_objective(self, **objective_parameters):

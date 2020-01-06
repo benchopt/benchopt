@@ -18,7 +18,9 @@ class Solver(BaseSolver):
     package_import = 'sklearn'
 
     parameters = {
-        'solver': ['saga', 'liblinear'],
+        'solver': [
+            # 'saga',
+            'liblinear'],
     }
     parameter_template = "{solver}"
 

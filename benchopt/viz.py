@@ -10,40 +10,46 @@ def plot_benchmark(df, benchmark):
     datasets = df.data.unique()
     for data in datasets:
         df_data = df[df.data == data]
-        if 'convergence_curve' in plots:
-            plot_convergence_curve(df_data, benchmark, data)
-        if 'histogram' in plots:
-            plot_histogram(df_data, benchmark, data)
+        objectives = df.objective.unique()
+        for objective in objectives:
+            df_obj = df_data[df_data.objective == objective]
+            if 'convergence_curve' in plots:
+                plot_convergence_curve(df_obj, benchmark)
+            if 'histogram' in plots:
+                plot_histogram(df_obj, benchmark)
     plt.show()
 
 
-def plot_convergence_curve(df, benchmark, dataset_name):
+def plot_convergence_curve(df, benchmark):
+    dataset_name = df.data.unique()[0]
+    objective_name = df.objective.unique()[0]
+    plot_id = hash((benchmark, dataset_name, objective_name))
 
-    benchmark_name = get_benchmark_setting(benchmark, 'name')
     solvers = df.solver.unique()
 
-    plt.figure(f"{dataset_name} - Convergence")
+    plt.figure()
     eps = 1e-10
-    c_star = df.objective.min() - eps
+    c_star = df.obj.min() - eps
     for m in solvers:
         df_ = df[df.solver == m]
         curve = df_.groupby('sample').median()
-        plt.loglog(curve.time, curve.objective - c_star, label=m)
+        plt.loglog(curve.time, curve.obj - c_star, label=m)
     xlim = plt.xlim()
     plt.hlines(eps, *xlim, color='k', linestyle='--')
     plt.xlim(xlim)
     plt.legend()
     plt.xlabel("Time [sec]")
     plt.ylabel(r"$F(\beta) - F(\beta^*)$")
-    plt.title(f"{benchmark_name}\nData: {dataset_name}")
+    plt.title(f"{objective_name}\nData: {dataset_name}", fontsize=12)
     plt.tight_layout()
-    plt.savefig(f"output_benchmarks/{benchmark}_{dataset_name.lower()}"
-                "_convergence.pdf")
+    plt.savefig(f"output_benchmarks/{plot_id}_convergence.pdf")
 
 
-def plot_histogram(df, benchmark, dataset_name):
+def plot_histogram(df, benchmark):
+    dataset_name = df.data.unique()[0]
+    objective_name = df.objective.unique()[0]
+    plot_id = hash((benchmark, dataset_name, objective_name))
 
-    benchmark_name = get_benchmark_setting(benchmark, 'name')
     solvers = df.solver.unique()
 
     n_solvers = len(solvers)
@@ -54,9 +60,9 @@ def plot_histogram(df, benchmark, dataset_name):
 
     rect_list = []
     ticks_list = []
-    fig = plt.figure(f"{dataset_name} - Histogram")
+    fig = plt.figure()
     ax = fig.gca()
-    c_star = df.objective.min() + eps
+    c_star = df.obj.min() + eps
     for i, solver_name in enumerate(solvers):
         xi = (i + 1.5) * width
         ticks_list.append((xi, solver_name))
@@ -64,7 +70,7 @@ def plot_histogram(df, benchmark, dataset_name):
 
         # Find the first sample which reach a given tolerance
         df_tol = df_.groupby('sample').filter(
-            lambda x: x.objective.max() < c_star)
+            lambda x: x.obj.max() < c_star)
         if df_tol.empty:
             print(f"Solver {solver_name} did not reach precision {eps}.")
             height = df.time.max()
@@ -87,10 +93,9 @@ def plot_histogram(df, benchmark, dataset_name):
     ax.set_yscale('log')
     plt.xlim(0, 1)
     plt.ylabel("Time [sec]")
-    plt.title(f"{benchmark_name}\nData: {dataset_name}")
+    plt.title(f"{objective_name}\nData: {dataset_name}", fontsize=12)
     plt.tight_layout()
-    plt.savefig(f"output_benchmarks/{benchmark}_{dataset_name.lower()}"
-                "_histogram.pdf")
+    plt.savefig(f"output_benchmarks/{plot_id}_histogram.pdf")
 
 # def make_time_curve(df):
 #     t_min = df.time.min()
