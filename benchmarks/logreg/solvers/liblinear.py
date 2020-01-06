@@ -10,9 +10,6 @@ class Solver(CommandLineSolver):
     cmd_name = 'train'
     install_script = 'install_liblinear.sh'
 
-    def __init__(self, **parameters):
-        super().__init__(**parameters)
-
     def dump_loss(self, loss_parameters):
         X, y, lmbd = loss_parameters.values()
 

@@ -15,7 +15,33 @@ Cost = namedtuple('Cost', 'data scale solver sample time loss repetition'
                   .split(' '))
 
 
-class BaseSolver(ABC):
+class ParametrizedNameMixin():
+    parameters = {}
+
+    def __init__(self, **parameters):
+        self.parameters = parameters
+        if not hasattr(self, 'parameter_template'):
+            self.parameter_template = ",".join(
+                [f"{k}={v}" for k, v in parameters.items()])
+
+    @property
+    @abstractmethod
+    def name(self):
+        """Each object should expose its name for plotting purposes."""
+        ...
+
+    @property
+    def _name(self):
+        """Hook to define a different template to format the parameters"""
+        return f"{self.name}({self.parameter_template})"
+
+    def __repr__(self):
+        if len(self.parameters) == 0:
+            return self.name.capitalize()
+        return self._name.format(**self.parameters).capitalize()
+
+
+class BaseSolver(ParametrizedNameMixin, ABC):
 
     # TODO: sampling strategy with eps/tol instead for solvers that do not
     #       expose the max number of iterations
@@ -38,8 +64,14 @@ class BaseSolver(ABC):
     install_cmd = None
 
     def __init__(self, **parameters):
-        """Instantiate a solver with the given parameters."""
-        ...
+        """Instantiate a solver with the given parameters and store them.
+
+        All parameters `PARAM` that are passed through init will be accessible
+        as `self.PARAM` in the class.
+        """
+        super().__init__(**parameters)
+        for k, v in parameters.items():
+            setattr(self, k, v)
 
     @abstractmethod
     def set_loss(self, **loss_parameters):
@@ -72,12 +104,6 @@ class BaseSolver(ABC):
         parameters : ndarray, shape (n_parameters,)
             The computed coefficients by the solver.
         """
-        ...
-
-    @property
-    @abstractmethod
-    def name(self):
-        """Each solver should expose its name for plotting purposes."""
         ...
 
     @classproperty
@@ -152,11 +178,6 @@ class BaseSolver(ABC):
         #     raise NotImplementedError("Uninstall not implemented for bash.")
         print(" done")
 
-    # @property
-    # @classmethod
-    # def __name__(cls):
-    #     return cls.name
-
 
 class CommandLineSolver(BaseSolver, ABC):
     """A base class for solvers that are called through command lines
@@ -181,6 +202,7 @@ class CommandLineSolver(BaseSolver, ABC):
         self._model_file = tempfile.NamedTemporaryFile()
         self.data_filename = self._data_file.name
         self.model_filename = self._model_file.name
+        super().__init__(**parameters)
 
     @abstractmethod
     def get_command_line(self, n_iter):
@@ -238,7 +260,7 @@ class CommandLineSolver(BaseSolver, ABC):
         os.system(cmd_line)
 
 
-class BaseDataset:
+class BaseDataset(ParametrizedNameMixin):
     """Base class to define a dataset in a benchmark.
     """
 
@@ -255,10 +277,4 @@ class BaseDataset:
             Extra parameters of the loss. The loss will be called as
                 loss(**loss_parameters, beta=beta)
         """
-        ...
-
-    @property
-    @abstractmethod
-    def name(self):
-        """Each dataset should expose its name for plotting purposes."""
         ...

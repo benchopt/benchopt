@@ -17,9 +17,10 @@ class Solver(BaseSolver):
     package_name = 'scikit-learn'
     package_import = 'sklearn'
 
-    parameters = dict(
-        solvers=['saga', 'liblinear']
-    )
+    parameters = {
+        'solver': ['saga', 'liblinear'],
+    }
+    parameter_template = "{solver}"
 
     def set_loss(self, loss_parameters):
         self.X, self.y, self.lmbd = loss_parameters.values()
@@ -27,7 +28,7 @@ class Solver(BaseSolver):
         warnings.filterwarnings('ignore', category=ConvergenceWarning)
 
         self.clf = LogisticRegression(
-            solver='saga', C=1 / self.lmbd,
+            solver=self.solver, C=1 / self.lmbd,
             penalty='l1', fit_intercept=False,
             tol=1e-12)
 

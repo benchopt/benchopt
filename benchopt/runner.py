@@ -8,11 +8,13 @@ from .base import Cost
 from .viz import plot_benchmark
 from .util import filter_solvers
 from .util import get_benchmark_loss
+from .util import get_parameter_product
 from .util import list_benchmark_solvers
 from .util import list_benchmark_datasets
 from .config import get_global_setting, get_benchmark_setting
 
 
+DEBUG = get_global_setting('debug')
 CACHE_DIR = get_global_setting('cache_dir')
 mem = Memory(location=CACHE_DIR, verbose=0)
 
@@ -28,13 +30,13 @@ def run_one_sample(loss_function, loss_parameters,
                    solver_class, solver_parameters,
                    sample, n_rep=1, meta={}, progress=None):
     # Instantiate the solver
-    solver = solver_class(*solver_parameters)
+    solver = solver_class(**solver_parameters)
     solver.set_loss(loss_parameters)
 
     curve = []
     current_loss = []
     for rep in range(n_rep):
-        print(f"{solver.name}: {progress:6.1%} ({rep} / {n_rep})\r",
+        print(f"|--{solver}: {progress:6.1%} ({rep} / {n_rep})\r",
               end='', flush=True)
         t_start = time.time()
         solver.run(sample)
@@ -42,16 +44,16 @@ def run_one_sample(loss_function, loss_parameters,
         beta_hat_i = solver.get_result()
         loss_value = loss_function(**loss_parameters, beta=beta_hat_i)
         current_loss.append(loss_value)
-        curve.append(Cost(**meta, solver=solver.name, sample=sample,
+        curve.append(Cost(**meta, solver=str(solver), sample=sample,
                           time=delta_t, loss=loss_value,
                           repetition=rep))
 
     return curve, np.max(current_loss)
 
 
-def run_one_solver(loss_function, dataset_class, dataset_parameters,
+def run_one_solver(loss_function, loss_parameters,
                    solver_class, solver_parameters,
-                   max_samples, n_rep=1, force=False):
+                   max_samples, n_rep=1, force=False, meta={}):
     """Minimize a loss function with the given solver for different accuracy
     """
 
@@ -60,12 +62,7 @@ def run_one_solver(loss_function, dataset_class, dataset_parameters,
     eps = 1e-10
 
     # Instantiate the solver
-    solver = solver_class(*solver_parameters)
-
-    # Set the loss for the solver
-    dataset = dataset_class(*dataset_parameters)
-    scale, loss_parameters = dataset.get_loss_parameters()
-    solver.set_loss(loss_parameters)
+    solver = solver_class(**solver_parameters)
 
     # Sample the performances for different accuracy, either by varying the
     # tolerance or the maximal number of iterations
@@ -82,15 +79,14 @@ def run_one_solver(loss_function, dataset_class, dataset_parameters,
 
     id_sample = 0
     sample = 1
-    delta_losses = [2 * eps]
+    delta_losses = [1e100]
     prev_loss_value = np.inf
-
-    meta = dict(data=dataset.name, scale=scale)
 
     for id_sample in range(max_samples):
         if (np.max(delta_losses) < eps):
             # We are on a plateau and the loss is not improving
             # stop here on the sampling
+            print(f"|--{solver}: done".ljust(40))
             break
 
         p = progress(id_sample, np.max(delta_losses))
@@ -115,10 +111,12 @@ def run_one_solver(loss_function, dataset_class, dataset_parameters,
             delta_losses.pop(0)
         prev_loss_value = loss_value
         sample = get_next(sample)
+    else:
+        print(f"|--{solver}: done (did not converged)".ljust(40))
 
-    # for n_iter in list_iter:
-    print(f"{solver.name}: done".ljust(40))
-    print(np.max(delta_losses), eps, sample)
+    if DEBUG:
+        print(f"|    Exit with delta_loss = {np.max(delta_losses):.2e} and "
+              f"sampling_parameter={sample}")
     return curve
 
 
@@ -137,22 +135,29 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                                     exclude=exclude)
 
     res = []
-    for dataset in datasets:
-        dataset_parameters = {}
-        dataset
-        for solver in solver_classes:
-            solver_parameters = {}
+    for dataset_class in datasets:
+        it_data_parameters = get_parameter_product(dataset_class.parameters)
+        for dataset_parameters in it_data_parameters:
+            dataset = dataset_class(**dataset_parameters)
+            scale, loss_parameters = dataset.get_loss_parameters()
+            print(dataset)
+            meta = dict(data=str(dataset), scale=scale)
+            for solver in solver_classes:
+                it_solver_parameters = get_parameter_product(solver.parameters)
+                for solver_parameters in it_solver_parameters:
 
-            force = solver.name.lower() in forced_solvers
-            try:
-                res.extend(run_one_solver(
-                    loss_function=loss_function, dataset_class=dataset,
-                    dataset_parameters=dataset_parameters,
-                    solver_class=solver, solver_parameters=solver_parameters,
-                    max_samples=max_samples, n_rep=n_rep, force=force
-                ))
-            except Exception:
-                import traceback
-                traceback.print_exc()
+                    force = solver.name.lower() in forced_solvers
+                    try:
+                        res.extend(run_one_solver(
+                            loss_function=loss_function,
+                            loss_parameters=loss_parameters,
+                            solver_class=solver,
+                            solver_parameters=solver_parameters,
+                            max_samples=max_samples, n_rep=n_rep, force=force,
+                            meta=meta
+                        ))
+                    except Exception:
+                        import traceback
+                        traceback.print_exc()
     df = pd.DataFrame(res)
     plot_benchmark(df, benchmark)

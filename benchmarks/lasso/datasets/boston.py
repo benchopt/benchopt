@@ -14,6 +14,8 @@ class Dataset(BaseDataset):
     def __init__(self, reg=.1):
         self.reg = reg
 
+        super().__init__(reg=reg)
+
     def get_loss_parameters(self):
 
         X, y = load_boston(return_X_y=True)

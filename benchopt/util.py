@@ -3,6 +3,7 @@ import venv
 import pkgutil
 import warnings
 import tempfile
+import itertools
 from importlib import import_module
 
 from .config import get_global_setting
@@ -297,3 +298,39 @@ class safe_import():
 
         self.record.__exit__(exc_type, exc_value, traceback)
         return silence_error
+
+
+def expand(keys, values):
+    """Expand the multiple parameters for itertools product"""
+    args = []
+    for k, v in zip(keys, values):
+        if ',' in k:
+            params_name = [p.strip() for p in k.split(',')]
+            assert len(params_name) == len(v)
+            args.extend(list(zip(params_name, v)))
+        else:
+            args.append((k, v))
+    return dict(args)
+
+
+def get_parameter_product(parameters):
+    """Get an iterator that is the product of parameters expanded as a dict.
+
+    Parameters
+    ----------
+    parameters: dict of list
+        A dictionary of type {parameter_names: parameters_value_list}. The
+        parameter_names is either a single parameter name or a list of
+        parameter names separated with ','. The parameters_value_list should
+        be either a list of value if there is only one parameter or a list of
+        tuple with the same cardinality as parameter_names.
+
+    Return
+    ------
+    parameter_iterator: iterator
+        An iterator where each element is a dictionary of parameters expanded
+        as the product of every items in parameters.
+    """
+    parameter_names = parameters.keys()
+    return map(expand, itertools.repeat(parameter_names),
+               itertools.product(*parameters.values()))
