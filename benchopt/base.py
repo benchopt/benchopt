@@ -11,7 +11,7 @@ from .util import check_import_solver
 from .class_property import classproperty
 
 
-Cost = namedtuple('Cost', 'data scale solver sample time loss repetition'
+Cost = namedtuple('Cost', 'data scale solver sample time objective repetition'
                   .split(' '))
 
 
@@ -74,8 +74,8 @@ class BaseSolver(ParametrizedNameMixin, ABC):
             setattr(self, k, v)
 
     @abstractmethod
-    def set_loss(self, **loss_parameters):
-        """Prepare the data for the solver."""
+    def set_objective(self, **objective_parameters):
+        """Prepare the objective for the solver."""
         ...
 
     @abstractmethod
@@ -188,9 +188,10 @@ class CommandLineSolver(BaseSolver, ABC):
       the command line necessary to run the solver up to n_iter with the input
       data provided in data_file.
 
-    - dump_loss(self, X, y): dumps the parameter to compute the loss function
-      in a file and returns the name of the file. This utility is necessary to
-      reduce the impact of dumping the data to the disk in the benchmark.
+    - dump_objective(self, X, y): dumps the parameter to compute the objective
+      function in a file and returns the name of the file. This utility is
+      necessary to reduce the impact of dumping the data to the disk in the
+      benchmark.
 
     - get_result(self): retrieves the result from the disk. This utility is
       necessary to reduce the impact of loading the data from the disk in the
@@ -222,17 +223,17 @@ class CommandLineSolver(BaseSolver, ABC):
         ...
 
     @abstractmethod
-    def dump_loss(self, loss_parameters):
-        """Dump the data for the loss to the disk.
+    def dump_objective(self, objective_parameters):
+        """Dump the data for the objective to the disk.
 
         If possible, the data should be dump to the file self.data_filename so
         it will be clean up automatically by benchopt.
 
         Parameters
         ----------
-        loss_parameters: tuple
-            Parameter to construct the loss function. The specific shape and
-            the order of the parameter are described in each benchmark
+        objective_parameters: tuple
+            Parameter to construct the objective function. The specific shape
+            and the order of the parameter are described in each benchmark
             definition file.
         """
         ...
@@ -251,9 +252,9 @@ class CommandLineSolver(BaseSolver, ABC):
         """
         ...
 
-    def set_loss(self, loss_parameters):
+    def set_objective(self, **objective_parameters):
         """Prepare the data"""
-        self.dump_loss(loss_parameters)
+        self.dump_objective(**objective_parameters)
 
     def run(self, n_iter):
         cmd_line = self.get_command_line(n_iter)
@@ -265,16 +266,16 @@ class BaseDataset(ParametrizedNameMixin):
     """
 
     @abstractmethod
-    def get_loss_parameters(self):
-        """Return the scale of the problem as well as the loss parameters.
+    def get_data(self):
+        """Return the scale of the problem as well as the objective parameters.
 
         Return
         ------
         scale: int
             Size of the optimized parameter. The solvers should return a
             parameter of shape (scale,).
-        loss_parameters: dict
-            Extra parameters of the loss. The loss will be called as
-                loss(**loss_parameters, beta=beta)
+        objective_parameters: dict
+            Extra parameters of the objective. The objective will be called as
+                objective(**objective_parameters, beta=beta)
         """
         ...

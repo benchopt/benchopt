@@ -7,10 +7,10 @@ from joblib import Memory
 from .base import Cost
 from .viz import plot_benchmark
 from .util import filter_solvers
-from .util import get_benchmark_loss
 from .util import get_parameter_product
 from .util import list_benchmark_solvers
 from .util import list_benchmark_datasets
+from .util import get_benchmark_objective
 from .config import get_global_setting, get_benchmark_setting
 
 
@@ -26,15 +26,15 @@ MIN_TOL = 1e-15
 
 
 @mem.cache(ignore=['progress'])
-def run_one_sample(loss_function, loss_parameters,
+def run_one_sample(objective_function, objective_parameters,
                    solver_class, solver_parameters,
                    sample, n_rep=1, meta={}, progress=None):
     # Instantiate the solver
     solver = solver_class(**solver_parameters)
-    solver.set_loss(loss_parameters)
+    solver.set_objective(**objective_parameters)
 
     curve = []
-    current_loss = []
+    current_objective = []
     for rep in range(n_rep):
         print(f"|--{solver}: {progress:6.1%} ({rep} / {n_rep})\r",
               end='', flush=True)
@@ -42,19 +42,20 @@ def run_one_sample(loss_function, loss_parameters,
         solver.run(sample)
         delta_t = time.time() - t_start
         beta_hat_i = solver.get_result()
-        loss_value = loss_function(**loss_parameters, beta=beta_hat_i)
-        current_loss.append(loss_value)
+        objective_value = objective_function(**objective_parameters,
+                                             beta=beta_hat_i)
+        current_objective.append(objective_value)
         curve.append(Cost(**meta, solver=str(solver), sample=sample,
-                          time=delta_t, loss=loss_value,
+                          time=delta_t, objective=objective_value,
                           repetition=rep))
 
-    return curve, np.max(current_loss)
+    return curve, np.max(current_objective)
 
 
-def run_one_solver(loss_function, loss_parameters,
+def run_one_solver(objective_function, objective_parameters,
                    solver_class, solver_parameters,
                    max_samples, n_rep=1, force=False, meta={}):
-    """Minimize a loss function with the given solver for different accuracy
+    """Minimize a objective function with the given solver for different accuracy
     """
 
     # TODO: parametrize
@@ -79,44 +80,46 @@ def run_one_solver(loss_function, loss_parameters,
 
     id_sample = 0
     sample = 1
-    delta_losses = [1e100]
-    prev_loss_value = np.inf
+    delta_objectives = [1e100]
+    prev_objective_value = np.inf
 
     for id_sample in range(max_samples):
-        if (np.max(delta_losses) < eps):
-            # We are on a plateau and the loss is not improving
+        if (np.max(delta_objectives) < eps):
+            # We are on a plateau and the objective is not improving
             # stop here on the sampling
             print(f"|--{solver}: done".ljust(40))
             break
 
-        p = progress(id_sample, np.max(delta_losses))
+        p = progress(id_sample, np.max(delta_objectives))
 
         run_args = dict(
-            loss_function=loss_function, loss_parameters=loss_parameters,
+            objective_function=objective_function,
+            objective_parameters=objective_parameters,
             solver_class=solver_class, solver_parameters=solver_parameters,
             sample=sample, n_rep=n_rep, progress=p, meta=meta
         )
         if force:
             run_one_sample.call(**run_args)
 
-        sample_curve, loss_value = run_one_sample(**run_args)
+        sample_curve, objective_value = run_one_sample(**run_args)
         curve.extend(sample_curve)
 
-        # loss_value = np.mean(current_loss)
-        delta_loss = prev_loss_value - loss_value
-        delta_losses.append(delta_loss)
-        if delta_loss == 0:
+        # objective_value = np.mean(current_objective)
+        delta_objective = prev_objective_value - objective_value
+        delta_objectives.append(delta_objective)
+        if delta_objective == 0:
             rho *= 1.2
-        if len(delta_losses) > PATIENCE:
-            delta_losses.pop(0)
-        prev_loss_value = loss_value
+        if len(delta_objectives) > PATIENCE:
+            delta_objectives.pop(0)
+        prev_objective_value = objective_value
         sample = get_next(sample)
     else:
         print(f"|--{solver}: done (did not converged)".ljust(40))
 
     if DEBUG:
-        print(f"|    Exit with delta_loss = {np.max(delta_losses):.2e} and "
-              f"sampling_parameter={sample}")
+        delta = np.max(delta_objectives)
+        print(f"|    Exit with delta_objective = {delta:.2e} and "
+              f"sampling_parameter={sample}.")
     return curve
 
 
@@ -124,7 +127,7 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                   max_samples=10, n_rep=1):
 
     # Load the benchmark function and the datasets
-    loss_function = get_benchmark_loss(benchmark)
+    objective_function = get_benchmark_objective(benchmark)
     datasets = list_benchmark_datasets(benchmark)
 
     # Load the solvers to execute
@@ -139,7 +142,7 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
         it_data_parameters = get_parameter_product(dataset_class.parameters)
         for dataset_parameters in it_data_parameters:
             dataset = dataset_class(**dataset_parameters)
-            scale, loss_parameters = dataset.get_loss_parameters()
+            scale, objective_parameters = dataset.get_data()
             print(dataset)
             meta = dict(data=str(dataset), scale=scale)
             for solver in solver_classes:
@@ -149,8 +152,8 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                     force = solver.name.lower() in forced_solvers
                     try:
                         res.extend(run_one_solver(
-                            loss_function=loss_function,
-                            loss_parameters=loss_parameters,
+                            objective_function=objective_function,
+                            objective_parameters=objective_parameters,
                             solver_class=solver,
                             solver_parameters=solver_parameters,
                             max_samples=max_samples, n_rep=n_rep, force=force,

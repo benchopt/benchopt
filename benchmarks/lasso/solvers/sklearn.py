@@ -15,8 +15,8 @@ class Solver(BaseSolver):
     package_name = 'scikit-learn'
     package_import = 'sklearn'
 
-    def set_loss(self, loss_parameters):
-        self.X, self.y, self.lmbd = loss_parameters.values()
+    def set_objective(self, X, y, lmbd):
+        self.X, self.y, self.lmbd = X, y, lmbd
 
         n_samples = self.X.shape[0]
         self.clf = Lasso(alpha=self.lmbd/n_samples, fit_intercept=False, tol=0)

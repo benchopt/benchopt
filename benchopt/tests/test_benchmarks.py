@@ -4,7 +4,7 @@ import numpy as np
 from benchopt.runner import SAMPLING_STRATEGIES
 
 from benchopt.util import get_all_benchmarks
-from benchopt.util import get_benchmark_loss
+from benchopt.util import get_benchmark_objective
 from benchopt.util import list_benchmark_solvers
 from benchopt.util import list_benchmark_datasets
 
@@ -24,18 +24,19 @@ def class_ids(parameter):
 
 @pytest.mark.parametrize('benchmark_name, dataset_class', DATASETS,
                          ids=class_ids)
-def test_benchmark_loss(benchmark_name, dataset_class):
-    """Check that the loss function and the datasets are well defined."""
-    loss_function = get_benchmark_loss(benchmark_name)
+def test_benchmark_objective(benchmark_name, dataset_class):
+    """Check that the objective function and the datasets are well defined."""
+    objective_function = get_benchmark_objective(benchmark_name)
     parameters = {}
     dataset = dataset_class(**parameters)
-    scale, loss_parameters = dataset.get_loss_parameters()
+    scale, objective_parameters = dataset.get_data()
 
     # check that the reported scale si correct and that the result of
-    # the loss function is a scalar
+    # the objective function is a scalar
     beta_hat = np.zeros(scale)
-    assert np.isscalar(loss_function(**loss_parameters, beta=beta_hat)), (
-        "The output of the loss function should be a scalar."
+    objective_value = objective_function(**objective_parameters, beta=beta_hat)
+    assert np.isscalar(objective_value), (
+        "The output of the objective function should be a scalar."
     )
 
 
@@ -73,3 +74,20 @@ def test_dataset_class(benchmark_name, dataset_class):
     assert hasattr(dataset_class, 'name'), "All dataset should expose a name"
     assert isinstance(dataset_class.name, str), (
         "The dataset's name should be a string")
+
+    # Ensure that the dataset exposes a `get_data` function
+    # that is callable
+    dataset = dataset_class()
+    assert hasattr(dataset, 'get_data'), (
+        "All dataset should implement get_data"
+    )
+    objective_parameters = dataset.get_data()
+    assert isinstance(objective_parameters, tuple), (
+        "Ouput of get_data should be a 2-tuple"
+    )
+    assert len(objective_parameters) == 2, (
+        "Ouput of get_data should be a 2-tuple"
+    )
+
+    assert isinstance(objective_parameters[0], int)
+    assert isinstance(objective_parameters[1], dict)

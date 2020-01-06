@@ -17,8 +17,8 @@ class Solver(BaseSolver):
         'git+https://github.com/scikit-learn-contrib/lightning.git'
     )
 
-    def set_loss(self, loss_parameters):
-        self.X, self.y, self.lmbd = loss_parameters.values()
+    def set_objective(self, X, y, lmbd):
+        self.X, self.y, self.lmbd = X, y, lmbd
 
         self.clf = CDRegressor(
             loss='squared', penalty='l1', C=1, alpha=self.lmbd,

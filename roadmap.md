@@ -15,7 +15,7 @@
    - Local run with a callback API?
 
 * complicated part:
-   - Same definition of the loss (mean vs sum)
+   - Same definition of the objective (mean vs sum)
 
 
 ## Current TODO:

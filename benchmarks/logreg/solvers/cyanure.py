@@ -13,8 +13,8 @@ class Solver(BaseSolver):
     package_name = 'cyanure-mkl'
     package_import = 'cyanure'
 
-    def set_loss(self, loss_parameters):
-        self.X, self.y, self.lmbd = loss_parameters.values()
+    def set_objective(self, X, y, lmbd):
+        self.X, self.y, self.lmbd = X, y, lmbd
 
         self.solver = BinaryClassifier(loss='logistic', penalty='l1',
                                        fit_intercept=False)

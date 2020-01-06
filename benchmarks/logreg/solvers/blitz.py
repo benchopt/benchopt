@@ -16,8 +16,8 @@ class Solver(BaseSolver):
         'git+https://github.com/tommoral/blitzl1.git@FIX_python_type_check'
     )
 
-    def set_loss(self, loss_parameters):
-        self.X, self.y, self.lmbd = loss_parameters.values()
+    def set_objective(self, X, y, lmbd):
+        self.X, self.y, self.lmbd = X, y, lmbd
 
         # n_samples = self.X.shape[0]
         # self.lmbd /= n_samples

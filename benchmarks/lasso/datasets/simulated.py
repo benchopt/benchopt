@@ -23,7 +23,7 @@ class Dataset(BaseDataset):
 
         super().__init__(n_samples=n_samples, n_features=n_features, reg=reg)
 
-    def get_loss_parameters(self):
+    def get_data(self):
 
         rng = np.random.RandomState(self.random_state)
         X = rng.randn(self.n_samples, self.n_features)
@@ -31,9 +31,9 @@ class Dataset(BaseDataset):
 
         lmbd = self.reg * self._get_lmbd_max(X, y)
 
-        loss_parameters = dict(X=X, y=y, lmbd=lmbd)
+        objective_parameters = dict(X=X, y=y, lmbd=lmbd)
 
-        return self.n_features, loss_parameters
+        return self.n_features, objective_parameters
 
     def _get_lmbd_max(self, X, y):
         return abs(X.T.dot(y)).max()

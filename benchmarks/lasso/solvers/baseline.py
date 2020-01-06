@@ -7,8 +7,8 @@ from benchopt.base import BaseSolver
 class Solver(BaseSolver):
     name = 'Baseline'
 
-    def set_loss(self, loss_parameters):
-        self.X, self.y, self.lmbd = loss_parameters.values()
+    def set_objective(self, X, y, lmbd):
+        self.X, self.y, self.lmbd = X, y, lmbd
 
         self.L = np.linalg.norm(self.X.dot(self.X.T), ord=2)
 

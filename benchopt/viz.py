@@ -24,11 +24,11 @@ def plot_convergence_curve(df, benchmark, dataset_name):
 
     plt.figure(f"{dataset_name} - Convergence")
     eps = 1e-10
-    c_star = df.loss.min() - eps
+    c_star = df.objective.min() - eps
     for m in solvers:
         df_ = df[df.solver == m]
         curve = df_.groupby('sample').median()
-        plt.loglog(curve.time, curve.loss - c_star, label=m)
+        plt.loglog(curve.time, curve.objective - c_star, label=m)
     xlim = plt.xlim()
     plt.hlines(eps, *xlim, color='k', linestyle='--')
     plt.xlim(xlim)
@@ -56,14 +56,15 @@ def plot_histogram(df, benchmark, dataset_name):
     ticks_list = []
     fig = plt.figure(f"{dataset_name} - Histogram")
     ax = fig.gca()
-    c_star = df.loss.min() + eps
+    c_star = df.objective.min() + eps
     for i, solver_name in enumerate(solvers):
         xi = (i + 1.5) * width
         ticks_list.append((xi, solver_name))
         df_ = df[df.solver == solver_name]
 
         # Find the first sample which reach a given tolerance
-        df_tol = df_.groupby('sample').filter(lambda x: x.loss.max() < c_star)
+        df_tol = df_.groupby('sample').filter(
+            lambda x: x.objective.max() < c_star)
         if df_tol.empty:
             print(f"Solver {solver_name} did not reach precision {eps}.")
             height = df.time.max()

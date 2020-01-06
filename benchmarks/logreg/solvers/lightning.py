@@ -15,9 +15,9 @@ class Solver(BaseSolver):
         'git+https://github.com/scikit-learn-contrib/lightning.git'
     )
 
-    def set_loss(self, loss_parameters):
+    def set_objective(self, X, y, lmbd):
 
-        self.X, self.y, self.lmbd = loss_parameters.values()
+        self.X, self.y, self.lmbd = X, y, lmbd
 
         self.clf = CDClassifier(
             loss='log', penalty='l1', C=1, alpha=self.lmbd,

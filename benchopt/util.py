@@ -177,12 +177,12 @@ def get_benchmark_module_name(benchmark):
     return f"benchmarks.{benchmark}"
 
 
-def get_benchmark_loss(benchmark):
-    """Load the loss function defined in the given benchmark."""
+def get_benchmark_objective(benchmark):
+    """Load the objective function defined in the given benchmark."""
     benchmark_module_name = get_benchmark_module_name(benchmark)
-    loss_module_name = f"{benchmark_module_name}.loss"
-    module = import_module(loss_module_name)
-    return module.loss_function
+    objective_module_name = f"{benchmark_module_name}.objective"
+    module = import_module(objective_module_name)
+    return module.objective_function
 
 
 def list_benchmark_submodule_names(benchmark, submodule='solvers'):

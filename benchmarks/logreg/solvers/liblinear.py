@@ -10,8 +10,7 @@ class Solver(CommandLineSolver):
     cmd_name = 'train'
     install_script = 'install_liblinear.sh'
 
-    def dump_loss(self, loss_parameters):
-        X, y, lmbd = loss_parameters.values()
+    def dump_objective(self, X, y, lmbd):
 
         # The regularization parameter is passed directly to the command line
         # so we store it for latter.
