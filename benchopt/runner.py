@@ -14,16 +14,16 @@ from .util import get_benchmark_objective
 from .config import get_global_setting, get_benchmark_setting
 
 
+# Get config values
 DEBUG = get_global_setting('debug')
 CACHE_DIR = get_global_setting('cache_dir')
 
 
-SAMPLING_STRATEGIES = ['iteration', 'tolerance']
+# Define some constants
+# TODO: better parametrize this?
 PATIENCE = 5
 MAX_ITER = int(1e6)
 MIN_TOL = 1e-15
-
-BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE = range(30, 38)
 
 
 # jobib cache to avoid loosing computations
@@ -33,12 +33,17 @@ mem = Memory(location=CACHE_DIR, verbose=0)
 ###################################
 # Helper function for outputs
 ###################################
+BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE = range(30, 38)
+
 
 def colorify(message, color=BLUE):
     """Change color of the standard output"""
     return ("\033[1;%dm" % color) + message + "\033[0m"
 
 
+##################################
+# Time one run of a solver
+##################################
 @mem.cache
 def run_repetition(objective, solver_class, solver_parameters, meta, sample):
 
@@ -57,7 +62,7 @@ def run_repetition(objective, solver_class, solver_parameters, meta, sample):
 
 
 def run_one_sample(objective, solver_class, solver_parameters, meta, sample,
-                   n_rep, progress_str):
+                   n_rep, progress_str, force=False):
 
     curve = []
     current_objective = []
@@ -66,8 +71,12 @@ def run_one_sample(objective, solver_class, solver_parameters, meta, sample,
               end='', flush=True)
 
         meta_rep = dict(**meta, idx_rep=rep)
-        cost, objective_value = run_repetition(
-            objective, solver_class, solver_parameters, meta_rep, sample)
+
+        # Force the run if needed
+        args = (objective, solver_class, solver_parameters, meta_rep, sample)
+        if force:
+            run_repetition.call(*args)
+        cost, objective_value = run_repetition(*args)
 
         curve.append(cost)
         current_objective.append(objective_value)
@@ -117,15 +126,13 @@ def run_one_solver(objective, solver_class, solver_parameters,
             p = progress(id_sample, np.max(delta_objectives))
             progress_str = f"{tag} {p:6.1%}"
 
-            run_args = dict(
+            sample_curve, objective_value = run_one_sample(
                 objective=objective, solver_class=solver_class,
                 solver_parameters=solver_parameters, sample=sample,
-                n_rep=n_rep, progress_str=progress_str, meta=meta
+                n_rep=n_rep, progress_str=progress_str, meta=meta,
+                force=force
             )
-            if force:
-                run_one_sample.call(**run_args)
 
-            sample_curve, objective_value = run_one_sample(**run_args)
             curve.extend(sample_curve)
 
             delta_objective = prev_objective_value - objective_value

@@ -11,8 +11,12 @@ from .util import check_import_solver
 from .class_property import classproperty
 
 
+# Possible sampling strategies
+SAMPLING_STRATEGIES = ['iteration', 'tolerance']
+
+# Named-tuple for the cost function
 Cost = namedtuple('Cost', 'data scale objective solver sample time obj '
-                  'idx_rep'.split(' '))
+                          'idx_rep'.split(' '))
 
 
 class ParametrizedNameMixin():
