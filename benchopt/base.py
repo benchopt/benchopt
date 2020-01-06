@@ -274,8 +274,34 @@ class BaseDataset(ParametrizedNameMixin):
         scale: int
             Size of the optimized parameter. The solvers should return a
             parameter of shape (scale,).
-        objective_parameters: dict
-            Extra parameters of the objective. The objective will be called as
-                objective(**objective_parameters, beta=beta)
+        data: dict
+            Extra parameters of the objective. The objective will be
+            instanciated by calling Objective.set_data(**data)
         """
+        ...
+
+
+class BaseObjective(ParametrizedNameMixin):
+    """Base class to define an objective
+    """
+    def __init__(self, **parameters):
+        """Instantiate a solver with the given parameters and store them.
+
+        All parameters `PARAM` that are passed through init will be accessible
+        as `self.PARAM` in the class.
+        """
+        super().__init__(**parameters)
+        for k, v in parameters.items():
+            setattr(self, k, v)
+
+    @abstractmethod
+    def __call__(self, beta):
+        ...
+
+    @abstractmethod
+    def set_data(self, **data):
+        ...
+
+    @abstractmethod
+    def to_dict(self):
         ...

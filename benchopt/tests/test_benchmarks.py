@@ -26,15 +26,18 @@ def class_ids(parameter):
                          ids=class_ids)
 def test_benchmark_objective(benchmark_name, dataset_class):
     """Check that the objective function and the datasets are well defined."""
-    objective_function = get_benchmark_objective(benchmark_name)
+    objective_class = get_benchmark_objective(benchmark_name)
+    objective = objective_class()
+
     parameters = {}
     dataset = dataset_class(**parameters)
-    scale, objective_parameters = dataset.get_data()
+    scale, data = dataset.get_data()
+    objective.set_data(**data)
 
     # check that the reported scale si correct and that the result of
     # the objective function is a scalar
     beta_hat = np.zeros(scale)
-    objective_value = objective_function(**objective_parameters, beta=beta_hat)
+    objective_value = objective(beta=beta_hat)
     assert np.isscalar(objective_value), (
         "The output of the objective function should be a scalar."
     )
@@ -81,13 +84,15 @@ def test_dataset_class(benchmark_name, dataset_class):
     assert hasattr(dataset, 'get_data'), (
         "All dataset should implement get_data"
     )
-    objective_parameters = dataset.get_data()
-    assert isinstance(objective_parameters, tuple), (
+    data = dataset.get_data()
+    assert isinstance(data, tuple), (
         "Ouput of get_data should be a 2-tuple"
     )
-    assert len(objective_parameters) == 2, (
+    assert len(data) == 2, (
         "Ouput of get_data should be a 2-tuple"
     )
 
-    assert isinstance(objective_parameters[0], int)
-    assert isinstance(objective_parameters[1], dict)
+    scale, data = data
+
+    assert isinstance(scale, int)
+    assert isinstance(data, dict)

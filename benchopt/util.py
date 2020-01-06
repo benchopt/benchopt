@@ -182,7 +182,7 @@ def get_benchmark_objective(benchmark):
     benchmark_module_name = get_benchmark_module_name(benchmark)
     objective_module_name = f"{benchmark_module_name}.objective"
     module = import_module(objective_module_name)
-    return module.objective_function
+    return module.Objective
 
 
 def list_benchmark_submodule_names(benchmark, submodule='solvers'):

@@ -26,12 +26,11 @@ MIN_TOL = 1e-15
 
 
 @mem.cache(ignore=['progress'])
-def run_one_sample(objective_function, objective_parameters,
-                   solver_class, solver_parameters,
+def run_one_sample(objective, solver_class, solver_parameters,
                    sample, n_rep=1, meta={}, progress=None):
     # Instantiate the solver
     solver = solver_class(**solver_parameters)
-    solver.set_objective(**objective_parameters)
+    solver.set_objective(**objective.to_dict())
 
     curve = []
     current_objective = []
@@ -42,8 +41,7 @@ def run_one_sample(objective_function, objective_parameters,
         solver.run(sample)
         delta_t = time.time() - t_start
         beta_hat_i = solver.get_result()
-        objective_value = objective_function(**objective_parameters,
-                                             beta=beta_hat_i)
+        objective_value = objective(beta=beta_hat_i)
         current_objective.append(objective_value)
         curve.append(Cost(**meta, solver=str(solver), sample=sample,
                           time=delta_t, objective=objective_value,
@@ -52,8 +50,7 @@ def run_one_sample(objective_function, objective_parameters,
     return curve, np.max(current_objective)
 
 
-def run_one_solver(objective_function, objective_parameters,
-                   solver_class, solver_parameters,
+def run_one_solver(objective, solver_class, solver_parameters,
                    max_samples, n_rep=1, force=False, meta={}):
     """Minimize a objective function with the given solver for different accuracy
     """
@@ -93,10 +90,9 @@ def run_one_solver(objective_function, objective_parameters,
         p = progress(id_sample, np.max(delta_objectives))
 
         run_args = dict(
-            objective_function=objective_function,
-            objective_parameters=objective_parameters,
-            solver_class=solver_class, solver_parameters=solver_parameters,
-            sample=sample, n_rep=n_rep, progress=p, meta=meta
+            objective=objective, solver_class=solver_class,
+            solver_parameters=solver_parameters, sample=sample,
+            n_rep=n_rep, progress=p, meta=meta
         )
         if force:
             run_one_sample.call(**run_args)
@@ -127,7 +123,9 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                   max_samples=10, n_rep=1):
 
     # Load the benchmark function and the datasets
-    objective_function = get_benchmark_objective(benchmark)
+    objective_class = get_benchmark_objective(benchmark)
+    it_obj_parameters = get_parameter_product(objective_class.parameters)
+
     datasets = list_benchmark_datasets(benchmark)
 
     # Load the solvers to execute
@@ -142,25 +140,28 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
         it_data_parameters = get_parameter_product(dataset_class.parameters)
         for dataset_parameters in it_data_parameters:
             dataset = dataset_class(**dataset_parameters)
-            scale, objective_parameters = dataset.get_data()
             print(dataset)
-            meta = dict(data=str(dataset), scale=scale)
-            for solver in solver_classes:
-                it_solver_parameters = get_parameter_product(solver.parameters)
-                for solver_parameters in it_solver_parameters:
+            scale, data = dataset.get_data()
+            for obj_parameters in it_obj_parameters:
+                objective = objective_class(**obj_parameters)
+                print(objective)
+                objective.set_data(**data)
+                meta = dict(data=str(dataset), scale=scale)
+                for solver in solver_classes:
+                    it_solver_parameters = get_parameter_product(
+                        solver.parameters)
+                    for solver_parameters in it_solver_parameters:
 
-                    force = solver.name.lower() in forced_solvers
-                    try:
-                        res.extend(run_one_solver(
-                            objective_function=objective_function,
-                            objective_parameters=objective_parameters,
-                            solver_class=solver,
-                            solver_parameters=solver_parameters,
-                            max_samples=max_samples, n_rep=n_rep, force=force,
-                            meta=meta
-                        ))
-                    except Exception:
-                        import traceback
-                        traceback.print_exc()
+                        force = solver.name.lower() in forced_solvers
+                        try:
+                            res.extend(run_one_solver(
+                                objective=objective, solver_class=solver,
+                                solver_parameters=solver_parameters,
+                                max_samples=max_samples, n_rep=n_rep,
+                                force=force, meta=meta
+                            ))
+                        except Exception:
+                            import traceback
+                            traceback.print_exc()
     df = pd.DataFrame(res)
     plot_benchmark(df, benchmark)

@@ -8,31 +8,23 @@ class Dataset(BaseDataset):
     name = "Simulated"
 
     parameters = {
-        'reg': [.01, .1, .5],
         'n_samples, n_features': [
             (100, 5000),
             (100, 10000)]
     }
 
-    def __init__(self, n_samples=100, n_features=5000, reg=.1,
-                 random_state=42):
+    def __init__(self, n_samples=100, n_features=5000, random_state=42):
         self.n_samples = n_samples
         self.n_features = n_features
-        self.reg = reg
         self.random_state = random_state
 
-        super().__init__(n_samples=n_samples, n_features=n_features, reg=reg)
+        super().__init__(n_samples=n_samples, n_features=n_features)
 
     def get_data(self):
         rng = np.random.RandomState(self.random_state)
         X = rng.randn(self.n_samples, self.n_features)
         y = 2*(rng.randn(self.n_samples) > 0) - 1
 
-        lmbd = self.reg * self._get_lmbd_max(X, y)
+        data = dict(X=X, y=y)
 
-        objective_parameters = dict(X=X, y=y, lmbd=lmbd)
-
-        return self.n_features, objective_parameters
-
-    def _get_lmbd_max(self, X, y):
-        return abs(X.T.dot(y)).max()
+        return self.n_features, data
