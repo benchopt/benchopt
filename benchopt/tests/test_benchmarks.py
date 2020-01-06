@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 
-from benchopt.runner import SAMPLING_STRATEGIES
+from benchopt.base import SAMPLING_STRATEGIES
 
 from benchopt.util import get_all_benchmarks
 from benchopt.util import get_benchmark_objective
