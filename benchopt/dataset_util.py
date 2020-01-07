@@ -28,14 +28,14 @@ def download_libsvm(X_path, y_path, name, replace=False):
     path = download(url, pjoin(DATA_DIR, name), replace=replace)
 
     decompressor = BZ2Decompressor()
-    with (open(pjoin(path, NAMES[name].split('/')[-1]), "r+b") as f,
-          open(path, "rb") as g):
+    with open(pjoin(path, NAMES[name].split('/')[-1]), "r+b") as f, \
+            open(path, "rb") as g:
         for data in iter(lambda: g.read(100 * 1024), b''):
             f.write(decompressor.decompress(data))
 
-        X, y = load_svmlight_file(f, N_FEATURES[names])
+        X, y = load_svmlight_file(f, N_FEATURES[name])
         X = sparse.csc_matrix(X)
         X.sort_indices()
-        sparse.save_npz(X_PATH, X)
-        np.save(Y_PATH, y)
+        sparse.save_npz(X_path, X)
+        np.save(y_path, y)
     return X, y

@@ -12,15 +12,15 @@ DATA_DIR = get_global_setting('cache_dir')
 class Dataset(BaseDataset):
     # TODO call the dataset log1p_train to harmonize with libsvm naming?
     name = "finance"
-    X_PATH = pjoin(DATA_DIR, name, "X.npz")
-    Y_PATH = pjoin(DATA_DIR, name, "y.npy")
+    X_path = pjoin(DATA_DIR, name, "X.npz")
+    y_path = pjoin(DATA_DIR, name, "y.npy")
 
     def get_data(self):
         try:
-            X = sparse.load_npz(X_PATH)
-            y = np.load(Y_PATH)
+            X = sparse.load_npz(self.X_path)
+            y = np.load(self.y_path)
         except FileNotFoundError:
-            X, y = download_libsvm(X_PATH, Y_PATH, name)
+            X, y = download_libsvm(self.X_path, self.y_path, self.name)
 
         data = dict(X=X, y=y)
 
