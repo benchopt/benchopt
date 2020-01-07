@@ -1,7 +1,7 @@
 import numpy as np
+import os
 from scipy import sparse
 from bz2 import BZ2Decompressor
-from os.path import join as pjoin
 
 from download import download
 from sklearn.datasets import load_svmlight_file
@@ -25,11 +25,11 @@ N_FEATURES = {'finance': 4272227,
 def download_libsvm(X_path, y_path, name, replace=False):
     url = ("https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/" +
            NAMES[name] + ".bz2")
-    path = download(url, pjoin(DATA_DIR, name), replace=replace)
+    path = download(url, os.path.join(DATA_DIR, name), replace=replace)
 
     decompressor = BZ2Decompressor()
-    with open(pjoin(path, NAMES[name].split('/')[-1]), "r+b") as f, \
-            open(path, "rb") as g:
+    decomp_path = os.path.join(path, NAMES[name].split('/')[-1])
+    with open(decomp_path, "r+b") as f, open(path, "rb") as g:
         for data in iter(lambda: g.read(100 * 1024), b''):
             f.write(decompressor.decompress(data))
 

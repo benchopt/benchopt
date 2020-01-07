@@ -1,6 +1,6 @@
 import numpy as np
+import os
 from scipy import sparse
-from os.path import join as pjoin
 
 from benchopt.base import BaseDataset
 from benchopt.config import get_global_setting
@@ -12,8 +12,8 @@ DATA_DIR = get_global_setting('cache_dir')
 class Dataset(BaseDataset):
     # TODO call the dataset log1p_train to harmonize with libsvm naming?
     name = "finance"
-    X_path = pjoin(DATA_DIR, name, "X.npz")
-    y_path = pjoin(DATA_DIR, name, "y.npy")
+    X_path = os.path.join(DATA_DIR, name, "X.npz")
+    y_path = os.path.join(DATA_DIR, name, "y.npy")
 
     def get_data(self):
         try:
