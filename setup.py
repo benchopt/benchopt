@@ -27,6 +27,7 @@ setup(
     version=VERSION,
     url=URL,
     packages=find_packages(),
+    # TODO decide if we keep download
     install_requires=['numpy', 'pandas', 'matplotlib',
                       'click', 'joblib'],
     entry_points={
