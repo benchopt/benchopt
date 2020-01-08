@@ -1,5 +1,5 @@
-import numpy as np
 import os
+import numpy as np
 from scipy import sparse
 
 from benchopt.base import BaseDataset
