@@ -23,7 +23,7 @@ N_FEATURES = {'finance': 4272227,
 
 
 def download_libsvm(X_path, y_path, name, replace=False):
-    url = ("https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/" +
+    url = ("http://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/" +
            NAMES[name] + ".bz2")
     path = download(url, os.path.join(DATA_DIR, name), replace=replace)
 
