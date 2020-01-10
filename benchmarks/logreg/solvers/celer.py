@@ -3,7 +3,7 @@ from benchopt.util import safe_import
 
 
 with safe_import() as solver_import:
-    from celer.homotopy import logreg_path
+    from celer.homotopy import celer_path
 
 
 class Solver(BaseSolver):
@@ -22,8 +22,8 @@ class Solver(BaseSolver):
         )
 
     def run(self, n_iter):
-        path = logreg_path(self.X, self.y, alphas=[self.lmbd], max_iter=n_iter,
-                           **self.solver_parameter)
+        path = celer_path(self.X, self.y, pb="logreg", alphas=[self.lmbd],
+                          max_iter=n_iter, **self.solver_parameter)
         self.coef_ = path[1]
 
     def get_result(self):
