@@ -1,5 +1,7 @@
-import os
+import re
+import time
 import tempfile
+import subprocess
 from collections import namedtuple
 from abc import ABC, abstractmethod
 
@@ -198,6 +200,14 @@ class BaseSolver(ParametrizedNameMixin, ABC):
         #     raise NotImplementedError("Uninstall not implemented for bash.")
         print(" done")
 
+    def _time_run(self, sample):
+        """Called by the runner to evaluate the duration of a sample_run.
+
+        """
+        t_start = time.time()
+        self.run(sample)
+        return time.time() - t_start
+
 
 class CommandLineSolver(BaseSolver, ABC):
     """A base class for solvers that are called through command lines
@@ -276,9 +286,37 @@ class CommandLineSolver(BaseSolver, ABC):
         """Prepare the data"""
         self.dump_objective(**objective_parameters)
 
-    def run(self, n_iter):
-        cmd_line = self.get_command_line(n_iter)
-        os.system(cmd_line)
+    def _time_run(self, sample):
+        """Called by the runner to evaluate the duration of a sample_run.
+
+        Here, we do something a bit more complicated to mitigate the overhead
+        due to the file I/O for the
+
+        """
+        # trace_cmd_line = (f"strace -cP {self.data_filename} "
+        #                   f"-P {self.model_filename}")
+        trace_cmd_line = "/usr/bin/time --format=%e\t%S\t%U"
+        solver_cmd_line = self.get_command_line(sample)
+        cmd_line = f"{trace_cmd_line} {solver_cmd_line}".split(' ')
+
+        t_start = time.time()
+        output = subprocess.check_output(
+            cmd_line, stderr=subprocess.STDOUT
+        )
+        delta_t = time.time() - t_start
+        wall_times = re.findall(r'([0-9.]*)\t*([0-9.]*)\t([0-9.]*)',
+                                output.decode())[0]
+        total_time, sys_time, usr_time = [float(t) for t in wall_times]
+        io_time = total_time - (sys_time + usr_time)
+        # time_io = re.findall(r'([0-9.]*)\s*[0-9]*\s*total$', output.decode())
+        # assert len(time_io) == 1
+        # time_io = float(time_io[0])
+
+        return delta_t - io_time
+
+    def run(self, sample):
+        solver_cmd_line = self.get_command_line(sample).split(' ')
+        subprocess.check_call(solver_cmd_line)
 
 
 class BaseDataset(ParametrizedNameMixin):

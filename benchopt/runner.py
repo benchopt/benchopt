@@ -1,4 +1,3 @@
-import time
 import numpy as np
 import pandas as pd
 from joblib import Memory
@@ -45,15 +44,15 @@ def colorify(message, color=BLUE):
 # Time one run of a solver
 ##################################
 @mem.cache
-def run_repetition(objective, solver_class, solver_parameters, meta, sample):
+def run_one_repetition(objective, solver_class, solver_parameters,
+                       meta, sample):
 
-    # Instantiate solver here to avoid having weird pickling errors
+    # Instantiate solver here to avoid having weird pickling errors for memory
+    # caching.
     solver = solver_class(**solver_parameters)
     solver.set_objective(**objective.to_dict())
 
-    t_start = time.time()
-    solver.run(sample)
-    delta_t = time.time() - t_start
+    delta_t = solver._time_run(sample)
     beta_hat_i = solver.get_result()
     objective_value = objective(beta=beta_hat_i)
 
@@ -66,17 +65,17 @@ def run_one_sample(objective, solver_class, solver_parameters, meta, sample,
 
     curve = []
     current_objective = []
-    for rep in range(n_rep):
-        print(f"{progress_str} ({rep} / {n_rep})\r",
+    for idx_rep in range(n_rep):
+        print(f"{progress_str} ({idx_rep} / {n_rep})\r",
               end='', flush=True)
 
-        meta_rep = dict(**meta, idx_rep=rep)
+        meta_rep = dict(**meta, idx_rep=idx_rep)
 
         # Force the run if needed
         args = (objective, solver_class, solver_parameters, meta_rep, sample)
         if force:
-            run_repetition.call(*args)
-        cost, objective_value = run_repetition(*args)
+            run_one_repetition.call(*args)
+        cost, objective_value = run_one_repetition(*args)
 
         curve.append(cost)
         current_objective.append(objective_value)
