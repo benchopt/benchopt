@@ -52,7 +52,7 @@ def run_one_repetition(objective, solver_class, solver_parameters,
     solver = solver_class(**solver_parameters)
     solver.set_objective(**objective.to_dict())
 
-    delta_t = solver._time_run(sample)
+    delta_t = solver._timed_run(sample)
     beta_hat_i = solver.get_result()
     objective_value = objective(beta=beta_hat_i)
 

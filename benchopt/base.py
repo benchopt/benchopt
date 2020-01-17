@@ -16,6 +16,10 @@ from .class_property import classproperty
 # Possible sampling strategies
 SAMPLING_STRATEGIES = ['iteration', 'tolerance']
 
+# Strategy to compute I/O timing
+# Should be one of {'strace', 'time', 'direct_time'}
+IO_TIME = 'direct_time'
+
 # Named-tuple for the cost function
 Cost = namedtuple('Cost', 'data scale objective solver sample time obj '
                           'idx_rep'.split(' '))
@@ -200,7 +204,7 @@ class BaseSolver(ParametrizedNameMixin, ABC):
         #     raise NotImplementedError("Uninstall not implemented for bash.")
         print(" done")
 
-    def _time_run(self, sample):
+    def _timed_run(self, sample):
         """Called by the runner to evaluate the duration of a sample_run.
 
         """
@@ -286,16 +290,19 @@ class CommandLineSolver(BaseSolver, ABC):
         """Prepare the data"""
         self.dump_objective(**objective_parameters)
 
-    def _time_run(self, sample):
+    def _timed_run(self, sample):
         """Called by the runner to evaluate the duration of a sample_run.
 
         Here, we do something a bit more complicated to mitigate the overhead
         due to the file I/O for the
 
         """
-        # trace_cmd_line = (f"strace -cP {self.data_filename} "
-        #                   f"-P {self.model_filename}")
-        trace_cmd_line = "/usr/bin/time --format=%e\t%S\t%U"
+        if IO_TIME == 'strace':
+            trace_cmd_line = (f"strace -cP {self.data_filename} "
+                              f"-P {self.model_filename}")
+        else:
+            trace_cmd_line = "/usr/bin/time --format=%e\t%S\t%U"
+
         solver_cmd_line = self.get_command_line(sample)
         cmd_line = f"{trace_cmd_line} {solver_cmd_line}".split(' ')
 
@@ -304,13 +311,24 @@ class CommandLineSolver(BaseSolver, ABC):
             cmd_line, stderr=subprocess.STDOUT
         )
         delta_t = time.time() - t_start
-        wall_times = re.findall(r'([0-9.]*)\t*([0-9.]*)\t([0-9.]*)',
-                                output.decode())[0]
+
+        output = output.decode()
+        if IO_TIME == 'strace':
+            io_time = re.findall(r'([0-9.]*)\s*[0-9]*\s*total$', output)
+            assert len(io_time) == 1
+            io_time = float(io_time[0])
+            return delta_t - io_time
+
+        wall_times = re.findall(r'([0-9.]*)\t*([0-9.]*)\t([0-9.]*)', output)[0]
         total_time, sys_time, usr_time = [float(t) for t in wall_times]
-        io_time = total_time - (sys_time + usr_time)
-        # time_io = re.findall(r'([0-9.]*)\s*[0-9]*\s*total$', output.decode())
-        # assert len(time_io) == 1
-        # time_io = float(time_io[0])
+        if IO_TIME == 'time':
+            io_time = total_time - (sys_time + usr_time)
+            return delta_t - io_time
+
+        delta_t_time = (sys_time + usr_time)
+        return delta_t_time
+
+        # Implem using strace
 
         return delta_t - io_time
 

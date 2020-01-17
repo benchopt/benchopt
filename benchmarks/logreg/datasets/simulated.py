@@ -10,7 +10,8 @@ class Dataset(BaseDataset):
     parameters = {
         'n_samples, n_features': [
             (100, 5000),
-            (100, 10000)]
+            (100, 10000)
+        ]
     }
 
     def __init__(self, n_samples=100, n_features=5000, random_state=42):
