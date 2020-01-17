@@ -39,4 +39,4 @@ class Solver(BaseSolver):
         self.clf.fit(self.X, self.y)
 
     def get_result(self):
-        return self.clf.coef_.T
+        return self.clf.coef_.flatten()

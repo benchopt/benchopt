@@ -73,8 +73,10 @@ class BaseSolver(ParametrizedNameMixin, ABC):
         All parameters `PARAM` that are passed through init will be accessible
         as `self.PARAM` in the class.
         """
-        super().__init__(**parameters)
-        for k, v in parameters.items():
+        parameters_ = {k: v[0] for k, v in self.parameters.items()}
+        parameters_.update(**parameters)
+        super().__init__(**parameters_)
+        for k, v in parameters_.items():
             setattr(self, k, v)
 
     def _set_objective(self, **objective_parameters):

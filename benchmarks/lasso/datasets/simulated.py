@@ -13,7 +13,7 @@ class Dataset(BaseDataset):
             (100, 10000)]
     }
 
-    def __init__(self, n_samples=100, n_features=5000, random_state=27):
+    def __init__(self, n_samples=10, n_features=50, random_state=27):
         self.n_samples = n_samples
         self.n_features = n_features
         self.random_state = random_state
