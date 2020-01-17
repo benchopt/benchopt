@@ -161,8 +161,8 @@ class BaseSolver(ParametrizedNameMixin, ABC):
         except BaseException:
             # Something went wrong so we consider that this is not installed
             return False
-        else:
-            raise NotImplementedError()
+
+        return True
 
     @classmethod
     def install(cls, env_name=None, force=False):
