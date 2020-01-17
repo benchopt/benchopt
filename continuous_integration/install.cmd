@@ -9,7 +9,6 @@ set PIP_INSTALL=pip install -q
 @rem Deactivate any environment
 call deactivate
 @rem Clean up any left-over from a previous build and install version of python
-conda remove --all -q -y -n %VIRTUALENV%
 conda create -n %VIRTUALENV% -q -y python=%VERSION_PYTHON%
 
 call activate %VIRTUALENV%

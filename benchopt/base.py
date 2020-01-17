@@ -152,11 +152,17 @@ class BaseSolver(ParametrizedNameMixin, ABC):
 
     @classmethod
     def is_installed(cls, env_name=None):
-        if cls.install_cmd == 'pip':
-            return check_import_solver(cls.package_import, env_name=env_name)
-        elif cls.install_cmd == 'bash':
-            return check_cmd_solver(cls.cmd_name, env_name=env_name)
-        return True
+        try:
+            if cls.install_cmd == 'pip':
+                return check_import_solver(cls.package_import,
+                                           env_name=env_name)
+            elif cls.install_cmd == 'bash':
+                return check_cmd_solver(cls.cmd_name, env_name=env_name)
+        except BaseException:
+            # Something went wrong so we consider that this is not installed
+            return False
+        else:
+            raise NotImplementedError()
 
     @classmethod
     def install(cls, env_name=None, force=False):
