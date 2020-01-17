@@ -1,3 +1,4 @@
+import ctypes
 import numpy as np
 import matplotlib.pyplot as plt
 from .config import get_benchmark_setting
@@ -24,6 +25,7 @@ def plot_convergence_curve(df, benchmark):
     dataset_name = df.data.unique()[0]
     objective_name = df.objective.unique()[0]
     plot_id = hash((benchmark, dataset_name, objective_name))
+    plot_id = ctypes.c_size_t(plot_id).value
 
     solvers = df.solver.unique()
 
@@ -42,13 +44,14 @@ def plot_convergence_curve(df, benchmark):
     plt.ylabel(r"$F(\beta) - F(\beta^*)$")
     plt.title(f"{objective_name}\nData: {dataset_name}", fontsize=12)
     plt.tight_layout()
-    plt.savefig(f"output_benchmarks/{plot_id}_convergence.pdf")
+    plt.savefig(f"output_benchmarks/convergence_{plot_id}.pdf")
 
 
 def plot_histogram(df, benchmark):
     dataset_name = df.data.unique()[0]
     objective_name = df.objective.unique()[0]
     plot_id = hash((benchmark, dataset_name, objective_name))
+    plot_id = ctypes.c_size_t(plot_id).value
 
     solvers = df.solver.unique()
 
@@ -95,7 +98,7 @@ def plot_histogram(df, benchmark):
     plt.ylabel("Time [sec]")
     plt.title(f"{objective_name}\nData: {dataset_name}", fontsize=12)
     plt.tight_layout()
-    plt.savefig(f"output_benchmarks/{plot_id}_histogram.pdf")
+    plt.savefig(f"output_benchmarks/histogram_{plot_id}.pdf")
 
 # def make_time_curve(df):
 #     t_min = df.time.min()
