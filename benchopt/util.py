@@ -54,6 +54,7 @@ def _run_in_bash(script, msg=None):
     tmp = tempfile.NamedTemporaryFile(mode="w+")
     fast_failure_script = f"set -e\n{script}"
     tmp.write(fast_failure_script)
+    tmp.flush()
 
     if DEBUG:
         print(fast_failure_script)
