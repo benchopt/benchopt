@@ -8,7 +8,7 @@ elif [[ "$PACKAGER" == "ubuntu" ]]; then
     source $VIRTUALENV/bin/activate
 fi
 
-TEST_CMD="python -m pytest --showlocals --durations=20 --junitxml=$JUNITXML --pyargs"
+TEST_CMD="python -m pytest -v --showlocals --durations=20 --junitxml=$JUNITXML --pyargs"
 
 # if [[ "$COVERAGE" == "true" ]]; then
 #     TEST_CMD="$TEST_CMD --cov benchopt"

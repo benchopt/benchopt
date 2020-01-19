@@ -13,9 +13,7 @@ with safe_import() as solver_import:
 class Solver(BaseSolver):
     name = 'sklearn'
 
-    install_cmd = 'pip'
-    package_name = 'scikit-learn'
-    package_import = 'sklearn'
+    install_cmd = None
 
     parameters = {
         'solver': [

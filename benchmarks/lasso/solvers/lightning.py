@@ -12,7 +12,8 @@ class Solver(BaseSolver):
     name = 'Lightning'
 
     install_cmd = 'pip'
-    package_name = 'lightning'
+    package_name = 'sklearn-contrib-lightning'
+    package_import = 'lightning'
     package_install = (
         'git+https://github.com/scikit-learn-contrib/lightning.git'
     )

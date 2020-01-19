@@ -19,9 +19,6 @@ class Solver(BaseSolver):
     def set_objective(self, X, y, lmbd):
         self.X, self.y, self.lmbd = X, y, lmbd
 
-        # n_samples = self.X.shape[0]
-        # self.lmbd /= n_samples
-
         blitzl1.set_use_intercept(False)
         self.problem = blitzl1.LassoProblem(self.X, self.y)
 

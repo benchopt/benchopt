@@ -87,6 +87,11 @@ def test_solver_class(benchmark_name, solver_class):
     # Check that the solver_class uses a valid sampling_strategy
     assert solver_class.sampling_strategy in SAMPLING_STRATEGIES
 
+
+@pytest.mark.parametrize('benchmark_name, solver_class', SOLVERS,
+                         ids=class_ids)
+def test_solver_install(test_env, benchmark_name, solver_class):
+
     # Check that the solver_class exposes a known install cmd
     assert solver_class.install_cmd in [None, 'pip', 'bash']
 
@@ -96,6 +101,13 @@ def test_solver_class(benchmark_name, solver_class):
     if solver_class.install_cmd == 'bash':
         assert hasattr(solver_class, 'install_script')
         assert hasattr(solver_class, 'cmd_name')
+
+    solver_class.install(env_name=test_env, force=True)
+    assert solver_class.is_installed(env_name=test_env)
+
+    if solver_class.install_cmd == 'pip':
+        solver_class.uninstall(env_name=test_env)
+        assert not solver_class.is_installed(env_name=test_env)
 
 
 @pytest.mark.parametrize('benchmark_name, solver_class', SOLVERS,

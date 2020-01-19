@@ -1,9 +1,11 @@
 import os
 import venv
+import shutil
 import pkgutil
 import warnings
 import tempfile
 import itertools
+import subprocess
 from importlib import import_module
 
 from .config import get_global_setting
@@ -50,15 +52,18 @@ def _run_in_bash(script, msg=None):
     # Use a TemporaryFile to make sure this file is cleaned up at
     # the end of this function.
     tmp = tempfile.NamedTemporaryFile(mode="w+")
+    fast_failure_script = f"set -e\n{script}"
     with open(tmp.name, 'w') as f:
-        f.write(script)
+        f.write(fast_failure_script)
 
     if DEBUG:
-        print(script)
+        print(fast_failure_script)
 
-    exit_code = os.system(f"bash {tmp.name}")
+    # exit_code = os.system(f"bash {tmp.name}")
+    exit_code, output = subprocess.getstatusoutput(
+        [f"bash {tmp.name}"])
     if msg is not None and exit_code != 0:
-        raise RuntimeError(msg)
+        raise RuntimeError(msg.format(output=output))
     return exit_code
 
 
@@ -98,7 +103,8 @@ def pip_install_in_env(*packages, env_name=None):
                          "To allow this, set BENCHO_ALLOW_INSTALL=True.")
     cmd = PIP_INSTALL_CMD.format(packages=' '.join(packages))
     _run_bash_in_env(cmd, env_name=env_name,
-                     msg=f"Failed to pip install packages {packages}")
+                     msg=f"Failed to pip install packages {packages}\n"
+                         "Error:{output}")
 
 
 def pip_uninstall_in_env(*packages, env_name=None):
@@ -108,7 +114,8 @@ def pip_uninstall_in_env(*packages, env_name=None):
                          "To allow this, set BENCHO_ALLOW_INSTALL=True.")
     cmd = PIP_UNINSTALL_CMD.format(packages=' '.join(packages))
     _run_bash_in_env(cmd, env_name=env_name,
-                     msg=f"Failed to uninstall packages {packages}")
+                     msg=f"Failed to uninstall packages {packages}\n"
+                         "Error: {output}")
 
 
 def bash_install_in_env(script, env_name=None):
@@ -119,7 +126,8 @@ def bash_install_in_env(script, env_name=None):
     env = "$VIRTUAL_ENV" if env_name is not None else "$HOME/.local/"
     cmd = BASH_INSTALL_CMD.format(install_script=script, env=env)
     _run_bash_in_env(cmd, env_name=env_name,
-                     msg=f"Failed to run script {script}")
+                     msg=f"Failed to run script {script}\n"
+                         "Error: {output}")
 
 
 def check_import_solver(package_import, env_name=None):
@@ -261,6 +269,14 @@ def create_venv(env_name, recreate=False):
         # other packages.
         pip_install_in_env("numpy", "cython", ".", env_name=env_name)
         print(" done")
+
+
+def delete_venv(env_name):
+    """Delete a virtual env with name env_name."""
+
+    env_dir = f"{VENV_DIR}/{env_name}"
+    if os.path.exists(env_dir):
+        shutil.rmtree(env_dir)
 
 
 def install_solvers(solvers, forced_solvers=None, env_name=None):
