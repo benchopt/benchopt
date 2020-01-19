@@ -1,6 +1,9 @@
 from pytest import fixture
 
 from benchopt.util import create_venv, delete_venv
+from benchopt.config import DEFAULT_GLOBAL
+DEFAULT_GLOBAL['debug'] = True
+DEFAULT_GLOBAL['print_install_error'] = True
 
 
 # Setup and clean a test env to install/uninstall all the solvers and check
