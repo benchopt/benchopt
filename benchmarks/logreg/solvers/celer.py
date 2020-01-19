@@ -3,7 +3,7 @@ from benchopt.util import safe_import
 
 
 with safe_import() as solver_import:
-    from celer.homotopy import logreg_path
+    from celer import LogisticRegression
 
 
 class Solver(BaseSolver):
@@ -16,15 +16,15 @@ class Solver(BaseSolver):
     def set_objective(self, X, y, lmbd):
         self.X, self.y, self.lmbd = X, y, lmbd
 
-        self.solver_parameter = dict(
-            solver='celer', max_epochs=50000, p0=10, gap_freq=10,
-            use_accel=True, tol=1e-12, prune=True, better_lc=True
+        self.clf = LogisticRegression(
+            penalty='l1', C=1/self.lmbd, max_iter=1,
+            max_epochs=100000, p0=10, verbose=False, tol=1e-12,
+            fit_intercept=False
         )
 
     def run(self, n_iter):
-        path = logreg_path(self.X, self.y, alphas=[self.lmbd], max_iter=n_iter,
-                           **self.solver_parameter)
-        self.coef_ = path[1]
+        self.clf.max_iter = n_iter
+        self.clf.fit(self.X, self.y)
 
     def get_result(self):
-        return self.coef_.flatten()
+        return self.clf.coef_.flatten()
