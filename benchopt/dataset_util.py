@@ -31,7 +31,7 @@ def download_libsvm(X_path, y_path, name, replace=False):
 
     decompressor = BZ2Decompressor()
     decomp_path = os.path.join(DATA_DIR, name, file_name)
-    with open(decomp_path, "r+b") as tmp_file, open(path, "rb") as orig_file:
+    with open(decomp_path, "w+b") as tmp_file, open(path, "rb") as orig_file:
         for data in iter(lambda: orig_file.read(100 * 1024), b''):
             tmp_file.write(decompressor.decompress(data))
 
