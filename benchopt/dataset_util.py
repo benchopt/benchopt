@@ -29,15 +29,19 @@ def download_libsvm(X_path, y_path, name, replace=False):
     path = download(url, os.path.join(DATA_DIR, name, f"{file_name}.bz2"),
                     replace=replace, progressbar=True)
 
+    # Decompress the files
     decompressor = BZ2Decompressor()
-    decomp_path = os.path.join(DATA_DIR, name, file_name)
-    with open(decomp_path, "w+b") as tmp_file, open(path, "rb") as orig_file:
-        for data in iter(lambda: orig_file.read(100 * 1024), b''):
-            tmp_file.write(decompressor.decompress(data))
-        tmp_file.seek(0)
-        X, y = load_svmlight_file(tmp_file, N_FEATURES[name])
+    tmp_path = os.path.join(DATA_DIR, name, file_name)
+    with open(tmp_path, "wb") as decompressed_file:
+        with open(path, "rb") as orig_file:
+            for data in iter(lambda: orig_file.read(100 * 1024), b''):
+                decompressed_file.write(decompressor.decompress(data))
 
-    os.remove(decomp_path)
+    # Read the files with sklearn util
+    with open(tmp_path, "rb") as decompressed_file:
+        X, y = load_svmlight_file(decompressed_file, N_FEATURES[name])
+
+    os.remove(tmp_path)
     os.remove(path)
     X = sparse.csc_matrix(X)
     X.sort_indices()
