@@ -85,7 +85,8 @@ def bench(benchmarks, solver_names, forced_solvers, max_samples, recreate,
             f"benchopt run --max-samples {max_samples} -n {repetition} "
             f"{solvers_option} {forced_solvers_option} {benchmark}"
         )
-        exit_code = _run_bash_in_env(cmd, env_name=benchmark)
+        exit_code = _run_bash_in_env(cmd, env_name=benchmark,
+                                     capture_stdout=False)
         return_code[benchmark] = exit_code
 
 

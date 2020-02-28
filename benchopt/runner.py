@@ -61,6 +61,7 @@ def run_repetition(objective, solver_class, solver_parameters, meta, sample):
                  obj=objective_value), objective_value)
 
 
+@mem.cache
 def run_one_sample(objective, solver_class, solver_parameters, meta, sample,
                    n_rep, progress_str, force=False):
 

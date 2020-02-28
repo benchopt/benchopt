@@ -33,16 +33,20 @@ CHECK_PACKAGE_INSTALLED_CMD = (
 CHECK_CMD_INSTALLED_CMD = "type $'{cmd_name}' 1>/dev/null 2>&1"
 
 
-def _run_in_bash(script, msg=None):
+def _run_in_bash(script, raise_on_error=None, capture_stdout=True):
     """Run a bash script and return its exit code.
 
     Parameters
     ----------
     script: str
         Script to run
-    msg: str or None
-        If msg is not None, raise a RuntimeError with the given message if the
-        command's exit code is non-zero. Else, just return the exit code.
+    raise_on_error: str or None
+        If raise_on_error is not None, raise a RuntimeError with the given
+        message if the command's exit code is non-zero.
+        Else, just return the exit code.
+    capture_stdout: bool
+        If set to True, capture the stdout of the subprocess. Else, it is
+        printed in the main process stdout.
 
     Return
     ------
@@ -58,16 +62,20 @@ def _run_in_bash(script, msg=None):
 
     if DEBUG:
         print(fast_failure_script)
+        print(capture_stdout)
 
-    # exit_code = os.system(f"bash {tmp.name}")
-    exit_code, output = subprocess.getstatusoutput(
-        [f"bash {tmp.name}"])
-    if msg is not None and exit_code != 0:
-        raise RuntimeError(msg.format(output=output))
+    if capture_stdout:
+        exit_code, output = subprocess.getstatusoutput([f"bash {tmp.name}"])
+    else:
+        exit_code = os.system(f"bash {tmp.name}")
+        output = ""
+    if raise_on_error is not None and exit_code != 0:
+        raise RuntimeError(raise_on_error.format(output=output))
     return exit_code
 
 
-def _run_bash_in_env(script, env_name=None, msg=None):
+def _run_bash_in_env(script, env_name=None, raise_on_error=None,
+                     capture_stdout=True):
     """Run a script in a given virtual env
 
     Parameters
@@ -76,9 +84,13 @@ def _run_bash_in_env(script, env_name=None, msg=None):
         Script to run
     env_name: str
         Name of the environment to run the script in.
-    msg: str or None
-        If msg is not None, raise a RuntimeError with the given message if the
-        command's exit code is non-zero. Else, just return the exit code.
+    raise_on_error: str or None
+        If raise_on_error is not None, raise a RuntimeError with the given
+        message if the command's exit code is non-zero.
+        Else, just return the exit code.
+    capture_stdout: bool
+        If set to True, capture the stdout of the subprocess. Else, it is
+        printed in the main process stdout.
 
     Return
     ------
@@ -88,12 +100,10 @@ def _run_bash_in_env(script, env_name=None, msg=None):
     if env_name is not None:
         env_dir = f"{VENV_DIR}/{env_name}"
 
-        script = f"""
-            source {env_dir}/bin/activate
-            {script}
-        """
+        script = f"source {env_dir}/bin/activate\n{script}"
 
-    return _run_in_bash(script, msg=msg)
+    return _run_in_bash(script, raise_on_error=raise_on_error,
+                        capture_stdout=capture_stdout)
 
 
 def pip_install_in_env(*packages, env_name=None):
@@ -103,8 +113,8 @@ def pip_install_in_env(*packages, env_name=None):
                          "To allow this, set BENCHO_ALLOW_INSTALL=True.")
     cmd = PIP_INSTALL_CMD.format(packages=' '.join(packages))
     _run_bash_in_env(cmd, env_name=env_name,
-                     msg=f"Failed to pip install packages {packages}\n"
-                         "Error:{output}")
+                     raise_on_error="Failed to pip install packages "
+                     f"{packages}\nError:{{output}}")
 
 
 def pip_uninstall_in_env(*packages, env_name=None):
@@ -114,8 +124,8 @@ def pip_uninstall_in_env(*packages, env_name=None):
                          "To allow this, set BENCHO_ALLOW_INSTALL=True.")
     cmd = PIP_UNINSTALL_CMD.format(packages=' '.join(packages))
     _run_bash_in_env(cmd, env_name=env_name,
-                     msg=f"Failed to uninstall packages {packages}\n"
-                         "Error: {output}")
+                     raise_on_error=f"Failed to uninstall packages {packages}"
+                     "\nError: {output}")
 
 
 def bash_install_in_env(script, env_name=None):
@@ -126,8 +136,8 @@ def bash_install_in_env(script, env_name=None):
     env = "$VIRTUAL_ENV" if env_name is not None else "$HOME/.local/"
     cmd = BASH_INSTALL_CMD.format(install_script=script, env=env)
     _run_bash_in_env(cmd, env_name=env_name,
-                     msg=f"Failed to run script {script}\n"
-                         "Error: {output}")
+                     raise_on_error=f"Failed to run script {script}\n"
+                     "Error: {output}")
 
 
 def check_import_solver(package_import, env_name=None):
