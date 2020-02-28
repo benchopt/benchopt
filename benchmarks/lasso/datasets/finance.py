@@ -6,7 +6,7 @@ from benchopt.base import BaseDataset
 from benchopt.config import get_global_setting
 from benchopt.dataset_util import download_libsvm
 
-DATA_DIR = get_global_setting('cache_dir')
+DATA_DIR = get_global_setting('data_dir')
 
 
 class Dataset(BaseDataset):

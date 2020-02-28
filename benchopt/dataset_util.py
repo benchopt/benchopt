@@ -9,7 +9,7 @@ from sklearn.datasets import load_svmlight_file
 from benchopt.config import get_global_setting
 
 
-DATA_DIR = get_global_setting('cache_dir')
+DATA_DIR = get_global_setting('data_dir')
 
 NAMES = {'rcv1_train': 'binary/rcv1_train.binary',
          'news20': 'binary/news20.binary',
@@ -23,12 +23,14 @@ N_FEATURES = {'finance': 4272227,
 
 
 def download_libsvm(X_path, y_path, name, replace=False):
+    file_name = NAMES[name].split('/')[-1]
     url = ("http://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/" +
            NAMES[name] + ".bz2")
-    path = download(url, os.path.join(DATA_DIR, name), replace=replace)
+    path = download(url, os.path.join(DATA_DIR, name, f"{file_name}.bz2"),
+                    replace=replace, progressbar=True)
 
     decompressor = BZ2Decompressor()
-    decomp_path = os.path.join(path, NAMES[name].split('/')[-1])
+    decomp_path = os.path.join(DATA_DIR, name, file_name)
     with open(decomp_path, "r+b") as tmp_file, open(path, "rb") as orig_file:
         for data in iter(lambda: orig_file.read(100 * 1024), b''):
             tmp_file.write(decompressor.decompress(data))
