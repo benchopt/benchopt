@@ -83,7 +83,7 @@ def plot_histogram(df, benchmark):
             height = df.time.max()
             rect = ax.bar(
                 x=xi, height=height, width=width, color='w', edgecolor='k')
-            ax.annotate("Did not converged", xy=(xi, height/2), ha='center',
+            ax.annotate("Did not converge", xy=(xi, height/2), ha='center',
                         va='center', color='k', rotation=90)
             rect_list.append(rect)
             continue

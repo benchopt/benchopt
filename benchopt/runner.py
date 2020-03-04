@@ -145,7 +145,7 @@ def run_one_solver(objective, solver_class, solver_parameters,
             prev_objective_value = objective_value
             sample = get_next(sample)
         else:
-            status = colorify("done (did not converged)", YELLOW)
+            status = colorify("done (did not converge)", YELLOW)
         if DEBUG:
             delta = np.max(delta_objectives)
             print(f"{tag} DEBUG - Exit with delta_objective = {delta:.2e} "
