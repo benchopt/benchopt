@@ -2,7 +2,7 @@ from benchopt.base import BaseObjective
 
 
 class Objective(BaseObjective):
-    name = "Sparse Logistic Regression"
+    name = "Lasso"
 
     parameters = {
         'fit_intercept': [False],
