@@ -33,27 +33,10 @@ def main():
 
 @main.command()
 @click.argument('benchmark', nargs=1, callback=validate_benchmark)
-@click.option('--repetition', '-n',
-              metavar='<int>', default=1, type=int,
-              help='Number of repetition used to estimate the runtime.')
-@click.option('--solver', '-s', 'solver_names',
-              metavar="<solver_name>", multiple=True, type=str,
-              help='Include solver_names in the benchmark')
-@click.option('--force-solver', '-f', 'forced_solvers',
-              metavar="<solver_name>", multiple=True, type=str,
-              help="Force the run for <solver_name>, evn if it is already "
-              "cached.")
-@click.option('--max-samples',
-              metavar="<int>", default=100, show_default=True, type=int,
-              help='Maximal number of iteration for each solver')
-def run(benchmark, solver_names, forced_solvers, max_samples, repetition):
-    """Run a benchmark"""
-    run_benchmark(benchmark, solver_names, forced_solvers,
-                  max_samples=max_samples, n_rep=repetition)
-
-
-@main.command()
-@click.argument('benchmark', nargs=1, callback=validate_benchmark)
+@click.option('--local', '-l',
+              is_flag=True,
+              help="If this flag is set, run the benchmark with the local "
+              "interpreter.")
 @click.option('--recreate', '-r',
               is_flag=True,
               help="If this flag is set, start with a fresh venv.")
@@ -68,10 +51,15 @@ def run(benchmark, solver_names, forced_solvers, max_samples, repetition):
 @click.option('--max-samples',
               metavar="<int>", default=100, show_default=True, type=int,
               help='Maximal number of iteration for each solver')
-def bench(benchmark, solver_names, forced_solvers, max_samples, recreate,
-          repetition):
+def run(benchmark, solver_names, forced_solvers, max_samples, recreate,
+        local, repetition):
     """Run a benchmark in a separate venv where the solvers will be installed
     """
+
+    if local:
+        run_benchmark(benchmark, solver_names, forced_solvers,
+                      max_samples=max_samples, n_rep=repetition)
+        return
 
     # Create the virtual env
     create_venv(benchmark, recreate=recreate)
