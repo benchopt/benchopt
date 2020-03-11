@@ -48,7 +48,6 @@ class Solver(BaseSolver):
                 diff = old - w[j]
                 if diff != 0:
                     R += diff * X[:, j]
-            print(np.sum(R ** 2) / 2 + lmbd * np.sum(np.abs(w)))
         return w
 
     @staticmethod
