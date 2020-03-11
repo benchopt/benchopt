@@ -48,8 +48,8 @@ def _run_in_bash(script, raise_on_error=None, capture_stdout=True):
         If set to True, capture the stdout of the subprocess. Else, it is
         printed in the main process stdout.
 
-    Return
-    ------
+    Returns
+    -------
     exit_code: int
         Exit code of the script
     """
@@ -92,8 +92,8 @@ def _run_bash_in_env(script, env_name=None, raise_on_error=None,
         If set to True, capture the stdout of the subprocess. Else, it is
         printed in the main process stdout.
 
-    Return
-    ------
+    Returns
+    -------
     exit_code: int
         Exit code of the script
     """
@@ -351,8 +351,8 @@ def product_param(parameters):
         be either a list of value if there is only one parameter or a list of
         tuple with the same cardinality as parameter_names.
 
-    Return
-    ------
+    Returns
+    -------
     parameter_iterator: iterator
         An iterator where each element is a dictionary of parameters expanded
         as the product of every items in parameters.
