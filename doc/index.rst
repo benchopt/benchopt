@@ -1,5 +1,7 @@
 .. include:: ../README.rst
 
+BenchOpt is package to compare optimization algorithms.
+
 Contents
 ========
 .. toctree::
