@@ -1,5 +1,7 @@
-Writing a benchmark
-===================
+.. _how:
+
+Write a benchmark
+=================
 
 .. contents:: Contents
    :local:
