@@ -48,15 +48,15 @@ def main():
               help="Include <solver_name> in the benchmark. By default, all "
               "solvers are included. When `-s` is used, only listed estimators"
               " are included.")
+@click.option('--force-solver', '-f', 'forced_solvers',
+              metavar="<solver_name>", multiple=True, type=str,
+              help="Force the re-installation and run for <solver_name>. This "
+              "avoids caching effect when adding an estimator.")
 @click.option('--dataset', '-d', 'dataset_names',
               metavar="<dataset_name>", multiple=True, type=str,
               help="Run the benchmark on <dataset_name>. By default, all "
               "datasets are included. When `-d` is used, only listed datasets"
               " are included. Note that <dataset_name> can be a regexp.")
-@click.option('--force-solver', '-f', 'forced_solvers',
-              metavar="<solver_name>", multiple=True, type=str,
-              help="Force the re-installation and run for <solver_name>. This "
-              "avoids caching effect when adding an estimator.")
 @click.option('--max-samples',
               metavar="<int>", default=100, show_default=True, type=int,
               help='Maximal number of iteration for each solver')
