@@ -44,9 +44,9 @@ def plot_convergence_curve(df, benchmark):
     plt.hlines(eps, *xlim, color='k', linestyle='--')
     plt.xlim(xlim)
     plt.legend()
-    plt.xlabel("Time [sec]")
-    plt.ylabel(r"$F(\beta) - F(\beta^*)$")
-    plt.title(f"{objective_name}\nData: {dataset_name}", fontsize=12)
+    plt.xlabel("Time [sec]", fontsize=18)
+    plt.ylabel(r"F(x) - F(x*)", fontsize=18)
+    plt.title(f"{objective_name}\nData: {dataset_name}", fontsize=18)
     plt.tight_layout()
     plt.savefig(f"output_benchmarks/convergence_{plot_id}.pdf")
 
