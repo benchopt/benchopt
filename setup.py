@@ -13,7 +13,7 @@ DISTNAME = 'benchopt'
 DESCRIPTION = "Benchmark toolkit for optimization"
 MAINTAINER = 'T. Moreau'
 MAINTAINER_EMAIL = 'thomas.moreau@inria.fr'
-URL = 'https://github.com/tommoral/benchopt'
+URL = 'https://github.com/benchopt/benchopt'
 LICENSE = 'BSD (3-clause)'
 VERSION = __version__
 
@@ -27,7 +27,7 @@ setup(
     version=VERSION,
     url=URL,
     packages=find_packages(),
-    install_requires=['numpy', 'pandas', 'matplotlib', 'pyyaml',
+    install_requires=['numpy', 'pandas', 'matplotlib',
                       'click', 'joblib', 'scikit-learn'],
     entry_points={
         'console_scripts': ['benchopt = benchopt.cli:start']

@@ -121,7 +121,7 @@ class BaseSolver(ParametrizedNameMixin, ABC):
 
         The parameters should be returned as a flattened array.
 
-        Return:
+        Returns
         -------
         parameters : ndarray, shape (n_parameters,)
             The computed coefficients by the solver.
@@ -177,8 +177,8 @@ class BaseSolver(ParametrizedNameMixin, ABC):
             If set to True, first tries to uninstall the solver from the
             environment before installing it.
 
-        Return
-        ------
+        Returns
+        -------
         is_installed: bool
             True if the solver is correctly installed in the environment.
         """
@@ -243,8 +243,8 @@ class CommandLineSolver(BaseSolver, ABC):
             Number of iteration to run the solver for. It allows to sample the
             time/accuracy curve in the benchmark.
 
-        Return
-        ------
+        Returns
+        -------
         cmd_line : str
             The command line to call to run the solver for n_iter
         """
@@ -297,8 +297,8 @@ class BaseDataset(ParametrizedNameMixin):
     def get_data(self):
         """Return the scale of the problem as well as the objective parameters.
 
-        Return
-        ------
+        Returns
+        -------
         scale: int
             Size of the optimized parameter. The solvers should return a
             parameter of shape (scale,).
