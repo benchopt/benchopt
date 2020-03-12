@@ -32,10 +32,14 @@ def plot_convergence_curve(df, benchmark):
     plt.figure()
     eps = 1e-10
     c_star = df.obj.min() - eps
-    for m in solvers:
+    for i, m in enumerate(solvers):
         df_ = df[df.solver == m]
         curve = df_.groupby('sample').median()
-        plt.loglog(curve.time, curve.obj - c_star, label=m)
+        q1 = df_.groupby('sample').time.quantile(.1)
+        q9 = df_.groupby('sample').time.quantile(.9)
+        plt.loglog(curve.time, curve.obj - c_star, f"C{i}", label=m,
+                   linewidth=3)
+        plt.fill_betweenx(curve.obj - c_star, q1, q9, color=f"C{i}", alpha=.3)
     xlim = plt.xlim()
     plt.hlines(eps, *xlim, color='k', linestyle='--')
     plt.xlim(xlim)
