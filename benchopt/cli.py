@@ -76,7 +76,7 @@ def run(benchmark, solver_names, forced_solvers, max_samples, recreate,
     solvers_option = ' '.join(['-s '+s for s in solver_names])
     forced_solvers_option = ' '.join(['-f '+s for s in forced_solvers])
     cmd = (
-        f"benchopt run --max-samples {max_samples} -n {repetition} "
+        f"benchopt run -l --max-samples {max_samples} -n {repetition} "
         f"{solvers_option} {forced_solvers_option} {benchmark}"
     )
     exit_code = _run_bash_in_env(cmd, env_name=benchmark,
