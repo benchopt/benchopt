@@ -10,8 +10,8 @@ class Solver(BaseSolver):
     name = 'Cyanure'
 
     install_cmd = 'pip'
-    package_name = 'cyanure-mkl'
-    package_import = 'cyanure'
+    requirements = ['cyanure-mkl']
+    requirements_import = ['cyanure']
 
     def set_objective(self, X, y, lmbd):
         self.X, self.y, self.lmbd = X, y, lmbd

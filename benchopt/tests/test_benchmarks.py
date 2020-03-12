@@ -97,7 +97,7 @@ def test_solver_install(test_env, benchmark_name, solver_class):
 
     # Check that the solver_class exposes a known install cmd
     if solver_class.install_cmd == 'pip':
-        assert hasattr(solver_class, 'package_name')
+        assert hasattr(solver_class, 'requirements')
     if solver_class.install_cmd == 'bash':
         assert hasattr(solver_class, 'install_script')
         assert hasattr(solver_class, 'cmd_name')
@@ -115,7 +115,8 @@ def test_solver_install(test_env, benchmark_name, solver_class):
 def test_solver(benchmark_name, solver_class):
 
     if solver_class.install_cmd == 'pip':
-        pytest.importorskip(solver_class.package_import)
+        for package in solver_class.requirements_import:
+            pytest.importorskip(package)
     elif not solver_class.is_installed():
         pytest.skip("Solver is not installed")
 

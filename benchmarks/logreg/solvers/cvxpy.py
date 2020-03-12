@@ -14,7 +14,7 @@ class Solver(BaseSolver):
     name = 'cvxpy'
 
     install_cmd = 'pip'
-    package_name = 'cvxpy'
+    requirements = ['cvxpy']
 
     def set_objective(self, X, y, lmbd):
 

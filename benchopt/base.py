@@ -54,12 +54,12 @@ class BaseSolver(ParametrizedNameMixin, ABC):
     # Information on how to install the solver. The value of install_cmd should
     # be in {None, 'pip', 'bash'}. The API reads:
     #
-    # - 'pip': The solver should have at least attribute `package_name`.
-    #          BenchOpt will pip install `$package_name` and check it is
-    #          possible to import `$package_name` in the virtualenv. It is also
+    # - 'pip': The solver should have at least attribute `requirements`.
+    #          BenchOpt will pip install `$requirements` and check it is
+    #          possible to import `$requirements` in the virtualenv. It is also
     #          possible to give a different name for the install by defining a
-    #          class attribute `package_install` and for the import with the
-    #          class attribute `package_import`.
+    #          class attribute `requirements_install` and for the import with
+    #          the class attribute `requirements_import`.
     #
     # - 'bash': The solver should have attribute `install_script` and
     #           `cmd_name`. BenchOpt will run `install_script` in a bash and
@@ -129,23 +129,23 @@ class BaseSolver(ParametrizedNameMixin, ABC):
         ...
 
     @classproperty
-    def package_import(cls):
+    def requirements_import(cls):
         """Hook to override the name of the import in python
 
-        package_import default to package_name."""
+        requirements_import default to requirements."""
         if cls.install_cmd == 'pip':
-            return cls.package_name
+            return cls.requirements
         raise RuntimeError("This property should only be accessed when "
                            "install_cmd='pip'. Here, install_cmd={}"
                            .format(cls.install_cmd))
 
     @classproperty
-    def package_install(cls):
+    def requirements_install(cls):
         """Hook to override the install name for pip.
 
-        package_install default to package_name."""
+        requirements_install default to requirements."""
         if cls.install_cmd == 'pip':
-            return cls.package_name
+            return cls.requirements
         raise RuntimeError("This property should only be accessed when "
                            "install_cmd='pip'. Here, install_cmd={}"
                            .format(cls.install_cmd))
@@ -154,7 +154,7 @@ class BaseSolver(ParametrizedNameMixin, ABC):
     def is_installed(cls, env_name=None):
         try:
             if cls.install_cmd == 'pip':
-                return check_import_solver(cls.package_import,
+                return check_import_solver(cls.requirements_import,
                                            env_name=env_name)
             elif cls.install_cmd == 'bash':
                 return check_cmd_solver(cls.cmd_name, env_name=env_name)
@@ -190,7 +190,8 @@ class BaseSolver(ParametrizedNameMixin, ABC):
             print(f"Installing solver {cls.name} in {env_name}:...",
                   end='', flush=True)
             if cls.install_cmd == 'pip':
-                pip_install_in_env(cls.package_install, env_name=env_name)
+                pip_install_in_env(*cls.requirements_install,
+                                   env_name=env_name)
             elif cls.install_cmd == 'bash':
                 bash_install_in_env(cls.install_script, env_name=env_name)
             print(" done")
@@ -201,7 +202,7 @@ class BaseSolver(ParametrizedNameMixin, ABC):
         print(f"Uninstalling solver {cls.name} in {env_name}:...",
               end='', flush=True)
         if cls.install_cmd == 'pip':
-            pip_uninstall_in_env(cls.package_name, env_name=env_name)
+            pip_uninstall_in_env(*cls.requirements, env_name=env_name)
         # elif cls.install_cmd == 'bash':
         #     raise NotImplementedError("Uninstall not implemented for bash.")
         print(" done")

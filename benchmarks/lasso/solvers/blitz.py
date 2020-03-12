@@ -11,10 +11,10 @@ class Solver(BaseSolver):
     sampling_strategy = 'tolerance'
 
     install_cmd = 'pip'
-    package_name = 'blitzl1'
-    package_install = (
+    requirements = ['blitzl1']
+    package_install = [
         'git+https://github.com/tommoral/blitzl1.git@FIX_python_type_check'
-    )
+    ]
 
     def set_objective(self, X, y, lmbd):
         self.X, self.y, self.lmbd = X, y, lmbd
