@@ -167,7 +167,9 @@ def run_one_solver(objective, solver_class, solver_parameters,
 
 
 def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
-                  max_samples=10, n_rep=1):
+                  dataset_names=None, max_samples=10, n_rep=1):
+
+    from .util import is_included
 
     # Load the objective class for this benchmark and the datasets
     objective_class = get_benchmark_objective(benchmark)
@@ -184,6 +186,8 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
     for dataset_class in datasets:
         for dataset_parameters in product_param(dataset_class.parameters):
             dataset = dataset_class(**dataset_parameters)
+            if not is_included(str(dataset), dataset_names):
+                continue
             print(f"{dataset}")
             scale, data = dataset.get_data()
             for obj_parameters in product_param(objective_class.parameters):

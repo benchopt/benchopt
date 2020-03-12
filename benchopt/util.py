@@ -1,4 +1,5 @@
 import os
+import re
 import venv
 import shutil
 import pkgutil
@@ -62,7 +63,6 @@ def _run_in_bash(script, raise_on_error=None, capture_stdout=True):
 
     if DEBUG:
         print(fast_failure_script)
-        print(capture_stdout)
 
     if capture_stdout:
         exit_code, output = subprocess.getstatusoutput([f"bash {tmp.name}"])
@@ -265,6 +265,19 @@ def filter_solvers(solvers, solver_names=None, forced_solvers=None,
                    if s.name.lower() in solver_names + forced_solvers]
 
     return solvers
+
+
+def is_included(name, include_patterns=None):
+    """Check if a certain name is match by any pattern in include_patterns.
+
+    When include_patterns is None, all names are included.
+    """
+    if include_patterns is None or len(include_patterns) == 0:
+        return True
+    for p in include_patterns:
+        if re.match(f".*{p}.*", name, flags=re.IGNORECASE) is not None:
+            return True
+    return False
 
 
 def create_venv(env_name, recreate=False):

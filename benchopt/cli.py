@@ -43,21 +43,30 @@ def main():
 @click.option('--repetition', '-n',
               metavar='<int>', default=1, type=int,
               help='Number of repetition used to estimate the runtime.')
-@click.option('--solver', '-s', 'solver_names', multiple=True, type=str)
+@click.option('--solver', '-s', 'solver_names',
+              metavar="<solver_name>", multiple=True, type=str,
+              help="Include <solver_name> in the benchmark. By default, all "
+              "solvers are included. When `-s` is used, only listed estimators"
+              " are included.")
+@click.option('--dataset', '-d', 'dataset_names',
+              metavar="<solver_name>", multiple=True, type=str,
+              help="Include <solver_name> in the benchmark. By default, all "
+              "solvers are included. When `-s` is used, only listed estimators"
+              " are included.")
 @click.option('--force-solver', '-f', 'forced_solvers',
               metavar="<solver_name>", multiple=True, type=str,
-              help="Force the run for <solver_name>, evn if it is already "
-              "cached.")
+              help="Force the re-installation and run for <solver_name>. This "
+              "avoids caching effect when adding an estimator.")
 @click.option('--max-samples',
               metavar="<int>", default=100, show_default=True, type=int,
               help='Maximal number of iteration for each solver')
-def run(benchmark, solver_names, forced_solvers, max_samples, recreate,
-        local, repetition):
+def run(benchmark, solver_names, forced_solvers, dataset_names,
+        max_samples, recreate, local, repetition):
     """Run a benchmark in a separate venv where the solvers will be installed
     """
 
     if local:
-        run_benchmark(benchmark, solver_names, forced_solvers,
+        run_benchmark(benchmark, solver_names, forced_solvers, dataset_names,
                       max_samples=max_samples, n_rep=repetition)
         return
 
@@ -73,11 +82,13 @@ def run(benchmark, solver_names, forced_solvers, max_samples, recreate,
     install_solvers(solvers=solvers, forced_solvers=forced_solvers,
                     env_name=benchmark)
 
-    solvers_option = ' '.join(['-s '+s for s in solver_names])
-    forced_solvers_option = ' '.join(['-f '+s for s in forced_solvers])
+    solvers_option = ' '.join(['-s ' + s for s in solver_names])
+    forced_solvers_option = ' '.join(['-f ' + s for s in forced_solvers])
+    datasets_option = ' '.join(['-d ' + d for d in dataset_names])
     cmd = (
         f"benchopt run -l --max-samples {max_samples} -n {repetition} "
-        f"{solvers_option} {forced_solvers_option} {benchmark}"
+        f"{solvers_option} {forced_solvers_option} {datasets_option} "
+        f"{benchmark}"
     )
     exit_code = _run_bash_in_env(cmd, env_name=benchmark,
                                  capture_stdout=False)
