@@ -7,9 +7,7 @@ from benchopt.util import get_all_benchmarks
 from benchopt.util import get_benchmark_objective
 from benchopt.util import list_benchmark_solvers
 from benchopt.util import list_benchmark_datasets
-
-
-pytestmark = pytest.mark.usefixtures("ensure_test_env")
+from benchopt.util import create_venv, delete_venv
 
 
 BENCHMARKS = get_all_benchmarks()
@@ -23,6 +21,21 @@ def class_ids(parameter):
     if hasattr(parameter, 'name'):
         return parameter.name.lower()
     return None
+
+
+# Setup and clean a test env to install/uninstall all the solvers and check
+# that they are correctly configured
+
+TEST_ENV_NAME = "benchopt_test_env"
+
+
+def setup_module(module):
+    print("create env")
+    create_venv(TEST_ENV_NAME, recreate=True)
+
+
+def teardown_module(module):
+    delete_venv(TEST_ENV_NAME)
 
 
 @pytest.mark.parametrize('benchmark_name, dataset_class', DATASETS,
@@ -93,7 +106,7 @@ def test_solver_class(benchmark_name, solver_class):
 
 @pytest.mark.parametrize('benchmark_name, solver_class', SOLVERS,
                          ids=class_ids)
-def test_solver_install(test_env, benchmark_name, solver_class):
+def test_solver_install(benchmark_name, solver_class):
 
     # Check that the solver_class exposes a known install cmd
     assert solver_class.install_cmd in [None, 'pip', 'bash']
@@ -105,12 +118,12 @@ def test_solver_install(test_env, benchmark_name, solver_class):
         assert hasattr(solver_class, 'install_script')
         assert hasattr(solver_class, 'cmd_name')
 
-    solver_class.install(env_name=test_env, force=True)
-    assert solver_class.is_installed(env_name=test_env)
+    solver_class.install(env_name=TEST_ENV_NAME, force=True)
+    assert solver_class.is_installed(env_name=TEST_ENV_NAME)
 
     if solver_class.install_cmd == 'pip':
-        solver_class.uninstall(env_name=test_env)
-        assert not solver_class.is_installed(env_name=test_env)
+        solver_class.uninstall(env_name=TEST_ENV_NAME)
+        assert not solver_class.is_installed(env_name=TEST_ENV_NAME)
 
 
 @pytest.mark.parametrize('benchmark_name, solver_class', SOLVERS,
