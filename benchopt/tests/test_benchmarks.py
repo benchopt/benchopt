@@ -9,6 +9,9 @@ from benchopt.util import list_benchmark_solvers
 from benchopt.util import list_benchmark_datasets
 
 
+pytestmark = pytest.mark.usefixtures("ensure_test_env")
+
+
 BENCHMARKS = get_all_benchmarks()
 SOLVERS = [(benchmark, solver) for benchmark in BENCHMARKS
            for solver in list_benchmark_solvers(benchmark)]

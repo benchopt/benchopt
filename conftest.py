@@ -17,9 +17,8 @@ def test_env():
     return TEST_ENV_NAME
 
 
-def pytest_sessionstart(session):
+@fixture
+def ensure_test_env():
     create_venv(TEST_ENV_NAME, recreate=True)
-
-
-def pytest_sessionfinish(session, exitstatus):
+    yield
     delete_venv(TEST_ENV_NAME)
