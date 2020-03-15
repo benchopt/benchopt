@@ -19,8 +19,6 @@ jobs:
 #         VERSION_PYTHON: '3.6'
 #         PACKAGER: 'pip'
 
-
-
 - template: continuous_integration/posix.yml
   parameters:
     name: Linux
