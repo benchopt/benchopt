@@ -1,25 +1,23 @@
 # Adapted from https://github.com/pandas-dev/pandas/blob/master/azure-pipelines.yml
 jobs:
 
-- template: continuous_integration/windows.yml
-  parameters:
-    name: Windows
-    vmImage: vs2017-win2016
-    matrix:
-      py38_pip:
-        VERSION_PYTHON: '3.8'
-        PACKAGER: 'pip'
-      py37_conda:
-        VERSION_PYTHON: '3.7'
-        PACKAGER: 'conda'
-      py37_pip:
-        VERSION_PYTHON: '3.7'
-        PACKAGER: 'pip'
-      py36_pip:
-        VERSION_PYTHON: '3.6'
-        PACKAGER: 'pip'
-
-
+# - template: continuous_integration/windows.yml
+#   parameters:
+#     name: Windows
+#     vmImage: vs2017-win2016
+#     matrix:
+#       py38_pip:
+#         VERSION_PYTHON: '3.8'
+#         PACKAGER: 'pip'
+#       py37_conda:
+#         VERSION_PYTHON: '3.7'
+#         PACKAGER: 'conda'
+#       py37_pip:
+#         VERSION_PYTHON: '3.7'
+#         PACKAGER: 'pip'
+#       py36_pip:
+#         VERSION_PYTHON: '3.6'
+#         PACKAGER: 'pip'
 
 - template: continuous_integration/posix.yml
   parameters:
@@ -39,7 +37,7 @@ jobs:
 - template: continuous_integration/posix.yml
   parameters:
     name: macOS
-    vmImage: xcode9-macos10.13
+    vmImage: macOS-10.14
     matrix:
       pylatest_conda:
         VERSION_PYTHON: '*'

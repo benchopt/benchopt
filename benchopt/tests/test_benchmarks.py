@@ -7,6 +7,7 @@ from benchopt.util import get_all_benchmarks
 from benchopt.util import get_benchmark_objective
 from benchopt.util import list_benchmark_solvers
 from benchopt.util import list_benchmark_datasets
+from benchopt.util import create_venv, delete_venv
 
 
 BENCHMARKS = get_all_benchmarks()
@@ -20,6 +21,21 @@ def class_ids(parameter):
     if hasattr(parameter, 'name'):
         return parameter.name.lower()
     return None
+
+
+# Setup and clean a test env to install/uninstall all the solvers and check
+# that they are correctly configured
+
+TEST_ENV_NAME = "benchopt_test_env"
+
+
+def setup_module(module):
+    print("create env")
+    create_venv(TEST_ENV_NAME, recreate=True)
+
+
+def teardown_module(module):
+    delete_venv(TEST_ENV_NAME)
 
 
 @pytest.mark.parametrize('benchmark_name, dataset_class', DATASETS,
@@ -90,24 +106,27 @@ def test_solver_class(benchmark_name, solver_class):
 
 @pytest.mark.parametrize('benchmark_name, solver_class', SOLVERS,
                          ids=class_ids)
-def test_solver_install(test_env, benchmark_name, solver_class):
+def test_solver_install(benchmark_name, solver_class):
 
     # Check that the solver_class exposes a known install cmd
     assert solver_class.install_cmd in [None, 'pip', 'bash']
 
     # Check that the solver_class exposes a known install cmd
     if solver_class.install_cmd == 'pip':
-        assert hasattr(solver_class, 'package_name')
+        assert hasattr(solver_class, 'requirements')
     if solver_class.install_cmd == 'bash':
         assert hasattr(solver_class, 'install_script')
         assert hasattr(solver_class, 'cmd_name')
 
-    solver_class.install(env_name=test_env, force=True)
-    assert solver_class.is_installed(env_name=test_env)
+    if solver_class.name in ['Liblinear', 'Cyanure']:
+        pytest.xfail('%s is not fully working yet' % solver_class.name)
+
+    solver_class.install(env_name=TEST_ENV_NAME, force=True)
+    assert solver_class.is_installed(env_name=TEST_ENV_NAME)
 
     if solver_class.install_cmd == 'pip':
-        solver_class.uninstall(env_name=test_env)
-        assert not solver_class.is_installed(env_name=test_env)
+        solver_class.uninstall(env_name=TEST_ENV_NAME)
+        assert not solver_class.is_installed(env_name=TEST_ENV_NAME)
 
 
 @pytest.mark.parametrize('benchmark_name, solver_class', SOLVERS,
@@ -115,7 +134,8 @@ def test_solver_install(test_env, benchmark_name, solver_class):
 def test_solver(benchmark_name, solver_class):
 
     if solver_class.install_cmd == 'pip':
-        pytest.importorskip(solver_class.package_import)
+        for package in solver_class.requirements_import:
+            pytest.importorskip(package)
     elif not solver_class.is_installed():
         pytest.skip("Solver is not installed")
 

@@ -31,6 +31,7 @@ if [[ "$PACKAGER" == "conda" ]]; then
 	make_conda $TO_INSTALL
 
 elif [[ "$PACKAGER" == "ubuntu" ]]; then
+    sudo apt-get update
     sudo apt-get install python3-venv python3-virtualenv python3-numpy cython
     python3 -m virtualenv --system-site-packages --python=python3 $VIRTUALENV
     source $VIRTUALENV/bin/activate

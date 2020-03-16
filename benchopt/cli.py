@@ -26,7 +26,7 @@ def validate_benchmark(ctx, param, value):
 
 
 @click.group(context_settings=CONTEXT_SETTINGS)
-def main():
+def main(prog_name='benchopt'):
     """Command-line interface to benchOpt"""
     pass
 

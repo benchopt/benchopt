@@ -29,7 +29,7 @@ PIP_INSTALL_CMD = "pip install -qq {packages}"
 PIP_UNINSTALL_CMD = "pip uninstall -qq -y {packages}"
 BASH_INSTALL_CMD = "bash install_scripts/{install_script} {env}"
 CHECK_PACKAGE_INSTALLED_CMD = (
-    "python -c 'import {package_import}' 1>/dev/null 2>&1"
+    "python -c 'import {package}' 1>/dev/null 2>&1"
 )
 CHECK_CMD_INSTALLED_CMD = "type $'{cmd_name}' 1>/dev/null 2>&1"
 
@@ -140,23 +140,26 @@ def bash_install_in_env(script, env_name=None):
                      "Error: {output}")
 
 
-def check_import_solver(package_import, env_name=None):
+def check_import_solver(requirements_import, env_name=None):
     """Check that a python package is installed in an environment.
 
     Parameters
     ----------
-    package_import : str
-        Name of the package that should be installed. This function checks that
-        this package can be imported in python.
+    requirements_import : str
+        Name of the packages that should be installed. This function checks
+        that these packages can be imported in python.
     env_name : str or None
         Name of the virtual environment to check. If it is None, check in the
         current environment.
     """
     # TODO: if env is None, check directly in the current python interpreter
-    check_package_installed_cmd = CHECK_PACKAGE_INSTALLED_CMD.format(
-        package_import=package_import)
-    return _run_bash_in_env(check_package_installed_cmd,
-                            env_name=env_name) == 0
+    for package in requirements_import:
+        check_package_installed_cmd = CHECK_PACKAGE_INSTALLED_CMD.format(
+            package=package)
+        if _run_bash_in_env(check_package_installed_cmd,
+                            env_name=env_name) != 0:
+            return False
+    return True
 
 
 def check_cmd_solver(cmd_name, env_name=None):

@@ -43,10 +43,10 @@ def plot_convergence_curve(df, benchmark):
     xlim = plt.xlim()
     plt.hlines(eps, *xlim, color='k', linestyle='--')
     plt.xlim(xlim)
-    plt.legend()
-    plt.xlabel("Time [sec]", fontsize=18)
-    plt.ylabel(r"F(x) - F(x*)", fontsize=18)
-    plt.title(f"{objective_name}\nData: {dataset_name}", fontsize=18)
+    plt.legend(fontsize=14)
+    plt.xlabel("Time [sec]", fontsize=14)
+    plt.ylabel(r"F(x) - F(x*)", fontsize=14)
+    plt.title(f"{objective_name}\nData: {dataset_name}", fontsize=14)
     plt.tight_layout()
     plt.savefig(f"output_benchmarks/convergence_{plot_id}.pdf")
 
@@ -83,7 +83,7 @@ def plot_histogram(df, benchmark):
             height = df.time.max()
             rect = ax.bar(
                 x=xi, height=height, width=width, color='w', edgecolor='k')
-            ax.annotate("Did not converged", xy=(xi, height/2), ha='center',
+            ax.annotate("Did not converge", xy=(xi, height/2), ha='center',
                         va='center', color='k', rotation=90)
             rect_list.append(rect)
             continue
