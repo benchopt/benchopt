@@ -45,16 +45,11 @@ class ParametrizedNameMixin():
         return self._name.format(**self.parameters).capitalize()
 
 
-class BaseSolver(ParametrizedNameMixin, ABC):
-
-    # TODO: sampling strategy with eps/tol instead for solvers that do not
-    #       expose the max number of iterations
-    sampling_strategy = 'iteration'
-
-    # Information on how to install the solver. The value of install_cmd should
+class DependenciesMixin:
+    # Information on how to install the class. The value of install_cmd should
     # be in {None, 'pip', 'bash'}. The API reads:
     #
-    # - 'pip': The solver should have at least attribute `requirements`.
+    # - 'pip': The class should have at least attribute `requirements`.
     #          BenchOpt will pip install `$requirements` and check it is
     #          possible to import `$requirements` in the virtualenv. It is also
     #          possible to give a different name for the install by defining a
@@ -66,6 +61,92 @@ class BaseSolver(ParametrizedNameMixin, ABC):
     #           provide the virtualenv's directory as an argument. It will also
     #           check that `cmd_name` is in the virtual_env PATH.
     install_cmd = None
+
+    @classproperty
+    def requirements_import(cls):
+        """Hook to override the name of the import in python
+
+        requirements_import default to requirements."""
+        if cls.install_cmd == 'pip':
+            return cls.requirements
+        raise RuntimeError("This property should only be accessed when "
+                           "install_cmd='pip'. Here, install_cmd='{}'"
+                           .format(cls.install_cmd))
+
+    @classproperty
+    def requirements_install(cls):
+        """Hook to override the install name for pip.
+
+        requirements_install default to requirements."""
+        if cls.install_cmd == 'pip':
+            return cls.requirements
+        raise RuntimeError("This property should only be accessed when "
+                           "install_cmd='pip'. Here, install_cmd='{}'"
+                           .format(cls.install_cmd))
+
+    @classmethod
+    def is_installed(cls, env_name=None):
+        try:
+            if cls.install_cmd == 'pip':
+                return check_import_solver(cls.requirements_import,
+                                           env_name=env_name)
+            elif cls.install_cmd == 'bash':
+                return check_cmd_solver(cls.cmd_name, env_name=env_name)
+        except BaseException:
+            # Something went wrong so we consider that this is not installed
+            return False
+
+        return True
+
+    @classmethod
+    def install(cls, env_name=None, force=False):
+        """Install the solver in the given virtual env.
+
+        Parameters
+        ----------
+        env_name: str or None
+            Name of the environment where the solver should be installed. If
+            None, tries to install it in the current environment.
+        force : boolean (default: False)
+            If set to True, first tries to uninstall the solver from the
+            environment before installing it.
+
+        Returns
+        -------
+        is_installed: bool
+            True if the class is correctly installed in the environment.
+        """
+        # uninstall the class that requires a force reinstall
+        if force:
+            cls.uninstall(env_name=env_name)
+
+        if force or not cls.is_installed(env_name=env_name):
+            print(f"Installing {cls.name} in {env_name}:...",
+                  end='', flush=True)
+            if cls.install_cmd == 'pip':
+                pip_install_in_env(*cls.requirements_install,
+                                   env_name=env_name)
+            elif cls.install_cmd == 'bash':
+                bash_install_in_env(cls.install_script, env_name=env_name)
+            print(" done")
+        return cls.is_installed(env_name=env_name)
+
+    @classmethod
+    def uninstall(cls, env_name=None):
+        print(f"Uninstalling {cls.name} in {env_name}:...",
+              end='', flush=True)
+        if cls.install_cmd == 'pip':
+            pip_uninstall_in_env(*cls.requirements, env_name=env_name)
+        # elif cls.install_cmd == 'bash':
+        #     raise NotImplementedError("Uninstall not implemented for bash.")
+        print(" done")
+
+
+class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
+
+    # TODO: sampling strategy with eps/tol instead for solvers that do not
+    #       expose the max number of iterations
+    sampling_strategy = 'iteration'
 
     def __init__(self, **parameters):
         """Instantiate a solver with the given parameters and store them.
@@ -127,85 +208,6 @@ class BaseSolver(ParametrizedNameMixin, ABC):
             The computed coefficients by the solver.
         """
         ...
-
-    @classproperty
-    def requirements_import(cls):
-        """Hook to override the name of the import in python
-
-        requirements_import default to requirements."""
-        if cls.install_cmd == 'pip':
-            return cls.requirements
-        raise RuntimeError("This property should only be accessed when "
-                           "install_cmd='pip'. Here, install_cmd={}"
-                           .format(cls.install_cmd))
-
-    @classproperty
-    def requirements_install(cls):
-        """Hook to override the install name for pip.
-
-        requirements_install default to requirements."""
-        if cls.install_cmd == 'pip':
-            return cls.requirements
-        raise RuntimeError("This property should only be accessed when "
-                           "install_cmd='pip'. Here, install_cmd={}"
-                           .format(cls.install_cmd))
-
-    @classmethod
-    def is_installed(cls, env_name=None):
-        try:
-            if cls.install_cmd == 'pip':
-                return check_import_solver(cls.requirements_import,
-                                           env_name=env_name)
-            elif cls.install_cmd == 'bash':
-                return check_cmd_solver(cls.cmd_name, env_name=env_name)
-        except BaseException:
-            # Something went wrong so we consider that this is not installed
-            return False
-
-        return True
-
-    @classmethod
-    def install(cls, env_name=None, force=False):
-        """Install the solver in the given virtual env.
-
-        Parameters
-        ----------
-        env_name: str or None
-            Name of the environment where the solver should be installed. If
-            None, tries to install it in the current environment.
-        force : boolean (default: False)
-            If set to True, first tries to uninstall the solver from the
-            environment before installing it.
-
-        Returns
-        -------
-        is_installed: bool
-            True if the solver is correctly installed in the environment.
-        """
-        # uninstall the solvers that requires a force reinstall
-        if force:
-            cls.uninstall(env_name=env_name)
-
-        if force or not cls.is_installed(env_name=env_name):
-            print(f"Installing solver {cls.name} in {env_name}:...",
-                  end='', flush=True)
-            if cls.install_cmd == 'pip':
-                pip_install_in_env(*cls.requirements_install,
-                                   env_name=env_name)
-            elif cls.install_cmd == 'bash':
-                bash_install_in_env(cls.install_script, env_name=env_name)
-            print(" done")
-        return cls.is_installed(env_name=env_name)
-
-    @classmethod
-    def uninstall(cls, env_name=None):
-        print(f"Uninstalling solver {cls.name} in {env_name}:...",
-              end='', flush=True)
-        if cls.install_cmd == 'pip':
-            pip_uninstall_in_env(*cls.requirements, env_name=env_name)
-        # elif cls.install_cmd == 'bash':
-        #     raise NotImplementedError("Uninstall not implemented for bash.")
-        print(" done")
 
 
 class CommandLineSolver(BaseSolver, ABC):
