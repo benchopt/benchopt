@@ -1,11 +1,19 @@
-from sklearn.datasets import load_boston
-
 from benchopt.base import BaseDataset
+
+from benchopt.util import safe_import
+
+
+with safe_import():
+    from sklearn.datasets import load_boston
 
 
 class Dataset(BaseDataset):
 
     name = "Boston"
+
+    install_cmd = "pip"
+    requirements = ['scikit-learn']
+    requirements_import = ['sklearn']
 
     def get_data(self):
 

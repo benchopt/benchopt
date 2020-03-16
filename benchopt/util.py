@@ -292,8 +292,10 @@ def create_venv(env_name, recreate=False):
         print(f"Creating venv {env_name}:...", end='', flush=True)
         venv.create(env_dir, with_pip=True)
         # Install benchopt as well as packages used as utilities to install
-        # other packages.
-        pip_install_in_env("numpy", "cython", ".", env_name=env_name)
+        # other packages. The install of benchopt is done with the -e flag
+        # to ease development process
+        # XXX: add a flag to enable/disable develop install?
+        pip_install_in_env("numpy", "cython", "-e .", env_name=env_name)
         print(" done")
 
 
@@ -311,6 +313,16 @@ def install_solvers(solvers, forced_solvers=None, env_name=None):
     for solver in solvers:
         force_install = solver.name.lower() in forced_solvers
         solver.install(env_name=env_name, force=force_install)
+
+
+def install_required_datasets(benchmark, dataset_names, env_name=None):
+    """List all datasets and install the required ons"""
+    datasets = list_benchmark_datasets(benchmark)
+    for dataset_class in datasets:
+        for dataset_parameters in product_param(dataset_class.parameters):
+            dataset = dataset_class(**dataset_parameters)
+            if is_included(str(dataset), dataset_names):
+                dataset_class.install(env_name=env_name, force=False)
 
 
 class safe_import():

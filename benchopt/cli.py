@@ -5,6 +5,7 @@ from benchopt import run_benchmark
 
 from benchopt.util import filter_solvers
 from benchopt.util import get_all_benchmarks
+from benchopt.util import install_required_datasets
 from benchopt.util import _run_bash_in_env, create_venv
 from benchopt.util import list_benchmark_solvers, install_solvers
 
@@ -73,6 +74,9 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
     # Create the virtual env
     create_venv(benchmark, recreate=recreate)
 
+    # installed required datasets
+    install_required_datasets(benchmark, dataset_names, env_name=benchmark)
+
     # Get the solvers and install them
     solvers = list_benchmark_solvers(benchmark)
     exclude = get_benchmark_setting(benchmark, 'exclude_solvers')
@@ -82,6 +86,7 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
     install_solvers(solvers=solvers, forced_solvers=forced_solvers,
                     env_name=benchmark)
 
+    # run the command in the virtual env
     solvers_option = ' '.join(['-s ' + s for s in solver_names])
     forced_solvers_option = ' '.join(['-f ' + s for s in forced_solvers])
     datasets_option = ' '.join(['-d ' + d for d in dataset_names])
@@ -90,9 +95,8 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
         f"{solvers_option} {forced_solvers_option} {datasets_option} "
         f"{benchmark}"
     )
-    exit_code = _run_bash_in_env(cmd, env_name=benchmark,
-                                 capture_stdout=False)
-    raise SystemExit(exit_code)
+    raise SystemExit(_run_bash_in_env(
+        cmd, env_name=benchmark, capture_stdout=False))
 
 
 def start():

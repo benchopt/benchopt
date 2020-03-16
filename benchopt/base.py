@@ -86,6 +86,8 @@ class DependenciesMixin:
 
     @classmethod
     def is_installed(cls, env_name=None):
+        """Check if the dependencies of the class can be imported.
+        """
         try:
             if cls.install_cmd == 'pip':
                 return check_import_solver(cls.requirements_import,
@@ -100,15 +102,15 @@ class DependenciesMixin:
 
     @classmethod
     def install(cls, env_name=None, force=False):
-        """Install the solver in the given virtual env.
+        """Install the class in the given virtual env.
 
         Parameters
         ----------
         env_name: str or None
-            Name of the environment where the solver should be installed. If
+            Name of the environment where the class should be installed. If
             None, tries to install it in the current environment.
         force : boolean (default: False)
-            If set to True, first tries to uninstall the solver from the
+            If set to True, first tries to uninstall the class from the
             environment before installing it.
 
         Returns
@@ -292,7 +294,7 @@ class CommandLineSolver(BaseSolver, ABC):
         os.system(cmd_line)
 
 
-class BaseDataset(ParametrizedNameMixin):
+class BaseDataset(ParametrizedNameMixin, DependenciesMixin):
     """Base class to define a dataset in a benchmark.
     """
 
