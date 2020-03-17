@@ -18,17 +18,16 @@ $ pip install https://github.com/benchopt/benchopt
 Usage
 -----
 
-The main entry point to run benchmark with benchOpt is the `benchopt` command line tool, based on `click`.
-To run a benchmark to options are possible.
-
-When the solvers are installed directly on the system, it is possible to use the `run` command:
+The `benchopt` command line tool is based on `click`. To run Lasso benchmarks on all datasets and with all solvers, run:
 
 ```
-benchopt run lasso -s sklearn -s baseline --max-samples 10 --repetition 10
+benchopt run lasso
 ```
 
-It is also possible to run the benchmark in a separate environment with the `bench` command. The solver will be installed in a virtual environment.The usage is:
+Apart from the problem (e.g. Lasso or Logreg), options can be passed to `benchopt run`, to restrict the benchmarks to some solvers or datasets, e.g.:
 
 ```
-benchopt bench lasso -s sklearn -s baseline --max-samples 10 --repetition 10
+benchopt run lasso -s sklearn -s baseline -d boston --max-samples 10 --repetition 10
 ```
+
+Use `benchopt run -h` for more details about these options, or visit https://benchopt.github.io/api.html.
