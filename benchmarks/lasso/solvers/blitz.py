@@ -13,7 +13,7 @@ class Solver(BaseSolver):
     install_cmd = 'pip'
     requirements = ['blitzl1']
     requirements_install = [
-        'git+https://github.com/tommoral/blitzl1.git@FIX_python_type_check'
+        'git+https://github.com/tommoral/blitzl1.git@FIX_setup_deps'
     ]
 
     def set_objective(self, X, y, lmbd):
