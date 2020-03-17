@@ -18,16 +18,16 @@ $ pip install https://github.com/benchopt/benchopt
 Usage
 -----
 
-The `benchopt` command line tool is based on `click`. To run benchmarks on all problems, all datasets and with all solvers, run:
+The `benchopt` command line tool is based on `click`. To run Lasso benchmarks on all datasets and with all solvers, run:
 
 ```
-benchopt run
+benchopt run lasso
 ```
 
-Options can also be passed to `benchopt run`, to restrict the benchmarks to some objectives, solvers or datasets, e.g.:
+Apart from the problem (e.g. Lasso or Logreg), options can be passed to `benchopt run`, to restrict the benchmarks to some solvers or datasets, e.g.:
 
 ```
 benchopt run lasso -s sklearn -s baseline -d boston --max-samples 10 --repetition 10
 ```
 
-Use `benchopt run -h` for more details about options.
+Use `benchopt run -h` for more details about these options.
