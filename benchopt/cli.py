@@ -18,6 +18,10 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
 def validate_benchmark(ctx, param, value):
     all_benchmarks = get_all_benchmarks()
+    if not all_benchmarks:
+        raise click.BadArgumentUsage(
+            "benchopt should be run in a folder where there is benchmarks "
+            "directory with at least one benchmark.")
     if value not in all_benchmarks:
         raise click.BadParameter(
             f"{value} is not a valid benchmark. "
