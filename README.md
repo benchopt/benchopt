@@ -30,4 +30,4 @@ Apart from the problem (e.g. Lasso or Logreg), options can be passed to `benchop
 benchopt run lasso -s sklearn -s baseline -d boston --max-samples 10 --repetition 10
 ```
 
-Use `benchopt run -h` for more details about these options.
+Use `benchopt run -h` for more details about these options, or visit https://benchopt.github.io/api.html.
