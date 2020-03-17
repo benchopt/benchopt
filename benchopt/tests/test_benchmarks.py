@@ -11,10 +11,16 @@ from benchopt.util import create_venv, delete_venv
 
 
 BENCHMARKS = get_all_benchmarks()
-SOLVERS = [(benchmark, solver) for benchmark in BENCHMARKS
-           for solver in list_benchmark_solvers(benchmark)]
-DATASETS = [(benchmark, dataset) for benchmark in BENCHMARKS
-            for dataset in list_benchmark_datasets(benchmark)]
+BENCH_AND_SOLVERS = [
+    (benchmark, solver) for benchmark in BENCHMARKS
+    for solver in list_benchmark_solvers(benchmark)]
+BENCH_AND_DATASETS = [
+    (benchmark, dataset_class) for benchmark in BENCHMARKS
+    for dataset_class in list_benchmark_datasets(benchmark)]
+BENCH_AND_SIMULATED = [
+    (benchmark, dataset_class) for benchmark in BENCHMARKS
+    for dataset_class in list_benchmark_datasets(benchmark)
+    if dataset_class.name.lower() == 'simulated']
 
 
 def class_ids(parameter):
@@ -38,7 +44,7 @@ def teardown_module(module):
     delete_venv(TEST_ENV_NAME)
 
 
-@pytest.mark.parametrize('benchmark_name, dataset_class', DATASETS,
+@pytest.mark.parametrize('benchmark_name, dataset_class', BENCH_AND_SIMULATED,
                          ids=class_ids)
 def test_benchmark_objective(benchmark_name, dataset_class):
     """Check that the objective function and the datasets are well defined."""
@@ -59,10 +65,10 @@ def test_benchmark_objective(benchmark_name, dataset_class):
     )
 
 
-@pytest.mark.parametrize('benchmark_name, dataset_class', DATASETS,
+@pytest.mark.parametrize('benchmark_name, dataset_class', BENCH_AND_DATASETS,
                          ids=class_ids)
 def test_dataset_class(benchmark_name, dataset_class):
-    """Check that all installed dataset_class respects the public API"""
+    """Check that all dataset_class respects the public API"""
 
     # Check that the dataset_class exposes a name
     assert hasattr(dataset_class, 'name'), "All dataset should expose a name"
@@ -75,21 +81,41 @@ def test_dataset_class(benchmark_name, dataset_class):
     assert hasattr(dataset, 'get_data'), (
         "All dataset should implement get_data"
     )
+    assert callable(dataset.get_data), (
+        "dataset.get_data should be a callable"
+    )
+
+
+@pytest.mark.parametrize('benchmark_name, dataset_class', BENCH_AND_DATASETS,
+                         ids=class_ids)
+def test_dataset_get_data(benchmark_name, dataset_class):
+    """Check that all installed dataset_class.get_data return the right result
+    """
+    # skip the test if the dataset is not installed
+    if dataset_class.install_cmd == 'pip':
+        for package in dataset_class.requirements_import:
+            pytest.importorskip(package)
+
+    dataset = dataset_class()
     data = dataset.get_data()
     assert isinstance(data, tuple), (
-        "Ouput of get_data should be a 2-tuple"
+        "Output of get_data should be a 2-tuple"
     )
     assert len(data) == 2, (
-        "Ouput of get_data should be a 2-tuple"
+        "Output of get_data should be a 2-tuple"
     )
 
     scale, data = data
 
-    assert isinstance(scale, int)
-    assert isinstance(data, dict)
+    assert isinstance(scale, int), (
+        "First output of get_data should be integer"
+    )
+    assert isinstance(data, dict), (
+        "Second output of get_data should be dict"
+    )
 
 
-@pytest.mark.parametrize('benchmark_name, solver_class', SOLVERS,
+@pytest.mark.parametrize('benchmark_name, solver_class', BENCH_AND_SOLVERS,
                          ids=class_ids)
 def test_solver_class(benchmark_name, solver_class):
     """Check that all installed solver_class respects the public API"""
@@ -104,7 +130,7 @@ def test_solver_class(benchmark_name, solver_class):
     assert solver_class.sampling_strategy in SAMPLING_STRATEGIES
 
 
-@pytest.mark.parametrize('benchmark_name, solver_class', SOLVERS,
+@pytest.mark.parametrize('benchmark_name, solver_class', BENCH_AND_SOLVERS,
                          ids=class_ids)
 def test_solver_install(benchmark_name, solver_class):
 
@@ -129,7 +155,7 @@ def test_solver_install(benchmark_name, solver_class):
         assert not solver_class.is_installed(env_name=TEST_ENV_NAME)
 
 
-@pytest.mark.parametrize('benchmark_name, solver_class', SOLVERS,
+@pytest.mark.parametrize('benchmark_name, solver_class', BENCH_AND_SOLVERS,
                          ids=class_ids)
 def test_solver(benchmark_name, solver_class):
 

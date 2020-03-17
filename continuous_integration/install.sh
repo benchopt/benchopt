@@ -26,7 +26,7 @@ make_conda() {
 
 if [[ "$PACKAGER" == "conda" ]]; then
     TO_INSTALL="python=$VERSION_PYTHON pip pytest pytest-timeout \
-                numpy cython joblib scikit-learn"
+                numpy cython joblib"
 
 	make_conda $TO_INSTALL
 
