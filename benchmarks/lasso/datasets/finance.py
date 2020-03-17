@@ -1,10 +1,14 @@
 import os
 import numpy as np
-from scipy import sparse
 
 from benchopt.base import BaseDataset
 from benchopt.config import get_global_setting
-from benchopt.dataset_util import download_libsvm
+from benchopt.util import safe_import
+
+with safe_import():
+    # Dependencies of download_libsvm are scikit-learn, download and tqdm
+    from benchopt.utils.datasets.libsvm import download_libsvm
+    from scipy import sparse
 
 DATA_DIR = get_global_setting('data_dir')
 
@@ -12,15 +16,21 @@ DATA_DIR = get_global_setting('data_dir')
 class Dataset(BaseDataset):
     # TODO call the dataset log1p_train to harmonize with libsvm naming?
     name = "finance"
-    X_path = os.path.join(DATA_DIR, name, "X.npz")
-    y_path = os.path.join(DATA_DIR, name, "y.npy")
+
+    install_cmd = 'pip'
+    requirements = ['scikit-learn', 'scipy', 'download', 'tqdm']
+    requirements_import = ['sklearn', 'scipy', 'download', 'tqdm']
 
     def get_data(self):
+
+        X_path = os.path.join(DATA_DIR, self.name, "X.npz")
+        y_path = os.path.join(DATA_DIR, self.name, "y.npy")
+
         try:
-            X = sparse.load_npz(self.X_path)
-            y = np.load(self.y_path)
+            X = sparse.load_npz(X_path)
+            y = np.load(y_path)
         except FileNotFoundError:
-            X, y = download_libsvm(self.X_path, self.y_path, self.name)
+            X, y = download_libsvm(X_path, y_path, self.name)
 
         data = dict(X=X, y=y)
 

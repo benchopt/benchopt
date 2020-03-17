@@ -339,14 +339,16 @@ def install_required_datasets(benchmark, dataset_names, env_name=None):
                 dataset_class.install(env_name=env_name, force=False)
 
 
-class safe_import():
+class safe_import:
     """Do not fail on ImportError and Catch the warnings"""
     def __init__(self):
         self.failed_import = False
         self.record = warnings.catch_warnings(record=True)
 
     def __enter__(self):
-        self.record.__enter__()
+        # Catch the import warning except if install error are printed.
+        if not PRINT_INSTALL_ERROR:
+            self.record.__enter__()
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
@@ -360,7 +362,10 @@ class safe_import():
             # Prevent the error propagation
             silence_error = True
 
-        self.record.__exit__(exc_type, exc_value, traceback)
+        if not PRINT_INSTALL_ERROR:
+            self.record.__exit__(exc_type, exc_value, traceback)
+
+        # Returning True in __exit__ prevent error propagation.
         return silence_error
 
 
