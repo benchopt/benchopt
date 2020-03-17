@@ -1,4 +1,5 @@
 numpy
 cython
+joblib
 pytest
 pytest-timeout
