@@ -7,6 +7,8 @@ class Dataset(BaseDataset):
 
     name = "Simulated"
 
+    # List of parameters to generate the datasets. The benchmark will consider
+    # the cross product for each key in the dictionary.
     parameters = {
         'n_samples, n_features': [
             (100, 5000),
@@ -14,10 +16,12 @@ class Dataset(BaseDataset):
     }
 
     def __init__(self, n_samples=10, n_features=50, random_state=27):
+        # Store the parameters of the dataset
         self.n_samples = n_samples
         self.n_features = n_features
         self.random_state = random_state
 
+        # Pass parameters that will be used in Dataset name
         super().__init__(n_samples=n_samples, n_features=n_features)
 
     def get_data(self):

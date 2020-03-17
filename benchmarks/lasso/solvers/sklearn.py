@@ -11,7 +11,9 @@ with safe_import() as solver_import:
 class Solver(BaseSolver):
     name = 'sklearn'
 
-    install_cmd = None
+    install_cmd = 'pip'
+    requirements = ['scikit-learn']
+    requirements_import = ['sklearn']
 
     def set_objective(self, X, y, lmbd):
         self.X, self.y, self.lmbd = X, y, lmbd

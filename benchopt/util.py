@@ -10,14 +10,11 @@ import subprocess
 from importlib import import_module
 
 from .config import get_global_setting
+from .config import DEBUG, ALLOW_INSTALL, PRINT_INSTALL_ERROR
 
 
 # Load global setting
-DEBUG = get_global_setting('debug')
 VENV_DIR = get_global_setting('venv_dir')
-PRINT_INSTALL_ERRORS = get_global_setting('print_install_error')
-ALLOW_INSTALL = os.environ.get('BENCHO_ALLOW_INSTALL',
-                               get_global_setting('allow_install'))
 
 
 if not os.path.exists(VENV_DIR):
@@ -29,9 +26,9 @@ PIP_INSTALL_CMD = "pip install -qq {packages}"
 PIP_UNINSTALL_CMD = "pip uninstall -qq -y {packages}"
 BASH_INSTALL_CMD = "bash install_scripts/{install_script} {env}"
 CHECK_PACKAGE_INSTALLED_CMD = (
-    "python -c 'import {package}' 1>/dev/null 2>&1"
+    "python -c 'import {package}'"
 )
-CHECK_CMD_INSTALLED_CMD = "type $'{cmd_name}' 1>/dev/null 2>&1"
+CHECK_CMD_INSTALLED_CMD = "type $'{cmd_name}'"
 
 
 def _run_in_bash(script, raise_on_error=None, capture_stdout=True):
@@ -41,9 +38,11 @@ def _run_in_bash(script, raise_on_error=None, capture_stdout=True):
     ----------
     script: str
         Script to run
-    raise_on_error: str or None
-        If raise_on_error is not None, raise a RuntimeError with the given
+    raise_on_error: str or callable or None
+        If raise_on_error is a string, raise a RuntimeError with the given
         message if the command's exit code is non-zero.
+        If raise_on_error is a callable, when script output is non 0, call
+        the callable with output as an argument `raise_on_error(output)`.
         Else, just return the exit code.
     capture_stdout: bool
         If set to True, capture the stdout of the subprocess. Else, it is
@@ -70,7 +69,13 @@ def _run_in_bash(script, raise_on_error=None, capture_stdout=True):
         exit_code = os.system(f"bash {tmp.name}")
         output = ""
     if raise_on_error is not None and exit_code != 0:
-        raise RuntimeError(raise_on_error.format(output=output))
+        if isinstance(raise_on_error, str):
+            raise RuntimeError(raise_on_error.format(output=output))
+        elif callable(raise_on_error):
+            raise_on_error(output)
+        else:
+            raise ValueError("Bad value for `raise_on_error`. Should be a str"
+                             f", a callable or None. Got {raise_on_error}.")
     return exit_code
 
 
@@ -112,9 +117,11 @@ def pip_install_in_env(*packages, env_name=None):
         raise ValueError("Trying to install solver not in a virtualenv. "
                          "To allow this, set BENCHO_ALLOW_INSTALL=True.")
     cmd = PIP_INSTALL_CMD.format(packages=' '.join(packages))
+    error_msg = f"Failed to pip install packages {packages}\nError:{{output}}"
+    if not PRINT_INSTALL_ERROR:
+        error_msg = None
     _run_bash_in_env(cmd, env_name=env_name,
-                     raise_on_error="Failed to pip install packages "
-                     f"{packages}\nError:{{output}}")
+                     raise_on_error=error_msg)
 
 
 def pip_uninstall_in_env(*packages, env_name=None):
@@ -156,8 +163,15 @@ def check_import_solver(requirements_import, env_name=None):
     for package in requirements_import:
         check_package_installed_cmd = CHECK_PACKAGE_INSTALLED_CMD.format(
             package=package)
+
+        def raise_on_error(output):
+            not_installed = f"ModuleNotFoundError: No module named '{package}'"
+            if not_installed not in output:
+                print(output)
+
         if _run_bash_in_env(check_package_installed_cmd,
-                            env_name=env_name) != 0:
+                            env_name=env_name,
+                            raise_on_error=raise_on_error) != 0:
             return False
     return True
 
@@ -292,8 +306,10 @@ def create_venv(env_name, recreate=False):
         print(f"Creating venv {env_name}:...", end='', flush=True)
         venv.create(env_dir, with_pip=True)
         # Install benchopt as well as packages used as utilities to install
-        # other packages.
-        pip_install_in_env("numpy", "cython", ".", env_name=env_name)
+        # other packages. The install of benchopt is done with the -e flag
+        # to ease development process
+        # XXX: add a flag to enable/disable develop install?
+        pip_install_in_env("numpy", "cython", "-e .", env_name=env_name)
         print(" done")
 
 
@@ -313,6 +329,16 @@ def install_solvers(solvers, forced_solvers=None, env_name=None):
         solver.install(env_name=env_name, force=force_install)
 
 
+def install_required_datasets(benchmark, dataset_names, env_name=None):
+    """List all datasets and install the required ons"""
+    datasets = list_benchmark_datasets(benchmark)
+    for dataset_class in datasets:
+        for dataset_parameters in product_param(dataset_class.parameters):
+            dataset = dataset_class(**dataset_parameters)
+            if is_included(str(dataset), dataset_names):
+                dataset_class.install(env_name=env_name, force=False)
+
+
 class safe_import():
     """Do not fail on ImportError and Catch the warnings"""
     def __init__(self):
@@ -330,10 +356,6 @@ class safe_import():
         # prevent import error from propagating and tag
         if exc_type is not None and issubclass(exc_type, ImportError):
             self.failed_import = True
-
-            if PRINT_INSTALL_ERRORS:
-                import traceback
-                traceback.print_exc()
 
             # Prevent the error propagation
             silence_error = True

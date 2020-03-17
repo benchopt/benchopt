@@ -121,7 +121,7 @@ def test_solver_install(benchmark_name, solver_class):
     if solver_class.name in ['Liblinear', 'Cyanure']:
         pytest.xfail('%s is not fully working yet' % solver_class.name)
 
-    solver_class.install(env_name=TEST_ENV_NAME, force=True)
+    assert solver_class.install(env_name=TEST_ENV_NAME, force=True)
     assert solver_class.is_installed(env_name=TEST_ENV_NAME)
 
     if solver_class.install_cmd == 'pip':

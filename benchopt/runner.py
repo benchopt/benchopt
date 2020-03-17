@@ -6,8 +6,9 @@ from joblib import Memory
 
 from .base import Cost
 from .viz import plot_benchmark
-from .util import filter_solvers
+from .util import is_included
 from .util import product_param
+from .util import filter_solvers
 from .util import list_benchmark_solvers
 from .util import list_benchmark_datasets
 from .util import get_benchmark_objective
@@ -168,8 +169,6 @@ def run_one_solver(objective, solver_class, solver_parameters,
 
 def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                   dataset_names=None, max_samples=10, n_rep=1):
-
-    from .util import is_included
 
     # Load the objective class for this benchmark and the datasets
     objective_class = get_benchmark_objective(benchmark)
