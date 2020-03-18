@@ -4,4 +4,5 @@ joblib
 pytest
 pytest-timeout
 pytest-cov
+coverage
 codecov
