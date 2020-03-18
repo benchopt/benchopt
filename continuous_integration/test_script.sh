@@ -12,7 +12,7 @@ TEST_CMD="python -m pytest -v --showlocals --durations=20 --junitxml=$JUNITXML -
 TEST_CMD="$TEST_CMD --skip-install"
 
 if [[ "$COVERAGE" == "true" ]]; then
-    TEST_CMD="$TEST_CMD --cov=benchopt --cov-append"
+    TEST_CMD="$TEST_CMD --cov=benchopt"
 fi
 
 set -x
@@ -20,6 +20,7 @@ $TEST_CMD
 set +x
 
 
+ls -la
 if [[ "$COVERAGE" == "true" ]]; then
     coverage combine --append
     coverage xml -i  # language agnostic report for the codecov upload script
