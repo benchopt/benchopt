@@ -3,4 +3,5 @@ cython
 joblib
 pytest
 pytest-timeout
+pytest-cov
 codecov
