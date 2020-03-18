@@ -1,5 +1,5 @@
 numpy
 cython
-scikit-learn
+joblib
 pytest
 pytest-timeout

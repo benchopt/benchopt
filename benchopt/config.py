@@ -15,6 +15,7 @@ DEFAULT_GLOBAL = {
     'print_install_error': False,
     'venv_dir': './.venv/',
     'cache_dir': '.',
+    'data_dir': './data/'
 }
 
 DEFAULT_BENCHMARK = {
@@ -25,7 +26,7 @@ DEFAULT_BENCHMARK = {
 
 
 def get_global_setting(name):
-    assert name in DEFAULT_GLOBAL, f"Unkonwn config key {name}"
+    assert name in DEFAULT_GLOBAL, f"Unknown config key {name}"
 
     # TODO: get the correct type from DEFAULT_GLOBAL
     venv_name = f"BENCHO_{name.upper()}"

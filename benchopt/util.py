@@ -225,36 +225,30 @@ def list_benchmark_submodule_names(benchmark, submodule='solvers'):
     return [m.name for m in submodules]
 
 
+def _list_benchmark_submodule_classes(benchmark, package_name, class_name):
+
+    classes = []
+    # List all available module in benchmark.package_name
+    submodule_names = list_benchmark_submodule_names(benchmark, package_name)
+    module_name = get_benchmark_module_name(benchmark)
+    for submodule_name in submodule_names:
+        class_module_name = f"{module_name}.{package_name}.{submodule_name}"
+        module = import_module(class_module_name)
+
+        # Get the class
+        classes.append(getattr(module, class_name))
+
+    return classes
+
+
 def list_benchmark_solvers(benchmark):
     """List all available solver classes for a given benchmark"""
-
-    solver_classes = []
-    solver_names = list_benchmark_submodule_names(benchmark, 'solvers')
-    module_name = get_benchmark_module_name(benchmark)
-    for name in solver_names:
-        solver_module_name = f"{module_name}.solvers.{name}"
-        solver_module = import_module(solver_module_name)
-
-        # Get the Solver class
-        solver_classes.append(solver_module.Solver)
-
-    return solver_classes
+    return _list_benchmark_submodule_classes(benchmark, 'solvers', 'Solver')
 
 
 def list_benchmark_datasets(benchmark):
     """List all available dataset classes for a given benchmark"""
-
-    dataset_classes = []
-    datasets = list_benchmark_submodule_names(benchmark, 'datasets')
-    module_name = get_benchmark_module_name(benchmark)
-    for s in datasets:
-        solver_module_name = f"{module_name}.datasets.{s}"
-        solver_module = import_module(solver_module_name)
-
-        # Get the Solver class
-        dataset_classes.append(solver_module.Dataset)
-
-    return dataset_classes
+    return _list_benchmark_submodule_classes(benchmark, 'datasets', 'Dataset')
 
 
 def check_solver_name_list(name_list):
@@ -339,14 +333,16 @@ def install_required_datasets(benchmark, dataset_names, env_name=None):
                 dataset_class.install(env_name=env_name, force=False)
 
 
-class safe_import():
+class safe_import:
     """Do not fail on ImportError and Catch the warnings"""
     def __init__(self):
         self.failed_import = False
         self.record = warnings.catch_warnings(record=True)
 
     def __enter__(self):
-        self.record.__enter__()
+        # Catch the import warning except if install error are printed.
+        if not PRINT_INSTALL_ERROR:
+            self.record.__enter__()
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
@@ -360,7 +356,10 @@ class safe_import():
             # Prevent the error propagation
             silence_error = True
 
-        self.record.__exit__(exc_type, exc_value, traceback)
+        if not PRINT_INSTALL_ERROR:
+            self.record.__exit__(exc_type, exc_value, traceback)
+
+        # Returning True in __exit__ prevent error propagation.
         return silence_error
 
 
