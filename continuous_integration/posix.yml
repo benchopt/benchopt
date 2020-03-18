@@ -25,9 +25,6 @@ jobs:
         continuous_integration/test_script.sh
       displayName: 'Test Benchopt'
     - script: |
-        coverage combine --append
-        coverage xml -i  # language agnostic report for the codecov upload script
-        coverage report
         curl -s https://codecov.io/bash | bash
       condition: and(succeeded(), eq(variables['COVERAGE'], 'true'), eq(variables['PACKAGER'], 'conda'))
       displayName: 'Upload To Codecov'
