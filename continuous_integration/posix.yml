@@ -25,7 +25,8 @@ jobs:
         continuous_integration/test_script.sh
       displayName: 'Test Benchopt'
     - script: |
-        curl -s https://codecov.io/bash | bash
+        pip install codecov
+        codecov -t $CODECOV_TOKEN
       condition: and(succeeded(), eq(variables['COVERAGE'], 'true'), eq(variables['PACKAGER'], 'conda'))
       displayName: 'Upload To Codecov'
     - task: PublishTestResults@2
