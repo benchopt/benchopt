@@ -24,6 +24,9 @@ jobs:
     - script: |
         continuous_integration/test_script.sh
       displayName: 'Test Benchopt'
+    - script: |
+        continuous_integration/coverage_script.sh
+      displayName: 'Send coverage'
     - task: PublishTestResults@2
       inputs:
         testResultsFiles: '$(JUNITXML)'
