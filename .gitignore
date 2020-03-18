@@ -4,6 +4,8 @@ joblib
 .pytest_cache
 __pycache__
 *.egg-info
+/data
+/doc/_build
 
 # IDE specific folders
 .vscode
