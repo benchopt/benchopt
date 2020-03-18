@@ -9,10 +9,6 @@ class Solver(BaseSolver):
 
     parameters = {'use_acceleration': [False, True]}
 
-    def __init__(self, use_acceleration):
-        self.use_acceleration = use_acceleration
-        super().__init__()
-
     def set_objective(self, X, y, lmbd):
         self.X, self.y, self.lmbd = X, y, lmbd
 
