@@ -11,7 +11,7 @@ fi
 TEST_CMD="python -m pytest -v --showlocals --durations=20 --junitxml=$JUNITXML --pyargs"
 
 if [[ "$COVERAGE" == "true" ]]; then
-    TEST_CMD="$TEST_CMD --cov=./"
+    TEST_CMD="$TEST_CMD --cov=benchopt --cov-append"
 fi
 
 set -x
