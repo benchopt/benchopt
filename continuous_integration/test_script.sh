@@ -22,7 +22,7 @@ set +x
 
 ls -la
 if [[ "$COVERAGE" == "true" ]]; then
-    coverage combine --append
+    # coverage combine --append
     coverage xml -i  # language agnostic report for the codecov upload script
     coverage report
 fi
