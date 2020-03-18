@@ -1,4 +1,4 @@
-set DEFAULT_PYTEST_ARGS=-vlrx --timeout=60 --cov=benchopt
+set DEFAULT_PYTEST_ARGS=-vlrx --timeout=60
 
 call activate %VIRTUALENV%
 
