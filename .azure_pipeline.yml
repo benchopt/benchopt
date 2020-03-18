@@ -30,6 +30,7 @@ jobs:
       py36_conda:
         PACKAGER: 'conda'
         VERSION_PYTHON: '3.6'
+        COVERAGE: 'true'
       pylatest_conda:
         PACKAGER: 'conda'
         VERSION_PYTHON: '*'
