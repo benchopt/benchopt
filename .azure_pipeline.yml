@@ -96,11 +96,6 @@ jobs:
 
   - bash: |
       pip install codecov
-      echo "TOKEN: $TOKEN / $TOKEN2 / $(CODECOV_TOKEN)"
-      codecov -t $TOKEN_OPEN
-    env:
-      TOKEN_OPEN: c9c00143-6856-4ffa-bad5-c19f51e22dbc
-      TOKEN: $(CODECOV_TOKEN)
-      TOKEN2: $(test_var)
+      codecov -t $(CODECOV_TOKEN)
     displayName: 'Upload to codecov'
     condition: and(succeeded(), eq(variables['COVERAGE'], 'true'))
