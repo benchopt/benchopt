@@ -6,6 +6,7 @@ __pycache__
 *.egg-info
 /data
 /doc/_build
+.coverage
 
 # IDE specific folders
 .vscode

@@ -2,6 +2,7 @@
 
 [![Build Status](https://dev.azure.com/benchopt/benchopt/_apis/build/status/benchopt.benchOpt?branchName=master)](https://dev.azure.com/benchopt/benchopt/_build/latest?definitionId=1&branchName=master)
 [![Python 3.6+](https://img.shields.io/badge/python-3.6%2B-blue)](https://www.python.org/downloads/release/python-360/)
+[![codecov](https://codecov.io/gh/benchopt/benchOpt/branch/master/graph/badge.svg)](https://codecov.io/gh/benchopt/benchOpt)
 
 The goal of this project is to benchmark implementation of optimization methods on several classical problems.
 

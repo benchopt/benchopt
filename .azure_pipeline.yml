@@ -1,44 +1,101 @@
-# Adapted from https://github.com/pandas-dev/pandas/blob/master/azure-pipelines.yml
-jobs:
+# Adapted from https://github.com/joblib/loky/blob/master/.azure-pipelines.yml
 
-# - template: continuous_integration/windows.yml
-#   parameters:
-#     name: Windows
-#     vmImage: vs2017-win2016
-#     matrix:
-#       py38_pip:
+trigger:
+- master
+
+pr:
+- master
+
+# YAML file in the release branch
+schedules:
+- cron: "0 13 * * *"
+  displayName: Daily build
+  branches:
+    include:
+    - master
+  always: true
+
+jobs:
+- job: test_benchopt
+  displayName: Test
+  strategy:
+    matrix:
+
+      linux_py36_ubuntu:
+        imageName: 'ubuntu-latest'
+        PACKAGER: 'ubuntu'
+        VERSION_PYTHON: '3.6'
+      linux_py36_conda:
+        imageName: 'ubuntu-latest'
+        PACKAGER: 'conda'
+        VERSION_PYTHON: '3.6'
+        COVERAGE: 'true'
+      linux_pylatest_conda:
+        imageName: 'ubuntu-latest'
+        PACKAGER: 'conda'
+        VERSION_PYTHON: '*'
+
+      # MacOS builds
+      macOS_pylatest_conda:
+        imageName: 'macOS-10.14'
+        VERSION_PYTHON: '*'
+        PACKAGER: 'conda'
+
+#       win_py38_pip:
+#         imageName: 'vs2017-win2016'
 #         VERSION_PYTHON: '3.8'
 #         PACKAGER: 'pip'
-#       py37_conda:
+#       win_py37_conda:
+#         imageName: 'vs2017-win2016'
 #         VERSION_PYTHON: '3.7'
 #         PACKAGER: 'conda'
-#       py37_pip:
+#       win_py37_pip:
+#         imageName: 'vs2017-win2016'
 #         VERSION_PYTHON: '3.7'
 #         PACKAGER: 'pip'
-#       py36_pip:
+#       win_py36_pip:
+#         imageName: 'vs2017-win2016'
 #         VERSION_PYTHON: '3.6'
 #         PACKAGER: 'pip'
 
-- template: continuous_integration/posix.yml
-  parameters:
-    name: Linux
-    vmImage: ubuntu-18.04
-    matrix:
-      py36_ubuntu:
-        PACKAGER: 'ubuntu'
-        VERSION_PYTHON: '3.6'
-      py36_conda:
-        PACKAGER: 'conda'
-        VERSION_PYTHON: '3.6'
-      pylatest_conda:
-        PACKAGER: 'conda'
-        VERSION_PYTHON: '*'
+  variables:
+    VIRTUALENV: 'testvenv'
+    JUNITXML: 'test-data.xml'
 
-- template: continuous_integration/posix.yml
-  parameters:
-    name: macOS
-    vmImage: macOS-10.14
-    matrix:
-      pylatest_conda:
-        VERSION_PYTHON: '*'
-        PACKAGER: 'conda'
+  pool:
+    vmImage: $(imageName)
+
+  steps:
+
+  - bash: echo "##vso[task.prependpath]C:/Program Files/Git/bin"
+    displayName: 'Override Git bash shell for Windows'
+    condition: eq(variables['Agent.OS'], 'Windows_NT')
+
+  - powershell: Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
+    displayName: Add conda to PATH
+    condition: eq(variables['Agent.OS'], 'Windows_NT')
+
+  - bash: |
+      echo "##vso[task.prependpath]$CONDA/bin"
+      sudo chown -R $USER $CONDA
+    displayName: Add conda to PATH
+    condition: and(eq(variables['PACKAGER'], 'conda'),
+                   ne(variables['Agent.OS'], 'Windows_NT'))
+
+  - bash: bash continuous_integration/install.sh
+    displayName: 'Install benchopt and its dependencies'
+
+  - bash: bash continuous_integration/test_script.sh
+    displayName: 'Run the tests'
+
+  - task: PublishTestResults@2
+    inputs:
+      testResultsFiles: '$(JUNITXML)'
+    displayName: 'Publish Test Results'
+    condition: and(succeededOrFailed(), ne(variables['SKIP_TESTS'], 'true'))
+
+  - bash: |
+      pip install codecov
+      codecov -t $(CODECOV_TOKEN)
+    displayName: 'Upload to codecov'
+    condition: and(succeeded(), eq(variables['COVERAGE'], 'true'))

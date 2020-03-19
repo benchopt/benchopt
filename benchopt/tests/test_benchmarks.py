@@ -132,7 +132,7 @@ def test_solver_class(benchmark_name, solver_class):
 
 @pytest.mark.parametrize('benchmark_name, solver_class', BENCH_AND_SOLVERS,
                          ids=class_ids)
-def test_solver_install(benchmark_name, solver_class):
+def test_solver_install_api(benchmark_name, solver_class):
 
     # Check that the solver_class exposes a known install cmd
     assert solver_class.install_cmd in [None, 'pip', 'bash']
@@ -144,6 +144,11 @@ def test_solver_install(benchmark_name, solver_class):
         assert hasattr(solver_class, 'install_script')
         assert hasattr(solver_class, 'cmd_name')
 
+
+@pytest.mark.requires_install
+@pytest.mark.parametrize('benchmark_name, solver_class', BENCH_AND_SOLVERS,
+                         ids=class_ids)
+def test_solver_install(benchmark_name, solver_class):
     if solver_class.name in ['Liblinear', 'Cyanure']:
         pytest.xfail('%s is not fully working yet' % solver_class.name)
 
