@@ -76,10 +76,8 @@ jobs:
     displayName: 'Publish Test Results'
     condition: and(succeededOrFailed(), ne(variables['SKIP_TESTS'], 'true'))
 
-  - bash: |
-      echo "Token: $TOKEN"
-      curl -s https://codecov.io/bash | bash
+  - bash: bash <(curl -s https://codecov.io/bash) -P "$SYSTEM_PULLREQUEST_PULLREQUESTNUMBER"
     env:
-      TOKEN: $(CODECOV_TOKEN)
+      CODECOV_TOKEN: $(CODECOV_TOKEN)
     displayName: 'Upload to codecov'
     condition: and(succeeded(), eq(variables['COVERAGE'], 'true'))
