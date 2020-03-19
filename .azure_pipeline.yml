@@ -78,8 +78,7 @@ jobs:
     displayName: 'Publish Test Results'
     condition: and(succeededOrFailed(), ne(variables['SKIP_TESTS'], 'true'))
 
-  - task: codecovUpload
-    bash: |
+  - bash: |
       pip install codecov
       echo "TOKEN: $TOKEN / $(CODECOV_TOKEN)"
       codecov -t $TOKEN_OPEN
