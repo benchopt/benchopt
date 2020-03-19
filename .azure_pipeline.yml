@@ -41,6 +41,7 @@ jobs:
 #         imageName: 'vs2017-win2016'
 #         VERSION_PYTHON: '3.6'
 #         PACKAGER: 'pip'
+
   variables:
     VIRTUALENV: 'testvenv'
     JUNITXML: 'test-data.xml'
@@ -75,6 +76,8 @@ jobs:
     displayName: 'Publish Test Results'
     condition: and(succeededOrFailed(), ne(variables['SKIP_TESTS'], 'true'))
 
-  - bash: curl -s https://codecov.io/bash | bash
+  - bash: |
+      echo "Token: $(CODECOV_TOKEN)"
+      curl -s https://codecov.io/bash | bash
     displayName: 'Upload to codecov'
     condition: and(succeeded(), eq(variables['COVERAGE'], 'true'))
