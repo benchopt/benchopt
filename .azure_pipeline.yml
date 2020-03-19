@@ -5,16 +5,16 @@ jobs:
   strategy:
     matrix:
 
-      py36_ubuntu:
+      linux_py36_ubuntu:
         imageName: 'ubuntu-18.04'
         PACKAGER: 'ubuntu'
         VERSION_PYTHON: '3.6'
-      py36_conda:
+      linux_py36_conda:
         imageName: 'ubuntu-18.04'
         PACKAGER: 'conda'
         VERSION_PYTHON: '3.6'
         COVERAGE: 'true'
-      pylatest_conda:
+      linux_pylatest_conda:
         imageName: 'ubuntu-18.04'
         PACKAGER: 'conda'
         VERSION_PYTHON: '*'
@@ -58,8 +58,13 @@ jobs:
     displayName: Add conda to PATH
     condition: eq(variables['Agent.OS'], 'Windows_NT')
 
+  - bash: echo "##vso[task.prependpath]$CONDA/bin"
+    displayName: Add conda to PATH
+    condition: and(eq(variables['PACKAGER'], 'conda'),
+                   ne(variables['Agent.OS'], 'Windows_NT'))
+
   - bash: bash continuous_integration/install.sh
-    displayName: 'Install joblib and its dependencies'
+    displayName: 'Install benchopt and its dependencies'
 
   - bash: bash continuous_integration/test_script.sh
     displayName: 'Run the tests'
