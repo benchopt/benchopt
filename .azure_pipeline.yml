@@ -59,7 +59,9 @@ jobs:
     displayName: Add conda to PATH
     condition: eq(variables['Agent.OS'], 'Windows_NT')
 
-  - bash: echo "##vso[task.prependpath]$CONDA/bin"
+  - bash: |
+      echo "##vso[task.prependpath]$CONDA/bin"
+      sudo chown -R $USER $CONDA
     displayName: Add conda to PATH
     condition: and(eq(variables['PACKAGER'], 'conda'),
                    ne(variables['Agent.OS'], 'Windows_NT'))
@@ -78,9 +80,10 @@ jobs:
 
   - bash: |
       pip install codecov
-      echo "TOKEN: $CODECOV_TOKEN"
+      echo "TOKEN: $TOKEN"
       codecov -t $CODECOV_TOKEN
     env:
       CODECOV_TOKEN: c9c00143-6856-4ffa-bad5-c19f51e22dbc
+      TOKEN: $(token_codecov)
     displayName: 'Upload to codecov'
     condition: and(succeeded(), eq(variables['COVERAGE'], 'true'))
