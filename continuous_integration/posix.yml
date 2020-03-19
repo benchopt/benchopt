@@ -10,6 +10,7 @@ jobs:
   variables:
     VIRTUALENV: 'testvenv'
     JUNITXML: 'test-data.xml'
+    TOKEN: $(CODECOV_TOKEN)
   strategy:
     matrix:
       ${{ insert }}: ${{ parameters.matrix }}
@@ -18,18 +19,16 @@ jobs:
     - bash: echo "##vso[task.prependpath]$CONDA/bin"
       displayName: Add conda to PATH
       condition: eq(variables['PACKAGER'], 'conda')
-    - script: |
-        continuous_integration/install.sh
-      displayName: 'Install'
-    - script: |
-        continuous_integration/test_script.sh
-      displayName: 'Test Benchopt'
+    # - script: |
+    #     continuous_integration/install.sh
+    #   displayName: 'Install'
+    # - script: |
+    #     continuous_integration/test_script.sh
+    #   displayName: 'Test Benchopt'
     - script: |
         pip install codecov
-        echo "$TOKEN / $CODECOV_TOKEN"
+        echo "Token vars: $TOKEN / $CODECOV_TOKEN"
         codecov -t $TOKEN
-      env: # Explicitly pass secret variable to step
-        TOKEN: $CODECOV_TOKEN
       condition: and(succeeded(), eq(variables['COVERAGE'], 'true'), eq(variables['PACKAGER'], 'conda'))
       displayName: 'Upload To Codecov'
     - task: PublishTestResults@2
