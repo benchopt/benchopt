@@ -26,7 +26,7 @@ jobs:
     #   displayName: 'Test Benchopt'
     - script: |
         pip install codecov
-        echo "Token vars: $TOKEN / $(CODECOV_TOKEN)"
+        echo "Token vars: $TOKEN / $TOKEN2 / $(CODECOV_TOKEN) / variables['CODECOV_TOKEN']"
         codecov -t $TOKEN
       condition: and(succeeded(), eq(variables['COVERAGE'], 'true'), eq(variables['PACKAGER'], 'conda'))
       displayName: 'Upload To Codecov'
