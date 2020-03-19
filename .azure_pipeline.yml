@@ -6,16 +6,16 @@ jobs:
     matrix:
 
       linux_py36_ubuntu:
-        imageName: 'ubuntu-18.04'
+        imageName: 'ubuntu-latest'
         PACKAGER: 'ubuntu'
         VERSION_PYTHON: '3.6'
       linux_py36_conda:
-        imageName: 'ubuntu-18.04'
+        imageName: 'ubuntu-latest'
         PACKAGER: 'conda'
         VERSION_PYTHON: '3.6'
         COVERAGE: 'true'
       linux_pylatest_conda:
-        imageName: 'ubuntu-18.04'
+        imageName: 'ubuntu-latest'
         PACKAGER: 'conda'
         VERSION_PYTHON: '*'
 
@@ -77,7 +77,9 @@ jobs:
     condition: and(succeededOrFailed(), ne(variables['SKIP_TESTS'], 'true'))
 
   - bash: |
-      echo "Token: $(CODECOV_TOKEN)"
+      echo "Token: $TOKEN"
       curl -s https://codecov.io/bash | bash
+    env:
+      TOKEN: $(CODECOV_TOKEN)
     displayName: 'Upload to codecov'
     condition: and(succeeded(), eq(variables['COVERAGE'], 'true'))
