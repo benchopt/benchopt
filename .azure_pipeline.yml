@@ -32,7 +32,7 @@ jobs:
         VERSION_PYTHON: '3.6'
         COVERAGE: 'true'
         TOKEN: ${CODECOV_TOKEN}
-        TOKEN2: ${{ CODECOV_TOKEN }}
+        TOKEN2: $(CODECOV_TOKEN)
       pylatest_conda:
         PACKAGER: 'conda'
         VERSION_PYTHON: '*'
