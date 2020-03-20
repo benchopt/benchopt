@@ -9,7 +9,7 @@ with safe_import():
 
 
 class Solver(BaseSolver):
-    name = 'Gap Safe'
+    name = 'Gapsafe'
     sampling_strategy = 'iteration'
 
     install_cmd = 'pip'
