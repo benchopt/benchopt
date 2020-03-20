@@ -32,7 +32,8 @@ class Solver(BaseSolver):
         self.w = w
 
     def st(self, w, mu):
-        return np.sign(w) * np.maximum(0, np.abs(w) - mu)
+        w -= np.clip(w, -mu, mu)
+        return w
 
     def get_result(self):
         return self.w
