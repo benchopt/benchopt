@@ -61,7 +61,7 @@ from the union of the data and the objective parameters.
 
 You can define your custom solver.
 
-Example of hand written solver
+Example of hand written and parametrized solver
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Using a hand written solver:
