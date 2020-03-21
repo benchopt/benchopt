@@ -15,7 +15,7 @@ class Dataset(BaseDataset):
             (100, 10000)],
     }
 
-    def __init__(self, n_samples=10, n_features=50, random_state=27, corr=0.5):
+    def __init__(self, n_samples=10, n_features=50, random_state=27, corr=0):
         # Store the parameters of the dataset
         self.n_samples = n_samples
         self.n_features = n_features
@@ -23,12 +23,16 @@ class Dataset(BaseDataset):
         self.corr = corr
 
     def get_data(self):
-        # use Toeplitz covariance matrix:
-        idx = np.arange(self.n_features)
-        corr_mat = self.corr ** np.abs(idx[:, None] - idx)
         rng = np.random.RandomState(self.random_state)
-        X = rng.multivariate_normal(
-            np.zeros(self.n_features), corr_mat, self.n_samples)
+        if self.corr == 0:
+            X = rng.randn(self.n_samples, self.n_features)
+        else:
+            # use Toeplitz covariance matrix:
+            idx = np.arange(self.n_features)
+            corr_mat = self.corr ** np.abs(idx[:, None] - idx)
+            X = rng.multivariate_normal(
+                np.zeros(self.n_features), corr_mat, self.n_samples)
+
         y = rng.randn(self.n_samples)
 
         data = dict(X=X, y=y)
