@@ -174,6 +174,13 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
     objective_class = get_benchmark_objective(benchmark)
     datasets = list_benchmark_datasets(benchmark)
 
+    if dataset_names is not None:
+        unknwon_datasets = set(dataset_names) - \
+            set([ds.name.lower() for ds in datasets])
+        if unknwon_datasets:
+            raise ValueError(
+                "Unknown dataset(s): %s" % ', '.join(unknwon_datasets))
+
     # Load the solvers and filter them to get the one to run
     solver_classes = list_benchmark_solvers(benchmark)
     exclude = get_benchmark_setting(benchmark, 'exclude_solvers')

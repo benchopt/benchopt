@@ -274,9 +274,10 @@ def filter_solvers(solvers, solver_names=None, forced_solvers=None,
     if len(solver_names) > 0:
         solvers = [s for s in solvers
                    if s.name.lower() in solver_names + forced_solvers]
-        not_found = list(set(solver_names + forced_solvers) - set(solvers))
+        not_found = list(set(solver_names + forced_solvers) -
+                         set([s.name.lower() for s in solvers]))
         if not_found:
-            warnings.warn('Solver(s) not found: %s' % ', '.join(not_found))
+            raise ValueError('Solver(s) not found: %s' % ', '.join(not_found))
     return solvers
 
 
@@ -326,7 +327,7 @@ def install_solvers(solvers, forced_solvers=None, env_name=None):
 
 
 def install_required_datasets(benchmark, dataset_names, env_name=None):
-    """List all datasets and install the required ons"""
+    """List all datasets and install the required ones"""
     datasets = list_benchmark_datasets(benchmark)
     for dataset_class in datasets:
         for dataset_parameters in product_param(dataset_class.parameters):
