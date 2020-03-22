@@ -3,7 +3,7 @@ from benchopt.util import safe_import
 
 
 with safe_import() as solver_import:
-    import scipy as scp
+    from scipy import optimize
 
 
 class Solver(BaseSolver):
@@ -16,7 +16,7 @@ class Solver(BaseSolver):
         self.X, self.y = X, y
 
     def run(self, n_iter):
-        self.w = scp.optimize.nnls(self.X, self.y, maxiter=n_iter)[0]
+        self.w = optimize.nnls(self.X, self.y, maxiter=n_iter)[0]
 
     def get_result(self):
         return self.w
