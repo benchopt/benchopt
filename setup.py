@@ -28,7 +28,7 @@ setup(
     url=URL,
     packages=find_packages(),
     install_requires=['numpy', 'pandas', 'matplotlib',
-                      'click', 'joblib'],
+                      'click', 'joblib', 'scipy'],
     entry_points={
         'console_scripts': ['benchopt = benchopt.cli:start']
     }
