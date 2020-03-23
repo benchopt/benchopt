@@ -17,14 +17,6 @@ if solver_import.failed_import:
         return f
 
 
-@njit
-def positive_proj(x):
-    if x > 0:
-        return x
-    else:
-        return 0
-
-
 class Solver(BaseSolver):
     name = "cd"
 
@@ -56,7 +48,7 @@ class Solver(BaseSolver):
         for _ in range(n_iter):
             for j in range(n_features):
                 old = w[j]
-                w[j] = positive_proj(w[j] + X[:, j] @ R / L[j])
+                w[j] = max(w[j] + X[:, j] @ R / L[j], 0)
                 diff = old - w[j]
                 if diff != 0:
                     R += diff * X[:, j]
@@ -75,7 +67,7 @@ class Solver(BaseSolver):
                 scal = 0.
                 for ind in range(start, end):
                     scal += X_data[ind] * R[X_indices[ind]]
-                w[j] = positive_proj(w[j] + scal / L[j])
+                w[j] = max(w[j] + scal / L[j], 0)
                 diff = old - w[j]
                 if diff != 0:
                     for ind in range(start, end):

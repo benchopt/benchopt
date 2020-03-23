@@ -26,10 +26,10 @@ class Solver(BaseSolver):
                 w_old = w.copy()
             grad = self.X.T.dot(self.X.dot(w) - self.y)
             w -= grad / L
-            w = np.clip(w, a_min=0, a_max=None)
+            w_colector = max(w, 0)
             if self.use_acceleration:
-                w += (t_old - 1.) / t_new * (w - w_old)
-        self.w = w
+                w += (t_old - 1.) / t_new * (w_colector - w_old)
+        self.w = w_colector
 
     def get_result(self):
         return self.w
