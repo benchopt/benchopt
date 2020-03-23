@@ -9,6 +9,7 @@ from .util import bash_install_in_env
 from .util import pip_uninstall_in_env
 from .util import check_import_solver
 from .class_property import classproperty
+from .config import PRINT_INSTALL_ERROR
 
 
 # Possible sampling strategies
@@ -125,12 +126,18 @@ class DependenciesMixin:
         if force or not cls.is_installed(env_name=env_name):
             print(f"Installing {cls.name} in {env_name}:...",
                   end='', flush=True)
-            if cls.install_cmd == 'pip':
-                pip_install_in_env(*cls.requirements_install,
-                                   env_name=env_name)
-            elif cls.install_cmd == 'bash':
-                bash_install_in_env(cls.install_script, env_name=env_name)
-            print(" done")
+            try:
+                if cls.install_cmd == 'pip':
+                    pip_install_in_env(*cls.requirements_install,
+                                       env_name=env_name)
+                elif cls.install_cmd == 'bash':
+                    bash_install_in_env(cls.install_script, env_name=env_name)
+                print(" done")
+            except Exception as exception:
+                if PRINT_INSTALL_ERROR:
+                    raise exception
+                else:
+                    print(" failed")
         return cls.is_installed(env_name=env_name)
 
     @classmethod

@@ -118,8 +118,6 @@ def pip_install_in_env(*packages, env_name=None):
                          "To allow this, set BENCHO_ALLOW_INSTALL=True.")
     cmd = PIP_INSTALL_CMD.format(packages=' '.join(packages))
     error_msg = f"Failed to pip install packages {packages}\nError:{{output}}"
-    if not PRINT_INSTALL_ERROR:
-        error_msg = None
     _run_bash_in_env(cmd, env_name=env_name,
                      raise_on_error=error_msg)
 
