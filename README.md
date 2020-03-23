@@ -13,7 +13,7 @@ Install
 This package can be install through `pip` using
 
 ```
-$ pip install https://github.com/benchopt/benchopt
+$ pip install git+https://github.com/benchopt/benchopt
 ```
 
 Usage
