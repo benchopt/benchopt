@@ -18,7 +18,7 @@ class Objective(BaseObjective):
         self.X, self.y = X, y
 
     def __call__(self, beta):
-        if (beta > 0).all():
+        if (beta < 0).any():
             diff = self.y - self.X.dot(beta)
             return .5 * diff.dot(diff)
         else:
