@@ -13,7 +13,7 @@ Install
 This package can be install through `pip` using
 
 ```
-$ pip install git+https://github.com/benchopt/benchopt
+$ pip install -U https://api.github.com/repos/benchopt/benchOpt/zipball/master
 ```
 
 Usage
