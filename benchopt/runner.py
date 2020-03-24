@@ -49,7 +49,7 @@ def colorify(message, color=BLUE):
 @mem.cache
 def run_repetition(objective, solver_class, solver_parameters, meta, sample):
 
-    # check if the module catched a failed import
+    # check if the module caught a failed import
     module = importlib.import_module(solver_class.__module__)
     if module.solver_import.failed_import:
         raise ImportError(
@@ -119,7 +119,7 @@ def run_one_solver(objective, solver_class, solver_parameters,
         return max(id_sample / max_samples,
                    np.log(max(delta, eps)) / np.log(eps))
 
-    # check if the module catched a failed import
+    # check if the module caught a failed import
     module = importlib.import_module(solver_class.__module__)
     if module.solver_import.failed_import:
         status = colorify("failed import", YELLOW)
