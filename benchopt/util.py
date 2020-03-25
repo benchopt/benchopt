@@ -10,7 +10,7 @@ import subprocess
 from importlib import import_module
 
 from .config import get_global_setting
-from .config import DEBUG, ALLOW_INSTALL, PRINT_INSTALL_ERROR
+from .config import DEBUG, ALLOW_INSTALL, RAISE_INSTALL_ERROR
 
 
 # Load global setting
@@ -338,8 +338,8 @@ class safe_import:
         self.record = warnings.catch_warnings(record=True)
 
     def __enter__(self):
-        # Catch the import warning except if install error are printed.
-        if not PRINT_INSTALL_ERROR:
+        # Catch the import warning except if install errors are raised.
+        if not RAISE_INSTALL_ERROR:
             self.record.__enter__()
         return self
 
@@ -354,7 +354,7 @@ class safe_import:
             # Prevent the error propagation
             silence_error = True
 
-        if not PRINT_INSTALL_ERROR:
+        if not RAISE_INSTALL_ERROR:
             self.record.__exit__(exc_type, exc_value, traceback)
 
         # Returning True in __exit__ prevent error propagation.

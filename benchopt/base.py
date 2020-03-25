@@ -9,7 +9,7 @@ from .util import bash_install_in_env
 from .util import pip_uninstall_in_env
 from .util import check_import_solver
 from .class_property import classproperty
-from .config import PRINT_INSTALL_ERROR
+from .config import RAISE_INSTALL_ERROR
 
 
 # Possible sampling strategies
@@ -134,7 +134,7 @@ class DependenciesMixin:
                     bash_install_in_env(cls.install_script, env_name=env_name)
                 print(" done")
             except Exception as exception:
-                if PRINT_INSTALL_ERROR:
+                if RAISE_INSTALL_ERROR:
                     raise exception
                 else:
                     print(" failed")

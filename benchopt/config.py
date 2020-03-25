@@ -12,7 +12,7 @@ config.read(CONFIG_FILE_LOCATION)
 DEFAULT_GLOBAL = {
     'debug': False,
     'allow_install': False,
-    'print_install_error': False,
+    'raise_install_error': False,
     'venv_dir': './.venv/',
     'cache_dir': '.',
     'data_dir': './data/'
@@ -64,4 +64,4 @@ class BooleanFlag(object):
 
 DEBUG = BooleanFlag('debug')
 ALLOW_INSTALL = BooleanFlag('allow_install')
-PRINT_INSTALL_ERROR = BooleanFlag('print_install_error')
+RAISE_INSTALL_ERROR = BooleanFlag('raise_install_error')
