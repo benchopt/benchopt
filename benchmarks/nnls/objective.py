@@ -23,8 +23,6 @@ class Objective(BaseObjective):
             return .5 * diff.dot(diff)
         else:
             return np.inf
-        # diff = self.y - self.X.dot(beta)
-        # return .5 * diff.dot(diff)
 
     def to_dict(self):
         return dict(X=self.X, y=self.y)
