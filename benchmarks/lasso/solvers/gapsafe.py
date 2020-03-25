@@ -23,7 +23,7 @@ class Solver(BaseSolver):
     def run(self, n_iter):
         coefs_ = lasso_path(
             self.X, self.y, [self.lmbd], max_iter=n_iter, eps=1e-14,
-            fit_intercept=False)[1]
+            fit_intercept=False, verbose=False)[1]
         self.coef_ = coefs_[:, -1]
 
     def get_result(self):
