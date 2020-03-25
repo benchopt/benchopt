@@ -30,7 +30,7 @@ class Solver(BaseSolver):
     name = "cd"
 
     install_cmd = 'pip'
-    requirements = ['numba', 'sparse']
+    requirements = ['numba', 'scipy']
 
     def set_objective(self, X, y, lmbd):
         self.X, self.y, self.lmbd = X, y, lmbd
