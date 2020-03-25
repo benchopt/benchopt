@@ -122,7 +122,7 @@ def run_one_solver(objective, solver_class, solver_parameters,
     # check if the module caught a failed import
     module = importlib.import_module(solver_class.__module__)
     if module.solver_import.failed_import:
-        status = colorify("failed import", YELLOW)
+        status = colorify("failed import", RED)
         print(f"{tag} {status}".ljust(80))
         return curve
 
