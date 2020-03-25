@@ -10,9 +10,10 @@ class Dataset(BaseDataset):
     # List of parameters to generate the datasets. The benchmark will consider
     # the cross product for each key in the dictionary.
     parameters = {
-        'n_samples, n_features': [
-            (100, 5000),
-            (100, 10000)],
+        'n_samples, n_features, corr': [
+            (100, 5000, 0),
+            (100, 5000, 0.6),
+            (100, 10000, 0)],  # slow to simulate big correlated design
     }
 
     def __init__(self, n_samples=10, n_features=50, random_state=27, corr=0):
