@@ -16,6 +16,9 @@ class Solver(BaseSolver):
         self.X, self.y = X, y
 
     def run(self, n_iter):
+        # n_iter is not used here:
+        # optimize.nnls(self.X, self.y, maxiter=n_iter) could produce
+        # a RuntimeError for some dataset like Boston.
         self.w = optimize.nnls(self.X, self.y)[0]
 
     def get_result(self):
