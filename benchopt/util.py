@@ -324,7 +324,7 @@ def install_solvers(solvers, forced_solvers=None, env_name=None):
 
     if not all(successes):
         print("Some solvers were not successfully installed, and will thus be "
-              "ignored. Use 'export BENCHOPT_RAISE_INSTALL_ERROR=true' to "
+              "ignored. Use 'export BENCHO_RAISE_INSTALL_ERROR=true' to "
               "stop at any installation failure and print the traceback.")
 
 
