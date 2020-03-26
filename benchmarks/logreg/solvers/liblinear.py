@@ -1,5 +1,9 @@
 import pandas as pd
 from benchopt.base import CommandLineSolver
+from benchopt.util import safe_import
+
+with safe_import() as solver_import:
+    pass
 
 
 class Solver(CommandLineSolver):
