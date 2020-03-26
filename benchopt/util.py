@@ -316,9 +316,16 @@ def delete_venv(env_name):
 def install_solvers(solvers, forced_solvers=None, env_name=None):
     """Install the listed solvers if needed."""
 
+    successes = []
     for solver in solvers:
         force_install = solver.name.lower() in forced_solvers
-        solver.install(env_name=env_name, force=force_install)
+        success = solver.install(env_name=env_name, force=force_install)
+        successes.append(success)
+
+    if not all(successes):
+        print("Some solvers were not successfully installed, and will thus be "
+              "ignored. Use 'export BENCHOPT_RAISE_INSTALL_ERROR=true' to "
+              "stop at any installation failure and print the traceback.")
 
 
 def install_required_datasets(benchmark, dataset_names, env_name=None):
