@@ -123,7 +123,8 @@ class DependenciesMixin:
         if force:
             cls.uninstall(env_name=env_name)
 
-        if force or not cls.is_installed(env_name=env_name):
+        is_installed = cls.is_installed(env_name=env_name)
+        if force or not is_installed:
             print(f"Installing {cls.name} in {env_name}:...",
                   end='', flush=True)
             try:
@@ -132,13 +133,18 @@ class DependenciesMixin:
                                        env_name=env_name)
                 elif cls.install_cmd == 'bash':
                     bash_install_in_env(cls.install_script, env_name=env_name)
-                print(" done")
+
             except Exception as exception:
                 if RAISE_INSTALL_ERROR:
                     raise exception
-                else:
-                    print(" failed")
-        return cls.is_installed(env_name=env_name)
+
+            is_installed = cls.is_installed(env_name=env_name)
+            if is_installed:
+                print(" done")
+            else:
+                print(" failed")
+
+        return is_installed
 
     @classmethod
     def uninstall(cls, env_name=None):
