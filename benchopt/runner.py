@@ -51,7 +51,7 @@ def run_repetition(objective, solver_class, solver_parameters, meta, sample):
 
     # check if the module caught a failed import
     module = importlib.import_module(solver_class.__module__)
-    if module.solver_import.failed_import:
+    if hasattr(module, 'solver_import') and module.solver_import.failed_import:
         raise ImportError(
             f"Failure during import in {solver_class.__module__}.")
 
@@ -121,7 +121,7 @@ def run_one_solver(objective, solver_class, solver_parameters,
 
     # check if the module caught a failed import
     module = importlib.import_module(solver_class.__module__)
-    if module.solver_import.failed_import:
+    if hasattr(module, 'solver_import') and module.solver_import.failed_import:
         status = colorify("failed import", RED)
         print(f"{tag} {status}".ljust(80))
         return curve

@@ -323,9 +323,11 @@ def install_solvers(solvers, forced_solvers=None, env_name=None):
         successes.append(success)
 
     if not all(successes):
-        print("Some solvers were not successfully installed, and will thus be "
-              "ignored. Use 'export BENCHO_RAISE_INSTALL_ERROR=true' to "
-              "stop at any installation failure and print the traceback.")
+        warnings.warn(
+            "Some solvers were not successfully installed, and will thus be "
+            "ignored. Use 'export BENCHO_RAISE_INSTALL_ERROR=true' to "
+            "stop at any installation failure and print the traceback.",
+            UserWarning)
 
 
 def install_required_datasets(benchmark, dataset_names, env_name=None):
