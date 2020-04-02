@@ -10,7 +10,7 @@ import subprocess
 from importlib import import_module
 
 from .config import get_global_setting
-from .config import DEBUG, ALLOW_INSTALL, PRINT_INSTALL_ERROR
+from .config import DEBUG, ALLOW_INSTALL, RAISE_INSTALL_ERROR
 
 
 # Load global setting
@@ -118,8 +118,6 @@ def pip_install_in_env(*packages, env_name=None):
                          "To allow this, set BENCHO_ALLOW_INSTALL=True.")
     cmd = PIP_INSTALL_CMD.format(packages=' '.join(packages))
     error_msg = f"Failed to pip install packages {packages}\nError:{{output}}"
-    if not PRINT_INSTALL_ERROR:
-        error_msg = None
     _run_bash_in_env(cmd, env_name=env_name,
                      raise_on_error=error_msg)
 
@@ -318,9 +316,18 @@ def delete_venv(env_name):
 def install_solvers(solvers, forced_solvers=None, env_name=None):
     """Install the listed solvers if needed."""
 
+    successes = []
     for solver in solvers:
         force_install = solver.name.lower() in forced_solvers
-        solver.install(env_name=env_name, force=force_install)
+        success = solver.install(env_name=env_name, force=force_install)
+        successes.append(success)
+
+    if not all(successes):
+        warnings.warn(
+            "Some solvers were not successfully installed, and will thus be "
+            "ignored. Use 'export BENCHO_RAISE_INSTALL_ERROR=true' to "
+            "stop at any installation failure and print the traceback.",
+            UserWarning)
 
 
 def install_required_datasets(benchmark, dataset_names, env_name=None):
@@ -340,8 +347,8 @@ class safe_import:
         self.record = warnings.catch_warnings(record=True)
 
     def __enter__(self):
-        # Catch the import warning except if install error are printed.
-        if not PRINT_INSTALL_ERROR:
+        # Catch the import warning except if install errors are raised.
+        if not RAISE_INSTALL_ERROR:
             self.record.__enter__()
         return self
 
@@ -356,7 +363,7 @@ class safe_import:
             # Prevent the error propagation
             silence_error = True
 
-        if not PRINT_INSTALL_ERROR:
+        if not RAISE_INSTALL_ERROR:
             self.record.__exit__(exc_type, exc_value, traceback)
 
         # Returning True in __exit__ prevent error propagation.

@@ -4,7 +4,7 @@ from benchopt.config import DEFAULT_GLOBAL
 
 
 DEFAULT_GLOBAL['debug'] = True
-DEFAULT_GLOBAL['print_install_error'] = True
+DEFAULT_GLOBAL['raise_install_error'] = True
 
 
 def pytest_addoption(parser):

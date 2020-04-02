@@ -9,6 +9,7 @@ from .util import bash_install_in_env
 from .util import pip_uninstall_in_env
 from .util import check_import_solver
 from .class_property import classproperty
+from .config import RAISE_INSTALL_ERROR
 
 
 # Possible sampling strategies
@@ -122,16 +123,28 @@ class DependenciesMixin:
         if force:
             cls.uninstall(env_name=env_name)
 
-        if force or not cls.is_installed(env_name=env_name):
+        is_installed = cls.is_installed(env_name=env_name)
+        if force or not is_installed:
             print(f"Installing {cls.name} in {env_name}:...",
                   end='', flush=True)
-            if cls.install_cmd == 'pip':
-                pip_install_in_env(*cls.requirements_install,
-                                   env_name=env_name)
-            elif cls.install_cmd == 'bash':
-                bash_install_in_env(cls.install_script, env_name=env_name)
-            print(" done")
-        return cls.is_installed(env_name=env_name)
+            try:
+                if cls.install_cmd == 'pip':
+                    pip_install_in_env(*cls.requirements_install,
+                                       env_name=env_name)
+                elif cls.install_cmd == 'bash':
+                    bash_install_in_env(cls.install_script, env_name=env_name)
+
+            except Exception as exception:
+                if RAISE_INSTALL_ERROR:
+                    raise exception
+
+            is_installed = cls.is_installed(env_name=env_name)
+            if is_installed:
+                print(" done")
+            else:
+                print(" failed")
+
+        return is_installed
 
     @classmethod
     def uninstall(cls, env_name=None):

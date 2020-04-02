@@ -1,4 +1,5 @@
 import time
+import importlib
 import numpy as np
 import pandas as pd
 from joblib import Memory
@@ -47,6 +48,12 @@ def colorify(message, color=BLUE):
 ##################################
 @mem.cache
 def run_repetition(objective, solver_class, solver_parameters, meta, sample):
+
+    # check if the module caught a failed import
+    module = importlib.import_module(solver_class.__module__)
+    if hasattr(module, 'solver_import') and module.solver_import.failed_import:
+        raise ImportError(
+            f"Failure during import in {solver_class.__module__}.")
 
     # Instantiate solver here to avoid having weird pickling errors
     solver = solver_class(**solver_parameters)
@@ -111,6 +118,13 @@ def run_one_solver(objective, solver_class, solver_parameters,
     def progress(id_sample, delta):
         return max(id_sample / max_samples,
                    np.log(max(delta, eps)) / np.log(eps))
+
+    # check if the module caught a failed import
+    module = importlib.import_module(solver_class.__module__)
+    if hasattr(module, 'solver_import') and module.solver_import.failed_import:
+        status = colorify("failed import", RED)
+        print(f"{tag} {status}".ljust(80))
+        return curve
 
     id_sample = 0
     sample = 1
