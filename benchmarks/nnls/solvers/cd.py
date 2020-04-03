@@ -4,15 +4,15 @@ from numpy.linalg import norm
 
 from benchopt.base import BaseSolver
 from benchopt.util import safe_import
-import warnings
-from numba.errors import PerformanceWarning
-
-warnings.filterwarnings("ignore", category=PerformanceWarning)
 
 
 with safe_import() as solver_import:
     from scipy import sparse
     from numba import njit
+    import warnings
+    from numba.errors import PerformanceWarning
+
+    warnings.filterwarnings("ignore", category=PerformanceWarning)
 
 if solver_import.failed_import:
 
