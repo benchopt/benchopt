@@ -5,13 +5,15 @@ from benchopt.base import BaseSolver
 
 
 class Solver(BaseSolver):
-    name = 'Baseline'  # proximal gradient, eventually accelerated
+    """Baseline is proximal gradient, optionnaly accelerated."""
+    name = 'Baseline'
 
     # any parameter defined here is accessible as a class attribute
     parameters = {'use_acceleration': [False, True]}
 
-    def set_objective(self, X, y):
+    def set_objective(self, X, y, fit_intercept=False):
         self.X, self.y = X, y
+        self.fit_intercept = fit_intercept
 
     def run(self, n_iter):
         L = np.linalg.norm(self.X, ord=2) ** 2

@@ -14,8 +14,9 @@ class Solver(BaseSolver):
     install_cmd = 'pip'
     requirements = ['scipy']
 
-    def set_objective(self, X, y):
+    def set_objective(self, X, y, fit_intercept=False):
         self.X, self.y = X, y
+        self.fit_intercept = fit_intercept
 
     def run(self, n_iter):
         m, n = self.X.shape
