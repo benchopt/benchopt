@@ -284,6 +284,7 @@ def is_included(name, include_patterns=None):
     if include_patterns is None or len(include_patterns) == 0:
         return True
     for p in include_patterns:
+        p = p.replace("*", '.*')
         if re.match(f".*{p}.*", name, flags=re.IGNORECASE) is not None:
             return True
     return False
