@@ -4,15 +4,14 @@ from numpy.linalg import norm
 
 from benchopt.base import BaseSolver
 from benchopt.util import safe_import
+from warnings import filterwarnings
 
 
 with safe_import() as solver_import:
     from scipy import sparse
     from numba import njit
-    import warnings
     from numba.errors import PerformanceWarning
 
-    warnings.filterwarnings("ignore", category=PerformanceWarning)
 
 if solver_import.failed_import:
 
@@ -34,6 +33,8 @@ class Solver(BaseSolver):
         self.run(1)
 
     def run(self, n_iter):
+        filterwarnings("ignore", category=PerformanceWarning)
+
         if sparse.issparse(self.X):
             L = sparse.linalg.norm(self.X, axis=0) ** 2
             self.w = self.sparse_cd(
