@@ -32,7 +32,7 @@ class Solver(BaseSolver):
             if self.use_acceleration:
                 t_old = t_new
                 t_new = (1 + np.sqrt(1 + 4 * t_old ** 2)) / 2
-                z += (t_old - 1.) / t_new * (w - w_old)
+                z = w + (t_old - 1.) / t_new * (w - w_old)
 
     def get_result(self):
         return self.w
