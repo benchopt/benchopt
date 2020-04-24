@@ -40,10 +40,12 @@ List of optimization problems available
 
 - `lasso`: aka l1-regularized least-squares. This consists in solving the following program:
 
-```min_w (1 / (2 * n_samples)) * ||y - Xw||^2_2 + alpha * ||w||_1```
+  ```min_w (1 / (2 * n_samples)) * ||y - Xw||^2_2 + alpha * ||w||_1```
 
--`logreg`: aka l1-regularized logistic regression. This consists in solving the following program
-```min_w \sum_i (1 + np.exp(-y_i X_{i,:} w)) + alpha * ||w||_1```
+- `logreg`: aka l1-regularized logistic regression. This consists in solving the following program:
 
--`nnls`: aka non-negative least-squares. This consists in solving the following program:
-```min_{w >=0} (1 / (2 * n_samples)) * ||y - Xw||^2_2```
+  ```min_w \sum_i (1 + np.exp(-y_i X_{i,:} w)) + alpha * ||w||_1```
+
+- `nnls`: aka non-negative least-squares. This consists in solving the following program:
+
+  ```min_{w >=0} (1 / (2 * n_samples)) * ||y - Xw||^2_2```
