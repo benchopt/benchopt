@@ -35,8 +35,7 @@ Use `benchopt run -h` for more details about these options, or visit https://ben
 
 
 
-List of optimization problems available
----------------------------------------------------
+### List of optimization problems available
 
 - `lasso`: aka l1-regularized least-squares. This consists in solving the following program:
 
