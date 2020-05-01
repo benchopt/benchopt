@@ -52,6 +52,8 @@ class Solver(BaseSolver):
         w = np.zeros(n_features)
         for _ in range(n_iter):
             for j in range(n_features):
+                if L[j] == 0.:
+                    continue
                 old = w[j]
                 w[j] = w[j] + X[:, j] @ R / L[j]
                 diff = old - w[j]
@@ -67,6 +69,8 @@ class Solver(BaseSolver):
         R = np.copy(y)
         for _ in range(n_iter):
             for j in range(n_features):
+                if L[j] == 0.:
+                    continue
                 old = w[j]
                 start, end = X_indptr[j:j+2]
                 scal = 0.
