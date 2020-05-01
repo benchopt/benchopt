@@ -43,13 +43,13 @@ List of optimization problems available
 
 .. math::
 
-    \min_w \frac{1}{2n} \|y - Xw\|^2_2 + \alpha \|w\|_1
+    \min_w \frac{1}{2n} \|y - Xw\|^2_2 + \lambda \|w\|_1
 
 - `logreg`: aka l1-regularized logistic regression. This consists in solving the following program:
 
 .. math::
 
-    \min_w \sum_i (1 + \exp(-y_i x_i^\top w)) + \alpha \|w\|_1
+    \min_w \sum_i \log(1 + \exp(-y_i x_i^\top w)) + \lambda \|w\|_1
 
 - `nnls`: aka non-negative least-squares. This consists in solving the following program:
 
