@@ -109,9 +109,14 @@ html_theme_options = {
         # ("Models", "models"),
         # ("Examples", "auto_examples/index"),
         ("API", "api"),
+        ("Write a benchmark", "how"),
         ("GitHub", "https://github.com/benchopt/benchOpt", True)
     ],
-    'bootswatch_theme': "united"
+    # 'bootswatch_theme': "united",
+    # 'bootswatch_theme': "sandstone",
+    'bootswatch_theme': "flatly",
+    # 'bootswatch_theme': "simplex",
+    'bootstrap_version': "3",
 }
 
 # Add any paths that contain custom themes here, relative to this directory.
@@ -189,3 +194,7 @@ texinfo_documents = [
 #         'scipy': 'http://docs.scipy.org/doc/scipy-0.17.0/reference',
 #         'mayavi': 'http://docs.enthought.com/mayavi/mayavi'}
 # }
+
+
+def setup(app):
+    app.add_stylesheet('style.css')

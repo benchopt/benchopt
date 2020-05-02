@@ -17,12 +17,16 @@ URL = 'https://github.com/benchopt/benchopt'
 LICENSE = 'BSD (3-clause)'
 VERSION = __version__
 
+with open('README.rst', 'r') as fid:
+    long_description = fid.read()
 
 setup(
     name=DISTNAME,
     maintainer=MAINTAINER,
     maintainer_email=MAINTAINER_EMAIL,
     description=DESCRIPTION,
+    long_description=long_description,
+    long_description_content_type='text/x-rst',
     license=LICENSE,
     version=VERSION,
     url=URL,
