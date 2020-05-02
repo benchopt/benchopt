@@ -120,4 +120,6 @@ workflows:
   default:
     jobs:
       - build_docs
-      - deploy
+      - deploy:
+          requires:
+            - build_docs
