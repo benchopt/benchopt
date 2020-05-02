@@ -71,7 +71,7 @@ jobs:
             path: doc/_build/html/
             destination: dev
         - persist_to_workspace:
-            root: docs/build
+            root: doc/_build
             paths:
               - html
 
