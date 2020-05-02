@@ -196,5 +196,5 @@ texinfo_documents = [
 # }
 
 
-def setup(app):
-    app.add_stylesheet('style.css')
+# def setup(app):
+#     app.add_stylesheet('style.css')
