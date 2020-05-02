@@ -95,7 +95,7 @@ jobs:
             name: Deploy docs
             command: |
               set -e;
-              if [ "${CIRCLE_BRANCH}" == "circle_ci" ]; then
+              if [ "${CIRCLE_BRANCH}" == "master" ]; then
                 git config --global user.email "circle@benchopt.com";
                 git config --global user.name "Circle CI";
                 cd ~/benchopt.github.io;
@@ -126,4 +126,4 @@ workflows:
           filters:
             branches:
               only:
-                - circle_ci
+                - master
