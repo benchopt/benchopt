@@ -123,3 +123,7 @@ workflows:
       - deploy:
           requires:
             - build_docs
+          filters:
+            branches:
+              only:
+                - circle_ci
