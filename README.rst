@@ -39,29 +39,35 @@ Use `benchopt run -h` for more details about these options, or visit https://ben
 List of optimization problems available
 ---------------------------------------
 
-- `ols`: aka ordinary least-squares. This consists in solving the following program:
+Notation:  In that follows, n (or n_samples) stands for the number of samples and p (or n_features) stands for the number of features. 
 
 .. math:: 
 
-	\min_w \frac{1}{2} \|y - Xw\|^2_2
+ y \in \mathbb{R}^n, X = [x_1^\top, \dots, x_n^\top]^\top \in \mathbb{R}^{n \times p}
 
-- `lasso`: aka l1-regularized least-squares. This consists in solving the following program:
+- `ols`: ordinary least-squares. This consists in solving the following program:
 
 .. math::
 
-    \min_w \frac{1}{2n} \|y - Xw\|^2_2 + \lambda \|w\|_1
+	\min_w \frac{1}{2} \|y - Xw\|^2_2
 
-- `logreg`: aka l1-regularized logistic regression. This consists in solving the following program:
+- `lasso`: l1-regularized least-squares. This consists in solving the following program:
+
+.. math::
+
+    \min_w \frac{1}{2} \|y - Xw\|^2_2 + \lambda \|w\|_1
+
+- `logreg`: l1-regularized logistic regression. This consists in solving the following program:
 
 .. math::
 
     \min_w \sum_i \log(1 + \exp(-y_i x_i^\top w)) + \lambda \|w\|_1
 
-- `nnls`: aka non-negative least-squares. This consists in solving the following program:
+- `nnls`: non-negative least-squares. This consists in solving the following program:
 
 .. math::
 
-    \min_{w \geq 0} \frac{1}{2n} \|y - Xw\|^2_2
+    \min_{w \geq 0} \frac{1}{2} \|y - Xw\|^2_2
 
 
 .. |Build Status| image:: https://dev.azure.com/benchopt/benchopt/_apis/build/status/benchopt.benchOpt?branchName=master
