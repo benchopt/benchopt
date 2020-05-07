@@ -39,9 +39,9 @@ Use `benchopt run -h` for more details about these options, or visit https://ben
 List of optimization problems available
 ---------------------------------------
 
-Notation:  In that follows, n (or n_samples) stands for the number of samples and p (or n_features) stands for the number of features. 
+Notation:  In what follows, n (or n_samples) stands for the number of samples and p (or n_features) stands for the number of features.
 
-.. math:: 
+.. math::
 
  y \in \mathbb{R}^n, X = [x_1^\top, \dots, x_n^\top]^\top \in \mathbb{R}^{n \times p}
 
