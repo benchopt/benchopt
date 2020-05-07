@@ -10,7 +10,10 @@ from warnings import filterwarnings
 with safe_import() as solver_import:
     from scipy import sparse
     from numba import njit
-    from numba.errors import PerformanceWarning
+    try:
+        from numba.core.errors import NumbaPerformanceWarning
+    except ImportError:
+        from numba.errors import PerformanceWarning as NumbaPerformanceWarning
 
 
 if solver_import.failed_import:
@@ -33,7 +36,7 @@ class Solver(BaseSolver):
         self.run(1)
 
     def run(self, n_iter):
-        filterwarnings("ignore", category=PerformanceWarning)
+        filterwarnings("ignore", category=NumbaPerformanceWarning)
 
         if sparse.issparse(self.X):
             L = sparse.linalg.norm(self.X, axis=0) ** 2
