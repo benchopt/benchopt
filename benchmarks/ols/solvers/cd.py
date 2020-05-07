@@ -11,9 +11,13 @@ with safe_import() as solver_import:
     from scipy import sparse
     from numba import njit
     try:
-        from numba.core.errors import NumbaPerformanceWarning
+        from numba.core.errors import NumbaPerformanceWarning  # numba 0.49
     except ImportError:
-        from numba.errors import PerformanceWarning as NumbaPerformanceWarning
+        try:
+            from numba.errors import NumbaPerformanceWarning  # numba 0.44
+        except ImportError:
+            from numba.errors import PerformanceWarning as \
+                NumbaPerformanceWarning  # numba 0.24
 
 
 if solver_import.failed_import:
