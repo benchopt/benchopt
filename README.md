@@ -37,10 +37,6 @@ Use `benchopt run -h` for more details about these options, or visit https://ben
 
 ### List of optimization problems available
 
-- `ols`: aka ordinary least-squares. This consists in solving the following program:
-
-  ```min_w 1 / 2 * ||y - Xw||^2_2```
-
 - `lasso`: aka l1-regularized least-squares. This consists in solving the following program:
 
   ```min_w (1 / (2 * n_samples)) * ||y - Xw||^2_2 + alpha * ||w||_1```
