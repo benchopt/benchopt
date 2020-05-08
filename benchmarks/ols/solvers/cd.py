@@ -8,14 +8,9 @@ from warnings import filterwarnings
 with safe_import() as solver_import:
     from scipy import sparse
     from numba import njit
-    try:
-        from numba.core.errors import NumbaPerformanceWarning  # numba 0.49
-    except ImportError:
-        try:
-            from numba.errors import NumbaPerformanceWarning  # numba 0.44
-        except ImportError:
-            from numba.errors import PerformanceWarning as \
-                NumbaPerformanceWarning  # numba 0.24
+
+    from benchopt.utils.solvers.numba import import_numba_warnings
+    NumbaPerformanceWarning = import_numba_warnings("performance")
 
 
 if solver_import.failed_import:

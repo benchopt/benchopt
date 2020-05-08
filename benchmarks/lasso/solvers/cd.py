@@ -2,11 +2,15 @@ import numpy as np
 
 from benchopt.base import BaseSolver
 from benchopt.util import safe_import
+from warnings import filterwarnings
 
 
 with safe_import() as solver_import:
     from scipy import sparse
     from numba import njit
+
+    from benchopt.utils.solvers.numba import import_numba_warnings
+    NumbaPerformanceWarning = import_numba_warnings("performance")
 
 
 if solver_import.failed_import:
@@ -37,6 +41,7 @@ class Solver(BaseSolver):
         self.run(1)
 
     def run(self, n_iter):
+        filterwarnings("ignore", category=NumbaPerformanceWarning)
         L = (self.X ** 2).sum(axis=0)
         if sparse.issparse(self.X):
             self.w = self.sparse_cd(
