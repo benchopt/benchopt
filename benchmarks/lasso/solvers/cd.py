@@ -37,7 +37,7 @@ class Solver(BaseSolver):
         self.run(1)
 
     def run(self, n_iter):
-        L = (self.X ** 2).sum(axis =0)
+        L = (self.X ** 2).sum(axis=0)
         if sparse.issparse(self.X):
             self.w = self.sparse_cd(
                 self.X.data, self.X.indices, self.X.indptr, self.y, self.lmbd,
