@@ -11,7 +11,6 @@ class Solver(BaseSolver):
 
     install_cmd = 'pip'
     requirements = ['statsmodels']
-    requirements_import = ['statsmodels']
 
     def set_objective(self, X, y, lmbd):
         self.X, self.y, self.lmbd = X, y, lmbd
