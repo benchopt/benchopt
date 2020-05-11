@@ -30,7 +30,7 @@ class Solver(BaseSolver):
 
     def set_objective(self, X, y, lmbd):
         # use Fortran order to compute gradient on contiguous columns
-        self.X, self.y, self.lmbd = np.ascontiguousarray(X.T).T, y, lmbd
+        self.X, self.y, self.lmbd = np.asfortranarray(X), y, lmbd
 
         # Make sure we cache the numba compilation.
         self.run(1)

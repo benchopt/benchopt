@@ -22,7 +22,7 @@ class Solver(BaseSolver):
 
     def set_objective(self, X, y, fit_intercept=False):
         # use Fortran order to compute gradient on contiguous columns
-        self.X, self.y = np.ascontiguousarray(X.T).T, y
+        self.X, self.y = np.asfortranarray(X), y
         self.fit_intercept = fit_intercept
 
         # Make sure we cache the numba compilation.
