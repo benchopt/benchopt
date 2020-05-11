@@ -2,13 +2,10 @@ import numpy as np
 
 from benchopt.base import BaseSolver
 from benchopt.util import safe_import
-from warnings import filterwarnings
-
 
 with safe_import() as solver_import:
     from scipy import sparse
     from numba import njit
-    from numba.errors import PerformanceWarning
 
 
 if solver_import.failed_import:
@@ -24,14 +21,14 @@ class Solver(BaseSolver):
     requirements = ['numba', 'scipy']
 
     def set_objective(self, X, y, fit_intercept=False):
-        self.X, self.y = X, y
+        # use Fortran order to compute gradient on contiguous columns
+        self.X, self.y = np.asfortranarray(X), y
         self.fit_intercept = fit_intercept
 
         # Make sure we cache the numba compilation.
         self.run(1)
 
     def run(self, n_iter):
-        filterwarnings("ignore", category=PerformanceWarning)
         L = (self.X ** 2).sum(axis=0)
         if sparse.issparse(self.X):
             self.w = self.sparse_cd(
