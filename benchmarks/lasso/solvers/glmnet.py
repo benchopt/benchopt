@@ -15,7 +15,7 @@ class Solver(BaseSolver):
 
     install_cmd = 'bash'
     install_script = 'install_glmnet.sh'
-    requirements = ['rpy2']
+    requirements_import = ['rpy2']
 
     def set_objective(self, X, y, lmbd):
         self.X, self.y, self.lmbd = X, y, lmbd
@@ -32,7 +32,6 @@ class Solver(BaseSolver):
         as_matrix = robjects.r['as']
         coefs = np.array(as_matrix(results["beta"], "matrix"))
         self.w = coefs[:, -1]
-        # TODO del coefs?
 
     def get_result(self):
         return self.w
