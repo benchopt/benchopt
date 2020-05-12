@@ -95,6 +95,7 @@ jobs:
             name: Deploy docs
             command: |
               set -e;
+              cd ~/benchopt.github.io;
               if [[ -z $(git diff) || "${CIRCLE_BRANCH}" != "master" ]]; then
                 echo "No deployment (build: ${CIRCLE_BRANCH}).";
               else
