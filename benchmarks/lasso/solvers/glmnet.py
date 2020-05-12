@@ -13,13 +13,8 @@ with safe_import() as solver_import:
 class Solver(BaseSolver):
     name = "glmnet"
 
-    install_cmd = 'python'
-    install_script = """
-    import rpy2.robjects.packages as rpackages
-    utils = rpackages.importr('utils')
-    utils.chooseCRANmirror(ind=1)
-    utils.install_packages("glmnet", dependencies=True)
-    """
+    install_cmd = 'bash'
+    install_script = 'install_glmnet.sh'
     requirements = ['rpy2']
 
     def set_objective(self, X, y, lmbd):
