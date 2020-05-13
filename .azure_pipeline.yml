@@ -78,8 +78,6 @@ jobs:
   - bash: |
       conda init $SHELL
       ./env.sh
-      sudo ./svc.sh stop
-      sudo ./svc.sh start
     displayName: Conda init
     condition: ne(variables['Agent.OS'], 'Windows_NT')
 
