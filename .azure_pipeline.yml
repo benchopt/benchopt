@@ -71,13 +71,11 @@ jobs:
     displayName: 'Override Git bash shell for Windows'
     condition: eq(variables['Agent.OS'], 'Windows_NT')
 
-  - powershell: conda init $SHELL
+  - powershell: conda init powershell
     displayName: Conda init
     condition: eq(variables['Agent.OS'], 'Windows_NT')
 
-  - bash: |
-      conda init bash
-      exec bash
+  - bash: conda init bash
     displayName: Conda init
     condition: ne(variables['Agent.OS'], 'Windows_NT')
 
