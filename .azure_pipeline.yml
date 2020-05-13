@@ -71,13 +71,16 @@ jobs:
     displayName: 'Override Git bash shell for Windows'
     condition: eq(variables['Agent.OS'], 'Windows_NT')
 
-  - powershell: conda init powershell
-    displayName: Conda init
+  - powershell: Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
+    displayName: Add conda to PATH
     condition: eq(variables['Agent.OS'], 'Windows_NT')
 
-  - bash: conda init bash
-    displayName: Conda init
-    condition: ne(variables['Agent.OS'], 'Windows_NT')
+  - bash: |
+      echo "##vso[task.prependpath]$CONDA/bin"
+      sudo chown -R $USER $CONDA
+    displayName: Add conda to PATH
+    condition: and(eq(variables['PACKAGER'], 'conda'),
+                   ne(variables['Agent.OS'], 'Windows_NT'))
 
   - bash: bash continuous_integration/install.sh
     displayName: 'Install benchopt and its dependencies'
