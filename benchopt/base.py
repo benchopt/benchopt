@@ -120,7 +120,7 @@ class DependenciesMixin:
             True if the class is correctly installed in the environment.
         """
         # uninstall the class that requires a force reinstall
-        if force:
+        if force and cls.is_installed(env_name=env_name):
             cls.uninstall(env_name=env_name)
 
         is_installed = cls.is_installed(env_name=env_name)

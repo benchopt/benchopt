@@ -115,6 +115,7 @@ def conda_install_in_env(*packages, env_name=None):
     if env_name is None and not ALLOW_INSTALL:
         raise ValueError("Trying to install solver not in a conda env. "
                          "To allow this, set BENCHO_ALLOW_INSTALL=True.")
+    install_this = False
     if '-e .' in packages:
         install_this = True
         packages = list(packages)
@@ -133,6 +134,7 @@ def conda_uninstall_in_env(*packages, env_name=None):
     if env_name is None and not ALLOW_INSTALL:
         raise ValueError("Trying to uninstall solver not in a conda env. "
                          "To allow this, set BENCHO_ALLOW_INSTALL=True.")
+    uninstall_this = False
     if '-e .' in packages:
         uninstall_this = True
         packages = list(packages)
