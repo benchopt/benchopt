@@ -21,7 +21,7 @@ fi
 make_conda() {
     TO_INSTALL="$@"
     conda create -n $CONDAENV --yes $TO_INSTALL
-    source activate $CONDAENV
+    conda activate $CONDAENV
 }
 
 # if [[ "$PACKAGER" == "conda" ]]; then
