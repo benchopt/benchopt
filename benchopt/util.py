@@ -103,7 +103,8 @@ def _run_bash_in_env(script, env_name=None, raise_on_error=None,
         Exit code of the script
     """
     if env_name is not None:
-        script = f"conda activate {env_name}\n{script}"
+        script = (". $CONDA_PREFIX/etc/profile.d/conda.sh && "
+                  f"conda activate {env_name}\n{script}")
 
     return _run_in_bash(script, raise_on_error=raise_on_error,
                         capture_stdout=capture_stdout)
