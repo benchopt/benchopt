@@ -25,7 +25,7 @@ def st(x, mu):
 class Solver(BaseSolver):
     name = "cd"
 
-    install_cmd = 'pip'
+    install_cmd = 'conda'
     requirements = ['numba', 'scipy']
 
     def set_objective(self, X, y, lmbd):

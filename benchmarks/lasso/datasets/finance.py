@@ -17,7 +17,7 @@ class Dataset(BaseDataset):
     # TODO call the dataset log1p_train to harmonize with libsvm naming?
     name = "finance"
 
-    install_cmd = 'pip'
+    install_cmd = 'conda'
     requirements = ['scikit-learn', 'scipy', 'download', 'tqdm']
     requirements_import = ['sklearn', 'scipy', 'download', 'tqdm']
 

@@ -11,7 +11,7 @@ class Dataset(BaseDataset):
 
     name = "Boston"
 
-    install_cmd = "pip"
+    install_cmd = 'conda'
     requirements = ['scikit-learn']
     requirements_import = ['sklearn']
 

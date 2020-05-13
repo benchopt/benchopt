@@ -7,8 +7,8 @@ from benchopt.util import get_all_benchmarks
 from benchopt.util import get_benchmark_objective
 from benchopt.util import list_benchmark_solvers
 from benchopt.util import list_benchmark_datasets
-from benchopt.util import create_venv, delete_venv
 from benchopt.util import check_failed_import
+from benchopt.util import create_condaenv, delete_condaenv
 
 
 BENCHMARKS = get_all_benchmarks()
@@ -38,11 +38,11 @@ TEST_ENV_NAME = "benchopt_test_env"
 
 def setup_module(module):
     print("create env")
-    create_venv(TEST_ENV_NAME, recreate=True)
+    create_condaenv(TEST_ENV_NAME, recreate=True)
 
 
 def teardown_module(module):
-    delete_venv(TEST_ENV_NAME)
+    delete_condaenv(TEST_ENV_NAME)
 
 
 @pytest.mark.parametrize('benchmark_name, dataset_class', BENCH_AND_SIMULATED,
@@ -93,7 +93,7 @@ def test_dataset_get_data(benchmark_name, dataset_class):
     """Check that all installed dataset_class.get_data return the right result
     """
     # skip the test if the dataset is not installed
-    if dataset_class.install_cmd == 'pip':
+    if dataset_class.install_cmd == 'conda':
         for package in dataset_class.requirements_import:
             pytest.importorskip(package)
 
@@ -136,10 +136,10 @@ def test_solver_class(benchmark_name, solver_class):
 def test_solver_install_api(benchmark_name, solver_class):
 
     # Check that the solver_class exposes a known install cmd
-    assert solver_class.install_cmd in [None, 'pip', 'bash']
+    assert solver_class.install_cmd in [None, 'conda', 'bash']
 
     # Check that the solver_class exposes a known install cmd
-    if solver_class.install_cmd == 'pip':
+    if solver_class.install_cmd == 'conda':
         assert hasattr(solver_class, 'requirements')
     if solver_class.install_cmd == 'bash':
         assert hasattr(solver_class, 'install_script')
@@ -156,7 +156,7 @@ def test_solver_install(benchmark_name, solver_class):
     assert solver_class.install(env_name=TEST_ENV_NAME, force=True)
     assert solver_class.is_installed(env_name=TEST_ENV_NAME)
 
-    if solver_class.install_cmd == 'pip':
+    if solver_class.install_cmd == 'conda':
         solver_class.uninstall(env_name=TEST_ENV_NAME)
         assert not solver_class.is_installed(env_name=TEST_ENV_NAME)
 
@@ -165,7 +165,7 @@ def test_solver_install(benchmark_name, solver_class):
                          ids=class_ids)
 def test_solver(benchmark_name, solver_class):
 
-    if solver_class.install_cmd == 'pip':
+    if solver_class.install_cmd == 'conda':
         for package in solver_class.requirements_import:
             pytest.importorskip(package)
     elif not solver_class.is_installed():

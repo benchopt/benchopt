@@ -9,7 +9,7 @@ with safe_import() as solver_import:
 class Solver(BaseSolver):
     name = 'statsmodels'
 
-    install_cmd = 'pip'
+    install_cmd = 'conda'
     requirements = ['statsmodels']
 
     def set_objective(self, X, y, lmbd):

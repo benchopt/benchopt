@@ -11,7 +11,7 @@ with safe_import() as solver_import:
 class Solver(BaseSolver):
     name = 'Lightning'
 
-    install_cmd = 'pip'
+    install_cmd = 'conda'
     requirements = ['sklearn-contrib-lightning']
     requirements_import = ['lightning']
     requirements_install = [

@@ -13,7 +13,7 @@ class Solver(BaseSolver):
     name = 'Celer'
     sampling_strategy = 'iteration'
 
-    install_cmd = 'pip'
+    install_cmd = 'conda'
     requirements = ['celer']
     requirements_install = ['git+https://github.com/mathurinm/celer.git']
 

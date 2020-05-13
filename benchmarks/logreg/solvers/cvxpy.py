@@ -13,7 +13,7 @@ with safe_import() as solver_import:
 class Solver(BaseSolver):
     name = 'cvxpy'
 
-    install_cmd = 'pip'
+    install_cmd = 'conda'
     requirements = ['cvxpy']
 
     def set_objective(self, X, y, lmbd):

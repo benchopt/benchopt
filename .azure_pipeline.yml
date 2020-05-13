@@ -59,7 +59,7 @@ jobs:
 #         PACKAGER: 'pip'
 
   variables:
-    VIRTUALENV: 'testvenv'
+    CONDAENV: 'testcondaenv'
     JUNITXML: 'test-data.xml'
 
   pool:

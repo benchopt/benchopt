@@ -17,7 +17,7 @@ if solver_import.failed_import:
 class Solver(BaseSolver):
     name = "cd"
 
-    install_cmd = 'pip'
+    install_cmd = 'conda'
     requirements = ['numba', 'scipy']
 
     def set_objective(self, X, y, fit_intercept=False):

@@ -11,7 +11,7 @@ with safe_import() as solver_import:
 class Solver(BaseSolver):
     name = 'scipy'
 
-    install_cmd = 'pip'
+    install_cmd = 'conda'
     requirements = ['scipy']
 
     def set_objective(self, X, y, fit_intercept=False):

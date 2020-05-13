@@ -4,9 +4,9 @@ from collections import namedtuple
 from abc import ABC, abstractmethod
 
 from .util import check_cmd_solver
-from .util import pip_install_in_env
+from .util import conda_install_in_env
 from .util import bash_install_in_env
-from .util import pip_uninstall_in_env
+from .util import conda_uninstall_in_env
 from .util import check_import_solver
 from .class_property import classproperty
 from .config import RAISE_INSTALL_ERROR
@@ -48,19 +48,19 @@ class ParametrizedNameMixin():
 
 class DependenciesMixin:
     # Information on how to install the class. The value of install_cmd should
-    # be in {None, 'pip', 'bash'}. The API reads:
+    # be in {None, 'conda', 'bash'}. The API reads:
     #
-    # - 'pip': The class should have at least attribute `requirements`.
-    #          BenchOpt will pip install `$requirements` and check it is
-    #          possible to import `$requirements` in the virtualenv. It is also
+    # - 'conda': The class should have at least attribute `requirements`.
+    #          BenchOpt will conda install `$requirements` and check it is
+    #          possible to import `$requirements` in the conda env. It is also
     #          possible to give a different name for the install by defining a
     #          class attribute `requirements_install` and for the import with
     #          the class attribute `requirements_import`.
     #
     # - 'bash': The solver should have attribute `install_script` and
     #           `cmd_name`. BenchOpt will run `install_script` in a bash and
-    #           provide the virtualenv's directory as an argument. It will also
-    #           check that `cmd_name` is in the virtual_env PATH.
+    #           provide the conda env directory as an argument. It will also
+    #           check that `cmd_name` is in the conda env PATH.
     install_cmd = None
 
     @classproperty
@@ -68,21 +68,21 @@ class DependenciesMixin:
         """Hook to override the name of the import in python
 
         requirements_import default to requirements."""
-        if cls.install_cmd == 'pip':
+        if cls.install_cmd == 'conda':
             return cls.requirements
         raise RuntimeError("This property should only be accessed when "
-                           "install_cmd='pip'. Here, install_cmd='{}'"
+                           "install_cmd='conda'. Here, install_cmd='{}'"
                            .format(cls.install_cmd))
 
     @classproperty
     def requirements_install(cls):
-        """Hook to override the install name for pip.
+        """Hook to override the install name for conda.
 
         requirements_install default to requirements."""
-        if cls.install_cmd == 'pip':
+        if cls.install_cmd == 'conda':
             return cls.requirements
         raise RuntimeError("This property should only be accessed when "
-                           "install_cmd='pip'. Here, install_cmd='{}'"
+                           "install_cmd='conda'. Here, install_cmd='{}'"
                            .format(cls.install_cmd))
 
     @classmethod
@@ -90,7 +90,7 @@ class DependenciesMixin:
         """Check if the dependencies of the class can be imported.
         """
         try:
-            if cls.install_cmd == 'pip':
+            if cls.install_cmd == 'conda':
                 return check_import_solver(cls.requirements_import,
                                            env_name=env_name)
             elif cls.install_cmd == 'bash':
@@ -103,12 +103,12 @@ class DependenciesMixin:
 
     @classmethod
     def install(cls, env_name=None, force=False):
-        """Install the class in the given virtual env.
+        """Install the class in the given conda env.
 
         Parameters
         ----------
         env_name: str or None
-            Name of the environment where the class should be installed. If
+            Name of the conda env where the class should be installed. If
             None, tries to install it in the current environment.
         force : boolean (default: False)
             If set to True, first tries to uninstall the class from the
@@ -128,9 +128,9 @@ class DependenciesMixin:
             print(f"Installing {cls.name} in {env_name}:...",
                   end='', flush=True)
             try:
-                if cls.install_cmd == 'pip':
-                    pip_install_in_env(*cls.requirements_install,
-                                       env_name=env_name)
+                if cls.install_cmd == 'conda':
+                    conda_install_in_env(*cls.requirements_install,
+                                         env_name=env_name)
                 elif cls.install_cmd == 'bash':
                     bash_install_in_env(cls.install_script, env_name=env_name)
 
@@ -150,8 +150,8 @@ class DependenciesMixin:
     def uninstall(cls, env_name=None):
         print(f"Uninstalling {cls.name} in {env_name}:...",
               end='', flush=True)
-        if cls.install_cmd == 'pip':
-            pip_uninstall_in_env(*cls.requirements, env_name=env_name)
+        if cls.install_cmd == 'conda':
+            conda_uninstall_in_env(*cls.requirements, env_name=env_name)
         # elif cls.install_cmd == 'bash':
         #     raise NotImplementedError("Uninstall not implemented for bash.")
         print(" done")
@@ -244,6 +244,7 @@ class CommandLineSolver(BaseSolver, ABC):
       benchmark.
 
     """
+
     def __init__(self, **parameters):
         self._data_file = tempfile.NamedTemporaryFile()
         self._model_file = tempfile.NamedTemporaryFile()
@@ -330,6 +331,7 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin):
 class BaseObjective(ParametrizedNameMixin):
     """Base class to define an objective
     """
+
     def __init__(self, **parameters):
         """Instantiate a solver with the given parameters and store them.
 

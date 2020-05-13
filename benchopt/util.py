@@ -1,6 +1,6 @@
 import os
 import re
-import venv
+# import venv
 import shutil
 import pkgutil
 import warnings
@@ -14,16 +14,16 @@ from .config import DEBUG, ALLOW_INSTALL, RAISE_INSTALL_ERROR
 
 
 # Load global setting
-VENV_DIR = get_global_setting('venv_dir')
+# CONDAENV_DIR = get_global_setting('condaenv_dir')
 
 
-if not os.path.exists(VENV_DIR):
-    os.mkdir(VENV_DIR)
+# if not os.path.exists(VENV_DIR):
+#     os.mkdir(VENV_DIR)
 
 
 # Bash commands for installing and checking the solvers
-PIP_INSTALL_CMD = "pip install -qq {packages}"
-PIP_UNINSTALL_CMD = "pip uninstall -qq -y {packages}"
+CONDA_INSTALL_CMD = "conda install -qq {packages}"
+CONDA_UNINSTALL_CMD = "conda remove -qq -y {packages}"
 BASH_INSTALL_CMD = "bash install_scripts/{install_script} {env}"
 CHECK_PACKAGE_INSTALLED_CMD = (
     "python -c 'import {package}'"
@@ -81,7 +81,7 @@ def _run_in_bash(script, raise_on_error=None, capture_stdout=True):
 
 def _run_bash_in_env(script, env_name=None, raise_on_error=None,
                      capture_stdout=True):
-    """Run a script in a given virtual env
+    """Run a script in a given conda env
 
     Parameters
     ----------
@@ -103,31 +103,30 @@ def _run_bash_in_env(script, env_name=None, raise_on_error=None,
         Exit code of the script
     """
     if env_name is not None:
-        env_dir = f"{VENV_DIR}/{env_name}"
-
-        script = f"source {env_dir}/bin/activate\n{script}"
+        script = f"conda activate {env_name}\n{script}"
 
     return _run_in_bash(script, raise_on_error=raise_on_error,
                         capture_stdout=capture_stdout)
 
 
-def pip_install_in_env(*packages, env_name=None):
-    """Install the packages with pip in the given environment"""
+def conda_install_in_env(*packages, env_name=None):
+    """Install the packages with conda in the given environment"""
     if env_name is None and not ALLOW_INSTALL:
-        raise ValueError("Trying to install solver not in a virtualenv. "
+        raise ValueError("Trying to install solver not in a conda env. "
                          "To allow this, set BENCHO_ALLOW_INSTALL=True.")
-    cmd = PIP_INSTALL_CMD.format(packages=' '.join(packages))
-    error_msg = f"Failed to pip install packages {packages}\nError:{{output}}"
+    cmd = CONDA_INSTALL_CMD.format(packages=' '.join(packages))
+    error_msg = (f"Failed to conda install packages {packages}\n"
+                 "Error:{{output}}")
     _run_bash_in_env(cmd, env_name=env_name,
                      raise_on_error=error_msg)
 
 
-def pip_uninstall_in_env(*packages, env_name=None):
-    """Uninstall the packages with pip in the given environment"""
+def conda_uninstall_in_env(*packages, env_name=None):
+    """Uninstall the packages with conda in the given environment"""
     if env_name is None and not ALLOW_INSTALL:
-        raise ValueError("Trying to uninstall solver not in a virtualenv. "
+        raise ValueError("Trying to uninstall solver not in a conda env. "
                          "To allow this, set BENCHO_ALLOW_INSTALL=True.")
-    cmd = PIP_UNINSTALL_CMD.format(packages=' '.join(packages))
+    cmd = CONDA_UNINSTALL_CMD.format(packages=' '.join(packages))
     _run_bash_in_env(cmd, env_name=env_name,
                      raise_on_error=f"Failed to uninstall packages {packages}"
                      "\nError: {output}")
@@ -136,9 +135,10 @@ def pip_uninstall_in_env(*packages, env_name=None):
 def bash_install_in_env(script, env_name=None):
     """Run a bash install script in the given environment"""
     if env_name is None and not ALLOW_INSTALL:
-        raise ValueError("Trying to install solver not in a virtualenv. "
+        raise ValueError("Trying to install solver not in a conda env. "
                          "To allow this, set BENCHO_ALLOW_INSTALL=True.")
-    env = "$VIRTUAL_ENV" if env_name is not None else "$HOME/.local/"
+    env = env_name if env_name is not None else "base"
+    # TODO correct idea to use base?
     cmd = BASH_INSTALL_CMD.format(install_script=script, env=env)
     _run_bash_in_env(cmd, env_name=env_name,
                      raise_on_error=f"Failed to run script {script}\n"
@@ -154,7 +154,7 @@ def check_import_solver(requirements_import, env_name=None):
         Name of the packages that should be installed. This function checks
         that these packages can be imported in python.
     env_name : str or None
-        Name of the virtual environment to check. If it is None, check in the
+        Name of the conda environment to check. If it is None, check in the
         current environment.
     """
     # TODO: if env is None, check directly in the current python interpreter
@@ -183,7 +183,7 @@ def check_cmd_solver(cmd_name, env_name=None):
         Name of the cmd that should be installed. This function checks that
         this cmd is available on the path of the environment.
     env_name : str or None
-        Name of the virtual environment to check. If it is None, check in the
+        Name of the conda environment to check. If it is None, check in the
         current environment.
     """
     check_cmd_installed_cmd = CHECK_CMD_INSTALLED_CMD.format(
@@ -306,28 +306,26 @@ def is_included(name, include_patterns=None):
     return False
 
 
-def create_venv(env_name, recreate=False):
-    """Create a virtual env with name env_name and install basic utilities"""
+def create_condaenv(env_name, recreate=False):
+    """Create a conda env with name env_name and install basic utilities"""
 
-    env_dir = f"{VENV_DIR}/{env_name}"
+    force = "-y" * recreate
 
-    if not os.path.exists(env_dir) or recreate:
-        print(f"Creating venv {env_name}:...", end='', flush=True)
-        venv.create(env_dir, with_pip=True)
-        # Install benchopt as well as packages used as utilities to install
-        # other packages. The install of benchopt is done with the -e flag
-        # to ease development process
-        # XXX: add a flag to enable/disable develop install?
-        pip_install_in_env("numpy", "cython", "-e .", env_name=env_name)
-        print(" done")
+    print(f"Creating conda env {env_name}:...", end='', flush=True)
+    # TODO do we want to specify a condaenv path with -p here?
+    subprocess.run(f"conda create {force} -n {env_name}")
+    # Install benchopt as well as packages used as utilities to install
+    # other packages. The install of benchopt is done with the -e flag
+    # to ease development process
+    # XXX: add a flag to enable/disable develop install?
+    conda_install_in_env("numpy", "cython", "-e .", env_name=env_name)
+    print(" done")
 
 
-def delete_venv(env_name):
-    """Delete a virtual env with name env_name."""
+def delete_condaenv(env_name):
+    """Delete a conda env with name env_name."""
 
-    env_dir = f"{VENV_DIR}/{env_name}"
-    if os.path.exists(env_dir):
-        shutil.rmtree(env_dir)
+    subprocess.run(f"conda env remove -n {env_name}")
 
 
 def install_solvers(solvers, forced_solvers=None, env_name=None):
@@ -359,6 +357,7 @@ def install_required_datasets(benchmark, dataset_names, env_name=None):
 
 class safe_import:
     """Do not fail on ImportError and Catch the warnings"""
+
     def __init__(self):
         self.failed_import = False
         self.record = warnings.catch_warnings(record=True)

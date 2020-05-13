@@ -13,7 +13,7 @@ with safe_import() as solver_import:
 class Solver(BaseSolver):
     name = 'sklearn'
 
-    install_cmd = 'pip'
+    install_cmd = 'conda'
     requirements = ['scikit-learn']
     requirements_import = ['sklearn']
 

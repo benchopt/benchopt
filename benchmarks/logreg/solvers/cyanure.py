@@ -9,7 +9,7 @@ with safe_import() as solver_import:
 class Solver(BaseSolver):
     name = 'Cyanure'
 
-    install_cmd = 'pip'
+    install_cmd = 'conda'
     requirements = ['cyanure-mkl']
     requirements_import = ['cyanure']
 
