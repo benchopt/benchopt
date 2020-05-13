@@ -23,6 +23,7 @@ make_conda() {
     conda create -n $CONDAENV --yes $TO_INSTALL
     # . $CONDA_PREFIX/etc/profile.d/conda.sh
     conda init bash
+    . $HOME/.bashrc
     conda activate $CONDAENV
 }
 
