@@ -22,7 +22,7 @@ from .config import DEBUG, ALLOW_INSTALL, RAISE_INSTALL_ERROR
 
 
 # Bash commands for installing and checking the solvers
-CONDA_INSTALL_CMD = "conda install -qq {packages}"
+CONDA_INSTALL_CMD = "conda install -qq -y {packages}"
 CONDA_UNINSTALL_CMD = "conda remove -qq -y {packages}"
 BASH_INSTALL_CMD = "bash install_scripts/{install_script} {env}"
 CHECK_PACKAGE_INSTALLED_CMD = (
@@ -114,11 +114,17 @@ def conda_install_in_env(*packages, env_name=None):
     if env_name is None and not ALLOW_INSTALL:
         raise ValueError("Trying to install solver not in a conda env. "
                          "To allow this, set BENCHO_ALLOW_INSTALL=True.")
+    if '-e .' in packages:
+        install_this = True
+        packages = list(packages)
+        packages.remove('-e .')
     cmd = CONDA_INSTALL_CMD.format(packages=' '.join(packages))
     error_msg = (f"Failed to conda install packages {packages}\n"
                  "Error:{{output}}")
     _run_bash_in_env(cmd, env_name=env_name,
                      raise_on_error=error_msg)
+    if install_this:
+        _run_bash_in_env('pip install -e .', env_name=env_name)
 
 
 def conda_uninstall_in_env(*packages, env_name=None):
@@ -126,10 +132,16 @@ def conda_uninstall_in_env(*packages, env_name=None):
     if env_name is None and not ALLOW_INSTALL:
         raise ValueError("Trying to uninstall solver not in a conda env. "
                          "To allow this, set BENCHO_ALLOW_INSTALL=True.")
+    if '-e .' in packages:
+        uninstall_this = True
+        packages = list(packages)
+        packages.remove('-e .')
     cmd = CONDA_UNINSTALL_CMD.format(packages=' '.join(packages))
     _run_bash_in_env(cmd, env_name=env_name,
                      raise_on_error=f"Failed to uninstall packages {packages}"
                      "\nError: {output}")
+    if uninstall_this:
+        _run_bash_in_env('pip uninstall -e .', env_name=env_name)
 
 
 def bash_install_in_env(script, env_name=None):
@@ -313,7 +325,7 @@ def create_condaenv(env_name, recreate=False):
 
     print(f"Creating conda env {env_name}:...", end='', flush=True)
     # TODO do we want to specify a condaenv path with -p here?
-    subprocess.run(f"conda create {force} -n {env_name}")
+    subprocess.run(f"conda create {force} -n {env_name}", shell=True)
     # Install benchopt as well as packages used as utilities to install
     # other packages. The install of benchopt is done with the -e flag
     # to ease development process
@@ -325,7 +337,7 @@ def create_condaenv(env_name, recreate=False):
 def delete_condaenv(env_name):
     """Delete a conda env with name env_name."""
 
-    subprocess.run(f"conda env remove -n {env_name}")
+    subprocess.run(f"conda env remove -n {env_name}", shell=True)
 
 
 def install_solvers(solvers, forced_solvers=None, env_name=None):
