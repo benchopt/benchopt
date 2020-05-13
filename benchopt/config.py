@@ -13,7 +13,7 @@ DEFAULT_GLOBAL = {
     'debug': False,
     'allow_install': False,
     'raise_install_error': False,
-    'venv_dir': './.venv/',
+    # 'venv_dir': './.venv/',
     'cache_dir': '.',
     'data_dir': './data/'
 }
@@ -29,15 +29,15 @@ def get_global_setting(name):
     assert name in DEFAULT_GLOBAL, f"Unknown config key {name}"
 
     # TODO: get the correct type from DEFAULT_GLOBAL
-    venv_name = f"BENCHO_{name.upper()}"
+    condaenv_name = f"BENCHO_{name.upper()}"
 
     if isinstance(DEFAULT_GLOBAL[name], bool):
         setting = config.getboolean('benchopt', name,
                                     fallback=DEFAULT_GLOBAL[name])
-        setting = bool(os.environ.get(venv_name, setting))
+        setting = bool(os.environ.get(condaenv_name, setting))
     else:
         setting = config.get('benchopt', name, fallback=DEFAULT_GLOBAL[name])
-        setting = os.environ.get(venv_name, setting)
+        setting = os.environ.get(condaenv_name, setting)
 
     return setting
 

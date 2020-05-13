@@ -44,7 +44,7 @@ def main(prog_name='benchopt'):
               "interpreter.")
 @click.option('--recreate', '-r',
               is_flag=True,
-              help="If this flag is set, start with a fresh venv.")
+              help="If this flag is set, start with a fresh conda env.")
 @click.option('--repetition', '-n',
               metavar='<int>', default=1, type=int,
               help='Number of repetition used to estimate the runtime.')
@@ -75,7 +75,7 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
                       max_samples=max_samples, n_rep=repetition)
         return
 
-    # Create the virtual env
+    # Create the conda env
     create_condaenv(benchmark, recreate=recreate)
 
     # installed required datasets
@@ -90,7 +90,7 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
     install_solvers(solvers=solvers, forced_solvers=forced_solvers,
                     env_name=benchmark)
 
-    # run the command in the virtual env
+    # run the command in the conda env
     solvers_option = ' '.join(['-s ' + s for s in solver_names])
     forced_solvers_option = ' '.join(['-f ' + s for s in forced_solvers])
     datasets_option = ' '.join(['-d ' + d for d in dataset_names])

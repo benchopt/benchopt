@@ -3,9 +3,9 @@
 set -e
 
 if [[ "$PACKAGER" == "conda" ]]; then
-    source activate $VIRTUALENV
+    source activate $CONDAENV
 elif [[ "$PACKAGER" == "ubuntu" ]]; then
-    source $VIRTUALENV/bin/activate
+    source $CONDAENV/bin/activate
 fi
 
 TEST_CMD="python -m pytest -v --showlocals --durations=20 --junitxml=$JUNITXML --pyargs"

@@ -20,23 +20,23 @@ fi
 
 make_conda() {
     TO_INSTALL="$@"
-    conda create -n $VIRTUALENV --yes $TO_INSTALL
-    source activate $VIRTUALENV
+    conda create -n $CONDAENV --yes $TO_INSTALL
+    source activate $CONDAENV
 }
 
-if [[ "$PACKAGER" == "conda" ]]; then
-    TO_INSTALL=$(cat dev-requirements.txt)
-    TO_INSTALL="python=$VERSION_PYTHON pip $TO_INSTALL"
+# if [[ "$PACKAGER" == "conda" ]]; then
+TO_INSTALL=$(cat dev-requirements.txt)
+TO_INSTALL="python=$VERSION_PYTHON pip $TO_INSTALL"
 
-	make_conda $TO_INSTALL
+make_conda $TO_INSTALL
 
-elif [[ "$PACKAGER" == "ubuntu" ]]; then
-    sudo apt-get update
-    sudo apt-get install python3-venv python3-virtualenv python3-numpy cython
-    python3 -m virtualenv --system-site-packages --python=python3 $VIRTUALENV
-    source $VIRTUALENV/bin/activate
-    python -m pip install -r dev-requirements.txt
-fi
+# elif [[ "$PACKAGER" == "ubuntu" ]]; then
+#     sudo apt-get update
+#     sudo apt-get install  python3-numpy cython
+#     python3 -m virtualenv --system-site-packages --python=python3 $CONDAENV
+#     conda activate $CONDAENV
+#     python -m pip install -r dev-requirements.txt
+# fi
 
 python --version
 python -c "import numpy; print('numpy %s' % numpy.__version__)"
