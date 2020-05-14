@@ -348,6 +348,8 @@ def create_condaenv(env_name, recreate=False):
     print(f"Creating conda env {env_name}:...", end='', flush=True)
     # TODO do we want to specify a condaenv path with -p here?
     subprocess.run(f"conda create {force} -n {env_name}", shell=True)
+    # TODO I need it for cvxpy but is dubious to touch user's config no?
+    subprocess.run("conda config --append channels conda-forge")
     # Install benchopt as well as packages used as utilities to install
     # other packages. The install of benchopt is done with the -e flag
     # to ease development process
