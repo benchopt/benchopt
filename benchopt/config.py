@@ -10,7 +10,7 @@ config.read(CONFIG_FILE_LOCATION)
 
 
 DEFAULT_GLOBAL = {
-    'debug': False,
+    'debug': True,
     'allow_install': False,
     'raise_install_error': False,
     # 'venv_dir': './.venv/',

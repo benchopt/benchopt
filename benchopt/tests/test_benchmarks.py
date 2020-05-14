@@ -205,3 +205,18 @@ def test_solver(benchmark_name, solver_class):
         val_eps = objective(beta_hat_i + eps)
         diff = val_eps - val_star
         assert diff > 0
+
+
+if __name__ == "__main__":
+    # create_condaenv(TEST_ENV_NAME, recreate=True)
+    for idx in range(7, 8):
+        if idx == 5:  # cyanure, skip
+            pass
+        bench, solver_class = BENCH_AND_SOLVERS[idx]
+        print(bench, solver_class)
+        assert solver_class.install(env_name=TEST_ENV_NAME, force=True)
+        assert solver_class.is_installed(env_name=TEST_ENV_NAME)
+
+        if solver_class.install_cmd == 'conda':
+            solver_class.uninstall(env_name=TEST_ENV_NAME)
+            assert not solver_class.is_installed(env_name=TEST_ENV_NAME)
