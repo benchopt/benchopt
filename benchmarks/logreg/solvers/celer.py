@@ -14,8 +14,9 @@ class Solver(BaseSolver):
     sampling_strategy = 'iteration'
 
     install_cmd = 'conda'
-    requirements = ['celer']
-    requirements_install = ['git+https://github.com/mathurinm/celer.git']
+    requirements = ['pip:celer']
+    requirements_import = ['celer']
+    requirements_install = ['pip:git+https://github.com/mathurinm/celer.git']
 
     def set_objective(self, X, y, lmbd):
         self.X, self.y, self.lmbd = X, y, lmbd

@@ -24,6 +24,8 @@ from .config import DEBUG, ALLOW_INSTALL, RAISE_INSTALL_ERROR
 # Bash commands for installing and checking the solvers
 CONDA_INSTALL_CMD = "conda install -qq -y {packages}"
 CONDA_UNINSTALL_CMD = "conda remove -qq -y {packages}"
+PIP_INSTALL_CMD = "pip install -qq {packages}"
+PIP_UNINSTALL_CMD = "pip uninstall -qq -y {packages}"
 BASH_INSTALL_CMD = "bash install_scripts/{install_script} {env}"
 CHECK_PACKAGE_INSTALLED_CMD = (
     "python -c 'import {package}'"
@@ -104,12 +106,13 @@ def _run_bash_in_env(script, env_name=None, raise_on_error=None,
     """
     if env_name is not None:
         script = (". $CONDA_PREFIX/etc/profile.d/conda.sh && "
-                  f"conda activate {env_name}\n{script}")
+                  f"conda activate {env_name} && {script}")
 
     return _run_in_bash(script, raise_on_error=raise_on_error,
                         capture_stdout=capture_stdout)
 
 
+# TODO: suggestion new name: install_in_conda_env (since it also uses pip)
 def conda_install_in_env(*packages, env_name=None):
     """Install the packages with conda in the given environment"""
     if env_name is None and not ALLOW_INSTALL:
@@ -120,11 +123,18 @@ def conda_install_in_env(*packages, env_name=None):
         install_this = True
         packages = list(packages)
         packages.remove('-e .')
-    cmd = CONDA_INSTALL_CMD.format(packages=' '.join(packages))
+
+    pip_packages = [pkg[4:] for pkg in packages if pkg.startswith('pip:')]
+    conda_packages = [pkg for pkg in packages if not pkg.startswith('pip:')]
+
     error_msg = (f"Failed to conda install packages {packages}\n"
                  "Error:{output}")
-    _run_bash_in_env(cmd, env_name=env_name,
-                     raise_on_error=error_msg)
+    if conda_packages:
+        cmd = CONDA_INSTALL_CMD.format(packages=' '.join(conda_packages))
+        _run_bash_in_env(cmd, env_name=env_name, raise_on_error=error_msg)
+    if pip_packages:
+        cmd = PIP_INSTALL_CMD.format(packages=' '.join(pip_packages))
+        _run_bash_in_env(cmd, env_name=env_name, raise_on_error=error_msg)
     if install_this:
         _run_bash_in_env('pip install -e .', env_name=env_name)
 
@@ -139,10 +149,18 @@ def conda_uninstall_in_env(*packages, env_name=None):
         uninstall_this = True
         packages = list(packages)
         packages.remove('-e .')
-    cmd = CONDA_UNINSTALL_CMD.format(packages=' '.join(packages))
-    _run_bash_in_env(cmd, env_name=env_name,
-                     raise_on_error=f"Failed to uninstall packages {packages}"
-                     "\nError: {output}")
+
+    pip_packages = [pkg[4:] for pkg in packages if pkg.startswith('pip:')]
+    conda_packages = [pkg for pkg in packages if not pkg.startswith('pip:')]
+
+    error_msg = (f"Failed to conda remove packages {packages}"
+                 "\nError: {output}")
+    if conda_packages:
+        cmd = CONDA_UNINSTALL_CMD.format(packages=' '.join(conda_packages))
+        _run_bash_in_env(cmd, env_name=env_name, raise_on_error=error_msg)
+    if pip_packages:
+        cmd = PIP_UNINSTALL_CMD.format(packages=' '.join(pip_packages))
+        _run_bash_in_env(cmd, env_name=env_name, raise_on_error=error_msg)
     if uninstall_this:
         _run_bash_in_env('pip uninstall -e .', env_name=env_name)
 

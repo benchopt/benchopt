@@ -12,10 +12,10 @@ class Solver(BaseSolver):
     name = 'Lightning'
 
     install_cmd = 'conda'
-    requirements = ['sklearn-contrib-lightning']
+    requirements = ['pip:sklearn-contrib-lightning']
     requirements_import = ['lightning']
     requirements_install = [
-        'git+https://github.com/scikit-learn-contrib/lightning.git'
+        'pip:git+https://github.com/scikit-learn-contrib/lightning.git'
     ]
 
     def set_objective(self, X, y, lmbd):

@@ -11,9 +11,10 @@ class Solver(BaseSolver):
     sampling_strategy = 'tolerance'
 
     install_cmd = 'conda'
-    requirements = ['blitzl1']
+    requirements_import = ['blitzl1']
+    requirements = ['pip:blitzl1']
     requirements_install = [
-        'git+https://github.com/tommoral/blitzl1.git@FIX_setup_deps'
+        'pip:git+https://github.com/tommoral/blitzl1.git@FIX_setup_deps'
     ]
 
     def set_objective(self, X, y, lmbd):
