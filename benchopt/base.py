@@ -6,7 +6,6 @@ from abc import ABC, abstractmethod
 from .util import check_cmd_solver
 from .util import conda_install_in_env
 from .util import bash_install_in_env
-# from .util import conda_uninstall_in_env
 from .util import check_import_solver
 from .class_property import classproperty
 from .config import RAISE_INSTALL_ERROR

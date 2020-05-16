@@ -164,7 +164,6 @@ def check_import_solver(requirements_import, env_name=None):
             if not_installed not in output:
                 print(output)
 
-        print(env_name)
         if _run_bash_in_env(check_package_installed_cmd,
                             env_name=env_name,
                             raise_on_error=raise_on_error) != 0:
@@ -310,7 +309,6 @@ def create_condaenv(env_name, recreate=False):
     force = " -y" * recreate
 
     print(f"Creating conda env {env_name}:...", end='', flush=True)
-    # TODO do we want to specify a condaenv path with -p here?
     subprocess.run(f"conda create{force} -n {env_name}", shell=True)
     # add conda-forge to channels, but only in this env with --env
     subprocess.run(f". activate {env_name} && conda config --env --append "
