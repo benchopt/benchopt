@@ -22,10 +22,10 @@ from .config import DEBUG, ALLOW_INSTALL, RAISE_INSTALL_ERROR
 
 
 # Bash commands for installing and checking the solvers
-CONDA_INSTALL_CMD = "conda install -qq -y {packages}"
-CONDA_UNINSTALL_CMD = "conda remove -qq -y {packages}"
-PIP_INSTALL_CMD = "pip install -qq {packages}"
-PIP_UNINSTALL_CMD = "pip uninstall -qq -y {packages}"
+CONDA_INSTALL_CMD = "conda install -y {packages}"
+# CONDA_UNINSTALL_CMD = "conda remove -y {packages}"
+PIP_INSTALL_CMD = "pip install {packages}"
+# PIP_UNINSTALL_CMD = "pip uninstall -y {packages}"
 BASH_INSTALL_CMD = "bash install_scripts/{install_script} {env}"
 CHECK_PACKAGE_INSTALLED_CMD = (
     "python -c 'import {package}'"
@@ -114,7 +114,7 @@ def _run_bash_in_env(script, env_name=None, raise_on_error=None,
 
 
 # TODO: suggestion new name: install_in_conda_env (since it also uses pip)
-def conda_install_in_env(*packages, env_name=None):
+def conda_install_in_env(*packages, env_name=None, force=False):
     """Install the packages with conda in the given environment"""
     if env_name is None and not ALLOW_INSTALL:
         raise ValueError("Trying to install solver not in a conda env. "
@@ -132,38 +132,42 @@ def conda_install_in_env(*packages, env_name=None):
                  "Error:{output}")
     if conda_packages:
         cmd = CONDA_INSTALL_CMD.format(packages=' '.join(conda_packages))
+        if force:
+            cmd += ' --force-reinstall'
         _run_bash_in_env(cmd, env_name=env_name, raise_on_error=error_msg)
     if pip_packages:
         cmd = PIP_INSTALL_CMD.format(packages=' '.join(pip_packages))
+        if force:
+            cmd += ' --force-reinstall'
         _run_bash_in_env(cmd, env_name=env_name, raise_on_error=error_msg)
     if install_this:
         _run_bash_in_env('pip install -e .', env_name=env_name)
 
 
-def conda_uninstall_in_env(*packages, env_name=None):
-    """Uninstall the packages with conda in the given environment"""
-    if env_name is None and not ALLOW_INSTALL:
-        raise ValueError("Trying to uninstall solver not in a conda env. "
-                         "To allow this, set BENCHO_ALLOW_INSTALL=True.")
-    uninstall_this = False
-    if '-e .' in packages:
-        uninstall_this = True
-        packages = list(packages)
-        packages.remove('-e .')
+# def conda_uninstall_in_env(*packages, env_name=None):
+#     """Uninstall the packages with conda in the given environment"""
+#     if env_name is None and not ALLOW_INSTALL:
+#         raise ValueError("Trying to uninstall solver not in a conda env. "
+#                          "To allow this, set BENCHO_ALLOW_INSTALL=True.")
+#     uninstall_this = False
+#     if '-e .' in packages:
+#         uninstall_this = True
+#         packages = list(packages)
+#         packages.remove('-e .')
 
-    pip_packages = [pkg[4:] for pkg in packages if pkg.startswith('pip:')]
-    conda_packages = [pkg for pkg in packages if not pkg.startswith('pip:')]
+#     pip_packages = [pkg[4:] for pkg in packages if pkg.startswith('pip:')]
+#     conda_packages = [pkg for pkg in packages if not pkg.startswith('pip:')]
 
-    error_msg = (f"Failed to conda remove packages {packages}"
-                 "\nError: {output}")
-    if conda_packages:
-        cmd = CONDA_UNINSTALL_CMD.format(packages=' '.join(conda_packages))
-        _run_bash_in_env(cmd, env_name=env_name, raise_on_error=error_msg)
-    if pip_packages:
-        cmd = PIP_UNINSTALL_CMD.format(packages=' '.join(pip_packages))
-        _run_bash_in_env(cmd, env_name=env_name, raise_on_error=error_msg)
-    if uninstall_this:
-        _run_bash_in_env('pip uninstall -e .', env_name=env_name)
+#     error_msg = (f"Failed to conda remove packages {packages}"
+#                  "\nError: {output}")
+#     if conda_packages:
+#         cmd = CONDA_UNINSTALL_CMD.format(packages=' '.join(conda_packages))
+#         _run_bash_in_env(cmd, env_name=env_name, raise_on_error=error_msg)
+#     if pip_packages:
+#         cmd = PIP_UNINSTALL_CMD.format(packages=' '.join(pip_packages))
+#         _run_bash_in_env(cmd, env_name=env_name, raise_on_error=error_msg)
+#     if uninstall_this:
+#         _run_bash_in_env('pip uninstall -e .', env_name=env_name)
 
 
 def bash_install_in_env(script, env_name=None):
@@ -201,6 +205,7 @@ def check_import_solver(requirements_import, env_name=None):
             if not_installed not in output:
                 print(output)
 
+        print(env_name)
         if _run_bash_in_env(check_package_installed_cmd,
                             env_name=env_name,
                             raise_on_error=raise_on_error) != 0:
@@ -343,13 +348,14 @@ def is_included(name, include_patterns=None):
 def create_condaenv(env_name, recreate=False):
     """Create a conda env with name env_name and install basic utilities"""
 
-    force = "-y" * recreate
+    force = " -y" * recreate
 
     print(f"Creating conda env {env_name}:...", end='', flush=True)
     # TODO do we want to specify a condaenv path with -p here?
-    subprocess.run(f"conda create {force} -n {env_name}", shell=True)
-    # TODO I need it for cvxpy but is dubious to touch user's config no?
-    subprocess.run("conda config --append channels conda-forge", shell=True)
+    subprocess.run(f"conda create{force} -n {env_name}", shell=True)
+    # add conda-forge to channels, but only in this env with --env
+    subprocess.run(". activate {env_name} && conda config --env --append "
+                   "channels conda-forge", shell=True)
     # Install benchopt as well as packages used as utilities to install
     # other packages. The install of benchopt is done with the -e flag
     # to ease development process

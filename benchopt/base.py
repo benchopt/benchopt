@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from .util import check_cmd_solver
 from .util import conda_install_in_env
 from .util import bash_install_in_env
-from .util import conda_uninstall_in_env
+# from .util import conda_uninstall_in_env
 from .util import check_import_solver
 from .class_property import classproperty
 from .config import RAISE_INSTALL_ERROR
@@ -111,50 +111,43 @@ class DependenciesMixin:
             Name of the conda env where the class should be installed. If
             None, tries to install it in the current environment.
         force : boolean (default: False)
-            If set to True, first tries to uninstall the class from the
-            environment before installing it.
+            If set to True, forces reinstallation when using conda.
 
         Returns
         -------
         is_installed: bool
             True if the class is correctly installed in the environment.
         """
-        # uninstall the class that requires a force reinstall
-        if force and cls.is_installed(env_name=env_name):
-            cls.uninstall(env_name=env_name)
+        print(f"Installing {cls.name} in {env_name}:...",
+              end='', flush=True)
+        try:
+            if cls.install_cmd == 'conda':
+                conda_install_in_env(*cls.requirements_install,
+                                     env_name=env_name, force=force)
+            elif cls.install_cmd == 'bash':
+                bash_install_in_env(cls.install_script, env_name=env_name)
+
+        except Exception as exception:
+            if RAISE_INSTALL_ERROR:
+                raise exception
 
         is_installed = cls.is_installed(env_name=env_name)
-        if force or not is_installed:
-            print(f"Installing {cls.name} in {env_name}:...",
-                  end='', flush=True)
-            try:
-                if cls.install_cmd == 'conda':
-                    conda_install_in_env(*cls.requirements_install,
-                                         env_name=env_name)
-                elif cls.install_cmd == 'bash':
-                    bash_install_in_env(cls.install_script, env_name=env_name)
-
-            except Exception as exception:
-                if RAISE_INSTALL_ERROR:
-                    raise exception
-
-            is_installed = cls.is_installed(env_name=env_name)
-            if is_installed:
-                print(" done")
-            else:
-                print(" failed")
+        if is_installed:
+            print(" done")
+        else:
+            print(" failed")
 
         return is_installed
 
-    @classmethod
-    def uninstall(cls, env_name=None):
-        print(f"Uninstalling {cls.name} in {env_name}:...",
-              end='', flush=True)
-        if cls.install_cmd == 'conda':
-            conda_uninstall_in_env(*cls.requirements, env_name=env_name)
-        # elif cls.install_cmd == 'bash':
-        #     raise NotImplementedError("Uninstall not implemented for bash.")
-        print(" done")
+    # @classmethod
+    # def uninstall(cls, env_name=None):
+    #     print(f"Uninstalling {cls.name} in {env_name}:...",
+    #           end='', flush=True)
+    #     if cls.install_cmd == 'conda':
+    #         conda_uninstall_in_env(*cls.requirements, env_name=env_name)
+    #     # elif cls.install_cmd == 'bash':
+    #     #     raise NotImplementedError("Uninstall not implemented for bash.")
+    #     print(" done")
 
 
 class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):

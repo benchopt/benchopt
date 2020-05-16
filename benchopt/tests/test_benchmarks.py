@@ -153,12 +153,14 @@ def test_solver_install(benchmark_name, solver_class):
     if solver_class.name in ['Liblinear', 'Cyanure']:
         pytest.xfail('%s is not fully working yet' % solver_class.name)
 
+    # assert that install works in a fresh environment
+    create_condaenv(TEST_ENV_NAME, recreate=True)
     assert solver_class.install(env_name=TEST_ENV_NAME, force=True)
     assert solver_class.is_installed(env_name=TEST_ENV_NAME)
 
-    if solver_class.install_cmd == 'conda':
-        solver_class.uninstall(env_name=TEST_ENV_NAME)
-        assert not solver_class.is_installed(env_name=TEST_ENV_NAME)
+    # if solver_class.install_cmd == 'conda':
+    #     # solver_class.uninstall(env_name=TEST_ENV_NAME)
+    #     assert not solver_class.is_installed(env_name=TEST_ENV_NAME)
 
 
 @pytest.mark.parametrize('benchmark_name, solver_class', BENCH_AND_SOLVERS,
@@ -209,14 +211,15 @@ def test_solver(benchmark_name, solver_class):
 
 if __name__ == "__main__":
     # create_condaenv(TEST_ENV_NAME, recreate=True)
-    for idx in range(7, 8):
+    for idx in range(8):
         if idx == 5:  # cyanure, skip
-            pass
+            continue
         bench, solver_class = BENCH_AND_SOLVERS[idx]
         print(bench, solver_class)
+        create_condaenv(TEST_ENV_NAME, recreate=True)
         assert solver_class.install(env_name=TEST_ENV_NAME, force=True)
         assert solver_class.is_installed(env_name=TEST_ENV_NAME)
 
-        if solver_class.install_cmd == 'conda':
-            solver_class.uninstall(env_name=TEST_ENV_NAME)
-            assert not solver_class.is_installed(env_name=TEST_ENV_NAME)
+        # if solver_class.install_cmd == 'conda':
+        #     # solver_class.uninstall(env_name=TEST_ENV_NAME)
+        #     assert not solver_class.is_installed(env_name=TEST_ENV_NAME)
