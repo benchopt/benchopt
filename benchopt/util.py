@@ -1,7 +1,5 @@
 import os
 import re
-# import venv
-import shutil
 import pkgutil
 import warnings
 import tempfile
@@ -9,23 +7,12 @@ import itertools
 import subprocess
 from importlib import import_module
 
-from .config import get_global_setting
 from .config import DEBUG, ALLOW_INSTALL, RAISE_INSTALL_ERROR
-
-
-# Load global setting
-# CONDAENV_DIR = get_global_setting('condaenv_dir')
-
-
-# if not os.path.exists(VENV_DIR):
-#     os.mkdir(VENV_DIR)
 
 
 # Bash commands for installing and checking the solvers
 CONDA_INSTALL_CMD = "conda install -y {packages}"
-# CONDA_UNINSTALL_CMD = "conda remove -y {packages}"
 PIP_INSTALL_CMD = "pip install {packages}"
-# PIP_UNINSTALL_CMD = "pip uninstall -y {packages}"
 BASH_INSTALL_CMD = "bash install_scripts/{install_script} {env}"
 CHECK_PACKAGE_INSTALLED_CMD = (
     "python -c 'import {package}'"
@@ -105,8 +92,6 @@ def _run_bash_in_env(script, env_name=None, raise_on_error=None,
         Exit code of the script
     """
     if env_name is not None:
-        # script = (". $CONDA_PREFIX/etc/profile.d/conda.sh && "
-                #   f"conda activate {env_name} && {script}")
         script = (f". activate {env_name} && {script}")
 
     return _run_in_bash(script, raise_on_error=raise_on_error,
@@ -142,32 +127,6 @@ def conda_install_in_env(*packages, env_name=None, force=False):
         _run_bash_in_env(cmd, env_name=env_name, raise_on_error=error_msg)
     if install_this:
         _run_bash_in_env('pip install -e .', env_name=env_name)
-
-
-# def conda_uninstall_in_env(*packages, env_name=None):
-#     """Uninstall the packages with conda in the given environment"""
-#     if env_name is None and not ALLOW_INSTALL:
-#         raise ValueError("Trying to uninstall solver not in a conda env. "
-#                          "To allow this, set BENCHO_ALLOW_INSTALL=True.")
-#     uninstall_this = False
-#     if '-e .' in packages:
-#         uninstall_this = True
-#         packages = list(packages)
-#         packages.remove('-e .')
-
-#     pip_packages = [pkg[4:] for pkg in packages if pkg.startswith('pip:')]
-#     conda_packages = [pkg for pkg in packages if not pkg.startswith('pip:')]
-
-#     error_msg = (f"Failed to conda remove packages {packages}"
-#                  "\nError: {output}")
-#     if conda_packages:
-#         cmd = CONDA_UNINSTALL_CMD.format(packages=' '.join(conda_packages))
-#         _run_bash_in_env(cmd, env_name=env_name, raise_on_error=error_msg)
-#     if pip_packages:
-#         cmd = PIP_UNINSTALL_CMD.format(packages=' '.join(pip_packages))
-#         _run_bash_in_env(cmd, env_name=env_name, raise_on_error=error_msg)
-#     if uninstall_this:
-#         _run_bash_in_env('pip uninstall -e .', env_name=env_name)
 
 
 def bash_install_in_env(script, env_name=None):
@@ -249,7 +208,7 @@ def check_failed_import(solver_class):
 
 def get_all_benchmarks():
     """List all the available benchmarks."""
-    submodules = pkgutil.iter_modules([f'benchmarks'])
+    submodules = pkgutil.iter_modules(['benchmarks'])
     return [m.name for m in submodules]
 
 
@@ -354,8 +313,8 @@ def create_condaenv(env_name, recreate=False):
     # TODO do we want to specify a condaenv path with -p here?
     subprocess.run(f"conda create{force} -n {env_name}", shell=True)
     # add conda-forge to channels, but only in this env with --env
-                   "channels conda-forge", shell=True)
     subprocess.run(f". activate {env_name} && conda config --env --append "
+                   "channels conda-forge", shell=True)
     # Install benchopt as well as packages used as utilities to install
     # other packages. The install of benchopt is done with the -e flag
     # to ease development process

@@ -30,7 +30,7 @@ def class_ids(parameter):
     return None
 
 
-# Setup and clean a test env to install/uninstall all the solvers and check
+# Setup and clean a test env to install all the solvers and check
 # that they are correctly configured
 
 TEST_ENV_NAME = "benchopt_test_env"
@@ -158,10 +158,6 @@ def test_solver_install(benchmark_name, solver_class):
     assert solver_class.install(env_name=TEST_ENV_NAME, force=True)
     assert solver_class.is_installed(env_name=TEST_ENV_NAME)
 
-    # if solver_class.install_cmd == 'conda':
-    #     # solver_class.uninstall(env_name=TEST_ENV_NAME)
-    #     assert not solver_class.is_installed(env_name=TEST_ENV_NAME)
-
 
 @pytest.mark.parametrize('benchmark_name, solver_class', BENCH_AND_SOLVERS,
                          ids=class_ids)
@@ -210,7 +206,6 @@ def test_solver(benchmark_name, solver_class):
 
 
 if __name__ == "__main__":
-    # create_condaenv(TEST_ENV_NAME, recreate=True)
     for idx in range(8):
         if idx == 5:  # cyanure, skip
             continue
@@ -219,7 +214,3 @@ if __name__ == "__main__":
         create_condaenv(TEST_ENV_NAME, recreate=True)
         assert solver_class.install(env_name=TEST_ENV_NAME, force=True)
         assert solver_class.is_installed(env_name=TEST_ENV_NAME)
-
-        # if solver_class.install_cmd == 'conda':
-        #     # solver_class.uninstall(env_name=TEST_ENV_NAME)
-        #     assert not solver_class.is_installed(env_name=TEST_ENV_NAME)

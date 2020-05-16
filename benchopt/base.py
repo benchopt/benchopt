@@ -139,16 +139,6 @@ class DependenciesMixin:
 
         return is_installed
 
-    # @classmethod
-    # def uninstall(cls, env_name=None):
-    #     print(f"Uninstalling {cls.name} in {env_name}:...",
-    #           end='', flush=True)
-    #     if cls.install_cmd == 'conda':
-    #         conda_uninstall_in_env(*cls.requirements, env_name=env_name)
-    #     # elif cls.install_cmd == 'bash':
-    #     #     raise NotImplementedError("Uninstall not implemented for bash.")
-    #     print(" done")
-
 
 class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
 
