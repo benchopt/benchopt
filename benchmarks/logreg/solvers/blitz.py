@@ -11,7 +11,7 @@ class Solver(BaseSolver):
     sampling_strategy = 'tolerance'
 
     install_cmd = 'conda'
-    requirements_import = ['blitzl1']
+    requirements = ['blitzl1']
     requirements_install = [
         'pip:git+https://github.com/tommoral/blitzl1.git@FIX_setup_deps'
     ]

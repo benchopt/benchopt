@@ -12,7 +12,7 @@ class Solver(BaseSolver):
     name = 'Lightning'
 
     install_cmd = 'conda'
-    requirements_import = ['lightning']
+    requirements = ['lightning']
     requirements_install = [
         'pip:git+https://github.com/scikit-learn-contrib/lightning.git'
     ]
