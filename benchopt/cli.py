@@ -6,7 +6,7 @@ from benchopt import run_benchmark
 from benchopt.util import filter_solvers
 from benchopt.util import get_all_benchmarks
 from benchopt.util import install_required_datasets
-from benchopt.util import _run_bash_in_env, create_condaenv
+from benchopt.util import _run_bash_in_env, create_conda_env
 from benchopt.util import list_benchmark_solvers, install_solvers
 
 
@@ -75,8 +75,7 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
                       max_samples=max_samples, n_rep=repetition)
         return
 
-    # Create the conda env
-    create_condaenv(benchmark, recreate=recreate)
+    create_conda_env(benchmark, recreate=recreate)
 
     # installed required datasets
     install_required_datasets(benchmark, dataset_names, env_name=benchmark)
