@@ -18,26 +18,12 @@ if [[ "$UNAMESTR" == "Darwin" ]]; then
     export DYLD_LIBRARY_PATH=/usr/local/opt/libomp/lib
 fi
 
-make_conda() {
-    TO_INSTALL="$@"
-    conda create -n $CONDAENV --yes $TO_INSTALL
-    . activate $CONDAENV
-    echo $CONDA
-}
-
-# if [[ "$PACKAGER" == "conda" ]]; then
 TO_INSTALL=$(cat dev-requirements.txt)
 TO_INSTALL="python=$VERSION_PYTHON pip $TO_INSTALL"
 
-make_conda $TO_INSTALL
-
-# elif [[ "$PACKAGER" == "ubuntu" ]]; then
-#     sudo apt-get update
-#     sudo apt-get install  python3-numpy cython
-#     python3 -m virtualenv --system-site-packages --python=python3 $CONDAENV
-#     conda activate $CONDAENV
-#     python -m pip install -r dev-requirements.txt
-# fi
+conda create -n $CONDAENV --yes $TO_INSTALL
+. activate $CONDAENV
+echo $CONDA
 
 python --version
 python -c "import numpy; print('numpy %s' % numpy.__version__)"

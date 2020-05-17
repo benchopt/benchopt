@@ -21,25 +21,18 @@ jobs:
   strategy:
     matrix:
 
-      # linux_py36_ubuntu:
-      #   imageName: 'ubuntu-latest'
-      #   PACKAGER: 'ubuntu'
-      #   VERSION_PYTHON: '3.6'
       linux_py36_conda:
         imageName: 'ubuntu-latest'
-        PACKAGER: 'conda'
         VERSION_PYTHON: '3.6'
         COVERAGE: 'true'
       linux_pylatest_conda:
         imageName: 'ubuntu-latest'
-        PACKAGER: 'conda'
         VERSION_PYTHON: '*'
 
       # MacOS builds
       macOS_pylatest_conda:
         imageName: 'macOS-10.14'
         VERSION_PYTHON: '*'
-        PACKAGER: 'conda'
 
 #       win_py38_pip:
 #         imageName: 'vs2017-win2016'
@@ -79,8 +72,7 @@ jobs:
       echo "##vso[task.prependpath]$CONDA/bin"
       sudo chown -R $USER $CONDA
     displayName: Add conda to PATH
-    condition: and(eq(variables['PACKAGER'], 'conda'),
-                   ne(variables['Agent.OS'], 'Windows_NT'))
+    condition: ne(variables['Agent.OS'], 'Windows_NT')
 
   - bash: bash continuous_integration/install.sh
     displayName: 'Install benchopt and its dependencies'

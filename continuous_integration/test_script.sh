@@ -2,12 +2,7 @@
 
 set -e
 
-# if [[ "$PACKAGER" == "conda" ]]; then
-# . $CONDA_PREFIX/etc/profile.d/conda.sh
 . activate $CONDAENV
-# elif [[ "$PACKAGER" == "ubuntu" ]]; then
-    # source $CONDAENV/bin/activate
-# fi
 
 TEST_CMD="python -m pytest -v --showlocals --durations=20 --junitxml=$JUNITXML --pyargs"
 

@@ -12,7 +12,6 @@ class Solver(BaseSolver):
 
     install_cmd = 'conda'
     requirements_import = ['blitzl1']
-    requirements = ['pip:blitzl1']
     requirements_install = [
         'pip:git+https://github.com/tommoral/blitzl1.git@FIX_setup_deps'
     ]

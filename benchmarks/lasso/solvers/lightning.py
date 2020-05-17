@@ -12,7 +12,6 @@ class Solver(BaseSolver):
     name = 'Lightning'
 
     install_cmd = 'conda'
-    requirements = ['pip:sklearn-contrib-lightning']
     requirements_import = ['lightning']
     requirements_install = [
         'pip:git+https://github.com/scikit-learn-contrib/lightning.git'

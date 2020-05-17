@@ -92,7 +92,7 @@ def _run_bash_in_env(script, env_name=None, raise_on_error=None,
         Exit code of the script
     """
     if env_name is not None:
-        script = (f". activate {env_name} && {script}")
+        script = (f". activate {env_name}\n{script}")
 
     return _run_in_bash(script, raise_on_error=raise_on_error,
                         capture_stdout=capture_stdout)
@@ -306,10 +306,10 @@ def is_included(name, include_patterns=None):
 def create_conda_env(env_name, recreate=False):
     """Create a conda env with name env_name and install basic utilities"""
 
-    force = " -y" * recreate
+    force = " -y" if recreate else ""
 
     print(f"Creating conda env {env_name}:...", end='', flush=True)
-    subprocess.run(f"conda create{force} -n {env_name}", shell=True)
+    subprocess.run(f"conda create {force} -n {env_name}", shell=True)
     # add conda-forge to channels, but only in this env with --env
     subprocess.run(f". activate {env_name} && conda config --env --append "
                    "channels conda-forge", shell=True)
