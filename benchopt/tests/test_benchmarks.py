@@ -8,7 +8,7 @@ from benchopt.util import get_benchmark_objective
 from benchopt.util import list_benchmark_solvers
 from benchopt.util import list_benchmark_datasets
 from benchopt.util import check_failed_import
-from benchopt.util import create_condaenv, delete_condaenv
+from benchopt.util import create_conda_env, delete_conda_env
 
 
 BENCHMARKS = get_all_benchmarks()
@@ -38,11 +38,11 @@ TEST_ENV_NAME = "benchopt_test_env"
 
 def setup_module(module):
     print("create env")
-    create_condaenv(TEST_ENV_NAME, recreate=True)
+    create_conda_env(TEST_ENV_NAME, recreate=True)
 
 
 def teardown_module(module):
-    delete_condaenv(TEST_ENV_NAME)
+    delete_conda_env(TEST_ENV_NAME)
 
 
 @pytest.mark.parametrize('benchmark_name, dataset_class', BENCH_AND_SIMULATED,
@@ -154,7 +154,7 @@ def test_solver_install(benchmark_name, solver_class):
         pytest.xfail('%s is not fully working yet' % solver_class.name)
 
     # assert that install works in a fresh environment
-    create_condaenv(TEST_ENV_NAME, recreate=True)
+    create_conda_env(TEST_ENV_NAME, recreate=True)
     assert solver_class.install(env_name=TEST_ENV_NAME, force=True)
     assert solver_class.is_installed(env_name=TEST_ENV_NAME)
 
@@ -203,14 +203,3 @@ def test_solver(benchmark_name, solver_class):
         val_eps = objective(beta_hat_i + eps)
         diff = val_eps - val_star
         assert diff > 0
-
-
-if __name__ == "__main__":
-    for idx in range(8):
-        if idx == 5:  # cyanure, skip
-            continue
-        bench, solver_class = BENCH_AND_SOLVERS[idx]
-        print(bench, solver_class)
-        create_condaenv(TEST_ENV_NAME, recreate=True)
-        assert solver_class.install(env_name=TEST_ENV_NAME, force=True)
-        assert solver_class.is_installed(env_name=TEST_ENV_NAME)

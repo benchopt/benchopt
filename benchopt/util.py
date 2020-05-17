@@ -303,7 +303,7 @@ def is_included(name, include_patterns=None):
     return False
 
 
-def create_condaenv(env_name, recreate=False):
+def create_conda_env(env_name, recreate=False):
     """Create a conda env with name env_name and install basic utilities"""
 
     force = " -y" * recreate
@@ -321,7 +321,7 @@ def create_condaenv(env_name, recreate=False):
     print(" done")
 
 
-def delete_condaenv(env_name):
+def delete_conda_env(env_name):
     """Delete a conda env with name env_name."""
 
     subprocess.run(f"conda env remove -n {env_name}", shell=True)
