@@ -1,15 +1,11 @@
 import numpy as np
 
-from numpy.linalg import norm
-
 from benchopt.base import BaseSolver
 from benchopt.util import safe_import
-
 
 with safe_import() as solver_import:
     from scipy import sparse
     from numba import njit
-
 
 if solver_import.failed_import:
 
@@ -33,19 +29,19 @@ class Solver(BaseSolver):
     requirements = ['numba', 'scipy']
 
     def set_objective(self, X, y, lmbd):
-        self.X, self.y, self.lmbd = X, y, lmbd
+        # use Fortran order to compute gradient on contiguous columns
+        self.X, self.y, self.lmbd = np.asfortranarray(X), y, lmbd
 
         # Make sure we cache the numba compilation.
         self.run(1)
 
     def run(self, n_iter):
+        L = (self.X ** 2).sum(axis=0)
         if sparse.issparse(self.X):
-            L = sparse.linalg.norm(self.X, axis=0) ** 2
             self.w = self.sparse_cd(
                 self.X.data, self.X.indices, self.X.indptr, self.y, self.lmbd,
                 L, n_iter)
         else:
-            L = norm(self.X, axis=0) ** 2
             self.w = self.cd(self.X, self.y, self.lmbd, L, n_iter)
 
     @staticmethod
