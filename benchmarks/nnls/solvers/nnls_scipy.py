@@ -5,7 +5,7 @@ from benchopt.base import BaseSolver
 from benchopt.util import safe_import
 
 with safe_import() as solver_import:
-        from scipy.optimize._nnls import nnls
+    from scipy.optimize._nnls import nnls
 
 
 class Solver(BaseSolver):
