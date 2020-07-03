@@ -4,8 +4,8 @@ from collections import namedtuple
 from abc import ABC, abstractmethod
 
 from .util import check_cmd_solver
-from .util import conda_install_in_env
-from .util import bash_install_in_env
+from .util import install_in_conda_env
+from .util import shell_install_in_conda_env
 from .util import check_import_solver
 from .class_property import classproperty
 from .config import RAISE_INSTALL_ERROR
@@ -47,7 +47,7 @@ class ParametrizedNameMixin():
 
 class DependenciesMixin:
     # Information on how to install the class. The value of install_cmd should
-    # be in {None, 'conda', 'bash'}. The API reads:
+    # be in {None, 'conda', 'shell'}. The API reads:
     #
     # - 'conda': The class should have at least attribute `requirements`.
     #          BenchOpt will conda install `$requirements` and check it is
@@ -56,8 +56,8 @@ class DependenciesMixin:
     #          class attribute `requirements_install` and for the import with
     #          the class attribute `requirements_import`.
     #
-    # - 'bash': The solver should have attribute `install_script` and
-    #           `cmd_name`. BenchOpt will run `install_script` in a bash and
+    # - 'shell': The solver should have attribute `install_script` and
+    #           `cmd_name`. BenchOpt will run `install_script` in a shell and
     #           provide the conda env directory as an argument. It will also
     #           check that `cmd_name` is in the conda env PATH.
     install_cmd = None
@@ -92,7 +92,7 @@ class DependenciesMixin:
             if cls.install_cmd == 'conda':
                 return check_import_solver(cls.requirements_import,
                                            env_name=env_name)
-            elif cls.install_cmd == 'bash':
+            elif cls.install_cmd == 'shell':
                 return check_cmd_solver(cls.cmd_name, env_name=env_name)
         except BaseException:
             # Something went wrong so we consider that this is not installed
@@ -117,24 +117,28 @@ class DependenciesMixin:
         is_installed: bool
             True if the class is correctly installed in the environment.
         """
-        print(f"Installing {cls.name} in {env_name}:...",
-              end='', flush=True)
-        try:
-            if cls.install_cmd == 'conda':
-                conda_install_in_env(*cls.requirements_install,
-                                     env_name=env_name, force=force)
-            elif cls.install_cmd == 'bash':
-                bash_install_in_env(cls.install_script, env_name=env_name)
-
-        except Exception as exception:
-            if RAISE_INSTALL_ERROR:
-                raise exception
-
         is_installed = cls.is_installed(env_name=env_name)
-        if is_installed:
-            print(" done")
-        else:
-            print(" failed")
+
+        if not is_installed:
+            print(f"Installing {cls.name} in {env_name}:...",
+                  end='', flush=True)
+            try:
+                if cls.install_cmd == 'conda':
+                    install_in_conda_env(*cls.requirements_install,
+                                         env_name=env_name, force=force)
+                elif cls.install_cmd == 'shell':
+                    shell_install_in_conda_env(cls.install_script,
+                                               env_name=env_name)
+
+            except Exception as exception:
+                if RAISE_INSTALL_ERROR:
+                    raise exception
+
+            is_installed = cls.is_installed(env_name=env_name)
+            if is_installed:
+                print(" done")
+            else:
+                print(" failed")
 
         return is_installed
 

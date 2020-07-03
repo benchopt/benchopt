@@ -10,11 +10,12 @@ config.read(CONFIG_FILE_LOCATION)
 
 
 DEFAULT_GLOBAL = {
-    'debug': True,
+    'debug': False,
     'allow_install': False,
     'raise_install_error': False,
     'cache_dir': '.',
-    'data_dir': './data/'
+    'data_dir': './data/',
+    'shell': os.environ.get('SHELL', 'bash')
 }
 
 DEFAULT_BENCHMARK = {

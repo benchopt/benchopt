@@ -136,12 +136,12 @@ def test_solver_class(benchmark_name, solver_class):
 def test_solver_install_api(benchmark_name, solver_class):
 
     # Check that the solver_class exposes a known install cmd
-    assert solver_class.install_cmd in [None, 'conda', 'bash']
+    assert solver_class.install_cmd in [None, 'conda', 'shell']
 
     # Check that the solver_class exposes a known install cmd
     if solver_class.install_cmd == 'conda':
         assert hasattr(solver_class, 'requirements')
-    if solver_class.install_cmd == 'bash':
+    if solver_class.install_cmd == 'shell':
         assert hasattr(solver_class, 'install_script')
         assert hasattr(solver_class, 'cmd_name')
 
@@ -153,8 +153,7 @@ def test_solver_install(benchmark_name, solver_class):
     if solver_class.name in ['Liblinear', 'Cyanure']:
         pytest.xfail('%s is not fully working yet' % solver_class.name)
 
-    # assert that install works in a fresh environment
-    create_conda_env(TEST_ENV_NAME, recreate=True)
+    # assert that install works when forced to reinstall
     assert solver_class.install(env_name=TEST_ENV_NAME, force=True)
     assert solver_class.is_installed(env_name=TEST_ENV_NAME)
 

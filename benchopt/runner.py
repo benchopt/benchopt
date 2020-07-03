@@ -169,10 +169,9 @@ def run_one_solver(objective, solver_class, solver_parameters,
         status = colorify("failed", RED)
         print(f"{tag} {status}".ljust(80))
 
-        if not DEBUG:
-            import traceback
-            traceback.print_exc()
-        else:
+        import traceback
+        traceback.print_exc()
+        if DEBUG:
             import ipdb
             ipdb.post_mortem()
 
@@ -185,6 +184,11 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
     # Load the objective class for this benchmark and the datasets
     objective_class = get_benchmark_objective(benchmark)
     datasets = list_benchmark_datasets(benchmark)
+
+    invalid_dataset = set(dataset_names) - set(datasets)
+    assert len(invalid_dataset) == 0, (
+        f'Invalid datasets: {invalid_dataset}. Should be in {datasets}.'
+    )
 
     # Load the solvers and filter them to get the one to run
     solver_classes = list_benchmark_solvers(benchmark)

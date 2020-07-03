@@ -10,7 +10,7 @@ class Solver(CommandLineSolver):
     name = 'Liblinear'
     sampling_strategy = 'tolerance'
 
-    install_cmd = 'bash'
+    install_cmd = 'shell'
     cmd_name = 'train'
     install_script = 'install_liblinear.sh'
 

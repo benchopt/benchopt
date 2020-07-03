@@ -7,21 +7,38 @@ import itertools
 import subprocess
 from importlib import import_module
 
+from .config import get_global_setting
 from .config import DEBUG, ALLOW_INSTALL, RAISE_INSTALL_ERROR
 
 
-# Bash commands for installing and checking the solvers
+SHELL = get_global_setting('shell')
+
+
+# Shell commands for installing and checking the solvers
 CONDA_INSTALL_CMD = "conda install -y {packages}"
 PIP_INSTALL_CMD = "pip install {packages}"
-BASH_INSTALL_CMD = "bash install_scripts/{install_script} {env}"
+SHELL_INSTALL_CMD = f"{SHELL} install_scripts/{{install_script}} {{env}}"
 CHECK_PACKAGE_INSTALLED_CMD = (
     "python -c 'import {package}'"
 )
 CHECK_CMD_INSTALLED_CMD = "type $'{cmd_name}'"
 
 
-def _run_in_bash(script, raise_on_error=None, capture_stdout=True):
-    """Run a bash script and return its exit code.
+# Yaml config file for benchopt env
+BENCHOPT_ENV = f"""
+channels:
+    - conda-forge
+dependencies:
+  - numpy
+  - cython
+  - pip
+  - pip:
+    - -e {os.getcwd()}
+"""
+
+
+def _run_shell(script, raise_on_error=None, capture_stdout=True):
+    """Run a shell script and return its exit code.
 
     Parameters
     ----------
@@ -53,9 +70,9 @@ def _run_in_bash(script, raise_on_error=None, capture_stdout=True):
         print(fast_failure_script)
 
     if capture_stdout:
-        exit_code, output = subprocess.getstatusoutput([f"bash {tmp.name}"])
+        exit_code, output = subprocess.getstatusoutput([f"{SHELL} {tmp.name}"])
     else:
-        exit_code = os.system(f"bash {tmp.name}")
+        exit_code = os.system(f"{SHELL} {tmp.name}")
         output = ""
     if raise_on_error is not None and exit_code != 0:
         if isinstance(raise_on_error, str):
@@ -68,8 +85,8 @@ def _run_in_bash(script, raise_on_error=None, capture_stdout=True):
     return exit_code
 
 
-def _run_bash_in_env(script, env_name=None, raise_on_error=None,
-                     capture_stdout=True):
+def _run_shell_in_env(script, env_name=None, raise_on_error=None,
+                      capture_stdout=True):
     """Run a script in a given conda env
 
     Parameters
@@ -94,16 +111,16 @@ def _run_bash_in_env(script, env_name=None, raise_on_error=None,
     if env_name is not None:
         script = (f". activate {env_name}\n{script}")
 
-    return _run_in_bash(script, raise_on_error=raise_on_error,
-                        capture_stdout=capture_stdout)
+    return _run_shell(script, raise_on_error=raise_on_error,
+                      capture_stdout=capture_stdout)
 
 
-# TODO: suggestion new name: install_in_conda_env (since it also uses pip)
-def conda_install_in_env(*packages, env_name=None, force=False):
+def install_in_conda_env(*packages, env_name=None, force=False):
     """Install the packages with conda in the given environment"""
     if env_name is None and not ALLOW_INSTALL:
-        raise ValueError("Trying to install solver not in a conda env. "
-                         "To allow this, set BENCHO_ALLOW_INSTALL=True.")
+        raise ValueError("Trying to install solver not in a conda env "
+                         "managed by benchopt. To allow this, "
+                         "set BENCHO_ALLOW_INSTALL=True.")
     install_this = False
     if '-e .' in packages:
         install_this = True
@@ -119,27 +136,27 @@ def conda_install_in_env(*packages, env_name=None, force=False):
         cmd = CONDA_INSTALL_CMD.format(packages=' '.join(conda_packages))
         if force:
             cmd += ' --force-reinstall'
-        _run_bash_in_env(cmd, env_name=env_name, raise_on_error=error_msg)
+        _run_shell_in_env(cmd, env_name=env_name, raise_on_error=error_msg)
     if pip_packages:
         cmd = PIP_INSTALL_CMD.format(packages=' '.join(pip_packages))
         if force:
             cmd += ' --force-reinstall'
-        _run_bash_in_env(cmd, env_name=env_name, raise_on_error=error_msg)
+        _run_shell_in_env(cmd, env_name=env_name, raise_on_error=error_msg)
     if install_this:
-        _run_bash_in_env('pip install -e .', env_name=env_name)
+        _run_shell_in_env('pip install -e .', env_name=env_name)
 
 
-def bash_install_in_env(script, env_name=None):
-    """Run a bash install script in the given environment"""
+def shell_install_in_conda_env(script, env_name=None):
+    """Run a shell install script in the given environment"""
     if env_name is None and not ALLOW_INSTALL:
         raise ValueError("Trying to install solver not in a conda env. "
                          "To allow this, set BENCHO_ALLOW_INSTALL=True.")
     env = env_name if env_name is not None else "base"
     # TODO correct idea to use base?
-    cmd = BASH_INSTALL_CMD.format(install_script=script, env=env)
-    _run_bash_in_env(cmd, env_name=env_name,
-                     raise_on_error=f"Failed to run script {script}\n"
-                     "Error: {output}")
+    cmd = SHELL_INSTALL_CMD.format(install_script=script, env=env)
+    _run_shell_in_env(cmd, env_name=env_name,
+                      raise_on_error=f"Failed to run script {script}\n"
+                      "Error: {output}")
 
 
 def check_import_solver(requirements_import, env_name=None):
@@ -164,9 +181,9 @@ def check_import_solver(requirements_import, env_name=None):
             if not_installed not in output:
                 print(output)
 
-        if _run_bash_in_env(check_package_installed_cmd,
-                            env_name=env_name,
-                            raise_on_error=raise_on_error) != 0:
+        if _run_shell_in_env(check_package_installed_cmd,
+                             env_name=env_name,
+                             raise_on_error=raise_on_error) != 0:
             return False
     return True
 
@@ -185,8 +202,8 @@ def check_cmd_solver(cmd_name, env_name=None):
     """
     check_cmd_installed_cmd = CHECK_CMD_INSTALLED_CMD.format(
         cmd_name=cmd_name)
-    return _run_bash_in_env(check_cmd_installed_cmd,
-                            env_name=env_name) == 0
+    return _run_shell_in_env(check_cmd_installed_cmd,
+                             env_name=env_name) == 0
 
 
 def check_failed_import(solver_class):
@@ -306,25 +323,29 @@ def is_included(name, include_patterns=None):
 def create_conda_env(env_name, recreate=False):
     """Create a conda env with name env_name and install basic utilities"""
 
-    force = " -y" if recreate else ""
+    force = "--force" if recreate else ""
 
     print(f"Creating conda env {env_name}:...", end='', flush=True)
-    subprocess.run(f"conda create {force} -n {env_name}", shell=True)
-    # add conda-forge to channels, but only in this env with --env
-    subprocess.run(f". activate {env_name} && conda config --env --append "
-                   "channels conda-forge", shell=True)
-    # Install benchopt as well as packages used as utilities to install
-    # other packages. The install of benchopt is done with the -e flag
-    # to ease development process
-    # XXX: add a flag to enable/disable develop install?
-    conda_install_in_env("numpy", "cython", "-e .", env_name=env_name)
+    env_yaml = tempfile.NamedTemporaryFile(mode="w+", suffix='.yml')
+    env_yaml.write(f"name: {env_name}{BENCHOPT_ENV}")
+    env_yaml.flush()
+    try:
+        _run_shell(f"conda env create {force} -n {env_name} "
+                   f"-f {env_yaml.name}", capture_stdout=True,
+                   raise_on_error="{output}")
+    except RuntimeError:
+        _run_shell(f"conda env update {force} -n {env_name} "
+                   f"-f {env_yaml.name}", capture_stdout=True,
+                   raise_on_error="{output}")
+
     print(" done")
 
 
 def delete_conda_env(env_name):
     """Delete a conda env with name env_name."""
 
-    subprocess.run(f"conda env remove -n {env_name}", shell=True)
+    _run_shell(f"conda env remove -n {env_name}",
+               capture_stdout=True)
 
 
 def install_solvers(solvers, forced_solvers=None, env_name=None):

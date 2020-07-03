@@ -6,7 +6,7 @@ from benchopt import run_benchmark
 from benchopt.util import filter_solvers
 from benchopt.util import get_all_benchmarks
 from benchopt.util import install_required_datasets
-from benchopt.util import _run_bash_in_env, create_conda_env
+from benchopt.util import _run_shell_in_env, create_conda_env
 from benchopt.util import list_benchmark_solvers, install_solvers
 
 
@@ -98,7 +98,7 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
         f"{solvers_option} {forced_solvers_option} {datasets_option} "
         f"{benchmark}"
     )
-    raise SystemExit(_run_bash_in_env(
+    raise SystemExit(_run_shell_in_env(
         cmd, env_name=benchmark, capture_stdout=False))
 
 
