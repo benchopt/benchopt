@@ -1,5 +1,4 @@
 import time
-import importlib
 import numpy as np
 import pandas as pd
 from joblib import Memory
@@ -13,6 +12,7 @@ from .util import filter_solvers
 from .util import list_benchmark_solvers
 from .util import list_benchmark_datasets
 from .util import get_benchmark_objective
+from .util import check_failed_import
 from .config import get_global_setting, get_benchmark_setting
 
 
@@ -50,8 +50,7 @@ def colorify(message, color=BLUE):
 def run_repetition(objective, solver_class, solver_parameters, meta, sample):
 
     # check if the module caught a failed import
-    module = importlib.import_module(solver_class.__module__)
-    if hasattr(module, 'solver_import') and module.solver_import.failed_import:
+    if check_failed_import(solver_class):
         raise ImportError(
             f"Failure during import in {solver_class.__module__}.")
 
@@ -120,8 +119,7 @@ def run_one_solver(objective, solver_class, solver_parameters,
                    np.log(max(delta, eps)) / np.log(eps))
 
     # check if the module caught a failed import
-    module = importlib.import_module(solver_class.__module__)
-    if hasattr(module, 'solver_import') and module.solver_import.failed_import:
+    if check_failed_import(solver_class):
         status = colorify("failed import", RED)
         print(f"{tag} {status}".ljust(80))
         return curve

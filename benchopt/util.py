@@ -192,6 +192,22 @@ def check_cmd_solver(cmd_name, env_name=None):
                             env_name=env_name) == 0
 
 
+def check_failed_import(solver_class):
+    """Check if the module caught a failed import.
+
+    Parameters
+    ----------
+    solver_class : subclass of BaseSolver
+        Custom solver class.
+    """
+    import importlib
+    module = importlib.import_module(solver_class.__module__)
+    if hasattr(module, 'solver_import'):
+        return module.solver_import.failed_import
+    else:
+        return False
+
+
 def get_all_benchmarks():
     """List all the available benchmarks."""
     submodules = pkgutil.iter_modules([f'benchmarks'])

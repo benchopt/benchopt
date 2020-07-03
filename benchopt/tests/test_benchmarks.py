@@ -8,6 +8,7 @@ from benchopt.util import get_benchmark_objective
 from benchopt.util import list_benchmark_solvers
 from benchopt.util import list_benchmark_datasets
 from benchopt.util import create_venv, delete_venv
+from benchopt.util import check_failed_import
 
 
 BENCHMARKS = get_all_benchmarks()
@@ -169,6 +170,9 @@ def test_solver(benchmark_name, solver_class):
             pytest.importorskip(package)
     elif not solver_class.is_installed():
         pytest.skip("Solver is not installed")
+
+    if check_failed_import(solver_class):
+        pytest.skip("Solver import failed")
 
     objective_class = get_benchmark_objective(benchmark_name)
     objective = objective_class()
