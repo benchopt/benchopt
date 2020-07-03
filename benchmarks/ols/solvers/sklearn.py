@@ -8,9 +8,9 @@ with safe_import() as solver_import:
 class Solver(BaseSolver):
     name = 'sklearn'
 
-    install_cmd = 'pip'
-    requirements = ['scikit-learn']
-    requirements_import = ['sklearn']
+    install_cmd = 'conda'
+    requirements = ['sklearn']
+    requirements_install = ['scikit-learn']
 
     def set_objective(self, X, y, fit_intercept=False):
         self.X, self.y, self.fit_intercept = X, y, fit_intercept
