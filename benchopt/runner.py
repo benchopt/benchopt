@@ -169,11 +169,11 @@ def run_one_solver(objective, solver_class, solver_parameters,
         status = colorify("failed", RED)
         print(f"{tag} {status}".ljust(80))
 
-        import traceback
-        traceback.print_exc()
         if DEBUG:
-            import ipdb
-            ipdb.post_mortem()
+            raise
+        else:
+            import traceback
+            traceback.print_exc()
 
     return curve
 
