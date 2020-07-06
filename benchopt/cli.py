@@ -36,7 +36,9 @@ def main(prog_name='benchopt'):
     pass
 
 
-@main.command()
+@main.command(
+    help="Run a benchmark with benchopt."
+)
 @click.argument('benchmark', nargs=1, callback=validate_benchmark)
 @click.option('--local', '-l',
               is_flag=True,
