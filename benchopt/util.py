@@ -86,8 +86,8 @@ def _run_shell(script, raise_on_error=None, capture_stdout=True):
     return exit_code
 
 
-def _run_shell_in_env(script, env_name=None, raise_on_error=None,
-                      capture_stdout=True):
+def _run_shell_in_conda_env(script, env_name=None, raise_on_error=None,
+                            capture_stdout=True):
     """Run a script in a given conda env
 
     Parameters
@@ -134,14 +134,16 @@ def install_in_conda_env(*packages, env_name=None, force=False):
         cmd = CONDA_INSTALL_CMD.format(packages=' '.join(conda_packages))
         if force:
             cmd += ' --force-reinstall'
-        _run_shell_in_env(cmd, env_name=env_name, raise_on_error=error_msg)
+        _run_shell_in_conda_env(cmd, env_name=env_name,
+                                raise_on_error=error_msg)
     if pip_packages:
         cmd = PIP_INSTALL_CMD.format(packages=' '.join(pip_packages))
         if force:
             cmd += ' --force-reinstall'
-        _run_shell_in_env(cmd, env_name=env_name, raise_on_error=error_msg)
+        _run_shell_in_conda_env(cmd, env_name=env_name,
+                                raise_on_error=error_msg)
     if install_this:
-        _run_shell_in_env('pip install -e .', env_name=env_name)
+        _run_shell_in_conda_env('pip install -e .', env_name=env_name)
 
 
 def shell_install_in_conda_env(script, env_name=None):
@@ -152,9 +154,9 @@ def shell_install_in_conda_env(script, env_name=None):
     env = env_name if env_name is not None else "base"
     # TODO correct idea to use base?
     cmd = SHELL_INSTALL_CMD.format(install_script=script, env=env)
-    _run_shell_in_env(cmd, env_name=env_name,
-                      raise_on_error=f"Failed to run script {script}\n"
-                      "Error: {output}")
+    _run_shell_in_conda_env(cmd, env_name=env_name,
+                            raise_on_error=f"Failed to run script {script}\n"
+                            "Error: {output}")
 
 
 def check_import_solver(requirements_import, env_name=None):
@@ -179,9 +181,9 @@ def check_import_solver(requirements_import, env_name=None):
             if not_installed not in output:
                 print(output)
 
-        if _run_shell_in_env(check_package_installed_cmd,
-                             env_name=env_name,
-                             raise_on_error=raise_on_error) != 0:
+        if _run_shell_in_conda_env(check_package_installed_cmd,
+                                   env_name=env_name,
+                                   raise_on_error=raise_on_error) != 0:
             return False
     return True
 
@@ -200,8 +202,8 @@ def check_cmd_solver(cmd_name, env_name=None):
     """
     check_cmd_installed_cmd = CHECK_CMD_INSTALLED_CMD.format(
         cmd_name=cmd_name)
-    return _run_shell_in_env(check_cmd_installed_cmd,
-                             env_name=env_name) == 0
+    return _run_shell_in_conda_env(check_cmd_installed_cmd,
+                                   env_name=env_name) == 0
 
 
 def check_failed_import(solver_class):
