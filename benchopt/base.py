@@ -18,6 +18,8 @@ Cost = namedtuple('Cost', 'data scale objective solver sample time obj '
 
 
 class ParametrizedNameMixin():
+    """Mixing for parametric classes representation and naming.
+    """
     parameters = {}
 
     def __init__(self, **parameters):
@@ -74,8 +76,8 @@ class DependenciesMixin:
         Parameters
         ----------
         env_name: str or None
-            Name of the conda env where the class should be installed. If
-            None, tries to install it in the current environment.
+            Name of the conda env where the install should be checked. If
+            None, check the install in the current environment.
         raise_on_not_installed: boolean or None
             If set to True, raise an error if the requirements are not
             installed. This is mainly for testing purposes.
@@ -150,27 +152,33 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
 
     Solvers that derive from this class should implement three methods:
 
-    - set_objective(self, **objective_parameters): prepare the solver to be
+    - set_objective(self, **objective_parameters): prepares the solver to be
       called on a given problem. **objective_parameters are the output of the
       method :code:`to_dict` from the benchmark objective. In particular, this
       method should dumps the parameter to compute the objective function in a
-      file for command line solvers to reduce the impact of dumping the data
-      to the disk in the benchmark.
+      file for command line solvers to reduce the impact of dumping the data to
+      the disk in the benchmark.
 
-    - run(self, n_iter/tolerance): a method that perform the computation for
-      the previously given objective, after a call to :code:`set_objective`.
-      This function is the part that is timed in the benchmark and should avoid
-      performing any computation unrelated to the optimization procedure.
+    - run(self, n_iter/tolerance): performs the computation for the previously
+      given objective function, after a call to :code:`set_objective`. This
+      method is the one timed in the benchmark and should not perform any
+      operation unrelated to  the optimization procedure.
 
-    - get_result(self): returns the parameters computed by the previous run.
-      For command line solvers, this retrieves the result from the disk. This
-      utility is necessary to reduce the impact of loading the result from the
-      disk in the benchmark.
+    - get_result(self): returns the parameters computed by the previous call to
+      run. For command line solvers, this retrieves the result from the disk.
+      This utility is necessary to reduce the impact of loading the result from
+      the disk in the benchmark.
+
+    Note that two `sampling_strategy` can be used to construct the benchmark
+    curve:
+
+    - `iteration`: call the run method with max_iter number increasing
+      logarithmically to get more an more precise points.
+    - `tolerance`: call the run method with tolerance deacreasing
+      logarithmically to get more and more precise points.
 
     """
 
-    # TODO: sampling strategy with eps/tol instead for solvers that do not
-    #       expose the max number of iterations
     sampling_strategy = 'iteration'
 
     def __init__(self, **parameters):
@@ -190,16 +198,6 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         """
         self.objective_parameters = objective_parameters
         self.set_objective(**objective_parameters)
-
-    # @staticmethod
-    # def reconstruct(klass, parameters, objective_parameters):
-    #     obj = klass(**parameters)
-    #     obj.set_objective(**objective_parameters)
-    #     return obj
-
-    # def __reduce__(self):
-    #     return self.reconstruct, (self.__class__, self.parameters,
-    #                               self.objective_parameters)
 
     @abstractmethod
     def set_objective(self, **objective_parameters):
@@ -234,11 +232,23 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         """
         ...
 
+    # TODO: use this to allow parallel computation of the benchmark.
+    # @staticmethod
+    # def reconstruct(klass, parameters, objective_parameters):
+    #     obj = klass(**parameters)
+    #     obj.set_objective(**objective_parameters)
+    #     return obj
+
+    # def __reduce__(self):
+    #     return self.reconstruct, (self.__class__, self.parameters,
+    #                               self.objective_parameters)
+
 
 class CommandLineSolver(BaseSolver, ABC):
     """A base class for solvers that are called through command lines
 
-    Solvers that derive from this class should dump their data in
+    The goal of this base class is to provide easy to use temporary files and
+    solvers that derive from this class should dump their data in
     `self.data_filename` and the result in `self.model_filename`.
     """
 
@@ -252,6 +262,13 @@ class CommandLineSolver(BaseSolver, ABC):
 
 class BaseDataset(ParametrizedNameMixin, DependenciesMixin):
     """Base class to define a dataset in a benchmark.
+
+    Datasets that derive from this class should implement one method:
+
+    - `get_data()`: retrieves/simulates the data contains in this data set and
+      returns the `scale` of the data as well as a dictionary containing the
+      data. This dictionary is passed as arguments of the objective function
+      method `set_data`.
     """
 
     @abstractmethod
@@ -265,13 +282,28 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin):
             parameter of shape (scale,).
         data: dict
             Extra parameters of the objective. The objective will be
-            instanciated by calling Objective.set_data(**data)
+            instanciated by calling `Objective.set_data(**data)`.
         """
         ...
 
 
 class BaseObjective(ParametrizedNameMixin):
-    """Base class to define an objective
+    """Base class to define an objective function
+
+    Objectives that derive from this class should implement three methods:
+
+    - `set_data(**data)`: stores the info from a given dataset to be able to
+      compute the objective value on these data.
+
+    - `to_dict()`: exports the data from the dataset as well as the parameters
+      from the objective function as a dictionary that will be passed as
+      parameters of the solver's `set_objective` method in order to specify the
+      objective function of the benchmark.
+
+    - `__call__(beta)`: computes the value of the objective function for an
+      given estimate beta. Beta is given as a flat 1D vector of size
+      corresponding to the `scale` value returned by `Dataset.get_data`. The
+      output should be a float or a dictionary of floats.
     """
 
     def __init__(self, **parameters):
@@ -285,13 +317,13 @@ class BaseObjective(ParametrizedNameMixin):
             setattr(self, k, v)
 
     @abstractmethod
-    def __call__(self, beta):
-        ...
-
-    @abstractmethod
     def set_data(self, **data):
         ...
 
     @abstractmethod
     def to_dict(self):
+        ...
+
+    @abstractmethod
+    def __call__(self, beta):
         ...
