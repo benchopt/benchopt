@@ -125,7 +125,6 @@ def install_in_conda_env(*packages, env_name=None, force=False):
         raise ValueError("Trying to install solver not in a conda env "
                          "managed by benchopt. To allow this, "
                          "set BENCHO_ALLOW_INSTALL=True.")
-    install_this = False
 
     pip_packages = [pkg[4:] for pkg in packages if pkg.startswith('pip:')]
     conda_packages = [pkg for pkg in packages if not pkg.startswith('pip:')]
@@ -145,8 +144,6 @@ def install_in_conda_env(*packages, env_name=None, force=False):
             cmd += ' --force-reinstall'
         _run_shell_in_conda_env(cmd, env_name=env_name,
                                 raise_on_error=error_msg)
-    if install_this:
-        _run_shell_in_conda_env('pip install -e .', env_name=env_name)
 
 
 def shell_install_in_conda_env(script, env_name=None):
