@@ -1,10 +1,11 @@
+import uuid
 import pytest
 import numpy as np
+
 
 from benchopt.base import SAMPLING_STRATEGIES
 
 from benchopt.util import get_all_benchmarks
-from benchopt.util import check_failed_import
 from benchopt.util import list_benchmark_solvers
 from benchopt.util import list_benchmark_datasets
 from benchopt.util import get_benchmark_objective
@@ -32,8 +33,7 @@ def class_ids(parameter):
 
 # Setup and clean a test env to install all the solvers and check
 # that they are correctly configured
-
-TEST_ENV_NAME = "benchopt_test_env"
+TEST_ENV_NAME = f"benchopt_test_env_{uuid.uuid4()}"
 
 
 def setup_module(module):
@@ -93,9 +93,8 @@ def test_dataset_get_data(benchmark_name, dataset_class):
     """Check that all installed dataset_class.get_data return the right result
     """
     # skip the test if the dataset is not installed
-    if dataset_class.install_cmd == 'conda':
-        for package in dataset_class.requirements_import:
-            pytest.importorskip(package)
+    if not dataset_class.is_installed():
+        pytest.skip("Dataset is not installed")
 
     dataset = dataset_class()
     data = dataset.get_data()
@@ -143,7 +142,6 @@ def test_solver_install_api(benchmark_name, solver_class):
         assert hasattr(solver_class, 'requirements')
     if solver_class.install_cmd == 'shell':
         assert hasattr(solver_class, 'install_script')
-        assert hasattr(solver_class, 'cmd_name')
 
 
 @pytest.mark.requires_install
@@ -151,7 +149,7 @@ def test_solver_install_api(benchmark_name, solver_class):
                          ids=class_ids)
 def test_solver_install(benchmark_name, solver_class):
     # assert that install works when forced to reinstalls
-    assert solver_class.install(env_name=TEST_ENV_NAME, force=True)
+    assert solver_class.install(env_name=TEST_ENV_NAME)
     assert solver_class.is_installed(env_name=TEST_ENV_NAME)
 
 
@@ -159,14 +157,8 @@ def test_solver_install(benchmark_name, solver_class):
                          ids=class_ids)
 def test_solver(benchmark_name, solver_class):
 
-    if solver_class.install_cmd == 'conda':
-        for package in solver_class.requirements_import:
-            pytest.importorskip(package)
-    elif not solver_class.is_installed():
+    if not solver_class.is_installed():
         pytest.skip("Solver is not installed")
-
-    if check_failed_import(solver_class):
-        pytest.skip("Solver import failed")
 
     objective_class = get_benchmark_objective(benchmark_name)
     objective = objective_class()

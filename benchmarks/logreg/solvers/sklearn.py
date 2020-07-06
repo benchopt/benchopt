@@ -2,10 +2,10 @@ import warnings
 
 
 from benchopt.base import BaseSolver
-from benchopt.util import safe_import
+from benchopt.util import safe_import_context
 
 
-with safe_import() as solver_import:
+with safe_import_context() as import_ctx:
     from sklearn.exceptions import ConvergenceWarning
     from sklearn.linear_model import LogisticRegression
 
@@ -15,7 +15,6 @@ class Solver(BaseSolver):
 
     install_cmd = 'conda'
     requirements = ['scikit-learn']
-    requirements_import = ['sklearn']
 
     parameters = {
         'solver': [

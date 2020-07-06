@@ -1,8 +1,8 @@
 from benchopt.base import BaseSolver
-from benchopt.util import safe_import
+from benchopt.util import safe_import_context
 
 
-with safe_import() as solver_import:
+with safe_import_context() as import_ctx:
     from lightning.classification import CDClassifier
 
 
@@ -10,8 +10,7 @@ class Solver(BaseSolver):
     name = 'Lightning'
 
     install_cmd = 'conda'
-    requirements = ['lightning']
-    requirements_install = [
+    requirements = [
         'pip:git+https://github.com/scikit-learn-contrib/lightning.git'
     ]
 

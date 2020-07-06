@@ -1,7 +1,7 @@
 from benchopt.base import BaseSolver
-from benchopt.util import safe_import
+from benchopt.util import safe_import_context
 
-with safe_import() as solver_import:
+with safe_import_context() as import_ctx:
     from sklearn.linear_model import LinearRegression
 
 
@@ -9,8 +9,7 @@ class Solver(BaseSolver):
     name = 'sklearn'
 
     install_cmd = 'conda'
-    requirements = ['sklearn']
-    requirements_install = ['scikit-learn']
+    requirements = ['scikit-learn']
 
     def set_objective(self, X, y, fit_intercept=False):
         self.X, self.y, self.fit_intercept = X, y, fit_intercept

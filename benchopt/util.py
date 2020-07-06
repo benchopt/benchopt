@@ -18,10 +18,9 @@ SHELL = get_global_setting('shell')
 CONDA_INSTALL_CMD = "conda install -y {packages}"
 PIP_INSTALL_CMD = "pip install {packages}"
 SHELL_INSTALL_CMD = f"{SHELL} install_scripts/{{install_script}} $CONDA_PREFIX"
-CHECK_PACKAGE_INSTALLED_CMD = (
-    "python -c 'import {package}'"
-)
-CHECK_CMD_INSTALLED_CMD = "type $'{cmd_name}'"
+
+# Shell cmd to test if a cmd exists
+CHECK_SHELL_CMD_EXISTS = "type $'{cmd_name}'"
 
 
 # Yaml config file for benchopt env
@@ -32,6 +31,7 @@ channels:
 dependencies:
   - numpy
   - cython
+  - compilers
   - pip
   - pip:
     - -e {os.getcwd()}
@@ -161,36 +161,7 @@ def shell_install_in_conda_env(script, env_name=None):
                             "Error: {output}")
 
 
-def check_import_solver(requirements_import, env_name=None):
-    """Check that a python package is installed in an environment.
-
-    Parameters
-    ----------
-    requirements_import : str
-        Name of the packages that should be installed. This function checks
-        that these packages can be imported in python.
-    env_name : str or None
-        Name of the conda environment to check. If it is None, check in the
-        current environment.
-    """
-    # TODO: if env is None, check directly in the current python interpreter
-    for package in requirements_import:
-        check_package_installed_cmd = CHECK_PACKAGE_INSTALLED_CMD.format(
-            package=package)
-
-        def raise_on_error(output):
-            not_installed = f"ModuleNotFoundError: No module named '{package}'"
-            if not_installed not in output:
-                print(output)
-
-        if _run_shell_in_conda_env(check_package_installed_cmd,
-                                   env_name=env_name,
-                                   raise_on_error=raise_on_error) != 0:
-            return False
-    return True
-
-
-def check_cmd_solver(cmd_name, env_name=None):
+def import_shell_cmd(cmd_name, env_name=None):
     """Check that a cmd is available in an environment.
 
     Parameters
@@ -201,27 +172,26 @@ def check_cmd_solver(cmd_name, env_name=None):
     env_name : str or None
         Name of the conda environment to check. If it is None, check in the
         current environment.
+
+    Return
     """
-    check_cmd_installed_cmd = CHECK_CMD_INSTALLED_CMD.format(
-        cmd_name=cmd_name)
-    return _run_shell_in_conda_env(check_cmd_installed_cmd,
-                                   env_name=env_name) == 0
+    def raise_import_error(output):
+        raise ImportError(
+            f'Could not find {cmd_name} on the path of conda env {env_name}\n'
+            f'{output}'
+        )
+    _run_shell_in_conda_env(
+        CHECK_SHELL_CMD_EXISTS.format(cmd_name=cmd_name),
+        env_name=env_name, raise_on_error=raise_import_error
+    )
 
+    def run_shell_cmd(*args):
+        cmd_args = " ".join(args)
+        _run_shell_in_conda_env(
+            f"{cmd_name} {cmd_args}", env_name=env_name, raise_on_error=True
+        )
 
-def check_failed_import(solver_class):
-    """Check if the module caught a failed import.
-
-    Parameters
-    ----------
-    solver_class : subclass of BaseSolver
-        Custom solver class.
-    """
-    import importlib
-    module = importlib.import_module(solver_class.__module__)
-    if hasattr(module, 'solver_import'):
-        return module.solver_import.failed_import
-    else:
-        return False
+    return run_shell_cmd
 
 
 def get_all_benchmarks():
@@ -380,7 +350,7 @@ def install_required_datasets(benchmark, dataset_names, env_name=None):
                 dataset_class.install(env_name=env_name, force=False)
 
 
-class safe_import:
+class safe_import_context:
     """Do not fail on ImportError and Catch the warnings"""
 
     def __init__(self):
@@ -393,7 +363,7 @@ class safe_import:
             self.record.__enter__()
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, exc_type, exc_value, tb):
 
         silence_error = False
 
@@ -405,7 +375,7 @@ class safe_import:
             silence_error = True
 
         if not RAISE_INSTALL_ERROR:
-            self.record.__exit__(exc_type, exc_value, traceback)
+            self.record.__exit__(exc_type, exc_value, tb)
 
         # Returning True in __exit__ prevent error propagation.
         return silence_error

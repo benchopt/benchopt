@@ -1,9 +1,9 @@
 from benchopt.base import BaseDataset
 
-from benchopt.util import safe_import
+from benchopt.util import safe_import_context
 
 
-with safe_import():
+with safe_import_context() as import_ctx:
     from sklearn.datasets import load_boston
 
 
@@ -13,7 +13,6 @@ class Dataset(BaseDataset):
 
     install_cmd = 'conda'
     requirements = ['scikit-learn']
-    requirements_import = ['sklearn']
 
     def get_data(self):
 

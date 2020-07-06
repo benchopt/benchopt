@@ -1,10 +1,10 @@
 import warnings
 
 from benchopt.base import BaseSolver
-from benchopt.util import safe_import
+from benchopt.util import safe_import_context
 
 
-with safe_import() as solver_import:
+with safe_import_context() as import_ctx:
     from celer import LogisticRegression
     from celer.homotopy import ConvergenceWarning
 
@@ -14,8 +14,7 @@ class Solver(BaseSolver):
     sampling_strategy = 'iteration'
 
     install_cmd = 'conda'
-    requirements = ['celer']
-    requirements_install = ['pip:git+https://github.com/mathurinm/celer.git']
+    requirements = ['pip:git+https://github.com/mathurinm/celer.git']
 
     def set_objective(self, X, y, lmbd):
         self.X, self.y, self.lmbd = X, y, lmbd

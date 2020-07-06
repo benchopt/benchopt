@@ -1,14 +1,12 @@
-import os
 import tempfile
 from collections import namedtuple
 from abc import ABC, abstractmethod
 
-from .util import check_cmd_solver
 from .util import install_in_conda_env
+from .util import _run_shell_in_conda_env
 from .util import shell_install_in_conda_env
-from .util import check_import_solver
-from .class_property import classproperty
 from .config import RAISE_INSTALL_ERROR
+from .class_property import classproperty
 
 
 # Possible sampling strategies
@@ -49,56 +47,53 @@ class DependenciesMixin:
     # Information on how to install the class. The value of install_cmd should
     # be in {None, 'conda', 'shell'}. The API reads:
     #
-    # - 'conda': The class should have at least attribute `requirements`.
-    #          BenchOpt will conda install `$requirements` and check it is
-    #          possible to import `$requirements` in the conda env. It is also
-    #          possible to give a different name for the install by defining a
-    #          class attribute `requirements_install` and for the import with
-    #          the class attribute `requirements_import`.
+    # - 'conda': The class should have an attribute `requirements`.
+    #          BenchOpt will conda install `$requirements`, except for entries
+    #          starting with `pip:` which will be installed with `pip` in the
+    #          conda env.
     #
-    # - 'shell': The solver should have attribute `install_script` and
-    #           `cmd_name`. BenchOpt will run `install_script` in a shell and
-    #           provide the conda env directory as an argument. It will also
-    #           check that `cmd_name` is in the conda env PATH.
+    # - 'shell': The solver should have attribute `install_script`. BenchOpt
+    #           will run `install_script` in a shell and provide the conda
+    #           env directory as an argument. The command should then be
+    #           installed in the `bin` folder of the env and can be imported
+    #           with import_shell_cmd in the safe_import_context.
     install_cmd = None
 
     @classproperty
-    def requirements_import(cls):
-        """Hook to override the name of the import in python
-
-        requirements_import default to requirements."""
-        if cls.install_cmd == 'conda':
-            return cls.requirements
-        raise RuntimeError("This property should only be accessed when "
-                           "install_cmd='conda'. Here, install_cmd='{}'"
-                           .format(cls.install_cmd))
+    def benchmark(cls):
+        return cls.__module__.split('.')[1]
 
     @classproperty
-    def requirements_install(cls):
-        """Hook to override the install name for conda.
-
-        requirements_install default to requirements."""
-        if cls.install_cmd == 'conda':
-            return cls.requirements
-        raise RuntimeError("This property should only be accessed when "
-                           "install_cmd='conda'. Here, install_cmd='{}'"
-                           .format(cls.install_cmd))
+    def name(cls):
+        return cls.__module__.split('.')[-1]
 
     @classmethod
     def is_installed(cls, env_name=None):
-        """Check if the dependencies of the class can be imported.
-        """
-        try:
-            if cls.install_cmd == 'conda':
-                return check_import_solver(cls.requirements_import,
-                                           env_name=env_name)
-            elif cls.install_cmd == 'shell':
-                return check_cmd_solver(cls.cmd_name, env_name=env_name)
-        except BaseException:
-            # Something went wrong so we consider that this is not installed
-            return False
+        """Check if the module caught a failed import to assert install.
 
-        return True
+        Parameters
+        ----------
+        env_name: str or None
+            Name of the conda env where the class should be installed. If
+            None, tries to install it in the current environment.
+
+        Returns
+        -------
+        is_installed: bool
+            returns True if no import failure has been detected.
+        """
+        if env_name is None:
+            import importlib
+            module = importlib.import_module(cls.__module__)
+            if hasattr(module, 'import_ctx'):
+                return not module.import_ctx.failed_import
+            else:
+                return True
+        else:
+            return _run_shell_in_conda_env(
+                f"benchopt check-install {cls.benchmark} {cls.name}",
+                env_name=env_name
+            ) == 0
 
     @classmethod
     def install(cls, env_name=None, force=False):
@@ -124,8 +119,8 @@ class DependenciesMixin:
                   end='', flush=True)
             try:
                 if cls.install_cmd == 'conda':
-                    install_in_conda_env(*cls.requirements_install,
-                                         env_name=env_name, force=force)
+                    install_in_conda_env(*cls.requirements, env_name=env_name,
+                                         force=force)
                 elif cls.install_cmd == 'shell':
                     shell_install_in_conda_env(cls.install_script,
                                                env_name=env_name)
@@ -144,6 +139,28 @@ class DependenciesMixin:
 
 
 class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
+    """A base class for solver wrappers in BenchOpt.
+
+    Solvers that derive from this class should implement three methods:
+
+    - set_objective(self, **objective_parameters): prepare the solver to be
+      called on a given problem. **objective_parameters are the output of the
+      method :code:`to_dict` from the benchmark objective. In particular, this
+      method should dumps the parameter to compute the objective function in a
+      file for command line solvers to reduce the impact of dumping the data
+      to the disk in the benchmark.
+
+    - run(self, n_iter/tolerance): a method that perform the computation for
+      the previously given objective, after a call to :code:`set_objective`.
+      This function is the part that is timed in the benchmark and should avoid
+      performing any computation unrelated to the optimization procedure.
+
+    - get_result(self): returns the parameters computed by the previous run.
+      For command line solvers, this retrieves the result from the disk. This
+      utility is necessary to reduce the impact of loading the result from the
+      disk in the benchmark.
+
+    """
 
     # TODO: sampling strategy with eps/tol instead for solvers that do not
     #       expose the max number of iterations
@@ -214,21 +231,8 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
 class CommandLineSolver(BaseSolver, ABC):
     """A base class for solvers that are called through command lines
 
-    Solvers that derive from this class should implement three methods:
-
-    - get_command_line(self, n_iter, lmbd, data_file): a method that returns
-      the command line necessary to run the solver up to n_iter with the input
-      data provided in data_file.
-
-    - dump_objective(self, X, y): dumps the parameter to compute the objective
-      function in a file and returns the name of the file. This utility is
-      necessary to reduce the impact of dumping the data to the disk in the
-      benchmark.
-
-    - get_result(self): retrieves the result from the disk. This utility is
-      necessary to reduce the impact of loading the data from the disk in the
-      benchmark.
-
+    Solvers that derive from this class should dump their data in
+    `self.data_filename` and the result in `self.model_filename`.
     """
 
     def __init__(self, **parameters):
@@ -237,61 +241,6 @@ class CommandLineSolver(BaseSolver, ABC):
         self.data_filename = self._data_file.name
         self.model_filename = self._model_file.name
         super().__init__(**parameters)
-
-    @abstractmethod
-    def get_command_line(self, n_iter):
-        """Returns the command line to call the solver for n_iter on data_file
-
-        Parameters
-        ----------
-        n_iter : int
-            Number of iteration to run the solver for. It allows to sample the
-            time/accuracy curve in the benchmark.
-
-        Returns
-        -------
-        cmd_line : str
-            The command line to call to run the solver for n_iter
-        """
-        ...
-
-    @abstractmethod
-    def dump_objective(self, objective_parameters):
-        """Dump the data for the objective to the disk.
-
-        If possible, the data should be dump to the file self.data_filename so
-        it will be clean up automatically by benchopt.
-
-        Parameters
-        ----------
-        objective_parameters: tuple
-            Parameter to construct the objective function. The specific shape
-            and the order of the parameter are described in each benchmark
-            definition file.
-        """
-        ...
-
-    @abstractmethod
-    def get_result(self):
-        """Load the data from the disk and return the coefficients
-
-        If possible, the model should be loaded from self.model_filename so
-        it will be clean up automatically by benchopt.
-
-        Return:
-        -------
-        parameters : ndarray, shape (n_parameters,)
-            The computed coefficients by the solver.
-        """
-        ...
-
-    def set_objective(self, **objective_parameters):
-        """Prepare the data"""
-        self.dump_objective(**objective_parameters)
-
-    def run(self, n_iter):
-        cmd_line = self.get_command_line(n_iter)
-        os.system(cmd_line)
 
 
 class BaseDataset(ParametrizedNameMixin, DependenciesMixin):

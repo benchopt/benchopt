@@ -1,13 +1,13 @@
 import numpy as np
 
 from benchopt.base import BaseSolver
-from benchopt.util import safe_import
+from benchopt.util import safe_import_context
 
-with safe_import() as solver_import:
+with safe_import_context() as import_ctx:
     from scipy import sparse
     from numba import njit
 
-if solver_import.failed_import:
+if import_ctx.failed_import:
 
     def njit(f):  # noqa: F811
         return f

@@ -1,10 +1,10 @@
 import warnings
 from benchopt.base import BaseSolver
-from benchopt.util import safe_import
+from benchopt.util import safe_import_context
 
 import numpy as np
 
-with safe_import() as solver_import:
+with safe_import_context() as import_ctx:
     from sklearn.linear_model import Lasso
     from sklearn.exceptions import ConvergenceWarning
 
@@ -13,8 +13,7 @@ class Solver(BaseSolver):
     name = 'sklearn'
 
     install_cmd = 'conda'
-    requirements = ['sklearn']
-    requirements_install = ['scikit-learn']
+    requirements = ['scikit-learn']
 
     def set_objective(self, X, y, fit_intercept=False):
         self.X, self.y = np.asfortranarray(X), y

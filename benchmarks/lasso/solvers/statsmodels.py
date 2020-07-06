@@ -1,8 +1,8 @@
 from benchopt.base import BaseSolver
-from benchopt.util import safe_import
+from benchopt.util import safe_import_context
 
 
-with safe_import() as solver_import:
+with safe_import_context() as import_ctx:
     import statsmodels.api as sm
 
 
@@ -19,11 +19,10 @@ class Solver(BaseSolver):
 
     def run(self, n_iter):
 
-        self.results = self.clf.fit_regularized(alpha=self.lmbd / self.n_samples,
-                                                method='elastic_net',
-                                                L1_wt=1, maxiter=n_iter,
-                                                cnvrg_tol=1e-14,
-                                                zero_tol=1e-14)
+        self.results = self.clf.fit_regularized(
+            alpha=self.lmbd / self.n_samples, method='elastic_net',
+            L1_wt=1, maxiter=n_iter, cnvrg_tol=1e-14, zero_tol=1e-14
+        )
 
     def get_result(self):
         return self.results.params.flatten()
