@@ -149,7 +149,7 @@ def test_solver_install_api(benchmark_name, solver_class):
                          ids=class_ids)
 def test_solver_install(benchmark_name, solver_class):
     # assert that install works when forced to reinstalls
-    assert solver_class.install(env_name=TEST_ENV_NAME)
+    solver_class.install(env_name=TEST_ENV_NAME)
     solver_class.is_installed(env_name=TEST_ENV_NAME,
                               raise_on_not_installed=True)
 
