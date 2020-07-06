@@ -8,7 +8,6 @@ from benchopt.util import check_failed_import
 from benchopt.util import list_benchmark_solvers
 from benchopt.util import list_benchmark_datasets
 from benchopt.util import get_benchmark_objective
-from benchopt.util import _run_shell_in_conda_env
 from benchopt.util import create_conda_env, delete_conda_env
 
 
@@ -151,15 +150,7 @@ def test_solver_install_api(benchmark_name, solver_class):
 @pytest.mark.parametrize('benchmark_name, solver_class', BENCH_AND_SOLVERS,
                          ids=class_ids)
 def test_solver_install(benchmark_name, solver_class):
-    if solver_class.name in ['Liblinear', 'Cyanure']:
-        pytest.xfail('%s is not fully working yet' % solver_class.name)
-
-    # assert that install works when forced to reinstall
-    print("=" * 80, flush=True)
-    _run_shell_in_conda_env(f"conda config --env --show channels",
-                            env_name=TEST_ENV_NAME, capture_stdout=False)
-    print("=" * 80, flush=True)
-
+    # assert that install works when forced to reinstalls
     assert solver_class.install(env_name=TEST_ENV_NAME, force=True)
     assert solver_class.is_installed(env_name=TEST_ENV_NAME)
 
