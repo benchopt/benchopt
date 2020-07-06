@@ -70,6 +70,9 @@ def _run_shell(script, raise_on_error=None, capture_stdout=True):
     if DEBUG:
         print(fast_failure_script)
 
+    if raise_on_error is True:
+        raise_on_error = "{output}"
+
     if capture_stdout:
         exit_code, output = subprocess.getstatusoutput([f"{SHELL} {tmp.name}"])
     else:
@@ -332,11 +335,14 @@ def create_conda_env(env_name, recreate=False):
     try:
         _run_shell(f"conda env create {force} -n {env_name} "
                    f"-f {env_yaml.name}", capture_stdout=True,
-                   raise_on_error="{output}")
+                   raise_on_error=True)
     except RuntimeError:
         _run_shell(f"conda env update {force} -n {env_name} "
                    f"-f {env_yaml.name}", capture_stdout=True,
-                   raise_on_error="{output}")
+                   raise_on_error=True)
+    _run_shell_in_conda_env(f"conda config --env --add channels conda-forge",
+                            env_name=env_name, capture_stdout=True,
+                            raise_on_error=True)
 
     print(" done")
 
