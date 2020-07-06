@@ -27,6 +27,7 @@ CHECK_CMD_INSTALLED_CMD = "type $'{cmd_name}'"
 # Yaml config file for benchopt env
 BENCHOPT_ENV = f"""
 channels:
+  - defaults
   - conda-forge
 dependencies:
   - numpy

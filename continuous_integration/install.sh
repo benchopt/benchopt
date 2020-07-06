@@ -9,6 +9,7 @@ TO_INSTALL="python=$VERSION_PYTHON pip $TO_INSTALL"
 
 conda create -n $CONDAENV --yes $TO_INSTALL
 . activate $CONDAENV
+conda config --append channels conda-forge
 echo $CONDA
 
 python --version

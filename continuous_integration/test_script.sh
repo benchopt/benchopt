@@ -14,7 +14,7 @@ if [[ "$COVERAGE" == "true" ]]; then
 fi
 
 set -x
-$TEST_CMD
+$TEST_CMD -k cvxpy
 set +x
 
 if [[ "$COVERAGE" == "true" ]]; then
