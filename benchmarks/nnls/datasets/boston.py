@@ -1,9 +1,9 @@
 from benchopt.base import BaseDataset
 
-from benchopt.util import safe_import
+from benchopt.util import safe_import_context
 
 
-with safe_import():
+with safe_import_context() as import_ctx:
     from sklearn.datasets import load_boston
     from sklearn.preprocessing import StandardScaler
 
@@ -12,9 +12,8 @@ class Dataset(BaseDataset):
 
     name = "Boston"
 
-    install_cmd = "pip"
+    install_cmd = 'conda'
     requirements = ['scikit-learn']
-    requirements_import = ['sklearn']
 
     # List of parameters to generate the datasets. The benchmark will consider
     # the cross product for each key in the dictionary.

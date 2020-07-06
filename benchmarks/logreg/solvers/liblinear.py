@@ -1,20 +1,19 @@
 import pandas as pd
 from benchopt.base import CommandLineSolver
-from benchopt.util import safe_import
+from benchopt.util import safe_import_context, import_shell_cmd
 
-with safe_import() as solver_import:
-    pass
+with safe_import_context() as import_ctx:
+    train_cmd = import_shell_cmd('train')
 
 
 class Solver(CommandLineSolver):
     name = 'Liblinear'
     sampling_strategy = 'tolerance'
 
-    install_cmd = 'bash'
-    cmd_name = 'train'
+    install_cmd = 'shell'
     install_script = 'install_liblinear.sh'
 
-    def dump_objective(self, X, y, lmbd):
+    def set_objective(self, X, y, lmbd):
 
         # The regularization parameter is passed directly to the command line
         # so we store it for latter.
@@ -31,11 +30,10 @@ class Solver(CommandLineSolver):
 
                 f.write(line)
 
-    def get_command_line(self, tolerance):
-        cmd = (f"train -q -s 6 -B -1 -c {1 / self.lmbd} "
-               f"-e {tolerance} {self.data_filename} "
-               f"{self.model_filename}")
-        return cmd
+    def run(self, tolerance):
+        train_cmd(f"-q -s 6 -B -1 -c {1 / self.lmbd} "
+                  f"-e {tolerance} {self.data_filename} "
+                  f"{self.model_filename}")
 
     def get_result(self):
         df = pd.read_csv(self.model_filename, header=5)

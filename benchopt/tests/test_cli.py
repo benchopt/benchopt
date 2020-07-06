@@ -10,5 +10,6 @@ def test_invalid_benchmark():
 
 
 def test_invalid_dataset():
-    with pytest.raises(SystemExit, match=r"2"):
-        run(['lasso', '-d', 'invalid_dataset', '-s', 'baseline'], 'benchopt')
+    with pytest.raises(AssertionError, match=r"invalid_dataset"):
+        run(['lasso', '-l', '-d', 'invalid_dataset', '-s', 'baseline'],
+            'benchopt')

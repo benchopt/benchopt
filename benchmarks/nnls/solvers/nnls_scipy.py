@@ -2,16 +2,16 @@ import numpy as np
 
 
 from benchopt.base import BaseSolver
-from benchopt.util import safe_import
+from benchopt.util import safe_import_context
 
-with safe_import() as solver_import:
+with safe_import_context() as import_ctx:
     from scipy.optimize._nnls import nnls
 
 
 class Solver(BaseSolver):
     name = 'scipy'
 
-    install_cmd = 'pip'
+    install_cmd = 'conda'
     requirements = ['scipy']
 
     def set_objective(self, X, y, fit_intercept=False):

@@ -1,17 +1,16 @@
 from benchopt.base import BaseSolver
-from benchopt.util import safe_import
+from benchopt.util import safe_import_context
 
 
-with safe_import() as solver_import:
+with safe_import_context() as import_ctx:
     from cyanure import BinaryClassifier
 
 
 class Solver(BaseSolver):
     name = 'Cyanure'
 
-    install_cmd = 'pip'
-    requirements = ['cyanure-mkl']
-    requirements_import = ['cyanure']
+    install_cmd = 'conda'
+    requirements = ['pip:cyanure-mkl']
 
     def set_objective(self, X, y, lmbd):
         self.X, self.y, self.lmbd = X, y, lmbd

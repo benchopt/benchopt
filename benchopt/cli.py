@@ -6,8 +6,8 @@ from benchopt import run_benchmark
 from benchopt.util import filter_solvers
 from benchopt.util import get_all_benchmarks
 from benchopt.util import install_required_datasets
-from benchopt.util import _run_bash_in_env, create_venv
 from benchopt.util import list_benchmark_solvers, install_solvers
+from benchopt.util import _run_shell_in_conda_env, create_conda_env
 
 
 from benchopt.config import get_benchmark_setting
@@ -36,7 +36,9 @@ def main(prog_name='benchopt'):
     pass
 
 
-@main.command()
+@main.command(
+    help="Run a benchmark with benchopt."
+)
 @click.argument('benchmark', nargs=1, callback=validate_benchmark)
 @click.option('--local', '-l',
               is_flag=True,
@@ -44,7 +46,7 @@ def main(prog_name='benchopt'):
               "interpreter.")
 @click.option('--recreate', '-r',
               is_flag=True,
-              help="If this flag is set, start with a fresh venv.")
+              help="If this flag is set, start with a fresh conda env.")
 @click.option('--repetition', '-n',
               metavar='<int>', default=1, type=int,
               help='Number of repetition used to estimate the runtime.')
@@ -75,8 +77,7 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
                       max_samples=max_samples, n_rep=repetition)
         return
 
-    # Create the virtual env
-    create_venv(benchmark, recreate=recreate)
+    create_conda_env(benchmark, recreate=recreate)
 
     # installed required datasets
     install_required_datasets(benchmark, dataset_names, env_name=benchmark)
@@ -90,7 +91,7 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
     install_solvers(solvers=solvers, forced_solvers=forced_solvers,
                     env_name=benchmark)
 
-    # run the command in the virtual env
+    # run the command in the conda env
     solvers_option = ' '.join(['-s ' + s for s in solver_names])
     forced_solvers_option = ' '.join(['-f ' + s for s in forced_solvers])
     datasets_option = ' '.join(['-d ' + d for d in dataset_names])
@@ -99,8 +100,22 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
         f"{solvers_option} {forced_solvers_option} {datasets_option} "
         f"{benchmark}"
     )
-    raise SystemExit(_run_bash_in_env(
-        cmd, env_name=benchmark, capture_stdout=False))
+    raise SystemExit(_run_shell_in_conda_env(
+        cmd, env_name=benchmark, capture_stdout=False
+    ))
+
+
+@main.command(
+    help="Check that solvers from benchmark are correctly installed."
+)
+@click.argument('benchmark', nargs=1, callback=validate_benchmark)
+@click.argument('solver_names', nargs=-1, type=str)
+def check_install(benchmark, solver_names):
+    solver_classes = list_benchmark_solvers(benchmark)
+    solver_classes = filter_solvers(solver_classes, solver_names=solver_names)
+    assert len(solver_classes) == len(solver_names), solver_classes
+    for solver in solver_classes:
+        solver.is_installed(raise_on_not_installed=True)
 
 
 def start():

@@ -12,7 +12,6 @@ from .util import filter_solvers
 from .util import list_benchmark_solvers
 from .util import list_benchmark_datasets
 from .util import get_benchmark_objective
-from .util import check_failed_import
 from .config import get_global_setting, get_benchmark_setting
 
 
@@ -50,7 +49,7 @@ def colorify(message, color=BLUE):
 def run_repetition(objective, solver_class, solver_parameters, meta, sample):
 
     # check if the module caught a failed import
-    if check_failed_import(solver_class):
+    if not solver_class.is_installed():
         raise ImportError(
             f"Failure during import in {solver_class.__module__}.")
 
@@ -119,7 +118,7 @@ def run_one_solver(objective, solver_class, solver_parameters,
                    np.log(max(delta, eps)) / np.log(eps))
 
     # check if the module caught a failed import
-    if check_failed_import(solver_class):
+    if not solver_class.is_installed():
         status = colorify("failed import", RED)
         print(f"{tag} {status}".ljust(80))
         return curve
@@ -169,12 +168,11 @@ def run_one_solver(objective, solver_class, solver_parameters,
         status = colorify("failed", RED)
         print(f"{tag} {status}".ljust(80))
 
-        if not DEBUG:
+        if DEBUG:
+            raise
+        else:
             import traceback
             traceback.print_exc()
-        else:
-            import ipdb
-            ipdb.post_mortem()
 
     return curve
 
@@ -185,6 +183,11 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
     # Load the objective class for this benchmark and the datasets
     objective_class = get_benchmark_objective(benchmark)
     datasets = list_benchmark_datasets(benchmark)
+
+    invalid_dataset = set(dataset_names) - set(datasets)
+    assert len(invalid_dataset) == 0, (
+        f'Invalid datasets: {invalid_dataset}. Should be in {datasets}.'
+    )
 
     # Load the solvers and filter them to get the one to run
     solver_classes = list_benchmark_solvers(benchmark)

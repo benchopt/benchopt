@@ -1,8 +1,8 @@
 from benchopt.base import BaseSolver
-from benchopt.util import safe_import
+from benchopt.util import safe_import_context
 
 
-with safe_import() as solver_import:
+with safe_import_context() as import_ctx:
     from lightning.regression import CDRegressor
 
 
@@ -11,11 +11,9 @@ with safe_import() as solver_import:
 class Solver(BaseSolver):
     name = 'Lightning'
 
-    install_cmd = 'pip'
-    requirements = ['sklearn-contrib-lightning']
-    requirements_import = ['lightning']
-    requirements_install = [
-        'git+https://github.com/scikit-learn-contrib/lightning.git'
+    install_cmd = 'conda'
+    requirements = [
+        'pip:git+https://github.com/scikit-learn-contrib/lightning.git'
     ]
 
     def set_objective(self, X, y, lmbd):
