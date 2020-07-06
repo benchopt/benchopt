@@ -28,16 +28,17 @@ DEFAULT_BENCHMARK = {
 def get_global_setting(name):
     assert name in DEFAULT_GLOBAL, f"Unknown config key {name}"
 
-    # TODO: get the correct type from DEFAULT_GLOBAL
-    conda_env_name = f"BENCHO_{name.upper()}"
+    # Get the name of the environment variable associated to this setting
+    env_var_name = f"BENCHO_{name.upper()}"
 
     if isinstance(DEFAULT_GLOBAL[name], bool):
         setting = config.getboolean('benchopt', name,
                                     fallback=DEFAULT_GLOBAL[name])
-        setting = bool(os.environ.get(conda_env_name, setting))
+        setting = bool(os.environ.get(env_var_name, setting))
     else:
+        # TODO: get the correct type from DEFAULT_GLOBAL for other types
         setting = config.get('benchopt', name, fallback=DEFAULT_GLOBAL[name])
-        setting = os.environ.get(conda_env_name, setting)
+        setting = os.environ.get(env_var_name, setting)
 
     return setting
 

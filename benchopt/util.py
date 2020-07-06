@@ -17,7 +17,7 @@ SHELL = get_global_setting('shell')
 # Shell commands for installing and checking the solvers
 CONDA_INSTALL_CMD = "conda install -y {packages}"
 PIP_INSTALL_CMD = "pip install {packages}"
-SHELL_INSTALL_CMD = f"{SHELL} install_scripts/{{install_script}} {{env}}"
+SHELL_INSTALL_CMD = f"{SHELL} install_scripts/{{install_script}} $CONDA_PREFIX"
 CHECK_PACKAGE_INSTALLED_CMD = (
     "python -c 'import {package}'"
 )
@@ -154,9 +154,8 @@ def shell_install_in_conda_env(script, env_name=None):
     if env_name is None and not ALLOW_INSTALL:
         raise ValueError("Trying to install solver not in a conda env. "
                          "To allow this, set BENCHO_ALLOW_INSTALL=True.")
-    env = env_name if env_name is not None else "base"
-    # TODO correct idea to use base?
-    cmd = SHELL_INSTALL_CMD.format(install_script=script, env=env)
+
+    cmd = SHELL_INSTALL_CMD.format(install_script=script)
     _run_shell_in_conda_env(cmd, env_name=env_name,
                             raise_on_error=f"Failed to run script {script}\n"
                             "Error: {output}")
