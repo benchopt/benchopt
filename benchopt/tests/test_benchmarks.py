@@ -3,12 +3,12 @@ import numpy as np
 
 from benchopt.base import SAMPLING_STRATEGIES
 
-from benchopt.util import _run_shell
 from benchopt.util import get_all_benchmarks
 from benchopt.util import check_failed_import
 from benchopt.util import list_benchmark_solvers
 from benchopt.util import list_benchmark_datasets
 from benchopt.util import get_benchmark_objective
+from benchopt.util import _run_shell_in_conda_env
 from benchopt.util import create_conda_env, delete_conda_env
 
 
@@ -156,7 +156,8 @@ def test_solver_install(benchmark_name, solver_class):
 
     # assert that install works when forced to reinstall
     print("=" * 80, flush=True)
-    _run_shell(f"conda env export -n {TEST_ENV_NAME}", capture_stdout=False)
+    _run_shell_in_conda_env(f"conda config --env --show channels",
+                            env_name=TEST_ENV_NAME, capture_stdout=False)
     print("=" * 80, flush=True)
 
     assert solver_class.install(env_name=TEST_ENV_NAME, force=True)
