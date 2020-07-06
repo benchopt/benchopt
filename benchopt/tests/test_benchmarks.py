@@ -41,8 +41,6 @@ def setup_module(module):
     print("create env")
     create_conda_env(TEST_ENV_NAME, recreate=True)
 
-    _run_shell(f"conda env export -n {TEST_ENV_NAME}", capture_stdout=False)
-
 
 def teardown_module(module):
     delete_conda_env(TEST_ENV_NAME)
@@ -157,6 +155,10 @@ def test_solver_install(benchmark_name, solver_class):
         pytest.xfail('%s is not fully working yet' % solver_class.name)
 
     # assert that install works when forced to reinstall
+    print("=" * 80, flush=True)
+    _run_shell(f"conda env export -n {TEST_ENV_NAME}", capture_stdout=False)
+    print("=" * 80, flush=True)
+
     assert solver_class.install(env_name=TEST_ENV_NAME, force=True)
     assert solver_class.is_installed(env_name=TEST_ENV_NAME)
 
