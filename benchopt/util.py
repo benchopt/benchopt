@@ -123,15 +123,12 @@ def install_in_conda_env(*packages, env_name=None, force=False):
                          "managed by benchopt. To allow this, "
                          "set BENCHO_ALLOW_INSTALL=True.")
     install_this = False
-    if '-e .' in packages:
-        install_this = True
-        packages = list(packages)
-        packages.remove('-e .')
 
     pip_packages = [pkg[4:] for pkg in packages if pkg.startswith('pip:')]
     conda_packages = [pkg for pkg in packages if not pkg.startswith('pip:')]
 
-    error_msg = (f"Failed to conda install packages {packages}\n"
+    error_msg = ("Failed to conda install packages "
+                 f"{packages if len(packages) > 1 else packages[0]}\n"
                  "Error:{output}")
     if conda_packages:
         cmd = CONDA_INSTALL_CMD.format(packages=' '.join(conda_packages))
