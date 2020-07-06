@@ -3,11 +3,12 @@ import numpy as np
 
 from benchopt.base import SAMPLING_STRATEGIES
 
+from benchopt.util import _run_shell
 from benchopt.util import get_all_benchmarks
-from benchopt.util import get_benchmark_objective
+from benchopt.util import check_failed_import
 from benchopt.util import list_benchmark_solvers
 from benchopt.util import list_benchmark_datasets
-from benchopt.util import check_failed_import
+from benchopt.util import get_benchmark_objective
 from benchopt.util import create_conda_env, delete_conda_env
 
 
@@ -39,6 +40,8 @@ TEST_ENV_NAME = "benchopt_test_env"
 def setup_module(module):
     print("create env")
     create_conda_env(TEST_ENV_NAME, recreate=True)
+
+    _run_shell(f"conda env export -n {TEST_ENV_NAME}", capture_stdout=False)
 
 
 def teardown_module(module):
