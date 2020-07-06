@@ -113,8 +113,7 @@ def check_install(benchmark, solver_names):
     solver_classes = filter_solvers(solver_classes, solver_names=solver_names)
     assert len(solver_classes) == len(solver_names), solver_classes
     for solver in solver_classes:
-        if not solver.is_installed():
-            raise SystemExit(1)
+        solver.is_installed(raise_on_not_installed=True)
 
 
 def start():

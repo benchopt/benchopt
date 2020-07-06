@@ -68,7 +68,7 @@ class DependenciesMixin:
         return cls.__module__.split('.')[-1]
 
     @classmethod
-    def is_installed(cls, env_name=None):
+    def is_installed(cls, env_name=None, raise_on_not_installed=None):
         """Check if the module caught a failed import to assert install.
 
         Parameters
@@ -76,6 +76,9 @@ class DependenciesMixin:
         env_name: str or None
             Name of the conda env where the class should be installed. If
             None, tries to install it in the current environment.
+        raise_on_not_installed: boolean or None
+            If set to True, raise an error if the requirements are not
+            installed. This is mainly for testing purposes.
 
         Returns
         -------
@@ -85,14 +88,18 @@ class DependenciesMixin:
         if env_name is None:
             import importlib
             module = importlib.import_module(cls.__module__)
-            if hasattr(module, 'import_ctx'):
-                return not module.import_ctx.failed_import
+            if (hasattr(module, 'import_ctx')
+                    and module.import_ctx.failed_import):
+                if raise_on_not_installed:
+                    exc_type, value, tb = module.import_ctx.import_error
+                    raise exc_type(value).with_traceback(tb)
+                return False
             else:
                 return True
         else:
             return _run_shell_in_conda_env(
                 f"benchopt check-install {cls.benchmark} {cls.name}",
-                env_name=env_name
+                env_name=env_name, raise_on_error=raise_on_not_installed
             ) == 0
 
     @classmethod

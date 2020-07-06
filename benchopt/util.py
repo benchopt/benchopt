@@ -370,6 +370,7 @@ class safe_import_context:
         # prevent import error from propagating and tag
         if exc_type is not None and issubclass(exc_type, ImportError):
             self.failed_import = True
+            self.import_error = exc_type, exc_value, tb
 
             # Prevent the error propagation
             silence_error = True
