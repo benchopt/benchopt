@@ -8,6 +8,7 @@ from .util import list_benchmark_solvers, install_solvers
 from .util import list_benchmark_datasets, install_required_datasets
 
 from .utils.checkers import validate_benchmark
+from .utils.checkers import validate_solver_patterns
 from .utils.checkers import validate_dataset_patterns
 from .utils.shell_cmd import _run_shell_in_conda_env, create_conda_env
 
@@ -65,6 +66,7 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
 
     # Check that the dataset patterns match actual dataset
     validate_dataset_patterns(benchmark, dataset_names)
+    validate_solver_patterns(benchmark, solver_names+forced_solvers)
 
     if local:
         run_benchmark(benchmark, solver_names, forced_solvers, dataset_names,
