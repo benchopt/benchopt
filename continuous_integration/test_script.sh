@@ -12,7 +12,7 @@ TEST_CMD="$TEST_CMD --test-env $CONDAENV --pyargs"
 
 if [[ "$COVERAGE" == "true" ]]; then
     TEST_CMD="$TEST_CMD --cov=benchopt --cov-append"
-    python continuous_integration/install_coverage_subprocess.py
+    python continuous_integration/install_coverage_subprocess_pth.py
 fi
 
 set -x
