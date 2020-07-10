@@ -20,6 +20,8 @@ $TEST_CMD
 set +x
 
 if [[ "$COVERAGE" == "true" ]]; then
-    coverage combine --append
+    ls -la
+    # coverage combine --append
     coverage xml -i  # language agnostic report for the codecov upload script
+    coverage report
 fi
