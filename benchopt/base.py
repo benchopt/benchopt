@@ -327,3 +327,21 @@ class BaseObjective(ParametrizedNameMixin):
     @abstractmethod
     def __call__(self, beta):
         ...
+
+    # Save the dataset object used to get the objective data so we can avoid
+    # hashing the data directly.
+    def set_dataset(self, dataset):
+        self.dataset = dataset
+        _, data = dataset.get_data()
+        return self.set_data(**data)
+
+    # Reduce the pickling and hashing burden by only pickling class parameters.
+    @staticmethod
+    def reconstruct(klass, parameters, dataset):
+        obj = klass(**parameters)
+        obj.set_dataset(dataset)
+        return obj
+
+    def __reduce__(self):
+        return self.reconstruct, (self.__class__, self.parameters,
+                                  self.dataset)
