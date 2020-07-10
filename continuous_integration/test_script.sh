@@ -11,7 +11,7 @@ TEST_CMD="$TEST_CMD --test-env $CONDAENV --pyargs"
 # TEST_CMD="$TEST_CMD --skip-install"
 
 if [[ "$COVERAGE" == "true" ]]; then
-    TEST_CMD="$TEST_CMD --cov=benchopt --cov-append"
+    TEST_CMD="$TEST_CMD --cov=benchopt --cov-append --cov-config=.coveragerc"
     python continuous_integration/install_coverage_subprocess_pth.py
 fi
 
