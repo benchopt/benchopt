@@ -19,9 +19,9 @@ class Solver(BaseSolver):
 
     parameters = {
         'solver': [
-            'lbfgs',
             'liblinear',
             'newton-cg',
+            'lbfgs',
         ],
     }
     parameter_template = "{solver}"
