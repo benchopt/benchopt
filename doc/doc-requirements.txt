@@ -4,3 +4,4 @@ sphinx-click
 sphinx_gallery
 pillow
 scikit-learn
+git+https://github.com/scikit-learn-contrib/lightning.git
