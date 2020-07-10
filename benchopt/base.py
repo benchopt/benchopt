@@ -2,11 +2,11 @@ import tempfile
 from collections import namedtuple
 from abc import ABC, abstractmethod
 
-from .util import install_in_conda_env
-from .util import _run_shell_in_conda_env
-from .util import shell_install_in_conda_env
 from .config import RAISE_INSTALL_ERROR
-from .class_property import classproperty
+from .utils.class_property import classproperty
+from .utils.shell_cmd import install_in_conda_env
+from .utils.shell_cmd import _run_shell_in_conda_env
+from .utils.shell_cmd import shell_install_in_conda_env
 
 
 # Possible sampling strategies
@@ -37,7 +37,7 @@ class ParametrizedNameMixin():
     @property
     def _name(self):
         """Hook to define a different template to format the parameters"""
-        return f"{self.name}({self.parameter_template})"
+        return f"{self.name}[{self.parameter_template}]"
 
     def __repr__(self):
         if len(self.parameters) == 0:
@@ -327,3 +327,21 @@ class BaseObjective(ParametrizedNameMixin):
     @abstractmethod
     def __call__(self, beta):
         ...
+
+    # Save the dataset object used to get the objective data so we can avoid
+    # hashing the data directly.
+    def set_dataset(self, dataset):
+        self.dataset = dataset
+        _, data = dataset.get_data()
+        return self.set_data(**data)
+
+    # Reduce the pickling and hashing burden by only pickling class parameters.
+    @staticmethod
+    def reconstruct(klass, parameters, dataset):
+        obj = klass(**parameters)
+        obj.set_dataset(dataset)
+        return obj
+
+    def __reduce__(self):
+        return self.reconstruct, (self.__class__, self.parameters,
+                                  self.dataset)

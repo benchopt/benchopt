@@ -1,33 +1,22 @@
 import click
 
-from benchopt import run_benchmark
+from . import run_benchmark
 
 
-from benchopt.util import filter_solvers
-from benchopt.util import get_all_benchmarks
-from benchopt.util import install_required_datasets
-from benchopt.util import list_benchmark_solvers, install_solvers
-from benchopt.util import _run_shell_in_conda_env, create_conda_env
+from .util import filter_classes_on_name
+from .util import list_benchmark_solvers, install_solvers
+from .util import list_benchmark_datasets, install_required_datasets
+
+from .utils.checkers import validate_benchmark
+from .utils.checkers import validate_solver_patterns
+from .utils.checkers import validate_dataset_patterns
+from .utils.shell_cmd import _run_shell_in_conda_env, create_conda_env
 
 
-from benchopt.config import get_benchmark_setting
+from .config import get_benchmark_setting
 
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
-
-
-def validate_benchmark(ctx, param, value):
-    all_benchmarks = get_all_benchmarks()
-    if not all_benchmarks:
-        raise click.BadArgumentUsage(
-            "benchopt should be run in a folder where there is benchmarks "
-            "directory with at least one benchmark.")
-    if value not in all_benchmarks:
-        raise click.BadParameter(
-            f"{value} is not a valid benchmark. "
-            f"Should be one of: {all_benchmarks}"
-        )
-    return value
 
 
 @click.group(context_settings=CONTEXT_SETTINGS)
@@ -47,8 +36,8 @@ def main(prog_name='benchopt'):
 @click.option('--recreate', '-r',
               is_flag=True,
               help="If this flag is set, start with a fresh conda env.")
-@click.option('--repetition', '-n',
-              metavar='<int>', default=1, type=int,
+@click.option('--n-rep', '-n',
+              metavar='<int>', default=5, type=int,
               help='Number of repetition used to estimate the runtime.')
 @click.option('--solver', '-s', 'solver_names',
               metavar="<solver_name>", multiple=True, type=str,
@@ -67,41 +56,50 @@ def main(prog_name='benchopt'):
 @click.option('--max-samples',
               metavar="<int>", default=100, show_default=True, type=int,
               help='Maximal number of iteration for each solver')
+@click.option('--timeout',
+              metavar="<int>", default=100, show_default=True, type=int,
+              help='Timeout a solver when run for more than <timeout> seconds')
 def run(benchmark, solver_names, forced_solvers, dataset_names,
-        max_samples, recreate, local, repetition):
+        max_samples, timeout, recreate, local, n_rep):
     """Run a benchmark in a separate venv where the solvers will be installed
     """
 
+    # Check that the dataset patterns match actual dataset
+    validate_dataset_patterns(benchmark, dataset_names)
+    validate_solver_patterns(benchmark, solver_names+forced_solvers)
+
     if local:
         run_benchmark(benchmark, solver_names, forced_solvers, dataset_names,
-                      max_samples=max_samples, n_rep=repetition)
+                      max_samples=max_samples, timeout=timeout, n_rep=n_rep)
         return
 
-    create_conda_env(benchmark, recreate=recreate)
+    env_name = f"benchopt_{benchmark}"
+    create_conda_env(env_name, recreate=recreate)
 
     # installed required datasets
-    install_required_datasets(benchmark, dataset_names, env_name=benchmark)
+    install_required_datasets(benchmark, dataset_names, env_name=env_name)
 
     # Get the solvers and install them
     solvers = list_benchmark_solvers(benchmark)
     exclude = get_benchmark_setting(benchmark, 'exclude_solvers')
-    solvers = filter_solvers(solvers, solver_names=solver_names,
-                             forced_solvers=forced_solvers,
-                             exclude=exclude)
+    solvers = filter_classes_on_name(
+        solvers, include=solver_names, forced=forced_solvers, exclude=exclude
+    )
     install_solvers(solvers=solvers, forced_solvers=forced_solvers,
-                    env_name=benchmark)
+                    env_name=env_name)
 
     # run the command in the conda env
     solvers_option = ' '.join(['-s ' + s for s in solver_names])
     forced_solvers_option = ' '.join(['-f ' + s for s in forced_solvers])
     datasets_option = ' '.join(['-d ' + d for d in dataset_names])
     cmd = (
-        f"benchopt run -l --max-samples {max_samples} -n {repetition} "
+        f"benchopt run {benchmark} --local --n-rep {n_rep} "
+        f"--max-samples {max_samples} --timeout {timeout} "
         f"{solvers_option} {forced_solvers_option} {datasets_option} "
-        f"{benchmark}"
+        f""
     )
     raise SystemExit(_run_shell_in_conda_env(
-        cmd, env_name=benchmark, capture_stdout=False
+        cmd, env_name=env_name, capture_stdout=False
     ))
 
 
@@ -109,18 +107,26 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
     help="Check that solvers from benchmark are correctly installed."
 )
 @click.argument('benchmark', nargs=1, callback=validate_benchmark)
-@click.argument('solver_names', nargs=-1, type=str)
-def check_install(benchmark, solver_names):
+@click.argument('class_names', nargs=-1, type=str)
+def check_install(benchmark, class_names):
+
+    # Get installable solvers
     solver_classes = list_benchmark_solvers(benchmark)
-    solver_classes = filter_solvers(solver_classes, solver_names=solver_names)
-    assert len(solver_classes) == len(solver_names), solver_classes
-    for solver in solver_classes:
-        solver.is_installed(raise_on_not_installed=True)
+    to_check_classes = filter_classes_on_name(
+        solver_classes, include=class_names
+    )
 
+    # Get installable datasets
+    dataset_classes = list_benchmark_datasets(benchmark)
+    to_check_classes.extend(filter_classes_on_name(
+        dataset_classes, include=class_names
+    ))
 
-def start():
-    main()
+    # make sure all the requested class_names exists
+    assert len(class_names) == len(to_check_classes), solver_classes
+    for klass in to_check_classes:
+        klass.is_installed(raise_on_not_installed=True)
 
 
 if __name__ == '__main__':
-    start()
+    main()

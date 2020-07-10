@@ -6,9 +6,9 @@ from joblib import Memory
 
 from .base import Cost
 from .viz import plot_benchmark
-from .util import is_included
+from .util import is_matched
 from .util import product_param
-from .util import filter_solvers
+from .util import filter_classes_on_name
 from .util import list_benchmark_solvers
 from .util import list_benchmark_datasets
 from .util import get_benchmark_objective
@@ -57,9 +57,9 @@ def run_repetition(objective, solver_class, solver_parameters, meta, sample):
     solver = solver_class(**solver_parameters)
     solver.set_objective(**objective.to_dict())
 
-    t_start = time.time()
+    t_start = time.perf_counter()
     solver.run(sample)
-    delta_t = time.time() - t_start
+    delta_t = time.perf_counter() - t_start
     beta_hat_i = solver.get_result()
     objective_value = objective(beta=beta_hat_i)
 
@@ -67,9 +67,9 @@ def run_repetition(objective, solver_class, solver_parameters, meta, sample):
                  obj=objective_value), objective_value)
 
 
-@mem.cache
+@mem.cache(ignore=['deadline'])
 def run_one_sample(objective, solver_class, solver_parameters, meta, sample,
-                   n_rep, progress_str, force=False):
+                   n_rep, progress_str, deadline, force=False):
 
     curve = []
     current_objective = []
@@ -88,11 +88,15 @@ def run_one_sample(objective, solver_class, solver_parameters, meta, sample,
         curve.append(cost)
         current_objective.append(objective_value)
 
+        if deadline < time.time():
+            # Reached the timeout so stop the computation here
+            break
+
     return curve, np.max(current_objective)
 
 
 def run_one_solver(objective, solver_class, solver_parameters,
-                   meta, max_samples, n_rep=1, force=False):
+                   meta, max_samples, timeout, n_rep=1, force=False):
     """Minimize a objective function with the given solver for different accuracy
     """
 
@@ -128,6 +132,8 @@ def run_one_solver(objective, solver_class, solver_parameters,
     delta_objectives = [1e15]
     prev_objective_value = np.inf
 
+    deadline = time.time() + timeout
+
     try:
         for id_sample in range(max_samples):
             if (np.max(delta_objectives) < eps):
@@ -139,14 +145,21 @@ def run_one_solver(objective, solver_class, solver_parameters,
             p = progress(id_sample, np.max(delta_objectives))
             progress_str = f"{tag} {p:6.1%}"
 
-            sample_curve, objective_value = run_one_sample(
+            call_args = dict(
                 objective=objective, solver_class=solver_class,
                 solver_parameters=solver_parameters, sample=sample,
                 n_rep=n_rep, progress_str=progress_str, meta=meta,
-                force=force
+                force=force, deadline=deadline
             )
-
+            if force:
+                run_one_sample.call(**call_args)
+            sample_curve, objective_value = run_one_sample(**call_args)
             curve.extend(sample_curve)
+
+            if time.time() > deadline:
+                # We reached the timeout so stop the computation here
+                status = colorify('done (timeout)', YELLOW)
+                break
 
             delta_objective = prev_objective_value - objective_value
             delta_objectives.append(delta_objective)
@@ -178,36 +191,33 @@ def run_one_solver(objective, solver_class, solver_parameters,
 
 
 def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
-                  dataset_names=None, max_samples=10, n_rep=1):
+                  dataset_names=None, max_samples=10, timeout=100,
+                  n_rep=1):
 
     # Load the objective class for this benchmark and the datasets
     objective_class = get_benchmark_objective(benchmark)
     datasets = list_benchmark_datasets(benchmark)
 
-    invalid_dataset = set(dataset_names) - set(datasets)
-    assert len(invalid_dataset) == 0, (
-        f'Invalid datasets: {invalid_dataset}. Should be in {datasets}.'
-    )
-
     # Load the solvers and filter them to get the one to run
     solver_classes = list_benchmark_solvers(benchmark)
     exclude = get_benchmark_setting(benchmark, 'exclude_solvers')
-    solver_classes = filter_solvers(solver_classes, solver_names=solver_names,
-                                    forced_solvers=forced_solvers,
-                                    exclude=exclude)
+    solver_classes = filter_classes_on_name(
+        solver_classes, include=solver_names,
+        forced=forced_solvers, exclude=exclude
+    )
 
     run_statistics = []
     for dataset_class in datasets:
         for dataset_parameters in product_param(dataset_class.parameters):
             dataset = dataset_class(**dataset_parameters)
-            if not is_included(str(dataset), dataset_names):
+            if not is_matched(str(dataset), dataset_names):
                 continue
             print(f"{dataset}")
             scale, data = dataset.get_data()
             for obj_parameters in product_param(objective_class.parameters):
                 objective = objective_class(**obj_parameters)
                 print(f"|--{objective}")
-                objective.set_data(**data)
+                objective.set_dataset(dataset)
 
                 for solver_class in solver_classes:
                     for solver_parameters in product_param(
@@ -216,14 +226,15 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                         # Get meta
                         meta = dict(
                             objective=str(objective), data=str(dataset),
-                            scale=scale)
+                            scale=scale
+                        )
 
                         force = solver_class.name.lower() in forced_solvers
                         run_statistics.extend(run_one_solver(
                             objective=objective, solver_class=solver_class,
                             solver_parameters=solver_parameters, meta=meta,
-                            max_samples=max_samples, n_rep=n_rep,
-                            force=force
+                            max_samples=max_samples, timeout=timeout,
+                            n_rep=n_rep, force=force
                         ))
     df = pd.DataFrame(run_statistics)
     plot_benchmark(df, benchmark)
