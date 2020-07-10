@@ -9,6 +9,7 @@ __pycache__
 /doc/auto_examples
 /doc/generated
 .coverage
+output_benchmarks
 
 # IDE specific folders
 .vscode
