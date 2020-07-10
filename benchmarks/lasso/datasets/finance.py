@@ -3,9 +3,9 @@ import numpy as np
 
 from benchopt.base import BaseDataset
 from benchopt.config import get_global_setting
-from benchopt.util import safe_import
+from benchopt.util import safe_import_context
 
-with safe_import():
+with safe_import_context() as import_ctx:
     # Dependencies of download_libsvm are scikit-learn, download and tqdm
     from benchopt.utils.datasets.libsvm import download_libsvm
     from scipy import sparse
@@ -17,9 +17,8 @@ class Dataset(BaseDataset):
     # TODO call the dataset log1p_train to harmonize with libsvm naming?
     name = "finance"
 
-    install_cmd = 'pip'
+    install_cmd = 'conda'
     requirements = ['scikit-learn', 'scipy', 'download', 'tqdm']
-    requirements_import = ['sklearn', 'scipy', 'download', 'tqdm']
 
     def get_data(self):
 

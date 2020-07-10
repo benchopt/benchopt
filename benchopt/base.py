@@ -1,15 +1,12 @@
-import os
 import tempfile
 from collections import namedtuple
 from abc import ABC, abstractmethod
 
-from .util import check_cmd_solver
-from .util import pip_install_in_env
-from .util import bash_install_in_env
-from .util import pip_uninstall_in_env
-from .util import check_import_solver
-from .class_property import classproperty
 from .config import RAISE_INSTALL_ERROR
+from .utils.class_property import classproperty
+from .utils.shell_cmd import install_in_conda_env
+from .utils.shell_cmd import _run_shell_in_conda_env
+from .utils.shell_cmd import shell_install_in_conda_env
 
 
 # Possible sampling strategies
@@ -21,6 +18,8 @@ Cost = namedtuple('Cost', 'data scale objective solver sample time obj '
 
 
 class ParametrizedNameMixin():
+    """Mixing for parametric classes representation and naming.
+    """
     parameters = {}
 
     def __init__(self, **parameters):
@@ -38,7 +37,7 @@ class ParametrizedNameMixin():
     @property
     def _name(self):
         """Hook to define a different template to format the parameters"""
-        return f"{self.name}({self.parameter_template})"
+        return f"{self.name}[{self.parameter_template}]"
 
     def __repr__(self):
         if len(self.parameters) == 0:
@@ -48,91 +47,92 @@ class ParametrizedNameMixin():
 
 class DependenciesMixin:
     # Information on how to install the class. The value of install_cmd should
-    # be in {None, 'pip', 'bash'}. The API reads:
+    # be in {None, 'conda', 'shell'}. The API reads:
     #
-    # - 'pip': The class should have at least attribute `requirements`.
-    #          BenchOpt will pip install `$requirements` and check it is
-    #          possible to import `$requirements` in the virtualenv. It is also
-    #          possible to give a different name for the install by defining a
-    #          class attribute `requirements_install` and for the import with
-    #          the class attribute `requirements_import`.
+    # - 'conda': The class should have an attribute `requirements`.
+    #          BenchOpt will conda install `$requirements`, except for entries
+    #          starting with `pip:` which will be installed with `pip` in the
+    #          conda env.
     #
-    # - 'bash': The solver should have attribute `install_script` and
-    #           `cmd_name`. BenchOpt will run `install_script` in a bash and
-    #           provide the virtualenv's directory as an argument. It will also
-    #           check that `cmd_name` is in the virtual_env PATH.
+    # - 'shell': The solver should have attribute `install_script`. BenchOpt
+    #           will run `install_script` in a shell and provide the conda
+    #           env directory as an argument. The command should then be
+    #           installed in the `bin` folder of the env and can be imported
+    #           with import_shell_cmd in the safe_import_context.
     install_cmd = None
 
     @classproperty
-    def requirements_import(cls):
-        """Hook to override the name of the import in python
-
-        requirements_import default to requirements."""
-        if cls.install_cmd == 'pip':
-            return cls.requirements
-        raise RuntimeError("This property should only be accessed when "
-                           "install_cmd='pip'. Here, install_cmd='{}'"
-                           .format(cls.install_cmd))
+    def benchmark(cls):
+        return cls.__module__.split('.')[1]
 
     @classproperty
-    def requirements_install(cls):
-        """Hook to override the install name for pip.
-
-        requirements_install default to requirements."""
-        if cls.install_cmd == 'pip':
-            return cls.requirements
-        raise RuntimeError("This property should only be accessed when "
-                           "install_cmd='pip'. Here, install_cmd='{}'"
-                           .format(cls.install_cmd))
+    def name(cls):
+        return cls.__module__.split('.')[-1]
 
     @classmethod
-    def is_installed(cls, env_name=None):
-        """Check if the dependencies of the class can be imported.
-        """
-        try:
-            if cls.install_cmd == 'pip':
-                return check_import_solver(cls.requirements_import,
-                                           env_name=env_name)
-            elif cls.install_cmd == 'bash':
-                return check_cmd_solver(cls.cmd_name, env_name=env_name)
-        except BaseException:
-            # Something went wrong so we consider that this is not installed
-            return False
-
-        return True
-
-    @classmethod
-    def install(cls, env_name=None, force=False):
-        """Install the class in the given virtual env.
+    def is_installed(cls, env_name=None, raise_on_not_installed=None):
+        """Check if the module caught a failed import to assert install.
 
         Parameters
         ----------
         env_name: str or None
-            Name of the environment where the class should be installed. If
+            Name of the conda env where the install should be checked. If
+            None, check the install in the current environment.
+        raise_on_not_installed: boolean or None
+            If set to True, raise an error if the requirements are not
+            installed. This is mainly for testing purposes.
+
+        Returns
+        -------
+        is_installed: bool
+            returns True if no import failure has been detected.
+        """
+        if env_name is None:
+            import importlib
+            module = importlib.import_module(cls.__module__)
+            if (hasattr(module, 'import_ctx')
+                    and module.import_ctx.failed_import):
+                if raise_on_not_installed:
+                    exc_type, value, tb = module.import_ctx.import_error
+                    raise exc_type(value).with_traceback(tb)
+                return False
+            else:
+                return True
+        else:
+            return _run_shell_in_conda_env(
+                f"benchopt check-install {cls.benchmark} {cls.name}",
+                env_name=env_name, raise_on_error=raise_on_not_installed
+            ) == 0
+
+    @classmethod
+    def install(cls, env_name=None, force=False):
+        """Install the class in the given conda env.
+
+        Parameters
+        ----------
+        env_name: str or None
+            Name of the conda env where the class should be installed. If
             None, tries to install it in the current environment.
         force : boolean (default: False)
-            If set to True, first tries to uninstall the class from the
-            environment before installing it.
+            If set to True, forces reinstallation when using conda.
 
         Returns
         -------
         is_installed: bool
             True if the class is correctly installed in the environment.
         """
-        # uninstall the class that requires a force reinstall
-        if force:
-            cls.uninstall(env_name=env_name)
-
         is_installed = cls.is_installed(env_name=env_name)
+
         if force or not is_installed:
             print(f"Installing {cls.name} in {env_name}:...",
                   end='', flush=True)
             try:
-                if cls.install_cmd == 'pip':
-                    pip_install_in_env(*cls.requirements_install,
-                                       env_name=env_name)
-                elif cls.install_cmd == 'bash':
-                    bash_install_in_env(cls.install_script, env_name=env_name)
+                if cls.install_cmd == 'conda':
+                    install_in_conda_env(*cls.requirements, env_name=env_name,
+                                         force=force)
+                elif cls.install_cmd == 'shell':
+                    shell_install_in_conda_env(cls.install_script,
+                                               env_name=env_name)
 
             except Exception as exception:
                 if RAISE_INSTALL_ERROR:
@@ -146,21 +146,39 @@ class DependenciesMixin:
 
         return is_installed
 
-    @classmethod
-    def uninstall(cls, env_name=None):
-        print(f"Uninstalling {cls.name} in {env_name}:...",
-              end='', flush=True)
-        if cls.install_cmd == 'pip':
-            pip_uninstall_in_env(*cls.requirements, env_name=env_name)
-        # elif cls.install_cmd == 'bash':
-        #     raise NotImplementedError("Uninstall not implemented for bash.")
-        print(" done")
-
 
 class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
+    """A base class for solver wrappers in BenchOpt.
 
-    # TODO: sampling strategy with eps/tol instead for solvers that do not
-    #       expose the max number of iterations
+    Solvers that derive from this class should implement three methods:
+
+    - set_objective(self, **objective_parameters): prepares the solver to be
+      called on a given problem. **objective_parameters are the output of the
+      method :code:`to_dict` from the benchmark objective. In particular, this
+      method should dumps the parameter to compute the objective function in a
+      file for command line solvers to reduce the impact of dumping the data to
+      the disk in the benchmark.
+
+    - run(self, n_iter/tolerance): performs the computation for the previously
+      given objective function, after a call to :code:`set_objective`. This
+      method is the one timed in the benchmark and should not perform any
+      operation unrelated to  the optimization procedure.
+
+    - get_result(self): returns the parameters computed by the previous call to
+      run. For command line solvers, this retrieves the result from the disk.
+      This utility is necessary to reduce the impact of loading the result from
+      the disk in the benchmark.
+
+    Note that two `sampling_strategy` can be used to construct the benchmark
+    curve:
+
+    - `iteration`: call the run method with max_iter number increasing
+      logarithmically to get more an more precise points.
+    - `tolerance`: call the run method with tolerance deacreasing
+      logarithmically to get more and more precise points.
+
+    """
+
     sampling_strategy = 'iteration'
 
     def __init__(self, **parameters):
@@ -180,16 +198,6 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         """
         self.objective_parameters = objective_parameters
         self.set_objective(**objective_parameters)
-
-    # @staticmethod
-    # def reconstruct(klass, parameters, objective_parameters):
-    #     obj = klass(**parameters)
-    #     obj.set_objective(**objective_parameters)
-    #     return obj
-
-    # def __reduce__(self):
-    #     return self.reconstruct, (self.__class__, self.parameters,
-    #                               self.objective_parameters)
 
     @abstractmethod
     def set_objective(self, **objective_parameters):
@@ -224,26 +232,26 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         """
         ...
 
+    # TODO: use this to allow parallel computation of the benchmark.
+    # @staticmethod
+    # def reconstruct(klass, parameters, objective_parameters):
+    #     obj = klass(**parameters)
+    #     obj.set_objective(**objective_parameters)
+    #     return obj
+
+    # def __reduce__(self):
+    #     return self.reconstruct, (self.__class__, self.parameters,
+    #                               self.objective_parameters)
+
 
 class CommandLineSolver(BaseSolver, ABC):
     """A base class for solvers that are called through command lines
 
-    Solvers that derive from this class should implement three methods:
-
-    - get_command_line(self, n_iter, lmbd, data_file): a method that returns
-      the command line necessary to run the solver up to n_iter with the input
-      data provided in data_file.
-
-    - dump_objective(self, X, y): dumps the parameter to compute the objective
-      function in a file and returns the name of the file. This utility is
-      necessary to reduce the impact of dumping the data to the disk in the
-      benchmark.
-
-    - get_result(self): retrieves the result from the disk. This utility is
-      necessary to reduce the impact of loading the data from the disk in the
-      benchmark.
-
+    The goal of this base class is to provide easy to use temporary files and
+    solvers that derive from this class should dump their data in
+    `self.data_filename` and the result in `self.model_filename`.
     """
+
     def __init__(self, **parameters):
         self._data_file = tempfile.NamedTemporaryFile()
         self._model_file = tempfile.NamedTemporaryFile()
@@ -251,64 +259,16 @@ class CommandLineSolver(BaseSolver, ABC):
         self.model_filename = self._model_file.name
         super().__init__(**parameters)
 
-    @abstractmethod
-    def get_command_line(self, n_iter):
-        """Returns the command line to call the solver for n_iter on data_file
-
-        Parameters
-        ----------
-        n_iter : int
-            Number of iteration to run the solver for. It allows to sample the
-            time/accuracy curve in the benchmark.
-
-        Returns
-        -------
-        cmd_line : str
-            The command line to call to run the solver for n_iter
-        """
-        ...
-
-    @abstractmethod
-    def dump_objective(self, objective_parameters):
-        """Dump the data for the objective to the disk.
-
-        If possible, the data should be dump to the file self.data_filename so
-        it will be clean up automatically by benchopt.
-
-        Parameters
-        ----------
-        objective_parameters: tuple
-            Parameter to construct the objective function. The specific shape
-            and the order of the parameter are described in each benchmark
-            definition file.
-        """
-        ...
-
-    @abstractmethod
-    def get_result(self):
-        """Load the data from the disk and return the coefficients
-
-        If possible, the model should be loaded from self.model_filename so
-        it will be clean up automatically by benchopt.
-
-        Return:
-        -------
-        parameters : ndarray, shape (n_parameters,)
-            The computed coefficients by the solver.
-        """
-        ...
-
-    def set_objective(self, **objective_parameters):
-        """Prepare the data"""
-        self.dump_objective(**objective_parameters)
-
-    def run(self, n_iter):
-        cmd_line = self.get_command_line(n_iter)
-        os.system(cmd_line)
-
 
 class BaseDataset(ParametrizedNameMixin, DependenciesMixin):
     """Base class to define a dataset in a benchmark.
+
+    Datasets that derive from this class should implement one method:
+
+    - `get_data()`: retrieves/simulates the data contains in this data set and
+      returns the `scale` of the data as well as a dictionary containing the
+      data. This dictionary is passed as arguments of the objective function
+      method `set_data`.
     """
 
     @abstractmethod
@@ -322,14 +282,30 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin):
             parameter of shape (scale,).
         data: dict
             Extra parameters of the objective. The objective will be
-            instanciated by calling Objective.set_data(**data)
+            instanciated by calling `Objective.set_data(**data)`.
         """
         ...
 
 
 class BaseObjective(ParametrizedNameMixin):
-    """Base class to define an objective
+    """Base class to define an objective function
+
+    Objectives that derive from this class should implement three methods:
+
+    - `set_data(**data)`: stores the info from a given dataset to be able to
+      compute the objective value on these data.
+
+    - `to_dict()`: exports the data from the dataset as well as the parameters
+      from the objective function as a dictionary that will be passed as
+      parameters of the solver's `set_objective` method in order to specify the
+      objective function of the benchmark.
+
+    - `__call__(beta)`: computes the value of the objective function for an
+      given estimate beta. Beta is given as a flat 1D vector of size
+      corresponding to the `scale` value returned by `Dataset.get_data`. The
+      output should be a float or a dictionary of floats.
     """
+
     def __init__(self, **parameters):
         """Instantiate a solver with the given parameters and store them.
 
@@ -341,13 +317,31 @@ class BaseObjective(ParametrizedNameMixin):
             setattr(self, k, v)
 
     @abstractmethod
-    def __call__(self, beta):
-        ...
-
-    @abstractmethod
     def set_data(self, **data):
         ...
 
     @abstractmethod
     def to_dict(self):
         ...
+
+    @abstractmethod
+    def __call__(self, beta):
+        ...
+
+    # Save the dataset object used to get the objective data so we can avoid
+    # hashing the data directly.
+    def set_dataset(self, dataset):
+        self.dataset = dataset
+        _, data = dataset.get_data()
+        return self.set_data(**data)
+
+    # Reduce the pickling and hashing burden by only pickling class parameters.
+    @staticmethod
+    def reconstruct(klass, parameters, dataset):
+        obj = klass(**parameters)
+        obj.set_dataset(dataset)
+        return obj
+
+    def __reduce__(self):
+        return self.reconstruct, (self.__class__, self.parameters,
+                                  self.dataset)

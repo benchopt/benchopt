@@ -96,7 +96,7 @@ jobs:
             command: |
               set -e;
               cd ~/benchopt.github.io;
-              if [[ -z $(git diff) || "${CIRCLE_BRANCH}" != "master" ]]; then
+              if [[ "${CIRCLE_BRANCH}" != "master" ]]; then
                 echo "No deployment (build: ${CIRCLE_BRANCH}).";
               else
                 git config --global user.email "circle@benchopt.com";
@@ -109,10 +109,14 @@ jobs:
                 git clean -xdf
                 echo "Deploying dev docs for ${CIRCLE_BRANCH}.";
                 cp -a /tmp/build/html/* .;
-                touch .nojekyll;
-                git add -A;
-                git commit -m "CircleCI update of dev docs (${CIRCLE_BUILD_NUM}).";
-                git push origin master;
+                if [[ -z $(git diff) ]]; then
+                  echo "Nothing to commit"
+                else
+                  touch .nojekyll;
+                  git add -A;
+                  git commit -m "CircleCI update of dev docs (${CIRCLE_BUILD_NUM}).";
+                  git push origin master;
+                fi
               fi
 
 workflows:

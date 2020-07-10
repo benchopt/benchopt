@@ -1,12 +1,13 @@
 import warnings
+
+
 from benchopt.base import BaseSolver
 from benchopt.util import safe_import_context
 
-import numpy as np
 
 with safe_import_context() as import_ctx:
-    from sklearn.linear_model import Lasso
     from sklearn.exceptions import ConvergenceWarning
+    from sklearn.linear_model import LogisticRegression
 
 
 class Solver(BaseSolver):
@@ -15,13 +16,22 @@ class Solver(BaseSolver):
     install_cmd = 'conda'
     requirements = ['scikit-learn']
 
-    def set_objective(self, X, y, fit_intercept=False):
-        self.X, self.y = np.asfortranarray(X), y
-        self.fit_intercept = fit_intercept
+    parameters = {
+        'solver': [
+            # 'saga',
+            'liblinear'],
+    }
+    parameter_template = "{solver}"
 
-        self.clf = Lasso(positive=True, alpha=1e-10,
-                         fit_intercept=fit_intercept, tol=0)
+    def set_objective(self, X, y, lmbd):
+        self.X, self.y, self.lmbd = X, y, lmbd
+
         warnings.filterwarnings('ignore', category=ConvergenceWarning)
+
+        self.clf = LogisticRegression(
+            solver=self.solver, C=1 / self.lmbd,
+            penalty='l1', fit_intercept=False,
+            tol=1e-12)
 
     def run(self, n_iter):
         self.clf.max_iter = n_iter

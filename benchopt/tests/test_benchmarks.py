@@ -1,14 +1,14 @@
+import sys
 import pytest
 import numpy as np
+
 
 from benchopt.base import SAMPLING_STRATEGIES
 
 from benchopt.util import get_all_benchmarks
-from benchopt.util import get_benchmark_objective
 from benchopt.util import list_benchmark_solvers
 from benchopt.util import list_benchmark_datasets
-from benchopt.util import create_venv, delete_venv
-from benchopt.util import check_failed_import
+from benchopt.util import get_benchmark_objective
 
 
 BENCHMARKS = get_all_benchmarks()
@@ -28,21 +28,6 @@ def class_ids(parameter):
     if hasattr(parameter, 'name'):
         return parameter.name.lower()
     return None
-
-
-# Setup and clean a test env to install/uninstall all the solvers and check
-# that they are correctly configured
-
-TEST_ENV_NAME = "benchopt_test_env"
-
-
-def setup_module(module):
-    print("create env")
-    create_venv(TEST_ENV_NAME, recreate=True)
-
-
-def teardown_module(module):
-    delete_venv(TEST_ENV_NAME)
 
 
 @pytest.mark.parametrize('benchmark_name, dataset_class', BENCH_AND_SIMULATED,
@@ -93,9 +78,8 @@ def test_dataset_get_data(benchmark_name, dataset_class):
     """Check that all installed dataset_class.get_data return the right result
     """
     # skip the test if the dataset is not installed
-    if dataset_class.install_cmd == 'pip':
-        for package in dataset_class.requirements_import:
-            pytest.importorskip(package)
+    if not dataset_class.is_installed():
+        pytest.skip("Dataset is not installed")
 
     dataset = dataset_class()
     data = dataset.get_data()
@@ -136,43 +120,35 @@ def test_solver_class(benchmark_name, solver_class):
 def test_solver_install_api(benchmark_name, solver_class):
 
     # Check that the solver_class exposes a known install cmd
-    assert solver_class.install_cmd in [None, 'pip', 'bash']
+    assert solver_class.install_cmd in [None, 'conda', 'shell']
 
     # Check that the solver_class exposes a known install cmd
-    if solver_class.install_cmd == 'pip':
+    if solver_class.install_cmd == 'conda':
         assert hasattr(solver_class, 'requirements')
-    if solver_class.install_cmd == 'bash':
+    if solver_class.install_cmd == 'shell':
         assert hasattr(solver_class, 'install_script')
-        assert hasattr(solver_class, 'cmd_name')
 
 
 @pytest.mark.requires_install
 @pytest.mark.parametrize('benchmark_name, solver_class', BENCH_AND_SOLVERS,
                          ids=class_ids)
-def test_solver_install(benchmark_name, solver_class):
-    if solver_class.name in ['Liblinear', 'Cyanure']:
-        pytest.xfail('%s is not fully working yet' % solver_class.name)
+def test_solver_install(test_env_name, benchmark_name, solver_class):
 
-    assert solver_class.install(env_name=TEST_ENV_NAME, force=True)
-    assert solver_class.is_installed(env_name=TEST_ENV_NAME)
+    if solver_class.name.lower() == 'cyanure' and sys.platform == 'darwin':
+        pytest.skip('Cyanure is not easy to install on macos.')
 
-    if solver_class.install_cmd == 'pip':
-        solver_class.uninstall(env_name=TEST_ENV_NAME)
-        assert not solver_class.is_installed(env_name=TEST_ENV_NAME)
+    # assert that install works when forced to reinstalls
+    solver_class.install(env_name=test_env_name)
+    solver_class.is_installed(env_name=test_env_name,
+                              raise_on_not_installed=True)
 
 
 @pytest.mark.parametrize('benchmark_name, solver_class', BENCH_AND_SOLVERS,
                          ids=class_ids)
 def test_solver(benchmark_name, solver_class):
 
-    if solver_class.install_cmd == 'pip':
-        for package in solver_class.requirements_import:
-            pytest.importorskip(package)
-    elif not solver_class.is_installed():
+    if not solver_class.is_installed():
         pytest.skip("Solver is not installed")
-
-    if check_failed_import(solver_class):
-        pytest.skip("Solver import failed")
 
     objective_class = get_benchmark_objective(benchmark_name)
     objective = objective_class()
@@ -201,7 +177,7 @@ def test_solver(benchmark_name, solver_class):
     val_star = objective(beta_hat_i)
 
     for _ in range(100):
-        eps = 1e-9 * np.random.randn(scale)
+        eps = 1e-7 * np.random.randn(scale)
         val_eps = objective(beta_hat_i + eps)
         diff = val_eps - val_star
         assert diff > 0

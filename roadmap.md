@@ -6,7 +6,7 @@
    - Independent of python implementation?
    - Multiple datasets
    - Easy install
-   - Easy command line interface/venv
+   - Easy command line interface
 
 * Support
    - TPU/GPU/parallelism

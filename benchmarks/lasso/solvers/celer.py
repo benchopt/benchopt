@@ -1,10 +1,10 @@
 import warnings
 
 from benchopt.base import BaseSolver
-from benchopt.util import safe_import
+from benchopt.util import safe_import_context
 
 
-with safe_import() as solver_import:
+with safe_import_context() as import_ctx:
     from celer import Lasso
     from celer.homotopy import ConvergenceWarning
 
@@ -13,9 +13,10 @@ class Solver(BaseSolver):
     name = 'Celer'
     sampling_strategy = 'iteration'
 
-    install_cmd = 'pip'
-    requirements = ['celer']
-    requirements_install = ['git+https://github.com/mathurinm/celer.git']
+    install_cmd = 'conda'
+    requirements = [
+        'pip:git+https://github.com/mathurinm/celer.git'
+    ]
 
     def set_objective(self, X, y, lmbd):
         self.X, self.y, self.lmbd = X, y, lmbd
@@ -23,10 +24,9 @@ class Solver(BaseSolver):
         warnings.filterwarnings('ignore', category=ConvergenceWarning)
         n_samples = self.X.shape[0]
         self.lasso = Lasso(
-            alpha=self.lmbd/n_samples, max_iter=1, gap_freq=10,
-            max_epochs=100000, p0=10, verbose=False, tol=1e-12, prune=True,
-            fit_intercept=False, normalize=False, warm_start=False,
-            positive=False
+            alpha=self.lmbd/n_samples, max_iter=1, max_epochs=100000,
+            tol=1e-12, prune=True, fit_intercept=False, normalize=False,
+            warm_start=False, positive=False, verbose=False,
         )
 
     def run(self, n_iter):

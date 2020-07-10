@@ -1,8 +1,8 @@
 from benchopt.base import BaseSolver
-from benchopt.util import safe_import
+from benchopt.util import safe_import_context
 
 
-with safe_import() as solver_import:
+with safe_import_context() as import_ctx:
     import blitzl1
 
 
@@ -10,10 +10,9 @@ class Solver(BaseSolver):
     name = 'Blitz'
     sampling_strategy = 'tolerance'
 
-    install_cmd = 'pip'
-    requirements = ['blitzl1']
-    requirements_install = [
-        'git+https://github.com/tommoral/blitzl1.git@FIX_setup_deps'
+    install_cmd = 'conda'
+    requirements = [
+        'pip:git+https://github.com/tommoral/blitzl1.git@FIX_setup_deps'
     ]
 
     def set_objective(self, X, y, lmbd):

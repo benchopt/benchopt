@@ -38,7 +38,7 @@ extensions = [
     'sphinx.ext.intersphinx',
     'sphinx.ext.mathjax',
     'sphinx_click.ext',
-    # 'sphinx_gallery.gen_gallery',
+    'sphinx_gallery.gen_gallery',
     'numpydoc',
 ]
 
@@ -184,16 +184,25 @@ texinfo_documents = [
      'Miscellaneous'),
 ]
 
-# sphinx_gallery_conf = {
-#     'examples_dirs': '../examples',
-#     'gallery_dirs': 'auto_examples',
-#     'reference_url': {
-#         'mne': 'http://martinos.org/mne/stable',
-#         'benchopt': 'http://benchopt.github.io/',
-#         'numpy': 'http://docs.scipy.org/doc/numpy-1.9.1',
-#         'scipy': 'http://docs.scipy.org/doc/scipy-0.17.0/reference',
-#         'mayavi': 'http://docs.enthought.com/mayavi/mayavi'}
-# }
+# Example configuration for intersphinx: refer to the Python standard library.
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/3', None),
+    'numpy': ('https://numpy.org/devdocs', None),
+    'scipy': ('https://scipy.github.io/devdocs', None),
+    'matplotlib': ('https://matplotlib.org', None),
+}
+intersphinx_timeout = 5
+
+
+sphinx_gallery_conf = {
+    'doc_module': 'benchopt',
+    'reference_url': {
+        'benchopt': None,
+    },
+    'backreferences_dir': 'generated',
+    'examples_dirs': '../examples',
+    'gallery_dirs': 'auto_examples',
+}
 
 
 def setup(app):

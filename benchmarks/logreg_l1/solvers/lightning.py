@@ -3,11 +3,9 @@ from benchopt.util import safe_import_context
 
 
 with safe_import_context() as import_ctx:
-    from lightning.regression import CDRegressor
+    from lightning.classification import CDClassifier
 
 
-# TODO: lightning always fit an intercept
-#       it is thus not optimizing the same cost function
 class Solver(BaseSolver):
     name = 'Lightning'
 
@@ -17,11 +15,12 @@ class Solver(BaseSolver):
     ]
 
     def set_objective(self, X, y, lmbd):
+
         self.X, self.y, self.lmbd = X, y, lmbd
 
-        self.clf = CDRegressor(
-            loss='squared', penalty='l1', C=1, alpha=self.lmbd,
-            tol=1e-15)
+        self.clf = CDClassifier(
+            loss='log', penalty='l1', C=1, alpha=self.lmbd,
+            tol=0, permute=False, shrinking=False, warm_start=False)
 
     def run(self, n_iter):
         self.clf.max_iter = n_iter
