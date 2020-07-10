@@ -238,3 +238,4 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                         ))
     df = pd.DataFrame(run_statistics)
     plot_benchmark(df, benchmark)
+    return df
