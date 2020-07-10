@@ -6,6 +6,8 @@ __pycache__
 *.egg-info
 /data
 /doc/_build
+/doc/auto_examples
+/doc/generated
 .coverage
 
 # IDE specific folders

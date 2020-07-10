@@ -2,4 +2,3 @@ numpydoc
 sphinx-bootstrap-theme
 sphinx-click
 scikit-learn
-git+https://github.com/scikit-learn-contrib/lightning.git
