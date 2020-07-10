@@ -29,9 +29,9 @@ def check_class_method(func):
     return func
 
 
-def classproperty(fset, fget=None):
-    fset = check_class_method(fset)
-    if fget is not None:
-        fget = check_class_method(fget)
+def classproperty(fget, fset=None):
+    fget = check_class_method(fget)
+    if fset is not None:
+        fset = check_class_method(fset)
 
-    return ClassPropertyDescriptor(fset, fget)
+    return ClassPropertyDescriptor(fget, fset)
