@@ -1,161 +1,15 @@
-import os
 import re
 import pkgutil
 import warnings
-import tempfile
 import itertools
-import subprocess
 from importlib import import_module
 
-from .config import get_global_setting
-from .config import DEBUG, ALLOW_INSTALL, RAISE_INSTALL_ERROR
+from .config import RAISE_INSTALL_ERROR
+from .utils.shell_cmd import _run_shell_in_conda_env
 
-
-SHELL = get_global_setting('shell')
-
-
-# Shell commands for installing and checking the solvers
-CONDA_INSTALL_CMD = "conda install -y {packages}"
-PIP_INSTALL_CMD = "pip install {packages}"
-SHELL_INSTALL_CMD = f"{SHELL} install_scripts/{{install_script}} $CONDA_PREFIX"
 
 # Shell cmd to test if a cmd exists
 CHECK_SHELL_CMD_EXISTS = "type $'{cmd_name}'"
-
-
-# Yaml config file for benchopt env
-BENCHOPT_ENV = f"""
-channels:
-  - defaults
-  - conda-forge
-dependencies:
-  - numpy
-  - cython
-  - compilers
-  - pip
-  - pip:
-    - -e {os.getcwd()}
-"""
-
-
-def _run_shell(script, raise_on_error=None, capture_stdout=True):
-    """Run a shell script and return its exit code.
-
-    Parameters
-    ----------
-    script: str
-        Script to run
-    raise_on_error: str or callable or None
-        If raise_on_error is a string, raise a RuntimeError with the given
-        message if the command's exit code is non-zero.
-        If raise_on_error is a callable, when script output is non 0, call
-        the callable with output as an argument `raise_on_error(output)`.
-        Else, just return the exit code.
-    capture_stdout: bool
-        If set to True, capture the stdout of the subprocess. Else, it is
-        printed in the main process stdout.
-
-    Returns
-    -------
-    exit_code: int
-        Exit code of the script
-    """
-    # Use a TemporaryFile to make sure this file is cleaned up at
-    # the end of this function.
-    tmp = tempfile.NamedTemporaryFile(mode="w+")
-    fast_failure_script = f"set -e\n{script}"
-    tmp.write(fast_failure_script)
-    tmp.flush()
-
-    if DEBUG:
-        print(fast_failure_script)
-
-    if raise_on_error is True:
-        raise_on_error = "{output}"
-
-    if capture_stdout:
-        exit_code, output = subprocess.getstatusoutput([f"{SHELL} {tmp.name}"])
-    else:
-        exit_code = os.system(f"{SHELL} {tmp.name}")
-        output = ""
-    if raise_on_error is not None and exit_code != 0:
-        if isinstance(raise_on_error, str):
-            raise RuntimeError(raise_on_error.format(output=output))
-        elif callable(raise_on_error):
-            raise_on_error(output)
-        else:
-            raise ValueError("Bad value for `raise_on_error`. Should be a str"
-                             f", a callable or None. Got {raise_on_error}.")
-    return exit_code
-
-
-def _run_shell_in_conda_env(script, env_name=None, raise_on_error=None,
-                            capture_stdout=True):
-    """Run a script in a given conda env
-
-    Parameters
-    ----------
-    script: str
-        Script to run
-    env_name: str
-        Name of the environment to run the script in.
-    raise_on_error: str or None
-        If raise_on_error is not None, raise a RuntimeError with the given
-        message if the command's exit code is non-zero.
-        Else, just return the exit code.
-    capture_stdout: bool
-        If set to True, capture the stdout of the subprocess. Else, it is
-        printed in the main process stdout.
-
-    Returns
-    -------
-    exit_code: int
-        Exit code of the script
-    """
-    if env_name is not None:
-        script = (f". activate {env_name}\n{script}")
-
-    return _run_shell(script, raise_on_error=raise_on_error,
-                      capture_stdout=capture_stdout)
-
-
-def install_in_conda_env(*packages, env_name=None, force=False):
-    """Install the packages with conda in the given environment"""
-    if env_name is None and not ALLOW_INSTALL:
-        raise ValueError("Trying to install solver not in a conda env "
-                         "managed by benchopt. To allow this, "
-                         "set BENCHO_ALLOW_INSTALL=True.")
-
-    pip_packages = [pkg[4:] for pkg in packages if pkg.startswith('pip:')]
-    conda_packages = [pkg for pkg in packages if not pkg.startswith('pip:')]
-
-    error_msg = ("Failed to conda install packages "
-                 f"{packages if len(packages) > 1 else packages[0]}\n"
-                 "Error:{output}")
-    if conda_packages:
-        cmd = CONDA_INSTALL_CMD.format(packages=' '.join(conda_packages))
-        if force:
-            cmd += ' --force-reinstall'
-        _run_shell_in_conda_env(cmd, env_name=env_name,
-                                raise_on_error=error_msg)
-    if pip_packages:
-        cmd = PIP_INSTALL_CMD.format(packages=' '.join(pip_packages))
-        if force:
-            cmd += ' --force-reinstall'
-        _run_shell_in_conda_env(cmd, env_name=env_name,
-                                raise_on_error=error_msg)
-
-
-def shell_install_in_conda_env(script, env_name=None):
-    """Run a shell install script in the given environment"""
-    if env_name is None and not ALLOW_INSTALL:
-        raise ValueError("Trying to install solver not in a conda env. "
-                         "To allow this, set BENCHO_ALLOW_INSTALL=True.")
-
-    cmd = SHELL_INSTALL_CMD.format(install_script=script)
-    _run_shell_in_conda_env(cmd, env_name=env_name,
-                            raise_on_error=f"Failed to run script {script}\n"
-                            "Error: {output}")
 
 
 def import_shell_cmd(cmd_name, env_name=None):
@@ -248,37 +102,52 @@ def list_benchmark_datasets(benchmark):
     return _list_benchmark_submodule_classes(benchmark, 'datasets', 'Dataset')
 
 
-def check_solver_name_list(name_list):
+def check_name_list(name_list):
     if name_list is None:
         return []
     return [name.lower() for name in name_list]
 
 
-def filter_solvers(solvers, solver_names=None, forced_solvers=None,
-                   exclude=None):
+def filter_classes_on_name(classes, include=None, forced=None, exclude=None):
+    """Filter a list of classes based on their name attribute.
+
+    Parameters
+    ----------
+    classes: list of class
+        The list to be filter. Each class should have a `name` class field.
+    include: list of str
+        Included name patterns.
+    forced: list of str
+        Second included name patterns list, used to force re-run.
+    exclude: list of str
+        Excluded name patterns. Inclusion patterns take precedence on this.
+
+    Returns
+    -------
+    classes: list of class
+        The list of class curated by the given filters.
+    """
 
     # Currate the list of names
-    exclude = check_solver_name_list(exclude)
-    solver_names = check_solver_name_list(solver_names)
-    forced_solvers = check_solver_name_list(forced_solvers)
+    exclude = check_name_list(exclude)
+    include_patterns = check_name_list(include) + check_name_list(forced)
 
     if len(exclude) > 0:
-        # If a solver is explicitly included in solver_names, this takes
+        # If a solver is explicitly included in solver_include, this takes
         # precedence over the exclusion parameter in the config file.
-        exclude = set(exclude) - set(solver_names + forced_solvers)
-        solvers = [s for s in solvers if s.name.lower() not in exclude]
+        exclude = set(exclude) - set(include + forced)
+        classes = [c for c in classes if not is_matched(c.name, exclude)]
 
-    if len(solver_names) > 0:
-        solvers = [s for s in solvers
-                   if s.name.lower() in solver_names + forced_solvers]
+    if len(include_patterns) > 0:
+        classes = [c for c in classes if is_matched(c.name, include_patterns)]
 
-    return solvers
+    return classes
 
 
-def is_included(name, include_patterns=None):
-    """Check if a certain name is match by any pattern in include_patterns.
+def is_matched(name, include_patterns=None):
+    """Check if a certain name is matched by any pattern in include_patterns.
 
-    When include_patterns is None, all names are included.
+    When include_patterns is None or [], always return True.
     """
     if include_patterns is None or len(include_patterns) == 0:
         return True
@@ -287,37 +156,6 @@ def is_included(name, include_patterns=None):
         if re.match(f".*{p}.*", name, flags=re.IGNORECASE) is not None:
             return True
     return False
-
-
-def create_conda_env(env_name, recreate=False):
-    """Create a conda env with name env_name and install basic utilities"""
-
-    force = "--force" if recreate else ""
-
-    print(f"Creating conda env {env_name}:...", end='', flush=True)
-    env_yaml = tempfile.NamedTemporaryFile(mode="w+", suffix='.yml')
-    env_yaml.write(f"name: {env_name}{BENCHOPT_ENV}")
-    env_yaml.flush()
-    try:
-        _run_shell(f"conda env create {force} -n {env_name} "
-                   f"-f {env_yaml.name}", capture_stdout=True,
-                   raise_on_error=True)
-    except RuntimeError:
-        _run_shell(f"conda env update {force} -n {env_name} "
-                   f"-f {env_yaml.name}", capture_stdout=True,
-                   raise_on_error=True)
-    _run_shell_in_conda_env(f"conda config --env --add channels conda-forge",
-                            env_name=env_name, capture_stdout=True,
-                            raise_on_error=True)
-
-    print(" done")
-
-
-def delete_conda_env(env_name):
-    """Delete a conda env with name env_name."""
-
-    _run_shell(f"conda env remove -n {env_name}",
-               capture_stdout=True)
 
 
 def install_solvers(solvers, forced_solvers=None, env_name=None):
@@ -334,7 +172,8 @@ def install_solvers(solvers, forced_solvers=None, env_name=None):
             "Some solvers were not successfully installed, and will thus be "
             "ignored. Use 'export BENCHO_RAISE_INSTALL_ERROR=true' to "
             "stop at any installation failure and print the traceback.",
-            UserWarning)
+            UserWarning
+        )
 
 
 def install_required_datasets(benchmark, dataset_names, env_name=None):
@@ -343,7 +182,7 @@ def install_required_datasets(benchmark, dataset_names, env_name=None):
     for dataset_class in datasets:
         for dataset_parameters in product_param(dataset_class.parameters):
             dataset = dataset_class(**dataset_parameters)
-            if is_included(str(dataset), dataset_names):
+            if is_matched(str(dataset), dataset_names):
                 dataset_class.install(env_name=env_name, force=False)
 
 

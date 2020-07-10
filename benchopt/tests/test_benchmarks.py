@@ -10,7 +10,7 @@ from benchopt.util import get_all_benchmarks
 from benchopt.util import list_benchmark_solvers
 from benchopt.util import list_benchmark_datasets
 from benchopt.util import get_benchmark_objective
-from benchopt.util import create_conda_env, delete_conda_env
+from benchopt.utils.shell_cmd import create_conda_env, delete_conda_env
 
 
 BENCHMARKS = get_all_benchmarks()

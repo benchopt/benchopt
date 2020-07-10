@@ -6,9 +6,9 @@ from joblib import Memory
 
 from .base import Cost
 from .viz import plot_benchmark
-from .util import is_included
+from .util import is_matched
 from .util import product_param
-from .util import filter_solvers
+from .util import filter_classes_on_name
 from .util import list_benchmark_solvers
 from .util import list_benchmark_datasets
 from .util import get_benchmark_objective
@@ -184,30 +184,26 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
     objective_class = get_benchmark_objective(benchmark)
     datasets = list_benchmark_datasets(benchmark)
 
-    invalid_dataset = set(dataset_names) - set(datasets)
-    assert len(invalid_dataset) == 0, (
-        f'Invalid datasets: {invalid_dataset}. Should be in {datasets}.'
-    )
-
     # Load the solvers and filter them to get the one to run
     solver_classes = list_benchmark_solvers(benchmark)
     exclude = get_benchmark_setting(benchmark, 'exclude_solvers')
-    solver_classes = filter_solvers(solver_classes, solver_names=solver_names,
-                                    forced_solvers=forced_solvers,
-                                    exclude=exclude)
+    solver_classes = filter_classes_on_name(
+        solver_classes, include=solver_names,
+        forced=forced_solvers, exclude=exclude
+    )
 
     run_statistics = []
     for dataset_class in datasets:
         for dataset_parameters in product_param(dataset_class.parameters):
             dataset = dataset_class(**dataset_parameters)
-            if not is_included(str(dataset), dataset_names):
+            if not is_matched(str(dataset), dataset_names):
                 continue
             print(f"{dataset}")
             scale, data = dataset.get_data()
             for obj_parameters in product_param(objective_class.parameters):
                 objective = objective_class(**obj_parameters)
                 print(f"|--{objective}")
-                objective.set_data(**data)
+                objective.set_dataset(dataset)
 
                 for solver_class in solver_classes:
                     for solver_parameters in product_param(
@@ -216,7 +212,8 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                         # Get meta
                         meta = dict(
                             objective=str(objective), data=str(dataset),
-                            scale=scale)
+                            scale=scale
+                        )
 
                         force = solver_class.name.lower() in forced_solvers
                         run_statistics.extend(run_one_solver(

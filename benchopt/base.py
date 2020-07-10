@@ -2,11 +2,11 @@ import tempfile
 from collections import namedtuple
 from abc import ABC, abstractmethod
 
-from .util import install_in_conda_env
-from .util import _run_shell_in_conda_env
-from .util import shell_install_in_conda_env
 from .config import RAISE_INSTALL_ERROR
 from .class_property import classproperty
+from .utils.shell_cmd import install_in_conda_env
+from .utils.shell_cmd import _run_shell_in_conda_env
+from .utils.shell_cmd import shell_install_in_conda_env
 
 
 # Possible sampling strategies
