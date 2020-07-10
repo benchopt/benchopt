@@ -1,5 +1,4 @@
 import sys
-import uuid
 import pytest
 import numpy as np
 
@@ -10,7 +9,6 @@ from benchopt.util import get_all_benchmarks
 from benchopt.util import list_benchmark_solvers
 from benchopt.util import list_benchmark_datasets
 from benchopt.util import get_benchmark_objective
-from benchopt.utils.shell_cmd import create_conda_env, delete_conda_env
 
 
 BENCHMARKS = get_all_benchmarks()
@@ -30,20 +28,6 @@ def class_ids(parameter):
     if hasattr(parameter, 'name'):
         return parameter.name.lower()
     return None
-
-
-# Setup and clean a test env to install all the solvers and check
-# that they are correctly configured
-TEST_ENV_NAME = f"benchopt_test_env_{uuid.uuid4()}"
-
-
-def setup_module(module):
-    print("create env")
-    create_conda_env(TEST_ENV_NAME, recreate=True)
-
-
-def teardown_module(module):
-    delete_conda_env(TEST_ENV_NAME)
 
 
 @pytest.mark.parametrize('benchmark_name, dataset_class', BENCH_AND_SIMULATED,
@@ -148,14 +132,14 @@ def test_solver_install_api(benchmark_name, solver_class):
 @pytest.mark.requires_install
 @pytest.mark.parametrize('benchmark_name, solver_class', BENCH_AND_SOLVERS,
                          ids=class_ids)
-def test_solver_install(benchmark_name, solver_class):
+def test_solver_install(test_env_name, benchmark_name, solver_class):
 
     if solver_class.name.lower() == 'cyanure' and sys.platform == 'darwin':
         pytest.skip('Cyanure is not easy to install on macos.')
 
     # assert that install works when forced to reinstalls
-    solver_class.install(env_name=TEST_ENV_NAME)
-    solver_class.is_installed(env_name=TEST_ENV_NAME,
+    solver_class.install(env_name=test_env_name)
+    solver_class.is_installed(env_name=test_env_name,
                               raise_on_not_installed=True)
 
 

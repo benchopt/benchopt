@@ -2,7 +2,7 @@ import click
 import pytest
 
 
-from benchopt.cli import run
+from benchopt.cli import run, check_install
 
 
 def test_invalid_benchmark():
@@ -14,3 +14,8 @@ def test_invalid_dataset():
     with pytest.raises(click.BadParameter, match=r"invalid_dataset"):
         run(['lasso', '-l', '-d', 'invalid_dataset', '-s', 'baseline'],
             'benchopt', standalone_mode=False)
+
+
+def test_check_install():
+    with pytest.raises(SystemExit, match=r'0'):
+        check_install(['lasso', 'baseline'], 'benchopt')
