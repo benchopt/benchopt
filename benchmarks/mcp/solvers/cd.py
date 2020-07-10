@@ -12,7 +12,6 @@ if solver_import.failed_import:
     def njit(f):  # noqa: F811
         return f
 
-
 @njit
 def st(x, mu):
     if x > mu:
@@ -22,14 +21,15 @@ def st(x, mu):
     return 0
 
 @njit
-def prox_mcp(x, lmbd, gamma, Lj):
-    # prox associated to 1/L * pen_MCP
+def prox_mcp(x, lmbd, gamma):
+    # prox associated to pen = 1/Lj * pen_MCP
     if x > gamma * lmbd:
         return x
     if x < - gamma * lmbd:
         return x
-    return 1. / (1. - 1. / (Lj * gamma)) * st(x, lmbd / Lj)
+    return gamma / (gamma - 1) * st(x, lmbd)
     # return st(x, lmbd/L)
+
 
 class Solver(BaseSolver):
     name = "cd"
@@ -54,7 +54,7 @@ class Solver(BaseSolver):
     @staticmethod
     @njit
     def cd(X, y, lmbd, gamma, L, n_iter):
-        n_features = X.shape[1]
+        n_samples, n_features = X.shape
         R = np.copy(y)
         w = np.zeros(n_features)
         for _ in range(n_iter):
@@ -62,17 +62,21 @@ class Solver(BaseSolver):
                 if L[j] == 0.:
                     continue
                 old = w[j]
-                w[j] = prox_mcp(w[j] + X[:, j] @ R / L[j], lmbd, gamma, L[j])
+                # w[j] = st(w[j] + X[:, j] @ R / L[j], lmbd / L[j])
+                w[j] = prox_mcp(w[j] + X[:, j] @ R / L[j],
+                                lmbd * np.sqrt(n_samples / L[j]) , gamma)
+                # w[j] = w[j] + X[:, j] @ R / L[j]
+
                 diff = old - w[j]
                 if diff != 0:
                     R += diff * X[:, j]
-            print(w)
         return w
 
     @staticmethod
     @njit
     def sparse_cd(X_data, X_indices, X_indptr, y, lmbd, gamma, L, n_iter):
         n_features = len(X_indptr) - 1
+        n_samples = len(y)
         w = np.zeros(n_features)
         R = np.copy(y)
         for _ in range(n_iter):
@@ -84,7 +88,8 @@ class Solver(BaseSolver):
                 scal = 0.
                 for ind in range(start, end):
                     scal += X_data[ind] * R[X_indices[ind]]
-                w[j] = prox_mcp(w[j] + scal / L[j], lmbd, gamma, L[j])
+                w[j] = prox_mcp(w[j] + scal / L[j],
+                                lmbd * np.sqrt(n_samples / L[j]) , gamma)
                 diff = old - w[j]
                 if diff != 0:
                     for ind in range(start, end):

@@ -4,6 +4,22 @@ import numpy as np
 from benchopt.base import BaseSolver
 
 
+def st(x, mu):
+    if x > mu:
+        return x - mu
+    if x < - mu:
+        return x + mu
+    return 0
+
+
+def prox_mcp(x, lmbd, gamma):
+    if x > gamma * lmbd:
+        return x
+    if x < - gamma * lmbd:
+        return x
+    return gamma / (gamma - 1) * st(x, lmbd)
+
+
 class Solver(BaseSolver):
     name = 'Baseline'  # proximal gradient, optionally accelerated
 
@@ -17,7 +33,8 @@ class Solver(BaseSolver):
 
     def run(self, n_iter):
         L = np.linalg.norm(self.X, ord=2) ** 2
-        n_features = self.X.shape[1]
+        n_samples, n_features = self.X.shape
+        norms2 = (self.X ** 2).sum(axis=0)
         w = np.zeros(n_features)
         t_new = 1.
         for _ in range(n_iter):
@@ -27,15 +44,16 @@ class Solver(BaseSolver):
                 w_old = w.copy()
             grad = self.X.T.dot(self.X.dot(w) - self.y)
             w -= grad / L
-            w = self.prox_mcp(w, self.lmbd, self.gamma, L)
+            w = self.prox_mcp_vec(w,
+                                  self.lmbd * (n_samples * norms2)**0.5 / L,
+                                  self.gamma * L / norms2)
             if self.use_acceleration:
                 w += (t_old - 1.) / t_new * (w - w_old)
         self.w = w
 
-    def prox_mcp(self, w, lmbd, gamma, L):
-        small_idx = np.abs(w) < gamma * self.lmbd
-        w[small_idx] -= np.clip(w[small_idx], -lmbd / L, lmbd / L)
-        w[small_idx] /= (1. - 1. / (gamma * L))
+    def prox_mcp_vec(self, w, lmbd, gamma):
+        for j in range(len(w)):
+            w[j] = prox_mcp(w[j], lmbd[j], gamma[j])
         return w
 
     def get_result(self):

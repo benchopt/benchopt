@@ -43,7 +43,7 @@ Notation:  In what follows, n (or n_samples) stands for the number of samples an
 
 .. math::
 
- y \in \mathbb{R}^n, X = [x_1^\top, \dots, x_n^\top]^\top \in \mathbb{R}^{n \times p}
+ y \in \mathbb{R}^n, X = [x_{1,:}^\top, \dots, x_{n,:}^\top]^\top = [x_{:,1},\dots,x_{:,p}] \in \mathbb{R}^{n \times p}
 
 - `ols`: ordinary least-squares. This consists in solving the following program:
 
@@ -56,6 +56,21 @@ Notation:  In what follows, n (or n_samples) stands for the number of samples an
 .. math::
 
     \min_w \frac{1}{2} \|y - Xw\|^2_2 + \lambda \|w\|_1
+
+- `mcp`: mcp-regularized least-squares. This consists in solving the following program:
+
+.. math::
+
+    \min_w \frac{1}{2 n} \|y - Xw\|^2_2 + \sum_{j=1}^p \rho_{\lambda,\gamma}(d_j w_j)
+
+where
+
+.. math::
+
+  d_j = \|x_{:,j}\|_{2} / \sqrt{n}; \quad \rho_{\lambda,\gamma}(t) = \begin{cases} \frac{t^2}{2\gamma} \enspace, &\text{if } |t| \leq \gamma\lambda \enspace, \\
+  \lambda |t| - \frac{\lambda^2 \gamma}{2} \enspace, &\text{if } |t| > \gamma \lambda
+  \end{cases}
+
 
 - `logreg`: l1-regularized logistic regression. This consists in solving the following program:
 

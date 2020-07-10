@@ -13,7 +13,7 @@ class Objective(BaseObjective):
 
     parameters = {
         'fit_intercept': [False],
-        'reg': [[0.05, 1.2], [.1, 1.2], [.5, 1.2]]  # [lbda ratio, gamma
+        'reg': [[.1, 1.2], [.5, 1.2]]  # [lbda ratio, gamma
     }
 
     def __init__(self, reg=[.1, 1.2], fit_intercept=False):
@@ -27,17 +27,23 @@ class Objective(BaseObjective):
         self.gamma = self.reg[1]
 
     def __call__(self, beta):
+        norms2 = (self.X ** 2).sum(axis=0)
+        n_samples = len(self.y)
         diff = self.y - self.X.dot(beta)
+        beta_norm = np.sqrt(norms2 / n_samples) * beta
 
-        pen = (0.5 * self.gamma * self.lmbd ** 2) * np.ones(beta.shape)
-        small_idx = np.abs(beta) < self.gamma * self.lmbd
-        pen[small_idx] = self.lmbd * np.abs(beta[small_idx]) - beta[small_idx] ** 2 / (2 * self.gamma)
+        pen = (self.gamma * self.lmbd ** 2 / 2.) * np.ones(beta_norm.shape)
+        small_idx = np.abs(beta_norm) <= self.gamma * self.lmbd
+        pen[small_idx] = self.lmbd * np.abs(beta_norm[small_idx]) - beta_norm[small_idx] ** 2 / (2 * self.gamma)
 
-        return .5 * diff.dot(diff) + pen.sum()
+        return diff.dot(diff) / (2. * n_samples) + pen.sum()
 
     def _get_lambda_max(self):
         # Possibly to adapt for MCP, but good enough for a V1 scaling of lmbd.
-        return abs(self.X.T.dot(self.y)).max()
+        norms2 = (self.X ** 2).sum(axis=0)
+        n_samples, _ = self.X.shape
+        return abs(self.X.T.dot(self.y) / (n_samples * norms2)**0.5).max()
+        # return abs(self.X.T.dot(self.y) / len(self.y)).max()
 
     def to_dict(self):
         return dict(X=self.X, y=self.y, lmbd=self.lmbd, gamma=self.gamma)
