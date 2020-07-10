@@ -35,8 +35,8 @@ def main(prog_name='benchopt'):
 @click.option('--recreate', '-r',
               is_flag=True,
               help="If this flag is set, start with a fresh conda env.")
-@click.option('--repetition', '-n',
-              metavar='<int>', default=1, type=int,
+@click.option('--n-rep', '-n',
+              metavar='<int>', default=5, type=int,
               help='Number of repetition used to estimate the runtime.')
 @click.option('--solver', '-s', 'solver_names',
               metavar="<solver_name>", multiple=True, type=str,
@@ -55,8 +55,11 @@ def main(prog_name='benchopt'):
 @click.option('--max-samples',
               metavar="<int>", default=100, show_default=True, type=int,
               help='Maximal number of iteration for each solver')
+@click.option('--timeout',
+              metavar="<int>", default=100, show_default=True, type=int,
+              help='Timeout a solver when run for more than <timeout> seconds')
 def run(benchmark, solver_names, forced_solvers, dataset_names,
-        max_samples, recreate, local, repetition):
+        max_samples, timeout, recreate, local, n_rep):
     """Run a benchmark in a separate venv where the solvers will be installed
     """
 
@@ -65,7 +68,7 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
 
     if local:
         run_benchmark(benchmark, solver_names, forced_solvers, dataset_names,
-                      max_samples=max_samples, n_rep=repetition)
+                      max_samples=max_samples, timeout=timeout, n_rep=n_rep)
         return
 
     env_name = f"benchopt_{benchmark}"
@@ -88,9 +91,10 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
     forced_solvers_option = ' '.join(['-f ' + s for s in forced_solvers])
     datasets_option = ' '.join(['-d ' + d for d in dataset_names])
     cmd = (
-        f"benchopt run -l --max-samples {max_samples} -n {repetition} "
+        f"benchopt run {benchmark} --local --n-rep {n_rep} "
+        f"--max-samples {max_samples} --timeout {timeout} "
         f"{solvers_option} {forced_solvers_option} {datasets_option} "
-        f"{benchmark}"
+        f""
     )
     raise SystemExit(_run_shell_in_conda_env(
         cmd, env_name=env_name, capture_stdout=False

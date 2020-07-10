@@ -37,7 +37,7 @@ class ParametrizedNameMixin():
     @property
     def _name(self):
         """Hook to define a different template to format the parameters"""
-        return f"{self.name}({self.parameter_template})"
+        return f"{self.name}[{self.parameter_template}]"
 
     def __repr__(self):
         if len(self.parameters) == 0:

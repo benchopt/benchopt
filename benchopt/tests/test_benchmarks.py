@@ -193,7 +193,7 @@ def test_solver(benchmark_name, solver_class):
     val_star = objective(beta_hat_i)
 
     for _ in range(100):
-        eps = 1e-9 * np.random.randn(scale)
+        eps = 1e-7 * np.random.randn(scale)
         val_eps = objective(beta_hat_i + eps)
         diff = val_eps - val_star
         assert diff > 0
