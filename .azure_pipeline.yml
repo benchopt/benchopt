@@ -25,7 +25,7 @@ jobs:
         imageName: 'ubuntu-latest'
         VERSION_PYTHON: '3.6'
         COVERAGE: 'true'
-        COVERAGE_PROCESS_START: .coveragerc
+        COVERAGE_PROCESS_START: $(Build.SourcesDirectory)/.coveragerc
       linux_pylatest_conda:
         imageName: 'ubuntu-latest'
         VERSION_PYTHON: '*'
