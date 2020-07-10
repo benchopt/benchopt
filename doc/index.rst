@@ -76,7 +76,7 @@ Notation:  In what follows, n (or n_samples) stands for the number of samples an
 
     \min_w \sum_i \log(1 + \exp(-y_i x_i^\top w)) + \lambda \|w\|_1
 
-- `logreg_l2`: l1-regularized logistic regression. This consists in solving the following program:
+- `logreg_l2`: l2-regularized logistic regression. This consists in solving the following program:
 
 .. math::
 

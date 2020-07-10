@@ -57,11 +57,17 @@ Notation:  In what follows, n (or n_samples) stands for the number of samples an
 
     \min_w \frac{1}{2} \|y - Xw\|^2_2 + \lambda \|w\|_1
 
-- `logreg`: l1-regularized logistic regression. This consists in solving the following program:
+- `logreg_l1`: l1-regularized logistic regression. This consists in solving the following program:
 
 .. math::
 
     \min_w \sum_i \log(1 + \exp(-y_i x_i^\top w)) + \lambda \|w\|_1
+
+- `logreg_l2`: l2-regularized logistic regression. This consists in solving the following program:
+
+.. math::
+
+    \min_w \sum_i \log(1 + \exp(-y_i x_i^\top w)) + \frac{\lambda}{2} \|w\|_2^2
 
 - `nnls`: non-negative least-squares. This consists in solving the following program:
 
