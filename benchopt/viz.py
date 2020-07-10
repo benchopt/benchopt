@@ -1,3 +1,4 @@
+import os
 import ctypes
 import numpy as np
 import matplotlib.pyplot as plt
@@ -21,6 +22,11 @@ def plot_benchmark(df, benchmark):
                 figs.append(plot_histogram(df_obj, benchmark))
     plt.show()
     return figs
+
+
+def _make_output_folder():
+    if not os.path.exists('output_benchmarks'):
+        os.mkdir('output_benchmarks')
 
 
 def plot_convergence_curve(df, benchmark):
@@ -50,6 +56,7 @@ def plot_convergence_curve(df, benchmark):
     plt.ylabel(r"F(x) - F(x*)", fontsize=14)
     plt.title(f"{objective_name}\nData: {dataset_name}", fontsize=14)
     plt.tight_layout()
+    _make_output_folder()
     plt.savefig(f"output_benchmarks/convergence_{plot_id}.pdf")
     return fig
 
@@ -105,6 +112,7 @@ def plot_histogram(df, benchmark):
     plt.ylabel("Time [sec]")
     plt.title(f"{objective_name}\nData: {dataset_name}", fontsize=12)
     plt.tight_layout()
+    _make_output_folder()
     plt.savefig(f"output_benchmarks/histogram_{plot_id}.pdf")
     return fig
 
