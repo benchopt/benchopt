@@ -4,20 +4,16 @@ import numpy as np
 from benchopt.base import BaseSolver
 
 
-def st(x, mu):
-    if x > mu:
-        return x - mu
-    if x < - mu:
-        return x + mu
-    return 0
+def st(w, mu):
+    # w -= np.clip(w, -mu, mu)
+    # return w
+    return np.sign(w) * np.maximum(np.abs(w) - mu, 0)
 
 
-def prox_mcp(x, lmbd, gamma):
-    if x > gamma * lmbd:
-        return x
-    if x < - gamma * lmbd:
-        return x
-    return gamma / (gamma - 1) * st(x, lmbd)
+def prox_mcp(w, lmbd, gamma):
+    mask = np.abs(w) < gamma * lmbd
+    w[mask] = gamma[mask] / (gamma[mask] - 1) * st(w[mask], lmbd[mask])
+    return w
 
 
 class Solver(BaseSolver):
@@ -44,17 +40,11 @@ class Solver(BaseSolver):
                 w_old = w.copy()
             grad = self.X.T.dot(self.X.dot(w) - self.y)
             w -= grad / L
-            w = self.prox_mcp_vec(w,
-                                  self.lmbd * (n_samples * norms2)**0.5 / L,
-                                  self.gamma * L / norms2)
+            w = prox_mcp(w, self.lmbd * (n_samples * norms2)**0.5 / L,
+                         self.gamma * L / norms2)
             if self.use_acceleration:
                 w += (t_old - 1.) / t_new * (w - w_old)
         self.w = w
-
-    def prox_mcp_vec(self, w, lmbd, gamma):
-        for j in range(len(w)):
-            w[j] = prox_mcp(w[j], lmbd[j], gamma[j])
-        return w
 
     def get_result(self):
         return self.w

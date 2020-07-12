@@ -1,13 +1,13 @@
 import numpy as np
 
 from benchopt.base import BaseSolver
-from benchopt.util import safe_import
+from benchopt.util import safe_import_context
 
-with safe_import() as solver_import:
+with safe_import_context() as import_ctx:
     from scipy import sparse
     from numba import njit
 
-if solver_import.failed_import:
+if import_ctx.failed_import:
 
     def njit(f):  # noqa: F811
         return f
@@ -19,6 +19,7 @@ def st(x, mu):
     if x < - mu:
         return x + mu
     return 0
+
 
 @njit
 def prox_mcp(x, lmbd, gamma):
@@ -34,11 +35,13 @@ def prox_mcp(x, lmbd, gamma):
 class Solver(BaseSolver):
     name = "cd"
 
-    install_cmd = 'pip'
+    install_cmd = 'conda'
     requirements = ['numba', 'scipy']
 
     def set_objective(self, X, y, lmbd, gamma):
+        # use Fortran order to compute gradient on contiguous columns
         self.X, self.y, self.lmbd, self.gamma = np.asfortranarray(X), y, lmbd, gamma
+
         # Make sure we cache the numba compilation.
         self.run(1)
 
@@ -62,11 +65,8 @@ class Solver(BaseSolver):
                 if L[j] == 0.:
                     continue
                 old = w[j]
-                # w[j] = st(w[j] + X[:, j] @ R / L[j], lmbd / L[j])
                 w[j] = prox_mcp(w[j] + X[:, j] @ R / L[j],
                                 lmbd * np.sqrt(n_samples / L[j]) , gamma)
-                # w[j] = w[j] + X[:, j] @ R / L[j]
-
                 diff = old - w[j]
                 if diff != 0:
                     R += diff * X[:, j]
