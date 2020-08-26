@@ -12,6 +12,7 @@ from .util import filter_classes_on_name
 from .util import list_benchmark_solvers
 from .util import list_benchmark_datasets
 from .util import get_benchmark_objective
+from .utils.checkers import solver_supports_dataset
 from .config import get_global_setting, get_benchmark_setting
 
 
@@ -220,6 +221,9 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                 objective.set_dataset(dataset)
 
                 for solver_class in solver_classes:
+                    if not solver_supports_dataset(solver_class, dataset):
+                        continue
+
                     for solver_parameters in product_param(
                             solver_class.parameters):
 

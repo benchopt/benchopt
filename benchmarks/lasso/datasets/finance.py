@@ -16,6 +16,7 @@ DATA_DIR = get_global_setting('data_dir')
 class Dataset(BaseDataset):
     # TODO call the dataset log1p_train to harmonize with libsvm naming?
     name = "finance"
+    is_sparse = True
 
     install_cmd = 'conda'
     requirements = ['scikit-learn', 'scipy', 'download', 'tqdm']

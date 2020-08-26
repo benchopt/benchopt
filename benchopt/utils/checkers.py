@@ -69,3 +69,12 @@ def validate_solver_patterns(benchmark, solver_patterns):
             all_solvers.append(str(solver_class(**solver_parameters)))
 
     _validate_patterns(all_solvers, solver_patterns, name_type='solver')
+
+
+def solver_supports_dataset(solver, dataset):
+    # Check that the solver is compatible with the given dataset
+    if (getattr(dataset, 'is_sparse', False)
+            and not getattr(solver, 'support_sparse', True)):
+        return False
+
+    return True
