@@ -1,37 +1,33 @@
-import numpy as np
-import pandas as pd
-from benchopt.base import CommandLineSolver
-from benchopt.util import safe_import_context, import_shell_cmd
-from scipy.io import savemat, loadmat
+from benchopt.base import BaseSolver
+from benchopt.util import safe_import_context
 
 with safe_import_context() as import_ctx:
-    import h5py
-    train_cmd = import_shell_cmd('julia')
+    import julia
+    julia.install()
+    # configure the julia runtime
+    jl = julia.Julia(
+        compiled_modules=False
+    )
 
 
-class Solver(CommandLineSolver):
+class Solver(BaseSolver):
+
+    # Config of the solver
     name = 'JuliaPGD'
     sampling_strategy = 'iteration'
+    support_sparse = False
 
+    # Requirements
     install_cmd = 'conda'
-    requirements = ['julia', 'h5py']
+    requirements = ['julia', 'pip:julia']
 
     def set_objective(self, X, y, lmbd):
+        self.X, self.y, self.lmbd = X, y, lmbd
 
-        # The regularization parameter is passed directly to the command line
-        # so we store it for latter.
-        self.lmbd = lmbd
-
-        # Dump the large arrays to a file and store its name
-        n_samples = X.shape[0]
-
-        savemat(self.data_filename, {'X': X, 'y': y})
+        self.solve_lasso = jl.include("benchmarks/lasso/solvers/lasso_pgd.jl")
 
     def run(self, n_iter):
-        train_cmd(f"benchmarks/lasso/solvers/lasso_pgd.jl {self.lmbd} "
-                  f"{n_iter} {self.data_filename} "
-                  f"{self.model_filename}")
+        self.beta = self.solve_lasso(self.X, self.y, self.lmbd, n_iter)
 
     def get_result(self):
-        data = h5py.File(self.model_filename, 'r')
-        return np.array(data['/w']).ravel()
+        return self.beta.ravel()
