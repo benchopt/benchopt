@@ -21,6 +21,7 @@ class Solver(BaseSolver):
 
     def run(self, tol):
         numpy2ri.activate()
+        import rpy2.robjects.packages as rpackages
         rpackages.importr('glmnet')
         glmnet = robjects.r['glmnet']
         fit_dict = {"lambda.min.ratio": self.lmbd / self.lmbd_max}
