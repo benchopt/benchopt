@@ -1,21 +1,24 @@
 import numpy as np
 
 from benchopt.base import BaseSolver
-from benchopt.util import safe_import
+from benchopt.util import safe_import_context
 
 
-with safe_import() as solver_import:
+with safe_import_context() as import_ctx:
     import rpy2.robjects.packages as rpackages
     from rpy2 import robjects
     from rpy2.robjects import numpy2ri
+
+    utils = rpackages.importr("utils")
+    utils.chooseCRANmirror(ind=1)
+    utils.install_packages("glmnet", dependencies=True)
 
 
 class Solver(BaseSolver):
     name = "glmnet"
 
-    install_cmd = 'bash'
-    install_script = 'install_glmnet.sh'
-    requirements_import = ['rpy2']
+    install_cmd = 'conda'
+    requirements = ['r-base', 'rpy2']
 
     def set_objective(self, X, y, lmbd):
         self.X, self.y, self.lmbd = X, y, lmbd
