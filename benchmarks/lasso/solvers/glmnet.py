@@ -5,20 +5,15 @@ from benchopt.util import safe_import_context
 
 
 with safe_import_context() as import_ctx:
-    import rpy2.robjects.packages as rpackages
     from rpy2 import robjects
     from rpy2.robjects import numpy2ri
-
-    utils = rpackages.importr("utils")
-    utils.chooseCRANmirror(ind=1)
-    utils.install_packages("glmnet", dependencies=True)
 
 
 class Solver(BaseSolver):
     name = "glmnet"
 
     install_cmd = 'conda'
-    requirements = ['r-base', 'rpy2']
+    requirements = ['r-base', 'rpy2', 'r-glmnet']
 
     def set_objective(self, X, y, lmbd):
         self.X, self.y, self.lmbd = X, y, lmbd
