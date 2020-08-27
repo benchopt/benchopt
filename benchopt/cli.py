@@ -1,19 +1,19 @@
 import click
 
-from . import run_benchmark
+from benchopt import run_benchmark
 
 
-from .util import filter_classes_on_name
-from .util import list_benchmark_solvers, install_solvers
-from .util import list_benchmark_datasets, install_required_datasets
+from benchopt.util import filter_classes_on_name
+from benchopt.util import list_benchmark_solvers, install_solvers
+from benchopt.util import list_benchmark_datasets, install_required_datasets
 
-from .utils.checkers import validate_benchmark
-from .utils.checkers import validate_solver_patterns
-from .utils.checkers import validate_dataset_patterns
-from .utils.shell_cmd import _run_shell_in_conda_env, create_conda_env
+from benchopt.utils.checkers import validate_benchmark
+from benchopt.utils.checkers import validate_solver_patterns
+from benchopt.utils.checkers import validate_dataset_patterns
+from benchopt.utils.shell_cmd import _run_shell_in_conda_env, create_conda_env
 
 
-from .config import get_benchmark_setting
+from benchopt.config import get_benchmark_setting
 
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])

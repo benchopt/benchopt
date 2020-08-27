@@ -10,6 +10,7 @@ __pycache__
 /doc/generated
 .coverage
 output_benchmarks
+benchopt_front_page_convergence.pdf
 
 # IDE specific folders
 .vscode
