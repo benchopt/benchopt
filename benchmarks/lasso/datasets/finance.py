@@ -19,7 +19,7 @@ class Dataset(BaseDataset):
     is_sparse = True
 
     install_cmd = 'conda'
-    requirements = ['scikit-learn', 'scipy', 'download', 'tqdm']
+    requirements = ['scikit-learn', 'scipy', 'pip:download', 'tqdm']
 
     def get_data(self):
 
