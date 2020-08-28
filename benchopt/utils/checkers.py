@@ -1,5 +1,5 @@
 import click
-import pathlib
+from pathlib import Path
 
 from benchopt.util import is_matched
 from benchopt.util import product_param
@@ -8,7 +8,7 @@ from benchopt.util import list_benchmark_datasets
 
 
 def validate_benchmark(ctx, param, value):
-    benchmark = pathlib.Path(value)
+    benchmark = Path(value)
     if not benchmark.exists():
         raise click.BadParameter(f"{value} is not a valid benchmark folder.")
     return value

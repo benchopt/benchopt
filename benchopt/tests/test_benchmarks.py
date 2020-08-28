@@ -1,8 +1,8 @@
 import sys
 import pytest
-import pathlib
 
 import numpy as np
+from pathlib import Path
 
 
 from benchopt.base import SAMPLING_STRATEGIES
@@ -20,7 +20,7 @@ def get_all_benchmarks():
     benchmarks : list of str
         The list of all available benchmarks.
     """
-    BENCHMARKS_DIR = pathlib.Path(__file__).parents[1] / '..' / 'benchmarks'
+    BENCHMARKS_DIR = Path(__file__).parents[1] / '..' / 'benchmarks'
     return [str(b) for b in BENCHMARKS_DIR.glob('*/')]
 
 

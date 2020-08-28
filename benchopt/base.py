@@ -198,11 +198,11 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         for k, v in parameters_.items():
             setattr(self, k, v)
 
-    def _set_objective(self, **objective_dict):
-        """Store the objective_dict to make sure this solver is picklable
+    def _set_objective(self, objective):
+        """Store the objective to make sure this solver is picklable
         """
-        self.objective_dict = objective_dict
-        self.set_objective(**objective_dict)
+        self._objective = objective
+        self.set_objective(**objective.to_dict())
 
     @abstractmethod
     def set_objective(self, **objective_dict):
@@ -239,21 +239,21 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
 
     # TODO: use this to allow parallel computation of the benchmark.
     @staticmethod
-    def reconstruct(module_filename, pickled_module_hash, parameters,
-                    objective_dict):
+    def reconstruct(module_filename, parameters, objective,
+                    pickled_module_hash=None):
 
         Solver = reconstruct_class(
             module_filename, pickled_module_hash, 'Solver'
         )
         obj = Solver(**parameters)
         obj.save_parameters(**parameters)
-        obj._set_objective(**objective_dict)
+        obj._set_objective(objective)
         return obj
 
     def __reduce__(self):
         module_hash = get_file_hash(self._module_filename)
         return self.reconstruct, (self._module_filename, module_hash,
-                                  self.parameters, self.objective_dict)
+                                  self.parameters, self._objective)
 
 
 class CommandLineSolver(BaseSolver, ABC):

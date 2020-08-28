@@ -1,10 +1,10 @@
 import re
 import sys
 import hashlib
-import pathlib
 import warnings
 import importlib
 import itertools
+from pathlib import Path
 
 from .config import RAISE_INSTALL_ERROR
 from .utils.shell_cmd import _run_shell_in_conda_env
@@ -49,15 +49,15 @@ def import_shell_cmd(cmd_name, env_name=None):
 
 def get_benchmark_name(benchmark_dir):
     """Get benchmark name from folder."""
-    return pathlib.Path(benchmark_dir).name
+    return Path(benchmark_dir).name
 
 
-def get_module_from_file(filename):
+def get_module_from_file(module_filename):
     """Load a module from the name of the file"""
-    filename = pathlib.Path(filename)
-    package_name = '.'.join(filename.with_suffix('').parts[-3:])
+    module_filename = Path(module_filename)
+    package_name = '.'.join(module_filename.with_suffix('').parts[-3:])
     spec = importlib.util.spec_from_file_location(
-        package_name, filename
+        package_name, module_filename
     )
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -65,13 +65,29 @@ def get_module_from_file(filename):
     return module
 
 
-def reconstruct_class(module_filename, pickled_module_hash, class_name):
-    """XXX."""
-    module_hash = get_file_hash(module_filename)
-    assert pickled_module_hash == module_hash, (
-        f'{class_name} class changed between pickle and unpickle. This '
-        'object should not be stored using pickle for long term storage.'
-    )
+def reconstruct_class(module_filename, class_name, pickled_module_hash=None):
+    """Retrieve a class in module defined by its filename.
+
+    Parameters
+    ----------
+    module_filename : str or Path
+        path to the module from which the class should be retrieved.
+    class_name : str
+        Name of the class to retrieve.
+    pickled_module_has : str or None
+        MD5 hash of the module file, to ensure the module did not changed.
+
+    Returns
+    -------
+    class: type
+        The class that was requested.
+    """
+    if pickled_module_hash is not None:
+        module_hash = get_file_hash(module_filename)
+        assert pickled_module_hash == module_hash, (
+            f'{class_name} class changed between pickle and unpickle. This '
+            'object should not be stored using pickle for long term storage.'
+        )
 
     return getattr(get_module_from_file(module_filename), class_name)
 
@@ -89,12 +105,12 @@ def get_benchmark_objective(benchmark):
     obj : class
         The class defining the objective function for the benchmark.
     """
-    module_filename = pathlib.Path(benchmark) / 'objective.py'
+    module_filename = Path(benchmark) / 'objective.py'
     if not module_filename.exists():
         raise RuntimeError("Did not find an `objective` module in benchmark.")
     module = get_module_from_file(module_filename)
     obj = module.Objective
-    obj._module_filename = module_filename
+    obj._module_filename = module_filename.absolute()
     return obj
 
 
@@ -102,15 +118,16 @@ def _list_benchmark_submodule_classes(benchmark_dir, subpkg, class_name):
 
     classes = []
     # List all available module in benchmark.subpkg
-    package = pathlib.Path(benchmark_dir) / subpkg
+    package = Path(benchmark_dir) / subpkg
     submodule_files = package.glob('*.py')
     for module_filename in submodule_files:
+        module_filename = Path(module_filename)
         module = get_module_from_file(module_filename)
 
         # Get the class
         klass = getattr(module, class_name)
         klass._benchmark_dir = benchmark_dir
-        klass._module_filename = module_filename
+        klass._module_filename = module_filename.absolute()
         classes.append(klass)
 
     return classes

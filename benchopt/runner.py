@@ -130,6 +130,7 @@ def run_one_sample(benchmark, objective, solver, meta, sample,
         the given sample. It is used to detect when to stop adding points to
         the curve.
     """
+
     # Create a Memory object to cache the computations in the benchmark folder
     mem = Memory(location=benchmark, verbose=0)
     run_repetition_cached = mem.cache(run_repetition)
@@ -197,7 +198,9 @@ def run_one_solver(benchmark, objective, solver, meta, max_samples, timeout,
 
     # Create a Memory object to cache the computations in the benchmark folder
     mem = Memory(location=benchmark, verbose=0)
-    run_one_sample_cached = mem.cache(run_one_sample, ignore=['deadline'])
+    run_one_sample_cached = mem.cache(
+        run_one_sample, ignore=['deadline', 'benchmark']
+    )
 
     # Get the solver's name
     tag = colorify(f"|----{solver}:")
@@ -359,7 +362,7 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                         # Instantiate solver
                         solver = solver_class(**solver_parameters)
                         solver.save_parameters(**solver_parameters)
-                        solver._set_objective(**objective.to_dict())
+                        solver._set_objective(objective)
 
                         force = solver_class.name.lower() in forced_solvers
                         run_statistics.extend(run_one_solver(
