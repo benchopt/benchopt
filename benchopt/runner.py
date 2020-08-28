@@ -39,7 +39,18 @@ BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE = range(30, 38)
 
 
 def colorify(message, color=BLUE):
-    """Change color of the standard output"""
+    """Change color of the standard output.
+
+    Parameters
+    ----------
+    message : str
+        The message to color.
+
+    Returns
+    -------
+    color_message : str
+        The colored message to be displayed in terminal.
+    """
     return ("\033[1;%dm" % color) + message + "\033[0m"
 
 
@@ -48,7 +59,29 @@ def colorify(message, color=BLUE):
 ##################################
 @mem.cache
 def run_repetition(objective, solver, meta, sample):
+    """Run one repetition of the solver.
 
+    Parameters
+    ----------
+    objective : instance of BaseObjective
+        The objective to minimize.
+    solver : instance of BaseSolver
+        The solver to use.
+    meta : dict
+        Metadata passed to instanciate a Cost.
+        Contains data, scale, XXX
+    sample : int | float
+        Corresponds to stopping criterion, such as
+        tol or max_iter for the solver. It depends
+        on the sampling_strategy for the solver.
+
+    Returns
+    -------
+    cost : instance of Cost
+        Details on the cost function reached.
+    objective_value : float
+        The value of the objective function reached.
+    """
     # check if the module caught a failed import
     if not solver.is_installed():
         raise ImportError(
