@@ -47,16 +47,12 @@ def colorify(message, color=BLUE):
 # Time one run of a solver
 ##################################
 @mem.cache
-def run_repetition(objective, solver_class, solver_parameters, meta, sample):
+def run_repetition(objective, solver, meta, sample):
 
     # check if the module caught a failed import
-    if not solver_class.is_installed():
+    if not solver.is_installed():
         raise ImportError(
-            f"Failure during import in {solver_class.__module__}.")
-
-    # Instantiate solver here to avoid having weird pickling errors
-    solver = solver_class(**solver_parameters)
-    solver.set_objective(**objective.to_dict())
+            f"Failure during import in {solver.__module__}.")
 
     t_start = time.perf_counter()
     solver.run(sample)
@@ -69,7 +65,7 @@ def run_repetition(objective, solver_class, solver_parameters, meta, sample):
 
 
 @mem.cache(ignore=['deadline'])
-def run_one_sample(objective, solver_class, solver_parameters, meta, sample,
+def run_one_sample(objective, solver, meta, sample,
                    n_rep, progress_str, deadline, force=False):
 
     curve = []
@@ -81,7 +77,7 @@ def run_one_sample(objective, solver_class, solver_parameters, meta, sample,
         meta_rep = dict(**meta, idx_rep=rep)
 
         # Force the run if needed
-        args = (objective, solver_class, solver_parameters, meta_rep, sample)
+        args = (objective, solver, meta_rep, sample)
         if force:
             run_repetition.call(*args)
         cost, objective_value = run_repetition(*args)
@@ -96,8 +92,8 @@ def run_one_sample(objective, solver_class, solver_parameters, meta, sample,
     return curve, np.max(current_objective)
 
 
-def run_one_solver(objective, solver_class, solver_parameters,
-                   meta, max_samples, timeout, n_rep=1, force=False):
+def run_one_solver(objective, solver, meta, max_samples, timeout,
+                   n_rep=1, force=False):
     """Minimize a objective function with the given solver for different accuracy
     """
 
@@ -105,17 +101,16 @@ def run_one_solver(objective, solver_class, solver_parameters,
     rho = 1.5
     eps = 1e-10
 
-    # Instantiate solver to get its name
-    solver_name = str(solver_class(**solver_parameters))
-    tag = colorify(f"|----{solver_name}:")
+    # Get the solver's name
+    tag = colorify(f"|----{solver}:")
 
     # Sample the performances for different accuracy, either by varying the
     # tolerance or the maximal number of iterations
     curve = []
-    if solver_class.sampling_strategy == 'iteration':
+    if solver.sampling_strategy == 'iteration':
         def get_next(x): return max(x + 1, min(int(rho * x), MAX_ITER))
 
-    elif solver_class.sampling_strategy == 'tolerance':
+    elif solver.sampling_strategy == 'tolerance':
         def get_next(x): return max(x / rho, MIN_TOL)
 
     def progress(id_sample, delta):
@@ -123,7 +118,7 @@ def run_one_solver(objective, solver_class, solver_parameters,
                    np.log(max(delta, eps)) / np.log(eps))
 
     # check if the module caught a failed import
-    if not solver_class.is_installed():
+    if not solver.is_installed():
         status = colorify("failed import", RED)
         print(f"{tag} {status}".ljust(80))
         return curve
@@ -147,8 +142,7 @@ def run_one_solver(objective, solver_class, solver_parameters,
             progress_str = f"{tag} {p:6.1%}"
 
             call_args = dict(
-                objective=objective, solver_class=solver_class,
-                solver_parameters=solver_parameters, sample=sample,
+                objective=objective, solver=solver, sample=sample,
                 n_rep=n_rep, progress_str=progress_str, meta=meta,
                 force=force, deadline=deadline
             )
@@ -233,10 +227,14 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                             scale=scale
                         )
 
+                        # Instantiate solver
+                        solver = solver_class(**solver_parameters)
+                        solver.save_parameters(**solver_parameters)
+                        solver._set_objective(**objective.to_dict())
+
                         force = solver_class.name.lower() in forced_solvers
                         run_statistics.extend(run_one_solver(
-                            objective=objective, solver_class=solver_class,
-                            solver_parameters=solver_parameters, meta=meta,
+                            objective=objective, solver=solver, meta=meta,
                             max_samples=max_samples, timeout=timeout,
                             n_rep=n_rep, force=force
                         ))

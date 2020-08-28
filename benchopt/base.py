@@ -2,6 +2,9 @@ import tempfile
 from collections import namedtuple
 from abc import ABC, abstractmethod
 
+from .util import get_file_hash
+from .util import reconstruct_class
+from .util import get_module_from_file
 from .config import RAISE_INSTALL_ERROR
 from .utils.class_property import classproperty
 from .utils.shell_cmd import install_in_conda_env
@@ -23,6 +26,9 @@ class ParametrizedNameMixin():
     parameters = {}
 
     def __init__(self, **parameters):
+        self.save_parameters(**parameters)
+
+    def save_parameters(self, **parameters):
         self.parameters = parameters
         if not hasattr(self, 'parameter_template'):
             self.parameter_template = ",".join(
@@ -87,9 +93,10 @@ class DependenciesMixin:
         is_installed: bool
             returns True if no import failure has been detected.
         """
+        if raise_on_not_installed is None and RAISE_INSTALL_ERROR:
+            raise_on_not_installed = True
         if env_name is None:
-            import importlib
-            module = importlib.import_module(cls.__module__)
+            module = get_module_from_file(cls._module_filename)
             if (hasattr(module, 'import_ctx')
                     and module.import_ctx.failed_import):
                 if raise_on_not_installed:
@@ -100,7 +107,7 @@ class DependenciesMixin:
                 return True
         else:
             return _run_shell_in_conda_env(
-                f"benchopt check-install {cls.benchmark} {cls.name}",
+                f"benchopt check-install {cls._benchmark_dir} {cls.name}",
                 env_name=env_name, raise_on_error=raise_on_not_installed
             ) == 0
 
@@ -193,14 +200,14 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         for k, v in parameters_.items():
             setattr(self, k, v)
 
-    def _set_objective(self, **objective_parameters):
-        """Store the objective_parameters to make sure this solver is picklable
+    def _set_objective(self, **objective_dict):
+        """Store the objective_dict to make sure this solver is picklable
         """
-        self.objective_parameters = objective_parameters
-        self.set_objective(**objective_parameters)
+        self.objective_dict = objective_dict
+        self.set_objective(**objective_dict)
 
     @abstractmethod
-    def set_objective(self, **objective_parameters):
+    def set_objective(self, **objective_dict):
         """Prepare the objective for the solver."""
         ...
 
@@ -233,15 +240,22 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         ...
 
     # TODO: use this to allow parallel computation of the benchmark.
-    # @staticmethod
-    # def reconstruct(klass, parameters, objective_parameters):
-    #     obj = klass(**parameters)
-    #     obj.set_objective(**objective_parameters)
-    #     return obj
+    @staticmethod
+    def reconstruct(module_filename, pickled_module_hash, parameters,
+                    objective_dict):
 
-    # def __reduce__(self):
-    #     return self.reconstruct, (self.__class__, self.parameters,
-    #                               self.objective_parameters)
+        Solver = reconstruct_class(
+            module_filename, pickled_module_hash, 'Solver'
+        )
+        obj = Solver(**parameters)
+        obj.save_parameters(**parameters)
+        obj._set_objective(**objective_dict)
+        return obj
+
+    def __reduce__(self):
+        module_hash = get_file_hash(self._module_filename)
+        return self.reconstruct, (self._module_filename, module_hash,
+                                  self.parameters, self.objective_dict)
 
 
 class CommandLineSolver(BaseSolver, ABC):
@@ -285,6 +299,20 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin):
             instanciated by calling `Objective.set_data(**data)`.
         """
         ...
+
+    # Reduce the pickling and hashing burden by only pickling class parameters.
+    @staticmethod
+    def reconstruct(module_filename, pickled_module_hash, parameters):
+        Dataset = reconstruct_class(
+            module_filename, pickled_module_hash, 'Dataset'
+        )
+        obj = Dataset(**parameters)
+        return obj
+
+    def __reduce__(self):
+        module_hash = get_file_hash(self._module_filename)
+        return self.reconstruct, (self._module_filename, module_hash,
+                                  self.parameters)
 
 
 class BaseObjective(ParametrizedNameMixin):
@@ -337,11 +365,15 @@ class BaseObjective(ParametrizedNameMixin):
 
     # Reduce the pickling and hashing burden by only pickling class parameters.
     @staticmethod
-    def reconstruct(klass, parameters, dataset):
-        obj = klass(**parameters)
+    def reconstruct(module_filename, pickled_module_hash, parameters, dataset):
+        Objective = reconstruct_class(
+            module_filename, pickled_module_hash, 'Objective'
+        )
+        obj = Objective(**parameters)
         obj.set_dataset(dataset)
         return obj
 
     def __reduce__(self):
-        return self.reconstruct, (self.__class__, self.parameters,
-                                  self.dataset)
+        module_hash = get_file_hash(self._module_filename)
+        return self.reconstruct, (self._module_filename, module_hash,
+                                  self.parameters, self.dataset)

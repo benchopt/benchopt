@@ -1,8 +1,9 @@
 import re
-import pkgutil
+import hashlib
+import pathlib
 import warnings
+import importlib
 import itertools
-from importlib import import_module
 
 from .config import RAISE_INSTALL_ERROR
 from .utils.shell_cmd import _run_shell_in_conda_env
@@ -10,6 +11,8 @@ from .utils.shell_cmd import _run_shell_in_conda_env
 
 # Shell cmd to test if a cmd exists
 CHECK_SHELL_CMD_EXISTS = "type $'{cmd_name}'"
+
+BENCHMARKS_DIR = pathlib.Path(__file__).parents[1] / 'benchmarks'
 
 
 def import_shell_cmd(cmd_name, env_name=None):
@@ -47,59 +50,77 @@ def import_shell_cmd(cmd_name, env_name=None):
 
 def get_all_benchmarks():
     """List all the available benchmarks."""
-    submodules = pkgutil.iter_modules(['benchmarks'])
-    return [m.name for m in submodules]
+    return [str(b) for b in BENCHMARKS_DIR.glob('*/')]
 
 
-def check_benchmarks(benchmarks, all_benchmarks):
-    unknown_benchmarks = set(benchmarks) - set(all_benchmarks)
-    assert len(unknown_benchmarks) == 0, (
-        "{} is not a valid benchmark. Should be one of: {}"
-        .format(unknown_benchmarks, all_benchmarks)
+def get_benchmark_name(benchmark_dir):
+    return pathlib.Path(benchmark_dir).name
+
+
+def get_module_from_file(filename):
+    """Load a module from the name of the file"""
+    filename = pathlib.Path(filename)
+    package_name = '.'.join(filename.with_suffix('').parts[-3:])
+    spec = importlib.util.spec_from_file_location(
+        package_name, filename
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def reconstruct_class(module_filename, pickled_module_hash, class_name):
+    module_hash = get_file_hash(module_filename)
+    assert pickled_module_hash == module_hash, (
+        f'{class_name} class changed between pickle and unpickle. This '
+        'object should not be stored using pickle for long term storage.'
     )
 
-
-def get_benchmark_module_name(benchmark):
-    return f"benchmarks.{benchmark}"
+    return getattr(get_module_from_file(module_filename), class_name)
 
 
 def get_benchmark_objective(benchmark):
     """Load the objective function defined in the given benchmark."""
-    benchmark_module_name = get_benchmark_module_name(benchmark)
-    objective_module_name = f"{benchmark_module_name}.objective"
-    module = import_module(objective_module_name)
-    return module.Objective
+
+    module_filename = pathlib.Path(benchmark) / 'objective.py'
+    if not module_filename.exists():
+        raise RuntimeError("Did not find an `objective` module in benchmark.")
+    module = get_module_from_file(module_filename)
+    obj = module.Objective
+    obj._module_filename = module_filename
+    return obj
 
 
-def list_benchmark_submodule_names(benchmark, submodule='solvers'):
-    submodules = pkgutil.iter_modules([f'benchmarks/{benchmark}/{submodule}'])
-    return [m.name for m in submodules]
-
-
-def _list_benchmark_submodule_classes(benchmark, package_name, class_name):
+def _list_benchmark_submodule_classes(benchmark_dir, subpkg, class_name):
 
     classes = []
-    # List all available module in benchmark.package_name
-    submodule_names = list_benchmark_submodule_names(benchmark, package_name)
-    module_name = get_benchmark_module_name(benchmark)
-    for submodule_name in submodule_names:
-        class_module_name = f"{module_name}.{package_name}.{submodule_name}"
-        module = import_module(class_module_name)
+    # List all available module in benchmark.subpkg
+    package = pathlib.Path(benchmark_dir) / subpkg
+    submodule_files = package.glob('*.py')
+    for module_filename in submodule_files:
+        module = get_module_from_file(module_filename)
 
         # Get the class
-        classes.append(getattr(module, class_name))
+        klass = getattr(module, class_name)
+        klass._benchmark_dir = benchmark_dir
+        klass._module_filename = module_filename
+        classes.append(klass)
 
     return classes
 
 
-def list_benchmark_solvers(benchmark):
-    """List all available solver classes for a given benchmark"""
-    return _list_benchmark_submodule_classes(benchmark, 'solvers', 'Solver')
+def list_benchmark_solvers(benchmark_dir):
+    """List all available solver classes for a given benchmark_dir"""
+    return _list_benchmark_submodule_classes(
+        benchmark_dir, 'solvers', 'Solver'
+    )
 
 
-def list_benchmark_datasets(benchmark):
-    """List all available dataset classes for a given benchmark"""
-    return _list_benchmark_submodule_classes(benchmark, 'datasets', 'Dataset')
+def list_benchmark_datasets(benchmark_dir):
+    """List all available dataset classes for a given benchmark_dir"""
+    return _list_benchmark_submodule_classes(
+        benchmark_dir, 'datasets', 'Dataset'
+    )
 
 
 def check_name_list(name_list):
@@ -252,3 +273,10 @@ def product_param(parameters):
     parameter_names = parameters.keys()
     return map(expand, itertools.repeat(parameter_names),
                itertools.product(*parameters.values()))
+
+
+def get_file_hash(filename):
+    hasher = hashlib.md5()
+    with open(filename, 'rb') as f:
+        hasher.update(f.read())
+    return hasher.hexdigest()

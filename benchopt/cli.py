@@ -3,6 +3,7 @@ import click
 from benchopt import run_benchmark
 
 
+from benchopt.util import get_benchmark_name
 from benchopt.util import filter_classes_on_name
 from benchopt.util import list_benchmark_solvers, install_solvers
 from benchopt.util import list_benchmark_datasets, install_required_datasets
@@ -64,6 +65,8 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
     """Run a benchmark in a separate venv where the solvers will be installed
     """
 
+    benchmark_name = get_benchmark_name(benchmark)
+
     # Check that the dataset patterns match actual dataset
     validate_dataset_patterns(benchmark, dataset_names)
     validate_solver_patterns(benchmark, solver_names+forced_solvers)
@@ -73,7 +76,7 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
                       max_samples=max_samples, timeout=timeout, n_rep=n_rep)
         return
 
-    env_name = f"benchopt_{benchmark}"
+    env_name = f"benchopt_{benchmark_name}"
     create_conda_env(env_name, recreate=recreate)
 
     # installed required datasets
