@@ -277,7 +277,34 @@ def run_one_solver(objective, solver, meta, max_samples, timeout,
 def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                   dataset_names=None, max_samples=10, timeout=100,
                   n_rep=1):
+    """Run full benchmark.
 
+    Parameters
+    ----------
+    benchmark : str
+        The path to the benchmark files.
+    solver_names : list | None
+        List of solvers to include in the benchmark. If None
+        all solvers available are run.
+    forced_solvers : list | None
+        List of solvers to include in the benchmark and for
+        which one forces recomputation.
+    dataset_names : list | None
+        List of datasets to include. If None all available
+        datasets are used.
+    max_samples : int
+        The maximum number of solver runs to perform to estimate
+        the convergence curve.
+    timeout : float
+        The maximum duration in seconds of the solver run.
+    n_rep : int
+        The number of repetitions to run. Defaults to 1.
+
+    Returns
+    -------
+    df : instance of pandas.DataFrame
+        The benchmark results.
+    """
     # Load the objective class for this benchmark and the datasets
     objective_class = get_benchmark_objective(benchmark)
     datasets = list_benchmark_datasets(benchmark)
