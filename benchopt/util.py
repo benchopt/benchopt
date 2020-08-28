@@ -13,8 +13,6 @@ from .utils.shell_cmd import _run_shell_in_conda_env
 # Shell cmd to test if a cmd exists
 CHECK_SHELL_CMD_EXISTS = "type $'{cmd_name}'"
 
-BENCHMARKS_DIR = pathlib.Path(__file__).parents[1] / 'benchmarks'
-
 
 def import_shell_cmd(cmd_name, env_name=None):
     """Check that a cmd is available in an environment.
@@ -49,12 +47,8 @@ def import_shell_cmd(cmd_name, env_name=None):
     return run_shell_cmd
 
 
-def get_all_benchmarks():
-    """List all the available benchmarks."""
-    return [str(b) for b in BENCHMARKS_DIR.glob('*/')]
-
-
 def get_benchmark_name(benchmark_dir):
+    """Get benchmark name from folder."""
     return pathlib.Path(benchmark_dir).name
 
 
@@ -72,6 +66,7 @@ def get_module_from_file(filename):
 
 
 def reconstruct_class(module_filename, pickled_module_hash, class_name):
+    """XXX."""
     module_hash = get_file_hash(module_filename)
     assert pickled_module_hash == module_hash, (
         f'{class_name} class changed between pickle and unpickle. This '
@@ -82,8 +77,18 @@ def reconstruct_class(module_filename, pickled_module_hash, class_name):
 
 
 def get_benchmark_objective(benchmark):
-    """Load the objective function defined in the given benchmark."""
+    """Load the objective function defined in the given benchmark.
 
+    Parameters
+    ----------
+    benchmark : str
+        The path to the folder containing the benchmark.
+
+    Returns
+    -------
+    obj : class
+        The class defining the objective function for the benchmark.
+    """
     module_filename = pathlib.Path(benchmark) / 'objective.py'
     if not module_filename.exists():
         raise RuntimeError("Did not find an `objective` module in benchmark.")

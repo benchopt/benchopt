@@ -1,14 +1,27 @@
 import sys
 import pytest
+import pathlib
+
 import numpy as np
 
 
 from benchopt.base import SAMPLING_STRATEGIES
 
-from benchopt.util import get_all_benchmarks
 from benchopt.util import list_benchmark_solvers
 from benchopt.util import list_benchmark_datasets
 from benchopt.util import get_benchmark_objective
+
+
+def get_all_benchmarks():
+    """List all the available benchmarks.
+
+    Returns
+    -------
+    benchmarks : list of str
+        The list of all available benchmarks.
+    """
+    BENCHMARKS_DIR = pathlib.Path(__file__).parents[1] / '..' / 'benchmarks'
+    return [str(b) for b in BENCHMARKS_DIR.glob('*/')]
 
 
 BENCHMARKS = get_all_benchmarks()
