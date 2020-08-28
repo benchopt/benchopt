@@ -1,4 +1,5 @@
 import re
+import sys
 import hashlib
 import pathlib
 import warnings
@@ -66,6 +67,7 @@ def get_module_from_file(filename):
     )
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
+    sys.modules[package_name] = module
     return module
 
 

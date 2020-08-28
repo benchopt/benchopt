@@ -93,8 +93,6 @@ class DependenciesMixin:
         is_installed: bool
             returns True if no import failure has been detected.
         """
-        if raise_on_not_installed is None and RAISE_INSTALL_ERROR:
-            raise_on_not_installed = True
         if env_name is None:
             module = get_module_from_file(cls._module_filename)
             if (hasattr(module, 'import_ctx')

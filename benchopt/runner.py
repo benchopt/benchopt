@@ -19,6 +19,7 @@ from .config import get_global_setting, get_benchmark_setting
 # Get config values
 DEBUG = get_global_setting('debug')
 CACHE_DIR = get_global_setting('cache_dir')
+RAISE_INSTALL_ERROR = get_global_setting('raise_install_error')
 
 
 # Define some constants
@@ -207,7 +208,7 @@ def run_one_solver(objective, solver, meta, max_samples, timeout,
                    np.log(max(delta, eps)) / np.log(eps))
 
     # check if the module caught a failed import
-    if not solver.is_installed():
+    if not solver.is_installed(raise_on_not_installed=RAISE_INSTALL_ERROR):
         status = colorify("failed import", RED)
         print(f"{tag} {status}".ljust(80))
         return curve
