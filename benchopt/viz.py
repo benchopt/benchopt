@@ -1,12 +1,11 @@
-import os
 import ctypes
 import numpy as np
+from pathlib import Path
 import matplotlib.pyplot as plt
 from .config import get_benchmark_setting
 
 
 def plot_benchmark(df, benchmark):
-
     plots = get_benchmark_setting(benchmark, 'plots')
 
     datasets = df.data.unique()
@@ -24,9 +23,10 @@ def plot_benchmark(df, benchmark):
     return figs
 
 
-def _make_output_folder():
-    if not os.path.exists('output_benchmarks'):
-        os.mkdir('output_benchmarks')
+def _make_output_folder(benchmark):
+    output_dir = Path(benchmark) / "outputs"
+    output_dir.mkdir(exist_ok=True)
+    return output_dir
 
 
 def plot_convergence_curve(df, benchmark):
@@ -56,8 +56,8 @@ def plot_convergence_curve(df, benchmark):
     plt.ylabel(r"F(x) - F(x*)", fontsize=14)
     plt.title(f"{objective_name}\nData: {dataset_name}", fontsize=14)
     plt.tight_layout()
-    _make_output_folder()
-    plt.savefig(f"output_benchmarks/convergence_{plot_id}.pdf")
+    output_dir = _make_output_folder(benchmark)
+    plt.savefig(output_dir / f"convergence_{plot_id}.pdf")
     return fig
 
 
@@ -112,8 +112,8 @@ def plot_histogram(df, benchmark):
     plt.ylabel("Time [sec]")
     plt.title(f"{objective_name}\nData: {dataset_name}", fontsize=12)
     plt.tight_layout()
-    _make_output_folder()
-    plt.savefig(f"output_benchmarks/histogram_{plot_id}.pdf")
+    output_dir = _make_output_folder(benchmark)
+    plt.savefig(output_dir / f"histogram_{plot_id}.pdf")
     return fig
 
 # def make_time_curve(df):

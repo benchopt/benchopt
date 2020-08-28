@@ -9,7 +9,7 @@ __pycache__
 /doc/auto_examples
 /doc/generated
 .coverage
-output_benchmarks
+**/outputs
 benchopt_front_page_convergence.pdf
 
 # IDE specific folders
