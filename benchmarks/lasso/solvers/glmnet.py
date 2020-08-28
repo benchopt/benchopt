@@ -18,15 +18,16 @@ class Solver(BaseSolver):
     def set_objective(self, X, y, lmbd):
         self.X, self.y, self.lmbd = X, y, lmbd
         self.lmbd_max = np.max(np.abs(X.T @ y))
-
-    def run(self, tol):
         numpy2ri.activate()
         import rpy2.robjects.packages as rpackages
         rpackages.importr('glmnet')
-        glmnet = robjects.r['glmnet']
+        self.glmnet = robjects.r['glmnet']
+
+    def run(self, tol):
         fit_dict = {"lambda.min.ratio": self.lmbd / self.lmbd_max}
-        glmnet_fit = glmnet(self.X, self.y, intercept=False,
-                            standardize=False, thresh=tol, **fit_dict)
+        glmnet_fit = self.glmnet(self.X, self.y, intercept=False,
+                                 standardize=False, thresh=tol,
+                                 **fit_dict)
         results = dict(zip(glmnet_fit.names, list(glmnet_fit)))
         as_matrix = robjects.r['as']
         coefs = np.array(as_matrix(results["beta"], "matrix"))
