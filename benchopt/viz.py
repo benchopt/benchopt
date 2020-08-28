@@ -1,11 +1,28 @@
 import ctypes
-import numpy as np
 from pathlib import Path
+
+import numpy as np
 import matplotlib.pyplot as plt
+
 from .config import get_benchmark_setting
 
 
 def plot_benchmark(df, benchmark):
+    """Plot convergence curve and histogram for a given benchmark.
+
+    Parameters
+    ----------
+    df : instance of pandas.DataFrame
+        The benchmark results.
+    benchmark : str
+        The path to the benchmark folder.
+
+    Returns
+    -------
+    figs : list
+        The matplotlib figures for convergence curve and histogram
+        for each dataset.
+    """
     plots = get_benchmark_setting(benchmark, 'plots')
 
     datasets = df.data.unique()
@@ -30,6 +47,20 @@ def _make_output_folder(benchmark):
 
 
 def plot_convergence_curve(df, benchmark):
+    """Plot convergence curve for a given benchmark and dataset.
+
+    Parameters
+    ----------
+    df : instance of pandas.DataFrame
+        The benchmark results.
+    benchmark : str
+        The path to the benchmark folder.
+
+    Returns
+    -------
+    fig : instance of matplotlib.figure.Figure
+        The matplotlib figure.
+    """
     dataset_name = df.data.unique()[0]
     objective_name = df.objective.unique()[0]
     plot_id = hash((benchmark, dataset_name, objective_name))
@@ -62,6 +93,20 @@ def plot_convergence_curve(df, benchmark):
 
 
 def plot_histogram(df, benchmark):
+    """Plot histogram for a given benchmark and dataset.
+
+    Parameters
+    ----------
+    df : instance of pandas.DataFrame
+        The benchmark results.
+    benchmark : str
+        The path to the benchmark folder.
+
+    Returns
+    -------
+    fig : instance of matplotlib.figure.Figure
+        The matplotlib figure.
+    """
     dataset_name = df.data.unique()[0]
     objective_name = df.objective.unique()[0]
     plot_id = hash((benchmark, dataset_name, objective_name))
@@ -73,7 +118,7 @@ def plot_histogram(df, benchmark):
 
     eps = 1e-6
     width = 1 / (n_solvers + 2)
-    colors = color_palette(n_solvers)
+    colors = _color_palette(n_solvers)
 
     rect_list = []
     ticks_list = []
@@ -116,16 +161,8 @@ def plot_histogram(df, benchmark):
     plt.savefig(output_dir / f"histogram_{plot_id}.pdf")
     return fig
 
-# def make_time_curve(df):
-#     t_min = df.time.min()
-#     t_max = df.time.max()
-#     time = np.logspace(np.log10(t_min), np.log10(t_max), 20)
-#     extended_time = np.r_[0, time, 2*t_max]
-#     bins = np.c_[(extended_time[:-2] + time) / 2,
-#                  (extended_time[2:] + time) / 2]
 
-
-def color_palette(n_colors=4, cmap='viridis', extrema=False):
+def _color_palette(n_colors=4, cmap='viridis', extrema=False):
     """Create a color palette from a matplotlib color map"""
     if extrema:
         bins = np.linspace(0, 1, n_colors)
