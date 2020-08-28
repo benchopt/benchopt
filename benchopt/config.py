@@ -13,7 +13,6 @@ DEFAULT_GLOBAL = {
     'debug': False,
     'allow_install': False,
     'raise_install_error': False,
-    'cache_dir': '.',
     'data_dir': './data/',
     'shell': os.environ.get('SHELL', 'bash')
 }

@@ -18,7 +18,6 @@ from .config import get_global_setting, get_benchmark_setting
 
 # Get config values
 DEBUG = get_global_setting('debug')
-CACHE_DIR = get_global_setting('cache_dir')
 RAISE_INSTALL_ERROR = get_global_setting('raise_install_error')
 
 
@@ -27,10 +26,6 @@ RAISE_INSTALL_ERROR = get_global_setting('raise_install_error')
 PATIENCE = 5
 MAX_ITER = int(1e6)
 MIN_TOL = 1e-15
-
-
-# jobib cache to avoid loosing computations
-mem = Memory(location=CACHE_DIR, verbose=0)
 
 
 ###################################
@@ -58,7 +53,6 @@ def colorify(message, color=BLUE):
 ##################################
 # Time one run of a solver
 ##################################
-@mem.cache
 def run_repetition(objective, solver, meta, sample):
     """Run one repetition of the solver.
 
@@ -69,8 +63,8 @@ def run_repetition(objective, solver, meta, sample):
     solver : instance of BaseSolver
         The solver to use.
     meta : dict
-        Metadata passed to instanciate a Cost.
-        Contains data, scale, XXX
+        Metadata passed to instantiate a Cost.
+        Contains objective, data, scale, XXX
     sample : int | float
         Corresponds to stopping criterion, such as
         tol or max_iter for the solver. It depends
@@ -98,20 +92,21 @@ def run_repetition(objective, solver, meta, sample):
                  obj=objective_value), objective_value)
 
 
-@mem.cache(ignore=['deadline'])
-def run_one_sample(objective, solver, meta, sample,
+def run_one_sample(benchmark, objective, solver, meta, sample,
                    n_rep, progress_str, deadline, force=False):
     """Run all repetitions of the solver for a value of stopping criterion.
 
     Parameters
     ----------
+    benchmark : str
+        The path to the benchmark files.
     objective : instance of BaseObjective
         The objective to minimize.
     solver : instance of BaseSolver
         The solver to use.
     meta : dict
-        Metadata passed to instanciate a Cost.
-        Contains data, scale, XXX
+        Metadata passed to instantiate a Cost.
+        Contains objective, data, scale, XXX
     sample : int | float
         Corresponds to stopping criterion, such as
         tol or max_iter for the solver. It depends
@@ -123,16 +118,21 @@ def run_one_sample(objective, solver, meta, sample,
     deadline : float
         The computer time solver cannot exceed to complete.
     force : bool
-        Force rerun of the solver of not.
+        If force is set to True, ignore the cache and run the computations
+        for the solver anyway. Else, use the cache if available.
 
     Returns
     -------
     curve : list of Cost
         The cost obtained for all repetitions.
     max_objective_value : float
-        The maximum of the objective values obtaeined across
-        repetitions.
+        The maximum of the objective values obtained across the repetitions for
+        the given sample. It is used to detect when to stop adding points to
+        the curve.
     """
+    # Create a Memory object to cache the computations in the benchmark folder
+    mem = Memory(location=benchmark, verbose=0)
+    run_repetition_cached = mem.cache(run_repetition)
 
     curve = []
     current_objective = []
@@ -145,8 +145,9 @@ def run_one_sample(objective, solver, meta, sample,
         # Force the run if needed
         args = (objective, solver, meta_rep, sample)
         if force:
-            run_repetition.call(*args)
-        cost, objective_value = run_repetition(*args)
+            (cost, objective_value), _ = run_repetition_cached.call(*args)
+        else:
+            cost, objective_value = run_repetition_cached(*args)
 
         curve.append(cost)
         current_objective.append(objective_value)
@@ -158,19 +159,21 @@ def run_one_sample(objective, solver, meta, sample,
     return curve, np.max(current_objective)
 
 
-def run_one_solver(objective, solver, meta, max_samples, timeout,
+def run_one_solver(benchmark, objective, solver, meta, max_samples, timeout,
                    n_rep=1, force=False):
     """Minimize objective function with onesolver for different accuracies.
 
     Parameters
     ----------
+    benchmark : str
+        The path to the benchmark files.
     objective : instance of BaseObjective
         The objective to minimize.
     solver : instance of BaseSolver
         The solver to use.
     meta : dict
         Metadata passed to instanciate a Cost.
-        Contains data, scale, XXX
+        Contains objective, data, scale, XXX
     max_samples : int
         The maximum number of solver runs to perform to estimate
         the convergence curve.
@@ -179,7 +182,8 @@ def run_one_solver(objective, solver, meta, max_samples, timeout,
     n_rep : int
         The number of repetitions to run. Defaults to 1.
     force : bool
-        Force rerun of the solver of not.
+        If force is set to True, ignore the cache and run the computations
+        for the solver anyway. Else, use the cache if available.
 
     Returns
     -------
@@ -190,6 +194,10 @@ def run_one_solver(objective, solver, meta, max_samples, timeout,
     # TODO: parametrize
     rho = 1.5
     eps = 1e-10
+
+    # Create a Memory object to cache the computations in the benchmark folder
+    mem = Memory(location=benchmark, verbose=0)
+    run_one_sample_cached = mem.cache(run_one_sample, ignore=['deadline'])
 
     # Get the solver's name
     tag = colorify(f"|----{solver}:")
@@ -232,13 +240,17 @@ def run_one_solver(objective, solver, meta, max_samples, timeout,
             progress_str = f"{tag} {p:6.1%}"
 
             call_args = dict(
-                objective=objective, solver=solver, sample=sample,
-                n_rep=n_rep, progress_str=progress_str, meta=meta,
-                force=force, deadline=deadline
+                benchmark=benchmark, objective=objective, solver=solver,
+                sample=sample, n_rep=n_rep, progress_str=progress_str,
+                meta=meta, force=force, deadline=deadline
             )
             if force:
-                run_one_sample.call(**call_args)
-            sample_curve, objective_value = run_one_sample(**call_args)
+                (sample_curve,
+                 objective_value), _ = run_one_sample_cached.call(**call_args)
+            else:
+                sample_curve, objective_value = run_one_sample_cached(
+                    **call_args
+                )
             curve.extend(sample_curve)
 
             if time.time() > deadline:
@@ -351,9 +363,9 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
 
                         force = solver_class.name.lower() in forced_solvers
                         run_statistics.extend(run_one_solver(
-                            objective=objective, solver=solver, meta=meta,
-                            max_samples=max_samples, timeout=timeout,
-                            n_rep=n_rep, force=force
+                            benchmark=benchmark, objective=objective,
+                            solver=solver, meta=meta, max_samples=max_samples,
+                            timeout=timeout, n_rep=n_rep, force=force
                         ))
     df = pd.DataFrame(run_statistics)
     plot_benchmark(df, benchmark)
