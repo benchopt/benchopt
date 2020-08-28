@@ -100,6 +100,38 @@ def run_repetition(objective, solver, meta, sample):
 @mem.cache(ignore=['deadline'])
 def run_one_sample(objective, solver, meta, sample,
                    n_rep, progress_str, deadline, force=False):
+    """Run all repetitions of the solver for a value of stopping criterion.
+
+    Parameters
+    ----------
+    objective : instance of BaseObjective
+        The objective to minimize.
+    solver : instance of BaseSolver
+        The solver to use.
+    meta : dict
+        Metadata passed to instanciate a Cost.
+        Contains data, scale, XXX
+    sample : int | float
+        Corresponds to stopping criterion, such as
+        tol or max_iter for the solver. It depends
+        on the sampling_strategy for the solver.
+    n_rep : int
+        The number of repetitions to run.
+    progress_str : str
+        The string to display in the progress bar.
+    deadline : float
+        The computer time solver cannot exceed to complete.
+    force : bool
+        Force rerun of the solver of not.
+
+    Returns
+    -------
+    curve : list of Cost
+        The cost obtained for all repetitions.
+    max_objective_value : float
+        The maximum of the objective values obtaeined across
+        repetitions.
+    """
 
     curve = []
     current_objective = []
@@ -127,7 +159,31 @@ def run_one_sample(objective, solver, meta, sample,
 
 def run_one_solver(objective, solver, meta, max_samples, timeout,
                    n_rep=1, force=False):
-    """Minimize a objective function with the given solver for different accuracy
+    """Minimize objective function with onesolver for different accuracies.
+
+    Parameters
+    ----------
+    objective : instance of BaseObjective
+        The objective to minimize.
+    solver : instance of BaseSolver
+        The solver to use.
+    meta : dict
+        Metadata passed to instanciate a Cost.
+        Contains data, scale, XXX
+    max_samples : int
+        The maximum number of solver runs to perform to estimate
+        the convergence curve.
+    timeout : float
+        The maximum duration in seconds of the solver run.
+    n_rep : int
+        The number of repetitions to run. Defaults to 1.
+    force : bool
+        Force rerun of the solver of not.
+
+    Returns
+    -------
+    curve : list of Cost
+        The cost obtained for all repetitions and all stopping criteria.
     """
 
     # TODO: parametrize
