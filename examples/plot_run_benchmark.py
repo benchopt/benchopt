@@ -20,6 +20,6 @@ df = run_benchmark('benchmarks/logreg_l2', ['sklearn', 'lightning'],
                    dataset_names=['Simulated*n_samples=200,n_features=500*'],
                    max_samples=100, timeout=20, n_rep=3)
 
-figs = plot_benchmark(df, benchmark='logreg_l2')
+figs = plot_benchmark(df, benchmark='benchmarks/logreg_l2')
 plt.show()
 os.chdir(cwd)
