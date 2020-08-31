@@ -4,13 +4,11 @@ from pathlib import Path
 from benchopt import run_benchmark
 
 
-from benchopt.util import get_benchmark_name
 from benchopt.util import filter_classes_on_name
 from benchopt.util import _load_class_from_module
 from benchopt.util import install_required_datasets
 from benchopt.util import list_benchmark_solvers, install_solvers
 
-from benchopt.utils.checkers import validate_benchmark
 from benchopt.utils.checkers import validate_solver_patterns
 from benchopt.utils.checkers import validate_dataset_patterns
 from benchopt.utils.shell_cmd import _run_shell_in_conda_env, create_conda_env
@@ -31,7 +29,7 @@ def main(prog_name='benchopt'):
 @main.command(
     help="Run a benchmark with benchopt."
 )
-@click.argument('benchmark', nargs=1, callback=validate_benchmark)
+@click.argument('benchmark', type=click.Path(exists=True))
 @click.option('--local', '-l',
               is_flag=True,
               help="If this flag is set, run the benchmark with the local "
@@ -67,9 +65,7 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
     """Run a benchmark in a separate venv where the solvers will be installed
     """
 
-    benchmark_name = get_benchmark_name(benchmark)
-
-    # Check that the dataset patterns match actual dataset
+    # Check that the dataset/solver patterns match actual dataset
     validate_dataset_patterns(benchmark, dataset_names)
     validate_solver_patterns(benchmark, solver_names+forced_solvers)
 
@@ -78,6 +74,7 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
                       max_samples=max_samples, timeout=timeout, n_rep=n_rep)
         return
 
+    benchmark_name = Path(benchmark).name
     env_name = f"benchopt_{benchmark_name}"
     create_conda_env(env_name, recreate=recreate)
 

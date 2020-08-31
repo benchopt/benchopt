@@ -47,11 +47,6 @@ def import_shell_cmd(cmd_name, env_name=None):
     return run_shell_cmd
 
 
-def get_benchmark_name(benchmark_dir):
-    """Get benchmark name from folder."""
-    return Path(benchmark_dir).name
-
-
 def get_module_from_file(module_filename):
     """Load a module from the name of the file"""
     module_filename = Path(module_filename)
@@ -97,7 +92,7 @@ def get_benchmark_objective(benchmark_dir):
 
     Parameters
     ----------
-    benchmark_dir : str
+    benchmark_dir : str or Path
         The path to the folder containing the benchmark.
 
     Returns
@@ -113,6 +108,23 @@ def get_benchmark_objective(benchmark_dir):
 
 
 def _load_class_from_module(module_filename, class_name):
+    """Load a class from a module_filename.
+
+    This helper also stores info necessary for DependenciesMixing to check the
+    the correct installation and to reload the classes.
+
+    Parameters
+    ----------
+    module_filename : str or Path
+        Path to the file defining the module to load the class from.
+    class_name : str
+        Name of the class to load
+
+    Returns
+    -------
+    klass : class
+        The klass requested from the given module.
+    """
     module_filename = Path(module_filename)
     module = get_module_from_file(module_filename)
     klass = getattr(module, class_name)
@@ -122,17 +134,30 @@ def _load_class_from_module(module_filename, class_name):
     return klass
 
 
-def _list_benchmark_submodule_classes(benchmark_dir, subpkg, class_name):
+def _list_benchmark_classes(benchmark_dir, class_name):
+    """Load all classes with the same name from a benchmark's subpackage.
+
+    Parameters
+    ----------
+    benchmark_dir : str or Path
+        The path to the folder containing the benchmark.
+    class_name : str
+        Base name of the classes to load.
+
+    Returns
+    -------
+    classes : List of class
+        A list with all the classes with base_class_name `class_name` in the
+        given subpkg of the benchmark.
+    """
 
     classes = []
     # List all available module in benchmark.subpkg
-    package = Path(benchmark_dir) / subpkg
+    package = Path(benchmark_dir) / f'{class_name.lower()}s'
     submodule_files = package.glob('*.py')
     for module_filename in submodule_files:
         # Get the class
-        classes.append(_load_class_from_module(
-            module_filename, class_name
-        ))
+        classes.append(_load_class_from_module(module_filename, class_name))
 
     classes.sort(key=lambda c: c.name)
     return classes
@@ -140,22 +165,19 @@ def _list_benchmark_submodule_classes(benchmark_dir, subpkg, class_name):
 
 def list_benchmark_solvers(benchmark_dir):
     """List all available solver classes for a given benchmark_dir"""
-    return _list_benchmark_submodule_classes(
-        benchmark_dir, 'solvers', 'Solver'
-    )
+    return _list_benchmark_classes(benchmark_dir, 'Solver')
 
 
 def list_benchmark_datasets(benchmark_dir):
     """List all available dataset classes for a given benchmark_dir"""
-    return _list_benchmark_submodule_classes(
-        benchmark_dir, 'datasets', 'Dataset'
-    )
+    return _list_benchmark_classes(benchmark_dir, 'Dataset')
 
 
-def check_name_list(name_list):
+def _check_name_list(name_list):
+    """Normalize name_list ot a list of lowercase str."""
     if name_list is None:
         return []
-    return [name.lower() for name in name_list]
+    return [str(name).lower() for name in name_list]
 
 
 def filter_classes_on_name(classes, include=None, forced=None, exclude=None):
@@ -179,8 +201,8 @@ def filter_classes_on_name(classes, include=None, forced=None, exclude=None):
     """
 
     # Currate the list of names
-    exclude = check_name_list(exclude)
-    include_patterns = check_name_list(include) + check_name_list(forced)
+    exclude = _check_name_list(exclude)
+    include_patterns = _check_name_list(include) + _check_name_list(forced)
 
     if len(exclude) > 0:
         # If a solver is explicitly included in solver_include, this takes
