@@ -162,13 +162,16 @@ def test_solver_install(test_env_name, benchmark_name, solver_class):
                          ids=class_ids)
 def test_solver(benchmark_name, solver_class):
 
+    if not solver_class.is_installed():
+        pytest.skip("Solver is not installed")
+
+    if 'numba' in solver_class.requirements:
+        pytest.skip("_reload create segfault with numba?!")
+
     # Make sure we get the latest version of the class. As the modules are
     # dynamically created since PR#51, dependencies that are installed in the
     # test can be used to test the solver.
     solver_class = solver_class._reload_class()
-
-    if not solver_class.is_installed():
-        pytest.skip("Solver is not installed")
 
     objective_class = get_benchmark_objective(benchmark_name)
     objective = objective_class()
