@@ -92,12 +92,12 @@ def _reconstruct_class(module_filename, class_name, pickled_module_hash=None):
     return getattr(get_module_from_file(module_filename), class_name)
 
 
-def get_benchmark_objective(benchmark):
+def get_benchmark_objective(benchmark_dir):
     """Load the objective function defined in the given benchmark.
 
     Parameters
     ----------
-    benchmark : str
+    benchmark_dir : str
         The path to the folder containing the benchmark.
 
     Returns
@@ -105,13 +105,23 @@ def get_benchmark_objective(benchmark):
     obj : class
         The class defining the objective function for the benchmark.
     """
-    module_filename = Path(benchmark) / 'objective.py'
+    module_filename = Path(benchmark_dir) / 'objective.py'
     if not module_filename.exists():
         raise RuntimeError("Did not find an `objective` module in benchmark.")
+
+    return _load_class_from_module(module_filename, "Objective", benchmark_dir)
+
+
+def _load_class_from_module(module_filename, class_name, benchmark_dir):
+    module_filename = Path(module_filename)
     module = get_module_from_file(module_filename)
-    obj = module.Objective
-    obj._module_filename = module_filename.resolve()
-    return obj
+    klass = getattr(module, class_name)
+
+    # Store the info to easily reload the class
+    klass._class_name = class_name
+    klass._benchmark_dir = benchmark_dir
+    klass._module_filename = module_filename.resolve()
+    return klass
 
 
 def _list_benchmark_submodule_classes(benchmark_dir, subpkg, class_name):
@@ -121,14 +131,10 @@ def _list_benchmark_submodule_classes(benchmark_dir, subpkg, class_name):
     package = Path(benchmark_dir) / subpkg
     submodule_files = package.glob('*.py')
     for module_filename in submodule_files:
-        module_filename = Path(module_filename)
-        module = get_module_from_file(module_filename)
-
         # Get the class
-        klass = getattr(module, class_name)
-        klass._benchmark_dir = benchmark_dir
-        klass._module_filename = module_filename.absolute()
-        classes.append(klass)
+        classes.append(_load_class_from_module(
+            module_filename, class_name, benchmark_dir
+        ))
 
     classes.sort(key=lambda c: c.name)
     return classes
@@ -253,9 +259,6 @@ class safe_import_context:
         if exc_type is not None and issubclass(exc_type, ImportError):
             self.failed_import = True
             self.import_error = exc_type, exc_value, tb
-
-            import traceback
-            traceback.print_exception(exc_type, exc_value, tb)
 
             # Prevent the error propagation
             silence_error = True
