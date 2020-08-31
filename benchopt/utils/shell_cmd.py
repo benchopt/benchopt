@@ -33,7 +33,7 @@ dependencies:
 """
 
 
-def _run_shell(script, raise_on_error=None, capture_stdout=True):
+def _run_shell(script, raise_on_error=None, capture_stdout=True, env_name=None):
     """Run a shell script and return its exit code.
 
     Parameters
@@ -49,6 +49,8 @@ def _run_shell(script, raise_on_error=None, capture_stdout=True):
     capture_stdout: bool
         If set to True, capture the stdout of the subprocess. Else, it is
         printed in the main process stdout.
+    env_name: str
+        Name of the environment to run the script in.
 
     Returns
     -------
@@ -68,10 +70,14 @@ def _run_shell(script, raise_on_error=None, capture_stdout=True):
     if raise_on_error is True:
         raise_on_error = "{output}"
 
+    CMDLINE = f"{SHELL} {tmp.name}"
+    if env_name is not None:
+        CMDLINE = f"conda run -n {env_name} {CMDLINE}"
+
     if capture_stdout:
-        exit_code, output = subprocess.getstatusoutput([f"{SHELL} {tmp.name}"])
+        exit_code, output = subprocess.getstatusoutput([CMDLINE])
     else:
-        exit_code = os.system(f"{SHELL} {tmp.name}")
+        exit_code = os.system(CMDLINE)
         output = ""
     if raise_on_error is not None and exit_code != 0:
         if isinstance(raise_on_error, str):
@@ -111,11 +117,8 @@ def _run_shell_in_conda_env(script, env_name=None, raise_on_error=None,
     exit_code: int
         Exit code of the script
     """
-    if env_name is not None:
-        script = (f". activate {env_name}\n{script}")
-
     return _run_shell(script, raise_on_error=raise_on_error,
-                      capture_stdout=capture_stdout)
+                      capture_stdout=capture_stdout, env_name=env_name)
 
 
 def create_conda_env(env_name, recreate=False):
