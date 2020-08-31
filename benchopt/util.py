@@ -65,7 +65,7 @@ def get_module_from_file(module_filename):
     return module
 
 
-def reconstruct_class(module_filename, class_name, pickled_module_hash=None):
+def _reconstruct_class(module_filename, class_name, pickled_module_hash=None):
     """Retrieve a class in module defined by its filename.
 
     Parameters

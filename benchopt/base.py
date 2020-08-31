@@ -3,7 +3,7 @@ from collections import namedtuple
 from abc import ABC, abstractmethod
 
 from .util import get_file_hash
-from .util import reconstruct_class
+from .util import _reconstruct_class
 from .util import get_module_from_file
 from .config import RAISE_INSTALL_ERROR
 from .utils.class_property import classproperty
@@ -239,10 +239,10 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
 
     # TODO: use this to allow parallel computation of the benchmark.
     @staticmethod
-    def reconstruct(module_filename, parameters, objective,
-                    pickled_module_hash=None):
+    def _reconstruct(module_filename, parameters, objective,
+                     pickled_module_hash=None):
 
-        Solver = reconstruct_class(
+        Solver = _reconstruct_class(
             module_filename, pickled_module_hash, 'Solver'
         )
         obj = Solver(**parameters)
@@ -252,8 +252,8 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
 
     def __reduce__(self):
         module_hash = get_file_hash(self._module_filename)
-        return self.reconstruct, (self._module_filename, module_hash,
-                                  self.parameters, self._objective)
+        return self._reconstruct, (self._module_filename, module_hash,
+                                   self.parameters, self._objective)
 
 
 class CommandLineSolver(BaseSolver, ABC):
@@ -300,8 +300,8 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin):
 
     # Reduce the pickling and hashing burden by only pickling class parameters.
     @staticmethod
-    def reconstruct(module_filename, pickled_module_hash, parameters):
-        Dataset = reconstruct_class(
+    def _reconstruct(module_filename, pickled_module_hash, parameters):
+        Dataset = _reconstruct_class(
             module_filename, pickled_module_hash, 'Dataset'
         )
         obj = Dataset(**parameters)
@@ -309,8 +309,8 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin):
 
     def __reduce__(self):
         module_hash = get_file_hash(self._module_filename)
-        return self.reconstruct, (self._module_filename, module_hash,
-                                  self.parameters)
+        return self._reconstruct, (self._module_filename, module_hash,
+                                   self.parameters)
 
 
 class BaseObjective(ParametrizedNameMixin):
@@ -363,8 +363,9 @@ class BaseObjective(ParametrizedNameMixin):
 
     # Reduce the pickling and hashing burden by only pickling class parameters.
     @staticmethod
-    def reconstruct(module_filename, pickled_module_hash, parameters, dataset):
-        Objective = reconstruct_class(
+    def _reconstruct(module_filename, pickled_module_hash, parameters,
+                     dataset):
+        Objective = _reconstruct_class(
             module_filename, pickled_module_hash, 'Objective'
         )
         obj = Objective(**parameters)
@@ -373,5 +374,5 @@ class BaseObjective(ParametrizedNameMixin):
 
     def __reduce__(self):
         module_hash = get_file_hash(self._module_filename)
-        return self.reconstruct, (self._module_filename, module_hash,
-                                  self.parameters, self.dataset)
+        return self._reconstruct, (self._module_filename, module_hash,
+                                   self.parameters, self.dataset)
