@@ -130,6 +130,7 @@ def _list_benchmark_submodule_classes(benchmark_dir, subpkg, class_name):
         klass._module_filename = module_filename.absolute()
         classes.append(klass)
 
+    classes.sort(key=lambda c: c.name)
     return classes
 
 
