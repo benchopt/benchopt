@@ -233,7 +233,7 @@ def install_required_datasets(benchmark, dataset_names, env_name=None):
 
 
 class safe_import_context:
-    """Do not fail on ImportError and Catch the warnings"""
+    """Do not fail on ImportError and catch import warnings"""
 
     def __init__(self):
         self.failed_import = False
@@ -253,6 +253,9 @@ class safe_import_context:
         if exc_type is not None and issubclass(exc_type, ImportError):
             self.failed_import = True
             self.import_error = exc_type, exc_value, tb
+
+            import traceback
+            traceback.print_exception(exc_type, exc_value, tb)
 
             # Prevent the error propagation
             silence_error = True
