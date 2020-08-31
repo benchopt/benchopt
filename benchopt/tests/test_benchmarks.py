@@ -1,4 +1,4 @@
-import sys
+# import sys
 import pytest
 
 import numpy as np
@@ -142,18 +142,18 @@ def test_solver_install_api(benchmark_name, solver_class):
         assert hasattr(solver_class, 'install_script')
 
 
-@pytest.mark.requires_install
-@pytest.mark.parametrize('benchmark_name, solver_class', BENCH_AND_SOLVERS,
-                         ids=class_ids)
-def test_solver_install(test_env_name, benchmark_name, solver_class):
+# @pytest.mark.requires_install
+# @pytest.mark.parametrize('benchmark_name, solver_class', BENCH_AND_SOLVERS,
+#                          ids=class_ids)
+# def test_solver_install(test_env_name, benchmark_name, solver_class):
 
-    if solver_class.name.lower() == 'cyanure' and sys.platform == 'darwin':
-        pytest.skip('Cyanure is not easy to install on macos.')
+#     if solver_class.name.lower() == 'cyanure' and sys.platform == 'darwin':
+#         pytest.skip('Cyanure is not easy to install on macos.')
 
-    # assert that install works when forced to reinstalls
-    solver_class.install(env_name=test_env_name)
-    solver_class.is_installed(env_name=test_env_name,
-                              raise_on_not_installed=True)
+#     # assert that install works when forced to reinstalls
+#     solver_class.install(env_name=test_env_name)
+#     solver_class.is_installed(env_name=test_env_name,
+#                               raise_on_not_installed=True)
 
 
 @pytest.mark.parametrize('benchmark_name, solver_class', BENCH_AND_SOLVERS,
