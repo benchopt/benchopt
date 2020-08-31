@@ -110,7 +110,7 @@ def get_benchmark_objective(benchmark):
         raise RuntimeError("Did not find an `objective` module in benchmark.")
     module = get_module_from_file(module_filename)
     obj = module.Objective
-    obj._module_filename = module_filename.absolute()
+    obj._module_filename = module_filename.resolve()
     return obj
 
 

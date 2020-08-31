@@ -5,11 +5,13 @@ from abc import ABC, abstractmethod
 from .util import get_file_hash
 from .util import _reconstruct_class
 from .util import get_module_from_file
-from .config import RAISE_INSTALL_ERROR
 from .utils.class_property import classproperty
 from .utils.shell_cmd import install_in_conda_env
 from .utils.shell_cmd import _run_shell_in_conda_env
 from .utils.shell_cmd import shell_install_in_conda_env
+
+from .config import DEBUG
+from .config import RAISE_INSTALL_ERROR
 
 
 # Possible sampling strategies
@@ -95,6 +97,8 @@ class DependenciesMixin:
         """
         if env_name is None:
             module = get_module_from_file(cls._module_filename)
+            print('\n', module, cls._module_filename,
+                  hasattr(module, 'import_ctx'))
             if (hasattr(module, 'import_ctx')
                     and module.import_ctx.failed_import):
                 if raise_on_not_installed:
@@ -106,7 +110,8 @@ class DependenciesMixin:
         else:
             return _run_shell_in_conda_env(
                 f"benchopt check-install {cls._benchmark_dir} {cls.name}",
-                env_name=env_name, raise_on_error=raise_on_not_installed
+                env_name=env_name, raise_on_error=raise_on_not_installed,
+                capture_stdout=not DEBUG
             ) == 0
 
     @classmethod
