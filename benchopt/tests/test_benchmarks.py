@@ -165,7 +165,7 @@ def test_solver(benchmark_name, solver_class):
     if not solver_class.is_installed():
         pytest.skip("Solver is not installed")
 
-    if 'numba' in solver_class.requirements:
+    if solver_class.name == 'cd':
         pytest.skip("_reload create segfault with numba?!")
 
     # Make sure we get the latest version of the class. As the modules are
