@@ -7,6 +7,8 @@ UNAMESTR=`uname`
 TO_INSTALL=$(cat dev-requirements.txt)
 TO_INSTALL="python=$VERSION_PYTHON pip $TO_INSTALL"
 
+conda update -n base -c defaults conda
+
 conda create -n $CONDAENV --yes $TO_INSTALL
 . activate $CONDAENV
 conda config --env --prepend channels conda-forge
