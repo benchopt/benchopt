@@ -1,5 +1,6 @@
 import click
 import pytest
+from pathlib import Path
 
 
 from benchopt.cli import run, check_install
@@ -23,5 +24,7 @@ def test_invalid_solver():
 
 
 def test_check_install():
+    baseline = Path(__file__).parent / '..' / '..' / 'benchmarks'
+    baseline = baseline / 'lasso' / 'solvers' / 'baseline.py'
     with pytest.raises(SystemExit, match=r'0'):
-        check_install(['benchmarks/lasso', 'baseline'], 'benchopt')
+        check_install([str(baseline.resolve()), 'Solver'], 'benchopt')

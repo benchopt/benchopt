@@ -109,17 +109,15 @@ def get_benchmark_objective(benchmark_dir):
     if not module_filename.exists():
         raise RuntimeError("Did not find an `objective` module in benchmark.")
 
-    return _load_class_from_module(module_filename, "Objective", benchmark_dir)
+    return _load_class_from_module(module_filename, "Objective")
 
 
-def _load_class_from_module(module_filename, class_name, benchmark_dir):
+def _load_class_from_module(module_filename, class_name):
     module_filename = Path(module_filename)
     module = get_module_from_file(module_filename)
     klass = getattr(module, class_name)
 
     # Store the info to easily reload the class
-    klass._class_name = class_name
-    klass._benchmark_dir = benchmark_dir
     klass._module_filename = module_filename.resolve()
     return klass
 
@@ -133,7 +131,7 @@ def _list_benchmark_submodule_classes(benchmark_dir, subpkg, class_name):
     for module_filename in submodule_files:
         # Get the class
         classes.append(_load_class_from_module(
-            module_filename, class_name, benchmark_dir
+            module_filename, class_name
         ))
 
     classes.sort(key=lambda c: c.name)

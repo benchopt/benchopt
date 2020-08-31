@@ -107,7 +107,8 @@ class DependenciesMixin:
                 return True
         else:
             return _run_shell_in_conda_env(
-                f"benchopt check-install {cls._benchmark_dir} {cls.name}",
+                f"benchopt check-install {cls._module_filename} "
+                f"{cls._base_class_name}",
                 env_name=env_name, raise_on_error=raise_on_not_installed
             ) == 0
 
@@ -155,8 +156,9 @@ class DependenciesMixin:
 
     @classmethod
     def _reload_class(cls):
-        return _load_class_from_module(cls._module_filename, cls._class_name,
-                                       cls._benchmark_dir)
+        return _load_class_from_module(
+            cls._module_filename, cls._base_class_name
+        )
 
 
 class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
@@ -191,6 +193,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
 
     """
 
+    _base_class_name = 'Solver'
     sampling_strategy = 'iteration'
 
     def __init__(self, **parameters):
@@ -290,6 +293,8 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin):
       method `set_data`.
     """
 
+    _base_class_name = 'Dataset'
+
     @abstractmethod
     def get_data(self):
         """Return the scale of the problem as well as the objective parameters.
@@ -338,6 +343,8 @@ class BaseObjective(ParametrizedNameMixin):
       corresponding to the `scale` value returned by `Dataset.get_data`. The
       output should be a float or a dictionary of floats.
     """
+
+    _base_class_name = 'Objective'
 
     def __init__(self, **parameters):
         """Instantiate a solver with the given parameters and store them.

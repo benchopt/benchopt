@@ -1,12 +1,14 @@
 import click
+from pathlib import Path
 
 from benchopt import run_benchmark
 
 
 from benchopt.util import get_benchmark_name
 from benchopt.util import filter_classes_on_name
+from benchopt.util import _load_class_from_module
+from benchopt.util import install_required_datasets
 from benchopt.util import list_benchmark_solvers, install_solvers
-from benchopt.util import list_benchmark_datasets, install_required_datasets
 
 from benchopt.utils.checkers import validate_benchmark
 from benchopt.utils.checkers import validate_solver_patterns
@@ -109,26 +111,13 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
 @main.command(
     help="Check that solvers from benchmark are correctly installed."
 )
-@click.argument('benchmark', nargs=1, callback=validate_benchmark)
-@click.argument('class_names', nargs=-1, type=str)
-def check_install(benchmark, class_names):
+@click.argument('module_filename', nargs=1, type=Path)
+@click.argument('base_class_name', nargs=1, type=str)
+def check_install(module_filename, base_class_name):
 
-    # Get installable solvers
-    solver_classes = list_benchmark_solvers(benchmark)
-    to_check_classes = filter_classes_on_name(
-        solver_classes, include=class_names
-    )
-
-    # Get installable datasets
-    dataset_classes = list_benchmark_datasets(benchmark)
-    to_check_classes.extend(filter_classes_on_name(
-        dataset_classes, include=class_names
-    ))
-
-    # make sure all the requested class_names exists
-    assert len(class_names) == len(to_check_classes), solver_classes
-    for klass in to_check_classes:
-        klass.is_installed(raise_on_not_installed=True)
+    # Get class to check
+    klass = _load_class_from_module(module_filename, base_class_name)
+    klass.is_installed(raise_on_not_installed=True)
 
 
 if __name__ == '__main__':
