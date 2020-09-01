@@ -106,7 +106,10 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
 
 
 @main.command(
-    help="Check that solvers from benchmark are correctly installed."
+    help="Check that a given solver or dataset is correctly installed.\n\n"
+    "The class to be checked is specified with the absolute path of the file "
+    "in which it is defined MODULE_FILENAME and the name of the base "
+    "class BASE_CLASS_NAME."
 )
 @click.argument('module_filename', nargs=1, type=Path)
 @click.argument('base_class_name', nargs=1, type=str)
