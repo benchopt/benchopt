@@ -17,6 +17,7 @@ fi
 
 set -x
 $TEST_CMD
+$TEST_CMD --skip-install
 set +x
 
 if [[ "$COVERAGE" == "true" ]]; then
