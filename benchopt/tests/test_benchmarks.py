@@ -97,6 +97,10 @@ def test_dataset_get_data(benchmark_name, dataset_class):
         pytest.skip("Dataset is not installed")
 
     dataset = dataset_class()
+
+    if dataset_class.name.lower() == 'finance':
+        pytest.skip("Do not download finance.")
+
     data = dataset.get_data()
     assert isinstance(data, tuple), (
         "Output of get_data should be a 2-tuple"
