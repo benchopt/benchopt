@@ -90,7 +90,7 @@ def _list_benchmark_classes(benchmark_dir, class_name):
         # Get the class
         classes.append(_load_class_from_module(module_filename, class_name))
 
-    classes.sort(key=lambda c: c.name)
+    classes.sort(key=lambda c: c.name.lower())
     return classes
 
 

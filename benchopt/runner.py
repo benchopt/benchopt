@@ -63,8 +63,8 @@ def run_repetition(objective, solver, meta, sample):
     solver : instance of BaseSolver
         The solver to use.
     meta : dict
-        Metadata passed to instantiate a Cost.
-        Contains objective, data, scale, XXX
+        Metadata passed to store in Cost results.
+        Contains objective, data, scale, id_rep.
     sample : int | float
         Corresponds to stopping criterion, such as
         tol or max_iter for the solver. It depends
@@ -105,8 +105,8 @@ def run_one_sample(benchmark, objective, solver, meta, sample,
     solver : instance of BaseSolver
         The solver to use.
     meta : dict
-        Metadata passed to instantiate a Cost.
-        Contains objective, data, scale, XXX
+        Metadata passed to store in Cost results.
+        Contains objective, data, scale.
     sample : int | float
         Corresponds to stopping criterion, such as
         tol or max_iter for the solver. It depends
@@ -173,8 +173,8 @@ def run_one_solver(benchmark, objective, solver, meta, max_samples, timeout,
     solver : instance of BaseSolver
         The solver to use.
     meta : dict
-        Metadata passed to instanciate a Cost.
-        Contains objective, data, scale, XXX
+        Metadata passed to store in Cost results.
+        Contains objective, data, scale.
     max_samples : int
         The maximum number of solver runs to perform to estimate
         the convergence curve.
