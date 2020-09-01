@@ -11,7 +11,7 @@ with safe_import_context() as import_ctx:
 
 class Solver(BaseSolver):
     name = 'Celer'
-    sampling_strategy = 'iteration'
+    stop_strategy = 'iteration'
 
     install_cmd = 'conda'
     requirements = ['pip:git+https://github.com/mathurinm/celer.git']

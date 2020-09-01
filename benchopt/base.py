@@ -13,11 +13,11 @@ from .utils.dynamic_modules import _load_class_from_module
 from .config import RAISE_INSTALL_ERROR
 
 
-# Possible sampling strategies
-SAMPLING_STRATEGIES = ['iteration', 'tolerance']
+# Possible stop strategies
+STOP_STRATEGIES = ['iteration', 'tolerance']
 
 # Named-tuple for the cost function
-Cost = namedtuple('Cost', 'data scale objective solver sample time obj '
+Cost = namedtuple('Cost', 'data scale objective solver stop_val time obj '
                           'idx_rep'.split(' '))
 
 
@@ -181,7 +181,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
       This utility is necessary to reduce the impact of loading the result from
       the disk in the benchmark.
 
-    Note that two `sampling_strategy` can be used to construct the benchmark
+    Note that two `stop_strategy` can be used to construct the benchmark
     curve:
 
     - `iteration`: call the run method with max_iter number increasing
@@ -192,7 +192,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
     """
 
     _base_class_name = 'Solver'
-    sampling_strategy = 'iteration'
+    stop_strategy = 'iteration'
 
     def __init__(self, **parameters):
         """Instantiate a solver with the given parameters and store them.
@@ -218,17 +218,17 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         ...
 
     @abstractmethod
-    def run(self, n_iter):
-        """Call the solver for n_iter iterations.
+    def run(self, stop_val):
+        """Call the solver with the given stop_val.
 
         This function should not return the parameters which will be
         retrieved by a subsequent call to get_result.
 
         Parameters
         ----------
-        n_iter : int
-            Number of iteration to run the solver for. It allows to sample the
-            time/accuracy curve in the benchmark.
+        stop_val : int
+            Value for the stopping criterion of the solver for. It allows to
+            sample the time/accuracy curve in the benchmark.
         """
         ...
 

@@ -8,7 +8,7 @@ with safe_import_context() as import_ctx:
 
 class Solver(BaseSolver):
     name = 'Blitz'
-    sampling_strategy = 'tolerance'
+    stop_strategy = 'tolerance'
 
     install_cmd = 'conda'
     requirements = [

@@ -73,9 +73,9 @@ def plot_convergence_curve(df, benchmark):
     c_star = df.obj.min() - eps
     for i, m in enumerate(solvers):
         df_ = df[df.solver == m]
-        curve = df_.groupby('sample').median()
-        q1 = df_.groupby('sample').time.quantile(.1)
-        q9 = df_.groupby('sample').time.quantile(.9)
+        curve = df_.groupby('stop_val').median()
+        q1 = df_.groupby('stop_val').time.quantile(.1)
+        q9 = df_.groupby('stop_val').time.quantile(.9)
         plt.loglog(curve.time, curve.obj - c_star, f"C{i}", label=m,
                    linewidth=3)
         plt.fill_betweenx(curve.obj - c_star, q1, q9, color=f"C{i}", alpha=.3)
@@ -130,8 +130,8 @@ def plot_histogram(df, benchmark):
         ticks_list.append((xi, solver_name))
         df_ = df[df.solver == solver_name]
 
-        # Find the first sample which reach a given tolerance
-        df_tol = df_.groupby('sample').filter(
+        # Find the first stop_val which reach a given tolerance
+        df_tol = df_.groupby('stop_val').filter(
             lambda x: x.obj.max() < c_star)
         if df_tol.empty:
             print(f"Solver {solver_name} did not reach precision {eps}.")
@@ -142,8 +142,8 @@ def plot_histogram(df, benchmark):
                         va='center', color='k', rotation=90)
             rect_list.append(rect)
             continue
-        sample = df_tol['sample'].min()
-        this_df = df_[df_['sample'] == sample]
+        stop_val = df_tol['stop_val'].min()
+        this_df = df_[df_['stop_val'] == stop_val]
         rect_list.append(ax.bar(
             x=xi, height=this_df.time.mean(), width=width, color=colors[i]))
 

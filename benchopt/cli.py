@@ -34,12 +34,13 @@ def main(prog_name='benchopt'):
               is_flag=True,
               help="If this flag is set, run the benchmark with the local "
               "interpreter.")
-@click.option('--recreate', '-r',
+@click.option('--recreate',
               is_flag=True,
               help="If this flag is set, start with a fresh conda env.")
-@click.option('--n-rep', '-n',
+@click.option('--n-repetitions', '-r',
               metavar='<int>', default=5, type=int,
-              help='Number of repetition used to estimate the runtime.')
+              help='Number of repetition that are averaged to estimate the '
+              'runtime.')
 @click.option('--solver', '-s', 'solver_names',
               metavar="<solver_name>", multiple=True, type=str,
               help="Include <solver_name> in the benchmark. By default, all "
@@ -54,14 +55,15 @@ def main(prog_name='benchopt'):
               help="Run the benchmark on <dataset_name>. By default, all "
               "datasets are included. When `-d` is used, only listed datasets"
               " are included. Note that <dataset_name> can be a regexp.")
-@click.option('--max-samples',
+@click.option('--max-runs', '-n',
               metavar="<int>", default=100, show_default=True, type=int,
-              help='Maximal number of iteration for each solver')
+              help='Maximal number of run for each solver. This corresponds '
+              'to the number of points in the time/accuracy curve.')
 @click.option('--timeout',
               metavar="<int>", default=100, show_default=True, type=int,
               help='Timeout a solver when run for more than <timeout> seconds')
 def run(benchmark, solver_names, forced_solvers, dataset_names,
-        max_samples, timeout, recreate, local, n_rep):
+        max_runs, n_repetitions, timeout, recreate, local):
     """Run a benchmark in a separate venv where the solvers will be installed
     """
 
@@ -71,7 +73,8 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
 
     if local:
         run_benchmark(benchmark, solver_names, forced_solvers, dataset_names,
-                      max_samples=max_samples, timeout=timeout, n_rep=n_rep)
+                      max_runs=max_runs, n_repetitions=n_repetitions,
+                      timeout=timeout)
         return
 
     benchmark_name = Path(benchmark).name
@@ -95,8 +98,8 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
     forced_solvers_option = ' '.join(['-f ' + s for s in forced_solvers])
     datasets_option = ' '.join(['-d ' + d for d in dataset_names])
     cmd = (
-        f"benchopt run {benchmark} --local --n-rep {n_rep} "
-        f"--max-samples {max_samples} --timeout {timeout} "
+        f"benchopt run {benchmark} --local --n-repetitions {n_repetitions} "
+        f"--max-runs {max_runs} --timeout {timeout} "
         f"{solvers_option} {forced_solvers_option} {datasets_option} "
         f""
     )

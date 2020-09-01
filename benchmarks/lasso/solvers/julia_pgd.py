@@ -14,7 +14,7 @@ class Solver(BaseSolver):
 
     # Config of the solver
     name = 'JuliaPGD'
-    sampling_strategy = 'iteration'
+    stop_strategy = 'iteration'
     support_sparse = False
 
     # Requirements

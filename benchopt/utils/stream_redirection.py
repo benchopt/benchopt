@@ -7,7 +7,7 @@ import tempfile
 
 
 class SuppressStd(object):
-    """Capture stderr and stdout at C-level.
+    """Context to capture stderr and stdout at C-level.
     """
 
     def __init__(self):

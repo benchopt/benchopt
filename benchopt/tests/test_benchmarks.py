@@ -5,7 +5,7 @@ import numpy as np
 from pathlib import Path
 
 
-from benchopt.base import SAMPLING_STRATEGIES
+from benchopt.base import STOP_STRATEGIES
 
 from benchopt.util import list_benchmark_solvers
 from benchopt.util import list_benchmark_datasets
@@ -130,8 +130,8 @@ def test_solver_class(benchmark_name, solver_class):
         "The solver's name should be a string"
     )
 
-    # Check that the solver_class uses a valid sampling_strategy
-    assert solver_class.sampling_strategy in SAMPLING_STRATEGIES
+    # Check that the solver_class uses a valid stop_strategy
+    assert solver_class.stop_strategy in STOP_STRATEGIES
 
 
 @pytest.mark.parametrize('benchmark_name, solver_class', BENCH_AND_SOLVERS,
@@ -192,8 +192,8 @@ def test_solver(benchmark_name, solver_class):
 
     solver = solver_class()
     solver.set_objective(**objective.to_dict())
-    sample = 1000 if solver_class.sampling_strategy == 'iteration' else 1e-15
-    solver.run(sample)
+    stop_val = 1000 if solver_class.stop_strategy == 'iteration' else 1e-15
+    solver.run(stop_val)
     beta_hat_i = solver.get_result()
 
     assert beta_hat_i.shape == (scale, )
