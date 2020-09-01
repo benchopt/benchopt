@@ -2,14 +2,13 @@ import tempfile
 from collections import namedtuple
 from abc import ABC, abstractmethod
 
-from .util import get_file_hash
-from .util import _reconstruct_class
-from .util import get_module_from_file
-from .util import _load_class_from_module
 from .utils.class_property import classproperty
+from .utils.dynamic_modules import get_file_hash
 from .utils.shell_cmd import install_in_conda_env
 from .utils.shell_cmd import _run_shell_in_conda_env
+from .utils.dynamic_modules import _reconstruct_class
 from .utils.shell_cmd import shell_install_in_conda_env
+from .utils.dynamic_modules import _load_class_from_module
 
 from .config import RAISE_INSTALL_ERROR
 
@@ -96,11 +95,10 @@ class DependenciesMixin:
             returns True if no import failure has been detected.
         """
         if env_name is None:
-            module = get_module_from_file(cls._module_filename)
-            if (hasattr(module, 'import_ctx')
-                    and module.import_ctx.failed_import):
+            if (cls._import_ctx is not None
+                    and cls._import_ctx.failed_import):
                 if raise_on_not_installed:
-                    exc_type, value, tb = module.import_ctx.import_error
+                    exc_type, value, tb = cls._import_ctx.import_error
                     raise exc_type(value).with_traceback(tb)
                 return False
             else:
@@ -253,7 +251,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
                      pickled_module_hash=None):
 
         Solver = _reconstruct_class(
-            module_filename, pickled_module_hash, 'Solver'
+            module_filename, 'Solver', pickled_module_hash
         )
         obj = Solver(**parameters)
         obj.save_parameters(**parameters)
@@ -314,7 +312,7 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin):
     @staticmethod
     def _reconstruct(module_filename, pickled_module_hash, parameters):
         Dataset = _reconstruct_class(
-            module_filename, pickled_module_hash, 'Dataset'
+            module_filename, 'Dataset', pickled_module_hash
         )
         obj = Dataset(**parameters)
         return obj
@@ -380,7 +378,7 @@ class BaseObjective(ParametrizedNameMixin):
     def _reconstruct(module_filename, pickled_module_hash, parameters,
                      dataset):
         Objective = _reconstruct_class(
-            module_filename, pickled_module_hash, 'Objective'
+            module_filename, 'Objective', pickled_module_hash
         )
         obj = Objective(**parameters)
         obj.set_dataset(dataset)

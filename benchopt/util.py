@@ -1,13 +1,11 @@
 import re
-import sys
-import hashlib
 import warnings
-import importlib
 import itertools
 from pathlib import Path
 
 from .config import RAISE_INSTALL_ERROR
 from .utils.shell_cmd import _run_shell_in_conda_env
+from .utils.dynamic_modules import _load_class_from_module
 
 
 # Shell cmd to test if a cmd exists
@@ -47,46 +45,6 @@ def import_shell_cmd(cmd_name, env_name=None):
     return run_shell_cmd
 
 
-def get_module_from_file(module_filename):
-    """Load a module from the name of the file"""
-    module_filename = Path(module_filename)
-    package_name = '.'.join(module_filename.with_suffix('').parts[-3:])
-    spec = importlib.util.spec_from_file_location(
-        package_name, module_filename
-    )
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    sys.modules[package_name] = module
-    return module
-
-
-def _reconstruct_class(module_filename, class_name, pickled_module_hash=None):
-    """Retrieve a class in module defined by its filename.
-
-    Parameters
-    ----------
-    module_filename : str or Path
-        path to the module from which the class should be retrieved.
-    class_name : str
-        Name of the class to retrieve.
-    pickled_module_has : str or None
-        MD5 hash of the module file, to ensure the module did not changed.
-
-    Returns
-    -------
-    class: type
-        The class that was requested.
-    """
-    if pickled_module_hash is not None:
-        module_hash = get_file_hash(module_filename)
-        assert pickled_module_hash == module_hash, (
-            f'{class_name} class changed between pickle and unpickle. This '
-            'object should not be stored using pickle for long term storage.'
-        )
-
-    return getattr(get_module_from_file(module_filename), class_name)
-
-
 def get_benchmark_objective(benchmark_dir):
     """Load the objective function defined in the given benchmark.
 
@@ -105,33 +63,6 @@ def get_benchmark_objective(benchmark_dir):
         raise RuntimeError("Did not find an `objective` module in benchmark.")
 
     return _load_class_from_module(module_filename, "Objective")
-
-
-def _load_class_from_module(module_filename, class_name):
-    """Load a class from a module_filename.
-
-    This helper also stores info necessary for DependenciesMixing to check the
-    the correct installation and to reload the classes.
-
-    Parameters
-    ----------
-    module_filename : str or Path
-        Path to the file defining the module to load the class from.
-    class_name : str
-        Name of the class to load
-
-    Returns
-    -------
-    klass : class
-        The klass requested from the given module.
-    """
-    module_filename = Path(module_filename)
-    module = get_module_from_file(module_filename)
-    klass = getattr(module, class_name)
-
-    # Store the info to easily reload the class
-    klass._module_filename = module_filename.resolve()
-    return klass
 
 
 def _list_benchmark_classes(benchmark_dir, class_name):
@@ -324,10 +255,3 @@ def product_param(parameters):
     parameter_names = parameters.keys()
     return map(expand, itertools.repeat(parameter_names),
                itertools.product(*parameters.values()))
-
-
-def get_file_hash(filename):
-    hasher = hashlib.md5()
-    with open(filename, 'rb') as f:
-        hasher.update(f.read())
-    return hasher.hexdigest()

@@ -161,8 +161,6 @@ def test_solver_install(test_env_name, benchmark_name, solver_class):
 @pytest.mark.parametrize('benchmark_name, solver_class', BENCH_AND_SOLVERS,
                          ids=class_ids)
 def test_solver(benchmark_name, solver_class):
-    if solver_class.name == 'cd':
-        pytest.skip("get_module_from_file create segfault with numba?!")
 
     if not solver_class.is_installed():
         pytest.skip("Solver is not installed")
