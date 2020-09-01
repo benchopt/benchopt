@@ -22,7 +22,7 @@ class Solver(BaseSolver):
         self.problem = cp.Problem(cp.Minimize(
             loss + self.lmbd * cp.norm(self.beta, 1)))
 
-        # Hack cvxpy to be able to retrieve a sub optimal solution when
+        # Hack cvxpy to be able to retrieve a suboptimal solution when
         # reaching max_iter
         cp.reductions.solvers.conic_solvers.ECOS.STATUS_MAP[-1] = \
             'optimal_inaccurate'
