@@ -6,7 +6,7 @@ from benchopt.util import safe_import_context
 
 with safe_import_context() as import_ctx:
     from rpy2 import robjects
-    from rpy2.robjects import numpy2ri
+    from rpy2.robjects import numpy2ri, packages
 
 
 class Solver(BaseSolver):
@@ -15,13 +15,14 @@ class Solver(BaseSolver):
     install_cmd = 'conda'
     requirements = ['r-base', 'rpy2', 'r-glmnet']
     stop_strategy = 'iteration'
+    support_sparse = False
 
     def set_objective(self, X, y, lmbd):
         self.X, self.y, self.lmbd = X, y, lmbd
         self.lmbd_max = np.max(np.abs(X.T @ y))
 
         numpy2ri.activate()
-        robjects.packages.importr('glmnet')
+        packages.importr('glmnet')
         self.glmnet = robjects.r['glmnet']
 
     def run(self, tol):
