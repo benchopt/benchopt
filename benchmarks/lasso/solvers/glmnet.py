@@ -19,9 +19,9 @@ class Solver(BaseSolver):
     def set_objective(self, X, y, lmbd):
         self.X, self.y, self.lmbd = X, y, lmbd
         self.lmbd_max = np.max(np.abs(X.T @ y))
+
         numpy2ri.activate()
-        import rpy2.robjects.packages as rpackages
-        rpackages.importr('glmnet')
+        robjects.packages.importr('glmnet')
         self.glmnet = robjects.r['glmnet']
 
     def run(self, tol):
