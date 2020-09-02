@@ -14,7 +14,7 @@ class Solver(BaseSolver):
 
     install_cmd = 'conda'
     requirements = ['r-base', 'rpy2', 'r-glmnet']
-    stop_strategy = 'tolerance'
+    stop_strategy = 'iteration'
 
     def set_objective(self, X, y, lmbd):
         self.X, self.y, self.lmbd = X, y, lmbd
@@ -27,7 +27,8 @@ class Solver(BaseSolver):
     def run(self, tol):
         fit_dict = {"lambda.min.ratio": self.lmbd / self.lmbd_max}
         glmnet_fit = self.glmnet(self.X, self.y, intercept=False,
-                                 standardize=False, thresh=tol,
+                                 standardize=False, maxit=tol,
+                                 thresh=1e-14,
                                  **fit_dict)
         results = dict(zip(glmnet_fit.names, list(glmnet_fit)))
         as_matrix = robjects.r['as']
