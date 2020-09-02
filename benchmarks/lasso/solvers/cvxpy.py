@@ -4,10 +4,6 @@ from benchopt.util import safe_import_context
 
 with safe_import_context() as import_ctx:
     import cvxpy as cp
-    # Hack cvxpy to be able to retrieve a sub optimal solution when
-    # reaching max_iter
-    cp.reductions.solvers.conic_solvers.ECOS.STATUS_MAP[-1] = \
-        'optimal_inaccurate'
 
 
 class Solver(BaseSolver):
@@ -26,13 +22,12 @@ class Solver(BaseSolver):
         self.problem = cp.Problem(cp.Minimize(
             loss + self.lmbd * cp.norm(self.beta, 1)))
 
+        # Hack cvxpy to be able to retrieve a suboptimal solution when
+        # reaching max_iter
+        cp.reductions.solvers.conic_solvers.ECOS.STATUS_MAP[-1] = \
+            'optimal_inaccurate'
+
         cp.settings.ERROR = ['solver_error']
-        # log_likelihood = cp.sum(
-        #     cp.multiply(y, X @ self.beta) - cp.logistic(X @ self.beta)
-        # )
-        # self.problem = cp.Problem(cp.Maximize(
-        #     log_likelihood / n_features - self.lmbd * cp.norm(self.beta, 1)))
-        # self.problem.solve(verbose=True)
 
     def run(self, n_iter):
         self.problem.solve(max_iters=n_iter, verbose=False)

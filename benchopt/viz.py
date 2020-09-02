@@ -1,12 +1,28 @@
-import os
 import ctypes
+from pathlib import Path
+
 import numpy as np
 import matplotlib.pyplot as plt
+
 from .config import get_benchmark_setting
 
 
 def plot_benchmark(df, benchmark):
+    """Plot convergence curve and histogram for a given benchmark.
 
+    Parameters
+    ----------
+    df : instance of pandas.DataFrame
+        The benchmark results.
+    benchmark : str
+        The path to the benchmark folder.
+
+    Returns
+    -------
+    figs : list
+        The matplotlib figures for convergence curve and histogram
+        for each dataset.
+    """
     plots = get_benchmark_setting(benchmark, 'plots')
 
     datasets = df.data.unique()
@@ -24,12 +40,27 @@ def plot_benchmark(df, benchmark):
     return figs
 
 
-def _make_output_folder():
-    if not os.path.exists('output_benchmarks'):
-        os.mkdir('output_benchmarks')
+def _make_output_folder(benchmark):
+    output_dir = Path(benchmark) / "outputs"
+    output_dir.mkdir(exist_ok=True)
+    return output_dir
 
 
 def plot_convergence_curve(df, benchmark):
+    """Plot convergence curve for a given benchmark and dataset.
+
+    Parameters
+    ----------
+    df : instance of pandas.DataFrame
+        The benchmark results.
+    benchmark : str
+        The path to the benchmark folder.
+
+    Returns
+    -------
+    fig : instance of matplotlib.figure.Figure
+        The matplotlib figure.
+    """
     dataset_name = df.data.unique()[0]
     objective_name = df.objective.unique()[0]
     plot_id = hash((benchmark, dataset_name, objective_name))
@@ -42,9 +73,9 @@ def plot_convergence_curve(df, benchmark):
     c_star = df.obj.min() - eps
     for i, m in enumerate(solvers):
         df_ = df[df.solver == m]
-        curve = df_.groupby('sample').median()
-        q1 = df_.groupby('sample').time.quantile(.1)
-        q9 = df_.groupby('sample').time.quantile(.9)
+        curve = df_.groupby('stop_val').median()
+        q1 = df_.groupby('stop_val').time.quantile(.1)
+        q9 = df_.groupby('stop_val').time.quantile(.9)
         plt.loglog(curve.time, curve.obj - c_star, f"C{i}", label=m,
                    linewidth=3)
         plt.fill_betweenx(curve.obj - c_star, q1, q9, color=f"C{i}", alpha=.3)
@@ -56,12 +87,26 @@ def plot_convergence_curve(df, benchmark):
     plt.ylabel(r"F(x) - F(x*)", fontsize=14)
     plt.title(f"{objective_name}\nData: {dataset_name}", fontsize=14)
     plt.tight_layout()
-    _make_output_folder()
-    plt.savefig(f"output_benchmarks/convergence_{plot_id}.pdf")
+    output_dir = _make_output_folder(benchmark)
+    plt.savefig(output_dir / f"convergence_{plot_id}.pdf")
     return fig
 
 
 def plot_histogram(df, benchmark):
+    """Plot histogram for a given benchmark and dataset.
+
+    Parameters
+    ----------
+    df : instance of pandas.DataFrame
+        The benchmark results.
+    benchmark : str
+        The path to the benchmark folder.
+
+    Returns
+    -------
+    fig : instance of matplotlib.figure.Figure
+        The matplotlib figure.
+    """
     dataset_name = df.data.unique()[0]
     objective_name = df.objective.unique()[0]
     plot_id = hash((benchmark, dataset_name, objective_name))
@@ -73,7 +118,7 @@ def plot_histogram(df, benchmark):
 
     eps = 1e-6
     width = 1 / (n_solvers + 2)
-    colors = color_palette(n_solvers)
+    colors = _color_palette(n_solvers)
 
     rect_list = []
     ticks_list = []
@@ -85,8 +130,8 @@ def plot_histogram(df, benchmark):
         ticks_list.append((xi, solver_name))
         df_ = df[df.solver == solver_name]
 
-        # Find the first sample which reach a given tolerance
-        df_tol = df_.groupby('sample').filter(
+        # Find the first stop_val which reach a given tolerance
+        df_tol = df_.groupby('stop_val').filter(
             lambda x: x.obj.max() < c_star)
         if df_tol.empty:
             print(f"Solver {solver_name} did not reach precision {eps}.")
@@ -97,8 +142,8 @@ def plot_histogram(df, benchmark):
                         va='center', color='k', rotation=90)
             rect_list.append(rect)
             continue
-        sample = df_tol['sample'].min()
-        this_df = df_[df_['sample'] == sample]
+        stop_val = df_tol['stop_val'].min()
+        this_df = df_[df_['stop_val'] == stop_val]
         rect_list.append(ax.bar(
             x=xi, height=this_df.time.mean(), width=width, color=colors[i]))
 
@@ -112,20 +157,12 @@ def plot_histogram(df, benchmark):
     plt.ylabel("Time [sec]")
     plt.title(f"{objective_name}\nData: {dataset_name}", fontsize=12)
     plt.tight_layout()
-    _make_output_folder()
-    plt.savefig(f"output_benchmarks/histogram_{plot_id}.pdf")
+    output_dir = _make_output_folder(benchmark)
+    plt.savefig(output_dir / f"histogram_{plot_id}.pdf")
     return fig
 
-# def make_time_curve(df):
-#     t_min = df.time.min()
-#     t_max = df.time.max()
-#     time = np.logspace(np.log10(t_min), np.log10(t_max), 20)
-#     extended_time = np.r_[0, time, 2*t_max]
-#     bins = np.c_[(extended_time[:-2] + time) / 2,
-#                  (extended_time[2:] + time) / 2]
 
-
-def color_palette(n_colors=4, cmap='viridis', extrema=False):
+def _color_palette(n_colors=4, cmap='viridis', extrema=False):
     """Create a color palette from a matplotlib color map"""
     if extrema:
         bins = np.linspace(0, 1, n_colors)

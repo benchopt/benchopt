@@ -1,6 +1,5 @@
 # Cache directories
 joblib
-.venv
 .pytest_cache
 __pycache__
 *.egg-info
@@ -9,7 +8,7 @@ __pycache__
 /doc/auto_examples
 /doc/generated
 .coverage
-output_benchmarks
+**/outputs
 benchopt_front_page_convergence.pdf
 
 # IDE specific folders

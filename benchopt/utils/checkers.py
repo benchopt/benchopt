@@ -2,25 +2,8 @@ import click
 
 from benchopt.util import is_matched
 from benchopt.util import product_param
-from benchopt.util import get_all_benchmarks
 from benchopt.util import list_benchmark_solvers
 from benchopt.util import list_benchmark_datasets
-
-
-def validate_benchmark(ctx, param, value):
-    all_benchmarks = get_all_benchmarks()
-    if not all_benchmarks:
-        raise click.BadArgumentUsage(
-            "benchopt should be run in a folder where there is benchmarks "
-            "directory with at least one benchmark."
-        )
-    if value not in all_benchmarks:
-        all_benchmarks = '- ' + '\n- '.join(all_benchmarks)
-        raise click.BadParameter(
-            f"{value} is not a valid benchmark.\n"
-            f"Should be one of:\n{all_benchmarks}"
-        )
-    return value
 
 
 def _validate_patterns(all_names, patterns, name_type='dataset'):

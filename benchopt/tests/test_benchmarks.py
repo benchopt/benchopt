@@ -1,14 +1,29 @@
 import sys
 import pytest
+
 import numpy as np
+from pathlib import Path
 
 
-from benchopt.base import SAMPLING_STRATEGIES
+from benchopt.base import STOP_STRATEGIES
 
-from benchopt.util import get_all_benchmarks
 from benchopt.util import list_benchmark_solvers
 from benchopt.util import list_benchmark_datasets
 from benchopt.util import get_benchmark_objective
+
+
+def get_all_benchmarks():
+    """List all the available benchmarks.
+
+    Returns
+    -------
+    benchmarks : list of str
+        The list of all available benchmarks.
+    """
+    BENCHMARKS_DIR = Path(__file__).parents[1] / '..' / 'benchmarks'
+    all_benchmarks = [b.resolve() for b in BENCHMARKS_DIR.glob('*/')]
+    all_benchmarks.sort()
+    return all_benchmarks
 
 
 BENCHMARKS = get_all_benchmarks()
@@ -82,6 +97,10 @@ def test_dataset_get_data(benchmark_name, dataset_class):
         pytest.skip("Dataset is not installed")
 
     dataset = dataset_class()
+
+    if dataset_class.name.lower() == 'finance':
+        pytest.skip("Do not download finance.")
+
     data = dataset.get_data()
     assert isinstance(data, tuple), (
         "Output of get_data should be a 2-tuple"
@@ -111,8 +130,8 @@ def test_solver_class(benchmark_name, solver_class):
         "The solver's name should be a string"
     )
 
-    # Check that the solver_class uses a valid sampling_strategy
-    assert solver_class.sampling_strategy in SAMPLING_STRATEGIES
+    # Check that the solver_class uses a valid stop_strategy
+    assert solver_class.stop_strategy in STOP_STRATEGIES
 
 
 @pytest.mark.parametrize('benchmark_name, solver_class', BENCH_AND_SOLVERS,
@@ -168,8 +187,8 @@ def test_solver(benchmark_name, solver_class):
 
     solver = solver_class()
     solver.set_objective(**objective.to_dict())
-    sample = 1000 if solver_class.sampling_strategy == 'iteration' else 1e-15
-    solver.run(sample)
+    stop_val = 1000 if solver_class.stop_strategy == 'iteration' else 1e-15
+    solver.run(stop_val)
     beta_hat_i = solver.get_result()
 
     assert beta_hat_i.shape == (scale, )

@@ -1,4 +1,4 @@
-import pathlib
+from pathlib import Path
 from benchopt.base import BaseSolver
 from benchopt.util import safe_import_context
 
@@ -7,14 +7,14 @@ with safe_import_context() as import_ctx:
 
 
 # File containing the function to be called from julia
-JULIA_SOLVER_FILE = str(pathlib.Path(__file__).with_suffix('.jl'))
+JULIA_SOLVER_FILE = str(Path(__file__).with_suffix('.jl'))
 
 
 class Solver(BaseSolver):
 
     # Config of the solver
     name = 'JuliaPGD'
-    sampling_strategy = 'iteration'
+    stop_strategy = 'iteration'
     support_sparse = False
 
     # Requirements

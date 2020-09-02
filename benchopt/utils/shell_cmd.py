@@ -78,9 +78,13 @@ def _run_shell(script, raise_on_error=None, capture_stdout=True):
             raise RuntimeError(raise_on_error.format(output=output))
         elif callable(raise_on_error):
             raise_on_error(output)
+        elif raise_on_error is False:
+            pass
         else:
-            raise ValueError("Bad value for `raise_on_error`. Should be a str"
-                             f", a callable or None. Got {raise_on_error}.")
+            raise ValueError(
+                "Bad value for `raise_on_error`. Should be a str, a callable, "
+                f"a bool or None. Got {raise_on_error}."
+            )
     return exit_code
 
 

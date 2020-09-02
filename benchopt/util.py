@@ -1,11 +1,11 @@
 import re
-import pkgutil
 import warnings
 import itertools
-from importlib import import_module
+from pathlib import Path
 
 from .config import RAISE_INSTALL_ERROR
 from .utils.shell_cmd import _run_shell_in_conda_env
+from .utils.dynamic_modules import _load_class_from_module
 
 
 # Shell cmd to test if a cmd exists
@@ -45,67 +45,70 @@ def import_shell_cmd(cmd_name, env_name=None):
     return run_shell_cmd
 
 
-def get_all_benchmarks():
-    """List all the available benchmarks."""
-    submodules = pkgutil.iter_modules(['benchmarks'])
-    return [m.name for m in submodules]
+def get_benchmark_objective(benchmark_dir):
+    """Load the objective function defined in the given benchmark.
+
+    Parameters
+    ----------
+    benchmark_dir : str or Path
+        The path to the folder containing the benchmark.
+
+    Returns
+    -------
+    obj : class
+        The class defining the objective function for the benchmark.
+    """
+    module_filename = Path(benchmark_dir) / 'objective.py'
+    if not module_filename.exists():
+        raise RuntimeError("Did not find an `objective` module in benchmark.")
+
+    return _load_class_from_module(module_filename, "Objective")
 
 
-def check_benchmarks(benchmarks, all_benchmarks):
-    unknown_benchmarks = set(benchmarks) - set(all_benchmarks)
-    assert len(unknown_benchmarks) == 0, (
-        "{} is not a valid benchmark. Should be one of: {}"
-        .format(unknown_benchmarks, all_benchmarks)
-    )
+def _list_benchmark_classes(benchmark_dir, class_name):
+    """Load all classes with the same name from a benchmark's subpackage.
 
+    Parameters
+    ----------
+    benchmark_dir : str or Path
+        The path to the folder containing the benchmark.
+    class_name : str
+        Base name of the classes to load.
 
-def get_benchmark_module_name(benchmark):
-    return f"benchmarks.{benchmark}"
-
-
-def get_benchmark_objective(benchmark):
-    """Load the objective function defined in the given benchmark."""
-    benchmark_module_name = get_benchmark_module_name(benchmark)
-    objective_module_name = f"{benchmark_module_name}.objective"
-    module = import_module(objective_module_name)
-    return module.Objective
-
-
-def list_benchmark_submodule_names(benchmark, submodule='solvers'):
-    submodules = pkgutil.iter_modules([f'benchmarks/{benchmark}/{submodule}'])
-    return [m.name for m in submodules]
-
-
-def _list_benchmark_submodule_classes(benchmark, package_name, class_name):
+    Returns
+    -------
+    classes : List of class
+        A list with all the classes with base_class_name `class_name` in the
+        given subpkg of the benchmark.
+    """
 
     classes = []
-    # List all available module in benchmark.package_name
-    submodule_names = list_benchmark_submodule_names(benchmark, package_name)
-    module_name = get_benchmark_module_name(benchmark)
-    for submodule_name in submodule_names:
-        class_module_name = f"{module_name}.{package_name}.{submodule_name}"
-        module = import_module(class_module_name)
-
+    # List all available module in benchmark.subpkg
+    package = Path(benchmark_dir) / f'{class_name.lower()}s'
+    submodule_files = package.glob('*.py')
+    for module_filename in submodule_files:
         # Get the class
-        classes.append(getattr(module, class_name))
+        classes.append(_load_class_from_module(module_filename, class_name))
 
+    classes.sort(key=lambda c: c.name.lower())
     return classes
 
 
-def list_benchmark_solvers(benchmark):
-    """List all available solver classes for a given benchmark"""
-    return _list_benchmark_submodule_classes(benchmark, 'solvers', 'Solver')
+def list_benchmark_solvers(benchmark_dir):
+    """List all available solver classes for a given benchmark_dir"""
+    return _list_benchmark_classes(benchmark_dir, 'Solver')
 
 
-def list_benchmark_datasets(benchmark):
-    """List all available dataset classes for a given benchmark"""
-    return _list_benchmark_submodule_classes(benchmark, 'datasets', 'Dataset')
+def list_benchmark_datasets(benchmark_dir):
+    """List all available dataset classes for a given benchmark_dir"""
+    return _list_benchmark_classes(benchmark_dir, 'Dataset')
 
 
-def check_name_list(name_list):
+def _check_name_list(name_list):
+    """Normalize name_list ot a list of lowercase str."""
     if name_list is None:
         return []
-    return [name.lower() for name in name_list]
+    return [str(name).lower() for name in name_list]
 
 
 def filter_classes_on_name(classes, include=None, forced=None, exclude=None):
@@ -129,8 +132,8 @@ def filter_classes_on_name(classes, include=None, forced=None, exclude=None):
     """
 
     # Currate the list of names
-    exclude = check_name_list(exclude)
-    include_patterns = check_name_list(include) + check_name_list(forced)
+    exclude = _check_name_list(exclude)
+    include_patterns = _check_name_list(include) + _check_name_list(forced)
 
     if len(exclude) > 0:
         # If a solver is explicitly included in solver_include, this takes
@@ -187,7 +190,7 @@ def install_required_datasets(benchmark, dataset_names, env_name=None):
 
 
 class safe_import_context:
-    """Do not fail on ImportError and Catch the warnings"""
+    """Do not fail on ImportError and catch import warnings"""
 
     def __init__(self):
         self.failed_import = False
