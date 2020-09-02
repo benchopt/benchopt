@@ -25,10 +25,10 @@ class Solver(BaseSolver):
         packages.importr('glmnet')
         self.glmnet = robjects.r['glmnet']
 
-    def run(self, tol):
+    def run(self, n_iter):
         fit_dict = {"lambda.min.ratio": self.lmbd / self.lmbd_max}
         glmnet_fit = self.glmnet(self.X, self.y, intercept=False,
-                                 standardize=False, maxit=tol,
+                                 standardize=False, maxit=n_iter,
                                  thresh=1e-14,
                                  **fit_dict)
         results = dict(zip(glmnet_fit.names, list(glmnet_fit)))
