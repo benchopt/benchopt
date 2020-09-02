@@ -23,14 +23,14 @@ The `benchopt` command line tool is based on `click`. To run Lasso benchmarks on
 
 .. code-block::
 
-	$ benchopt run lasso
+	$ benchopt run benchmarks/lasso
 
 
 Apart from the problem (e.g. Lasso or Logreg), options can be passed to `benchopt run`, to restrict the benchmarks to some solvers or datasets, e.g.:
 
 .. code-block::
 
-	$ benchopt run lasso -s sklearn -s baseline -d boston --max-samples 10 --repetition 10
+	$ benchopt run benchmarks/lasso -s sklearn -s baseline -d boston --max-runs 10 --n-repetitions 10
 
 
 Use `benchopt run -h` for more details about these options, or visit https://benchopt.github.io/api.html.

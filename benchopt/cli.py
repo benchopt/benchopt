@@ -1,13 +1,14 @@
 import click
+from pathlib import Path
 
 from benchopt import run_benchmark
 
 
 from benchopt.util import filter_classes_on_name
+from benchopt.util import _load_class_from_module
+from benchopt.util import install_required_datasets
 from benchopt.util import list_benchmark_solvers, install_solvers
-from benchopt.util import list_benchmark_datasets, install_required_datasets
 
-from benchopt.utils.checkers import validate_benchmark
 from benchopt.utils.checkers import validate_solver_patterns
 from benchopt.utils.checkers import validate_dataset_patterns
 from benchopt.utils.shell_cmd import _run_shell_in_conda_env, create_conda_env
@@ -28,17 +29,18 @@ def main(prog_name='benchopt'):
 @main.command(
     help="Run a benchmark with benchopt."
 )
-@click.argument('benchmark', nargs=1, callback=validate_benchmark)
+@click.argument('benchmark', type=click.Path(exists=True))
 @click.option('--local', '-l',
               is_flag=True,
               help="If this flag is set, run the benchmark with the local "
               "interpreter.")
-@click.option('--recreate', '-r',
+@click.option('--recreate',
               is_flag=True,
               help="If this flag is set, start with a fresh conda env.")
-@click.option('--n-rep', '-n',
+@click.option('--n-repetitions', '-r',
               metavar='<int>', default=5, type=int,
-              help='Number of repetition used to estimate the runtime.')
+              help='Number of repetition that are averaged to estimate the '
+              'runtime.')
 @click.option('--solver', '-s', 'solver_names',
               metavar="<solver_name>", multiple=True, type=str,
               help="Include <solver_name> in the benchmark. By default, all "
@@ -53,27 +55,30 @@ def main(prog_name='benchopt'):
               help="Run the benchmark on <dataset_name>. By default, all "
               "datasets are included. When `-d` is used, only listed datasets"
               " are included. Note that <dataset_name> can be a regexp.")
-@click.option('--max-samples',
+@click.option('--max-runs', '-n',
               metavar="<int>", default=100, show_default=True, type=int,
-              help='Maximal number of iteration for each solver')
+              help='Maximal number of run for each solver. This corresponds '
+              'to the number of points in the time/accuracy curve.')
 @click.option('--timeout',
               metavar="<int>", default=100, show_default=True, type=int,
               help='Timeout a solver when run for more than <timeout> seconds')
 def run(benchmark, solver_names, forced_solvers, dataset_names,
-        max_samples, timeout, recreate, local, n_rep):
+        max_runs, n_repetitions, timeout, recreate, local):
     """Run a benchmark in a separate venv where the solvers will be installed
     """
 
-    # Check that the dataset patterns match actual dataset
+    # Check that the dataset/solver patterns match actual dataset
     validate_dataset_patterns(benchmark, dataset_names)
     validate_solver_patterns(benchmark, solver_names+forced_solvers)
 
     if local:
         run_benchmark(benchmark, solver_names, forced_solvers, dataset_names,
-                      max_samples=max_samples, timeout=timeout, n_rep=n_rep)
+                      max_runs=max_runs, n_repetitions=n_repetitions,
+                      timeout=timeout)
         return
 
-    env_name = f"benchopt_{benchmark}"
+    benchmark_name = Path(benchmark).name
+    env_name = f"benchopt_{benchmark_name}"
     create_conda_env(env_name, recreate=recreate)
 
     # installed required datasets
@@ -93,8 +98,8 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
     forced_solvers_option = ' '.join(['-f ' + s for s in forced_solvers])
     datasets_option = ' '.join(['-d ' + d for d in dataset_names])
     cmd = (
-        f"benchopt run {benchmark} --local --n-rep {n_rep} "
-        f"--max-samples {max_samples} --timeout {timeout} "
+        f"benchopt run {benchmark} --local --n-repetitions {n_repetitions} "
+        f"--max-runs {max_runs} --timeout {timeout} "
         f"{solvers_option} {forced_solvers_option} {datasets_option} "
         f""
     )
@@ -104,28 +109,18 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
 
 
 @main.command(
-    help="Check that solvers from benchmark are correctly installed."
+    help="Check that a given solver or dataset is correctly installed.\n\n"
+    "The class to be checked is specified with the absolute path of the file "
+    "in which it is defined MODULE_FILENAME and the name of the base "
+    "class BASE_CLASS_NAME."
 )
-@click.argument('benchmark', nargs=1, callback=validate_benchmark)
-@click.argument('class_names', nargs=-1, type=str)
-def check_install(benchmark, class_names):
+@click.argument('module_filename', nargs=1, type=Path)
+@click.argument('base_class_name', nargs=1, type=str)
+def check_install(module_filename, base_class_name):
 
-    # Get installable solvers
-    solver_classes = list_benchmark_solvers(benchmark)
-    to_check_classes = filter_classes_on_name(
-        solver_classes, include=class_names
-    )
-
-    # Get installable datasets
-    dataset_classes = list_benchmark_datasets(benchmark)
-    to_check_classes.extend(filter_classes_on_name(
-        dataset_classes, include=class_names
-    ))
-
-    # make sure all the requested class_names exists
-    assert len(class_names) == len(to_check_classes), solver_classes
-    for klass in to_check_classes:
-        klass.is_installed(raise_on_not_installed=True)
+    # Get class to check
+    klass = _load_class_from_module(module_filename, base_class_name)
+    klass.is_installed(raise_on_not_installed=True)
 
 
 if __name__ == '__main__':

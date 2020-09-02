@@ -2,18 +2,22 @@ import tempfile
 from collections import namedtuple
 from abc import ABC, abstractmethod
 
-from .config import RAISE_INSTALL_ERROR
 from .utils.class_property import classproperty
+from .utils.dynamic_modules import get_file_hash
 from .utils.shell_cmd import install_in_conda_env
 from .utils.shell_cmd import _run_shell_in_conda_env
+from .utils.dynamic_modules import _reconstruct_class
 from .utils.shell_cmd import shell_install_in_conda_env
+from .utils.dynamic_modules import _load_class_from_module
+
+from .config import RAISE_INSTALL_ERROR
 
 
-# Possible sampling strategies
-SAMPLING_STRATEGIES = ['iteration', 'tolerance']
+# Possible stop strategies
+STOP_STRATEGIES = ['iteration', 'tolerance']
 
 # Named-tuple for the cost function
-Cost = namedtuple('Cost', 'data scale objective solver sample time obj '
+Cost = namedtuple('Cost', 'data scale objective solver stop_val time obj '
                           'idx_rep'.split(' '))
 
 
@@ -23,6 +27,9 @@ class ParametrizedNameMixin():
     parameters = {}
 
     def __init__(self, **parameters):
+        self.save_parameters(**parameters)
+
+    def save_parameters(self, **parameters):
         self.parameters = parameters
         if not hasattr(self, 'parameter_template'):
             self.parameter_template = ",".join(
@@ -88,19 +95,18 @@ class DependenciesMixin:
             returns True if no import failure has been detected.
         """
         if env_name is None:
-            import importlib
-            module = importlib.import_module(cls.__module__)
-            if (hasattr(module, 'import_ctx')
-                    and module.import_ctx.failed_import):
+            if (cls._import_ctx is not None
+                    and cls._import_ctx.failed_import):
                 if raise_on_not_installed:
-                    exc_type, value, tb = module.import_ctx.import_error
+                    exc_type, value, tb = cls._import_ctx.import_error
                     raise exc_type(value).with_traceback(tb)
                 return False
             else:
                 return True
         else:
             return _run_shell_in_conda_env(
-                f"benchopt check-install {cls.benchmark} {cls.name}",
+                f"benchopt check-install {cls._module_filename} "
+                f"{cls._base_class_name}",
                 env_name=env_name, raise_on_error=raise_on_not_installed
             ) == 0
 
@@ -146,6 +152,12 @@ class DependenciesMixin:
 
         return is_installed
 
+    @classmethod
+    def _reload_class(cls):
+        return _load_class_from_module(
+            cls._module_filename, cls._base_class_name
+        )
+
 
 class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
     """A base class for solver wrappers in BenchOpt.
@@ -169,7 +181,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
       This utility is necessary to reduce the impact of loading the result from
       the disk in the benchmark.
 
-    Note that two `sampling_strategy` can be used to construct the benchmark
+    Note that two `stop_strategy` can be used to construct the benchmark
     curve:
 
     - `iteration`: call the run method with max_iter number increasing
@@ -179,7 +191,8 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
 
     """
 
-    sampling_strategy = 'iteration'
+    _base_class_name = 'Solver'
+    stop_strategy = 'iteration'
 
     def __init__(self, **parameters):
         """Instantiate a solver with the given parameters and store them.
@@ -193,29 +206,29 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         for k, v in parameters_.items():
             setattr(self, k, v)
 
-    def _set_objective(self, **objective_parameters):
-        """Store the objective_parameters to make sure this solver is picklable
+    def _set_objective(self, objective):
+        """Store the objective to make sure this solver is picklable
         """
-        self.objective_parameters = objective_parameters
-        self.set_objective(**objective_parameters)
+        self._objective = objective
+        self.set_objective(**objective.to_dict())
 
     @abstractmethod
-    def set_objective(self, **objective_parameters):
+    def set_objective(self, **objective_dict):
         """Prepare the objective for the solver."""
         ...
 
     @abstractmethod
-    def run(self, n_iter):
-        """Call the solver for n_iter iterations.
+    def run(self, stop_val):
+        """Call the solver with the given stop_val.
 
         This function should not return the parameters which will be
         retrieved by a subsequent call to get_result.
 
         Parameters
         ----------
-        n_iter : int
-            Number of iteration to run the solver for. It allows to sample the
-            time/accuracy curve in the benchmark.
+        stop_val : int | float
+            Value for the stopping criterion of the solver for. It allows to
+            sample the time/accuracy curve in the benchmark.
         """
         ...
 
@@ -233,15 +246,22 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         ...
 
     # TODO: use this to allow parallel computation of the benchmark.
-    # @staticmethod
-    # def reconstruct(klass, parameters, objective_parameters):
-    #     obj = klass(**parameters)
-    #     obj.set_objective(**objective_parameters)
-    #     return obj
+    @staticmethod
+    def _reconstruct(module_filename, parameters, objective,
+                     pickled_module_hash=None):
 
-    # def __reduce__(self):
-    #     return self.reconstruct, (self.__class__, self.parameters,
-    #                               self.objective_parameters)
+        Solver = _reconstruct_class(
+            module_filename, 'Solver', pickled_module_hash
+        )
+        obj = Solver(**parameters)
+        obj.save_parameters(**parameters)
+        obj._set_objective(objective)
+        return obj
+
+    def __reduce__(self):
+        module_hash = get_file_hash(self._module_filename)
+        return self._reconstruct, (self._module_filename, module_hash,
+                                   self.parameters, self._objective)
 
 
 class CommandLineSolver(BaseSolver, ABC):
@@ -271,6 +291,8 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin):
       method `set_data`.
     """
 
+    _base_class_name = 'Dataset'
+
     @abstractmethod
     def get_data(self):
         """Return the scale of the problem as well as the objective parameters.
@@ -285,6 +307,20 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin):
             instanciated by calling `Objective.set_data(**data)`.
         """
         ...
+
+    # Reduce the pickling and hashing burden by only pickling class parameters.
+    @staticmethod
+    def _reconstruct(module_filename, pickled_module_hash, parameters):
+        Dataset = _reconstruct_class(
+            module_filename, 'Dataset', pickled_module_hash
+        )
+        obj = Dataset(**parameters)
+        return obj
+
+    def __reduce__(self):
+        module_hash = get_file_hash(self._module_filename)
+        return self._reconstruct, (self._module_filename, module_hash,
+                                   self.parameters)
 
 
 class BaseObjective(ParametrizedNameMixin):
@@ -305,6 +341,8 @@ class BaseObjective(ParametrizedNameMixin):
       corresponding to the `scale` value returned by `Dataset.get_data`. The
       output should be a float or a dictionary of floats.
     """
+
+    _base_class_name = 'Objective'
 
     def __init__(self, **parameters):
         """Instantiate a solver with the given parameters and store them.
@@ -337,11 +375,16 @@ class BaseObjective(ParametrizedNameMixin):
 
     # Reduce the pickling and hashing burden by only pickling class parameters.
     @staticmethod
-    def reconstruct(klass, parameters, dataset):
-        obj = klass(**parameters)
+    def _reconstruct(module_filename, pickled_module_hash, parameters,
+                     dataset):
+        Objective = _reconstruct_class(
+            module_filename, 'Objective', pickled_module_hash
+        )
+        obj = Objective(**parameters)
         obj.set_dataset(dataset)
         return obj
 
     def __reduce__(self):
-        return self.reconstruct, (self.__class__, self.parameters,
-                                  self.dataset)
+        module_hash = get_file_hash(self._module_filename)
+        return self._reconstruct, (self._module_filename, module_hash,
+                                   self.parameters, self.dataset)
