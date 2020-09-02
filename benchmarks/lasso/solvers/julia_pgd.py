@@ -3,7 +3,7 @@ from benchopt.base import BaseSolver
 from benchopt.util import safe_import_context
 
 with safe_import_context() as import_ctx:
-    from benchopt.utils.julia import get_jl_interpreter
+    from benchopt.utils.julia_helpers import get_jl_interpreter
 
 
 # File containing the function to be called from julia
