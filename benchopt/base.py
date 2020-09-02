@@ -226,7 +226,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
 
         Parameters
         ----------
-        stop_val : int
+        stop_val : int | float
             Value for the stopping criterion of the solver for. It allows to
             sample the time/accuracy curve in the benchmark.
         """

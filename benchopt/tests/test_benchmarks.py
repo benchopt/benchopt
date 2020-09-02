@@ -169,11 +169,6 @@ def test_solver(benchmark_name, solver_class):
     if not solver_class.is_installed():
         pytest.skip("Solver is not installed")
 
-    # Make sure we get the latest version of the class. As the modules are
-    # dynamically created since PR#51, dependencies that are installed in the
-    # test can be used to test the solver.
-    solver_class = solver_class._reload_class()
-
     objective_class = get_benchmark_objective(benchmark_name)
     objective = objective_class()
 
