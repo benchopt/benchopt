@@ -8,7 +8,11 @@ if os.environ.get('R_HOME', None) is not None:
 
 import rpy2  # noqa: E402
 import rpy2.robjects.packages as rpackages  # noqa: E402
-from rpy2.robjects.packages import PackageNotInstalledError  # noqa: E402
+try:
+    from rpy2.robjects.packages import PackageNotInstalledError
+except ImportError:
+    # Backward compat for rpy2 version < 3.3
+    from rpy2.rinterface import RRuntimeError as PackageNotInstalledError
 
 # Hide the R warnings
 rpy2.robjects.r['options'](warn=-1)
@@ -21,3 +25,11 @@ def import_rpackages(*packages):
             rpackages.importr(pkg)
         except PackageNotInstalledError:
             raise ImportError(f"R package '{pkg}' is not installed")
+
+
+def import_func_from_r_file(filename):
+    import rpy2.robjects as robjects
+    r_source = robjects.r['source']
+    r_source(filename)
+
+    # print(robjects.r['sessionInfo']())
