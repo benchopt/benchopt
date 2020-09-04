@@ -3,7 +3,7 @@ from benchopt.base import BaseSolver
 from benchopt.util import safe_import_context
 
 with safe_import_context() as import_ctx:
-    from benchopt.utils.julia import get_jl_interpreter
+    from benchopt.utils.julia_helpers import get_jl_interpreter
 
 
 # File containing the function to be called from julia
@@ -13,7 +13,7 @@ JULIA_SOLVER_FILE = str(Path(__file__).with_suffix('.jl'))
 class Solver(BaseSolver):
 
     # Config of the solver
-    name = 'JuliaPGD'
+    name = 'Julia-PGD'
     stop_strategy = 'iteration'
     support_sparse = False
 
