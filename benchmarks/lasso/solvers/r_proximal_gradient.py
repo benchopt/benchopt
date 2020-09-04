@@ -32,6 +32,9 @@ class Solver(BaseSolver):
 
     def run(self, n_iter):
 
+        # There is an issue in loading Lapack library with rpy2 so
+        # we cannot compute the SVD in R for now. We compute it using
+        # numpy but this should be fixed at some point. See issue #52
         step_size = 1 / np.linalg.norm(self.X, ord=2) ** 2
         coefs = self.r_ista(
             self.X, self.y[:, None], self.lmbd,
