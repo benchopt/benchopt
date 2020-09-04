@@ -18,7 +18,7 @@ with safe_import_context() as import_ctx:
 
 
 class Solver(BaseSolver):
-    name = "R-ISTA"
+    name = "R-PGD"
 
     install_cmd = 'conda'
     requirements = ['r-base', 'r-matrix', 'rpy2']
@@ -28,7 +28,7 @@ class Solver(BaseSolver):
     def set_objective(self, X, y, lmbd):
         self.X, self.y, self.lmbd = X, y, lmbd
         self.lmbd_max = np.max(np.abs(X.T @ y))
-        self.r_ista = robjects.r['ISTA']
+        self.r_pgd = robjects.r['proximal_gradient_descent']
 
     def run(self, n_iter):
 
@@ -36,7 +36,7 @@ class Solver(BaseSolver):
         # we cannot compute the SVD in R for now. We compute it using
         # numpy but this should be fixed at some point. See issue #52
         step_size = 1 / np.linalg.norm(self.X, ord=2) ** 2
-        coefs = self.r_ista(
+        coefs = self.r_pgd(
             self.X, self.y[:, None], self.lmbd,
             step_size=step_size, n_iter=n_iter
         )

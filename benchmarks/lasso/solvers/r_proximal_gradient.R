@@ -22,7 +22,7 @@ St <- function(lambda, X) {
 
 
 # Main algorithm
-ISTA <- function(X, Y, lambda, step_size, n_iter) {
+proximal_gradient_descent <- function(X, Y, lambda, step_size, n_iter) {
     # --------- Initialize parameter ---------
     p <- ncol(X)
     parameters <- numeric(p)

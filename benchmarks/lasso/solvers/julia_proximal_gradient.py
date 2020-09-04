@@ -13,7 +13,7 @@ JULIA_SOLVER_FILE = str(Path(__file__).with_suffix('.jl'))
 class Solver(BaseSolver):
 
     # Config of the solver
-    name = 'JuliaPGD'
+    name = 'Julia-PGD'
     stop_strategy = 'iteration'
     support_sparse = False
 
