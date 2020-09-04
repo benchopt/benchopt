@@ -8,12 +8,16 @@ if os.environ.get('R_HOME', None) is not None:
 
 import rpy2  # noqa: E402
 import rpy2.robjects.packages as rpackages  # noqa: E402
-print(f"RPY2 version: {rpy2.__version__}")
 try:
     from rpy2.robjects.packages import PackageNotInstalledError
 except ImportError:
     # Backward compat for rpy2 version < 3.3
-    from rpy2.rinterface import RRuntimeError as PackageNotInstalledError
+    try:
+        from rpy2.rinterface_lib.embedded import \
+            RRuntimeError as PackageNotInstalledError
+    except ImportError:
+        # Backward compat for rpy2 version < 3
+        from rpy2.rinterface import RRuntimeError as PackageNotInstalledError
 
 # Hide the R warnings
 rpy2.robjects.r['options'](warn=-1)
