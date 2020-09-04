@@ -31,5 +31,3 @@ def import_func_from_r_file(filename):
     import rpy2.robjects as robjects
     r_source = robjects.r['source']
     r_source(filename)
-
-    # print(robjects.r['sessionInfo']())

@@ -32,7 +32,11 @@ class Solver(BaseSolver):
 
     def run(self, n_iter):
 
-        coefs = self.r_ista(self.X, self.y[:, None], self.lmbd, n_iter=n_iter)
+        step_size = 1 / np.linalg.norm(self.X, ord=2) ** 2
+        coefs = self.r_ista(
+            self.X, self.y[:, None], self.lmbd,
+            step_size=step_size, n_iter=n_iter
+        )
         as_matrix = robjects.r['as']
         self.w = np.array(as_matrix(coefs, "matrix"))
 
