@@ -50,10 +50,9 @@ def class_ids(parameter):
 def test_benchmark_objective(benchmark_name, dataset_class):
     """Check that the objective function and the datasets are well defined."""
     objective_class = get_benchmark_objective(benchmark_name)
-    objective = objective_class()
+    objective = objective_class.get_instance()
 
-    parameters = {}
-    dataset = dataset_class(**parameters)
+    dataset = dataset_class.get_instance()
     scale, data = dataset.get_data()
     objective.set_data(**data)
 
@@ -78,7 +77,7 @@ def test_dataset_class(benchmark_name, dataset_class):
 
     # Ensure that the dataset exposes a `get_data` function
     # that is callable
-    dataset = dataset_class()
+    dataset = dataset_class.get_instance()
     assert hasattr(dataset, 'get_data'), (
         "All dataset should implement get_data"
     )
@@ -96,7 +95,7 @@ def test_dataset_get_data(benchmark_name, dataset_class):
     if not dataset_class.is_installed():
         pytest.skip("Dataset is not installed")
 
-    dataset = dataset_class()
+    dataset = dataset_class.get_instance()
 
     if dataset_class.name.lower() == 'finance':
         pytest.skip("Do not download finance.")
@@ -170,7 +169,7 @@ def test_solver(benchmark_name, solver_class):
         pytest.skip("Solver is not installed")
 
     objective_class = get_benchmark_objective(benchmark_name)
-    objective = objective_class()
+    objective = objective_class.get_instance()
 
     datasets = list_benchmark_datasets(benchmark_name)
     simulated_dataset = [d for d in datasets if d.name.lower() == 'simulated']
@@ -180,12 +179,12 @@ def test_solver(benchmark_name, solver_class):
         "testing purpose")
 
     dataset_class = simulated_dataset[0]
-    dataset = dataset_class()
+    dataset = dataset_class.get_instance()
 
     scale, data = dataset.get_data()
     objective.set_data(**data)
 
-    solver = solver_class()
+    solver = solver_class.get_instance()
     solver.set_objective(**objective.to_dict())
     stop_val = 1000 if solver_class.stop_strategy == 'iteration' else 1e-15
     solver.run(stop_val)

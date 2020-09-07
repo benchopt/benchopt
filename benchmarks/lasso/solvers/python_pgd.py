@@ -5,7 +5,7 @@ from benchopt.base import BaseSolver
 
 
 class Solver(BaseSolver):
-    name = 'PGD'  # proximal gradient, optionally accelerated
+    name = 'Python-PGD'  # proximal gradient, optionally accelerated
 
     # any parameter defined here is accessible as a class attribute
     parameters = {'use_acceleration': [False, True]}

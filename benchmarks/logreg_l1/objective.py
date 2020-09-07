@@ -16,8 +16,6 @@ class Objective(BaseObjective):
         self.reg = reg
         self.fit_intercept = fit_intercept
 
-        super().__init__(reg=reg)
-
     def set_data(self, X, y):
         self.X, self.y = X, y
         self.lmbd = self.reg * self._get_lambda_max()

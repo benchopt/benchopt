@@ -5,15 +5,15 @@ from joblib import Memory
 
 
 from .base import Cost
-from .viz import plot_benchmark
 from .util import is_matched
+from .viz import plot_benchmark
 from .util import product_param
-from .util import filter_classes_on_name
+from .util import _check_name_lists
+from .config import get_global_setting
 from .util import list_benchmark_solvers
 from .util import list_benchmark_datasets
 from .util import get_benchmark_objective
 from .utils.checkers import solver_supports_dataset
-from .config import get_global_setting, get_benchmark_setting
 
 
 # Get config values
@@ -292,8 +292,9 @@ def run_one_solver(benchmark, objective, solver, meta, max_runs, n_repetitions,
 
 
 def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
-                  dataset_names=None, max_runs=10, n_repetitions=1,
-                  timeout=100):
+                  dataset_names=None, objective_filters=None,
+                  max_runs=10, n_repetitions=1, timeout=100,
+                  plot_result=True):
     """Run full benchmark.
 
     Parameters
@@ -309,6 +310,9 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
     dataset_names : list | None
         List of datasets to include. If None all available
         datasets are used.
+    objective_filters : list | None
+        Filters to select specific objective parameters. If None,
+        all objective parameters are tested
     max_runs : int
         The maximum number of solver runs to perform to estimate
         the convergence curve.
@@ -316,6 +320,9 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
         The number of repetitions to run. Defaults to 1.
     timeout : float
         The maximum duration in seconds of the solver run.
+    plot_result : bool
+        If set to True (default), display the result plot and save them in
+        the benchmark directory.
 
     Returns
     -------
@@ -328,22 +335,20 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
 
     # Load the solvers and filter them to get the one to run
     solver_classes = list_benchmark_solvers(benchmark)
-    exclude = get_benchmark_setting(benchmark, 'exclude_solvers')
-    solver_classes = filter_classes_on_name(
-        solver_classes, include=solver_names,
-        forced=forced_solvers, exclude=exclude
-    )
+    included_solvers = _check_name_lists(solver_names, forced_solvers)
 
     run_statistics = []
     for dataset_class in datasets:
         for dataset_parameters in product_param(dataset_class.parameters):
-            dataset = dataset_class(**dataset_parameters)
+            dataset = dataset_class.get_instance(**dataset_parameters)
             if not is_matched(str(dataset), dataset_names):
                 continue
             print(f"{dataset}")
             scale, data = dataset.get_data()
             for obj_parameters in product_param(objective_class.parameters):
-                objective = objective_class(**obj_parameters)
+                objective = objective_class.get_instance(**obj_parameters)
+                if not is_matched(str(objective), objective_filters):
+                    continue
                 print(f"|--{objective}")
                 objective.set_dataset(dataset)
 
@@ -354,18 +359,19 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                     for solver_parameters in product_param(
                             solver_class.parameters):
 
+                        # Instantiate solver
+                        solver = solver_class.get_instance(**solver_parameters)
+                        if not is_matched(solver, included_solvers):
+                            continue
+                        solver._set_objective(objective)
+
                         # Get meta
                         meta = dict(
                             objective=str(objective), data=str(dataset),
                             scale=scale
                         )
 
-                        # Instantiate solver
-                        solver = solver_class(**solver_parameters)
-                        solver.save_parameters(**solver_parameters)
-                        solver._set_objective(objective)
-
-                        force = solver_class.name.lower() in forced_solvers
+                        force = is_matched(str(solver), forced_solvers)
                         run_statistics.extend(run_one_solver(
                             benchmark=benchmark, objective=objective,
                             solver=solver, meta=meta, max_runs=max_runs,
@@ -373,5 +379,6 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                             force=force
                         ))
     df = pd.DataFrame(run_statistics)
-    plot_benchmark(df, benchmark)
+    if plot_result:
+        plot_benchmark(df, benchmark)
     return df

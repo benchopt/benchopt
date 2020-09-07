@@ -66,7 +66,7 @@ Example of hand written and parametrized solver
 
 Using a hand written solver:
 
-.. literalinclude:: ../benchmarks/lasso/solvers/baseline.py
+.. literalinclude:: ../benchmarks/lasso/solvers/python_pgd.py
 
 Example of a solver available from a package on PyPi
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

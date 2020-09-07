@@ -104,47 +104,14 @@ def list_benchmark_datasets(benchmark_dir):
     return _list_benchmark_classes(benchmark_dir, 'Dataset')
 
 
-def _check_name_list(name_list):
+def _check_name_lists(*name_lists):
     """Normalize name_list ot a list of lowercase str."""
-    if name_list is None:
-        return []
-    return [str(name).lower() for name in name_list]
-
-
-def filter_classes_on_name(classes, include=None, forced=None, exclude=None):
-    """Filter a list of classes based on their name attribute.
-
-    Parameters
-    ----------
-    classes: list of class
-        The list to be filter. Each class should have a `name` class field.
-    include: list of str
-        Included name patterns.
-    forced: list of str
-        Second included name patterns list, used to force re-run.
-    exclude: list of str
-        Excluded name patterns. Inclusion patterns take precedence on this.
-
-    Returns
-    -------
-    classes: list of class
-        The list of class curated by the given filters.
-    """
-
-    # Currate the list of names
-    exclude = _check_name_list(exclude)
-    include_patterns = _check_name_list(include) + _check_name_list(forced)
-
-    if len(exclude) > 0:
-        # If a solver is explicitly included in solver_include, this takes
-        # precedence over the exclusion parameter in the config file.
-        exclude = set(exclude) - set(include + forced)
-        classes = [c for c in classes if not is_matched(c.name, exclude)]
-
-    if len(include_patterns) > 0:
-        classes = [c for c in classes if is_matched(c.name, include_patterns)]
-
-    return classes
+    res = []
+    for l in name_lists:
+        if l is None:
+            continue
+        res.extend([str(name).lower() for name in l])
+    return res
 
 
 def is_matched(name, include_patterns=None):
@@ -154,6 +121,7 @@ def is_matched(name, include_patterns=None):
     """
     if include_patterns is None or len(include_patterns) == 0:
         return True
+    name = str(name)
     for p in include_patterns:
         p = p.replace("*", '.*')
         if re.match(f".*{p}.*", name, flags=re.IGNORECASE) is not None:
@@ -161,16 +129,26 @@ def is_matched(name, include_patterns=None):
     return False
 
 
-def install_solvers(solvers, forced_solvers=None, env_name=None):
-    """Install the listed solvers if needed."""
+def _install_required_classes(classes, include_patterns, force_patterns=None,
+                              env_name=None):
+    """Install all classes that are required for the run."""
+    # Merge force install and install patterns.
+    include_patterns = _check_name_lists(include_patterns, force_patterns)
 
-    successes = []
-    for solver in solvers:
-        force_install = solver.name.lower() in forced_solvers
-        success = solver.install(env_name=env_name, force=force_install)
-        successes.append(success)
+    # Try to install all classes matching one of the patterns
+    success = True
+    for klass in classes:
+        for klass_parameters in product_param(klass.parameters):
+            name = klass._get_parametrized_name(**klass_parameters)
+            if is_matched(name, include_patterns):
+                force = (
+                    force_patterns is not None and len(force_patterns) > 0
+                    and is_matched(name, force_patterns)
+                )
+                success &= klass.install(env_name=env_name, force=force)
 
-    if not all(successes):
+    # If one failed, raise a warning to explain how to see the install errors.
+    if not success:
         warnings.warn(
             "Some solvers were not successfully installed, and will thus be "
             "ignored. Use 'export BENCHO_RAISE_INSTALL_ERROR=true' to "
@@ -179,14 +157,20 @@ def install_solvers(solvers, forced_solvers=None, env_name=None):
         )
 
 
+def install_required_solvers(benchmark, solver_names, forced_solvers=None,
+                             env_name=None):
+    """List all solvers and install the required ones."""
+    solvers = list_benchmark_solvers(benchmark)
+    _install_required_classes(
+        solvers, solver_names, force_patterns=forced_solvers,
+        env_name=env_name
+    )
+
+
 def install_required_datasets(benchmark, dataset_names, env_name=None):
-    """List all datasets and install the required ons"""
+    """List all datasets and install the required ones."""
     datasets = list_benchmark_datasets(benchmark)
-    for dataset_class in datasets:
-        for dataset_parameters in product_param(dataset_class.parameters):
-            dataset = dataset_class(**dataset_parameters)
-            if is_matched(str(dataset), dataset_names):
-                dataset_class.install(env_name=env_name, force=False)
+    _install_required_classes(datasets, dataset_names, env_name=env_name)
 
 
 class safe_import_context:

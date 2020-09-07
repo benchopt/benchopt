@@ -2,7 +2,7 @@ from benchopt.base import BaseObjective
 
 
 class Objective(BaseObjective):
-    name = "Ordinarly Least Squares"
+    name = "Ordinary Least Squares"
 
     parameters = {
         'fit_intercept': [False],
@@ -10,8 +10,6 @@ class Objective(BaseObjective):
 
     def __init__(self, fit_intercept=False):
         self.fit_intercept = fit_intercept
-
-        super().__init__(fit_intercept=fit_intercept)
 
     def set_data(self, X, y):
         self.X, self.y = X, y

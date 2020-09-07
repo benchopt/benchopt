@@ -17,9 +17,6 @@ class Dataset(BaseDataset):
         self.n_features = n_features
         self.random_state = random_state
 
-        # Pass parameters that will be used in Dataset name
-        super().__init__(n_samples=n_samples, n_features=n_features)
-
     def get_data(self):
 
         rng = np.random.RandomState(self.random_state)

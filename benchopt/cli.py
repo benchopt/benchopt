@@ -3,18 +3,13 @@ from pathlib import Path
 
 from benchopt import run_benchmark
 
-
-from benchopt.util import filter_classes_on_name
 from benchopt.util import _load_class_from_module
+from benchopt.util import install_required_solvers
 from benchopt.util import install_required_datasets
-from benchopt.util import list_benchmark_solvers, install_solvers
 
 from benchopt.utils.checkers import validate_solver_patterns
 from benchopt.utils.checkers import validate_dataset_patterns
 from benchopt.utils.shell_cmd import _run_shell_in_conda_env, create_conda_env
-
-
-from benchopt.config import get_benchmark_setting
 
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
@@ -37,10 +32,10 @@ def main(prog_name='benchopt'):
 @click.option('--recreate',
               is_flag=True,
               help="If this flag is set, start with a fresh conda env.")
-@click.option('--n-repetitions', '-r',
-              metavar='<int>', default=5, type=int,
-              help='Number of repetition that are averaged to estimate the '
-              'runtime.')
+@click.option('--objective-filter', '-p', 'objective_filters',
+              metavar='<objective_filter>', multiple=True, type=str,
+              help="Filter the objective based on its parametrized name. This "
+              "can be used to only include one set of parameters.")
 @click.option('--solver', '-s', 'solver_names',
               metavar="<solver_name>", multiple=True, type=str,
               help="Include <solver_name> in the benchmark. By default, all "
@@ -59,12 +54,20 @@ def main(prog_name='benchopt'):
               metavar="<int>", default=100, show_default=True, type=int,
               help='Maximal number of run for each solver. This corresponds '
               'to the number of points in the time/accuracy curve.')
+@click.option('--n-repetitions', '-r',
+              metavar='<int>', default=5, type=int,
+              help='Number of repetition that are averaged to estimate the '
+              'runtime.')
 @click.option('--timeout',
               metavar="<int>", default=100, show_default=True, type=int,
               help='Timeout a solver when run for more than <timeout> seconds')
+@click.option('--no-plot',
+              is_flag=True,
+              help="If this flag is set, do not plot the results.")
 def run(benchmark, solver_names, forced_solvers, dataset_names,
-        max_runs, n_repetitions, timeout, recreate, local):
-    """Run a benchmark in a separate venv where the solvers will be installed
+        objective_filters, max_runs, n_repetitions, timeout,
+        recreate=False, local=True, no_plot=False):
+    """Run a benchmark in a separate conda env where the deps will be installed
     """
 
     # Check that the dataset/solver patterns match actual dataset
@@ -72,9 +75,12 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
     validate_solver_patterns(benchmark, solver_names+forced_solvers)
 
     if local:
-        run_benchmark(benchmark, solver_names, forced_solvers, dataset_names,
-                      max_runs=max_runs, n_repetitions=n_repetitions,
-                      timeout=timeout)
+        run_benchmark(
+            benchmark, solver_names, forced_solvers,
+            dataset_names=dataset_names, objective_filters=objective_filters,
+            max_runs=max_runs, n_repetitions=n_repetitions, timeout=timeout,
+            plot_result=not no_plot
+        )
         return
 
     benchmark_name = Path(benchmark).name
@@ -85,23 +91,22 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
     install_required_datasets(benchmark, dataset_names, env_name=env_name)
 
     # Get the solvers and install them
-    solvers = list_benchmark_solvers(benchmark)
-    exclude = get_benchmark_setting(benchmark, 'exclude_solvers')
-    solvers = filter_classes_on_name(
-        solvers, include=solver_names, forced=forced_solvers, exclude=exclude
+    install_required_solvers(
+        benchmark, solver_names, forced_solvers=forced_solvers,
+        env_name=env_name
     )
-    install_solvers(solvers=solvers, forced_solvers=forced_solvers,
-                    env_name=env_name)
 
     # run the command in the conda env
     solvers_option = ' '.join(['-s ' + s for s in solver_names])
     forced_solvers_option = ' '.join(['-f ' + s for s in forced_solvers])
     datasets_option = ' '.join(['-d ' + d for d in dataset_names])
+    objective_option = ' '.join(['-p ' + p for p in objective_filters])
     cmd = (
         f"benchopt run {benchmark} --local --n-repetitions {n_repetitions} "
         f"--max-runs {max_runs} --timeout {timeout} "
-        f"{solvers_option} {forced_solvers_option} {datasets_option} "
-        f""
+        f"{solvers_option} {forced_solvers_option} "
+        f"{datasets_option} {objective_option} "
+        f"{'--no-plot' if no_plot else ''} "
     )
     raise SystemExit(_run_shell_in_conda_env(
         cmd, env_name=env_name, capture_stdout=False

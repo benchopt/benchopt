@@ -18,8 +18,6 @@ class Dataset(BaseDataset):
         self.n_features = n_features
         self.random_state = random_state
 
-        super().__init__(n_samples=n_samples, n_features=n_features)
-
     def get_data(self):
         rng = np.random.RandomState(self.random_state)
         X = rng.randn(self.n_samples, self.n_features)
