@@ -61,16 +61,12 @@ class ParametrizedNameMixin():
         """Each object should expose its name for plotting purposes."""
         ...
 
-    @property
-    def _name(self):
-        """Hook to define a different template to format the parameters"""
-        return f"{self.name}[{self.parameter_template}]"
-
     def __repr__(self):
         """Compute the parametrized name of the instance."""
-        if len(self.parameters) == 0:
-            return self.name.capitalize()
-        return self._name.format(**self.parameters).capitalize()
+        out = f"{self.name}"
+        if len(self.parameters) > 0:
+            out += f"[{self.parameter_template}]".format(**self.parameters)
+        return out
 
     @classmethod
     def _get_parametrized_name(cls, **parameters):
