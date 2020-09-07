@@ -26,10 +26,10 @@ def test_invalid_solver():
 
 
 def test_check_install():
-    baseline = Path(__file__).parent / '..' / '..' / 'benchmarks'
-    baseline = baseline / 'lasso' / 'solvers' / 'baseline.py'
+    pgd_solver = Path(__file__).parent / '..' / '..' / 'benchmarks'
+    pgd_solver = pgd_solver / 'lasso' / 'solvers' / 'python_pgd.py'
     with pytest.raises(SystemExit, match=r'0'):
-        check_install([str(baseline.resolve()), 'Solver'], 'benchopt')
+        check_install([str(pgd_solver.resolve()), 'Solver'], 'benchopt')
 
 
 def test_benchopt_run():
@@ -40,7 +40,9 @@ def test_benchopt_run():
             'benchopt', standalone_mode=False)
 
     output = out.output
-    assert len(re.findall('Simulated', output)) == 1
-    assert len(re.findall('Lasso', output)) == 1
+    matches = re.findall('Simulated', output)
+    assert len(matches) == 1, output
+    matches = re.findall('Lasso', output)
+    assert len(matches) == 1, output
     assert 'Pgd[use_acceleration=false]' in output
     assert 'Pgd[use_acceleration=true]' not in output

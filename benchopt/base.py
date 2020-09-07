@@ -2,6 +2,7 @@ import tempfile
 from collections import namedtuple
 from abc import ABC, abstractmethod
 
+from .util import product_param
 from .utils.class_property import classproperty
 from .utils.dynamic_modules import get_file_hash
 from .utils.shell_cmd import install_in_conda_env
@@ -26,19 +27,20 @@ class ParametrizedNameMixin():
     parameters = {}
 
     def __init__(self, **parameters):
-        """Placeholder for init if it is not defined, parameters will be set in
-        save_parameters.
+        """Default init set parameters base on the cls.parameters
         """
-        pass
+        parameters_ = next(product_param(self.parameters))
+        parameters_.update(parameters)
+        for k, v in parameters_.items():
+            if not hasattr(self, k):
+                setattr(self, k, v)
 
     def save_parameters(self, **parameters):
-        parameters_ = {k: v[0] for k, v in self.parameters.items()}
-        parameters_.update(parameters)
-        self.parameters = parameters_
+        self.parameters = parameters
         if not hasattr(self, 'parameter_template'):
             self.parameter_template = ",".join(
-                [f"{k}={v}" for k, v in parameters_.items()])
-        for k, v in parameters_.items():
+                [f"{k}={v}" for k, v in parameters.items()])
+        for k, v in parameters.items():
             if not hasattr(self, k):
                 setattr(self, k, v)
 
