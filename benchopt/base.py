@@ -32,11 +32,13 @@ class ParametrizedNameMixin():
         pass
 
     def save_parameters(self, **parameters):
-        self.parameters = parameters
+        parameters_ = {k: v[0] for k, v in self.parameters.items()}
+        parameters_.update(parameters)
+        self.parameters = parameters_
         if not hasattr(self, 'parameter_template'):
             self.parameter_template = ",".join(
-                [f"{k}={v}" for k, v in parameters.items()])
-        for k, v in parameters.items():
+                [f"{k}={v}" for k, v in parameters_.items()])
+        for k, v in parameters_.items():
             if not hasattr(self, k):
                 setattr(self, k, v)
 
