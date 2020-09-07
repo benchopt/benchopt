@@ -8,7 +8,7 @@ from .base import Cost
 from .util import is_matched
 from .viz import plot_benchmark
 from .util import product_param
-from .util import _check_name_list
+from .util import _check_name_lists
 from .config import get_global_setting
 from .util import list_benchmark_solvers
 from .util import list_benchmark_datasets
@@ -335,8 +335,7 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
 
     # Load the solvers and filter them to get the one to run
     solver_classes = list_benchmark_solvers(benchmark)
-    included_solvers = _check_name_list(solver_names)
-    included_solvers.extend(_check_name_list(forced_solvers))
+    included_solvers = _check_name_lists(solver_names, forced_solvers)
 
     run_statistics = []
     for dataset_class in datasets:

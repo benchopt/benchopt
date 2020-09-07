@@ -44,5 +44,5 @@ def test_benchopt_run():
     assert len(matches) == 1, output
     matches = re.findall('Lasso', output)
     assert len(matches) == 1, output
-    assert 'Pgd[use_acceleration=false]' in output
-    assert 'Pgd[use_acceleration=true]' not in output
+    assert 'Python-pgd[use_acceleration=false]' in output
+    assert 'Python-pgd[use_acceleration=true]' not in output

@@ -4,8 +4,8 @@ from pathlib import Path
 from benchopt import run_benchmark
 
 from benchopt.util import _load_class_from_module
-from benchopt.util import install_required_datasets
 from benchopt.util import install_required_solvers
+from benchopt.util import install_required_datasets
 
 from benchopt.utils.checkers import validate_solver_patterns
 from benchopt.utils.checkers import validate_dataset_patterns
@@ -34,8 +34,8 @@ def main(prog_name='benchopt'):
               help="If this flag is set, start with a fresh conda env.")
 @click.option('--objective-filter', '-p', 'objective_filters',
               metavar='<objective_filter>', multiple=True, type=str,
-              help="Filter the objective on its parametrized name to only "
-              "include one parameter.")
+              help="Filter the objective based on its parametrized name. This "
+              "can be used to only include one set of parameters.")
 @click.option('--solver', '-s', 'solver_names',
               metavar="<solver_name>", multiple=True, type=str,
               help="Include <solver_name> in the benchmark. By default, all "

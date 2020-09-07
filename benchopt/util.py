@@ -104,11 +104,14 @@ def list_benchmark_datasets(benchmark_dir):
     return _list_benchmark_classes(benchmark_dir, 'Dataset')
 
 
-def _check_name_list(name_list):
+def _check_name_lists(*name_lists):
     """Normalize name_list ot a list of lowercase str."""
-    if name_list is None:
-        return []
-    return [str(name).lower() for name in name_list]
+    res = []
+    for l in name_lists:
+        if l is None:
+            continue
+        res.extend([str(name).lower() for name in l])
+    return res
 
 
 def is_matched(name, include_patterns=None):
@@ -130,8 +133,7 @@ def _install_required_classes(classes, include_patterns, force_patterns=None,
                               env_name=None):
     """Install all classes that are required for the run."""
     # Merge force install and install patterns.
-    include_patterns = _check_name_list(include_patterns)
-    include_patterns.extend(_check_name_list(force_patterns))
+    include_patterns = _check_name_lists(include_patterns, force_patterns)
 
     # Try to install all classes matching one of the patterns
     success = True
