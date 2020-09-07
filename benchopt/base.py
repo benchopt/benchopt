@@ -8,7 +8,6 @@ from .utils.shell_cmd import install_in_conda_env
 from .utils.shell_cmd import _run_shell_in_conda_env
 from .utils.dynamic_modules import _reconstruct_class
 from .utils.shell_cmd import shell_install_in_conda_env
-from .utils.dynamic_modules import _load_class_from_module
 
 from .config import RAISE_INSTALL_ERROR
 
@@ -27,13 +26,30 @@ class ParametrizedNameMixin():
     parameters = {}
 
     def __init__(self, **parameters):
-        self.save_parameters(**parameters)
+        """Placeholder for init if it is not defined, parameters will be set in
+        save_parameters.
+        """
+        pass
 
     def save_parameters(self, **parameters):
         self.parameters = parameters
         if not hasattr(self, 'parameter_template'):
             self.parameter_template = ",".join(
                 [f"{k}={v}" for k, v in parameters.items()])
+        for k, v in parameters.items():
+            if not hasattr(self, k):
+                setattr(self, k, v)
+
+    @classmethod
+    def get_instance(cls, **parameters):
+        """Helper function to instantiate an object and save its parameters.
+
+        Saving the parameters allow for cheap hashing and to compute parametric
+        names for the objects.
+        """
+        obj = cls(**parameters)
+        obj.save_parameters(**parameters)
+        return obj
 
     @property
     @abstractmethod
@@ -47,9 +63,23 @@ class ParametrizedNameMixin():
         return f"{self.name}[{self.parameter_template}]"
 
     def __repr__(self):
+        """Compute the parametrized name of the instance."""
         if len(self.parameters) == 0:
             return self.name.capitalize()
         return self._name.format(**self.parameters).capitalize()
+
+    @classmethod
+    def _get_parametrized_name(cls, **parameters):
+        """Compute the parametrized name for a given set of parameters."""
+        return str(cls.get_instance(**parameters))
+
+    @classmethod
+    def _reload_class(cls, pickled_module_hash=None):
+
+        return _reconstruct_class(
+            cls._module_filename, cls._base_class_name,
+            pickled_module_hash=pickled_module_hash
+        )
 
 
 class DependenciesMixin:
@@ -152,12 +182,6 @@ class DependenciesMixin:
 
         return is_installed
 
-    @classmethod
-    def _reload_class(cls):
-        return _load_class_from_module(
-            cls._module_filename, cls._base_class_name
-        )
-
 
 class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
     """A base class for solver wrappers in BenchOpt.
@@ -193,18 +217,6 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
 
     _base_class_name = 'Solver'
     stop_strategy = 'iteration'
-
-    def __init__(self, **parameters):
-        """Instantiate a solver with the given parameters and store them.
-
-        All parameters `PARAM` that are passed through init will be accessible
-        as `self.PARAM` in the class.
-        """
-        parameters_ = {k: v[0] for k, v in self.parameters.items()}
-        parameters_.update(**parameters)
-        super().__init__(**parameters_)
-        for k, v in parameters_.items():
-            setattr(self, k, v)
 
     def _set_objective(self, objective):
         """Store the objective to make sure this solver is picklable
@@ -253,8 +265,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         Solver = _reconstruct_class(
             module_filename, 'Solver', pickled_module_hash
         )
-        obj = Solver(**parameters)
-        obj.save_parameters(**parameters)
+        obj = Solver.get_instance(**parameters)
         obj._set_objective(objective)
         return obj
 
@@ -314,7 +325,7 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin):
         Dataset = _reconstruct_class(
             module_filename, 'Dataset', pickled_module_hash
         )
-        obj = Dataset(**parameters)
+        obj = Dataset.get_instance(**parameters)
         return obj
 
     def __reduce__(self):
@@ -344,16 +355,6 @@ class BaseObjective(ParametrizedNameMixin):
 
     _base_class_name = 'Objective'
 
-    def __init__(self, **parameters):
-        """Instantiate a solver with the given parameters and store them.
-
-        All parameters `PARAM` that are passed through init will be accessible
-        as `self.PARAM` in the class.
-        """
-        super().__init__(**parameters)
-        for k, v in parameters.items():
-            setattr(self, k, v)
-
     @abstractmethod
     def set_data(self, **data):
         ...
@@ -380,7 +381,7 @@ class BaseObjective(ParametrizedNameMixin):
         Objective = _reconstruct_class(
             module_filename, 'Objective', pickled_module_hash
         )
-        obj = Objective(**parameters)
+        obj = Objective.get_instance(**parameters)
         obj.set_dataset(dataset)
         return obj
 

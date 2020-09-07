@@ -36,7 +36,9 @@ def validate_dataset_patterns(benchmark, dataset_patterns):
     all_datasets = []
     for dataset_class in datasets:
         for dataset_parameters in product_param(dataset_class.parameters):
-            all_datasets.append(str(dataset_class(**dataset_parameters)))
+            all_datasets.append(
+                dataset_class._get_parametrized_name(**dataset_parameters)
+            )
 
     _validate_patterns(all_datasets, dataset_patterns, name_type='dataset')
 
@@ -49,7 +51,9 @@ def validate_solver_patterns(benchmark, solver_patterns):
     all_solvers = []
     for solver_class in solver:
         for solver_parameters in product_param(solver_class.parameters):
-            all_solvers.append(str(solver_class(**solver_parameters)))
+            all_solvers.append(
+                solver_class._get_parametrized_name(**solver_parameters)
+            )
 
     _validate_patterns(all_solvers, solver_patterns, name_type='solver')
 

@@ -16,8 +16,6 @@ class Objective(BaseObjective):
         self.lmbd = lmbd
         self.fit_intercept = fit_intercept
 
-        super().__init__(lmbd=lmbd)
-
     def set_data(self, X, y):
         self.X, self.y = X, y
 

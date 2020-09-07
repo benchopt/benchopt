@@ -23,9 +23,6 @@ class Dataset(BaseDataset):
         # Store the parameters of the dataset
         self.standardized = standardized
 
-        # Pass parameters that will be used in Dataset name
-        super().__init__(standardized=standardized)
-
     def get_data(self):
 
         X, y = load_boston(return_X_y=True)
