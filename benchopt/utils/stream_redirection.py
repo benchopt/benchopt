@@ -11,8 +11,8 @@ class SuppressStd(object):
     """
 
     def __init__(self):
-        self.orig_stdout_fileno = sys.stdout.fileno()
-        self.orig_stderr_fileno = sys.stderr.fileno()
+        self.orig_stdout_fileno = sys.__stdout__.fileno()
+        self.orig_stderr_fileno = sys.__stderr__.fileno()
         self.output = None
 
     def __enter__(self):

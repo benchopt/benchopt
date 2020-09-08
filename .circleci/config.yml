@@ -40,12 +40,30 @@ jobs:
               /sbin/start-stop-daemon --start --quiet --pidfile /tmp/custom_xvfb_99.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :99 -screen 0 1400x900x24 -ac +extension GLX +render -noreset;
 
         - run:
+            name: Get conda running
+            command: |
+              wget -q https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh;
+              chmod +x ~/miniconda.sh;
+              ~/miniconda.sh -b -p ~/miniconda;
+              echo "export PATH=~/miniconda/bin:$PATH" >> $BASH_ENV;
+
+        - run:
             name: Get Python running
             command: |
-              python -m pip install --user --upgrade --progress-bar off pip
-              python -m pip install --user --upgrade --progress-bar off -r dev-requirements.txt
-              python -m pip install --user --upgrade --progress-bar off -r doc/doc-requirements.txt
-              python -m pip install --user -e .
+              pip install --upgrade --progress-bar off -r dev-requirements.txt
+              pip install --upgrade --progress-bar off -r doc/doc-requirements.txt
+              conda config --env --prepend channels conda-forge
+
+              # There is an ungoing issue with compat between libgit2 and julia which
+              # makes the auto install of julia solver fails when cloning the General
+              # repository from julia. To avoid this, we clone this on the system directly.
+              # See https://github.com/JuliaLang/julia/issues/33111
+              git clone https://github.com/JuliaRegistries/General.git \
+                      $HOME/.julia/registries/General
+
+              conda install julia r-base rpy2
+              pip install julia
+              pip install -e .
 
         - save_cache:
             key: pip-cache
