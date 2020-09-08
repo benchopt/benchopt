@@ -110,7 +110,7 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
     )
     raise SystemExit(_run_shell_in_conda_env(
         cmd, env_name=env_name, capture_stdout=False
-    ))
+    ) != 0)
 
 
 @main.command(
@@ -142,12 +142,12 @@ def test(benchmark_dir, env_name):
         create_conda_env(env_name, with_pytest=True)
         env_option = f'--test-env {env_name}'
     cmd = (
-        f'pytest -vlsx {TEST_FILE} --benchmark {benchmark_dir} '
-        f'{env_option} --pdb'
+        f'pytest -vl {TEST_FILE} --benchmark {benchmark_dir} '
+        f'{env_option}'
     )
     raise SystemExit(_run_shell_in_conda_env(
         cmd, env_name=env_name, capture_stdout=False
-    ))
+    ) != 0)
 
 
 if __name__ == '__main__':
