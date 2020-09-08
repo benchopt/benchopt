@@ -1,6 +1,7 @@
 import os
 import tempfile
 import subprocess
+from pathlib import Path
 
 from ..config import get_global_setting
 from ..config import DEBUG, ALLOW_INSTALL
@@ -19,6 +20,8 @@ CHECK_SHELL_CMD_EXISTS = "type $'{cmd_name}'"
 
 
 # Yaml config file for benchopt env
+# XXX: find a more robust way to detect if we are using the develop mode
+# package or a release to install the correct version even with pip.
 BENCHOPT_ENV = f"""
 channels:
   - defaults
@@ -29,7 +32,7 @@ dependencies:
   - compilers
   - pip
   - pip:
-    - -e {os.getcwd()}
+    - -e {Path(__file__).parents[2]}
 """
 
 
@@ -122,14 +125,21 @@ def _run_shell_in_conda_env(script, env_name=None, raise_on_error=None,
                       capture_stdout=capture_stdout)
 
 
-def create_conda_env(env_name, recreate=False):
+def create_conda_env(env_name, recreate=False, with_pytest=False):
     """Create a conda env with name env_name and install basic utilities"""
 
     force = "--force" if recreate else ""
 
+    benchopt_env = BENCHOPT_ENV
+    if with_pytest:
+        # Add pytest as a dependency of the env
+        benchopt_env = benchopt_env.replace(
+            '- compilers', '- compilers\n  - pytest'
+        )
+
     print(f"Creating conda env {env_name}:...", end='', flush=True)
     env_yaml = tempfile.NamedTemporaryFile(mode="w+", suffix='.yml')
-    env_yaml.write(f"name: {env_name}{BENCHOPT_ENV}")
+    env_yaml.write(f"name: {env_name}{benchopt_env}")
     env_yaml.flush()
     try:
         _run_shell(

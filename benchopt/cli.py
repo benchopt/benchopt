@@ -128,5 +128,27 @@ def check_install(module_filename, base_class_name):
     klass.is_installed(raise_on_not_installed=True)
 
 
+@main.command(
+    help="Test a given benchmark."
+)
+@click.argument('benchmark_dir', type=click.Path(exists=True))
+@click.option('--env-name', type=str, default=None)
+def test(benchmark_dir, env_name):
+
+    TEST_FILE = Path(__file__).parent / 'tests' / 'test_benchmarks.py'
+
+    env_option = ''
+    if env_name is not None:
+        create_conda_env(env_name, with_pytest=True)
+        env_option = f'--test-env {env_name}'
+    cmd = (
+        f'pytest -vlsx {TEST_FILE} --benchmark {benchmark_dir} '
+        f'{env_option} --pdb'
+    )
+    raise SystemExit(_run_shell_in_conda_env(
+        cmd, env_name=env_name, capture_stdout=False
+    ))
+
+
 if __name__ == '__main__':
     main()
