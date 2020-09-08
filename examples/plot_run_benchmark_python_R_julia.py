@@ -16,7 +16,7 @@ cwd = os.getcwd()
 os.chdir(Path(os.path.dirname(benchopt.__file__)) / '..')
 
 df = run_benchmark('benchmarks/lasso',
-                   ['Python-PGD*False', 'R-PGD', 'Julia-PGD'],
+                   ['Python-PGD*use_acceleration=False', 'R-PGD', 'Julia-PGD'],
                    forced_solvers=[],
                    dataset_names=['Simulated*n_samples=100,n_features=500*'],
                    objective_filters=['reg=0.5'],
