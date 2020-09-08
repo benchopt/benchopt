@@ -16,13 +16,25 @@ class SuppressStd(object):
         self.output = None
 
     def __enter__(self):
+        # Redirect the stdout/stderr fd to temp file
         self.orig_stdout_dup = os.dup(self.orig_stdout_fileno)
         self.orig_stderr_dup = os.dup(self.orig_stderr_fileno)
         self.tfile = tempfile.TemporaryFile(mode='w+b')
         os.dup2(self.tfile.fileno(), self.orig_stdout_fileno)
         os.dup2(self.tfile.fileno(), self.orig_stderr_fileno)
 
+        # Store the stdout object and replace it by the temp file.
+        self.stdout_obj = sys.stdout
+        self.stderr_obj = sys.stderr
+        sys.stdout = self.tfile
+        sys.stderr = self.tfile
+
     def __exit__(self, type, value, traceback):
+
+        # Restore the stdout/stderr object.
+        sys.stdout = self.stdout_obj
+        sys.stderr = self.stderr_obj
+
         # Close capture file handle
         os.close(self.orig_stdout_fileno)
         os.close(self.orig_stderr_fileno)
