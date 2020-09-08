@@ -162,7 +162,7 @@ def run_one_stop_val(benchmark, objective, solver, meta, stop_val,
 
 
 def run_one_solver(benchmark, objective, solver, meta, max_runs, n_repetitions,
-                   timeout, force=False):
+                   timeout, force=False, show_progress=True):
     """Minimize objective function with onesolver for different accuracies.
 
     Parameters
@@ -186,6 +186,8 @@ def run_one_solver(benchmark, objective, solver, meta, max_runs, n_repetitions,
     force : bool
         If force is set to True, ignore the cache and run the computations
         for the solver anyway. Else, use the cache if available.
+    show_progress : bool
+        If show_progress is set to True, display the progress of the benchmark.
 
     Returns
     -------
@@ -241,7 +243,10 @@ def run_one_solver(benchmark, objective, solver, meta, max_runs, n_repetitions,
                 break
 
             p = progress(id_stop_val, np.max(delta_objectives))
-            progress_str = f"{tag} {p:6.1%}"
+            if show_progress:
+                progress_str = f"{tag} {p:6.1%}"
+            else:
+                progress_str = None
 
             call_args = dict(
                 benchmark=benchmark, objective=objective, solver=solver,
@@ -294,7 +299,7 @@ def run_one_solver(benchmark, objective, solver, meta, max_runs, n_repetitions,
 def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                   dataset_names=None, objective_filters=None,
                   max_runs=10, n_repetitions=1, timeout=100,
-                  plot_result=True):
+                  plot_result=True, show_progress=True):
     """Run full benchmark.
 
     Parameters
@@ -323,6 +328,8 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
     plot_result : bool
         If set to True (default), display the result plot and save them in
         the benchmark directory.
+    show_progress : bool
+        If show_progress is set to True, display the progress of the benchmark.
 
     Returns
     -------
@@ -376,7 +383,7 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                             benchmark=benchmark, objective=objective,
                             solver=solver, meta=meta, max_runs=max_runs,
                             n_repetitions=n_repetitions, timeout=timeout,
-                            force=force
+                            force=force, show_progress=show_progress
                         ))
     df = pd.DataFrame(run_statistics)
     if plot_result:
