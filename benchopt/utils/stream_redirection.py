@@ -26,8 +26,8 @@ class SuppressStd(object):
         # Store the stdout object and replace it by the temp file.
         self.stdout_obj = sys.stdout
         self.stderr_obj = sys.stderr
-        sys.stdout = self.tfile
-        sys.stderr = self.tfile
+        sys.stdout = sys.__stdout__
+        sys.stderr = sys.__stderr__
 
     def __exit__(self, type, value, traceback):
 
