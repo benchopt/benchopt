@@ -92,7 +92,7 @@ def pytest_generate_tests(metafunc):
             if benchmark is None:
                 benchmarks = get_all_benchmarks()
             else:
-                benchmarks = [Path(benchmark)]
+                benchmarks = [Path(benchmark).resolve()]
             metafunc.parametrize(params, func(benchmarks), ids=class_ids)
 
 
