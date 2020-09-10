@@ -152,6 +152,8 @@ def create_conda_env(env_name, recreate=False, with_pytest=False):
         )
     except RuntimeError:
         print(" already exists")
+        import traceback
+        traceback.print_exc()
     else:
         print(" done")
 

@@ -175,8 +175,6 @@ class DependenciesMixin:
                         raise_install_error is None and RAISE_INSTALL_ERROR):
                     raise exception
                 is_installed = False
-                import traceback
-                traceback.print_exc()
             else:
                 is_installed = cls.is_installed(env_name=env_name)
             if is_installed:
