@@ -129,11 +129,16 @@ def check_install(module_filename, base_class_name):
 
 
 @main.command(
-    help="Test a given benchmark."
+    help="Test a given benchmark.",
+    context_settings=dict(ignore_unknown_options=True)
 )
 @click.argument('benchmark_dir', type=click.Path(exists=True))
 @click.option('--env-name', type=str, default=None)
-def test(benchmark_dir, env_name):
+@click.argument('pytest_args', nargs=-1, type=click.UNPROCESSED)
+def test(benchmark_dir, env_name, pytest_args):
+    pytest_args = ' '.join(pytest_args)
+    if len(pytest_args) == 0:
+        pytest_args = '-vl'
 
     TEST_FILE = Path(__file__).parent / 'tests' / 'test_benchmarks.py'
 
@@ -142,9 +147,10 @@ def test(benchmark_dir, env_name):
         create_conda_env(env_name, with_pytest=True)
         env_option = f'--test-env {env_name}'
     cmd = (
-        f'pytest -vl {TEST_FILE} --benchmark {benchmark_dir} '
-        f'{env_option}'
+        f'pytest {pytest_args} {TEST_FILE} '
+        f'--benchmark {benchmark_dir} {env_option}'
     )
+
     raise SystemExit(_run_shell_in_conda_env(
         cmd, env_name=env_name, capture_stdout=False
     ) != 0)
