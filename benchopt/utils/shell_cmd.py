@@ -164,7 +164,10 @@ def create_conda_env(env_name, recreate=False, with_pytest=False):
 
 def env_exists(env_name):
     try:
-        _run_shell_in_conda_env(f'which python', raise_on_error=True)
+        _run_shell_in_conda_env(
+            f'which python',
+            env_name=env_name, capture_stdout=True, raise_on_error=True
+        )
         return True
     except RuntimeError:
         return False
