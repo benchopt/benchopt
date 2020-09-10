@@ -129,6 +129,9 @@ def _run_shell_in_conda_env(script, env_name=None, raise_on_error=None,
 def create_conda_env(env_name, recreate=False, with_pytest=False):
     """Create a conda env with name env_name and install basic utilities"""
 
+    if env_exists(env_name) and not recreate:
+        return
+
     force = "--force" if recreate else ""
 
     benchopt_env = BENCHOPT_ENV
@@ -157,6 +160,14 @@ def create_conda_env(env_name, recreate=False, with_pytest=False):
         traceback.print_exc()
     else:
         print(" done")
+
+
+def env_exists(env_name):
+    try:
+        _run_shell_in_conda_env(f'which python', raise_on_error=True)
+        return True
+    except RuntimeError:
+        return False
 
 
 def delete_conda_env(env_name):
