@@ -1,7 +1,7 @@
 import os
 import tempfile
 import subprocess
-from pathlib import Path
+from pip._internal.commands.freeze import freeze
 
 from ..config import get_global_setting
 from ..config import DEBUG, ALLOW_INSTALL
@@ -22,6 +22,7 @@ CHECK_SHELL_CMD_EXISTS = "type $'{cmd_name}'"
 # Yaml config file for benchopt env
 # XXX: find a more robust way to detect if we are using the develop mode
 # package or a release to install the correct version even with pip.
+BENCHOPT_INSTALL = [pkg for pkg in freeze() if 'benchopt' in pkg][0]
 BENCHOPT_ENV = f"""
 channels:
   - defaults
@@ -32,7 +33,7 @@ dependencies:
   - compilers
   - pip
   - pip:
-    - -e {Path(__file__).parents[2]}
+    - {BENCHOPT_INSTALL}
 """
 
 
