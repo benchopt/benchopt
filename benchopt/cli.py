@@ -129,11 +129,13 @@ def check_install(module_filename, base_class_name):
 
 
 @main.command(
-    help="Test a given benchmark.",
+    help="Test a benchmark in BENCHMARK_DIR.",
     context_settings=dict(ignore_unknown_options=True)
 )
 @click.argument('benchmark_dir', type=click.Path(exists=True))
-@click.option('--env-name', type=str, default=None)
+@click.option('--env-name', type=str, default=None, metavar='NAME',
+              help='Environment to run the test in. If it is not provided '
+              'a temporary one is created for the test.')
 @click.argument('pytest_args', nargs=-1, type=click.UNPROCESSED)
 def test(benchmark_dir, env_name, pytest_args):
     pytest_args = ' '.join(pytest_args)
