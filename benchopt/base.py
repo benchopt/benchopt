@@ -141,7 +141,7 @@ class DependenciesMixin:
             ) == 0
 
     @classmethod
-    def install(cls, env_name=None, force=False, raise_install_error=None):
+    def install(cls, env_name=None, force=False):
         """Install the class in the given conda env.
 
         Parameters
@@ -171,12 +171,10 @@ class DependenciesMixin:
                                                env_name=env_name)
 
             except Exception as exception:
-                if raise_install_error or (
-                        raise_install_error is None and RAISE_INSTALL_ERROR):
+                if RAISE_INSTALL_ERROR:
                     raise exception
-                is_installed = False
-            else:
-                is_installed = cls.is_installed(env_name=env_name)
+
+            is_installed = cls.is_installed(env_name=env_name)
             if is_installed:
                 print(" done")
             else:

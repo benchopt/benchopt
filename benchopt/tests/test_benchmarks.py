@@ -117,7 +117,7 @@ def test_solver_install(test_env_name, benchmark_solver):
         pytest.skip('Cyanure is not easy to install on macos.')
 
     # assert that install works when forced to reinstalls
-    solver_class.install(env_name=test_env_name, raise_install_error=True)
+    solver_class.install(env_name=test_env_name)
     solver_class.is_installed(env_name=test_env_name,
                               raise_on_not_installed=True)
 
