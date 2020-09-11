@@ -13,7 +13,7 @@ SHELL = get_global_setting('shell')
 # Shell commands for installing and checking the solvers
 CONDA_INSTALL_CMD = "conda install -y {packages}"
 PIP_INSTALL_CMD = "pip install {packages}"
-SHELL_INSTALL_CMD = f"{SHELL} install_scripts/{{install_script}} $CONDA_PREFIX"
+SHELL_INSTALL_CMD = f"{SHELL} {{install_script}} $CONDA_PREFIX"
 
 # Shell cmd to test if a cmd exists
 CHECK_SHELL_CMD_EXISTS = "type $'{cmd_name}'"

@@ -167,8 +167,11 @@ class DependenciesMixin:
                     install_in_conda_env(*cls.requirements, env_name=env_name,
                                          force=force)
                 elif cls.install_cmd == 'shell':
-                    shell_install_in_conda_env(cls.install_script,
-                                               env_name=env_name)
+                    install_file = (
+                        cls._module_filename.parents[1] / 'install_scripts' /
+                        cls.install_script
+                    )
+                    shell_install_in_conda_env(install_file, env_name=env_name)
 
             except Exception as exception:
                 if RAISE_INSTALL_ERROR:
