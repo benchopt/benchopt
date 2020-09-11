@@ -1,6 +1,7 @@
 import os
 import tempfile
 import subprocess
+from pip._internal.commands.freeze import freeze
 
 from ..config import get_global_setting
 from ..config import DEBUG, ALLOW_INSTALL
@@ -18,7 +19,11 @@ SHELL_INSTALL_CMD = f"{SHELL} install_scripts/{{install_script}} $CONDA_PREFIX"
 CHECK_SHELL_CMD_EXISTS = "type $'{cmd_name}'"
 
 
-# Yaml config file for benchopt env
+# Find out how benchopt where installed so we can install the same version even
+# if it was installed in develop mode. This requires pip version >= 20.1
+BENCHOPT_INSTALL = [pkg for pkg in freeze() if 'benchopt' in pkg][0]
+
+# Yaml config file for benchopt env.
 BENCHOPT_ENV = f"""
 channels:
   - defaults
@@ -29,7 +34,7 @@ dependencies:
   - compilers
   - pip
   - pip:
-    - -e {os.getcwd()}
+    - {BENCHOPT_INSTALL}
 """
 
 
@@ -122,14 +127,24 @@ def _run_shell_in_conda_env(script, env_name=None, raise_on_error=None,
                       capture_stdout=capture_stdout)
 
 
-def create_conda_env(env_name, recreate=False):
+def create_conda_env(env_name, recreate=False, with_pytest=False):
     """Create a conda env with name env_name and install basic utilities"""
+
+    if env_exists(env_name) and not recreate:
+        return
 
     force = "--force" if recreate else ""
 
+    benchopt_env = BENCHOPT_ENV
+    if with_pytest:
+        # Add pytest as a dependency of the env
+        benchopt_env = benchopt_env.replace(
+            '- compilers', '- compilers\n  - pytest'
+        )
+
     print(f"Creating conda env {env_name}:...", end='', flush=True)
     env_yaml = tempfile.NamedTemporaryFile(mode="w+", suffix='.yml')
-    env_yaml.write(f"name: {env_name}{BENCHOPT_ENV}")
+    env_yaml.write(f"name: {env_name}{benchopt_env}")
     env_yaml.flush()
     try:
         _run_shell(
@@ -141,9 +156,22 @@ def create_conda_env(env_name, recreate=False):
             env_name=env_name, capture_stdout=True, raise_on_error=True
         )
     except RuntimeError:
-        print(" already exists")
+        print(" failed to create the environment.")
+        raise
     else:
         print(" done")
+
+
+def env_exists(env_name):
+    """Returns True if a given environment exists in the system."""
+    try:
+        _run_shell_in_conda_env(
+            f'which python',
+            env_name=env_name, capture_stdout=True, raise_on_error=True
+        )
+        return True
+    except RuntimeError:
+        return False
 
 
 def delete_conda_env(env_name):

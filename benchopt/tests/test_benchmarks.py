@@ -2,53 +2,16 @@ import sys
 import pytest
 
 import numpy as np
-from pathlib import Path
-
 
 from benchopt.base import STOP_STRATEGIES
 
-from benchopt.util import list_benchmark_solvers
 from benchopt.util import list_benchmark_datasets
 from benchopt.util import get_benchmark_objective
 
 
-def get_all_benchmarks():
-    """List all the available benchmarks.
-
-    Returns
-    -------
-    benchmarks : list of str
-        The list of all available benchmarks.
-    """
-    BENCHMARKS_DIR = Path(__file__).parents[1] / '..' / 'benchmarks'
-    all_benchmarks = [b.resolve() for b in BENCHMARKS_DIR.glob('*/')]
-    all_benchmarks.sort()
-    return all_benchmarks
-
-
-BENCHMARKS = get_all_benchmarks()
-BENCH_AND_SOLVERS = [
-    (benchmark, solver) for benchmark in BENCHMARKS
-    for solver in list_benchmark_solvers(benchmark)]
-BENCH_AND_DATASETS = [
-    (benchmark, dataset_class) for benchmark in BENCHMARKS
-    for dataset_class in list_benchmark_datasets(benchmark)]
-BENCH_AND_SIMULATED = [
-    (benchmark, dataset_class) for benchmark in BENCHMARKS
-    for dataset_class in list_benchmark_datasets(benchmark)
-    if dataset_class.name.lower() == 'simulated']
-
-
-def class_ids(parameter):
-    if hasattr(parameter, 'name'):
-        return parameter.name.lower()
-    return None
-
-
-@pytest.mark.parametrize('benchmark_name, dataset_class', BENCH_AND_SIMULATED,
-                         ids=class_ids)
-def test_benchmark_objective(benchmark_name, dataset_class):
+def test_benchmark_objective(benchmark_dataset_simu):
     """Check that the objective function and the datasets are well defined."""
+    benchmark_name, dataset_class = benchmark_dataset_simu
     objective_class = get_benchmark_objective(benchmark_name)
     objective = objective_class.get_instance()
 
@@ -56,7 +19,7 @@ def test_benchmark_objective(benchmark_name, dataset_class):
     scale, data = dataset.get_data()
     objective.set_data(**data)
 
-    # check that the reported scale si correct and that the result of
+    # check that the reported scale is correct and that the result of
     # the objective function is a scalar
     beta_hat = np.zeros(scale)
     objective_value = objective(beta=beta_hat)
@@ -65,10 +28,9 @@ def test_benchmark_objective(benchmark_name, dataset_class):
     )
 
 
-@pytest.mark.parametrize('benchmark_name, dataset_class', BENCH_AND_DATASETS,
-                         ids=class_ids)
-def test_dataset_class(benchmark_name, dataset_class):
+def test_dataset_class(benchmark_dataset):
     """Check that all dataset_class respects the public API"""
+    benchmark_name, dataset_class = benchmark_dataset
 
     # Check that the dataset_class exposes a name
     assert hasattr(dataset_class, 'name'), "All dataset should expose a name"
@@ -86,11 +48,11 @@ def test_dataset_class(benchmark_name, dataset_class):
     )
 
 
-@pytest.mark.parametrize('benchmark_name, dataset_class', BENCH_AND_DATASETS,
-                         ids=class_ids)
-def test_dataset_get_data(benchmark_name, dataset_class):
+def test_dataset_get_data(benchmark_dataset):
     """Check that all installed dataset_class.get_data return the right result
     """
+    benchmark_name, dataset_class = benchmark_dataset
+
     # skip the test if the dataset is not installed
     if not dataset_class.is_installed():
         pytest.skip("Dataset is not installed")
@@ -118,10 +80,10 @@ def test_dataset_get_data(benchmark_name, dataset_class):
     )
 
 
-@pytest.mark.parametrize('benchmark_name, solver_class', BENCH_AND_SOLVERS,
-                         ids=class_ids)
-def test_solver_class(benchmark_name, solver_class):
+def test_solver_class(benchmark_solver):
     """Check that all installed solver_class respects the public API"""
+
+    benchmark_name, solver_class = benchmark_solver
 
     # Check that the solver_class exposes a name
     assert hasattr(solver_class, 'name'), "All solver should expose a name"
@@ -133,10 +95,9 @@ def test_solver_class(benchmark_name, solver_class):
     assert solver_class.stop_strategy in STOP_STRATEGIES
 
 
-@pytest.mark.parametrize('benchmark_name, solver_class', BENCH_AND_SOLVERS,
-                         ids=class_ids)
-def test_solver_install_api(benchmark_name, solver_class):
+def test_solver_install_api(benchmark_solver):
 
+    _, solver_class = benchmark_solver
     # Check that the solver_class exposes a known install cmd
     assert solver_class.install_cmd in [None, 'conda', 'shell']
 
@@ -148,9 +109,9 @@ def test_solver_install_api(benchmark_name, solver_class):
 
 
 @pytest.mark.requires_install
-@pytest.mark.parametrize('benchmark_name, solver_class', BENCH_AND_SOLVERS,
-                         ids=class_ids)
-def test_solver_install(test_env_name, benchmark_name, solver_class):
+def test_solver_install(test_env_name, benchmark_solver):
+
+    benchmark_name, solver_class = benchmark_solver
 
     if solver_class.name.lower() == 'cyanure' and sys.platform == 'darwin':
         pytest.skip('Cyanure is not easy to install on macos.')
@@ -161,10 +122,9 @@ def test_solver_install(test_env_name, benchmark_name, solver_class):
                               raise_on_not_installed=True)
 
 
-@pytest.mark.parametrize('benchmark_name, solver_class', BENCH_AND_SOLVERS,
-                         ids=class_ids)
-def test_solver(benchmark_name, solver_class):
+def test_solver(benchmark_solver):
 
+    benchmark_name, solver_class = benchmark_solver
     if not solver_class.is_installed():
         pytest.skip("Solver is not installed")
 

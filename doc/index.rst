@@ -66,23 +66,11 @@ Notation:  In what follows, n (or n_samples) stands for the number of samples an
 
  y \in \mathbb{R}^n, X = [x_1^\top, \dots, x_n^\top]^\top \in \mathbb{R}^{n \times p}
 
-- `ols`: ordinary least-squares. This consists in solving the following program:
-
-.. math::
-
-    \min_w \frac{1}{2} \|y - Xw\|^2_2
-
 - `lasso`: l1-regularized least-squares. This consists in solving the following program:
 
 .. math::
 
     \min_w \frac{1}{2} \|y - Xw\|^2_2 + \lambda \|w\|_1
-
-- `logreg_l1`: l1-regularized logistic regression. This consists in solving the following program:
-
-.. math::
-
-    \min_w \sum_i \log(1 + \exp(-y_i x_i^\top w)) + \lambda \|w\|_1
 
 - `logreg_l2`: l2-regularized logistic regression. This consists in solving the following program:
 
@@ -90,7 +78,19 @@ Notation:  In what follows, n (or n_samples) stands for the number of samples an
 
     \min_w \sum_i \log(1 + \exp(-y_i x_i^\top w)) + \frac{\lambda}{2} \|w\|_2^2
 
-- `nnls`: non-negative least-squares. This consists in solving the following program:
+- `logreg_l1`_: l1-regularized logistic regression. This consists in solving the following program:
+
+.. math::
+
+    \min_w \sum_i \log(1 + \exp(-y_i x_i^\top w)) + \lambda \|w\|_1
+
+- `ols`_: ordinary least-squares. This consists in solving the following program:
+
+.. math::
+
+    \min_w \frac{1}{2} \|y - Xw\|^2_2
+
+- `nnls`_: non-negative least-squares. This consists in solving the following program:
 
 .. math::
 
@@ -112,3 +112,7 @@ Contents
    :target: https://www.python.org/downloads/release/python-360/
 .. |codecov| image:: https://codecov.io/gh/benchopt/benchOpt/branch/master/graph/badge.svg
    :target: https://codecov.io/gh/benchopt/benchOpt
+
+.. _`ols`: https://github.com/benchopt/benchmark_ols
+.. _`nnls`: https://github.com/benchopt/benchmark_nnls
+.. _`logreg_l1`: https://github.com/benchopt/benchmark_logreg_l1
