@@ -19,7 +19,7 @@ class Objective(BaseObjective):
     def set_data(self, X, y):
         self.X, self.y = X, y
 
-    def __call__(self, beta):
+    def compute(self, beta):
         y_X_beta = self.y * self.X.dot(beta.flatten())
         l2 = 0.5 * np.dot(beta, beta)
         return np.log1p(np.exp(-y_X_beta)).sum() + self.lmbd * l2

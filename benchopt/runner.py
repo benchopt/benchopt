@@ -86,7 +86,7 @@ def run_one_repetition(objective, solver, meta, stop_val):
     solver.run(stop_val)
     delta_t = time.perf_counter() - t_start
     beta_hat_i = solver.get_result()
-    objective_value = objective(beta=beta_hat_i)
+    objective_value = objective(beta_hat_i)
 
     return (Cost(**meta, solver=str(solver), stop_val=stop_val, time=delta_t,
                  obj=objective_value), objective_value)

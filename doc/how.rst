@@ -7,13 +7,17 @@ Write a benchmark
    :local:
    :depth: 2
 
+A benchmark is defined in a folder that should respect a certain
+structure. Examples of benchmarks are available in the
+`benchmarks folder <https://github.com/benchopt/benchOpt/tree/master/benchmarks>`_
+of the `benchOpt repository <https://github.com/benchopt/benchOpt>`_
+or in repository of the `benchopt organisation <https://github.com/benchopt/>`_.
+The simplest way to create a benchmark is to copy an existing folder and
+modify the element to fit the new structure.
+
 A benchmark consists in three elements: an objective function,
 a list of datasets, and a list of solvers.
 
-A benchmark is defined in a folder that should respect a certain
-structure. Examples of benchmarks are availble in the
-`benchmarks folder <https://github.com/benchopt/benchOpt/tree/master/benchmarks>`_
-of the `benchOpt repository <https://github.com/benchopt/benchOpt>`_
 
 1. Objective
 ------------
@@ -21,7 +25,7 @@ of the `benchOpt repository <https://github.com/benchopt/benchOpt>`_
 The objective function is defined through a Python class that
 allows to evaluate the function that should be minimized by solvers.
 A objective should define a `set_data` method that allows
-to specify the data and a `__call__` method that allows
+to specify the data and a `compute` method that allows
 to evaluate the objective for a given value of the iterate.
 
 Example
@@ -53,7 +57,7 @@ Using simulated data:
 
 .. literalinclude:: ../benchmarks/lasso/datasets/simulated.py
 
-2. Solvers
+3. Solvers
 ----------
 
 Solver requires to define a `set_objective` that is constructed

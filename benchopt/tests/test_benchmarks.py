@@ -22,7 +22,7 @@ def test_benchmark_objective(benchmark_dataset_simu):
     # check that the reported scale is correct and that the result of
     # the objective function is a scalar
     beta_hat = np.zeros(scale)
-    objective_value = objective(beta=beta_hat)
+    objective_value = objective(beta_hat)
     assert np.isscalar(objective_value), (
         "The output of the objective function should be a scalar."
     )

@@ -350,7 +350,7 @@ class BaseObjective(ParametrizedNameMixin):
       parameters of the solver's `set_objective` method in order to specify the
       objective function of the benchmark.
 
-    - `__call__(beta)`: computes the value of the objective function for an
+    - `compute(beta)`: computes the value of the objective function for an
       given estimate beta. Beta is given as a flat 1D vector of size
       corresponding to the `scale` value returned by `Dataset.get_data`. The
       output should be a float or a dictionary of floats.
@@ -367,8 +367,11 @@ class BaseObjective(ParametrizedNameMixin):
         ...
 
     @abstractmethod
-    def __call__(self, beta):
+    def compute(self, beta):
         ...
+
+    def __call__(self, beta):
+        return self.compute(beta)
 
     # Save the dataset object used to get the objective data so we can avoid
     # hashing the data directly.
