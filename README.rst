@@ -3,37 +3,59 @@ Benchmark repository for optimization
 
 |Build Status| |Python 3.6+| |codecov|
 
-BenchOpt is a package to simplify and make more transparent and
-reproducible the comparisons of optimization algorithms.
+BenchOpt is a package to simplify, make more transparent and
+more reproducible the comparisons of optimization algorithms.
+
+BenchOpt is written in Python but it is available with
+`many programming languages <auto_examples/plot_run_benchmark_python_R_julia.html>`_.
+So far it has been tested with `Python <https://www.python.org/>`_,
+`R <https://www.r-project.org/>`_, `Julia <https://julialang.org/>`_
+and compiled binaries written in C/C++ available via a terminal
+command. If it can be installed via
+`conda <https://docs.conda.io/en/latest/>`_ it should just work!
+
+BenchOpt is used through a command line as documented
+in :ref:`api_documentation`. Ultimately running and replicating an
+optimization benchmark should be **as simple as doing**:
+
+.. code-block::
+
+    $ benchopt run benchmarks/logreg_l2
+
+Running this command will give you a benchmark plot on l2-regularized logistic regression:
+
+.. figure:: auto_examples/images/sphx_glr_plot_run_benchmark_001.png
+   :target: how.html
+   :align: center
+   :scale: 80%
+
+Learn how to :ref:`how`.
 
 Install
 --------
 
-This package can be install through `pip` using:
+This package can be installed through `pip` using:
 
 .. code-block::
 
-	$ pip install -U https://api.github.com/repos/benchopt/benchOpt/zipball/master
+    $ pip install -U https://api.github.com/repos/benchopt/benchOpt/zipball/master
 
+Command line usage
+------------------
 
-Usage
------
-
-The `benchopt` command line tool is based on `click`. To run Lasso benchmarks on all datasets and with all solvers, run:
-
-.. code-block::
-
-	$ benchopt run benchmarks/lasso
-
-
-Apart from the problem (e.g. Lasso or Logreg), options can be passed to `benchopt run`, to restrict the benchmarks to some solvers or datasets, e.g.:
+To run Lasso benchmarks on all datasets and with all solvers, run:
 
 .. code-block::
 
-	$ benchopt run benchmarks/lasso -s sklearn -s python-pgd -d boston --max-runs 10 --n-repetitions 10
+    $ benchopt run benchmarks/lasso
 
+Use
 
-Use `benchopt run -h` for more details about these options, or visit https://benchopt.github.io/api.html.
+.. code-block::
+
+    $ benchopt run -h
+
+for more details about different options read the :ref:`api_documentation`.
 
 
 List of optimization problems available
