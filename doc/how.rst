@@ -72,10 +72,10 @@ Using a hand written solver:
 
 .. literalinclude:: ../benchmarks/lasso/solvers/python_pgd.py
 
-Example of a solver available from a package on PyPi
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Example of a solver available from a package on conda
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Using a package available from PyPi:
+Using a package available from conda:
 
 .. literalinclude:: ../benchmarks/lasso/solvers/sklearn.py
 
