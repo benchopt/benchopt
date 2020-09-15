@@ -18,17 +18,22 @@ class Solver(BaseSolver):
 
         n_features = self.X.shape[1]
         w = np.zeros(n_features)
+        if self.use_acceleration:
+            z = np.zeros(n_features)
+
         t_new = 1
         for _ in range(n_iter):
             if self.use_acceleration:
                 t_old = t_new
                 t_new = (1 + np.sqrt(1 + 4 * t_old ** 2)) / 2
                 w_old = w.copy()
-            grad = self.X.T.dot(self.X.dot(w) - self.y)
-            w -= grad / L
-            w = self.st(w, self.lmbd / L)
-            if self.use_acceleration:
-                w += (t_old - 1.) / t_new * (w - w_old)
+                z -= self.X.T @ (self.X @ z - self.y) / L
+                w = self.st(z, self.lmbd / L)
+                z = w + (t_old - 1.) / t_new * (w - w_old)
+            else:
+                w -= self.X.T @ (self.X @ w - self.y) / L
+                w = self.st(w, self.lmbd / L)
+
         self.w = w
 
     def st(self, w, mu):
