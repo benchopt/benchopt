@@ -18,10 +18,10 @@ class Solver(BaseSolver):
     support_sparse = False
 
     # Requirements
-    # pin pyjulia to version 0.5.5 as 0.5.6 seems to segfault on OSX
+    # pin pyjulia to version 0.5.4 as 0.5.5 seems to segfault on OSX
     # See issue#64
     install_cmd = 'conda'
-    requirements = ['julia', 'pip:julia==0.5.5']
+    requirements = ['julia', 'pip:julia==0.5.4']
 
     def set_objective(self, X, y, lmbd):
         self.X, self.y, self.lmbd = X, y, lmbd
