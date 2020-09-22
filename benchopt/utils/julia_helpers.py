@@ -12,6 +12,7 @@ jl_interpreter = None
 def get_jl_interpreter():
     global jl_interpreter
     if jl_interpreter is None:
+        # Only suppress std if not in debug mode.
         out = nullcontext() if DEBUG else SuppressStd()
         try:
             with out:

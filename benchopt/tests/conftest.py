@@ -12,6 +12,8 @@ from benchopt.utils.shell_cmd import create_conda_env
 # https://pyjulia.readthedocs.io/en/latest/pytest.html?highlight=pytest#pytest-plugin
 try:
     import julia  # noqa: F401
+    # make sure julia is properly installed for the test if it exists
+    julia.install()
     pytest_plugins = ("julia.pytestplugin",)
 except Exception:
     pass
