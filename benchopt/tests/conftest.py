@@ -15,8 +15,9 @@ try:
     # make sure julia is properly installed for the test if it exists
     julia.install()
     pytest_plugins = ("julia.pytestplugin",)
+    use_julia = True
 except Exception:
-    pass
+    use_julia = False
 
 
 DEFAULT_GLOBAL['debug'] = True
@@ -48,6 +49,12 @@ def class_ids(parameters):
     if name_id.startswith('-'):
         name_id = name_id[1:]
     return name_id
+
+
+# Make sure that when using pyjulia, we use the proper option for the plugin
+def pytest_cmdline_preparse(args):
+    if use_julia:
+        args.append('--julia-compiled-modules=no')
 
 
 def pytest_addoption(parser):
