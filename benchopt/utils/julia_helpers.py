@@ -1,11 +1,17 @@
 import julia
-from contextlib import nullcontext
+from contextlib import contextmanager
 
 from ..config import DEBUG
 from .stream_redirection import SuppressStd
 
+# nullcontext is not available in python <=3.6 so we resort to this
+# for backward compat.
+@contextmanager
+def nullcontext(enter_result=None):
+    yield enter_result
 
-# Factory to get the julia interpreter only once
+
+# Singleton to get the julia interpreter only once
 jl_interpreter = None
 
 
