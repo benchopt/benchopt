@@ -8,6 +8,14 @@ from benchopt.util import list_benchmark_datasets
 from benchopt.utils.shell_cmd import delete_conda_env
 from benchopt.utils.shell_cmd import create_conda_env
 
+# Use julia pytest plugin  to avoid segfault in the test suit as described in
+# https://pyjulia.readthedocs.io/en/latest/pytest.html?highlight=pytest#pytest-plugin
+try:
+    import julia  # noqa: F401
+    pytest_plugins = ("julia.pytestplugin",)
+except Exception:
+    pass
+
 
 DEFAULT_GLOBAL['debug'] = True
 DEFAULT_GLOBAL['raise_install_error'] = True
