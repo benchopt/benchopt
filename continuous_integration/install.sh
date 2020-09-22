@@ -20,11 +20,9 @@ pip list
 pip install -e .
 
 
-if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-        # There is an ungoing issue with compat between libgit2 and julia which
-        # makes the auto install of julia solver fails when cloning the General
-        # repository from julia. To avoid this, we clone this on the system
-        # directly. See https://github.com/JuliaLang/julia/issues/33111
-        git clone https://github.com/JuliaRegistries/General.git \
-                $HOME/.julia/registries/General
-fi
+# There is an ungoing issue with compat between libgit2 and julia which makes
+# the auto install of julia solver fails when cloning the General repository
+# from julia. To avoid this, we clone this on the system directly.
+# See https://github.com/JuliaLang/julia/issues/33111
+git clone https://github.com/JuliaRegistries/General.git \
+        $HOME/.julia/registries/General
