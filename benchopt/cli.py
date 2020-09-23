@@ -3,8 +3,7 @@ import pandas as pd
 from pathlib import Path
 
 from benchopt import run_benchmark
-
-from .viz import plot_benchmark
+from benchopt.viz import plot_benchmark
 
 from benchopt.util import _load_class_from_module
 from benchopt.util import install_required_solvers
