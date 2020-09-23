@@ -128,6 +128,11 @@ def test_solver(benchmark_solver):
     if not solver_class.is_installed():
         pytest.skip("Solver is not installed")
 
+    # Skip test_solver for julia in OSX as it throw a segfault
+    # See issue#64
+    if 'julia' in solver_class.name.lower() and sys.platform == 'darwin':
+        pytest.skip('Julia causes segfault on OSX for now.')
+
     objective_class = get_benchmark_objective(benchmark_name)
     objective = objective_class.get_instance()
 
