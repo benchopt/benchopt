@@ -60,7 +60,10 @@ class TestPlotCmd:
             run(['benchmarks/lasso', '-l', '-d', 'simulated*500', '-s',
                 'pgd*False', '-n', '1', '-r', '1', '-p', '0.1', '--no-plot'],
                 'benchopt', standalone_mode=False)
-        result_file = re.findall(r'Saving result in: (.*\.csv)', out.output)[0]
+        result_files = re.findall(r'Saving result in: (.*\.csv)', out.output)
+        if len(result_files) != 1:
+            print(out.output)
+        result_file = result_files[0]
         cls.result_file = result_file
 
     @classmethod
