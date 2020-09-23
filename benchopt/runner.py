@@ -14,7 +14,7 @@ from .config import get_global_setting
 from .util import list_benchmark_solvers
 from .util import list_benchmark_datasets
 from .util import get_benchmark_objective
-from .utils.files import _make_output_folder
+from .utils.files import _get_output_folder
 from .utils.checkers import solver_supports_dataset
 
 
@@ -141,8 +141,8 @@ def run_one_stop_val(benchmark, objective, solver, meta, stop_val,
     current_objective = []
     for rep in range(n_repetitions):
         if progress_str is not None:
-            print(f"{progress_str} ({rep} / {n_repetitions})\r",
-                  end='', flush=True)
+            msg = f"{progress_str} ({rep} / {n_repetitions} repetitions)"
+            print(f"{msg.ljust(60)}\r", end='', flush=True)
 
         meta_rep = dict(**meta, idx_rep=rep)
 
@@ -391,7 +391,7 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
 
     # Save output in CSV file in the benchmark folder
     timestamp = datetime.now().strftime('%Y-%m-%d_%Hh%M:%S')
-    output_dir = _make_output_folder(benchmark)
+    output_dir = _get_output_folder(benchmark)
     save_file = output_dir / f'benchopt_run_{timestamp}.csv'
     df.to_csv(save_file)
     print(colorify(f'Saving result in: {save_file}', GREEN))

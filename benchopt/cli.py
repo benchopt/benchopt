@@ -1,15 +1,22 @@
 import click
+import pandas as pd
 from pathlib import Path
 
 from benchopt import run_benchmark
+
+from .viz import plot_benchmark
 
 from benchopt.util import _load_class_from_module
 from benchopt.util import install_required_solvers
 from benchopt.util import install_required_datasets
 
+from benchopt.utils.files import _get_output_folder
 from benchopt.utils.checkers import validate_solver_patterns
 from benchopt.utils.checkers import validate_dataset_patterns
 from benchopt.utils.shell_cmd import _run_shell_in_conda_env, create_conda_env
+
+
+BENCHMARK_TEST_FILE = Path(__file__).parent / 'tests' / 'test_benchmarks.py'
 
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
@@ -114,6 +121,43 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
 
 
 @main.command(
+    help="Plot the result from a previously run benchmark."
+)
+@click.argument('benchmark', type=click.Path(exists=True))
+@click.option('--filename', '-f',
+              type=str, default=None,
+              help="Specify the file to select in the benchmark. If it is "
+              "not specified, take the latest on in the benchmark output "
+              "folder.")
+@click.option('--kind', '-k', 'kinds',
+              multiple=True, show_default=True, type=str,
+              help='Timeout a solver when run for more than <timeout> seconds')
+def plot(benchmark, filename=None, kinds=('convergence_curve',)):
+
+    output_folder = _get_output_folder(benchmark)
+    all_csv_files = output_folder.glob("*.csv")
+    all_csv_files = sorted(
+        all_csv_files, key=lambda t: t.stat().st_mtime
+    )
+    if filename is not None:
+        if (output_folder / filename).exists():
+            result_filename = output_folder / filename
+        elif Path(filename).exists():
+            result_filename = Path(filename)
+        else:
+            all_csv_files = '\n- '.join([str(s) for s in all_csv_files])
+            raise FileNotFoundError(
+                f"Could not find result file {filename}. Available result "
+                f"files are:\n- {all_csv_files}"
+            )
+    else:
+        result_filename = all_csv_files[-1]
+
+    df = pd.read_csv(result_filename)
+    plot_benchmark(df, benchmark, kinds=kinds)
+
+
+@main.command(
     help="Check that a given solver or dataset is correctly installed.\n\n"
     "The class to be checked is specified with the absolute path of the file "
     "in which it is defined MODULE_FILENAME and the name of the base "
@@ -142,14 +186,12 @@ def test(benchmark_dir, env_name, pytest_args):
     if len(pytest_args) == 0:
         pytest_args = '-vl'
 
-    TEST_FILE = Path(__file__).parent / 'tests' / 'test_benchmarks.py'
-
     env_option = ''
     if env_name is not None:
         create_conda_env(env_name, with_pytest=True)
         env_option = f'--test-env {env_name}'
     cmd = (
-        f'pytest {pytest_args} {TEST_FILE} '
+        f'pytest {pytest_args} {BENCHMARK_TEST_FILE} '
         f'--benchmark {benchmark_dir} {env_option}'
     )
 
