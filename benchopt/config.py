@@ -31,9 +31,9 @@ def get_global_setting(name):
     env_var_name = f"BENCHO_{name.upper()}"
 
     if isinstance(DEFAULT_GLOBAL[name], bool):
-        setting = config.getboolean('benchopt', name,
-                                    fallback=DEFAULT_GLOBAL[name])
-        setting = os.environ.get(env_var_name, setting)
+        file_setting = config.getboolean('benchopt', name,
+                                         fallback=DEFAULT_GLOBAL[name])
+        setting = os.environ.get(env_var_name, file_setting)
         # convert string 0/1/true/false/yes/no/on/off to boolean
         if isinstance(setting, str):
             setting = setting.lower()
@@ -45,6 +45,7 @@ def get_global_setting(name):
                     'boolean. Should be one of '
                     f'{list(configparser.ConfigParser.BOOLEAN_STATES.keys())}'
                 )
+                setting = file_setting
     else:
         # TODO: get the correct type from DEFAULT_GLOBAL for other types
         setting = config.get('benchopt', name, fallback=DEFAULT_GLOBAL[name])
