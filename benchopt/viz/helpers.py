@@ -23,5 +23,11 @@ def get_plot_id(benchmark, df):
     hasher.update(benchmark.encode('utf-8'))  # benchmark
     hasher.update(df.data.unique()[0].encode('utf-8'))  # dataset
     hasher.update(df.objective.unique()[0].encode('utf-8'))  # objective
+    for s in df.solver.unique():
+        hasher.update(s.encode('utf-8'))
+    max_n_rep = df.idx_rep.max()
+    max_stop_val = df.stop_val.max()
+    min_stop_val = df.stop_val.min()
+    hasher.update(f'{max_n_rep} {max_stop_val} {min_stop_val}'.encode('utf-8'))
     plot_id = hasher.hexdigest()
     return plot_id

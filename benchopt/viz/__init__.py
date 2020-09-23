@@ -14,8 +14,8 @@ PLOT_KINDS = {
 }
 
 
-def plot_benchmark(df, benchmark, kinds=None):
-    """Plot convergence curve and histogram for a given benchmark.
+def plot_benchmark(df, benchmark, kinds=None, display=True):
+    f"""Plot convergence curve and histogram for a given benchmark.
 
     Parameters
     ----------
@@ -23,6 +23,11 @@ def plot_benchmark(df, benchmark, kinds=None):
         The benchmark results.
     benchmark : str
         The path to the benchmark folder.
+    kinds : list of str or None
+        List of the plots that will be generated. If None are provided, use the
+        config file to choose or default to convergence_curve.
+    display : bool
+        If set to True, display the curves with plt.show.
 
     Returns
     -------
@@ -52,7 +57,11 @@ def plot_benchmark(df, benchmark, kinds=None):
                         f"Requesting invalid plot '{k}'. Should be in:\n"
                         f"{PLOT_KINDS}")
                 fig = PLOT_KINDS[k](df_obj, benchmark)
-                plt.savefig(output_dir / f"{plot_id}_{k}.pdf")
+                save_name = output_dir / f"{plot_id}_{k}.pdf"
+                plt.savefig(save_name)
+                print(f'Save {k} plot for {data} and {objective} as:'
+                      f' {save_name}')
                 figs.append(fig)
-    plt.show()
+    if display:
+        plt.show()
     return figs

@@ -132,7 +132,12 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
 @click.option('--kind', '-k', 'kinds',
               multiple=True, show_default=True, type=str,
               help='Timeout a solver when run for more than <timeout> seconds')
-def plot(benchmark, filename=None, kinds=('convergence_curve',)):
+@click.option('--no-display',
+              is_flag=True,
+              help="If this flag is set, do not display the plot on the "
+              "screen.")
+def plot(benchmark, filename=None, kinds=('convergence_curve',),
+         no_display=False):
 
     output_folder = _get_output_folder(benchmark)
     all_csv_files = output_folder.glob("*.csv")
@@ -154,7 +159,7 @@ def plot(benchmark, filename=None, kinds=('convergence_curve',)):
         result_filename = all_csv_files[-1]
 
     df = pd.read_csv(result_filename)
-    plot_benchmark(df, benchmark, kinds=kinds)
+    plot_benchmark(df, benchmark, kinds=kinds, display=not no_display)
 
 
 @main.command(
