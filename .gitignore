@@ -11,6 +11,11 @@ __pycache__
 **/outputs
 benchopt_front_page_convergence.pdf
 
+# Package directory
+build/
+dist/
+
+
 # IDE specific folders
 .vscode
 

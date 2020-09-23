@@ -1,11 +1,5 @@
-include *.md
-include *.py
-include *.txt
-include *.yml
-include .coveragerc
-include Makefile
-recursive-include continuous_integration *.py
-recursive-include continuous_integration *.sh
+include setup.py
+include COPYING
 recursive-include doc *.css
 recursive-include doc *.py
 recursive-include doc *.rst
