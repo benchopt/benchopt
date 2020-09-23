@@ -1,10 +1,10 @@
 import ctypes
-from pathlib import Path
 
 import numpy as np
 import matplotlib.pyplot as plt
 
 from .config import get_benchmark_setting
+from .utils.files import _make_output_folder
 
 
 def plot_benchmark(df, benchmark):
@@ -38,12 +38,6 @@ def plot_benchmark(df, benchmark):
                 figs.append(plot_histogram(df_obj, benchmark))
     plt.show()
     return figs
-
-
-def _make_output_folder(benchmark):
-    output_dir = Path(benchmark) / "outputs"
-    output_dir.mkdir(exist_ok=True)
-    return output_dir
 
 
 def plot_convergence_curve(df, benchmark):

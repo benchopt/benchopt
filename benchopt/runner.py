@@ -2,6 +2,7 @@ import time
 import numpy as np
 import pandas as pd
 from joblib import Memory
+from datetime import datetime
 
 
 from .base import Cost
@@ -13,6 +14,7 @@ from .config import get_global_setting
 from .util import list_benchmark_solvers
 from .util import list_benchmark_datasets
 from .util import get_benchmark_objective
+from .utils.files import _make_output_folder
 from .utils.checkers import solver_supports_dataset
 
 
@@ -386,6 +388,14 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                             force=force, show_progress=show_progress
                         ))
     df = pd.DataFrame(run_statistics)
+
+    # Save output in CSV file in the benchmark folder
+    timestamp = datetime.now().strftime('%Y-%m-%d_%Hh%M:%S')
+    output_dir = _make_output_folder(benchmark)
+    save_file = output_dir / f'benchopt_run_{timestamp}.csv'
+    df.to_csv(save_file)
+    print(colorify(f'Saving result in: {save_file}', GREEN))
+
     if plot_result:
         plot_benchmark(df, benchmark)
     return df
