@@ -7,7 +7,7 @@ BenchOpt is a package to simplify, make more transparent and
 more reproducible the comparisons of optimization algorithms.
 
 BenchOpt is written in Python but it is available with
-`many programming languages <auto_examples/plot_run_benchmark_python_R_julia.html>`_.
+many programming languages.
 So far it has been tested with `Python <https://www.python.org/>`_,
 `R <https://www.r-project.org/>`_, `Julia <https://julialang.org/>`_
 and compiled binaries written in C/C++ available via a terminal
@@ -15,21 +15,17 @@ command. If it can be installed via
 `conda <https://docs.conda.io/en/latest/>`_ it should just work!
 
 BenchOpt is used through a command line as documented
-in :ref:`api_documentation`. Ultimately running and replicating an
+in api_documentation. Ultimately running and replicating an
 optimization benchmark should be **as simple as doing**:
 
 .. code-block::
 
     $ benchopt run benchmarks/logreg_l2
 
-Running this command will give you a benchmark plot on l2-regularized logistic regression:
+Running this command will give you a benchmark plot on l2-regularized
+logistic regression.
 
-.. figure:: auto_examples/images/sphx_glr_plot_run_benchmark_001.png
-   :target: how.html
-   :align: center
-   :scale: 80%
-
-Learn how to :ref:`how`.
+Learn how to `write a benchmark <https://benchopt.github.io/how.html>`_.
 
 Install
 --------
@@ -55,48 +51,17 @@ Use
 
     $ benchopt run -h
 
-for more details about different options read the :ref:`api_documentation`.
+for more details about different options read the
+`API Documentation <https://benchopt.github.io/api.html>`_.
 
 
 List of optimization problems available
 ---------------------------------------
 
-Notation:  In what follows, n (or n_samples) stands for the number of samples and p (or n_features) stands for the number of features.
-
-.. math::
-
- y \in \mathbb{R}^n, X = [x_1^\top, \dots, x_n^\top]^\top \in \mathbb{R}^{n \times p}
-
-- `lasso`: l1-regularized least-squares. This consists in solving the following program:
-
-.. math::
-
-    \min_w \frac{1}{2} \|y - Xw\|^2_2 + \lambda \|w\|_1
-
-- `logreg_l2`: l2-regularized logistic regression. This consists in solving the following program:
-
-.. math::
-
-    \min_w \sum_i \log(1 + \exp(-y_i x_i^\top w)) + \frac{\lambda}{2} \|w\|_2^2
-
-- `logreg_l1`_: l1-regularized logistic regression. This consists in solving the following program:
-
-.. math::
-
-    \min_w \sum_i \log(1 + \exp(-y_i x_i^\top w)) + \lambda \|w\|_1
-
-- `ols`_: ordinary least-squares. This consists in solving the following program:
-
-.. math::
-
-	\min_w \frac{1}{2} \|y - Xw\|^2_2
-
-- `nnls`_: non-negative least-squares. This consists in solving the following program:
-
-.. math::
-
-    \min_{w \geq 0} \frac{1}{2} \|y - Xw\|^2_2
-
+To discover what benchmarks are presently available look
+for `benchmark repositories on GitHub <https://github.com/benchopt/>`_,
+such as for
+`l1-regularized logistic regression <https://github.com/benchopt/benchmark_logreg_l1>`_.
 
 .. |Build Status| image:: https://dev.azure.com/benchopt/benchopt/_apis/build/status/benchopt.benchOpt?branchName=master
    :target: https://dev.azure.com/benchopt/benchopt/_build/latest?definitionId=1&branchName=master
