@@ -1,0 +1,27 @@
+name: build
+
+on:
+  push:
+    branches:
+      - '**'
+  create:
+    branches:
+      - 'master'
+    tags:
+      - '**'
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python 3.8
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
+
+    - name: Install dependencies
+      run: pip install check-manifest
+    - name: Check MANIFEST
+      run: check-manifest

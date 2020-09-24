@@ -1,0 +1,12 @@
+
+
+[tool.check-manifest]
+ignore = [
+  "*.yml",
+  ".coveragerc",
+  ".circleci/*",
+  "continuous_integration/*",
+  "Makefile",
+  "benchmarks/**",
+  "roadmap.md",
+]
