@@ -1,22 +1,23 @@
-# using Core
+using Core
 using LinearAlgebra
 using StatsBase # sample function
 
 # TODO : import shared functions from file
 # include("./benchmarks/logreg_l2/solvers/logistic.jl")
 
-##########################################################
-
 # Loss evaluation
-function logistic_loss(X, y, w::Array{Float64}) # correct
-    # return sum( log.(1. .+  exp.(-(y .* (X*w)))) ) # other implementation
-    return -sum( log.(logistic_diff_phi(y .* (X*w))) )
+function logistic_loss(X, y, w::Array{Float64})
+    return sum( log.(1. .+  exp.(-(y .* (X*w)))) )
 end
 
 # Gradient evaluation
-function logistic_diff_phi(z::Array{Float64}) # correct
-    # Derivative of phi_i is ``more or less" the sigmoid
-    # phi'(z) = 1 / (1 + e^(-z))
+function sigmoid(z::Array{Float64})
+    # This function computes the sigmoid function:
+    # \sigma(z) = 1 / (1 + e^(-z)) .
+    # Let the i-th loss be
+    # \phi_i (z) = \log \left( 1 + e^{-y_i z} \right) .
+    # Then its derivative is
+    # \phi_i^' (z) = -y_i \sigma(-y_i z)
     idx = z .> 0
     out = zeros(size(z))
     out[idx] = (1 .+ exp.(-z[idx])).^(-1)
@@ -25,17 +26,15 @@ function logistic_diff_phi(z::Array{Float64}) # correct
     return out
 end
 
-function logistic_grad(X, y, w::Array{Float64}) # correct
+function logistic_grad(X, y, w::Array{Float64})
     # lot of computations hidden back here
-    z = logistic_diff_phi(y .* (X*w))
+    z = sigmoid(y .* (X*w))
     return X' * (y .* (z .- 1))
 end
 
-##########################################################
-
 function logreg_l2_Jac!(X, y, w::Array{Float64}, lambda::Float64, B::Array{Int64}, Jac::Array{Float64})
     n_samples = size(X, 1)
-    z = logistic_diff_phi(y[B] .* (X[B, :]*w));
+    z = sigmoid(y[B] .* (X[B, :]*w));
     Jac[:, B] = n_samples .* X[B, :]' .* (y[B] .* (z .- 1))' .+ (lambda .* w); # J_{:i}^{t+1} <- \nabla f_i (w^t)
 end
 
@@ -63,9 +62,9 @@ function solve_logreg_l2(X, y, lambda::Float64, n_iter::Int64; batch_size::Int64
 
         # Assign each gradient to a different column of Jac
         aux[:] = -sum(Jac[:, B], dims=2); # Calculating the auxiliary vector
-        # aux = sum_{i \in B} (\nabla f_i (w^t) - J_{:i}^t)
         logreg_l2_Jac!(X, y, w, lambda, B, Jac); # Update of the Jacobian estimate
         aux[:] += sum(Jac[:, B], dims=2);
+        # Here: aux = \sum_{i \in B} (\nabla f_i (w^t) - J_{:i}^t)
 
         # Update of the unbiased gradient estimate: g^k
         if unbiased
