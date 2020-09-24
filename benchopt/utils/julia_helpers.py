@@ -4,6 +4,7 @@ from contextlib import contextmanager
 from ..config import DEBUG
 from .stream_redirection import SuppressStd
 
+
 # nullcontext is not available in python <=3.6 so we resort to this
 # for backward compat.
 @contextmanager
