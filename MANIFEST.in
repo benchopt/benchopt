@@ -16,3 +16,5 @@ prune doc/auto_examples
 # Include examples
 recursive-include examples *.py
 recursive-include examples *.txt
+
+exclude .mailmap
