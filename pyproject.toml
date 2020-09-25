@@ -1,0 +1,16 @@
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-v"
+testpaths = [
+    "benchopt",
+]
+
+[tool.check-manifest]
+ignore = [
+  "*.yml",
+  ".coveragerc",
+  ".circleci/*",
+  "continuous_integration/*",
+  "Makefile",
+  "roadmap.md",
+]

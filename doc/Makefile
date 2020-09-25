@@ -131,6 +131,7 @@ coverage:
 	@echo "Testing of coverage in the sources finished, look at the " \
 		  "results in $(BUILDDIR)/coverage/python.txt."
 
+.PHONY: install
 install:
 	rm -rf _build/doctrees _build/benchopt.github.io
 	# first clone the benchopt/benchopt.github.io repo because it may ask

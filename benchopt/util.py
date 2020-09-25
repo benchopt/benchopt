@@ -107,10 +107,10 @@ def list_benchmark_datasets(benchmark_dir):
 def _check_name_lists(*name_lists):
     """Normalize name_list ot a list of lowercase str."""
     res = []
-    for l in name_lists:
-        if l is None:
+    for name_list in name_lists:
+        if name_list is None:
             continue
-        res.extend([str(name).lower() for name in l])
+        res.extend([str(name).lower() for name in name_list])
     return res
 
 

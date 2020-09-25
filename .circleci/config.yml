@@ -70,6 +70,14 @@ jobs:
             paths:
               - ~/.cache/pip
 
+        # Clone the benchmarks that are used in the examples
+        - run:
+            name: Clone benchmarks for examples
+            command: |
+              git clone https://github.com/benchopt/benchmark_logreg_l2 benchmarks/logreg_l2
+              git clone https://github.com/benchopt/benchmark_lasso benchmarks/lasso
+
+
         # Look at what we have and fail early if there is some library conflict
         - run:
             name: Check installation

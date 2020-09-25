@@ -7,29 +7,38 @@ BenchOpt is a package to simplify, make more transparent and
 more reproducible the comparisons of optimization algorithms.
 
 BenchOpt is written in Python but it is available with
-`many programming languages <auto_examples/plot_run_benchmark_python_R_julia.html>`_.
+`many programming languages <https://benchopt.github.io/auto_examples/plot_run_benchmark_python_R_julia.html>`_.
 So far it has been tested with `Python <https://www.python.org/>`_,
 `R <https://www.r-project.org/>`_, `Julia <https://julialang.org/>`_
 and compiled binaries written in C/C++ available via a terminal
 command. If it can be installed via
 `conda <https://docs.conda.io/en/latest/>`_ it should just work!
 
-BenchOpt is used through a command line as documented
-in :ref:`api_documentation`. Ultimately running and replicating an
-optimization benchmark should be **as simple as doing**:
+BenchOpt is used through a command line as described
+in `the API Documentation <https://benchopt.github.io/api.html>`_.
+Ultimately running and replicating an optimization benchmark should
+be **as simple as doing**:
 
 .. code-block::
 
-    $ benchopt run benchmarks/logreg_l2
+    $ git clone https://github.com/benchopt/benchmark_logreg_l2
+    $ benchopt run ./benchmark_logreg_l2
 
-Running this command will give you a benchmark plot on l2-regularized logistic regression:
+Running this command will give you a benchmark plot on l2-regularized
+logistic regression:
 
-.. figure:: auto_examples/images/sphx_glr_plot_run_benchmark_001.png
+.. figure:: https://benchopt.github.io/_images/sphx_glr_plot_run_benchmark_001.png
    :target: how.html
    :align: center
    :scale: 80%
 
-Learn how to :ref:`how`.
+To discover which benchmarks are presently available look
+for `benchmark_* repositories on GitHub <https://github.com/benchopt/>`_,
+such as for
+`l1-regularized logistic regression <https://github.com/benchopt/benchmark_logreg_l1>`_.
+
+
+Learn how to `write a benchmark on our documentation <https://benchopt.github.io/how.html>`_.
 
 Install
 --------
@@ -38,16 +47,25 @@ This package can be installed through `pip` using:
 
 .. code-block::
 
-    $ pip install -U https://api.github.com/repos/benchopt/benchOpt/zipball/master
+    $ pip install benchopt
+
+This will install the command line tool to run the benchmark. Then, existing
+benchmarks can be retrieved from git or created locally. For instance, the
+benchmark for Lasso can be retrieved with:
+
+.. code-block::
+
+    $ git clone https://github.com/benchopt/benchmark_lasso
+
 
 Command line usage
 ------------------
 
-To run Lasso benchmarks on all datasets and with all solvers, run:
+To run the Lasso benchmark on all datasets and with all solvers, run:
 
 .. code-block::
 
-    $ benchopt run benchmarks/lasso
+    $ benchopt run ./benchmark_lasso
 
 Use
 
@@ -55,47 +73,18 @@ Use
 
     $ benchopt run -h
 
-for more details about different options read the :ref:`api_documentation`.
+for more details about different options or read the
+`API Documentation <https://benchopt.github.io/api.html>`_.
 
 
 List of optimization problems available
 ---------------------------------------
 
-Notation:  In what follows, n (or n_samples) stands for the number of samples and p (or n_features) stands for the number of features.
-
-.. math::
-
- y \in \mathbb{R}^n, X = [x_1^\top, \dots, x_n^\top]^\top \in \mathbb{R}^{n \times p}
-
-- `lasso`: l1-regularized least-squares. This consists in solving the following program:
-
-.. math::
-
-    \min_w \frac{1}{2} \|y - Xw\|^2_2 + \lambda \|w\|_1
-
-- `logreg_l2`: l2-regularized logistic regression. This consists in solving the following program:
-
-.. math::
-
-    \min_w \sum_i \log(1 + \exp(-y_i x_i^\top w)) + \frac{\lambda}{2} \|w\|_2^2
-
-- `logreg_l1`_: l1-regularized logistic regression. This consists in solving the following program:
-
-.. math::
-
-    \min_w \sum_i \log(1 + \exp(-y_i x_i^\top w)) + \lambda \|w\|_1
-
-- `ols`_: ordinary least-squares. This consists in solving the following program:
-
-.. math::
-
-	\min_w \frac{1}{2} \|y - Xw\|^2_2
-
-- `nnls`_: non-negative least-squares. This consists in solving the following program:
-
-.. math::
-
-    \min_{w \geq 0} \frac{1}{2} \|y - Xw\|^2_2
+- `ols`_: ordinary least-squares.
+- `nnls`_: non-negative least-squares.
+- `lasso`_: l1-regularized least-squares.
+- `logreg_l2`_: l2-regularized logistic regression.
+- `logreg_l1`_: l1-regularized logistic regression.
 
 
 .. |Build Status| image:: https://dev.azure.com/benchopt/benchopt/_apis/build/status/benchopt.benchOpt?branchName=master
@@ -107,4 +96,6 @@ Notation:  In what follows, n (or n_samples) stands for the number of samples an
 
 .. _`ols`: https://github.com/benchopt/benchmark_ols
 .. _`nnls`: https://github.com/benchopt/benchmark_nnls
+.. _`lasso`: https://github.com/benchopt/benchmark_lasso
 .. _`logreg_l1`: https://github.com/benchopt/benchmark_logreg_l1
+.. _`logreg_l2`: https://github.com/benchopt/benchmark_logreg_l2

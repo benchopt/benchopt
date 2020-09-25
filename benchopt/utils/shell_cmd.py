@@ -152,7 +152,7 @@ def create_conda_env(env_name, recreate=False, with_pytest=False):
             capture_stdout=True, raise_on_error=True
         )
         _run_shell_in_conda_env(
-            f"conda config --env --add channels conda-forge",
+            "conda config --env --add channels conda-forge",
             env_name=env_name, capture_stdout=True, raise_on_error=True
         )
     except RuntimeError:
@@ -166,7 +166,7 @@ def env_exists(env_name):
     """Returns True if a given environment exists in the system."""
     try:
         _run_shell_in_conda_env(
-            f'which python',
+            'which python',
             env_name=env_name, capture_stdout=True, raise_on_error=True
         )
         return True

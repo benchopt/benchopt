@@ -31,7 +31,7 @@ to evaluate the objective for a given value of the iterate.
 Example
 ~~~~~~~
 
-.. literalinclude:: ../benchmarks/lasso/objective.py
+.. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/objective.py
 
 2. Datasets
 -----------
@@ -45,7 +45,7 @@ Example
 
 Using a real dataset:
 
-.. literalinclude:: ../benchmarks/lasso/datasets/boston.py
+.. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/datasets/boston.py
 
 You can also define a parametrized dataset for example to test
 across problem dimensions.
@@ -55,7 +55,7 @@ Example of parametrized dataset
 
 Using simulated data:
 
-.. literalinclude:: ../benchmarks/lasso/datasets/simulated.py
+.. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/datasets/simulated.py
 
 3. Solvers
 ----------
@@ -70,19 +70,19 @@ Example of hand written and parametrized solver
 
 Using a hand written solver:
 
-.. literalinclude:: ../benchmarks/lasso/solvers/python_pgd.py
+.. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/solvers/python_pgd.py
 
 Example of a solver available from a package on conda
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Using a package available from conda:
 
-.. literalinclude:: ../benchmarks/lasso/solvers/sklearn.py
+.. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/solvers/sklearn.py
 
 Example of a solver available from a package available from source
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Using a package available from source:
 
-.. literalinclude:: ../benchmarks/lasso/solvers/celer.py
+.. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/solvers/celer.py
 

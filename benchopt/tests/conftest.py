@@ -8,25 +8,13 @@ from benchopt.util import list_benchmark_datasets
 from benchopt.utils.shell_cmd import delete_conda_env
 from benchopt.utils.shell_cmd import create_conda_env
 
+from benchopt.tests import TEST_BENCHMARK_DIR
+
 
 DEFAULT_GLOBAL['debug'] = True
 DEFAULT_GLOBAL['raise_install_error'] = True
 
 _TEST_ENV_NAME = None
-
-
-def get_all_benchmarks():
-    """List all the available benchmarks.
-
-    Returns
-    -------
-    benchmarks : list of str
-        The list of all available benchmarks.
-    """
-    BENCHMARKS_DIR = Path(__file__).parent / 'benchmarks'
-    all_benchmarks = [b.resolve() for b in BENCHMARKS_DIR.glob('*/')]
-    all_benchmarks.sort()
-    return all_benchmarks
 
 
 def class_ids(parameters):
@@ -40,6 +28,10 @@ def class_ids(parameters):
     return name_id
 
 
+def pytest_report_header(config):
+    return "project deps: mylib-1.1"
+
+
 def pytest_addoption(parser):
     parser.addoption("--skip-install", action="store_true",
                      help="skip install of solvers that can slow down CI.")
@@ -47,7 +39,7 @@ def pytest_addoption(parser):
                      help="Use a given env to test the solvers' install.")
     parser.addoption("--recreate", action="store_true",
                      help="Recreate the environment if it already exists.")
-    parser.addoption("--benchmark", type=str, default=None,
+    parser.addoption("--benchmark", type=str, default=None, nargs='*',
                      help="Specify a benchmark to test.")
 
 
@@ -88,11 +80,11 @@ def pytest_generate_tests(metafunc):
     }
     for params, func in PARAMETRIZATION.items():
         if params in metafunc.fixturenames:
-            benchmark = metafunc.config.getoption("benchmark")
-            if benchmark is None:
-                benchmarks = get_all_benchmarks()
-            else:
-                benchmarks = [Path(benchmark).resolve()]
+            benchmarks = metafunc.config.getoption("benchmark")
+            if benchmarks is None or len(benchmarks) == 0:
+                benchmarks = TEST_BENCHMARK_DIR.glob('*/')
+            benchmarks = [Path(b).resolve() for b in benchmarks]
+            benchmarks.sort()
             metafunc.parametrize(params, func(benchmarks), ids=class_ids)
 
 

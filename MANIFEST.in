@@ -1,0 +1,26 @@
+include LICENSE
+include setup.py
+include conftest.py
+include pyproject.toml
+include dev-requirements.txt
+
+# Include doc generation files
+include doc/_static/style.css
+recursive-include doc *.py
+recursive-include doc *.rst
+recursive-include doc *.txt
+recursive-include doc Makefile
+prune doc/_build
+prune doc/generated
+prune doc/auto_examples
+
+# Include examples
+recursive-include examples *.py
+recursive-include examples *.txt
+
+# Include dummy benchmark for test
+recursive-include benchopt/tests/test_benchmarks *.R
+recursive-include benchopt/tests/test_benchmarks *.jl
+recursive-include benchopt/tests/test_benchmarks *.py
+
+exclude .mailmap

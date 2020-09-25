@@ -15,7 +15,7 @@ PLOT_KINDS = {
 
 
 def plot_benchmark(df, benchmark, kinds=None, display=True):
-    f"""Plot convergence curve and histogram for a given benchmark.
+    """Plot convergence curve and histogram for a given benchmark.
 
     Parameters
     ----------
