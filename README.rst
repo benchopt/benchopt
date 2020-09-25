@@ -14,14 +14,15 @@ and compiled binaries written in C/C++ available via a terminal
 command. If it can be installed via
 `conda <https://docs.conda.io/en/latest/>`_ it should just work!
 
-BenchOpt is used through a command line as documented
-in `api_documentation <https://benchopt.github.io/api.html>`_.
+BenchOpt is used through a command line as described
+in `the API Documentation <https://benchopt.github.io/api.html>`_.
 Ultimately running and replicating an optimization benchmark should
 be **as simple as doing**:
 
 .. code-block::
 
-    $ benchopt run benchmarks/logreg_l2
+    $ git clone https://github.com/benchopt/benchmark_logreg_l2
+    $ benchopt run ./benchmark_logreg_l2
 
 Running this command will give you a benchmark plot on l2-regularized
 logistic regression:
@@ -48,14 +49,23 @@ This package can be installed through `pip` using:
 
     $ pip install benchopt
 
-Command line usage
-------------------
-
-To run Lasso benchmarks on all datasets and with all solvers, run:
+This will install the command line tool to run the benchmark. Then, existing
+benchmarks can be retrieved from git or created locally. For instance, the
+benchmark for Lasso can be retrieved with:
 
 .. code-block::
 
-    $ benchopt run benchmarks/lasso
+    $ git clone https://github.com/benchopt/benchmark_lasso.git
+
+
+Command line usage
+------------------
+
+To run the benchmark OLS on all datasets and with all solvers, run:
+
+.. code-block::
+
+    $ benchopt run ./benchmark_lasso
 
 Use
 
@@ -67,9 +77,25 @@ for more details about different options or read the
 `API Documentation <https://benchopt.github.io/api.html>`_.
 
 
+List of optimization problems available
+---------------------------------------
+
+- `ols`_: ordinary least-squares.
+- `nnls`_: non-negative least-squares.
+- `lasso`_: l1-regularized least-squares.
+- `logreg_l2`_: l2-regularized logistic regression.
+- `logreg_l1`_: l1-regularized logistic regression.
+
+
 .. |Build Status| image:: https://dev.azure.com/benchopt/benchopt/_apis/build/status/benchopt.benchOpt?branchName=master
    :target: https://dev.azure.com/benchopt/benchopt/_build/latest?definitionId=1&branchName=master
 .. |Python 3.6+| image:: https://img.shields.io/badge/python-3.6%2B-blue
    :target: https://www.python.org/downloads/release/python-360/
 .. |codecov| image:: https://codecov.io/gh/benchopt/benchOpt/branch/master/graph/badge.svg
    :target: https://codecov.io/gh/benchopt/benchOpt
+
+.. _`ols`: https://github.com/benchopt/benchmark_ols
+.. _`nnls`: https://github.com/benchopt/benchmark_nnls
+.. _`lasso`: https://github.com/benchopt/benchmark_lasso
+.. _`logreg_l1`: https://github.com/benchopt/benchmark_logreg_l1
+.. _`logreg_l2`: https://github.com/benchopt/benchmark_logreg_l2

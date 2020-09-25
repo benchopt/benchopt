@@ -20,9 +20,10 @@ optimization benchmark should be **as simple as doing**:
 
 .. code-block::
 
-    $ benchopt run benchmarks/logreg_l2
+    $ git clone https://github.com/benchopt/benchmark_logreg_l2
+    $ benchopt run ./benchmark_logreg_l2
 
-Running this command will give you a benchmark plot on l2-regularized logistic regression:
+Running these commands will fetch the benchmark files and give you a benchmark plot on l2-regularized logistic regression:
 
 .. figure:: auto_examples/images/sphx_glr_plot_run_benchmark_001.png
    :target: how.html
@@ -38,7 +39,18 @@ This package can be installed through `pip` using:
 
 .. code-block::
 
-    $ pip install -U https://api.github.com/repos/benchopt/benchOpt/zipball/master
+    $ pip install benchopt
+
+This will install the command line tool to run the benchmark. Then, existing
+benchmarks can be retrieved from git or created locally. To discover which
+benchmarks are presently available look for
+`benchmark_* repositories on GitHub <https://github.com/benchopt/>`_,
+such as for `l1-regularized logistic regression <https://github.com/benchopt/benchmark_logreg_l1>`_.
+This benchmark can then be retrieved locally with:
+
+.. code-block::
+
+    $ git clone https://github.com/benchopt/benchmark_lasso.git
 
 Command line usage
 ------------------
@@ -47,7 +59,7 @@ To run Lasso benchmarks on all datasets and with all solvers, run:
 
 .. code-block::
 
-    $ benchopt run benchmarks/lasso
+    $ benchopt run benchmark_lasso
 
 Use
 
@@ -66,24 +78,6 @@ Notation:  In what follows, n (or n_samples) stands for the number of samples an
 
  y \in \mathbb{R}^n, X = [x_1^\top, \dots, x_n^\top]^\top \in \mathbb{R}^{n \times p}
 
-- `lasso`: l1-regularized least-squares. This consists in solving the following program:
-
-.. math::
-
-    \min_w \frac{1}{2} \|y - Xw\|^2_2 + \lambda \|w\|_1
-
-- `logreg_l2`: l2-regularized logistic regression. This consists in solving the following program:
-
-.. math::
-
-    \min_w \sum_i \log(1 + \exp(-y_i x_i^\top w)) + \frac{\lambda}{2} \|w\|_2^2
-
-- `logreg_l1`_: l1-regularized logistic regression. This consists in solving the following program:
-
-.. math::
-
-    \min_w \sum_i \log(1 + \exp(-y_i x_i^\top w)) + \lambda \|w\|_1
-
 - `ols`_: ordinary least-squares. This consists in solving the following program:
 
 .. math::
@@ -95,6 +89,25 @@ Notation:  In what follows, n (or n_samples) stands for the number of samples an
 .. math::
 
     \min_{w \geq 0} \frac{1}{2} \|y - Xw\|^2_2
+
+- `lasso`_: l1-regularized least-squares. This consists in solving the following program:
+
+.. math::
+
+    \min_w \frac{1}{2} \|y - Xw\|^2_2 + \lambda \|w\|_1
+
+- `logreg_l2`_: l2-regularized logistic regression. This consists in solving the following program:
+
+.. math::
+
+    \min_w \sum_i \log(1 + \exp(-y_i x_i^\top w)) + \frac{\lambda}{2} \|w\|_2^2
+
+- `logreg_l1`_: l1-regularized logistic regression. This consists in solving the following program:
+
+.. math::
+
+    \min_w \sum_i \log(1 + \exp(-y_i x_i^\top w)) + \lambda \|w\|_1
+
 
 Contents
 ========
@@ -115,4 +128,6 @@ Contents
 
 .. _`ols`: https://github.com/benchopt/benchmark_ols
 .. _`nnls`: https://github.com/benchopt/benchmark_nnls
+.. _`lasso`: https://github.com/benchopt/benchmark_lasso
 .. _`logreg_l1`: https://github.com/benchopt/benchmark_logreg_l1
+.. _`logreg_l2`: https://github.com/benchopt/benchmark_logreg_l2

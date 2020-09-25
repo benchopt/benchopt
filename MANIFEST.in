@@ -1,6 +1,7 @@
 include LICENSE
 include setup.py
 include conftest.py
+include pyproject.toml
 include dev-requirements.txt
 
 # Include doc generation files

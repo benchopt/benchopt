@@ -2,7 +2,7 @@
 minversion = "6.0"
 addopts = "-v"
 testpaths = [
-    "benchopt/tests",
+    "benchopt",
 ]
 
 [tool.check-manifest]
@@ -12,6 +12,5 @@ ignore = [
   ".circleci/*",
   "continuous_integration/*",
   "Makefile",
-  "benchmarks/**",
   "roadmap.md",
 ]
