@@ -26,18 +26,18 @@ be **as simple as doing**:
 Running this command will give you a benchmark plot on l2-regularized
 logistic regression:
 
-.. figure:: https://benchopt.github.io/_images/sphx_glr_plot_run_benchmark_python_R_julia_001.png
+.. figure:: https://benchopt.github.io/_images/sphx_glr_plot_run_benchmark_001.png
    :target: how.html
    :align: center
    :scale: 80%
 
 To discover which benchmarks are presently available look
-for `benchmark repositories on GitHub <https://github.com/benchopt/>`_,
+for `benchmark_* repositories on GitHub <https://github.com/benchopt/>`_,
 such as for
 `l1-regularized logistic regression <https://github.com/benchopt/benchmark_logreg_l1>`_.
 
 
-Learn how to `write a benchmark <https://benchopt.github.io/how.html>`_.
+Learn how to `write a benchmark on our documentation <https://benchopt.github.io/how.html>`_.
 
 Install
 --------
