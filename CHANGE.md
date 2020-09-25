@@ -1,3 +1,6 @@
+### 1.1 -- in progress
+
+
 ### 1.0 - 2020-09-25 - Release highlights
 
 Provide a command line interface for benchmarking optimisation algorithm implementations:
