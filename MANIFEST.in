@@ -1,5 +1,6 @@
 include LICENSE
 include setup.py
+include CHANGE.md
 include conftest.py
 include pyproject.toml
 include dev-requirements.txt
