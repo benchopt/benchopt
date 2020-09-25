@@ -61,7 +61,7 @@ benchmark for Lasso can be retrieved with:
 Command line usage
 ------------------
 
-To run the benchmark OLS on all datasets and with all solvers, run:
+To run the Lasso benchmark on all datasets and with all solvers, run:
 
 .. code-block::
 
