@@ -1,4 +1,4 @@
-include COPYING
+include LICENSE
 include setup.py
 include conftest.py
 include dev-requirements.txt
