@@ -45,6 +45,11 @@ setup(
         'Topic :: Utilities',
         'Topic :: Software Development :: Libraries',
     ],
+    project_urls={
+        'Documentation': 'https://benchopt.github.io/',
+        'Source': 'https://github.com/benchopt/benchOpt',
+        'Tracker': 'https://github.com/benchopt/benchOpt/issues/',
+    },
     packages=find_packages(),
     install_requires=['numpy', 'pandas', 'matplotlib',
                       'click', 'joblib'],
