@@ -55,7 +55,7 @@ benchmark for Lasso can be retrieved with:
 
 .. code-block::
 
-    $ git clone https://github.com/benchopt/benchmark_lasso.git
+    $ git clone https://github.com/benchopt/benchmark_lasso
 
 
 Command line usage

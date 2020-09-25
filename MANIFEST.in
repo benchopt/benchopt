@@ -17,8 +17,6 @@ prune doc/auto_examples
 # Include examples
 recursive-include examples *.py
 recursive-include examples *.txt
-prune examples/benchmark_lasso
-prune examples/benchmark_logreg_l2
 
 # Include dummy benchmark for test
 recursive-include benchopt/tests/test_benchmarks *.R

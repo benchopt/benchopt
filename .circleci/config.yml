@@ -74,8 +74,8 @@ jobs:
         - run:
             name: Clone benchmarks for examples
             command: |
-              git clone https://github.com/benchopt/benchmark_logreg_l2 examples/benchmark_logreg_l2
-              git clone https://github.com/benchopt/benchmark_lasso examples/benchmark_lasso
+              git clone https://github.com/benchopt/benchmark_logreg_l2 benchmarks/logreg_l2
+              git clone https://github.com/benchopt/benchmark_lasso benchmarks/lasso
 
 
         # Look at what we have and fail early if there is some library conflict
