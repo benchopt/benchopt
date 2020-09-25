@@ -24,7 +24,7 @@ class TestCheckInstallCmd:
             check_install([str(pgd_solver.resolve()), 'Solver'], 'benchopt')
 
     def test_dataset_installed(self):
-        pgd_solver = DUMMY_BENCHMARK / 'datasets' / 'boston.py'
+        pgd_solver = DUMMY_BENCHMARK / 'datasets' / 'simulated.py'
         with pytest.raises(SystemExit, match=r'0'):
             check_install([str(pgd_solver.resolve()), 'Dataset'], 'benchopt')
 
