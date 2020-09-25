@@ -67,13 +67,13 @@ Notation:  In what follows, n (or n_samples) stands for the number of samples an
 
  y \in \mathbb{R}^n, X = [x_1^\top, \dots, x_n^\top]^\top \in \mathbb{R}^{n \times p}
 
-- `lasso`: l1-regularized least-squares. This consists in solving the following program:
+- `lasso`_: l1-regularized least-squares. This consists in solving the following program:
 
 .. math::
 
     \min_w \frac{1}{2} \|y - Xw\|^2_2 + \lambda \|w\|_1
 
-- `logreg_l2`: l2-regularized logistic regression. This consists in solving the following program:
+- `logreg_l2`_: l2-regularized logistic regression. This consists in solving the following program:
 
 .. math::
 
@@ -107,4 +107,6 @@ Notation:  In what follows, n (or n_samples) stands for the number of samples an
 
 .. _`ols`: https://github.com/benchopt/benchmark_ols
 .. _`nnls`: https://github.com/benchopt/benchmark_nnls
+.. _`lasso`: https://github.com/benchopt/benchmark_lasso
 .. _`logreg_l1`: https://github.com/benchopt/benchmark_logreg_l1
+.. _`logreg_l2`: https://github.com/benchopt/benchmark_logreg_l2
