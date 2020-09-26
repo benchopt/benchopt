@@ -9,9 +9,10 @@ Write a benchmark
 
 A benchmark is defined in a folder that should respect a certain
 structure. Examples of benchmarks are available in the
-`benchmarks folder <https://github.com/benchopt/benchOpt/tree/master/benchmarks>`_
-of the `benchOpt repository <https://github.com/benchopt/benchOpt>`_
-or in repository of the `benchopt organisation <https://github.com/benchopt/>`_.
+`benchOpt organisation <https://github.com/benchopt/>`_ such
+as for `Ordinary Least Square (OLS) <https://github.com/benchopt/benchmark_ols>`_,
+`Lasso <https://github.com/benchopt/benchmark_lasso>`_ or
+`L1-regularized logistic regression <https://github.com/benchopt/benchmark_logreg_l1>`_.
 The simplest way to create a benchmark is to copy an existing folder and
 modify the element to fit the new structure.
 
