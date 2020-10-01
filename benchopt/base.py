@@ -163,6 +163,7 @@ class DependenciesMixin:
             print(f"Installing {cls.name} in {env_name}:...",
                   end='', flush=True)
             try:
+                cls._pre_install_hook(env_name=env_name)
                 if cls.install_cmd == 'conda':
                     install_in_conda_env(*cls.requirements, env_name=env_name,
                                          force=force)
@@ -172,6 +173,7 @@ class DependenciesMixin:
                         cls.install_script
                     )
                     shell_install_in_conda_env(install_file, env_name=env_name)
+                cls._post_install_hook(env_name=env_name)
 
             except Exception as exception:
                 if RAISE_INSTALL_ERROR:
@@ -184,6 +186,16 @@ class DependenciesMixin:
                 print(" failed")
 
         return is_installed
+
+    @classmethod
+    def _pre_install_hook(cls, env_name=None):
+        """Hook called before installing dependencies with conda or pip."""
+        pass
+
+    @classmethod
+    def _post_install_hook(cls, env_name=None):
+        """Hook called after installing dependencies with conda or pip."""
+        pass
 
 
 class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
