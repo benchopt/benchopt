@@ -146,6 +146,9 @@ def _install_required_classes(classes, include_patterns, force_patterns=None,
                     and is_matched(name, force_patterns)
                 )
                 success &= klass.install(env_name=env_name, force=force)
+                # Once a class has been installed, there is no need to
+                # check for other parameterization.
+                break
 
     # If one failed, raise a warning to explain how to see the install errors.
     if not success:
