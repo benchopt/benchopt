@@ -1,10 +1,10 @@
 import os
 import tempfile
 import subprocess
-from pip._internal.commands.freeze import freeze
 
 from ..config import get_global_setting
 from ..config import DEBUG, ALLOW_INSTALL
+from .misc import get_benchopt_requirement_line
 
 
 SHELL = get_global_setting('shell')
@@ -18,10 +18,7 @@ SHELL_INSTALL_CMD = f"{SHELL} {{install_script}} $CONDA_PREFIX"
 # Shell cmd to test if a cmd exists
 CHECK_SHELL_CMD_EXISTS = "type $'{cmd_name}'"
 
-
-# Find out how benchopt where installed so we can install the same version even
-# if it was installed in develop mode. This requires pip version >= 20.1
-BENCHOPT_INSTALL = [pkg for pkg in freeze() if 'benchopt' in pkg][0]
+BENCHOPT_INSTALL = get_benchopt_requirement_line()
 
 # Yaml config file for benchopt env.
 BENCHOPT_ENV = f"""
@@ -139,11 +136,15 @@ def create_conda_env(env_name, recreate=False, with_pytest=False):
     if with_pytest:
         # Add pytest as a dependency of the env
         benchopt_env = benchopt_env.replace(
-            '- compilers', '- compilers\n  - pytest'
+            '- pip:', '- pytest\n  - pip:\n'
         )
 
     print(f"Creating conda env {env_name}:...", end='', flush=True)
-    env_yaml = tempfile.NamedTemporaryFile(mode="w+", suffix='.yml')
+    if DEBUG:
+        print(f'\nconda env config:\n{benchopt_env}')
+    env_yaml = tempfile.NamedTemporaryFile(
+        mode="w+", prefix='conda_env_', suffix='.yml'
+    )
     env_yaml.write(f"name: {env_name}{benchopt_env}")
     env_yaml.flush()
     try:
