@@ -1,8 +1,10 @@
-import julia
+from pathlib import Path
 from contextlib import contextmanager
 
 from ..config import DEBUG
+from ..base import BaseSolver
 from .stream_redirection import SuppressStd
+from .shell_cmd import _run_shell_in_conda_env
 
 
 # nullcontext is not available in python <=3.6 so we resort to this
@@ -10,6 +12,10 @@ from .stream_redirection import SuppressStd
 @contextmanager
 def nullcontext(enter_result=None):
     yield enter_result
+
+
+def assert_julia_installed():
+    import julia  # noqa: F401
 
 
 # Singleton to get the julia interpreter only once
@@ -23,6 +29,7 @@ def get_jl_interpreter():
         out = nullcontext() if DEBUG else SuppressStd()
         try:
             with out:
+                import julia
                 # configure the julia runtime
                 runtime_config = {
                     'compiled_modules': False,
@@ -36,3 +43,34 @@ def get_jl_interpreter():
             raise
 
     return jl_interpreter
+
+
+class JuliaSolver(BaseSolver):
+
+    # pyjulia does not support passing sparse matrix yet
+    support_sparse = False
+
+    # Requirements
+    install_cmd = 'conda'
+    requirements = ['julia', 'pip:julia']
+
+    @classmethod
+    def _pre_install_hook(cls, env_name=None):
+        """Make sure julia can be installed with conda
+
+        There is an ungoing issue with compat between libgit2 and julia which
+        makes the auto install of julia solver fails when cloning the General
+        repository from julia. To avoid this, we clone this on the system
+        directly.
+        See https://github.com/JuliaLang/julia/issues/33111
+        """
+        julia_dir = Path.home() / '.julia' / 'registries' / 'General'
+        if not julia_dir.exists():
+
+            cmd_clone = (
+                "git clone https://github.com/JuliaRegistries/General.git "
+                f"{julia_dir}"
+            )
+            _run_shell_in_conda_env(
+                cmd_clone, env_name=env_name, raise_on_error=True
+            )
