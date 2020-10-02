@@ -90,7 +90,7 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
         )
         return
 
-    benchmark_name = Path(benchmark).name
+    benchmark_name = Path(benchmark).resolve().name
     env_name = f"benchopt_{benchmark_name}"
     create_conda_env(env_name, recreate=recreate)
 
