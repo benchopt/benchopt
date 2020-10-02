@@ -55,6 +55,23 @@ class JuliaSolver(BaseSolver):
     requirements = ['julia', 'pip:julia']
 
     @classmethod
+    def is_installed(cls, env_name=None, raise_on_not_installed=None):
+        success = super().is_installed(
+            env_name=env_name, raise_on_not_installed=raise_on_not_installed
+        )
+
+        # If julia is installed, check that the package dependencies are also
+        # installed.
+        if success and hasattr(cls, 'julia_requirements'):
+            try:
+                jl = get_jl_interpreter()
+                for pkg in cls.julia_requirements:
+                    jl.eval(f'using {pkg}')
+            except Exception:
+                return False
+        return success
+
+    @classmethod
     def _pre_install_hook(cls, env_name=None):
         """Make sure julia can be installed with conda
 
@@ -73,4 +90,18 @@ class JuliaSolver(BaseSolver):
             )
             _run_shell_in_conda_env(
                 cmd_clone, env_name=env_name, raise_on_error=True
+            )
+
+    @classmethod
+    def _post_install_hook(cls, env_name=None):
+        """Install dependencies on Julia packages"""
+
+        if hasattr(cls, 'julia_requirements'):
+            julia_pkg_install = (
+                "using Pkg; " +
+                '; '.join([f'Pkg.add("{p}")' for p in cls.julia_requirements])
+            )
+            _run_shell_in_conda_env(
+                f"julia -e '{julia_pkg_install}'", env_name=env_name,
+                raise_on_error=True
             )
