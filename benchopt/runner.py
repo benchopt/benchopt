@@ -380,7 +380,9 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                             scale=scale
                         )
 
-                        force = is_matched(str(solver), forced_solvers)
+                        force = (forced_solvers is not None
+                                 and len(forced_solvers) > 0
+                                 and is_matched(str(solver), forced_solvers))
                         run_statistics.extend(run_one_solver(
                             benchmark=benchmark, objective=objective,
                             solver=solver, meta=meta, max_runs=max_runs,
