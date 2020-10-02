@@ -95,7 +95,8 @@ def run_one_repetition(objective, solver, meta, stop_val):
 
 
 def run_one_stop_val(benchmark, objective, solver, meta, stop_val,
-                     n_repetitions, deadline, progress_str=None, force=False):
+                     n_repetitions, deadline=None, progress_str=None,
+                     force=False):
     """Run all repetitions of the solver for a value of stopping criterion.
 
     Parameters
@@ -156,7 +157,7 @@ def run_one_stop_val(benchmark, objective, solver, meta, stop_val,
         curve.append(cost)
         current_objective.append(objective_value)
 
-        if deadline < time.time():
+        if deadline is not None and deadline < time.time():
             # Reached the timeout so stop the computation here
             break
 
@@ -204,7 +205,8 @@ def run_one_solver(benchmark, objective, solver, meta, max_runs, n_repetitions,
     # Create a Memory object to cache the computations in the benchmark folder
     mem = Memory(location=benchmark, verbose=0)
     run_one_stop_val_cached = mem.cache(
-        run_one_stop_val, ignore=['deadline', 'benchmark']
+        run_one_stop_val,
+        ignore=['deadline', 'benchmark', 'force', 'progress_str']
     )
 
     # Get the solver's name

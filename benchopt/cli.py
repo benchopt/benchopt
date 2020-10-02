@@ -83,6 +83,7 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
     if local:
         run_benchmark(
             benchmark, solver_names, forced_solvers,
+
             dataset_names=dataset_names, objective_filters=objective_filters,
             max_runs=max_runs, n_repetitions=n_repetitions, timeout=timeout,
             plot_result=not no_plot
