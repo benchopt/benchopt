@@ -1,25 +1,23 @@
 from pathlib import Path
-from benchopt.base import BaseSolver
 from benchopt.util import safe_import_context
 
+from benchopt.utils.julia_helpers import JuliaSolver
+from benchopt.utils.julia_helpers import get_jl_interpreter
+from benchopt.utils.julia_helpers import assert_julia_installed
+
 with safe_import_context() as import_ctx:
-    from benchopt.utils.julia_helpers import get_jl_interpreter
+    assert_julia_installed()
 
 
 # File containing the function to be called from julia
 JULIA_SOLVER_FILE = str(Path(__file__).with_suffix('.jl'))
 
 
-class Solver(BaseSolver):
+class Solver(JuliaSolver):
 
     # Config of the solver
     name = 'Julia-PGD'
     stop_strategy = 'iteration'
-    support_sparse = False
-
-    # Requirements
-    install_cmd = 'conda'
-    requirements = ['julia', 'pip:julia']
 
     def set_objective(self, X, y, lmbd):
         self.X, self.y, self.lmbd = X, y, lmbd

@@ -34,6 +34,43 @@ class TestCheckInstallCmd:
             check_install([str(pgd_solver.resolve()), 'Dataset'], 'benchopt')
 
 
+class CaptureRunOutput(object):
+    """Context to capture run cmd output and files.
+    """
+
+    def __init__(self):
+        self.out = SuppressStd()
+        self.output = None
+        self.result_files = []
+
+    def __enter__(self):
+        self.output = None
+        self.result_files = []
+
+        # Redirect the stdout/stderr fd to temp file
+        self.out.__enter__()
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self.out.__exit__(type, value, traceback)
+        self.output = self.out.output
+
+        # Make sure to delete all the result that created by the run command.
+        self.result_files = re.findall(
+            r'Saving result in: (.*\.csv)', self.output
+        )
+        if len(self.result_files) >= 1:
+            for result_file in self.result_files:
+                Path(result_file).unlink()
+
+    def check_output(self, pattern, repetition=None):
+        matches = re.findall(pattern, self.output)
+        if repetition is None:
+            assert len(matches) > 0, self.output
+        else:
+            assert len(matches) == repetition, self.output
+
+
 class TestRunCmd:
 
     def test_invalid_benchmark(self):
@@ -51,27 +88,48 @@ class TestRunCmd:
                 'benchopt', standalone_mode=False)
 
     def test_benchopt_run(self):
-        out = SuppressStd()
-        with out:
-            run([str(DUMMY_BENCHMARK), '-l', '-d', 'simulated*500', '-s',
+        with CaptureRunOutput() as out:
+            run([str(DUMMY_BENCHMARK), '-l', '-d', 'simulated*500', '-f',
                 'pgd*False', '-n', '1', '-r', '1', '-p', '0.1', '--no-plot'],
                 'benchopt', standalone_mode=False)
 
-        output = out.output
-        matches = re.findall('Simulated', output)
-        assert len(matches) == 1, output
-        matches = re.findall('Lasso', output)
-        assert len(matches) == 1, output
-        matches = re.findall(r'Python-PGD\[use_acceleration=False\]', output)
-        assert len(matches) == 2, output
-        assert 'Python-PGD[use_acceleration=True]' not in output
+        out.check_output('Simulated', repetition=1)
+        out.check_output('Lasso', repetition=1)
+        out.check_output(r'Python-PGD\[use_acceleration=False\]', repetition=2)
+        out.check_output(r'Python-PGD\[use_acceleration=True\]', repetition=0)
 
         # Make sure the results were saved in a result file
-        # and delete it to avoid polluting result directory
-        result_files = re.findall(r'Saving result in: (.*\.csv)', out.output)
-        assert len(result_files) == 1, out.output
-        result_file = result_files[0]
-        Path(result_file).unlink()
+        assert len(out.result_files) == 1, out.output
+
+    def test_benchopt_caching(self):
+
+        n_rep = 2
+        run_cmd = [str(DUMMY_BENCHMARK), '-l', '-d', 'simulated*500', '-s',
+                   'pgd*False', '-n', '1', '-r', str(n_rep), '-p', '0.1',
+                   '--no-plot']
+
+        # Make a first run that should be put in cache
+        with CaptureRunOutput() as out:
+            run(run_cmd, 'benchopt', standalone_mode=False)
+
+        # Now check that the cache is hit when running the benchmark a
+        # second time without force
+        with CaptureRunOutput() as out:
+            run([str(DUMMY_BENCHMARK), '-l', '-d', 'simulated*500', '-s',
+                 'pgd*False', '-n', '1', '-r', str(n_rep), '-p', '0.1',
+                 '--no-plot'],
+                'benchopt', standalone_mode=False)
+
+        out.check_output(r'Python-PGD\[use_acceleration=False\]',
+                         repetition=1)
+
+        # Make sure that -f option forces the re-run for the solver
+        run_cmd[4] = '-f'
+        with CaptureRunOutput() as out:
+            run(run_cmd, 'benchopt', standalone_mode=False)
+
+        out.check_output(r'Python-PGD\[use_acceleration=False\]',
+                         repetition=n_rep+1)
 
 
 class TestPlotCmd:
