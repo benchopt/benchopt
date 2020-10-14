@@ -36,7 +36,8 @@ def main(ctx, prog_name='benchopt', version=False):
         if version:
             raise click.BadOptionUsage(
                 '--version',
-                '--version should only be used without a sub-command.')
+                '--version should only be used without a sub-command.'
+            )
 
 
 @main.command(
