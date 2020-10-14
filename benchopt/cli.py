@@ -27,17 +27,11 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.pass_context
 def main(ctx, prog_name='benchopt', version=False):
     """Command-line interface to benchOpt"""
+    if version:
+        print(__version__)
+        raise SystemExit(0)
     if ctx.invoked_subcommand is None:
-        if not version:
-            print(main.get_help(ctx))
-        else:
-            print(__version__)
-    else:
-        if version:
-            raise click.BadOptionUsage(
-                '--version',
-                '--version should only be used without a sub-command.'
-            )
+        print(main.get_help(ctx))
 
 
 @main.command(
