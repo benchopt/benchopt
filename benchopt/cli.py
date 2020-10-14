@@ -2,6 +2,7 @@ import click
 import pandas as pd
 from pathlib import Path
 
+from benchopt import __version__
 from benchopt import run_benchmark
 from benchopt.viz import plot_benchmark
 
@@ -21,10 +22,21 @@ BENCHMARK_TEST_FILE = Path(__file__).parent / 'tests' / 'test_benchmarks.py'
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
 
-@click.group(context_settings=CONTEXT_SETTINGS)
-def main(prog_name='benchopt'):
+@click.group(context_settings=CONTEXT_SETTINGS, invoke_without_command=True)
+@click.option('--version', '-v', is_flag=True, help='Print version')
+@click.pass_context
+def main(ctx, prog_name='benchopt', version=False):
     """Command-line interface to benchOpt"""
-    pass
+    if ctx.invoked_subcommand is None:
+        if not version:
+            print(main.get_help(ctx))
+        else:
+            print(__version__)
+    else:
+        if version:
+            raise click.BadOptionUsage(
+                '--version',
+                '--version should only be used without a sub-command.')
 
 
 @main.command(
