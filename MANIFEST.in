@@ -24,4 +24,7 @@ recursive-include benchopt/tests/test_benchmarks *.R
 recursive-include benchopt/tests/test_benchmarks *.jl
 recursive-include benchopt/tests/test_benchmarks *.py
 
+# Exclude joblib folders in dummy_benchmark
+prune benchopt/tests/test_benchmarks/dummy_benchmark/joblib
+
 exclude .mailmap

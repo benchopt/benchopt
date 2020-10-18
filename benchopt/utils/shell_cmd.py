@@ -1,7 +1,9 @@
 import os
 import tempfile
+import warnings
 import subprocess
 
+import benchopt
 from ..config import get_global_setting
 from ..config import DEBUG, ALLOW_INSTALL
 from .misc import get_benchopt_requirement_line
@@ -35,7 +37,8 @@ dependencies:
 """
 
 
-def _run_shell(script, raise_on_error=None, capture_stdout=True):
+def _run_shell(script, raise_on_error=None, capture_stdout=True,
+               return_output=False):
     """Run a shell script and return its exit code.
 
     Parameters
@@ -51,12 +54,22 @@ def _run_shell(script, raise_on_error=None, capture_stdout=True):
     capture_stdout: bool
         If set to True, capture the stdout of the subprocess. Else, it is
         printed in the main process stdout.
+    return_output: bool
+        If set to True, return the stdout of the subprocess. It needs to be
+        used with capture_stdout=True.
 
     Returns
     -------
     exit_code: int
-        Exit code of the script
+        Exit code of the script.
+    output: str
+        If return_output=True, return the output of the command as a str.
     """
+    if return_output and not capture_stdout:
+        raise ValueError(
+            'return_output=True can only be used with capture_stdout=True'
+        )
+
     # Use a TemporaryFile to make sure this file is cleaned up at
     # the end of this function.
     tmp = tempfile.NamedTemporaryFile(mode="w+")
@@ -87,11 +100,13 @@ def _run_shell(script, raise_on_error=None, capture_stdout=True):
                 "Bad value for `raise_on_error`. Should be a str, a callable, "
                 f"a bool or None. Got {raise_on_error}."
             )
+    if return_output:
+        return exit_code, output
     return exit_code
 
 
 def _run_shell_in_conda_env(script, env_name=None, raise_on_error=None,
-                            capture_stdout=True):
+                            capture_stdout=True, return_output=False):
     """Run a script in a given conda env
 
     Parameters
@@ -107,11 +122,16 @@ def _run_shell_in_conda_env(script, env_name=None, raise_on_error=None,
     capture_stdout: bool
         If set to True, capture the stdout of the subprocess. Else, it is
         printed in the main process stdout.
+    return_output: bool
+        If set to True, return the stdout of the subprocess. It needs to be
+        used with capture_stdout=True.
 
     Returns
     -------
     exit_code: int
-        Exit code of the script
+        Exit code of the script.
+    output: str
+        If return_output=True, return the output of the command as a str.
     """
     if env_name is not None:
         # first line to use conda activate in bash script
@@ -120,14 +140,25 @@ def _run_shell_in_conda_env(script, env_name=None, raise_on_error=None,
                   f'conda activate {env_name}\n'
                   f'{script}')
 
-    return _run_shell(script, raise_on_error=raise_on_error,
-                      capture_stdout=capture_stdout)
+    return _run_shell(
+        script, raise_on_error=raise_on_error,
+        capture_stdout=capture_stdout, return_output=return_output
+    )
 
 
 def create_conda_env(env_name, recreate=False, with_pytest=False):
     """Create a conda env with name env_name and install basic utilities"""
 
     if env_exists(env_name) and not recreate:
+        benchopt_version = get_benchopt_version_in_env(env_name)
+        if benchopt.__version__ != benchopt_version:
+            warnings.warns(
+                f"The local version of benchopt ({benchopt.__version}) and "
+                f"the one in conda env ({benchopt_version}) are different. "
+                "This can lead to unexpected behavior. You can correct this "
+                " by either using the --recreate option or fixing the version "
+                f"of benchopt in conda env {env_name}"
+            )
         return
 
     force = "--force" if recreate else ""
@@ -156,11 +187,30 @@ def create_conda_env(env_name, recreate=False, with_pytest=False):
             "conda config --env --add channels conda-forge",
             env_name=env_name, capture_stdout=True, raise_on_error=True
         )
+        # Check that the correct version of benchopt is installed in the env
+        benchopt_version = get_benchopt_version_in_env(env_name)
+        assert benchopt_version == benchopt.__version__, (
+            f"Installed the wrong version of benchopt ({benchopt_version}) in "
+            f"conda env. This should be version: {benchopt.__version__}. There"
+            " is something wrong the env creation mechanism. Please report "
+            "this error to https://github.com/benchopt/benchopt"
+        )
     except RuntimeError:
         print(" failed to create the environment.")
         raise
     else:
         print(" done")
+
+
+def get_benchopt_version_in_env(env_name):
+    """Check that the version of benchopt installed in env_name is the same
+    as the one running.
+    """
+    _, benchopt_version = _run_shell_in_conda_env(
+        "benchopt --version",
+        env_name=env_name, capture_stdout=True, return_output=True
+    )
+    return benchopt_version
 
 
 def env_exists(env_name):

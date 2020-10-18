@@ -4,9 +4,10 @@ from setuptools import find_packages, setup
 with open('benchopt/__init__.py') as f:
     infos = f.readlines()
 for line in infos:
-    if "__version__" in line:
+    if "__version__ =" in line:
         match = re.search(r"__version__ = '([^']*)'", line)
         __version__ = match.groups()[0]
+        break
 
 
 DISTNAME = 'benchopt'
