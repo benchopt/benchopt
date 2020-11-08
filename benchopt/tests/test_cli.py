@@ -9,7 +9,7 @@ from benchopt.cli import run, plot, check_install
 from benchopt.utils.stream_redirection import SuppressStd
 
 
-from benchopt.tests import DUMMY_BENCHMARK
+from benchopt.tests import DUMMY_BENCHMARK, SELECT_ONE_SIMULATED
 
 
 class TestCheckInstallCmd:
@@ -89,9 +89,9 @@ class TestRunCmd:
 
     def test_benchopt_run(self):
         with CaptureRunOutput() as out:
-            run([str(DUMMY_BENCHMARK), '-l', '-d', 'simulated*500', '-f',
-                'pgd*False', '-n', '1', '-r', '1', '-p', '0.1', '--no-plot'],
-                'benchopt', standalone_mode=False)
+            run([str(DUMMY_BENCHMARK), '-l', '-d', SELECT_ONE_SIMULATED,
+                 '-f', 'pgd*False', '-n', '1', '-r', '1', '-p', '0.1',
+                 '--no-plot'], 'benchopt', standalone_mode=False)
 
         out.check_output('Simulated', repetition=1)
         out.check_output('Lasso', repetition=1)
@@ -104,8 +104,8 @@ class TestRunCmd:
     def test_benchopt_caching(self):
 
         n_rep = 2
-        run_cmd = [str(DUMMY_BENCHMARK), '-l', '-d', 'simulated*500', '-s',
-                   'pgd*False', '-n', '1', '-r', str(n_rep), '-p', '0.1',
+        run_cmd = [str(DUMMY_BENCHMARK), '-l', '-d', SELECT_ONE_SIMULATED,
+                   '-s', 'pgd*False', '-n', '1', '-r', str(n_rep), '-p', '0.1',
                    '--no-plot']
 
         # Make a first run that should be put in cache
@@ -115,10 +115,7 @@ class TestRunCmd:
         # Now check that the cache is hit when running the benchmark a
         # second time without force
         with CaptureRunOutput() as out:
-            run([str(DUMMY_BENCHMARK), '-l', '-d', 'simulated*500', '-s',
-                 'pgd*False', '-n', '1', '-r', str(n_rep), '-p', '0.1',
-                 '--no-plot'],
-                'benchopt', standalone_mode=False)
+            run(run_cmd, 'benchopt', standalone_mode=False)
 
         out.check_output(r'Python-PGD\[use_acceleration=False\]',
                          repetition=1)
@@ -140,7 +137,7 @@ class TestPlotCmd:
 
         out = SuppressStd()
         with out:
-            run([str(DUMMY_BENCHMARK), '-l', '-d', 'simulated*500', '-s',
+            run([str(DUMMY_BENCHMARK), '-l', '-d', SELECT_ONE_SIMULATED, '-s',
                 'pgd*False', '-n', '1', '-r', '1', '-p', '0.1', '--no-plot'],
                 'benchopt', standalone_mode=False)
         result_files = re.findall(r'Saving result in: (.*\.csv)', out.output)
