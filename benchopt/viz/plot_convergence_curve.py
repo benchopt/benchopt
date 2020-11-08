@@ -16,22 +16,22 @@ def plot_convergence_curve(df, benchmark):
     fig : instance of matplotlib.figure.Figure
         The matplotlib figure.
     """
-    dataset_name = df.data.unique()[0]
-    objective_name = df.objective.unique()[0]
-
-    solvers = df.solver.unique()
+    solver_names = df['solver_name'].unique()
+    dataset_name = df['data_name'].unique()[0]
+    objective_name = df['objective_name'].unique()[0]
 
     fig = plt.figure()
     eps = 1e-10
-    c_star = df.obj.min() - eps
-    for i, m in enumerate(solvers):
-        df_ = df[df.solver == m]
+    c_star = df['objective_value'].min() - eps
+    for i, solver_name in enumerate(solver_names):
+        df_ = df[df['solver_name'] == solver_name]
         curve = df_.groupby('stop_val').median()
-        q1 = df_.groupby('stop_val').time.quantile(.1)
-        q9 = df_.groupby('stop_val').time.quantile(.9)
-        plt.loglog(curve.time, curve.obj - c_star, f"C{i}", label=m,
-                   linewidth=3)
-        plt.fill_betweenx(curve.obj - c_star, q1, q9, color=f"C{i}", alpha=.3)
+        q1 = df_.groupby('stop_val')['time'].quantile(.1)
+        q9 = df_.groupby('stop_val')['time'].quantile(.9)
+        plt.loglog(curve['time'], curve['objective_value'] - c_star, f"C{i}",
+                   label=solver_name, linewidth=3)
+        plt.fill_betweenx(curve['objective_value'] - c_star, q1, q9,
+                          color=f"C{i}", alpha=.3)
     xlim = plt.xlim()
     plt.hlines(eps, *xlim, color='k', linestyle='--')
     plt.xlim(xlim)

@@ -55,7 +55,7 @@ def get_benchmark_objective(benchmark_dir):
 
     Returns
     -------
-    obj : class
+    objective_class : class
         The class defining the objective function for the benchmark.
     """
     module_filename = Path(benchmark_dir) / 'objective.py'

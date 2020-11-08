@@ -1,5 +1,4 @@
 import tempfile
-from collections import namedtuple
 from abc import ABC, abstractmethod
 
 from .util import product_param
@@ -15,10 +14,6 @@ from .config import RAISE_INSTALL_ERROR
 
 # Possible stop strategies
 STOP_STRATEGIES = ['iteration', 'tolerance']
-
-# Named-tuple for the cost function
-Cost = namedtuple('Cost', 'data scale objective solver stop_val time obj '
-                          'idx_rep'.split(' '))
 
 
 class ParametrizedNameMixin():
