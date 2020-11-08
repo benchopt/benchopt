@@ -152,7 +152,7 @@ def create_conda_env(env_name, recreate=False, with_pytest=False):
     if env_exists(env_name) and not recreate:
         benchopt_version = get_benchopt_version_in_env(env_name)
         if benchopt.__version__ != benchopt_version:
-            warnings.warns(
+            warnings.warn(
                 f"The local version of benchopt ({benchopt.__version}) and "
                 f"the one in conda env ({benchopt_version}) are different. "
                 "This can lead to unexpected behavior. You can correct this "

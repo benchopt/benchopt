@@ -1,6 +1,7 @@
 import numpy as np
 
 from benchopt.base import BaseDataset
+from benchopt.utils.datasets.simulated import gen_correlated_data
 
 
 class Dataset(BaseDataset):
@@ -10,29 +11,26 @@ class Dataset(BaseDataset):
     # List of parameters to generate the datasets. The benchmark will consider
     # the cross product for each key in the dictionary.
     parameters = {
-        'n_samples, n_features, corr': [
-            (100, 5000, 0),
-            (100, 5000, 0.6),
-            (100, 10000, 0)],  # slow to simulate big correlated design
+        'n_samples, n_features': [
+            (100, 5000),
+            (100, 10000)],  # slow to simulate big correlated design
+        'rho': [0, 0.6]
     }
 
-    def __init__(self, n_samples=10, n_features=50, random_state=27, corr=0):
+    def __init__(self, n_samples=10, n_features=50, random_state=27, rho=0):
         # Store the parameters of the dataset
         self.n_samples = n_samples
         self.n_features = n_features
         self.random_state = random_state
-        self.corr = corr
+        self.rho = rho
 
     def get_data(self):
         rng = np.random.RandomState(self.random_state)
-        if self.corr == 0:
+        if self.rho == 0:
             X = rng.randn(self.n_samples, self.n_features)
         else:
-            # use Toeplitz covariance matrix:
-            idx = np.arange(self.n_features)
-            corr_mat = self.corr ** np.abs(idx[:, None] - idx)
-            X = rng.multivariate_normal(
-                np.zeros(self.n_features), corr_mat, self.n_samples)
+            X = gen_correlated_data(self.n_samples, self.n_features,
+                                    rho=self.rho, random_state=rng)
 
         y = rng.randn(self.n_samples)
 
