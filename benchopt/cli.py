@@ -116,11 +116,12 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
     datasets_option = ' '.join(['-d ' + d for d in dataset_names])
     objective_option = ' '.join(['-p ' + p for p in objective_filters])
     cmd = (
-        f"benchopt run {benchmark} --local --n-repetitions {n_repetitions} "
-        f"--max-runs {max_runs} --timeout {timeout} "
-        f"{solvers_option} {forced_solvers_option} "
-        f"{datasets_option} {objective_option} "
-        f"{'--no-plot' if no_plot else ''} "
+        rf"benchopt run {benchmark} --local --n-repetitions {n_repetitions} "
+        rf"--max-runs {max_runs} --timeout {timeout} "
+        rf"{solvers_option} {forced_solvers_option} "
+        rf"{datasets_option} {objective_option} "
+        rf"{'--no-plot' if no_plot else ''} "
+        .replace('\\', '\\\\')
     )
     raise SystemExit(_run_shell_in_conda_env(
         cmd, env_name=env_name, capture_stdout=False
