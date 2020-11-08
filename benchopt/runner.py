@@ -69,13 +69,9 @@ def run_one_repetition(objective, solver, meta, stop_val):
     beta_hat_i = solver.get_result()
     objective_dict = objective(beta_hat_i)
 
-    # Objective function can return one value or a dict of values.
-    if not isinstance(objective_dict, dict):
-        objective_dict = {'objective_value': objective_dict}
-    objective_value = objective_dict['objective_value']
-
     return (dict(**meta, solver_name=str(solver), stop_val=stop_val,
-                 time=delta_t, **objective_dict), objective_value)
+                 time=delta_t, **objective_dict),
+            objective_dict['objective_value'])
 
 
 def run_one_stop_val(benchmark, objective, solver, meta, stop_val,

@@ -94,7 +94,7 @@ class TestRunCmd:
                  '--no-plot'], 'benchopt', standalone_mode=False)
 
         out.check_output('Simulated', repetition=1)
-        out.check_output('Lasso', repetition=1)
+        out.check_output('Dummy Sparse Regression', repetition=1)
         out.check_output(r'Python-PGD\[use_acceleration=False\]', repetition=2)
         out.check_output(r'Python-PGD\[use_acceleration=True\]', repetition=0)
 
