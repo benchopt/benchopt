@@ -17,7 +17,7 @@ class Dataset(BaseDataset):
         ], 'rho': [0, 0.6]
     }
 
-    def __init__(self, n_samples=10, n_features=50, random_state=27, rho=0):
+    def __init__(self, n_samples=10, n_features=50,  rho=0.6, random_state=27):
         # Store the parameters of the dataset
         self.n_samples = n_samples
         self.n_features = n_features

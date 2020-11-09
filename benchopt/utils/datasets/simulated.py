@@ -44,13 +44,12 @@ def make_correlated_data(n_samples=100, n_features=50, rho=0.6,
     rng = check_random_state(random_state)
 
     sigma = np.sqrt(1 - rho * rho)
-    innovation = rng.randn(n_features + 1, n_samples)
-    U = innovation[0]
+    U = rng.randn(n_samples)
 
     X = np.empty([n_samples, n_features])
     X[:, 0] = U
     for i in range(1, n_features):
         U *= rho
-        U += sigma * innovation[i]
+        U += sigma * rng.randn(n_samples)
         X[:, i] = U
-    return X.T
+    return X
