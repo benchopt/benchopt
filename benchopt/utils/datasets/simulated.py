@@ -1,6 +1,7 @@
 """Helper to generate simulated data in benchopt."""
 import numpy as np
-from sklearn.utils import check_random_state
+
+from ..checkers import check_random_state
 
 
 def make_correlated_data(n_samples=100, n_features=50, rho=0.6,
