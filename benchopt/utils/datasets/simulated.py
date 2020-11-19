@@ -1,7 +1,8 @@
 """Helper to generate simulated data in benchopt."""
 import numpy as np
 from numpy.linalg import norm
-from sklearn.utils import check_random_state
+
+from ..checkers import check_random_state
 
 
 def make_correlated_data(n_samples=100, n_features=50, rho=0.6, snr=3,
@@ -58,14 +59,13 @@ def make_correlated_data(n_samples=100, n_features=50, rho=0.6, snr=3,
     # sigma^2 = 1 - \rho ** 2: X[:, j+1] = rho X[:, j] + epsilon_j
     # where  epsilon_j = sigma * np.random.randn(n_samples)
     sigma = np.sqrt(1 - rho * rho)
-    innovation = rng.randn(n_features + 1, n_samples)
-    U = innovation[0]
+    U = rng.randn(n_samples)
 
     X = np.empty([n_samples, n_features], order='F')
     X[:, 0] = U
     for j in range(1, n_features):
         U *= rho
-        U += sigma * innovation[j]
+        U += sigma * rng.randn(n_samples)
         X[:, j] = U
 
     if w_true is None:
