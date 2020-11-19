@@ -1,18 +1,18 @@
 """Helper to generate simulated data in benchopt."""
 import numpy as np
+from numpy.linalg import norm
 from sklearn.utils import check_random_state
 
 
-def make_correlated_data(n_samples=100, n_features=50, rho=0.6,
-                         random_state=None):
+def make_correlated_data(n_samples=100, n_features=50, rho=0.6, snr=3,
+                         w_true=None, nnz=10, random_state=None):
     r"""Generate correlated design matrix with decaying correlation rho**|i-j|.
+    according to:
+    $$
+        y = X w^* + noise
+    $$
+    such that $||X w^*|| / ||noise|| = snr$$.
 
-    The data are generated using an AR model with reason corr and innovation
-    $\sigma^2 = 1 - \rho^2$,
-    $$
-        x_{i+1} = \rho x_i + \epsilon \quad
-        where \quad \epsilon \sim \mathcal N(0, \sigma^2)
-    $$
     The generated features have mean 0, variance 1 and the expected correlation
     structure
     $$
@@ -30,6 +30,13 @@ def make_correlated_data(n_samples=100, n_features=50, rho=0.6,
         Correlation $\rho$ between successive features. The element $C_{i, j}$
         in the correlation matrix will be $\rho^{|i-j|}$. This parameter
         should be selected in $[0, 1[$.
+    snr : float
+        Signal-to-noise ratio.
+    w_true: np.array, shape (n_features,) | None
+        True regression coefficients. If None, an array with `nnz` non zero
+        standard Gaussian entries is simulated.
+    nnz: int
+        Number of non zero elements in w_true if it must be simulated.
     random_state : int | RandomState instance | None (default)
         Determines random number generation for data generation. Use an int to
         make the randomness deterministic.
@@ -38,19 +45,35 @@ def make_correlated_data(n_samples=100, n_features=50, rho=0.6,
     -------
     X: ndarray, shape (n_samples, n_features)
         A design matrix with Toeplitz covariance.
+    y: ndarray, shape (n_samples,)
+        Observation vector.
+    w_true: ndarray, shape (n_features,)
+        True regression vector of the model.
     """
     if not 0 <= rho < 1:
         raise ValueError("The correlation `rho` should be chosen in [0, 1[.")
     rng = check_random_state(random_state)
 
+    # X is generated cleverly using an AR model with reason corr and innovation
+    # sigma^2 = 1 - \rho ** 2: X[:, j+1] = rho X[:, j] + epsilon_j
+    # where  epsilon_j = sigma * np.random.randn(n_samples)
     sigma = np.sqrt(1 - rho * rho)
     innovation = rng.randn(n_features + 1, n_samples)
     U = innovation[0]
 
-    X = np.empty([n_samples, n_features])
+    X = np.empty([n_samples, n_features], order='F')
     X[:, 0] = U
-    for i in range(1, n_features):
+    for j in range(1, n_features):
         U *= rho
-        U += sigma * innovation[i]
-        X[:, i] = U
-    return X.T
+        U += sigma * innovation[j]
+        X[:, j] = U
+
+    if w_true is None:
+        w_true = np.zeros(n_features)
+        support = np.random.choice(n_features, nnz, replace=False)
+        w_true[support] = np.random.randn(nnz)
+
+    y = X @ w_true
+    noise = np.random.randn(n_samples)
+    y += noise / norm(noise) * norm(y) / snr
+    return X, y, w_true
