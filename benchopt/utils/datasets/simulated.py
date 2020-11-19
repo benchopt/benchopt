@@ -6,7 +6,7 @@ from ..checkers import check_random_state
 
 
 def make_correlated_data(n_samples=100, n_features=50, rho=0.6, snr=3,
-                         w_true=None, nnz=10, random_state=None):
+                         w_true=None, density=0.2, random_state=None):
     r"""Generate correlated design matrix with decaying correlation rho**|i-j|.
     according to:
     $$
@@ -34,10 +34,10 @@ def make_correlated_data(n_samples=100, n_features=50, rho=0.6, snr=3,
     snr : float
         Signal-to-noise ratio.
     w_true: np.array, shape (n_features,) | None
-        True regression coefficients. If None, an array with `nnz` non zero
-        standard Gaussian entries is simulated.
-    nnz: int
-        Number of non zero elements in w_true if it must be simulated.
+        True regression coefficients. If None, a sparse array with standard
+        Gaussian non zero entries is simulated.
+    density: float
+        Proportion of non zero elements in w_true if the latter is simulated.
     random_state : int | RandomState instance | None (default)
         Determines random number generation for data generation. Use an int to
         make the randomness deterministic.
@@ -53,7 +53,10 @@ def make_correlated_data(n_samples=100, n_features=50, rho=0.6, snr=3,
     """
     if not 0 <= rho < 1:
         raise ValueError("The correlation `rho` should be chosen in [0, 1[.")
+    if not 0 < density <= 1:
+        raise ValueError("The density should be chosen in ]0, 1].")
     rng = check_random_state(random_state)
+    nnz = int(density * n_features)
 
     # X is generated cleverly using an AR model with reason corr and innovation
     # sigma^2 = 1 - \rho ** 2: X[:, j+1] = rho X[:, j] + epsilon_j
