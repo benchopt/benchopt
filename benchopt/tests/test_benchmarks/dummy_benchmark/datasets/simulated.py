@@ -26,11 +26,9 @@ class Dataset(BaseDataset):
 
     def get_data(self):
         rng = np.random.RandomState(self.random_state)
-        if self.rho == 0:
-            X = rng.randn(self.n_samples, self.n_features)
-        else:
-            X, y, _ = make_correlated_data(self.n_samples, self.n_features,
-                                           rho=self.rho, random_state=rng)
+
+        X, y, _ = make_correlated_data(self.n_samples, self.n_features,
+                                       rho=self.rho, random_state=rng)
 
         data = dict(X=X, y=y)
 

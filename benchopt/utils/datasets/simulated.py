@@ -58,18 +58,21 @@ def make_correlated_data(n_samples=100, n_features=50, rho=0.6, snr=3,
     rng = check_random_state(random_state)
     nnz = int(density * n_features)
 
-    # X is generated cleverly using an AR model with reason corr and innovation
-    # sigma^2 = 1 - \rho ** 2: X[:, j+1] = rho X[:, j] + epsilon_j
-    # where  epsilon_j = sigma * np.random.randn(n_samples)
-    sigma = np.sqrt(1 - rho * rho)
-    U = rng.randn(n_samples)
+    if rho != 0:
+        # X is generated cleverly using an AR model with reason corr and i
+        # innovation sigma^2 = 1 - \rho ** 2: X[:, j+1] = rho X[:, j] + eps_j
+        # where eps_j = sigma * np.random.randn(n_samples)
+        sigma = np.sqrt(1 - rho * rho)
+        U = rng.randn(n_samples)
 
-    X = np.empty([n_samples, n_features], order='F')
-    X[:, 0] = U
-    for j in range(1, n_features):
-        U *= rho
-        U += sigma * rng.randn(n_samples)
-        X[:, j] = U
+        X = np.empty([n_samples, n_features], order='F')
+        X[:, 0] = U
+        for j in range(1, n_features):
+            U *= rho
+            U += sigma * rng.randn(n_samples)
+            X[:, j] = U
+    else:
+        X = rng.randn(n_samples, n_features)
 
     if w_true is None:
         w_true = np.zeros(n_features)
