@@ -80,6 +80,7 @@ def make_correlated_data(n_samples=100, n_features=50, rho=0.6, snr=3,
         w_true[support] = np.random.randn(nnz)
 
     y = X @ w_true
-    noise = np.random.randn(n_samples)
-    y += noise / norm(noise) * norm(y) / snr
+    if snr != 0:
+        noise = np.random.randn(n_samples)
+        y += noise / norm(noise) * norm(y) / snr
     return X, y, w_true
