@@ -61,7 +61,7 @@ def make_correlated_data(n_samples=100, n_features=50, rho=0.6, snr=3,
     if rho != 0:
         # X is generated cleverly using an AR model with reason corr and i
         # innovation sigma^2 = 1 - \rho ** 2: X[:, j+1] = rho X[:, j] + eps_j
-        # where eps_j = sigma * np.random.randn(n_samples)
+        # where eps_j = sigma * rng.randn(n_samples)
         sigma = np.sqrt(1 - rho * rho)
         U = rng.randn(n_samples)
 
@@ -76,11 +76,11 @@ def make_correlated_data(n_samples=100, n_features=50, rho=0.6, snr=3,
 
     if w_true is None:
         w_true = np.zeros(n_features)
-        support = np.random.choice(n_features, nnz, replace=False)
-        w_true[support] = np.random.randn(nnz)
+        support = rng.choice(n_features, nnz, replace=False)
+        w_true[support] = rng.randn(nnz)
 
     y = X @ w_true
     if snr != 0:
-        noise = np.random.randn(n_samples)
+        noise = rng.randn(n_samples)
         y += noise / norm(noise) * norm(y) / snr
     return X, y, w_true
