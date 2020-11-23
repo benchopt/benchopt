@@ -7,19 +7,24 @@ from ..checkers import check_random_state
 
 def make_correlated_data(n_samples=100, n_features=50, rho=0.6, snr=3,
                          w_true=None, density=0.2, random_state=None):
-    r"""Generate correlated design matrix with decaying correlation rho**|i-j|.
-    according to:
-    $$
-        y = X w^* + noise
-    $$
-    such that $||X w^*|| / ||noise|| = snr$$.
+
+    r"""Generate a linear regression with decaying correlation for the design
+    matrix :math:`\rho^{|i-j|}`.
+
+    The data are generated according to:
+
+    .. math ::
+        y = X w^* + \epsilon
+
+    such that the signal to noise ratio is
+    :math:`snr = \frac{||X w^*||}{||\epsilon||}`.
 
     The generated features have mean 0, variance 1 and the expected correlation
     structure
-    $$
+
+    .. math ::
         \mathbb E[x_i] = 0~, \quad \mathbb E[x_i^2] = 1  \quad
         and \quad \mathbb E[x_ix_j] = \rho^{|i-j|}
-    $$
 
     Parameters
     ----------
@@ -27,10 +32,11 @@ def make_correlated_data(n_samples=100, n_features=50, rho=0.6, snr=3,
         Number of samples in the design matrix.
     n_features: int
         Number of features in the design matrix.
-    corr: float
-        Correlation $\rho$ between successive features. The element $C_{i, j}$
-        in the correlation matrix will be $\rho^{|i-j|}$. This parameter
-        should be selected in $[0, 1[$.
+    rho: float
+        Correlation :math:`\rho` between successive features. The cross
+        correlation :math:`C_{i, j}` between feature i and feature j will be
+        :math:`\rho^{|i-j|}`. This parameter should be selected in
+        :math:`[0, 1[`.
     snr : float
         Signal-to-noise ratio.
     w_true: np.array, shape (n_features,) | None
@@ -80,7 +86,10 @@ def make_correlated_data(n_samples=100, n_features=50, rho=0.6, snr=3,
         w_true[support] = rng.randn(nnz)
 
     y = X @ w_true
-    if snr != 0:
-        noise = rng.randn(n_samples)
+    noise = rng.randn(n_samples)
+    if snr not in [0, np.inf]:
         y += noise / norm(noise) * norm(y) / snr
+    elif snr == 0:
+        y = noise
+
     return X, y, w_true
