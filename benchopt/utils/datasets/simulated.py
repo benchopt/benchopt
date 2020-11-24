@@ -61,6 +61,8 @@ def make_correlated_data(n_samples=100, n_features=50, rho=0.6, snr=3,
         raise ValueError("The correlation `rho` should be chosen in [0, 1[.")
     if not 0 < density <= 1:
         raise ValueError("The density should be chosen in ]0, 1].")
+    if snr < 0:
+        raise ValueError("The snr should be chosen in [0, inf].")
     rng = check_random_state(random_state)
     nnz = int(density * n_features)
 
