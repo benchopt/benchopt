@@ -20,17 +20,19 @@ def test_benchmark_objective(benchmark_dataset_simu):
     objective.set_data(**data)
 
     # check that the reported scale is correct and that the result of
-    # the objective function is a scalar
+    # the objective function is a dictionary containing a scalar value for
+    # `objective_value`.
     beta_hat = np.zeros(scale)
     objective_dict = objective(beta_hat)
 
     assert 'objective_value' in objective_dict, (
         'When the output of objective is a dict, it should at least contain '
-        'a value for `objective_value` which will be used to detect the '
-        'convergence of the algorithm.'
+        'a value associated to `objective_value` which will be used to detect '
+        'the convergence of the algorithm.'
     )
     assert np.isscalar(objective_dict['objective_value']), (
-        "The output of the objective function should be a scalar."
+        "The output of the objective function should be a scalar, or a dict "
+        "containing a scalar associated to `objective_value`."
     )
 
 
