@@ -73,9 +73,13 @@ class CaptureRunOutput(object):
 
 class TestRunCmd:
 
-    def test_invalid_benchmark(self):
-        with pytest.raises(click.BadParameter, match=r"invalid_benchmark"):
-            run(['invalid_benchmark'], 'benchopt', standalone_mode=False)
+    @pytest.mark.parametrize('invalid_benchmark, match', [
+        ('invalid_benchmark', "Path 'invalid_benchmark' does not exist."),
+        ('.', "The folder '.' does not contain `objective.py`")],
+        ids=['invalid_path', 'no_objective'])
+    def test_invalid_benchmark(self, invalid_benchmark, match):
+        with pytest.raises(click.BadParameter, match=match):
+            run([invalid_benchmark], 'benchopt', standalone_mode=False)
 
     def test_invalid_dataset(self):
         with pytest.raises(click.BadParameter, match=r"invalid_dataset"):
