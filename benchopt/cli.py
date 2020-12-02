@@ -77,9 +77,16 @@ def main(ctx, prog_name='benchopt', version=False):
 @click.option('--no-plot',
               is_flag=True,
               help="If this flag is set, do not plot the results.")
+@click.option('--pdb',
+              is_flag=True,
+              help="Launch a debugger if there is an Error.")
+@click.option('--env-name', '-e', 'env_name', metavar="<env_name>", type=str,
+              help="Specify the environment in which the benchmark need to run"
+              " if it is not local.")
 def run(benchmark, solver_names, forced_solvers, dataset_names,
         objective_filters, max_runs, n_repetitions, timeout,
-        recreate=False, local=True, no_plot=False):
+        recreate=False, local=True, no_plot=False, pdb=False,
+        env_name=None):
     """Run a benchmark in a separate conda env where the deps will be installed
     """
 
@@ -90,15 +97,16 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
     if local:
         run_benchmark(
             benchmark, solver_names, forced_solvers,
-
-            dataset_names=dataset_names, objective_filters=objective_filters,
-            max_runs=max_runs, n_repetitions=n_repetitions, timeout=timeout,
-            plot_result=not no_plot
+            dataset_names=dataset_names,
+            objective_filters=objective_filters,
+            max_runs=max_runs, n_repetitions=n_repetitions,
+            timeout=timeout, plot_result=not no_plot, pdb=pdb
         )
         return
 
-    benchmark_name = Path(benchmark).resolve().name
-    env_name = f"benchopt_{benchmark_name}"
+    if env_name is None:
+        benchmark_name = Path(benchmark).resolve().name
+        env_name = f"benchopt_{benchmark_name}"
     create_conda_env(env_name, recreate=recreate)
 
     # installed required datasets
@@ -121,6 +129,7 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
         rf"{solvers_option} {forced_solvers_option} "
         rf"{datasets_option} {objective_option} "
         rf"{'--no-plot' if no_plot else ''} "
+        rf"{'--pdb' if pdb else ''} "
         .replace('\\', '\\\\')
     )
     raise SystemExit(_run_shell_in_conda_env(
