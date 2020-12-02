@@ -11,6 +11,7 @@ from benchopt.util import install_required_solvers
 from benchopt.util import install_required_datasets
 
 from benchopt.utils.files import _get_output_folder
+from benchopt.utils.checkers import validate_benchmark
 from benchopt.utils.checkers import validate_solver_patterns
 from benchopt.utils.checkers import validate_dataset_patterns
 from benchopt.utils.shell_cmd import _run_shell_in_conda_env, create_conda_env
@@ -94,6 +95,7 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
     """
 
     # Check that the dataset/solver patterns match actual dataset
+    validate_benchmark(benchmark)
     validate_dataset_patterns(benchmark, dataset_names)
     validate_solver_patterns(benchmark, solver_names+forced_solvers)
 
