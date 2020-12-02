@@ -15,7 +15,9 @@ from .util import list_benchmark_solvers
 from .util import list_benchmark_datasets
 from .util import get_benchmark_objective
 from .utils.files import _get_output_folder
+from .utils.pdb_helpers import exception_handler
 from .utils.checkers import solver_supports_dataset
+from .utils.colorify import colorify, RED, GREEN, YELLOW
 
 
 # Get config values
@@ -28,28 +30,6 @@ RAISE_INSTALL_ERROR = get_global_setting('raise_install_error')
 PATIENCE = 5
 MAX_ITER = int(1e6)
 MIN_TOL = 1e-15
-
-
-###################################
-# Helper function for outputs
-###################################
-BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE = range(30, 38)
-
-
-def colorify(message, color=BLUE):
-    """Change color of the standard output.
-
-    Parameters
-    ----------
-    message : str
-        The message to color.
-
-    Returns
-    -------
-    color_message : str
-        The colored message to be displayed in terminal.
-    """
-    return ("\033[1;%dm" % color) + message + "\033[0m"
 
 
 ##################################
@@ -165,7 +145,7 @@ def run_one_stop_val(benchmark, objective, solver, meta, stop_val,
 
 
 def run_one_solver(benchmark, objective, solver, meta, max_runs, n_repetitions,
-                   timeout, force=False, show_progress=True):
+                   timeout, force=False, show_progress=True, pdb=False):
     """Minimize objective function with onesolver for different accuracies.
 
     Parameters
@@ -191,6 +171,8 @@ def run_one_solver(benchmark, objective, solver, meta, max_runs, n_repetitions,
         for the solver anyway. Else, use the cache if available.
     show_progress : bool
         If show_progress is set to True, display the progress of the benchmark.
+    pdb : bool
+        It pdb is set to True, open a debugger on error.
 
     Returns
     -------
@@ -238,7 +220,7 @@ def run_one_solver(benchmark, objective, solver, meta, max_runs, n_repetitions,
 
     deadline = time.time() + timeout
 
-    try:
+    with exception_handler(tag, pdb=pdb):
         for id_stop_val in range(max_runs):
             if (np.max(delta_objectives) < eps):
                 # We are on a plateau and the objective is not improving
@@ -287,15 +269,6 @@ def run_one_solver(benchmark, objective, solver, meta, max_runs, n_repetitions,
                   f"and stop_val={stop_val:.1e}.")
         else:
             print(f"{tag} {status}".ljust(80))
-    except Exception:
-        status = colorify("failed", RED)
-        print(f"{tag} {status}".ljust(80))
-
-        if DEBUG:
-            raise
-        else:
-            import traceback
-            traceback.print_exc()
 
     return curve
 
@@ -303,7 +276,7 @@ def run_one_solver(benchmark, objective, solver, meta, max_runs, n_repetitions,
 def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                   dataset_names=None, objective_filters=None,
                   max_runs=10, n_repetitions=1, timeout=100,
-                  plot_result=True, show_progress=True):
+                  plot_result=True, show_progress=True, pdb=False):
     """Run full benchmark.
 
     Parameters
@@ -334,6 +307,8 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
         the benchmark directory.
     show_progress : bool
         If show_progress is set to True, display the progress of the benchmark.
+    pdb : bool
+        It pdb is set to True, open a debugger on error.
 
     Returns
     -------
@@ -389,7 +364,7 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                             benchmark=benchmark, objective=objective,
                             solver=solver, meta=meta, max_runs=max_runs,
                             n_repetitions=n_repetitions, timeout=timeout,
-                            force=force, show_progress=show_progress
+                            force=force, show_progress=show_progress, pdb=pdb
                         ))
     df = pd.DataFrame(run_statistics)
 
