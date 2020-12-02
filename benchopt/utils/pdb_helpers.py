@@ -1,10 +1,10 @@
 "A context manager to handle exception with option to open a debugger."
 from contextlib import contextmanager
 
-
 from .colorify import colorify, RED
 from ..config import get_global_setting
 
+# Use ipdb if it is available and default to pdb otherwise.
 try:
     from ipdb import post_mortem
 except ImportError:
