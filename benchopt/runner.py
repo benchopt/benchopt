@@ -16,7 +16,8 @@ from .util import get_benchmark_objective
 from .utils.files import _get_output_folder
 from .utils.pdb_helpers import exception_handler
 from .utils.checkers import solver_supports_dataset
-from .utils.colorify import colorify, RED, GREEN, YELLOW
+from .utils.colorify import colorify
+from .utils.colorify import LINE_LENGTH, RED, GREEN, YELLOW
 
 
 # Get config values
@@ -210,7 +211,7 @@ def run_one_solver(benchmark, objective, solver, meta, max_runs, n_repetitions,
     # check if the module caught a failed import
     if not solver.is_installed(raise_on_not_installed=RAISE_INSTALL_ERROR):
         status = colorify("failed import", RED)
-        print(f"{tag} {status}".ljust(80))
+        print(f"{tag} {status}".ljust(LINE_LENGTH))
         return curve
 
     id_stop_val = 0
@@ -268,7 +269,7 @@ def run_one_solver(benchmark, objective, solver, meta, max_runs, n_repetitions,
             print(f"{tag} DEBUG - Exit with delta_objective = {delta:.2e} "
                   f"and stop_val={stop_val:.1e}.")
         else:
-            print(f"{tag} {status}".ljust(80))
+            print(f"{tag} {status}".ljust(LINE_LENGTH))
 
     return curve
 
