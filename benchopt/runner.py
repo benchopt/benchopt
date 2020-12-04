@@ -369,7 +369,7 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
     df = pd.DataFrame(run_statistics)
 
     # Save output in CSV file in the benchmark folder
-    timestamp = datetime.now().strftime('%Y-%m-%d_%Hh%M:%S')
+    timestamp = datetime.now().strftime('%Y-%m-%d_%Hh%Mm%S')
     output_dir = _get_output_folder(benchmark)
     save_file = output_dir / f'benchopt_run_{timestamp}.csv'
     df.to_csv(save_file)
