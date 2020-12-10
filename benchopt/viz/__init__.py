@@ -6,13 +6,13 @@ from ..utils.files import _get_output_folder
 from .helpers import get_plot_id
 from .plot_histogram import plot_histogram
 from .plot_suboptimality_curve import plot_suboptimality_curve, plot_relative_suboptimality_curve
-from .plot_optimality_curve import plot_optimality_curve
+from .plot_objective_curve import plot_objective_curve
 
 
 PLOT_KINDS = {
     'suboptimality_curve': plot_suboptimality_curve,
     'relative_suboptimality_curve': plot_relative_suboptimality_curve,
-    'optimality_curve': plot_optimality_curve,
+    'objective_curve': plot_objective_curve,
     'histogram': plot_histogram
 }
 

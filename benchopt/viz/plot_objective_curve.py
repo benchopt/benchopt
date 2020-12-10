@@ -1,10 +1,10 @@
 import matplotlib.pyplot as plt
 
 
-def plot_optimality_curve(df, benchmark):
-    """Plot optimality curve for a given benchmark and dataset.
+def plot_objective_curve(df, benchmark): # A changer ailleurs objective
+    """Plot objective curve for a given benchmark and dataset.
 
-    F(x) as a function of x
+    F(x) as a function of x.
 
     Parameters
     ----------
@@ -23,7 +23,6 @@ def plot_optimality_curve(df, benchmark):
     objective_name = df['objective_name'].unique()[0]
 
     fig = plt.figure()
-    eps = 1e-10
     for i, solver_name in enumerate(solver_names):
         df_ = df[df['solver_name'] == solver_name]
         curve = df_.groupby('stop_val').median()
@@ -34,7 +33,6 @@ def plot_optimality_curve(df, benchmark):
         plt.fill_betweenx(curve['objective_value'], q1, q9,
                           color=f"C{i}", alpha=.3)
     xlim = plt.xlim()
-    plt.hlines(eps, *xlim, color='k', linestyle='--')
     plt.xlim(xlim)
     plt.legend(fontsize=14)
     plt.xlabel("Time [sec]", fontsize=14)

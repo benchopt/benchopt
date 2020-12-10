@@ -8,9 +8,9 @@ def plot_suboptimality_curve(df, benchmark, relative=False):
     F(x) - F(x*) as a function of x
 
     Plot relative suboptimality if relative == True, that is
-    (F(x) - F(x*)) / (F(x^0) - F(x*)) as a function of x
-
-    with F(x*) is the smallest value reached in df.
+    (F(x) - F(x*)) / (F_0 - F(x*)) as a function of x
+    with F(x*) is the smallest value reached in df and
+    F_0 the largest initial loss across all solvers.
 
     Parameters
     ----------
@@ -31,6 +31,7 @@ def plot_suboptimality_curve(df, benchmark, relative=False):
     fig = plt.figure()
     eps = 1e-10
     c_star = df['objective_value'].min() - eps
+    max_f_0 = df[df['stop_val'] == 1]['objective_value'].max()
     for i, solver_name in enumerate(solver_names):
         df_ = df[df['solver_name'] == solver_name]
         curve = df_.groupby('stop_val').median()
@@ -39,7 +40,7 @@ def plot_suboptimality_curve(df, benchmark, relative=False):
 
         if relative:
             y_label = r"$\frac{F(x) - F(x*)}{F(x^0) - F(x*)}$"
-            y_axis = (curve['objective_value'] - c_star) / (curve['objective_value'].iloc[0] - c_star)
+            y_axis = (curve['objective_value'] - c_star) / (max_f_0 - c_star)
         else:
             y_label = r"$F(x) - F(x*)$"
             y_axis = curve['objective_value'] - c_star
@@ -60,10 +61,10 @@ def plot_suboptimality_curve(df, benchmark, relative=False):
 def plot_relative_suboptimality_curve(df, benchmark):
     """Plot relative suboptimality curve for a given benchmark and dataset.
 
-    Plot relative suboptimality, that is
-    (F(x) - F(x*)) / (F(x^0) - F(x*)) as a function of x
-
-    with F(x*) is the smallest value reached in df.
+    Plot relative suboptimality if relative == True, that is
+    (F(x) - F(x*)) / (F_0 - F(x*)) as a function of x
+    with F(x*) is the smallest value reached in df and
+    F_0 the largest initial loss across all solvers.
 
     Parameters
     ----------
