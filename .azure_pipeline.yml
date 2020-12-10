@@ -21,19 +21,22 @@ jobs:
   strategy:
     matrix:
 
-      linux_py36_conda:
+      linux_py37_conda:
         imageName: 'ubuntu-latest'
-        VERSION_PYTHON: '3.6'
+        VERSION_PYTHON: '3.7'
         COVERAGE: 'true'
         COVERAGE_PROCESS_START: $(Build.SourcesDirectory)/.coveragerc
-      linux_pylatest_conda:
+      linux_py38_conda:
         imageName: 'ubuntu-latest'
-        VERSION_PYTHON: '*'
+        VERSION_PYTHON: '3.8'
+#      linux_pylatest_conda:
+#        imageName: 'ubuntu-latest'
+#        VERSION_PYTHON: '*'
 
       # MacOS builds
-      macOS_pylatest_conda:
+      macOS_py38_conda:
         imageName: 'macOS-10.14'
-        VERSION_PYTHON: '*'
+        VERSION_PYTHON: '3.8'
 
 #       win_py38_pip:
 #         imageName: 'vs2017-win2016'
