@@ -3,7 +3,7 @@
 Write a benchmark
 =================
 
-A benchmark consists in three elements: an objective_ function,
+A benchmark is composed of three elements: an objective_ function,
 a list of datasets_, and a list of solvers_.
 
 A benchmark is defined in a folder that should respect a certain
@@ -37,8 +37,9 @@ as for `Ordinary Least Square (OLS) <https://github.com/benchopt/benchmark_ols>`
 ------------
 
 The **objective function** is defined through a Python class.
-This class allows to evaluate the objective function to be minimized
-by the solvers. An objective class should define 3 methods:
+This class allows to monitor the quantities of interests along the iterations
+of the solvers. Typically it allows to evaluate the objective function to
+be minimized by the solvers. An objective class should define 3 methods:
 
   - **set_data**: it allows to specify the data. See the data as a dictionary
     of Python variables without any constraint.
@@ -81,10 +82,10 @@ Example of parametrized simulated dataset
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Sometimes one wants to test the solvers for variants of the same dataset.
-For example, one may want to change the dataset size, the noise level etc.
+For example, one may want to change the dataset size, the noise level, etc.
 To be able to specify parameters to get a dataset you can use a class
 attribute called `parameters`. This parameter must be a dictionary
-whose keys can be passed to the `__init__` of the class. The benchopt
+whose keys can be passed to the `__init__` of the class. Then benchopt
 will automatically allow you to test all combinations of parameters.
 
 .. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/datasets/simulated.py
