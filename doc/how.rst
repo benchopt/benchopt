@@ -41,7 +41,7 @@ This class allows to monitor the quantities of interest along the iterations
 of the solvers. Typically it allows to evaluate the objective function to
 be minimized by the solvers. An objective class should define 3 methods:
 
-  - ``set_data(\*\*data)``: it allows to specify the data. See the data as a dictionary
+  - ``set_data(**data)``: it allows to specify the data. See the data as a dictionary
     of Python variables without any constraint.
   - ``compute(x)``: it allows to evaluate the objective for a given value
     of the iterate, here called ``x``. This method should take only one parameter,
@@ -101,7 +101,7 @@ will automatically allow you to test all combinations of parameters.
 
 A solver requires to define three methods:
 
-   - ``set_objective(\*\*objective_dict)``: This method will be called with the
+   - ``set_objective(**objective_dict)``: This method will be called with the
      dictionary ``objective_dict`` returned by the method ``to_dict``
      from the objective. The goal of this method is to provide all necessary
      information to the solver so it can optimize the objective function.
@@ -131,9 +131,9 @@ benchopt supports different types of solvers:
 
    - :ref:`python_numpy_solvers`
    - :ref:`python_conda_solvers`
-   - :ref:`python_source_solvers`
    - :ref:`r_solvers`
    - :ref:`julia_solvers`
+   - :ref:`source_solvers`
 
 .. _python_numpy_solvers:
 
@@ -157,42 +157,22 @@ The `install_cmd` class variable needs to be set to `conda`
 and the list of conda packages is specified in the variable
 `requirements` that needs to be a Python list. If a requirement
 starts with `pip:` then the package is installed from `pypi <https://pypi.org/>`_ and
-not conda-forge <https://conda-forge.org/>`_. See example:
+not `conda-forge <https://conda-forge.org/>`_. See example:
 
 .. note::
 
-    The `install_cmd` can either be `conda` or `shell`. If `shell`
+    The ``install_cmd`` can either be ``'conda'`` or ``'shell'``. If ``'shell'``
     a shell script is necessary to explain how to setup the required
-    dependancies.
+    dependencies.
 
 .. note::
 
-    Specifying the dependancies is necessary if you let benchopt
-    manage the creation of a dedicated environment. If you want
-    using your local environment the list of dependancies is
+    Specifying the dependencies is necessary if you let benchopt
+    manage the creation of a dedicated environment. If you want to
+    use your local environment the list of dependencies is
     not relevant.
 
 .. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/solvers/sklearn.py
-
-.. _python_source_solvers:
-
-Python solver from source distribution
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-You can install a package from source in case it is not available
-as binaries from the package managers from either Python, R or Julia.
-
-.. note::
-    A package available from source may require a C++
-    or Fortran compiler.
-
-Here is example using pip:
-
-.. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/solvers/celer.py
-
-See for example on the L1 logistic regression benchmark for
-`an example <https://github.com/benchopt/benchmark_logreg_l1/blob/master/solvers/liblinear.py>`_
-that uses a ``'shell'`` as ``install_cmd``.
 
 .. _r_solvers:
 
@@ -200,7 +180,7 @@ R solver
 ~~~~~~~~
 
 A solver written in `R <https://www.r-project.org/>`_ needs two files.
-A .R file that contains the solver and a Python file that knows how to call the
+A ``.R`` file that contains the solver and a Python file that knows how to call the
 R solver using `Rpy2 <https://pypi.org/project/rpy2/>`_. Only the extensions
 should differ between the two files. Here is the Python file:
 
@@ -221,8 +201,33 @@ It uses the R code in:
 Julia solver
 ~~~~~~~~~~~~
 
+A solver written in `Julia <https://julialang.org>`_ needs two files.
+A ``.jl`` file that contains the solver and a Python file that knows how to call the
+Julia solver using `PyJulia <https://pypi.org/project/julia/>`_. Only the extensions
+should differ between the two files. Here is the Python file:
+
 .. literalinclude:: ../benchmarks/lasso/solvers/julia_pgd.py
 
-The uses the Julia code in:
+It uses the Julia code in:
 
 .. literalinclude:: ../benchmarks/lasso/solvers/julia_pgd.jl
+
+.. _source_solvers:
+
+Python solver from source distribution
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can install a package from source in case it is not available
+as binaries from the package managers from either Python, R or Julia.
+
+.. note::
+    A package available from source may require a C++
+    or Fortran compiler.
+
+Here is example using pip:
+
+.. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/solvers/celer.py
+
+See for example on the L1 logistic regression benchmark for
+`an example <https://github.com/benchopt/benchmark_logreg_l1/blob/master/solvers/liblinear.py>`_
+that uses a ``'shell'`` as ``install_cmd``.
