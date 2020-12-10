@@ -106,14 +106,16 @@ A solver requires to define three methods:
      from the objective. The goal of this method is to provide all necessary
      information to the solver so it can optimize the objective function.
 
-   - ``run``: This method takes only one parameter that controls the stopping
+   - ``run(stop_value)``: This method takes only one parameter that controls the stopping
      condition of the solver. This is typically a number of iterations ``n_iter``
      or a tolerance parameter ``tol``. This is controled by the ``stop_strategy``,
      see below for details.
 
-   - ``get_result``: This method returns a variable that can be passed
+   - ``get_result()``: This method returns a variable that can be passed
      to the ``compute`` method from the objective. This is the output of
      the solver.
+
+**Stop strategy:**
 
 A solver should also define a ``stop_strategy`` as class attribute.
 This ``stop_strategy`` can be:
@@ -153,10 +155,10 @@ Python solver from Conda package
 
 If you want to compare a solver available on `conda <https://docs.conda.io/en/latest/>`_
 you can specify how this solver needs to be installed and how to call it.
-The `install_cmd` class variable needs to be set to `conda`
+The ``install_cmd`` class variable needs to be set to ``'conda'``
 and the list of conda packages is specified in the variable
 `requirements` that needs to be a Python list. If a requirement
-starts with `pip:` then the package is installed from `pypi <https://pypi.org/>`_ and
+starts with ``pip:`` then the package is installed from `pypi <https://pypi.org/>`_ and
 not `conda-forge <https://conda-forge.org/>`_. See example:
 
 .. note::
@@ -202,7 +204,7 @@ Julia solver
 ~~~~~~~~~~~~
 
 A solver written in `Julia <https://julialang.org>`_ needs two files.
-A ``.jl`` file that contains the solver and a Python file that knows how to call the
+A ``.jl`` file that contains the solver and a ``.py`` file that knows how to call the
 Julia solver using `PyJulia <https://pypi.org/project/julia/>`_. Only the extensions
 should differ between the two files. Here is the Python file:
 
@@ -228,6 +230,8 @@ Here is example using pip:
 
 .. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/solvers/celer.py
 
-See for example on the L1 logistic regression benchmark for
-`an example <https://github.com/benchopt/benchmark_logreg_l1/blob/master/solvers/liblinear.py>`_
-that uses a ``'shell'`` as ``install_cmd``.
+.. note::
+
+    See for example on the L1 logistic regression benchmark for
+    `an example <https://github.com/benchopt/benchmark_logreg_l1/blob/master/solvers/liblinear.py>`_
+    that uses a ``'shell'`` as ``install_cmd``.
