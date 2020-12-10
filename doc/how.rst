@@ -37,18 +37,21 @@ as for `Ordinary Least Square (OLS) <https://github.com/benchopt/benchmark_ols>`
 ------------
 
 The **objective function** is defined through a Python class.
-This class allows to monitor the quantities of interests along the iterations
+This class allows to monitor the quantities of interest along the iterations
 of the solvers. Typically it allows to evaluate the objective function to
 be minimized by the solvers. An objective class should define 3 methods:
 
-  - **set_data**: it allows to specify the data. See the data as a dictionary
+  - ``set_data(\*\*data)``: it allows to specify the data. See the data as a dictionary
     of Python variables without any constraint.
-  - **compute**: it allows to evaluate the objective for a given value
-    of the iterate. This method should take only one parameter.
-  - **to_dict**: method that returns a dictionary to be passed
-    to the **set_objective** methods of solvers_.
+  - ``compute(x)``: it allows to evaluate the objective for a given value
+    of the iterate, here called ``x``. This method should take only one parameter,
+    the output returned by the solver. All other parameters should be stored
+    in the class with ``set_data`` method.
+  - ``to_dict()``: method that returns a dictionary to be passed
+    to the ``set_objective`` methods of solvers_.
 
-An objective class also needs to inherit from a base class called `BaseObjective`.
+An objective class also needs to inherit from a base class called
+:class:`benchopt.base.BaseObjective`.
 
 Example
 ~~~~~~~
@@ -63,12 +66,13 @@ Example
 A dataset defines what can be passed to an objective. More specifically,
 a dataset should implement one method:
 
-   - **get_data**: A method whose output consists of two things. First it outputs
-     the dimension of the optization problem (size of the iterates). Second it
-     outputs a dictionary that can be passed as `**kwargs` to
-     the **set_data** method of an objective_.
+   - ``get_data()``: A method whose output consists of two things. First it outputs
+     the dimension of the optimization problem (size of the iterates). Second it
+     outputs a dictionary that can be passed as keyword arguments ``**data`` to
+     the ``set_data`` method of an objective_.
 
-A dataset class also needs to inherit from a base class called `BaseDataset`.
+A dataset class also needs to inherit from a base class called
+:class:`benchopt.base.BaseDataset`.
 
 Example using a real dataset
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -83,9 +87,9 @@ Example of parametrized simulated dataset
 
 Sometimes one wants to test the solvers for variants of the same dataset.
 For example, one may want to change the dataset size, the noise level, etc.
-To be able to specify parameters to get a dataset you can use a class
-attribute called `parameters`. This parameter must be a dictionary
-whose keys can be passed to the `__init__` of the class. Then benchopt
+To be able to specify parameters to get a dataset, you can use a class
+attribute called ``parameters``. This parameter must be a dictionary
+whose keys can be passed to the ``__init__`` of the class. Then benchopt
 will automatically allow you to test all combinations of parameters.
 
 .. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/datasets/simulated.py
@@ -95,27 +99,33 @@ will automatically allow you to test all combinations of parameters.
 3. Solvers
 ----------
 
-Solver requires to define three methods:
+A solver requires to define three methods:
 
-   - **set_objective**: This method expects as input the union of what is returned
-     by the **get_data** methods of both the dataset and the objective.
+   - ``set_objective(\*\*objective_dict)``: This method will be called with the
+     dictionary ``objective_dict`` returned by the method ``to_dict``
+     from the objective. The goal of this method is to provide all necessary
+     information to the solver so it can optimize the objective function.
 
-   - **run**: This method takes only one parameter that controls the stopping
-     condition of the solver. This is typically a number of iterations
-     or a tolerance parameter.
+   - ``run``: This method takes only one parameter that controls the stopping
+     condition of the solver. This is typically a number of iterations ``n_iter``
+     or a tolerance parameter ``tol``. This is controled by the ``stop_strategy``,
+     see below for details.
 
-   - **get_result**: This method returns a variable that can be passed
-     to the **compute** method from the objective. This is the value of
-     the iterates.
+   - ``get_result``: This method returns a variable that can be passed
+     to the ``compute`` method from the objective. This is the output of
+     the solver.
 
-It should also define a **stop_strategy**. This stop_strategy can be:
+A solver should also define a ``stop_strategy`` as class attribute.
+This ``stop_strategy`` can be:
 
-    - *'iteration'* : in this case the **run** method of the solver
-      is parametrized by the number of iterations computed.
+    - ``'iteration'``: in this case the ``run`` method of the solver
+      is parametrized by the number of iterations computed. The parameter
+      is called ``n_iter`` and should be an integer.
 
-    - *'tolerance'* : in this case the **run** method of the solver
-      is parametrized by a tolerance that should be decrease in
-      the running time.
+    - ``'tolerance'``: in this case the ``run`` method of the solver
+      is parametrized by a tolerance that should decrease with
+      the running time. The parameter is called ``tol`` and should be
+      a positive float.
 
 benchopt supports different types of solvers:
 
@@ -182,7 +192,7 @@ Here is example using pip:
 
 See for example on the L1 logistic regression benchmark for
 `an example <https://github.com/benchopt/benchmark_logreg_l1/blob/master/solvers/liblinear.py>`_
-that uses a `shell` as `install_cmd`.
+that uses a ``'shell'`` as ``install_cmd``.
 
 .. _r_solvers:
 

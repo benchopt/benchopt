@@ -21,3 +21,13 @@ Here is a list of Python function available to construct a new benchmark.
    safe_import_context
    viz.plot_benchmark
    utils.datasets.simulated.make_correlated_data
+
+List of base classes:
+
+.. autosummary::
+   :toctree: generated/
+
+   base.BaseObjective
+   base.BaseDataset
+   base.BaseSolver
+
