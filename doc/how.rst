@@ -131,50 +131,48 @@ This ``stop_strategy`` can be:
 
 benchopt supports different types of solvers:
 
-   - :ref:`python_numpy_solvers`
-   - :ref:`python_conda_solvers`
+   - :ref:`python_solvers`
    - :ref:`r_solvers`
    - :ref:`julia_solvers`
    - :ref:`source_solvers`
 
-.. _python_numpy_solvers:
+.. _python_solvers:
 
-Python solver based on Numpy, Scipy, Numba
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Python solver
+~~~~~~~~~~~~~
 
-Such solvers are written in pure `Python <https://www.python.org/>`_ without any compiled
-code. They are typically written in `Numpy <https://numpy.org/>`_ and possibly
-with some just in time compilation e.g. with `Numba <https://numba.pydata.org/>`_.
+The simplest solvers to use are solvers written in pure
+`Python <https://www.python.org/>`_ without any compiled
+code. They are typically written in `Numpy <https://numpy.org/>`_
+with no other dependencies. Here is an example:
 
 .. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/solvers/python_pgd.py
 
-.. _python_conda_solvers:
+If your Python solver requires some packages such as `Numba <https://numba.pydata.org/>`_,
+benchopt allows you to list some requirements. The necessary packages should be available
+via `conda <https://docs.conda.io/en/latest/>`_ or
+`pip <https://packaging.python.org/guides/tool-recommendations/>`_.
 
-Python solver from Conda package
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-If you want to compare a solver available on `conda <https://docs.conda.io/en/latest/>`_
-you can specify how this solver needs to be installed and how to call it.
-The ``install_cmd`` class variable needs to be set to ``'conda'``
-and the list of conda packages is specified in the variable
-`requirements` that needs to be a Python list. If a requirement
+In this case the ``install_cmd`` class variable needs to be set to ``'conda'``
+and the list of needed packages is specified in the variable
+``requirements`` that needs to be a Python list. If a requirement
 starts with ``pip:`` then the package is installed from `pypi <https://pypi.org/>`_ and
 not `conda-forge <https://conda-forge.org/>`_. See example:
+
+.. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/solvers/sklearn.py
 
 .. note::
 
     The ``install_cmd`` can either be ``'conda'`` or ``'shell'``. If ``'shell'``
     a shell script is necessary to explain how to setup the required
-    dependencies.
+    dependencies. See :ref:`source_solvers`.
 
 .. note::
 
     Specifying the dependencies is necessary if you let benchopt
     manage the creation of a dedicated environment. If you want to
     use your local environment the list of dependencies is
-    not relevant.
-
-.. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/solvers/sklearn.py
+    not relevant. See :ref:`cli_documentation`.
 
 .. _r_solvers:
 
@@ -182,7 +180,7 @@ R solver
 ~~~~~~~~
 
 A solver written in `R <https://www.r-project.org/>`_ needs two files.
-A ``.R`` file that contains the solver and a Python file that knows how to call the
+A ``.R`` file that contains the solver and a ``.py`` file that knows how to call the
 R solver using `Rpy2 <https://pypi.org/project/rpy2/>`_. Only the extensions
 should differ between the two files. Here is the Python file:
 
@@ -191,6 +189,7 @@ should differ between the two files. Here is the Python file:
 It uses the R code in:
 
 .. literalinclude:: ../benchmarks/lasso/solvers/r_pgd.R
+    :language: R
 
 .. note::
 
@@ -213,6 +212,7 @@ should differ between the two files. Here is the Python file:
 It uses the Julia code in:
 
 .. literalinclude:: ../benchmarks/lasso/solvers/julia_pgd.jl
+    :language: julia
 
 .. _source_solvers:
 
