@@ -1,5 +1,6 @@
 # Cache directories
 joblib
+__cache__
 .pytest_cache
 __pycache__
 *.egg-info
@@ -9,6 +10,8 @@ __pycache__
 /doc/generated
 /examples/benchmark_*
 .coverage
+
+# Output files
 **/outputs
 benchopt_front_page_convergence.pdf
 

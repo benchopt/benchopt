@@ -1,15 +1,15 @@
 import numpy as np
 from pathlib import Path
 
-from benchopt.base import BaseSolver
-from benchopt.util import safe_import_context
+from benchopt import BaseSolver
+from benchopt import safe_import_context
 
 
 with safe_import_context() as import_ctx:
 
     from rpy2 import robjects
     from rpy2.robjects import numpy2ri
-    from benchopt.utils.r_helpers import import_func_from_r_file
+    from benchopt.helpers.r_lang import import_func_from_r_file
 
     # Setup the system to allow rpy2 running
     R_FILE = str(Path(__file__).with_suffix('.R'))

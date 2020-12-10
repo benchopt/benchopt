@@ -1,9 +1,9 @@
 from pathlib import Path
-from benchopt.util import safe_import_context
+from benchopt import safe_import_context
 
-from benchopt.utils.julia_helpers import JuliaSolver
-from benchopt.utils.julia_helpers import get_jl_interpreter
-from benchopt.utils.julia_helpers import assert_julia_installed
+from benchopt.helpers.julia import JuliaSolver
+from benchopt.helpers.julia import get_jl_interpreter
+from benchopt.helpers.julia import assert_julia_installed
 
 with safe_import_context() as import_ctx:
     assert_julia_installed()

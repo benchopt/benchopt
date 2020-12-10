@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 from numpy.linalg import norm
 
-from benchopt.utils.datasets.simulated import make_correlated_data
+from benchopt.datasets.simulated import make_correlated_data
 
 
 def test_correlated():
