@@ -19,12 +19,10 @@ def plot_histogram(df, benchmark):
     fig : instance of matplotlib.figure.Figure
         The matplotlib figure.
     """
-    dataset_name = df.data.unique()[0]
-    objective_name = df.objective.unique()[0]
-
-    solvers = df.solver.unique()
-
-    n_solvers = len(solvers)
+    solver_names = df['solver_name'].unique()
+    dataset_name = df['data_name'].unique()[0]
+    objective_name = df['objective_name'].unique()[0]
+    n_solvers = len(solver_names)
 
     eps = 1e-6
     width = 1 / (n_solvers + 2)
@@ -34,15 +32,15 @@ def plot_histogram(df, benchmark):
     ticks_list = []
     fig = plt.figure()
     ax = fig.gca()
-    c_star = df.obj.min() + eps
-    for i, solver_name in enumerate(solvers):
+    c_star = df['objective_value'].min() + eps
+    for i, solver_name in enumerate(solver_names):
         xi = (i + 1.5) * width
         ticks_list.append((xi, solver_name))
-        df_ = df[df.solver == solver_name]
+        df_ = df[df['solver_name'] == solver_name]
 
         # Find the first stop_val which reach a given tolerance
         df_tol = df_.groupby('stop_val').filter(
-            lambda x: x.obj.max() < c_star)
+            lambda x: x['objective_value'].max() < c_star)
         if df_tol.empty:
             print(f"Solver {solver_name} did not reach precision {eps}.")
             height = df.time.max()
@@ -55,9 +53,9 @@ def plot_histogram(df, benchmark):
         stop_val = df_tol['stop_val'].min()
         this_df = df_[df_['stop_val'] == stop_val]
         rect_list.append(ax.bar(
-            x=xi, height=this_df.time.mean(), width=width, color=colors[i]))
+            x=xi, height=this_df['time'].mean(), width=width, color=colors[i]))
 
-        plt.scatter(np.ones_like(this_df.time) * xi, this_df.time,
+        plt.scatter(np.ones_like(this_df['time']) * xi, this_df['time'],
                     marker='_', color='k', zorder=10)
 
     ax.set_xticks([xi for xi, _ in ticks_list])

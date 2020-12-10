@@ -1,6 +1,7 @@
 "Helper function for colored terminal outputs"
 
 
+LINE_LENGTH = 100
 BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE = range(30, 38)
 
 

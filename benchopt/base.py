@@ -1,5 +1,4 @@
 import tempfile
-from collections import namedtuple
 from abc import ABC, abstractmethod
 
 from .util import product_param
@@ -15,10 +14,6 @@ from .config import RAISE_INSTALL_ERROR
 
 # Possible stop strategies
 STOP_STRATEGIES = ['iteration', 'tolerance']
-
-# Named-tuple for the cost function
-Cost = namedtuple('Cost', 'data scale objective solver stop_val time obj '
-                          'idx_rep'.split(' '))
 
 
 class ParametrizedNameMixin():
@@ -365,7 +360,9 @@ class BaseObjective(ParametrizedNameMixin):
     - `compute(beta)`: computes the value of the objective function for an
       given estimate beta. Beta is given as a flat 1D vector of size
       corresponding to the `scale` value returned by `Dataset.get_data`. The
-      output should be a float or a dictionary of floats.
+      output should be a float or a dictionary of floats. If a dictioanry is
+      returned, it should at least contain a key `objective_value` associated
+      to a scalar value which will be used to detect convergence.
     """
 
     _base_class_name = 'Objective'
@@ -383,7 +380,16 @@ class BaseObjective(ParametrizedNameMixin):
         ...
 
     def __call__(self, beta):
-        return self.compute(beta)
+        """Used to call the computation of the objective.
+
+        This allow to standardize the output to a dictionary.
+        """
+        objective_dict = self.compute(beta)
+
+        if not isinstance(objective_dict, dict):
+            objective_dict = {'objective_value': objective_dict}
+
+        return objective_dict
 
     # Save the dataset object used to get the objective data so we can avoid
     # hashing the data directly.

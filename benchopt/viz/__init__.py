@@ -41,13 +41,13 @@ def plot_benchmark(df, benchmark, kinds=None, display=True):
 
     output_dir = _get_output_folder(benchmark)
 
-    datasets = df.data.unique()
+    datasets = df['data_name'].unique()
     figs = []
     for data in datasets:
-        df_data = df[df.data == data]
-        objectives = df.objective.unique()
-        for objective in objectives:
-            df_obj = df_data[df_data.objective == objective]
+        df_data = df[df['data_name'] == data]
+        objective_names = df['objective_name'].unique()
+        for objective_name in objective_names:
+            df_obj = df_data[df_data['objective_name'] == objective_name]
 
             plot_id = get_plot_id(benchmark, df_obj)
 
@@ -59,7 +59,7 @@ def plot_benchmark(df, benchmark, kinds=None, display=True):
                 fig = PLOT_KINDS[k](df_obj, benchmark)
                 save_name = output_dir / f"{plot_id}_{k}.pdf"
                 plt.savefig(save_name)
-                print(f'Save {k} plot for {data} and {objective} as:'
+                print(f'Save {k} plot for {data} and {objective_name} as:'
                       f' {save_name}')
                 figs.append(fig)
     if display:

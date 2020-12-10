@@ -20,14 +20,15 @@ def get_plot_id(benchmark, df):
 
     hasher = md5()
 
+    # Hash benchmark, dataset, objective and solver names in the benchmark
     hasher.update(benchmark.encode('utf-8'))  # benchmark
-    hasher.update(df.data.unique()[0].encode('utf-8'))  # dataset
-    hasher.update(df.objective.unique()[0].encode('utf-8'))  # objective
-    for s in df.solver.unique():
+    hasher.update(df['data_name'].unique()[0].encode('utf-8'))
+    hasher.update(df['objective_name'].unique()[0].encode('utf-8'))
+    for s in df['solver_name'].unique():
         hasher.update(s.encode('utf-8'))
-    max_n_rep = df.idx_rep.max()
-    max_stop_val = df.stop_val.max()
-    min_stop_val = df.stop_val.min()
+    max_n_rep = df['idx_rep'].max()
+    max_stop_val = df['stop_val'].max()
+    min_stop_val = df['stop_val'].min()
     hasher.update(f'{max_n_rep} {max_stop_val} {min_stop_val}'.encode('utf-8'))
     plot_id = hasher.hexdigest()
     return plot_id

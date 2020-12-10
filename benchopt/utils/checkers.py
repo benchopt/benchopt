@@ -6,6 +6,17 @@ from benchopt.util import is_matched
 from benchopt.util import product_param
 from benchopt.util import list_benchmark_solvers
 from benchopt.util import list_benchmark_datasets
+from benchopt.util import get_benchmark_objective
+
+
+def validate_benchmark(benchmark):
+    try:
+        get_benchmark_objective(benchmark)
+    except RuntimeError:
+        raise click.BadParameter(
+            f"The folder '{benchmark}' does not contain `objective.py`.\n"
+            "Make sure you provide the path to a valid benchmark."
+        )
 
 
 def _validate_patterns(all_names, patterns, name_type='dataset'):

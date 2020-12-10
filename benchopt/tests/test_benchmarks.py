@@ -20,11 +20,19 @@ def test_benchmark_objective(benchmark_dataset_simu):
     objective.set_data(**data)
 
     # check that the reported scale is correct and that the result of
-    # the objective function is a scalar
+    # the objective function is a dictionary containing a scalar value for
+    # `objective_value`.
     beta_hat = np.zeros(scale)
-    objective_value = objective(beta_hat)
-    assert np.isscalar(objective_value), (
-        "The output of the objective function should be a scalar."
+    objective_dict = objective(beta_hat)
+
+    assert 'objective_value' in objective_dict, (
+        'When the output of objective is a dict, it should at least contain '
+        'a value associated to `objective_value` which will be used to detect '
+        'the convergence of the algorithm.'
+    )
+    assert np.isscalar(objective_dict['objective_value']), (
+        "The output of the objective function should be a scalar, or a dict "
+        "containing a scalar associated to `objective_value`."
     )
 
 
@@ -163,10 +171,10 @@ def test_solver(benchmark_solver):
 
     assert beta_hat_i.shape == (scale, )
 
-    val_star = objective(beta_hat_i)
+    val_star = objective(beta_hat_i)['objective_value']
 
     for _ in range(100):
         eps = 1e-5 * np.random.randn(scale)
-        val_eps = objective(beta_hat_i + eps)
+        val_eps = objective(beta_hat_i + eps)['objective_value']
         diff = val_eps - val_star
         assert diff > 0

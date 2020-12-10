@@ -11,6 +11,7 @@ from benchopt.util import install_required_solvers
 from benchopt.util import install_required_datasets
 
 from benchopt.utils.files import _get_output_folder
+from benchopt.utils.checkers import validate_benchmark
 from benchopt.utils.checkers import validate_solver_patterns
 from benchopt.utils.checkers import validate_dataset_patterns
 from benchopt.utils.shell_cmd import _run_shell_in_conda_env, create_conda_env
@@ -79,10 +80,13 @@ def main(ctx, prog_name='benchopt', version=False):
               help="If this flag is set, do not plot the results.")
 @click.option('--pdb',
               is_flag=True,
-              help="Launch a debugger if there is an Error.")
-@click.option('--env-name', '-e', 'env_name', metavar="<env_name>", type=str,
+              help="Launch a debugger if there is an error. This will launch "
+              "ipdb if it is installed and default to pdb otherwise.")
+@click.option('--env-name', '-e',
+              metavar="<env_name>", type=str,
               help="Specify the environment in which the benchmark need to run"
-              " if it is not local.")
+              " if it is not local. If it is not provided, the benchmark will "
+              "in an environment `benchopt_$BENCHMARK_NAME`.")
 def run(benchmark, solver_names, forced_solvers, dataset_names,
         objective_filters, max_runs, n_repetitions, timeout,
         recreate=False, local=True, no_plot=False, pdb=False,
@@ -91,6 +95,7 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
     """
 
     # Check that the dataset/solver patterns match actual dataset
+    validate_benchmark(benchmark)
     validate_dataset_patterns(benchmark, dataset_names)
     validate_solver_patterns(benchmark, solver_names+forced_solvers)
 
@@ -211,6 +216,12 @@ def test(benchmark_dir, env_name, pytest_args):
     env_option = ''
     if env_name is not None:
         create_conda_env(env_name, with_pytest=True)
+        if _run_shell_in_conda_env("pytest --version", env_name=env_name) != 0:
+            raise ModuleNotFoundError(
+                f"pytest is not installed in conda env {env_name}.\n"
+                f"Please run `conda install -n {env_name} pytest` to test the "
+                "benchmark in this environment."
+            )
         env_option = f'--test-env {env_name}'
     cmd = (
         f'pytest {pytest_args} {BENCHMARK_TEST_FILE} '

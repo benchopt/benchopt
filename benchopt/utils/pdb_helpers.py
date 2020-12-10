@@ -1,10 +1,12 @@
 "A context manager to handle exception with option to open a debugger."
 from contextlib import contextmanager
 
-
-from .colorify import colorify, RED
 from ..config import get_global_setting
 
+from .colorify import colorify
+from .colorify import LINE_LENGTH, RED, YELLOW
+
+# Use ipdb if it is available and default to pdb otherwise.
 try:
     from ipdb import post_mortem
 except ImportError:
@@ -28,9 +30,13 @@ def exception_handler(tag=None, pdb=False):
     """
     try:
         yield
+    except KeyboardInterrupt:
+        status = colorify("interrupted", YELLOW)
+        print(f"\r{tag} {status}".ljust(LINE_LENGTH))
+        raise SystemExit(1)
     except BaseException:
         status = colorify("error", RED)
-        print(f"{tag} {status}".ljust(80))
+        print(f"{tag} {status}".ljust(LINE_LENGTH))
 
         if pdb:
             post_mortem()

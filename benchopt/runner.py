@@ -5,7 +5,6 @@ from joblib import Memory
 from datetime import datetime
 
 
-from .base import Cost
 from .util import is_matched
 from .viz import plot_benchmark
 from .util import product_param
@@ -17,7 +16,8 @@ from .util import get_benchmark_objective
 from .utils.files import _get_output_folder
 from .utils.pdb_helpers import exception_handler
 from .utils.checkers import solver_supports_dataset
-from .utils.colorify import colorify, RED, GREEN, YELLOW
+from .utils.colorify import colorify
+from .utils.colorify import LINE_LENGTH, RED, GREEN, YELLOW
 
 
 # Get config values
@@ -54,10 +54,10 @@ def run_one_repetition(objective, solver, meta, stop_val):
 
     Returns
     -------
-    cost : instance of Cost
-        Details on the cost function reached.
+    cost : dict
+        Details on the run and the objective value obtained.
     objective_value : float
-        The value of the objective function reached.
+        Value of the objective function reached, used to detect convergence.
     """
     # check if the module caught a failed import
     if not solver.is_installed():
@@ -68,10 +68,11 @@ def run_one_repetition(objective, solver, meta, stop_val):
     solver.run(stop_val)
     delta_t = time.perf_counter() - t_start
     beta_hat_i = solver.get_result()
-    objective_value = objective(beta_hat_i)
+    objective_dict = objective(beta_hat_i)
 
-    return (Cost(**meta, solver=str(solver), stop_val=stop_val, time=delta_t,
-                 obj=objective_value), objective_value)
+    return (dict(**meta, solver_name=str(solver), stop_val=stop_val,
+                 time=delta_t, **objective_dict),
+            objective_dict['objective_value'])
 
 
 def run_one_stop_val(benchmark, objective, solver, meta, stop_val,
@@ -210,7 +211,7 @@ def run_one_solver(benchmark, objective, solver, meta, max_runs, n_repetitions,
     # check if the module caught a failed import
     if not solver.is_installed(raise_on_not_installed=RAISE_INSTALL_ERROR):
         status = colorify("failed import", RED)
-        print(f"{tag} {status}".ljust(80))
+        print(f"{tag} {status}".ljust(LINE_LENGTH))
         return curve
 
     id_stop_val = 0
@@ -268,7 +269,7 @@ def run_one_solver(benchmark, objective, solver, meta, max_runs, n_repetitions,
             print(f"{tag} DEBUG - Exit with delta_objective = {delta:.2e} "
                   f"and stop_val={stop_val:.1e}.")
         else:
-            print(f"{tag} {status}".ljust(80))
+            print(f"{tag} {status}".ljust(LINE_LENGTH))
 
     return curve
 
@@ -353,7 +354,8 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
 
                         # Get meta
                         meta = dict(
-                            objective=str(objective), data=str(dataset),
+                            objective_name=str(objective),
+                            data_name=str(dataset),
                             scale=scale
                         )
 
