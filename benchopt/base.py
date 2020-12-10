@@ -363,7 +363,7 @@ class BaseObjective(ParametrizedNameMixin):
       output should be a float or a dictionary of floats.
       If a dictionary is returned, it should at least contain a key
       `objective_value` associated to a scalar value which will be used to detect
-      convergence. With a dictionary, mutliple metric values can be stored at once instead
+      convergence. With a dictionary, multiple metric values can be stored at once instead
       of runnning each separately.
     
     """

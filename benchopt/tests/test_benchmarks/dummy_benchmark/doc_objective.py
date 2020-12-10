@@ -8,9 +8,8 @@ class Objective(BaseObjective):
         'reg': [0.05, .1, .5]
     }
 
-    def __init__(self, reg=.1, fit_intercept=False):
+    def __init__(self, reg=.1):
         self.reg = reg
-        self.fit_intercept = fit_intercept
 
     def set_data(self, X, y):
         self.X, self.y = X, y

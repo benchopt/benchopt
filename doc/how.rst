@@ -31,7 +31,7 @@ to evaluate the objective for a given value of the iterate.
 
 Multiple values can be computed in one objective as long as they are
 stored in a dictionary with a key being `objective_value`. This allows
-to compare different metrics in the same run.
+to compute different metrics at once.
 
 Example
 ~~~~~~~
