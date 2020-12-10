@@ -108,6 +108,7 @@ html_theme_options = {
     'navbar_links': [
         # ("Models", "models"),
         # ("Examples", "auto_examples/index"),
+        ("CLI", "cli"),
         ("API", "api"),
         ("Write a benchmark", "how"),
         ("GitHub", "https://github.com/benchopt/benchOpt", True)
@@ -118,6 +119,8 @@ html_theme_options = {
     # 'bootswatch_theme': "simplex",
     'bootstrap_version': "3",
 }
+
+html_sidebars = {'**': ['localtoc.html']}
 
 # Add any paths that contain custom themes here, relative to this directory.
 html_theme_path = sphinx_bootstrap_theme.get_html_theme_path()

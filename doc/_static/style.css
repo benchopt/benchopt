@@ -1,6 +1,29 @@
+body {
+    font-size: 13pt;
+}
+
+h1 {
+    font-size: 160% !important;
+    color: #e87700;
+}
+
+h2 {
+    font-size: 140% !important;
+    color: #e87700;
+}
+
+h3 {
+    font-size: 140% !important;
+    color: #e87700;
+}
+
+h4 {
+    font-size: 120% !important;
+    color: #e87700;
+}
 
 blockquote p {
-    font-size: 14px !important;
+    font-size: 95% !important;
 }
 
 blockquote {
@@ -23,4 +46,9 @@ code {
     margin-top: -150px;
     -webkit-background-clip: content-box;
     background-clip: content-box;
+}
+
+#sidebar {
+    text-overflow: ellipsis;
+    overflow: hidden;
 }

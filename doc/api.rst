@@ -1,20 +1,33 @@
 .. _api_documentation:
 
-=================
-API Documentation
-=================
+========================
+Python API Documentation
+========================
 
-.. click:: benchopt.cli:main
-   :prog: benchopt
-   :show-nested:
+Here is a list of Python function available to construct a new benchmark.
 
+:py:mod:`benchopt`:
 
-------------------------------------------
-Helper function for benchmark construction
-------------------------------------------
+.. automodule:: benchopt
+   :no-members:
+   :no-inherited-members:
 
-Here is a list of helper function available to construct a new benchmark.
+.. currentmodule:: benchopt
 
 .. autosummary::
+   :toctree: generated/
 
-   benchopt.utils.datasets.simulated.make_correlated_data
+   run_benchmark
+   safe_import_context
+   viz.plot_benchmark
+   utils.datasets.simulated.make_correlated_data
+
+List of base classes:
+
+.. autosummary::
+   :toctree: generated/
+
+   base.BaseObjective
+   base.BaseDataset
+   base.BaseSolver
+
