@@ -15,7 +15,7 @@ command. If it can be installed via
 `conda <https://docs.conda.io/en/latest/>`_ it should just work!
 
 BenchOpt is used through a command line as documented
-in :ref:`api_documentation`. Ultimately running and replicating an
+in :ref:`cli_documentation`. Ultimately running and replicating an
 optimization benchmark should be **as simple as doing**:
 
 .. code-block::
@@ -115,6 +115,7 @@ Contents
 .. toctree::
    :maxdepth: 1
 
+   cli
    api
    how
    Fork benchopt on Github <https://github.com/benchopt/benchopt>

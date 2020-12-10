@@ -39,10 +39,6 @@ def main(ctx, prog_name='benchopt', version=False):
     help="Run a benchmark with benchopt."
 )
 @click.argument('benchmark', type=click.Path(exists=True))
-@click.option('--local', '-l',
-              is_flag=True,
-              help="If this flag is set, run the benchmark with the local "
-              "interpreter.")
 @click.option('--recreate',
               is_flag=True,
               help="If this flag is set, start with a fresh conda env.")
@@ -82,15 +78,23 @@ def main(ctx, prog_name='benchopt', version=False):
               is_flag=True,
               help="Launch a debugger if there is an error. This will launch "
               "ipdb if it is installed and default to pdb otherwise.")
-@click.option('--env-name', '-e',
+@click.option('--local', '-l', 'env_name',
+              flag_value=False, default=True,
+              help="Run the benchmark in the local env. Must have all solvers "
+              "and dataset dependencies installed.")
+@click.option('--env', '-e', 'env_name',
+              flag_value=True,
+              help="Run the benchmark in a conda env for the benchmark. The "
+              "env is named benchopt_<BENCHMARK> and all solver dependencies "
+              "are installed in it.")
+@click.option('--env-name', 'env_name',
               metavar="<env_name>", type=str,
-              help="Specify the environment in which the benchmark need to run"
-              " if it is not local. If it is not provided, the benchmark will "
-              "in an environment `benchopt_$BENCHMARK_NAME`.")
+              help="Run the benchmark in a conda env for the benchmark. The "
+              "env is named <env_name> and all solver dependencies are "
+              "installed in it.")
 def run(benchmark, solver_names, forced_solvers, dataset_names,
         objective_filters, max_runs, n_repetitions, timeout,
-        recreate=False, local=True, no_plot=False, pdb=False,
-        env_name=None):
+        recreate=False, no_plot=False, pdb=False, env_name=False):
     """Run a benchmark in a separate conda env where the deps will be installed
     """
 
@@ -99,7 +103,9 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
     validate_dataset_patterns(benchmark, dataset_names)
     validate_solver_patterns(benchmark, solver_names+forced_solvers)
 
-    if local:
+    # If env_name is False, the flag `--local` has been used (default) so
+    # run in the current environement.
+    if env_name is False:
         run_benchmark(
             benchmark, solver_names, forced_solvers,
             dataset_names=dataset_names,
@@ -109,7 +115,9 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
         )
         return
 
-    if env_name is None:
+    # If env_name is True, the flag `--env` has been used. Create a conda env
+    # specific to the benchmark. Else, use the <env_name> value.
+    if env_name is True:
         benchmark_name = Path(benchmark).resolve().name
         env_name = f"benchopt_{benchmark_name}"
     create_conda_env(env_name, recreate=recreate)
