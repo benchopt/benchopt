@@ -107,6 +107,15 @@ Solver requires to define three methods:
      to the **compute** method from the objective. This is the value of
      the iterates.
 
+It should also define a **stop_strategy**. This stop_strategy can be:
+
+    - *'iteration'* : in this case the **run** method of the solver
+      is parametrized by the number of iterations computed.
+
+    - *'tolerance'* : in this case the **run** method of the solver
+      is parametrized by a tolerance that should be decrease in
+      the running time.
+
 benchopt supports different types of solvers:
 
    - :ref:`python_numpy_solvers`
@@ -131,31 +140,78 @@ with some just in time compilation e.g. with `Numba <https://numba.pydata.org/>`
 Python solver from Conda package
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-If you want to compare a solver available on conda you can specify
-how this solver needs to be installed and how to call it.
+If you want to compare a solver available on `conda <https://docs.conda.io/en/latest/>`_
+you can specify how this solver needs to be installed and how to call it.
 The `install_cmd` class variable needs to be set to `conda`
 and the list of conda packages is specified in the variable
-`requirements` that needs to be a list. See example:
+`requirements` that needs to be a Python list. If a requirement
+starts with `pip:` then the package is installed from `pypi <https://pypi.org/>`_ and
+not conda-forge <https://conda-forge.org/>`_. See example:
+
+.. note::
+
+    The `install_cmd` can either be `conda` or `shell`. If `shell`
+    a shell script is necessary to explain how to setup the required
+    dependancies.
+
+.. note::
+
+    Specifying the dependancies is necessary if you let benchopt
+    manage the creation of a dedicated environment. If you want
+    using your local environment the list of dependancies is
+    not relevant.
 
 .. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/solvers/sklearn.py
 
 .. _python_source_solvers:
 
-Python solver from source distrution
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Python solver from source distribution
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can install a package from source in case it is not available
+as binaries from the package managers from either Python, R or Julia.
 
 .. note::
     A package available from source may require a C++
     or Fortran compiler.
 
+Here is example using pip:
+
 .. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/solvers/celer.py
+
+See for example on the L1 logistic regression benchmark for
+`an example <https://github.com/benchopt/benchmark_logreg_l1/blob/master/solvers/liblinear.py>`_
+that uses a `shell` as `install_cmd`.
 
 .. _r_solvers:
 
 R solver
 ~~~~~~~~
 
+A solver written in `R <https://www.r-project.org/>`_ needs two files.
+A .R file that contains the solver and a Python file that knows how to call the
+R solver using `Rpy2 <https://pypi.org/project/rpy2/>`_. Only the extensions
+should differ between the two files. Here is the Python file:
+
+.. literalinclude:: ../benchmarks/lasso/solvers/r_pgd.py
+
+It uses the R code in:
+
+.. literalinclude:: ../benchmarks/lasso/solvers/r_pgd.R
+
+.. note::
+
+    This uses the function :func:`benchopt.safe_import_context` to avoid
+    a crash when R is not available. The solver is in this case
+    just skipped.
+
 .. _julia_solvers:
 
 Julia solver
 ~~~~~~~~~~~~
+
+.. literalinclude:: ../benchmarks/lasso/solvers/julia_pgd.py
+
+The uses the Julia code in:
+
+.. literalinclude:: ../benchmarks/lasso/solvers/julia_pgd.jl

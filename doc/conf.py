@@ -108,6 +108,7 @@ html_theme_options = {
     'navbar_links': [
         # ("Models", "models"),
         # ("Examples", "auto_examples/index"),
+        ("CLI", "cli"),
         ("API", "api"),
         ("Write a benchmark", "how"),
         ("GitHub", "https://github.com/benchopt/benchOpt", True)

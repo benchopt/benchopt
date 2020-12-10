@@ -47,3 +47,8 @@ code {
     -webkit-background-clip: content-box;
     background-clip: content-box;
 }
+
+#sidebar {
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
