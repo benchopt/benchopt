@@ -360,9 +360,13 @@ class BaseObjective(ParametrizedNameMixin):
     - `compute(beta)`: computes the value of the objective function for an
       given estimate beta. Beta is given as a flat 1D vector of size
       corresponding to the `scale` value returned by `Dataset.get_data`. The
-      output should be a float or a dictionary of floats. If a dictioanry is
-      returned, it should at least contain a key `objective_value` associated
-      to a scalar value which will be used to detect convergence.
+      output should be a float or a dictionary of floats.
+      If a dictionary is returned, it should at least contain a key
+      `objective_value` associated to a scalar value which will be used to detect
+      convergence.
+      With a dictionary, mutliple metric values can be stored at once instead
+      of runnning each separately.
+    
     """
 
     _base_class_name = 'Objective'

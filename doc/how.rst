@@ -29,10 +29,14 @@ A objective should define a `set_data` method that allows
 to specify the data and a `compute` method that allows
 to evaluate the objective for a given value of the iterate.
 
+Multiple values can be computed in one objective as long as they are
+stored in a dictionary with a key being `objective_value`. This allows
+to compare different metrics in the same run.
+
 Example
 ~~~~~~~
 
-.. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/objective.py
+.. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/doc_objective.py
 
 2. Datasets
 -----------
