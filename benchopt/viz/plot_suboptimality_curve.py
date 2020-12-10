@@ -58,6 +58,7 @@ def plot_suboptimality_curve(df, benchmark, relative=False):
     plt.tight_layout()
     return fig
 
+
 def plot_relative_suboptimality_curve(df, benchmark):
     """Plot relative suboptimality curve for a given benchmark and dataset.
 
