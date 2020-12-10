@@ -158,7 +158,7 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
               is_flag=True,
               help="If this flag is set, do not display the plot on the "
               "screen.")
-def plot(benchmark, filename=None, kinds=('convergence_curve',),
+def plot(benchmark, filename=None, kinds=('suboptimality_curve',),
          no_display=False):
 
     output_folder = _get_output_folder(benchmark)

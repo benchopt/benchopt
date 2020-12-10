@@ -5,11 +5,14 @@ from ..utils.files import _get_output_folder
 
 from .helpers import get_plot_id
 from .plot_histogram import plot_histogram
-from .plot_convergence_curve import plot_convergence_curve
+from .plot_suboptimality_curve import plot_suboptimality_curve, plot_relative_suboptimality_curve
+from .plot_optimality_curve import plot_optimality_curve
 
 
 PLOT_KINDS = {
-    'convergence_curve': plot_convergence_curve,
+    'suboptimality_curve': plot_suboptimality_curve,
+    'relative_suboptimality_curve': plot_relative_suboptimality_curve,
+    'optimality_curve': plot_optimality_curve,
     'histogram': plot_histogram
 }
 
@@ -25,7 +28,7 @@ def plot_benchmark(df, benchmark, kinds=None, display=True):
         The path to the benchmark folder.
     kinds : list of str or None
         List of the plots that will be generated. If None are provided, use the
-        config file to choose or default to convergence_curve.
+        config file to choose or default to suboptimality_curve.
     display : bool
         If set to True, display the curves with plt.show.
 

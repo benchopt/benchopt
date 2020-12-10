@@ -19,7 +19,7 @@ DEFAULT_GLOBAL = {
 }
 
 DEFAULT_BENCHMARK = {
-    'plots': "'convergence_curve'",
+    'plots': "'suboptimality_curve'",
     'name': None
 }
 
