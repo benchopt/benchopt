@@ -216,8 +216,8 @@ It uses the Julia code in:
 
 .. _source_solvers:
 
-Python solver from source distribution
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Solver from source
+~~~~~~~~~~~~~~~~~~
 
 You can install a package from source in case it is not available
 as binaries from the package managers from either Python, R or Julia.
@@ -226,7 +226,7 @@ as binaries from the package managers from either Python, R or Julia.
     A package available from source may require a C++
     or Fortran compiler.
 
-Here is example using pip:
+Here is example using pip from a Python package on GitHub:
 
 .. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/solvers/celer.py
 
