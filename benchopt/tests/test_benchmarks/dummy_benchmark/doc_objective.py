@@ -4,7 +4,7 @@ from benchopt.base import BaseObjective
 class Objective(BaseObjective):
     name = "Lasso Regression"
 
-    parameters = {
+    parameters = { # regularization parameters in a dict
         'reg': [0.05, .1, .5]
     }
 
@@ -16,6 +16,7 @@ class Objective(BaseObjective):
         self.lmbd = self.reg * self._get_lambda_max()
 
     def compute(self, beta):
+        """Objective value at one iteration"""
         diff = self.y - self.X.dot(beta)
         return .5 * diff.dot(diff) + self.lmbd * abs(beta).sum()
 
@@ -23,4 +24,5 @@ class Objective(BaseObjective):
         return abs(self.X.T.dot(self.y)).max()
 
     def to_dict(self):
+        """Objects needed for a solver to run the set_objective method"""
         return dict(X=self.X, y=self.y, lmbd=self.lmbd)
