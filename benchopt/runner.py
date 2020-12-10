@@ -315,7 +315,7 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
     -------
     df : instance of pandas.DataFrame
         The benchmark results. If multiple metrics were computed, each
-        one is stored in separate column. If the number of metrics computed
+        one is stored in a separate column. If the number of metrics computed
         by the objective is not the same for all parameters, the missing data
         is set to `NaN`.
     """
