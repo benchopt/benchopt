@@ -1,7 +1,7 @@
 import os
 
-# # Make sure that R_HOME is loaded from the current interpreter to avoid
-# # using the parent interpreter R_HOME in the sub-interpreter.
+# Make sure that R_HOME is loaded from the current interpreter to avoid
+# using the parent interpreter R_HOME in the sub-interpreter.
 if os.environ.get('R_HOME', None) is not None:
     os.environ.pop('R_HOME')
 
