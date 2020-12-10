@@ -369,6 +369,9 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                             force=force, show_progress=show_progress, pdb=pdb
                         ))
     df = pd.DataFrame(run_statistics)
+    if df.empty:
+        print(colorify('No output produced.', RED))
+        raise SystemExit(1)
 
     # Save output in CSV file in the benchmark folder
     timestamp = datetime.now().strftime('%Y-%m-%d_%Hh%Mm%S')
