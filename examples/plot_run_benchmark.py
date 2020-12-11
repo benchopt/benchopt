@@ -9,7 +9,7 @@ import os
 from pathlib import Path
 import matplotlib.pyplot as plt
 from benchopt import run_benchmark
-from benchopt.viz import plot_benchmark
+from benchopt.viz import plot_benchmark, PLOT_KINDS
 
 
 BENCHMARK_PATH = Path(os.getcwd()).parent / 'benchmarks' / 'logreg_l2'
@@ -31,5 +31,6 @@ except RuntimeError:
     )
 
 
-figs = plot_benchmark(df, benchmark=str(BENCHMARK_PATH))
+kinds = list(PLOT_KINDS.keys())
+figs = plot_benchmark(df, benchmark=str(BENCHMARK_PATH), kinds=kinds)
 plt.show()
