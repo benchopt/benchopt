@@ -6,8 +6,8 @@ from pathlib import Path
 from .base import BaseSolver, BaseDataset
 from .utils.colorify import colorify, YELLOW
 from .utils.dynamic_modules import _load_class_from_module
-from .utils.parametrized_name_mixing import product_param
-from .utils.parametrized_name_mixing import _list_all_names
+from .utils.parametrized_name_mixin import product_param
+from .utils.parametrized_name_mixin import _list_all_names
 
 
 class Benchmark:

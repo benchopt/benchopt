@@ -4,8 +4,8 @@ from abc import ABC, abstractmethod
 from .utils.dynamic_modules import get_file_hash
 from .utils.dynamic_modules import _reconstruct_class
 
-from .utils.dependencies_mixing import DependenciesMixin
-from .utils.parametrized_name_mixing import ParametrizedNameMixin
+from .utils.dependencies_mixin import DependenciesMixin
+from .utils.parametrized_name_mixin import ParametrizedNameMixin
 
 
 # Possible stop strategies
