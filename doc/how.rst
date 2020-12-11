@@ -53,10 +53,14 @@ be minimized by the solvers. An objective class should define 3 methods:
 An objective class also needs to inherit from a base class called
 :class:`benchopt.base.BaseObjective`.
 
+Multiple values can be computed in one objective as long as they are
+stored in a dictionary with a key being `objective_value`. This allows
+to compute different metrics at once.
+
 Example
 ~~~~~~~
 
-.. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/objective.py
+.. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/doc_objective.py
 
 .. _datasets:
 
