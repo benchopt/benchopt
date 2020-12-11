@@ -79,4 +79,4 @@ def plot_relative_suboptimality_curve(df, benchmark):
     fig : instance of matplotlib.figure.Figure
         The matplotlib figure.
     """
-    plot_suboptimality_curve(df, benchmark, relative=True)
+    return plot_suboptimality_curve(df, benchmark, relative=True)
