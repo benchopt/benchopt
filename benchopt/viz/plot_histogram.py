@@ -17,7 +17,7 @@ def plot_histogram(df, benchmark):
     Returns
     -------
     fig : instance of matplotlib.figure.Figure
-        The matplotlib figure.
+        The matplotlib figure of the objective values.
     """
     solver_names = df['solver_name'].unique()
     dataset_name = df['data_name'].unique()[0]
