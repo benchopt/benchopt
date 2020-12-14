@@ -9,7 +9,7 @@ import os
 from pathlib import Path
 import matplotlib.pyplot as plt
 from benchopt import run_benchmark
-from benchopt.viz import plot_benchmark
+from benchopt.benchmark import Benchmark
 from benchopt.viz import plot_benchmark, PLOT_KINDS
 
 
