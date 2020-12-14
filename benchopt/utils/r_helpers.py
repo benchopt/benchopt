@@ -5,6 +5,7 @@ import os
 if os.environ.get('R_HOME', None) is not None:
     del os.environ['R_HOME']
 
+
 import rpy2  # noqa: E402
 import rpy2.robjects.packages as rpackages  # noqa: E402
 import rpy2.situation
@@ -21,8 +22,10 @@ except ImportError:
 
 # Hide the R warnings
 rpy2.robjects.r['options'](warn=-1)
+
 # Set the R_HOME directory to the one of the R RHOME ouput
 os.environ['R_HOME'] = rpy2.situation.r_home_from_subprocess()
+
 
 def import_rpackages(*packages):
     """Helper to import R packages in the import_ctx"""
