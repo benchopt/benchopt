@@ -8,6 +8,7 @@ if os.environ.get('R_HOME', None) is not None:
 
 import rpy2  # noqa: E402
 import rpy2.robjects.packages as rpackages  # noqa: E402
+import rpy2.situation
 try:
     from rpy2.robjects.packages import PackageNotInstalledError
 except ImportError:
@@ -21,6 +22,9 @@ except ImportError:
 
 # Hide the R warnings
 rpy2.robjects.r['options'](warn=-1)
+
+# Set the R_HOME directory to the one of the R RHOME ouput
+os.environ['R_HOME'] = rpy2.situation.r_home_from_subprocess()
 
 
 def import_rpackages(*packages):

@@ -3,10 +3,11 @@ name: linting
 on:
   push:
     branches:
-      - '**'
-  create:
+      - master
+  pull_request:
     branches:
-      - 'master'
+      - master
+  create:
     tags:
       - '**'
 
