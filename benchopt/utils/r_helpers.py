@@ -3,20 +3,18 @@ import os
 # Make sure that R_HOME is loaded from the current interpreter to avoid
 # using the parent interpreter R_HOME in the sub-interpreter.
 if os.environ.get('R_HOME', None) is not None:
-    os.environ.pop('R_HOME')
-
+    del os.environ['R_HOME']
 
 import rpy2  # noqa: E402
 import rpy2.robjects.packages as rpackages  # noqa: E402
+import rpy2.situation
 try:
     from rpy2.robjects.packages import PackageNotInstalledError
-    import rpy2.situation
 except ImportError:
     # Backward compat for rpy2 version < 3.3
     try:
         from rpy2.rinterface_lib.embedded import \
             RRuntimeError as PackageNotInstalledError
-        import rpy2.situation
     except ImportError:
         # Backward compat for rpy2 version < 3
         from rpy2.rinterface import RRuntimeError as PackageNotInstalledError
