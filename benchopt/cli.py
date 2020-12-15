@@ -7,7 +7,8 @@ from benchopt import run_benchmark
 from benchopt.viz import plot_benchmark
 from benchopt.benchmark import Benchmark
 
-from benchopt.utils.files import _get_output_folder
+from benchopt.config import get_global_setting
+from benchopt.utils.github import publish_result_file
 from benchopt.utils.dynamic_modules import _load_class_from_module
 from benchopt.utils.shell_cmd import _run_shell_in_conda_env, create_conda_env
 
@@ -160,27 +161,45 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
 def plot(benchmark, filename=None, kinds=('suboptimality_curve',),
          no_display=False):
 
-    output_folder = _get_output_folder(benchmark)
-    all_csv_files = output_folder.glob("*.csv")
-    all_csv_files = sorted(
-        all_csv_files, key=lambda t: t.stat().st_mtime
-    )
-    if filename is not None:
-        if (output_folder / filename).exists():
-            result_filename = output_folder / filename
-        elif Path(filename).exists():
-            result_filename = Path(filename)
-        else:
-            all_csv_files = '\n- '.join([str(s) for s in all_csv_files])
-            raise FileNotFoundError(
-                f"Could not find result file {filename}. Available result "
-                f"files are:\n- {all_csv_files}"
-            )
-    else:
-        result_filename = all_csv_files[-1]
+    # Get the result file
+    benchmark = Benchmark(benchmark)
+    result_filename = benchmark.get_result_file(filename)
 
+    # Plot he results.
     df = pd.read_csv(result_filename)
     plot_benchmark(df, benchmark, kinds=kinds, display=not no_display)
+
+
+@main.command(
+    help="Publish the result from a previously run benchmark."
+)
+@click.argument('benchmark', type=click.Path(exists=True))
+@click.option('--token', '-t', type=str, default=None,
+              help="Github token to access the result repo.")
+@click.option('--filename', '-f',
+              type=str, default=None,
+              help="Specify the file to publish in the benchmark. If it is "
+              "not specified, take the latest on in the benchmark output "
+              "folder.")
+def publish(benchmark, token=None, filename=None):
+
+    if token is None:
+        token = get_global_setting('github_token')
+    if token is None:
+        raise RuntimeError(
+            "Could not find the token value to connect to GitHub.\n\n"
+            "Please go to https://github.com/settings/tokens to generate a "
+            "personal token $TOKEN.\nThen, either provide it with option `-t` "
+            "or put it in a config file ./benchopt.ini\nunder section "
+            "[benchopt] as `github_token = $TOKEN`."
+        )
+
+    # Get the result file
+    benchmark = Benchmark(benchmark)
+    result_filename = benchmark.get_result_file(filename)
+
+    # Publish the result.
+    publish_result_file(benchmark.name, result_filename, token)
 
 
 @main.command(

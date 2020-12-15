@@ -1,8 +1,5 @@
 import matplotlib.pyplot as plt
 
-from ..config import get_benchmark_setting
-from ..utils.files import _get_output_folder
-
 from .helpers import get_plot_id
 from .plot_histogram import plot_histogram
 from .plot_suboptimality_curve import plot_suboptimality_curve
@@ -39,11 +36,11 @@ def plot_benchmark(df, benchmark, kinds=None, display=True):
         The matplotlib figures for convergence curve and histogram
         for each dataset.
     """
-    config_kinds = get_benchmark_setting(benchmark, 'plots')
+    config_kinds = benchmark.get_setting('plots')
     if kinds is None or len(kinds) == 0:
         kinds = config_kinds
 
-    output_dir = _get_output_folder(benchmark)
+    output_dir = benchmark.get_output_folder()
 
     datasets = df['data_name'].unique()
     figs = []

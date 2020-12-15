@@ -9,6 +9,8 @@ from .utils.dynamic_modules import _load_class_from_module
 from .utils.parametrized_name_mixin import product_param
 from .utils.parametrized_name_mixin import _list_all_names
 
+from .config import get_benchmark_setting
+
 
 class Benchmark:
     def __init__(self, benchmark_dir):
@@ -23,6 +25,13 @@ class Benchmark:
                 "`objective.py`.\nMake sure you provide the path to a valid "
                 "benchmark."
             )
+
+    def get_setting(self, setting_name):
+        "Retrieve the setting value from benchmark config."
+
+        # Get the config file and read it
+        config_file = self.benchmark_dir / 'config.ini'
+        return get_benchmark_setting(config_file, self.name, setting_name)
 
     def get_benchmark_objective(self):
         """Load the objective function defined in the given benchmark.
@@ -82,12 +91,55 @@ class Benchmark:
         return classes
 
     def list_benchmark_solvers(self):
-        """List all available solver classes for a given benchmark_dir"""
+        "List all available solver classes for the benchmark."
         return self._list_benchmark_classes(BaseSolver)
 
     def list_benchmark_datasets(self):
-        """List all available dataset classes for a given benchmark_dir"""
+        "List all available dataset classes for the benchmark."
         return self._list_benchmark_classes(BaseDataset)
+
+    def get_output_folder(self):
+        "Create or get the folder to store the output of the benchmark."
+        output_dir = Path(self.benchmark_dir) / "outputs"
+        output_dir.mkdir(exist_ok=True)
+        return output_dir
+
+    def get_result_file(self, filename=None):
+        """Get a result file from the benchmark.
+
+        Parameters
+        ----------
+        filename : str
+            Select a specific file from the benchmark.
+        """
+        # List all result files
+        output_folder = self.get_output_folder()
+        all_csv_files = output_folder.glob("*.csv")
+        all_csv_files = sorted(
+            all_csv_files, key=lambda t: t.stat().st_mtime
+        )
+
+        if filename is not None:
+            result_filename = (output_folder / filename).with_suffix('.csv')
+            if not result_filename.exists():
+                if Path(filename).exists():
+                    result_filename = Path(filename)
+                else:
+                    all_csv_files = '\n- '.join([
+                        str(s) for s in all_csv_files
+                    ])
+                    raise FileNotFoundError(
+                        f"Could not find result file {filename}. Available "
+                        f"result files are:\n- {all_csv_files}"
+                    )
+        else:
+            if len(all_csv_files) == 0:
+                raise RuntimeError(
+                    f"Could not find any CSV result files in {output_folder}."
+                )
+            result_filename = all_csv_files[-1]
+
+        return result_filename
 
     def _install_required_classes(self, classes, include_patterns,
                                   force_patterns=None, env_name=None):

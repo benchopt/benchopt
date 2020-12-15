@@ -6,12 +6,6 @@ from ..config import get_global_setting
 from .colorify import colorify
 from .colorify import LINE_LENGTH, RED, YELLOW
 
-# Use ipdb if it is available and default to pdb otherwise.
-try:
-    from ipdb import post_mortem
-except ImportError:
-    from pdb import post_mortem
-
 
 # Get config values
 DEBUG = get_global_setting('debug')
@@ -39,6 +33,11 @@ def exception_handler(tag=None, pdb=False):
         print(f"{tag} {status}".ljust(LINE_LENGTH))
 
         if pdb:
+            # Use ipdb if it is available and default to pdb otherwise.
+            try:
+                from ipdb import post_mortem
+            except ImportError:
+                from pdb import post_mortem
             post_mortem()
 
         if DEBUG:

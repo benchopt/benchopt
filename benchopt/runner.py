@@ -9,7 +9,6 @@ from .utils import product_param
 from .benchmark import is_matched
 from .config import get_global_setting
 from .benchmark import _check_name_lists
-from .utils.files import _get_output_folder
 from .utils.pdb_helpers import exception_handler
 
 from .utils.colorify import colorify
@@ -382,7 +381,7 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
 
     # Save output in CSV file in the benchmark folder
     timestamp = datetime.now().strftime('%Y-%m-%d_%Hh%Mm%S')
-    output_dir = _get_output_folder(benchmark.benchmark_dir)
+    output_dir = benchmark.get_output_folder()
     save_file = output_dir / f'benchopt_run_{timestamp}.csv'
     df.to_csv(save_file)
     print(colorify(f'Saving result in: {save_file}', GREEN))
