@@ -13,18 +13,16 @@ class ParametrizedNameMixin():
     def __init__(self, **parameters):
         """Default init set parameters base on the cls.parameters
         """
-        parameters_ = next(product_param(self.parameters))
-        parameters_.update(parameters)
-        for k, v in parameters_.items():
-            if not hasattr(self, k):
-                setattr(self, k, v)
+        pass
 
     def save_parameters(self, **parameters):
-        self.parameters = parameters
+        _parameters = next(product_param(self.parameters))
+        _parameters.update(parameters)
+        self._parameters = _parameters
         if not hasattr(self, 'parameter_template'):
             self.parameter_template = ",".join(
-                [f"{k}={v}" for k, v in parameters.items()])
-        for k, v in parameters.items():
+                [f"{k}={v}" for k, v in _parameters.items()])
+        for k, v in _parameters.items():
             if not hasattr(self, k):
                 setattr(self, k, v)
 
@@ -48,8 +46,8 @@ class ParametrizedNameMixin():
     def __repr__(self):
         """Compute the parametrized name of the instance."""
         out = f"{self.name}"
-        if len(self.parameters) > 0:
-            out += f"[{self.parameter_template}]".format(**self.parameters)
+        if len(self._parameters) > 0:
+            out += f"[{self.parameter_template}]".format(**self._parameters)
         return out
 
     @classmethod

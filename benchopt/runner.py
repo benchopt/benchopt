@@ -121,7 +121,7 @@ def run_one_stop_val(benchmark_dir, objective, solver, meta, stop_val,
     for rep in range(n_repetitions):
         if progress_str is not None:
             msg = f"{progress_str} ({rep} / {n_repetitions} repetitions)"
-            print(f"{msg.ljust(60)}\r", end='', flush=True)
+            print(f"{msg.ljust(LINE_LENGTH)}\r", end='', flush=True)
 
         meta_rep = dict(**meta, idx_rep=rep)
 
@@ -221,10 +221,14 @@ def run_one_solver(benchmark_dir, objective, solver, meta,
 
     with exception_handler(tag, pdb=pdb):
         for id_stop_val in range(max_runs):
-            if (np.max(delta_objectives) < eps):
+            if (-eps <= np.max(delta_objectives) < eps):
                 # We are on a plateau and the objective is not improving
                 # stop here for the stop_val
                 status = colorify('done', GREEN)
+                break
+            if np.max(delta_objectives) < -1e10:
+                # The algorithm is diverging, stopping here
+                status = colorify('diverged', RED)
                 break
 
             p = progress(id_stop_val, np.max(delta_objectives))
@@ -263,12 +267,12 @@ def run_one_solver(benchmark_dir, objective, solver, meta,
             stop_val = get_next(stop_val)
         else:
             status = colorify("done (did not converge)", YELLOW)
+
+        print(f"{tag} {status}".ljust(LINE_LENGTH))
         if DEBUG:
             delta = np.max(delta_objectives)
-            print(f"{tag} DEBUG - Exit with delta_objective = {delta:.2e} "
+            print(f"DEBUG - Exit with delta_objective = {delta:.2e} "
                   f"and stop_val={stop_val:.1e}.")
-        else:
-            print(f"{tag} {status}".ljust(LINE_LENGTH))
 
     return curve
 
@@ -332,13 +336,13 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
             dataset = dataset_class.get_instance(**dataset_parameters)
             if not is_matched(str(dataset), dataset_names):
                 continue
-            print(f"{dataset}")
+            print(f"{dataset}".ljust(LINE_LENGTH))
             scale, data = dataset.get_data()
             for obj_parameters in product_param(objective_class.parameters):
                 objective = objective_class.get_instance(**obj_parameters)
                 if not is_matched(str(objective), objective_filters):
                     continue
-                print(f"|--{objective}")
+                print(f"|--{objective}".ljust(LINE_LENGTH))
                 objective.set_dataset(dataset)
 
                 for solver_class in solver_classes:
@@ -373,7 +377,7 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                         ))
     df = pd.DataFrame(run_statistics)
     if df.empty:
-        print(colorify('No output produced.', RED))
+        print(colorify('No output produced.', RED).ljust(LINE_LENGTH))
         raise SystemExit(1)
 
     # Save output in CSV file in the benchmark folder

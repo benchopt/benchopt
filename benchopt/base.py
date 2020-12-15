@@ -110,7 +110,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
     def __reduce__(self):
         module_hash = get_file_hash(self._module_filename)
         return self._reconstruct, (self._module_filename, module_hash,
-                                   self.parameters, self._objective)
+                                   self._parameters, self._objective)
 
 
 class CommandLineSolver(BaseSolver, ABC):
@@ -169,7 +169,7 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
     def __reduce__(self):
         module_hash = get_file_hash(self._module_filename)
         return self._reconstruct, (self._module_filename, module_hash,
-                                   self.parameters)
+                                   self._parameters)
 
 
 class BaseObjective(ParametrizedNameMixin):
@@ -242,4 +242,4 @@ class BaseObjective(ParametrizedNameMixin):
     def __reduce__(self):
         module_hash = get_file_hash(self._module_filename)
         return self._reconstruct, (self._module_filename, module_hash,
-                                   self.parameters, self.dataset)
+                                   self._parameters, self.dataset)
