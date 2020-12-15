@@ -1,5 +1,5 @@
 
-from .utils.shell_cmd import _run_shell_in_conda_env
+from benchopt.utils.shell_cmd import _run_shell_in_conda_env
 
 
 # Shell cmd to test if a cmd exists
