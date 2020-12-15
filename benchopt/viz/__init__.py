@@ -50,7 +50,7 @@ def plot_benchmark(df, benchmark, kinds=None, display=True):
         for objective_name in objective_names:
             df_obj = df_data[df_data['objective_name'] == objective_name]
 
-            plot_id = get_plot_id(benchmark, df_obj)
+            plot_id = get_plot_id(benchmark.name, df_obj)
 
             for k in kinds:
                 if k not in PLOT_KINDS:
