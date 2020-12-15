@@ -1,10 +1,8 @@
 import uuid
 import pytest
-from pathlib import Path
 
+from benchopt.benchmark import Benchmark
 from benchopt.config import DEFAULT_GLOBAL
-from benchopt.util import list_benchmark_solvers
-from benchopt.util import list_benchmark_datasets
 from benchopt.utils.shell_cmd import delete_conda_env
 from benchopt.utils.shell_cmd import create_conda_env
 
@@ -66,16 +64,16 @@ def pytest_generate_tests(metafunc):
     PARAMETRIZATION = {
         'benchmark_dataset_simu': lambda benchmarks: [
             (benchmark, dataset_class) for benchmark in benchmarks
-            for dataset_class in list_benchmark_datasets(benchmark)
+            for dataset_class in benchmark.list_benchmark_datasets()
             if dataset_class.name.lower() == 'simulated'
         ],
         'benchmark_dataset': lambda benchmarks: [
             (benchmark, dataset_class) for benchmark in benchmarks
-            for dataset_class in list_benchmark_datasets(benchmark)
+            for dataset_class in benchmark.list_benchmark_datasets()
         ],
         'benchmark_solver': lambda benchmarks: [
             (benchmark, solver) for benchmark in benchmarks
-            for solver in list_benchmark_solvers(benchmark)
+            for solver in benchmark.list_benchmark_solvers()
         ]
     }
     for params, func in PARAMETRIZATION.items():
@@ -83,7 +81,7 @@ def pytest_generate_tests(metafunc):
             benchmarks = metafunc.config.getoption("benchmark")
             if benchmarks is None or len(benchmarks) == 0:
                 benchmarks = TEST_BENCHMARK_DIR.glob('*/')
-            benchmarks = [Path(b).resolve() for b in benchmarks]
+            benchmarks = [Benchmark(b) for b in benchmarks]
             benchmarks.sort()
             metafunc.parametrize(params, func(benchmarks), ids=class_ids)
 

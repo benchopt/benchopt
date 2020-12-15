@@ -5,15 +5,10 @@ from pathlib import Path
 from benchopt import __version__
 from benchopt import run_benchmark
 from benchopt.viz import plot_benchmark
-
-from benchopt.util import _load_class_from_module
-from benchopt.util import install_required_solvers
-from benchopt.util import install_required_datasets
+from benchopt.benchmark import Benchmark
 
 from benchopt.utils.files import _get_output_folder
-from benchopt.utils.checkers import validate_benchmark
-from benchopt.utils.checkers import validate_solver_patterns
-from benchopt.utils.checkers import validate_dataset_patterns
+from benchopt.utils.dynamic_modules import _load_class_from_module
 from benchopt.utils.shell_cmd import _run_shell_in_conda_env, create_conda_env
 
 
@@ -95,13 +90,11 @@ def main(ctx, prog_name='benchopt', version=False):
 def run(benchmark, solver_names, forced_solvers, dataset_names,
         objective_filters, max_runs, n_repetitions, timeout,
         recreate=False, no_plot=False, pdb=False, env_name=False):
-    """Run a benchmark in a separate conda env where the deps will be installed
-    """
 
     # Check that the dataset/solver patterns match actual dataset
-    validate_benchmark(benchmark)
-    validate_dataset_patterns(benchmark, dataset_names)
-    validate_solver_patterns(benchmark, solver_names+forced_solvers)
+    benchmark = Benchmark(benchmark)
+    benchmark.validate_dataset_patterns(dataset_names)
+    benchmark.validate_solver_patterns(solver_names+forced_solvers)
 
     # If env_name is False, the flag `--local` has been used (default) so
     # run in the current environement.
@@ -118,17 +111,15 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
     # If env_name is True, the flag `--env` has been used. Create a conda env
     # specific to the benchmark. Else, use the <env_name> value.
     if env_name is True:
-        benchmark_name = Path(benchmark).resolve().name
-        env_name = f"benchopt_{benchmark_name}"
+        env_name = f"benchopt_{benchmark.name}"
     create_conda_env(env_name, recreate=recreate)
 
     # installed required datasets
-    install_required_datasets(benchmark, dataset_names, env_name=env_name)
+    benchmark.install_required_datasets(dataset_names, env_name=env_name)
 
     # Get the solvers and install them
-    install_required_solvers(
-        benchmark, solver_names, forced_solvers=forced_solvers,
-        env_name=env_name
+    benchmark.install_required_solvers(
+        solver_names, forced_solvers=forced_solvers, env_name=env_name
     )
 
     # run the command in the conda env

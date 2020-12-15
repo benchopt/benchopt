@@ -1,10 +1,10 @@
 from pathlib import Path
 from contextlib import contextmanager
 
-from ..config import DEBUG
-from ..base import BaseSolver
-from .stream_redirection import SuppressStd
-from .shell_cmd import _run_shell_in_conda_env
+from benchopt.config import DEBUG
+from benchopt.base import BaseSolver
+from benchopt.utils.stream_redirection import SuppressStd
+from benchopt.utils.shell_cmd import _run_shell_in_conda_env
 
 
 # nullcontext is not available in python <=3.6 so we resort to this

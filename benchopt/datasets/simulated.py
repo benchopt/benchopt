@@ -2,7 +2,7 @@
 import numpy as np
 from numpy.linalg import norm
 
-from ..checkers import check_random_state
+from ..utils.checkers import check_random_state
 
 
 def make_correlated_data(n_samples=100, n_features=50, rho=0.6, snr=3,

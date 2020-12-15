@@ -1,7 +1,7 @@
 import numpy as np
 
 
-from benchopt.base import BaseSolver
+from benchopt import BaseSolver
 
 
 class Solver(BaseSolver):

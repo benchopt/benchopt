@@ -5,14 +5,11 @@ import numpy as np
 
 from benchopt.base import STOP_STRATEGIES
 
-from benchopt.util import list_benchmark_datasets
-from benchopt.util import get_benchmark_objective
-
 
 def test_benchmark_objective(benchmark_dataset_simu):
     """Check that the objective function and the datasets are well defined."""
-    benchmark_name, dataset_class = benchmark_dataset_simu
-    objective_class = get_benchmark_objective(benchmark_name)
+    benchmark, dataset_class = benchmark_dataset_simu
+    objective_class = benchmark.get_benchmark_objective()
     objective = objective_class.get_instance()
 
     dataset = dataset_class.get_instance()
@@ -38,7 +35,7 @@ def test_benchmark_objective(benchmark_dataset_simu):
 
 def test_dataset_class(benchmark_dataset):
     """Check that all dataset_class respects the public API"""
-    benchmark_name, dataset_class = benchmark_dataset
+    _, dataset_class = benchmark_dataset
 
     # Check that the dataset_class exposes a name
     assert hasattr(dataset_class, 'name'), "All dataset should expose a name"
@@ -59,7 +56,7 @@ def test_dataset_class(benchmark_dataset):
 def test_dataset_get_data(benchmark_dataset):
     """Check that all installed dataset_class.get_data return the right result
     """
-    benchmark_name, dataset_class = benchmark_dataset
+    _, dataset_class = benchmark_dataset
 
     # skip the test if the dataset is not installed
     if not dataset_class.is_installed():
@@ -91,7 +88,7 @@ def test_dataset_get_data(benchmark_dataset):
 def test_solver_class(benchmark_solver):
     """Check that all installed solver_class respects the public API"""
 
-    benchmark_name, solver_class = benchmark_solver
+    _, solver_class = benchmark_solver
 
     # Check that the solver_class exposes a name
     assert hasattr(solver_class, 'name'), "All solver should expose a name"
@@ -138,7 +135,7 @@ def test_solver_install(test_env_name, benchmark_solver):
 
 def test_solver(benchmark_solver):
 
-    benchmark_name, solver_class = benchmark_solver
+    benchmark, solver_class = benchmark_solver
     if not solver_class.is_installed():
         pytest.skip("Solver is not installed")
 
@@ -147,10 +144,10 @@ def test_solver(benchmark_solver):
     if 'julia' in solver_class.name.lower() and sys.platform == 'darwin':
         pytest.skip('Julia causes segfault on OSX for now.')
 
-    objective_class = get_benchmark_objective(benchmark_name)
+    objective_class = benchmark.get_benchmark_objective()
     objective = objective_class.get_instance()
 
-    datasets = list_benchmark_datasets(benchmark_name)
+    datasets = benchmark.list_benchmark_datasets()
     simulated_dataset = [d for d in datasets if d.name.lower() == 'simulated']
 
     assert len(simulated_dataset) == 1, (

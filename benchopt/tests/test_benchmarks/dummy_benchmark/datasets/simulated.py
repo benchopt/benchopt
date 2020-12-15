@@ -1,12 +1,13 @@
 import numpy as np
 
-from benchopt.base import BaseDataset
-from benchopt.utils.datasets.simulated import make_correlated_data
+from benchopt import BaseDataset
+from benchopt.datasets import make_correlated_data
 
 
 class Dataset(BaseDataset):
 
     name = "Simulated"
+    __name__ = 'test'
 
     # List of parameters to generate the datasets. The benchmark will consider
     # the cross product for each key in the dictionary.

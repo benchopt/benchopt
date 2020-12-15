@@ -23,9 +23,10 @@ recursive-include examples *.txt
 recursive-include benchopt/tests/test_benchmarks *.R
 recursive-include benchopt/tests/test_benchmarks *.jl
 recursive-include benchopt/tests/test_benchmarks *.py
-include benchopt/utils/datasets/tests/test_dataset_simulated.py
+include benchopt/datasets/tests/test_dataset_simulated.py
 
 # Exclude joblib folders in dummy_benchmark
 prune benchopt/tests/test_benchmarks/dummy_benchmark/joblib
+prune benchopt/tests/test_benchmarks/dummy_benchmark/__cache__
 
 exclude .mailmap

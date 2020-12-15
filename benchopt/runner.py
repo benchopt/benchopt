@@ -4,24 +4,21 @@ import pandas as pd
 from joblib import Memory
 from datetime import datetime
 
-
-from .util import is_matched
 from .viz import plot_benchmark
-from .util import product_param
-from .util import _check_name_lists
+from .utils import product_param
+from .benchmark import is_matched
 from .config import get_global_setting
-from .util import list_benchmark_solvers
-from .util import list_benchmark_datasets
-from .util import get_benchmark_objective
+from .benchmark import _check_name_lists
 from .utils.files import _get_output_folder
 from .utils.pdb_helpers import exception_handler
-from .utils.checkers import solver_supports_dataset
+
 from .utils.colorify import colorify
 from .utils.colorify import LINE_LENGTH, RED, GREEN, YELLOW
 
 
 # Get config values
 DEBUG = get_global_setting('debug')
+CACHE_DIR = '__cache__'
 RAISE_INSTALL_ERROR = get_global_setting('raise_install_error')
 
 
@@ -75,14 +72,14 @@ def run_one_repetition(objective, solver, meta, stop_val):
             objective_dict['objective_value'])
 
 
-def run_one_stop_val(benchmark, objective, solver, meta, stop_val,
+def run_one_stop_val(benchmark_dir, objective, solver, meta, stop_val,
                      n_repetitions, deadline=None, progress_str=None,
                      force=False):
     """Run all repetitions of the solver for a value of stopping criterion.
 
     Parameters
     ----------
-    benchmark : str
+    benchmark_dir : str
         The path to the benchmark files.
     objective : instance of BaseObjective
         The objective to minimize.
@@ -116,7 +113,7 @@ def run_one_stop_val(benchmark, objective, solver, meta, stop_val,
     """
 
     # Create a Memory object to cache the computations in the benchmark folder
-    mem = Memory(location=benchmark, verbose=0)
+    mem = Memory(location=benchmark_dir / CACHE_DIR, verbose=0)
     run_one_repetition_cached = mem.cache(run_one_repetition)
 
     curve = []
@@ -145,13 +142,14 @@ def run_one_stop_val(benchmark, objective, solver, meta, stop_val,
     return curve, np.max(current_objective)
 
 
-def run_one_solver(benchmark, objective, solver, meta, max_runs, n_repetitions,
-                   timeout, force=False, show_progress=True, pdb=False):
+def run_one_solver(benchmark_dir, objective, solver, meta,
+                   max_runs, n_repetitions, timeout,
+                   force=False, show_progress=True, pdb=False):
     """Minimize objective function with onesolver for different accuracies.
 
     Parameters
     ----------
-    benchmark : str
+    benchmark_dir : str
         The path to the benchmark files.
     objective : instance of BaseObjective
         The objective to minimize.
@@ -186,10 +184,10 @@ def run_one_solver(benchmark, objective, solver, meta, max_runs, n_repetitions,
     eps = 1e-10
 
     # Create a Memory object to cache the computations in the benchmark folder
-    mem = Memory(location=benchmark, verbose=0)
+    mem = Memory(location=benchmark_dir / CACHE_DIR, verbose=0)
     run_one_stop_val_cached = mem.cache(
         run_one_stop_val,
-        ignore=['deadline', 'benchmark', 'force', 'progress_str']
+        ignore=['deadline', 'benchmark_dir', 'force', 'progress_str']
     )
 
     # Get the solver's name
@@ -236,9 +234,10 @@ def run_one_solver(benchmark, objective, solver, meta, max_runs, n_repetitions,
                 progress_str = None
 
             call_args = dict(
-                benchmark=benchmark, objective=objective, solver=solver,
-                meta=meta, stop_val=stop_val, n_repetitions=n_repetitions,
-                deadline=deadline, progress_str=progress_str, force=force
+                benchmark_dir=benchmark_dir, objective=objective,
+                solver=solver, meta=meta, stop_val=stop_val,
+                n_repetitions=n_repetitions, deadline=deadline,
+                progress_str=progress_str, force=force
             )
             if force:
                 (stop_val_curve, objective_value), _ = \
@@ -282,8 +281,8 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
 
     Parameters
     ----------
-    benchmark : str
-        The path to the benchmark files.
+    benchmark : benchopt.Benchmark object
+        Object to represent the benchmark.
     solver_names : list | None
         List of solvers to include in the benchmark. If None
         all solvers available are run.
@@ -320,11 +319,11 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
         is set to `NaN`.
     """
     # Load the objective class for this benchmark and the datasets
-    objective_class = get_benchmark_objective(benchmark)
-    datasets = list_benchmark_datasets(benchmark)
+    objective_class = benchmark.get_benchmark_objective()
+    datasets = benchmark.list_benchmark_datasets()
 
     # Load the solvers and filter them to get the one to run
-    solver_classes = list_benchmark_solvers(benchmark)
+    solver_classes = benchmark.list_benchmark_solvers()
     included_solvers = _check_name_lists(solver_names, forced_solvers)
 
     run_statistics = []
@@ -343,7 +342,7 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                 objective.set_dataset(dataset)
 
                 for solver_class in solver_classes:
-                    if not solver_supports_dataset(solver_class, dataset):
+                    if not solver_class.supports_dataset(dataset):
                         continue
 
                     for solver_parameters in product_param(
@@ -366,10 +365,11 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                                  and len(forced_solvers) > 0
                                  and is_matched(str(solver), forced_solvers))
                         run_statistics.extend(run_one_solver(
-                            benchmark=benchmark, objective=objective,
-                            solver=solver, meta=meta, max_runs=max_runs,
-                            n_repetitions=n_repetitions, timeout=timeout,
-                            force=force, show_progress=show_progress, pdb=pdb
+                            benchmark_dir=benchmark.benchmark_dir,
+                            objective=objective, solver=solver, meta=meta,
+                            max_runs=max_runs, n_repetitions=n_repetitions,
+                            timeout=timeout, show_progress=show_progress,
+                            force=force, pdb=pdb
                         ))
     df = pd.DataFrame(run_statistics)
     if df.empty:
@@ -378,7 +378,7 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
 
     # Save output in CSV file in the benchmark folder
     timestamp = datetime.now().strftime('%Y-%m-%d_%Hh%Mm%S')
-    output_dir = _get_output_folder(benchmark)
+    output_dir = _get_output_folder(benchmark.benchmark_dir)
     save_file = output_dir / f'benchopt_run_{timestamp}.csv'
     df.to_csv(save_file)
     print(colorify(f'Saving result in: {save_file}', GREEN))
