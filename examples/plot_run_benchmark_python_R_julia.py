@@ -10,6 +10,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 from benchopt import run_benchmark
 from benchopt.benchmark import Benchmark
+from benchopt.tests import SELECT_ONE_SIMULATED
 from benchopt.viz import plot_benchmark, PLOT_KINDS
 
 
@@ -19,7 +20,7 @@ try:
     df = run_benchmark(
         Benchmark(BENCHMARK_PATH),
         ['Python-PGD*use_acceleration=False', 'R-PGD', 'Julia-PGD'],
-        dataset_names=['Simulated*n_samples=100,n_features=500*'],
+        dataset_names=[SELECT_ONE_SIMULATED],
         objective_filters=['reg=0.5'],
         max_runs=100, timeout=100, n_repetitions=5,
         plot_result=False, show_progress=False
