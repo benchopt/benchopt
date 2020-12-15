@@ -60,7 +60,7 @@ def plot_benchmark(df, benchmark, kinds=None, display=True):
                     raise ValueError(
                         f"Requesting invalid plot '{k}'. Should be in:\n"
                         f"{PLOT_KINDS}")
-                fig = PLOT_KINDS[k](df_obj, benchmark)
+                fig = PLOT_KINDS[k](df_obj)
                 save_name = output_dir / f"{plot_id}_{k}.pdf"
                 plt.savefig(save_name)
                 print(f'Save {k} plot for {data} and {objective_name} as:'

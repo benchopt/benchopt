@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 
 
-def plot_objective_curve(df, benchmark):
+def plot_objective_curve(df):
     """Plot objective curve for a given benchmark and dataset.
 
     F(x) as a function of x.
@@ -10,8 +10,6 @@ def plot_objective_curve(df, benchmark):
     ----------
     df : instance of pandas.DataFrame
         The benchmark results.
-    benchmark : str
-        The path to the benchmark folder.
 
     Returns
     -------
