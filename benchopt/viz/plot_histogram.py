@@ -4,15 +4,13 @@ import matplotlib.pyplot as plt
 from .helpers import _color_palette
 
 
-def plot_histogram(df, benchmark):
+def plot_histogram(df):
     """Plot histogram for a given benchmark and dataset.
 
     Parameters
     ----------
     df : instance of pandas.DataFrame
         The benchmark results.
-    benchmark : str
-        The path to the benchmark folder.
 
     Returns
     -------

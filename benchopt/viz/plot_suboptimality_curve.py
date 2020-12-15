@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 
 
-def plot_suboptimality_curve(df, benchmark, relative=False):
+def plot_suboptimality_curve(df, relative=False):
     """Plot suboptimality curve for a given benchmark and dataset.
 
     Plot suboptimality if relative == False, that is
@@ -16,8 +16,8 @@ def plot_suboptimality_curve(df, benchmark, relative=False):
     ----------
     df : instance of pandas.DataFrame
         The benchmark results.
-    benchmark : str
-        The path to the benchmark folder.
+    relative : bool
+        Plot suboptimality relative to first iterate.
 
     Returns
     -------
@@ -59,7 +59,7 @@ def plot_suboptimality_curve(df, benchmark, relative=False):
     return fig
 
 
-def plot_relative_suboptimality_curve(df, benchmark):
+def plot_relative_suboptimality_curve(df):
     """Plot relative suboptimality curve for a given benchmark and dataset.
 
     Plot relative suboptimality if relative == True, that is
@@ -71,12 +71,10 @@ def plot_relative_suboptimality_curve(df, benchmark):
     ----------
     df : instance of pandas.DataFrame
         The benchmark results.
-    benchmark : str
-        The path to the benchmark folder.
 
     Returns
     -------
     fig : instance of matplotlib.figure.Figure
         The matplotlib figure.
     """
-    return plot_suboptimality_curve(df, benchmark, relative=True)
+    return plot_suboptimality_curve(df, relative=True)
