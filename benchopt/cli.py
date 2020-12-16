@@ -74,11 +74,11 @@ def main(ctx, prog_name='benchopt', version=False):
               help="Launch a debugger if there is an error. This will launch "
               "ipdb if it is installed and default to pdb otherwise.")
 @click.option('--local', '-l', 'env_name',
-              flag_value=False, default=True,
+              flag_value='False', default=True,
               help="Run the benchmark in the local env. Must have all solvers "
               "and dataset dependencies installed.")
 @click.option('--env', '-e', 'env_name',
-              flag_value=True,
+              flag_value='True',
               help="Run the benchmark in a conda env for the benchmark. The "
               "env is named benchopt_<BENCHMARK> and all solver dependencies "
               "are installed in it.")
@@ -98,7 +98,7 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
 
     # If env_name is False, the flag `--local` has been used (default) so
     # run in the current environement.
-    if env_name is False:
+    if env_name == 'False':
         run_benchmark(
             benchmark, solver_names, forced_solvers,
             dataset_names=dataset_names,
@@ -110,7 +110,7 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
 
     # If env_name is True, the flag `--env` has been used. Create a conda env
     # specific to the benchmark. Else, use the <env_name> value.
-    if env_name is True:
+    if env_name == 'True':
         env_name = f"benchopt_{benchmark.name}"
     create_conda_env(env_name, recreate=recreate)
 
