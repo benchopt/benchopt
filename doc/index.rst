@@ -21,7 +21,7 @@ optimization benchmark should be **as simple as doing**:
 .. code-block::
 
     $ git clone https://github.com/benchopt/benchmark_logreg_l2
-    $ benchopt run ./benchmark_logreg_l2
+    $ benchopt run --env ./benchmark_logreg_l2
 
 Running these commands will fetch the benchmark files and give you a benchmark plot on l2-regularized logistic regression:
 
@@ -59,7 +59,7 @@ To run Lasso benchmarks on all datasets and with all solvers, run:
 
 .. code-block::
 
-    $ benchopt run benchmark_lasso
+    $ benchopt run --env benchmark_lasso
 
 Use
 

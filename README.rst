@@ -22,7 +22,7 @@ be **as simple as doing**:
 .. code-block::
 
     $ git clone https://github.com/benchopt/benchmark_logreg_l2
-    $ benchopt run ./benchmark_logreg_l2
+    $ benchopt run --env ./benchmark_logreg_l2
 
 Running this command will give you a benchmark plot on l2-regularized
 logistic regression:
@@ -65,7 +65,7 @@ To run the Lasso benchmark on all datasets and with all solvers, run:
 
 .. code-block::
 
-    $ benchopt run ./benchmark_lasso
+    $ benchopt run --env ./benchmark_lasso
 
 Use
 
