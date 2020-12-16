@@ -84,13 +84,13 @@ def main(ctx, prog_name='benchopt', version=False):
               "env is named benchopt_<BENCHMARK> and all solver dependencies "
               "are installed in it.")
 @click.option('--env-name', 'env_name',
-              metavar="<env_name>", type=str,
+              metavar="<env_name>", type=str, default='False',
               help="Run the benchmark in a conda env for the benchmark. The "
               "env is named <env_name> and all solver dependencies are "
               "installed in it.")
 def run(benchmark, solver_names, forced_solvers, dataset_names,
         objective_filters, max_runs, n_repetitions, timeout,
-        recreate=False, no_plot=False, pdb=False, env_name=False):
+        recreate=False, no_plot=False, pdb=False, env_name='False'):
 
     # Check that the dataset/solver patterns match actual dataset
     benchmark = Benchmark(benchmark)
