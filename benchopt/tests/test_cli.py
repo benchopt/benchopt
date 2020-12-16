@@ -105,6 +105,22 @@ class TestRunCmd:
         # Make sure the results were saved in a result file
         assert len(out.result_files) == 1, out.output
 
+    def test_benchopt_run_in_env(self, test_env_name):
+        with CaptureRunOutput() as out:
+            with pytest.raises(SystemExit, match='False'):
+                run([str(DUMMY_BENCHMARK), '--env-name', test_env_name,
+                     '-d', SELECT_ONE_SIMULATED,
+                     '-f', 'pgd*False', '-n', '1', '-r', '1', '-p', '0.1',
+                     '--no-plot'], 'benchopt', standalone_mode=False)
+
+        out.check_output(f'conda activate {test_env_name}', repetition=6)
+        out.check_output('Dummy Sparse Regression', repetition=1)
+        out.check_output(r'Python-PGD\[use_acceleration=False\]', repetition=2)
+        out.check_output(r'Python-PGD\[use_acceleration=True\]', repetition=0)
+
+        # Make sure the results were saved in a result file
+        assert len(out.result_files) == 1, out.output
+
     def test_benchopt_caching(self):
 
         n_rep = 2
