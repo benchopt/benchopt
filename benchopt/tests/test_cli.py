@@ -4,7 +4,7 @@ from pathlib import Path
 import click
 import pytest
 
-from benchopt.viz import PLOT_KINDS
+from benchopt.plotting import PLOT_KINDS
 from benchopt.cli import run, plot, check_install
 from benchopt.utils.stream_redirection import SuppressStd
 

@@ -4,9 +4,9 @@ import pandas as pd
 from joblib import Memory
 from datetime import datetime
 
-from .viz import plot_benchmark
 from .utils import product_param
 from .benchmark import is_matched
+from .plotting import plot_benchmark
 from .config import get_global_setting
 from .benchmark import _check_name_lists
 from .utils.pdb_helpers import exception_handler

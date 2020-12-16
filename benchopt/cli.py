@@ -4,8 +4,8 @@ from pathlib import Path
 
 from benchopt import __version__
 from benchopt import run_benchmark
-from benchopt.viz import plot_benchmark
 from benchopt.benchmark import Benchmark
+from benchopt.plotting import plot_benchmark
 
 from benchopt.config import get_global_setting
 from benchopt.utils.github import publish_result_file
@@ -67,8 +67,7 @@ def main(ctx, prog_name='benchopt', version=False):
 @click.option('--timeout',
               metavar="<int>", default=100, show_default=True, type=int,
               help='Timeout a solver when run for more than <timeout> seconds')
-@click.option('--no-plot',
-              is_flag=True,
+@click.option('--plot/--no-plot', default=True,
               help="If this flag is set, do not plot the results.")
 @click.option('--pdb',
               is_flag=True,
@@ -90,7 +89,7 @@ def main(ctx, prog_name='benchopt', version=False):
               "installed in it.")
 def run(benchmark, solver_names, forced_solvers, dataset_names,
         objective_filters, max_runs, n_repetitions, timeout,
-        recreate=False, no_plot=False, pdb=False, env_name='False'):
+        recreate=False, plot=True, pdb=False, env_name='False'):
 
     # Check that the dataset/solver patterns match actual dataset
     benchmark = Benchmark(benchmark)
@@ -105,7 +104,7 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
             dataset_names=dataset_names,
             objective_filters=objective_filters,
             max_runs=max_runs, n_repetitions=n_repetitions,
-            timeout=timeout, plot_result=not no_plot, pdb=pdb
+            timeout=timeout, plot_result=plot, pdb=pdb
         )
         return
 
@@ -134,7 +133,7 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
         rf"--max-runs {max_runs} --timeout {timeout} "
         rf"{solvers_option} {forced_solvers_option} "
         rf"{datasets_option} {objective_option} "
-        rf"{'--no-plot' if no_plot else ''} "
+        rf"{'--plot' if plot else '--no-plot'} "
         rf"{'--pdb' if pdb else ''} "
         .replace('\\', '\\\\')
     )
@@ -147,20 +146,21 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
     help="Plot the result from a previously run benchmark."
 )
 @click.argument('benchmark', type=click.Path(exists=True))
-@click.option('--filename', '-f',
-              type=str, default=None,
+@click.option('--filename', '-f', type=str, default=None,
               help="Specify the file to select in the benchmark. If it is "
               "not specified, take the latest on in the benchmark output "
               "folder.")
 @click.option('--kind', '-k', 'kinds',
               multiple=True, show_default=True, type=str,
               help='Timeout a solver when run for more than <timeout> seconds')
-@click.option('--no-display',
-              is_flag=True,
-              help="If this flag is set, do not display the plot on the "
-              "screen.")
+@click.option('--display/--no-display', default=True,
+              help="Whether or not to display the plot on the screen.")
+@click.option('--plotly', is_flag=True,
+              help="If this flag is set, generate figure as HTML with plotly. "
+              "This option does not work with all kind of plots and requires "
+              "to have plotly installed.")
 def plot(benchmark, filename=None, kinds=('suboptimality_curve',),
-         no_display=False):
+         display=True, plotly=False):
 
     # Get the result file
     benchmark = Benchmark(benchmark)
@@ -168,7 +168,7 @@ def plot(benchmark, filename=None, kinds=('suboptimality_curve',),
 
     # Plot the results.
     df = pd.read_csv(result_filename)
-    plot_benchmark(df, benchmark, kinds=kinds, display=not no_display)
+    plot_benchmark(df, benchmark, kinds=kinds, display=display, plotly=plotly)
 
 
 @main.command(
