@@ -33,5 +33,5 @@ except RuntimeError:
 
 
 kinds = list(PLOT_KINDS.keys())
-figs = plot_benchmark(df, benchmark=str(BENCHMARK_PATH), kinds=kinds)
+figs = plot_benchmark(df, benchmark=Benchmark(BENCHMARK_PATH), kinds=kinds)
 plt.show()
