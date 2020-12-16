@@ -2,15 +2,15 @@ import uuid
 import pytest
 
 from benchopt.benchmark import Benchmark
-from benchopt.config import DEFAULT_GLOBAL
+from benchopt.config import DEFAULT_GLOBAL_CONFIG
 from benchopt.utils.shell_cmd import delete_conda_env
 from benchopt.utils.shell_cmd import create_conda_env
 
 from benchopt.tests import TEST_BENCHMARK_DIR
 
 
-DEFAULT_GLOBAL['debug'] = True
-DEFAULT_GLOBAL['raise_install_error'] = True
+DEFAULT_GLOBAL_CONFIG['debug'] = True
+DEFAULT_GLOBAL_CONFIG['raise_install_error'] = True
 
 _TEST_ENV_NAME = None
 
