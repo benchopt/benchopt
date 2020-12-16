@@ -165,7 +165,7 @@ def plot(benchmark, filename=None, kinds=('suboptimality_curve',),
     benchmark = Benchmark(benchmark)
     result_filename = benchmark.get_result_file(filename)
 
-    # Plot he results.
+    # Plot the results.
     df = pd.read_csv(result_filename)
     plot_benchmark(df, benchmark, kinds=kinds, display=not no_display)
 
