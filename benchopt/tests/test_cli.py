@@ -113,7 +113,8 @@ class TestRunCmd:
                      '-f', 'pgd*False', '-n', '1', '-r', '1', '-p', '0.1',
                      '--no-plot'], 'benchopt', standalone_mode=False)
 
-        out.check_output(f'conda activate {test_env_name}', repetition=6)
+        out.check_output(f'conda activate {test_env_name}')
+        out.check_output('Simulated', repetition=1)
         out.check_output('Dummy Sparse Regression', repetition=1)
         out.check_output(r'Python-PGD\[use_acceleration=False\]', repetition=2)
         out.check_output(r'Python-PGD\[use_acceleration=True\]', repetition=0)
