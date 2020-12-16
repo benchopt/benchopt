@@ -2,6 +2,9 @@
 
 - Add a `--version` option in benchopt and check that the version installed
   in conda subenv match the one in the calling process (#83)
+- Change default mode to local run. Can call a run in an environment with
+  option `--env` for a dedicated conda env or `--env-name ENV_NAME` to specify
+  the env to use. (#94)
 
 
 ### 1.0 - 2020-09-25 - Release highlights
