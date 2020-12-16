@@ -58,7 +58,8 @@ def run_one_repetition(objective, solver, meta, stop_val):
     # check if the module caught a failed import
     if not solver.is_installed():
         raise ImportError(
-            f"Failure during import in {solver.__module__}.")
+            f"Failure during import in {solver.__module__}."
+        )
 
     t_start = time.perf_counter()
     solver.run(stop_val)
@@ -207,9 +208,12 @@ def run_one_solver(benchmark_dir, objective, solver, meta,
 
     # check if the module caught a failed import
     if not solver.is_installed(raise_on_not_installed=RAISE_INSTALL_ERROR):
-        status = colorify("failed import", RED)
+        status = colorify("not installed", RED)
         print(f"{tag} {status}".ljust(LINE_LENGTH))
         return curve
+
+    # Set objective once we are sure that the solver is installed.
+    solver._set_objective(objective)
 
     id_stop_val = 0
     stop_val = 1
@@ -336,6 +340,12 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
             if not is_matched(str(dataset), dataset_names):
                 continue
             print(f"{dataset}".ljust(LINE_LENGTH))
+            if not dataset.is_installed(
+                    raise_on_not_installed=RAISE_INSTALL_ERROR):
+                print(colorify(f"Dataset {dataset} is not installed.", RED)
+                      .ljust(LINE_LENGTH))
+                continue
+
             scale, data = dataset.get_data()
             for obj_parameters in product_param(objective_class.parameters):
                 objective = objective_class.get_instance(**obj_parameters)
@@ -355,7 +365,6 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                         solver = solver_class.get_instance(**solver_parameters)
                         if not is_matched(solver, included_solvers):
                             continue
-                        solver._set_objective(objective)
 
                         # Get meta
                         meta = dict(
