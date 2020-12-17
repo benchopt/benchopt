@@ -8,7 +8,7 @@ except ImportError:
 def fill_between_x(fig, x, q1, q9, y, color, label, plotly=False):
 
     if not plotly:
-        plt.loglog(x, y, color, label=label, linewidth=3)
+        plt.loglog(x, y, color=color, label=label, linewidth=3)
         plt.fill_betweenx(y, q1, q9, color=color, alpha=.3)
         return fig
 
