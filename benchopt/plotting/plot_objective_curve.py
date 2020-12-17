@@ -33,9 +33,9 @@ def plot_objective_curve(df, plotly=False, suboptimality=False,
         The rendered figure, used to create HTML reports.
     """
     if plotly:
-        MARKERS = {i: i for i, v in enumerate(plt.Line2D.markers)}
+        markers = {i: i for i, v in enumerate(plt.Line2D.markers)}
     else:
-        MARKERS = {i: v for i, v in enumerate(plt.Line2D.markers)}
+        markers = {i: v for i, v in enumerate(plt.Line2D.markers)}
 
     df = df.copy()
     solver_names = df['solver_name'].unique()
@@ -68,7 +68,7 @@ def plot_objective_curve(df, plotly=False, suboptimality=False,
 
         fill_between_x(
             fig, curve['time'], q1, q9, curve['objective_value'],
-            color=CMAP(i), marker=MARKERS[i], label=solver_name, plotly=plotly
+            color=CMAP(i), marker=markers[i], label=solver_name, plotly=plotly
         )
 
     if suboptimality:
