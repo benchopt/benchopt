@@ -49,6 +49,7 @@ def add_h_line(fig, val, xlim=None, plotly=False):
     if not plotly:
         plt.hlines(val, *xlim, color='k', linestyle='--')
         plt.xlim(xlim)
+        return fig
 
     fig.add_trace(go.Scatter(
         x=xlim, y=[val] * 2,
