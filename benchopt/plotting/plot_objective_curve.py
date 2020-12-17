@@ -1,13 +1,10 @@
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 
 from .helpers_compat import get_figure
 from .helpers_compat import add_h_line
 from .helpers_compat import fill_between_x
 
-
-# XXX: this cmap is only valid for benchmark that have less than 20 solvers
-# Finding a solution to get a good color palette for any number (<50) solvers
-# would be nice.
 CMAP = plt.get_cmap('tab20')
 
 
@@ -36,6 +33,12 @@ def plot_objective_curve(df, plotly=False, suboptimality=False,
     fig : matplotlib.Figure or pyplot.Figure
         The rendered figure, used to create HTML reports.
     """
+    if plotly:
+        from plotly.validators.scatter.marker import SymbolValidator
+        markers = SymbolValidator().values[::12]
+        print(markers)
+    else:
+        markers = list(Line2D.markers)
     df = df.copy()
     solver_names = df['solver_name'].unique()
     dataset_name = df['data_name'].unique()[0]
@@ -67,7 +70,7 @@ def plot_objective_curve(df, plotly=False, suboptimality=False,
 
         fill_between_x(
             fig, curve['time'], q1, q9, curve['objective_value'],
-            color=CMAP(i), label=solver_name, plotly=plotly
+            color=CMAP(i), marker=markers[i], label=solver_name, plotly=plotly
         )
 
     if suboptimality:
