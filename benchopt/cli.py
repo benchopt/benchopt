@@ -157,8 +157,8 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
               help="Whether or not to display the plot on the screen.")
 @click.option('--plotly', is_flag=True,
               help="If this flag is set, generate figure as HTML with plotly. "
-              "This option does not work with all kind of plots and requires "
-              "to have plotly installed.")
+              "This option does not work with all plot kinds and requires "
+              "to have installed `plotly`.")
 def plot(benchmark, filename=None, kinds=('suboptimality_curve',),
          display=True, plotly=False):
 

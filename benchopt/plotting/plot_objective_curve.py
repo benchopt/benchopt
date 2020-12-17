@@ -5,6 +5,9 @@ from .helpers_compat import add_h_line
 from .helpers_compat import fill_between_x
 
 
+# XXX: this cmap is only valid for benchmark that have less than 20 solvers
+# Finding a solution to get a good color palette for any number (<50) solvers
+# would be nice.
 CMAP = plt.get_cmap('tab20')
 
 
@@ -47,7 +50,10 @@ def plot_objective_curve(df, plotly=False, suboptimality=False,
         df['objective_value'] -= c_star
 
     if relative:
-        y_label = r"$\frac{F(x) - F(x*)}{F(x^0) - F(x*)}$"
+        obj = y_label[1:-1]
+        y_label = r"$\frac{{{}}}{{{}}}$".format(
+            obj, obj.replace('F(x)', 'F(x^0)')
+        )
         max_f_0 = df[df['stop_val'] == 1]['objective_value'].max()
         df['objective_value'] /= max_f_0
 
