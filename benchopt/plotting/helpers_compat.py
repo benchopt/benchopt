@@ -4,6 +4,7 @@ try:
 except ImportError:
     go = None
 
+TRANSLATE_MARKERS = {v: i for i, v in enumerate(plt.Line2D.markers)}
 
 def fill_between_x(fig, x, q1, q9, y, color, marker, label, plotly=False):
 
@@ -13,6 +14,7 @@ def fill_between_x(fig, x, q1, q9, y, color, marker, label, plotly=False):
         return fig
 
     color = f'rgba{color}'
+    marker = TRANSLATE_MARKER[marker]
     fig.add_trace(go.Scatter(
         x=x, y=y,
         line_color=color, marker_symbol=marker, mode='lines+markers',

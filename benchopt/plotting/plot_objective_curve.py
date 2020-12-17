@@ -1,12 +1,11 @@
 import matplotlib.pyplot as plt
-from matplotlib.lines import Line2D
 
 from .helpers_compat import get_figure
 from .helpers_compat import add_h_line
 from .helpers_compat import fill_between_x
 
 CMAP = plt.get_cmap('tab20')
-
+MARKERS = list(plt.Line2D.markers)
 
 def plot_objective_curve(df, plotly=False, suboptimality=False,
                          relative=False):
@@ -70,7 +69,7 @@ def plot_objective_curve(df, plotly=False, suboptimality=False,
 
         fill_between_x(
             fig, curve['time'], q1, q9, curve['objective_value'],
-            color=CMAP(i), marker=markers[i], label=solver_name, plotly=plotly
+            color=CMAP(i), marker=MARKERS[i], label=solver_name, plotly=plotly
         )
 
     if suboptimality:
