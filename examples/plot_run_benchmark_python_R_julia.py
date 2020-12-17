@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 from benchopt import run_benchmark
 from benchopt.benchmark import Benchmark
 from benchopt.tests import SELECT_ONE_SIMULATED
-from benchopt.viz import plot_benchmark, PLOT_KINDS
+from benchopt.plotting import plot_benchmark, PLOT_KINDS
 
 
 BENCHMARK_PATH = Path(os.getcwd()).parent / 'benchmarks' / 'lasso'

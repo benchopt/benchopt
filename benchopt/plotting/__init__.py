@@ -2,9 +2,9 @@ import matplotlib.pyplot as plt
 
 from .helpers import get_plot_id
 from .plot_histogram import plot_histogram
-from .plot_suboptimality_curve import plot_suboptimality_curve
-from .plot_suboptimality_curve import plot_relative_suboptimality_curve
 from .plot_objective_curve import plot_objective_curve
+from .plot_objective_curve import plot_suboptimality_curve
+from .plot_objective_curve import plot_relative_suboptimality_curve
 
 
 PLOT_KINDS = {
@@ -15,7 +15,7 @@ PLOT_KINDS = {
 }
 
 
-def plot_benchmark(df, benchmark, kinds=None, display=True):
+def plot_benchmark(df, benchmark, kinds=None, display=True, plotly=False):
     """Plot convergence curve and histogram for a given benchmark.
 
     Parameters
@@ -29,6 +29,9 @@ def plot_benchmark(df, benchmark, kinds=None, display=True):
         config file to choose or default to suboptimality_curve.
     display : bool
         If set to True, display the curves with plt.show.
+    plotly : bool
+        If set to True, generate figures with plotly if possible and save the
+        result as a HTML file.
 
     Returns
     -------
@@ -57,9 +60,17 @@ def plot_benchmark(df, benchmark, kinds=None, display=True):
                     raise ValueError(
                         f"Requesting invalid plot '{k}'. Should be in:\n"
                         f"{PLOT_KINDS}")
-                fig = PLOT_KINDS[k](df_obj)
-                save_name = output_dir / f"{plot_id}_{k}.pdf"
-                plt.savefig(save_name)
+                try:
+                    fig = PLOT_KINDS[k](df_obj, plotly=plotly)
+                except TypeError:
+                    fig = PLOT_KINDS[k](df_obj)
+                save_name = output_dir / f"{plot_id}_{k}"
+                if hasattr(fig, 'write_html'):
+                    save_name = save_name.with_suffix('.html')
+                    fig.write_html(str(save_name), include_mathjax='cdn')
+                else:
+                    save_name = save_name.with_suffix('.pdf')
+                    plt.savefig(save_name)
                 print(f'Save {k} plot for {data} and {objective_name} as:'
                       f' {save_name}')
                 figs.append(fig)
