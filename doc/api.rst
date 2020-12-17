@@ -19,7 +19,7 @@ Here is a list of Python function available to construct a new benchmark.
 
    run_benchmark
    safe_import_context
-   viz.plot_benchmark
+   plotting.plot_benchmark
    datasets.simulated.make_correlated_data
 
 List of base classes:

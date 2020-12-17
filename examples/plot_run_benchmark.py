@@ -10,7 +10,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 from benchopt import run_benchmark
 from benchopt.benchmark import Benchmark
-from benchopt.viz import plot_benchmark, PLOT_KINDS
+from benchopt.plotting import plot_benchmark, PLOT_KINDS
 
 
 BENCHMARK_PATH = Path(os.getcwd()).parent / 'benchmarks' / 'logreg_l2'
