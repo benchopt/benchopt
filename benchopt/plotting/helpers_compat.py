@@ -4,17 +4,14 @@ try:
 except ImportError:
     go = None
 
-TRANSLATE_MARKERS = {v: i for i, v in enumerate(plt.Line2D.markers)}
 
 def fill_between_x(fig, x, q1, q9, y, color, marker, label, plotly=False):
-
     if not plotly:
         plt.loglog(x, y, color=color, marker=marker, label=label, linewidth=3)
         plt.fill_betweenx(y, q1, q9, color=color, alpha=.3)
         return fig
 
     color = f'rgba{color}'
-    marker = TRANSLATE_MARKER[marker]
     fig.add_trace(go.Scatter(
         x=x, y=y,
         line_color=color, marker_symbol=marker, mode='lines+markers',

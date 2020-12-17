@@ -5,7 +5,7 @@ from .helpers_compat import add_h_line
 from .helpers_compat import fill_between_x
 
 CMAP = plt.get_cmap('tab20')
-MARKERS = list(plt.Line2D.markers)
+
 
 def plot_objective_curve(df, plotly=False, suboptimality=False,
                          relative=False):
@@ -33,11 +33,10 @@ def plot_objective_curve(df, plotly=False, suboptimality=False,
         The rendered figure, used to create HTML reports.
     """
     if plotly:
-        from plotly.validators.scatter.marker import SymbolValidator
-        markers = SymbolValidator().values[::12]
-        print(markers)
+        MARKERS = {i: i for i, v in enumerate(plt.Line2D.markers)}
     else:
-        markers = list(Line2D.markers)
+        MARKERS = {i: v for i, v in enumerate(plt.Line2D.markers)}
+
     df = df.copy()
     solver_names = df['solver_name'].unique()
     dataset_name = df['data_name'].unique()[0]
