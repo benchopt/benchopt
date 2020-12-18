@@ -81,6 +81,7 @@ def plot_objective_curve(df, plotly=False, suboptimality=False,
             yaxis_type='log',
             xaxis_title=r"Time [sec]",
             yaxis_title=y_label,
+            yaxis_tickformat="e",
             title=title,
             legend_title='solver'
         )
