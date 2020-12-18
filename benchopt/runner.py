@@ -42,7 +42,7 @@ def run_one_repetition(objective, solver, meta, stop_val):
         The solver to use.
     meta : dict
         Metadata passed to store in Cost results.
-        Contains objective, data, scale, id_rep.
+        Contains objective, data, dimension, id_rep.
     stop_val : int | float
         Corresponds to stopping criterion, such as
         tol or max_iter for the solver. It depends
@@ -87,7 +87,7 @@ def run_one_stop_val(benchmark_dir, objective, solver, meta, stop_val,
         The solver to use.
     meta : dict
         Metadata passed to store in Cost results.
-        Contains objective, data, scale.
+        Contains objective, data, dimension.
     stop_val : int | float
         Corresponds to stopping criterion, such as
         tol or max_iter for the solver. It depends
@@ -157,7 +157,7 @@ def run_one_solver(benchmark_dir, objective, solver, meta,
         The solver to use.
     meta : dict
         Metadata passed to store in Cost results.
-        Contains objective, data, scale.
+        Contains objective, data, dimension.
     max_runs : int
         The maximum number of solver runs to perform to estimate
         the convergence curve.
@@ -213,7 +213,12 @@ def run_one_solver(benchmark_dir, objective, solver, meta,
         return curve
 
     # Set objective once we are sure that the solver is installed.
-    solver._set_objective(objective)
+    skip, reason = solver._set_objective(objective)
+    if skip:
+        print(f"{tag} {colorify('skip', YELLOW)}".ljust(LINE_LENGTH))
+        if reason is not None:
+            print(f'Reason: {reason}')
+        return []
 
     id_stop_val = 0
     stop_val = 1
@@ -346,7 +351,7 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                       .ljust(LINE_LENGTH))
                 continue
 
-            scale, data = dataset.get_data()
+            dimension, data = dataset._get_data()
             for obj_parameters in product_param(objective_class.parameters):
                 objective = objective_class.get_instance(**obj_parameters)
                 if not is_matched(str(objective), objective_filters):
@@ -355,8 +360,6 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                 objective.set_dataset(dataset)
 
                 for solver_class in solver_classes:
-                    if not solver_class.supports_dataset(dataset):
-                        continue
 
                     for solver_parameters in product_param(
                             solver_class.parameters):
@@ -370,7 +373,7 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                         meta = dict(
                             objective_name=str(objective),
                             data_name=str(dataset),
-                            scale=scale
+                            dimension=dimension
                         )
 
                         force = (forced_solvers is not None

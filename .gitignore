@@ -19,8 +19,9 @@ benchopt_front_page_convergence.pdf
 build/
 dist/
 
-# Benchmarks cloned for running tests/examples
+# Benchmarks&results cloned for running tests/examples
 /benchmarks/
+/results/
 
 
 # IDE specific folders

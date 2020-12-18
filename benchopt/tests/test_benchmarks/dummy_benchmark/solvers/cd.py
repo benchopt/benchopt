@@ -1,14 +1,13 @@
 import numpy as np
+from scipy import sparse
 
 from benchopt import BaseSolver
 from benchopt import safe_import_context
 
 with safe_import_context() as import_ctx:
-    from scipy import sparse
     from numba import njit
 
 if import_ctx.failed_import:
-
     def njit(f):  # noqa: F811
         return f
 
@@ -26,7 +25,7 @@ class Solver(BaseSolver):
     name = "cd"
 
     install_cmd = 'conda'
-    requirements = ['numba', 'scipy']
+    requirements = ['numba']
 
     def set_objective(self, X, y, lmbd):
         # use Fortran order to compute gradient on contiguous columns
@@ -36,12 +35,14 @@ class Solver(BaseSolver):
         self.run(1)
 
     def run(self, n_iter):
-        L = (self.X ** 2).sum(axis=0)
         if sparse.issparse(self.X):
+            L = np.array((self.X.multiply(self.X)).sum(axis=0)).squeeze()
             self.w = self.sparse_cd(
                 self.X.data, self.X.indices, self.X.indptr, self.y, self.lmbd,
-                L, n_iter)
+                L, n_iter
+            )
         else:
+            L = (self.X ** 2).sum(axis=0)
             self.w = self.cd(self.X, self.y, self.lmbd, L, n_iter)
 
     @staticmethod
