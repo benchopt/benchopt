@@ -9,27 +9,27 @@ from benchopt.cli import run, plot, check_install
 from benchopt.utils.stream_redirection import SuppressStd
 
 
-from benchopt.tests import DUMMY_BENCHMARK, SELECT_ONE_SIMULATED
+from benchopt.tests import DUMMY_BENCHMARK_PATH, SELECT_ONE_SIMULATED
 
 
 class TestCheckInstallCmd:
     def test_solver_installed(self):
-        pgd_solver = DUMMY_BENCHMARK / 'solvers' / 'python_pgd.py'
+        pgd_solver = DUMMY_BENCHMARK_PATH / 'solvers' / 'python_pgd.py'
         with pytest.raises(SystemExit, match=r'0'):
             check_install([str(pgd_solver.resolve()), 'Solver'], 'benchopt')
 
     def test_solver_does_not_exists(self):
-        pgd_solver = DUMMY_BENCHMARK / 'solvers' / 'invalid.py'
+        pgd_solver = DUMMY_BENCHMARK_PATH / 'solvers' / 'invalid.py'
         with pytest.raises(FileNotFoundError, match=r'invalid.py'):
             check_install([str(pgd_solver.resolve()), 'Solver'], 'benchopt')
 
     def test_dataset_installed(self):
-        pgd_solver = DUMMY_BENCHMARK / 'datasets' / 'simulated.py'
+        pgd_solver = DUMMY_BENCHMARK_PATH / 'datasets' / 'simulated.py'
         with pytest.raises(SystemExit, match=r'0'):
             check_install([str(pgd_solver.resolve()), 'Dataset'], 'benchopt')
 
     def test_dataset_does_not_exists(self):
-        pgd_solver = DUMMY_BENCHMARK / 'datasets' / 'invalid.py'
+        pgd_solver = DUMMY_BENCHMARK_PATH / 'datasets' / 'invalid.py'
         with pytest.raises(FileNotFoundError, match=r'invalid.py'):
             check_install([str(pgd_solver.resolve()), 'Dataset'], 'benchopt')
 
@@ -83,17 +83,17 @@ class TestRunCmd:
 
     def test_invalid_dataset(self):
         with pytest.raises(click.BadParameter, match=r"invalid_dataset"):
-            run([str(DUMMY_BENCHMARK), '-l', '-d', 'invalid_dataset', '-s',
-                'pgd'], 'benchopt', standalone_mode=False)
+            run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', 'invalid_dataset',
+                 '-s', 'pgd'], 'benchopt', standalone_mode=False)
 
     def test_invalid_solver(self):
         with pytest.raises(click.BadParameter, match=r"invalid_solver"):
-            run([str(DUMMY_BENCHMARK), '-l', '-s', 'invalid_solver'],
+            run([str(DUMMY_BENCHMARK_PATH), '-l', '-s', 'invalid_solver'],
                 'benchopt', standalone_mode=False)
 
     def test_benchopt_run(self):
         with CaptureRunOutput() as out:
-            run([str(DUMMY_BENCHMARK), '-l', '-d', SELECT_ONE_SIMULATED,
+            run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,
                  '-f', 'pgd*False', '-n', '1', '-r', '1', '-p', '0.1',
                  '--no-plot'], 'benchopt', standalone_mode=False)
 
@@ -108,7 +108,7 @@ class TestRunCmd:
     def test_benchopt_run_in_env(self, test_env_name):
         with CaptureRunOutput() as out:
             with pytest.raises(SystemExit, match='False'):
-                run([str(DUMMY_BENCHMARK), '--env-name', test_env_name,
+                run([str(DUMMY_BENCHMARK_PATH), '--env-name', test_env_name,
                      '-d', SELECT_ONE_SIMULATED,
                      '-f', 'pgd*False', '-n', '1', '-r', '1', '-p', '0.1',
                      '--no-plot'], 'benchopt', standalone_mode=False)
@@ -125,7 +125,7 @@ class TestRunCmd:
     def test_benchopt_caching(self):
 
         n_rep = 2
-        run_cmd = [str(DUMMY_BENCHMARK), '-l', '-d', SELECT_ONE_SIMULATED,
+        run_cmd = [str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,
                    '-s', 'pgd*False', '-n', '1', '-r', str(n_rep), '-p', '0.1',
                    '--no-plot']
 
@@ -158,9 +158,9 @@ class TestPlotCmd:
 
         out = SuppressStd()
         with out:
-            run([str(DUMMY_BENCHMARK), '-l', '-d', SELECT_ONE_SIMULATED, '-s',
-                'pgd*False', '-n', '1', '-r', '1', '-p', '0.1', '--no-plot'],
-                'benchopt', standalone_mode=False)
+            run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,
+                 '-s', 'pgd*False', '-n', '1', '-r', '1', '-p', '0.1',
+                 '--no-plot'], 'benchopt', standalone_mode=False)
         result_files = re.findall(r'Saving result in: (.*\.csv)', out.output)
         assert len(result_files) == 1, out.output
         result_file = result_files[0]
@@ -174,14 +174,14 @@ class TestPlotCmd:
     def test_plot_invalid_file(self):
 
         with pytest.raises(FileNotFoundError, match=r"invalid_file"):
-            plot([str(DUMMY_BENCHMARK), '-f', 'invalid_file'],
+            plot([str(DUMMY_BENCHMARK_PATH), '-f', 'invalid_file'],
                  'benchopt', standalone_mode=False)
 
     def test_plot_invalid_kind(self):
 
         with pytest.raises(ValueError, match=r"invalid_kind"):
 
-            plot([str(DUMMY_BENCHMARK), '-k', 'invalid_kind'],
+            plot([str(DUMMY_BENCHMARK_PATH), '-k', 'invalid_kind'],
                  'benchopt', standalone_mode=False)
 
     @pytest.mark.parametrize('kind', PLOT_KINDS)
@@ -189,8 +189,8 @@ class TestPlotCmd:
 
         out = SuppressStd()
         with out:
-            plot([str(DUMMY_BENCHMARK), '-f', self.result_file, '-k', kind,
-                  '--no-display'],
+            plot([str(DUMMY_BENCHMARK_PATH), '-f', self.result_file,
+                  '-k', kind, '--no-display'],
                  'benchopt', standalone_mode=False)
         saved_files = re.findall(r'Save .* as: (.*\.pdf)', out.output)
         assert len(saved_files) == 1
