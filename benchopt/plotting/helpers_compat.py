@@ -5,17 +5,16 @@ except ImportError:
     go = None
 
 
-def fill_between_x(fig, x, q1, q9, y, color, label, plotly=False):
-
+def fill_between_x(fig, x, q1, q9, y, color, marker, label, plotly=False):
     if not plotly:
-        plt.loglog(x, y, color=color, label=label, linewidth=3)
+        plt.loglog(x, y, color=color, marker=marker, label=label, linewidth=3)
         plt.fill_betweenx(y, q1, q9, color=color, alpha=.3)
         return fig
 
     color = f'rgba{color}'
     fig.add_trace(go.Scatter(
         x=x, y=y,
-        line_color=color, mode='lines',
+        line_color=color, marker_symbol=marker, mode='lines+markers',
         name=label, legendgroup=label,
     ))
     fig.add_trace(go.Scatter(
