@@ -6,22 +6,8 @@ from github import GithubException
 BENCHOPT_RESULT_REPO = 'benchopt/results'
 
 
-def list_all_files(repo, branch):
-    "List all existing files in a github repo."
-    all_files = []
-    contents = repo.get_contents('', ref=branch)
-    while contents:
-        file_content = contents.pop(0)
-        if file_content.type == "dir":
-            contents.extend(
-                repo.get_contents(file_content.path, ref=branch)
-            )
-        else:
-            all_files.append(file_content.path)
-    return all_files
-
-
 def get_file_content(repo, branch, git_path):
+    "Get content and sha of the file if it exists else return None."
     try:
         prev_content = repo.get_contents(git_path, ref=branch)
         return prev_content.decoded_content.decode('utf-8'), prev_content.sha
@@ -63,8 +49,8 @@ def publish_result_file(benchmark_name, file_path, token):
         repo = origin
         branch = origin.default_branch
 
-    prev_content, prev_content_sha = get_file_content(repo, branch, git_path)
     # If file already exists and is the same, do nothing.
+    prev_content, prev_content_sha = get_file_content(repo, branch, git_path)
     if prev_content == file_content:
         print(f"File {file_name} is already uploaded.")
         return
