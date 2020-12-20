@@ -69,8 +69,8 @@ Use
 
 for more details about different options read the :ref:`api_documentation`.
 
-List of optimization problems available
----------------------------------------
+Benchmarks available
+--------------------
 
 Notation:  In what follows, n (or n_samples) stands for the number of samples and p (or n_features) stands for the number of features.
 
@@ -108,6 +108,10 @@ Notation:  In what follows, n (or n_samples) stands for the number of samples an
 
     \min_w \sum_i \log(1 + \exp(-y_i x_i^\top w)) + \lambda \|w\|_1
 
+Benchmark results
+-----------------
+
+All the public benchmark results are available at `BenchOpt Benchmarks results <https://benchopt.github.io/results/>`_.
 
 Contents
 ========
