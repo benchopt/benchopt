@@ -55,14 +55,15 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         Parameters
         ----------
         objective: benchopt.BaseObjective
-            the objective function for the current optimization problem.
+            The objective function for the current optimization problem.
 
         Returns
         -------
         skip : bool
-            Wether or not the solver should be skipped.
-        reason : str
-            a reason why it should be skipped for display puposes.
+            Whether this solver should be skipped or not for this objective.
+        reason : str | None
+            The reason why it should be skipped for display purposes.
+            If skip is False, the reason should be None.
         """
         self._objective = objective
         objective_dict = objective.to_dict()
@@ -77,7 +78,14 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
 
     @abstractmethod
     def set_objective(self, **objective_dict):
-        """Prepare the objective for the solver."""
+        """Prepare the objective for the solver.
+
+        Parameters
+        ----------
+        **objective_parameters : dict
+            Dictionary obtained as the output of the method ``to_dict`` from
+            the benchmark ``Objective``.
+        """
         ...
 
     @abstractmethod
@@ -103,12 +111,28 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
 
         Returns
         -------
-        parameters : ndarray, shape (n_parameters,)
+        parameters : ndarray, shape ``(dimension,)`` or ``*dimension``
             The computed coefficients by the solver.
         """
         ...
 
     def skip(self, **objective_dict):
+        """Used to decide if the ``Solver`` is compatible with the objective.
+
+        Parameters
+        ----------
+        **objective_parameters : dict
+            Dictionary obtained as the output of the method ``to_dict`` from
+            the benchmark ``Objective``.
+
+        Returns
+        -------
+        skip : bool
+            Whether this solver should be skipped or not for this objective.
+        reason : str | None
+            The reason why it should be skipped for display purposes.
+            If skip is False, the reason should be None.
+        """
         # Check that the solver is compatible with the given dataset
         if not getattr(self, 'support_sparse', True):
             if any(sparse.issparse(v) for v in objective_dict.values()):
