@@ -42,6 +42,11 @@ code {
     color: #2c3e50 !important;
 }
 
+.method {
+    border-top: 3px solid #d0d0d0;
+    padding-top: 10px;
+}
+
 .function dt {
     padding-top: 150px;
     margin-top: -150px;

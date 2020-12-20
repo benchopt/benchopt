@@ -28,6 +28,9 @@ API
 - ``Objective.compute`` can now return a dictionary with multiple outputs to
   monitor several metrics at once, by `Thomas Moreau`_ (gh:`84`).
 
+- ``Solver.skip`` can now be used to skip objectives that are incompatible
+  for the Solver, by `Thomas Moreau`_ (:gh:`113`).
+
 CLI
 ~~~
 

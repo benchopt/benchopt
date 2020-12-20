@@ -1,4 +1,6 @@
 import tempfile
+import numbers
+from scipy import sparse
 from abc import ABC, abstractmethod
 
 from .utils.dynamic_modules import get_file_hash
@@ -17,29 +19,29 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
 
     Solvers that derive from this class should implement three methods:
 
-    - set_objective(self, **objective_parameters): prepares the solver to be
-      called on a given problem. **objective_parameters are the output of the
-      method :code:`to_dict` from the benchmark objective. In particular, this
-      method should dumps the parameter to compute the objective function in a
-      file for command line solvers to reduce the impact of dumping the data to
-      the disk in the benchmark.
+    - ``set_objective(self, **objective_parameters)``: prepares the solver to
+      be called on a given problem. ``**objective_parameters`` are the output
+      of the method ``to_dict`` from the benchmark objective. In particular,
+      this method should dumps the parameter to compute the objective function
+      in a file for command line solvers to reduce the impact of dumping the
+      data to the disk in the benchmark.
 
-    - run(self, n_iter/tolerance): performs the computation for the previously
-      given objective function, after a call to :code:`set_objective`. This
-      method is the one timed in the benchmark and should not perform any
+    - ``run(self, n_iter/tolerance)``: performs the computation for the
+      previously given objective function, after a call to ``set_objective``.
+      This method is the one timed in the benchmark and should not perform any
       operation unrelated to  the optimization procedure.
 
-    - get_result(self): returns the parameters computed by the previous call to
-      run. For command line solvers, this retrieves the result from the disk.
-      This utility is necessary to reduce the impact of loading the result from
-      the disk in the benchmark.
+    - ``get_result(self)``: returns the parameters computed by the previous
+      call to run. For command line solvers, this retrieves the result from the
+      disk. This utility is necessary to reduce the impact of loading the
+      result from the disk in the benchmark.
 
-    Note that two `stop_strategy` can be used to construct the benchmark
+    Note that two ``stop_strategy`` can be used to construct the benchmark
     curve:
 
-    - `iteration`: call the run method with max_iter number increasing
+    - ``'iteration'``: call the run method with max_iter number increasing
       logarithmically to get more an more precise points.
-    - `tolerance`: call the run method with tolerance deacreasing
+    - ``'tolerance'``: call the run method with tolerance deacreasing
       logarithmically to get more and more precise points.
 
     """
@@ -48,14 +50,42 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
     stop_strategy = 'iteration'
 
     def _set_objective(self, objective):
-        """Store the objective to make sure this solver is picklable
+        """Store the objective for hashing/pickling and check its compatibility
+
+        Parameters
+        ----------
+        objective: benchopt.BaseObjective
+            The objective function for the current optimization problem.
+
+        Returns
+        -------
+        skip : bool
+            Whether this solver should be skipped or not for this objective.
+        reason : str | None
+            The reason why it should be skipped for display purposes.
+            If skip is False, the reason should be None.
         """
         self._objective = objective
-        self.set_objective(**objective.to_dict())
+        objective_dict = objective.to_dict()
+
+        # Check if the objective is compatible with the solver
+        skip, reason = self.skip(**objective_dict)
+        if skip:
+            return skip, reason
+
+        self.set_objective(**objective_dict)
+        return False, None
 
     @abstractmethod
     def set_objective(self, **objective_dict):
-        """Prepare the objective for the solver."""
+        """Prepare the objective for the solver.
+
+        Parameters
+        ----------
+        **objective_parameters : dict
+            Dictionary obtained as the output of the method ``to_dict`` from
+            the benchmark ``Objective``.
+        """
         ...
 
     @abstractmethod
@@ -81,19 +111,34 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
 
         Returns
         -------
-        parameters : ndarray, shape (n_parameters,)
+        parameters : ndarray, shape ``(dimension,)`` or ``*dimension``
             The computed coefficients by the solver.
         """
         ...
 
-    @classmethod
-    def supports_dataset(cls, dataset):
-        # Check that the solver is compatible with the given dataset
-        if (getattr(dataset, 'is_sparse', False)
-                and not getattr(cls, 'support_sparse', True)):
-            return False
+    def skip(self, **objective_dict):
+        """Used to decide if the ``Solver`` is compatible with the objective.
 
-        return True
+        Parameters
+        ----------
+        **objective_parameters : dict
+            Dictionary obtained as the output of the method ``to_dict`` from
+            the benchmark ``Objective``.
+
+        Returns
+        -------
+        skip : bool
+            Whether this solver should be skipped or not for this objective.
+        reason : str | None
+            The reason why it should be skipped for display purposes.
+            If skip is False, the reason should be None.
+        """
+        # Check that the solver is compatible with the given dataset
+        if not getattr(self, 'support_sparse', True):
+            if any(sparse.issparse(v) for v in objective_dict.values()):
+                return True, f"{self} does not support sparse data."
+
+        return False, None
 
     # TODO: use this to allow parallel computation of the benchmark.
     @staticmethod
@@ -134,28 +179,39 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
 
     Datasets that derive from this class should implement one method:
 
-    - `get_data()`: retrieves/simulates the data contains in this data set and
-      returns the `scale` of the data as well as a dictionary containing the
-      data. This dictionary is passed as arguments of the objective function
-      method `set_data`.
+    - ``get_data()``: retrieves/simulates the data contains in this data set
+      and returns the ``dimension`` of the data as well as a dictionary
+      containing the data. This dictionary is passed as arguments of the
+      objective function method ``set_data``.
     """
 
     _base_class_name = 'Dataset'
 
     @abstractmethod
     def get_data(self):
-        """Return the scale of the problem as well as the objective parameters.
+        """Return the problem's dimension as well as the objective parameters.
 
         Returns
         -------
-        scale: int
-            Size of the optimized parameter. The solvers should return a
-            parameter of shape (scale,).
+        dimension: int or tuple
+            Dimension of the optimized parameter. The solvers should return a
+            parameter of shape ``(dimension,)`` or ``*dimension``.
         data: dict
             Extra parameters of the objective. The objective will be
-            instanciated by calling `Objective.set_data(**data)`.
+            instanciated by calling ``Objective.set_data(**data)``.
         """
         ...
+
+    def _get_data(self):
+        "Wrapper to make sure the returned results are correctly formated."
+
+        dimension, data = self.get_data()
+
+        # Make sure dimension is a tuple
+        if isinstance(dimension, numbers.Integral):
+            dimension = (dimension,)
+
+        return dimension, data
 
     # Reduce the pickling and hashing burden by only pickling class parameters.
     @staticmethod
@@ -186,9 +242,9 @@ class BaseObjective(ParametrizedNameMixin):
       objective function of the benchmark.
 
     - `compute(beta)`: computes the value of the objective function for an
-      given estimate beta. Beta is given as a flat 1D vector of size
-      corresponding to the `scale` value returned by `Dataset.get_data`. The
-      output should be a float or a dictionary of floats.
+      given estimate beta. Beta is given as np.array of size corresponding to
+      the `dimension` value returned by `Dataset.get_data`. The output should
+      be a float or a dictionary of floats.
       If a dictionary is returned, it should at least contain a key
       `objective_value` associated to a scalar value which will be used to
       detect convergence. With a dictionary, multiple metric values can be
@@ -225,7 +281,7 @@ class BaseObjective(ParametrizedNameMixin):
     # hashing the data directly.
     def set_dataset(self, dataset):
         self.dataset = dataset
-        _, data = dataset.get_data()
+        _, data = dataset._get_data()
         return self.set_data(**data)
 
     # Reduce the pickling and hashing burden by only pickling class parameters.

@@ -1,5 +1,6 @@
 import sys
 import pytest
+import numbers
 
 import numpy as np
 
@@ -13,13 +14,13 @@ def test_benchmark_objective(benchmark_dataset_simu):
     objective = objective_class.get_instance()
 
     dataset = dataset_class.get_instance()
-    scale, data = dataset.get_data()
+    dimension, data = dataset._get_data()
     objective.set_data(**data)
 
-    # check that the reported scale is correct and that the result of
+    # check that the reported dimension is correct and that the result of
     # the objective function is a dictionary containing a scalar value for
     # `objective_value`.
-    beta_hat = np.zeros(scale)
+    beta_hat = np.zeros(*dimension)
     objective_dict = objective(beta_hat)
 
     assert 'objective_value' in objective_dict, (
@@ -67,21 +68,26 @@ def test_dataset_get_data(benchmark_dataset):
     if dataset_class.name.lower() == 'finance':
         pytest.skip("Do not download finance.")
 
-    data = dataset.get_data()
-    assert isinstance(data, tuple), (
+    res = dataset._get_data()
+    assert isinstance(res, tuple), (
         "Output of get_data should be a 2-tuple"
     )
-    assert len(data) == 2, (
+    assert len(res) == 2, (
         "Output of get_data should be a 2-tuple"
     )
 
-    scale, data = data
+    dimension, data = res
 
-    assert isinstance(scale, int), (
-        "First output of get_data should be integer"
+    assert isinstance(dimension, tuple), (
+        "First output of get_data should be an integer or a tuple of integers."
+        f" Got {dimension}."
+    )
+    assert all(isinstance(d, numbers.Integral) for d in dimension), (
+        "First output of get_data should be an integer or a tuple of integers."
+        f" Got {dimension}."
     )
     assert isinstance(data, dict), (
-        "Second output of get_data should be dict"
+        f"Second output of get_data should be a dict. Got {data}."
     )
 
 
@@ -157,7 +163,7 @@ def test_solver(benchmark_solver):
     dataset_class = simulated_dataset[0]
     dataset = dataset_class.get_instance()
 
-    scale, data = dataset.get_data()
+    dimension, data = dataset._get_data()
     objective.set_data(**data)
 
     solver = solver_class.get_instance()
@@ -166,12 +172,12 @@ def test_solver(benchmark_solver):
     solver.run(stop_val)
     beta_hat_i = solver.get_result()
 
-    assert beta_hat_i.shape == (scale, )
+    assert beta_hat_i.shape == dimension
 
     val_star = objective(beta_hat_i)['objective_value']
 
     for _ in range(100):
-        eps = 1e-5 * np.random.randn(scale)
+        eps = 1e-5 * np.random.randn(*dimension)
         val_eps = objective(beta_hat_i + eps)['objective_value']
         diff = val_eps - val_star
         assert diff > 0
