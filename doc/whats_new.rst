@@ -1,0 +1,83 @@
+.. _whats_new:
+
+What's new
+==========
+
+.. currentmodule:: benchopt
+
+.. _changes_1_1:
+
+Version 1.1 - in progress
+-------------------------
+
+Changelog
+~~~~~~~~~
+
+- New plotting functions with different optimality criteria,
+  by `Nidham Gazagnadou`_ (:gh:`96`).
+
+- Support plotly for plotting functions, by `Thomas Moreau`_,
+  `Tanguy Lefort`_ and `Joseph Salmon`_ (:gh:`110`, :gh:`111`, :gh:`112`).
+
+- Add ``benchopt publish`` command to push benchmark results to GitHub,
+  by `Thomas Moreau`_ (:gh:`110`).
+
+API
+~~~
+
+- ``Objective.compute`` can now return a dictionary with multiple outputs to
+  monitor several metrics at once, by `Thomas Moreau`_ (gh:`84`).
+
+CLI
+~~~
+
+- Add ``--version`` option for ``benchopt``, by `Thomas Moreau`_ (:gh:`83`).
+
+- Add ``--pdb`` option for ``benchopt run`` to open debugger on error and help
+  benchmark debugging, by `Thomas Moreau`_ (:gh:`86`).
+
+- Change default run to local mode. Can call a run in a dedicated env with
+  option ``--env`` or ``--env-name ENV_NAME`` to specify the env,
+  by `Thomas Moreau`_ (:gh:`94`).
+
+BUG
+~~~
+
+- Throw a warning when benchopt version in conda env does not match the one of
+  calling ``benchopt``, by `Thomas Moreau`_ (:gh:`83`).
+
+- Fix Lapack issue with R code, by `Tanguy Lefort`_ (:gh:`97`).
+
+
+DOC
+~~~
+
+- Improve how-to narative documentation, by `Alexandre Gramfort`_ (:gh:`93`).
+
+- Add what's new page, by `Alexandre Gramfort`_ (:gh:`114`).
+
+
+.. _changes_1_0:
+
+Version 1.0 - 2020-09-25
+------------------------
+
+Release highlights
+~~~~~~~~~~~~~~~~~~
+
+- Provide a command line interface for benchmarking optimisation algorithm
+  implementations:
+
+  - ``benchopt run`` to run the benchmarks
+  - ``benchopt plot`` to display the results
+  - ``benchopt test`` to test that a benchmark folder is correctly structured.
+
+The committer list for this release is the following:
+
+  * `Alexandre Gramfort`_
+  * `Joseph Salmon`_
+  * `Mathurin Massias`_
+  * `Thomas Moreau`_
+  * `Tom Dupré la Tour`_
+
+.. include:: names.inc

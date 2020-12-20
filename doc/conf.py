@@ -15,12 +15,13 @@
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-#
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
+
+import os
+import sys
 import sphinx_bootstrap_theme
 
+curdir = os.path.dirname(__file__)
+sys.path.append(os.path.abspath(os.path.join(curdir, 'sphinxext')))
 
 # -- General configuration ------------------------------------------------
 
@@ -40,6 +41,7 @@ extensions = [
     'sphinx_click.ext',
     'sphinx_gallery.gen_gallery',
     'numpydoc',
+    'gh_substitutions',  # custom ext, see ./sphinxext/gh_substitutions.py
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -111,6 +113,7 @@ html_theme_options = {
         ("CLI", "cli"),
         ("API", "api"),
         ("Write a benchmark", "how"),
+        ("What's new", "whats_new"),
         ("GitHub", "https://github.com/benchopt/benchOpt", True)
     ],
     # 'bootswatch_theme': "united",

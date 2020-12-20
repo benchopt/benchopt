@@ -10,10 +10,11 @@ h1 {
 h2 {
     font-size: 140% !important;
     color: #e87700;
+    text-decoration: underline;
 }
 
 h3 {
-    font-size: 140% !important;
+    font-size: 120% !important;
     color: #e87700;
 }
 
