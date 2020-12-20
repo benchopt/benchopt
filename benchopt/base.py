@@ -19,29 +19,29 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
 
     Solvers that derive from this class should implement three methods:
 
-    - set_objective(self, **objective_parameters): prepares the solver to be
-      called on a given problem. **objective_parameters are the output of the
-      method :code:`to_dict` from the benchmark objective. In particular, this
-      method should dumps the parameter to compute the objective function in a
-      file for command line solvers to reduce the impact of dumping the data to
-      the disk in the benchmark.
+    - ``set_objective(self, **objective_parameters)``: prepares the solver to
+      be called on a given problem. ``**objective_parameters`` are the output
+      of the method ``to_dict`` from the benchmark objective. In particular,
+      this method should dumps the parameter to compute the objective function
+      in a file for command line solvers to reduce the impact of dumping the
+      data to the disk in the benchmark.
 
-    - run(self, n_iter/tolerance): performs the computation for the previously
-      given objective function, after a call to :code:`set_objective`. This
-      method is the one timed in the benchmark and should not perform any
+    - ``run(self, n_iter/tolerance)``: performs the computation for the
+      previously given objective function, after a call to ``set_objective``.
+      This method is the one timed in the benchmark and should not perform any
       operation unrelated to  the optimization procedure.
 
-    - get_result(self): returns the parameters computed by the previous call to
-      run. For command line solvers, this retrieves the result from the disk.
-      This utility is necessary to reduce the impact of loading the result from
-      the disk in the benchmark.
+    - ``get_result(self)``: returns the parameters computed by the previous
+      call to run. For command line solvers, this retrieves the result from the
+      disk. This utility is necessary to reduce the impact of loading the
+      result from the disk in the benchmark.
 
-    Note that two `stop_strategy` can be used to construct the benchmark
+    Note that two ``stop_strategy`` can be used to construct the benchmark
     curve:
 
-    - `iteration`: call the run method with max_iter number increasing
+    - ``'iteration'``: call the run method with max_iter number increasing
       logarithmically to get more an more precise points.
-    - `tolerance`: call the run method with tolerance deacreasing
+    - ``'tolerance'``: call the run method with tolerance deacreasing
       logarithmically to get more and more precise points.
 
     """
@@ -155,10 +155,10 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
 
     Datasets that derive from this class should implement one method:
 
-    - `get_data()`: retrieves/simulates the data contains in this data set and
-      returns the `dimension` of the data as well as a dictionary containing
-      the data. This dictionary is passed as arguments of the objective
-      function method `set_data`.
+    - ``get_data()``: retrieves/simulates the data contains in this data set
+      and returns the ``dimension`` of the data as well as a dictionary
+      containing the data. This dictionary is passed as arguments of the
+      objective function method ``set_data``.
     """
 
     _base_class_name = 'Dataset'
@@ -171,10 +171,10 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
         -------
         dimension: int or tuple
             Dimension of the optimized parameter. The solvers should return a
-            parameter of shape (dimension,) or *dimension.
+            parameter of shape ``(dimension,)`` or ``*dimension``.
         data: dict
             Extra parameters of the objective. The objective will be
-            instanciated by calling `Objective.set_data(**data)`.
+            instanciated by calling ``Objective.set_data(**data)``.
         """
         ...
 
