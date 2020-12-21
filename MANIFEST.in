@@ -11,6 +11,7 @@ recursive-include doc *.py
 recursive-include doc *.rst
 recursive-include doc *.txt
 recursive-include doc *.inc
+recursive-include doc *.png
 recursive-include doc Makefile
 prune doc/_build
 prune doc/generated
