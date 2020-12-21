@@ -59,6 +59,8 @@ DOC
 
 - Add what's new page, by `Alexandre Gramfort`_ (:gh:`114`).
 
+- Add documentation on how to publish results, by `Alexandre Gramfort`_ (:gh:`118`).
+
 
 .. _changes_1_0:
 
