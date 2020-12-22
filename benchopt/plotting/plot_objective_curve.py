@@ -82,7 +82,9 @@ def plot_objective_curve(df, plotly=False, suboptimality=False,
             yaxis_type='log',
             xaxis_title=r"Time [sec]",
             yaxis_title=y_label,
-            yaxis_tickformat="e",
+            yaxis_tickformat=".1e",
+            xaxis_tickformat=".0e",
+            xaxis_tickangle=-45,
             title=title,
             legend_title='solver'
         )
