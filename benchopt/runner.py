@@ -453,9 +453,9 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                             force=force, pdb=pdb
                         ))
     df = pd.DataFrame(run_statistics)
-    print(df)
+    # print(df)
     df = cumsum_time(df)
-    print(df)
+    # print(df)
 
     if df.empty:
         print(colorify('No output produced.', RED).ljust(LINE_LENGTH))
