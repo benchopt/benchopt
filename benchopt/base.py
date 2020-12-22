@@ -89,6 +89,11 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         ...
 
     @abstractmethod
+    def init(self):
+        """Initialize the weights for the solver."""
+        ...
+
+    @abstractmethod
     def run(self, stop_val):
         """Call the solver with the given stop_val.
 
