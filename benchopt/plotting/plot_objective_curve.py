@@ -84,7 +84,7 @@ def plot_objective_curve(df, plotly=False, suboptimality=False,
             yaxis_title=y_label,
             yaxis_tickformat=".0e",
             xaxis_tickformat=".0e",
-            xaxis_tickangle=45,
+            xaxis_tickangle=-45,
             title=title,
             legend_title='solver'
         )
