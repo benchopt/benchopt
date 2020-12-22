@@ -134,10 +134,16 @@ def run_one_stop_val(benchmark_dir, objective, solver, meta, stop_val,
 
         curve.append(cost)
         current_objective.append(objective_value)
+        # print("cost:", cost)
+        # print("objective_value: ", objective_value)
+        # print("current_objective:", current_objective, "\n")
 
         if deadline is not None and deadline < time.time():
             # Reached the timeout so stop the computation here
             break
+
+    print("curve:", curve, "\n")
+    print("current_objective:", current_objective, "\n")
 
     return curve, np.max(current_objective)
 
@@ -145,7 +151,7 @@ def run_one_stop_val(benchmark_dir, objective, solver, meta, stop_val,
 def run_one_solver(benchmark_dir, objective, solver, meta,
                    max_runs, n_repetitions, timeout,
                    force=False, show_progress=True, pdb=False):
-    """Minimize objective function with onesolver for different accuracies.
+    """Minimize objective function with one solver for different accuracies.
 
     Parameters
     ----------
