@@ -68,8 +68,9 @@ def make_bars(fig, heights, ticks, width, colors, times, plotly=False):
             ax.bar(x=xi, height=height, width=width,
                    color=colors[idx], edgecolor=edges)
             if colors[idx] == "w":
-                ax.annotate("Did not converge", xy=(xi, height/2), ha='center',
-                            va='center', color='k', rotation=90)
+                ax.text(xi, .5, "Did not converge",
+                        ha="center", va="center", color='k',
+                        rotation=90, transform=ax.transAxes)
             else:
                 plt.scatter(np.ones_like(times[idx]) * xi, times[idx],
                             marker='_', color='k', zorder=10)
