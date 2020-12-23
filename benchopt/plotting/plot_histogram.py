@@ -52,7 +52,7 @@ def plot_histogram(df, plotly=False):
         times_list.append(this_df['time'])
 
     make_bars(fig, height_list, ticks_list, width,
-                colors, times_list, plotly=plotly)
+            colors, times_list, plotly=plotly)
     title = f"{objective_name}\nData: {dataset_name}"
 
     if plotly:
@@ -61,9 +61,9 @@ def plot_histogram(df, plotly=False):
             yaxis_title="Time [sec]",
             yaxis_tickformat=".1e",
             xaxis_tickangle=-60,
-            xaxis_tickmode = 'array',
-            xaxis_ticktext = solver_names,
-            xaxis_tickvals = [xi for xi, _ in ticks_list],
+            xaxis_tickmode='array',
+            xaxis_ticktext=solver_names,
+            xaxis_tickvals=[xi for xi, _ in ticks_list],
             xaxis_range=[0, 1],
             title=title
         )
