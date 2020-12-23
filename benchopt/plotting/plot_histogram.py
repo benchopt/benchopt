@@ -2,9 +2,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from .helpers import _color_palette
+from .helpers_compat import get_figure, make_bars
 
 
-def plot_histogram(df):
+def plot_histogram(df, plotly=False):
     """Plot histogram for a given benchmark and dataset.
 
     Parameters
@@ -26,10 +27,10 @@ def plot_histogram(df):
     width = 1 / (n_solvers + 2)
     colors = _color_palette(n_solvers)
 
-    rect_list = []
+    height_list = []
     ticks_list = []
-    fig = plt.figure()
-    ax = fig.gca()
+    times_list = []
+    fig = get_figure(plotly)
     c_star = df['objective_value'].min() + eps
     for i, solver_name in enumerate(solver_names):
         xi = (i + 1.5) * width
@@ -40,27 +41,39 @@ def plot_histogram(df):
         df_tol = df_.groupby('stop_val').filter(
             lambda x: x['objective_value'].max() < c_star)
         if df_tol.empty:
+            colors[i] = "w" if not plotly else (.8627, .8627, .8627)
             print(f"Solver {solver_name} did not reach precision {eps}.")
-            height = df.time.max()
-            rect = ax.bar(
-                x=xi, height=height, width=width, color='w', edgecolor='k')
-            ax.annotate("Did not converge", xy=(xi, height/2), ha='center',
-                        va='center', color='k', rotation=90)
-            rect_list.append(rect)
+            height_list.append(df.time.max())
+            times_list.append(np.nan)
             continue
         stop_val = df_tol['stop_val'].min()
         this_df = df_[df_['stop_val'] == stop_val]
-        rect_list.append(ax.bar(
-            x=xi, height=this_df['time'].mean(), width=width, color=colors[i]))
+        height_list.append(this_df['time'].mean())
+        times_list.append(this_df['time'])
 
-        plt.scatter(np.ones_like(this_df['time']) * xi, this_df['time'],
-                    marker='_', color='k', zorder=10)
+    make_bars(fig, height_list, ticks_list, width,
+                colors, times_list, plotly=plotly)
+    title = f"{objective_name}\nData: {dataset_name}"
 
-    ax.set_xticks([xi for xi, _ in ticks_list])
-    ax.set_xticklabels([label for _, label in ticks_list], rotation=60)
-    ax.set_yscale('log')
-    plt.xlim(0, 1)
-    plt.ylabel("Time [sec]")
-    plt.title(f"{objective_name}\nData: {dataset_name}", fontsize=12)
-    plt.tight_layout()
+    if plotly:
+        fig.update_layout(
+            yaxis_type='log',
+            yaxis_title="Time [sec]",
+            yaxis_tickformat=".1e",
+            xaxis_tickangle=-60,
+            xaxis_tickmode = 'array',
+            xaxis_ticktext = solver_names,
+            xaxis_tickvals = [xi for xi, _ in ticks_list],
+            xaxis_range=[0, 1],
+            title=title
+        )
+    else:
+        ax = fig.gca()
+        ax.set_xticks([xi for xi, _ in ticks_list])
+        ax.set_xticklabels([label for _, label in ticks_list], rotation=60)
+        ax.set_yscale('log')
+        plt.xlim(0, 1)
+        plt.ylabel("Time [sec]")
+        plt.title(title, fontsize=12)
+        plt.tight_layout()
     return fig
