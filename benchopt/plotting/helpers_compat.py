@@ -76,22 +76,17 @@ def make_bars(fig, heights, ticks, width, colors, times, plotly=False):
     else:
         colors = [f'rgba{color}' for color in colors]
         xi, _ = zip(*ticks)
-        fig.add_trace(go.Bar(x=xi, y=heights,
-                             width=[width] * len(xi),
-                             marker_color=colors))
         no_cv = [True if col ==
                  "rgba(0.8627, 0.8627, 0.8627)" else False for col in colors]
-        if any(no_cv):
-            pts = zip(list(np.array(xi)[no_cv]),
-                      [h_ / 2 for h_ in np.array(heights)[no_cv]])
-            fig.update_layout(annotations=[
-                go.layout.Annotation(
-                    x=pts_[0],
-                    y=np.log(pts_[1]),
-                    text="Did not converge",
-                    valign="bottom",
-                    textangle=-90, yanchor="middle",
-                    showarrow=False) for pts_ in pts])
+        text_ = ["Did not converge" if no_cv_ else " " for no_cv_ in no_cv]
+        fig.add_trace(go.Bar(x=xi,
+                             y=heights,
+                             width=[width],
+                             marker_color=colors,
+                             text=text_,
+                             textposition="inside",
+                             insidetextanchor='middle',
+                             textangle=-90))
         for idx, x_ in enumerate(xi):
             if not no_cv[idx]:
                 fig.add_trace(
