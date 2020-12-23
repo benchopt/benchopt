@@ -52,7 +52,7 @@ def plot_histogram(df, plotly=False):
         times_list.append(this_df['time'])
 
     make_bars(fig, height_list, ticks_list, width,
-            colors, times_list, plotly=plotly)
+              colors, times_list, plotly=plotly)
     title = f"{objective_name}\nData: {dataset_name}"
 
     if plotly:
