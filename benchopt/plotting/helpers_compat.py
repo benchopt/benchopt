@@ -58,7 +58,7 @@ def add_h_line(fig, val, xlim=None, plotly=False):
     ))
 
 
-def make_bars(fig, heights, ticks, width, colors, times, plotly=False):
+def _make_bars(fig, heights, ticks, width, colors, times, plotly=False):
     if not plotly:
         ax = fig.gca()
         for idx, tick in enumerate(ticks):
