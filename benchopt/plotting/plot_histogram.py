@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from .helpers import _color_palette
-from .helpers_compat import get_figure, make_bars
+from .helpers_compat import get_figure, _make_bars
 
 
 def plot_histogram(df, plotly=False):
@@ -53,8 +53,8 @@ def plot_histogram(df, plotly=False):
         height_list.append(this_df['time'].mean())
         times_list.append(this_df['time'])
 
-    make_bars(fig, height_list, ticks_list, width,
-              colors, times_list, plotly=plotly)
+    _make_bars(fig, height_list, ticks_list, width,
+               colors, times_list, plotly=plotly)
     title = f"{objective_name}\nData: {dataset_name}"
 
     if plotly:
