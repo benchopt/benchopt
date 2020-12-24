@@ -12,6 +12,8 @@ def plot_histogram(df, plotly=False):
     ----------
     df : instance of pandas.DataFrame
         The benchmark results.
+    plotly : bool
+        If set to True, creates a figure with plotly instead of matplotlib.
 
     Returns
     -------

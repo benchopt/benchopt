@@ -62,12 +62,13 @@ def make_bars(fig, heights, ticks, width, colors, times, plotly=False):
     if not plotly:
         ax = fig.gca()
         for idx, tick in enumerate(ticks):
+            no_cv = np.isnan(times[idx]).any()
             xi = tick[0]
             height = heights[idx]
-            edges = colors[idx] if colors[idx] != "w" else "k"
+            edges = colors[idx] if not no_cv else "k"
             ax.bar(x=xi, height=height, width=width,
                    color=colors[idx], edgecolor=edges)
-            if colors[idx] == "w":
+            if no_cv:
                 ax.text(xi, .5, "Did not converge",
                         ha="center", va="center", color='k',
                         rotation=90, transform=ax.transAxes)
@@ -77,9 +78,8 @@ def make_bars(fig, heights, ticks, width, colors, times, plotly=False):
     else:
         colors = [f'rgba{color}' for color in colors]
         xi, _ = zip(*ticks)
-        no_cv = [True if col ==
-                 "rgba(0.8627, 0.8627, 0.8627)" else False for col in colors]
-        text_ = ["Did not converge" if no_cv_ else " " for no_cv_ in no_cv]
+        text_ = ["Did not converge" if np.isnan(
+                                    time).any() else " " for time in times]
         fig.add_trace(go.Bar(x=xi,
                              y=heights,
                              width=[width],
@@ -89,7 +89,7 @@ def make_bars(fig, heights, ticks, width, colors, times, plotly=False):
                              insidetextanchor='middle',
                              textangle=-90))
         for idx, x_ in enumerate(xi):
-            if not no_cv[idx]:
+            if text_[idx] == " ":
                 fig.add_trace(
                     go.Scatter(
                         mode='markers', x=np.ones_like(times[idx]) * x_,
