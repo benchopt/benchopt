@@ -1,4 +1,6 @@
+import json
 import click
+import pprint
 from pathlib import Path
 from collections import Iterable
 
@@ -6,6 +8,7 @@ from benchopt.config import set_setting
 from benchopt.config import get_setting
 from benchopt.benchmark import Benchmark
 from benchopt.utils.files import rm_folder
+from benchopt.utils.sys_info import get_sys_info
 from benchopt.config import get_global_config_file
 from benchopt.utils.dynamic_modules import _load_class_from_module
 
@@ -34,6 +37,12 @@ def clean(benchmark, token=None, filename=None):
     cache_folder = benchmark.get_cache_location()
     print(f"rm -rf {cache_folder}")
     rm_folder(cache_folder)
+
+
+@helpers.command()
+def sys_info():
+    "Get details on the system (processor, RAM, etc..)."
+    pprint.pprint(json.loads(get_sys_info()))
 
 
 @helpers.group(
