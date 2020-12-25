@@ -56,7 +56,8 @@ def get_cuda_version():
     if which("nvcc") is None:
         return None
     command = ["nvcc", "--version"]
-    out = subprocess.check_output(command).strip().decode("utf-8").split("\n")[-1]
+    out = subprocess.check_output(command).strip().decode("utf-8")
+    out = out.split("\n")[-1]  # take only last line
     return out
 
 
