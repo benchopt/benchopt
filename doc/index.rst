@@ -113,10 +113,7 @@ Benchmark results
 
 All the public benchmark results are available at `BenchOpt Benchmarks results <https://benchopt.github.io/results/>`_.
 
-Publish results
----------------
-
-You can have a look at this page to :ref:`publish`.
+**Publish results**: You can directly publish the result of a run of ``benchopt`` on `BenchOpt Benchmarks results <https://benchopt.github.io/results/>`_. You can have a look at this page to :ref:`publish`.
 
 Contents
 ========
