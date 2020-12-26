@@ -68,7 +68,7 @@ def main(ctx, prog_name='benchopt', version=False):
               metavar="<int>", default=100, show_default=True, type=int,
               help='Timeout a solver when run for more than <timeout> seconds')
 @click.option('--plot/--no-plot', default=True,
-              help="If this flag is set, do not plot the results.")
+              help="Wether or not to plot the results. Default is True.")
 @click.option('--pdb',
               is_flag=True,
               help="Launch a debugger if there is an error. This will launch "
@@ -172,7 +172,9 @@ def plot(benchmark, filename=None, kinds=('suboptimality_curve',),
 
 
 @main.command(
-    help="Publish the result from a previously run benchmark."
+    help="Publish the result from a previously run benchmark.\n\n"
+    "See the :ref:`publish` documentation for more info on how to use this "
+    "command."
 )
 @click.argument('benchmark', type=click.Path(exists=True))
 @click.option('--token', '-t', type=str, default=None,

@@ -52,8 +52,8 @@ def plot_objective_curve(df, plotly=False, suboptimality=False,
 
     if relative:
         obj = y_label[1:-1]
-        y_label = r"$\frac{{{}}}{{{}}}$".format(
-            obj, obj.replace('F(x)', 'F(x^0)')
+        y_label = r"$\frac{{{num}}}{{{den}}}$".format(
+            num=obj, den=obj.replace('F(x)', 'F(x^0)')
         )
         max_f_0 = df[df['stop_val'] == 1]['objective_value'].max()
         df['objective_value'] /= max_f_0

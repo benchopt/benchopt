@@ -46,7 +46,6 @@ Then create a token named ``benchopt``, ticking the **repo** box as shown below:
 .. figure:: _static/github_benchopt_token.png
    :target: https://github.com/settings/tokens
    :align: center
-   :scale: 80%
 
 Then click on ``generate token`` and copy this token of 40 characters in a secure
 location.
