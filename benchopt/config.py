@@ -2,13 +2,10 @@ import os
 import re
 import warnings
 import configparser
+from pathlib import Path
 
-
+CONFIG_FILE_NAME = 'benchopt.ini'
 CONFIG_FILE_LOCATION = os.environ.get('BENCHO_CONFIG', './benchopt.ini')
-
-config = configparser.ConfigParser()
-config.read(CONFIG_FILE_LOCATION)
-
 
 DEFAULT_GLOBAL_CONFIG = {
     'debug': False,
@@ -16,6 +13,7 @@ DEFAULT_GLOBAL_CONFIG = {
     'raise_install_error': False,
     'github_token': None,
     'data_dir': './data/',
+    'conda_cmd': 'conda',
     'shell': os.environ.get('SHELL', 'bash')
 }
 
@@ -25,15 +23,36 @@ DEFAULT_BENCHMARK_CONFIG = {
 }
 
 
+def get_global_config_file():
+    "Return the global config file."
+
+    config_file = os.environ.get('BENCHO_CONFIG', None)
+    if config_file is not None:
+        config_file = Path(config_file)
+        assert config_file.exists(), (
+            f"BENCHO_CONFIG is set but file {config_file} does not exists."
+        )
+        return config_file
+    config_file = Path('.') / CONFIG_FILE_NAME
+    if not config_file.exists():
+        config_file = Path.home() / '.config' / CONFIG_FILE_NAME
+    return config_file
+
+
 def get_global_setting(name):
     assert name in DEFAULT_GLOBAL_CONFIG, f"Unknown config key {name}"
 
     # Get the name of the environment variable associated to this setting
     env_var_name = f"BENCHO_{name.upper()}"
 
+    # Get global config file
+    global_config = configparser.ConfigParser()
+    global_config.read(get_global_config_file())
+
     if isinstance(DEFAULT_GLOBAL_CONFIG[name], bool):
-        file_setting = config.getboolean('benchopt', name,
-                                         fallback=DEFAULT_GLOBAL_CONFIG[name])
+        file_setting = global_config.getboolean(
+            'benchopt', name, fallback=DEFAULT_GLOBAL_CONFIG[name]
+        )
         setting = os.environ.get(env_var_name, file_setting)
         # convert string 0/1/true/false/yes/no/on/off to boolean
         if isinstance(setting, str):
@@ -49,7 +68,7 @@ def get_global_setting(name):
                 setting = file_setting
     else:
         # TODO: get the correct type from DEFAULT_GLOBAL_CONFIG for other types
-        setting = config.get(
+        setting = global_config.get(
             'benchopt', name, fallback=DEFAULT_GLOBAL_CONFIG[name]
         )
         setting = os.environ.get(env_var_name, setting)
@@ -59,7 +78,7 @@ def get_global_setting(name):
 
 def get_benchmark_setting(config_file, benchmark_name, setting_name):
     if not config_file.exists():
-        config_file = CONFIG_FILE_LOCATION
+        config_file = get_global_config_file()
     config = configparser.ConfigParser()
     config.read(config_file)
 

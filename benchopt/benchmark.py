@@ -2,6 +2,7 @@ import re
 import click
 import warnings
 from pathlib import Path
+from joblib import Memory
 
 from .base import BaseSolver, BaseDataset
 from .utils.colorify import colorify, YELLOW
@@ -10,6 +11,9 @@ from .utils.parametrized_name_mixin import product_param
 from .utils.parametrized_name_mixin import _list_all_names
 
 from .config import get_benchmark_setting
+
+
+CACHE_DIR = '__cache__'
 
 
 class Benchmark:
@@ -26,20 +30,17 @@ class Benchmark:
                 "benchmark."
             )
 
+        self.mem = Memory(location=self.get_cache_location(), verbose=0)
+
     def get_setting(self, setting_name):
         "Retrieve the setting value from benchmark config."
 
         # Get the config file and read it
-        config_file = self.benchmark_dir / 'config.ini'
+        config_file = self.get_config_file()
         return get_benchmark_setting(config_file, self.name, setting_name)
 
     def get_benchmark_objective(self):
         """Load the objective function defined in the given benchmark.
-
-        Parameters
-        ----------
-        benchmark_dir : str or Path
-            The path to the folder containing the benchmark.
 
         Returns
         -------
@@ -59,8 +60,6 @@ class Benchmark:
 
         Parameters
         ----------
-        benchmark_dir : str or Path
-            The path to the folder containing the benchmark.
         base_class : class
             Base class for the classes to load.
 
@@ -98,11 +97,18 @@ class Benchmark:
         "List all available dataset classes for the benchmark."
         return self._list_benchmark_classes(BaseDataset)
 
+    def get_cache_location(self):
+        "Get the location for the cache of the benchmark."
+        return self.benchmark_dir / CACHE_DIR
+
     def get_output_folder(self):
         "Create or get the folder to store the output of the benchmark."
-        output_dir = Path(self.benchmark_dir) / "outputs"
+        output_dir = self.benchmark_dir / "outputs"
         output_dir.mkdir(exist_ok=True)
         return output_dir
+
+    def get_config_file(self):
+        return self.benchmark_dir / 'config.ini'
 
     def get_result_file(self, filename=None):
         """Get a result file from the benchmark.

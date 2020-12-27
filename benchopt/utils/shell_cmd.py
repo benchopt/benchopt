@@ -10,15 +10,7 @@ from .misc import get_benchopt_requirement_line
 
 
 SHELL = get_global_setting('shell')
-
-
-# Shell commands for installing and checking the solvers
-CONDA_INSTALL_CMD = "conda install -y {packages}"
-PIP_INSTALL_CMD = "pip install {packages}"
-SHELL_INSTALL_CMD = f"{SHELL} {{install_script}} $CONDA_PREFIX"
-
-# Shell cmd to test if a cmd exists
-CHECK_SHELL_CMD_EXISTS = "type $'{cmd_name}'"
+CONDA_CMD = get_global_setting('conda_cmd')
 
 BENCHOPT_INSTALL = get_benchopt_requirement_line()
 
@@ -136,8 +128,8 @@ def _run_shell_in_conda_env(script, env_name=None, raise_on_error=None,
     if env_name is not None:
         # first line to use conda activate in bash script
         # see https://github.com/conda/conda/issues/7980
-        script = (f'eval "$(conda shell.bash hook)"\n'
-                  f'conda activate {env_name}\n'
+        script = (f'eval "$({CONDA_CMD} shell.bash hook)"\n'
+                  f'{CONDA_CMD} activate {env_name}\n'
                   f'{script}')
 
     return _run_shell(
@@ -180,11 +172,11 @@ def create_conda_env(env_name, recreate=False, with_pytest=False):
     env_yaml.flush()
     try:
         _run_shell(
-            f"conda env create {force} -n {env_name} -f {env_yaml.name}",
+            f"{CONDA_CMD} env create {force} -n {env_name} -f {env_yaml.name}",
             capture_stdout=True, raise_on_error=True
         )
         _run_shell_in_conda_env(
-            "conda config --env --add channels conda-forge",
+            f"{CONDA_CMD} config --env --add channels conda-forge",
             env_name=env_name, capture_stdout=True, raise_on_error=True
         )
         # Check that the correct version of benchopt is installed in the env
@@ -228,7 +220,7 @@ def env_exists(env_name):
 def delete_conda_env(env_name):
     """Delete a conda env with name env_name."""
 
-    _run_shell(f"conda env remove -n {env_name}",
+    _run_shell(f"{CONDA_CMD} env remove -n {env_name}",
                capture_stdout=True)
 
 
@@ -246,13 +238,15 @@ def install_in_conda_env(*packages, env_name=None, force=False):
                  f"{packages if len(packages) > 1 else packages[0]}\n"
                  "Error:{output}")
     if conda_packages:
-        cmd = CONDA_INSTALL_CMD.format(packages=' '.join(conda_packages))
+        packages = ' '.join(conda_packages)
+        cmd = f"{CONDA_CMD} install -y {packages}"
         if force:
             cmd += ' --force-reinstall'
         _run_shell_in_conda_env(cmd, env_name=env_name,
                                 raise_on_error=error_msg)
     if pip_packages:
-        cmd = PIP_INSTALL_CMD.format(packages=' '.join(pip_packages))
+        packages = ' '.join(pip_packages)
+        cmd = f"pip install {packages}"
         if force:
             cmd += ' --force-reinstall'
         _run_shell_in_conda_env(cmd, env_name=env_name,
@@ -265,7 +259,7 @@ def shell_install_in_conda_env(script, env_name=None):
         raise ValueError("Trying to install solver not in a conda env. "
                          "To allow this, set BENCHO_ALLOW_INSTALL=True.")
 
-    cmd = SHELL_INSTALL_CMD.format(install_script=script)
+    cmd = f"{SHELL} {script} $CONDA_PREFIX"
     _run_shell_in_conda_env(cmd, env_name=env_name,
                             raise_on_error=f"Failed to run script {script}\n"
                             "Error: {output}")
