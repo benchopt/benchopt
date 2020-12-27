@@ -208,21 +208,6 @@ def publish(benchmark, token=None, filename=None):
 
 
 @main.command(
-    help="Check that a given solver or dataset is correctly installed.\n\n"
-    "The class to be checked is specified with the absolute path of the file "
-    "in which it is defined MODULE_FILENAME and the name of the base "
-    "class BASE_CLASS_NAME."
-)
-@click.argument('module_filename', nargs=1, type=Path)
-@click.argument('base_class_name', nargs=1, type=str)
-def check_install(module_filename, base_class_name):
-
-    # Get class to check
-    klass = _load_class_from_module(module_filename, base_class_name)
-    klass.is_installed(raise_on_not_installed=True)
-
-
-@main.command(
     help="Test a benchmark in BENCHMARK_DIR.",
     context_settings=dict(ignore_unknown_options=True)
 )
@@ -254,6 +239,26 @@ def test(benchmark_dir, env_name, pytest_args):
     raise SystemExit(_run_shell_in_conda_env(
         cmd, env_name=env_name, capture_stdout=False
     ) != 0)
+
+
+############################################################################
+# Private sub-commands - not part of the public CLI
+# These are helpers used in the other commands.
+
+@main.command(
+    help="Check that a given solver or dataset is correctly installed.\n\n"
+    "The class to be checked is specified with the absolute path of the file "
+    "in which it is defined MODULE_FILENAME and the name of the base "
+    "class BASE_CLASS_NAME.",
+    hidden=True
+)
+@click.argument('module_filename', nargs=1, type=Path)
+@click.argument('base_class_name', nargs=1, type=str)
+def check_install(module_filename, base_class_name):
+
+    # Get class to check
+    klass = _load_class_from_module(module_filename, base_class_name)
+    klass.is_installed(raise_on_not_installed=True)
 
 
 if __name__ == '__main__':
