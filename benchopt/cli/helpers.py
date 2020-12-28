@@ -1,6 +1,9 @@
 import click
 from pathlib import Path
+from collections import Iterable
 
+from benchopt.config import set_setting
+from benchopt.config import get_setting
 from benchopt.benchmark import Benchmark
 from benchopt.utils.files import rm_folder
 from benchopt.config import get_global_config_file
@@ -33,24 +36,74 @@ def clean(benchmark, token=None, filename=None):
     rm_folder(cache_folder)
 
 
-@helpers.command(
-    help="Configuration helper for benchopt."
+@helpers.group(
+    help="Configuration helper for benchopt.",
+    invoke_without_command=True
 )
 @click.option('--benchmark', '-b', metavar='<benchmark>',
               type=click.Path(exists=True), default=None)
-def config(benchmark, token=None, filename=None):
+@click.pass_context
+def config(ctx, benchmark, token=None, filename=None):
+    ctx.ensure_object(dict)
 
     if benchmark is None:
-        global_config = get_global_config_file()
-        print(f"Global config for benchopt is: {global_config.resolve()}")
+        config = get_global_config_file()
     else:
         benchmark = Benchmark(benchmark)
-        bench_config = benchmark.get_config_file()
-        if not bench_config.exists():
-            bench_config = get_global_config_file()
-        print(
-            f"Config File for benchmark {benchmark.name}: {bench_config}"
+        config = benchmark.get_config_file()
+    if ctx.invoked_subcommand is None:
+        print(f"Config file is: {config.resolve()}")
+
+    ctx.obj['config'] = config
+    ctx.obj['benchmark_name'] = benchmark.name if benchmark else None
+
+
+@config.command(help="Set config value.")
+@click.option('--append', '-a', is_flag=True,
+              help='Append values to others')
+@click.argument("name", type=str)
+@click.argument("values", metavar='<val>', type=str,
+                nargs=-1, required=True)
+@click.pass_context
+def set(ctx, name, values, append=False):
+    config = ctx.obj['config']
+    benchmark_name = ctx.obj['benchmark_name']
+    if not config.exists():
+        config.parent.mkdir(exist_ok=True, parents=True)
+        config.touch()
+
+    if append:
+        current_value = get_setting(
+            name, config_file=config, benchmark_name=benchmark_name
         )
+        if not isinstance(current_value, list):
+            raise click.BadParameter(
+                f"Cannot use option --append with setting '{name}' for which "
+                "a string is expected."
+            )
+        current_value.extend(values)
+        values = current_value
+
+    if len(values) == 1:
+        values = values[0]
+
+    set_setting(name, values, config_file=config,
+                benchmark_name=benchmark_name)
+
+
+@config.command(help="Get config value.")
+@click.argument("name", type=str)
+@click.pass_context
+def get(ctx, name):
+    config = ctx.obj['config']
+    benchmark_name = ctx.obj['benchmark_name']
+
+    value = get_setting(
+        name, config_file=config, benchmark_name=benchmark_name
+    )
+    if not isinstance(value, str) and isinstance(value, Iterable):
+        value = ' '.join(value)
+    print(f"{name}: {value}")
 
 
 ############################################################################

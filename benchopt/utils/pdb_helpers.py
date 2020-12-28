@@ -1,14 +1,12 @@
 "A context manager to handle exception with option to open a debugger."
 from contextlib import contextmanager
 
-from ..config import get_global_setting
-
 from .colorify import colorify
 from .colorify import LINE_LENGTH, RED, YELLOW
 
 
 # Get config values
-DEBUG = get_global_setting('debug')
+from ..config import DEBUG
 
 
 @contextmanager

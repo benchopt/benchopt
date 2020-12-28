@@ -6,7 +6,6 @@ from datetime import datetime
 from .utils import product_param
 from .benchmark import is_matched
 from .plotting import plot_benchmark
-from .config import get_global_setting
 from .benchmark import _check_name_lists
 from .utils.pdb_helpers import exception_handler
 
@@ -15,8 +14,8 @@ from .utils.colorify import LINE_LENGTH, RED, GREEN, YELLOW
 
 
 # Get config values
-DEBUG = get_global_setting('debug')
-RAISE_INSTALL_ERROR = get_global_setting('raise_install_error')
+from .config import DEBUG
+from .config import RAISE_INSTALL_ERROR
 
 
 # Define some constants

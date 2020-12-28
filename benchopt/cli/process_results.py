@@ -1,10 +1,10 @@
 import click
 import pandas as pd
 
+from benchopt.config import get_setting
 from benchopt.benchmark import Benchmark
 from benchopt.plotting import PLOT_KINDS
 from benchopt.plotting import plot_benchmark
-from benchopt.config import get_global_setting
 from benchopt.utils.github import publish_result_file
 
 
@@ -61,7 +61,7 @@ def plot(benchmark, filename=None, kinds=('suboptimality_curve',),
 def publish(benchmark, token=None, filename=None):
 
     if token is None:
-        token = get_global_setting('github_token')
+        token = get_setting('github_token')
     if token is None:
         raise RuntimeError(
             "Could not find the token value to connect to GitHub.\n\n"

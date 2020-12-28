@@ -4,13 +4,13 @@ import warnings
 import subprocess
 
 import benchopt
-from ..config import get_global_setting
+from ..config import get_setting
 from ..config import DEBUG, ALLOW_INSTALL
 from .misc import get_benchopt_requirement_line
 
 
-SHELL = get_global_setting('shell')
-CONDA_CMD = get_global_setting('conda_cmd')
+SHELL = get_setting('shell')
+CONDA_CMD = get_setting('conda_cmd')
 
 BENCHOPT_INSTALL = get_benchopt_requirement_line()
 
