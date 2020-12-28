@@ -12,7 +12,7 @@ from benchopt.utils.dynamic_modules import _load_class_from_module
 
 @click.group(name='HELPERS')
 def helpers(ctx):
-    "Private commands for benchopt."
+    "Helpers to clean and config ``benchopt``."
     pass
 
 
@@ -37,7 +37,8 @@ def clean(benchmark, token=None, filename=None):
 
 
 @helpers.group(
-    help="Configuration helper for benchopt.",
+    help="Configuration helper for benchopt. The configuration of benchopt "
+    "is detailed in :ref:`config_doc`.",
     invoke_without_command=True
 )
 @click.option('--benchmark', '-b', metavar='<benchmark>',
@@ -58,10 +59,13 @@ def config(ctx, benchmark, token=None, filename=None):
     ctx.obj['benchmark_name'] = benchmark.name if benchmark else None
 
 
-@config.command(help="Set config value.")
+@config.command(help="Set value of setting <name> to <val>.\n\n"
+                "Multiple values can be provided as separate arguments. "
+                "This will generate a list of values in the config file.")
 @click.option('--append', '-a', is_flag=True,
-              help='Append values to others')
-@click.argument("name", type=str)
+              help="Can be used to append values to the existing ones for "
+              "settings that takes list of values.")
+@click.argument("name", metavar='<name>', type=str)
 @click.argument("values", metavar='<val>', type=str,
                 nargs=-1, required=True)
 @click.pass_context
@@ -91,8 +95,8 @@ def set(ctx, name, values, append=False):
                 benchmark_name=benchmark_name)
 
 
-@config.command(help="Get config value.")
-@click.argument("name", type=str)
+@config.command(help="Get config value for setting <name>.")
+@click.argument("name", metavar='<name>', type=str)
 @click.pass_context
 def get(ctx, name):
     config = ctx.obj['config']

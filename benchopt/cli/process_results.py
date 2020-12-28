@@ -47,8 +47,8 @@ def plot(benchmark, filename=None, kinds=('suboptimality_curve',),
 
 @process_results.command(
     help="Publish the result from a previously run benchmark.\n\n"
-    "See the :ref:`publish` documentation for more info on how to use this "
-    "command."
+    "See the :ref:`publish_doc` documentation for more info on how to use "
+    "this command."
 )
 @click.argument('benchmark', type=click.Path(exists=True))
 @click.option('--token', '-t', type=str, default=None,

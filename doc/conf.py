@@ -38,7 +38,7 @@ extensions = [
     'sphinx.ext.doctest',
     'sphinx.ext.intersphinx',
     'sphinx.ext.mathjax',
-    'sphinx_click.ext',
+    'sphinx_click_semantic_group',
     'sphinx_gallery.gen_gallery',
     'numpydoc',
     'gh_substitutions',  # custom ext, see ./sphinxext/gh_substitutions.py

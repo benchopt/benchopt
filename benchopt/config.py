@@ -17,10 +17,34 @@ DEFAULT_GLOBAL_CONFIG = {
     'conda_cmd': 'conda',
     'shell': os.environ.get('SHELL', 'bash')
 }
+"""
+* ``debug``: If set to true, enable debug logs.
+* ``allow_install``, *boolean*: Install in current env are disabled by
+  default. If set to true, enable installing in the current env.
+* ``raise_install_error``, *boolean*: If set to true, raise error when
+  install fails.
+* ``github_token``, *str*: token to publish results on ``benchopt/results``
+  via github.
+* ``conda_cmd``, *str*: can be used to give the path to ``conda`` if it is
+  not directly installed on ``$PATH``.
+* ``shell``, *str*: can be used to specify the shell to use. Default to
+  `SHELL` from env if it exists and ``'bash'`` otherwise.
+"""
 
 DEFAULT_BENCHMARK_CONFIG = {
     'plots': ["suboptimality_curve"],
 }
+"""
+* ``plots``, *list*: Select the plots to display for the benchmark. Should be
+  valid plot kinds. The list can simply be one item by line, with each item
+  indented, as:
+
+  .. code-block:: ini
+
+    plots =
+        suboptimality_curve
+        histogram
+"""
 
 
 def get_global_config_file():
