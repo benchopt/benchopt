@@ -152,7 +152,9 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
               "folder.")
 @click.option('--kind', '-k', 'kinds',
               multiple=True, show_default=True, type=str,
-              help='Timeout a solver when run for more than <timeout> seconds')
+              help="Specify the type of figure to plot:"
+              "`suboptimality_curve`, `relative_suboptimality_curve`,"
+              "`objective_curve` or `histogram`.")
 @click.option('--display/--no-display', default=True,
               help="Whether or not to display the plot on the screen.")
 @click.option('--plotly', is_flag=True,
