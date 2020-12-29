@@ -156,7 +156,7 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
 @click.option('--kind', '-k', 'kinds',
               multiple=True, show_default=True, type=str,
               help="Specify the type of figure to plot: " +
-              ", ".join("`{0}`".format(k) for k in PLOT_KINDS_NAMES[:-1]) +
+              ", ".join(f"`{k}`" for k in PLOT_KINDS_NAMES[:-1]) +
               " or `" + PLOT_KINDS_NAMES[-1] + "`.")
 @click.option('--display/--no-display', default=True,
               help="Whether or not to display the plot on the screen.")
