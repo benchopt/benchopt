@@ -9,7 +9,7 @@ from benchopt.utils.github import publish_result_file
 
 
 process_results = click.Group(
-    name='process_results',
+    name='Process Results',
     help="Utilities to process benchmark outputs produced by benchOpt."
 )
 

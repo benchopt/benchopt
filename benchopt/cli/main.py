@@ -12,7 +12,7 @@ BENCHMARK_TEST_FILE = Path(_bench_test_module).parent / "test_benchmarks.py"
 
 
 main = click.Group(
-    name='main',
+    name='Principal Commands',
     help="Principal commands that are used in ``benchopt``."
 )
 

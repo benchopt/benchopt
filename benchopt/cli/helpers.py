@@ -11,7 +11,7 @@ from benchopt.utils.dynamic_modules import _load_class_from_module
 
 
 helpers = click.Group(
-    name='helpers',
+    name='Helpers',
     help="Helpers to clean and config ``benchopt``."
 )
 
