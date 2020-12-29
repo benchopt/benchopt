@@ -58,10 +58,10 @@ def run_one_initialization(objective, solver, meta):
         )
 
     t_start = time.perf_counter()
-    # print("t_start init :", t_start)
+    # print("t_start init separated :", t_start)
     solver.initialization()
     delta_t = time.perf_counter() - t_start
-    # print("delta_t init :", delta_t)
+    # print("delta_t init separated:", delta_t)
     # return run_init(objective, solver, meta)
 
     beta_hat_i = solver.get_result()
@@ -116,56 +116,56 @@ def run_one_repetition(objective, solver, meta, stop_val):
             objective_dict['objective_value'])
 
 
-def run_one_repetition_with_init(objective, solver, meta, stop_val):
-    """Run one repetition of the solver.
+# def run_one_repetition_with_init(objective, solver, meta, stop_val):
+#     """Run one repetition of the solver.
 
-    Parameters
-    ----------
-    objective : instance of BaseObjective
-        The objective to minimize.
-    solver : instance of BaseSolver
-        The solver to use.
-    meta : dict
-        Metadata passed to store in Cost results.
-        Contains objective, data, dimension, id_rep.
-    stop_val : int | float
-        Corresponds to stopping criterion, such as
-        tol or max_iter for the solver. It depends
-        on the stop_strategy for the solver.
+#     Parameters
+#     ----------
+#     objective : instance of BaseObjective
+#         The objective to minimize.
+#     solver : instance of BaseSolver
+#         The solver to use.
+#     meta : dict
+#         Metadata passed to store in Cost results.
+#         Contains objective, data, dimension, id_rep.
+#     stop_val : int | float
+#         Corresponds to stopping criterion, such as
+#         tol or max_iter for the solver. It depends
+#         on the stop_strategy for the solver.
 
-    Returns
-    -------
-    cost : dict
-        Details on the run and the objective value obtained.
-    objective_value : float
-        Value of the objective function reached, used to detect convergence.
-    """
-    # check if the module caught a failed import
-    if not solver.is_installed():
-        raise ImportError(
-            f"Failure during import in {solver.__module__}."
-        )
+#     Returns
+#     -------
+#     cost : dict
+#         Details on the run and the objective value obtained.
+#     objective_value : float
+#         Value of the objective function reached, used to detect convergence.
+#     """
+#     # check if the module caught a failed import
+#     if not solver.is_installed():
+#         raise ImportError(
+#             f"Failure during import in {solver.__module__}."
+#         )
 
-    if stop_val == 0:
-        t_start = time.perf_counter()
-        # print("t_start init :", t_start)
-        solver.initialization()
-        delta_t = time.perf_counter() - t_start
-        # print("delta_t init :", delta_t)
-        # return run_init(objective, solver, meta)
-    else:
-        t_start = time.perf_counter()
-        # print("t_start :", t_start)
-        solver.run(stop_val)
-        delta_t = time.perf_counter() - t_start
-        # print("delta_t :", delta_t)
+#     if stop_val == 0:
+#         t_start = time.perf_counter()
+#         print("t_start init :", t_start)
+#         solver.initialization()
+#         delta_t = time.perf_counter() - t_start
+#         print("delta_t init :", delta_t)
+#         # return run_init(objective, solver, meta)
+#     else:
+#         t_start = time.perf_counter()
+#         # print("t_start :", t_start)
+#         solver.run(stop_val)
+#         delta_t = time.perf_counter() - t_start
+#         # print("delta_t :", delta_t)
 
-    beta_hat_i = solver.get_result()
-    objective_dict = objective(beta_hat_i)
+#     beta_hat_i = solver.get_result()
+#     objective_dict = objective(beta_hat_i)
 
-    return (dict(**meta, solver_name=str(solver), stop_val=stop_val,
-                 time=delta_t, **objective_dict),
-            objective_dict['objective_value'])
+#     return (dict(**meta, solver_name=str(solver), stop_val=stop_val,
+#                  time=delta_t, **objective_dict),
+#             objective_dict['objective_value'])
 
 
 def run_one_stop_val(benchmark_dir, objective, solver, meta, stop_val,
@@ -210,10 +210,13 @@ def run_one_stop_val(benchmark_dir, objective, solver, meta, stop_val,
 
     # Create a Memory object to cache the computations in the benchmark folder
     mem = Memory(location=benchmark_dir / CACHE_DIR, verbose=0)
-    run_one_repetition_cached = mem.cache(run_one_repetition_with_init)
+    run_one_initialization_cached = mem.cache(run_one_initialization)
+    # run_one_repetition_with_init_cached = mem.cache(run_one_repetition_with_init)
+    run_one_repetition_cached = mem.cache(run_one_repetition)
 
     curve = []
     current_objective = []
+    max_objective_value = -np.inf
     for rep in range(n_repetitions):
         if progress_str is not None:
             msg = f"{progress_str} ({rep} / {n_repetitions} repetitions)"
@@ -223,17 +226,32 @@ def run_one_stop_val(benchmark_dir, objective, solver, meta, stop_val,
 
         # Force the run if needed
         args = (objective, solver, meta_rep, stop_val)
-        # print("Stop_val : ", stop_val)
-        if force:
-            (cost, objective_value), _ = run_one_repetition_cached.call(*args)
-        else:
-            cost, objective_value = run_one_repetition_cached(*args)
+        # print("============== Stop_val : ", stop_val)
 
-        # print("\ncost[time]:", cost["time"])
-        # print("objective_value: ", objective_value,"\n")
-        curve.append(cost)
-        current_objective.append(objective_value)
-        # print("current_objective:", current_objective, "\n")
+        if stop_val == 0:
+            try:
+                # cost, objective_value = run_one_initialization(*args[:-1])
+                if force:
+                    (cost, objective_value), _ = run_one_initialization_cached.call(*args[:-1])
+                else:
+                    cost, objective_value = run_one_initialization_cached(*args[:-1])
+                curve.append(cost)
+                current_objective.append(objective_value)
+                max_objective_value = np.max(current_objective)
+            except:
+                print(f"No external initialization implemented for solver {solver}.")
+        else:
+            if force:
+                (cost, objective_value), _ = run_one_repetition_cached.call(*args)
+            else:
+                cost, objective_value = run_one_repetition_cached(*args)
+
+            # print("\ncost[time]:", cost["time"])
+            # print("objective_value: ", objective_value,"\n")
+            curve.append(cost)
+            current_objective.append(objective_value)
+            max_objective_value = np.max(current_objective)
+            # print("current_objective:", current_objective, "\n")
 
         if deadline is not None and deadline < time.time():
             # Reached the timeout so stop the computation here
@@ -241,8 +259,9 @@ def run_one_stop_val(benchmark_dir, objective, solver, meta, stop_val,
 
     # print("curve:", curve, "\n")
     # print("current_objective:", current_objective, "\n")
+    # print("np.max(current_objective): ", np.max(current_objective))
 
-    return curve, np.max(current_objective)
+    return curve, max_objective_value
 
 
 def run_one_solver(benchmark_dir, objective, solver, meta,
@@ -336,7 +355,7 @@ def run_one_solver(benchmark_dir, objective, solver, meta,
         # print("----------------------------\n")
 
         # progress_str = "Init"
-        init_args = (objective, solver, meta)
+        # init_args = (objective, solver, meta)
         # print("init_args: ", init_args)
         # Create a Memory object to cache the computations in the benchmark folder
         # mem = Memory(location=benchmark_dir / CACHE_DIR, verbose=0)
@@ -380,10 +399,6 @@ def run_one_solver(benchmark_dir, objective, solver, meta,
             # print("///////////call_args['stop_val']: ", call_args["stop_val"], "\\\\\\\\\\\\")
             # print("===========call_args:\n", call_args)
             # print("====================:")
-            # if stop_val == 0:
-            #     try ...
-            # else:
-
             if force:
                 (stop_val_curve, objective_value), _ = \
                     run_one_stop_val_cached.call(**call_args)
@@ -392,6 +407,7 @@ def run_one_solver(benchmark_dir, objective, solver, meta,
                     **call_args
                 )
             curve.extend(stop_val_curve)
+            # print(curve)
 
             if time.time() > deadline:
                 # We reached the timeout so stop the computation here
