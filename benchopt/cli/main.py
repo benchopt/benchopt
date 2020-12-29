@@ -11,7 +11,10 @@ from benchopt.tests import __file__ as _bench_test_module
 BENCHMARK_TEST_FILE = Path(_bench_test_module).parent / "test_benchmarks.py"
 
 
-main = click.Group()
+main = click.Group(
+    name='main',
+    help="Principal commands that are used in ``benchopt``."
+)
 
 
 @main.command(

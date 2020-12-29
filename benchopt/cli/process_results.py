@@ -8,10 +8,10 @@ from benchopt.plotting import plot_benchmark
 from benchopt.utils.github import publish_result_file
 
 
-@click.group()
-def process_results(ctx):
-    "Utilities to process benchmark outputs produced by benchOpt."
-    pass
+process_results = click.Group(
+    name='process_results',
+    help="Utilities to process benchmark outputs produced by benchOpt."
+)
 
 
 @process_results.command(

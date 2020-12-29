@@ -1,6 +1,6 @@
 numpydoc
 sphinx-bootstrap-theme
-# sphinx-click
+sphinx-click
 sphinx_gallery
 pillow
 scikit-learn

@@ -10,10 +10,10 @@ from benchopt.config import get_global_config_file
 from benchopt.utils.dynamic_modules import _load_class_from_module
 
 
-@click.group(name='HELPERS')
-def helpers(ctx):
-    "Helpers to clean and config ``benchopt``."
-    pass
+helpers = click.Group(
+    name='helpers',
+    help="Helpers to clean and config ``benchopt``."
+)
 
 
 @helpers.command(
