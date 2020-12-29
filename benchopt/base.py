@@ -89,7 +89,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         ...
 
     @abstractmethod
-    def init(self):
+    def initialization(self):
         """Initialize the weights for the solver."""
         ...
 

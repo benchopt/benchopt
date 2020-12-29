@@ -31,7 +31,92 @@ MIN_TOL = 1e-15
 ##################################
 # Time one run of a solver
 ##################################
+def run_one_initialization(objective, solver, meta):
+    """Run one initialization of the solver.
+
+    Parameters
+    ----------
+    objective : instance of BaseObjective
+        The objective to minimize.
+    solver : instance of BaseSolver
+        The solver to use.
+    meta : dict
+        Metadata passed to store in Cost results.
+        Contains objective, data, dimension, id_rep.
+
+    Returns
+    -------
+    cost : dict
+        Details on the run and the objective value obtained.
+    objective_value : float
+        Value of the objective function reached, used to detect convergence.
+    """
+    # check if the module caught a failed import
+    if not solver.is_installed():
+        raise ImportError(
+            f"Failure during import in {solver.__module__}."
+        )
+
+    t_start = time.perf_counter()
+    # print("t_start init :", t_start)
+    solver.initialization()
+    delta_t = time.perf_counter() - t_start
+    # print("delta_t init :", delta_t)
+    # return run_init(objective, solver, meta)
+
+    beta_hat_i = solver.get_result()
+    objective_dict = objective(beta_hat_i)
+
+    return (dict(**meta, solver_name=str(solver), stop_val=0,
+                 time=delta_t, **objective_dict),
+            objective_dict['objective_value'])
+
+
 def run_one_repetition(objective, solver, meta, stop_val):
+    """Run one repetition of the solver.
+
+    Parameters
+    ----------
+    objective : instance of BaseObjective
+        The objective to minimize.
+    solver : instance of BaseSolver
+        The solver to use.
+    meta : dict
+        Metadata passed to store in Cost results.
+        Contains objective, data, dimension, id_rep.
+    stop_val : int | float
+        Corresponds to stopping criterion, such as
+        tol or max_iter for the solver. It depends
+        on the stop_strategy for the solver.
+
+    Returns
+    -------
+    cost : dict
+        Details on the run and the objective value obtained.
+    objective_value : float
+        Value of the objective function reached, used to detect convergence.
+    """
+    # check if the module caught a failed import
+    if not solver.is_installed():
+        raise ImportError(
+            f"Failure during import in {solver.__module__}."
+        )
+
+    t_start = time.perf_counter()
+    # print("t_start :", t_start)
+    solver.run(stop_val)
+    delta_t = time.perf_counter() - t_start
+    # print("delta_t :", delta_t)
+
+    beta_hat_i = solver.get_result()
+    objective_dict = objective(beta_hat_i)
+
+    return (dict(**meta, solver_name=str(solver), stop_val=stop_val,
+                 time=delta_t, **objective_dict),
+            objective_dict['objective_value'])
+
+
+def run_one_repetition_with_init(objective, solver, meta, stop_val):
     """Run one repetition of the solver.
 
     Parameters
@@ -64,7 +149,7 @@ def run_one_repetition(objective, solver, meta, stop_val):
     if stop_val == 0:
         t_start = time.perf_counter()
         # print("t_start init :", t_start)
-        solver.init()
+        solver.initialization()
         delta_t = time.perf_counter() - t_start
         # print("delta_t init :", delta_t)
         # return run_init(objective, solver, meta)
@@ -125,7 +210,7 @@ def run_one_stop_val(benchmark_dir, objective, solver, meta, stop_val,
 
     # Create a Memory object to cache the computations in the benchmark folder
     mem = Memory(location=benchmark_dir / CACHE_DIR, verbose=0)
-    run_one_repetition_cached = mem.cache(run_one_repetition)
+    run_one_repetition_cached = mem.cache(run_one_repetition_with_init)
 
     curve = []
     current_objective = []
@@ -263,10 +348,12 @@ def run_one_solver(benchmark_dir, objective, solver, meta,
         # prev_objective_value = objective_value
 
         for id_stop_val in range(max_runs + 1):
+            # print("id_stop_val:", id_stop_val, "| delta_objectives :", delta_objectives)
             if (-eps <= np.max(delta_objectives) < eps):
                 # We are on a plateau and the objective is not improving
                 # stop here for the stop_val
-                status = colorify('done', GREEN)
+                print("OBJECTIVE NOT IMPROVING for", PATIENCE, "iterations.")
+                status = colorify('done (no more improvement)', GREEN)
                 break
             if np.max(delta_objectives) < -1e10:
                 # The algorithm is diverging, stopping here
@@ -278,7 +365,7 @@ def run_one_solver(benchmark_dir, objective, solver, meta,
             p = progress(id_stop_val, np.max(delta_objectives))
             if show_progress:
                 if stop_val == 0:
-                    progress_str = f"{tag} Initialization"
+                    progress_str = f"{tag} Initialization\n"
                 else:
                     progress_str = f"{tag} {p:6.1%}"
             else:
@@ -293,6 +380,10 @@ def run_one_solver(benchmark_dir, objective, solver, meta,
             # print("///////////call_args['stop_val']: ", call_args["stop_val"], "\\\\\\\\\\\\")
             # print("===========call_args:\n", call_args)
             # print("====================:")
+            # if stop_val == 0:
+            #     try ...
+            # else:
+
             if force:
                 (stop_val_curve, objective_value), _ = \
                     run_one_stop_val_cached.call(**call_args)
@@ -304,6 +395,7 @@ def run_one_solver(benchmark_dir, objective, solver, meta,
 
             if time.time() > deadline:
                 # We reached the timeout so stop the computation here
+                print("TIMEOUT REACHED:", time.time())
                 status = colorify('done (timeout)', YELLOW)
                 break
 

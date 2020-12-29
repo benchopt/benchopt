@@ -20,7 +20,7 @@ DEFAULT_GLOBAL_CONFIG = {
 }
 
 DEFAULT_BENCHMARK_CONFIG = {
-    'plots': "'suboptimality_curve'",
+    'plots': "'objective_curve'", #"'suboptimality_curve'",
     'name': None
 }
 

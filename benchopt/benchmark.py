@@ -31,6 +31,7 @@ class Benchmark:
 
         # Get the config file and read it
         config_file = self.benchmark_dir / 'config.ini'
+        print("\n\n Config file:", config_file)
         return get_benchmark_setting(config_file, self.name, setting_name)
 
     def get_benchmark_objective(self):

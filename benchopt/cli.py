@@ -99,6 +99,7 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
     # If env_name is False, the flag `--local` has been used (default) so
     # run in the current environement.
     if env_name == 'False':
+        print("timeout in cli: ", timeout)
         run_benchmark(
             benchmark, solver_names, forced_solvers,
             dataset_names=dataset_names,
