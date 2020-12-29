@@ -5,7 +5,7 @@ from pathlib import Path
 from benchopt import __version__
 from benchopt import run_benchmark
 from benchopt.benchmark import Benchmark
-from benchopt.plotting import plot_benchmark
+from benchopt.plotting import plot_benchmark, PLOT_KINDS
 
 from benchopt.config import get_global_setting
 from benchopt.utils.github import publish_result_file
@@ -17,6 +17,9 @@ BENCHMARK_TEST_FILE = Path(__file__).parent / 'tests' / 'test_benchmarks.py'
 
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
+
+
+PLOT_KINDS_NAMES = list(PLOT_KINDS.keys())
 
 
 @click.group(context_settings=CONTEXT_SETTINGS, invoke_without_command=True)
@@ -152,9 +155,9 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
               "folder.")
 @click.option('--kind', '-k', 'kinds',
               multiple=True, show_default=True, type=str,
-              help="Specify the type of figure to plot: "
-              "`suboptimality_curve`, `relative_suboptimality_curve`, "
-              "`objective_curve` or `histogram`.")
+              help="Specify the type of figure to plot: " +
+              ", ".join("`{0}`".format(k) for k in PLOT_KINDS_NAMES[:-1]) +
+              " or `" + PLOT_KINDS_NAMES[-1] + "`.")
 @click.option('--display/--no-display', default=True,
               help="Whether or not to display the plot on the screen.")
 @click.option('--plotly', is_flag=True,
