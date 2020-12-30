@@ -1,14 +1,16 @@
 import os
 
+import rpy2  # noqa: E402
+import rpy2.robjects.packages as rpackages  # noqa: E402
+import rpy2.situation
+
+
 # Make sure that R_HOME is loaded from the current interpreter to avoid
 # using the parent interpreter R_HOME in the sub-interpreter.
 if os.environ.get('R_HOME', None) is not None:
     del os.environ['R_HOME']
 
 
-import rpy2  # noqa: E402
-import rpy2.robjects.packages as rpackages  # noqa: E402
-import rpy2.situation
 try:
     from rpy2.robjects.packages import PackageNotInstalledError
 except ImportError:

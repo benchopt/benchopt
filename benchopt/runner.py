@@ -116,58 +116,6 @@ def run_one_repetition(objective, solver, meta, stop_val):
             objective_dict['objective_value'])
 
 
-# def run_one_repetition_with_init(objective, solver, meta, stop_val):
-#     """Run one repetition of the solver.
-
-#     Parameters
-#     ----------
-#     objective : instance of BaseObjective
-#         The objective to minimize.
-#     solver : instance of BaseSolver
-#         The solver to use.
-#     meta : dict
-#         Metadata passed to store in Cost results.
-#         Contains objective, data, dimension, id_rep.
-#     stop_val : int | float
-#         Corresponds to stopping criterion, such as
-#         tol or max_iter for the solver. It depends
-#         on the stop_strategy for the solver.
-
-#     Returns
-#     -------
-#     cost : dict
-#         Details on the run and the objective value obtained.
-#     objective_value : float
-#         Value of the objective function reached, used to detect convergence.
-#     """
-#     # check if the module caught a failed import
-#     if not solver.is_installed():
-#         raise ImportError(
-#             f"Failure during import in {solver.__module__}."
-#         )
-
-#     if stop_val == 0:
-#         t_start = time.perf_counter()
-#         print("t_start init :", t_start)
-#         solver.initialization()
-#         delta_t = time.perf_counter() - t_start
-#         print("delta_t init :", delta_t)
-#         # return run_init(objective, solver, meta)
-#     else:
-#         t_start = time.perf_counter()
-#         # print("t_start :", t_start)
-#         solver.run(stop_val)
-#         delta_t = time.perf_counter() - t_start
-#         # print("delta_t :", delta_t)
-
-#     beta_hat_i = solver.get_result()
-#     objective_dict = objective(beta_hat_i)
-
-#     return (dict(**meta, solver_name=str(solver), stop_val=stop_val,
-#                  time=delta_t, **objective_dict),
-#             objective_dict['objective_value'])
-
-
 def run_one_stop_val(benchmark_dir, objective, solver, meta, stop_val,
                      n_repetitions, deadline=None, progress_str=None,
                      force=False):
@@ -211,7 +159,6 @@ def run_one_stop_val(benchmark_dir, objective, solver, meta, stop_val,
     # Create a Memory object to cache the computations in the benchmark folder
     mem = Memory(location=benchmark_dir / CACHE_DIR, verbose=0)
     run_one_initialization_cached = mem.cache(run_one_initialization)
-    # run_one_repetition_with_init_cached = mem.cache(run_one_repetition_with_init)
     run_one_repetition_cached = mem.cache(run_one_repetition)
 
     curve = []
@@ -232,17 +179,20 @@ def run_one_stop_val(benchmark_dir, objective, solver, meta, stop_val,
             try:
                 # cost, objective_value = run_one_initialization(*args[:-1])
                 if force:
-                    (cost, objective_value), _ = run_one_initialization_cached.call(*args[:-1])
+                    (cost, objective_value), _ = \
+                        run_one_initialization_cached.call(*args[:-1])
                 else:
-                    cost, objective_value = run_one_initialization_cached(*args[:-1])
+                    cost, objective_value = \
+                        run_one_initialization_cached(*args[:-1])
                 curve.append(cost)
                 current_objective.append(objective_value)
                 max_objective_value = np.max(current_objective)
-            except:
-                print(f"No external initialization implemented for solver {solver}.")
+            except AttributeError:
+                print(f"No external initialization implemented for {solver}.")
         else:
             if force:
-                (cost, objective_value), _ = run_one_repetition_cached.call(*args)
+                (cost, objective_value), _ = \
+                    run_one_repetition_cached.call(*args)
             else:
                 cost, objective_value = run_one_repetition_cached(*args)
 
@@ -343,31 +293,14 @@ def run_one_solver(benchmark_dir, objective, solver, meta,
         return []
 
     id_stop_val = 0
-    stop_val = 0 #stop_val = 1
+    stop_val = 0  # stop_val = 1
     delta_objectives = [1e15]
     prev_objective_value = np.inf
 
     deadline = time.time() + timeout
 
     with exception_handler(tag, pdb=pdb):
-        # print("\n----------------------------")
-        # print("Initialisation")
-        # print("----------------------------\n")
-
-        # progress_str = "Init"
-        # init_args = (objective, solver, meta)
-        # print("init_args: ", init_args)
-        # Create a Memory object to cache the computations in the benchmark folder
-        # mem = Memory(location=benchmark_dir / CACHE_DIR, verbose=0)
-        # run_init_cached = mem.cache(run_init)
-
-        # (init_curve, objective_value), _ = run_init_cached.call(*init_args)
-        # print("init_curve :", init_curve, "\n\n")
-        # # curve.extend(init_curve)
-        # prev_objective_value = objective_value
-
         for id_stop_val in range(max_runs + 1):
-            # print("id_stop_val:", id_stop_val, "| delta_objectives :", delta_objectives)
             if (-eps <= np.max(delta_objectives) < eps):
                 # We are on a plateau and the objective is not improving
                 # stop here for the stop_val
@@ -396,9 +329,6 @@ def run_one_solver(benchmark_dir, objective, solver, meta,
                 n_repetitions=n_repetitions, deadline=deadline,
                 progress_str=progress_str, force=force
             )
-            # print("///////////call_args['stop_val']: ", call_args["stop_val"], "\\\\\\\\\\\\")
-            # print("===========call_args:\n", call_args)
-            # print("====================:")
             if force:
                 (stop_val_curve, objective_value), _ = \
                     run_one_stop_val_cached.call(**call_args)
@@ -455,7 +385,11 @@ def cumsum_time(df):
         by the objective is not the same for all parameters, the missing data
         is set to `NaN`. Containing cumulative time.
     """
-    df['time'] = df.groupby(by=['objective_name', 'data_name', 'dimension', 'idx_rep', 'solver_name'])["time"].cumsum()
+    df['time'] = df.groupby(by=['objective_name',
+                                'data_name',
+                                'dimension',
+                                'idx_rep',
+                                'solver_name'])["time"].cumsum()
     return df
 
 

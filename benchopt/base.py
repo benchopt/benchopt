@@ -88,12 +88,6 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         """
         ...
 
-    # @abstractmethod
-    def initialization(self):
-        """Initialization of the solver."""
-        # ...
-        pass
-
     @abstractmethod
     def run(self, stop_val):
         """Call the solver with the given stop_val.
