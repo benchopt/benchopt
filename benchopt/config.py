@@ -1,12 +1,16 @@
 import os
+import stat
 import warnings
 import configparser
 from pathlib import Path
-from collections import Iterable
+from collections.abc import Iterable
 
 BOOLEAN_STATES = configparser.ConfigParser.BOOLEAN_STATES
 CONFIG_FILE_NAME = 'benchopt.ini'
-CONFIG_FILE_LOCATION = os.environ.get('BENCHO_CONFIG', './benchopt.ini')
+
+# Global config file should be only accessible to current user as it stores
+# senesible information such as the Github otken.
+GLOBAL_CONFIG_FILE_MODE = stat.S_IFREG | stat.S_IRUSR | stat.S_IWUSR
 
 DEFAULT_GLOBAL_CONFIG = {
     'debug': False,
@@ -54,12 +58,26 @@ def get_global_config_file():
     if config_file is not None:
         config_file = Path(config_file)
         assert config_file.exists(), (
-            f"BENCHOPT_CONFIG is set but file {config_file} does not exists."
+            f"BENCHOPT_CONFIG is set but file {config_file} does not exists.\n"
+            f"It can be created with `touch {config_file.resolve()}`."
         )
-        return config_file
-    config_file = Path('.') / CONFIG_FILE_NAME
-    if not config_file.exists():
-        config_file = Path.home() / '.config' / CONFIG_FILE_NAME
+    else:
+        config_file = Path('.') / CONFIG_FILE_NAME
+        if not config_file.exists():
+            config_file = Path.home() / '.config' / CONFIG_FILE_NAME
+
+    # check that the global config file is only accessible to current user as
+    # it stores critical information such as the github token.
+    if (config_file.exists()
+            and config_file.stat().st_mode != GLOBAL_CONFIG_FILE_MODE):
+        mode = oct(config_file.stat().st_mode)[5:]
+        expected_mode = oct(GLOBAL_CONFIG_FILE_MODE)[5:]
+        warnings.warn(
+            f"BenchOpt config file {config_file} is with mode {mode}.\n"
+            "As it stores sensitive information such as the github token,\n"
+            f"it is advised to use mode {expected_mode} (user rw only)."
+        )
+
     return config_file
 
 
@@ -89,6 +107,11 @@ def set_setting(name, value, config_file=None, benchmark_name=None):
         config[benchmark_name] = {}
 
     config[benchmark_name][name] = reverse_parse(default_value, value)
+
+    # Create config file with the correct permission.
+    if not config_file.exists():
+        config_file.touch(mode=GLOBAL_CONFIG_FILE_MODE)
+
     with config_file.open('w') as f:
         config.write(f)
 
