@@ -5,7 +5,7 @@ from pathlib import Path
 from benchopt import __version__
 from benchopt import run_benchmark
 from benchopt.benchmark import Benchmark
-from benchopt.plotting import plot_benchmark
+from benchopt.plotting import plot_benchmark, PLOT_KINDS
 
 from benchopt.config import get_global_setting
 from benchopt.utils.github import publish_result_file
@@ -152,7 +152,9 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
               "folder.")
 @click.option('--kind', '-k', 'kinds',
               multiple=True, show_default=True, type=str,
-              help='Timeout a solver when run for more than <timeout> seconds')
+              help="Specify the type of figure to plot:\n\n* " +
+              "\n\n* ".join([f"``{name}``: {func.__doc__.splitlines()[0]}"
+                             for name, func in PLOT_KINDS.items()]))
 @click.option('--display/--no-display', default=True,
               help="Whether or not to display the plot on the screen.")
 @click.option('--plotly', is_flag=True,
