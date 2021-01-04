@@ -19,7 +19,7 @@ def set_config_file(permission='600'):
         if old_config_file is not None:
             os.environ['BENCHOPT_CONFIG'] = old_config_file
         else:
-            os.unsetenv('BENCHOPT_CONFIG')
+            del os.environ['BENCHOPT_CONFIG']
         config_file.unlink()
 
 
