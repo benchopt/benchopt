@@ -127,7 +127,7 @@ Contents
    publish
    config
    whats_new
-   Fork benchopt on Github <https://github.com/benchopt/benchopt>
+   Fork BenchOpt on Github <https://github.com/benchopt/benchopt>
 
 .. |Build Status| image:: https://dev.azure.com/benchopt/benchopt/_apis/build/status/benchopt.benchOpt?branchName=master
    :target: https://dev.azure.com/benchopt/benchopt/_build/latest?definitionId=1&branchName=master

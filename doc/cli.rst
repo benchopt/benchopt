@@ -8,17 +8,3 @@ Command Line Interface (CLI) Documentation
    :prog: benchopt
    :nested: full
 
-.. .. click:: benchopt.cli:main
-..    :semantic-group: Principal commands
-..    :prog: benchopt
-..    :nested: full
-
-.. .. click:: benchopt.cli:process_results
-..    :semantic-group: Process Results
-..    :prog: benchopt
-..    :nested: full
-
-.. .. click:: benchopt.cli:helpers
-..    :semantic-group: Helpers
-..    :prog: benchopt
-..    :nested: full
