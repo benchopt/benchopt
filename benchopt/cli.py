@@ -157,8 +157,7 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
               multiple=True, show_default=True, type=str,
               help="Specify the type of figure to plot:\n\n* " +
               "\n\n* ".join([f"``{name}``: {func.__doc__.splitlines()[0]}"
-                           for name, func in PLOT_KINDS.items()])
-              )
+                             for name, func in PLOT_KINDS.items()]))
 @click.option('--display/--no-display', default=True,
               help="Whether or not to display the plot on the screen.")
 @click.option('--plotly', is_flag=True,
