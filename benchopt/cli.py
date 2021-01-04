@@ -17,11 +17,6 @@ BENCHMARK_TEST_FILE = Path(__file__).parent / 'tests' / 'test_benchmarks.py'
 
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
-
-
-PLOT_KINDS_NAMES = list(f'`{k}`' for k in PLOT_KINDS)
-
-
 @click.group(context_settings=CONTEXT_SETTINGS, invoke_without_command=True)
 @click.option('--version', '-v', is_flag=True, help='Print version')
 @click.pass_context
