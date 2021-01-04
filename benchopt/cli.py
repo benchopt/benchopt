@@ -19,7 +19,7 @@ BENCHMARK_TEST_FILE = Path(__file__).parent / 'tests' / 'test_benchmarks.py'
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
 
-PLOT_KINDS_NAMES = list(PLOT_KINDS.keys())
+PLOT_KINDS_NAMES = list(f'`{k}`' for k in PLOT_KINDS)
 
 
 @click.group(context_settings=CONTEXT_SETTINGS, invoke_without_command=True)
