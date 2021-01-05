@@ -113,7 +113,7 @@ Benchmark results
 
 All the public benchmark results are available at `BenchOpt Benchmarks results <https://benchopt.github.io/results/>`_.
 
-**Publish results**: You can directly publish the result of a run of ``benchopt`` on `BenchOpt Benchmarks results <https://benchopt.github.io/results/>`_. You can have a look at this page to :ref:`publish`.
+**Publish results**: You can directly publish the result of a run of ``benchopt`` on `BenchOpt Benchmarks results <https://benchopt.github.io/results/>`_. You can have a look at this page to :ref:`publish_doc`.
 
 Contents
 ========
@@ -125,8 +125,9 @@ Contents
    api
    how
    publish
+   config
    whats_new
-   Fork benchopt on Github <https://github.com/benchopt/benchopt>
+   Fork BenchOpt on Github <https://github.com/benchopt/benchopt>
 
 .. |Build Status| image:: https://dev.azure.com/benchopt/benchopt/_apis/build/status/benchopt.benchOpt?branchName=master
    :target: https://dev.azure.com/benchopt/benchopt/_build/latest?definitionId=1&branchName=master

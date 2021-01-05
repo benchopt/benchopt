@@ -1,4 +1,4 @@
-.. _publish:
+.. _publish_doc:
 
 Publish benchmark results
 =========================
@@ -47,5 +47,7 @@ Then create a token named ``benchopt``, ticking the **repo** box as shown below:
    :target: https://github.com/settings/tokens
    :align: center
 
-Then click on ``generate token`` and copy this token of 40 characters in a secure
-location.
+Then click on ``generate token`` and copy this token of 40 characters in a
+secure location. Note that the token can be stored in a config file for BenchOpt
+using ``benchopt config set github_token <TOKEN>``. More info on config files can
+be found in :ref:`config_doc`.

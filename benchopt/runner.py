@@ -1,13 +1,11 @@
 import time
 import numpy as np
 import pandas as pd
-from joblib import Memory
 from datetime import datetime
 
 from .utils import product_param
 from .benchmark import is_matched
 from .plotting import plot_benchmark
-from .config import get_global_setting
 from .benchmark import _check_name_lists
 from .utils.pdb_helpers import exception_handler
 
@@ -16,9 +14,8 @@ from .utils.colorify import LINE_LENGTH, RED, GREEN, YELLOW
 
 
 # Get config values
-DEBUG = get_global_setting('debug')
-CACHE_DIR = '__cache__'
-RAISE_INSTALL_ERROR = get_global_setting('raise_install_error')
+from .config import DEBUG
+from .config import RAISE_INSTALL_ERROR
 
 
 # Define some constants
@@ -72,15 +69,15 @@ def run_one_repetition(objective, solver, meta, stop_val):
             objective_dict['objective_value'])
 
 
-def run_one_stop_val(benchmark_dir, objective, solver, meta, stop_val,
+def run_one_stop_val(benchmark, objective, solver, meta, stop_val,
                      n_repetitions, deadline=None, progress_str=None,
                      force=False):
     """Run all repetitions of the solver for a value of stopping criterion.
 
     Parameters
     ----------
-    benchmark_dir : str
-        The path to the benchmark files.
+    benchmark : benchopt.Benchmark object
+        Object to represent the benchmark.
     objective : instance of BaseObjective
         The objective to minimize.
     solver : instance of BaseSolver
@@ -113,8 +110,7 @@ def run_one_stop_val(benchmark_dir, objective, solver, meta, stop_val,
     """
 
     # Create a Memory object to cache the computations in the benchmark folder
-    mem = Memory(location=benchmark_dir / CACHE_DIR, verbose=0)
-    run_one_repetition_cached = mem.cache(run_one_repetition)
+    run_one_repetition_cached = benchmark.mem.cache(run_one_repetition)
 
     curve = []
     current_objective = []
@@ -142,15 +138,15 @@ def run_one_stop_val(benchmark_dir, objective, solver, meta, stop_val,
     return curve, np.max(current_objective)
 
 
-def run_one_solver(benchmark_dir, objective, solver, meta,
+def run_one_solver(benchmark, objective, solver, meta,
                    max_runs, n_repetitions, timeout,
                    force=False, show_progress=True, pdb=False):
     """Minimize objective function with onesolver for different accuracies.
 
     Parameters
     ----------
-    benchmark_dir : str
-        The path to the benchmark files.
+    benchmark : benchopt.Benchmark object
+        Object to represent the benchmark.
     objective : instance of BaseObjective
         The objective to minimize.
     solver : instance of BaseSolver
@@ -184,10 +180,9 @@ def run_one_solver(benchmark_dir, objective, solver, meta,
     eps = 1e-10
 
     # Create a Memory object to cache the computations in the benchmark folder
-    mem = Memory(location=benchmark_dir / CACHE_DIR, verbose=0)
-    run_one_stop_val_cached = mem.cache(
+    run_one_stop_val_cached = benchmark.mem.cache(
         run_one_stop_val,
-        ignore=['deadline', 'benchmark_dir', 'force', 'progress_str']
+        ignore=['deadline', 'benchmark', 'force', 'progress_str']
     )
 
     # Get the solver's name
@@ -246,7 +241,7 @@ def run_one_solver(benchmark_dir, objective, solver, meta,
                 progress_str = None
 
             call_args = dict(
-                benchmark_dir=benchmark_dir, objective=objective,
+                benchmark=benchmark, objective=objective,
                 solver=solver, meta=meta, stop_val=stop_val,
                 n_repetitions=n_repetitions, deadline=deadline,
                 progress_str=progress_str, force=force
@@ -380,8 +375,8 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                                  and len(forced_solvers) > 0
                                  and is_matched(str(solver), forced_solvers))
                         run_statistics.extend(run_one_solver(
-                            benchmark_dir=benchmark.benchmark_dir,
-                            objective=objective, solver=solver, meta=meta,
+                            benchmark=benchmark, objective=objective,
+                            solver=solver, meta=meta,
                             max_runs=max_runs, n_repetitions=n_repetitions,
                             timeout=timeout, show_progress=show_progress,
                             force=force, pdb=pdb

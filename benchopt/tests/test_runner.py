@@ -16,7 +16,7 @@ def test_skip_api(capsys):
     solver = TEST_SOLVER.get_instance()
 
     res = run_one_solver(
-        benchmark_dir=benchmark.benchmark_dir,
+        benchmark=benchmark,
         objective=objective, solver=solver, meta={},
         max_runs=1, n_repetitions=1,
         timeout=10000, show_progress=False,
@@ -30,7 +30,7 @@ def test_skip_api(capsys):
     objective = TEST_OBJECTIVE.get_instance(reg=1)
     objective.set_dataset(dataset)
     res = run_one_solver(
-        benchmark_dir=benchmark.benchmark_dir,
+        benchmark=benchmark,
         objective=objective, solver=solver, meta={},
         max_runs=1, n_repetitions=1,
         timeout=10000, show_progress=False,

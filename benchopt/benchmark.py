@@ -2,14 +2,17 @@ import re
 import click
 import warnings
 from pathlib import Path
+from joblib import Memory
 
+from .config import get_setting
 from .base import BaseSolver, BaseDataset
 from .utils.colorify import colorify, YELLOW
 from .utils.dynamic_modules import _load_class_from_module
 from .utils.parametrized_name_mixin import product_param
 from .utils.parametrized_name_mixin import _list_all_names
 
-from .config import get_benchmark_setting
+
+CACHE_DIR = '__cache__'
 
 
 class Benchmark:
@@ -26,20 +29,18 @@ class Benchmark:
                 "benchmark."
             )
 
+        self.mem = Memory(location=self.get_cache_location(), verbose=0)
+
     def get_setting(self, setting_name):
         "Retrieve the setting value from benchmark config."
 
         # Get the config file and read it
-        config_file = self.benchmark_dir / 'config.ini'
-        return get_benchmark_setting(config_file, self.name, setting_name)
+        config_file = self.get_config_file()
+        return get_setting(name=setting_name, config_file=config_file,
+                           benchmark_name=self.name)
 
     def get_benchmark_objective(self):
         """Load the objective function defined in the given benchmark.
-
-        Parameters
-        ----------
-        benchmark_dir : str or Path
-            The path to the folder containing the benchmark.
 
         Returns
         -------
@@ -59,8 +60,6 @@ class Benchmark:
 
         Parameters
         ----------
-        benchmark_dir : str or Path
-            The path to the folder containing the benchmark.
         base_class : class
             Base class for the classes to load.
 
@@ -98,9 +97,20 @@ class Benchmark:
         "List all available dataset classes for the benchmark."
         return self._list_benchmark_classes(BaseDataset)
 
+    def get_cache_location(self):
+        "Get the location for the cache of the benchmark."
+        return self.benchmark_dir / CACHE_DIR
+
+    def get_config_file(self):
+        "Get the location for the config file of the benchmark."
+        return self.benchmark_dir / 'config.ini'
+
     def get_output_folder(self):
-        "Create or get the folder to store the output of the benchmark."
-        output_dir = Path(self.benchmark_dir) / "outputs"
+        """Get the folder to store the output of the benchmark.
+
+        If it does not exists, create it.
+        """
+        output_dir = self.benchmark_dir / "outputs"
         output_dir.mkdir(exist_ok=True)
         return output_dir
 
@@ -110,7 +120,8 @@ class Benchmark:
         Parameters
         ----------
         filename : str
-            Select a specific file from the benchmark.
+            Select a specific file from the benchmark. If None, this will
+            select the most recent CSV file in the benchmark output folder.
         """
         # List all result files
         output_folder = self.get_output_folder()
@@ -143,7 +154,7 @@ class Benchmark:
 
     def _install_required_classes(self, classes, include_patterns,
                                   force_patterns=None, env_name=None):
-        """Install all classes that are required for the run."""
+        "Install all classes that are required for the run."
         # Merge force install and install patterns.
         include_patterns = _check_name_lists(include_patterns, force_patterns)
 
@@ -167,14 +178,14 @@ class Benchmark:
         if not success:
             warnings.warn(
                 "Some solvers were not successfully installed, and will thus "
-                "be ignored. Use 'export BENCHO_RAISE_INSTALL_ERROR=true' to "
-                "stop at any installation failure and print the traceback.",
+                "be ignored. Use 'export BENCHOPT_RAISE_INSTALL_ERROR=true' to"
+                " stop at any installation failure and print the traceback.",
                 UserWarning
             )
 
     def install_required_solvers(self, solver_names, forced_solvers=None,
                                  env_name=None):
-        """List all solvers and install the required ones."""
+        "List all solvers and install the required ones."
         solvers = self.list_benchmark_solvers()
         self._install_required_classes(
             solvers, solver_names, force_patterns=forced_solvers,
@@ -182,14 +193,14 @@ class Benchmark:
         )
 
     def install_required_datasets(self, dataset_names, env_name=None):
-        """List all datasets and install the required ones."""
+        "List all datasets and install the required ones."
         datasets = self.list_benchmark_datasets()
         self._install_required_classes(
             datasets, dataset_names, env_name=env_name
         )
 
     def validate_dataset_patterns(self, dataset_patterns):
-        """Check that all provided patterns match at least one dataset"""
+        "Check that all provided patterns match at least one dataset"
 
         # List all dataset strings.
         datasets = self.list_benchmark_datasets()
@@ -198,7 +209,7 @@ class Benchmark:
         _validate_patterns(all_datasets, dataset_patterns, name_type='dataset')
 
     def validate_solver_patterns(self, solver_patterns):
-        """Check that all provided patterns match at least one solver"""
+        "Check that all provided patterns match at least one solver"
 
         # List all dataset strings.
         solvers = self.list_benchmark_solvers()
@@ -208,7 +219,7 @@ class Benchmark:
 
 
 def _check_name_lists(*name_lists):
-    """Normalize name_list ot a list of lowercase str."""
+    "Normalize name_list ot a list of lowercase str."
     res = []
     for name_list in name_lists:
         if name_list is None:
@@ -233,8 +244,7 @@ def is_matched(name, include_patterns=None):
 
 
 def _validate_patterns(all_names, patterns, name_type='dataset'):
-    """Check that all provided patterns match at least one name.
-    """
+    "Check that all provided patterns match at least one name."
     if patterns is None:
         return
 
