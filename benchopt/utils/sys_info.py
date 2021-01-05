@@ -9,7 +9,6 @@ from pathlib import Path
 
 import scipy
 import numpy as np
-import threadpoolctl
 from joblib import cpu_count
 
 from .stream_redirection import SuppressStd
@@ -64,14 +63,6 @@ def _get_numpy_libs():
     return libs
 
 
-def _get_threadpool_info():
-    "Return info on C-level threadpools used by this program."
-    infos = threadpoolctl.threadpool_info()
-    for lib_info in infos:
-        del lib_info['filepath']
-    return infos
-
-
 def get_sys_info():
     "Return a dictionary with info from the current system."
     info = {}
@@ -90,9 +81,6 @@ def get_sys_info():
     info["system-ram (GB)"] = round(
         psutil.virtual_memory().total / (1024.0 ** 3)
     )
-
-    # Info on C-level threadpools
-    info["threadpool-info"] = _get_threadpool_info()
 
     # Info on dependency libs
     info["version-cuda"] = _get_cuda_version()
