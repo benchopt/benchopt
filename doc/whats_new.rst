@@ -19,8 +19,8 @@ Changelog
 - Support plotly for plotting functions, by `Thomas Moreau`_,
   `Tanguy Lefort`_ and `Joseph Salmon`_ (:gh:`110`, :gh:`111`, :gh:`112`).
 
-- Add ``benchopt publish`` command to push benchmark results to GitHub,
-  by `Thomas Moreau`_ (:gh:`110`).
+- Change envrionment variable for config from `BENCHO_*` to `BENCHOPT_*`,
+  by `Thomas Moreau`_ (:gh:`128`).
 
 API
 ~~~
@@ -42,6 +42,15 @@ CLI
 - Change default run to local mode. Can call a run in a dedicated env with
   option ``--env`` or ``--env-name ENV_NAME`` to specify the env,
   by `Thomas Moreau`_ (:gh:`94`).
+
+- Add ``benchopt publish`` command to push benchmark results to GitHub,
+  by `Thomas Moreau`_ (:gh:`110`).
+
+- Add ``benchopt clean`` command to remove cached file and output files locally,
+  by `Thomas Moreau`_ (:gh:`128`).
+
+- Add ``benchopt config`` command to allow easy configuration of ``benchopt``
+  using the CLI, by `Thomas Moreau`_ (:gh:`128`).
 
 BUG
 ~~~

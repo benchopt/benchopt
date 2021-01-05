@@ -229,7 +229,7 @@ def install_in_conda_env(*packages, env_name=None, force=False):
     if env_name is None and not ALLOW_INSTALL:
         raise ValueError("Trying to install solver not in a conda env "
                          "managed by benchopt. To allow this, "
-                         "set BENCHO_ALLOW_INSTALL=True.")
+                         "set BENCHOPT_ALLOW_INSTALL=True.")
 
     pip_packages = [pkg[4:] for pkg in packages if pkg.startswith('pip:')]
     conda_packages = [pkg for pkg in packages if not pkg.startswith('pip:')]
@@ -257,7 +257,7 @@ def shell_install_in_conda_env(script, env_name=None):
     """Run a shell install script in the given environment"""
     if env_name is None and not ALLOW_INSTALL:
         raise ValueError("Trying to install solver not in a conda env. "
-                         "To allow this, set BENCHO_ALLOW_INSTALL=True.")
+                         "To allow this, set BENCHOPT_ALLOW_INSTALL=True.")
 
     cmd = f"{SHELL} {script} $CONDA_PREFIX"
     _run_shell_in_conda_env(cmd, env_name=env_name,
