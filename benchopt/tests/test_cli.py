@@ -161,9 +161,7 @@ class TestPlotCmd:
     @classmethod
     def setup_class(cls):
         "Make sure at least one result file is available"
-
-        out = SuppressStd()
-        with out:
+        with SuppressStd() as out:
             run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,
                  '-s', SELECT_ONE_PGD, '-n', '2', '-r', '1', '-p', '0.1',
                  '--no-plot'], 'benchopt', standalone_mode=False)
@@ -193,8 +191,7 @@ class TestPlotCmd:
     @pytest.mark.parametrize('kind', PLOT_KINDS)
     def test_valid_call(self, kind):
 
-        out = SuppressStd()
-        with out:
+        with SuppressStd() as out:
             plot([str(DUMMY_BENCHMARK_PATH), '-f', self.result_file,
                   '-k', kind, '--no-display'],
                  'benchopt', standalone_mode=False)
