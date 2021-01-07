@@ -4,6 +4,7 @@
 Command Line Interface (CLI) Documentation
 ==========================================
 
-.. click:: benchopt.cli:main
+.. click:: benchopt.cli:benchopt
    :prog: benchopt
-   :show-nested:
+   :nested: full
+

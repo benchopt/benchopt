@@ -93,7 +93,7 @@ Sometimes one wants to test the solvers for variants of the same dataset.
 For example, one may want to change the dataset size, the noise level, etc.
 To be able to specify parameters to get a dataset, you can use a class
 attribute called ``parameters``. This parameter must be a dictionary
-whose keys can be passed to the ``__init__`` of the class. Then benchopt
+whose keys can be passed to the ``__init__`` of the class. Then BenchOpt
 will automatically allow you to test all combinations of parameters.
 
 .. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/datasets/simulated.py
@@ -133,7 +133,7 @@ This ``stop_strategy`` can be:
       the running time. The parameter is called ``tol`` and should be
       a positive float.
 
-benchopt supports different types of solvers:
+BenchOpt supports different types of solvers:
 
    - :ref:`python_solvers`
    - :ref:`r_solvers`
@@ -153,7 +153,7 @@ with no other dependencies. Here is an example:
 .. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/solvers/python_pgd.py
 
 If your Python solver requires some packages such as `Numba <https://numba.pydata.org/>`_,
-benchopt allows you to list some requirements. The necessary packages should be available
+BenchOpt allows you to list some requirements. The necessary packages should be available
 via `conda <https://docs.conda.io/en/latest/>`_ or
 `pip <https://packaging.python.org/guides/tool-recommendations/>`_.
 
@@ -173,7 +173,7 @@ not `conda-forge <https://conda-forge.org/>`_. See example:
 
 .. note::
 
-    Specifying the dependencies is necessary if you let benchopt
+    Specifying the dependencies is necessary if you let BenchOpt
     manage the creation of a dedicated environment. If you want to
     use your local environment the list of dependencies is
     not relevant. See :ref:`cli_documentation`.

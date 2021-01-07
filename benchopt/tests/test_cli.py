@@ -5,13 +5,17 @@ import click
 import pytest
 
 from benchopt.plotting import PLOT_KINDS
-from benchopt.cli import run, plot, check_install
 from benchopt.utils.stream_redirection import SuppressStd
 
 
 from benchopt.tests import SELECT_ONE_PGD
 from benchopt.tests import SELECT_ONE_SIMULATED
 from benchopt.tests import DUMMY_BENCHMARK_PATH
+
+
+from benchopt.cli.main import run
+from benchopt.cli.process_results import plot
+from benchopt.cli.helpers import check_install
 
 
 class TestCheckInstallCmd:
@@ -161,7 +165,7 @@ class TestPlotCmd:
         out = SuppressStd()
         with out:
             run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,
-                 '-s', SELECT_ONE_PGD, '-n', '1', '-r', '1', '-p', '0.1',
+                 '-s', SELECT_ONE_PGD, '-n', '2', '-r', '1', '-p', '0.1',
                  '--no-plot'], 'benchopt', standalone_mode=False)
         result_files = re.findall(r'Saving result in: (.*\.csv)', out.output)
         assert len(result_files) == 1, out.output

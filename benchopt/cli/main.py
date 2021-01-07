@@ -1,34 +1,20 @@
 import click
-import pandas as pd
 from pathlib import Path
 
-from benchopt import __version__
 from benchopt import run_benchmark
 from benchopt.benchmark import Benchmark
-from benchopt.plotting import plot_benchmark
-
-from benchopt.config import get_global_setting
-from benchopt.utils.github import publish_result_file
-from benchopt.utils.dynamic_modules import _load_class_from_module
-from benchopt.utils.shell_cmd import _run_shell_in_conda_env, create_conda_env
+from benchopt.utils.shell_cmd import create_conda_env
+from benchopt.utils.shell_cmd import _run_shell_in_conda_env
 
 
-BENCHMARK_TEST_FILE = Path(__file__).parent / 'tests' / 'test_benchmarks.py'
+from benchopt.tests import __file__ as _bench_test_module
+BENCHMARK_TEST_FILE = Path(_bench_test_module).parent / "test_benchmarks.py"
 
 
-CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
-
-
-@click.group(context_settings=CONTEXT_SETTINGS, invoke_without_command=True)
-@click.option('--version', '-v', is_flag=True, help='Print version')
-@click.pass_context
-def main(ctx, prog_name='benchopt', version=False):
-    """Command-line interface to benchOpt"""
-    if version:
-        print(__version__)
-        raise SystemExit(0)
-    if ctx.invoked_subcommand is None:
-        print(main.get_help(ctx))
+main = click.Group(
+    name='Principal Commands',
+    help="Principal commands that are used in ``benchopt``."
+)
 
 
 @main.command(
@@ -68,7 +54,7 @@ def main(ctx, prog_name='benchopt', version=False):
               metavar="<int>", default=100, show_default=True, type=int,
               help='Timeout a solver when run for more than <timeout> seconds')
 @click.option('--plot/--no-plot', default=True,
-              help="If this flag is set, do not plot the results.")
+              help="Wether or not to plot the results. Default is True.")
 @click.option('--pdb',
               is_flag=True,
               help="Launch a debugger if there is an error. This will launch "
@@ -144,91 +130,15 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
 
 
 @main.command(
-    help="Plot the result from a previously run benchmark."
-)
-@click.argument('benchmark', type=click.Path(exists=True))
-@click.option('--filename', '-f', type=str, default=None,
-              help="Specify the file to select in the benchmark. If it is "
-              "not specified, take the latest on in the benchmark output "
-              "folder.")
-@click.option('--kind', '-k', 'kinds',
-              multiple=True, show_default=True, type=str,
-              help='Timeout a solver when run for more than <timeout> seconds')
-@click.option('--display/--no-display', default=True,
-              help="Whether or not to display the plot on the screen.")
-@click.option('--plotly', is_flag=True,
-              help="If this flag is set, generate figure as HTML with plotly. "
-              "This option does not work with all plot kinds and requires "
-              "to have installed `plotly`.")
-def plot(benchmark, filename=None, kinds=('suboptimality_curve',),
-         display=True, plotly=False):
-
-    # Get the result file
-    benchmark = Benchmark(benchmark)
-    result_filename = benchmark.get_result_file(filename)
-
-    # Plot the results.
-    df = pd.read_csv(result_filename)
-    plot_benchmark(df, benchmark, kinds=kinds, display=display, plotly=plotly)
-
-
-@main.command(
-    help="Publish the result from a previously run benchmark."
-)
-@click.argument('benchmark', type=click.Path(exists=True))
-@click.option('--token', '-t', type=str, default=None,
-              help="Github token to access the result repo.")
-@click.option('--filename', '-f',
-              type=str, default=None,
-              help="Specify the file to publish in the benchmark. If it is "
-              "not specified, take the latest on in the benchmark output "
-              "folder.")
-def publish(benchmark, token=None, filename=None):
-
-    if token is None:
-        token = get_global_setting('github_token')
-    if token is None:
-        raise RuntimeError(
-            "Could not find the token value to connect to GitHub.\n\n"
-            "Please go to https://github.com/settings/tokens to generate a "
-            "personal token $TOKEN.\nThen, either provide it with option `-t` "
-            "or put it in a config file ./benchopt.ini\nunder section "
-            "[benchopt] as `github_token = $TOKEN`."
-        )
-
-    # Get the result file
-    benchmark = Benchmark(benchmark)
-    result_filename = benchmark.get_result_file(filename)
-
-    # Publish the result.
-    publish_result_file(benchmark.name, result_filename, token)
-
-
-@main.command(
-    help="Check that a given solver or dataset is correctly installed.\n\n"
-    "The class to be checked is specified with the absolute path of the file "
-    "in which it is defined MODULE_FILENAME and the name of the base "
-    "class BASE_CLASS_NAME."
-)
-@click.argument('module_filename', nargs=1, type=Path)
-@click.argument('base_class_name', nargs=1, type=str)
-def check_install(module_filename, base_class_name):
-
-    # Get class to check
-    klass = _load_class_from_module(module_filename, base_class_name)
-    klass.is_installed(raise_on_not_installed=True)
-
-
-@main.command(
-    help="Test a benchmark in BENCHMARK_DIR.",
+    help="Test a benchmark for benchopt.",
     context_settings=dict(ignore_unknown_options=True)
 )
-@click.argument('benchmark_dir', type=click.Path(exists=True))
+@click.argument('benchmark', type=click.Path(exists=True))
 @click.option('--env-name', type=str, default=None, metavar='NAME',
               help='Environment to run the test in. If it is not provided '
               'a temporary one is created for the test.')
 @click.argument('pytest_args', nargs=-1, type=click.UNPROCESSED)
-def test(benchmark_dir, env_name, pytest_args):
+def test(benchmark, env_name, pytest_args):
     pytest_args = ' '.join(pytest_args)
     if len(pytest_args) == 0:
         pytest_args = '-vl'
@@ -245,13 +155,9 @@ def test(benchmark_dir, env_name, pytest_args):
         env_option = f'--test-env {env_name}'
     cmd = (
         f'pytest {pytest_args} {BENCHMARK_TEST_FILE} '
-        f'--benchmark {benchmark_dir} {env_option}'
+        f'--benchmark {benchmark} {env_option}'
     )
 
     raise SystemExit(_run_shell_in_conda_env(
         cmd, env_name=env_name, capture_stdout=False
     ) != 0)
-
-
-if __name__ == '__main__':
-    main()
