@@ -66,6 +66,7 @@ def _get_numpy_libs():
 def get_sys_info():
     "Return a dictionary with info from the current system."
     info = {}
+
     # Info on the env
     info["env-OMP_NUM_THREADS"] = os.environ.get('OMP_NUM_THREADS')
 
@@ -86,4 +87,5 @@ def get_sys_info():
     info["version-cuda"] = _get_cuda_version()
     info["version-numpy"] = (np.__version__, _get_numpy_libs())
     info["version-scipy"] = scipy.__version__
+
     return json.dumps(info)
