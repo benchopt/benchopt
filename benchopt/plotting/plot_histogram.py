@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 from .helpers import _color_palette
 from .helpers_compat import get_figure, _make_bars
 
+PLOTLY_GRAY = (.8627, .8627, .8627)
+
 
 def plot_histogram(df, plotly=False):
     """Plot histogram for a given benchmark and dataset.
@@ -43,14 +45,14 @@ def plot_histogram(df, plotly=False):
         df_tol = df_.groupby('stop_val').filter(
             lambda x: x['objective_value'].max() < c_star)
         if df_tol.empty:
-            colors[i] = "w" if not plotly else (.8627, .8627, .8627)
+            colors[i] = "w" if not plotly else PLOTLY_GRAY
             print(f"Solver {solver_name} did not reach precision {eps}.")
             height_list.append(df.time.max())
             times_list.append(np.nan)
             continue
         stop_val = df_tol['stop_val'].min()
         this_df = df_[df_['stop_val'] == stop_val]
-        height_list.append(this_df['time'].mean())
+        height_list.append(this_df['time'].median())
         times_list.append(this_df['time'])
 
     _make_bars(fig, height_list, ticks_list, width,
