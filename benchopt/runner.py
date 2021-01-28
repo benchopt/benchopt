@@ -55,11 +55,8 @@ def run_one_initialization(objective, solver, meta):
         )
 
     t_start = time.perf_counter()
-    # print("t_start init separated :", t_start)
     solver.initialization()
     delta_t = time.perf_counter() - t_start
-    # print("delta_t init separated:", delta_t)
-    # return run_init(objective, solver, meta)
 
     beta_hat_i = solver.get_result()
     objective_dict = objective(beta_hat_i)
@@ -100,10 +97,8 @@ def run_one_repetition(objective, solver, meta, stop_val):
         )
 
     t_start = time.perf_counter()
-    # print("t_start :", t_start)
     solver.run(stop_val)
     delta_t = time.perf_counter() - t_start
-    # print("delta_t :", delta_t)
 
     beta_hat_i = solver.get_result()
     objective_dict = objective(beta_hat_i)
@@ -154,9 +149,7 @@ def run_one_stop_val(benchmark, objective, solver, meta, stop_val,
     """
 
     # Create a Memory object to cache the computations in the benchmark folder
-    # mem = Memory(location=benchmark_dir / CACHE_DIR, verbose=0)
     run_one_initialization_cached = benchmark.mem.cache(run_one_initialization)
-    # run_one_repetition_cached = mem.cache(run_one_repetition)
     run_one_repetition_cached = benchmark.mem.cache(run_one_repetition)
 
     curve = []
@@ -171,7 +164,6 @@ def run_one_stop_val(benchmark, objective, solver, meta, stop_val,
 
         # Force the run if needed
         args = (objective, solver, meta_rep, stop_val)
-        # print("============== Stop_val : ", stop_val)
 
         if stop_val == 0:
             try:
@@ -194,20 +186,13 @@ def run_one_stop_val(benchmark, objective, solver, meta, stop_val,
             else:
                 cost, objective_value = run_one_repetition_cached(*args)
 
-            # print("\ncost[time]:", cost["time"])
-            # print("objective_value: ", objective_value,"\n")
             curve.append(cost)
             current_objective.append(objective_value)
             max_objective_value = np.max(current_objective)
-            # print("current_objective:", current_objective, "\n")
 
         if deadline is not None and deadline < time.time():
             # Reached the timeout so stop the computation here
             break
-
-    # print("curve:", curve, "\n")
-    # print("current_objective:", current_objective, "\n")
-    # print("np.max(current_objective): ", np.max(current_objective))
 
     return curve, max_objective_value
 
@@ -290,7 +275,7 @@ def run_one_solver(benchmark, objective, solver, meta,
         return []
 
     id_stop_val = 0
-    stop_val = 0  # stop_val = 1
+    stop_val = 0
     delta_objectives = [1e15]
     prev_objective_value = np.inf
 
@@ -309,8 +294,6 @@ def run_one_solver(benchmark, objective, solver, meta,
                 status = colorify('diverged', RED)
                 break
 
-            # print("id_stop_val: ", id_stop_val)
-            # print("stop_val: ", stop_val)
             p = progress(id_stop_val, np.max(delta_objectives))
             if show_progress:
                 if stop_val == 0:
@@ -334,7 +317,6 @@ def run_one_solver(benchmark, objective, solver, meta,
                     **call_args
                 )
             curve.extend(stop_val_curve)
-            # print(curve)
 
             if time.time() > deadline:
                 # We reached the timeout so stop the computation here
@@ -359,7 +341,6 @@ def run_one_solver(benchmark, objective, solver, meta,
             print(f"DEBUG - Exit with delta_objective = {delta:.2e} "
                   f"and stop_val={stop_val:.1e}.")
 
-    # print("\noutput curve :\n", curve, "\n")
     return curve
 
 
@@ -492,9 +473,7 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                             force=force, pdb=pdb
                         ))
     df = pd.DataFrame(run_statistics)
-    # print(df)
     df = cumsum_time(df)
-    # print(df)
 
     if df.empty:
         print(colorify('No output produced.', RED).ljust(LINE_LENGTH))
