@@ -93,9 +93,17 @@ class Benchmark:
         "List all available solver classes for the benchmark."
         return self._list_benchmark_classes(BaseSolver)
 
+    def list_benchmark_solver_names(self):
+        "List all available solver names for the benchmark."
+        return [s.name for s in self._list_benchmark_classes(BaseSolver)]
+
     def list_benchmark_datasets(self):
         "List all available dataset classes for the benchmark."
         return self._list_benchmark_classes(BaseDataset)
+
+    def list_benchmark_dataset_names(self):
+        "List all available dataset names for the benchmark."
+        return [d.name for d in self._list_benchmark_classes(BaseDataset)]
 
     def get_cache_location(self):
         "Get the location for the cache of the benchmark."

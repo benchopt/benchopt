@@ -17,6 +17,20 @@ main = click.Group(
 )
 
 
+def get_solvers(ctx, args, incomplete):
+    benchmark = Benchmark(args[1])
+    solvers = benchmark.list_benchmark_solver_names()
+    solvers = [s.lower() for s in solvers]
+    return [s for s in solvers if incomplete.lower() in s]
+
+
+def get_datasets(ctx, args, incomplete):
+    benchmark = Benchmark(args[1])
+    datasets = benchmark.list_benchmark_dataset_names()
+    datasets = [d.lower() for d in datasets]
+    return [d for d in datasets if incomplete.lower() in d]
+
+
 @main.command(
     help="Run a benchmark with benchopt."
 )
@@ -32,16 +46,18 @@ main = click.Group(
               metavar="<solver_name>", multiple=True, type=str,
               help="Include <solver_name> in the benchmark. By default, all "
               "solvers are included. When `-s` is used, only listed estimators"
-              " are included.")
+              " are included.", autocompletion=get_solvers)
 @click.option('--force-solver', '-f', 'forced_solvers',
               metavar="<solver_name>", multiple=True, type=str,
               help="Force the re-installation and run for <solver_name>. This "
-              "avoids caching effect when adding an estimator.")
+              "avoids caching effect when adding an estimator.",
+              autocompletion=get_solvers)
 @click.option('--dataset', '-d', 'dataset_names',
               metavar="<dataset_name>", multiple=True, type=str,
               help="Run the benchmark on <dataset_name>. By default, all "
               "datasets are included. When `-d` is used, only listed datasets"
-              " are included. Note that <dataset_name> can be a regexp.")
+              " are included. Note that <dataset_name> can be a regexp.",
+              autocompletion=get_datasets)
 @click.option('--max-runs', '-n',
               metavar="<int>", default=100, show_default=True, type=int,
               help='Maximal number of run for each solver. This corresponds '

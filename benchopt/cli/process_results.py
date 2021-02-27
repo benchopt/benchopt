@@ -14,6 +14,11 @@ process_results = click.Group(
 )
 
 
+def get_plot_kinds(ctx, args, incomplete):
+    kinds = list(PLOT_KINDS)
+    return [k for k in kinds if incomplete in k]
+
+
 @process_results.command(
     help="Plot the result from a previously run benchmark."
 )
@@ -26,7 +31,8 @@ process_results = click.Group(
               multiple=True, show_default=True, type=str,
               help="Specify the type of figure to plot:\n\n* " +
               "\n\n* ".join([f"``{name}``: {func.__doc__.splitlines()[0]}"
-                             for name, func in PLOT_KINDS.items()]))
+                             for name, func in PLOT_KINDS.items()]),
+              autocompletion=get_plot_kinds)
 @click.option('--display/--no-display', default=True,
               help="Whether or not to display the plot on the screen.")
 @click.option('--plotly', is_flag=True,
