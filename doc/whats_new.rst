@@ -23,7 +23,7 @@ Changelog
   by `Thomas Moreau`_ (:gh:`128`).
 
 - Add autocompletion support in the `benchopt` command,
-  by `Alexandre Gramfort`_ (:gh:`XXX`).
+  by `Alexandre Gramfort`_ (:gh:`132`).
 
 API
 ~~~
