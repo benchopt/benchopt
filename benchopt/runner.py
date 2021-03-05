@@ -134,7 +134,7 @@ def run_one_stop_val(benchmark, objective, solver, meta, stop_val,
             # Reached the timeout so stop the computation here
             break
 
-    return curve, max(*current_objective)
+    return curve, max(current_objective)
 
 
 def run_one_solver(benchmark, objective, solver, meta,
@@ -223,17 +223,17 @@ def run_one_solver(benchmark, objective, solver, meta,
 
     with exception_handler(tag, pdb=pdb):
         for id_stop_val in range(max_runs):
-            if (-eps <= max(*delta_objectives) < eps):
+            if (-eps <= max(delta_objectives) < eps):
                 # We are on a plateau and the objective is not improving
                 # stop here for the stop_val
                 status = colorify('done', GREEN)
                 break
-            if max(*delta_objectives) < -1e10:
+            if max(delta_objectives) < -1e10:
                 # The algorithm is diverging, stopping here
                 status = colorify('diverged', RED)
                 break
 
-            p = progress(id_stop_val, max(*delta_objectives))
+            p = progress(id_stop_val, max(delta_objectives))
             if show_progress:
                 progress_str = f"{tag} {p:6.1%}"
             else:
@@ -272,7 +272,7 @@ def run_one_solver(benchmark, objective, solver, meta,
 
         print(f"{tag} {status}".ljust(LINE_LENGTH))
         if DEBUG:
-            delta = max(*delta_objectives)
+            delta = max(delta_objectives)
             print(f"DEBUG - Exit with delta_objective = {delta:.2e} "
                   f"and stop_val={stop_val:.1e}.")
 
