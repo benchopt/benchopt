@@ -63,6 +63,8 @@ def run_one_repetition(objective, solver, meta, stop_val):
     delta_t = time.perf_counter() - t_start
     beta_hat_i = solver.get_result()
     objective_dict = objective(beta_hat_i)
+
+    # Add system info in results
     info = get_sys_info()
 
     return (dict(**meta, solver_name=str(solver), stop_val=stop_val,
