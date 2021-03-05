@@ -1,5 +1,4 @@
 import warnings
-import os
 import sys
 
 from ..config import RAISE_INSTALL_ERROR

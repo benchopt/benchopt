@@ -170,7 +170,9 @@ def test(benchmark, env_name, pytest_args):
         env_option = f'--test-env {env_name}'
 
     from benchopt.tests import __file__ as _bench_test_module
-    BENCHMARK_TEST_FILE = Path(_bench_test_module).parent / "test_benchmarks.py"
+    BENCHMARK_TEST_FILE = (
+        Path(_bench_test_module).parent / "test_benchmarks.py"
+    )
 
     cmd = (
         f'pytest {pytest_args} {BENCHMARK_TEST_FILE} '
