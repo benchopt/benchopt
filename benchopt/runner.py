@@ -1,6 +1,6 @@
+import math
 import time
 from datetime import datetime
-import math
 
 from .utils import product_param
 from .benchmark import is_matched
@@ -25,11 +25,24 @@ MIN_TOL = 1e-15
 INFINITY = 3e38  # see: np.finfo('float32').max
 
 
+def cache(func, benchmark, force=False):
+
+    # Create a cached function the computations in the benchmark folder
+    # and handle cases where we force the run.
+    func_cached = benchmark.mem.cache(func)
+    if force:
+        def _func_cached(**kwargs):
+            func_cached.call(**kwargs)[0]
+
+        return _func_cached
+    return func_cached
+
+
 ##################################
 # Time one run of a solver
 ##################################
-def run_one_repetition(objective, solver, meta, stop_val):
-    """Run one repetition of the solver.
+def run_one_resolution(objective, solver, meta, stop_val):
+    """Run one resolution of the solver.
 
     Parameters
     ----------
@@ -72,9 +85,8 @@ def run_one_repetition(objective, solver, meta, stop_val):
             objective_dict['objective_value'])
 
 
-def run_one_stop_val(benchmark, objective, solver, meta, stop_val,
-                     n_repetitions, deadline=None, progress_str=None,
-                     force=False):
+def run_one_to_cvg(benchmark, objective, solver, meta, max_runs, deadline=None,
+                   progress_str=None, force=False):
     """Run all repetitions of the solver for a value of stopping criterion.
 
     Parameters
@@ -88,12 +100,9 @@ def run_one_stop_val(benchmark, objective, solver, meta, stop_val,
     meta : dict
         Metadata passed to store in Cost results.
         Contains objective, data, dimension.
-    stop_val : int | float
-        Corresponds to stopping criterion, such as
-        tol or max_iter for the solver. It depends
-        on the stop_strategy for the solver.
-    n_repetitions : int
-        The number of repetitions to run.
+    max_runs : int
+        The maximum number of solver runs to perform to estimate
+        the convergence curve.
     deadline : float
         The computer time solver cannot exceed to complete.
     progress_str : str
@@ -112,39 +121,94 @@ def run_one_stop_val(benchmark, objective, solver, meta, stop_val,
         the curve.
     """
 
+    # TODO: parametrize
+    rho = 1.5
+    eps = 1e-10
+
+    def progress(id_stop_val, delta):
+        return max(id_stop_val / max_runs,
+                   math.log(max(delta, eps)) / math.log(eps))
+
+    # Select strategy to compute next stop_val
+    if solver.stop_strategy == 'iteration':
+        def get_next(x): return max(x + 1, min(int(rho * x), MAX_ITER))
+
+    elif solver.stop_strategy == 'tolerance':
+        def get_next(x): return max(x / rho, MIN_TOL)
+
     # Create a Memory object to cache the computations in the benchmark folder
-    run_one_repetition_cached = benchmark.mem.cache(run_one_repetition)
+    # and handle cases where we force the run.
+    run_one_resolution_cached = cache(run_one_resolution, benchmark, force)
 
-    curve = []
-    current_objective = []
-    for rep in range(n_repetitions):
-        if progress_str is not None:
-            msg = f"{progress_str} ({rep} / {n_repetitions} repetitions)"
-            print(f"{msg.ljust(LINE_LENGTH)}\r", end='', flush=True)
+    # compute initial value
+    if progress_str is not None:
+        print(progress_str.format(progress='initialization').ljust(LINE_LENGTH)
+              + '\r', end='', flush=True)
+    init_stop_val = (
+        0 if solver.stop_strategy == 'iteration' else INFINITY
+    )
+    call_args = dict(
+        objective=objective, solver=solver, meta=meta
+    )
+    cost, objective_value = run_one_resolution_cached(
+        stop_val=init_stop_val, **call_args
+    )
 
-        meta_rep = dict(**meta, idx_rep=rep)
+    curve = [cost]
 
-        # Force the run if needed
-        args = (objective, solver, meta_rep, stop_val)
-        if force:
-            (cost, objective_value), _ = run_one_repetition_cached.call(*args)
-        else:
-            cost, objective_value = run_one_repetition_cached(*args)
+    id_stop_val = 0
+    stop_val = 1
+    delta_objectives = [1e15]
+    prev_objective_value = objective_value
 
-        curve.append(cost)
-        current_objective.append(objective_value)
-
-        if deadline is not None and deadline < time.time():
-            # Reached the timeout so stop the computation here
+    for id_stop_val in range(max_runs):
+        if (-eps <= max(delta_objectives) < eps):
+            # We are on a plateau and the objective is not improving
+            # stop here for the stop_val
+            status = 'done'
+            break
+        if max(delta_objectives) < -1e10:
+            # The algorithm is diverging, stopping here
+            status = 'diverged'
             break
 
-    return curve, max(current_objective)
+        if time.time() > deadline:
+            # We reached the timeout so stop the computation here
+            status = 'timeout'
+            break
+
+        if progress_str is not None:
+            p = progress(id_stop_val, max(delta_objectives))
+            print(progress_str.format(progress=f'{p:6.1%}').ljust(LINE_LENGTH)
+                  + '\r', end='', flush=True)
+        cost, objective_value = run_one_resolution_cached(
+            stop_val=stop_val, **call_args
+        )
+        curve.append(cost)
+
+        delta_objective = prev_objective_value - objective_value
+        delta_objectives.append(delta_objective)
+        if delta_objective == 0:
+            rho *= 1.2
+        if len(delta_objectives) > PATIENCE:
+            delta_objectives.pop(0)
+        prev_objective_value = objective_value
+        stop_val = get_next(stop_val)
+    else:
+        status = 'unfinished'
+
+    if DEBUG:
+        delta = max(*delta_objectives)
+        print(f"DEBUG - Exit with delta_objective = {delta:.2e} "
+              f"and stop_val={stop_val:.1e}.")
+
+    return curve, status
 
 
-def run_one_solver(benchmark, objective, solver, meta,
-                   max_runs, n_repetitions, timeout,
-                   force=False, show_progress=True, pdb=False):
-    """Minimize objective function with onesolver for different accuracies.
+def run_one_solver(benchmark, objective, solver, meta, max_runs, n_repetitions,
+                   timeout=None, tag=None, show_progress=True, force=False,
+                   pdb=False):
+    """Run all repetitions of the solver for a value of stopping criterion.
 
     Parameters
     ----------
@@ -161,125 +225,62 @@ def run_one_solver(benchmark, objective, solver, meta,
         The maximum number of solver runs to perform to estimate
         the convergence curve.
     n_repetitions : int
-        The number of repetitions to run. Defaults to 1.
+        The number of repetitions to run.
     timeout : float
         The maximum duration in seconds of the solver run.
+    progress_str : str
+        The string to display in the progress bar.
     force : bool
         If force is set to True, ignore the cache and run the computations
         for the solver anyway. Else, use the cache if available.
-    show_progress : bool
-        If show_progress is set to True, display the progress of the benchmark.
     pdb : bool
-        It pdb is set to True, open a debugger on error.
+        If pdb is set to True, open a debugger on error.
 
     Returns
     -------
     curve : list of Cost
-        The cost obtained for all repetitions and all stopping criteria.
+        The cost obtained for all repetitions and all stop values.
     """
 
-    # TODO: parametrize
-    rho = 1.5
-    eps = 1e-10
-
     # Create a Memory object to cache the computations in the benchmark folder
-    run_one_stop_val_cached = benchmark.mem.cache(
-        run_one_stop_val,
-        ignore=['deadline', 'benchmark', 'force', 'progress_str']
-    )
+    run_one_to_cvg_cached = cache(run_one_to_cvg, benchmark, force)
 
-    # Get the solver's name
-    tag = colorify(f"|----{solver}:")
-
-    # Sample the performances for different accuracy, either by varying the
-    # tolerance or the maximal number of iterations
     curve = []
-    if solver.stop_strategy == 'iteration':
-        def get_next(x): return max(x + 1, min(int(rho * x), MAX_ITER))
+    states = []
+    for rep in range(n_repetitions):
+        if show_progress:
+            progress_str = f"{tag} {{progress}} ({rep} / {n_repetitions} reps)"
+        else:
+            progress_str = None
 
-    elif solver.stop_strategy == 'tolerance':
-        def get_next(x): return max(x / rho, MIN_TOL)
+        meta_rep = dict(**meta, idx_rep=rep)
 
-    def progress(id_stop_val, delta):
-        return max(id_stop_val / max_runs,
-                   math.log(max(delta, eps)) / math.log(eps))
+        # Force the run if needed
+        deadline = time.time() + timeout / n_repetitions
 
-    # check if the module caught a failed import
-    if not solver.is_installed(raise_on_not_installed=RAISE_INSTALL_ERROR):
-        status = colorify("not installed", RED)
-        print(f"{tag} {status}".ljust(LINE_LENGTH))
-        return curve
-
-    # Set objective once we are sure that the solver is installed.
-    skip, reason = solver._set_objective(objective)
-    if skip:
-        print(f"{tag} {colorify('skip', YELLOW)}".ljust(LINE_LENGTH))
-        if reason is not None:
-            print(f'Reason: {reason}')
-        return []
-
-    id_stop_val = 0
-    stop_val = 1
-    delta_objectives = [1e15]
-    prev_objective_value = INFINITY
-
-    deadline = time.time() + timeout
-
-    with exception_handler(tag, pdb=pdb):
-        for id_stop_val in range(max_runs):
-            if (-eps <= max(delta_objectives) < eps):
-                # We are on a plateau and the objective is not improving
-                # stop here for the stop_val
-                status = colorify('done', GREEN)
-                break
-            if max(delta_objectives) < -1e10:
-                # The algorithm is diverging, stopping here
-                status = colorify('diverged', RED)
-                break
-
-            p = progress(id_stop_val, max(delta_objectives))
-            if show_progress:
-                progress_str = f"{tag} {p:6.1%}"
-            else:
-                progress_str = None
-
-            call_args = dict(
-                benchmark=benchmark, objective=objective,
-                solver=solver, meta=meta, stop_val=stop_val,
-                n_repetitions=n_repetitions, deadline=deadline,
+        with exception_handler(tag, pdb=pdb):
+            curve_one_rep, status = run_one_to_cvg_cached(
+                benchmark, objective, solver, meta_rep, max_runs, deadline,
                 progress_str=progress_str, force=force
             )
-            if force:
-                (stop_val_curve, objective_value), _ = \
-                    run_one_stop_val_cached.call(**call_args)
-            else:
-                stop_val_curve, objective_value = run_one_stop_val_cached(
-                    **call_args
-                )
-            curve.extend(stop_val_curve)
 
-            if time.time() > deadline:
-                # We reached the timeout so stop the computation here
-                status = colorify('done (timeout)', YELLOW)
-                break
+        curve.extend(curve_one_rep)
+        states.append(status)
 
-            delta_objective = prev_objective_value - objective_value
-            delta_objectives.append(delta_objective)
-            if delta_objective == 0:
-                rho *= 1.2
-            if len(delta_objectives) > PATIENCE:
-                delta_objectives.pop(0)
-            prev_objective_value = objective_value
-            stop_val = get_next(stop_val)
-        else:
-            status = colorify("done (did not converge)", YELLOW)
+        if deadline is not None and deadline < time.time():
+            # Reached the timeout so stop the computation here
+            break
 
-        print(f"{tag} {status}".ljust(LINE_LENGTH))
-        if DEBUG:
-            delta = max(delta_objectives)
-            print(f"DEBUG - Exit with delta_objective = {delta:.2e} "
-                  f"and stop_val={stop_val:.1e}.")
+    if 'diverged' in states:
+        final_status = colorify('diverged', RED)
+    elif 'timeout' in states:
+        final_status = colorify('done (timeout)', YELLOW)
+    elif 'unfinished' in states:
+        final_status = colorify("done (not enough run)", YELLOW)
+    else:
+        final_status = colorify('done', GREEN)
 
+    print(f"{tag} {final_status}".ljust(LINE_LENGTH))
     return curve
 
 
@@ -367,6 +368,26 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                         if not is_matched(solver, included_solvers):
                             continue
 
+                        # Get the solver's name
+                        tag = colorify(f"|----{solver}:")
+
+                        # check if the module caught a failed import
+                        if not solver.is_installed(
+                                raise_on_not_installed=RAISE_INSTALL_ERROR
+                        ):
+                            status = colorify("not installed", RED)
+                            print(f"{tag} {status}".ljust(LINE_LENGTH))
+                            continue
+
+                        # Set objective.
+                        skip, reason = solver._set_objective(objective)
+                        if skip:
+                            print(f"{tag} {colorify('skip', YELLOW)}"
+                                  .ljust(LINE_LENGTH))
+                            if reason is not None:
+                                print(f'Reason: {reason}')
+                            continue
+
                         # Get meta
                         meta = dict(
                             objective_name=str(objective),
@@ -377,9 +398,10 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                         force = (forced_solvers is not None
                                  and len(forced_solvers) > 0
                                  and is_matched(str(solver), forced_solvers))
+
                         run_statistics.extend(run_one_solver(
                             benchmark=benchmark, objective=objective,
-                            solver=solver, meta=meta,
+                            solver=solver, meta=meta, tag=tag,
                             max_runs=max_runs, n_repetitions=n_repetitions,
                             timeout=timeout, show_progress=show_progress,
                             force=force, pdb=pdb
