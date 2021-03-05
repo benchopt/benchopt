@@ -398,7 +398,7 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
         is set to `NaN`.
     """
     print("BenchOpt is running", flush=True)
-    
+
     # Load the objective class for this benchmark and the datasets
     objective_class = benchmark.get_benchmark_objective()
     datasets = benchmark.list_benchmark_datasets()

@@ -223,7 +223,7 @@ class Benchmark:
         "List all datasets and install the required ones."
         datasets = self.list_benchmark_datasets()
         self._install_required_classes(
-            datasets, dataset_names, force_patterns=forced_datasets, 
+            datasets, dataset_names, force_patterns=forced_datasets,
             env_name=env_name
         )
 

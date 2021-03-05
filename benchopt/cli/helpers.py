@@ -77,7 +77,8 @@ def sys_info():
               "your own conda environment.")
 @click.option('--recreate',
               is_flag=True,
-              help="If this flag is set, start with a fresh conda environment. "
+              help="If this flag is set, start with a fresh conda "
+              " environment. "
               "Only used when using a benchmark specific environment "
               "(i.e. option `-e/--env`). "
               "Ignored if not used with the option `-e/--env`, i.e. "
@@ -101,8 +102,8 @@ def sys_info():
               "conda environment for the benchmark."
               "/!\\ By using this option, you may potentially alter "
               "your own conda environment.")
-def install(benchmark, solver_names, dataset_names, force=False, recreate=False,
-            env_name='False', confirm=False):
+def install(benchmark, solver_names, dataset_names, force=False,
+            recreate=False, env_name='False', confirm=False):
 
     # Check that the dataset/solver patterns match actual dataset
     benchmark = Benchmark(benchmark)
@@ -121,7 +122,7 @@ def install(benchmark, solver_names, dataset_names, force=False, recreate=False,
         if recreate:
             print(f"Warning: cannot recreate user env '{env_name}'",
                   flush=True)
-            recreate=False
+            recreate = False
     else:
         # If env_name is True, the flag `--env` has been used. Create a conda venv
         # specific to the benchmark. Else, use the <env_name> value.
@@ -136,7 +137,7 @@ def install(benchmark, solver_names, dataset_names, force=False, recreate=False,
             if recreate:
                 print(f"Warning: cannot recreate user env '{env_name}'",
                       flush=True)
-                recreate=False
+                recreate = False
 
         # create environment if necessary
         create_conda_env(env_name, recreate=recreate)
@@ -146,25 +147,25 @@ def install(benchmark, solver_names, dataset_names, force=False, recreate=False,
     forced_solvers = ()
     if force:
         if len(solver_names) > 0:
-            forced_solvers = solver_name
+            forced_solvers = solver_names
         else:
             forced_solvers = benchmark.list_benchmark_solver_names()
     # same for datasets
     forced_datasets = ()
     if force:
         if len(dataset_names) > 0:
-            forced_datasets = dataset_name
+            forced_datasets = dataset_names
         else:
             forced_datasets = benchmark.list_benchmark_dataset_names()
 
     # install required datasets
-    print(f"# Datasets", flush=True)
+    print("# Datasets", flush=True)
     benchmark.install_required_datasets(
         dataset_names, forced_datasets=forced_datasets, env_name=env_name
     )
 
     # install required solvers
-    print(f"# Solvers", flush=True)
+    print("# Solvers", flush=True)
     benchmark.install_required_solvers(
         solver_names, forced_solvers=forced_solvers, env_name=env_name
     )
