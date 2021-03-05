@@ -1,6 +1,7 @@
 import click
 import pprint
 from pathlib import Path
+import os
 from collections import Iterable
 
 from benchopt.config import set_setting
@@ -109,11 +110,18 @@ def install(benchmark, solver_names, dataset_names, force=False, recreate=False,
     benchmark.validate_dataset_patterns(dataset_names)
     benchmark.validate_solver_patterns(solver_names)
 
-    # If env_name is False (default), installtion in the current environement.
+    # If env_name is False (default), installation in the current environement.
     if env_name == 'False':
-        env_name = None
+        env_name = os.environ['CONDA_DEFAULT_ENV']
         if not confirm:
-            click.confirm("Install in the current env?", abort=True)
+            click.confirm(f"Install in the current env '{env_name}'?",
+                          abort=True)
+        # incompatible with the 'recreate' flag to avoid messing with the
+        # user environement
+        if recreate:
+            print(f"Warning: cannot recreate user env '{env_name}'",
+                  flush=True)
+            recreate=False
     else:
         # If env_name is True, the flag `--env` has been used. Create a conda venv
         # specific to the benchmark. Else, use the <env_name> value.
