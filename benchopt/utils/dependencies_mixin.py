@@ -84,7 +84,7 @@ class DependenciesMixin:
         is_installed = cls.is_installed(env_name=env_name)
 
         if force or not is_installed:
-            print(f"Installing {cls.name} in {env_name}:...",
+            print(f"- Installing '{cls.name}' in '{env_name}':...",
                   end='', flush=True)
             try:
                 cls._pre_install_hook(env_name=env_name)
@@ -108,6 +108,8 @@ class DependenciesMixin:
                 print(" done")
             else:
                 print(" failed")
+        else:
+            print(f"- '{cls.name}' already available in '{env_name}'", flush=True)
 
         return is_installed
 
