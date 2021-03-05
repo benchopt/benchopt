@@ -228,8 +228,10 @@ def run_one_solver(benchmark, objective, solver, meta, max_runs, n_repetitions,
         The number of repetitions to run.
     timeout : float
         The maximum duration in seconds of the solver run.
-    progress_str : str
-        The string to display in the progress bar.
+    tag : str
+        The solver name.
+    show_progress : bool
+        If set to True displays the current state of the repetitions.
     force : bool
         If force is set to True, ignore the cache and run the computations
         for the solver anyway. Else, use the cache if available.
