@@ -23,6 +23,16 @@ PATIENCE = 5
 MAX_ITER = int(1e6)
 MIN_TOL = 1e-15
 INFINITY = 3e38  # see: np.finfo('float32').max
+RHO = 1.5
+EPS = 1e-10
+
+
+def get_next(x, rho=RHO, strategy="iteration"):
+    if strategy == "iteration":
+        return max(x + 1, min(int(rho * x), MAX_ITER))
+    else:
+        assert strategy == 'tolerance'
+        def get_next(x): return max(x / rho, MIN_TOL)
 
 
 def cache(func, benchmark, force=False, ignore=None):
@@ -121,20 +131,9 @@ def run_one_to_cvg(benchmark, objective, solver, meta, max_runs, deadline=None,
         the curve.
     """
 
-    # TODO: parametrize
-    rho = 1.5
-    eps = 1e-10
-
     def progress(id_stop_val, delta):
         return max(id_stop_val / max_runs,
-                   math.log(max(delta, eps)) / math.log(eps))
-
-    # Select strategy to compute next stop_val
-    if solver.stop_strategy == 'iteration':
-        def get_next(x): return max(x + 1, min(int(rho * x), MAX_ITER))
-
-    elif solver.stop_strategy == 'tolerance':
-        def get_next(x): return max(x / rho, MIN_TOL)
+                   math.log(max(delta, EPS)) / math.log(EPS))
 
     # Create a Memory object to cache the computations in the benchmark folder
     # and handle cases where we force the run.
@@ -158,11 +157,12 @@ def run_one_to_cvg(benchmark, objective, solver, meta, max_runs, deadline=None,
 
     id_stop_val = 0
     stop_val = 1
+    rho_ = RHO
     delta_objectives = [1e15]
     prev_objective_value = objective_value
 
     for id_stop_val in range(max_runs):
-        if (-eps <= max(delta_objectives) < eps):
+        if (-EPS <= max(delta_objectives) < EPS):
             # We are on a plateau and the objective is not improving
             # stop here for the stop_val
             status = 'done'
@@ -189,11 +189,11 @@ def run_one_to_cvg(benchmark, objective, solver, meta, max_runs, deadline=None,
         delta_objective = prev_objective_value - objective_value
         delta_objectives.append(delta_objective)
         if delta_objective == 0:
-            rho *= 1.2
+            rho_ *= 1.2
         if len(delta_objectives) > PATIENCE:
             delta_objectives.pop(0)
         prev_objective_value = objective_value
-        stop_val = get_next(stop_val)
+        stop_val = get_next(stop_val, rho=rho_, strategy=solver.stop_strategy)
     else:
         status = 'unfinished'
 
@@ -203,6 +203,36 @@ def run_one_to_cvg(benchmark, objective, solver, meta, max_runs, deadline=None,
               f"and stop_val={stop_val:.1e}.")
 
     return curve, status
+
+
+def get_callback(curve_one_rep, cb_status, objective, solver,
+                 meta_rep, deadline):
+    # make documentation
+    info = get_sys_info()
+
+    def callback(it, beta_hat_i):
+        t0 = time.perf_counter()
+        cb_status["delta_t"] += t0 - cb_status["time"]
+        stop = False
+        if it == cb_status["next_stopval"]:
+            objective_dict = objective(beta_hat_i)
+            # Add system info in results
+            dict_ = dict(**meta_rep, solver_name=str(solver),
+                         stop_val=it, time=cb_status["delta_t"],
+                         **objective_dict, **info)
+            curve_one_rep.append(dict_)
+
+            stop = time.time() > deadline
+            if stop:
+                cb_status["status"] = 'timeout'
+
+            cb_status["next_stopval"] = get_next(
+                cb_status["next_stopval"]
+            )
+        cb_status["time"] = time.perf_counter()
+        return stop
+
+    return callback
 
 
 def run_one_solver(benchmark, objective, solver, meta, max_runs, n_repetitions,
@@ -265,11 +295,25 @@ def run_one_solver(benchmark, objective, solver, meta, max_runs, n_repetitions,
             # Force the run if needed
             deadline = time.time() + timeout / n_repetitions
 
-            curve_one_rep, status = run_one_to_cvg_cached(
-                benchmark=benchmark, objective=objective, solver=solver,
-                meta=meta_rep, max_runs=max_runs, deadline=deadline,
-                progress_str=progress_str, force=force
-            )
+            if hasattr(solver, "run_all_in_one"):
+                max_iter = int(2 * 1.5 ** (max_runs - 1))
+                curve_one_rep = []
+                cb_status = {"time": time.perf_counter(),
+                             "delta_t": 0,
+                             "status": 'unfinished',
+                             "next_stopval": 0}
+
+                callback = get_callback(curve_one_rep, cb_status,
+                                        objective, solver, meta_rep, deadline
+                                        )
+                solver.run_all_in_one(max_iter, callback)
+                status = cb_status["status"]
+            else:
+                curve_one_rep, status = run_one_to_cvg_cached(
+                    benchmark=benchmark, objective=objective, solver=solver,
+                    meta=meta_rep, max_runs=max_runs, deadline=deadline,
+                    progress_str=progress_str, force=force
+                )
 
             curve.extend(curve_one_rep)
             states.append(status)
