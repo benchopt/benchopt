@@ -124,8 +124,8 @@ def install(benchmark, solver_names, dataset_names, force=False,
                   flush=True)
             recreate = False
     else:
-        # If env_name is True, the flag `--env` has been used. Create a conda venv
-        # specific to the benchmark. Else, use the <env_name> value.
+        # If env_name is True, the flag `--env` has been used. Create a conda
+        # env specific to the benchmark. Else, use the <env_name> value.
         if env_name == 'True':
             env_name = f"benchopt_{benchmark.name}"
         else:
