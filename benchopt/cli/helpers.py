@@ -68,26 +68,40 @@ def sys_info():
               "To include multiple datasets, use multiple `-d` options.")
 @click.option('--env', '-e', 'env_name',
               flag_value='True', type=str, default='False',
-              help="Install the benchmark requirements in a dedicated "
+              help="Install all requirements in a dedicated "
               "conda environment for the benchmark. "
               "The environment is named `benchopt_<BENCHMARK>` and all "
-              "solver dependencies and datasets are installed in it.")
+              "solver dependencies and datasets are installed in it."
+              "/!\\ By not using this option, you may potentially alter "
+              "your own conda environment.")
 @click.option('--recreate',
               is_flag=True,
               help="If this flag is set, start with a fresh conda environment. "
               "Only used when using a benchmark specific environment "
-              "(i.e. option `-e/--env`)"
+              "(i.e. option `-e/--env`). "
               "Ignored if not used with the option `-e/--env`, i.e. "
-              "if installation in the local environment (default) or in a "
+              "if installing in the local environment (default) or in a "
               "conda environment specified by the user (option `--env-name`), "
               "to avoid messing with user environments.")
 @click.option('--env-name', 'env_name',
               metavar="<env_name>", type=str, default='False',
               help="Install the benchmark requirements in the "
-              "conda environment named <env_name>."
+              "conda environment named <env_name>. "
               "If not existing, it is created.")
+@click.option('--yes', '-y', 'confirm',
+              is_flag=True,
+              help="If this flag is set, "
+              "and if the option `--env-name` is provided "
+              "or no environment option "
+              "(i.e. `-e/--env` or `--env-name`) is provided, "
+              "no confirmation will be asked to the user. "
+              "Ignored if used with the option `-e/--env`, i.e. "
+              "if installing in a dedicated "
+              "conda environment for the benchmark."
+              "/!\\ By using this option, you may potentially alter "
+              "your own conda environment.")
 def install(benchmark, solver_names, dataset_names, force=False, recreate=False,
-            env_name='False'):
+            env_name='False', confirm=False):
 
     # Check that the dataset/solver patterns match actual dataset
     benchmark = Benchmark(benchmark)
@@ -98,16 +112,21 @@ def install(benchmark, solver_names, dataset_names, force=False, recreate=False,
     # If env_name is False (default), installtion in the current environement.
     if env_name == 'False':
         env_name = None
+        if not confirm:
+            click.confirm("Install in the current env?", abort=True)
     else:
         # If env_name is True, the flag `--env` has been used. Create a conda venv
         # specific to the benchmark. Else, use the <env_name> value.
         if env_name == 'True':
             env_name = f"benchopt_{benchmark.name}"
         else:
-            # user specified environment, incompatible with the 'recreate' flag
-            # to avoid messing with the user environements
+            # user specified environment
+            if not confirm:
+                click.confirm(f"Install in the env '{env_name}'?", abort=True)
+            # incompatible with the 'recreate' flag to avoid messing with the
+            # user environements
             if recreate:
-                print(f"Warning: cannot recreate user env {env_name}",
+                print(f"Warning: cannot recreate user env '{env_name}'",
                       flush=True)
                 recreate=False
 
