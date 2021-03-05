@@ -152,8 +152,8 @@ def install(benchmark, solver_names, dataset_names, force=False, recreate=False,
     # same for datasets
     forced_datasets = ()
     if force:
-        if len(solver_names) > 0:
-            forced_datasets = solver_name
+        if len(dataset_names) > 0:
+            forced_datasets = dataset_name
         else:
             forced_datasets = benchmark.list_benchmark_dataset_names()
 
