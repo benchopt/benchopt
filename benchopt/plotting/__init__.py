@@ -1,18 +1,11 @@
 import matplotlib.pyplot as plt
 
+from ..constants import PLOT_KINDS
 from .helpers import get_plot_id
-from .plot_histogram import plot_histogram
-from .plot_objective_curve import plot_objective_curve
-from .plot_objective_curve import plot_suboptimality_curve
-from .plot_objective_curve import plot_relative_suboptimality_curve
-
-
-PLOT_KINDS = {
-    'suboptimality_curve': plot_suboptimality_curve,
-    'relative_suboptimality_curve': plot_relative_suboptimality_curve,
-    'objective_curve': plot_objective_curve,
-    'histogram': plot_histogram
-}
+from .plot_histogram import plot_histogram  # noqa: F401
+from .plot_objective_curve import plot_objective_curve  # noqa: F401
+from .plot_objective_curve import plot_suboptimality_curve  # noqa: F401
+from .plot_objective_curve import plot_relative_suboptimality_curve  # noqa: F401 E501
 
 
 def plot_benchmark(df, benchmark, kinds=None, display=True, plotly=False):
@@ -60,10 +53,11 @@ def plot_benchmark(df, benchmark, kinds=None, display=True, plotly=False):
                     raise ValueError(
                         f"Requesting invalid plot '{k}'. Should be in:\n"
                         f"{PLOT_KINDS}")
+                plot_func = globals()[PLOT_KINDS[k]]
                 try:
-                    fig = PLOT_KINDS[k](df_obj, plotly=plotly)
+                    fig = plot_func(df_obj, plotly=plotly)
                 except TypeError:
-                    fig = PLOT_KINDS[k](df_obj)
+                    fig = plot_func(df_obj)
                 save_name = output_dir / f"{plot_id}_{k}"
                 if hasattr(fig, 'write_html'):
                     save_name = save_name.with_suffix('.html')

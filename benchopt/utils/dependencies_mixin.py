@@ -1,7 +1,4 @@
-
-
 from ..config import RAISE_INSTALL_ERROR
-
 
 from .class_property import classproperty
 from .shell_cmd import install_in_conda_env

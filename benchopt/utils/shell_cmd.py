@@ -12,10 +12,8 @@ from .misc import get_benchopt_requirement_line
 SHELL = get_setting('shell')
 CONDA_CMD = get_setting('conda_cmd')
 
-BENCHOPT_INSTALL = get_benchopt_requirement_line()
-
 # Yaml config file for benchopt env.
-BENCHOPT_ENV = f"""
+BENCHOPT_ENV = """
 channels:
   - defaults
   - conda-forge
@@ -25,7 +23,7 @@ dependencies:
   - compilers
   - pip
   - pip:
-    - {BENCHOPT_INSTALL}
+    - {benchopt_install}
 """
 
 
@@ -155,7 +153,10 @@ def create_conda_env(env_name, recreate=False, with_pytest=False):
 
     force = "--force" if recreate else ""
 
-    benchopt_env = BENCHOPT_ENV
+    benchopt_env = BENCHOPT_ENV.format(
+        benchopt_install=get_benchopt_requirement_line()
+    )
+
     if with_pytest:
         # Add pytest as a dependency of the env
         benchopt_env = benchopt_env.replace(

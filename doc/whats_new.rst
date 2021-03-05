@@ -22,6 +22,9 @@ Changelog
 - Change envrionment variable for config from `BENCHO_*` to `BENCHOPT_*`,
   by `Thomas Moreau`_ (:gh:`128`).
 
+- Add autocompletion support in the `benchopt` command,
+  by `Alexandre Gramfort`_, `Tanguy Lefort`_ and `Thomas Moreau`_ (:gh:`133`).
+
 API
 ~~~
 

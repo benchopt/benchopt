@@ -1,11 +1,9 @@
 import time
-import numpy as np
-import pandas as pd
 from datetime import datetime
+import math
 
 from .utils import product_param
 from .benchmark import is_matched
-from .plotting import plot_benchmark
 from .benchmark import _check_name_lists
 from .utils.pdb_helpers import exception_handler
 
@@ -23,6 +21,7 @@ from .config import RAISE_INSTALL_ERROR
 PATIENCE = 5
 MAX_ITER = int(1e6)
 MIN_TOL = 1e-15
+INFINITY = 3e38  # see: np.finfo('float32').max
 
 
 ##################################
@@ -135,7 +134,7 @@ def run_one_stop_val(benchmark, objective, solver, meta, stop_val,
             # Reached the timeout so stop the computation here
             break
 
-    return curve, np.max(current_objective)
+    return curve, max(current_objective)
 
 
 def run_one_solver(benchmark, objective, solver, meta,
@@ -199,7 +198,7 @@ def run_one_solver(benchmark, objective, solver, meta,
 
     def progress(id_stop_val, delta):
         return max(id_stop_val / max_runs,
-                   np.log(max(delta, eps)) / np.log(eps))
+                   math.log(max(delta, eps)) / math.log(eps))
 
     # check if the module caught a failed import
     if not solver.is_installed(raise_on_not_installed=RAISE_INSTALL_ERROR):
@@ -218,23 +217,23 @@ def run_one_solver(benchmark, objective, solver, meta,
     id_stop_val = 0
     stop_val = 1
     delta_objectives = [1e15]
-    prev_objective_value = np.inf
+    prev_objective_value = INFINITY
 
     deadline = time.time() + timeout
 
     with exception_handler(tag, pdb=pdb):
         for id_stop_val in range(max_runs):
-            if (-eps <= np.max(delta_objectives) < eps):
+            if (-eps <= max(delta_objectives) < eps):
                 # We are on a plateau and the objective is not improving
                 # stop here for the stop_val
                 status = colorify('done', GREEN)
                 break
-            if np.max(delta_objectives) < -1e10:
+            if max(delta_objectives) < -1e10:
                 # The algorithm is diverging, stopping here
                 status = colorify('diverged', RED)
                 break
 
-            p = progress(id_stop_val, np.max(delta_objectives))
+            p = progress(id_stop_val, max(delta_objectives))
             if show_progress:
                 progress_str = f"{tag} {p:6.1%}"
             else:
@@ -273,7 +272,7 @@ def run_one_solver(benchmark, objective, solver, meta,
 
         print(f"{tag} {status}".ljust(LINE_LENGTH))
         if DEBUG:
-            delta = np.max(delta_objectives)
+            delta = max(delta_objectives)
             print(f"DEBUG - Exit with delta_objective = {delta:.2e} "
                   f"and stop_val={stop_val:.1e}.")
 
@@ -381,6 +380,8 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                             timeout=timeout, show_progress=show_progress,
                             force=force, pdb=pdb
                         ))
+
+    import pandas as pd
     df = pd.DataFrame(run_statistics)
     if df.empty:
         print(colorify('No output produced.', RED).ljust(LINE_LENGTH))
@@ -394,5 +395,6 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
     print(colorify(f'Saving result in: {save_file}', GREEN))
 
     if plot_result:
+        from benchopt.plotting import plot_benchmark
         plot_benchmark(df, benchmark)
     return df
