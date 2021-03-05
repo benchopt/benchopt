@@ -4,9 +4,16 @@ import sys
 
 from ..config import RAISE_INSTALL_ERROR
 
+SKIP_IMPORT = False
+
 
 class SkipWithBlock(Exception):
     pass
+
+
+def skip_import():
+    global SKIP_IMPORT
+    SKIP_IMPORT = True
 
 
 class safe_import_context:
@@ -18,7 +25,7 @@ class safe_import_context:
 
     def __enter__(self):
         # Skip context if necessary to speed up import
-        if os.environ.get('SKIP_IMPORT_CONTEXT'):
+        if SKIP_IMPORT:
             # See https://stackoverflow.com/questions/12594148/skipping-execution-of-with-block  # noqa
             sys.settrace(lambda *args, **keys: None)
             frame = sys._getframe(1)
@@ -35,7 +42,7 @@ class safe_import_context:
 
     def __exit__(self, exc_type, exc_value, tb):
 
-        if os.environ.get('SKIP_IMPORT_CONTEXT'):
+        if SKIP_IMPORT:
             self.failed_import = True
             return True
 

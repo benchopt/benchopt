@@ -2,12 +2,9 @@ import click
 from pathlib import Path
 
 from benchopt.benchmark import Benchmark
+from benchopt.utils.safe_import import skip_import
 from benchopt.utils.shell_cmd import create_conda_env
 from benchopt.utils.shell_cmd import _run_shell_in_conda_env
-
-
-from benchopt.tests import __file__ as _bench_test_module
-BENCHMARK_TEST_FILE = Path(_bench_test_module).parent / "test_benchmarks.py"
 
 
 main = click.Group(
@@ -17,6 +14,7 @@ main = click.Group(
 
 
 def get_solvers(ctx, args, incomplete):
+    skip_import()
     benchmark = Benchmark(args[1])
     solvers = benchmark.list_benchmark_solver_names()
     solvers = [s.lower() for s in solvers]
@@ -24,6 +22,7 @@ def get_solvers(ctx, args, incomplete):
 
 
 def get_datasets(ctx, args, incomplete):
+    skip_import()
     benchmark = Benchmark(args[1])
     datasets = benchmark.list_benchmark_dataset_names()
     datasets = [d.lower() for d in datasets]
@@ -169,6 +168,10 @@ def test(benchmark, env_name, pytest_args):
                 "benchmark in this environment."
             )
         env_option = f'--test-env {env_name}'
+
+    from benchopt.tests import __file__ as _bench_test_module
+    BENCHMARK_TEST_FILE = Path(_bench_test_module).parent / "test_benchmarks.py"
+
     cmd = (
         f'pytest {pytest_args} {BENCHMARK_TEST_FILE} '
         f'--benchmark {benchmark} {env_option}'

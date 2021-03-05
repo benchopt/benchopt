@@ -1,5 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
 
 from .helpers import _color_palette
 from .helpers_compat import get_figure, _make_bars
@@ -76,8 +75,8 @@ def plot_histogram(df, plotly=False):
         ax.set_xticks([xi for xi, _ in ticks_list])
         ax.set_xticklabels([label for _, label in ticks_list], rotation=60)
         ax.set_yscale('log')
-        plt.xlim(0, 1)
-        plt.ylabel("Time [sec]")
-        plt.title(title, fontsize=12)
-        plt.tight_layout()
+        ax.set_xlim(0, 1)
+        ax.set_ylabel("Time [sec]")
+        ax.set_title(title, fontsize=12)
+        fig.tight_layout()
     return fig

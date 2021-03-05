@@ -1,11 +1,8 @@
 import click
-import pandas as pd
 
 from benchopt.config import get_setting
 from benchopt.benchmark import Benchmark
-from benchopt.plotting import PLOT_KINDS
-from benchopt.plotting import plot_benchmark
-from benchopt.utils.github import publish_result_file
+from benchopt.constants import PLOT_KINDS
 
 
 process_results = click.Group(
@@ -46,8 +43,11 @@ def plot(benchmark, filename=None, kinds=('suboptimality_curve',),
     benchmark = Benchmark(benchmark)
     result_filename = benchmark.get_result_file(filename)
 
-    # Plot the results.
+    # Load the results.
+    import pandas as pd
     df = pd.read_csv(result_filename)
+    # Plot the results.
+    from benchopt.plotting import plot_benchmark
     plot_benchmark(df, benchmark, kinds=kinds, display=display, plotly=plotly)
 
 
@@ -82,4 +82,5 @@ def publish(benchmark, token=None, filename=None):
     result_filename = benchmark.get_result_file(filename)
 
     # Publish the result.
+    from benchopt.utils.github import publish_result_file
     publish_result_file(benchmark.name, result_filename, token)
