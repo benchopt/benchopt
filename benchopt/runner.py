@@ -25,14 +25,14 @@ MIN_TOL = 1e-15
 INFINITY = 3e38  # see: np.finfo('float32').max
 
 
-def cache(func, benchmark, force=False):
+def cache(func, benchmark, force=False, ignore=None):
 
     # Create a cached function the computations in the benchmark folder
     # and handle cases where we force the run.
-    func_cached = benchmark.mem.cache(func)
+    func_cached = benchmark.mem.cache(func, ignore=ignore)
     if force:
         def _func_cached(**kwargs):
-            func_cached.call(**kwargs)[0]
+            return func_cached.call(**kwargs)[0]
 
         return _func_cached
     return func_cached
@@ -243,44 +243,49 @@ def run_one_solver(benchmark, objective, solver, meta, max_runs, n_repetitions,
     """
 
     # Create a Memory object to cache the computations in the benchmark folder
-    run_one_to_cvg_cached = cache(run_one_to_cvg, benchmark, force)
+    run_one_to_cvg_cached = cache(run_one_to_cvg, benchmark, force,
+                                  ignore=['deadline', 'force', 'progress_str'])
 
     curve = []
     states = []
-    for rep in range(n_repetitions):
-        if show_progress:
-            progress_str = f"{tag} {{progress}} ({rep} / {n_repetitions} reps)"
-        else:
-            progress_str = None
 
-        meta_rep = dict(**meta, idx_rep=rep)
+    with exception_handler(tag, pdb=pdb):
+        for rep in range(n_repetitions):
+            if show_progress:
+                progress_str = (
+                    f"{tag} {{progress}} ({rep} / {n_repetitions} reps)"
+                )
+            else:
+                progress_str = None
 
-        # Force the run if needed
-        deadline = time.time() + timeout / n_repetitions
+            meta_rep = dict(**meta, idx_rep=rep)
 
-        with exception_handler(tag, pdb=pdb):
+            # Force the run if needed
+            deadline = time.time() + timeout / n_repetitions
+
             curve_one_rep, status = run_one_to_cvg_cached(
-                benchmark, objective, solver, meta_rep, max_runs, deadline,
+                benchmark=benchmark, objective=objective, solver=solver,
+                meta=meta_rep, max_runs=max_runs, deadline=deadline,
                 progress_str=progress_str, force=force
             )
 
-        curve.extend(curve_one_rep)
-        states.append(status)
+            curve.extend(curve_one_rep)
+            states.append(status)
 
-        if deadline is not None and deadline < time.time():
-            # Reached the timeout so stop the computation here
-            break
+            if deadline is not None and deadline < time.time():
+                # Reached the timeout so stop the computation here
+                break
 
-    if 'diverged' in states:
-        final_status = colorify('diverged', RED)
-    elif 'timeout' in states:
-        final_status = colorify('done (timeout)', YELLOW)
-    elif 'unfinished' in states:
-        final_status = colorify("done (not enough run)", YELLOW)
-    else:
-        final_status = colorify('done', GREEN)
+        if 'diverged' in states:
+            final_status = colorify('diverged', RED)
+        elif 'timeout' in states:
+            final_status = colorify('done (timeout)', YELLOW)
+        elif 'unfinished' in states:
+            final_status = colorify("done (not enough run)", YELLOW)
+        else:
+            final_status = colorify('done', GREEN)
 
-    print(f"{tag} {final_status}".ljust(LINE_LENGTH))
+        print(f"{tag} {final_status}".ljust(LINE_LENGTH))
     return curve
 
 
@@ -361,7 +366,8 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                 for solver_class in solver_classes:
 
                     for solver_parameters in product_param(
-                            solver_class.parameters):
+                            solver_class.parameters
+                    ):
 
                         # Instantiate solver
                         solver = solver_class.get_instance(**solver_parameters)
@@ -379,7 +385,7 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                             print(f"{tag} {status}".ljust(LINE_LENGTH))
                             continue
 
-                        # Set objective.
+                        # Set objective an skip if necessary.
                         skip, reason = solver._set_objective(objective)
                         if skip:
                             print(f"{tag} {colorify('skip', YELLOW)}"
@@ -411,7 +417,8 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
     df = pd.DataFrame(run_statistics)
     if df.empty:
         print(colorify('No output produced.', RED).ljust(LINE_LENGTH))
-        raise SystemExit(1)
+        return
+        # raise SystemExit(1)
 
     # Save output in CSV file in the benchmark folder
     timestamp = datetime.now().strftime('%Y-%m-%d_%Hh%Mm%S')

@@ -69,6 +69,9 @@ class CaptureRunOutput(object):
             for result_file in self.result_files:
                 Path(result_file).unlink()
 
+        if type is not None:
+            print(self.output)
+
     def check_output(self, pattern, repetition=None):
         matches = re.findall(pattern, self.output)
         if repetition is None:
@@ -105,7 +108,7 @@ class TestRunCmd:
 
         out.check_output('Simulated', repetition=1)
         out.check_output('Dummy Sparse Regression', repetition=1)
-        out.check_output(r'Python-PGD\[step_size=1\]', repetition=2)
+        out.check_output(r'Python-PGD\[step_size=1\]', repetition=3)
         out.check_output(r'Python-PGD\[step_size=1.5\]', repetition=0)
 
         # Make sure the results were saved in a result file
@@ -122,7 +125,7 @@ class TestRunCmd:
         out.check_output(f'conda activate {test_env_name}')
         out.check_output('Simulated', repetition=1)
         out.check_output('Dummy Sparse Regression', repetition=1)
-        out.check_output(r'Python-PGD\[step_size=1\]', repetition=2)
+        out.check_output(r'Python-PGD\[step_size=1\]', repetition=3)
         out.check_output(r'Python-PGD\[step_size=1.5\]', repetition=0)
 
         # Make sure the results were saved in a result file
@@ -153,7 +156,7 @@ class TestRunCmd:
             run(run_cmd, 'benchopt', standalone_mode=False)
 
         out.check_output(r'Python-PGD\[step_size=1\]',
-                         repetition=n_rep+1)
+                         repetition=2*n_rep+1)
 
 
 class TestPlotCmd:
