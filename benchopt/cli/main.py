@@ -78,8 +78,6 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
         objective_filters, max_runs, n_repetitions, timeout,
         recreate=False, plot=True, pdb=False, env_name='False'):
 
-    print("BenchOpt is running", flush=True)
-
     from benchopt.runner import run_benchmark
 
     # Check that the dataset/solver patterns match actual dataset
