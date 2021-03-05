@@ -20,8 +20,7 @@ helpers = click.Group(
 
 
 @helpers.command(
-    help="Clean the cache and the outputs from a benchmark.",
-    options_metavar=''
+    help="Clean the cache and the outputs from a benchmark."
 )
 @click.argument('benchmark', type=click.Path(exists=True),
                 autocompletion=get_benchmark)
