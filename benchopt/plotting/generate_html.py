@@ -27,26 +27,27 @@ TEMPLATE_RESULT = ROOT / "templates" / "result.mako.html"
 TEMPLATE_LOCAL_RESULT = ROOT / "templates" / "local_result.mako.html"
 
 
-def generate_plot_benchmark(fname, kinds):
+def generate_plot_benchmark(df, kinds, fname=None):
     """Generate all possible plots for a given benchmark.
     Parameters
     ----------
-    fname : instance of pandas.DataFrame
+    df : instance of pandas.DataFrame
         The benchmark results.
     kinds : list of str
         List of the kind of plots that will be generated. This needs to be a
         sub-list of PLOT_KINDS.keys().
+    fname: str
+        CSV file name.
+        If set to None, a default filename will be generated.
     Returns
     -------
     figs : list
         The matplotlib figures for convergence curve and histogram
         for each dataset.
     """
-
-    df = pd.read_csv(fname)
     dataset_names = df['data_name'].unique()
     objective_names = df['objective_name'].unique()
-    fname_short = str(fname).replace('outputs/', '').replace('/', '_')
+    fname_short = fname.replace('outputs/', '').replace('/', '_')
 
     figures = {}
     n_figure = 0
@@ -67,7 +68,6 @@ def generate_plot_benchmark(fname, kinds):
                     fig = plot_func(df_obj, plotly=True)
                 except TypeError:
                     fig = plot_func(df_obj)
-                # fig = kinds[k](df_obj, plotly=True)                  
                 figures[data_name][objective_name][k] = export_figure(
                     fig, f"{fname_short}_{n_figure}"
                 )
@@ -76,7 +76,7 @@ def generate_plot_benchmark(fname, kinds):
     return dict(
         figures=figures, dataset_names=dataset_names, fname_short=fname_short,
         objective_names=objective_names, kinds=list(kinds)
-    )
+        )
 
 
 def export_figure(fig, fig_name):
@@ -88,6 +88,30 @@ def export_figure(fig, fig_name):
     fig.savefig(save_name)
     plt.close(fig)
     return f'figures/{fig_basename}'
+
+
+def get_result_from_df(df, kinds):
+    results = []
+    BUILD_DIR_OUTPUTS.mkdir(exist_ok=True, parents=True)
+    BUILD_DIR_FIGURES.mkdir(exist_ok=True, parents=True)
+
+    datasets = list(df['data_name'].unique())
+    fname = "benchmark_benchopt_run_" + str(datetime.now())[:19] + ".csv"
+    fname = fname.replace(" ", "_").replace(":", "_")
+
+    # Generate figures
+    result = dict(
+        fname=fname,
+        datasets=datasets,
+        **generate_plot_benchmark(df, kinds, fname)
+    )
+    results.append(result)
+
+    for result in results:
+        result['page'] = \
+            f"{str(result['fname_short']).replace('.csv', '.html')}"
+
+    return results
 
 
 def get_results(fnames, kinds, copy=False):
@@ -111,7 +135,7 @@ def get_results(fnames, kinds, copy=False):
         result = dict(
             fname=fname,
             datasets=datasets,
-            **generate_plot_benchmark(fname, kinds)
+            **generate_plot_benchmark(df, kinds, fname)
         )
         results.append(result)
 
@@ -170,7 +194,7 @@ def render_all_results(results, benchmark, local=True):
     return htmls
 
 
-def plot_benchmark_html(df, output_dir, filename, kinds,
+def plot_benchmark_html(df, output_dir, kinds,
                         display=True, index=False):
     """
     Plot convergence curves and histograms for a
@@ -205,8 +229,7 @@ def plot_benchmark_html(df, output_dir, filename, kinds,
     Path(benchmark / BUILD_DIR_FIGURES).mkdir(exist_ok=True, parents=True)
     Path(benchmark / BUILD_DIR_OUTPUTS).mkdir(exist_ok=True, parents=True)
 
-    fnames = [filename]
-    results = get_results(fnames, kinds)
+    results = get_result_from_df(df, kinds)
     htmls = render_all_results(results, benchmark)
 
     result_filename = benchmark / BUILD_DIR / results[0]['page']
@@ -216,6 +239,7 @@ def plot_benchmark_html(df, output_dir, filename, kinds,
 
     if display:
         webbrowser.open(str(result_filename), new=2)
+
 
 @click.command()
 @click.option('--pattern', '-k', 'patterns',

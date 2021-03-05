@@ -9,7 +9,7 @@ from .plot_objective_curve import plot_relative_suboptimality_curve  # noqa: F40
 from .generate_html import plot_benchmark_html
 
 
-def plot_benchmark(df, benchmark, filename, kinds=None, display=True,
+def plot_benchmark(df, benchmark, kinds=None, display=True,
                    plotly=False, html=True):
     """Plot convergence curve and histogram for a given benchmark.
 
@@ -41,7 +41,7 @@ def plot_benchmark(df, benchmark, filename, kinds=None, display=True,
     output_dir = benchmark.get_output_folder()
 
     if html:
-        plot_benchmark_html(df, output_dir, filename, kinds, display)
+        plot_benchmark_html(df, output_dir, kinds, display)
         return None
 
     else:
@@ -73,7 +73,7 @@ def plot_benchmark(df, benchmark, filename, kinds=None, display=True,
                         save_name = save_name.with_suffix('.pdf')
                         plt.savefig(save_name)
                     print(f'Save {k} plot for {data} and {objective_name} as:'
-                        f' {save_name}')
+                          f' {save_name}')
                     figs.append(fig)
         if display:
             plt.show()

@@ -4,6 +4,8 @@ import warnings
 import configparser
 from pathlib import Path
 from collections.abc import Iterable
+from benchopt.constants import PLOT_KINDS
+
 
 BOOLEAN_STATES = configparser.ConfigParser.BOOLEAN_STATES
 CONFIG_FILE_NAME = 'benchopt.ini'
@@ -36,12 +38,7 @@ DEFAULT_GLOBAL_CONFIG = {
 """
 
 DEFAULT_BENCHMARK_CONFIG = {
-    'plots': [
-        "suboptimality_curve",
-        "relative_suboptimality_curve",
-        "objective_curve",
-        "histogram"
-    ],
+    'plots': list(PLOT_KINDS),
 }
 """
 * ``plots``, *list*: Select the plots to display for the benchmark. Should be

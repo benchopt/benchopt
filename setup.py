@@ -53,7 +53,7 @@ setup(
     },
     packages=find_packages(),
     install_requires=['numpy', 'scipy', 'pandas', 'matplotlib',
-                      'click', 'joblib', 'pygithub'],
+                      'click', 'joblib', 'pygithub', 'mako'],
     entry_points={
         'console_scripts': ['benchopt = benchopt.cli:benchopt']
     }
