@@ -34,7 +34,7 @@ main = click.Group(
               " are included.", autocompletion=get_solvers)
 @click.option('--force-solver', '-f', 'forced_solvers',
               metavar="<solver_name>", multiple=True, type=str,
-              help="Force the re-installation and run for <solver_name>. This "
+              help="Force the re-run for <solver_name>. This "
               "avoids caching effect when adding an estimator.",
               autocompletion=get_solvers)
 @click.option('--dataset', '-d', 'dataset_names',
@@ -101,15 +101,6 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
     # specific to the benchmark. Else, use the <env_name> value.
     if env_name == 'True':
         env_name = f"benchopt_{benchmark.name}"
-    create_conda_env(env_name, recreate=recreate)
-
-    # installed required datasets
-    benchmark.install_required_datasets(dataset_names, env_name=env_name)
-
-    # Get the solvers and install them
-    benchmark.install_required_solvers(
-        solver_names, forced_solvers=forced_solvers, env_name=env_name
-    )
 
     # run the command in the conda env
     solvers_option = ' '.join(['-s ' + s for s in solver_names])
