@@ -163,7 +163,7 @@ def create_conda_env(env_name, recreate=False, with_pytest=False):
             '- pip:', '- pytest\n  - pip:\n'
         )
 
-    print(f"Creating conda env {env_name}:...", end='', flush=True)
+    print(f"Creating conda env '{env_name}':...", end='', flush=True)
     if DEBUG:
         print(f'\nconda env config:\n{benchopt_env}')
     env_yaml = tempfile.NamedTemporaryFile(
