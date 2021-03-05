@@ -52,8 +52,8 @@ setup(
         'Tracker': 'https://github.com/benchopt/benchOpt/issues/',
     },
     packages=find_packages(),
-    install_requires=['numpy', 'scipy', 'pandas', 'matplotlib',
-                      'click', 'joblib', 'pygithub', 'mako'],
+    install_requires=['numpy', 'scipy', 'pandas', 'matplotlib', 'click',
+                      'joblib', 'pygithub', 'psutil', 'mako'],
     entry_points={
         'console_scripts': ['benchopt = benchopt.cli:benchopt']
     }
