@@ -17,14 +17,15 @@ class safe_import_context:
         self.record = warnings.catch_warnings(record=True)
 
     def __enter__(self):
-        # Catch the import warning except if install errors are raised.
+        # Skip context if necessary to speed up import
         if os.environ.get('SKIP_IMPORT_CONTEXT'):
-            # Do some magic
+            # See https://stackoverflow.com/questions/12594148/skipping-execution-of-with-block  # noqa
             sys.settrace(lambda *args, **keys: None)
             frame = sys._getframe(1)
             frame.f_trace = self.trace
             return self
 
+        # Catch the import warning except if install errors are raised.
         if not RAISE_INSTALL_ERROR:
             self.record.__enter__()
         return self
