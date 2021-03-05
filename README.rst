@@ -73,7 +73,7 @@ Use
 
     $ benchopt run -h
 
-for more details about different options or read the
+to get more details about the different options or read the
 `API Documentation <https://benchopt.github.io/api.html>`_.
 
 

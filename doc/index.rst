@@ -67,7 +67,8 @@ Use
 
     $ benchopt run -h
 
-for more details about different options read the :ref:`api_documentation`.
+to get more details about the different options or read the
+:ref:`api_documentation`.
 
 Benchmarks available
 --------------------
