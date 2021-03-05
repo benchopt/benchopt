@@ -109,7 +109,8 @@ class DependenciesMixin:
             else:
                 print(" failed")
         else:
-            print(f"- '{cls.name}' already available in '{env_name}'", flush=True)
+            print(f"- '{cls.name}' already available in '{env_name}'",
+                  flush=True)
 
         return is_installed
 
