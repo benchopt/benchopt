@@ -1,6 +1,5 @@
 import os
 import re
-import json
 import psutil
 import platform
 import subprocess
@@ -88,4 +87,4 @@ def get_sys_info():
     info["version-numpy"] = (np.__version__, _get_numpy_libs())
     info["version-scipy"] = scipy.__version__
 
-    return json.dumps(info)
+    return info

@@ -5,6 +5,7 @@ import math
 from .utils import product_param
 from .benchmark import is_matched
 from .benchmark import _check_name_lists
+from .utils.sys_info import get_sys_info
 from .utils.pdb_helpers import exception_handler
 
 from .utils.colorify import colorify
@@ -62,9 +63,10 @@ def run_one_repetition(objective, solver, meta, stop_val):
     delta_t = time.perf_counter() - t_start
     beta_hat_i = solver.get_result()
     objective_dict = objective(beta_hat_i)
+    info = get_sys_info()
 
     return (dict(**meta, solver_name=str(solver), stop_val=stop_val,
-                 time=delta_t, **objective_dict),
+                 time=delta_t, **objective_dict, **info),
             objective_dict['objective_value'])
 
 

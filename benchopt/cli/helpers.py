@@ -1,4 +1,3 @@
-import json
 import click
 import pprint
 from pathlib import Path
@@ -42,7 +41,7 @@ def clean(benchmark, token=None, filename=None):
 @helpers.command()
 def sys_info():
     "Get details on the system (processor, RAM, etc..)."
-    pprint.pprint(json.loads(get_sys_info()))
+    pprint.pprint(get_sys_info())
 
 
 @helpers.group(
