@@ -32,12 +32,14 @@ def get_plot_kinds(ctx, args, incomplete):
               autocompletion=get_plot_kinds)
 @click.option('--display/--no-display', default=True,
               help="Whether or not to display the plot on the screen.")
+@click.option('--html/--no-html', default=True,
+              help="Whether or not to display the plot on the screen.")
 @click.option('--plotly', is_flag=True,
               help="If this flag is set, generate figure as HTML with plotly. "
               "This option does not work with all plot kinds and requires "
               "to have installed `plotly`.")
 def plot(benchmark, filename=None, kinds=('suboptimality_curve',),
-         display=True, plotly=False):
+         display=True, html=True, plotly=False):
 
     # Get the result file
     benchmark = Benchmark(benchmark)
@@ -48,7 +50,8 @@ def plot(benchmark, filename=None, kinds=('suboptimality_curve',),
     df = pd.read_csv(result_filename)
     # Plot the results.
     from benchopt.plotting import plot_benchmark
-    plot_benchmark(df, benchmark, kinds=kinds, display=display, plotly=plotly)
+    plot_benchmark(df, benchmark, kinds=kinds, display=display,
+                   plotly=plotly, html=html)
 
 
 @process_results.command(

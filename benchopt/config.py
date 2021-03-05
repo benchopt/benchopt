@@ -36,7 +36,12 @@ DEFAULT_GLOBAL_CONFIG = {
 """
 
 DEFAULT_BENCHMARK_CONFIG = {
-    'plots': ["suboptimality_curve"],
+    'plots': [
+        "suboptimality_curve",
+        "relative_suboptimality_curve",
+        "objective_curve",
+        "histogram"
+    ],
 }
 """
 * ``plots``, *list*: Select the plots to display for the benchmark. Should be
