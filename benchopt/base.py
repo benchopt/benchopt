@@ -1,6 +1,5 @@
 import tempfile
 import numbers
-from scipy import sparse
 from abc import ABC, abstractmethod
 
 from .utils.dynamic_modules import get_file_hash
@@ -134,6 +133,8 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
             If skip is False, the reason should be None.
         """
         # Check that the solver is compatible with the given dataset
+        from scipy import sparse
+
         if not getattr(self, 'support_sparse', True):
             if any(sparse.issparse(v) for v in objective_dict.values()):
                 return True, f"{self} does not support sparse data."

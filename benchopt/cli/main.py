@@ -1,7 +1,6 @@
 import click
 from pathlib import Path
 
-from benchopt import run_benchmark
 from benchopt.benchmark import Benchmark
 from benchopt.utils.shell_cmd import create_conda_env
 from benchopt.utils.shell_cmd import _run_shell_in_conda_env
@@ -76,6 +75,8 @@ main = click.Group(
 def run(benchmark, solver_names, forced_solvers, dataset_names,
         objective_filters, max_runs, n_repetitions, timeout,
         recreate=False, plot=True, pdb=False, env_name='False'):
+
+    from benchopt.runner import run_benchmark
 
     # Check that the dataset/solver patterns match actual dataset
     benchmark = Benchmark(benchmark)

@@ -2,7 +2,6 @@ import re
 import click
 import warnings
 from pathlib import Path
-from joblib import Memory
 
 from .config import get_setting
 from .base import BaseSolver, BaseDataset
@@ -29,7 +28,12 @@ class Benchmark:
                 "benchmark."
             )
 
-        self.mem = Memory(location=self.get_cache_location(), verbose=0)
+    @property
+    def mem(self):
+        from joblib import Memory
+        if not hasattr(self, '_mem'):
+            self._mem = Memory(location=self.get_cache_location(), verbose=0)
+        return self._mem
 
     def get_setting(self, setting_name):
         "Retrieve the setting value from benchmark config."
