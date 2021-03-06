@@ -189,7 +189,7 @@ def run_one_to_cvg(benchmark, objective, solver, meta, max_runs, deadline=None,
         delta_objective = prev_objective_value - objective_value
         delta_objectives.append(delta_objective)
         if delta_objective == 0:
-            rho_ *= 1.2
+            rho *= 1.2
         if len(delta_objectives) > PATIENCE:
             delta_objectives.pop(0)
         prev_objective_value = objective_value
