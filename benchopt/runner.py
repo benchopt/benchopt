@@ -205,10 +205,14 @@ def run_one_to_cvg(benchmark, objective, solver, meta, max_runs, deadline=None,
     return curve, status
 
 
-def get_callback(curve_one_rep, cb_status, objective, solver,
-                 meta_rep, deadline):
+def get_callback(objective, meta_rep, deadline):
     # make documentation
     info = get_sys_info()
+    curve_one_rep = []
+    cb_status = {"time": time.perf_counter(),
+                 "delta_t": 0,
+                 "status": 'unfinished',
+                 "next_stopval": 0}
 
     def callback(it, beta_hat_i):
         t0 = time.perf_counter()
@@ -217,8 +221,8 @@ def get_callback(curve_one_rep, cb_status, objective, solver,
         if it == cb_status["next_stopval"]:
             objective_dict = objective(beta_hat_i)
             # Add system info in results
-            dict_ = dict(**meta_rep, solver_name=str(solver),
-                         stop_val=it, time=cb_status["delta_t"],
+            dict_ = dict(**meta_rep, stop_val=it,
+                         time=cb_status["delta_t"],
                          **objective_dict, **info)
             curve_one_rep.append(dict_)
 
@@ -232,7 +236,7 @@ def get_callback(curve_one_rep, cb_status, objective, solver,
         cb_status["time"] = time.perf_counter()
         return stop
 
-    return callback
+    return callback, curve_one_rep, cb_status
 
 
 def run_one_solver(benchmark, objective, solver, meta, max_runs, n_repetitions,
@@ -297,15 +301,13 @@ def run_one_solver(benchmark, objective, solver, meta, max_runs, n_repetitions,
 
             if hasattr(solver, "run_all_in_one"):
                 max_iter = int(2 * RHO ** (max_runs - 1))
-                curve_one_rep = []
-                cb_status = {"time": time.perf_counter(),
-                             "delta_t": 0,
-                             "status": 'unfinished',
-                             "next_stopval": 0}
 
-                callback = get_callback(curve_one_rep, cb_status,
-                                        objective, solver, meta_rep, deadline
-                                        )
+                # add solver name to meta
+                meta_rep["solver_name"] = str(solver)
+
+                callback, curve_one_rep, cb_status = get_callback(
+                            objective, meta_rep, deadline
+                        )
                 solver.run_all_in_one(max_iter, callback)
                 status = cb_status["status"]
             else:
