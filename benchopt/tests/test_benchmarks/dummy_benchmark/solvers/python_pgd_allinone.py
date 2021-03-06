@@ -48,6 +48,9 @@ class Solver(BaseSolver):
 
         return rk
 
+    def run(self, n_iter):
+        pass
+
     def run_all_in_one(self, max_iter, callback):  # add a callback argument
         L = self.compute_lipschitz_cste()
         n_features = self.X.shape[1]

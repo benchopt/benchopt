@@ -153,11 +153,13 @@ with no other dependencies. Here is an example:
 .. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/solvers/python_pgd.py
 
 For solvers that allow access to the each iterates of the solution, the ``run`` method can be
-replaced with ``run_all_in_one``. The distinction is in the use of a ``callback`` parameter.
+pass and instead use ``run_all_in_one``. The distinction is in the use of a ``callback`` parameter.
 This is a function that must be placed at the beginning of each iteration and at the very end
 of the method. It takes the number of the iterate and its value as arguments. Here is an example
 in the same situation as above:
 
+.. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/solvers/python_pgd_allinone.py
+  :pyobject: Solver.run
 .. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/solvers/python_pgd_allinone.py
   :pyobject: Solver.run_all_in_one
 
