@@ -55,7 +55,6 @@ class Solver(BaseSolver):
         L = self.compute_lipschitz_cste()
         n_features = self.X.shape[1]
         w = np.zeros(n_features)
-        self.w = w
         if self.use_acceleration:
             z = np.zeros(n_features)
 
