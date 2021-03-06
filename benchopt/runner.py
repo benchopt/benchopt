@@ -193,7 +193,7 @@ def run_one_to_cvg(benchmark, objective, solver, meta, max_runs, deadline=None,
         if len(delta_objectives) > PATIENCE:
             delta_objectives.pop(0)
         prev_objective_value = objective_value
-        stop_val = get_next(stop_val, rho=rho_, strategy=solver.stop_strategy)
+        stop_val = get_next(stop_val, rho=rho, strategy=solver.stop_strategy)
     else:
         status = 'unfinished'
 
