@@ -296,7 +296,7 @@ def run_one_solver(benchmark, objective, solver, meta, max_runs, n_repetitions,
             deadline = time.time() + timeout / n_repetitions
 
             if hasattr(solver, "run_all_in_one"):
-                max_iter = int(2 * 1.5 ** (max_runs - 1))
+                max_iter = int(2 * RHO ** (max_runs - 1))
                 curve_one_rep = []
                 cb_status = {"time": time.perf_counter(),
                              "delta_t": 0,
