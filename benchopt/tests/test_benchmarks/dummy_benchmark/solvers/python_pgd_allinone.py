@@ -74,6 +74,7 @@ class Solver(BaseSolver):
                 w -= self.X.T @ (self.X @ w - self.y) / L
                 w = self.st(w, self.lmbd / L)
         callback(max_iter, w)  # run callback at the end
+        self.w = w
 
     def get_result(self):
         return self.w
