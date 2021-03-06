@@ -32,7 +32,7 @@ def get_next(x, rho=RHO, strategy="iteration"):
         return max(x + 1, min(int(rho * x), MAX_ITER))
     else:
         assert strategy == 'tolerance'
-        def get_next(x): return max(x / rho, MIN_TOL)
+        return max(x / rho, MIN_TOL)
 
 
 def cache(func, benchmark, force=False, ignore=None):
