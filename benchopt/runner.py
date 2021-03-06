@@ -157,7 +157,7 @@ def run_one_to_cvg(benchmark, objective, solver, meta, max_runs, deadline=None,
 
     id_stop_val = 0
     stop_val = 1
-    rho_ = RHO
+    rho = RHO
     delta_objectives = [1e15]
     prev_objective_value = objective_value
 
