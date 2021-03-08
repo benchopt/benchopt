@@ -1,7 +1,7 @@
+import os
 import click
 import pprint
 from pathlib import Path
-import os
 from collections import Iterable
 
 from benchopt.config import set_setting
