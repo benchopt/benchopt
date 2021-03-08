@@ -108,7 +108,7 @@ def install(benchmark, solver_names, dataset_names, force=False,
 
     # Check that the dataset/solver patterns match actual dataset
     benchmark = Benchmark(benchmark)
-    print(f"Installing '{benchmark.name}' requirements", flush=True)
+    print(f"Installing '{benchmark.name}' requirements")
     benchmark.validate_dataset_patterns(dataset_names)
     benchmark.validate_solver_patterns(solver_names)
 
