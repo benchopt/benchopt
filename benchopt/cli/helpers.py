@@ -137,6 +137,16 @@ def install(benchmark, solver_names, dataset_names, force=False,
         # env specific to the benchmark. Else, use the <env_name> value.
         if env_name == 'True':
             env_name = f"benchopt_{benchmark.name}"
+        else:
+            # check provided env name
+            # (to avoid empty name like `--env-name ""`)
+            if len(env_name) == 0:
+                raise RuntimeError("Empty environment name.")
+            # avoid recreating 'base' conda env`
+            if env_name == 'base' and recreate:
+                raise RuntimeError(
+                    "Impossible to recreate 'base' conda environment."
+                )
 
         # create environment if necessary
         create_conda_env(env_name, recreate=recreate)
