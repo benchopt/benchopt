@@ -34,7 +34,7 @@ def get_benchmark(ctx, args, incomplete):
     skip_import()
     benchmarks = [os.curdir] + [b.path for b in os.scandir('.') if b.is_dir()]
     benchmarks = [b for b in benchmarks
-                    if os.path.isfile(os.path.join(b, "objective.py"))]
+                  if (Path(b) / "objective.py").exists()]
     return [b for b in benchmarks if incomplete in b]
 
 
