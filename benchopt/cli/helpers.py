@@ -13,6 +13,7 @@ from benchopt.cli.completion import get_benchmark
 from benchopt.config import get_global_config_file
 from benchopt.utils.dynamic_modules import _load_class_from_module
 from benchopt.utils.shell_cmd import create_conda_env
+from benchopt.cli.main import get_solvers, get_datasets
 
 
 helpers = click.Group(
@@ -61,13 +62,15 @@ def sys_info():
               help="Include <solver_name> in the installation. "
               "By default, all solvers are included. "
               "When `-s` is used, only listed estimators are included. "
-              "To include multiple solvers, use multiple `-s` options.")
+              "To include multiple solvers, use multiple `-s` options.",
+              autocompletion=get_solvers)
 @click.option('--dataset', '-d', 'dataset_names',
               metavar="<dataset_name>", multiple=True, type=str,
               help="Install the dataset <dataset_name>. By default, all "
               "datasets are included. When `-d` is used, only listed datasets "
               "are included. Note that <dataset_name> can be a regexp. "
-              "To include multiple datasets, use multiple `-d` options.")
+              "To include multiple datasets, use multiple `-d` options.",
+              autocompletion=get_datasets)
 @click.option('--env', '-e', 'env_name',
               flag_value='True', type=str, default='False',
               help="Install all requirements in a dedicated "
