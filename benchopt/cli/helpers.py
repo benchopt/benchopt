@@ -114,10 +114,18 @@ def install(benchmark, solver_names, dataset_names, force=False,
 
     # If env_name is False (default), installation in the current environement.
     if env_name == 'False':
-        env_name = os.environ['CONDA_DEFAULT_ENV']
-        if not confirm:
-            click.confirm(f"Install in the current env '{env_name}'?",
-                          abort=True)
+        # check if any current conda environment
+        if 'CONDA_DEFAULT_ENV' in os.environ and \
+                os.environ['CONDA_DEFAULT_ENV'] is not None and \
+                len(os.environ['CONDA_DEFAULT_ENV']) > 0:
+            # current conda env
+            env_name = os.environ['CONDA_DEFAULT_ENV']
+            # ask for user confirmation to install in current conda env
+            if not confirm:
+                click.confirm(f"Install in the current env '{env_name}'?",
+                              abort=True)
+        else:
+            raise RuntimeError("No conda environment is activated.")
         # incompatible with the 'recreate' flag to avoid messing with the
         # user environement
         if recreate:
