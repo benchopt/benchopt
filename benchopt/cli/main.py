@@ -6,7 +6,7 @@ from benchopt.cli.completion import get_solvers
 from benchopt.cli.completion import get_datasets
 from benchopt.cli.completion import get_benchmark
 from benchopt.utils.shell_cmd import create_conda_env
-from benchopt.utils.shell_cmd import _run_shell_in_conda_env
+from benchopt.utils.shell_cmd import _run_shell_in_conda_env, env_exists
 
 
 main = click.Group(
@@ -16,13 +16,13 @@ main = click.Group(
 
 
 @main.command(
-    help="Run a benchmark with benchopt."
+    help="Run a benchmark with benchopt.",
+    epilog="To (re-)install the required solvers and datasets"
+    "in a benchmark dedicated conda environment or in your own environment, "
+    "see the command `benchopt install`."
 )
 @click.argument('benchmark', type=click.Path(exists=True),
                 autocompletion=get_benchmark)
-@click.option('--recreate',
-              is_flag=True,
-              help="If this flag is set, start with a fresh conda env.")
 @click.option('--objective-filter', '-p', 'objective_filters',
               metavar='<objective_filter>', multiple=True, type=str,
               help="Filter the objective based on its parametrized name. This "
@@ -31,17 +31,20 @@ main = click.Group(
               metavar="<solver_name>", multiple=True, type=str,
               help="Include <solver_name> in the benchmark. By default, all "
               "solvers are included. When `-s` is used, only listed estimators"
-              " are included.", autocompletion=get_solvers)
+              " are included. To include multiple solvers, "
+              "use multiple `-s` options.", autocompletion=get_solvers)
 @click.option('--force-solver', '-f', 'forced_solvers',
               metavar="<solver_name>", multiple=True, type=str,
               help="Force the re-run for <solver_name>. This "
-              "avoids caching effect when adding an estimator.",
+              "avoids caching effect when adding an estimator."
+              "To select multiple solvers, use multiple `-f` options.",
               autocompletion=get_solvers)
 @click.option('--dataset', '-d', 'dataset_names',
               metavar="<dataset_name>", multiple=True, type=str,
               help="Run the benchmark on <dataset_name>. By default, all "
               "datasets are included. When `-d` is used, only listed datasets"
-              " are included. Note that <dataset_name> can be a regexp.",
+              " are included. Note that <dataset_name> can be a regexp. "
+              "To include multiple datasets, use multiple `-d` options.",
               autocompletion=get_datasets)
 @click.option('--max-runs', '-n',
               metavar="<int>", default=100, show_default=True, type=int,
@@ -62,21 +65,23 @@ main = click.Group(
               "ipdb if it is installed and default to pdb otherwise.")
 @click.option('--local', '-l', 'env_name',
               flag_value='False', default=True,
-              help="Run the benchmark in the local env. Must have all solvers "
-              "and dataset dependencies installed.")
+              help="Run the benchmark in the local coinda environment."
+              "To install the required solvers and datasets, "
+              "see the command `benchopt install`.")
 @click.option('--env', '-e', 'env_name',
               flag_value='True',
-              help="Run the benchmark in a conda env for the benchmark. The "
-              "env is named benchopt_<BENCHMARK> and all solver dependencies "
-              "are installed in it.")
+              help="Run the benchmark in a dedicated conda environment "
+              "for the benchmark. The envenvironment is named "
+              "benchopt_<BENCHMARK>.")
 @click.option('--env-name', 'env_name',
               metavar="<env_name>", type=str, default='False',
-              help="Run the benchmark in a conda env for the benchmark. The "
-              "env is named <env_name> and all solver dependencies are "
-              "installed in it.")
+              help="Run the benchmark in the conda environment "
+              "named <env_name>."
+              "To install the required solvers and datasets, "
+              "see the command `benchopt install`.")
 def run(benchmark, solver_names, forced_solvers, dataset_names,
         objective_filters, max_runs, n_repetitions, timeout,
-        recreate=False, plot=True, pdb=False, env_name='False'):
+        plot=True, pdb=False, env_name='False'):
 
     from benchopt.runner import run_benchmark
 
@@ -98,9 +103,21 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
         return
 
     # If env_name is True, the flag `--env` has been used. Create a conda env
-    # specific to the benchmark. Else, use the <env_name> value.
+    # specific to the benchmark (if not existing).
+    # Else, use the <env_name> value.
     if env_name == 'True':
         env_name = f"benchopt_{benchmark.name}"
+    else:
+        # check provided <env_name>
+        # (to avoid empty name like `--env-name ""`)
+        if len(env_name) == 0:
+            raise RuntimeError("Empty environment name.")
+
+    # check if dedicated environment exists
+    if not env_exists(env_name):
+        msg = f"Environment '{env_name}' does not exist, " + \
+            "see the command `benchopt install`?"
+        raise RuntimeError(msg)
 
     # run the command in the conda env
     solvers_option = ' '.join(['-s ' + s for s in solver_names])
