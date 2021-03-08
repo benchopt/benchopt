@@ -115,6 +115,14 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
         # (to avoid empty name like `--env-name ""`)
         if len(env_name) == 0:
             raise RuntimeError("Empty environment name.")
+        # check if environment was set up by benchopt
+        check_benchopt = _run_shell_in_conda_env(
+            "benchopt --version", env_name=env_name, capture_stdout=True
+        )
+        if check_benchopt != 0:
+            msg = "Environment is not configurated, " + \
+                "see the command `benchopt install`."
+            raise RuntimeError(msg)
 
     # check if dedicated environment exists
     if not env_exists(env_name):
