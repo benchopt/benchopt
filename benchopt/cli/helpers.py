@@ -54,8 +54,8 @@ def sys_info():
 @click.argument('benchmark', type=click.Path(exists=True))
 @click.option('--force', '-f',
               is_flag=True,
-              help="If this flag is set, force the reinstallation of "
-              "the benchmark requirements.")
+              help="If this flag is set, the reinstallation of "
+              "the benchmark requirements is forced.")
 @click.option('--solver', '-s', 'solver_names',
               metavar="<solver_name>", multiple=True, type=str,
               help="Include <solver_name> in the installation. "
@@ -72,37 +72,23 @@ def sys_info():
               flag_value='True', type=str, default='False',
               help="Install all requirements in a dedicated "
               "conda environment for the benchmark. "
-              "The environment is named `benchopt_<BENCHMARK>` and all "
-              "solver dependencies and datasets are installed in it."
-              "/!\\ By not using this option, you may potentially alter "
-              "your own conda environment.")
-@click.option('--recreate',
-              is_flag=True,
-              help="If this flag is set, start with a fresh conda "
-              " environment. "
-              "Only used when using a benchmark specific environment "
-              "(i.e. option `-e/--env`). "
-              "Ignored if not used with the option `-e/--env`, i.e. "
-              "if installing in the local environment (default) or in a "
-              "conda environment specified by the user (option `--env-name`), "
-              "to avoid messing with user environments.")
+              "The environment is named 'benchopt_<BENCHMARK>' and all "
+              "solver dependencies and datasets are installed in it.")
 @click.option('--env-name', 'env_name',
               metavar="<env_name>", type=str, default='False',
               help="Install the benchmark requirements in the "
               "conda environment named <env_name>. "
               "If not existing, it is created.")
+@click.option('--recreate',
+              is_flag=True,
+              help="If this flag is set, start with a fresh conda "
+              "environment. It can only be used combined with options "
+              "`-e/--env` or `--env-name`.")
 @click.option('--yes', '-y', 'confirm',
               is_flag=True,
-              help="If this flag is set, "
-              "and if the option `--env-name` is provided "
-              "or no environment option "
-              "(i.e. `-e/--env` or `--env-name`) is provided, "
-              "no confirmation will be asked to the user. "
-              "Ignored if used with the option `-e/--env`, i.e. "
-              "if installing in a dedicated "
-              "conda environment for the benchmark."
-              "/!\\ By using this option, you may potentially alter "
-              "your own conda environment.")
+              help="If this flag is set, no confirmation will be asked "
+              "to the user to install requirements in the current environment. "
+              "Useless with options `-e/--env` or `--env-name`.")
 def install(benchmark, solver_names, dataset_names, force=False,
             recreate=False, env_name='False', confirm=False):
 
@@ -138,7 +124,7 @@ def install(benchmark, solver_names, dataset_names, force=False,
         if env_name == 'True':
             env_name = f"benchopt_{benchmark.name}"
         else:
-            # check provided env name
+            # check provided <env_name>
             # (to avoid empty name like `--env-name ""`)
             if len(env_name) == 0:
                 raise RuntimeError("Empty environment name.")
