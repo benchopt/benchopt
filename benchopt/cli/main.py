@@ -65,13 +65,11 @@ main = click.Group(
               "ipdb if it is installed and default to pdb otherwise.")
 @click.option('--local', '-l', 'env_name',
               flag_value='False', default=True,
-              help="Run the benchmark in the local coinda environment."
-              "To install the required solvers and datasets, "
-              "see the command `benchopt install`.")
+              help="Run the benchmark in the local conda environment.")
 @click.option('--env', '-e', 'env_name',
               flag_value='True',
               help="Run the benchmark in a dedicated conda environment "
-              "for the benchmark. The envenvironment is named "
+              "for the benchmark. The environment is named "
               "benchopt_<BENCHMARK>.")
 @click.option('--env-name', 'env_name',
               metavar="<env_name>", type=str, default='False',
@@ -127,7 +125,7 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
     # check if dedicated environment exists
     if not env_exists(env_name):
         msg = f"Environment '{env_name}' does not exist, " + \
-            "see the command `benchopt install`?"
+            "see the command `benchopt install`."
         raise RuntimeError(msg)
 
     # run the command in the conda env
