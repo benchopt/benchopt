@@ -137,16 +137,6 @@ def install(benchmark, solver_names, dataset_names, force=False,
         # env specific to the benchmark. Else, use the <env_name> value.
         if env_name == 'True':
             env_name = f"benchopt_{benchmark.name}"
-        else:
-            # user specified environment
-            if not confirm:
-                click.confirm(f"Install in the env '{env_name}'?", abort=True)
-            # incompatible with the 'recreate' flag to avoid messing with the
-            # user environements
-            if recreate:
-                print(f"Warning: cannot recreate user env '{env_name}'",
-                      flush=True)
-                recreate = False
 
         # create environment if necessary
         create_conda_env(env_name, recreate=recreate)
