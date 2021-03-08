@@ -59,7 +59,7 @@ CLI
 - Add ``benchopt config`` command to allow easy configuration of ``benchopt``
   using the CLI, by `Thomas Moreau`_ (:gh:`128`).
 
-  - Add ``benchopt install`` command to install benchmark requirements
+- Add ``benchopt install`` command to install benchmark requirements
   (not done in ``benchopt run`` anymore) by `Ghislain Durif`_ (:gh:`135`).
 
 BUG
