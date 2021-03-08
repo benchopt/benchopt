@@ -114,6 +114,12 @@ def install(benchmark, solver_names, dataset_names, force=False,
 
     # If env_name is False (default), installation in the current environement.
     if env_name == 'False':
+        # incompatible with the 'recreate' flag to avoid messing with the
+        # user environement
+        if recreate:
+            msg = "Cannot recreate conda env without using options " + \
+                "'-e/--env' or '--env-name'."
+            raise RuntimeError(msg)
         # check if any current conda environment
         if 'CONDA_DEFAULT_ENV' in os.environ and \
                 os.environ['CONDA_DEFAULT_ENV'] is not None and \
@@ -126,12 +132,6 @@ def install(benchmark, solver_names, dataset_names, force=False,
                               abort=True)
         else:
             raise RuntimeError("No conda environment is activated.")
-        # incompatible with the 'recreate' flag to avoid messing with the
-        # user environement
-        if recreate:
-            print(f"Warning: cannot recreate user env '{env_name}'",
-                  flush=True)
-            recreate = False
     else:
         # If env_name is True, the flag `--env` has been used. Create a conda
         # env specific to the benchmark. Else, use the <env_name> value.
