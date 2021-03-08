@@ -33,7 +33,7 @@ def get_datasets(ctx, args, incomplete):
 def get_benchmark(ctx, args, incomplete):
     skip_import()
     benchmarks = [b.path for b in os.scandir('.') if b.is_dir()]
-    return [b for b in benchmarks if incomplete in b]
+    return [os.curdir] + [b for b in benchmarks if incomplete in b]
 
 
 @main.command(
