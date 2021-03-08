@@ -107,6 +107,9 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
     # Else, use the <env_name> value.
     if env_name == 'True':
         env_name = f"benchopt_{benchmark.name}"
+        # create environment if necessary
+        # (to avoid failure if `benchopt install -e` was not run)
+        create_conda_env(env_name, recreate=False)
     else:
         # check provided <env_name>
         # (to avoid empty name like `--env-name ""`)
