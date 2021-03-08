@@ -1,3 +1,4 @@
+import os
 import click
 from pathlib import Path
 
@@ -29,10 +30,17 @@ def get_datasets(ctx, args, incomplete):
     return [d for d in datasets if incomplete.lower() in d]
 
 
+def get_benchmark(ctx, args, incomplete):
+    skip_import()
+    benchmarks = [b.path for b in os.scandir('.') if b.is_dir()]
+    return [b for b in benchmarks if incomplete in b]
+
+
 @main.command(
     help="Run a benchmark with benchopt."
 )
-@click.argument('benchmark', type=click.Path(exists=True))
+@click.argument('benchmark', type=click.Path(exists=True),
+                autocompletion=get_benchmark)
 @click.option('--recreate',
               is_flag=True,
               help="If this flag is set, start with a fresh conda env.")
