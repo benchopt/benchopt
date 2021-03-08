@@ -17,9 +17,9 @@ main = click.Group(
 
 @main.command(
     help="Run a benchmark with benchopt.",
-    epilog="To (re-)install the required solvers and datasets"
-    "in a benchmark dedicated conda environment or in your own environment, "
-    "see the command `benchopt install`."
+    epilog="To (re-)install the required solvers and datasets "
+    "in a benchmark-dedicated conda environment or in your own "
+    "conda environment, see the command `benchopt install`."
 )
 @click.argument('benchmark', type=click.Path(exists=True),
                 autocompletion=get_benchmark)

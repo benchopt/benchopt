@@ -87,8 +87,8 @@ def sys_info():
 @click.option('--yes', '-y', 'confirm',
               is_flag=True,
               help="If this flag is set, no confirmation will be asked "
-              "to the user to install requirements in the current environment. "
-              "Useless with options `-e/--env` or `--env-name`.")
+              "to the user to install requirements in the current environment."
+              " Useless with options `-e/--env` or `--env-name`.")
 def install(benchmark, solver_names, dataset_names, force=False,
             recreate=False, env_name='False', confirm=False):
 
