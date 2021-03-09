@@ -41,7 +41,7 @@ def clean(benchmark, token=None, filename=None):
     rm_folder(cache_folder)
 
 
-def print_info(cls_list, env_name = None, dep = False):
+def print_info(cls_list, env_name=None, dep=False):
     """Print information for each element of input listed
 
     Parameters
@@ -94,7 +94,6 @@ def print_info(cls_list, env_name = None, dep = False):
                 print(colorify(f" not available in '{env_name}'", RED))
 
         print("-" * 10)
-
 
 
 @helpers.command(
