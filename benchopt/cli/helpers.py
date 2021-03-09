@@ -98,7 +98,8 @@ def print_info(cls_list, env_name=None, dep=False):
 
 
 @helpers.command(
-    help="List the requirements (solvers/datasets) for a benchmark.",
+    help="List information and requirements (solvers/datasets) "
+    "for a given benchmark.",
     epilog="To (re-)install the required solvers and datasets "
     "in a benchmark-dedicated conda environment or in your own "
     "conda environment, see the command `benchopt install`."
