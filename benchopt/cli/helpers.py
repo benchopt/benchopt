@@ -10,6 +10,9 @@ from benchopt.utils.files import rm_folder
 from benchopt.utils.sys_info import get_sys_info
 from benchopt.config import get_global_config_file
 from benchopt.utils.dynamic_modules import _load_class_from_module
+from benchopt.cli.main import get_benchmark
+from benchopt.utils.colorify import colorify
+from benchopt.utils.colorify import LINE_LENGTH, RED, GREEN
 
 
 helpers = click.Group(
@@ -36,6 +39,110 @@ def clean(benchmark, token=None, filename=None):
     cache_folder = benchmark.get_cache_location()
     print(f"rm -rf {cache_folder}")
     rm_folder(cache_folder)
+
+
+def print_info(cls_list, env_name = None, dep = False):
+    """Print information for each element of input listed
+
+    Parameters
+    ----------
+    cls_list : list
+        List of objects (solvers or datasets) to print info from.
+    env_name : string | None
+        name of environment where to check for object availability.
+        If None or 'False', no check is made.
+    dep : boolean
+        flag to print each object dependencies.
+    """
+
+    print("-" * 10)
+
+    for cls in cls_list:
+        print(f"## {cls.name}")
+        # doc
+        if hasattr(cls, '__doc__') and cls.__doc__ is not None and \
+                len(cls.__doc__) > 0:
+            print(f"- doc: {cls.__doc__}".ljust(LINE_LENGTH))
+        # parameters
+        if hasattr(cls, 'parameters') and cls.parameters is not None and \
+                len(cls.parameters) > 0:
+            print(f"- parameters: {', '.join(cls.parameters)}"
+                  .ljust(LINE_LENGTH))
+        # install command
+        if hasattr(cls, 'install_cmd') and cls.install_cmd is not None:
+            print(f"- install cmd: {cls.install_cmd}")
+        else:
+            print("- no installation required")
+        # dependencies
+        if dep:
+            if hasattr(cls, 'requirements') and \
+                    cls.requirements is not None and \
+                    len(cls.requirements) > 0:
+                print(f"- dependencies: {', '.join(cls.requirements)}"
+                      .ljust(LINE_LENGTH))
+            else:
+                print("- no dependencies")
+
+        # availability in env (if relevant)
+        if env_name is not None and env_name != 'False':
+            # check for dependency avaulability
+            if cls.is_installed(env_name):
+                print(colorify(u'\u2713', GREEN), end='', flush=True)
+                print(colorify(f" available in '{env_name}'", GREEN))
+            else:
+                print(colorify(u'\u274c', RED), end='', flush=True)
+                print(colorify(f" not available in '{env_name}'", RED))
+
+        print("-" * 10)
+
+
+
+@helpers.command(
+    help="List the requirements (solvers/datasets) for a benchmark.",
+    epilog="To (re-)install the required solvers and datasets "
+    "in a benchmark-dedicated conda environment or in your own "
+    "conda environment, see the command `benchopt install`."
+)
+@click.argument('benchmark', type=click.Path(exists=True),
+                autocompletion=get_benchmark)
+@click.option('--dep',
+              is_flag=True,
+              help="List solvers and datasets dependencies.")
+@click.option('--env', '-e', 'env_name',
+              flag_value='True', type=str, default='False',
+              help="Additional checks for requirement availability in "
+              "the dedicated conda environment for the benchmark "
+              "named 'benchopt_<BENCHMARK>'.")
+@click.option('--env-name', 'env_name',
+              metavar="<env_name>", type=str, default='False',
+              help="Additional checks for requirement availability in "
+              "the conda environment named <env_name>.")
+def info(benchmark, dep, env_name):
+
+    benchmark = Benchmark(benchmark)
+    print(f"Info regarding '{benchmark.name}'")
+
+    # get solvers and datasets in the benchmark
+    solvers = benchmark.list_benchmark_solvers()
+    datasets = benchmark.list_benchmark_datasets()
+
+    # Check conda env (if relevant)
+    # If env_name is True, the flag `--env` has been used. Check the conda
+    # env specific to the benchmark. Else, use the <env_name> value.
+    if env_name == 'True':
+        env_name = f"benchopt_{benchmark.name}"
+    else:
+        # check provided <env_name>
+        # (to avoid empty name like `--env-name ""`)
+        if len(env_name) == 0:
+            raise RuntimeError("Empty environment name.")
+
+    # print information
+    print("# Datasets", flush=True)
+    print_info(datasets, env_name, dep)
+
+    print("# Solvers", flush=True)
+    print_info(solvers, env_name, dep)
 
 
 @helpers.command()
