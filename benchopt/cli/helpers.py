@@ -89,10 +89,10 @@ def print_info(cls_list, env_name=None, dep=False):
             # check for dependency avaulability
             if cls.is_installed(env_name):
                 print(colorify(u'\u2713', GREEN), end='', flush=True)
-                print(colorify(f" available in '{env_name}'", GREEN))
+                print(colorify(f" available in env '{env_name}'", GREEN))
             else:
                 print(colorify(u'\u274c', RED), end='', flush=True)
-                print(colorify(f" not available in '{env_name}'", RED))
+                print(colorify(f" not available in env '{env_name}'", RED))
 
         print("-" * 10)
 
