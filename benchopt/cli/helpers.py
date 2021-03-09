@@ -13,7 +13,7 @@ from benchopt.cli.completion import get_benchmark
 from benchopt.config import get_global_config_file
 from benchopt.utils.dynamic_modules import _load_class_from_module
 from benchopt.utils.shell_cmd import create_conda_env
-from benchopt.cli.main import get_solvers, get_datasets
+from benchopt.cli.main import get_solvers, get_datasets, get_benchmark
 
 
 helpers = click.Group(
@@ -52,7 +52,8 @@ def sys_info():
 @helpers.command(
     help="Install the requirements (solvers/datasets) for a benchmark."
 )
-@click.argument('benchmark', type=click.Path(exists=True))
+@click.argument('benchmark', type=click.Path(exists=True),
+                autocompletion=get_benchmark)
 @click.option('--force', '-f',
               is_flag=True,
               help="If this flag is set, the reinstallation of "
