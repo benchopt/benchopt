@@ -55,6 +55,10 @@ CLI
 - Add ``benchopt config`` command to allow easy configuration of ``benchopt``
   using the CLI, by `Thomas Moreau`_ (:gh:`128`).
 
+- Add ``benchopt info`` command to print information about a benchmark
+  (including solvers, datasets, dependencies, etc.)
+  by `Ghislain Durif`_ (:gh:`140`).
+
 BUG
 ~~~
 
