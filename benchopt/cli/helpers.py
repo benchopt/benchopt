@@ -105,7 +105,7 @@ def print_info(cls_list, env_name=None, dep=False):
 )
 @click.argument('benchmark', type=click.Path(exists=True),
                 autocompletion=get_benchmark)
-@click.option('--dep',
+@click.option('--dep', '-d',
               is_flag=True,
               help="List solvers and datasets dependencies.")
 @click.option('--env', '-e', 'env_name',
