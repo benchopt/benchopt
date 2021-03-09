@@ -11,6 +11,7 @@ from benchopt.utils.sys_info import get_sys_info
 from benchopt.config import get_global_config_file
 from benchopt.utils.dynamic_modules import _load_class_from_module
 from benchopt.cli.main import get_benchmark
+from benchopt.utils.shell_cmd import _run_shell_in_conda_env
 from benchopt.utils.colorify import colorify
 from benchopt.utils.colorify import LINE_LENGTH, RED, GREEN
 
@@ -135,6 +136,17 @@ def info(benchmark, dep, env_name):
         # (to avoid empty name like `--env-name ""`)
         if len(env_name) == 0:
             raise RuntimeError("Empty environment name.")
+
+    # check if env_name exists
+    check_benchopt = _run_shell_in_conda_env(
+        "benchopt --version", env_name=env_name, capture_stdout=True
+    )
+    if check_benchopt != 0:
+        msg = f"Environment '{env_name}' does not exist " + \
+            "or is not configurated, it will not be checked, " + \
+            "see the command `benchopt install`."
+        print(msg)
+        env_name = None
 
     # print information
     print("# Datasets", flush=True)
