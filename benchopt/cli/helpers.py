@@ -138,16 +138,17 @@ def info(benchmark, dep, env_name):
         if len(env_name) == 0:
             raise RuntimeError("Empty environment name.")
 
-    # check if env_name exists
-    check_benchopt = _run_shell_in_conda_env(
-        "benchopt --version", env_name=env_name, capture_stdout=True
-    )
-    if check_benchopt != 0:
-        msg = f"Environment '{env_name}' does not exist " + \
-            "or is not configurated, it will not be checked, " + \
-            "see the command `benchopt install`."
-        print(msg)
-        env_name = None
+    # check if env_name exists (when using --env or --env-name)
+    if env_name is not None and env_name != 'False':
+        check_benchopt = _run_shell_in_conda_env(
+            "benchopt --version", env_name=env_name, capture_stdout=True
+        )
+        if check_benchopt != 0:
+            msg = f"Environment '{env_name}' does not exist " + \
+                "or is not configurated, it will not be checked, " + \
+                "see the command `benchopt install`."
+            print(msg)
+            env_name = None
 
     # print information
     print("# Datasets", flush=True)
