@@ -75,14 +75,12 @@ def print_info(cls_list, env_name=None, dep=False):
         else:
             print("- no installation required")
         # dependencies
-        if dep:
-            if hasattr(cls, 'requirements') and \
-                    cls.requirements is not None and \
-                    len(cls.requirements) > 0:
-                print(f"- dependencies: {', '.join(cls.requirements)}")
-            else:
-                print("- no dependencies")
-
+        if hasattr(cls, 'requirements') and \
+                cls.requirements is not None and \
+                len(cls.requirements) > 0:
+            print(f"- dependencies: {', '.join(cls.requirements)}")
+        else:
+            print("- no dependencies")
         # availability in env (if relevant)
         if env_name is not None and env_name != 'False':
             # check for dependency avaulability
@@ -105,9 +103,6 @@ def print_info(cls_list, env_name=None, dep=False):
 )
 @click.argument('benchmark', type=click.Path(exists=True),
                 autocompletion=get_benchmark)
-@click.option('--dep', '-d',
-              is_flag=True,
-              help="List solvers and datasets dependencies.")
 @click.option('--env', '-e', 'env_name',
               flag_value='True', type=str, default='False',
               help="Additional checks for requirement availability in "
@@ -117,7 +112,7 @@ def print_info(cls_list, env_name=None, dep=False):
               metavar="<env_name>", type=str, default='False',
               help="Additional checks for requirement availability in "
               "the conda environment named <env_name>.")
-def info(benchmark, dep, env_name):
+def info(benchmark, env_name):
 
     benchmark = Benchmark(benchmark)
     print(f"Info regarding '{benchmark.name}'")
@@ -172,10 +167,10 @@ def info(benchmark, dep, env_name):
 
     # print information
     print("# Datasets", flush=True)
-    print_info(datasets, env_name, dep)
+    print_info(datasets, env_name)
 
     print("# Solvers", flush=True)
-    print_info(solvers, env_name, dep)
+    print_info(solvers, env_name)
 
 
 @helpers.command()
