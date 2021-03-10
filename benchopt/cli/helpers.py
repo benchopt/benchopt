@@ -63,18 +63,15 @@ def print_info(cls_list, env_name=None):
                 len(cls.__doc__) > 0:
             print(f"- doc: {cls.__doc__}")
         # parameters
-        if hasattr(cls, 'parameters') and cls.parameters is not None and \
-                len(cls.parameters) > 0:
+        if hasattr(cls, 'parameters') and cls.parameters:
             print(f"- parameters: {', '.join(cls.parameters)}")
         # install command
-        if hasattr(cls, 'install_cmd') and cls.install_cmd is not None:
+        if hasattr(cls, 'install_cmd') and cls.install_cmd:
             print(f"- install cmd: {cls.install_cmd}")
         else:
             print("- no installation required")
         # dependencies
-        if hasattr(cls, 'requirements') and \
-                cls.requirements is not None and \
-                len(cls.requirements) > 0:
+        if hasattr(cls, 'requirements') and cls.requirements:
             print(f"- dependencies: {', '.join(cls.requirements)}")
         else:
             print("- no dependencies")
