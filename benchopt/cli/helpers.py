@@ -16,7 +16,6 @@ from benchopt.utils.shell_cmd import _run_shell_in_conda_env
 from benchopt.utils.colorify import colorify
 from benchopt.utils.colorify import RED, GREEN
 
-
 helpers = click.Group(
     name='Helpers',
     help="Helpers to clean and config ``benchopt``."
@@ -43,18 +42,16 @@ def clean(benchmark, token=None, filename=None):
     rm_folder(cache_folder)
 
 
-def print_info(cls_list, env_name=None, dep=False):
+def print_info(cls_list, env_name=None):
     """Print information for each element of input listed
 
     Parameters
     ----------
     cls_list : list
         List of objects (solvers or datasets) to print info from.
-    env_name : string | None
+    env_name : str | None
         name of environment where to check for object availability.
         If None or 'False', no check is made.
-    dep : boolean
-        flag to print each object dependencies.
     """
 
     print("-" * 10)
