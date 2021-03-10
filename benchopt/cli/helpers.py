@@ -14,7 +14,7 @@ from benchopt.utils.dynamic_modules import _load_class_from_module
 from benchopt.cli.main import get_benchmark
 from benchopt.utils.shell_cmd import _run_shell_in_conda_env
 from benchopt.utils.colorify import colorify
-from benchopt.utils.colorify import LINE_LENGTH, RED, GREEN
+from benchopt.utils.colorify import RED, GREEN
 
 
 helpers = click.Group(
