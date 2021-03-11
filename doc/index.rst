@@ -39,7 +39,8 @@ This package can be installed through `pip` using:
 
 .. code-block::
 
-    $ pip install benchopt
+    $ git clone https://github.com/benchopt/benchOpt
+    $ pip install -e benchOpt
 
 This will install the command line tool to run the benchmark. Then, existing
 benchmarks can be retrieved from git or created locally. To discover which
