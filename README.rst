@@ -43,11 +43,17 @@ Learn how to `write a benchmark on our documentation <https://benchopt.github.io
 Install
 --------
 
-This package can be installed through `pip` using:
+This package can be installed through `pip`. To get the **last release**, use:
 
 .. code-block::
 
     $ pip install benchopt
+
+And to get the **latest development version**, you can use:
+
+.. code-block::
+
+    $ pip install -U https://github.com/benchopt/benchOpt/archive/master.zip
 
 This will install the command line tool to run the benchmark. Then, existing
 benchmarks can be retrieved from git or created locally. For instance, the
