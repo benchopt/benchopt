@@ -35,11 +35,21 @@ Learn how to :ref:`how`.
 Install
 --------
 
-This package can be installed through `pip` using:
+This package can be installed through `pip`. To get the **last release**, use:
 
 .. code-block::
 
     $ pip install benchopt
+
+And to get the **latest development version**, you can use:
+
+.. code-block::
+
+    $ pip install -U https://github.com/benchopt/benchOpt/archive/master.zip
+
+**Note:** due to major API modifications, the last ``benchopt`` release does
+not correspond to the latest version of the documentation at the moment.
+Until further notice, it is recommended to use the development version.
 
 This will install the command line tool to run the benchmark. Then, existing
 benchmarks can be retrieved from git or created locally. To discover which
