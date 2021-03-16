@@ -186,7 +186,10 @@ def test(benchmark, env_name, pytest_args):
 
     cmd = (
         f'pytest {pytest_args} {BENCHMARK_TEST_FILE} '
-        f'--benchmark {benchmark} {env_option}'
+        f'--benchmark {benchmark} {env_option} '
+        # Make sure to not modify sys.path to add test file from current env
+        # in sub conda env as there might be different python versions.
+        '--import-mode importlib'
     )
 
     raise SystemExit(_run_shell_in_conda_env(
