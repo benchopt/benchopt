@@ -5,7 +5,7 @@ import subprocess
 from shutil import which
 from pathlib import Path
 
-from .stream_redirection import SuppressStd
+from benchopt.utils.stream_redirection import SuppressStd
 
 
 def _get_processor_name():
