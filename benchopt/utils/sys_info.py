@@ -5,7 +5,7 @@ import subprocess
 from shutil import which
 from pathlib import Path
 
-from benchopt.utils.stream_redirection import SuppressStd
+from .stream_redirection import SuppressStd
 
 
 def _get_processor_name():
@@ -38,7 +38,7 @@ def _get_cuda_version():
 def _get_numpy_libs():
     "Return info on 'Blas/Lapack' lib linked to numpy."
 
-    # Import are nested to avoid long import time.
+    # Import is nested to avoid long import time.
     import numpy as np
 
     with SuppressStd() as capture:
