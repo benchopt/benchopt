@@ -1,3 +1,4 @@
+import os
 import click
 from pathlib import Path
 
@@ -29,10 +30,19 @@ def get_datasets(ctx, args, incomplete):
     return [d for d in datasets if incomplete.lower() in d]
 
 
+def get_benchmark(ctx, args, incomplete):
+    skip_import()
+    benchmarks = [os.curdir] + [b.path for b in os.scandir('.') if b.is_dir()]
+    benchmarks = [b for b in benchmarks
+                  if (Path(b) / "objective.py").exists()]
+    return [b for b in benchmarks if incomplete in b]
+
+
 @main.command(
     help="Run a benchmark with benchopt."
 )
-@click.argument('benchmark', type=click.Path(exists=True))
+@click.argument('benchmark', type=click.Path(exists=True),
+                autocompletion=get_benchmark)
 @click.option('--recreate',
               is_flag=True,
               help="If this flag is set, start with a fresh conda env.")
@@ -176,7 +186,10 @@ def test(benchmark, env_name, pytest_args):
 
     cmd = (
         f'pytest {pytest_args} {BENCHMARK_TEST_FILE} '
-        f'--benchmark {benchmark} {env_option}'
+        f'--benchmark {benchmark} {env_option} '
+        # Make sure to not modify sys.path to add test file from current env
+        # in sub conda env as there might be different python versions.
+        '--import-mode importlib'
     )
 
     raise SystemExit(_run_shell_in_conda_env(
