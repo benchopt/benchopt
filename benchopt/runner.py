@@ -90,8 +90,8 @@ def run_one_resolution(objective, solver, meta, stop_val):
     # Add system info in results
     info = get_sys_info()
 
-    return (dict(**meta, solver_name=str(solver), stop_val=stop_val,
-                 time=delta_t, **objective_dict, **info),
+    return (dict(**meta, stop_val=stop_val, time=delta_t,
+                 **objective_dict, **info),
             objective_dict['objective_value'])
 
 
@@ -205,38 +205,41 @@ def run_one_to_cvg(benchmark, objective, solver, meta, max_runs, deadline=None,
     return curve, status
 
 
-def get_callback(objective, meta_rep, deadline):
+def get_callback(objective, max_iter, deadline,  meta):
     # make documentation
     info = get_sys_info()
-    curve_one_rep = []
-    cb_status = {"time": time.perf_counter(),
-                 "delta_t": 0,
-                 "status": 'unfinished',
-                 "next_stopval": 0}
+    curve = []
+    cb_status = {
+        'status': 'unfinished',
+        'next_stopval': 0,
+        'delta_t': 0,
+        'time': time.perf_counter(),
+    }
 
     def callback(it, beta_hat_i):
         t0 = time.perf_counter()
         cb_status["delta_t"] += t0 - cb_status["time"]
-        stop = False
         if it == cb_status["next_stopval"]:
             objective_dict = objective(beta_hat_i)
             # Add system info in results
-            dict_ = dict(**meta_rep, stop_val=it,
-                         time=cb_status["delta_t"],
-                         **objective_dict, **info)
-            curve_one_rep.append(dict_)
+            curve.append(dict(
+                **meta, stop_val=it, time=cb_status["delta_t"],
+                **objective_dict, **info
+            ))
 
-            stop = time.time() > deadline
-            if stop:
+            if deadline is not None and time.time() > deadline:
                 cb_status["status"] = 'timeout'
+                return False
+            if it == max_iter:
+                return False
 
-            cb_status["next_stopval"] = get_next(
-                cb_status["next_stopval"]
+            cb_status["next_stopval"] = min(
+                get_next(cb_status["next_stopval"]), max_iter
             )
         cb_status["time"] = time.perf_counter()
-        return stop
+        return True
 
-    return callback, curve_one_rep, cb_status
+    return curve, cb_status, callback
 
 
 def run_one_solver(benchmark, objective, solver, meta, max_runs, n_repetitions,
@@ -294,21 +297,17 @@ def run_one_solver(benchmark, objective, solver, meta, max_runs, n_repetitions,
             else:
                 progress_str = None
 
-            meta_rep = dict(**meta, idx_rep=rep)
+            meta_rep = dict(**meta, idx_rep=rep, solver_name=str(solver))
 
             # Force the run if needed
             deadline = time.time() + timeout / n_repetitions
 
-            if hasattr(solver, "run_all_in_one"):
+            if not hasattr(solver.run_with_cb, "not_implemented"):
                 max_iter = int(2 * RHO ** (max_runs - 1))
-
-                # add solver name to meta
-                meta_rep["solver_name"] = str(solver)
-
-                callback, curve_one_rep, cb_status = get_callback(
-                            objective, meta_rep, deadline
-                        )
-                solver.run_all_in_one(max_iter, callback)
+                curve_one_rep, cb_status, callback = get_callback(
+                    objective, max_iter, deadline, meta_rep
+                )
+                solver.run_with_cb(callback)
                 status = cb_status["status"]
             else:
                 curve_one_rep, status = run_one_to_cvg_cached(
