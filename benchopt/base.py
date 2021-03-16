@@ -14,6 +14,7 @@ STOP_STRATEGIES = ['iteration', 'tolerance']
 
 
 def not_implemented(func):
+    "Mark methods as not implemented."
     func.not_implemented = True
     return func
 
