@@ -1,6 +1,5 @@
 import os
 import re
-import psutil
 import platform
 import subprocess
 from shutil import which
@@ -76,6 +75,7 @@ def get_sys_info():
     info["platform-version"] = platform.version()
 
     # Info on the hardware
+    import psutil
     info["system-cpus"] = cpu_count()
     info["system-processor"] = _get_processor_name()
     info["system-ram (GB)"] = round(
