@@ -5,10 +5,6 @@ import subprocess
 from shutil import which
 from pathlib import Path
 
-import scipy
-import numpy as np
-from joblib import cpu_count
-
 from .stream_redirection import SuppressStd
 
 
@@ -41,6 +37,10 @@ def _get_cuda_version():
 
 def _get_numpy_libs():
     "Return info on 'Blas/Lapack' lib linked to numpy."
+
+    # Import are nested to avoid long import time.
+    import numpy as np
+
     with SuppressStd() as capture:
         np.show_config()
     lines = capture.output.splitlines()
@@ -63,6 +63,13 @@ def _get_numpy_libs():
 
 def get_sys_info():
     "Return a dictionary with info from the current system."
+
+    # Import are nested to avoid long import time when func is not called
+    import scipy
+    import psutil
+    import numpy as np
+    from joblib import cpu_count
+
     info = {}
 
     # Info on the env
@@ -75,7 +82,6 @@ def get_sys_info():
     info["platform-version"] = platform.version()
 
     # Info on the hardware
-    import psutil
     info["system-cpus"] = cpu_count()
     info["system-processor"] = _get_processor_name()
     info["system-ram (GB)"] = round(
