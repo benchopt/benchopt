@@ -2,7 +2,6 @@ import os
 import tempfile
 import warnings
 import subprocess
-from pathlib import Path
 
 import benchopt
 from ..config import get_setting
@@ -12,7 +11,6 @@ from .misc import get_benchopt_requirement_line
 
 SHELL = get_setting('shell')
 CONDA_CMD = get_setting('conda_cmd')
-SHELL_PREAMBLE = Path(__file__).parent / "shell_cmd_preamble.sh"
 
 # Yaml config file for benchopt env.
 BENCHOPT_ENV = """
