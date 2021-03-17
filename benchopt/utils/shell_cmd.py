@@ -62,15 +62,17 @@ def _run_shell(script, raise_on_error=None, capture_stdout=True,
             'return_output=True can only be used with capture_stdout=True'
         )
 
+    # Make sure the script fail at first failure
+    fast_failure_script = f"set -e\n{script}"
+
     # Use a TemporaryFile to make sure this file is cleaned up at
     # the end of this function.
     tmp = tempfile.NamedTemporaryFile(mode="w+")
-    fast_failure_script = f"set -e\nsource {SHELL_PREAMBLE}\n{script}"
     tmp.write(fast_failure_script)
     tmp.flush()
 
     if DEBUG:
-        print(fast_failure_script)
+        print("-" * 60 + f'\n{fast_failure_script}\n' + "-" * 60)
 
     if raise_on_error is True:
         raise_on_error = "{output}"
@@ -126,11 +128,23 @@ def _run_shell_in_conda_env(script, env_name=None, raise_on_error=None,
         If return_output=True, return the output of the command as a str.
     """
     if env_name is not None:
-        # first line to use conda activate in bash script
-        # see https://github.com/conda/conda/issues/7980
-        script = (f'eval "$({CONDA_CMD} shell.bash hook)"\n'
-                  f'{CONDA_CMD} activate {env_name}\n'
-                  f'{script}')
+        # Add necessary calls to make the script run in conda env.
+        script = (
+            # Make sure R_HOME is never passed down to subprocesses in differnt
+            # conda env as it might lead to trying to load packages from the
+            # wrong distribution.
+            '# Setup conda\nunset R_HOME\n'
+
+            # Run hook to setup conda and activate the env.
+            # first line to use conda activate in bash script
+            # see https://github.com/conda/conda/issues/7980
+            f'eval "$({CONDA_CMD} shell.bash hook)"\n'
+            f'{CONDA_CMD} activate {env_name}\n\n'
+
+            # Run the actual script
+            '# Run script\n'
+            f'{script}'
+        )
 
     return _run_shell(
         script, raise_on_error=raise_on_error,
