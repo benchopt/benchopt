@@ -120,8 +120,8 @@ class Benchmark:
     def get_xfail_file(self):
         """Get the location for the xfail file for the benchmark.
 
-        This file will serve to check is a test should be xfailed on specific
-        solvers and platforms when we have install or running problems.
+        This file will be used to check if a test should be xfailed on specific
+        solvers and platforms when we have installation or running issues.
         Returns None if this file does not exists.
         """
         xfail_file = self.benchmark_dir / 'xfail.py'
