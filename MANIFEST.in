@@ -5,6 +5,9 @@ include conftest.py
 include pyproject.toml
 include dev-requirements.txt
 
+# Include shell script preamble
+include benchopt/utils/shell_cmd_preamble.sh
+
 # Include doc generation files
 include doc/_static/style.css
 recursive-include doc *.py
