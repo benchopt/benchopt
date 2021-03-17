@@ -2,6 +2,7 @@ import os
 import tempfile
 import warnings
 import subprocess
+from pathlib import Path
 
 import benchopt
 from ..config import get_setting
@@ -11,6 +12,7 @@ from .misc import get_benchopt_requirement_line
 
 SHELL = get_setting('shell')
 CONDA_CMD = get_setting('conda_cmd')
+SHELL_PREAMBLE = Path(__file__).parent / "shell_cmd_preamble.sh"
 
 # Yaml config file for benchopt env.
 BENCHOPT_ENV = """
@@ -63,7 +65,7 @@ def _run_shell(script, raise_on_error=None, capture_stdout=True,
     # Use a TemporaryFile to make sure this file is cleaned up at
     # the end of this function.
     tmp = tempfile.NamedTemporaryFile(mode="w+")
-    fast_failure_script = f"set -e\n{script}"
+    fast_failure_script = f"source {SHELL_PREAMBLE}\n{script}"
     tmp.write(fast_failure_script)
     tmp.flush()
 
