@@ -65,7 +65,7 @@ def _run_shell(script, raise_on_error=None, capture_stdout=True,
     # Use a TemporaryFile to make sure this file is cleaned up at
     # the end of this function.
     tmp = tempfile.NamedTemporaryFile(mode="w+")
-    fast_failure_script = f"source {SHELL_PREAMBLE}\n{script}"
+    fast_failure_script = f"set -e\nsource {SHELL_PREAMBLE}\n{script}"
     tmp.write(fast_failure_script)
     tmp.flush()
 
