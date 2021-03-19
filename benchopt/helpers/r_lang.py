@@ -25,6 +25,11 @@ rpy2.robjects.r['options'](warn=-1)
 # Set the R_HOME directory to the one of the R RHOME ouput
 os.environ['R_HOME'] = rpy2.situation.r_home_from_subprocess()
 
+# Allow loading shared objects
+r_home = os.environ.get("R_HOME")
+os.environ["LD_LIBRARY_PATH"] = \
+    rpy2.situation.r_ld_library_path_from_subprocess(r_home)
+
 
 def import_rpackages(*packages):
     """Helper to import R packages in the import_ctx"""
