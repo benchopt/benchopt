@@ -40,6 +40,7 @@ def import_rpackages(*packages):
     base = rpackages.importr('base')
     R_PATH = base._libPaths()  # noqa: F841
     R_HOME = os.environ['R_HOME']  # noqa: F841
+    LD_PATH = os.environ['LD_LIBRARY_PATH']  # noqa: F841
     for pkg in packages:
         try:
             rpackages.importr(pkg)
