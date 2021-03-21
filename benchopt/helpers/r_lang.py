@@ -4,9 +4,6 @@ import os
 # using the parent interpreter R_HOME in the sub-interpreter.
 if os.environ.get('R_HOME', None) is not None:
     del os.environ['R_HOME']
-# same for the library path
-if os.environ.get('LD_LIBRARY_PATH', None) is not None:
-    del os.environ['LD_LIBRARY_PATH']
 
 import rpy2  # noqa: E402
 import rpy2.robjects.packages as rpackages  # noqa: E402
