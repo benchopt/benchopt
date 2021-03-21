@@ -28,7 +28,8 @@ os.environ['R_HOME'] = rpy2.situation.r_home_from_subprocess()
 # Allow loading shared objects
 r_home = os.environ.get("R_HOME")
 os.environ["LD_LIBRARY_PATH"] = \
-    rpy2.situation.r_ld_library_path_from_subprocess(r_home)
+    rpy2.situation.r_ld_library_path_from_subprocess(r_home) + \
+    ":" + r_home + "/library"
 
 
 def import_rpackages(*packages):
