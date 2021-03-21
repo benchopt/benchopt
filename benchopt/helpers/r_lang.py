@@ -38,6 +38,8 @@ def import_rpackages(*packages):
     R_PATH = base._libPaths()  # noqa: F841
     R_HOME = os.environ['R_HOME']  # noqa: F841
     LD_PATH = os.environ['LD_LIBRARY_PATH']  # noqa: F841
+    os.environ["LD_LIBRARY_PATH"] = \
+        rpy2.situation.r_ld_library_path_from_subprocess(R_HOME)
     for path in R_PATH:
         os.environ['LD_LIBRARY_PATH'] += ":" + path
     LD_PATH = os.environ['LD_LIBRARY_PATH']  # noqa: F841
