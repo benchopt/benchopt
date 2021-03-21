@@ -26,10 +26,9 @@ rpy2.robjects.r['options'](warn=-1)
 os.environ['R_HOME'] = rpy2.situation.r_home_from_subprocess()
 
 # Allow loading shared objects
-r_home = os.environ.get("R_HOME")
-os.environ["LD_LIBRARY_PATH"] = \
-    rpy2.situation.r_ld_library_path_from_subprocess(r_home) + \
-    ":" + r_home + "/library"
+# r_home = os.environ.get("R_HOME")
+# ld_path = rpy2.situation.r_ld_library_path_from_subprocess(r_home)
+# os.environ["LD_LIBRARY_PATH"] = ld_path + ":" + r_home + "/library"
 
 
 def import_rpackages(*packages):
@@ -38,6 +37,9 @@ def import_rpackages(*packages):
     base = rpackages.importr('base')
     R_PATH = base._libPaths()  # noqa: F841
     R_HOME = os.environ['R_HOME']  # noqa: F841
+    LD_PATH = os.environ['LD_LIBRARY_PATH']  # noqa: F841
+    for path in R_PATH:
+        os.environ['LD_LIBRARY_PATH'] += ":" + path
     LD_PATH = os.environ['LD_LIBRARY_PATH']  # noqa: F841
     for pkg in packages:
         try:
