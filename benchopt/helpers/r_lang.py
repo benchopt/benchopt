@@ -35,7 +35,8 @@ def import_rpackages(*packages):
     os.environ["LD_LIBRARY_PATH"] = \
         rpy2.situation.r_ld_library_path_from_subprocess(R_HOME)
     for path in R_PATH:
-        os.environ['LD_LIBRARY_PATH'] += ":" + path
+        os.environ['LD_LIBRARY_PATH'] = path + ':' + \
+             os.environ['LD_LIBRARY_PATH']
     LD_PATH = os.environ['LD_LIBRARY_PATH']  # noqa: F841
     TT = os.listdir(path)
     for t in TT:
