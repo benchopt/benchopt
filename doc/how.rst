@@ -152,16 +152,13 @@ with no other dependencies. Here is an example:
 
 .. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/solvers/python_pgd.py
 
-For solvers that allow access to the each iterates of the solution, the ``run`` method can be
-pass and instead use ``run_all_in_one``. The distinction is in the use of a ``callback`` parameter.
-This is a function that must be placed at the beginning of each iteration and at the very end
-of the method. It takes the number of the iterate and its value as arguments. Here is an example
-in the same situation as above:
+For solvers that allow access to each iterate of the solution, it is possible to implement
+``run_with_cb``. The distinction is that is calls a ``callback`` that should be called at
+each iteration with parameters the number of the iterate ``it`` and the current value of the iterate
+``beta``. Here is an example in the same situation as above:
 
 .. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/solvers/python_pgd_allinone.py
-  :pyobject: Solver.run
-.. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/solvers/python_pgd_allinone.py
-  :pyobject: Solver.run_all_in_one
+  :pyobject: Solver.run_with_cb
 
 If your Python solver requires some packages such as `Numba <https://numba.pydata.org/>`_,
 BenchOpt allows you to list some requirements. The necessary packages should be available

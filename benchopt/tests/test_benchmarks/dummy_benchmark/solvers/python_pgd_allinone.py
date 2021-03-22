@@ -6,7 +6,7 @@ with safe_import_context() as import_ctx:
 
 
 class Solver(BaseSolver):
-    name = 'Python-PGD-all-in-one'  # proximal gradient, optionally accelerated
+    name = 'Python-PGD-with-cb'  # proximal gradient, optionally accelerated
     # uses callbacks at each iterations instead of rerunning multiple times
 
     # any parameter defined here is accessible as a class attribute
@@ -48,7 +48,7 @@ class Solver(BaseSolver):
 
         return rk
 
-    def run_with_cb(self, callback):
+    def run_with_cb(self, callback):  # instead of the classic run
         L = self.compute_lipschitz_cste()
         n_features = self.X.shape[1]
         w = np.zeros(n_features)

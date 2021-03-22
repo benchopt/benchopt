@@ -55,7 +55,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         "Assert Solver implement one method in `run` and `run_with_cb`."
         if (hasattr(cls.run_with_cb, "not_implemented")
                 and hasattr(cls.run, "not_implemented")):
-            raise ValueError(
+            raise AttributeError(
                 "Solver class should implement at least one method "
                 "between `run` and `run_with_cb`."
             )
@@ -131,7 +131,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         callback : callable
             Callback that should be called after each iteration with parameters
             `(it, beta_hat_it)`. The callback returns False when the
-            computations should be stop.
+            computations should be stopped.
         """
         ...
 
