@@ -171,11 +171,11 @@ def test_solver(benchmark_solver):
     solver.set_objective(**objective.to_dict())
 
     # Either call run_with_cb or run
-    if not hasattr(solver.run_with_cb, 'not_implemented'):
+    if solver.stop_strategy == 'callback':
         curve, status, cb = get_callback(
             objective, max_iter=5000, deadline=None,  meta={}
         )
-        solver.run_with_cb(cb)
+        solver.run(cb)
     else:
         stop_val = 5000 if solver_class.stop_strategy == 'iteration' else 1e-15
         solver.run(stop_val)

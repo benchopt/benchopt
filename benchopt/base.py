@@ -10,13 +10,7 @@ from .utils.parametrized_name_mixin import ParametrizedNameMixin
 
 
 # Possible stop strategies
-STOP_STRATEGIES = ['iteration', 'tolerance']
-
-
-def not_implemented(func):
-    "Mark methods as not implemented."
-    func.not_implemented = True
-    return func
+STOP_STRATEGIES = ['iteration', 'tolerance', 'callback']
 
 
 class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
@@ -50,16 +44,6 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
       logarithmically to get more and more precise points.
 
     """
-
-    def __new__(cls, *args, **kwargs):
-        "Assert Solver implement one method in `run` and `run_with_cb`."
-        if (hasattr(cls.run_with_cb, "not_implemented")
-                and hasattr(cls.run, "not_implemented")):
-            raise AttributeError(
-                "Solver class should implement at least one method "
-                "between `run` and `run_with_cb`."
-            )
-        return super().__new__(cls)
 
     _base_class_name = 'Solver'
     stop_strategy = 'iteration'
@@ -103,34 +87,26 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         """
         ...
 
-    @not_implemented
+    @abstractmethod
     def run(self, stop_val):
         """Call the solver with the given stop_val.
 
         This function should not return the parameters which will be
         retrieved by a subsequent call to get_result.
 
-        Parameters
-        ----------
-        stop_val : int | float
-            Value for the stopping criterion of the solver for. It allows to
-            sample the time/accuracy curve in the benchmark.
-        """
-        ...
-
-    @not_implemented
-    def run_with_cb(self, callback):
-        """Call the solver to run until convergence is reached or max_iter.
-
-        This function should not return anything but it should call the
+        If `stop_strategy` is set to `"callback"`, then it should call the
         callback at each iteration. The callback will compute the time,
         the objective function and store the relevant quantities fo BenchOpt.
+        Else, the `stop_val` parameter should be specified.
 
         Parameters
         ----------
-        callback : callable
-            Callback that should be called after each iteration with parameters
-            `(it, beta_hat_it)`. The callback returns False when the
+        stop_val : int | float | callable
+            Value for the stopping criterion of the solver for. It allows to
+            sample the time/accuracy curve in the benchmark.
+            If it is a callable, then it should act as a callback. This
+            callback that should be called after each iteration with parameter
+            `beta_hat_it`. The callback returns False when the
             computations should be stopped.
         """
         ...

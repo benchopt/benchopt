@@ -11,6 +11,7 @@ class Solver(BaseSolver):
 
     # any parameter defined here is accessible as a class attribute
     parameters = {'use_acceleration': [False, True]}
+    stop_strategy = "callback"
 
     def set_objective(self, X, y, lmbd):
         self.X, self.y, self.lmbd = X, y, lmbd
@@ -48,7 +49,7 @@ class Solver(BaseSolver):
 
         return rk
 
-    def run_with_cb(self, callback):  # instead of the classic run
+    def run(self, callback):  # instead of the number of iteration or tolerance
         L = self.compute_lipschitz_cste()
         n_features = self.X.shape[1]
         w = np.zeros(n_features)
@@ -57,7 +58,7 @@ class Solver(BaseSolver):
 
         it = 0
         t_new = 1
-        while callback(it, w):
+        while callback(w):
             it += 1
             if self.use_acceleration:
                 t_old = t_new

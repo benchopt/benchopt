@@ -112,7 +112,8 @@ A solver requires to define three methods:
 
    - ``run(stop_value)``: This method takes only one parameter that controls the stopping
      condition of the solver. This is typically a number of iterations ``n_iter``
-     or a tolerance parameter ``tol``. This is controled by the ``stop_strategy``,
+     or a tolerance parameter ``tol`` or a ``callback`` function that will be called until a
+     number of iteration. This is controled by the ``stop_strategy``,
      see below for details.
 
    - ``get_result()``: This method returns a variable that can be passed
@@ -133,6 +134,10 @@ This ``stop_strategy`` can be:
       the running time. The parameter is called ``tol`` and should be
       a positive float.
 
+    - ``'callback'``: in this case, the ``run`` method of the solver
+      will call at each iteration a callback function that computes the
+      objective until a high number of iteration is reached.
+
 BenchOpt supports different types of solvers:
 
    - :ref:`python_solvers`
@@ -152,13 +157,13 @@ with no other dependencies. Here is an example:
 
 .. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/solvers/python_pgd.py
 
-For solvers that allow access to each iterate of the solution, it is possible to implement
-``run_with_cb``. The distinction is that is calls a ``callback`` that should be called at
-each iteration with parameters the number of the iterate ``it`` and the current value of the iterate
-``beta``. Here is an example in the same situation as above:
+For solvers that allow access to each iterate of the solution, using ``"callback"``
+as a ``stop_strategy`` implies a slight modification for ``run``. A ``callback`` should be called at
+each iteration with parameter the current value of the iterate ``beta``.
+Here is an example in the same situation as above:
 
 .. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/solvers/python_pgd_allinone.py
-  :pyobject: Solver.run_with_cb
+  :pyobject: Solver.run
 
 If your Python solver requires some packages such as `Numba <https://numba.pydata.org/>`_,
 BenchOpt allows you to list some requirements. The necessary packages should be available
