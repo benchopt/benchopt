@@ -212,11 +212,14 @@ def get_callback(objective, max_iter, deadline,  meta):
     ----------
     objective : instance of BaseObjective
         The objective to minimize.
-    maxiter : maximum number of iterations in the run.
-    deadline : maximum time allowed to perform the run.
+    max_iter : int
+        Maximum number of iterations to run for.
+    deadline : float
+        Deadline after which to stop the computations. This will be
+        used to respect the timeout for each solver.
     meta : dict
         Metadata passed to store in Cost results.
-        Contains objective, data, dimension
+        Contains objective and data names, problem dimension, etc.
 
     Returns
     -------

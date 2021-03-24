@@ -94,9 +94,9 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         This function should not return the parameters which will be
         retrieved by a subsequent call to get_result.
 
-        If `stop_strategy` is set to `"callback"`, then it should call the
+        If `stop_strategy` is set to `"callback"`, then `run` should call the
         callback at each iteration. The callback will compute the time,
-        the objective function and store the relevant quantities fo BenchOpt.
+        the objective function and store relevant quantities for BenchOpt.
         Else, the `stop_val` parameter should be specified.
 
         Parameters
@@ -105,9 +105,9 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
             Value for the stopping criterion of the solver for. It allows to
             sample the time/accuracy curve in the benchmark.
             If it is a callable, then it should act as a callback. This
-            callback that should be called after each iteration with parameter
+            callback should be called once for each iteration with argument
             `beta_hat_it`. The callback returns False when the
-            computations should be stopped.
+            computations should stop.
         """
         ...
 

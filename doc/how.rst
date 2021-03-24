@@ -112,8 +112,9 @@ A solver requires to define three methods:
 
    - ``run(stop_value)``: This method takes only one parameter that controls the stopping
      condition of the solver. This is typically a number of iterations ``n_iter``
-     or a tolerance parameter ``tol`` or a ``callback`` function that will be called until a
-     number of iteration. This is controled by the ``stop_strategy``,
+     or a tolerance parameter ``tol``. Alternatively, a ``callback`` function that will be
+     called at each iteration can be passed. The callback returns False once the
+     computation should stop. The parameter is controlled by the ``stop_strategy``,
      see below for details.
 
    - ``get_result()``: This method returns a variable that can be passed
@@ -135,8 +136,9 @@ This ``stop_strategy`` can be:
       a positive float.
 
     - ``'callback'``: in this case, the ``run`` method of the solver
-      will call at each iteration a callback function that computes the
-      objective until a high number of iteration is reached.
+      should call at each iteration the provided callback function. It will
+      compute and store the objective and return False once the computations
+      should stop.
 
 BenchOpt supports different types of solvers:
 
