@@ -205,66 +205,75 @@ def run_one_to_cvg(benchmark, objective, solver, meta, max_runs, deadline=None,
     return curve, status
 
 
-def get_callback(objective, max_iter, deadline,  meta):
-    """Get callback function and store informations for the curve.
+class Callback:
 
-    Parameters
-    ----------
-    objective : instance of BaseObjective
-        The objective to minimize.
-    max_iter : int
-        Maximum number of iterations to run for.
-    deadline : float
-        Deadline after which to stop the computations. This will be
-        used to respect the timeout for each solver.
-    meta : dict
-        Metadata passed to store in Cost results.
-        Contains objective and data names, problem dimension, etc.
+    def __init__(self, objective, max_iter, deadline, meta):
+        """Get callback function and store informations for the curve.
 
-    Returns
-    -------
-    curve : dict
-        Details on the run and the objective value obtained.
-    cb_status : dict
-        Instantiated dict containing informations for the time
-        callback is called.
-    callback : callable
-        Callable to compute the objective value at each iteration.
-    """
-    info = get_sys_info()
-    curve = []
-    cb_status = {
-        'status': 'unfinished',
-        "it": 0,
-        'next_stopval': 0,
-        'delta_t': 0,
-        'time': time.perf_counter(),
-    }
+        Parameters
+        ----------
+        objective : instance of BaseObjective
+            The objective to minimize.
+        max_iter : int
+            Maximum number of iterations to run for.
+        deadline : float
+            Deadline after which to stop the computations. This will be
+            used to respect the timeout for each solver.
+        meta : dict
+            Metadata passed to store in Cost results.
+            Contains objective and data names, problem dimension, etc.
+        """
 
-    def callback(beta_hat_i):
+        self.objective = objective
+        self.max_iter = max_iter
+        self.deadline = deadline
+        self.meta = meta
+        self.info = get_sys_info()
+        self.curve = []
+        self.cb_status = {
+                'status': 'unfinished',
+                "it": 0,
+                'next_stopval': 0,
+                'delta_t': 0,
+                'time': time.perf_counter(),
+        }
+
+    def __call__(self, beta_hat_i):
         t0 = time.perf_counter()
-        cb_status["delta_t"] += t0 - cb_status["time"]
-        if cb_status["it"] == cb_status["next_stopval"]:
-            objective_dict = objective(beta_hat_i)
-            curve.append(dict(
-                **meta, stop_val=cb_status["it"], time=cb_status["delta_t"],
-                **objective_dict, **info
+        self.cb_status["delta_t"] += t0 - self.cb_status["time"]
+        if self.cb_status["it"] == self.cb_status["next_stopval"]:
+            objective_dict = self.objective(beta_hat_i)
+            self.curve.append(dict(
+                    **self.meta, stop_val=self.cb_status["it"],
+                    time=self.cb_status["delta_t"],
+                    **objective_dict, **self.info
             ))
 
-            if deadline is not None and time.time() > deadline:
-                cb_status["status"] = 'timeout'
+            if self.deadline is not None and time.time() > self.deadline:
+                self.cb_status["status"] = 'timeout'
                 return False
-            if cb_status["it"] == max_iter:
+            if self.cb_status["it"] == self.max_iter:
                 return False
 
-            cb_status["next_stopval"] = min(
-                get_next(cb_status["next_stopval"]), max_iter
+            self.cb_status["next_stopval"] = min(
+                get_next(self.cb_status["next_stopval"]), self.max_iter
             )
-        cb_status["it"] += 1
-        cb_status["time"] = time.perf_counter()
+        self.cb_status["it"] += 1
+        self.cb_status["time"] = time.perf_counter()
         return True
 
-    return curve, cb_status, callback
+    def get_results(self):
+        """Get the results stored by the callback
+
+        Returns
+        -------
+        curve : dict
+            Details on the run and the objective value obtained.
+        cb_status : dict
+            Instantiated dict containing informations for the time
+            callback is called.
+        """
+        return self.curve, self.cb_status
 
 
 def run_one_solver(benchmark, objective, solver, meta, max_runs, n_repetitions,
@@ -329,11 +338,11 @@ def run_one_solver(benchmark, objective, solver, meta, max_runs, n_repetitions,
 
             if solver.stop_strategy == "callback":
                 max_iter = int(2 * RHO ** (max_runs - 1))
-                curve_one_rep, cb_status, callback = get_callback(
+                callback = Callback(
                     objective, max_iter, deadline, meta_rep
                 )
                 solver.run(callback)
-                status = cb_status["status"]
+                curve_one_rep, status = callback.get_results()
             else:
                 curve_one_rep, status = run_one_to_cvg_cached(
                     benchmark=benchmark, objective=objective, solver=solver,
