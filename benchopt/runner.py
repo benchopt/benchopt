@@ -27,12 +27,12 @@ RHO = 1.5
 EPS = 1e-10
 
 
-def get_next(x, rho=RHO, strategy="iteration"):
+def get_next(stop_val, rho=RHO, strategy="iteration"):
     if strategy == "iteration":
-        return max(x + 1, min(int(rho * x), MAX_ITER))
+        return max(stop_val + 1, min(int(rho * stop_val), MAX_ITER))
     else:
         assert strategy == 'tolerance'
-        return max(x / rho, MIN_TOL)
+        return max(stop_val / rho, MIN_TOL)
 
 
 def cache(func, benchmark, force=False, ignore=None):
@@ -222,6 +222,10 @@ class Callback:
         meta : dict
             Metadata passed to store in Cost results.
             Contains objective and data names, problem dimension, etc.
+
+        Attributes
+        ----------
+        TODO
         """
 
         self.objective = objective
@@ -268,8 +272,7 @@ class Callback:
         -------
         curve : list
             Details on the run and the objective value obtained.
-        status : string
-            How the run ended: done/diverged/timeout.
+        status : 'done' | 'diverged' | 'timeout'
         """
         return self.curve, self.status
 
