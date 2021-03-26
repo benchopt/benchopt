@@ -19,7 +19,7 @@ BENCHMARK_PATH = Path(os.getcwd()).parent / 'benchmarks' / 'lasso'
 try:
     df = run_benchmark(
         Benchmark(BENCHMARK_PATH),
-        ['Python-PGD*use_acceleration=False', 'R-PGD', 'Julia-PGD'],
+        ['Python-PGD[^-]*use_acceleration=False', 'R-PGD', 'Julia-PGD'],
         dataset_names=[SELECT_ONE_SIMULATED],
         objective_filters=['reg=0.5'],
         max_runs=100, timeout=100, n_repetitions=5,

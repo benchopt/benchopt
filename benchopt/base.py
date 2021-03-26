@@ -106,7 +106,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
             sample the time/accuracy curve in the benchmark.
             If it is a callable, then it should act as a callback. This
             callback should be called once for each iteration with argument
-            `beta_hat_it`. The callback returns False when the
+            the current iterate `x`. The callback returns False when the
             computations should stop.
         """
         ...

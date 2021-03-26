@@ -161,7 +161,7 @@ with no other dependencies. Here is an example:
 
 For solvers that allow access to each iterate of the solution, using ``"callback"``
 as a ``stop_strategy`` implies a slight modification for ``run``. A ``callback`` should be called at
-each iteration with parameter the current value of the iterate ``beta``.
+each iteration with parameter the current value of the iterate.
 Here is an example in the same situation as above:
 
 .. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/solvers/python_pgd_callback.py

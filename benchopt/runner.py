@@ -230,36 +230,35 @@ class Callback:
         self.meta = meta
         self.info = get_sys_info()
         self.curve = []
-        self.cb_status = {
-                'status': 'unfinished',
-                "it": 0,
-                'next_stopval': 0,
-                'delta_t': 0,
-                'time': time.perf_counter(),
-        }
+        self.status = 'unfinished'
+        self.it = 0
+        self.time_iter = 0.
+        self.next_stopval = 0
+        self.time_callback = time.perf_counter()
 
-    def __call__(self, beta_hat_i):
+    def __call__(self, x):
         t0 = time.perf_counter()
-        self.cb_status["delta_t"] += t0 - self.cb_status["time"]
-        if self.cb_status["it"] == self.cb_status["next_stopval"]:
-            objective_dict = self.objective(beta_hat_i)
+        self.time_iter += t0 - self.time_callback
+        if self.it == self.next_stopval:
+            objective_dict = self.objective(x)
             self.curve.append(dict(
-                    **self.meta, stop_val=self.cb_status["it"],
-                    time=self.cb_status["delta_t"],
+                    **self.meta, stop_val=self.it,
+                    time=self.time_iter,
                     **objective_dict, **self.info
             ))
 
             if self.deadline is not None and time.time() > self.deadline:
-                self.cb_status["status"] = 'timeout'
+                self.status = 'timeout'
                 return False
-            if self.cb_status["it"] == self.max_iter:
+            if self.it == self.max_iter:
                 return False
 
-            self.cb_status["next_stopval"] = min(
-                get_next(self.cb_status["next_stopval"]), self.max_iter
+            self.next_stopval = min(
+                get_next(self.next_stopval, strategy="iteration"),
+                self.max_iter
             )
-        self.cb_status["it"] += 1
-        self.cb_status["time"] = time.perf_counter()
+        self.it += 1
+        self.time_callback = time.perf_counter()
         return True
 
     def get_results(self):
@@ -267,13 +266,12 @@ class Callback:
 
         Returns
         -------
-        curve : dict
+        curve : list
             Details on the run and the objective value obtained.
-        cb_status : dict
-            Instantiated dict containing informations for the time
-            callback is called.
+        status : string
+            How the run ended: done/diverged/timeout.
         """
-        return self.curve, self.cb_status
+        return self.curve, self.status
 
 
 def run_one_solver(benchmark, objective, solver, meta, max_runs, n_repetitions,
