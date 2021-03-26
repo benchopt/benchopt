@@ -164,7 +164,7 @@ as a ``stop_strategy`` implies a slight modification for ``run``. A ``callback``
 each iteration with parameter the current value of the iterate ``beta``.
 Here is an example in the same situation as above:
 
-.. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/solvers/python_pgd_allinone.py
+.. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/solvers/python_pgd_callback.py
   :pyobject: Solver.run
 
 If your Python solver requires some packages such as `Numba <https://numba.pydata.org/>`_,

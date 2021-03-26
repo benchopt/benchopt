@@ -20,7 +20,7 @@ class Solver(BaseSolver):
         w -= np.clip(w, -mu, mu)
         return w
 
-    def compute_lipschitz_cste(self, max_iter=100):
+    def compute_lipschitz_cst(self, max_iter=100):
         if not sparse.issparse(self.X):
             return np.linalg.norm(self.X, ord=2) ** 2
 
