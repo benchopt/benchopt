@@ -56,10 +56,8 @@ class Solver(BaseSolver):
         if self.use_acceleration:
             z = np.zeros(n_features)
 
-        it = 0
         t_new = 1
         while callback(w):
-            it += 1
             if self.use_acceleration:
                 t_old = t_new
                 t_new = (1 + np.sqrt(1 + 4 * t_old ** 2)) / 2

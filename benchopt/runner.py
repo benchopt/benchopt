@@ -208,7 +208,7 @@ def run_one_to_cvg(benchmark, objective, solver, meta, max_runs, deadline=None,
 class Callback:
 
     def __init__(self, objective, max_iter, deadline, meta):
-        """Get callback function and store informations for the curve.
+        """Callback function to store information for the curve.
 
         Parameters
         ----------
@@ -246,9 +246,9 @@ class Callback:
         if self.it == self.next_stopval:
             objective_dict = self.objective(x)
             self.curve.append(dict(
-                    **self.meta, stop_val=self.it,
-                    time=self.time_iter,
-                    **objective_dict, **self.info
+                **self.meta, stop_val=self.it,
+                time=self.time_iter,
+                **objective_dict, **self.info
             ))
 
             if self.deadline is not None and time.time() > self.deadline:
@@ -272,7 +272,7 @@ class Callback:
         -------
         curve : list
             Details on the run and the objective value obtained.
-        status : 'done' | 'diverged' | 'timeout'
+        status : 'done' | 'diverged' | 'timeout' | 'unfinished'
         """
         return self.curve, self.status
 
