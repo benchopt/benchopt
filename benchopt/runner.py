@@ -205,7 +205,7 @@ def run_one_to_cvg(benchmark, objective, solver, meta, max_runs, deadline=None,
     return curve, status
 
 
-class Callback:
+class _Callback:
 
     def __init__(self, objective, max_iter, deadline, meta):
         """Callback function to store information for the curve.
@@ -339,7 +339,7 @@ def run_one_solver(benchmark, objective, solver, meta, max_runs, n_repetitions,
 
             if solver.stop_strategy == "callback":
                 max_iter = int(2 * RHO ** (max_runs - 1))
-                callback = Callback(
+                callback = _Callback(
                     objective, max_iter, deadline, meta_rep
                 )
                 solver.run(callback)

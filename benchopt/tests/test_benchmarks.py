@@ -5,7 +5,7 @@ import numbers
 import numpy as np
 
 from benchopt.base import STOP_STRATEGIES
-from benchopt.runner import Callback
+from benchopt.runner import _Callback
 
 
 def test_benchmark_objective(benchmark_dataset_simu):
@@ -172,7 +172,7 @@ def test_solver(benchmark_solver):
 
     # Either call run_with_cb or run
     if solver.stop_strategy == 'callback':
-        cb = Callback(
+        cb = _Callback(
             objective, max_iter=5000, deadline=None,  meta={}
         )
         solver.run(cb)
