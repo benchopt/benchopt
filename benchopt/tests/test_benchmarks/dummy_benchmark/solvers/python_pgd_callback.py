@@ -50,7 +50,7 @@ class Solver(BaseSolver):
         return rk
 
     def run(self, callback):  # instead of the number of iteration or tolerance
-        L = self.compute_lipschitz_cste()
+        L = self.compute_lipschitz_cst()
         n_features = self.X.shape[1]
         w = np.zeros(n_features)
         if self.use_acceleration:
