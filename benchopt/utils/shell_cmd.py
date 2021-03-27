@@ -16,6 +16,7 @@ CONDA_CMD = get_setting('conda_cmd')
 BENCHOPT_ENV = """
 channels:
   - defaults
+  - r
   - conda-forge
 dependencies:
   - numpy
