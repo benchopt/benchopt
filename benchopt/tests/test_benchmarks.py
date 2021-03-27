@@ -5,6 +5,7 @@ import numbers
 import numpy as np
 
 from benchopt.base import STOP_STRATEGIES
+from benchopt.runner import _Callback
 
 
 def test_benchmark_objective(benchmark, dataset_simu):
@@ -155,14 +156,22 @@ def test_solver(benchmark, solver_class):
 
     solver = solver_class.get_instance()
     solver.set_objective(**objective.to_dict())
-    stop_val = 5000 if solver_class.stop_strategy == 'iteration' else 1e-15
-    solver.run(stop_val)
+
+    # Either call run_with_cb or run
+    if solver.stop_strategy == 'callback':
+        cb = _Callback(
+            objective, max_iter=5000, deadline=None,  meta={}
+        )
+        solver.run(cb)
+    else:
+        stop_val = 5000 if solver_class.stop_strategy == 'iteration' else 1e-15
+        solver.run(stop_val)
+
     beta_hat_i = solver.get_result()
 
     assert beta_hat_i.shape == dimension
 
     val_star = objective(beta_hat_i)['objective_value']
-
     for _ in range(100):
         eps = 1e-5 * np.random.randn(*dimension)
         val_eps = objective(beta_hat_i + eps)['objective_value']
