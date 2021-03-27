@@ -206,27 +206,27 @@ def run_one_to_cvg(benchmark, objective, solver, meta, max_runs, deadline=None,
 
 
 class _Callback:
+    """Callback function to store information for the curve.
 
+    Parameters
+    ----------
+    objective : instance of BaseObjective
+        The objective to minimize.
+    max_iter : int
+        Maximum number of iterations to run for.
+    deadline : float
+        Deadline after which to stop the computations. This will be
+        used to respect the timeout for each solver.
+    meta : dict
+        Metadata passed to store in Cost results.
+        Contains objective and data names, problem dimension, etc.
+
+    Attributes
+    ----------
+    TODO
+    """
     def __init__(self, objective, max_iter, deadline, meta):
-        """Callback function to store information for the curve.
 
-        Parameters
-        ----------
-        objective : instance of BaseObjective
-            The objective to minimize.
-        max_iter : int
-            Maximum number of iterations to run for.
-        deadline : float
-            Deadline after which to stop the computations. This will be
-            used to respect the timeout for each solver.
-        meta : dict
-            Metadata passed to store in Cost results.
-            Contains objective and data names, problem dimension, etc.
-
-        Attributes
-        ----------
-        TODO
-        """
 
         self.objective = objective
         self.max_iter = max_iter
