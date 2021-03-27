@@ -236,6 +236,7 @@ class _Callback:
         self.it = 0
         self.time_iter = 0.
         self.next_stopval = 0
+        self.prev_objective = 1e10
         self.time_callback = time.perf_counter()
 
     def __call__(self, x):
@@ -254,7 +255,12 @@ class _Callback:
                 return False
             if self.it == self.max_iter:
                 return False
+            current_obj = objective_dict["objective_value"]
+            if (-EPS <= self.prev_objective - current_obj <= EPS):
+                self.status = 'done'
+                return False
 
+            self.prev_objective = current_obj
             self.next_stopval = min(
                 get_next(self.next_stopval, strategy="iteration"),
                 self.max_iter
