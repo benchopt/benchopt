@@ -328,6 +328,8 @@ def run_one_solver(benchmark, objective, solver, meta, max_runs, n_repetitions,
     states = []
 
     with exception_handler(tag, pdb=pdb):
+        if solver.stop_strategy == "callback":
+            n_repetitions += 1  # warmup
         for rep in range(n_repetitions):
             if show_progress:
                 progress_str = (
@@ -354,7 +356,8 @@ def run_one_solver(benchmark, objective, solver, meta, max_runs, n_repetitions,
                     meta=meta_rep, max_runs=max_runs, deadline=deadline,
                     progress_str=progress_str, force=force
                 )
-
+            if rep == 0 and solver.stop_strategy == "callback":
+                continue
             curve.extend(curve_one_rep)
             states.append(status)
 
