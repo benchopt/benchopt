@@ -226,8 +226,6 @@ class _Callback:
     TODO
     """
     def __init__(self, objective, max_iter, deadline, meta):
-
-
         self.objective = objective
         self.max_iter = max_iter
         self.deadline = deadline
