@@ -206,7 +206,7 @@ def run_one_to_cvg(benchmark, objective, solver, meta, max_runs, deadline=None,
 
 
 class _Callback:
-    """Callback function to store information for the curve.
+    """Callback class to monitor convergence.
 
     Parameters
     ----------
@@ -223,7 +223,33 @@ class _Callback:
 
     Attributes
     ----------
-    TODO
+    objective : instance of BaseObjective
+        The objective to minimize.
+    max_iter : int
+        Maximum number of iterations to run for.
+    deadline : float
+        Deadline after which to stop the computations. This will be
+        used to respect the timeout for each solver.
+    meta : dict
+        Metadata passed to store in Cost results.
+        Contains objective and data names, problem dimension, etc.
+    info : dict
+        A dictionary with info from the current system.
+    curve : list
+        The convergence curve stored as a list of dict.
+    status : 'done' | 'diverged' | 'timeout' | 'unfinished'
+        The convergence status.
+    time_iter : float
+        Computation time to reach the current iteration.
+        Excluding the times to evaluate objective.
+    it : int
+        The number of times the callback has been called. It's
+        initialized with 0.
+    next_stopval : int
+        The next iteration for which the curve should be
+        updated.
+    time_callback : float
+        The time when exiting the callback call.
     """
     def __init__(self, objective, max_iter, deadline, meta):
         self.objective = objective
