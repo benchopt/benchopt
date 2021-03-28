@@ -248,6 +248,9 @@ class _Callback:
     next_stopval : int
         The next iteration for which the curve should be
         updated.
+    prev_objective : float
+        The objective value at the previous iteration. Set to
+        inf at start.
     time_callback : float
         The time when exiting the callback call.
     """
@@ -262,7 +265,7 @@ class _Callback:
         self.it = 0
         self.time_iter = 0.
         self.next_stopval = 0
-        self.prev_objective = 1e10
+        self.prev_objective = math.inf
         self.time_callback = time.perf_counter()
 
     def __call__(self, x):
