@@ -17,6 +17,7 @@ BENCHOPT_ENV = """
 channels:
   - defaults
   - conda-forge
+  - conda-forge/label/cf202003
 dependencies:
   - numpy
   - cython

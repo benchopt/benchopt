@@ -53,6 +53,8 @@ jobs:
               pip install --upgrade --progress-bar off -r dev-requirements.txt
               pip install --upgrade --progress-bar off -r doc/doc-requirements.txt
               conda config --env --prepend channels conda-forge
+              conda config --set channel_priority false
+
 
               # There is an ungoing issue with compat between libgit2 and julia which
               # makes the auto install of julia solver fails when cloning the General
