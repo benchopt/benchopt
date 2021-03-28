@@ -243,7 +243,7 @@ class _Callback:
         Computation time to reach the current iteration.
         Excluding the times to evaluate objective.
     it : int
-        The last iteration number passed to __call__. It's
+        The number of times the callback has been called. It's
         initialized with 0.
     next_stopval : int
         The next iteration for which the curve should be
