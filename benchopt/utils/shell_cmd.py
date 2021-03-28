@@ -15,7 +15,6 @@ CONDA_CMD = get_setting('conda_cmd')
 # Yaml config file for benchopt env.
 BENCHOPT_ENV = """
 channels:
-  - defaults
   - conda-forge
 dependencies:
   - numpy
