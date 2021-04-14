@@ -7,7 +7,7 @@ from .benchmark import _check_name_lists
 from .utils.sys_info import get_sys_info
 from .utils.pdb_helpers import exception_handler
 
-from .stopping_criterion import SufficientDescentCondition
+from .stopping_criterion import SufficientDescentCriterion
 
 from .utils.colorify import colorify
 from .utils.colorify import LINE_LENGTH, RED, GREEN, YELLOW
@@ -318,7 +318,7 @@ def run_one_solver(benchmark, objective, solver, meta, max_runs, n_repetitions,
 
             meta_rep = dict(**meta, idx_rep=rep, solver_name=str(solver))
 
-            stopping_criterion = SufficientDescentCondition._get_instance(
+            stopping_criterion = SufficientDescentCriterion._get_instance(
                 max_runs=max_runs, timeout=timeout / n_repetitions,
                 progress_str=progress_str
             )

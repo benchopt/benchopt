@@ -145,7 +145,7 @@ class StoppingCriterion():
         )
 
 
-class SufficientDescentCondition(StoppingCriterion):
+class SufficientDescentCriterion(StoppingCriterion):
     """Stopping criterion based on sufficient descent.
 
     The solver will be stopped once successive evaluations do not make enough
