@@ -34,6 +34,10 @@ API
 - ``Solver.skip`` can now be used to skip objectives that are incompatible
   for the Solver, by `Thomas Moreau`_ (:gh:`113`).
 
+- ``Solver`` can now use ``stop_strategy = 'callback'`` to allow for
+  single call curve construction, by `Tanguy Lefort`_ and `Thomas Moreau`_
+  (:gh:`137`).
+
 CLI
 ~~~
 
