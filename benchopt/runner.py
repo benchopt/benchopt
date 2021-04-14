@@ -14,6 +14,7 @@ from .utils.colorify import LINE_LENGTH, RED, GREEN, YELLOW
 
 
 # Get config values
+from .config import DEBUG
 from .config import RAISE_INSTALL_ERROR
 
 
@@ -77,6 +78,9 @@ def run_one_resolution(objective, solver, meta, stop_val):
         raise ImportError(
             f"Failure during import in {solver.__module__}."
         )
+
+    if DEBUG:
+        print(f"DEBUG - Calling solver {solver} with stop val: {stop_val}")
 
     t_start = time.perf_counter()
     solver.run(stop_val)
@@ -150,8 +154,10 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
 
         # Check the stopping criterion and update rho if necessary.
         stop, status, is_flat = stopping_criterion.should_stop_solver(curve)
-        if is_flat == 0:
+        if is_flat:
             rho *= RHO_INC
+            if DEBUG:
+                print("DEBUG - curve is flat -> increasing rho:", rho)
 
         # compute next evaluation point
         stop_val = get_next(stop_val, rho=rho, strategy=solver.stop_strategy)
