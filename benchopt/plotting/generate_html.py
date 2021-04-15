@@ -81,7 +81,7 @@ def generate_plot_benchmark(df, kinds, fname):
 
 def export_figure(fig, fig_name):
     """
-    Export figure to HTML or svg.
+    Export a figure to HTML or svg.
 
     Parameters
     ----------
@@ -108,7 +108,7 @@ def export_figure(fig, fig_name):
 
 def get_result_from_df(df, kinds):
     """
-    Generate figure and CSV file from dataframe
+    Generate a figure and a CSV file from a single dataframe.
 
     Parameters
     ----------
@@ -145,12 +145,12 @@ def get_result_from_df(df, kinds):
 
 def get_results(fnames, kinds, copy=False):
     """
-    Generate figures and CSV files from several dataframes
+    Generate figures from a list of csv files.
 
     Parameters
     ----------
     fnames : list of str
-        list of csv files containing the benchmark results
+        list of csv files containing the benchmark results.
     kinds : list of str
         List of the kind of plots that will be generated. This needs to be a
         sub-list of PLOT_KINDS.keys().
@@ -158,7 +158,7 @@ def get_results(fnames, kinds, copy=False):
     Returns
     -------
     dict
-        Dictionary containing to results
+        Dictionary containing to results.
     """
     results = []
     HTML_DIR_OUTPUTS.mkdir(exist_ok=True, parents=True)
