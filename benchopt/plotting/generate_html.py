@@ -4,7 +4,6 @@ import webbrowser
 from pathlib import Path
 from datetime import datetime
 
-import click
 import pandas as pd
 import matplotlib.pyplot as plt
 from mako.template import Template
