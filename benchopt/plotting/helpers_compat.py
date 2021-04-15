@@ -17,14 +17,19 @@ def fill_between_x(fig, x, q1, q9, y, color, marker, label, plotly=False):
         x=x, y=y,
         line_color=color, marker_symbol=marker, mode='lines+markers',
         name=label, legendgroup=label,
+        hoverlabel=dict(namelength=-1),
+        hovertemplate='%{text} <br> (%{x:.1e},%{y:.1e}) <extra></extra>',
+        text=[label for _ in x]
     ))
     fig.add_trace(go.Scatter(
         x=q1, y=y, mode='lines', showlegend=False,
         line={'width': 0, 'color': color}, legendgroup=label,
+        hovertemplate='(%{x:.1e},%{y:.1e}) <extra></extra>',
     ))
     fig.add_trace(go.Scatter(
         x=q9, y=y, mode='lines', fill='tonextx', showlegend=False,
         line={'width': 0, 'color': color}, legendgroup=label,
+        hovertemplate='(%{x:.1e},%{y:.1e}) <extra></extra>',
     ))
 
     return fig

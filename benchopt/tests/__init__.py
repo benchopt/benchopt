@@ -1,9 +1,11 @@
 from pathlib import Path
 from benchopt.benchmark import Benchmark
 
-
+# Default benchmark
 TEST_BENCHMARK_DIR = Path(__file__).parent / 'test_benchmarks'
 DUMMY_BENCHMARK_PATH = TEST_BENCHMARK_DIR / 'dummy_benchmark'
+
+# Pattern to select specific datasets or solvers.
 SELECT_ONE_SIMULATED = r'simulated*500*rho=0\]'
 SELECT_ONE_PGD = r'python-pgd*step_size=1\]'
 

@@ -23,6 +23,16 @@ PATIENCE = 5
 MAX_ITER = int(1e6)
 MIN_TOL = 1e-15
 INFINITY = 3e38  # see: np.finfo('float32').max
+RHO = 1.5
+EPS = 1e-10
+
+
+def get_next(stop_val, rho=RHO, strategy="iteration"):
+    if strategy == "iteration":
+        return max(stop_val + 1, min(int(rho * stop_val), MAX_ITER))
+    else:
+        assert strategy == 'tolerance'
+        return max(stop_val / rho, MIN_TOL)
 
 
 def cache(func, benchmark, force=False, ignore=None):
@@ -80,8 +90,8 @@ def run_one_resolution(objective, solver, meta, stop_val):
     # Add system info in results
     info = get_sys_info()
 
-    return (dict(**meta, solver_name=str(solver), stop_val=stop_val,
-                 time=delta_t, **objective_dict, **info),
+    return (dict(**meta, stop_val=stop_val, time=delta_t,
+                 **objective_dict, **info),
             objective_dict['objective_value'])
 
 
@@ -121,20 +131,9 @@ def run_one_to_cvg(benchmark, objective, solver, meta, max_runs, deadline=None,
         the curve.
     """
 
-    # TODO: parametrize
-    rho = 1.5
-    eps = 1e-10
-
     def progress(id_stop_val, delta):
         return max(id_stop_val / max_runs,
-                   math.log(max(delta, eps)) / math.log(eps))
-
-    # Select strategy to compute next stop_val
-    if solver.stop_strategy == 'iteration':
-        def get_next(x): return max(x + 1, min(int(rho * x), MAX_ITER))
-
-    elif solver.stop_strategy == 'tolerance':
-        def get_next(x): return max(x / rho, MIN_TOL)
+                   math.log(max(delta, EPS)) / math.log(EPS))
 
     # Create a Memory object to cache the computations in the benchmark folder
     # and handle cases where we force the run.
@@ -158,11 +157,12 @@ def run_one_to_cvg(benchmark, objective, solver, meta, max_runs, deadline=None,
 
     id_stop_val = 0
     stop_val = 1
+    rho = RHO
     delta_objectives = [1e15]
     prev_objective_value = objective_value
 
     for id_stop_val in range(max_runs):
-        if (-eps <= max(delta_objectives) < eps):
+        if (-EPS <= max(delta_objectives) < EPS):
             # We are on a plateau and the objective is not improving
             # stop here for the stop_val
             status = 'done'
@@ -193,7 +193,7 @@ def run_one_to_cvg(benchmark, objective, solver, meta, max_runs, deadline=None,
         if len(delta_objectives) > PATIENCE:
             delta_objectives.pop(0)
         prev_objective_value = objective_value
-        stop_val = get_next(stop_val)
+        stop_val = get_next(stop_val, rho=rho, strategy=solver.stop_strategy)
     else:
         status = 'unfinished'
 
@@ -203,6 +203,102 @@ def run_one_to_cvg(benchmark, objective, solver, meta, max_runs, deadline=None,
               f"and stop_val={stop_val:.1e}.")
 
     return curve, status
+
+
+class _Callback:
+    """Callback class to monitor convergence.
+
+    Parameters
+    ----------
+    objective : instance of BaseObjective
+        The objective to minimize.
+    max_iter : int
+        Maximum number of iterations to run for.
+    deadline : float
+        Deadline after which to stop the computations. This will be
+        used to respect the timeout for each solver.
+    meta : dict
+        Metadata passed to store in Cost results.
+        Contains objective and data names, problem dimension, etc.
+
+    Attributes
+    ----------
+    objective : instance of BaseObjective
+        The objective to minimize.
+    max_iter : int
+        Maximum number of iterations to run for.
+    deadline : float
+        Deadline after which to stop the computations. This will be
+        used to respect the timeout for each solver.
+    meta : dict
+        Metadata passed to store in Cost results.
+        Contains objective and data names, problem dimension, etc.
+    info : dict
+        A dictionary with info from the current system.
+    curve : list
+        The convergence curve stored as a list of dict.
+    status : 'done' | 'diverged' | 'timeout' | 'unfinished'
+        The convergence status.
+    time_iter : float
+        Computation time to reach the current iteration.
+        Excluding the times to evaluate objective.
+    it : int
+        The number of times the callback has been called. It's
+        initialized with 0.
+    next_stopval : int
+        The next iteration for which the curve should be
+        updated.
+    time_callback : float
+        The time when exiting the callback call.
+    """
+    def __init__(self, objective, max_iter, deadline, meta):
+        self.objective = objective
+        self.max_iter = max_iter
+        self.deadline = deadline
+        self.meta = meta
+        self.info = get_sys_info()
+        self.curve = []
+        self.status = 'unfinished'
+        self.it = 0
+        self.time_iter = 0.
+        self.next_stopval = 0
+        self.time_callback = time.perf_counter()
+
+    def __call__(self, x):
+        t0 = time.perf_counter()
+        self.time_iter += t0 - self.time_callback
+        if self.it == self.next_stopval:
+            objective_dict = self.objective(x)
+            self.curve.append(dict(
+                **self.meta, stop_val=self.it,
+                time=self.time_iter,
+                **objective_dict, **self.info
+            ))
+
+            if self.deadline is not None and time.time() > self.deadline:
+                self.status = 'timeout'
+                return False
+            if self.it == self.max_iter:
+                return False
+
+            self.next_stopval = min(
+                get_next(self.next_stopval, strategy="iteration"),
+                self.max_iter
+            )
+        self.it += 1
+        self.time_callback = time.perf_counter()
+        return True
+
+    def get_results(self):
+        """Get the results stored by the callback
+
+        Returns
+        -------
+        curve : list
+            Details on the run and the objective value obtained.
+        status : 'done' | 'diverged' | 'timeout' | 'unfinished'
+        """
+        return self.curve, self.status
 
 
 def run_one_solver(benchmark, objective, solver, meta, max_runs, n_repetitions,
@@ -260,16 +356,24 @@ def run_one_solver(benchmark, objective, solver, meta, max_runs, n_repetitions,
             else:
                 progress_str = None
 
-            meta_rep = dict(**meta, idx_rep=rep)
+            meta_rep = dict(**meta, idx_rep=rep, solver_name=str(solver))
 
             # Force the run if needed
             deadline = time.time() + timeout / n_repetitions
 
-            curve_one_rep, status = run_one_to_cvg_cached(
-                benchmark=benchmark, objective=objective, solver=solver,
-                meta=meta_rep, max_runs=max_runs, deadline=deadline,
-                progress_str=progress_str, force=force
-            )
+            if solver.stop_strategy == "callback":
+                max_iter = int(2 * RHO ** (max_runs - 1))
+                callback = _Callback(
+                    objective, max_iter, deadline, meta_rep
+                )
+                solver.run(callback)
+                curve_one_rep, status = callback.get_results()
+            else:
+                curve_one_rep, status = run_one_to_cvg_cached(
+                    benchmark=benchmark, objective=objective, solver=solver,
+                    meta=meta_rep, max_runs=max_runs, deadline=deadline,
+                    progress_str=progress_str, force=force
+                )
 
             curve.extend(curve_one_rep)
             states.append(status)
