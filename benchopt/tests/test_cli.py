@@ -196,7 +196,7 @@ class TestPlotCmd:
 
         with SuppressStd() as out:
             plot([str(DUMMY_BENCHMARK_PATH), '-f', self.result_file,
-                  '-k', kind, '--no-display'],
+                  '-k', kind, '--no-display', '--no-html'],
                  'benchopt', standalone_mode=False)
         saved_files = re.findall(r'Save .* as: (.*\.pdf)', out.output)
         assert len(saved_files) == 1
