@@ -6,8 +6,8 @@ include pyproject.toml
 include dev-requirements.txt
 
 # Include html templates and css for plotting
-recursive-include becnhopt/plotting/ *.html
-recursive-include becnhopt/plotting/ *.css
+recursive-include becnhopt/plotting *.html
+recursive-include becnhopt/plotting *.css
 
 # Include doc generation files
 include doc/_static/style.css
