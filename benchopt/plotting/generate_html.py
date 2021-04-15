@@ -27,7 +27,7 @@ TEMPLATE_LOCAL_RESULT = ROOT / "templates" / "local_result.mako.html"
 
 
 def generate_plot_benchmark(df, kinds, fname):
-    """Generate all possible plots for a given benchmark.
+    """Generate all possible plots for a given benchmark run.
 
     Parameters
     ----------
@@ -81,11 +81,11 @@ def generate_plot_benchmark(df, kinds, fname):
 
 def export_figure(fig, fig_name):
     """
-    Export figure to svg
+    Export figure to HTML or svg.
 
     Parameters
     ----------
-    fig : plotly.graph_objs._figure.Figure
+    fig : plotly.graph_objs.Figure
         Figure from plotly
 
     fig_name : str
@@ -96,7 +96,6 @@ def export_figure(fig, fig_name):
     str
         Path to the figure.
     """
-    print(type(fig))
     if hasattr(fig, 'to_html'):
         return fig.to_html(include_plotlyjs=False)
 
@@ -138,11 +137,8 @@ def get_result_from_df(df, kinds):
         datasets=datasets,
         **generate_plot_benchmark(df, kinds, fname)
     )
+    result['page'] = f"{str(result['fname_short']).replace('.csv', '.html')}"
     results.append(result)
-
-    for result in results:
-        result['page'] = \
-            f"{str(result['fname_short']).replace('.csv', '.html')}"
 
     return results
 
@@ -153,8 +149,8 @@ def get_results(fnames, kinds, copy=False):
 
     Parameters
     ----------
-    fnames : list of pandas.DataFrame
-        List of pandas DataFrame containing the benchmark results
+    fnames : list of str
+        list of csv files containing the benchmark results
     kinds : list of str
         List of the kind of plots that will be generated. This needs to be a
         sub-list of PLOT_KINDS.keys().
@@ -196,7 +192,7 @@ def get_results(fnames, kinds, copy=False):
 
 
 def render_benchmark(results, benchmark):
-    """ Render HTML from results using the template """
+    """ Render HTML pages with all plots for 1 run of the benchmark. """
     return Template(filename=str(TEMPLATE_BENCHMARK),
                     input_encoding="utf-8").render(
         results=results,
@@ -208,7 +204,7 @@ def render_benchmark(results, benchmark):
 
 
 def render_index(benchmarks):
-    """ Render a home page to index the results from the template """
+    """ Render the benchmark's home page to index all runs. """
     return Template(filename=str(TEMPLATE_INDEX),
                     input_encoding="utf-8").render(
         benchmarks=benchmarks,
@@ -219,7 +215,7 @@ def render_index(benchmarks):
 
 
 def copy_static(benchmark=None):
-    """ Copy static files """
+    """ Copy static files in the HTML output folder """
     if benchmark is not None:
         dst = benchmark / HTML_DIR / 'static'
     else:
@@ -230,7 +226,7 @@ def copy_static(benchmark=None):
 
 
 def render_all_results(results, benchmark, local=True):
-    """ Create an html file containing the plot from results """
+    """ Create an html file containing the plot from a benchmark run. """
     if local:
         template = TEMPLATE_LOCAL_RESULT
     else:
