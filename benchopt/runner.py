@@ -523,8 +523,7 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
     df = pd.DataFrame(run_statistics)
     if df.empty:
         print(colorify('No output produced.', RED).ljust(LINE_LENGTH))
-        return
-        # raise SystemExit(1)
+        raise SystemExit(1)
 
     # Save output in CSV file in the benchmark folder
     timestamp = datetime.now().strftime('%Y-%m-%d_%Hh%Mm%S')
@@ -536,4 +535,4 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
     if plot_result:
         from benchopt.plotting import plot_benchmark
         plot_benchmark(save_file, benchmark)
-    return df
+    return save_file
