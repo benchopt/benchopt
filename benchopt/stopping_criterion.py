@@ -109,8 +109,8 @@ class StoppingCriterion():
             stop, progress = self.check_convergence(cost_curve)
 
             # Display the progress if necessary
-            self.show_progress(progress=progress)
             progress = max(n_eval / self.max_runs, progress)
+            self.show_progress(progress=progress)
 
             # Compute status and notify the runner if the curve is flat.
             status = 'done' if stop else None
