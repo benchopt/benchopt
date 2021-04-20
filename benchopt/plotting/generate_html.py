@@ -347,8 +347,8 @@ def plot_benchmark_html(fnames, benchmark, kinds,
 
     # Display the file in the default browser
     if display:
-        result_filename = root_html / results[-1]['page']
-        webbrowser.open(str(result_filename), new=2)
+        result_filename = (root_html / results[-1]['page']).absolute()
+        webbrowser.open_new_tab('file://' + str(result_filename))
 
 
 def plot_benchmark_html_all(patterns=(), benchmarks=(), root=None,
