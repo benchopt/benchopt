@@ -1,3 +1,4 @@
+import pandas as pd
 import matplotlib.pyplot as plt
 
 from ..constants import PLOT_KINDS
@@ -9,16 +10,16 @@ from .plot_objective_curve import plot_relative_suboptimality_curve  # noqa: F40
 from .generate_html import plot_benchmark_html
 
 
-def plot_benchmark(df, benchmark, kinds=None, display=True,
+def plot_benchmark(fname, benchmark, kinds=None, display=True,
                    plotly=False, html=True):
     """Plot convergence curve and histogram for a given benchmark.
 
     Parameters
     ----------
-    df : instance of pandas.DataFrame
-        The benchmark results.
-    benchmark : str
-        The path to the benchmark folder.
+    fname : str
+        Name of the file in which the results are saved.
+    benchmark : benchopt.Benchmark object
+        Object to represent the benchmark.
     kinds : list of str or None
         List of the plots that will be generated. If None are provided, use the
         config file to choose or default to suboptimality_curve.
@@ -38,14 +39,15 @@ def plot_benchmark(df, benchmark, kinds=None, display=True,
     if kinds is None or len(kinds) == 0:
         kinds = config_kinds
 
-    output_dir = benchmark.get_output_folder()
-
     if html:
-        plot_benchmark_html(df, output_dir, kinds, display)
+        plot_benchmark_html(fname, benchmark, kinds, display)
         return None
 
     else:
+        # Load the results.
+        df = pd.read_csv(fname)
         datasets = df['data_name'].unique()
+        output_dir = benchmark.get_output_folder()
         figs = []
         for data in datasets:
             df_data = df[df['data_name'] == data]

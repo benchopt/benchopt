@@ -16,6 +16,7 @@ __pycache__
 benchopt_front_page_convergence.pdf
 
 # Package directory
+html/
 build/
 dist/
 
