@@ -17,7 +17,7 @@ from benchopt.plotting import plot_benchmark, PLOT_KINDS
 BENCHMARK_PATH = Path(os.getcwd()).parent / 'benchmarks' / 'lasso'
 
 try:
-    df = run_benchmark(
+    save_file = run_benchmark(
         Benchmark(BENCHMARK_PATH),
         ['Python-PGD[^-]*use_acceleration=False', 'R-PGD', 'Julia-PGD'],
         dataset_names=[SELECT_ONE_SIMULATED],
@@ -34,5 +34,6 @@ except RuntimeError:
     )
 
 kinds = list(PLOT_KINDS.keys())
-figs = plot_benchmark(df, benchmark=Benchmark(BENCHMARK_PATH), kinds=kinds)
+figs = plot_benchmark(save_file, benchmark=Benchmark(BENCHMARK_PATH),
+                      kinds=kinds, html=False)
 plt.show()

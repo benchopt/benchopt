@@ -17,7 +17,7 @@ BENCHMARK_PATH = Path(os.getcwd()).parent / 'benchmarks' / 'logreg_l2'
 
 
 try:
-    df = run_benchmark(
+    save_file = run_benchmark(
         Benchmark(BENCHMARK_PATH), ['sklearn', 'lightning'],
         dataset_names=['Simulated*n_samples=200,n_features=500*'],
         max_runs=100, timeout=20, n_repetitions=3,
@@ -33,5 +33,6 @@ except RuntimeError:
 
 
 kinds = list(PLOT_KINDS.keys())
-figs = plot_benchmark(df, benchmark=Benchmark(BENCHMARK_PATH), kinds=kinds)
+figs = plot_benchmark(save_file, benchmark=Benchmark(BENCHMARK_PATH),
+                      kinds=kinds, html=False)
 plt.show()

@@ -1,0 +1,250 @@
+/*
+   Comprehensive Base Stylesheet - https://fvsch.com/base-stylesheet/
+   Makes browser default styles more consistent, creating a canvas that you
+   should modify for your project. Fully commented. Last update: 2011-10-02.
+*/
+
+/* CONTAINERS */
+body {
+  margin: auto;
+  max-width: 70em;
+  padding: 1.5em 3% 8em; /* Browsers have default 8px margins _or_ padding! */
+  font-size: 100%; /* See: http://www.informationarchitects.jp/en/100e2r/ */
+  line-height: 1.5; /* Default value, `normal`, depends on the font */
+  font-family: -apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif,Apple Color Emoji,Segoe UI Emoji; /* ripoff from github */
+}
+/* HTML5 blocks - needed in older browsers */
+article, aside, figcaption, figure, footer, header, nav, section {
+  display: block;
+}
+
+/* PARAGRAPHS */
+h1, h2, h3, h4 {
+  line-height: 1.25; /* Bigger text is often nicer with smaller line height */
+  font-weight: bold; /* Browser default. Use `normal` for less bulky titles */
+}
+h1 {
+    margin: 2em 0 .5em; /* Titles should be close to the text they describe */
+    font-size: 2em;
+}
+h2 {
+    margin: 2em 0 .5em; /* Titles should be close to the text they describe */
+    font-size: 1.5em;}
+h3 {
+    margin: 3em 0 .5em; /* Titles should be close to the text they describe */
+    font-size: 1.2em;}
+h4 {
+    margin: 1.5em 0 .5em; /* Titles should be close to the text they describe */
+    font-size: 1em;
+}
+ul, ol {
+  margin: 1em 0; /* Default for all browsers except IE */
+  padding-left: 40px; /* IE has a 40px margin-left instead */
+}
+p {
+  margin: 1em 0;
+}
+blockquote {
+  margin: 1em 40px; /* Same for all browsers - Customize or remove */
+}
+figure {
+  margin: 1em 0; /* Default in HTML5 spec: `1em 40px` */
+}
+
+/* LINKS */
+/* Default browser styles (from Firefox, similar in most browsers) */
+a {
+  text-decoration: none;
+}
+a:link,
+a:visited {
+    color: DodgerBlue;
+}
+a:active {
+    color: #EE0000;
+}
+/* Add your own styles for hover _and_ focus styles */
+a:hover, a:focus {
+  text-decoration: none;
+}
+/* Remove dotted outline clicked links - Keeps outline on focus */
+a:active, a:hover {
+  outline: none;
+}
+/* No border around images in links */
+a img {
+  border: none;
+}
+
+/* MISC TEXT-LEVEL ELEMENTS */
+/* Make quotations and references more visible */
+q, cite {
+  font-style: italic;
+}
+/* Remove automatic quotation marks for inline quotations
+   (`q {quotes:none}` not implemented in WebKit) */
+q:before, q:after {
+  content: "";
+}
+/* Stopping superscript and subscript from adding to the line's leading */
+sup, sub {
+  line-height: 0;
+}
+
+/* FORMS */
+fieldset {
+  margin: 0; /* Common default is `0 2px` */
+  padding: 0; /* Common default (roughly): `.35em .625em .75em` */
+  border: none;
+}
+input, button, select {
+  vertical-align: middle; /* Helps keep form elements roughly aligned */
+}
+
+/* TABLES */
+table {
+  border-collapse: collapse; /* Merges cell borders together */
+  /* Browser default: border-collapse: separate; border-spacing: 2px; */
+}
+td, th {
+  padding: 1px; /* Same as browser default - set to "0" to remove padding */
+  vertical-align: top; /* Default is "middle" */
+  text-align: left; /* Default for TH elements is "center" */
+}
+td:first-child, th:first-child {
+  empty-cells: hide; /* Hide empty cells when they're the first in the row */
+}
+    
+/* Custom stuff on top of the base style sheet */
+.status {
+    font-weight: bold;
+    font-family: monospace;
+    color: white;
+    padding: .25em .4em;
+    border-radius: .2em;
+}
+.success {
+    background-color: forestgreen;
+}
+.failure {
+    background-color: orangered;
+}
+.error {
+    background-color: firebrick;
+}
+
+.summary a {
+    font-weight: 500;
+}
+
+.highlight {
+    margin: 0;
+}
+
+.highlight pre {
+    padding: 1em;
+    border: 1px solid #eee;
+    background-color: #f5f5f5;
+    margin-bottom: 0.1em;
+    overflow-x: auto;
+}
+
+.source {
+    margin: 0.3em 0 2em;
+    font-size: 90%;
+}
+
+.source a:visited,
+.source a:link {
+    color: #666;
+    text-decoration: underline;
+}
+.source a:hover, a:focus {
+    color: #666;
+    text-decoration: underline;
+}
+
+/* Pandas dataframe css */
+/* Taken from: https://github.com/spatialaudio/nbsphinx/blob/fb3ba670fc1ba5f54d4c487573dbc1b4ecf7e9ff/src/nbsphinx.py#L587-L619 */
+
+table.dataframe {
+  border: none !important;
+  border-collapse: collapse;
+  border-spacing: 0;
+  border-color: transparent;
+  color: black;
+  font-size: .9em;
+  table-layout: fixed;
+}
+table.dataframe thead {
+  border-bottom: 1px solid black;
+  vertical-align: bottom;
+}
+table.dataframe tr,
+table.dataframe th,
+table.dataframe td {
+  text-align: left;
+  vertical-align: middle;
+  padding: 0.5em 0.5em;
+  line-height: normal;
+  white-space: normal;
+  max-width: none;
+  border: none;
+}
+table.dataframe th {
+  font-weight: bold;
+}
+table.dataframe tbody tr:nth-child(odd) {
+  background: #f5f5f5;
+}
+table.dataframe tbody tr:hover {
+  background: rgba(66, 165, 245, 0.2);
+}
+
+a.anchor:visited,
+a.anchor:link {
+    padding-left: .2em;
+    color: #999;
+}
+
+.backtotop {
+    text-decoration: none;
+    display: flex;
+    position: fixed;
+    font-size: 50px;
+    right: 40px;
+    bottom: 40px;
+    align-items: center;
+    justify-content: center;
+    order: 2;
+    margin-left: auto;
+    z-index: 999;
+}
+    
+.priority1 {
+    color: purple;
+}
+.priority2 {
+    color: firebrick;
+}
+.priority3 {
+    color: chocolate;
+}
+td.number {
+  text-align: right;
+}
+
+/* Style buttons */
+.btn {
+  background-color: DodgerBlue; /* Blue background */
+  border: none; /* Remove borders */
+  color: white; /* White text */
+  padding: 12px 16px; /* Some padding */
+  font-size: 16px; /* Set a font size */
+  cursor: pointer; /* Mouse pointer on hover */
+}
+
+/* Darker background on mouse-over */
+.btn:hover {
+  background-color: RoyalBlue;
+}

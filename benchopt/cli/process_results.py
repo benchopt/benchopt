@@ -32,23 +32,33 @@ def get_plot_kinds(ctx, args, incomplete):
               autocompletion=get_plot_kinds)
 @click.option('--display/--no-display', default=True,
               help="Whether or not to display the plot on the screen.")
+@click.option('--html/--no-html', default=True,
+              help="Whether or not to display the plot on the screen.")
 @click.option('--plotly', is_flag=True,
               help="If this flag is set, generate figure as HTML with plotly. "
               "This option does not work with all plot kinds and requires "
               "to have installed `plotly`.")
+@click.option('--all', 'all_files', is_flag=True,
+              help="If this flag is set, generate the plot for all existing "
+              "runs of a benchmark at once.")
 def plot(benchmark, filename=None, kinds=('suboptimality_curve',),
-         display=True, plotly=False):
+         display=True, html=True, plotly=False, all_files=False):
+
+    if all_files:
+        assert filename is None, (
+            "Cannot use `--all` and `--filename` simultaneously."
+        )
+        assert html, '`--all` can only be used for HTML plot generation.'
+        filename = 'all'
 
     # Get the result file
     benchmark = Benchmark(benchmark)
     result_filename = benchmark.get_result_file(filename)
 
-    # Load the results.
-    import pandas as pd
-    df = pd.read_csv(result_filename)
     # Plot the results.
     from benchopt.plotting import plot_benchmark
-    plot_benchmark(df, benchmark, kinds=kinds, display=display, plotly=plotly)
+    plot_benchmark(result_filename, benchmark, kinds=kinds, display=display,
+                   plotly=plotly, html=html)
 
 
 @process_results.command(
@@ -84,3 +94,26 @@ def publish(benchmark, token=None, filename=None):
     # Publish the result.
     from benchopt.utils.github import publish_result_file
     publish_result_file(benchmark.name, result_filename, token)
+
+
+@process_results.command(
+    help="Generate result website from list of benchmarks."
+)
+@click.option('--pattern', '-k', 'patterns',
+              metavar="<pattern>", multiple=True, type=str,
+              help="Include results matching <pattern>.")
+@click.option('--benchmark', '-b', 'benchmarks', metavar="<bench>",
+              multiple=True, type=click.Path(exists=True),
+              help="Folders containing benchmarks to include.")
+@click.option('--root', 'root', metavar="<root>",
+              type=click.Path(exists=True),
+              help="If no benchmark is provided, include all benchmark in "
+              "sub-directories of <root>. Default to current dir.")
+@click.option('--display/--no-display', default=True,
+              help="Whether or not to display the plot on the screen.")
+def generate_results(patterns=(), benchmarks=(), root=None, display=True):
+
+    from benchopt.plotting.generate_html import plot_benchmark_html_all
+    plot_benchmark_html_all(
+        patterns=patterns, benchmarks=benchmarks, root=root, display=display
+    )

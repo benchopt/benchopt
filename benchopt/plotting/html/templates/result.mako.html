@@ -1,0 +1,86 @@
+<html>
+<head>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📈</text></svg>">
+<link href="${static_dir}/main.css" rel="stylesheet" />
+<script defer src="https://use.fontawesome.com/releases/v5.0.10/js/all.js" integrity="sha384-slN8GvtUJGnv6ca26v8EzVaR9DC58QEwsIk9q1QXdCU8Yu8ck/tL/5szYlBbqmS+" crossorigin="anonymous"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.css" rel="stylesheet" />
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+</head>
+<body>
+<a id="top"></a>
+<a href="${home}"><button class="btn"><i class="fa fa-home"></i></button></a>
+<a href="${benchmark}.html"><button class="btn"><i class="fa fa-arrow-left"></i> ${benchmark}</button></a>
+<h1>Result on ${benchmark} benchmark</h1>
+
+<p><a href="${result['fname']}">
+	<button class="btn"><i class="fa fa-download"></i> ${result["fname_short"]}</button>
+</a></p>
+
+
+<!-- Add selector to display only one plot -->
+<label for='dataset_selector'>Dataset</label>
+<select id='dataset_selector' onchange="showMe(this);">
+% for data in result['dataset_names']:
+  <option value="${data}">${data}</option>
+%endfor
+</select>
+<label for='objective_selector'>Objective</label>
+<select id='objective_selector' onchange="showMe(this);">
+% for obj in result['objective_names']:
+  <option value="${obj}">${obj}</option>
+%endfor
+</select>
+<label for='plot_kind'>Kind</label>
+<select id='plot_kind' onchange="showMe(this);">
+% for kind in result['kinds']:
+  <option value="${kind}">${kind}</option>
+%endfor
+</select>
+
+% for data in result['dataset_names']:
+<div class="${data}">
+  % for obj in result['objective_names']:
+  <div class="${obj}">
+    % for kind in result['kinds']:
+    <div class="${kind}">
+      <%
+          fig = result['figures'][data][obj][kind]
+      %>
+      % if fig.endswith('.svg'):
+        <img src="${fig}"><br/>
+      % else:
+        ${fig}
+      %endif
+    </div>
+    %endfor
+  </div>
+  %endfor
+</div>
+%endfor
+
+<a class="backtotop" title="Back to top" href="#top"><i class="fas fa-level-up-alt"></i></a>
+
+<script type="text/javascript">
+	function showMe(e) {
+		for (var i = 0; i < e.options.length; i++) {
+			opt = e.options[i]
+			var all_obj = document.getElementsByClassName(opt.value);
+			for (var j =0; j< all_obj.length; j++)
+				all_obj[j].style.display = "none";
+		}
+		var class_to_display = e.options[e.selectedIndex].value;
+		var all_obj = document.getElementsByClassName(class_to_display);
+		for (var j =0; j< all_obj.length; j++)
+			all_obj[j].style.display = "block";
+  }
+
+  var obj = document.getElementById('dataset_selector');
+  obj.onchange();
+  var obj = document.getElementById('objective_selector');
+  obj.onchange();
+  var obj = document.getElementById('plot_kind');
+  obj.onchange();
+</script>
+</body>
+</html>

@@ -27,8 +27,8 @@ def publish_result_file(benchmark_name, file_path, token):
     with file_to_upload.open('r') as f:
         file_content = f.read()
 
-    file_name = f"{benchmark_name}/{file_to_upload.name}"
-    git_path = f'outputs/{file_name}'
+    git_path = f"benchmarks/{benchmark_name}/outputs/{file_to_upload.name}"
+    file_name = f'{benchmark_name}/{file_to_upload.name}'
 
     # Get github API and origin repo
     g = Github(login_or_token=token)

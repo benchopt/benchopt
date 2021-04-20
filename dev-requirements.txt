@@ -5,3 +5,4 @@ pytest
 pytest-timeout
 pytest-cov
 coverage
+mako

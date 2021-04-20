@@ -154,7 +154,7 @@ class Benchmark:
             all_csv_files, key=lambda t: t.stat().st_mtime
         )
 
-        if filename is not None:
+        if filename is not None and filename != 'all':
             result_filename = (output_folder / filename).with_suffix('.csv')
             if not result_filename.exists():
                 if Path(filename).exists():
@@ -173,6 +173,8 @@ class Benchmark:
                     f"Could not find any CSV result files in {output_folder}."
                 )
             result_filename = all_csv_files[-1]
+            if filename == 'all':
+                result_filename = all_csv_files
 
         return result_filename
 
