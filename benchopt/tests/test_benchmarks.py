@@ -6,6 +6,7 @@ import numpy as np
 
 from benchopt.base import STOP_STRATEGIES
 from benchopt.runner import _Callback
+from benchopt.stopping_criterion import StoppingCriterion
 
 
 def test_benchmark_objective(benchmark, dataset_simu):
@@ -159,8 +160,9 @@ def test_solver(benchmark, solver_class):
 
     # Either call run_with_cb or run
     if solver.stop_strategy == 'callback':
+        sc = StoppingCriterion._get_instance(max_runs=25, timeout=None)
         cb = _Callback(
-            objective, max_iter=5000, deadline=None,  meta={}
+            objective, meta={}, stopping_criterion=sc
         )
         solver.run(cb)
     else:
