@@ -55,6 +55,11 @@ setup(
     install_requires=['numpy', 'scipy', 'pandas', 'matplotlib',
                       'click', 'joblib', 'pygithub', 'mako',
                       'psutil', 'plotly'],
+    package_data={'benchopt.plotting': [
+        'html/static/main.css', 'html/templates/index.mako.html',
+        'html/templates/benchmark.mako.html',
+        'html/templates/result.mako.html',
+    ]},
     entry_points={
         'console_scripts': ['benchopt = benchopt.cli:benchopt']
     }
