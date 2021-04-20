@@ -120,9 +120,8 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
     -------
     curve : list of Cost
         The cost obtained for all repetitions.
-    status : str
-        The status on which the solver was stopped. Should be one of
-        {'done', 'timeout', 'max_runs', 'diverged', }
+    status : 'done' | 'diverged' | 'timeout' | 'max_runs'
+        The status on which the solver was stopped.
     """
 
     # Create a Memory object to cache the computations in the benchmark folder
@@ -131,15 +130,9 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
 
     # compute initial value
     stopping_criterion.show_progress('initialization')
-    init_stop_val = (
-        0 if solver.stop_strategy == 'iteration' else INFINITY
-    )
-    call_args = dict(
-        objective=objective, solver=solver, meta=meta
-    )
-    cost = run_one_resolution_cached(
-        stop_val=init_stop_val, **call_args
-    )
+    init_stop_val = (0 if solver.stop_strategy == 'iteration' else INFINITY)
+    call_args = dict(objective=objective, solver=solver, meta=meta)
+    cost = run_one_resolution_cached(stop_val=init_stop_val, **call_args)
     curve = [cost]
     stop, status, is_flat = stopping_criterion.should_stop_solver(curve)
 
@@ -191,8 +184,8 @@ class _Callback:
         A dictionary with info from the current system.
     curve : list
         The convergence curve stored as a list of dict.
-    status : 'done' | 'diverged' | 'timeout' | 'max_runs'
-        The convergence status.
+    status : 'running' | 'done' | 'diverged' | 'timeout' | 'max_runs'
+        The status on which the solver is or was stopped.
     time_iter : float
         Computation time to reach the current iteration.
         Excluding the times to evaluate objective.
@@ -262,7 +255,8 @@ class _Callback:
         -------
         curve : list
             Details on the run and the objective value obtained.
-        status : 'done' | 'diverged' | 'timeout' | 'unfinished'
+        status : 'done' | 'diverged' | 'timeout' | 'max_runs'
+            The status on which the solver was stopped.
         """
         return self.curve, self.status
 

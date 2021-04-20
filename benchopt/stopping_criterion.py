@@ -18,6 +18,16 @@ class StoppingCriterion():
 
     This class also handles the detection of diverging solvers and prints the
     progress if given a ``prgress_str``.
+
+    Instances of this class should only be created with `cls._get_instance`,
+    to make sure the class holds the proper attirbutes. This factory mechanism
+    allow for easy subclassing without requesting to call the `super.__init___`
+    in the subclass.
+
+    Similarly, sub-classes should implement `check-convergence` to check if the
+    algorithm has converged. This function will be called internally as a hook
+    in `should_stop_solver`, which also handles `timeout`, `max_runs` and
+    plateau detection.
     """
 
     def __init__(self, *args, **kwargs):
@@ -156,6 +166,15 @@ class SufficientDescentCriterion(StoppingCriterion):
     The solver will be stopped once successive evaluations do not make enough
     progress. The number of successive evaluation and the definition of
     sufficient progress is controled by ``eps`` and ``patience``.
+
+    Parameters
+    ----------
+    eps :  float (default: benchopt.stopping_criterion.EPS)
+        The objective function change is considered as insufficient when it is
+        in the interval ``[-eps, eps]``.
+    patience :  float (default: benchopt.stopping_criterion.PATIENCE)
+        The solver is stopped after ``patience`` successive insufficient
+        updates.
     """
     def __init__(self, eps=EPS, patience=PATIENCE):
         self.eps = eps
@@ -175,8 +194,10 @@ class SufficientDescentCriterion(StoppingCriterion):
 
         Returns
         -------
-        stop : bool - wether or not we should stop the algorithm.
-        progress : float - measure of how far the solver is from convergence.
+        stop : bool
+            Whether or not we should stop the algorithm.
+        progress : float
+            Measure of how far the solver is from convergence.
             This should be in [0, 1], 0 meaning no progress and 1 meaning
             that the solver has converged.
         """
