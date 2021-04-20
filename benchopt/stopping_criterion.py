@@ -16,7 +16,7 @@ class StoppingCriterion():
     This base class will check for the timeout and the max_run.
     It should be sub-classed to check for the convergence of the algorithm.
 
-    This class also handle the detection of diverging solvers and print the
+    This class also handles the detection of diverging solvers and prints the
     progress if given a ``prgress_str``.
     """
 
@@ -47,8 +47,8 @@ class StoppingCriterion():
     def should_stop_solver(self, cost_curve):
         """Base call to check if we should stop running a solver.
 
-        This base call check for the timeout and the max number of runs.
-        It also notify the runner if the curve is too flat, to increase
+        This base call checks for the timeout and the max number of runs.
+        It also notifies the runner if the curve is too flat, to increase
         the number of points between 2 evaluations of the objective.
 
         Parameters
@@ -59,9 +59,12 @@ class StoppingCriterion():
 
         Returns
         -------
-        stop : bool - wether or not we should stop the algorithm.
-        status : str - reason why the algorithm was stopped if stop is True.
-        is_flat : bool - indicate if 2 successive evaluation yielded the same
+        stop : bool
+            Whether or not we should stop the algorithm.
+        status : str
+            Reason why the algorithm was stopped if stop is True.
+        is_flat : bool
+            Indicate if 2 successive evaluations yielded the same
             objective value. Useful for moving faster on tolerance.
         """
         # Modify the criterion state:
@@ -73,7 +76,7 @@ class StoppingCriterion():
         delta_objective = self._prev_objective_value - objective_value
         self._prev_objective_value = objective_value
 
-        # default for value for is_flat
+        # default value for is_flat
         is_flat = False
 
         # check the different conditions:
@@ -131,8 +134,10 @@ class StoppingCriterion():
 
         Returns
         -------
-        stop : bool - wether or not we should stop the algorithm.
-        progress : float - measure of how far the solver is from convergence.
+        stop : bool
+            Whether or not we should stop the algorithm.
+        progress : float
+            Measure of how far the solver is from convergence.
             This should be in [0, 1], 0 meaning no progress and 1 meaning
             that the solver has converged.
         """
