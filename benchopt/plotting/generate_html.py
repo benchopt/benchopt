@@ -180,8 +180,6 @@ def render_index(benchmark_names, static_dir):
     -------
     rendered : str
         A str with the HTML code for the index page.
-    static_dir : str
-        Relative path from HTML root to the static files.
     """
     return Template(
         filename=str(TEMPLATE_INDEX), input_encoding="utf-8"
@@ -365,11 +363,15 @@ def plot_benchmark_html_all(patterns=(), benchmarks=(), root=None,
     benchmarks : tuple of Path
         Explicitly provides the benchmarks that should be display in the
         report.
-    root : Path
+    root : Path | None
         If no benchmarks is provided, list all directory in root that have
         a `outputs` folder and generate the report.
     display : bool
         If set to True, open the HTML report in default browser.
+
+    Returns
+    -------
+    None
     """
     # Parse the arguments adn get the list of benchmarks and patterns.
     if not benchmarks:
@@ -428,4 +430,4 @@ def plot_benchmark_html_all(patterns=(), benchmarks=(), root=None,
 
     # Display the file in the default browser
     if display:
-        webbrowser.open(str(index_filename), new=2)
+        webbrowser.open_new_tab('file://' + str(index_filename.absolute()))
