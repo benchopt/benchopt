@@ -51,8 +51,8 @@ jobs:
 
       - name: Install benchopt and its dependencies
         run: |
-          conda install -y pip
-          pip install -e .[test]
+          conda install -yq pip $(cat dev-requirements.txt)
+          pip install -e .
         shell: bash
 
       - run: bash continuous_integration/test_script.sh
