@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - master
+  pull_request:
+    branches:
+      - master
   create:
     tags:
       - '**'
@@ -38,12 +41,12 @@ jobs:
       uses: fountainhead/action-wait-for-check@v1.0.0
       id: wait-for-build
       with:
-        token: ${{ secrets.GH_STATUS_CHECK }}
+        token: ${{ secrets.GITHUB_TOKEN }}
         checkName: benchopt.benchOpt
         ref: ${{ github.event.pull_request.head.sha || github.sha ) }}
 
     - name: Publish distribution 📦 to Test PyPI
-      if: steps.wait-for-build.outputs.conclusion == 'success'
+      if: ${{ github.ref == 'refs/heads/master' && steps.wait-for-build.outputs.conclusion == 'success' }}
       uses: pypa/gh-action-pypi-publish@master
       with:
         password: ${{ secrets.TEST_PYPI_API_TOKEN }}
