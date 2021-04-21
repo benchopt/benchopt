@@ -62,6 +62,10 @@ jobs:
               conda install julia r-base rpy2 numpy cython -yq
               pip install --upgrade --progress-bar off julia
               pip install --upgrade --progress-bar off -e .[doc]
+              # Install ruamel.yaml package with conda as the install of conda
+              # with pip is broken otherwise.
+              # See https://github.com/debbiemarkslab/EVcouplings/pull/261
+              # conda install ruamel.yaml -qy
 
         - save_cache:
             key: pip-cache
