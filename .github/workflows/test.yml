@@ -76,6 +76,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload coverage
+        if: ${{ matrix.coverage == 'true' }}
         uses: codecov/codecov-action@v1
         with:
           flags: test_benchopt
