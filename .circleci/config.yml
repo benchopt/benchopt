@@ -50,7 +50,6 @@ jobs:
         - run:
             name: Get Python running
             command: |
-              pip install --upgrade --progress-bar off -r doc/doc-requirements.txt
               conda config --env --prepend channels conda-forge
 
               # There is an ungoing issue with compat between libgit2 and julia which
@@ -62,7 +61,7 @@ jobs:
 
               conda install julia r-base rpy2
               pip install julia
-              pip install --progress-bar off -e .[test]
+              pip install --upgrade --progress-bar off -e .[doc]
 
         - save_cache:
             key: pip-cache
