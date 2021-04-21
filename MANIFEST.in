@@ -1,9 +1,10 @@
 include LICENSE
 include setup.py
+include setup.cfg
 include CHANGE.md
 include conftest.py
 include pyproject.toml
-include dev-requirements.txt
+recursive-include benchopt *.py
 
 # Include html templates and css for plotting
 recursive-include benchopt/plotting *.html

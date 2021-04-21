@@ -25,8 +25,8 @@ try:
     )
 except RuntimeError:
     raise RuntimeError(
-        "This example can only work when Lasso benchmark is cloned in the "
-        "example folder. Please run:\n"
+        "This example can only work when Logreg-l2 benchmark is cloned in a "
+        "`benchmarks` folder. Please run:\n"
         "$ git clone https://github.com/benchopt/benchmark_logreg_l2 "
         f"{BENCHMARK_PATH.resolve()}"
     )
