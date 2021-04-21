@@ -61,6 +61,7 @@ jobs:
 
               conda install julia r-base rpy2 numpy cython -yq
               pip install --upgrade --progress-bar off julia
+              pip install --upgrade --progress-bar off git+https://github.com/scikit-learn-contrib/lightning.git
               pip install --upgrade --progress-bar off -e .[doc]
 
         - save_cache:
