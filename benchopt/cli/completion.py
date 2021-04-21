@@ -2,6 +2,7 @@ from pathlib import Path
 
 
 from benchopt.benchmark import Benchmark
+from benchopt.utils.misc import list_conda_envs
 from benchopt.utils.safe_import import skip_import
 
 
@@ -78,3 +79,9 @@ def get_output_files(ctx, args, incomplete):
     return [
         f.name for f in output_folder.glob('*.csv') if incomplete in str(f)
     ]
+
+
+def get_conda_envs(ctx, args, incomplete):
+    "Auto-completion for env-names."
+    _, all_envs = list_conda_envs()
+    return [e for e in all_envs if incomplete in e]
