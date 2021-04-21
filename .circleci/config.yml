@@ -50,7 +50,6 @@ jobs:
         - run:
             name: Get Python running
             command: |
-              pip install --upgrade --progress-bar off -r dev-requirements.txt
               pip install --upgrade --progress-bar off -r doc/doc-requirements.txt
               conda config --env --prepend channels conda-forge
 
@@ -63,7 +62,7 @@ jobs:
 
               conda install julia r-base rpy2
               pip install julia
-              pip install -e .
+              pip install --progress-bar off -e .[test]
 
         - save_cache:
             key: pip-cache
