@@ -59,8 +59,8 @@ jobs:
               git clone https://github.com/JuliaRegistries/General.git \
                       $HOME/.julia/registries/General
 
-              conda install julia r-base rpy2
-              pip install julia
+              conda install julia r-base rpy2 numpy cython -yq
+              pip install --upgrade --progress-bar off julia
               pip install --upgrade --progress-bar off -e .[doc]
 
         - save_cache:
