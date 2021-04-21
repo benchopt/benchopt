@@ -42,13 +42,17 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: Set up Python 3.8
-        uses: actions/setup-python@v2
+      - name: Setup Conda
+        uses: conda-incubator/setup-miniconda@v2
         with:
+          activate-environment: ${{ env.CONDAENV }}
           python-version: ${{ matrix.version_python }}
+          channels: conda-forge
 
-      - run: bash continuous_integration/install.sh
-        name: 'Install benchopt and its dependencies'
+      - name: Install benchopt and its dependencies
+        run: |
+          conda install -y pip
+          pip install -e .[test]
         shell: bash
 
       - run: bash continuous_integration/test_script.sh
