@@ -40,6 +40,10 @@ jobs:
       VERSION_PYTHON: ${{ matrix.version_python }}
       COVERAGE: ${{ matrix.coverage }}
 
+    defaults:
+      run:
+        shell: bash -l {0}
+
     steps:
       - uses: actions/checkout@v2
       - name: Setup Conda
@@ -49,16 +53,15 @@ jobs:
           python-version: ${{ matrix.version_python }}
           channels: conda-forge
 
+      - run: conda info
+
       - name: Install benchopt and its dependencies
         run: |
-          conda activate ${{ env.CONDA_ENV }}
           conda install -yq pip $(cat dev-requirements.txt)
           pip install -e .
-        shell: bash
 
       - run: bash continuous_integration/test_script.sh
         name: 'Run the tests'
-        shell: bash
 
       - name: Publish Test Report
         uses: mikepenz/action-junit-report@v2
