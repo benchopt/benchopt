@@ -2,9 +2,6 @@
 
 set -e
 
-eval "$(conda shell.bash hook)"
-conda activate $CONDA_ENV
-echo "$CONDA_ENV"
 conda info
 pip freeze
 
