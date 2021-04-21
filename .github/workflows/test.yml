@@ -64,7 +64,7 @@ jobs:
           conda install -yq pip
           pip install -e .[test]
 
-      - run: bash continuous_integration/test_script.sh
+      - run: continuous_integration/test_script.sh
         name: 'Run the tests'
 
       - name: Publish Test Report
