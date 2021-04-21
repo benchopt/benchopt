@@ -4,6 +4,12 @@ on:
   push:
     branches:
       - master
+  pull_request:
+    branches:
+      - master
+  create:
+    tags:
+      - '**'
 
 jobs:
   build-n-publish:
@@ -37,7 +43,7 @@ jobs:
       with:
         token: ${{ secrets.GH_STATUS_CHECK }}
         checkName: benchopt.benchOpt
-        ref: ${{ github.event.pull_request.head.sha || github.sha }}
+        ref: ${{ github.ref == 'refs/heads/master' && ${{ github.event.pull_request.head.sha || github.sha }} }}
 
     - name: Publish distribution 📦 to Test PyPI
       if: steps.wait-for-build.outputs.conclusion == 'success'
