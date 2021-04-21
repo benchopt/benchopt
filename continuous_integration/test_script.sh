@@ -8,8 +8,8 @@ echo "$CONDA_ENV"
 conda info
 pip freeze
 
-TEST_CMD="python -m pytest -vs --showlocals --durations=20 --junitxml=$JUNITXML --pyargs"
-TEST_CMD="$TEST_CMD --test-env $CONDAENV --pyargs"
+TEST_CMD="python -m pytest -vs --showlocals --durations=20 --junitxml=$JUNIT_XML --pyargs"
+TEST_CMD="$TEST_CMD --test-env $CONDA_ENV --pyargs"
 
 # Un-comment when debugging the CI
 # TEST_CMD="$TEST_CMD --skip-install"

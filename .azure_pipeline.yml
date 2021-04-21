@@ -56,8 +56,8 @@ jobs:
 #         PACKAGER: 'pip'
 
   variables:
-    CONDAENV: 'testcondaenv'
-    JUNITXML: 'test-data.xml'
+    CONDA_ENV: 'testcondaenv'
+    JUNIT_XML: 'test-data.xml'
 
   pool:
     vmImage: $(imageName)
@@ -86,7 +86,7 @@ jobs:
 
   - task: PublishTestResults@2
     inputs:
-      testResultsFiles: '$(JUNITXML)'
+      testResultsFiles: '$(JUNIT_XML)'
     displayName: 'Publish Test Results'
     condition: and(succeededOrFailed(), ne(variables['SKIP_TESTS'], 'true'))
 
