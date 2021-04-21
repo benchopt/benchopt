@@ -3,7 +3,8 @@ import click
 from benchopt.config import get_setting
 from benchopt.benchmark import Benchmark
 from benchopt.constants import PLOT_KINDS
-
+from benchopt.cli.completion import get_benchmark
+from benchopt.cli.completion import get_output_files
 
 process_results = click.Group(
     name='Process Results',
@@ -19,8 +20,10 @@ def get_plot_kinds(ctx, args, incomplete):
 @process_results.command(
     help="Plot the result from a previously run benchmark."
 )
-@click.argument('benchmark', type=click.Path(exists=True))
+@click.argument('benchmark', type=click.Path(exists=True),
+                autocompletion=get_benchmark)
 @click.option('--filename', '-f', type=str, default=None,
+              autocompletion=get_output_files,
               help="Specify the file to select in the benchmark. If it is "
               "not specified, take the latest on in the benchmark output "
               "folder.")
@@ -66,11 +69,12 @@ def plot(benchmark, filename=None, kinds=('suboptimality_curve',),
     "See the :ref:`publish_doc` documentation for more info on how to use "
     "this command."
 )
-@click.argument('benchmark', type=click.Path(exists=True))
+@click.argument('benchmark', type=click.Path(exists=True),
+                autocompletion=get_benchmark)
 @click.option('--token', '-t', type=str, default=None,
               help="Github token to access the result repo.")
-@click.option('--filename', '-f',
-              type=str, default=None,
+@click.option('--filename', '-f', type=str, default=None,
+              autocompletion=get_output_files,
               help="Specify the file to publish in the benchmark. If it is "
               "not specified, take the latest on in the benchmark output "
               "folder.")
@@ -99,12 +103,13 @@ def publish(benchmark, token=None, filename=None):
 @process_results.command(
     help="Generate result website from list of benchmarks."
 )
+@click.option('--benchmark', '-b', 'benchmarks', metavar="<bench>",
+              multiple=True, type=click.Path(exists=True),
+              autocompletion=get_benchmark,
+              help="Folders containing benchmarks to include.")
 @click.option('--pattern', '-k', 'patterns',
               metavar="<pattern>", multiple=True, type=str,
               help="Include results matching <pattern>.")
-@click.option('--benchmark', '-b', 'benchmarks', metavar="<bench>",
-              multiple=True, type=click.Path(exists=True),
-              help="Folders containing benchmarks to include.")
 @click.option('--root', 'root', metavar="<root>",
               type=click.Path(exists=True),
               help="If no benchmark is provided, include all benchmark in "

@@ -1,9 +1,10 @@
-import os
 import click
 from pathlib import Path
 
 from benchopt.benchmark import Benchmark
-from benchopt.utils.safe_import import skip_import
+from benchopt.cli.completion import get_solvers
+from benchopt.cli.completion import get_datasets
+from benchopt.cli.completion import get_benchmark
 from benchopt.utils.shell_cmd import create_conda_env
 from benchopt.utils.shell_cmd import _run_shell_in_conda_env
 
@@ -12,30 +13,6 @@ main = click.Group(
     name='Principal Commands',
     help="Principal commands that are used in ``benchopt``."
 )
-
-
-def get_solvers(ctx, args, incomplete):
-    skip_import()
-    benchmark = Benchmark(args[1])
-    solvers = benchmark.list_benchmark_solver_names()
-    solvers = [s.lower() for s in solvers]
-    return [s for s in solvers if incomplete.lower() in s]
-
-
-def get_datasets(ctx, args, incomplete):
-    skip_import()
-    benchmark = Benchmark(args[1])
-    datasets = benchmark.list_benchmark_dataset_names()
-    datasets = [d.lower() for d in datasets]
-    return [d for d in datasets if incomplete.lower() in d]
-
-
-def get_benchmark(ctx, args, incomplete):
-    skip_import()
-    benchmarks = [os.curdir] + [b.path for b in os.scandir('.') if b.is_dir()]
-    benchmarks = [b for b in benchmarks
-                  if (Path(b) / "objective.py").exists()]
-    return [b for b in benchmarks if incomplete in b]
 
 
 @main.command(
@@ -158,7 +135,8 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
     help="Test a benchmark for benchopt.",
     context_settings=dict(ignore_unknown_options=True)
 )
-@click.argument('benchmark', type=click.Path(exists=True))
+@click.argument('benchmark', type=click.Path(exists=True),
+                autocompletion=get_benchmark)
 @click.option('--env-name', type=str, default=None, metavar='NAME',
               help='Environment to run the test in. If it is not provided '
               'a temporary one is created for the test.')
