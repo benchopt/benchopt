@@ -214,5 +214,5 @@ class SufficientDescentCriterion(StoppingCriterion):
         if (-self.eps <= delta <= self.eps):
             return True, 1
 
-        progress = math.log(max(delta, EPS)) / math.log(EPS)
+        progress = math.log(max(abs(delta), self.eps)) / math.log(self.eps)
         return False, progress

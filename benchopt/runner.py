@@ -20,7 +20,7 @@ from .config import RAISE_INSTALL_ERROR
 
 # Define some constants
 # TODO: better parametrize this?
-MAX_ITER = int(1e6)
+MAX_ITER = int(1e12)
 MIN_TOL = 1e-15
 INFINITY = 3e38  # see: np.finfo('float32').max
 RHO = 1.5
