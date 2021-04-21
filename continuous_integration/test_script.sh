@@ -4,6 +4,8 @@ set -e
 
 eval "$(conda shell.bash hook)"
 conda activate $CONDAENV
+conda info
+pip freeze
 
 TEST_CMD="python -m pytest -vs --showlocals --durations=20 --junitxml=$JUNITXML --pyargs"
 TEST_CMD="$TEST_CMD --test-env $CONDAENV --pyargs"

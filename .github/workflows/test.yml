@@ -10,6 +10,9 @@ on:
   create:
     tags:
       - '**'
+  schedule:
+    # Run every day at 8:42am UTC.
+    - cron:  '42 8 * * *'
 
 # YAML file in the release branch
 # schedules:
@@ -57,8 +60,9 @@ jobs:
 
       - name: Install benchopt and its dependencies
         run: |
-          conda install -yq pip $(cat dev-requirements.txt)
-          pip install -e .
+          conda info
+          conda install -yq pip
+          pip install -e .[test]
 
       - run: bash continuous_integration/test_script.sh
         name: 'Run the tests'
