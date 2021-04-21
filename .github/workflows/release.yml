@@ -10,7 +10,9 @@ jobs:
     name: Release to PyPI and TestPyPI 📦
     runs-on: ubuntu-18.04
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
     - name: Set up Python 3.7
       uses: actions/setup-python@v1
       with:
@@ -29,13 +31,22 @@ jobs:
         --wheel
         --outdir dist/
         .
+    - name: Wait for test to succeed
+      uses: fountainhead/action-wait-for-check@v1.0.0
+      id: wait-for-build
+      with:
+        token: ${{ secrets.GH_STATUS_CHECK }}
+        checkName: benchopt.benchOpt
+        ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
     - name: Publish distribution 📦 to Test PyPI
+      if: steps.wait-for-build.outputs.conclusion == 'success'
       uses: pypa/gh-action-pypi-publish@master
       with:
         password: ${{ secrets.TEST_PYPI_API_TOKEN }}
         repository_url: https://test.pypi.org/legacy/
     - name: Publish distribution 📦 to PyPI
-      if: startsWith(github.ref, 'refs/tags')
+      if: ${{ startsWith(github.ref, 'refs/tags') && steps.wait-for-build.outputs.conclusion == 'success' }}
       uses: pypa/gh-action-pypi-publish@master
       with:
         password: ${{ secrets.PYPI_API_TOKEN }}
