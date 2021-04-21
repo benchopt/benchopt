@@ -18,7 +18,7 @@ BENCHMARK_PATH = Path(os.getcwd()).parent / 'benchmarks' / 'logreg_l2'
 
 try:
     save_file = run_benchmark(
-        Benchmark(BENCHMARK_PATH), ['sklearn', 'lightning', 'python-gd'],
+        Benchmark(BENCHMARK_PATH), ['sklearn', 'lightning'],
         dataset_names=['Simulated*n_samples=200,n_features=500*'],
         max_runs=100, timeout=20, n_repetitions=3,
         plot_result=False, show_progress=False
