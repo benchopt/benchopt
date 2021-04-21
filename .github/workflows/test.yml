@@ -45,6 +45,8 @@ jobs:
 
     defaults:
       run:
+        # Need to use this shell to get cond working properly.
+        # See https://github.com/marketplace/actions/setup-miniconda#important
         shell: bash -l {0}
 
     steps:
