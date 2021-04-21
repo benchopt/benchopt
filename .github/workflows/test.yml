@@ -40,29 +40,29 @@ jobs:
       VERSION_PYTHON: ${{ matrix.version_python }}
       COVERAGE: ${{ matrix.coverage }}
 
-  steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python 3.8
-      uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.version_python }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.version_python }}
 
-    - run: bash continuous_integration/install.sh
-      name: 'Install benchopt and its dependencies'
-      shell: bash
+      - run: bash continuous_integration/install.sh
+        name: 'Install benchopt and its dependencies'
+        shell: bash
 
-    - run: bash continuous_integration/test_script.sh
-      name: 'Run the tests'
-      shell: bash
+      - run: bash continuous_integration/test_script.sh
+        name: 'Run the tests'
+        shell: bash
 
-    - task: PublishTestResults@2
-      inputs:
-        testResultsFiles: ${{ env.JUNITXML }}
-      name: 'Publish Test Results'
+      - task: PublishTestResults@2
+        inputs:
+          testResultsFiles: ${{ env.JUNITXML }}
+        name: 'Publish Test Results'
 
-    - run: |
-        pip install codecov
-        codecov -t "${{ secrets.CODECOV_TOKEN }}"
-      name: 'Upload to codecov'
-      shell: bash
-      if: ${{ success() && env.COVERAGE == 'true' }}
+      - run: |
+          pip install codecov
+          codecov -t "${{ secrets.CODECOV_TOKEN }}"
+        name: 'Upload to codecov'
+        shell: bash
+        if: ${{ success() && env.COVERAGE == 'true' }}
