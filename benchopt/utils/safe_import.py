@@ -19,7 +19,6 @@ class safe_import_context:
     """Do not fail on ImportError and catch import warnings"""
 
     def __init__(self):
-        self.skip_import = False
         self.failed_import = False
         self.record = warnings.catch_warnings(record=True)
 
@@ -43,7 +42,6 @@ class safe_import_context:
     def __exit__(self, exc_type, exc_value, tb):
 
         if SKIP_IMPORT:
-            self.skip_import = True
             self.failed_import = True
             return True
 
