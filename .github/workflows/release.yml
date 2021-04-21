@@ -43,7 +43,7 @@ jobs:
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         checkName: benchopt.benchOpt
-        ref: ${{ github.event.pull_request.head.sha || github.sha ) }}
+        ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
     - name: Publish distribution 📦 to Test PyPI
       if: ${{ github.ref == 'refs/heads/master' && steps.wait-for-build.outputs.conclusion == 'success' }}
