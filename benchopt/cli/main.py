@@ -2,14 +2,14 @@ import click
 from pathlib import Path
 
 from benchopt.benchmark import Benchmark
-from benchopt.utils.misc import list_conda_envs
 from benchopt.cli.completion import get_solvers
 from benchopt.cli.completion import get_datasets
 from benchopt.cli.completion import get_benchmark
 from benchopt.cli.completion import get_conda_envs
-from benchopt.utils.shell_cmd import create_conda_env
+from benchopt.utils.conda_env_cmd import list_conda_envs
+from benchopt.utils.conda_env_cmd import create_conda_env
 from benchopt.utils.shell_cmd import _run_shell_in_conda_env
-from benchopt.utils.shell_cmd import get_benchopt_version_in_env
+from benchopt.utils.conda_env_cmd import get_benchopt_version_in_env
 
 
 main = click.Group(

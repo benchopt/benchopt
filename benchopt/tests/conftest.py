@@ -3,8 +3,8 @@ import uuid
 import pytest
 
 from benchopt.benchmark import Benchmark
-from benchopt.utils.shell_cmd import delete_conda_env
-from benchopt.utils.shell_cmd import create_conda_env
+from benchopt.utils.conda_env_cmd import create_conda_env
+from benchopt.utils.conda_env_cmd import delete_conda_env
 from benchopt.utils.dynamic_modules import _get_module_from_file
 
 from benchopt.tests import TEST_BENCHMARK_DIR
@@ -128,7 +128,7 @@ def empty_env_name(request):
 
     if _EMPTY_ENV_NAME is None:
         env_name = f"_benchopt_test_env_{uuid.uuid4()}"
-        request.addfinalizer(delete_test_env)
+        request.addfinalizer(delete_empty_env)
 
         _EMPTY_ENV_NAME = env_name
 
@@ -142,3 +142,12 @@ def delete_test_env():
 
     if _TEST_ENV_NAME is not None:
         delete_conda_env(_TEST_ENV_NAME)
+        _TEST_ENV_NAME = None
+
+
+def delete_empty_env():
+    global _EMPTY_ENV_NAME
+
+    if _EMPTY_ENV_NAME is not None:
+        delete_conda_env(_EMPTY_ENV_NAME)
+        _EMPTY_ENV_NAME = None
