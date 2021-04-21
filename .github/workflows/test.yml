@@ -1,0 +1,68 @@
+name: test
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  create:
+    tags:
+      - '**'
+
+# YAML file in the release branch
+# schedules:
+# - cron: "0 13 * * *"
+#   displayName: Daily build
+#   branches:
+#     include:
+#     - master
+#   always: true
+
+jobs:
+  test_benchopt:
+    displayName: Test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: unbuntu-latest
+            version_python: 3.7
+            coverage: 'true'
+          - os: unbuntu-latest
+            version_python: 3.8
+          - os: macos-latest
+            version_python: 3.8
+    env:
+      CONDAENV: 'testcondaenv'
+      JUNITXML: 'test-data.xml'
+      VERSION_PYTHON: ${{ matrix.version_python }}
+      COVERAGE: ${{ matrix.coverage }}
+
+  steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python 3.8
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.version_python }}
+
+    - run: bash continuous_integration/install.sh
+      name: 'Install benchopt and its dependencies'
+      shell: bash
+
+    - run: bash continuous_integration/test_script.sh
+      name: 'Run the tests'
+      shell: bash
+
+    - task: PublishTestResults@2
+      inputs:
+        testResultsFiles: ${{ env.JUNITXML }}
+      name: 'Publish Test Results'
+
+    - run: |
+        pip install codecov
+        codecov -t "${{ secrets.CODECOV_TOKEN }}"
+      name: 'Upload to codecov'
+      shell: bash
+      if: ${{ success() && env.COVERAGE == 'true' }}
