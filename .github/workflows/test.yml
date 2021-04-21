@@ -22,7 +22,7 @@ on:
 
 jobs:
   test_benchopt:
-    displayName: Test
+    name: Test
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
