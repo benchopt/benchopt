@@ -200,21 +200,12 @@ def list_conda_envs():
         env or not.
     """
     try:
-        from conda.core.envs_manager import list_all_known_prefixes
         from conda.base.context import context
     except ImportError:
         # Not in an activated conda env, returns an empty list.
-        active_env = os.environ.get('CONDA_DEFAULT_ENV', None)
-        exit_code, output = _run_shell_in_conda_env(
-            "conda env list", env_name='base', return_output=True
-        )
-        all_envs = [
-            env.split()[0] for env in output.splitlines()
-            if not env.startswith('#')
-        ]
-        if not active_env:
+        context = get_conda_context()
+        if context is None:
             return None, []
-        return active_env, [Path(e).name for e in all_envs]
 
     def get_env_name(prefix):
 
@@ -229,7 +220,15 @@ def list_conda_envs():
             name = ''
         return name, active
 
-    conda_prefixes = list_all_known_prefixes()
+    conda_prefixes = [context.root_prefix]
+    for env_dir in context.envs_dirs:
+        env_dir = Path(env_dir)
+        if not env_dir.is_dir():
+            continue
+        for p in env_dir.glob('*'):
+            if p.is_dir():
+                conda_prefixes.append(p)
+
     all_envs = [get_env_name(prefix) for prefix in conda_prefixes]
     active_envs = [e[0] for e in all_envs if e[1]]
     all_envs = [e[0] for e in all_envs]
@@ -240,3 +239,22 @@ def list_conda_envs():
     assert len(active_envs) == 1, "Multiple activated conda env?!."
 
     return active_envs[0], all_envs
+
+
+def get_conda_context():
+    import json
+    from collections import namedtuple
+    Context = namedtuple(
+        'Context', ['active_prefix', 'root_prefix', 'envs_dirs']
+    )
+
+    exit_code, payload = _run_shell_in_conda_env(
+        "conda config --show envs_dirs root_prefix --json", return_output=True
+    )
+
+    active_prefix = os.environ.get('CONDA_PREFIX', None)
+    if exit_code != 0 or active_prefix is None:
+        return None
+    info = json.loads(payload)
+    info['active_prefix'] = active_prefix
+    return Context(**info)
