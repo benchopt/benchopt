@@ -1,7 +1,7 @@
 Benchmark repository for optimization
 =====================================
 
-|Build Status| |Python 3.6+| |codecov|
+|Test Status| |Python 3.6+| |codecov|
 
 BenchOpt is a package to simplify, make more transparent and
 more reproducible the comparisons of optimization algorithms.
@@ -149,8 +149,8 @@ Contents
    whats_new
    Fork BenchOpt on Github <https://github.com/benchopt/benchopt>
 
-.. |Build Status| image:: https://dev.azure.com/benchopt/benchopt/_apis/build/status/benchopt.benchOpt?branchName=master
-   :target: https://dev.azure.com/benchopt/benchopt/_build/latest?definitionId=1&branchName=master
+.. |Test Status| image:: https://github.com/benchopt/benchOpt/actions/workflows/test.yml/badge.svg
+   :target: https://github.com/benchopt/benchOpt/actions/workflows/test.yml
 .. |Python 3.6+| image:: https://img.shields.io/badge/python-3.6%2B-blue
    :target: https://www.python.org/downloads/release/python-360/
 .. |codecov| image:: https://codecov.io/gh/benchopt/benchOpt/branch/master/graph/badge.svg

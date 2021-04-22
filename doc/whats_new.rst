@@ -23,7 +23,11 @@ Changelog
   by `Thomas Moreau`_ (:gh:`128`).
 
 - Add autocompletion support in the `benchopt` command,
-  by `Alexandre Gramfort`_, `Tanguy Lefort`_ and `Thomas Moreau`_ (:gh:`133`).
+  by `Alexandre Gramfort`_, `Tanguy Lefort`_ and `Thomas Moreau`_
+  (:gh:`133`, :gh:`135`).
+
+- Move most CI to github action, with auto-release on pypi,
+  by `Thomas Moreau`_ (:gh:`150`, :gh:`154`).
 
 API
 ~~~
@@ -37,6 +41,11 @@ API
 - ``Solver`` can now use ``stop_strategy = 'callback'`` to allow for
   single call curve construction, by `Tanguy Lefort`_ and `Thomas Moreau`_
   (:gh:`137`).
+
+- Add ``StoppingCriterion`` to reliably and flexibly assess a solver cvg.
+  For now, only ``SufficientDescentCriterion`` is implemented but better
+  API to set criterion per benchmark should be implemented in future release,
+  by `Thomas Moreau`_ (:gh:`151`)
 
 CLI
 ~~~

@@ -1,0 +1,92 @@
+name: test
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  create:
+    tags:
+      - '**'
+  schedule:
+    # Run every day at 8:42am UTC.
+    - cron:  '42 8 * * *'
+
+jobs:
+  test_benchopt:
+    name: Test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            version_python: 3.7
+            coverage: 'true'
+          - os: ubuntu-latest
+            version_python: 3.8
+          - os: macos-latest
+            version_python: 3.8
+    env:
+      CONDA_ENV: 'testcondaenv'
+      JUNIT_XML: 'test-data.xml'
+      VERSION_PYTHON: ${{ matrix.version_python }}
+      COVERAGE: ${{ matrix.coverage }}
+
+    defaults:
+      run:
+        # Need to use this shell to get cond working properly.
+        # See https://github.com/marketplace/actions/setup-miniconda#important
+        shell: bash -l {0}
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Conda
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          activate-environment: ${{ env.CONDA_ENV }}
+          python-version: ${{ matrix.version_python }}
+          channels: conda-forge
+
+      - run: conda info
+
+      - name: Install benchopt and its dependencies
+        run: |
+          conda info
+          conda install -yq pip
+          pip install -e .[test]
+
+      - run: continuous_integration/test_script.sh
+        name: 'Run the tests'
+
+      - name: Publish Test Report
+        uses: mikepenz/action-junit-report@v2
+        with:
+          report_paths: ${{ env.JUNIT_XML }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload coverage
+        if: ${{ matrix.coverage == 'true' }}
+        uses: codecov/codecov-action@v1
+        with:
+          flags: test_benchopt
+          fail_ci_if_error: true
+          verbose: true
+
+  report_test:
+    if: ${{ always() }}
+    needs: test_benchopt
+    runs-on: ubuntu-latest
+    env:
+      TEST_OUTCOME: ${{ needs.test_benchopt.result }}
+
+    steps:
+      - name: "Gather test results."
+        run: |
+          if [[ $TEST_OUTCOME == 'success' ]]; then
+            exit 0;
+          else
+            exit 1;
+          fi
+        shell: bash
