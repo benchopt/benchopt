@@ -39,7 +39,7 @@ jobs:
         .
     - name: Wait for all tests to succeed
       uses: fountainhead/action-wait-for-check@v1.0.0
-      id: wait-for-build
+      id: wait-for-tests
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         checkName: report_test
