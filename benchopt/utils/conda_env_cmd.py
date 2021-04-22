@@ -209,7 +209,7 @@ def list_conda_envs():
 
     def get_env_name(prefix):
 
-        active = prefix == context.active_prefix
+        active = prefix == Path(context.active_prefix)
         prefix = Path(prefix)
         if prefix == Path(context.root_prefix):
             name = 'base'
