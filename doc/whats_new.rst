@@ -5,7 +5,7 @@ What's new
 
 .. currentmodule:: benchopt
 
-.. _changes_1_1:
+.. _changes_1_2:
 
 Version 1.2 - in progress
 -------------------------
@@ -102,6 +102,17 @@ DOC
 
 - Add documentation on how to publish results, by `Alexandre Gramfort`_ (:gh:`118`).
 
+The committer list for this release is the following:
+
+  * `Alexandre Gramfort`_
+  * `Benoit Malézieux`_
+  * `Ghislain Durif`_
+  * `Joseph Salmon`_
+  * `Mathurin Massias`_
+  * `Nidham Gazagnadou`_
+  * `Tanguy Lefort`_
+  * `Thomas Moreau`_
+  * `Tom Dupré la Tour`_
 
 .. _changes_1_0:
 
