@@ -76,7 +76,7 @@ a dataset should implement one method:
      the ``set_data`` method of an objective_.
 
 A dataset class also needs to inherit from a base class called
-:class:`benchopt.base.BaseDataset`.
+:class:`benchopt.BaseDataset`.
 
 Example using a real dataset
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -113,7 +113,7 @@ A solver requires to define three methods:
    - ``run(stop_value)``: This method takes only one parameter that controls the stopping
      condition of the solver. This is typically a number of iterations ``n_iter``
      or a tolerance parameter ``tol``. Alternatively, a ``callback`` function that will be
-     called at each iteration can be passed. The callback returns False once the
+     called at each iteration can be passed. The callback returns ``False`` once the
      computation should stop. The parameter is controlled by the ``stop_strategy``,
      see below for details.
 
@@ -137,7 +137,7 @@ This ``stop_strategy`` can be:
 
     - ``'callback'``: in this case, the ``run`` method of the solver
       should call at each iteration the provided callback function. It will
-      compute and store the objective and return False once the computations
+      compute and store the objective and return ``False`` once the computations
       should stop.
 
 BenchOpt supports different types of solvers:

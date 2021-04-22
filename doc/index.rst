@@ -50,15 +50,11 @@ And to get the **latest development version**, you can use:
 
     $ pip install -U https://github.com/benchopt/benchOpt/archive/master.zip
 
-**Note:** due to major API modifications, the last ``benchopt`` release does
-not correspond to the latest version of the documentation at the moment.
-Until further notice, it is recommended to use the development version.
-
 This will install the command line tool to run the benchmark. Then, existing
 benchmarks can be retrieved from git or created locally. To discover which
 benchmarks are presently available look for
 `benchmark_* repositories on GitHub <https://github.com/benchopt/>`_,
-such as for `l1-regularized logistic regression <https://github.com/benchopt/benchmark_logreg_l1>`_.
+such as for `Lasso -- l1-regularized linear regression <https://github.com/benchopt/benchmark_lasso>`_.
 This benchmark can then be retrieved locally with:
 
 .. code-block::
@@ -72,13 +68,13 @@ To install all Lasso benchmarks requirements and dependencies, run:
 
 .. code-block::
 
-    $ benchopt install --env benchmark_lasso
+    $ benchopt install --env ./benchmark_lasso
 
 To run Lasso benchmarks on all datasets and with all solvers, run:
 
 .. code-block::
 
-    $ benchopt run --env benchmark_lasso
+    $ benchopt run --env ./benchmark_lasso
 
 Use
 
@@ -89,8 +85,8 @@ Use
 to get more details about the different options or read the
 :ref:`api_documentation`.
 
-Benchmarks available
---------------------
+Some available benchmarks
+-------------------------
 
 Notation:  In what follows, n (or n_samples) stands for the number of samples and p (or n_features) stands for the number of features.
 
@@ -127,6 +123,8 @@ Notation:  In what follows, n (or n_samples) stands for the number of samples an
 .. math::
 
     \min_w \sum_i \log(1 + \exp(-y_i x_i^\top w)) + \lambda \|w\|_1
+
+See `benchmark_* repositories on GitHub <https://github.com/benchopt/>`_ for more.
 
 Benchmark results
 -----------------
