@@ -14,15 +14,6 @@ on:
     # Run every day at 8:42am UTC.
     - cron:  '42 8 * * *'
 
-# YAML file in the release branch
-# schedules:
-# - cron: "0 13 * * *"
-#   displayName: Daily build
-#   branches:
-#     include:
-#     - master
-#   always: true
-
 jobs:
   test_benchopt:
     name: Test
@@ -87,11 +78,13 @@ jobs:
     if: ${{ always() }}
     needs: test_benchopt
     runs-on: ubuntu-latest
+    env:
+      TEST_OUTCOME: ${{ needs.test_benchopt.result }}
 
     steps:
       - name: "Gather test results."
         run: |
-          if [[ $env.WORKFLOW_CONCLUSION == 'success' ]]; then
+          if [[ $TEST_OUTCOME == 'success' ]]; then
             exit 0;
           else
             exit 1;
