@@ -7,8 +7,8 @@ What's new
 
 .. _changes_1_1:
 
-Version 1.1 - in progress
--------------------------
+Version 1.1 - 22-04-2021
+------------------------
 
 Changelog
 ~~~~~~~~~
