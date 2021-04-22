@@ -13,3 +13,5 @@
 .. _Nidham Gazagnadou: https://ngazagna.github.io
 
 .. _Ghislain Durif: https://gdurif.perso.math.cnrs.fr/
+
+.. _Benoit Malézieux: https://github.com/bmalezieux
