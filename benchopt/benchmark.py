@@ -218,11 +218,13 @@ class Benchmark:
             env_name=env_name
         )
 
-    def install_required_datasets(self, dataset_names, env_name=None):
+    def install_required_datasets(self, dataset_names, forced_datasets=None,
+                                  env_name=None):
         "List all datasets and install the required ones."
         datasets = self.list_benchmark_datasets()
         self._install_required_classes(
-            datasets, dataset_names, env_name=env_name
+            datasets, dataset_names, force_patterns=forced_datasets,
+            env_name=env_name
         )
 
     def validate_dataset_patterns(self, dataset_patterns):

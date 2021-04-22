@@ -1,30 +1,13 @@
 import os
 import tempfile
-import warnings
 import subprocess
 
-import benchopt
+from ..config import DEBUG
 from ..config import get_setting
-from ..config import DEBUG, ALLOW_INSTALL
-from .misc import get_benchopt_requirement_line
 
 
 SHELL = get_setting('shell')
 CONDA_CMD = get_setting('conda_cmd')
-
-# Yaml config file for benchopt env.
-BENCHOPT_ENV = """
-channels:
-  - defaults
-  - conda-forge
-dependencies:
-  - numpy
-  - cython
-  - compilers
-  - pip
-  - pip:
-    - {benchopt_install}
-"""
 
 
 def _run_shell(script, raise_on_error=None, capture_stdout=True,
@@ -134,133 +117,3 @@ def _run_shell_in_conda_env(script, env_name=None, raise_on_error=None,
         script, raise_on_error=raise_on_error,
         capture_stdout=capture_stdout, return_output=return_output
     )
-
-
-def create_conda_env(env_name, recreate=False, with_pytest=False):
-    """Create a conda env with name env_name and install basic utilities"""
-
-    if env_exists(env_name) and not recreate:
-        benchopt_version = get_benchopt_version_in_env(env_name)
-        if benchopt.__version__ != benchopt_version:
-            warnings.warn(
-                f"The local version of benchopt ({benchopt.__version__}) and "
-                f"the one in conda env ({benchopt_version}) are different. "
-                "This can lead to unexpected behavior. You can correct this "
-                " by either using the --recreate option or fixing the version "
-                f"of benchopt in conda env {env_name}"
-            )
-        return
-
-    force = "--force" if recreate else ""
-
-    benchopt_env = BENCHOPT_ENV.format(
-        benchopt_install=get_benchopt_requirement_line()
-    )
-
-    if with_pytest:
-        # Add pytest as a dependency of the env
-        benchopt_env = benchopt_env.replace(
-            '- pip:', '- pytest\n  - pip:\n'
-        )
-
-    print(f"Creating conda env {env_name}:...", end='', flush=True)
-    if DEBUG:
-        print(f'\nconda env config:\n{benchopt_env}')
-    env_yaml = tempfile.NamedTemporaryFile(
-        mode="w+", prefix='conda_env_', suffix='.yml'
-    )
-    env_yaml.write(f"name: {env_name}{benchopt_env}")
-    env_yaml.flush()
-    try:
-        _run_shell(
-            f"{CONDA_CMD} env create {force} -n {env_name} -f {env_yaml.name}",
-            capture_stdout=True, raise_on_error=True
-        )
-        _run_shell_in_conda_env(
-            f"{CONDA_CMD} config --env --add channels conda-forge",
-            env_name=env_name, capture_stdout=True, raise_on_error=True
-        )
-        # Check that the correct version of benchopt is installed in the env
-        benchopt_version = get_benchopt_version_in_env(env_name)
-        assert benchopt_version == benchopt.__version__, (
-            f"Installed the wrong version of benchopt ({benchopt_version}) in "
-            f"conda env. This should be version: {benchopt.__version__}. There"
-            " is something wrong the env creation mechanism. Please report "
-            "this error to https://github.com/benchopt/benchopt"
-        )
-    except RuntimeError:
-        print(" failed to create the environment.")
-        raise
-    else:
-        print(" done")
-
-
-def get_benchopt_version_in_env(env_name):
-    """Check that the version of benchopt installed in env_name is the same
-    as the one running.
-    """
-    _, benchopt_version = _run_shell_in_conda_env(
-        "benchopt --version",
-        env_name=env_name, capture_stdout=True, return_output=True
-    )
-    return benchopt_version
-
-
-def env_exists(env_name):
-    """Returns True if a given environment exists in the system."""
-    try:
-        _run_shell_in_conda_env(
-            'which python',
-            env_name=env_name, capture_stdout=True, raise_on_error=True
-        )
-        return True
-    except RuntimeError:
-        return False
-
-
-def delete_conda_env(env_name):
-    """Delete a conda env with name env_name."""
-
-    _run_shell(f"{CONDA_CMD} env remove -n {env_name}",
-               capture_stdout=True)
-
-
-def install_in_conda_env(*packages, env_name=None, force=False):
-    """Install the packages with conda in the given environment"""
-    if env_name is None and not ALLOW_INSTALL:
-        raise ValueError("Trying to install solver not in a conda env "
-                         "managed by benchopt. To allow this, "
-                         "set BENCHOPT_ALLOW_INSTALL=True.")
-
-    pip_packages = [pkg[4:] for pkg in packages if pkg.startswith('pip:')]
-    conda_packages = [pkg for pkg in packages if not pkg.startswith('pip:')]
-
-    error_msg = ("Failed to conda install packages "
-                 f"{packages if len(packages) > 1 else packages[0]}\n"
-                 "Error:{output}")
-    if conda_packages:
-        packages = ' '.join(conda_packages)
-        cmd = f"{CONDA_CMD} install -y {packages}"
-        if force:
-            cmd += ' --force-reinstall'
-        _run_shell_in_conda_env(cmd, env_name=env_name,
-                                raise_on_error=error_msg)
-    if pip_packages:
-        packages = ' '.join(pip_packages)
-        cmd = f"pip install {packages}"
-        if force:
-            cmd += ' --force-reinstall'
-        _run_shell_in_conda_env(cmd, env_name=env_name,
-                                raise_on_error=error_msg)
-
-
-def shell_install_in_conda_env(script, env_name=None):
-    """Run a shell install script in the given environment"""
-    if env_name is None and not ALLOW_INSTALL:
-        raise ValueError("Trying to install solver not in a conda env. "
-                         "To allow this, set BENCHOPT_ALLOW_INSTALL=True.")
-
-    cmd = f"{SHELL} {script} $CONDA_PREFIX"
-    _run_shell_in_conda_env(cmd, env_name=env_name,
-                            raise_on_error=f"Failed to run script {script}\n"
-                            "Error: {output}")

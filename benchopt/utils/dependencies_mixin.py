@@ -1,9 +1,9 @@
 from ..config import RAISE_INSTALL_ERROR
 
 from .class_property import classproperty
-from .shell_cmd import install_in_conda_env
 from .shell_cmd import _run_shell_in_conda_env
-from .shell_cmd import shell_install_in_conda_env
+from .conda_env_cmd import install_in_conda_env
+from .conda_env_cmd import shell_install_in_conda_env
 
 
 class DependenciesMixin:
@@ -83,8 +83,9 @@ class DependenciesMixin:
         """
         is_installed = cls.is_installed(env_name=env_name)
 
+        env_suffix = f" in '{env_name}'" if env_name else ''
         if force or not is_installed:
-            print(f"Installing {cls.name} in {env_name}:...",
+            print(f"- Installing '{cls.name}'{env_suffix}:...",
                   end='', flush=True)
             try:
                 cls._pre_install_hook(env_name=env_name)
@@ -108,6 +109,9 @@ class DependenciesMixin:
                 print(" done")
             else:
                 print(" failed")
+        else:
+            print(f"- '{cls.name}' already available{env_suffix}",
+                  flush=True)
 
         return is_installed
 

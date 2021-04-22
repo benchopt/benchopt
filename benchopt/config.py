@@ -11,7 +11,7 @@ BOOLEAN_STATES = configparser.ConfigParser.BOOLEAN_STATES
 CONFIG_FILE_NAME = 'benchopt.ini'
 
 # Global config file should be only accessible to current user as it stores
-# senesible information such as the Github otken.
+# sensitive information such as the Github token.
 GLOBAL_CONFIG_FILE_MODE = stat.S_IFREG | stat.S_IRUSR | stat.S_IWUSR
 
 DEFAULT_GLOBAL_CONFIG = {

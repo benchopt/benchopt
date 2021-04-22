@@ -397,6 +397,8 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
         by the objective is not the same for all parameters, the missing data
         is set to `NaN`.
     """
+    print("BenchOpt is running")
+
     # Load the objective class for this benchmark and the datasets
     objective_class = benchmark.get_benchmark_objective()
     datasets = benchmark.list_benchmark_datasets()

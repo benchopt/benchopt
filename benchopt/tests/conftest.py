@@ -3,8 +3,8 @@ import uuid
 import pytest
 
 from benchopt.benchmark import Benchmark
-from benchopt.utils.shell_cmd import delete_conda_env
-from benchopt.utils.shell_cmd import create_conda_env
+from benchopt.utils.conda_env_cmd import create_conda_env
+from benchopt.utils.conda_env_cmd import delete_conda_env
 from benchopt.utils.dynamic_modules import _get_module_from_file
 
 from benchopt.tests import TEST_BENCHMARK_DIR
@@ -13,6 +13,7 @@ os.environ['BENCHOPT_DEBUG'] = '1'
 os.environ['BENCHOPT_RAISE_INSTALL_ERROR'] = '1'
 
 _TEST_ENV_NAME = None
+_EMPTY_ENV_NAME = None
 
 
 def class_ids(p):
@@ -121,8 +122,32 @@ def test_env_name(request):
     return _TEST_ENV_NAME
 
 
+@pytest.fixture(scope='session')
+def empty_env_name(request):
+    global _EMPTY_ENV_NAME
+
+    if _EMPTY_ENV_NAME is None:
+        env_name = f"_benchopt_test_env_{uuid.uuid4()}"
+        request.addfinalizer(delete_empty_env)
+
+        _EMPTY_ENV_NAME = env_name
+
+        create_conda_env(_EMPTY_ENV_NAME, empty=True)
+
+    return _EMPTY_ENV_NAME
+
+
 def delete_test_env():
     global _TEST_ENV_NAME
 
     if _TEST_ENV_NAME is not None:
         delete_conda_env(_TEST_ENV_NAME)
+        _TEST_ENV_NAME = None
+
+
+def delete_empty_env():
+    global _EMPTY_ENV_NAME
+
+    if _EMPTY_ENV_NAME is not None:
+        delete_conda_env(_EMPTY_ENV_NAME)
+        _EMPTY_ENV_NAME = None

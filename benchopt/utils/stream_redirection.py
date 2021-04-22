@@ -31,7 +31,7 @@ class SuppressStd(object):
 
         return self
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, exc_class, value, traceback):
 
         # Make sure to flush stdout
         print(flush=True)
