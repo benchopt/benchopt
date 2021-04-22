@@ -42,7 +42,8 @@ jobs:
       id: wait-for-build
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
-        checkName: test_benchopt
+        checkName: test
+        timeoutSeconds: 900  # timeout after 15min
         ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
     - name: Publish distribution 📦 to Test PyPI
