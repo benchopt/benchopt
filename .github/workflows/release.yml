@@ -47,6 +47,12 @@ jobs:
         intervalSeconds: 30  # check every 30sec
         ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
+    - name: Debug
+      run: |
+        echo ${{ github.ref }}
+        echo ${{ steps.wait-for-tests.outputs.conclusion }}
+        echo ${{ github.ref == 'refs/heads/master' && steps.wait-for-tests.outputs.conclusion == 'success' }}
+
     - name: Publish distribution 📦 to Test PyPI
       if: ${{ github.ref == 'refs/heads/master' && steps.wait-for-tests.outputs.conclusion == 'success' }}
       uses: pypa/gh-action-pypi-publish@master
