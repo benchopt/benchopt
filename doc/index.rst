@@ -54,7 +54,7 @@ This will install the command line tool to run the benchmark. Then, existing
 benchmarks can be retrieved from git or created locally. To discover which
 benchmarks are presently available look for
 `benchmark_* repositories on GitHub <https://github.com/benchopt/>`_,
-such as for `l1-regularized Lasso regression <https://github.com/benchopt/benchmark_lasso>`_.
+such as for `Lasso -- l1-regularized linear regression <https://github.com/benchopt/benchmark_lasso>`_.
 This benchmark can then be retrieved locally with:
 
 .. code-block::
