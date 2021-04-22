@@ -82,3 +82,13 @@ jobs:
           flags: test_benchopt
           fail_ci_if_error: true
           verbose: true
+
+  report_test:
+    if: always()
+    needs: test_benchopt
+    run: |
+      if [[ $env.WORKFLOW_CONCLUSION == 'success' ]]; then
+        exit 0;
+      else
+        exit 1;
+      fi

@@ -37,12 +37,12 @@ jobs:
         --wheel
         --outdir dist/
         .
-    - name: Wait for test to succeed
+    - name: Wait for all tests to succeed
       uses: fountainhead/action-wait-for-check@v1.0.0
       id: wait-for-build
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
-        checkName: test
+        checkName: report_test
         timeoutSeconds: 900  # timeout after 15min
         ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
