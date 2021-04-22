@@ -84,11 +84,16 @@ jobs:
           verbose: true
 
   report_test:
-    if: always()
+    if: ${{ always() }}
     needs: test_benchopt
-    run: |
-      if [[ $env.WORKFLOW_CONCLUSION == 'success' ]]; then
-        exit 0;
-      else
-        exit 1;
-      fi
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: "Gather test results."
+        run: |
+          if [[ $env.WORKFLOW_CONCLUSION == 'success' ]]; then
+            exit 0;
+          else
+            exit 1;
+          fi
+        shell: bash
