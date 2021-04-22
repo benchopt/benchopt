@@ -29,6 +29,10 @@ Changelog
 - Move most CI to github action, with auto-release on pypi,
   by `Thomas Moreau`_ (:gh:`150`, :gh:`154`).
 
+- Remove ``BENCHOPT_ALLOW_INSTALL`` and always install to requested env as
+  user now must request explicitely the install,
+  by `Thomas Moreau`_ (:gh:`155`).
+
 API
 ~~~
 
@@ -68,7 +72,7 @@ CLI
 - Add ``benchopt config`` command to allow easy configuration of ``benchopt``
   using the CLI, by `Thomas Moreau`_ (:gh:`128`).
 
-- Add ``benchopt install`` command to install benchmark requirements
+  - Add ``benchopt install`` command to install benchmark requirements
   (not done in ``benchopt run`` anymore) by `Ghislain Durif`_ (:gh:`135`).
 
 BUG
