@@ -168,19 +168,22 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
     return results
 
 
-def render_index(benchmark_names, static_dir):
+def render_index(benchmark_names, static_dir, len_fnames):
     """Render a result index home page for all rendered benchmarks.
 
     Parameters
     ----------
     benchmark_names : list of str
         A list of all benchmark names that have been rendered.
+    len_fnames : list of int
+        A list of the number of files in each benchmark.
 
     Returns
     -------
     rendered : str
         A str with the HTML code for the index page.
     """
+    pretty_names = [str.replace(name, "_", " ") for name in benchmark_names]
     return Template(
         filename=str(TEMPLATE_INDEX), input_encoding="utf-8"
     ).render(
@@ -188,6 +191,8 @@ def render_index(benchmark_names, static_dir):
         nb_total_benchs=len(benchmark_names),
         max_rows=15, static_dir=static_dir,
         last_updated=datetime.now(),
+        pretty_names=pretty_names,
+        len_fnames=len_fnames
     )
 
 
@@ -391,14 +396,8 @@ def plot_benchmark_html_all(patterns=(), benchmarks=(), root=None,
     (root_html / OUTPUTS).mkdir(exist_ok=True, parents=True)
     static_dir = copy_static()
 
-    # Create an index that referes all benchmarks.
-    rendered = render_index([b.name for b in benchmarks], static_dir)
-    index_filename = DEFAULT_HTML_DIR / 'index.html'
-    print(f"Writing index to {index_filename}")
-    with open(index_filename, "w") as f:
-        f.write(rendered)
-
     # Loop over all benchmarks to
+    len_fnames = []
     for benchmark in benchmarks:
         print(f'Rendering benchmark: {benchmark}')
 
@@ -409,7 +408,7 @@ def plot_benchmark_html_all(patterns=(), benchmarks=(), root=None,
         results = get_results(
             fnames, PLOT_KINDS.keys(), root_html, benchmark.name, copy=True
         )
-
+        len_fnames.append(len(fnames))
         rendered = render_benchmark(
             results, benchmark.name, static_dir=static_dir
         )
@@ -427,6 +426,14 @@ def plot_benchmark_html_all(patterns=(), benchmarks=(), root=None,
             print(f"Writing results to {result_filename}")
             with open(result_filename, "w") as f:
                 f.write(html)
+
+    # Create an index that referes all benchmarks.
+    rendered = render_index([b.name for b in benchmarks], static_dir,
+                            len_fnames)
+    index_filename = DEFAULT_HTML_DIR / 'index.html'
+    print(f"Writing index to {index_filename}")
+    with open(index_filename, "w") as f:
+        f.write(rendered)
 
     # Display the file in the default browser
     if display:

@@ -2,6 +2,7 @@
 <head>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📈</text></svg>">
 <link href="${static_dir}/main.css" rel="stylesheet" />
+<link href="${static_dir}/hover_index.css", rel="stylesheet" />
 
 <script defer src="https://use.fontawesome.com/releases/v5.0.10/js/all.js" integrity="sha384-slN8GvtUJGnv6ca26v8EzVaR9DC58QEwsIk9q1QXdCU8Yu8ck/tL/5szYlBbqmS+" crossorigin="anonymous"></script>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.css" rel="stylesheet" />
@@ -25,13 +26,26 @@
 </p>
 
 <h2>Available Benchmarks</h2>
+<div class="content">
+<div class="grid">
 % for benchmark in benchmarks:
-  <div>
+    <figure class="effect-ruby">
+      <img src="https://via.placeholder.com/350x250/1E90FF" alt="backgrd"/>
+      <figcaption>
+        <h2>${pretty_names[loop.index]}</h2>
+        <p>${len_fnames[loop.index]} files available</p>
+        <a href="${benchmark}.html">View more</a>
+      </figcaption>
+    </figure>
+
+    <!--
     <a href="${benchmark}.html">
       <button class="btn"><i class="fa fa-search"></i> ${benchmark}</button>
     </a>
+    -->
+    %endfor
   </div>
-%endfor
+
 
 <a class="backtotop" title="Back to top" href="#top"><i class="fas fa-level-up-alt"></i></a>
 
