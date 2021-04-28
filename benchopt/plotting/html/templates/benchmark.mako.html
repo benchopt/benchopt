@@ -30,7 +30,28 @@
 <p>
     <strong>${nb_total_benchs}</strong> benchmark results in total.
 </p>
-<table class="summary display">
+
+
+<select id='selectcpu' onchange="change()">
+  <option value=""> Any </option>
+  % for result in results:
+    % if result['sysinfo']['system-cpus'] != "":
+      <option value="<b>cpu</b>: ${result['sysinfo']['system-cpus']['cpu']}"> ${result['sysinfo']['system-cpus']['cpu']} </option>
+    % endif
+  % endfor
+</select>
+
+<select id='selectram' onchange="change()">
+  <option value=""> Any </option>
+  % for result in results:
+    % if result['sysinfo']['system-ram (GB)'] != "":
+      <option value="<b>ram (GB)</b>: ${result['sysinfo']['system-ram (GB)']['ram (GB)']}"> ${result['sysinfo']['system-ram (GB)']['ram (GB)']} </option>
+    % endif
+  % endfor
+</select>
+
+
+<table class="summary display" id="summary">
 <thead>
   <tr>
     <th>Results</th>
@@ -84,6 +105,31 @@
 $(document).ready(function() {
     $('.summary').DataTable();
 } );
+
+function change(){
+  var td, i, fil;
+
+  var cpu = document.getElementById('selectcpu').value;
+  var ram = document.getElementById('selectram').value;
+  var filter = [cpu.toUpperCase(), ram.toUpperCase()];
+  console.log(filter);
+  var table = document.getElementById("summary");
+  var tr = table.getElementsByTagName("tr");
+  for (i = 0; i < tr.length; i++) {
+    tr[i].style.display = "";
+    td = tr[i].getElementsByTagName("td")[2];
+    if (td){
+     for (fil = 0; fil < filter.length; fil++){
+       if (td.innerHTML.toUpperCase().indexOf(filter[fil]) > -1 && tr[i].style.display !== "none") {
+         tr[i].style.display = "";
+       }
+       else {
+         tr[i].style.display = "none";
+       }
+     }
+    }
+  }
+}
 </script>
 </body>
 </html>

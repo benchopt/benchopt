@@ -151,8 +151,8 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
         if "platform" in df:
             platform = (
                 df["platform"].unique()[0] +
-                df["platform-architecture"].unique()[0] + "-" +
-                df["platform-release"].unique()[0]
+                df["platform-release"].unique()[0] + "-" +
+                df["platform-architecture"].unique()[0]
             )
             sysinfo["platform"] = {"system": platform}
             for idx, key in enumerate(keys_sysinfo):
