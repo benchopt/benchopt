@@ -142,6 +142,23 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
 
         df = pd.read_csv(fname)
         datasets = list(df['data_name'].unique())
+        keys_sysinfo = ['system-cpus',
+                        'system-ram (GB)', 'system-processor',
+                        'version-cuda', 'env-OMP_NUM_THREADS']
+        display_sysinfo = ["cpu", "ram (GB)", "processor", "cuda",
+                           "nb threads"]
+        sysinfo = dict.fromkeys(["platform"] + keys_sysinfo, "")
+        if "platform" in df:
+            platform = (
+                df["platform"].unique()[0] +
+                df["platform-architecture"].unique()[0] + "-" +
+                df["platform-release"].unique()[0]
+            )
+            sysinfo["platform"] = {"system": platform}
+            for idx, key in enumerate(keys_sysinfo):
+                val = df[key].unique()[0]
+                if not pd.isnull(val):
+                    sysinfo[key] = {display_sysinfo[idx]: val}
 
         # Copy CSV if necessary and give a relative path for HTML page access
         if copy:
@@ -152,7 +169,7 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
 
         # Generate figures
         result = dict(
-            fname=fname, datasets=datasets,
+            fname=fname, datasets=datasets, sysinfo=sysinfo,
             **generate_plot_benchmark(
                 df, kinds, fname, fig_dir, benchmark_name
             )
@@ -215,6 +232,7 @@ def render_benchmark(results, benchmark_name, static_dir, home='index.html'):
     rendered : str
         A str with the HTML code for the benchmark page.
     """
+
     return Template(
         filename=str(TEMPLATE_BENCHMARK), input_encoding="utf-8"
     ).render(

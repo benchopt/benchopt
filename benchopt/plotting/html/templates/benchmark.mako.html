@@ -35,6 +35,7 @@
   <tr>
     <th>Results</th>
     <th>Datasets</th>
+    <th>System info</th>
     <th></th>
   </tr>
 </thead>
@@ -50,6 +51,17 @@
       % for dataset in result['datasets']:
       <div class=dataset>
         ${dataset}
+      </div>
+      %endfor
+    </td>
+    <td class="sysinfo">
+      % for all_info in result['sysinfo'].values():
+      <div class="all_info">
+        % for idx in range(len(all_info)):
+        <div class="info">
+          <b>${list(all_info)[idx]}</b>: ${list(all_info.values())[idx]}
+        </div>
+        %endfor
       </div>
       %endfor
     </td>
