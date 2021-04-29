@@ -145,8 +145,9 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
         keys_sysinfo = ['system-cpus',
                         'system-ram (GB)', 'system-processor',
                         'version-cuda', 'env-OMP_NUM_THREADS']
+                        # 'version-numpy', 'version-scipy']
         display_sysinfo = ["cpu", "ram (GB)", "processor", "cuda",
-                           "nb threads"]
+                           "nb threads"]  # , 'numpy', 'scipy']
         sysinfo = dict.fromkeys(["platform"] + keys_sysinfo, "")
         if "platform" in df:
             platform = (

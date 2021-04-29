@@ -16,6 +16,30 @@
 </head>
 
 <body>
+
+<div class="sidenav">
+
+  <select id='selectcpu' onchange="change()">
+    <option value=""> Any </option>
+    % for result in results:
+      % if result['sysinfo']['system-cpus'] != "":
+        <option value="<b>cpu</b>: ${result['sysinfo']['system-cpus']['cpu']}"> ${result['sysinfo']['system-cpus']['cpu']} </option>
+      % endif
+    % endfor
+  </select>
+
+  <select id='selectram' onchange="change()">
+    <option value=""> Any </option>
+    % for result in results:
+      % if result['sysinfo']['system-ram (GB)'] != "":
+        <option value="<b>ram (GB)</b>: ${result['sysinfo']['system-ram (GB)']['ram (GB)']}"> ${result['sysinfo']['system-ram (GB)']['ram (GB)']} </option>
+      % endif
+    % endfor
+  </select>
+
+</div>
+
+<div class="main">
 <a id="top"></a>
 <a href="${home}"><button class="btn"><i class="fa fa-home"></i></button></a>
 <h1>
@@ -32,23 +56,6 @@
 </p>
 
 
-<select id='selectcpu' onchange="change()">
-  <option value=""> Any </option>
-  % for result in results:
-    % if result['sysinfo']['system-cpus'] != "":
-      <option value="<b>cpu</b>: ${result['sysinfo']['system-cpus']['cpu']}"> ${result['sysinfo']['system-cpus']['cpu']} </option>
-    % endif
-  % endfor
-</select>
-
-<select id='selectram' onchange="change()">
-  <option value=""> Any </option>
-  % for result in results:
-    % if result['sysinfo']['system-ram (GB)'] != "":
-      <option value="<b>ram (GB)</b>: ${result['sysinfo']['system-ram (GB)']['ram (GB)']}"> ${result['sysinfo']['system-ram (GB)']['ram (GB)']} </option>
-    % endif
-  % endfor
-</select>
 
 
 <table class="summary display" id="summary">
@@ -131,5 +138,6 @@ function change(){
   }
 }
 </script>
+</div>
 </body>
 </html>

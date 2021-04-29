@@ -114,7 +114,7 @@ td, th {
 td:first-child, th:first-child {
   empty-cells: hide; /* Hide empty cells when they're the first in the row */
 }
-    
+
 /* Custom stuff on top of the base style sheet */
 .status {
     font-weight: bold;
@@ -220,7 +220,7 @@ a.anchor:link {
     margin-left: auto;
     z-index: 999;
 }
-    
+
 .priority1 {
     color: purple;
 }
@@ -247,4 +247,28 @@ td.number {
 /* Darker background on mouse-over */
 .btn:hover {
   background-color: RoyalBlue;
+}
+
+.sidenav {
+	height: 100%;
+	width: 200px;
+	position: fixed;
+	z-index: 1;
+	top: 0;
+	left: 0;
+	background-color: #3085a3;
+	overflow-x: hidden;
+	padding-top: 20px;
+}
+
+.main {
+	margin-left: 50px;
+}
+
+.sidenav select {
+  padding: 6px 8px 6px 16px;
+  text-decoration: none;
+  font-size: 25px;
+  color: #000;
+  display: block;
 }
