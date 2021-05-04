@@ -17,10 +17,11 @@
 	float: left;
 	overflow: hidden;
 	margin: 10px 1%;
-	width: 48%;
+	width: 30%;
 	background: #3085a3;
 	text-align: center;
 	cursor: pointer;
+	border-radius: 30px;
 }
 
 .grid figure img {
@@ -49,14 +50,12 @@
 .grid figure figcaption,
 .grid figure figcaption > a {
 	position: absolute;
-	top: -3em;
+	top: 0em;
 	left: 0;
 	width: 100%;
 	height: 100%;
 }
 
-/* Anchor will cover the whole item by default */
-/* For some effects it will show as a button */
 .grid figure figcaption > a {
 	z-index: 1000;
 	text-indent: 0%;
@@ -107,16 +106,17 @@ figure.effect-ruby:hover img {
 }
 
 figure.effect-ruby h2 {
-    margin-top: 20%;
+	margin-top: 10;
 	-webkit-transition: -webkit-transform 0.35s;
 	transition: transform 0.35s;
 	-webkit-transform: translate3d(0,20px,0);
-	transform: translate3d(0,20px,0);
+	transform: translate3d(0,40px,0);
+	font-size: 1.25em;
 }
 
 figure.effect-ruby p {
     margin: 2em -1em 2em -1em;
-	padding: 3em 0em 3em 0em;
+	padding: 1em 0em 1em 0em;
 	border: 1px solid #fff;
 	opacity: 0;
 	-webkit-transition: opacity 0.35s, -webkit-transform 0.35s;
@@ -127,11 +127,56 @@ figure.effect-ruby p {
 
 figure.effect-ruby:hover h2 {
     -webkit-transform: translate3d(0,0,0);
-	transform: translate3d(0,0,0);
+	transform: translate3d(0px,10px,0) scale(.8);
+	margin-top: 0em;
 }
 
 figure.effect-ruby:hover p {
     opacity: 1;
-	-webkit-transform: translate3d(0,0,0) scale(1);
-	transform: translate3d(0,0,0) scale(1);
+	-webkit-transform: translate3d(0,0,0) scale(1.2);
+	transform: translate3d(-15,0,0) scale(1);
+}
+
+summary {
+	padding: 8px 0;
+	position: relative;
+	width: 100%;
+	list-style-image: none;
+	outline: none;
+}
+
+summary::marker {
+	content: "";
+	display: none;
+}
+
+details > summary::marker {
+	content: "";
+	display: none;
+}
+
+/**
+summary:after {
+	background: white;
+	border-radius: 50%;
+	content: "+";
+	border-color: #000000;
+	border-style: solid;
+	border-width: 2px;
+	color: #000000;
+	float: left;
+	font-size: 19px;
+	line-height: 24px;
+	vertical-align: middle;
+	margin: -5px 10px 0 0;
+	padding: 0;
+	text-align: center;
+	width: 24px;
+	height: 24px;
+}
+**/
+
+details[open] > summary:after {
+	line-height: 22px;
+	content: "";
 }

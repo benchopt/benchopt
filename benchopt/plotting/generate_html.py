@@ -142,25 +142,27 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
 
         df = pd.read_csv(fname)
         datasets = list(df['data_name'].unique())
-        keys_sysinfo = ['system-cpus',
-                        'system-ram (GB)', 'system-processor',
-                        'version-cuda', 'env-OMP_NUM_THREADS']
-                        # 'version-numpy', 'version-scipy']
-        display_sysinfo = ["cpu", "ram (GB)", "processor", "cuda",
-                           "nb threads"]  # , 'numpy', 'scipy']
-        sysinfo = dict.fromkeys(["platform"] + keys_sysinfo, "")
+        main_info = ['system-cpus', 'system-ram (GB)', "version-cuda"]
+        sub_info = ['platform', 'system-processor', 'env-OMP_NUM_THREADS']
+        display_sysinfo = ["cpu", "ram (GB)", "cuda",
+                           "processor", "nb threads"]
+        main_dic = dict.fromkeys(main_info, "")
+        sub_dic = dict.fromkeys(sub_info, "")
+        sysinfo = {"main": main_dic, "sub": sub_dic}
         if "platform" in df:
             platform = (
                 df["platform"].unique()[0] +
                 df["platform-release"].unique()[0] + "-" +
                 df["platform-architecture"].unique()[0]
             )
-            sysinfo["platform"] = {"system": platform}
-            for idx, key in enumerate(keys_sysinfo):
-                val = df[key].unique()[0]
-                if not pd.isnull(val):
-                    sysinfo[key] = {display_sysinfo[idx]: val}
-
+            sysinfo["sub"]["platform"] = {'platform': platform}
+            hierarchy = {0: "main", 1: "sub"}
+            for level, all_keys in enumerate([main_info, sub_info[1:]]):
+                level = hierarchy[level]
+                for idx, key in enumerate(all_keys):
+                    val = df[key].unique()[0]
+                    if not pd.isnull(val):
+                        sysinfo[level][key] = {display_sysinfo[idx]: val}
         # Copy CSV if necessary and give a relative path for HTML page access
         if copy:
             fname_in_output = out_dir / f"{benchmark_name}_{fname.name}"
@@ -201,7 +203,14 @@ def render_index(benchmark_names, static_dir, len_fnames):
     rendered : str
         A str with the HTML code for the index page.
     """
-    pretty_names = [str.replace(name, "_", " ") for name in benchmark_names]
+
+    pretty_names = [name.replace("benchmark_", "").replace("_", " ")
+                    for name in benchmark_names]
+    len_fnames, pretty_names, benchmark_names = map(
+        list, zip(*sorted(zip(len_fnames, pretty_names, benchmark_names),
+                          reverse=True))
+    )
+
     return Template(
         filename=str(TEMPLATE_INDEX), input_encoding="utf-8"
     ).render(

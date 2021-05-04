@@ -25,26 +25,25 @@
     <strong>${nb_total_benchs}</strong> benchmarks in total.
 </p>
 
-<h2>Available Benchmarks</h2>
+<h2>Available Regression Benchmarks</h2>
 <div class="content">
 <div class="grid">
 % for benchmark in benchmarks:
     <figure class="effect-ruby">
-      <img src="https://via.placeholder.com/350x250/1E90FF" alt="backgrd"/>
+      <img src="https://via.placeholder.com/250x150/1E90FF" alt="backgrd"/>
       <figcaption>
         <h2>${pretty_names[loop.index]}</h2>
         <p>${len_fnames[loop.index]} files available</p>
         <a href="${benchmark}.html">View more</a>
       </figcaption>
     </figure>
-
-    <!--
-    <a href="${benchmark}.html">
-      <button class="btn"><i class="fa fa-search"></i> ${benchmark}</button>
-    </a>
-    -->
     %endfor
   </div>
+
+  <!-- ?
+  <h2> Available Classification Benchmarks </h2>
+  ...
+  -->
 
 
 <a class="backtotop" title="Back to top" href="#top"><i class="fas fa-level-up-alt"></i></a>

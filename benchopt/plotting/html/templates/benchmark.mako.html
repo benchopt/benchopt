@@ -22,8 +22,8 @@
   <select id='selectcpu' onchange="change()">
     <option value=""> Any </option>
     % for result in results:
-      % if result['sysinfo']['system-cpus'] != "":
-        <option value="<b>cpu</b>: ${result['sysinfo']['system-cpus']['cpu']}"> ${result['sysinfo']['system-cpus']['cpu']} </option>
+      % if result['sysinfo']["main"]['system-cpus'] != "":
+        <option value="<b>cpu</b>: ${result['sysinfo']['main']['system-cpus']['cpu']}"> ${result['sysinfo']['main']['system-cpus']['cpu']} </option>
       % endif
     % endfor
   </select>
@@ -31,8 +31,8 @@
   <select id='selectram' onchange="change()">
     <option value=""> Any </option>
     % for result in results:
-      % if result['sysinfo']['system-ram (GB)'] != "":
-        <option value="<b>ram (GB)</b>: ${result['sysinfo']['system-ram (GB)']['ram (GB)']}"> ${result['sysinfo']['system-ram (GB)']['ram (GB)']} </option>
+      % if result['sysinfo']["main"]['system-ram (GB)'] != "":
+        <option value="<b>ram (GB)</b>: ${result['sysinfo']['main']['system-ram (GB)']['ram (GB)']}"> ${result['sysinfo']['main']['system-ram (GB)']['ram (GB)']} </option>
       % endif
     % endfor
   </select>
@@ -83,7 +83,7 @@
       %endfor
     </td>
     <td class="sysinfo">
-      % for all_info in result['sysinfo'].values():
+      % for all_info in result['sysinfo']['main'].values():
       <div class="all_info">
         % for idx in range(len(all_info)):
         <div class="info">
@@ -92,6 +92,20 @@
         %endfor
       </div>
       %endfor
+      <details>
+        <summary> p
+          <i class="fa fa-plus-circle plus"></i>
+        </summary>
+        % for all_info in result['sysinfo']['sub'].values():
+        <div class="all_info">
+          % for idx in range(len(all_info)):
+          <div class="info">
+            <b>${list(all_info)[idx]}</b>: ${list(all_info.values())[idx]}
+          </div>
+          %endfor
+        </div>
+        %endfor
+      </details>
     </td>
     <td class="buttons">
       <a href="${result['page']}">
@@ -119,7 +133,6 @@ function change(){
   var cpu = document.getElementById('selectcpu').value;
   var ram = document.getElementById('selectram').value;
   var filter = [cpu.toUpperCase(), ram.toUpperCase()];
-  console.log(filter);
   var table = document.getElementById("summary");
   var tr = table.getElementsByTagName("tr");
   for (i = 0; i < tr.length; i++) {
