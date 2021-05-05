@@ -137,46 +137,10 @@ figure.effect-ruby:hover p {
 	transform: translate3d(-15,0,0) scale(1);
 }
 
-summary {
-	padding: 8px 0;
-	position: relative;
-	width: 100%;
-	list-style-image: none;
-	outline: none;
-}
-
-summary::marker {
-	content: "";
-	display: none;
-}
-
-details > summary::marker {
-	content: "";
-	display: none;
-}
-
-/**
-summary:after {
-	background: white;
-	border-radius: 50%;
-	content: "+";
-	border-color: #000000;
-	border-style: solid;
-	border-width: 2px;
-	color: #000000;
-	float: left;
-	font-size: 19px;
-	line-height: 24px;
-	vertical-align: middle;
-	margin: -5px 10px 0 0;
-	padding: 0;
+button {
+	border:none;
+	background-color:transparent;
+	outline:none;
 	text-align: center;
-	width: 24px;
-	height: 24px;
-}
-**/
-
-details[open] > summary:after {
-	line-height: 22px;
-	content: "";
-}
+	margin-left: 40%;
+ }

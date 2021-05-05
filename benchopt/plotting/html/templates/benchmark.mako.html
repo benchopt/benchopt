@@ -1,6 +1,7 @@
 <html>
 <head>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📈</text></svg>">
+<link href="${static_dir}/hover_index.css" rel="stylesheet" />
 <link href="${static_dir}/main.css" rel="stylesheet" />
 
 <script defer src="https://use.fontawesome.com/releases/v5.0.10/js/all.js" integrity="sha384-slN8GvtUJGnv6ca26v8EzVaR9DC58QEwsIk9q1QXdCU8Yu8ck/tL/5szYlBbqmS+" crossorigin="anonymous"></script>
@@ -92,20 +93,25 @@
         %endfor
       </div>
       %endfor
-      <details>
-        <summary> p
-          <i class="fa fa-plus-circle plus"></i>
-        </summary>
-        % for all_info in result['sysinfo']['sub'].values():
-        <div class="all_info">
-          % for idx in range(len(all_info)):
-          <div class="info">
-            <b>${list(all_info)[idx]}</b>: ${list(all_info.values())[idx]}
+
+      <!-- platform is the one result monitored everytime in new csv files -->
+
+      % if result['sysinfo']['sub']['platform'] != '':
+        <button onclick="displaymore(this,${loop.index})" id=${"btn_subinfo"+str(loop.index)}>
+          <i class='fas fa-plus-circle'></i>
+        </button>
+        <div id=${"subinfo"+str(loop.index)} style="display:none;">
+          % for all_info in result['sysinfo']['sub'].values():
+          <div class="all_info">
+            % for idx in range(len(all_info)):
+            <div class="info">
+              <b>${list(all_info)[idx]}</b>: ${list(all_info.values())[idx]}
+            </div>
+            %endfor
           </div>
           %endfor
         </div>
-        %endfor
-      </details>
+      % endif
     </td>
     <td class="buttons">
       <a href="${result['page']}">
@@ -148,6 +154,17 @@ function change(){
        }
      }
     }
+  }
+}
+
+function displaymore(id, loop_index) {
+  var x = document.getElementById("subinfo"+loop_index);
+  $(id).find('svg').toggleClass('fa-plus-circle fa-minus-circle');
+  if (x.style.display === 'none') {
+    x.style.display = "block";
+  }
+  else {
+    x.style.display = "none";
   }
 }
 </script>
