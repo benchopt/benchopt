@@ -148,7 +148,8 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
                            "processor", "nb threads"]
         main_dic = dict.fromkeys(main_info, "")
         sub_dic = dict.fromkeys(sub_info, "")
-        sysinfo = {"main": main_dic, "sub": sub_dic}
+        sysinfo = {"main": main_dic, "sub": sub_dic,
+                   "all_names": display_sysinfo}
         if "platform" in df:
             platform = (
                 df["platform"].unique()[0] +
@@ -157,12 +158,14 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
             )
             sysinfo["sub"]["platform"] = {'platform': platform}
             hierarchy = {0: "main", 1: "sub"}
+            disp = 0
             for level, all_keys in enumerate([main_info, sub_info[1:]]):
                 level = hierarchy[level]
                 for idx, key in enumerate(all_keys):
                     val = df[key].unique()[0]
                     if not pd.isnull(val):
-                        sysinfo[level][key] = {display_sysinfo[idx]: val}
+                        sysinfo[level][key] = {display_sysinfo[disp]: val}
+                    disp += 1
         # Copy CSV if necessary and give a relative path for HTML page access
         if copy:
             fname_in_output = out_dir / f"{benchmark_name}_{fname.name}"

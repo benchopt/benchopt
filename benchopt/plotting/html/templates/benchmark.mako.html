@@ -19,25 +19,29 @@
 <body>
 
 <div class="sidenav">
-
-  <select id='selectcpu' onchange="change()">
+  <%
+    ll_main = results[0]["sysinfo"]['main']
+    ll_main_nospace = [item.replace(" ", "") for item in ll_main]
+  %>
+  % for idx, item in enumerate(ll_main):
+  <label for=${'select'+str(ll_main_nospace[idx])} style="font-size: 120%; padding: 8px; color: white;">
+     ${results[0]['sysinfo']['all_names'][idx]}
+  </label>
+  <select class="myselect" id=${'select'+str(ll_main_nospace[idx])} onchange="change(${ll_main_nospace})">
     <option value=""> Any </option>
     % for result in results:
-      % if result['sysinfo']["main"]['system-cpus'] != "":
-        <option value="<b>cpu</b>: ${result['sysinfo']['main']['system-cpus']['cpu']}"> ${result['sysinfo']['main']['system-cpus']['cpu']} </option>
+    <%
+      current_item = result['sysinfo']['main'][item]
+    %>
+      % if current_item != "":
+      <%
+        name = list(current_item.keys())[0]
+      %>
+        <option value="<b>${name}</b>: ${current_item[name]}"> ${current_item[name]} </option>
       % endif
     % endfor
   </select>
-
-  <select id='selectram' onchange="change()">
-    <option value=""> Any </option>
-    % for result in results:
-      % if result['sysinfo']["main"]['system-ram (GB)'] != "":
-        <option value="<b>ram (GB)</b>: ${result['sysinfo']['main']['system-ram (GB)']['ram (GB)']}"> ${result['sysinfo']['main']['system-ram (GB)']['ram (GB)']} </option>
-      % endif
-    % endfor
-  </select>
-
+  % endfor
 </div>
 
 <div class="main">
@@ -55,9 +59,6 @@
 <p>
     <strong>${nb_total_benchs}</strong> benchmark results in total.
 </p>
-
-
-
 
 <table class="summary display" id="summary">
 <thead>
@@ -81,7 +82,7 @@
       <div class=dataset>
         ${dataset}
       </div>
-      %endfor
+      % endfor
     </td>
     <td class="sysinfo">
       % for all_info in result['sysinfo']['main'].values():
@@ -90,22 +91,22 @@
         <div class="info">
           <b>${list(all_info)[idx]}</b>: ${list(all_info.values())[idx]}
         </div>
-        %endfor
+        % endfor
       </div>
-      %endfor
+      % endfor
 
-      <!-- platform is the one result monitored everytime in new csv files -->
+      <!-- platform is one result monitored everytime in new csv files -->
 
       % if result['sysinfo']['sub']['platform'] != '':
-        <button onclick="displaymore(this,${loop.index})" id=${"btn_subinfo"+str(loop.index)}>
+        <button onclick="displaymore(this,${loop.index})" id=${"btn_subinfo"+str(loop.index)} class="button buttoncent">
           <i class='fas fa-plus-circle'></i>
         </button>
         <div id=${"subinfo"+str(loop.index)} style="display:none;">
-          % for all_info in result['sysinfo']['sub'].values():
+          % for all_info_sub in result['sysinfo']['sub'].values():
           <div class="all_info">
-            % for idx in range(len(all_info)):
+            % for idx in range(len(all_info_sub)):
             <div class="info">
-              <b>${list(all_info)[idx]}</b>: ${list(all_info.values())[idx]}
+              <b>${list(all_info_sub.keys())[idx]}</b>: ${list(all_info_sub.values())[idx]}
             </div>
             %endfor
           </div>
@@ -133,12 +134,13 @@ $(document).ready(function() {
     $('.summary').DataTable();
 } );
 
-function change(){
+function change(ll_item){
   var td, i, fil;
-
-  var cpu = document.getElementById('selectcpu').value;
-  var ram = document.getElementById('selectram').value;
-  var filter = [cpu.toUpperCase(), ram.toUpperCase()];
+  var filter = new Array;
+  console.log(ll_item)
+  for (item = 0; item < ll_item.length; item++){
+    filter.push(document.getElementById("select"+ll_item[item]).value.toUpperCase());
+  }
   var table = document.getElementById("summary");
   var tr = table.getElementsByTagName("tr");
   for (i = 0; i < tr.length; i++) {
