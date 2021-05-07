@@ -227,7 +227,7 @@ def render_index(benchmark_names, static_dir, len_fnames):
         A str with the HTML code for the index page.
     """
 
-    pretty_names = [name.replace("benchmark_", "").replace("_", " ")
+    pretty_names = [name.replace("benchmark_", "").replace("_", " ").capitalize()
                     for name in benchmark_names]
     len_fnames, pretty_names, benchmark_names = map(
         list, zip(*sorted(zip(len_fnames, pretty_names, benchmark_names),
@@ -478,7 +478,7 @@ def plot_benchmark_html_all(patterns=(), benchmarks=(), root=None,
             with open(result_filename, "w") as f:
                 f.write(html)
 
-    # Create an index that referes all benchmarks.
+    # Create an index that lists all benchmarks.
     rendered = render_index([b.name for b in benchmarks], static_dir,
                             len_fnames)
     index_filename = DEFAULT_HTML_DIR / 'index.html'
