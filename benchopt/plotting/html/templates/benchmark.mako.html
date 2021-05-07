@@ -44,6 +44,11 @@
     % endfor
   </select>
   % endfor
+
+  <span id="closewithin" style="font-size:30px;cursor:pointer;text-align:center;" onclick="closeSideNav()">
+    <i class="fa fa-times-circle"></i> Close
+  </span>
+
 </div>
 
 <div class="main" id="main">
@@ -62,7 +67,7 @@
     <strong>${nb_total_benchs}</strong> benchmark results in total. <br>
     % if need_filter:
       <span id="open" style="font-size:30px;cursor:pointer" onclick="openSideNav()">&#9776; Filter System Informations</span>
-      <span id="close"style="font-size:30px;cursor:pointer" onclick="closeSideNav()">&#9776; Filter System Informations</span>
+      <span id="close" style="font-size:30px;cursor:pointer" onclick="closeSideNav()">&#9776; Filter System Informations</span>
     % endif
 </p>
 
@@ -179,6 +184,7 @@ function displaymore(id, loop_index) {
 
 var openbtn = document.getElementById("open");
 var closebtn = document.getElementById("close");
+var closewithin = document.getElementById("closewithin");
 closebtn.style.display = 'none';
 
 function openSideNav() {

@@ -262,6 +262,16 @@ td.number {
 	padding: 30px;
 }
 
+@media (min-width: 600px) {
+	.sidenav { padding: 10px;
+             width: 100px;}
+  }
+
+@media (min-width: 900px) {
+	.sidenav { padding: 20px;
+    width: 150px;}
+  }
+
 .main {
 	margin-left: 50px;
   transition: 0.5s;

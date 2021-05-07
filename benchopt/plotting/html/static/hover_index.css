@@ -6,9 +6,11 @@
 	position: relative;
 	margin: 0 auto;
 	padding: 1em 0 4em;
+	display: grid;
 	max-width: 1000px;
 	list-style: none;
 	text-align: center;
+	column-gap: 2em;
 }
 
 /* Common style */
@@ -17,7 +19,7 @@
 	float: left;
 	overflow: hidden;
 	margin: 10px 1%;
-	width: 30%;
+	width: 100%;
 	background: #3085a3;
 	text-align: center;
 	cursor: pointer;
@@ -41,6 +43,14 @@
 	-webkit-backface-visibility: hidden;
 	backface-visibility: hidden;
 }
+
+@media (min-width: 600px) {
+	.grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+@media (min-width: 900px) {
+	.grid { grid-template-columns: repeat(3, 1fr); }
+  }
 
 .grid figure figcaption::before,
 .grid figure figcaption::after {
