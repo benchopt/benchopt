@@ -69,6 +69,21 @@ def generate_plot_benchmark(df, kinds, fname, fig_dir, benchmark_name):
                 plot_func = globals()[PLOT_KINDS[k]]
                 try:
                     fig = plot_func(df_obj, plotly=True)
+                    if plot_func != "plot_histogram":
+                        if len(df_obj["solver_name"].unique()) < 10:
+                            fact_ = 10
+                        else:
+                            fact_ = 100
+                        height = 1000 + fact_ * len(objective_names)
+                        fig.update_layout(legend={"xanchor": "center",
+                                                  "yanchor": "top",
+                                                  "y": -.2,
+                                                  "x": .5
+                                                  },
+                                          autosize=False,
+                                          width=1000,
+                                          height=height
+                                          )
                 except TypeError:
                     fig = plot_func(df_obj)
                 figures[data_name][objective_name][k] = export_figure(
@@ -144,11 +159,14 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
         datasets = list(df['data_name'].unique())
         main_info = ['system-cpus', 'system-ram (GB)', "version-cuda"]
         sub_info = ['platform', 'system-processor', 'env-OMP_NUM_THREADS']
+        ter_info = ["version-numpy", "version-scipy"]
         display_sysinfo = ["cpu", "ram (GB)", "cuda",
-                           "processor", "nb threads"]
+                           "processor", "nb threads",
+                           "numpy", "scipy"]
         main_dic = dict.fromkeys(main_info, "")
         sub_dic = dict.fromkeys(sub_info, "")
-        sysinfo = {"main": main_dic, "sub": sub_dic,
+        ter_dic = dict.fromkeys(ter_info, "")
+        sysinfo = {"main": main_dic, "sub": sub_dic, "ter": ter_dic,
                    "all_names": display_sysinfo}
         if "platform" in df:
             platform = (
@@ -157,9 +175,11 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
                 df["platform-architecture"].unique()[0]
             )
             sysinfo["sub"]["platform"] = {'platform': platform}
-            hierarchy = {0: "main", 1: "sub"}
+            hierarchy = {0: "main", 1: "sub", 2: "ter"}
             disp = 0
-            for level, all_keys in enumerate([main_info, sub_info[1:]]):
+            for level, all_keys in enumerate(
+                [main_info, sub_info[1:], ter_info]
+            ):
                 level = hierarchy[level]
                 for idx, key in enumerate(all_keys):
                     val = df[key].unique()[0]

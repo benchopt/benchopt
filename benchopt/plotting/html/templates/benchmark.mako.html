@@ -18,10 +18,11 @@
 
 <body>
 
-<div class="sidenav">
+<div class="sidenav" id="sidenav" style="width:0px; padding: 0px;">
   <%
     ll_main = results[0]["sysinfo"]['main']
     ll_main_nospace = [item.replace(" ", "") for item in ll_main]
+    need_filter = False
   %>
   % for idx, item in enumerate(ll_main):
   <label for=${'select'+str(ll_main_nospace[idx])} style="font-size: 120%; padding: 8px; color: white;">
@@ -36,6 +37,7 @@
       % if current_item != "":
       <%
         name = list(current_item.keys())[0]
+        need_filter = True
       %>
         <option value="<b>${name}</b>: ${current_item[name]}"> ${current_item[name]} </option>
       % endif
@@ -44,7 +46,7 @@
   % endfor
 </div>
 
-<div class="main">
+<div class="main" id="main">
 <a id="top"></a>
 <a href="${home}"><button class="btn"><i class="fa fa-home"></i></button></a>
 <h1>
@@ -57,8 +59,13 @@
 <p><em>Last updated: ${last_updated.isoformat(sep=' ', timespec='minutes') | h}</em></p>
 <h2>Summary</h2>
 <p>
-    <strong>${nb_total_benchs}</strong> benchmark results in total.
+    <strong>${nb_total_benchs}</strong> benchmark results in total. <br>
+    % if need_filter:
+      <span id="open" style="font-size:30px;cursor:pointer" onclick="openSideNav()">&#9776; Filter System Informations</span>
+      <span id="close"style="font-size:30px;cursor:pointer" onclick="closeSideNav()">&#9776; Filter System Informations</span>
+    % endif
 </p>
+
 
 <table class="summary display" id="summary">
 <thead>
@@ -168,6 +175,28 @@ function displaymore(id, loop_index) {
   else {
     x.style.display = "none";
   }
+}
+
+var openbtn = document.getElementById("open");
+var closebtn = document.getElementById("close");
+closebtn.style.display = 'none';
+
+function openSideNav() {
+    navbar = document.getElementById("sidenav")
+    navbar.style.width = "200px";
+    navbar.style.padding = "30px";
+    document.getElementById("main").style.marginLeft = "50px";
+	  openbtn.style.display = 'none';
+    closebtn.style.display = '';
+}
+
+function closeSideNav() {
+    navbar = document.getElementById("sidenav")
+    navbar.style.width = "0";
+    navbar.style.padding = "0";
+    document.getElementById("main").style.marginLeft= "0";
+	  openbtn.style.display = '';
+    closebtn.style.display = 'none';
 }
 </script>
 </div>

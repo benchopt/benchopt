@@ -88,7 +88,7 @@ figure.effect-ruby {
 }
 
 figure.effect-ruby:hover {
-    background-color: #e87700;
+    background-color: DodgerBlue;
 }
 
 figure.effect-ruby img {
@@ -143,4 +143,12 @@ figure.effect-ruby:hover p {
 	outline:none;
 	text-align: center;
 	margin-left: 40%;
+ }
+
+ .buttonleft {
+	border:none;
+	background-color:transparent;
+	outline:none;
+	text-align: center;
+	margin-left: 1px;
  }
