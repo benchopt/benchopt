@@ -227,11 +227,12 @@ def render_index(benchmark_names, static_dir, len_fnames):
         A str with the HTML code for the index page.
     """
 
-    pretty_names = [name.replace("benchmark_", "").replace("_", " ").capitalize()
+    pretty_names = [name.replace("benchmark_", "").replace("_",
+                                                           " ").capitalize()
                     for name in benchmark_names]
-    len_fnames, pretty_names, benchmark_names = map(
-        list, zip(*sorted(zip(len_fnames, pretty_names, benchmark_names),
-                          reverse=True))
+    pretty_names, len_fnames, benchmark_names = map(
+        list, zip(*sorted(zip(pretty_names, len_fnames, benchmark_names),
+                          reverse=False))
     )
 
     return Template(

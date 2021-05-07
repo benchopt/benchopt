@@ -82,11 +82,16 @@
   </tr>
 </thead>
 <tbody>
-% for result in results:
+% for idx_res, result in enumerate(results):
   <tr>
     <td class="fname">
       <a href="${result['page']}">
-        ${result["fname_short"]}
+        <%
+          fname = result["fname_short"]
+          fname, _ = fname.split('.')
+          fname = fname.replace("benchmark_", "").replace("_benchopt_run_", " ")
+        %>
+        ${fname}
       </a>
     </td>
     <td class="datasets">
@@ -97,11 +102,17 @@
       % endfor
     </td>
     <td class="sysinfo">
-      % for all_info in result['sysinfo']['main'].values():
+
+      % for idx_info, all_info in enumerate(result['sysinfo']['main'].values()):
       <div class="all_info">
-        % for idx in range(len(all_info)):
         <div class="info">
+          % for idx in range(len(all_info)):
           <b>${list(all_info)[idx]}</b>: ${list(all_info.values())[idx]}
+            % if result['sysinfo']['sub']['platform'] != '' and idx_info == 0:
+              <button onclick="displaymore(this,${idx_res})" id=${"btn_subinfo"+str(idx_res)} class="button buttoncent" style="float:right;">
+                <i class='fas fa-plus-circle'></i>
+              </button>
+            % endif
         </div>
         % endfor
       </div>
@@ -110,9 +121,6 @@
       <!-- platform is one result monitored everytime in new csv files -->
 
       % if result['sysinfo']['sub']['platform'] != '':
-        <button onclick="displaymore(this,${loop.index})" id=${"btn_subinfo"+str(loop.index)} class="button buttoncent">
-          <i class='fas fa-plus-circle'></i>
-        </button>
         <div id=${"subinfo"+str(loop.index)} style="display:none;">
           % for all_info_sub in result['sysinfo']['sub'].values():
           <div class="all_info">
