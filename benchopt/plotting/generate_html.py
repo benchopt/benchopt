@@ -220,7 +220,8 @@ def get_sysinfo(df):
     disp = 0
     for level, all_keys in enumerate(
             [main_info, sub_info[1:], ter_info]):
-        if any([item in df for item in all_keys]):
+        # check if columns exist (empty or not) by level
+        if all([item in df for item in all_keys]):
             if level == 1:
                 platform = (
                     df["platform"].unique()[0] +
