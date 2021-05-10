@@ -175,6 +175,10 @@ table.dataframe {
   color: black;
   font-size: .9em;
   table-layout: fixed;
+  border-radius:6px;
+}
+table.datatable {
+  border-radius:6px;
 }
 table.dataframe thead {
   border-bottom: 1px solid black;
@@ -197,14 +201,16 @@ table.dataframe th {
 table.dataframe tbody tr:nth-child(odd) {
   background: #f5f5f5;
 }
-table.dataframe tbody tr:hover {
-  background: rgba(66, 165, 245, 0.2);
+table.datatable.display tbody tr:hover {
+  background-color: #ddd !important;
 }
-
 a.anchor:visited,
 a.anchor:link {
     padding-left: .2em;
     color: #999;
+}
+div.dataTables_filter, div.dataTables_length {
+  padding: 30px;
 }
 
 .backtotop {

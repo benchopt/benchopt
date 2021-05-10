@@ -157,35 +157,7 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
 
         df = pd.read_csv(fname)
         datasets = list(df['data_name'].unique())
-        main_info = ['system-cpus', 'system-ram (GB)', "version-cuda"]
-        sub_info = ['platform', 'system-processor', 'env-OMP_NUM_THREADS']
-        ter_info = ["version-numpy", "version-scipy"]
-        display_sysinfo = ["cpu", "ram (GB)", "cuda",
-                           "processor", "nb threads",
-                           "numpy", "scipy"]
-        main_dic = dict.fromkeys(main_info, "")
-        sub_dic = dict.fromkeys(sub_info, "")
-        ter_dic = dict.fromkeys(ter_info, "")
-        sysinfo = {"main": main_dic, "sub": sub_dic, "ter": ter_dic,
-                   "all_names": display_sysinfo}
-        if "platform" in df:
-            platform = (
-                df["platform"].unique()[0] +
-                df["platform-release"].unique()[0] + "-" +
-                df["platform-architecture"].unique()[0]
-            )
-            sysinfo["sub"]["platform"] = {'platform': platform}
-            hierarchy = {0: "main", 1: "sub", 2: "ter"}
-            disp = 0
-            for level, all_keys in enumerate(
-                [main_info, sub_info[1:], ter_info]
-            ):
-                level = hierarchy[level]
-                for idx, key in enumerate(all_keys):
-                    val = df[key].unique()[0]
-                    if not pd.isnull(val):
-                        sysinfo[level][key] = {display_sysinfo[disp]: val}
-                    disp += 1
+        sysinfo = get_sysinfo(df)
         # Copy CSV if necessary and give a relative path for HTML page access
         if copy:
             fname_in_output = out_dir / f"{benchmark_name}_{fname.name}"
@@ -209,6 +181,60 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
         )
 
     return results
+
+
+def get_sysinfo(df):
+    """Get a dictionnary of the recorded system informations.
+
+    System informations are sorted in 3 levels: main, sub and ter.
+        - Main : cpu - ram - cuda informations.
+            Displayed directly in the benchmark and result pages
+            and can be filtered on.
+        - Sub : platform - processor - number of threds.
+            Displayed on click in the benchmark and results pages.
+        - Ter : numpy - scipy.
+            Displayed on click in the result page.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        recorded data from the Benchmark
+
+    Returns
+    -------
+    sysinfo : dict
+        Contains the three-level sytem informations.
+    """
+    main_info = ['system-cpus', 'system-ram (GB)', "version-cuda"]
+    sub_info = ['platform', 'system-processor', 'env-OMP_NUM_THREADS']
+    ter_info = ["version-numpy", "version-scipy"]
+    display_sysinfo = ["cpu", "ram (GB)", "cuda",
+                       "processor", "nb threads",
+                       "numpy", "scipy"]
+    main_dic = dict.fromkeys(main_info, "")
+    sub_dic = dict.fromkeys(sub_info, "")
+    ter_dic = dict.fromkeys(ter_info, "")
+    sysinfo = {"main": main_dic, "sub": sub_dic, "ter": ter_dic,
+               "all_names": display_sysinfo}
+    hierarchy = {0: "main", 1: "sub", 2: "ter"}
+    disp = 0
+    for level, all_keys in enumerate(
+            [main_info, sub_info[1:], ter_info]):
+        if any([item in df for item in all_keys]):
+            if level == 1:
+                platform = (
+                    df["platform"].unique()[0] +
+                    df["platform-release"].unique()[0] + "-" +
+                    df["platform-architecture"].unique()[0]
+                )
+                sysinfo["sub"]["platform"] = {'platform': platform}
+            level = hierarchy[level]
+            for key in all_keys:
+                val = df[key].unique()[0]
+                if not pd.isnull(val):
+                    sysinfo[level][key] = {display_sysinfo[disp]: val}
+                disp += 1
+    return sysinfo
 
 
 def render_index(benchmark_names, static_dir, len_fnames):

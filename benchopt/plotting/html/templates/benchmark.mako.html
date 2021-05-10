@@ -18,12 +18,13 @@
 
 <body>
 
-<div class="sidenav" id="sidenav" style="width:0px; padding: 0px;">
-  <%
-    ll_main = results[0]["sysinfo"]['main']
-    ll_main_nospace = [item.replace(" ", "") for item in ll_main]
-    need_filter = False
-  %>
+<%
+  ll_main = results[0]["sysinfo"]['main']
+  ll_main_nospace = [item.replace(" ", "") for item in ll_main]
+  need_filter = False
+%>
+
+<div class="sidenav" id="sidenav" style="padding:0px; width:0px;">
   % for idx, item in enumerate(ll_main):
   <label for=${'select'+str(ll_main_nospace[idx])} style="font-size: 120%; padding: 8px; color: white;">
      ${results[0]['sysinfo']['all_names'][idx]}
@@ -48,32 +49,29 @@
   <span id="closewithin" style="font-size:30px;cursor:pointer;text-align:center;" onclick="closeSideNav()">
     <i class="fa fa-times-circle"></i> Close
   </span>
-
 </div>
 
 <div class="main" id="main">
 <a id="top"></a>
-<a href="${home}"><button class="btn"><i class="fa fa-home"></i></button></a>
 <h1>
-  BenchOpt benchmark results: ${benchmark}
+  <a href="${home}"><button class="btn"><i class="fa fa-home"></i></button></a>
+  BenchOpt results: ${benchmark.replace('benchmark_', '').replace('_', " ")}
   <a href="https://github.com/benchopt/${benchmark}">
     <i class="fab fa-github-square"></i>
   </a>
 </h1>
 
-<p><em>Last updated: ${last_updated.isoformat(sep=' ', timespec='minutes') | h}</em></p>
-<h2>Summary</h2>
-<p>
-    <strong>${nb_total_benchs}</strong> benchmark results in total. <br>
-    % if need_filter:
-      <span id="open" style="font-size:30px;cursor:pointer" onclick="openSideNav()">&#9776; Filter System Informations</span>
-      <span id="close" style="font-size:30px;cursor:pointer" onclick="closeSideNav()">&#9776; Filter System Informations</span>
-    % endif
+<p><em>Last updated: ${last_updated.isoformat(sep=' ', timespec='minutes') | h}</em>
+  with <strong>${nb_total_benchs}</strong> benchmark results in total. <br>
 </p>
 
+% if need_filter:
+<span id="close" style="font-size:30px;cursor:pointer" onclick="closeSideNav()">&#9776; Filter Informations</span>
+<span id="open" style="font-size:30px;cursor:pointer" onclick="openSideNav()">&#9776; Filter Informations</span>
+% endif
 
 <table class="summary display" id="summary">
-<thead>
+<thead style="background-color: dodgerblue;">
   <tr>
     <th>Results</th>
     <th>Datasets</th>
@@ -90,6 +88,8 @@
           fname = result["fname_short"]
           fname, _ = fname.split('.')
           fname = fname.replace("benchmark_", "").replace("_benchopt_run_", " ")
+          subs = list(result['sysinfo']['sub'].values())
+          disp_sub = any([item_sub != '' for item_sub in subs])
         %>
         ${fname}
       </a>
@@ -97,7 +97,18 @@
     <td class="datasets">
       % for dataset in result['datasets']:
       <div class=dataset>
-        ${dataset}
+        <%
+          split = dataset.split('[')
+          if len(split) > 1:
+            name_data, options = split
+            options = options[:-1]
+          else:
+            name_data, options = split[0], []
+        %>
+        ${name_data.capitalize()}
+        % if len(options) > 0:
+          </br> <span style="font-size: 80%;padding-left:15px;padding-bottom:15px;">${options} </span>
+        % endif
       </div>
       % endfor
     </td>
@@ -108,7 +119,7 @@
         <div class="info">
           % for idx in range(len(all_info)):
           <b>${list(all_info)[idx]}</b>: ${list(all_info.values())[idx]}
-            % if result['sysinfo']['sub']['platform'] != '' and idx_info == 0:
+            % if disp_sub and idx_info == 0:
               <button onclick="displaymore(this,${idx_res})" id=${"btn_subinfo"+str(idx_res)} class="button buttoncent" style="float:right;">
                 <i class='fas fa-plus-circle'></i>
               </button>
@@ -118,9 +129,7 @@
       </div>
       % endfor
 
-      <!-- platform is one result monitored everytime in new csv files -->
-
-      % if result['sysinfo']['sub']['platform'] != '':
+      % if disp_sub:
         <div id=${"subinfo"+str(loop.index)} style="display:none;">
           % for all_info_sub in result['sysinfo']['sub'].values():
           <div class="all_info">
@@ -153,6 +162,20 @@
 $(document).ready(function() {
     $('.summary').DataTable();
 } );
+
+$('table').each(function(a, tbl) {
+        var currentTableRows = $(tbl).find('tbody tr').length;
+        $(tbl).find('th').each(function(i) {
+            var remove = 0;
+            var currentTable = $(this).parents('table');
+            var tds = currentTable.find('tr td:nth-child(' + (i + 1) + ')');
+            tds.each(function(j) { if ($(this)[0].innerText.length == 0) remove++; });
+            if (remove == currentTableRows) {
+                $(this).hide();
+                tds.hide();
+            }
+        });
+    });
 
 function change(ll_item){
   var td, i, fil;
@@ -193,7 +216,7 @@ function displaymore(id, loop_index) {
 var openbtn = document.getElementById("open");
 var closebtn = document.getElementById("close");
 var closewithin = document.getElementById("closewithin");
-closebtn.style.display = 'none';
+openbtn.style.display = 'none';
 
 function openSideNav() {
     navbar = document.getElementById("sidenav")
@@ -204,11 +227,13 @@ function openSideNav() {
     closebtn.style.display = '';
 }
 
+openSideNav()
+
 function closeSideNav() {
     navbar = document.getElementById("sidenav")
     navbar.style.width = "0";
     navbar.style.padding = "0";
-    document.getElementById("main").style.marginLeft= "0";
+    document.getElementById("main").style.marginLeft = "0";
 	  openbtn.style.display = '';
     closebtn.style.display = 'none';
 }
