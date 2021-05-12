@@ -205,36 +205,42 @@ def get_sysinfo(df):
     sysinfo : dict
         Contains the three-level sytem informations.
     """
-    main_info = ['system-cpus', 'system-ram (GB)', "version-cuda"]
-    sub_info = ['platform', 'system-processor', 'env-OMP_NUM_THREADS']
-    ter_info = ["version-numpy", "version-scipy"]
-    display_sysinfo = ["cpu", "ram (GB)", "cuda",
-                       "processor", "nb threads",
-                       "numpy", "scipy"]
-    main_dic = dict.fromkeys(main_info, "")
-    sub_dic = dict.fromkeys(sub_info, "")
-    ter_dic = dict.fromkeys(ter_info, "")
-    sysinfo = {"main": main_dic, "sub": sub_dic, "ter": ter_dic,
-               "all_names": display_sysinfo}
-    hierarchy = {0: "main", 1: "sub", 2: "ter"}
-    disp = 0
-    for level, all_keys in enumerate(
-            [main_info, sub_info[1:], ter_info]):
-        # check if columns exist (empty or not) by level
-        if all([item in df for item in all_keys]):
-            if level == 1:
-                platform = (
-                    df["platform"].unique()[0] +
-                    df["platform-release"].unique()[0] + "-" +
-                    df["platform-architecture"].unique()[0]
-                )
-                sysinfo["sub"]["platform"] = {'platform': platform}
-            level = hierarchy[level]
-            for key in all_keys:
+    SYS_INFO = {
+        "main": [('system-cpus', 'cpu'),
+                 ('system-ram (GB)', 'ram (GB)'),
+                 ("version-cuda", 'cuda')
+                 ],
+        "sub": [('platform', 'platform'),
+                ('system-processor', 'processur'),
+                ('env-OMP_NUM_THREADS', 'nb threads')
+                ],
+        "ter": [("version-numpy", "numpy"),
+                ("version-scipy", "scipy")
+                ]
+    }
+
+    def get_val(df, key):
+        if key in df:
+            if key == 'platform':
+                return (
+                        df["platform"].unique()[0] +
+                        df["platform-release"].unique()[0] + "-" +
+                        df["platform-architecture"].unique()[0]
+                    )
+            else:
                 val = df[key].unique()[0]
                 if not pd.isnull(val):
-                    sysinfo[level][key] = {display_sysinfo[disp]: val}
-                disp += 1
+                    return val
+                return ''
+        else:
+            return ''
+
+    sysinfo = {
+        level: {name: get_val(df, key) for key, name in keys.items()}
+        for level, keys in SYS_INFO.items()
+        }
+
+    print(sysinfo)
     return sysinfo
 
 
