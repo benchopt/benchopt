@@ -257,7 +257,7 @@ td.number {
 
 .sidenav {
 	height: 100%;
-	width: 200px;
+	width: 10%;
 	position: fixed;
 	z-index: 1;
 	top: 0;
@@ -265,26 +265,29 @@ td.number {
 	background-color: #2c3e50;
 	overflow-x: hidden;
   transition: 0.5s;
-	padding: 30px;
+	padding: 1%;
+  padding-top: 5%;
 }
 
 @media (min-width: 600px) {
-	.sidenav { padding: 10px;
-             width: 100px;}
+	.sidenav { padding: 1%;
+             padding-top: 5%;
+             width: 10%;}
   }
 
 @media (min-width: 900px) {
-	.sidenav { padding: 20px;
-    width: 150px;}
+	.sidenav { padding: 1%;
+             padding-top: 5%;
+             width: 10%;}
   }
 
 .main {
-	margin-left: 50px;
+	margin-left: 12%;
   transition: 0.5s;
 }
 
 .sidenav .myselect {
-  padding: 10px 10px 10px 16px;
+  padding: 1% 1% 1% 1.5%;
   text-decoration: none;
   font-size: 25px;
   color: #000;
@@ -303,10 +306,10 @@ td.number {
   border: none;
   color: white;
   appearance: none;
-  padding: 40px;
+  padding: 1%;
   -webkit-appearance: none;
   -moz-appearance: none;
-  padding: 10px;
+  padding: 1%;
   margin-bottom: 10%;
 }
 
