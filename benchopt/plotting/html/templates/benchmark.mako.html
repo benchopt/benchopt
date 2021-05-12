@@ -20,33 +20,31 @@
 
 <%
   ll_main = results[0]["sysinfo"]['main']
-  ll_main_nospace = [item.replace(" ", "") for item in ll_main]
   need_filter = False
 %>
 
 <div class="sidenav" id="sidenav" style="padding:0px; width:0px;">
-  % for idx, item in enumerate(ll_main):
-  <label for=${'select'+str(ll_main_nospace[idx])} style="font-size: 120%; padding: 8px; color: white;">
-     ${results[0]['sysinfo']['all_names'][idx]}
+  % for key, val in ll_main.items():
+  <label for=${'select'+str(key.replace(" ", ""))} style="font-size: 120%; padding: 8px; color: white;">
+     ${key}
   </label>
-  <select class="myselect" id=${'select'+str(ll_main_nospace[idx])} onchange="change(${ll_main_nospace})">
+  <select class="myselect" id=${'select'+str(key.replace(" ", ""))} onchange="change(${list(ll_main.keys())})">
     <option value=""> Any </option>
     % for result in results:
     <%
-      current_item = result['sysinfo']['main'][item]
+      current_item = result['sysinfo']['main'][key]
     %>
       % if current_item != "":
       <%
-        name = list(current_item.keys())[0]
         need_filter = True
       %>
-        <option value="<b>${name}</b>: ${current_item[name]}"> ${current_item[name]} </option>
+        <option value="<b>${key}</b>: ${current_item}"> ${current_item} </option>
       % endif
     % endfor
   </select>
   % endfor
 
-  <span id="closewithin" style="font-size:30px;cursor:pointer;text-align:center;" onclick="closeSideNav()">
+  <span id="closewithin" style="font-size:30px;cursor:pointer;text-align:center;color:white;" onclick="closeSideNav()">
     <i class="fa fa-times-circle"></i> Close
   </span>
 </div>
@@ -71,7 +69,7 @@
 % endif
 
 <table class="summary display" id="summary">
-<thead style="background-color: dodgerblue;">
+<thead style="background-color: dodgerblue; color: white;">
   <tr>
     <th>Results</th>
     <th>Datasets</th>
@@ -88,13 +86,13 @@
           fname = result["fname_short"]
           fname, _ = fname.split('.')
           fname = fname.replace("benchmark_", "").replace("_benchopt_run_", " ")
-          subs = list(result['sysinfo']['sub'].values())
-          disp_sub = any([item_sub != '' for item_sub in subs])
+          disp_sub = any([val != '' for val in result['sysinfo']['sub'].values()])
         %>
         ${fname}
       </a>
     </td>
     <td class="datasets">
+
       % for dataset in result['datasets']:
       <div class=dataset>
         <%
@@ -111,37 +109,37 @@
         % endif
       </div>
       % endfor
+
     </td>
     <td class="sysinfo">
 
-      % for idx_info, all_info in enumerate(result['sysinfo']['main'].values()):
-      <div class="all_info">
-        <div class="info">
-          % for idx in range(len(all_info)):
-          <b>${list(all_info)[idx]}</b>: ${list(all_info.values())[idx]}
+      <ul style="list-style-type: none; margin-top: 0;">
+      % for idx_info, (keys_info, vals_info) in enumerate(result['sysinfo']['main'].items()):
+        % if vals_info != "":
+          <li>
+            <b>${keys_info}</b>: ${vals_info}
             % if disp_sub and idx_info == 0:
               <button onclick="displaymore(this,${idx_res})" id=${"btn_subinfo"+str(idx_res)} class="button buttoncent" style="float:right;">
                 <i class='fas fa-plus-circle'></i>
               </button>
             % endif
-        </div>
-        % endfor
-      </div>
+          </li>
+        % endif
       % endfor
 
       % if disp_sub:
         <div id=${"subinfo"+str(loop.index)} style="display:none;">
-          % for all_info_sub in result['sysinfo']['sub'].values():
-          <div class="all_info">
-            % for idx in range(len(all_info_sub)):
-            <div class="info">
-              <b>${list(all_info_sub.keys())[idx]}</b>: ${list(all_info_sub.values())[idx]}
-            </div>
-            %endfor
-          </div>
+          % for key_sub, val_sub in result['sysinfo']['sub'].items():
+            % if val_sub != "":
+              <li>
+                <b>${key_sub}</b>: ${val_sub}
+              </li>
+            % endif
           %endfor
         </div>
+      </ul>
       % endif
+
     </td>
     <td class="buttons">
       <a href="${result['page']}">
@@ -180,9 +178,8 @@ $('table').each(function(a, tbl) {
 function change(ll_item){
   var td, i, fil;
   var filter = new Array;
-  console.log(ll_item)
   for (item = 0; item < ll_item.length; item++){
-    filter.push(document.getElementById("select"+ll_item[item]).value.toUpperCase());
+    filter.push(document.getElementById("select"+ll_item[item].replace(/\s/g, "")).value.toUpperCase());
   }
   var table = document.getElementById("summary");
   var tr = table.getElementsByTagName("tr");

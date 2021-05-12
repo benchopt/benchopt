@@ -187,10 +187,10 @@ def get_sysinfo(df):
     """Get a dictionnary of the recorded system informations.
 
     System informations are sorted in 3 levels: main, sub and ter.
-        - Main : cpu - ram - cuda informations.
+        - Main : cpu - ram - cuda.
             Displayed directly in the benchmark and result pages
             and can be filtered on.
-        - Sub : platform - processor - number of threds.
+        - Sub : platform - processor - number of threads.
             Displayed on click in the benchmark and results pages.
         - Ter : numpy - scipy.
             Displayed on click in the result page.
@@ -211,7 +211,7 @@ def get_sysinfo(df):
                  ("version-cuda", 'cuda')
                  ],
         "sub": [('platform', 'platform'),
-                ('system-processor', 'processur'),
+                ('system-processor', 'processor'),
                 ('env-OMP_NUM_THREADS', 'nb threads')
                 ],
         "ter": [("version-numpy", "numpy"),
@@ -234,13 +234,10 @@ def get_sysinfo(df):
                 return ''
         else:
             return ''
-
     sysinfo = {
-        level: {name: get_val(df, key) for key, name in keys.items()}
+        level: {name: get_val(df, key) for key, name in keys}
         for level, keys in SYS_INFO.items()
         }
-
-    print(sysinfo)
     return sysinfo
 
 

@@ -25,35 +25,32 @@
 </a></p>
 
 <!--Display all system informations if you want to-->
-% if result['sysinfo']['sub']['platform'] != '':
+% if any([val != "" for _, val in result['sysinfo']['sub'].items()]):
 <p>System informations:
-  % for all_info in result['sysinfo']['main'].values():
-    % for idx in range(len(all_info)):
-      <b>${list(all_info)[idx]}</b>: ${list(all_info.values())[idx]}
-    % endfor
+  % for name, val in result['sysinfo']['main'].items():
+    % if val != "":
+      <b>${name}</b>: ${val}
+    % endif
   % endfor
     <button id="btn_subinfo" class="button buttonleft toggle">
       <i class='fas fa-plus-circle' id="logo_btn_info"></i>
     </button>
     <div id="subinfo" style="display:none;transition: 0.5s;">
       <ul>
-        % for all_info_sub in result['sysinfo']['sub'].values():
-          % for idx in range(len(all_info_sub)):
-            <li> <b>${list(all_info_sub.keys())[idx]}</b>: ${list(all_info_sub.values())[idx]} </li>
-          %endfor
+        % for key_sub, val_sub in result['sysinfo']['sub'].items():
+          % if val_sub != "":
+            <li> <b>${key_sub}</b>: ${val_sub} </li>
+          % endif
         %endfor
-        % for all_info_sub in result['sysinfo']['ter'].values():
-          % for idx in range(len(all_info_sub)):
+        % for key_ter, val_ter in result['sysinfo']['ter'].items():
+          % if val_ter != "":
             <%
-              name = list(all_info_sub.keys())[idx]
-              val = list(all_info_sub.values())[idx]
-              if len(val) > 1:
-                val = val.split()
+                val = val_ter.split()
                 val = [''.join(l for l in item if l.isalnum() or l in [".", "_", '=']) for item in val]
                 val = " ".join(val)
             %>
-            <li> <b>${name}</b>: ${val} </li>
-          %endfor
+            <li> <b>${key_ter}</b>: ${val} </li>
+          % endif
         %endfor
       </ul>
     </div>
