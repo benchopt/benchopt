@@ -25,6 +25,20 @@ TEMPLATE_BENCHMARK = ROOT / "templates" / "benchmark.mako.html"
 TEMPLATE_RESULT = ROOT / "templates" / "result.mako.html"
 TEMPLATE_LOCAL_RESULT = ROOT / "templates" / "local_result.mako.html"
 
+SYS_INFO = {
+    "main": [('system-cpus', 'cpu'),
+             ('system-ram (GB)', 'ram (GB)'),
+             ("version-cuda", 'cuda')
+             ],
+    "sub": [('platform', 'platform'),
+            ('system-processor', 'processor'),
+            ('env-OMP_NUM_THREADS', 'nb threads')
+            ],
+    "ter": [("version-numpy", "numpy"),
+            ("version-scipy", "scipy")
+            ]
+}
+
 
 def generate_plot_benchmark(df, kinds, fname, fig_dir, benchmark_name):
     """Generate all possible plots for a given benchmark run.
@@ -205,19 +219,6 @@ def get_sysinfo(df):
     sysinfo : dict
         Contains the three-level sytem informations.
     """
-    SYS_INFO = {
-        "main": [('system-cpus', 'cpu'),
-                 ('system-ram (GB)', 'ram (GB)'),
-                 ("version-cuda", 'cuda')
-                 ],
-        "sub": [('platform', 'platform'),
-                ('system-processor', 'processor'),
-                ('env-OMP_NUM_THREADS', 'nb threads')
-                ],
-        "ter": [("version-numpy", "numpy"),
-                ("version-scipy", "scipy")
-                ]
-    }
 
     def get_val(df, key):
         if key in df:

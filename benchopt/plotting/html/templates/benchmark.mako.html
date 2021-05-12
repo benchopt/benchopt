@@ -111,23 +111,30 @@
       % endfor
 
     </td>
+    <% disp_button = True %>
     <td class="sysinfo">
-
       <ul style="list-style-type: none; margin-top: 0;">
-      % for idx_info, (keys_info, vals_info) in enumerate(result['sysinfo']['main'].items()):
-        % if vals_info != "":
+      % for key_main, val_main in result['sysinfo']['main'].items():
+        % if val_main != "":
           <li>
-            <b>${keys_info}</b>: ${vals_info}
-            % if disp_sub and idx_info == 0:
+            <b>${key_main}</b>: ${val_main}
+            % if disp_sub and disp_button:
               <button onclick="displaymore(this,${idx_res})" id=${"btn_subinfo"+str(idx_res)} class="button buttoncent" style="float:right;">
                 <i class='fas fa-plus-circle'></i>
               </button>
+              <% disp_button = False %>
             % endif
           </li>
         % endif
       % endfor
 
       % if disp_sub:
+        <!--Case where sub infos are available but somehow main infos are not-->
+        % if disp_button:
+          <button onclick="displaymore(this,${idx_res})" id=${"btn_subinfo"+str(idx_res)} class="button buttoncent" style="float:right;">
+            <i class='fas fa-plus-circle'></i>
+          </button>
+        % endif
         <div id=${"subinfo"+str(loop.index)} style="display:none;">
           % for key_sub, val_sub in result['sysinfo']['sub'].items():
             % if val_sub != "":
