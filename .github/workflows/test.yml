@@ -47,8 +47,7 @@ jobs:
         with:
           activate-environment: ${{ env.CONDA_ENV }}
           python-version: ${{ matrix.version_python }}
-          # Use miniforge to only get conda-forge as default channel.
-          miniforge-version: latest
+          channels: conda-forge
 
       - run: conda info
 
