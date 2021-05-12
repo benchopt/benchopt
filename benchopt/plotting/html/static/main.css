@@ -114,7 +114,7 @@ td, th {
 td:first-child, th:first-child {
   empty-cells: hide; /* Hide empty cells when they're the first in the row */
 }
-    
+
 /* Custom stuff on top of the base style sheet */
 .status {
     font-weight: bold;
@@ -175,6 +175,10 @@ table.dataframe {
   color: black;
   font-size: .9em;
   table-layout: fixed;
+  border-radius:6px;
+}
+table.datatable {
+  border-radius:6px;
 }
 table.dataframe thead {
   border-bottom: 1px solid black;
@@ -197,14 +201,16 @@ table.dataframe th {
 table.dataframe tbody tr:nth-child(odd) {
   background: #f5f5f5;
 }
-table.dataframe tbody tr:hover {
-  background: rgba(66, 165, 245, 0.2);
+table.datatable.display tbody tr:hover {
+  background-color: #ddd !important;
 }
-
 a.anchor:visited,
 a.anchor:link {
     padding-left: .2em;
     color: #999;
+}
+div.dataTables_filter, div.dataTables_length {
+  padding: 30px;
 }
 
 .backtotop {
@@ -220,7 +226,7 @@ a.anchor:link {
     margin-left: auto;
     z-index: 999;
 }
-    
+
 .priority1 {
     color: purple;
 }
@@ -247,4 +253,65 @@ td.number {
 /* Darker background on mouse-over */
 .btn:hover {
   background-color: RoyalBlue;
+}
+
+.sidenav {
+	height: 100%;
+	width: 200px;
+	position: fixed;
+	z-index: 1;
+	top: 0;
+	left: 0;
+	background-color: #2c3e50;
+	overflow-x: hidden;
+  transition: 0.5s;
+	padding: 30px;
+}
+
+@media (min-width: 600px) {
+	.sidenav { padding: 10px;
+             width: 100px;}
+  }
+
+@media (min-width: 900px) {
+	.sidenav { padding: 20px;
+    width: 150px;}
+  }
+
+.main {
+	margin-left: 50px;
+  transition: 0.5s;
+}
+
+.sidenav .myselect {
+  padding: 10px 10px 10px 16px;
+  text-decoration: none;
+  font-size: 25px;
+  color: #000;
+  display: block;
+}
+
+.myselect {
+  width: 100%;
+  height: 50px;
+  font-size: 100%;
+  font-weight: bold;
+  cursor: pointer;
+  border-radius: 10px;
+  background-color: DodgerBlue;
+  border-bottom: 10px solid #2c3e50;
+  border: none;
+  color: white;
+  appearance: none;
+  padding: 40px;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding: 10px;
+  margin-bottom: 10%;
+}
+
+.myselect:hover {
+  color: #2c3e50;
+  background-color: white;
+  border-bottom-color: #DCDCDC;
 }

@@ -1,6 +1,7 @@
 <html>
 <head>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📈</text></svg>">
+<link href="${static_dir}/hover_index.css" rel="stylesheet" />
 <link href="${static_dir}/main.css" rel="stylesheet" />
 
 <script defer src="https://use.fontawesome.com/releases/v5.0.10/js/all.js" integrity="sha384-slN8GvtUJGnv6ca26v8EzVaR9DC58QEwsIk9q1QXdCU8Yu8ck/tL/5szYlBbqmS+" crossorigin="anonymous"></script>
@@ -16,42 +17,136 @@
 </head>
 
 <body>
+
+<%
+  ll_main = results[0]["sysinfo"]['main']
+  need_filter = False
+%>
+
+<div class="sidenav" id="sidenav" style="padding:0px; width:0px;">
+  % for key, val in ll_main.items():
+  <label for=${'select'+str(key.replace(" ", ""))} style="font-size: 120%; padding: 8px; color: white;">
+     ${key}
+  </label>
+  <select class="myselect" id=${'select'+str(key.replace(" ", ""))} onchange="change(${list(ll_main.keys())})">
+    <option value=""> Any </option>
+    % for result in results:
+    <%
+      current_item = result['sysinfo']['main'][key]
+    %>
+      % if current_item != "":
+      <%
+        need_filter = True
+      %>
+        <option value="<b>${key}</b>: ${current_item}"> ${current_item} </option>
+      % endif
+    % endfor
+  </select>
+  % endfor
+
+  <span id="closewithin" style="font-size:30px;cursor:pointer;text-align:center;color:white;" onclick="closeSideNav()">
+    <i class="fa fa-times-circle"></i> Close
+  </span>
+</div>
+
+<div class="main" id="main">
 <a id="top"></a>
-<a href="${home}"><button class="btn"><i class="fa fa-home"></i></button></a>
 <h1>
-  BenchOpt benchmark results: ${benchmark}
+  <a href="${home}"><button class="btn"><i class="fa fa-home"></i></button></a>
+  BenchOpt results: ${benchmark.replace('benchmark_', '').replace('_', " ")}
   <a href="https://github.com/benchopt/${benchmark}">
     <i class="fab fa-github-square"></i>
   </a>
 </h1>
 
-<p><em>Last updated: ${last_updated.isoformat(sep=' ', timespec='minutes') | h}</em></p>
-<h2>Summary</h2>
-<p>
-    <strong>${nb_total_benchs}</strong> benchmark results in total.
+<p><em>Last updated: ${last_updated.isoformat(sep=' ', timespec='minutes') | h}</em>
+  with <strong>${nb_total_benchs}</strong> benchmark results in total. <br>
 </p>
-<table class="summary display">
-<thead>
+
+% if need_filter:
+<span id="close" style="font-size:30px;cursor:pointer" onclick="closeSideNav()">&#9776; Filter Informations</span>
+<span id="open" style="font-size:30px;cursor:pointer" onclick="openSideNav()">&#9776; Filter Informations</span>
+% endif
+
+<table class="summary display" id="summary">
+<thead style="background-color: dodgerblue; color: white;">
   <tr>
     <th>Results</th>
     <th>Datasets</th>
+    <th>System info</th>
     <th></th>
   </tr>
 </thead>
 <tbody>
-% for result in results:
+% for idx_res, result in enumerate(results):
   <tr>
     <td class="fname">
       <a href="${result['page']}">
-        ${result["fname_short"]}
+        <%
+          fname = result["fname_short"]
+          fname, _ = fname.split('.')
+          fname = fname.replace("benchmark_", "").replace("_benchopt_run_", " ")
+          disp_sub = any([val != '' for val in result['sysinfo']['sub'].values()])
+        %>
+        ${fname}
       </a>
     </td>
     <td class="datasets">
+
       % for dataset in result['datasets']:
       <div class=dataset>
-        ${dataset}
+        <%
+          split = dataset.split('[')
+          if len(split) > 1:
+            name_data, options = split
+            options = options[:-1]
+          else:
+            name_data, options = split[0], []
+        %>
+        ${name_data.capitalize()}
+        % if len(options) > 0:
+          </br> <span style="font-size: 80%;padding-left:15px;padding-bottom:15px;">${options} </span>
+        % endif
       </div>
-      %endfor
+      % endfor
+
+    </td>
+    <% disp_button = True %>
+    <td class="sysinfo">
+      <ul style="list-style-type: none; margin-top: 0;">
+      % for key_main, val_main in result['sysinfo']['main'].items():
+        % if val_main != "":
+          <li>
+            <b>${key_main}</b>: ${val_main}
+            % if disp_sub and disp_button:
+              <button onclick="displaymore(this,${idx_res})" id=${"btn_subinfo"+str(idx_res)} class="button buttoncent" style="float:right;">
+                <i class='fas fa-plus-circle'></i>
+              </button>
+              <% disp_button = False %>
+            % endif
+          </li>
+        % endif
+      % endfor
+
+      % if disp_sub:
+        <!--Case where sub infos are available but somehow main infos are not-->
+        % if disp_button:
+          <button onclick="displaymore(this,${idx_res})" id=${"btn_subinfo"+str(idx_res)} class="button buttoncent" style="float:right;">
+            <i class='fas fa-plus-circle'></i>
+          </button>
+        % endif
+        <div id=${"subinfo"+str(loop.index)} style="display:none;">
+          % for key_sub, val_sub in result['sysinfo']['sub'].items():
+            % if val_sub != "":
+              <li>
+                <b>${key_sub}</b>: ${val_sub}
+              </li>
+            % endif
+          %endfor
+        </div>
+      </ul>
+      % endif
+
     </td>
     <td class="buttons">
       <a href="${result['page']}">
@@ -72,6 +167,81 @@
 $(document).ready(function() {
     $('.summary').DataTable();
 } );
+
+$('table').each(function(a, tbl) {
+        var currentTableRows = $(tbl).find('tbody tr').length;
+        $(tbl).find('th').each(function(i) {
+            var remove = 0;
+            var currentTable = $(this).parents('table');
+            var tds = currentTable.find('tr td:nth-child(' + (i + 1) + ')');
+            tds.each(function(j) { if ($(this)[0].innerText.length == 0) remove++; });
+            if (remove == currentTableRows) {
+                $(this).hide();
+                tds.hide();
+            }
+        });
+    });
+
+function change(ll_item){
+  var td, i, fil;
+  var filter = new Array;
+  for (item = 0; item < ll_item.length; item++){
+    filter.push(document.getElementById("select"+ll_item[item].replace(/\s/g, "")).value.toUpperCase());
+  }
+  var table = document.getElementById("summary");
+  var tr = table.getElementsByTagName("tr");
+  for (i = 0; i < tr.length; i++) {
+    tr[i].style.display = "";
+    td = tr[i].getElementsByTagName("td")[2];
+    if (td){
+     for (fil = 0; fil < filter.length; fil++){
+       if (td.innerHTML.toUpperCase().indexOf(filter[fil]) > -1 && tr[i].style.display !== "none") {
+         tr[i].style.display = "";
+       }
+       else {
+         tr[i].style.display = "none";
+       }
+     }
+    }
+  }
+}
+
+function displaymore(id, loop_index) {
+  var x = document.getElementById("subinfo"+loop_index);
+  $(id).find('svg').toggleClass('fa-plus-circle fa-minus-circle');
+  if (x.style.display === 'none') {
+    x.style.display = "block";
+  }
+  else {
+    x.style.display = "none";
+  }
+}
+
+var openbtn = document.getElementById("open");
+var closebtn = document.getElementById("close");
+var closewithin = document.getElementById("closewithin");
+openbtn.style.display = 'none';
+
+function openSideNav() {
+    navbar = document.getElementById("sidenav")
+    navbar.style.width = "200px";
+    navbar.style.padding = "30px";
+    document.getElementById("main").style.marginLeft = "50px";
+	  openbtn.style.display = 'none';
+    closebtn.style.display = '';
+}
+
+openSideNav()
+
+function closeSideNav() {
+    navbar = document.getElementById("sidenav")
+    navbar.style.width = "0";
+    navbar.style.padding = "0";
+    document.getElementById("main").style.marginLeft = "0";
+	  openbtn.style.display = '';
+    closebtn.style.display = 'none';
+}
 </script>
+</div>
 </body>
 </html>

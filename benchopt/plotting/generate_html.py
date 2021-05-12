@@ -25,6 +25,20 @@ TEMPLATE_BENCHMARK = ROOT / "templates" / "benchmark.mako.html"
 TEMPLATE_RESULT = ROOT / "templates" / "result.mako.html"
 TEMPLATE_LOCAL_RESULT = ROOT / "templates" / "local_result.mako.html"
 
+SYS_INFO = {
+    "main": [('system-cpus', 'cpu'),
+             ('system-ram (GB)', 'ram (GB)'),
+             ("version-cuda", 'cuda')
+             ],
+    "sub": [('platform', 'platform'),
+            ('system-processor', 'processor'),
+            ('env-OMP_NUM_THREADS', 'nb threads')
+            ],
+    "ter": [("version-numpy", "numpy"),
+            ("version-scipy", "scipy")
+            ]
+}
+
 
 def generate_plot_benchmark(df, kinds, fname, fig_dir, benchmark_name):
     """Generate all possible plots for a given benchmark run.
@@ -69,6 +83,21 @@ def generate_plot_benchmark(df, kinds, fname, fig_dir, benchmark_name):
                 plot_func = globals()[PLOT_KINDS[k]]
                 try:
                     fig = plot_func(df_obj, plotly=True)
+                    if plot_func != "plot_histogram":
+                        if len(df_obj["solver_name"].unique()) < 10:
+                            fact_ = 10
+                        else:
+                            fact_ = 100
+                        height = 1000 + fact_ * len(objective_names)
+                        fig.update_layout(legend={"xanchor": "center",
+                                                  "yanchor": "top",
+                                                  "y": -.2,
+                                                  "x": .5
+                                                  },
+                                          autosize=False,
+                                          width=1000,
+                                          height=height
+                                          )
                 except TypeError:
                     fig = plot_func(df_obj)
                 figures[data_name][objective_name][k] = export_figure(
@@ -142,7 +171,7 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
 
         df = pd.read_csv(fname)
         datasets = list(df['data_name'].unique())
-
+        sysinfo = get_sysinfo(df)
         # Copy CSV if necessary and give a relative path for HTML page access
         if copy:
             fname_in_output = out_dir / f"{benchmark_name}_{fname.name}"
@@ -152,7 +181,7 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
 
         # Generate figures
         result = dict(
-            fname=fname, datasets=datasets,
+            fname=fname, datasets=datasets, sysinfo=sysinfo,
             **generate_plot_benchmark(
                 df, kinds, fname, fig_dir, benchmark_name
             )
@@ -168,19 +197,75 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
     return results
 
 
-def render_index(benchmark_names, static_dir):
+def get_sysinfo(df):
+    """Get a dictionnary of the recorded system informations.
+
+    System informations are sorted in 3 levels: main, sub and ter.
+        - Main : cpu - ram - cuda.
+            Displayed directly in the benchmark and result pages
+            and can be filtered on.
+        - Sub : platform - processor - number of threads.
+            Displayed on click in the benchmark and results pages.
+        - Ter : numpy - scipy.
+            Displayed on click in the result page.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        recorded data from the Benchmark
+
+    Returns
+    -------
+    sysinfo : dict
+        Contains the three-level sytem informations.
+    """
+
+    def get_val(df, key):
+        if key in df:
+            if key == 'platform':
+                return (
+                        df["platform"].unique()[0] +
+                        df["platform-release"].unique()[0] + "-" +
+                        df["platform-architecture"].unique()[0]
+                    )
+            else:
+                val = df[key].unique()[0]
+                if not pd.isnull(val):
+                    return val
+                return ''
+        else:
+            return ''
+    sysinfo = {
+        level: {name: get_val(df, key) for key, name in keys}
+        for level, keys in SYS_INFO.items()
+        }
+    return sysinfo
+
+
+def render_index(benchmark_names, static_dir, len_fnames):
     """Render a result index home page for all rendered benchmarks.
 
     Parameters
     ----------
     benchmark_names : list of str
         A list of all benchmark names that have been rendered.
+    len_fnames : list of int
+        A list of the number of files in each benchmark.
 
     Returns
     -------
     rendered : str
         A str with the HTML code for the index page.
     """
+
+    pretty_names = [name.replace("benchmark_", "").replace("_",
+                                                           " ").capitalize()
+                    for name in benchmark_names]
+    pretty_names, len_fnames, benchmark_names = map(
+        list, zip(*sorted(zip(pretty_names, len_fnames, benchmark_names),
+                          reverse=False))
+    )
+
     return Template(
         filename=str(TEMPLATE_INDEX), input_encoding="utf-8"
     ).render(
@@ -188,6 +273,8 @@ def render_index(benchmark_names, static_dir):
         nb_total_benchs=len(benchmark_names),
         max_rows=15, static_dir=static_dir,
         last_updated=datetime.now(),
+        pretty_names=pretty_names,
+        len_fnames=len_fnames
     )
 
 
@@ -210,6 +297,7 @@ def render_benchmark(results, benchmark_name, static_dir, home='index.html'):
     rendered : str
         A str with the HTML code for the benchmark page.
     """
+
     return Template(
         filename=str(TEMPLATE_BENCHMARK), input_encoding="utf-8"
     ).render(
@@ -391,14 +479,8 @@ def plot_benchmark_html_all(patterns=(), benchmarks=(), root=None,
     (root_html / OUTPUTS).mkdir(exist_ok=True, parents=True)
     static_dir = copy_static()
 
-    # Create an index that referes all benchmarks.
-    rendered = render_index([b.name for b in benchmarks], static_dir)
-    index_filename = DEFAULT_HTML_DIR / 'index.html'
-    print(f"Writing index to {index_filename}")
-    with open(index_filename, "w") as f:
-        f.write(rendered)
-
     # Loop over all benchmarks to
+    len_fnames = []
     for benchmark in benchmarks:
         print(f'Rendering benchmark: {benchmark}')
 
@@ -409,7 +491,7 @@ def plot_benchmark_html_all(patterns=(), benchmarks=(), root=None,
         results = get_results(
             fnames, PLOT_KINDS.keys(), root_html, benchmark.name, copy=True
         )
-
+        len_fnames.append(len(fnames))
         rendered = render_benchmark(
             results, benchmark.name, static_dir=static_dir
         )
@@ -427,6 +509,14 @@ def plot_benchmark_html_all(patterns=(), benchmarks=(), root=None,
             print(f"Writing results to {result_filename}")
             with open(result_filename, "w") as f:
                 f.write(html)
+
+    # Create an index that lists all benchmarks.
+    rendered = render_index([b.name for b in benchmarks], static_dir,
+                            len_fnames)
+    index_filename = DEFAULT_HTML_DIR / 'index.html'
+    print(f"Writing index to {index_filename}")
+    with open(index_filename, "w") as f:
+        f.write(rendered)
 
     # Display the file in the default browser
     if display:
