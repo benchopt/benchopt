@@ -13,6 +13,7 @@
   crossorigin="anonymous"></script>
 <script src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js"></script>
 <link href="https://cdn.datatables.net/1.10.22/css/jquery.dataTables.min.css" rel="stylesheet" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 </head>
 
@@ -23,7 +24,7 @@
   need_filter = False
 %>
 
-<div class="sidenav" id="sidenav" style="padding:0px; width:0px;">
+<div class="sidenav" id="sidenav" style="visibility: hidden; height:0; opacity: 0; transition: visibility 0s, opacity 0.5s linear;">
   % for key, val in ll_main.items():
   <label for=${'select'+str(key.replace(" ", ""))} style="font-size: 120%; padding: 8px; color: white;">
      ${key}
@@ -43,10 +44,6 @@
     % endfor
   </select>
   % endfor
-
-  <span id="closewithin" style="font-size:30px;cursor:pointer;text-align:center;color:white;" onclick="closeSideNav()">
-    <i class="fa fa-times-circle"></i> Close
-  </span>
 </div>
 
 <div class="main" id="main">
@@ -92,23 +89,30 @@
       </a>
     </td>
     <td class="datasets">
-
-      % for dataset in result['datasets']:
+    <ul style="list-style-type: none; margin-top: 0;">
+      % for idx, dataset in enumerate(result['datasets']):
       <div class=dataset>
         <%
-          split = dataset.split('[')
-          if len(split) > 1:
-            name_data, options = split
-            options = options[:-1]
-          else:
-            name_data, options = split[0], []
+        if idx == 0:
+          name_data_old = ""
+        split = dataset.split('[')
+        if len(split) > 1:
+          name_data_new, options = split
+          options = options[:-1]
+        else:
+          name_data_new, options = split[0], []
+        not_disp_name = name_data_new == name_data_old
         %>
-        ${name_data.capitalize()}
-        % if len(options) > 0:
-          </br> <span style="font-size: 80%;padding-left:15px;padding-bottom:15px;">${options} </span>
+        % if not not_disp_name:
+          ${name_data_new.capitalize()}
         % endif
+        % if len(options) > 0:
+          <li><span style="font-size: 80%;padding-left:15px;padding-bottom:5px;">${options} </span> </li>
+        % endif
+        <% name_data_old = name_data_new %>
       </div>
       % endfor
+    </ul>
 
     </td>
     <% disp_button = True %>
@@ -224,9 +228,17 @@ openbtn.style.display = 'none';
 
 function openSideNav() {
     navbar = document.getElementById("sidenav")
-    navbar.style.width = "10%";
-    navbar.style.padding = "1%";
-    document.getElementById("main").style.marginLeft = "12%";
+    navbar.style.visibility = "visible";
+    main = document.getElementById("main")
+    if ($(window).width() < 900) {
+      navbar.style.height = "auto";
+      main.style.marginLeft = "0";
+    }
+    else {
+      navbar.style.height = "1000px";
+      main.style.marginLeft = "150px";
+    }
+    navbar.style.opacity = "1";
 	  openbtn.style.display = 'none';
     closebtn.style.display = '';
 }
@@ -235,10 +247,14 @@ openSideNav()
 
 function closeSideNav() {
     navbar = document.getElementById("sidenav")
-    navbar.style.width = "0";
-    navbar.style.padding = "0";
-    document.getElementById("main").style.marginLeft = "0";
-	  openbtn.style.display = '';
+    main = document.getElementById("main")
+    navbar.style.visibility = "hidden";
+    navbar.style.opacity = "0";
+    navbar.style.height = "0";
+    if ($(window).width() > 900) {
+      main.style.marginLeft = "150px";
+    }
+    openbtn.style.display = '';
     closebtn.style.display = 'none';
 }
 </script>

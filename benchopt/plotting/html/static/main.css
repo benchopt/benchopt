@@ -256,34 +256,44 @@ td.number {
 }
 
 .sidenav {
-	height: 100%;
-	width: 10%;
-	position: fixed;
-	z-index: 1;
-	top: 0;
-	left: 0;
+  margin: 0;
+  padding: 1%;
+  top: 0;
+  left: 0;
+  width: 200px;
+  position: fixed;
+  height: 100%;
+  overflow: auto;
 	background-color: #2c3e50;
-	overflow-x: hidden;
   transition: 0.5s;
-	padding: 1%;
-  padding-top: 5%;
 }
 
-@media (min-width: 600px) {
-	.sidenav { padding: 1%;
-             padding-top: 5%;
-             width: 10%;}
-  }
-
-@media (min-width: 900px) {
-	.sidenav { padding: 1%;
-             padding-top: 5%;
-             width: 10%;}
-  }
-
 .main {
-	margin-left: 12%;
-  transition: 0.5s;
+  margin-left: 150px;
+  padding: 1px 16px;
+  height: 1000px;
+}
+
+@media screen and (max-width: 900px) {
+  .sidenav {
+    width: 100%;
+    height: auto;
+    position: relative;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .sidenav .myselect {float: none;
+                      width: auto;
+                      margin-bottom: 0;}
+  .sidenav label {float: left;}
+  div.main {margin-left: 0;}
+}
+
+@media screen and (max-width: 400px) {
+  .sidenav {
+    text-align: center;
+    float: none;
+  }
 }
 
 .sidenav .myselect {
