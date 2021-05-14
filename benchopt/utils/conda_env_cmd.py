@@ -111,7 +111,7 @@ def create_conda_env(env_name, recreate=False, with_pytest=False, empty=False):
         _run_shell_in_conda_env(
             f"{CONDA_CMD} config --env --add channels conda-forge\n"
             f"{CONDA_CMD} config --show channels",
-            env_name=env_name, capture_stdout=True, raise_on_error=True
+            env_name=env_name, capture_stdout=not DEBUG, raise_on_error=True
         )
         if empty:
             return
@@ -164,8 +164,10 @@ def install_in_conda_env(*packages, env_name=None, force=False):
         cmd = f"{CONDA_CMD} install -y {packages}"
         if force:
             cmd += ' --force-reinstall'
-        _run_shell_in_conda_env(cmd, env_name=env_name,
-                                raise_on_error=error_msg)
+        _run_shell_in_conda_env(
+            cmd, env_name=env_name, raise_on_error=error_msg,
+            capture_stdout=not DEBUG
+        )
     if pip_packages:
         packages = ' '.join(pip_packages)
         cmd = f"pip install {packages}"
