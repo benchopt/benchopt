@@ -46,8 +46,12 @@
   % endfor
 </div>
 
+% if need_filter:
 <div class="main" id="main">
-<a id="top"></a>
+% else:
+<div class="main" id="main" style="margin-left: 0;">
+% endif
+  <a id="top"></a>
 <h1>
   <a href="${home}"><button class="btn"><i class="fa fa-home"></i></button></a>
   BenchOpt results: ${benchmark.replace('benchmark_', '').replace('_', " ")}
@@ -252,7 +256,7 @@ function closeSideNav() {
     navbar.style.opacity = "0";
     navbar.style.height = "0";
     if ($(window).width() > 900) {
-      main.style.marginLeft = "150px";
+      main.style.marginLeft = "0px";
     }
     openbtn.style.display = '';
     closebtn.style.display = 'none';
