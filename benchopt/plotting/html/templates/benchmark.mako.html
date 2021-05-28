@@ -24,7 +24,7 @@
   need_filter = False
 %>
 
-<div class="sidenav" id="sidenav" style="visibility: hidden; height:0; opacity: 0; transition: visibility 0s, opacity 0.5s linear; z-index: 10;">
+<div class="sidenav" id="sidenav" style="visibility: hidden; height:0; opacity: 0; transition: visibility 0s, opacity 0.5s linear; z-index: 100;">
   <a href="javascript:void(0)" class="closebtn" onclick="closeSideNav()">&times;</a>
   <div class="menu">
     % for key, val in ll_main.items():
@@ -172,7 +172,7 @@
 </tbody>
 </table>
 
-<a class="backtotop" title="Back to top" href="#top"><i class="fas fa-level-up-alt"></i></a>
+<a class="backtotop" title="Back to top" href="#top" style="z-index: 50;"><i class="fas fa-level-up-alt"></i></a>
 
 <script type="text/javascript">
 $(document).ready(function() {
