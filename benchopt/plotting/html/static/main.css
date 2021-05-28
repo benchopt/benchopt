@@ -268,6 +268,10 @@ td.number {
   transition: 0.5s;
 }
 
+.sidenav .closebtn{
+  display: none;
+}
+
 .main {
   margin-left: 200px;
   padding: 1px 16px;
@@ -275,18 +279,45 @@ td.number {
 }
 
 @media screen and (max-width: 900px) {
-  .sidenav {
-    width: 100%;
-    height: auto;
-    position: relative;
-    margin-left: auto;
-    margin-right: auto;
-  }
   .sidenav .myselect {float: none;
-                      width: auto;
-                      margin-bottom: 0;}
-  .sidenav label {float: left;}
+                      width: 75vw;
+                      text-align: center;
+                      margin-bottom: 15px;}
+  .sidenav {
+    height: 0%;
+    width: 100%;
+    position: fixed;
+    z-index: 1;
+    top: 0;
+    left: 0;
+    background-color: rgb(0,0,0);
+    background-color: rgba(0,0,0, 0.9);
+    overflow-y: hidden;
+    transition: 0.5s;
+  }
+
+  .sidenav .closebtn {
+    position: absolute;
+    font-size: 40px;
+    display: block;
+    }
+
+
   div.main {margin-left: 0;}
+  .menu {
+    position: relative;
+    margin: auto;
+    text-align: center;
+    margin-top: 30px;
+    margin-left: 12.5vw;
+    display: block;
+    width: 75vw;
+  }
+
+  .menu label{
+    font-size: 200%;
+    float: left;
+  }
 }
 
 @media screen and (max-width: 400px) {
