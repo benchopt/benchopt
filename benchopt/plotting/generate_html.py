@@ -231,7 +231,7 @@ def get_sysinfo(df):
             else:
                 val = df[key].unique()[0]
                 if not pd.isnull(val):
-                    return val
+                    return str(val)
                 return ''
         else:
             return ''
@@ -356,13 +356,13 @@ def copy_static(root_html=None):
 
 
 def _fetch_cached_run_list(new_results, benchmark_html):
-
     # Load/update and dump a cache of the previous new_results to maintain
     # an up to date list of runs.
     benchmark_html_cache = benchmark_html / 'cache_run_list.json'
     new_results = {
         str(r['fname']): {
             'fname': str(r['fname']), 'fname_short': str(r['fname_short']),
+            'sysinfo': r['sysinfo'],
             'page': str(r['page']), 'datasets': r['datasets']
         } for r in new_results
     }
