@@ -160,18 +160,17 @@ def install_in_conda_env(*packages, env_name=None, force=False):
                  "Error:{output}")
     if conda_packages:
         packages = ' '.join(conda_packages)
-        cmd = f"{CONDA_CMD} install -y {packages}"
-        if force:
-            cmd += ' --force-reinstall'
-        _run_shell_in_conda_env(cmd, env_name=env_name,
-                                raise_on_error=error_msg)
+        cmd = f"{CONDA_CMD} install --update-all -y {packages}"
+
     if pip_packages:
         packages = ' '.join(pip_packages)
         cmd = f"pip install {packages}"
-        if force:
-            cmd += ' --force-reinstall'
-        _run_shell_in_conda_env(cmd, env_name=env_name,
-                                raise_on_error=error_msg)
+
+    if force:
+        cmd += ' --force-reinstall'
+
+    _run_shell_in_conda_env(cmd, env_name=env_name,
+                            raise_on_error=error_msg)
 
 
 def shell_install_in_conda_env(script, env_name=None):
