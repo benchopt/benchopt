@@ -59,7 +59,8 @@ class CaptureRunOutput(object):
                 stem = path_.stem
                 html_files = dir_.glob('*' + stem + '*.html')
                 for html_file in html_files:
-                    html_file.unlink(missing_ok=True)  # remove html files
+                    if html_file.exists():
+                        html_file.unlink()  # remove html files
 
         # If there was an exception, display the output
         if exc_class is not None:
