@@ -33,13 +33,13 @@ main = click.Group(
 @click.option('--solver', '-s', 'solver_names',
               metavar="<solver_name>", multiple=True, type=str,
               help="Include <solver_name> in the benchmark. By default, all "
-              "solvers are included. When `-s` is used, only listed estimators"
+              "solvers are included. When `-s` is used, only listed solvers"
               " are included. To include multiple solvers, "
               "use multiple `-s` options.", autocompletion=get_solvers)
 @click.option('--force-solver', '-f', 'forced_solvers',
               metavar="<solver_name>", multiple=True, type=str,
               help="Force the re-run for <solver_name>. This "
-              "avoids caching effect when adding an estimator."
+              "avoids caching effect when adding a solver."
               "To select multiple solvers, use multiple `-f` options.",
               autocompletion=get_solvers)
 @click.option('--dataset', '-d', 'dataset_names',
@@ -51,17 +51,17 @@ main = click.Group(
               autocompletion=get_datasets)
 @click.option('--max-runs', '-n',
               metavar="<int>", default=100, show_default=True, type=int,
-              help='Maximal number of run for each solver. This corresponds '
+              help='Maximal number of runs for each solver. This corresponds '
               'to the number of points in the time/accuracy curve.')
 @click.option('--n-repetitions', '-r',
               metavar='<int>', default=5, type=int,
-              help='Number of repetition that are averaged to estimate the '
+              help='Number of repetitions that are averaged to estimate the '
               'runtime.')
 @click.option('--timeout',
               metavar="<int>", default=100, show_default=True, type=int,
               help='Timeout a solver when run for more than <timeout> seconds')
 @click.option('--plot/--no-plot', default=True,
-              help="Wether or not to plot the results. Default is True.")
+              help="Whether or not to plot the results. Default is True.")
 @click.option('--pdb',
               is_flag=True,
               help="Launch a debugger if there is an error. This will launch "
@@ -125,7 +125,7 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
     if env_name not in all_conda_envs:
         raise RuntimeError(
             f"The default env '{env_name}' for benchmark {benchmark.name} "
-            f"does not exists. Make sure to run {install_cmd} to create the "
+            f"does not exist. Make sure to run {install_cmd} to create the "
             "benchmark and install the dependencies."
         )
 
