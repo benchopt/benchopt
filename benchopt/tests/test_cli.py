@@ -67,7 +67,7 @@ class TestRunCmd:
         with CaptureRunOutput() as out:
             run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,
                  '-f', SELECT_ONE_PGD, '-n', '1', '-r', '1', '-p', '0.1',
-                 '--no-plot'], 'benchopt', standalone_mode=False)
+                 ], 'benchopt', standalone_mode=False)
 
         out.check_output('Simulated', repetition=1)
         out.check_output('Dummy Sparse Regression', repetition=1)
