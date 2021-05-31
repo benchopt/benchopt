@@ -53,7 +53,13 @@ class CaptureRunOutput(object):
         )
         if len(self.result_files) >= 1:
             for result_file in self.result_files:
-                Path(result_file).unlink()
+                path_ = Path(result_file)
+                path_.unlink()  # remove csv file
+                dir_ = path_.parents[0]
+                stem = path_.stem
+                html_files = dir_.glob('*' + stem + '*.html')
+                for html_file in html_files:
+                    html_file.unlink(missing_ok=True)  # remove html files
 
         # If there was an exception, display the output
         if exc_class is not None:
