@@ -2,20 +2,62 @@
 <head>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📈</text></svg>">
 <link href="${static_dir}/main.css" rel="stylesheet" />
+<link href="${static_dir}/hover_index.css" rel="stylesheet" />
+
 <script defer src="https://use.fontawesome.com/releases/v5.0.10/js/all.js" integrity="sha384-slN8GvtUJGnv6ca26v8EzVaR9DC58QEwsIk9q1QXdCU8Yu8ck/tL/5szYlBbqmS+" crossorigin="anonymous"></script>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.css" rel="stylesheet" />
 <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script
+  src="https://code.jquery.com/jquery-3.5.1.min.js"
+  integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0="
+  crossorigin="anonymous"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 </head>
 <body>
+
 <a id="top"></a>
 <a href="${home}"><button class="btn"><i class="fa fa-home"></i></button></a>
 <a href="${benchmark}.html"><button class="btn"><i class="fa fa-arrow-left"></i> ${benchmark}</button></a>
-<h1>Result on ${benchmark} benchmark</h1>
 
+<h1>Result on ${benchmark} benchmark</h1>
+<summary></summary>
 <p><a href="${result['fname']}">
 	<button class="btn"><i class="fa fa-download"></i> ${result["fname_short"]}</button>
 </a></p>
+
+<!--Display all system informations if you want to-->
+% if any([val != "" for _, val in result['sysinfo']['sub'].items()]):
+<p>System informations:
+  % for name, val in result['sysinfo']['main'].items():
+    % if val != "":
+      <b>${name}</b>: ${val}
+    % endif
+  % endfor
+    <button id="btn_subinfo" class="button buttonleft toggle">
+      <i class='fas fa-plus-circle' id="logo_btn_info"></i>
+    </button>
+    <div id="subinfo" style="display:none;transition: 0.5s;">
+      <ul>
+        % for key_sub, val_sub in result['sysinfo']['sub'].items():
+          % if val_sub != "":
+            <li> <b>${key_sub}</b>: ${val_sub} </li>
+          % endif
+        %endfor
+        % for key_ter, val_ter in result['sysinfo']['ter'].items():
+          % if val_ter != "":
+            <%
+                val = val_ter.split()
+                val = [''.join(l for l in item if l.isalnum() or l in [".", "_", '=']) for item in val]
+                val = " ".join(val)
+            %>
+            <li> <b>${key_ter}</b>: ${val} </li>
+          % endif
+        %endfor
+      </ul>
+    </div>
+  </p>
+  %endif
 
 
 <!-- Add selector to display only one plot -->
@@ -45,12 +87,12 @@
     % for kind in result['kinds']:
     <div class="${kind}">
       <%
-          fig = result['figures'][data][obj][kind]
+      fig = result['figures'][data][obj][kind]
       %>
       % if fig.endswith('.svg'):
-        <img src="${fig}"><br/>
+      <img src="${fig}"><br/>
       % else:
-        ${fig}
+      ${fig}
       %endif
     </div>
     %endfor
@@ -75,12 +117,24 @@
 			all_obj[j].style.display = "block";
   }
 
+  $('.toggle').click(function() {
+    $(this).find('svg').toggleClass('fa-plus-circle fa-minus-circle');
+    var x = document.getElementById("subinfo")
+    if (x.style.display === 'none') {
+      x.style.display = "block";
+    }
+    else {
+      x.style.display = "none";
+    }
+  });
+
   var obj = document.getElementById('dataset_selector');
   obj.onchange();
   var obj = document.getElementById('objective_selector');
   obj.onchange();
   var obj = document.getElementById('plot_kind');
   obj.onchange();
+
 </script>
 </body>
 </html>

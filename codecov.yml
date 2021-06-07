@@ -12,3 +12,7 @@ coverage:
 comment:
   layout: "header, diff, sunburst, uncovered"
   behavior: default
+
+codecov:
+  token: 95b22ec3-0937-463e-8fd6-c61a27ba5811
+
