@@ -24,26 +24,29 @@
   need_filter = False
 %>
 
-<div class="sidenav" id="sidenav" style="visibility: hidden; height:0; opacity: 0; transition: visibility 0s, opacity 0.5s linear;">
-  % for key, val in ll_main.items():
-  <label for=${'select'+str(key.replace(" ", ""))} style="font-size: 120%; padding: 8px; color: white;">
-     ${key}
-  </label>
-  <select class="myselect" id=${'select'+str(key.replace(" ", ""))} onchange="change(${list(ll_main.keys())})">
-    <option value=""> Any </option>
-    % for result in results:
-    <%
-      current_item = result['sysinfo']['main'][key]
-    %>
-      % if current_item != "":
+<div class="sidenav" id="sidenav" style="visibility: hidden; height:0; opacity: 0; transition: visibility 0s, opacity 0.5s linear; z-index: 100;">
+  <a href="javascript:void(0)" class="closebtn" onclick="closeSideNav()">&times;</a>
+  <div class="menu">
+    % for key, val in ll_main.items():
+    <label for=${'select'+str(key.replace(" ", ""))} style="padding: 8px; color: white;">
+       ${key}
+    </label>
+    <select class="myselect" id=${'select'+str(key.replace(" ", ""))} onchange="change(${list(ll_main.keys())})">
+      <option value=""> Any </option>
+      % for result in results:
       <%
-        need_filter = True
+        current_item = result['sysinfo']['main'][key]
       %>
-        <option value="<b>${key}</b>: ${current_item}"> ${current_item} </option>
-      % endif
+        % if current_item != "":
+        <%
+          need_filter = True
+        %>
+          <option value="<b>${key}</b>: ${current_item}"> ${current_item} </option>
+        % endif
+      % endfor
+    </select>
     % endfor
-  </select>
-  % endfor
+  </div>
 </div>
 
 % if need_filter:
@@ -169,7 +172,7 @@
 </tbody>
 </table>
 
-<a class="backtotop" title="Back to top" href="#top"><i class="fas fa-level-up-alt"></i></a>
+<a class="backtotop" title="Back to top" href="#top" style="z-index: 50;"><i class="fas fa-level-up-alt"></i></a>
 
 <script type="text/javascript">
 $(document).ready(function() {
@@ -227,7 +230,6 @@ function displaymore(id, loop_index) {
 
 var openbtn = document.getElementById("open");
 var closebtn = document.getElementById("close");
-var closewithin = document.getElementById("closewithin");
 openbtn.style.display = 'none';
 
 function openSideNav() {
@@ -235,7 +237,7 @@ function openSideNav() {
     navbar.style.visibility = "visible";
     main = document.getElementById("main")
     if ($(window).width() < 900) {
-      navbar.style.height = "auto";
+      navbar.style.height = "100%";
       main.style.marginLeft = "0";
     }
     else {
@@ -247,7 +249,12 @@ function openSideNav() {
     closebtn.style.display = '';
 }
 
-openSideNav()
+if ($(window).width() > 900){
+  openSideNav()
+}
+else {
+  closeSideNav()
+}
 
 function closeSideNav() {
     navbar = document.getElementById("sidenav")
