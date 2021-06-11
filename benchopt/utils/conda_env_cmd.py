@@ -113,11 +113,6 @@ def create_conda_env(env_name, recreate=False, with_pytest=False, empty=False):
             f"{CONDA_CMD} env create {force} -n {env_name} -f {env_yaml.name}",
             capture_stdout=True, raise_on_error=True
         )
-        _run_shell_in_conda_env(
-            f"{CONDA_CMD} config --env --add channels conda-forge\n"
-            f"{CONDA_CMD} config --show channels",
-            env_name=env_name, capture_stdout=not DEBUG, raise_on_error=True
-        )
         if empty:
             return
         # Check that the correct version of benchopt is installed in the env
