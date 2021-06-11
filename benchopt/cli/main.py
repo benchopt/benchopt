@@ -267,16 +267,18 @@ def install(benchmark, solver_names, dataset_names, force=False,
             forced_datasets = benchmark.list_benchmark_dataset_names()
 
     # install required datasets
-    print("# Datasets", flush=True)
-    benchmark.install_required_datasets(
-        dataset_names, forced_datasets=forced_datasets, env_name=env_name
+    print("# Install", flush=True)
+    benchmark.install_all_requirements(
+        all_include_patterns=(solver_names, dataset_names),
+        all_force_patterns=(forced_solvers, forced_datasets),
+        env_name=env_name
     )
 
-    # install required solvers
-    print("# Solvers", flush=True)
-    benchmark.install_required_solvers(
-        solver_names, forced_solvers=forced_solvers, env_name=env_name
-    )
+    # # install required solvers
+    # print("# Solvers", flush=True)
+    # benchmark.install_required_solvers(
+    #     , forced_solvers=forced_solvers, env_name=env_name
+    # )
 
 
 @main.command(

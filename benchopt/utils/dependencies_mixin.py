@@ -116,6 +116,44 @@ class DependenciesMixin:
         return is_installed
 
     @classmethod
+    def collect(cls, env_name=None, force=False):
+        """Collect info for global installation of all classes in an env.
+
+        Parameters
+        ----------
+        env_name: str or None
+            Name of the conda env where the class should be installed. If
+            None, tries to install it in the current environment.
+        force : boolean (default: False)
+            If set to True, forces reinstallation when using conda.
+
+        Returns
+        -------
+        requirements: list of str
+            List of all requirements for this class.
+        install_shell_scrip: str
+            Name of the install script to run.
+        post_install_hook: callable or None
+            Post install hook if one need to be run.
+        """
+        is_installed = cls.is_installed(env_name=env_name)
+
+        requirements, install_script = [], []
+        if force or not is_installed:
+            cls._pre_install_hook(env_name=env_name)
+            if cls.install_cmd == 'conda':
+                requirements = cls.requirements
+            elif cls.install_cmd == 'shell':
+                install_script = (
+                    cls._module_filename.parents[1] / 'install_scripts' /
+                    cls.install_script
+                )
+        return (
+            requirements, install_script,
+            [cls._post_install_hook] if requirements or install_script else []
+        )
+
+    @classmethod
     def _pre_install_hook(cls, env_name=None):
         """Hook called before installing dependencies with conda or pip."""
         pass
