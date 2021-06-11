@@ -117,17 +117,17 @@ class Benchmark:
         "Get the location for the config file of the benchmark."
         return self.benchmark_dir / 'config.ini'
 
-    def get_xfail_file(self):
-        """Get the location for the xfail file for the benchmark.
+    def get_test_config_file(self):
+        """Get the location for the test config file for the benchmark.
 
-        This file will be used to check if a test should be xfailed on specific
-        solvers and platforms when we have installation or running issues.
-        Returns None if this file does not exists.
+        This file will be used to check if a test should be xfailed/skipped on
+        specific solvers and platforms when we have installation or running
+        issues. Returns None if this file does not exists.
         """
-        xfail_file = self.benchmark_dir / 'xfail.py'
-        if not xfail_file.exists():
+        test_config_file = self.benchmark_dir / 'test_config.py'
+        if not test_config_file.exists():
             return None
-        return xfail_file
+        return test_config_file
 
     def get_output_folder(self):
         """Get the folder to store the output of the benchmark.

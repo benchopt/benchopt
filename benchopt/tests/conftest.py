@@ -87,21 +87,21 @@ def pytest_generate_tests(metafunc):
 
 
 @pytest.fixture
-def xfail_check(request):
+def check_test(request):
 
     if 'benchmark' not in request.fixturenames:
         raise ValueError(
-            '`xfail_check` fixture should only be used in tests parametrized '
+            '`check_test` fixture should only be used in tests parametrized '
             'with `benchmark` fixture'
         )
 
     benchmark = request.getfixturevalue('benchmark')
-    xfail_file = benchmark.get_xfail_file()
-    if xfail_file is None:
+    test_config_file = benchmark.get_test_config_file()
+    if test_config_file is None:
         return None
-    xfail_module = _get_module_from_file(xfail_file)
-    xfail_func_name = f"xfail_{request.function.__name__}"
-    return getattr(xfail_module, xfail_func_name, None)
+    test_config_module = _get_module_from_file(test_config_file)
+    check_func_name = f"check_{request.function.__name__}"
+    return getattr(test_config_module, check_func_name, None)
 
 
 @pytest.fixture(scope='session')
