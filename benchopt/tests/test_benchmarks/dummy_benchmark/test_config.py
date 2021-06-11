@@ -3,7 +3,7 @@ import sys
 import pytest
 
 
-def xfail_test_solver_install(solver_class):
+def check_test_solver_install(solver_class):
 
     if solver_class.name.lower() == 'cyanure' and sys.platform == 'darwin':
         pytest.xfail('Cyanure is not easy to install on macos.')

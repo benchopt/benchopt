@@ -116,10 +116,10 @@ def test_solver_install_api(benchmark, solver_class):
 
 
 @pytest.mark.requires_install
-def test_solver_install(test_env_name, benchmark, solver_class, xfail_check):
+def test_solver_install(test_env_name, benchmark, solver_class, check_test):
 
-    if xfail_check is not None:
-        xfail_check(solver_class)
+    if check_test is not None:
+        check_test(solver_class)
 
     # assert that install works when forced to reinstalls
     solver_class.install(env_name=test_env_name)
