@@ -22,6 +22,7 @@ channels:
   - conda-forge
   - nodefaults
 dependencies:
+  - python=3.8
   - numpy
   - cython
   - compilers
@@ -58,12 +59,14 @@ def create_conda_env(env_name, recreate=False, with_pytest=False, empty=False):
     # Get a list of all conda envs
     _, existing_conda_envs = list_conda_envs()
 
-    if DEBUG:
-        print("Existing conda envs are: ", existing_conda_envs)
-
     if env_name in existing_conda_envs and not recreate:
+        print(
+            f"Conda env {env_name} already exists. Checking setup ...",
+            end='', flush=True
+        )
         benchopt_version = get_benchopt_version_in_env(env_name)
         if benchopt_version is None:
+            print()
             raise RuntimeError(
                 f"`benchopt` is not installed in existing env '{env_name}'. "
                 "This can lead to unexpected behavior. You can correct this "
@@ -71,6 +74,7 @@ def create_conda_env(env_name, recreate=False, with_pytest=False, empty=False):
                 f"in conda env {env_name}."
             )
         if benchopt.__version__ != benchopt_version:
+            print()
             warnings.warn(
                 f"The local version of benchopt ({benchopt.__version__}) and "
                 f"the one in conda env ({benchopt_version}) are different. "
@@ -78,6 +82,7 @@ def create_conda_env(env_name, recreate=False, with_pytest=False, empty=False):
                 "by either using the --recreate option or fixing the version "
                 f"of benchopt in conda env {env_name}."
             )
+        print('done')
         return
 
     force = "--force" if recreate else ""
@@ -159,16 +164,18 @@ def install_in_conda_env(*packages, env_name=None, force=False):
     error_msg = ("Failed to conda install packages "
                  f"{packages if len(packages) > 1 else packages[0]}\n"
                  "Error:{output}")
+    cmd = []
     if conda_packages:
         packages = ' '.join(conda_packages)
-        cmd = f"{CONDA_CMD} install --update-all -y {packages}"
- 
+        cmd.append(f"{CONDA_CMD} install --update-all -y {packages}")
+
     if pip_packages:
         packages = ' '.join(pip_packages)
-        cmd = f"pip install {packages}"
+        cmd.append(f"pip install {packages}")
 
     if force:
-        cmd += ' --force-reinstall'
+        cmd = [c + ' --force-reinstall' for c in cmd]
+    cmd = '\n'.join(cmd)
 
     _run_shell_in_conda_env(
         cmd, env_name=env_name, raise_on_error=error_msg,
