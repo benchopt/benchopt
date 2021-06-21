@@ -152,6 +152,8 @@ def delete_conda_env(env_name):
 
 def install_in_conda_env(*packages, env_name=None, force=False):
     """Install the packages with conda in the given environment"""
+    if len(packages) == 0:
+        return
 
     pip_packages = [pkg[4:] for pkg in packages if pkg.startswith('pip:')]
     conda_packages = [pkg for pkg in packages if not pkg.startswith('pip:')]

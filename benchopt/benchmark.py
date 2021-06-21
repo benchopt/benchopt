@@ -212,14 +212,13 @@ class Benchmark:
                 UserWarning
             )
 
-    def install_all_requirements(
-            self, all_include_patterns, all_force_patterns, env_name=None
-    ):
+    def install_all_requirements(self, all_include_patterns,
+                                 all_force_patterns, env_name=None):
         "Install all classes that are required for the run."
         # Merge force install and install patterns.
 
         # Collect all classes matching one of the patterns
-        print("# Collecting packages...")
+        print("Collecting packages:")
         reqs, force_reqs, shell_scripts, post_install_hooks = [], [], [], []
         check_installs = []
         for list_classes, include_patterns, force_patterns in zip(
@@ -248,10 +247,19 @@ class Benchmark:
                             force_reqs += class_reqs
                         else:
                             reqs += class_reqs
-                        check_installs += [klass]
+                        if len(shell_scripts) > 0 or len(class_reqs) > 0:
+                            check_installs += [klass]
                         break
-        print('done')
+        print('... done')
 
+        list_install = '\n'.join([
+            f"- {klass.name}" for klass in check_installs
+        ])
+        if len(list_install) == 0:
+            print("All required solvers are already installed.")
+            return
+        print(f"Installing required packages for:\n{list_install}\n...",
+              end='', flush=True)
         if force_reqs:
             install_in_conda_env(
                 *list(set(reqs+force_reqs)), env_name=env_name, force=True
@@ -262,7 +270,9 @@ class Benchmark:
             shell_install_in_conda_env(install_script, env_name=env_name)
         for hooks in post_install_hooks:
             hooks(env_name=env_name)
+        print(' done')
 
+        print('- Checking installed packages...', end='', flush=True)
         success = True
         for klass in check_installs:
             success |= klass.is_installed(env_name=env_name)
@@ -276,6 +286,7 @@ class Benchmark:
                 " stop at any installation failure and print the traceback.",
                 UserWarning
             )
+        print(' done')
 
     def install_required_solvers(self, solver_names, forced_solvers=None,
                                  env_name=None):

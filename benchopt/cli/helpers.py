@@ -1,7 +1,7 @@
 import click
 import pprint
 from pathlib import Path
-from collections import Iterable
+from collections.abc import Iterable
 
 from benchopt.config import set_setting
 from benchopt.config import get_setting

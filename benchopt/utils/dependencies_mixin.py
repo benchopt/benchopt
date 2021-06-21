@@ -110,8 +110,7 @@ class DependenciesMixin:
             else:
                 print(" failed")
         else:
-            print(f"- '{cls.name}' already available{env_suffix}",
-                  flush=True)
+            print(f"- '{cls.name}' already available{env_suffix}")
 
         return is_installed
 
@@ -148,6 +147,10 @@ class DependenciesMixin:
                     cls._module_filename.parents[1] / 'install_scripts' /
                     cls.install_script
                 )
+        else:
+            env_suffix = f" in '{env_name}'" if env_name else ''
+            print(f"- '{cls.name}' already available{env_suffix}")
+
         return (
             requirements, install_script,
             [cls._post_install_hook] if requirements or install_script else []
