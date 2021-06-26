@@ -212,46 +212,49 @@ class Benchmark:
                 UserWarning
             )
 
-    def install_all_requirements(self, all_include_patterns,
-                                 all_force_patterns, env_name=None):
-        "Install all classes that are required for the run."
-        # Merge force install and install patterns.
+    def install_all_requirements(self, include_solvers, include_datasets,
+                                 force=False, env_name=None):
+        """Install all classes that are required for the run.
 
+        Parameters
+        ----------
+        include_solvers : list of str
+            patterns to select solvers to install.
+        include_datasets : list of str
+            patterns to select datasets to install.
+        force : bool
+            If set to True, force the reinstallation of all selected solvers'
+            requirements.
+        env_name : str or None
+            Install the benchmark requirements in the conda environment
+            named <env_name>. If None, install in the current environment.
+        """
         # Collect all classes matching one of the patterns
         print("Collecting packages:")
         reqs, force_reqs, shell_scripts, post_install_hooks = [], [], [], []
         check_installs = []
-        for list_classes, include_patterns, force_patterns in zip(
-                [self.list_benchmark_solvers, self.list_benchmark_datasets],
-                all_include_patterns, all_force_patterns
-        ):
+        for list_classes, include_patterns in [
+                (self.list_benchmark_solvers, include_solvers)
+                (self.list_benchmark_datasets, include_datasets)
+        ]:
             classes = list_classes()
-            include_patterns = _check_name_lists(
-                include_patterns, force_patterns
-            )
+            include_patterns = _check_name_lists(include_patterns)
             for klass in classes:
                 for klass_parameters in product_param(klass.parameters):
                     name = klass._get_parametrized_name(**klass_parameters)
                     if is_matched(name, include_patterns):
-                        force = (
-                            force_patterns is not None
-                            and len(force_patterns) > 0
-                            and is_matched(name, force_patterns)
-                        )
                         class_reqs, scripts, hooks = (
                             klass.collect(env_name=env_name, force=force)
                         )
                         shell_scripts += scripts
                         post_install_hooks += hooks
-                        if force:
-                            force_reqs += class_reqs
-                        else:
-                            reqs += class_reqs
-                        if len(shell_scripts) > 0 or len(class_reqs) > 0:
+                        reqs += class_reqs
+                        if len(scripts) > 0 or len(class_reqs) > 0:
                             check_installs += [klass]
                         break
         print('... done')
 
+        # Install the collected requirements
         list_install = '\n'.join([
             f"- {klass.name}" for klass in check_installs
         ])
@@ -260,18 +263,16 @@ class Benchmark:
             return
         print(f"Installing required packages for:\n{list_install}\n...",
               end='', flush=True)
-        if force_reqs:
-            install_in_conda_env(
-                *list(set(reqs+force_reqs)), env_name=env_name, force=True
-            )
-        else:
-            install_in_conda_env(*list(set(reqs)), env_name=env_name)
+        install_in_conda_env(
+            *list(set(reqs+force_reqs)), env_name=env_name, force=force
+        )
         for install_script in shell_scripts:
             shell_install_in_conda_env(install_script, env_name=env_name)
         for hooks in post_install_hooks:
             hooks(env_name=env_name)
         print(' done')
 
+        # Check install for all classes that needed extra requirements
         print('- Checking installed packages...', end='', flush=True)
         success = True
         for klass in check_installs:
