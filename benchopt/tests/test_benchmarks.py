@@ -141,7 +141,7 @@ def test_solver(benchmark, solver_class):
     objective_class = benchmark.get_benchmark_objective()
     objective = objective_class.get_instance()
 
-    datasets = benchmark.list_benchmark_datasets()
+    datasets = benchmark.datasets
     simulated_dataset = [d for d in datasets if d.name.lower() == 'simulated']
 
     assert len(simulated_dataset) == 1, (

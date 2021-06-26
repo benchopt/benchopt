@@ -60,16 +60,16 @@ def pytest_generate_tests(metafunc):
     PARAMETRIZATION = {
         ('benchmark', 'dataset_simu'): lambda benchmarks: [
             (benchmark, dataset_class) for benchmark in benchmarks
-            for dataset_class in benchmark.list_benchmark_datasets()
+            for dataset_class in benchmark.datasets
             if dataset_class.name.lower() == 'simulated'
         ],
         ('benchmark', 'dataset_class'): lambda benchmarks: [
             (benchmark, dataset_class) for benchmark in benchmarks
-            for dataset_class in benchmark.list_benchmark_datasets()
+            for dataset_class in benchmark.datasets
         ],
         ('benchmark', 'solver_class'): lambda benchmarks: [
             (benchmark, solver) for benchmark in benchmarks
-            for solver in benchmark.list_benchmark_solvers()
+            for solver in benchmark.solvers
         ]
     }
 

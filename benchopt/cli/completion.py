@@ -58,8 +58,7 @@ def get_solvers(ctx, args, incomplete):
     benchmark = find_benchmark_in_args(args)
     if benchmark is None:
         return [("", 'Benchmark has not been provided before')]
-    solvers = benchmark.list_benchmark_solver_names()
-    solvers = [s.lower() for s in solvers]
+    solvers = [s.lower() for s in benchmark.solver_names]
     return propose_from_list(solvers, incomplete.lower())
 
 
@@ -69,8 +68,7 @@ def get_datasets(ctx, args, incomplete):
     benchmark = find_benchmark_in_args(args)
     if benchmark is None:
         return [("", 'Benchmark has not been provided before')]
-    datasets = benchmark.list_benchmark_dataset_names()
-    datasets = [d.lower() for d in datasets]
+    datasets = [d.lower() for d in benchmark.dataset_names]
     return propose_from_list(datasets, incomplete.lower())
 
 

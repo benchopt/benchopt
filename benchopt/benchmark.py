@@ -96,19 +96,23 @@ class Benchmark:
         classes.sort(key=lambda c: c.name.lower())
         return classes
 
-    def list_benchmark_solvers(self):
+    @property
+    def solvers(self):
         "List all available solver classes for the benchmark."
         return self._list_benchmark_classes(BaseSolver)
 
-    def list_benchmark_solver_names(self):
+    @property
+    def solver_names(self):
         "List all available solver names for the benchmark."
         return [s.name for s in self._list_benchmark_classes(BaseSolver)]
 
-    def list_benchmark_datasets(self):
+    @property
+    def datasets(self):
         "List all available dataset classes for the benchmark."
         return self._list_benchmark_classes(BaseDataset)
 
-    def list_benchmark_dataset_names(self):
+    @property
+    def dataset_names(self):
         "List all available dataset names for the benchmark."
         return [d.name for d in self._list_benchmark_classes(BaseDataset)]
 
@@ -181,39 +185,8 @@ class Benchmark:
 
         return result_filename
 
-    def _install_required_classes(self, classes, include_patterns,
-                                  force_patterns=None, env_name=None):
-        "Install all classes that are required for the run."
-        # Merge force install and install patterns.
-        include_patterns = _check_name_lists(include_patterns, force_patterns)
-
-        # Try to install all classes matching one of the patterns
-        success = True
-        for klass in classes:
-            for klass_parameters in product_param(klass.parameters):
-                name = klass._get_parametrized_name(**klass_parameters)
-                if is_matched(name, include_patterns):
-                    force = (
-                        force_patterns is not None and len(force_patterns) > 0
-                        and is_matched(name, force_patterns)
-                    )
-                    success &= klass.install(env_name=env_name, force=force)
-                    # Once a class has been installed, there is no need to
-                    # check for other parameterization.
-                    break
-
-        # If one failed, raise a warning to explain how to see the install
-        # errors.
-        if not success:
-            warnings.warn(
-                "Some solvers were not successfully installed, and will thus "
-                "be ignored. Use 'export BENCHOPT_RAISE_INSTALL_ERROR=true' to"
-                " stop at any installation failure and print the traceback.",
-                UserWarning
-            )
-
     def install_all_requirements(self, include_solvers, include_datasets,
-                                 force=False, env_name=None):
+                                 env_name=None, force=False):
         """Install all classes that are required for the run.
 
         Parameters
@@ -222,24 +195,22 @@ class Benchmark:
             patterns to select solvers to install.
         include_datasets : list of str
             patterns to select datasets to install.
-        force : bool
-            If set to True, force the reinstallation of all selected solvers'
-            requirements.
-        env_name : str or None
-            Install the benchmark requirements in the conda environment
-            named <env_name>. If None, install in the current environment.
+        env_name: str or None
+            Name of the conda env where the class should be installed. If
+            None, tries to install it in the current environment.
+        force : boolean (default: False)
+            If set to True, forces reinstallation when using conda.
         """
         # Collect all classes matching one of the patterns
         print("Collecting packages:")
         reqs, force_reqs, shell_scripts, post_install_hooks = [], [], [], []
         check_installs = []
         for list_classes, include_patterns in [
-                (self.list_benchmark_solvers, include_solvers)
-                (self.list_benchmark_datasets, include_datasets)
+                (self.solvers, include_solvers),
+                (self.datasets, include_datasets)
         ]:
-            classes = list_classes()
             include_patterns = _check_name_lists(include_patterns)
-            for klass in classes:
+            for klass in list_classes:
                 for klass_parameters in product_param(klass.parameters):
                     name = klass._get_parametrized_name(**klass_parameters)
                     if is_matched(name, include_patterns):
@@ -289,30 +260,11 @@ class Benchmark:
             )
         print(' done')
 
-    def install_required_solvers(self, solver_names, forced_solvers=None,
-                                 env_name=None):
-        "List all solvers and install the required ones."
-        solvers = self.list_benchmark_solvers()
-        self._install_required_classes(
-            solvers, solver_names, force_patterns=forced_solvers,
-            env_name=env_name
-        )
-
-    def install_required_datasets(self, dataset_names, forced_datasets=None,
-                                  env_name=None):
-        "List all datasets and install the required ones."
-        datasets = self.list_benchmark_datasets()
-        self._install_required_classes(
-            datasets, dataset_names, force_patterns=forced_datasets,
-            env_name=env_name
-        )
-
     def validate_dataset_patterns(self, dataset_patterns):
         "Check that all provided patterns match at least one dataset"
 
         # List all dataset strings.
-        datasets = self.list_benchmark_datasets()
-        all_datasets = _list_all_names(*datasets)
+        all_datasets = _list_all_names(*self.datasets)
 
         _validate_patterns(all_datasets, dataset_patterns, name_type='dataset')
 
@@ -320,10 +272,9 @@ class Benchmark:
         "Check that all provided patterns match at least one solver"
 
         # List all dataset strings.
-        solvers = self.list_benchmark_solvers()
-        solvers = _list_all_names(*solvers)
+        all_solvers = _list_all_names(*self.solvers)
 
-        _validate_patterns(solvers, solver_patterns, name_type='solver')
+        _validate_patterns(all_solvers, solver_patterns, name_type='solver')
 
 
 def _check_name_lists(*name_lists):
