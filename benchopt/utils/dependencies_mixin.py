@@ -128,33 +128,31 @@ class DependenciesMixin:
 
         Returns
         -------
-        requirements: list of str
+        conda_requirements: list of str
             List of all requirements for this class.
-        install_shell_scrip: str
+        shell_install_script: str
             Name of the install script to run.
-        post_install_hook: callable or None
-            Post install hook if one need to be run.
+        post_install_hooks: list of callable
+            Post install hooks if one need to be run.
         """
         is_installed = cls.is_installed(env_name=env_name)
 
-        requirements, install_script = [], []
+        conda_reqs, shell_install_scripts, post_install_hooks = [], [], []
         if force or not is_installed:
             cls._pre_install_hook(env_name=env_name)
             if cls.install_cmd == 'conda':
-                requirements = cls.requirements
+                conda_reqs = cls.requirements
             elif cls.install_cmd == 'shell':
-                install_script = (
+                shell_install_scripts = [
                     cls._module_filename.parents[1] / 'install_scripts' /
                     cls.install_script
-                )
+                ]
+            post_install_hooks = [cls._post_install_hook]
         else:
             env_suffix = f" in '{env_name}'" if env_name else ''
             print(f"- '{cls.name}' already available{env_suffix}")
 
-        return (
-            requirements, install_script,
-            [cls._post_install_hook] if requirements or install_script else []
-        )
+        return conda_reqs, shell_install_scripts, post_install_hooks
 
     @classmethod
     def _pre_install_hook(cls, env_name=None):

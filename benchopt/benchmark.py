@@ -203,7 +203,7 @@ class Benchmark:
         """
         # Collect all classes matching one of the patterns
         print("Collecting packages:")
-        reqs, force_reqs, shell_scripts, post_install_hooks = [], [], [], []
+        conda_reqs, shell_install_scripts, post_install_hooks = [], [], []
         check_installs = []
         for list_classes, include_patterns in [
                 (self.solvers, include_solvers),
@@ -214,13 +214,13 @@ class Benchmark:
                 for klass_parameters in product_param(klass.parameters):
                     name = klass._get_parametrized_name(**klass_parameters)
                     if is_matched(name, include_patterns):
-                        class_reqs, scripts, hooks = (
+                        reqs, scripts, hooks = (
                             klass.collect(env_name=env_name, force=force)
                         )
-                        shell_scripts += scripts
+                        conda_reqs += reqs
+                        shell_install_scripts += scripts
                         post_install_hooks += hooks
-                        reqs += class_reqs
-                        if len(scripts) > 0 or len(class_reqs) > 0:
+                        if len(scripts) > 0 or len(reqs) > 0:
                             check_installs += [klass]
                         break
         print('... done')
@@ -235,9 +235,9 @@ class Benchmark:
         print(f"Installing required packages for:\n{list_install}\n...",
               end='', flush=True)
         install_in_conda_env(
-            *list(set(reqs+force_reqs)), env_name=env_name, force=force
+            *list(set(conda_reqs)), env_name=env_name, force=force
         )
-        for install_script in shell_scripts:
+        for install_script in shell_install_scripts:
             shell_install_in_conda_env(install_script, env_name=env_name)
         for hooks in post_install_hooks:
             hooks(env_name=env_name)
