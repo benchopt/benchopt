@@ -129,30 +129,20 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
 
     # compute initial value
     stopping_criterion.show_progress('initialization')
-    init_stop_val = (0 if solver.stop_strategy == 'iteration' else INFINITY)
+    stop_val = (0 if solver.stop_strategy == 'iteration' else INFINITY)
     call_args = dict(objective=objective, solver=solver, meta=meta)
-    cost = run_one_resolution_cached(stop_val=init_stop_val, **call_args)
-    curve = [cost]
-    stop, status, is_flat = stopping_criterion.should_stop_solver(curve)
 
-    stop_val = 1
-    rho = RHO
+    stop = False
+    curve = []
     while not stop:
 
-        cost = run_one_resolution_cached(
-            stop_val=stop_val, **call_args
-        )
+        cost = run_one_resolution_cached(stop_val=stop_val, **call_args)
         curve.append(cost)
 
         # Check the stopping criterion and update rho if necessary.
-        stop, status, is_flat = stopping_criterion.should_stop_solver(curve)
-        if is_flat:
-            rho *= RHO_INC
-            if DEBUG:
-                print("DEBUG - curve is flat -> increasing rho:", rho)
-
-        # compute next evaluation point
-        stop_val = get_next(stop_val, rho=rho, strategy=solver.stop_strategy)
+        stop, status, stop_val = stopping_criterion.should_stop_solver(
+            stop_val, curve
+        )
 
     return curve, status
 

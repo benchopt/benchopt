@@ -10,6 +10,15 @@ EPS = 1e-10
 PATIENCE = 3
 
 
+# Define some constants
+# TODO: better parametrize this?
+MAX_ITER = int(1e12)
+MIN_TOL = 1e-15
+INFINITY = 3e38  # see: np.finfo('float32').max
+RHO = 1.5
+RHO_INC = 1.2  # multiplicative update if rho is too small
+
+
 class StoppingCriterion():
     """Class to check if we need to stop an algorithm.
 
@@ -34,27 +43,27 @@ class StoppingCriterion():
         pass
 
     @classmethod
-    def _get_instance(cls, *args, max_runs=1, timeout=None, progress_str=None,
-                      **kwargs):
-        # Instanciate the subclass
-        stopping_criterion = cls(*args, **kwargs)
+    def _reset(self, max_runs=1, timeout=None, progress_str=None):
 
         # Store critical parameters for hashing and reconstruction
-        stopping_criterion.timeout = timeout
-        stopping_criterion.max_runs = max_runs
-        stopping_criterion.args = args
-        stopping_criterion.kwargs = kwargs
+        self.timeout = timeout
+        self.max_runs = max_runs
 
         # Store running arguments
         if timeout is not None:
-            stopping_criterion._deadline = time.time() + timeout
+            self._deadline = time.time() + timeout
         else:
-            stopping_criterion._deadline = None
-        stopping_criterion._prev_objective_value = 1e100
-        stopping_criterion._progress_str = progress_str
-        return stopping_criterion
+            self._deadline = None
+        self._prev_objective_value = 1e100
+        self._progress_str = progress_str
 
-    def should_stop_solver(self, cost_curve):
+        self.rho = RHO
+
+        self.reset()
+
+        return self
+
+    def should_stop_solver(self, stop_val, cost_curve):
         """Base call to check if we should stop running a solver.
 
         This base call checks for the timeout and the max number of runs.
@@ -73,9 +82,10 @@ class StoppingCriterion():
             Whether or not we should stop the algorithm.
         status : str
             Reason why the algorithm was stopped if stop is True.
-        is_flat : bool
-            Indicate if 2 successive evaluations yielded the same
-            objective value. Useful for moving faster on tolerance.
+        stop_val : int | float
+            Corresponds to stopping criterion, such as
+            tol or max_iter for the solver. It depends
+            on the stop_strategy for the solver.
         """
         # Modify the criterion state:
         # - compute the number of run with the curve. We need to remove 1 as
@@ -120,7 +130,12 @@ class StoppingCriterion():
             print(f"DEBUG - Exit with delta_objective = {delta_objective:.2e} "
                   f"and n_eval={n_eval:.1e}.")
 
-        return stop, status, is_flat
+        if is_flat:
+            self.rho *= RHO_INC
+            if DEBUG:
+                print("DEBUG - curve is flat -> increasing rho:", self.rho)
+
+        return stop, status, self.get_next()
 
     def show_progress(self, progress):
         """Display progress in the CLI interface."""
@@ -159,6 +174,13 @@ class StoppingCriterion():
             **self.kwargs
         )
 
+    def get_next(self, stop_val, strategy="iteration"):
+        if strategy == "iteration":
+            return max(stop_val + 1, min(int(self.rho * stop_val), MAX_ITER))
+        else:
+            assert strategy == 'tolerance'
+            return min(1, max(stop_val / self.rho, MIN_TOL))
+
 
 class SufficientDescentCriterion(StoppingCriterion):
     """Stopping criterion based on sufficient descent.
@@ -180,6 +202,8 @@ class SufficientDescentCriterion(StoppingCriterion):
         self.eps = eps
         self.patience = patience
 
+    def reset(self):
+        """Reset the stopping criterion."""
         self.delta_objectives = []
         self.prev_objective_value = 1e100
 
