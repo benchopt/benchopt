@@ -113,7 +113,7 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
 
     # compute initial value
     stopping_criterion.show_progress('initialization')
-    stop_val = 0 if solver.stop_strategy == 'iteration' else INFINITY
+    stop_val = INFINITY if stopping_criterion.strategy == 'tolerance' else 0
     call_args = dict(objective=objective, solver=solver, meta=meta)
 
     stop = False
