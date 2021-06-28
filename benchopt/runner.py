@@ -401,10 +401,10 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
 
     # Load the objective class for this benchmark and the datasets
     objective_class = benchmark.get_benchmark_objective()
-    datasets = benchmark.datasets
+    datasets = benchmark.get_datasets()
 
     # Load the solvers and filter them to get the one to run
-    solver_classes = benchmark.solvers
+    solver_classes = benchmark.get_solvers()
     included_solvers = _check_name_lists(solver_names, forced_solvers)
 
     run_statistics = []

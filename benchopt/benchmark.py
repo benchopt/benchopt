@@ -8,7 +8,7 @@ from .base import BaseSolver, BaseDataset
 from .utils.colorify import colorify, YELLOW
 from .utils.dynamic_modules import _load_class_from_module
 from .utils.parametrized_name_mixin import product_param
-from .utils.parametrized_name_mixin import _list_all_names
+from .utils.parametrized_name_mixin import _list_all_parmetrized_names
 
 from .utils.conda_env_cmd import install_in_conda_env
 from .utils.conda_env_cmd import shell_install_in_conda_env
@@ -96,23 +96,19 @@ class Benchmark:
         classes.sort(key=lambda c: c.name.lower())
         return classes
 
-    @property
-    def solvers(self):
+    def get_solvers(self):
         "List all available solver classes for the benchmark."
         return self._list_benchmark_classes(BaseSolver)
 
-    @property
-    def solver_names(self):
+    def get_solver_names(self):
         "List all available solver names for the benchmark."
         return [s.name for s in self._list_benchmark_classes(BaseSolver)]
 
-    @property
-    def datasets(self):
+    def get_datasets(self):
         "List all available dataset classes for the benchmark."
         return self._list_benchmark_classes(BaseDataset)
 
-    @property
-    def dataset_names(self):
+    def get_dataset_names(self):
         "List all available dataset names for the benchmark."
         return [d.name for d in self._list_benchmark_classes(BaseDataset)]
 
@@ -206,8 +202,8 @@ class Benchmark:
         conda_reqs, shell_install_scripts, post_install_hooks = [], [], []
         check_installs = []
         for list_classes, include_patterns in [
-                (self.solvers, include_solvers),
-                (self.datasets, include_datasets)
+                (self.get_solvers(), include_solvers),
+                (self.get_datasets(), include_datasets)
         ]:
             include_patterns = _check_name_lists(include_patterns)
             for klass in list_classes:
@@ -264,7 +260,7 @@ class Benchmark:
         "Check that all provided patterns match at least one dataset"
 
         # List all dataset strings.
-        all_datasets = _list_all_names(*self.datasets)
+        all_datasets = _list_all_parmetrized_names(*self.get_datasets())
 
         _validate_patterns(all_datasets, dataset_patterns, name_type='dataset')
 
@@ -272,7 +268,7 @@ class Benchmark:
         "Check that all provided patterns match at least one solver"
 
         # List all dataset strings.
-        all_solvers = _list_all_names(*self.solvers)
+        all_solvers = _list_all_parmetrized_names(*self.get_solvers())
 
         _validate_patterns(all_solvers, solver_patterns, name_type='solver')
 
