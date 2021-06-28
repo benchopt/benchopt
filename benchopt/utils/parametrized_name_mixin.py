@@ -100,7 +100,7 @@ def product_param(parameters):
                itertools.product(*parameters.values()))
 
 
-def _list_all_parmetrized_names(*parametrized_classes):
+def _list_all_parametrized_names(*parametrized_classes):
     """List all names for parametrized classes."""
     all_names = []
     for cls in parametrized_classes:
