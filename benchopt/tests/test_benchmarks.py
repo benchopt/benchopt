@@ -100,7 +100,14 @@ def test_solver_class(benchmark, solver_class):
 
     # Check that the solver_class uses a valid stop_strategy
     if hasattr(solver_class, 'stop_strategy'):
+        msg = f"stop_strategy should be in {STOP_STRATEGIES}."
         assert solver_class.stop_strategy in STOP_STRATEGIES
+
+    # Check that the solver_class uses a valid stop_strategy
+    if hasattr(solver_class, 'get_next'):
+        msg = "get_next should be a callable static method."
+        assert (callable(solver_class.get_next)
+                and type(solver_class.get_next) == staticmethod), msg
 
 
 def test_solver_install_api(benchmark, solver_class):
@@ -167,7 +174,7 @@ def test_solver(benchmark, solver_class):
     if solver_strategy == 'callback':
         print('hello')
         sc = solver.stopping_criterion.get_runner_instance(
-            max_runs=25, timeout=None, stop_strategy=solver_strategy
+            max_runs=25, timeout=None, solver=solver
         )
         cb = _Callback(
             objective, meta={}, stopping_criterion=sc
