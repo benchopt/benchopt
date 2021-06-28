@@ -8,7 +8,7 @@ from .base import BaseSolver, BaseDataset
 from .utils.colorify import colorify, YELLOW
 from .utils.dynamic_modules import _load_class_from_module
 from .utils.parametrized_name_mixin import product_param
-from .utils.parametrized_name_mixin import _list_all_parmetrized_names
+from .utils.parametrized_name_mixin import _list_all_parametrized_names
 
 from .utils.conda_env_cmd import install_in_conda_env
 from .utils.conda_env_cmd import shell_install_in_conda_env
@@ -260,7 +260,7 @@ class Benchmark:
         "Check that all provided patterns match at least one dataset"
 
         # List all dataset strings.
-        all_datasets = _list_all_parmetrized_names(*self.get_datasets())
+        all_datasets = _list_all_parametrized_names(*self.get_datasets())
 
         _validate_patterns(all_datasets, dataset_patterns, name_type='dataset')
 
@@ -268,7 +268,7 @@ class Benchmark:
         "Check that all provided patterns match at least one solver"
 
         # List all dataset strings.
-        all_solvers = _list_all_parmetrized_names(*self.get_solvers())
+        all_solvers = _list_all_parametrized_names(*self.get_solvers())
 
         _validate_patterns(all_solvers, solver_patterns, name_type='solver')
 
