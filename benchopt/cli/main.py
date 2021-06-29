@@ -250,32 +250,11 @@ def install(benchmark, solver_names, dataset_names, force=False,
         # create environment if necessary
         create_conda_env(env_name, recreate=recreate)
 
-    # If force is True (default is False), it forces the reinstallation of
-    # selected solvers (all solvers from the benchmark by default)
-    forced_solvers = ()
-    if force:
-        if len(solver_names) > 0:
-            forced_solvers = solver_names
-        else:
-            forced_solvers = benchmark.list_benchmark_solver_names()
-    # same for datasets
-    forced_datasets = ()
-    if force:
-        if len(dataset_names) > 0:
-            forced_datasets = dataset_names
-        else:
-            forced_datasets = benchmark.list_benchmark_dataset_names()
-
-    # install required datasets
-    print("# Datasets", flush=True)
-    benchmark.install_required_datasets(
-        dataset_names, forced_datasets=forced_datasets, env_name=env_name
-    )
-
-    # install required solvers
-    print("# Solvers", flush=True)
-    benchmark.install_required_solvers(
-        solver_names, forced_solvers=forced_solvers, env_name=env_name
+    # install requirements
+    print("# Install", flush=True)
+    benchmark.install_all_requirements(
+        include_solvers=solver_names, include_datasets=dataset_names,
+        env_name=env_name, force=force
     )
 
 

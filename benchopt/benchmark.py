@@ -8,7 +8,10 @@ from .base import BaseSolver, BaseDataset
 from .utils.colorify import colorify, YELLOW
 from .utils.dynamic_modules import _load_class_from_module
 from .utils.parametrized_name_mixin import product_param
-from .utils.parametrized_name_mixin import _list_all_names
+from .utils.parametrized_name_mixin import _list_all_parametrized_names
+
+from .utils.conda_env_cmd import install_in_conda_env
+from .utils.conda_env_cmd import shell_install_in_conda_env
 
 
 CACHE_DIR = '__cache__'
@@ -93,19 +96,19 @@ class Benchmark:
         classes.sort(key=lambda c: c.name.lower())
         return classes
 
-    def list_benchmark_solvers(self):
+    def get_solvers(self):
         "List all available solver classes for the benchmark."
         return self._list_benchmark_classes(BaseSolver)
 
-    def list_benchmark_solver_names(self):
+    def get_solver_names(self):
         "List all available solver names for the benchmark."
         return [s.name for s in self._list_benchmark_classes(BaseSolver)]
 
-    def list_benchmark_datasets(self):
+    def get_datasets(self):
         "List all available dataset classes for the benchmark."
         return self._list_benchmark_classes(BaseDataset)
 
-    def list_benchmark_dataset_names(self):
+    def get_dataset_names(self):
         "List all available dataset names for the benchmark."
         return [d.name for d in self._list_benchmark_classes(BaseDataset)]
 
@@ -178,26 +181,69 @@ class Benchmark:
 
         return result_filename
 
-    def _install_required_classes(self, classes, include_patterns,
-                                  force_patterns=None, env_name=None):
-        "Install all classes that are required for the run."
-        # Merge force install and install patterns.
-        include_patterns = _check_name_lists(include_patterns, force_patterns)
+    def install_all_requirements(self, include_solvers, include_datasets,
+                                 env_name=None, force=False):
+        """Install all classes that are required for the run.
 
-        # Try to install all classes matching one of the patterns
+        Parameters
+        ----------
+        include_solvers : list of str
+            patterns to select solvers to install.
+        include_datasets : list of str
+            patterns to select datasets to install.
+        env_name: str or None
+            Name of the conda env where the class should be installed. If
+            None, tries to install it in the current environment.
+        force : boolean (default: False)
+            If set to True, forces reinstallation when using conda.
+        """
+        # Collect all classes matching one of the patterns
+        print("Collecting packages:")
+        conda_reqs, shell_install_scripts, post_install_hooks = [], [], []
+        check_installs = []
+        for list_classes, include_patterns in [
+                (self.get_solvers(), include_solvers),
+                (self.get_datasets(), include_datasets)
+        ]:
+            include_patterns = _check_name_lists(include_patterns)
+            for klass in list_classes:
+                for klass_parameters in product_param(klass.parameters):
+                    name = klass._get_parametrized_name(**klass_parameters)
+                    if is_matched(name, include_patterns):
+                        reqs, scripts, hooks = (
+                            klass.collect(env_name=env_name, force=force)
+                        )
+                        conda_reqs += reqs
+                        shell_install_scripts += scripts
+                        post_install_hooks += hooks
+                        if len(scripts) > 0 or len(reqs) > 0:
+                            check_installs += [klass]
+                        break
+        print('... done')
+
+        # Install the collected requirements
+        list_install = '\n'.join([
+            f"- {klass.name}" for klass in check_installs
+        ])
+        if len(list_install) == 0:
+            print("All required solvers are already installed.")
+            return
+        print(f"Installing required packages for:\n{list_install}\n...",
+              end='', flush=True)
+        install_in_conda_env(
+            *list(set(conda_reqs)), env_name=env_name, force=force
+        )
+        for install_script in shell_install_scripts:
+            shell_install_in_conda_env(install_script, env_name=env_name)
+        for hooks in post_install_hooks:
+            hooks(env_name=env_name)
+        print(' done')
+
+        # Check install for all classes that needed extra requirements
+        print('- Checking installed packages...', end='', flush=True)
         success = True
-        for klass in classes:
-            for klass_parameters in product_param(klass.parameters):
-                name = klass._get_parametrized_name(**klass_parameters)
-                if is_matched(name, include_patterns):
-                    force = (
-                        force_patterns is not None and len(force_patterns) > 0
-                        and is_matched(name, force_patterns)
-                    )
-                    success &= klass.install(env_name=env_name, force=force)
-                    # Once a class has been installed, there is no need to
-                    # check for other parameterization.
-                    break
+        for klass in check_installs:
+            success |= klass.is_installed(env_name=env_name)
 
         # If one failed, raise a warning to explain how to see the install
         # errors.
@@ -208,31 +254,13 @@ class Benchmark:
                 " stop at any installation failure and print the traceback.",
                 UserWarning
             )
-
-    def install_required_solvers(self, solver_names, forced_solvers=None,
-                                 env_name=None):
-        "List all solvers and install the required ones."
-        solvers = self.list_benchmark_solvers()
-        self._install_required_classes(
-            solvers, solver_names, force_patterns=forced_solvers,
-            env_name=env_name
-        )
-
-    def install_required_datasets(self, dataset_names, forced_datasets=None,
-                                  env_name=None):
-        "List all datasets and install the required ones."
-        datasets = self.list_benchmark_datasets()
-        self._install_required_classes(
-            datasets, dataset_names, force_patterns=forced_datasets,
-            env_name=env_name
-        )
+        print(' done')
 
     def validate_dataset_patterns(self, dataset_patterns):
         "Check that all provided patterns match at least one dataset"
 
         # List all dataset strings.
-        datasets = self.list_benchmark_datasets()
-        all_datasets = _list_all_names(*datasets)
+        all_datasets = _list_all_parametrized_names(*self.get_datasets())
 
         _validate_patterns(all_datasets, dataset_patterns, name_type='dataset')
 
@@ -240,10 +268,9 @@ class Benchmark:
         "Check that all provided patterns match at least one solver"
 
         # List all dataset strings.
-        solvers = self.list_benchmark_solvers()
-        solvers = _list_all_names(*solvers)
+        all_solvers = _list_all_parametrized_names(*self.get_solvers())
 
-        _validate_patterns(solvers, solver_patterns, name_type='solver')
+        _validate_patterns(all_solvers, solver_patterns, name_type='solver')
 
 
 def _check_name_lists(*name_lists):
