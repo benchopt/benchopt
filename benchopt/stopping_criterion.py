@@ -71,7 +71,7 @@ class StoppingCriterion():
     def get_runner_instance(self, max_runs=1, timeout=None, progress_str=None,
                             solver=None):
         """Copy the stopping criterion and set the parameters that depends on
-        how benchopt runner is callled.
+        how benchopt runner is called.
 
         Parameters
         ----------
@@ -85,6 +85,12 @@ class StoppingCriterion():
         solver : BaseSolver
             The solver for which this stopping criterion is called. Used to get
             overridden ``stop_strategy`` and ``get_next``.
+
+        Returns
+        -------
+        stopping_criterion : StoppingCriterion
+            The stopping criterion instance to use in the runner, with
+            correct timeout and max_runs parameters.
         """
 
         # Check that the super constructor is correctly called in the
@@ -122,14 +128,15 @@ class StoppingCriterion():
         if hasattr(solver, 'get_next'):
             assert (
                 callable(solver.get_next)
-                and type(solver.get_next) == staticmethod
+                # and type(solver.get_next) == staticmethod
             ), "if defined, get_next should be a static method of the solver."
             try:
                 solver.get_next(0)
             except TypeError:
                 raise ValueError(
                     "get_next(0) throw a TypeError. Verify that `get_next` "
-                    "signature is get_next(stop_val)."
+                    "signature is get_next(stop_val) and that it is "
+                    "a staticmethod."
                 )
 
             stopping_criterion.get_next_stop_val = solver.get_next
@@ -154,7 +161,7 @@ class StoppingCriterion():
         ----------
         stop_val : int | float
             Corresponds to stopping criterion of the underlying algorithm, such
-            as tol or max_iter.
+            as ``tol`` or ``max_iter``.
         cost_curve : list of dict
             List of dict containing the values associated to the objective at
             each evaluated points.
@@ -338,6 +345,80 @@ class SufficientDescentCriterion(StoppingCriterion):
 
         delta = max(self._delta_objectives)
         if (-self.eps <= delta <= self.eps):
+            return True, 1
+
+        progress = math.log(max(abs(delta), self.eps)) / math.log(self.eps)
+        return False, progress
+
+
+class SufficientProgressCriterion(StoppingCriterion):
+    """Stopping criterion based on sufficient progress.
+
+    The solver will be stopped once successive evaluations do not make enough
+    progress. The number of successive evaluation and the definition of
+    sufficient progress is controled by ``eps`` and ``patience``.
+
+    Parameters
+    ----------
+    eps :  float (default: benchopt.stopping_criterion.EPS)
+        The progress between two steps is considered as insufficient when it is
+        smaller than ``eps``.
+    patience :  float (default: benchopt.stopping_criterion.PATIENCE)
+        The solver is stopped after ``patience`` successive insufficient
+        updates.
+    strategy : str in {'iteration', 'tolerance', 'callback'}
+        How the different precision solvers are called. Can be one of:
+        - ``'iteration'``: call the run method with max_iter number increasing
+        logarithmically to get more an more precise points.
+        - ``'tolerance'``: call the run method with tolerance deacreasing
+        logarithmically to get more and more precise points.
+        - ``'callback'``: call the run method with a callback that will compute
+        the objective function on a logarithmic scale. After each iteration,
+        the callback should be called with the current iterate solution.
+    """
+
+    def __init__(self, eps=EPS, patience=PATIENCE, strategy='iteration'):
+        self.eps = eps
+        self.patience = patience
+
+        self._progress = []
+        self._best_objective_value = 1e100
+
+        super().__init__(
+            eps=eps, patience=patience, strategy=strategy
+        )
+
+    def check_convergence(self, cost_curve):
+        """Check if the solver should be stopped based on the objective curve.
+
+        Parameters
+        ----------
+        cost_curve : list of dict
+            List of dict containing the values associated to the objective at
+            each evaluated points.
+
+        Returns
+        -------
+        stop : bool
+            Whether or not we should stop the algorithm.
+        progress : float
+            Measure of how far the solver is from convergence.
+            This should be in [0, 1], 0 meaning no progress and 1 meaning
+            that the solver has converged.
+        """
+        # Compute the current objective
+        objective_value = cost_curve[-1]['objective_value']
+        delta_objective = self._best_objective_value - objective_value
+        self._progress.append(delta_objective)
+
+        if len(self._progress) > self.patience:
+            self._progress.pop(0)
+        self._best_objective_value = min(
+            objective_value, self._best_objective_value
+        )
+
+        delta = max(self._progress)
+        if delta <= self.eps * self._best_objective_value:
             return True, 1
 
         progress = math.log(max(abs(delta), self.eps)) / math.log(self.eps)
