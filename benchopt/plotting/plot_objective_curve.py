@@ -108,15 +108,11 @@ def plot_objective_curve(df, plotly=False, suboptimality=False,
                     direction="down",
                     pad={"r": 10, "t": 10},
                     showactive=True,
-                    x=0.09,
-                    xanchor="left",
-                    y=1.08,
-                    yanchor="top"
                 )
             ],
             annotations=[
-                dict(text="Log-scale", x=0., xref="paper", y=1.045,
-                     yref="paper", showarrow=False)
+                dict(text="Log-scale", x=-0.15, xref="paper",
+                     y=1.01, yref="paper", showarrow=False)
             ]
         )
     else:
