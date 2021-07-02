@@ -86,7 +86,34 @@ def plot_objective_curve(df, plotly=False, suboptimality=False,
             xaxis_tickformat=".0e",
             xaxis_tickangle=-45,
             title=title,
-            legend_title='solver'
+            legend_title='solver',
+            )
+
+        # options for log scale
+        fig.update_layout(
+            updatemenus=[
+                dict(
+                    buttons=list([
+                        dict(
+                            args=["xaxis.type", "log"],
+                            label="loglog",
+                            method="relayout"
+                        ),
+                        dict(
+                            args=["xaxis.type", "linear"],
+                            label="semilog-y",
+                            method="relayout"
+                        )
+                    ]),
+                    direction="down",
+                    pad={"r": 10, "t": 10},
+                    showactive=True,
+                )
+            ],
+            annotations=[
+                dict(text="Log-scale", x=-0.15, xref="paper",
+                     y=1.01, yref="paper", showarrow=False)
+            ]
         )
     else:
         plt.legend(fontsize=14)
