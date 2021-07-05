@@ -62,6 +62,8 @@ main = click.Group(
               help='Timeout a solver when run for more than <timeout> seconds')
 @click.option('--plot/--no-plot', default=True,
               help="Whether or not to plot the results. Default is True.")
+@click.option('--html/--no-html', default=True,
+              help="Whether or not to display the plot on the screen.")
 @click.option('--pdb',
               is_flag=True,
               help="Launch a debugger if there is an error. This will launch "
