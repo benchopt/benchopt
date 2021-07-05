@@ -62,8 +62,8 @@ main = click.Group(
               help='Timeout a solver when run for more than <timeout> seconds')
 @click.option('--plot/--no-plot', default=True,
               help="Whether or not to plot the results. Default is True.")
-@click.option('--html/--no-html', default=True,
-              help="Whether or not to display the plot on the screen.")
+@click.option('--html/--no-html', is_flag = True, default=True,
+              help="Whether or not to display the plot as HTML report or matplotlib figures")
 @click.option('--pdb',
               is_flag=True,
               help="Launch a debugger if there is an error. This will launch "
@@ -84,14 +84,25 @@ main = click.Group(
               "datasets, see the command `benchopt install`.")
 def run(benchmark, solver_names, forced_solvers, dataset_names,
         objective_filters, max_runs, n_repetitions, timeout,
-        plot=True, pdb=False, env_name='False'):
+        plot=True, html = True,  pdb=False, env_name='False'):
 
     from benchopt.runner import run_benchmark
+    from benchopt.cli import plot 
+
+    
+
 
     # Check that the dataset/solver patterns match actual dataset
     benchmark = Benchmark(benchmark)
     benchmark.validate_dataset_patterns(dataset_names)
     benchmark.validate_solver_patterns(solver_names+forced_solvers)
+   
+    
+    result_filename = benchmark.get_result_file(filename)
+    
+    from benchopt.plotting import plot_benchmark
+    plot_benchmark(result_filename, benchmark, kinds=kinds, display=display, html=html)
+    
 
     # If env_name is False, the flag `--local` has been used (default) so
     # run in the current environement.
