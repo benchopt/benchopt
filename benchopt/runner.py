@@ -355,7 +355,7 @@ def run_one_solver(benchmark, objective, solver, meta, max_runs, n_repetitions,
 def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                   dataset_names=None, objective_filters=None,
                   max_runs=10, n_repetitions=1, timeout=100,
-                  plot_result=True, show_progress=True, pdb=False):
+                  plot_result=True,html = True, show_progress=True, pdb=False):
     """Run full benchmark.
 
     Parameters
@@ -384,6 +384,8 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
     plot_result : bool
         If set to True (default), display the result plot and save them in
         the benchmark directory.
+    html : bool
+    	If set to True (default), display the result plot in HTML, otherwise in matplotlib figures
     show_progress : bool
         If show_progress is set to True, display the progress of the benchmark.
     pdb : bool
@@ -493,5 +495,8 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
 
     if plot_result:
         from benchopt.plotting import plot_benchmark
-        plot_benchmark(save_file, benchmark)
+        plot_benchmark(save_file, benchmark, html)
+    
+    	
+    	
     return save_file
