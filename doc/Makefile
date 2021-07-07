@@ -19,6 +19,9 @@ ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 # the i18n builder cannot share the environment and doctrees with the others
 I18NSPHINXOPTS  = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 
+BENCH_LOGREG_PATH = ../benchmarks/benchmark_logreg_l2
+BENCH_LASSO_PATH = ../benchmarks/benchmark_lasso
+
 .PHONY: help
 help:
 	@echo "Please use \`make <target>' where <target> is one of"
@@ -45,6 +48,10 @@ clean:
 	rm -rf generated/*
 	rm -rf modules/*
 
+sync_git:
+	git clone git@github.com:benchopt/benchmark_logreg_l2.git $(BENCH_LOGREG_PATH) || (cd $(BENCH_LOGREG_PATH) ; git pull && cd ../../doc)
+	git clone git@github.com:benchopt/benchmark_lasso.git $(BENCH_LASSO_PATH) || (cd $(BENCH_LASSO_PATH) ; git pull && cd ../../doc)
+
 html-noplot:
 	$(SPHINXBUILD) -D plot_gallery=0 -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	@echo
@@ -52,6 +59,7 @@ html-noplot:
 
 .PHONY: html
 html:
+	make sync_git
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
