@@ -49,8 +49,8 @@ clean:
 	rm -rf modules/*
 
 sync_git:
-	git clone git@github.com:benchopt/benchmark_logreg_l2.git $(BENCH_LOGREG_PATH) || (cd $(BENCH_LOGREG_PATH) ; git pull && cd ../../doc)
-	git clone git@github.com:benchopt/benchmark_lasso.git $(BENCH_LASSO_PATH) || (cd $(BENCH_LASSO_PATH) ; git pull && cd ../../doc)
+	git clone https://github.com/benchopt/benchmark_logreg_l2 $(BENCH_LOGREG_PATH) > /dev/null 2>&1 || (cd $(BENCH_LOGREG_PATH) ; git pull && cd ../../doc)
+	git clone https://github.com:benchopt/benchmark_lasso $(BENCH_LASSO_PATH) > /dev/null 2>&1 || (cd $(BENCH_LASSO_PATH) ; git pull && cd ../../doc)
 
 html-noplot:
 	$(SPHINXBUILD) -D plot_gallery=0 -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
