@@ -13,7 +13,7 @@ from benchopt.tests import SELECT_ONE_SIMULATED
 from benchopt.plotting import plot_benchmark, PLOT_KINDS
 
 
-BENCHMARK_PATH = Path().parent / 'benchmarks' / 'benchmark_lasso'
+BENCHMARK_PATH = Path().resolve().parent / 'benchmarks' / 'benchmark_lasso'
 
 try:
     save_file = run_benchmark(
