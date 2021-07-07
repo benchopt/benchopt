@@ -49,19 +49,15 @@ clean:
 	rm -rf modules/*
 
 sync_git:
-	if [[ -d !  $(BENCH_LOGREG_PATH) ]] ; then \
+	if [ ! -d   $(BENCH_LOGREG_PATH) ] ; then \
 	    git clone https://github.com/benchopt/benchmark_logreg_l2 $(BENCH_LOGREG_PATH) ; \
 	else \
-	    pushd $(BENCH_LOGREG_PATH) ; \
-	    git pull ;\
-	    popd ;\
+	    (cd $(BENCH_LOGREG_PATH); git pull) \
 	fi
-	if [[ -d !  $(BENCH_LASSO_PATH) ]] ; then \
+	if [ ! -d   $(BENCH_LASSO_PATH) ] ; then \
 	    git clone https://github.com/benchopt/benchmark_lasso $(BENCH_LASSO_PATH) ; \
 	else \
-	    pushd $(BENCH_LASSO_PATH) ;\
-	    git pull ;\
-	    popd ;\
+	    (cd $(BENCH_LASSO_PATH); git pull) \
 	fi
 
 html-noplot:
