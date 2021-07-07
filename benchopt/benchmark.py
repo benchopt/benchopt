@@ -293,7 +293,7 @@ def is_matched(name, include_patterns=None):
     name = str(name)
     for p in include_patterns:
         p = p.replace("*", '.*')
-        if re.match(f".*{p}.*", name, flags=re.IGNORECASE) is not None:
+        if re.match(f"^{p}.*", name, flags=re.IGNORECASE) is not None:
             return True
     return False
 
