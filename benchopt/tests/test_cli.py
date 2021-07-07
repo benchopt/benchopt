@@ -185,7 +185,8 @@ class TestPlotCmd:
         with SuppressStd() as out:
             run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,
                  '-s', SELECT_ONE_PGD, '-n', '2', '-r', '1', '-p',
-                 SELECT_ONE_OBJECTIVE, '--no-plot'], 'benchopt', standalone_mode=False)
+                 SELECT_ONE_OBJECTIVE, '--no-plot'], 'benchopt',
+                standalone_mode=False)
         result_files = re.findall(r'Saving result in: (.*\.csv)', out.output)
         assert len(result_files) == 1, out.output
         result_file = result_files[0]
