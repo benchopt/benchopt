@@ -11,6 +11,7 @@ from benchopt.utils.stream_redirection import SuppressStd
 from benchopt.tests import CaptureRunOutput
 from benchopt.tests import SELECT_ONE_PGD
 from benchopt.tests import SELECT_ONE_SIMULATED
+from benchopt.tests import SELECT_ONE_OBJECTIVE
 from benchopt.tests import DUMMY_BENCHMARK
 from benchopt.tests import DUMMY_BENCHMARK_PATH
 
@@ -66,8 +67,8 @@ class TestRunCmd:
     def test_benchopt_run(self):
         with CaptureRunOutput() as out:
             run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,
-                 '-f', SELECT_ONE_PGD, '-n', '1', '-r', '1', '-p', '0.1',
-                 ], 'benchopt', standalone_mode=False)
+                 '-f', SELECT_ONE_PGD, '-n', '1', '-r', '1', '-p',
+                 SELECT_ONE_OBJECTIVE], 'benchopt', standalone_mode=False)
 
         out.check_output('Simulated', repetition=1)
         out.check_output('Dummy Sparse Regression', repetition=1)
@@ -82,8 +83,8 @@ class TestRunCmd:
             with pytest.raises(SystemExit, match='False'):
                 run([str(DUMMY_BENCHMARK_PATH), '--env-name', test_env_name,
                      '-d', SELECT_ONE_SIMULATED, '-f', SELECT_ONE_PGD,
-                     '-n', '1', '-r', '1', '-p', '0.1', '--no-plot'],
-                    'benchopt', standalone_mode=False)
+                     '-n', '1', '-r', '1', '-p', SELECT_ONE_OBJECTIVE,
+                     '--no-plot'], 'benchopt', standalone_mode=False)
 
         out.check_output(f'conda activate {test_env_name}')
         out.check_output('Simulated', repetition=1)
@@ -100,7 +101,7 @@ class TestRunCmd:
         n_rep = 2
         run_cmd = [str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,
                    '-s', SELECT_ONE_PGD, '-n', '1', '-r', str(n_rep),
-                   '-p', '0.1', '--no-plot']
+                   '-p', SELECT_ONE_OBJECTIVE, '--no-plot']
 
         # Make a first run that should be put in cache
         with CaptureRunOutput() as out:
@@ -183,8 +184,9 @@ class TestPlotCmd:
         "Make sure at least one result file is available"
         with SuppressStd() as out:
             run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,
-                 '-s', SELECT_ONE_PGD, '-n', '2', '-r', '1', '-p', '0.1',
-                 '--no-plot'], 'benchopt', standalone_mode=False)
+                 '-s', SELECT_ONE_PGD, '-n', '2', '-r', '1', '-p',
+                 SELECT_ONE_OBJECTIVE, '--no-plot'], 'benchopt',
+                standalone_mode=False)
         result_files = re.findall(r'Saving result in: (.*\.csv)', out.output)
         assert len(result_files) == 1, out.output
         result_file = result_files[0]
