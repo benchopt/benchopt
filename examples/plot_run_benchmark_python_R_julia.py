@@ -5,7 +5,6 @@ Demo benchmark with Julia/R/Python
 
 """
 
-import os
 from pathlib import Path
 import matplotlib.pyplot as plt
 from benchopt import run_benchmark

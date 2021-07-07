@@ -5,7 +5,6 @@ Run benchmark from a script
 
 """
 
-import os
 from pathlib import Path
 import matplotlib.pyplot as plt
 from benchopt import run_benchmark
