@@ -337,11 +337,12 @@ class SufficientDescentCriterion(StoppingCriterion):
         # Compute the current objective
         objective_value = cost_curve[-1]['objective_value']
         delta_objective = self._objective_value - objective_value
-        self._delta_objectives.append(delta_objective)
+        self._objective_value = objective_value
 
+        # Store only the last ``patience`` values for progress
+        self._delta_objectives.append(delta_objective)
         if len(self._delta_objectives) > self.patience:
             self._delta_objectives.pop(0)
-        self._objective_value = objective_value
 
         delta = max(self._delta_objectives)
         if (-self.eps <= delta <= self.eps):
@@ -406,16 +407,17 @@ class SufficientProgressCriterion(StoppingCriterion):
             This should be in [0, 1], 0 meaning no progress and 1 meaning
             that the solver has converged.
         """
-        # Compute the current objective
+        # Compute the current objective and update best value
         objective_value = cost_curve[-1]['objective_value']
         delta_objective = self._best_objective_value - objective_value
-        self._progress.append(delta_objective)
-
-        if len(self._progress) > self.patience:
-            self._progress.pop(0)
         self._best_objective_value = min(
             objective_value, self._best_objective_value
         )
+
+        # Store only the last ``patience`` values for progress
+        self._progress.append(delta_objective)
+        if len(self._progress) > self.patience:
+            self._progress.pop(0)
 
         delta = max(self._progress)
         if delta <= self.eps * self._best_objective_value:

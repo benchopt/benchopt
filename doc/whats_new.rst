@@ -17,6 +17,10 @@ Changelog
   with the line-profiler package all functions decorated with
   :func:`benchopt.utils.profile`, by `Alexandre Gramfort`_ (:gh:`186`).
 
+- Replace ``SufficientDescentCriterion`` by ``SufficientProgressCriterion``,
+  which measures progress relatively to the best attained value instead of
+  the previous one, by `Thomas Moreau`_ (:gh:`176`)
+
 .. _changes_1_1:
 
 Version 1.1 - 22-04-2021
@@ -31,10 +35,10 @@ Changelog
 - Support plotly for plotting functions, by `Thomas Moreau`_,
   `Tanguy Lefort`_ and `Joseph Salmon`_ (:gh:`110`, :gh:`111`, :gh:`112`).
 
-- Change envrionment variable for config from `BENCHO_*` to `BENCHOPT_*`,
+- Change envrionment variable for config from ``BENCHO_*`` to ``BENCHOPT_*``,
   by `Thomas Moreau`_ (:gh:`128`).
 
-- Add autocompletion support in the `benchopt` command,
+- Add autocompletion support in the ``benchopt`` command,
   by `Alexandre Gramfort`_, `Tanguy Lefort`_ and `Thomas Moreau`_
   (:gh:`133`, :gh:`135`).
 

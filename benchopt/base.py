@@ -2,7 +2,7 @@ import tempfile
 import numbers
 from abc import ABC, abstractmethod
 
-from .stopping_criterion import SufficientDescentCriterion
+from .stopping_criterion import SufficientProgressCriterion
 
 from .utils.dynamic_modules import get_file_hash
 from .utils.dynamic_modules import _reconstruct_class
@@ -44,7 +44,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
     """
 
     _base_class_name = 'Solver'
-    stopping_criterion = SufficientDescentCriterion(
+    stopping_criterion = SufficientProgressCriterion(
         strategy='iteration'
     )
 
