@@ -63,7 +63,8 @@ main = click.Group(
 @click.option('--plot/--no-plot', default=True,
               help="Whether or not to plot the results. Default is True.")
 @click.option('--html/--no-html', default=True,
-              help="Whether to display the plot as HTML report or matplotlib figures, default is True.")
+              help="Whether to display the plot as HTML report or matplotlib"
+              "figures.")
 @click.option('--pdb',
               is_flag=True,
               help="Launch a debugger if there is an error. This will launch "
@@ -84,7 +85,7 @@ main = click.Group(
               "datasets, see the command `benchopt install`.")
 def run(benchmark, solver_names, forced_solvers, dataset_names,
         objective_filters, max_runs, n_repetitions, timeout,
-        plot=True, html = True , pdb=False, env_name='False'):
+        plot=True, html=True, pdb=False, env_name='False'):
 
     from benchopt.runner import run_benchmark
 
@@ -101,7 +102,7 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
             dataset_names=dataset_names,
             objective_filters=objective_filters,
             max_runs=max_runs, n_repetitions=n_repetitions,
-            timeout=timeout, plot_result=plot, html = html, pdb=pdb
+            timeout=timeout, plot_result=plot, html=html, pdb=pdb
         )
         return
 
