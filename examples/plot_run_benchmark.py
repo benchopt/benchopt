@@ -13,7 +13,7 @@ from benchopt.plotting import plot_benchmark, PLOT_KINDS
 
 
 BENCHMARK_PATH = (
-    Path().parent / 'benchmarks' / 'benchmark_logreg_l2'
+    Path().resolve().parent / 'benchmarks' / 'benchmark_logreg_l2'
 )
 
 
