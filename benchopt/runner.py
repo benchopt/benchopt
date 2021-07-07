@@ -496,5 +496,5 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
 
     if plot_result:
         from benchopt.plotting import plot_benchmark
-        plot_benchmark(save_file, benchmark, html)
+        plot_benchmark(save_file, benchmark, 'None', 'True', 'False', html)
     return save_file

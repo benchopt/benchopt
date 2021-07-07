@@ -64,7 +64,7 @@ main = click.Group(
               help="Whether or not to plot the results. Default is True.")
 @click.option('--html/--no-html', default=True,
               help="Whether to display the plot as HTML report or matplotlib"
-              "figures.")
+              "figures, default is True.")
 @click.option('--pdb',
               is_flag=True,
               help="Launch a debugger if there is an error. This will launch "
