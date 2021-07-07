@@ -13,8 +13,9 @@ from benchopt.benchmark import Benchmark
 from benchopt.plotting import plot_benchmark, PLOT_KINDS
 
 
-BENCHMARK_PATH = Path(os.getcwd()).parent / \
-    'benchmarks' / 'benchmark_logreg_l2'
+BENCHMARK_PATH = (
+    Path().parent / 'benchmarks' / 'benchmark_logreg_l2'
+)
 
 
 try:
