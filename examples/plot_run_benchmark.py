@@ -5,7 +5,6 @@ Run benchmark from a script
 
 """
 
-import os
 from pathlib import Path
 import matplotlib.pyplot as plt
 from benchopt import run_benchmark
@@ -13,7 +12,9 @@ from benchopt.benchmark import Benchmark
 from benchopt.plotting import plot_benchmark, PLOT_KINDS
 
 
-BENCHMARK_PATH = Path(os.getcwd()).parent / 'benchmarks' / 'logreg_l2'
+BENCHMARK_PATH = (
+    Path().resolve().parent / 'benchmarks' / 'benchmark_logreg_l2'
+)
 
 
 try:

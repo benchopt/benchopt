@@ -5,7 +5,6 @@ Demo benchmark with Julia/R/Python
 
 """
 
-import os
 from pathlib import Path
 import matplotlib.pyplot as plt
 from benchopt import run_benchmark
@@ -14,7 +13,7 @@ from benchopt.tests import SELECT_ONE_SIMULATED
 from benchopt.plotting import plot_benchmark, PLOT_KINDS
 
 
-BENCHMARK_PATH = Path(os.getcwd()).parent / 'benchmarks' / 'lasso'
+BENCHMARK_PATH = Path().resolve().parent / 'benchmarks' / 'benchmark_lasso'
 
 try:
     save_file = run_benchmark(
