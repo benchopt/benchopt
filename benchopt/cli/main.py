@@ -151,6 +151,7 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
         rf"{solvers_option} {forced_solvers_option} "
         rf"{datasets_option} {objective_option} "
         rf"{'--plot' if plot else '--no-plot'} "
+        rf"{'--html' if html else '--no-html'} "
         rf"{'--pdb' if pdb else ''} "
         .replace('\\', '\\\\')
     )
