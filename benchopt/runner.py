@@ -77,7 +77,7 @@ def run_one_resolution(objective, solver, meta, stop_val):
     if not solver.is_installed():
         raise ImportError(
             f"Failure during import in {solver.__module__}."
-        )
+            )
 
     if DEBUG:
         print(f"DEBUG - Calling solver {solver} with stop val: {stop_val}")
@@ -496,5 +496,5 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
 
     if plot_result:
         from benchopt.plotting import plot_benchmark
-        plot_benchmark(save_file, benchmark, 'None', 'True', 'False', html)
+        plot_benchmark(save_file, benchmark, html=html)
     return save_file
