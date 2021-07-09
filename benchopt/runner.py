@@ -77,7 +77,7 @@ def run_one_resolution(objective, solver, meta, stop_val):
     if not solver.is_installed():
         raise ImportError(
             f"Failure during import in {solver.__module__}."
-            )
+        )
 
     if DEBUG:
         print(f"DEBUG - Calling solver {solver} with stop val: {stop_val}")
