@@ -72,6 +72,10 @@ main = click.Group(
 @click.option('--local', '-l', 'env_name',
               flag_value='False', default=True,
               help="Run the benchmark in the local conda environment.")
+@click.option('--profile', 'do_profile',
+              flag_value='True', default=False,
+              help="Will do line profiling on all functions with @profile "
+                   "decorator.")
 @click.option('--env', '-e', 'env_name',
               flag_value='True',
               help="Run the benchmark in a dedicated conda environment "
@@ -85,9 +89,18 @@ main = click.Group(
               "datasets, see the command `benchopt install`.")
 def run(benchmark, solver_names, forced_solvers, dataset_names,
         objective_filters, max_runs, n_repetitions, timeout,
-        plot=True, html=True, pdb=False, env_name='False'):
+        plot=True, html=True, pdb=False, do_profile=False,
+        env_name='False'):
 
     from benchopt.runner import run_benchmark
+
+    if do_profile:
+        import line_profiler
+        import builtins
+        import atexit
+        prof = line_profiler.LineProfiler()
+        builtins.__dict__['profile'] = prof
+        atexit.register(prof.print_stats)
 
     # Check that the dataset/solver patterns match actual dataset
     benchmark = Benchmark(benchmark)
