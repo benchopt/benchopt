@@ -1,6 +1,7 @@
 import time
 from datetime import datetime
 
+from .globals import globals
 from .utils import product_param
 from .benchmark import is_matched
 from .benchmark import _check_name_lists
@@ -11,7 +12,6 @@ from .stopping_criterion import SufficientDescentCriterion
 
 from .utils.colorify import colorify
 from .utils.colorify import LINE_LENGTH, RED, GREEN, YELLOW
-
 
 # Get config values
 from .config import DEBUG
@@ -497,4 +497,9 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
     if plot_result:
         from benchopt.plotting import plot_benchmark
         plot_benchmark(save_file, benchmark, html=html)
+
+    if globals["DO_PROFILE"]:
+        from benchopt.profiling import profile
+        profile.print_stats()
+
     return save_file

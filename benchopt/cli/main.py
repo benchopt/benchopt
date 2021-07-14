@@ -92,15 +92,11 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
         plot=True, html=True, pdb=False, do_profile=False,
         env_name='False'):
 
+    from benchopt.globals import globals
     from benchopt.runner import run_benchmark
 
-    if do_profile:
-        import line_profiler
-        import builtins
-        import atexit
-        prof = line_profiler.LineProfiler()
-        builtins.__dict__['profile'] = prof
-        atexit.register(prof.print_stats)
+    # to set DO_PROFILE before calling validate_solver_patterns
+    globals["DO_PROFILE"] = do_profile
 
     # Check that the dataset/solver patterns match actual dataset
     benchmark = Benchmark(benchmark)
