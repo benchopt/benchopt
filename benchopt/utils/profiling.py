@@ -14,7 +14,8 @@ def get_profiler():
         try:
             from line_profiler import LineProfiler
         except ImportError:
-            raise ImportError("Need line-profiler installed to use `--profile`")
+            raise ImportError("Need line-profiler installed to use "
+                              "`--profile` option.")
         PROFILER = LineProfiler()
     return PROFILER
 
@@ -22,9 +23,9 @@ def get_profiler():
 def profile(func):
     """Decorator to tell line profiler which function to profile.
 
-    Typically, this can be used for the `run` method of a `Solver`.
-    Once the method is decorated, you can use `--profile` in
-    `benchopt run` to get a profiling report.
+    Typically, this can be used for the ``run`` method of a ``Solver``.
+    Once the method is decorated, you can use ``--profile`` in
+    ``benchopt run`` to get a profiling report.
     """
     global USE_PROFILE
     if not USE_PROFILE:

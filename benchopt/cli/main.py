@@ -75,7 +75,8 @@ main = click.Group(
 @click.option('--profile', 'do_profile',
               flag_value='True', default=False,
               help="Will do line profiling on all functions with @profile "
-                   "decorator. The profile decorator needs to be imported "
+                   "decorator. Requires the line-profiler package. "
+                   "The profile decorator needs to be imported "
                    "with: from benchopt.utils import profile")
 @click.option('--env', '-e', 'env_name',
               flag_value='True',

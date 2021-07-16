@@ -13,6 +13,9 @@ Version 1.2 - in progress
 Changelog
 ~~~~~~~~~
 
+- New ``--profile`` option to the ``run`` command in order to profile
+  with the line-profiler package all functions decorated with
+  :func:`benchopt.utils.profile`, by `Alexandre Gramfort`_ (:gh:`186`).
 
 .. _changes_1_1:
 
