@@ -75,7 +75,8 @@ main = click.Group(
 @click.option('--profile', 'do_profile',
               flag_value='True', default=False,
               help="Will do line profiling on all functions with @profile "
-                   "decorator.")
+                   "decorator. The profile decorator needs to be imported "
+                   "with: from benchopt.utils import profile")
 @click.option('--env', '-e', 'env_name',
               flag_value='True',
               help="Run the benchmark in a dedicated conda environment "
@@ -92,11 +93,11 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
         plot=True, html=True, pdb=False, do_profile=False,
         env_name='False'):
 
-    from benchopt.globals import globals
     from benchopt.runner import run_benchmark
+    from benchopt.utils.profiling import use_profile
 
-    # to set DO_PROFILE before calling validate_solver_patterns
-    globals["DO_PROFILE"] = do_profile
+    if do_profile:
+        use_profile()  # needs to be called before validate_solver_patterns
 
     # Check that the dataset/solver patterns match actual dataset
     benchmark = Benchmark(benchmark)
@@ -111,7 +112,8 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
             dataset_names=dataset_names,
             objective_filters=objective_filters,
             max_runs=max_runs, n_repetitions=n_repetitions,
-            timeout=timeout, plot_result=plot, html=html, pdb=pdb
+            timeout=timeout, plot_result=plot, html=html, pdb=pdb,
+            do_profile=do_profile
         )
         return
 
