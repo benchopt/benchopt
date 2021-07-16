@@ -1,14 +1,33 @@
-from .globals import globals
 
-if globals["DO_PROFILE"]:
-    import line_profiler
-    profile = line_profiler.LineProfiler()
-else:
-    class Profile:
-        def __call__(self, func):
-            return func
+USE_PROFILE = False
+PROFILER = None
 
-        def print_stats(self):
-            return
+def use_profile():
+    global USE_PROFILE
+    USE_PROFILE = True
 
-    profile = Profile()
+def get_profiler():
+    global PROFILER
+    if PROFILER is None:
+        try:
+            from line_profiler import LineProfiler
+        except ImportError:
+            raise ImportError("Need line-profiler installed to use `--profile`)
+        PROFILER = LineProfiler()
+    return PROFILER
+    
+def profile(func):
+    """Decorator to tell line profiler which function to profile.
+    
+    Typically, this can be used for the `run` method of a `Solver`.
+    Once the method is decorated, you can use `--profile` in
+    `benchopt run` to get a profiling report.
+    """
+    if not USE_PROFILE:
+        return func
+    return get_profiler()(func)
+    
+def print_stats():
+    global PROFILER
+    if PROFILER is not None:
+        PROFILER.print_stats()
