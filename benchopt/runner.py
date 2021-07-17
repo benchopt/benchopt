@@ -6,7 +6,6 @@ from .benchmark import is_matched
 from .benchmark import _check_name_lists
 from .utils.sys_info import get_sys_info
 from .utils.pdb_helpers import exception_handler
-from .utils.profiling import use_profile, print_stats
 
 from .stopping_criterion import SufficientDescentCriterion
 
@@ -355,8 +354,7 @@ def run_one_solver(benchmark, objective, solver, meta, max_runs, n_repetitions,
 def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                   dataset_names=None, objective_filters=None,
                   max_runs=10, n_repetitions=1, timeout=100,
-                  plot_result=True, html=True, show_progress=True, pdb=False,
-                  do_profile=False):
+                  plot_result=True, html=True, show_progress=True, pdb=False):
     """Run full benchmark.
 
     Parameters
@@ -392,9 +390,6 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
         If show_progress is set to True, display the progress of the benchmark.
     pdb : bool
         It pdb is set to True, open a debugger on error.
-    do_profile : bool
-        If True, the run method will be profiled as well as any function
-        decorated with `benchopt.utils.profile`.
 
     Returns
     -------
@@ -405,9 +400,6 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
         is set to `NaN`.
     """
     print("BenchOpt is running")
-
-    if do_profile:
-        use_profile()
 
     # Load the objective class for this benchmark and the datasets
     objective_class = benchmark.get_benchmark_objective()
@@ -504,8 +496,4 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
     if plot_result:
         from benchopt.plotting import plot_benchmark
         plot_benchmark(save_file, benchmark, html=html)
-
-    if do_profile:
-        print_stats()
-
     return save_file

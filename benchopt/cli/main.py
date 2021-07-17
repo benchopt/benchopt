@@ -10,6 +10,7 @@ from benchopt.utils.conda_env_cmd import list_conda_envs
 from benchopt.utils.conda_env_cmd import create_conda_env
 from benchopt.utils.shell_cmd import _run_shell_in_conda_env
 from benchopt.utils.conda_env_cmd import get_benchopt_version_in_env
+from benchopt.utils.profiling import print_stats
 
 
 main = click.Group(
@@ -113,9 +114,12 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
             dataset_names=dataset_names,
             objective_filters=objective_filters,
             max_runs=max_runs, n_repetitions=n_repetitions,
-            timeout=timeout, plot_result=plot, html=html, pdb=pdb,
-            do_profile=do_profile
+            timeout=timeout, plot_result=plot, html=html, pdb=pdb
         )
+
+        if do_profile:
+            print_stats()
+
         return
 
     _, all_conda_envs = list_conda_envs()
