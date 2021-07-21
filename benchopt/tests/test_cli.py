@@ -72,8 +72,8 @@ class TestRunCmd:
 
         out.check_output('Simulated', repetition=1)
         out.check_output('Dummy Sparse Regression', repetition=1)
-        out.check_output('Python-PGD[step_size=1]:', repetition=3)
-        out.check_output('Python-PGD[step_size=1.5]:', repetition=0)
+        out.check_output(r'Python-PGD\[step_size=1\]:', repetition=3)
+        out.check_output(r'Python-PGD\[step_size=1.5\]:', repetition=0)
 
         # Make sure the results were saved in a result file
         assert len(out.result_files) == 1, out.output
@@ -89,8 +89,8 @@ class TestRunCmd:
         out.check_output(f'conda activate {test_env_name}')
         out.check_output('Simulated', repetition=1)
         out.check_output('Dummy Sparse Regression', repetition=1)
-        out.check_output('Python-PGD[step_size=1]:', repetition=3)
-        out.check_output('Python-PGD[step_size=1.5]:', repetition=0)
+        out.check_output(r'Python-PGD\[step_size=1\]:', repetition=3)
+        out.check_output(r'Python-PGD\[step_size=1.5\]:', repetition=0)
 
         # Make sure the results were saved in a result file
         assert len(out.result_files) == 1, out.output
@@ -112,7 +112,7 @@ class TestRunCmd:
         with CaptureRunOutput() as out:
             run(run_cmd, 'benchopt', standalone_mode=False)
 
-        out.check_output('Python-PGD[step_size=1]:',
+        out.check_output(r'Python-PGD\[step_size=1\]:',
                          repetition=1)
 
         # Make sure that -f option forces the re-run for the solver
@@ -120,7 +120,7 @@ class TestRunCmd:
         with CaptureRunOutput() as out:
             run(run_cmd, 'benchopt', standalone_mode=False)
 
-        out.check_output('Python-PGD[step_size=1]:',
+        out.check_output(r'Python-PGD\[step_size=1\]:',
                          repetition=2*n_rep+1)
 
 
