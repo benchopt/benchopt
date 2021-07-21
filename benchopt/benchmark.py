@@ -292,7 +292,7 @@ def is_matched(name, include_patterns=None):
         return True
     name = str(name)
     # we use [] to signal options in patterns, we must escape them for re
-    substitutions = {"*": ".*", "[": "\[", "]": "\]"}
+    substitutions = {"*": ".*", "[": r"\[", "]": r"\]"}
     for p in include_patterns:
         for old, new in substitutions.items():
             p = p.replace(old, new)
