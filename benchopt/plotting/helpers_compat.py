@@ -56,11 +56,9 @@ def add_h_line(fig, val, xlim=None, plotly=False):
         plt.xlim(xlim)
         return fig
 
-    fig.add_trace(go.Scatter(
-        x=xlim, y=[val] * 2,
-        line_dash='dot', line_color='black',
-        mode='lines', showlegend=False
-    ))
+    fig.add_hline(y=val,
+                  line_dash="dot",
+                  line_color="black")
 
 
 def _make_bars(fig, heights, ticks, width, colors, times, plotly=False):
