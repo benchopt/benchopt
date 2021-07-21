@@ -78,7 +78,7 @@ def plot_objective_curve(df, plotly=False, suboptimality=False,
     # Format the plot to be nice
     if plotly:
         fig.update_layout(
-            xaxis_type='log',
+            xaxis_type='linear',
             yaxis_type='log',
             xaxis_title=r"Time [sec]",
             yaxis_title=y_label,
@@ -87,7 +87,7 @@ def plot_objective_curve(df, plotly=False, suboptimality=False,
             xaxis_tickangle=-45,
             title=title,
             legend_title='solver',
-            )
+        )
 
         # options for log scale
         fig.update_layout(
@@ -95,15 +95,15 @@ def plot_objective_curve(df, plotly=False, suboptimality=False,
                 dict(
                     buttons=list([
                         dict(
+                            args=["xaxis.type", "linear"],
+                            label="semilog-y",
+                            method="relayout"
+                        ),
+                        dict(
                             args=["xaxis.type", "log"],
                             label="loglog",
                             method="relayout"
                         ),
-                        dict(
-                            args=["xaxis.type", "linear"],
-                            label="semilog-y",
-                            method="relayout"
-                        )
                     ]),
                     direction="down",
                     pad={"r": 10, "t": 10},
