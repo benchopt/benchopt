@@ -78,14 +78,14 @@ To run benchmarks on all datasets and with all solvers, run:
 
     $ benchopt run --env ./benchmark_lasso
 
-To run only some the `sklearn` and `celer` solvers, on the simulated dataset, run:
+To run only the `sklearn` and `celer` solvers, on the `simulated` and `finance` datasets, run:
 
 .. code-block::
 
-    $ benchopt run --env ./benchmark_lasso -s sklearn -s celer -d simulated
+    $ benchopt run --env ./benchmark_lasso -s sklearn -s celer -d simulated -d finance
 
 Some solvers and dataset have parameters; by default all combinations are run.
-If you want to run a specific configuration, pass this option explicitly, e.g., to run the python-pgd solver only with its parameter use_acceleration set to True, use:
+If you want to run a specific configuration, pass it explicitly, e.g., to run the python-pgd solver only with its parameter ``use_acceleration`` set to True, use:
 
 .. code-block::
 
