@@ -31,8 +31,7 @@ jobs:
         # Load our data
         - restore_cache:
             keys:
-              - data-cache-0
-              - pip-cache
+              - pkg-cache
 
         - run:
             name: Spin up Xvfb
@@ -58,15 +57,16 @@ jobs:
               git clone https://github.com/JuliaRegistries/General.git \
                       $HOME/.julia/registries/General
 
-              mamba install julia r-base rpy2 numpy cython -yq
+              mamba install python=3.8 julia r-base rpy2 numpy cython -yq
               pip install --upgrade --progress-bar off julia
               pip install --upgrade --progress-bar off git+https://github.com/scikit-learn-contrib/lightning.git
               pip install --upgrade --progress-bar off -e .[doc]
 
         - save_cache:
-            key: pip-cache
+            key: pkg-cache
             paths:
               - ~/.cache/pip
+              - ~/miniconda/pkgs
 
         # Look at what we have and fail early if there is some library conflict
         - run:
