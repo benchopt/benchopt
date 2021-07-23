@@ -42,7 +42,7 @@ jobs:
         - run:
             name: Get conda running
             command: |
-              wget -q https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh;
+              wget https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-$(uname)-$(uname -m).sh -O ~/miniconda.sh;
               chmod +x ~/miniconda.sh;
               ~/miniconda.sh -b -p ~/miniconda;
               echo "export PATH=~/miniconda/bin:$PATH" >> $BASH_ENV;
@@ -50,7 +50,6 @@ jobs:
         - run:
             name: Get Python running
             command: |
-              conda config --env --prepend channels conda-forge
 
               # There is an ungoing issue with compat between libgit2 and julia which
               # makes the auto install of julia solver fails when cloning the General
@@ -59,14 +58,10 @@ jobs:
               git clone https://github.com/JuliaRegistries/General.git \
                       $HOME/.julia/registries/General
 
-              conda install julia r-base rpy2 numpy cython -yq
+              mamba install julia r-base rpy2 numpy cython -yq
               pip install --upgrade --progress-bar off julia
               pip install --upgrade --progress-bar off git+https://github.com/scikit-learn-contrib/lightning.git
               pip install --upgrade --progress-bar off -e .[doc]
-              # Install ruamel.yaml package with conda as the install of conda
-              # with pip is broken otherwise.
-              # See https://github.com/debbiemarkslab/EVcouplings/pull/261
-              # conda install ruamel.yaml -qy
 
         - save_cache:
             key: pip-cache
