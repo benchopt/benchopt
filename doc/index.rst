@@ -78,7 +78,7 @@ To run benchmarks on all datasets and with all solvers, run:
 
     $ benchopt run --env ./benchmark_lasso
 
-To run only the `sklearn` and `celer` solvers, on the `simulated` and `finance` datasets, run:
+To run only the ``sklearn`` and ``celer`` solvers, on the ``simulated`` and ``finance`` datasets, run:
 
 .. code-block::
 
@@ -89,7 +89,7 @@ If you want to run a specific configuration, pass it explicitly, e.g., to run th
 
 .. code-block::
 
-    $ benchopt run --env ./benchmark_lasso -s python-pgd[use_acceleration=False]
+    $ benchopt run --env ./benchmark_lasso -s python-pgd[use_acceleration=True]
 
 
 Use
@@ -175,4 +175,3 @@ Contents
 .. _`lasso`: https://github.com/benchopt/benchmark_lasso
 .. _`logreg_l1`: https://github.com/benchopt/benchmark_logreg_l1
 .. _`logreg_l2`: https://github.com/benchopt/benchmark_logreg_l2
-.. _`cli_documentation`: https://benchopt.github.io/cli.html
