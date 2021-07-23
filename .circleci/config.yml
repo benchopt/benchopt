@@ -31,7 +31,7 @@ jobs:
         # Load our data
         - restore_cache:
             keys:
-              - pkg-cache
+              - pkgs-cache
 
         - run:
             name: Spin up Xvfb
@@ -62,11 +62,17 @@ jobs:
               pip install --upgrade --progress-bar off git+https://github.com/scikit-learn-contrib/lightning.git
               pip install --upgrade --progress-bar off -e .[doc]
 
+              # update conda pkgs cache
+              mkdir ~/conda_pkgs 2>/dev/null || echo 'already exists'
+              mv ~/miniconda/pkgs/* ~/conda_pkgs/
+              rm -r ~/miniconda/pkgs
+              ln -s ~/conda_pkgs ~/miniconda/pkgs
+
         - save_cache:
-            key: pkg-cache
+            key: pkgs-cache
             paths:
               - ~/.cache/pip
-              - ~/miniconda/pkgs
+              - ~/conda_pkgs
 
         # Look at what we have and fail early if there is some library conflict
         - run:
