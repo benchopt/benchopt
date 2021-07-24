@@ -291,8 +291,11 @@ def is_matched(name, include_patterns=None):
     if include_patterns is None or len(include_patterns) == 0:
         return True
     name = str(name)
+    # we use [] to signal options in patterns, we must escape them for re
+    substitutions = {"*": ".*", "[": r"\[", "]": r"\]"}
     for p in include_patterns:
-        p = p.replace("*", '.*')
+        for old, new in substitutions.items():
+            p = p.replace(old, new)
         if re.match(f"^{p}.*", name, flags=re.IGNORECASE) is not None:
             return True
     return False
@@ -314,6 +317,6 @@ def _validate_patterns(all_names, patterns, name_type='dataset'):
     if len(invalid_patterns) > 0:
         all_names = '- ' + '\n- '.join(all_names)
         raise click.BadParameter(
-            f"Patterns {invalid_patterns} did not matched any {name_type}.\n"
+            f"Patterns {invalid_patterns} did not match any {name_type}.\n"
             f"Available {name_type}s are:\n{all_names}"
         )

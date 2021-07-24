@@ -61,20 +61,36 @@ This benchmark can then be retrieved locally with:
 
     $ git clone https://github.com/benchopt/benchmark_lasso.git
 
-Command line usage
-------------------
+Example of command line usage on the Lasso benchmark
+----------------------------------------------------
 
-To install all Lasso benchmarks requirements and dependencies, run:
+This section illustrates benchopt's command line interface on the `Lasso benchmark <https://github.com/benchopt/benchmark_lasso>`_; the syntax is applicable to any benchmark.
+
+To install all requirements and dependencies of the benchmark, run:
 
 .. code-block::
 
     $ benchopt install --env ./benchmark_lasso
 
-To run Lasso benchmarks on all datasets and with all solvers, run:
+To run benchmarks on all datasets and with all solvers, run:
 
 .. code-block::
 
     $ benchopt run --env ./benchmark_lasso
+
+To run only the ``sklearn`` and ``celer`` solvers, on the ``simulated`` and ``finance`` datasets, run:
+
+.. code-block::
+
+    $ benchopt run --env ./benchmark_lasso -s sklearn -s celer -d simulated -d finance
+
+Some solvers and dataset have parameters; by default all combinations are run.
+If you want to run a specific configuration, pass it explicitly, e.g., to run the python-pgd solver only with its parameter ``use_acceleration`` set to True, use:
+
+.. code-block::
+
+    $ benchopt run --env ./benchmark_lasso -s python-pgd[use_acceleration=True]
+
 
 Use
 
@@ -82,8 +98,8 @@ Use
 
     $ benchopt run -h
 
-to get more details about the different options or read the
-:ref:`api_documentation`.
+to get more details about the different options read the
+:ref:`cli_documentation`.
 
 Some available benchmarks
 -------------------------
