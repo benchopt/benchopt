@@ -41,10 +41,17 @@ jobs:
         - run:
             name: Get conda running
             command: |
-              wget https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-$(uname)-$(uname -m).sh -O ~/miniconda.sh;
+
+              wget -q https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-$(uname)-$(uname -m).sh -O ~/miniconda.sh;
               chmod +x ~/miniconda.sh;
               ~/miniconda.sh -b -p ~/miniconda;
               echo "export PATH=~/miniconda/bin:$PATH" >> $BASH_ENV;
+
+              # update conda pkgs cache
+              mkdir ~/conda_pkgs 2>/dev/null || echo 'already exists'
+              mv ~/miniconda/pkgs/* ~/conda_pkgs/
+              rm -r ~/miniconda/pkgs
+              ln -s ~/conda_pkgs ~/miniconda/pkgs
 
         - run:
             name: Get Python running
@@ -61,12 +68,6 @@ jobs:
               pip install --upgrade --progress-bar off julia
               pip install --upgrade --progress-bar off git+https://github.com/scikit-learn-contrib/lightning.git
               pip install --upgrade --progress-bar off -e .[doc]
-
-              # update conda pkgs cache
-              mkdir ~/conda_pkgs 2>/dev/null || echo 'already exists'
-              mv ~/miniconda/pkgs/* ~/conda_pkgs/
-              rm -r ~/miniconda/pkgs
-              ln -s ~/conda_pkgs ~/miniconda/pkgs
 
         - save_cache:
             key: pkgs-cache
