@@ -96,9 +96,9 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
         env_name='False'):
 
     from benchopt.runner import run_benchmark
-    from benchopt.utils.profiling import use_profile
 
     if do_profile:
+        from benchopt.utils.profiling import use_profile
         use_profile()  # needs to be called before validate_solver_patterns
 
     # Check that the dataset/solver patterns match actual dataset
@@ -117,8 +117,7 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
             timeout=timeout, plot_result=plot, html=html, pdb=pdb
         )
 
-        if do_profile:
-            print_stats()
+        print_stats()  # print profiling stats (does nothing if not profiling)
 
         return
 

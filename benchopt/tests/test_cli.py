@@ -95,6 +95,16 @@ class TestRunCmd:
         # Make sure the results were saved in a result file
         assert len(out.result_files) == 1, out.output
 
+    def test_benchopt_run_profile(self):
+        with CaptureRunOutput() as out:
+            run_cmd = [str(DUMMY_BENCHMARK_PATH),
+                   '-d', SELECT_ONE_SIMULATED, '-f', SELECT_ONE_PGD,
+                   '-n', '1', '-r', '1', '-p', SELECT_ONE_OBJECTIVE,
+                   '--profile', '--no-plot']
+            run(run_cmd, 'benchopt', standalone_mode=False)
+
+        out.check_output('@profile', repetition=1)
+
     def test_benchopt_caching(self):
         # Check that the computation caching is working properly.
 
