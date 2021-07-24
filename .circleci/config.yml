@@ -49,8 +49,8 @@ jobs:
 
               # update conda pkgs cache
               mkdir ~/conda_pkgs 2>/dev/null || echo 'already exists'
-              mv -f ~/miniconda/pkgs/* ~/conda_pkgs/
-              rm -r ~/miniconda/pkgs
+              cp -r ~/miniconda/pkgs/* ~/conda_pkgs/
+              rm -rf ~/miniconda/pkgs
               ln -s ~/conda_pkgs ~/miniconda/pkgs
 
         - run:
