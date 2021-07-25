@@ -103,7 +103,7 @@ class TestRunCmd:
                        '--profile', '--no-plot']
             run(run_cmd, 'benchopt', standalone_mode=False)
 
-        out.check_output('@profile', repetition=1)
+        out.check_output('Using profiling', repetition=1)
 
     def test_benchopt_caching(self):
         # Check that the computation caching is working properly.

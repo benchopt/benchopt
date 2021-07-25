@@ -1,9 +1,12 @@
+from ..config import DEBUG
 
 USE_PROFILE = False
 PROFILER = None
 
 
 def use_profile():
+    if DEBUG:
+        print("DEBUG - Using profiling")
     global USE_PROFILE
     USE_PROFILE = True
 
