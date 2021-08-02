@@ -1,4 +1,5 @@
 from benchopt import BaseSolver, safe_import_context
+from benchopt.utils import profile
 
 with safe_import_context() as import_ctx:
     import numpy as np
@@ -18,6 +19,7 @@ class Solver(BaseSolver):
 
     # Main function of the solver, which compute a solution estimate.
     # Here this is the proximal gradient descent.
+    @profile
     def run(self, n_iter):
         L = np.linalg.norm(self.X, ord=2) ** 2
         step_size = self.step_size / L

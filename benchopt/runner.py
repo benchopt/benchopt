@@ -12,7 +12,6 @@ from .stopping_criterion import SufficientDescentCriterion
 from .utils.colorify import colorify
 from .utils.colorify import LINE_LENGTH, RED, GREEN, YELLOW
 
-
 # Get config values
 from .config import DEBUG
 from .config import RAISE_INSTALL_ERROR

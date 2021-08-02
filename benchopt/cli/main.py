@@ -10,6 +10,7 @@ from benchopt.utils.conda_env_cmd import list_conda_envs
 from benchopt.utils.conda_env_cmd import create_conda_env
 from benchopt.utils.shell_cmd import _run_shell_in_conda_env
 from benchopt.utils.conda_env_cmd import get_benchopt_version_in_env
+from benchopt.utils.profiling import print_stats
 
 
 main = click.Group(
@@ -72,6 +73,12 @@ main = click.Group(
 @click.option('--local', '-l', 'env_name',
               flag_value='False', default=True,
               help="Run the benchmark in the local conda environment.")
+@click.option('--profile', 'do_profile',
+              flag_value='True', default=False,
+              help="Will do line profiling on all functions with @profile "
+                   "decorator. Requires the line-profiler package. "
+                   "The profile decorator needs to be imported "
+                   "with: from benchopt.utils import profile")
 @click.option('--env', '-e', 'env_name',
               flag_value='True',
               help="Run the benchmark in a dedicated conda environment "
@@ -85,9 +92,14 @@ main = click.Group(
               "datasets, see the command `benchopt install`.")
 def run(benchmark, solver_names, forced_solvers, dataset_names,
         objective_filters, max_runs, n_repetitions, timeout,
-        plot=True, html=True, pdb=False, env_name='False'):
+        plot=True, html=True, pdb=False, do_profile=False,
+        env_name='False'):
 
     from benchopt.runner import run_benchmark
+
+    if do_profile:
+        from benchopt.utils.profiling import use_profile
+        use_profile()  # needs to be called before validate_solver_patterns
 
     # Check that the dataset/solver patterns match actual dataset
     benchmark = Benchmark(benchmark)
@@ -104,6 +116,9 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
             max_runs=max_runs, n_repetitions=n_repetitions,
             timeout=timeout, plot_result=plot, html=html, pdb=pdb
         )
+
+        print_stats()  # print profiling stats (does nothing if not profiling)
+
         return
 
     _, all_conda_envs = list_conda_envs()
