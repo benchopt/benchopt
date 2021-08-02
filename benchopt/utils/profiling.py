@@ -1,3 +1,5 @@
+from functools import wraps
+
 from ..config import DEBUG
 
 USE_PROFILE = False
@@ -30,10 +32,15 @@ def profile(func):
     Once the method is decorated, you can use ``--profile`` in
     ``benchopt run`` to get a profiling report.
     """
-    global USE_PROFILE
-    if not USE_PROFILE:
-        return func
-    return get_profiler()(func)
+    @wraps(func)
+    def profiled_func(*args, **kwargs):
+        global USE_PROFILE
+        if not USE_PROFILE:
+            call_func = func
+        else:
+            call_func = get_profiler()(func)
+        return call_func(*args, **kwargs)
+    return profiled_func
 
 
 def print_stats():

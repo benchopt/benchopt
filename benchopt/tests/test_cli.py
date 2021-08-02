@@ -104,6 +104,12 @@ class TestRunCmd:
             run(run_cmd, 'benchopt', standalone_mode=False)
 
         out.check_output('Using profiling', repetition=1)
+        out.check_output("File: .*benchopt/tests/test_benchmarks/"
+                         "dummy_benchmark/solvers/python_pgd.py", repetition=1)
+        out.check_output(r'\s+'.join([
+                "Line #", "Hits", "Time", "Per Hit", "% Time", "Line Contents"
+            ]), repetition=1)
+        out.check_output(r"def run\(self, n_iter\):", repetition=1)
 
     def test_benchopt_caching(self):
         # Check that the computation caching is working properly.
