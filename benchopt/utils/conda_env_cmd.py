@@ -7,7 +7,7 @@ import benchopt
 
 from .shell_cmd import _run_shell
 from .shell_cmd import _run_shell_in_conda_env
-from .misc import get_benchopt_requirement_line
+from .misc import get_benchopt_requirement
 
 from ..config import DEBUG
 from ..config import get_setting
@@ -28,7 +28,7 @@ dependencies:
   - compilers
   - pip
   - pip:
-    - {benchopt_install}
+    - {benchopt_requirement}
 """
 
 EMPTY_ENV = """
@@ -64,8 +64,8 @@ def create_conda_env(env_name, recreate=False, with_pytest=False, empty=False):
             f"Conda env {env_name} already exists. Checking setup ...",
             end='', flush=True
         )
-        benchopt_version = get_benchopt_version_in_env(env_name)
-        if benchopt_version is None:
+        env_version, _ = get_benchopt_version_in_env(env_name)
+        if env_version is None:
             print()
             raise RuntimeError(
                 f"`benchopt` is not installed in existing env '{env_name}'. "
@@ -73,11 +73,11 @@ def create_conda_env(env_name, recreate=False, with_pytest=False, empty=False):
                 "by either using the --recreate option or installing benchopt "
                 f"in conda env {env_name}."
             )
-        if benchopt.__version__ != benchopt_version:
+        if benchopt.__version__ != env_version:
             print()
             warnings.warn(
                 f"The local version of benchopt ({benchopt.__version__}) and "
-                f"the one in conda env ({benchopt_version}) are different. "
+                f"the one in conda env ({env_version}) are different. "
                 "This can lead to unexpected behavior. You can correct this "
                 "by either using the --recreate option or fixing the version "
                 f"of benchopt in conda env {env_name}."
@@ -87,8 +87,9 @@ def create_conda_env(env_name, recreate=False, with_pytest=False, empty=False):
 
     force = "--force" if recreate else ""
 
+    benchopt_requirement, benchopt_editable = get_benchopt_requirement()
     benchopt_env = BENCHOPT_ENV.format(
-        benchopt_install=get_benchopt_requirement_line()
+        benchopt_requirement=benchopt_requirement
     )
 
     if with_pytest:
@@ -116,13 +117,15 @@ def create_conda_env(env_name, recreate=False, with_pytest=False, empty=False):
         if empty:
             return
         # Check that the correct version of benchopt is installed in the env
-        benchopt_version = get_benchopt_version_in_env(env_name)
-        assert benchopt_version == benchopt.__version__, (
-            f"Installed the wrong version of benchopt ({benchopt_version}) in "
+        env_version, env_editable = get_benchopt_version_in_env(env_name)
+        error_msg = (
+            f"Installed the wrong version of benchopt ({env_version}) in "
             f"conda env. This should be version: {benchopt.__version__}. There"
             " is something wrong the env creation mechanism. Please report "
             "this error to https://github.com/benchopt/benchopt"
         )
+        assert ((benchopt_editable and env_editable)
+                or env_version == benchopt.__version__), error_msg
     except RuntimeError:
         print(" failed to create the environment.")
         raise
@@ -134,13 +137,14 @@ def get_benchopt_version_in_env(env_name):
     """Check that the version of benchopt installed in env_name is the same
     as the one running.
     """
-    check_benchopt, benchopt_version = _run_shell_in_conda_env(
-        "benchopt --version",
+    check_benchopt, output = _run_shell_in_conda_env(
+        "benchopt --version --check-editable",
         env_name=env_name, capture_stdout=True, return_output=True
     )
     if check_benchopt != 0:
-        return None
-    return benchopt_version
+        return None, None
+    benchopt_version, is_editable = output.split()
+    return benchopt_version, is_editable == 'True'
 
 
 def delete_conda_env(env_name):
@@ -201,15 +205,15 @@ def list_conda_envs():
     try:
         from conda.base.context import context
     except ImportError:
-        # Not in an activated conda env, returns an empty list.
         context = get_conda_context()
         if context is None:
+            # Not in an activated conda env, returns an empty list.
             return None, []
 
     def get_env_name(prefix):
 
-        active = prefix == Path(context.active_prefix)
         prefix = Path(prefix)
+        is_active = prefix == Path(context.active_prefix)
         if prefix == Path(context.root_prefix):
             name = 'base'
         elif any(Path(envs_dir) == prefix.parent
@@ -217,7 +221,7 @@ def list_conda_envs():
             name = prefix.name
         else:
             name = ''
-        return name, active
+        return name, is_active
 
     conda_prefixes = [context.root_prefix]
     for env_dir in context.envs_dirs:
