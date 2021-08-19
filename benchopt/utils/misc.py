@@ -1,26 +1,31 @@
 
 
-def get_benchopt_requirement_line():
+def get_benchopt_requirement():
     """Specification for pip requirement to install benchopt in conda env.
 
     Find out how benchopt where installed so we can install the same version
     even if it was installed in develop mode. This requires pip version >= 20.1
+
+    Returns
+    -------
+    pip_requirement : str
+        String to pass to pip to instal benchopt in another environment.
+    is_editable : bool
+        Whether the current installation is in development mode or not.
     """
-    from pip._internal.utils.misc import dist_is_editable
+    from pip._internal.metadata import get_default_environment
     from pip._internal.operations.freeze import FrozenRequirement
-    from pip._internal.utils.misc import get_installed_distributions
+
+    dist = get_default_environment().get_distribution('benchopt')
 
     # If benchopt is installed in editable mode, get the module path to install
     # it directly from the folder. Else, install it correctly even if it is
     # installed with an url.
-    all_dist = [t for t in get_installed_distributions()
-                if t.project_name == 'benchopt']
-    assert len(all_dist) == 1, (
+    assert dist is not None, (
         'benchopt is not installed in the current environment?'
     )
-    dist = all_dist[0]
-    if dist_is_editable(dist):
-        return f'-e {dist.module_path}'
-
     req = FrozenRequirement.from_dist(dist)
-    return str(req)
+    if req.editable:
+        return f'-e {dist.location}', True
+
+    return str(req), False
