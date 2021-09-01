@@ -172,7 +172,6 @@ def test_solver(benchmark, solver_class):
         solver, 'stop_strategy', solver.stopping_criterion.strategy
     )
     if solver_strategy == 'callback':
-        print('hello')
         sc = solver.stopping_criterion.get_runner_instance(
             max_runs=25, timeout=None, solver=solver
         )
@@ -193,4 +192,4 @@ def test_solver(benchmark, solver_class):
         eps = 1e-5 * np.random.randn(*dimension)
         val_eps = objective(beta_hat_i + eps)['objective_value']
         diff = val_eps - val_star
-        assert diff > 0
+        assert diff >= 0
