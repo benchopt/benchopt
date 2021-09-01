@@ -2,15 +2,13 @@ import tempfile
 import numbers
 from abc import ABC, abstractmethod
 
+from .stopping_criterion import SufficientProgressCriterion
+
 from .utils.dynamic_modules import get_file_hash
 from .utils.dynamic_modules import _reconstruct_class
 
 from .utils.dependencies_mixin import DependenciesMixin
 from .utils.parametrized_name_mixin import ParametrizedNameMixin
-
-
-# Possible stop strategies
-STOP_STRATEGIES = ['iteration', 'tolerance', 'callback']
 
 
 class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
@@ -46,7 +44,9 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
     """
 
     _base_class_name = 'Solver'
-    stop_strategy = 'iteration'
+    stopping_criterion = SufficientProgressCriterion(
+        strategy='iteration'
+    )
 
     def _set_objective(self, objective):
         """Store the objective for hashing/pickling and check its compatibility

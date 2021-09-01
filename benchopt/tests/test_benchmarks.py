@@ -4,9 +4,8 @@ import numbers
 
 import numpy as np
 
-from benchopt.base import STOP_STRATEGIES
 from benchopt.runner import _Callback
-from benchopt.stopping_criterion import StoppingCriterion
+from benchopt.stopping_criterion import STOP_STRATEGIES
 
 
 def test_benchmark_objective(benchmark, dataset_simu):
@@ -100,7 +99,15 @@ def test_solver_class(benchmark, solver_class):
     )
 
     # Check that the solver_class uses a valid stop_strategy
-    assert solver_class.stop_strategy in STOP_STRATEGIES
+    if hasattr(solver_class, 'stop_strategy'):
+        msg = f"stop_strategy should be in {STOP_STRATEGIES}."
+        assert solver_class.stop_strategy in STOP_STRATEGIES
+
+    # Check that the solver_class uses a valid stop_strategy
+    if hasattr(solver_class, 'get_next'):
+        msg = "get_next should be a callable static method."
+        assert (callable(solver_class.get_next)
+                and type(solver_class.get_next) == staticmethod), msg
 
 
 def test_solver_install_api(benchmark, solver_class):
@@ -160,14 +167,20 @@ def test_solver(benchmark, solver_class):
     solver.set_objective(**objective.to_dict())
 
     # Either call run_with_cb or run
-    if solver.stop_strategy == 'callback':
-        sc = StoppingCriterion._get_instance(max_runs=25, timeout=None)
+
+    solver_strategy = getattr(
+        solver, 'stop_strategy', solver.stopping_criterion.strategy
+    )
+    if solver_strategy == 'callback':
+        sc = solver.stopping_criterion.get_runner_instance(
+            max_runs=25, timeout=None, solver=solver
+        )
         cb = _Callback(
             objective, meta={}, stopping_criterion=sc
         )
         solver.run(cb)
     else:
-        stop_val = 5000 if solver_class.stop_strategy == 'iteration' else 1e-15
+        stop_val = 5000 if solver_strategy == 'iteration' else 1e-15
         solver.run(stop_val)
 
     beta_hat_i = solver.get_result()
@@ -179,4 +192,4 @@ def test_solver(benchmark, solver_class):
         eps = 1e-5 * np.random.randn(*dimension)
         val_eps = objective(beta_hat_i + eps)['objective_value']
         diff = val_eps - val_star
-        assert diff > 0
+        assert diff >= 0

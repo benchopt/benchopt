@@ -7,8 +7,6 @@ from .benchmark import _check_name_lists
 from .utils.sys_info import get_sys_info
 from .utils.pdb_helpers import exception_handler
 
-from .stopping_criterion import SufficientDescentCriterion
-
 from .utils.colorify import colorify
 from .utils.colorify import LINE_LENGTH, RED, GREEN, YELLOW
 
@@ -17,21 +15,7 @@ from .config import DEBUG
 from .config import RAISE_INSTALL_ERROR
 
 
-# Define some constants
-# TODO: better parametrize this?
-MAX_ITER = int(1e12)
-MIN_TOL = 1e-15
 INFINITY = 3e38  # see: np.finfo('float32').max
-RHO = 1.5
-RHO_INC = 1.2  # multiplicative update if rho is too small
-
-
-def get_next(stop_val, rho=RHO, strategy="iteration"):
-    if strategy == "iteration":
-        return max(stop_val + 1, min(int(rho * stop_val), MAX_ITER))
-    else:
-        assert strategy == 'tolerance'
-        return max(stop_val / rho, MIN_TOL)
 
 
 def cache(func, benchmark, force=False, ignore=None):
@@ -129,30 +113,20 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
 
     # compute initial value
     stopping_criterion.show_progress('initialization')
-    init_stop_val = (0 if solver.stop_strategy == 'iteration' else INFINITY)
+    stop_val = INFINITY if stopping_criterion.strategy == 'tolerance' else 0
     call_args = dict(objective=objective, solver=solver, meta=meta)
-    cost = run_one_resolution_cached(stop_val=init_stop_val, **call_args)
-    curve = [cost]
-    stop, status, is_flat = stopping_criterion.should_stop_solver(curve)
 
-    stop_val = 1
-    rho = RHO
+    stop = False
+    curve = []
     while not stop:
 
-        cost = run_one_resolution_cached(
-            stop_val=stop_val, **call_args
-        )
+        cost = run_one_resolution_cached(stop_val=stop_val, **call_args)
         curve.append(cost)
 
         # Check the stopping criterion and update rho if necessary.
-        stop, status, is_flat = stopping_criterion.should_stop_solver(curve)
-        if is_flat:
-            rho *= RHO_INC
-            if DEBUG:
-                print("DEBUG - curve is flat -> increasing rho:", rho)
-
-        # compute next evaluation point
-        stop_val = get_next(stop_val, rho=rho, strategy=solver.stop_strategy)
+        stop, status, stop_val = stopping_criterion.should_stop_solver(
+            stop_val, curve
+        )
 
     return curve, status
 
@@ -207,7 +181,6 @@ class _Callback:
         self.curve = []
         self.status = 'running'
         self.it = 0
-        self.rho = RHO
         self.time_iter = 0.
         self.next_stopval = 0
         self.time_callback = time.perf_counter()
@@ -226,21 +199,14 @@ class _Callback:
                 **objective_dict, **self.info
             ))
 
-            # Check the stopping criterion and update rho if necessary.
-            stop, status, is_flat = self.stopping_criterion.should_stop_solver(
-                self.curve
+            # Check the stopping criterion
+            should_stop_res = self.stopping_criterion.should_stop_solver(
+                self.next_stopval, self.curve
             )
+            stop, status, self.next_stopval = should_stop_res
             if stop:
                 self.status = status
                 return False
-
-            if is_flat:
-                self.rho *= RHO_INC
-
-            # compute next evaluation point
-            self.next_stopval = get_next(
-                self.next_stopval, rho=self.rho, strategy="iteration"
-            )
 
         # Update iteration number and restart time measurment.
         self.it += 1
@@ -317,12 +283,16 @@ def run_one_solver(benchmark, objective, solver, meta, max_runs, n_repetitions,
 
             meta_rep = dict(**meta, idx_rep=rep, solver_name=str(solver))
 
-            stopping_criterion = SufficientDescentCriterion._get_instance(
+            stopping_criterion = solver.stopping_criterion.get_runner_instance(
                 max_runs=max_runs, timeout=timeout / n_repetitions,
-                progress_str=progress_str
+                progress_str=progress_str, solver=solver
             )
 
-            if solver.stop_strategy == "callback":
+            solver_strategy = getattr(
+                solver, 'stop_strategy', solver.stopping_criterion.strategy
+            )
+
+            if solver_strategy == "callback":
                 callback = _Callback(
                     objective, meta_rep, stopping_criterion
                 )
