@@ -127,5 +127,5 @@ List of optimization problems available
    :target: https://github.com/benchopt/benchmark_huber_l2/actions
 .. |Build Status QuantileRegL1| image:: https://github.com/benchopt/benchmark_quantile_regression/workflows/Tests/badge.svg
    :target: https://github.com/benchopt/benchmark_quantile_regression/actions
-.. |Build Status LinearSVM| image:: https://github.com/benchopt/benchmark_linear_svm_binary/workflows/Tests/badge.svg
-   :target: https://github.com/benchopt/benchmark_linear_svm_binary/actions
+.. |Build Status LinearSVM| image:: https://github.com/benchopt/benchmark_linear_svm_binary_classif_no_intercept/workflows/Tests/badge.svg
+   :target: https://github.com/benchopt/benchmark_linear_svm_binary_classif_no_intercept/actions
