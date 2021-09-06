@@ -86,11 +86,14 @@ to get more details about the different options or read the
 List of optimization problems available
 ---------------------------------------
 
-- `ols`_: ordinary least-squares.
-- `nnls`_: non-negative least-squares.
-- `lasso`_: l1-regularized least-squares.
-- `logreg_l2`_: l2-regularized logistic regression.
-- `logreg_l1`_: l1-regularized logistic regression.
+- `Ordinary Least Squares (OLS) <https://github.com/benchopt/benchmark_ols>`_ |Build Status OLS|
+- `Non-Negative Least Squares (NNLS) <https://github.com/benchopt/benchmark_nnls>`_ |Build Status NNLS|
+- `LASSO: L1-regularized least squares <https://github.com/benchopt/benchmark_lasso>`_ |Build Status Lasso|
+- `L2-regularized logistic regression <https://github.com/benchopt/benchmark_logreg_l2>`_ |Build Status LogRegL2|
+- `L1-regularized logistic regression <https://github.com/benchopt/benchmark_logreg_l1>`_ |Build Status LogRegL1|
+- `L2-regularized Huber regression <https://github.com/benchopt/benchmark_huber_l2>`_ |Build Status HuberL2|
+- `L1-regularized quantile regression <https://github.com/benchopt/benchmark_quantile_regression>`_ |Build Status QuantileRegL1|
+- `Linear SVM for binary classification <https://github.com/benchopt/benchmark_linear_svm_binary_classif_no_intercept>`_ |Build Status LinearSVM|
 
 [![test]()]()
 
@@ -101,8 +104,19 @@ List of optimization problems available
 .. |codecov| image:: https://codecov.io/gh/benchopt/benchOpt/branch/master/graph/badge.svg
    :target: https://codecov.io/gh/benchopt/benchOpt
 
-.. _`ols`: https://github.com/benchopt/benchmark_ols
-.. _`nnls`: https://github.com/benchopt/benchmark_nnls
-.. _`lasso`: https://github.com/benchopt/benchmark_lasso
-.. _`logreg_l1`: https://github.com/benchopt/benchmark_logreg_l1
-.. _`logreg_l2`: https://github.com/benchopt/benchmark_logreg_l2
+.. |Build Status OLS| image:: https://github.com/benchopt/benchmark_ols/workflows/Tests/badge.svg
+   :target: https://github.com/benchopt/benchmark_ols/actions
+.. |Build Status NNLS| image:: https://github.com/benchopt/benchmark_nnls/workflows/Tests/badge.svg
+   :target: https://github.com/benchopt/benchmark_nnls/actions
+.. |Build Status Lasso| image:: https://github.com/benchopt/benchmark_lasso/workflows/Tests/badge.svg
+   :target: https://github.com/benchopt/benchmark_lasso/actions
+.. |Build Status LogRegL2| image:: https://github.com/benchopt/benchmark_logreg_l2/workflows/Tests/badge.svg
+   :target: https://github.com/benchopt/benchmark_logreg_l2/actions
+.. |Build Status LogRegL1| image:: https://github.com/benchopt/benchmark_logreg_l1/workflows/Tests/badge.svg
+   :target: https://github.com/benchopt/benchmark_logreg_l1/actions
+.. |Build Status HuberL2| image:: https://github.com/benchopt/benchmark_huber_l2/workflows/Tests/badge.svg
+   :target: https://github.com/benchopt/benchmark_huber_l2/actions
+.. |Build Status QuantileRegL1| image:: https://github.com/benchopt/benchmark_quantile_regression/workflows/Tests/badge.svg
+   :target: https://github.com/benchopt/benchmark_quantile_regression/actions
+.. |Build Status LinearSVM| image:: https://github.com/benchopt/benchmark_linear_svm_binary_classif_no_intercept/workflows/Tests/badge.svg
+   :target: https://github.com/benchopt/benchmark_linear_svm_binary_classif_no_intercept/actions
