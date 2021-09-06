@@ -113,19 +113,19 @@ List of optimization problems available
 .. _`quantile_l1`: https://github.com/benchopt/benchmark_quantile_regression
 .. _`linear_svm`: https://github.com/benchopt/benchmark_linear_svm_binary
 
-.. |Build Status OLS| image:: https://github.com/benchopt/benchmark_ols/workflows/checks/badge.svg
+.. |Build Status OLS| image:: https://github.com/benchopt/benchmark_ols/workflows/Tests/badge.svg
    :target: https://github.com/benchopt/benchmark_ols/actions
-.. |Build Status NNLS| image:: https://github.com/benchopt/benchmark_nnls/workflows/checks/badge.svg
+.. |Build Status NNLS| image:: https://github.com/benchopt/benchmark_nnls/workflows/Tests/badge.svg
    :target: https://github.com/benchopt/benchmark_nnls/actions
-.. |Build Status Lasso| image:: https://github.com/benchopt/benchmark_lasso/workflows/checks/badge.svg
+.. |Build Status Lasso| image:: https://github.com/benchopt/benchmark_lasso/workflows/Tests/badge.svg
    :target: https://github.com/benchopt/benchmark_lasso/actions
-.. |Build Status LogRegL2| image:: https://github.com/benchopt/benchmark_logreg_l2/workflows/checks/badge.svg
+.. |Build Status LogRegL2| image:: https://github.com/benchopt/benchmark_logreg_l2/workflows/Tests/badge.svg
    :target: https://github.com/benchopt/benchmark_logreg_l2/actions
-.. |Build Status LogRegL1| image:: https://github.com/benchopt/benchmark_logreg_l1/workflows/checks/badge.svg
+.. |Build Status LogRegL1| image:: https://github.com/benchopt/benchmark_logreg_l1/workflows/Tests/badge.svg
    :target: https://github.com/benchopt/benchmark_logreg_l1/actions
-.. |Build Status HuberL2| image:: https://github.com/benchopt/benchmark_huber_l2/workflows/checks/badge.svg
+.. |Build Status HuberL2| image:: https://github.com/benchopt/benchmark_huber_l2/workflows/Tests/badge.svg
    :target: https://github.com/benchopt/benchmark_huber_l2/actions
-.. |Build Status QuantileRegL1| image:: https://github.com/benchopt/benchmark_quantile_regression/workflows/checks/badge.svg
+.. |Build Status QuantileRegL1| image:: https://github.com/benchopt/benchmark_quantile_regression/workflows/Tests/badge.svg
    :target: https://github.com/benchopt/benchmark_quantile_regression/actions
-.. |Build Status LinearSVM| image:: https://github.com/benchopt/benchmark_linear_svm_binary/workflows/checks/badge.svg
+.. |Build Status LinearSVM| image:: https://github.com/benchopt/benchmark_linear_svm_binary/workflows/Tests/badge.svg
    :target: https://github.com/benchopt/benchmark_linear_svm_binary/actions
