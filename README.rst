@@ -86,14 +86,14 @@ to get more details about the different options or read the
 List of optimization problems available
 ---------------------------------------
 
-- `ols`_: ordinary least-squares. |Build Status OLS|
-- `nnls`_: non-negative least-squares. |Build Status NNLS|
-- `lasso`_: l1-regularized least-squares. |Build Status Lasso|
-- `logreg_l2`_: l2-regularized logistic regression. |Build Status LogRegL2|
-- `logreg_l1`_: l1-regularized logistic regression. |Build Status LogRegL1|
-- `huber_l2`_: l2-regularized Huber regression. |Build Status HuberL2|
-- `quantile_l1`_: l1-regularized quantile regression. |Build Status QuantileRegL1|
-- `linear_svm`_: linear SVM for binary classification. |Build Status LinearSVM|
+- `Ordinary Least Squares (OLS) <https://github.com/benchopt/benchmark_ols>`_ |Build Status OLS|
+- `Non-Negative Least Squares (NNLS) <https://github.com/benchopt/benchmark_nnls>`_ |Build Status NNLS|
+- `LASSO: l1-regularized least squares <https://github.com/benchopt/benchmark_lasso>`_ |Build Status Lasso|
+- `L2-regularized logistic regression <https://github.com/benchopt/benchmark_logreg_l2>`_ |Build Status LogRegL2|
+- `L1-regularized logistic regression <https://github.com/benchopt/benchmark_logreg_l1>`_ |Build Status LogRegL1|
+- `L2-regularized Huber regression <https://github.com/benchopt/benchmark_huber_l2>`_ |Build Status HuberL2|
+- `L1-regularized quantile regression <https://github.com/benchopt/benchmark_quantile_regression>`_ |Build Status QuantileRegL1|
+- `Linear SVM for binary classification <https://github.com/benchopt/benchmark_linear_svm_binary_classif_no_intercept>`_ |Build Status LinearSVM|
 
 [![test]()]()
 
@@ -103,15 +103,6 @@ List of optimization problems available
    :target: https://www.python.org/downloads/release/python-360/
 .. |codecov| image:: https://codecov.io/gh/benchopt/benchOpt/branch/master/graph/badge.svg
    :target: https://codecov.io/gh/benchopt/benchOpt
-
-.. _`ols`: https://github.com/benchopt/benchmark_ols
-.. _`nnls`: https://github.com/benchopt/benchmark_nnls
-.. _`lasso`: https://github.com/benchopt/benchmark_lasso
-.. _`logreg_l1`: https://github.com/benchopt/benchmark_logreg_l1
-.. _`logreg_l2`: https://github.com/benchopt/benchmark_logreg_l2
-.. _`huber_l2`: https://github.com/benchopt/benchmark_logreg_l2
-.. _`quantile_l1`: https://github.com/benchopt/benchmark_quantile_regression
-.. _`linear_svm`: https://github.com/benchopt/benchmark_linear_svm_binary
 
 .. |Build Status OLS| image:: https://github.com/benchopt/benchmark_ols/workflows/Tests/badge.svg
    :target: https://github.com/benchopt/benchmark_ols/actions
