@@ -381,7 +381,7 @@ def _fetch_cached_run_list(new_results, benchmark_html):
     return list(results.values())
 
 
-def plot_benchmark_html(fnames, benchmark, kinds, display=True, index=False):
+def plot_benchmark_html(fnames, benchmark, kinds, display=True):
     """Plot a given benchmark as an HTML report. This function can either plot
     a single run or multiple ones.
 

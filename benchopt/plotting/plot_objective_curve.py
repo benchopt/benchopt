@@ -61,6 +61,17 @@ def plot_objective_curve(df, obj_col='objective_value', plotly=False,
         df[obj_col] /= max_f_0
 
     fig = get_figure(plotly)
+
+    if df[obj_col].count() == 0:  # missing values
+        if plotly:
+            fig.add_annotation(text="Not Available",
+                               xref="paper", yref="paper",
+                               x=0.5, y=0.5, showarrow=False,
+                               font=dict(color="black", size=32))
+        else:
+            plt.text(0.5, 0.5, "Not Available")
+        return fig
+
     for i, solver_name in enumerate(solver_names):
         df_ = df[df['solver_name'] == solver_name]
         curve = df_.groupby('stop_val').median()

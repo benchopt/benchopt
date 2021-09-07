@@ -29,6 +29,9 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
     plotly : bool
         If set to True, generate figures with plotly if possible and save the
         result as a HTML file.
+    html : bool
+        If True plot the benchmark in an HTML page. If True, plotly
+        is necessarily used.
 
     Returns
     -------
