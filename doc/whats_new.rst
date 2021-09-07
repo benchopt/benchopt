@@ -21,6 +21,17 @@ Changelog
   which measures progress relatively to the best attained value instead of
   the previous one, by `Thomas Moreau`_ (:gh:`176`)
 
+- Now all values returned by ``Objective.compute`` are included in reports,
+  by `Thomas Moreau`_ and `Alexandre Gramfort`_ (gh:`200`).
+
+API
+~~~
+
+- When returning a dict, ``Objective.compute`` should at least include
+  ``value`` key instead of ``objective_value``, by `Thomas Moreau`_ and
+  `Alexandre Gramfort`_ (gh:`200`).
+
+
 .. _changes_1_1:
 
 Version 1.1 - 22-04-2021

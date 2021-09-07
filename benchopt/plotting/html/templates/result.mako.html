@@ -73,6 +73,11 @@
   <option value="${obj}">${obj}</option>
 %endfor
 </select>
+<select id='objective_column' onchange="showMe(this);">
+% for obj_col in result['obj_cols']:
+  <option value="${obj_col}">${obj_col.replace('objective_', '')}</option>
+%endfor
+</select>
 <label for='plot_kind'>Kind</label>
 <select id='plot_kind' onchange="showMe(this);">
 % for kind in result['kinds']:
@@ -84,16 +89,20 @@
 <div class="${data}">
   % for obj in result['objective_names']:
   <div class="${obj}">
-    % for kind in result['kinds']:
-    <div class="${kind}">
-      <%
-      fig = result['figures'][data][obj][kind]
-      %>
-      % if fig.endswith('.svg'):
-      <img src="${fig}"><br/>
-      % else:
-      ${fig}
-      %endif
+    % for obj_col in result['obj_cols']:
+    <div class="${obj_col}">
+      % for kind in result['kinds']:
+      <div class="${kind}">
+        <%
+        fig = result['figures'][data][obj][obj_col][kind]
+        %>
+        % if fig.endswith('.svg'):
+        <img src="${fig}"><br/>
+        % else:
+        ${fig}
+        %endif
+      </div>
+      %endfor
     </div>
     %endfor
   </div>

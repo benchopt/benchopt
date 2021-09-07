@@ -30,7 +30,8 @@ class Objective(BaseObjective):
     def compute(self, beta):
         "Compute the objective value given the output x of  a solver."
         diff = self.y - self.X.dot(beta)
-        return .5 * diff.dot(diff) + self.lmbd * abs(beta).sum()
+        objective_value = .5 * diff.dot(diff) + self.lmbd * abs(beta).sum()
+        return objective_value  # equivalent to dict(value=objective_value)
 
     def _get_lambda_max(self):
         "Helper to compute the scaling of lambda on the given data."

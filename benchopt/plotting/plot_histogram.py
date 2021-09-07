@@ -6,13 +6,15 @@ from .helpers_compat import get_figure, _make_bars
 PLOTLY_GRAY = (.8627, .8627, .8627)
 
 
-def plot_histogram(df, plotly=False):
+def plot_histogram(df, obj_col='objective_value', plotly=False):
     """Plot histogram for a given benchmark and dataset.
 
     Parameters
     ----------
     df : instance of pandas.DataFrame
         The benchmark results.
+    obj_col : str
+        Column to select in the DataFrame for the plot.
     plotly : bool
         If set to True, creates a figure with plotly instead of matplotlib.
 
@@ -34,7 +36,7 @@ def plot_histogram(df, plotly=False):
     ticks_list = []
     times_list = []
     fig = get_figure(plotly)
-    c_star = df['objective_value'].min() + eps
+    c_star = df[obj_col].min() + eps
     for i, solver_name in enumerate(solver_names):
         xi = (i + 1.5) * width
         ticks_list.append((xi, solver_name))
@@ -42,7 +44,7 @@ def plot_histogram(df, plotly=False):
 
         # Find the first stop_val which reach a given tolerance
         df_tol = df_.groupby('stop_val').filter(
-            lambda x: x['objective_value'].max() < c_star)
+            lambda x: x[obj_col].max() < c_star)
         if df_tol.empty:
             colors[i] = "w" if not plotly else PLOTLY_GRAY
             print(f"Solver {solver_name} did not reach precision {eps}.")

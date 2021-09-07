@@ -46,16 +46,21 @@ be minimized by the solvers. An objective class should define 3 methods:
   - ``compute(x)``: it allows to evaluate the objective for a given value
     of the iterate, here called ``x``. This method should take only one parameter,
     the output returned by the solver. All other parameters should be stored
-    in the class with ``set_data`` method.
+    in the class with ``set_data`` method. The compute function should return
+    a float (understood as the objective value) or a dictionary. If a dictionary
+    is returned it should contain a key called ``value`` and all other keys
+    should have ``float`` values allowing to track more than one value
+    of interest (e.g. train and test errors).
   - ``to_dict()``: method that returns a dictionary to be passed
     to the ``set_objective`` methods of solvers_.
 
 An objective class also needs to inherit from a base class called
 :class:`benchopt.base.BaseObjective`.
 
-Multiple values can be computed in one objective as long as they are
-stored in a dictionary with a key being `objective_value`. This allows
-to compute different metrics at once.
+.. note::
+  Multiple values can be computed in one objective as long as they are
+  stored in a dictionary with a key being ``value``. This allows to compute
+  different metrics at once.
 
 Example
 ~~~~~~~

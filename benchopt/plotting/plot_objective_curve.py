@@ -7,8 +7,8 @@ from .helpers_compat import fill_between_x
 CMAP = plt.get_cmap('tab20')
 
 
-def plot_objective_curve(df, plotly=False, suboptimality=False,
-                         relative=False):
+def plot_objective_curve(df, obj_col='objective_value', plotly=False,
+                         suboptimality=False, relative=False):
     """Plot objective curve for a given benchmark and dataset.
 
     Plot the objective value F(x) as a function of the time.
@@ -17,6 +17,8 @@ def plot_objective_curve(df, plotly=False, suboptimality=False,
     ----------
     df : instance of pandas.DataFrame
         The benchmark results.
+    obj_col : str
+        Column to select in the DataFrame for the plot.
     plotly : bool
         If set to True, output a plotly figure for HTML display.
     suboptimality : bool
@@ -47,18 +49,29 @@ def plot_objective_curve(df, plotly=False, suboptimality=False,
     if suboptimality:
         eps = 1e-10
         y_label = r"$F(x) - F(x*)$"
-        c_star = df['objective_value'].min() - eps
-        df['objective_value'] -= c_star
+        c_star = df[obj_col].min() - eps
+        df[obj_col] -= c_star
 
     if relative:
         obj = y_label[1:-1]
         y_label = r"$\frac{{{num}}}{{{den}}}$".format(
             num=obj, den=obj.replace('F(x)', 'F(x^0)')
         )
-        max_f_0 = df[df['stop_val'] == 1]['objective_value'].max()
-        df['objective_value'] /= max_f_0
+        max_f_0 = df[df['stop_val'] == 1][obj_col].max()
+        df[obj_col] /= max_f_0
 
     fig = get_figure(plotly)
+
+    if df[obj_col].count() == 0:  # missing values
+        if plotly:
+            fig.add_annotation(text="Not Available",
+                               xref="paper", yref="paper",
+                               x=0.5, y=0.5, showarrow=False,
+                               font=dict(color="black", size=32))
+        else:
+            plt.text(0.5, 0.5, "Not Available")
+        return fig
+
     for i, solver_name in enumerate(solver_names):
         df_ = df[df['solver_name'] == solver_name]
         curve = df_.groupby('stop_val').median()
@@ -67,7 +80,7 @@ def plot_objective_curve(df, plotly=False, suboptimality=False,
         q9 = df_.groupby('stop_val')['time'].quantile(.9)
 
         fill_between_x(
-            fig, curve['time'], q1, q9, curve['objective_value'],
+            fig, curve['time'], q1, q9, curve[obj_col],
             color=CMAP(i), marker=markers[i], label=solver_name, plotly=plotly
         )
 
@@ -125,7 +138,7 @@ def plot_objective_curve(df, plotly=False, suboptimality=False,
     return fig
 
 
-def plot_suboptimality_curve(df, plotly=False):
+def plot_suboptimality_curve(df, obj_col='objective_value', plotly=False):
     """Plot suboptimality curve for a given benchmark and dataset.
 
     Plot suboptimality, that is F(x) - F(x*) as a function of time,
@@ -135,6 +148,8 @@ def plot_suboptimality_curve(df, plotly=False):
     ----------
     df : instance of pandas.DataFrame
         The benchmark results.
+    obj_col : str
+        Column to select in the DataFrame for the plot.
     plotly : bool
         If set to True, output a plotly figure for HTML display.
 
@@ -143,10 +158,12 @@ def plot_suboptimality_curve(df, plotly=False):
     fig : instance of matplotlib.figure.Figure
         The matplotlib figure.
     """
-    return plot_objective_curve(df, plotly=plotly, suboptimality=True)
+    return plot_objective_curve(df, obj_col=obj_col, plotly=plotly,
+                                suboptimality=True)
 
 
-def plot_relative_suboptimality_curve(df, plotly=False):
+def plot_relative_suboptimality_curve(df, obj_col='objective_value',
+                                      plotly=False):
     """Plot relative suboptimality curve for a given benchmark and dataset.
 
     Plot relative suboptimality, that is (F(x) - F(x*)) / (F_0 - F(x*)) as a
@@ -157,6 +174,8 @@ def plot_relative_suboptimality_curve(df, plotly=False):
     ----------
     df : instance of pandas.DataFrame
         The benchmark results.
+    obj_col : str
+        Column to select in the DataFrame for the plot.
     plotly : bool
         If set to True, output a plotly figure for HTML display.
 
@@ -165,5 +184,5 @@ def plot_relative_suboptimality_curve(df, plotly=False):
     fig : instance of matplotlib.figure.Figure
         The matplotlib figure.
     """
-    return plot_objective_curve(df, plotly=plotly, suboptimality=True,
-                                relative=True)
+    return plot_objective_curve(df, obj_col=obj_col, plotly=plotly,
+                                suboptimality=True, relative=True)
