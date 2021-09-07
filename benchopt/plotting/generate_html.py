@@ -1,5 +1,6 @@
 import json
 import shutil
+import itertools
 import webbrowser
 from pathlib import Path
 from datetime import datetime
@@ -65,6 +66,10 @@ def generate_plot_benchmark(df, kinds, fname, fig_dir, benchmark_name):
     """
     dataset_names = df['data_name'].unique()
     objective_names = df['objective_name'].unique()
+    obj_cols = [
+        k for k in df.columns
+        if k.startswith('objective_') and k != 'objective_name'
+    ]
 
     figures = {}
     n_figure = 0
@@ -72,17 +77,17 @@ def generate_plot_benchmark(df, kinds, fname, fig_dir, benchmark_name):
         figures[data_name] = {}
         df_data = df[df['data_name'] == data_name]
         for objective_name in objective_names:
-            figures[data_name][objective_name] = {}
+            figures[data_name][objective_name] = {c: {} for c in obj_cols}
             df_obj = df_data[df_data['objective_name'] == objective_name]
 
-            for k in kinds:
+            for k, obj_col in itertools.product(kinds, obj_cols):
                 if k not in PLOT_KINDS:
                     raise ValueError(
                         f"Requesting invalid plot '{k}'. Should be in:\n"
                         f"{PLOT_KINDS}")
                 plot_func = globals()[PLOT_KINDS[k]]
                 try:
-                    fig = plot_func(df_obj, plotly=True)
+                    fig = plot_func(df_obj, obj_col=obj_col, plotly=True)
                     if plot_func != "plot_histogram":
                         if len(df_obj["solver_name"].unique()) < 10:
                             fact_ = 10
@@ -99,15 +104,15 @@ def generate_plot_benchmark(df, kinds, fname, fig_dir, benchmark_name):
                                           height=height
                                           )
                 except TypeError:
-                    fig = plot_func(df_obj)
-                figures[data_name][objective_name][k] = export_figure(
+                    fig = plot_func(df_obj, obj_col=obj_col)
+                figures[data_name][objective_name][obj_col][k] = export_figure(
                     fig, f"{benchmark_name}_{fname.name}_{n_figure}", fig_dir
                 )
                 n_figure += 1
 
     return dict(
         figures=figures, dataset_names=dataset_names, fname_short=fname.name,
-        objective_names=objective_names, kinds=list(kinds)
+        objective_names=objective_names, obj_cols=obj_cols, kinds=list(kinds)
     )
 
 
@@ -376,8 +381,7 @@ def _fetch_cached_run_list(new_results, benchmark_html):
     return list(results.values())
 
 
-def plot_benchmark_html(fnames, benchmark, kinds,
-                        display=True, index=False):
+def plot_benchmark_html(fnames, benchmark, kinds, display=True, index=False):
     """Plot a given benchmark as an HTML report. This function can either plot
     a single run or multiple ones.
 

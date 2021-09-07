@@ -1,3 +1,4 @@
+import itertools
 import pandas as pd
 import matplotlib.pyplot as plt
 
@@ -10,8 +11,8 @@ from .plot_objective_curve import plot_relative_suboptimality_curve  # noqa: F40
 from .generate_html import plot_benchmark_html
 
 
-def plot_benchmark(fname, benchmark, kinds=None, display=True,
-                   plotly=False, html=True):
+def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
+                   html=True):
     """Plot convergence curve and histogram for a given benchmark.
 
     Parameters
@@ -46,6 +47,10 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True,
     else:
         # Load the results.
         df = pd.read_csv(fname)
+        obj_cols = [
+            k for k in df.columns
+            if k.startswith('objective_') and k != 'objective_name'
+        ]
         datasets = df['data_name'].unique()
         output_dir = benchmark.get_output_folder()
         figs = []
@@ -57,25 +62,25 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True,
 
                 plot_id = get_plot_id(benchmark.name, df_obj)
 
-                for k in kinds:
+                for k, obj_col in itertools.product(kinds, obj_cols):
                     if k not in PLOT_KINDS:
                         raise ValueError(
                             f"Requesting invalid plot '{k}'. Should be in:\n"
                             f"{PLOT_KINDS}")
                     plot_func = globals()[PLOT_KINDS[k]]
                     try:
-                        fig = plot_func(df_obj, plotly=plotly)
+                        fig = plot_func(df_obj, obj_col=obj_col, plotly=plotly)
                     except TypeError:
-                        fig = plot_func(df_obj)
-                    save_name = output_dir / f"{plot_id}_{k}"
+                        fig = plot_func(df_obj, obj_col=obj_col)
+                    save_name = output_dir / f"{plot_id}_{obj_col}_{k}"
                     if hasattr(fig, 'write_html'):
                         save_name = save_name.with_suffix('.html')
                         fig.write_html(str(save_name), include_mathjax='cdn')
                     else:
                         save_name = save_name.with_suffix('.pdf')
                         plt.savefig(save_name)
-                    print(f'Save {k} plot for {data} and {objective_name} as:'
-                          f' {save_name}')
+                    print(f'Save {k} plot of {obj_col} for {data} and '
+                          f'{objective_name} as: {save_name}')
                     figs.append(fig)
         if display:
             plt.show()
