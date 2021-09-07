@@ -104,41 +104,71 @@ to get more details about the different options read the
 Some available benchmarks
 -------------------------
 
-Notation:  In what follows, n (or n_samples) stands for the number of samples and p (or n_features) stands for the number of features.
+**Notation:**  In what follows, n (or n_samples) stands for the number of samples and p (or n_features) stands for the number of features.
 
 .. math::
 
  y \in \mathbb{R}^n, X = [x_1^\top, \dots, x_n^\top]^\top \in \mathbb{R}^{n \times p}
 
-- `ols`_: ordinary least-squares. This consists in solving the following program:
+- `Ordinary Least Squares (OLS) <https://github.com/benchopt/benchmark_ols>`_: |Build Status OLS|
 
 .. math::
 
     \min_w \frac{1}{2} \|y - Xw\|^2_2
 
-- `nnls`_: non-negative least-squares. This consists in solving the following program:
+- `Non-Negative Least Squares (NNLS) <https://github.com/benchopt/benchmark_nnls>`_: |Build Status NNLS|
 
 .. math::
 
     \min_{w \geq 0} \frac{1}{2} \|y - Xw\|^2_2
 
-- `lasso`_: l1-regularized least-squares. This consists in solving the following program:
+- `LASSO: L1-regularized least squares <https://github.com/benchopt/benchmark_lasso>`_: |Build Status Lasso|
 
 .. math::
 
     \min_w \frac{1}{2} \|y - Xw\|^2_2 + \lambda \|w\|_1
 
-- `logreg_l2`_: l2-regularized logistic regression. This consists in solving the following program:
+- `L2-regularized logistic regression <https://github.com/benchopt/benchmark_logreg_l2>`_: |Build Status LogRegL2|
 
 .. math::
 
-    \min_w \sum_i \log(1 + \exp(-y_i x_i^\top w)) + \frac{\lambda}{2} \|w\|_2^2
+    \min_w \sum_{i=1}^{n} \log(1 + \exp(-y_i x_i^\top w)) + \frac{\lambda}{2} \|w\|_2^2
 
-- `logreg_l1`_: l1-regularized logistic regression. This consists in solving the following program:
+- `L1-regularized logistic regression <https://github.com/benchopt/benchmark_logreg_l1>`_: |Build Status LogRegL1|
 
 .. math::
 
-    \min_w \sum_i \log(1 + \exp(-y_i x_i^\top w)) + \lambda \|w\|_1
+    \min_w \sum_{i=1}^{n} \log(1 + \exp(-y_i x_i^\top w)) + \lambda \|w\|_1
+
+- `L2-regularized Huber regression <https://github.com/benchopt/benchmark_huber_l2>`_: |Build Status HuberL2|
+
+.. math::
+
+  \min_{w, \sigma} {\sum_{i=1}^n \left(\sigma + H_{\epsilon}\left(\frac{X_{i}w - y_{i}}{\sigma}\right)\sigma\right) + \lambda {||w||_2}^2}
+
+where
+
+.. math::
+
+  H_{\epsilon}(z) = \begin{cases}
+         z^2, & \text {if } |z| < \epsilon, \\
+         2\epsilon|z| - \epsilon^2, & \text{otherwise}
+  \end{cases}
+
+- `L1-regularized quantile regression <https://github.com/benchopt/benchmark_quantile_regression>`_: |Build Status QuantileRegL1|
+
+.. math::
+    \min_{w} \frac{1}{n} \sum_{i=1}^{n} PB_q(y_i - X_i w) + \lambda ||w||_1.
+
+where :math:`PB_q` is the pinball loss:
+
+.. math::
+    PB_q(t) = q \max(t, 0) + (1 - q) \max(-t, 0) =
+    \begin{cases}
+        q t, & t > 0, \\
+        0,    & t = 0, \\
+        (1-q) t, & t < 0
+    \end{cases}
 
 See `benchmark_* repositories on GitHub <https://github.com/benchopt/>`_ for more.
 
@@ -170,8 +200,19 @@ Contents
 .. |codecov| image:: https://codecov.io/gh/benchopt/benchOpt/branch/master/graph/badge.svg
    :target: https://codecov.io/gh/benchopt/benchOpt
 
-.. _`ols`: https://github.com/benchopt/benchmark_ols
-.. _`nnls`: https://github.com/benchopt/benchmark_nnls
-.. _`lasso`: https://github.com/benchopt/benchmark_lasso
-.. _`logreg_l1`: https://github.com/benchopt/benchmark_logreg_l1
-.. _`logreg_l2`: https://github.com/benchopt/benchmark_logreg_l2
+.. |Build Status OLS| image:: https://github.com/benchopt/benchmark_ols/workflows/Tests/badge.svg
+   :target: https://github.com/benchopt/benchmark_ols/actions
+.. |Build Status NNLS| image:: https://github.com/benchopt/benchmark_nnls/workflows/Tests/badge.svg
+   :target: https://github.com/benchopt/benchmark_nnls/actions
+.. |Build Status Lasso| image:: https://github.com/benchopt/benchmark_lasso/workflows/Tests/badge.svg
+   :target: https://github.com/benchopt/benchmark_lasso/actions
+.. |Build Status LogRegL2| image:: https://github.com/benchopt/benchmark_logreg_l2/workflows/Tests/badge.svg
+   :target: https://github.com/benchopt/benchmark_logreg_l2/actions
+.. |Build Status LogRegL1| image:: https://github.com/benchopt/benchmark_logreg_l1/workflows/Tests/badge.svg
+   :target: https://github.com/benchopt/benchmark_logreg_l1/actions
+.. |Build Status HuberL2| image:: https://github.com/benchopt/benchmark_huber_l2/workflows/Tests/badge.svg
+   :target: https://github.com/benchopt/benchmark_huber_l2/actions
+.. |Build Status QuantileRegL1| image:: https://github.com/benchopt/benchmark_quantile_regression/workflows/Tests/badge.svg
+   :target: https://github.com/benchopt/benchmark_quantile_regression/actions
+.. |Build Status LinearSVM| image:: https://github.com/benchopt/benchmark_linear_svm_binary_classif_no_intercept/workflows/Tests/badge.svg
+   :target: https://github.com/benchopt/benchmark_linear_svm_binary_classif_no_intercept/actions
