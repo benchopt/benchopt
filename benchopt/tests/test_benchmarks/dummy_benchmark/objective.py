@@ -28,9 +28,9 @@ class Objective(BaseObjective):
         if self.reg == .1:
             return objective_value
         elif self.reg < .1:
-            return dict(objective_value=objective_value)
+            return dict(value=objective_value)
         else:
-            return dict(objective_value=objective_value, val=objective_value)
+            return dict(value=objective_value, val=objective_value * 4)
 
     def _get_lambda_max(self):
         return abs(self.X.T.dot(self.y)).max()

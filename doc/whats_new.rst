@@ -21,6 +21,13 @@ Changelog
   which measures progress relatively to the best attained value instead of
   the previous one, by `Thomas Moreau`_ (:gh:`176`)
 
+API
+~~~
+
+- When returning a dict, ``Objective.compute`` should at least include
+  ``value`` key instead of ``objective_value``, by `Thomas Moreau`_ (gh:`200`).
+
+
 .. _changes_1_1:
 
 Version 1.1 - 22-04-2021

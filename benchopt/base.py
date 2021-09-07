@@ -256,7 +256,7 @@ class BaseObjective(ParametrizedNameMixin):
       the `dimension` value returned by `Dataset.get_data`. The output should
       be a float or a dictionary of floats.
       If a dictionary is returned, it should at least contain a key
-      `objective_value` associated to a scalar value which will be used to
+      `value` associated to a scalar value which will be used to
       detect convergence. With a dictionary, multiple metric values can be
       stored at once instead of runnning each separately.
     """
@@ -283,7 +283,18 @@ class BaseObjective(ParametrizedNameMixin):
         objective_dict = self.compute(beta)
 
         if not isinstance(objective_dict, dict):
-            objective_dict = {'objective_value': objective_dict}
+            objective_dict = {'value': objective_dict}
+
+        if 'name' in objective_dict:
+            raise ValueError(
+                "objective output cannot be called 'name'."
+            )
+
+        # To make the objective part clear in the results, we prefix all
+        # keys with `objective_`.
+        objective_dict = {
+            f'objective_{k}': v for k, v in objective_dict.items()
+        }
 
         return objective_dict
 

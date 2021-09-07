@@ -54,8 +54,8 @@ An objective class also needs to inherit from a base class called
 :class:`benchopt.base.BaseObjective`.
 
 Multiple values can be computed in one objective as long as they are
-stored in a dictionary with a key being `objective_value`. This allows
-to compute different metrics at once.
+stored in a dictionary with a key being `value`. This allows to compute
+different metrics at once.
 
 Example
 ~~~~~~~
