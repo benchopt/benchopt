@@ -31,7 +31,6 @@
 .grid figure img {
 	position: relative;
 	display: block;
-    background-image: #3085a3; /* color background */
 	max-height: 100%;
 	max-width: 100%;
 	opacity: 1.; /* over a dummy image */
