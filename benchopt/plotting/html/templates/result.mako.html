@@ -1,5 +1,6 @@
 <html>
 <head>
+<meta charset="utf-8"/>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📈</text></svg>">
 <link href="${static_dir}/main.css" rel="stylesheet" />
 <link href="${static_dir}/hover_index.css" rel="stylesheet" />
@@ -91,6 +92,10 @@
   <div class="${obj}">
     % for obj_col in result['obj_cols']:
     <div class="${obj_col}">
+        <%
+        changed_names = [data + obj + obj_col + kinds
+                     for kinds in result['kinds'] if kinds != "histogram"]
+        %>
       % for kind in result['kinds']:
       <div class="${kind}">
         <%
@@ -99,8 +104,15 @@
         % if fig.endswith('.svg'):
         <img src="${fig}"><br/>
         % else:
-        ${fig}
-        %endif
+        <label for='change_scaling'>Axis type</label>
+        <select id="change_scaling" onchange="changeScale(this,${changed_names})">
+          <option value="semilog-y">semilog-y</option>
+          <option value="loglog">loglog</option>
+        </select>
+        <div id="${data + obj + obj_col + kind}">
+          ${fig}
+        </div>
+          %endif
       </div>
       %endfor
     </div>
@@ -124,6 +136,24 @@
 		var all_obj = document.getElementsByClassName(class_to_display);
 		for (var j =0; j< all_obj.length; j++)
 			all_obj[j].style.display = "block";
+  }
+
+  function changeScale(e, all_ids) {
+    for (name = 0; name < all_ids.length; name++){
+      container = document.getElementById(all_ids[name]);
+      id_graph = container.getElementsByTagName("div")[1].id;
+      graph = document.getElementById(id_graph);
+      layout = graph.layout;
+      switch (e.value) {
+        case "loglog":
+          layout.xaxis.type = "log";
+          break;
+        case "semilog-y":
+          layout.xaxis.type = "linear";
+          break;
+        }
+      Plotly.relayout(id_graph, layout);
+    }
   }
 
   $('.toggle').click(function() {

@@ -31,10 +31,9 @@
 .grid figure img {
 	position: relative;
 	display: block;
-    background-image: #3085a3; /* color background */
 	max-height: 100%;
 	max-width: 100%;
-	opacity: 1.; /* over a dummy image */
+	opacity: 1.0; /* over a dummy image */
 }
 
 /* Style caption (title of benchmarks) */
@@ -108,25 +107,20 @@ figure.effect-ruby:hover {
 /* Define transformation */
 figure.effect-ruby img {
 	opacity: 0;
-	-webkit-transition: opacity 0.35s, -webkit-transform 0.35s;
 	transition: opacity 0.35s, transform 0.35s; /* transition time */
-	-webkit-transform: scale(1.15); /* size transformation -> bigger */
-	transform: scale(1.15);
+	transform: scale(1.15); /* size transformation -> bigger */
 }
 
 /* transformation with hovering */
 figure.effect-ruby:hover img {
 	opacity: 0;
-	-webkit-transform: scale(1);
 	transform: scale(1); /* size -> smaller */
 }
 
 /* Apply effect to problem name */
 figure.effect-ruby h2 {
 	margin-top: 10; /* default margin */
-	-webkit-transition: -webkit-transform 0.35s;
 	transition: transform 0.35s; /* transition time */
-	-webkit-transform: translate3d(0,20px,0); /* move down */
 	transform: translate3d(0,40px,0);
 	font-size: 1.25em; /* default font */
 }
@@ -136,10 +130,8 @@ figure.effect-ruby p {
 	padding: 1em 0em 1em 0em;
 	border: 1px solid #fff; /* create sort of white frame */
 	opacity: 0;
-	-webkit-transition: opacity 0.35s, -webkit-transform 0.35s;
 	transition: opacity 0.35s, transform 0.35s;
-	-webkit-transform: translate3d(0,20px,0) scale(1.1); /* size transform */
-	transform: translate3d(0,20px,0) scale(1.1);
+	transform: translate3d(0,20px,0) scale(1.1); /* size transform */
 }
 
 /* Transform title on hover */
@@ -151,8 +143,7 @@ figure.effect-ruby:hover h2 {
 
 figure.effect-ruby:hover p {
     opacity: 1;
-	-webkit-transform: translate3d(0,0,0) scale(1.2); /* bigger size */
-	transform: translate3d(-15,0,0) scale(1); /* placement in box */
+	transform: translate3d(0,0,0) scale(1.2); /* placement in box */
 }
 
 /* Button for inside the table with system informations */

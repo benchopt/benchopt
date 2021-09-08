@@ -1,5 +1,6 @@
 <html>
 <head>
+<meta charset="utf-8"/>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📈</text></svg>">
 <link href="${static_dir}/hover_index.css" rel="stylesheet" />
 <link href="${static_dir}/main.css" rel="stylesheet" />
@@ -229,44 +230,46 @@ function displaymore(id, loop_index) {
 }
 
 var openbtn = document.getElementById("open");
-var closebtn = document.getElementById("close");
-openbtn.style.display = 'none';
+if (openbtn){
+  var closebtn = document.getElementById("close");
+  openbtn.style.display = 'none';
 
-function openSideNav() {
-    navbar = document.getElementById("sidenav")
-    navbar.style.visibility = "visible";
-    main = document.getElementById("main")
-    if ($(window).width() < 900) {
-      navbar.style.height = "100%";
-      main.style.marginLeft = "0";
-    }
-    else {
-      navbar.style.height = "1000px";
-      main.style.marginLeft = "200px";
-    }
-    navbar.style.opacity = "1";
-	  openbtn.style.display = 'none';
-    closebtn.style.display = '';
-}
+  function openSideNav() {
+      navbar = document.getElementById("sidenav")
+      navbar.style.visibility = "visible";
+      main = document.getElementById("main")
+      if ($(window).width() < 900) {
+        navbar.style.height = "100%";
+        main.style.marginLeft = "0";
+      }
+      else {
+        navbar.style.height = "1000px";
+        main.style.marginLeft = "200px";
+      }
+      navbar.style.opacity = "1";
+  	  openbtn.style.display = 'none';
+      closebtn.style.display = '';
+  }
 
-if ($(window).width() > 900){
-  openSideNav()
-}
-else {
-  closeSideNav()
-}
+  if ($(window).width() > 900){
+    openSideNav()
+  }
+  else {
+    closeSideNav()
+  }
 
-function closeSideNav() {
-    navbar = document.getElementById("sidenav")
-    main = document.getElementById("main")
-    navbar.style.visibility = "hidden";
-    navbar.style.opacity = "0";
-    navbar.style.height = "0";
-    if ($(window).width() > 900) {
-      main.style.marginLeft = "0px";
+  function closeSideNav() {
+      navbar = document.getElementById("sidenav")
+      main = document.getElementById("main")
+      navbar.style.visibility = "hidden";
+      navbar.style.opacity = "0";
+      navbar.style.height = "0";
+      if ($(window).width() > 900) {
+        main.style.marginLeft = "0px";
+      }
+      openbtn.style.display = '';
+      closebtn.style.display = 'none';
     }
-    openbtn.style.display = '';
-    closebtn.style.display = 'none';
 }
 </script>
 </div>
