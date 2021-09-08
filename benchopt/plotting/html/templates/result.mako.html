@@ -94,7 +94,7 @@
     <div class="${obj_col}">
         <%
         changed_names = [data + obj + obj_col + kinds
-                     for kinds in result['kinds']]
+                     for kinds in result['kinds'] if kinds != "histogram"]
         %>
       % for kind in result['kinds']:
       <div class="${kind}">
@@ -147,13 +147,12 @@
       switch (e.value) {
         case "loglog":
           layout.xaxis.type = "log";
-          Plotly.relayout(id_graph, layout);
           break;
         case "semilog-y":
           layout.xaxis.type = "linear";
-          Plotly.relayout(id_graph, layout);
           break;
         }
+      Plotly.relayout(id_graph, layout);
     }
   }
 
