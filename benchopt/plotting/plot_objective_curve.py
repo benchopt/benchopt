@@ -102,32 +102,6 @@ def plot_objective_curve(df, obj_col='objective_value', plotly=False,
             legend_title='solver',
         )
 
-        # options for log scale
-        fig.update_layout(
-            updatemenus=[
-                dict(
-                    buttons=list([
-                        dict(
-                            args=["xaxis.type", "linear"],
-                            label="semilog-y",
-                            method="relayout"
-                        ),
-                        dict(
-                            args=["xaxis.type", "log"],
-                            label="loglog",
-                            method="relayout"
-                        ),
-                    ]),
-                    direction="down",
-                    pad={"r": 10, "t": 10},
-                    showactive=True,
-                )
-            ],
-            annotations=[
-                dict(text="Log-scale", x=-0.15, xref="paper",
-                     y=1.01, yref="paper", showarrow=False)
-            ]
-        )
     else:
         plt.legend(fontsize=14)
         plt.xlabel("Time [sec]", fontsize=14)
