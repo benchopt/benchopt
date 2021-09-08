@@ -33,7 +33,7 @@
 	display: block;
 	max-height: 100%;
 	max-width: 100%;
-	opacity: 1.; /* over a dummy image */
+	opacity: 1.0; /* over a dummy image */
 }
 
 /* Style caption (title of benchmarks) */
