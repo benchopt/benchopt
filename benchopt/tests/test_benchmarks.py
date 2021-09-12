@@ -1,4 +1,3 @@
-import sys
 import pytest
 import numbers
 
@@ -140,11 +139,6 @@ def test_solver(benchmark, solver_class):
     if not solver_class.is_installed():
         pytest.skip("Solver is not installed")
 
-    # Skip test_solver for julia in OSX as it throw a segfault
-    # See issue#64
-    if 'julia' in solver_class.name.lower() and sys.platform == 'darwin':
-        pytest.skip('Julia causes segfault on OSX for now.')
-
     objective_class = benchmark.get_benchmark_objective()
     objective = objective_class.get_instance()
 
@@ -187,9 +181,10 @@ def test_solver(benchmark, solver_class):
 
     assert beta_hat_i.shape == dimension
 
-    val_star = objective(beta_hat_i)['objective_value']
-    for _ in range(100):
-        eps = 1e-5 * np.random.randn(*dimension)
-        val_eps = objective(beta_hat_i + eps)['objective_value']
-        diff = val_eps - val_star
-        assert diff >= 0
+    if getattr(objective, "is_convex", True):
+        val_star = objective(beta_hat_i)['objective_value']
+        for _ in range(100):
+            eps = 1e-5 * np.random.randn(*dimension)
+            val_eps = objective(beta_hat_i + eps)['objective_value']
+            diff = val_eps - val_star
+            assert diff >= 0
