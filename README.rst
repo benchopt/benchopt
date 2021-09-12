@@ -94,6 +94,7 @@ List of optimization problems available
 - `L2-regularized Huber regression <https://github.com/benchopt/benchmark_huber_l2>`_ |Build Status HuberL2|
 - `L1-regularized quantile regression <https://github.com/benchopt/benchmark_quantile_regression>`_ |Build Status QuantileRegL1|
 - `Linear SVM for binary classification <https://github.com/benchopt/benchmark_linear_svm_binary_classif_no_intercept>`_ |Build Status LinearSVM|
+- `Linear ICA <https://github.com/benchopt/benchmark_linear_ica>`_ |Build Status LinearICA|
 
 [![test]()]()
 
@@ -120,3 +121,5 @@ List of optimization problems available
    :target: https://github.com/benchopt/benchmark_quantile_regression/actions
 .. |Build Status LinearSVM| image:: https://github.com/benchopt/benchmark_linear_svm_binary_classif_no_intercept/workflows/Tests/badge.svg
    :target: https://github.com/benchopt/benchmark_linear_svm_binary_classif_no_intercept/actions
+.. |Build Status LinearICA| image:: https://github.com/benchopt/benchmark_linear_ica/workflows/Tests/badge.svg
+   :target: https://github.com/benchopt/benchmark_linear_ica/actions
