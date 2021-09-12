@@ -48,7 +48,7 @@ def plot_objective_curve(df, obj_col='objective_value', plotly=False,
     y_label = r"$F(x)$"
     if suboptimality:
         eps = 1e-10
-        y_label = r"$F(x) - F(x*)$"
+        y_label = r"$F(x) - F(x^*)$"
         c_star = df[obj_col].min() - eps
         df[obj_col] -= c_star
 
@@ -84,7 +84,7 @@ def plot_objective_curve(df, obj_col='objective_value', plotly=False,
             color=CMAP(i), marker=markers[i], label=solver_name, plotly=plotly
         )
 
-    if suboptimality:
+    if suboptimality and not relative:
         add_h_line(fig, eps, [df['time'].min(), df['time'].max()],
                    plotly=plotly)
 
@@ -115,8 +115,8 @@ def plot_objective_curve(df, obj_col='objective_value', plotly=False,
 def plot_suboptimality_curve(df, obj_col='objective_value', plotly=False):
     """Plot suboptimality curve for a given benchmark and dataset.
 
-    Plot suboptimality, that is F(x) - F(x*) as a function of time,
-    where F(x*) is the smallest value reached in df.
+    Plot suboptimality, that is F(x) - F(x^*) as a function of time,
+    where F(x^*) is the smallest value reached in df.
 
     Parameters
     ----------

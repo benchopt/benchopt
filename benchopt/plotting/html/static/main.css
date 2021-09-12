@@ -24,7 +24,7 @@ h1, h2, h3, h4 {
   font-weight: bold; /* Browser default. Use `normal` for less bulky titles */
 }
 h1 {
-    margin: 2em 0 .5em; /* Titles should be close to the text they describe */
+    margin: 0.5em 0 .5em; /* Titles should be close to the text they describe */
     font-size: 2em;
 }
 h2 {

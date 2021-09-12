@@ -88,19 +88,23 @@ def generate_plot_benchmark(df, kinds, fname, fig_dir, benchmark_name):
                 plot_func = globals()[PLOT_KINDS[k]]
                 try:
                     fig = plot_func(df_obj, obj_col=obj_col, plotly=True)
-                    if plot_func != "plot_histogram":
+                    if PLOT_KINDS[k] == "plot_histogram":
+                        fig.update_layout(autosize=False,
+                                          width=900,
+                                          height=650)
+                    else:
                         if len(df_obj["solver_name"].unique()) < 10:
                             fact_ = 10
                         else:
                             fact_ = 100
-                        height = 1000 + fact_ * len(objective_names)
+                        height = 700 + fact_ * len(objective_names)
                         fig.update_layout(legend={"xanchor": "center",
                                                   "yanchor": "top",
                                                   "y": -.2,
                                                   "x": .5
                                                   },
                                           autosize=False,
-                                          width=1000,
+                                          width=900,
                                           height=height
                                           )
                 except TypeError:
@@ -134,7 +138,7 @@ def export_figure(fig, fig_name, fig_dir):
         Path to the saved figure.
     """
     if hasattr(fig, 'to_html'):
-        return fig.to_html(include_plotlyjs=False)
+        return fig.to_html(include_plotlyjs=False, include_mathjax="cdn")
 
     fig_basename = f"{fig_name}.svg"
     save_name = fig_dir / fig_basename
