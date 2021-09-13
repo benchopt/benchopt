@@ -23,6 +23,11 @@
 <%
   ll_main = results[0]["sysinfo"]['main']
   need_filter = False
+  items_unique = dict()
+  for key, val in ll_main.items():
+    all_items = list(set([r['sysinfo']['main'][key] for r in results]))
+    items_unique[key] = sorted(all_items)
+
 %>
 
 <div class="sidenav" id="sidenav" style="visibility: hidden; height:0; opacity: 0; transition: visibility 0s, opacity 0.5s linear; z-index: 100;">
@@ -34,10 +39,7 @@
     </label>
     <select class="myselect" id=${'select'+str(key.replace(" ", ""))} onchange="change(${list(ll_main.keys())})">
       <option value=""> Any </option>
-      % for result in results:
-      <%
-        current_item = result['sysinfo']['main'][key]
-      %>
+      % for current_item in items_unique[key]:
         % if current_item != "":
         <%
           need_filter = True
