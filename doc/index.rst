@@ -170,6 +170,19 @@ where :math:`PB_q` is the pinball loss:
         (1-q) t, & t < 0
     \end{cases}
 
+- `Linear ICA <https://github.com/benchopt/benchmark_linear_ica>`_: |Build Status LinearICA|
+
+Given some data :math:`X  \in \mathbb{R}^{d \times n}` assumed to be linearly
+related to unknown independent sources :math:`S  \in \mathbb{R}^{d \times n}` with
+
+.. math::
+    X = A S
+
+where :math:`A  \in \mathbb{R}^{d \times d}` is also unknown, the objective of
+linear ICA is to recover :math:`A` up to permutation and scaling of its columns.
+The objective in this benchmark is related to some estimation on :math:`A`
+quantified with the so-called AMARI distance.
+
 See `benchmark_* repositories on GitHub <https://github.com/benchopt/>`_ for more.
 
 Benchmark results
@@ -216,3 +229,5 @@ Contents
    :target: https://github.com/benchopt/benchmark_quantile_regression/actions
 .. |Build Status LinearSVM| image:: https://github.com/benchopt/benchmark_linear_svm_binary_classif_no_intercept/workflows/Tests/badge.svg
    :target: https://github.com/benchopt/benchmark_linear_svm_binary_classif_no_intercept/actions
+.. |Build Status LinearICA| image:: https://github.com/benchopt/benchmark_linear_ica/workflows/Tests/badge.svg
+   :target: https://github.com/benchopt/benchmark_linear_ica/actions
