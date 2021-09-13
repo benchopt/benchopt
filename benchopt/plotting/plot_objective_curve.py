@@ -45,18 +45,18 @@ def plot_objective_curve(df, obj_col='objective_value', plotly=False,
     objective_name = df['objective_name'].unique()[0]
     title = f"{objective_name}\nData: {dataset_name}"
 
-    y_label = r"$F(x)$"
+    y_label = "F(x)"
     if suboptimality:
         eps = 1e-10
-        y_label = r"$F(x) - F(x^*)$"
+        y_label = "F(x) - F(x*)"
         c_star = df[obj_col].min() - eps
         df[obj_col] -= c_star
 
     if relative:
-        obj = y_label[1:-1]
-        y_label = r"$\frac{{{num}}}{{{den}}}$".format(
-            num=obj, den=obj.replace('F(x)', 'F(x^0)')
-        )
+        if suboptimality:
+            y_label = "F(x) - F(x*) / F(x0) - F(x*)"
+        else:
+            y_label = "F(x) / F(x0)"
         max_f_0 = df[df['stop_val'] == 1][obj_col].max()
         df[obj_col] /= max_f_0
 

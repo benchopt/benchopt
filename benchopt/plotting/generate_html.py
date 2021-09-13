@@ -138,7 +138,7 @@ def export_figure(fig, fig_name, fig_dir):
         Path to the saved figure.
     """
     if hasattr(fig, 'to_html'):
-        return fig.to_html(include_plotlyjs=False, include_mathjax="cdn")
+        return fig.to_html(include_plotlyjs=False)
 
     fig_basename = f"{fig_name}.svg"
     save_name = fig_dir / fig_basename
