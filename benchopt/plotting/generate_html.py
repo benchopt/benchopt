@@ -495,7 +495,7 @@ def plot_benchmark_html_all(patterns=(), benchmarks=(), root=None,
         fnames = []
         for p in patterns:
             fnames += (benchmark / 'outputs').glob(f"{p}.csv")
-        fnames = sorted(set(fnames))
+        fnames = sorted(set(fnames))[::-1]
         results = get_results(
             fnames, PLOT_KINDS.keys(), root_html, benchmark.name, copy=True
         )
