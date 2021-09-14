@@ -179,8 +179,11 @@
 
 <script type="text/javascript">
 $(document).ready(function() {
-    $('.summary').DataTable();
-} );
+    $('.summary').dataTable( {
+        "order": [[ 0, "desc" ]]
+      }
+    )
+});
 
 $('table').each(function(a, tbl) {
         var currentTableRows = $(tbl).find('tbody tr').length;
