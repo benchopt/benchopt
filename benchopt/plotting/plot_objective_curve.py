@@ -45,6 +45,8 @@ def plot_objective_curve(df, obj_col='objective_value', plotly=False,
     objective_name = df['objective_name'].unique()[0]
     title = f"{objective_name}\nData: {dataset_name}"
 
+    inf = float("inf")
+    df = df[df[obj_col] != inf]
     y_label = "F(x)"
     if suboptimality:
         eps = 1e-10
