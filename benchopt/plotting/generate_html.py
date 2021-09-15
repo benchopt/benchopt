@@ -233,10 +233,10 @@ def get_sysinfo(df):
         if key in df:
             if key == 'platform':
                 return (
-                        df["platform"].unique()[0] +
-                        df["platform-release"].unique()[0] + "-" +
-                        df["platform-architecture"].unique()[0]
-                    )
+                    df["platform"].unique()[0] +
+                    df["platform-release"].unique()[0] + "-" +
+                    df["platform-architecture"].unique()[0]
+                )
             else:
                 val = df[key].unique()[0]
                 if not pd.isnull(val):
@@ -247,7 +247,7 @@ def get_sysinfo(df):
     sysinfo = {
         level: {name: get_val(df, key) for key, name in keys}
         for level, keys in SYS_INFO.items()
-        }
+    }
     return sysinfo
 
 
