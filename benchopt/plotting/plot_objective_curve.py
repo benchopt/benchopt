@@ -45,13 +45,13 @@ def plot_objective_curve(df, obj_col='objective_value', plotly=False,
     objective_name = df['objective_name'].unique()[0]
     title = f"{objective_name}\nData: {dataset_name}"
 
-    df = df.query(f"{obj_col} not in [inf, -inf]")
+    df.query(f"{obj_col} not in [inf, -inf]", inplace=True)
     y_label = "F(x)"
     if suboptimality:
         eps = 1e-10
         y_label = "F(x) - F(x*)"
         c_star = df[obj_col].min() - eps
-        df[obj_col] -= c_star
+        df.loc[:, obj_col] -= c_star
 
     if relative:
         if suboptimality:
@@ -59,7 +59,7 @@ def plot_objective_curve(df, obj_col='objective_value', plotly=False,
         else:
             y_label = "F(x) / F(x0)"
         max_f_0 = df[df['stop_val'] == 1][obj_col].max()
-        df[obj_col] /= max_f_0
+        df.loc[:, obj_col] /= max_f_0
 
     fig = get_figure(plotly)
 
