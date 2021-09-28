@@ -45,4 +45,5 @@ jobs:
         run: |
           conda install -yq pip numpy scipy numba
           pip install scikit-learn
-          python -c 'from sklearn.linear_model import Lasso'
+          ulimit -c unlimited && (python -c 'from sklearn.linear_model import Lasso' || (lldb -c `ls -t /cores/* | head -n1` \
+                 --batch -o 'thread backtrace all' -o 'quit' && exit 1))
