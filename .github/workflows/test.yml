@@ -49,13 +49,13 @@ jobs:
           python-version: ${{ matrix.version_python }}
           # Use miniforge to only get conda-forge as default channel.
           miniforge-version: latest
+          mamba-version: "*"
 
       - run: conda info
 
       - name: Install benchopt and its dependencies
         run: |
-          conda info
-          conda install -yq pip
+          mamba install -yq pip numpy scipy pandas matplotlib
           pip install -e .[test]
 
       - run: continuous_integration/test_script.sh
