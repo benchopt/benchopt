@@ -18,8 +18,7 @@ if [[ "$COVERAGE" == "true" ]]; then
 fi
 
 set -x
-$TEST_CMD benchopt/tests/test_benchmarks.py::test_solver_install[dummy_benchmark-julia-pgd] \
-          benchopt/tests/test_benchmarks.py::test_solver_install[dummy_benchmark-sklearn]
+$TEST_CMD benchopt/tests/test_benchmarks.py::test_solver_install -k "julia or cd or sklearn or r-pgd"
 $TEST_CMD --skip-install --cov-append
 set +x
 
