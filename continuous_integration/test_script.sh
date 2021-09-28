@@ -18,7 +18,7 @@ if [[ "$COVERAGE" == "true" ]]; then
 fi
 
 set -x
-$TEST_CMD benchopt/tests/test_benchmarks.py::test_solver_install -k "cd or sklearn or r-pgd"
+$TEST_CMD benchopt/tests/test_benchmarks.py::test_solver_install -k "cd or sklearn"
 $TEST_CMD --skip-install --cov-append
 set +x
 
