@@ -49,13 +49,14 @@ jobs:
           python-version: ${{ matrix.version_python }}
           # Use miniforge to only get conda-forge as default channel.
           miniforge-version: latest
-          mamba-version: "*"
 
       - run: conda info
 
       - name: Install benchopt and its dependencies
         run: |
-          mamba install -yq pip numpy scipy pandas matplotlib
+          conda install -yq pip numpy scipy pandas matplotlib numba
+          pip install scikit-learn
+          python -c 'from sklearn.linear_model import Lasso'
           pip install -e .[test]
 
       - run: continuous_integration/test_script.sh
