@@ -21,11 +21,11 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: ubuntu-latest
-            version_python: 3.7
-            coverage: 'true'
-          - os: ubuntu-latest
-            version_python: 3.8
+          # - os: ubuntu-latest
+          #   version_python: 3.7
+          #   coverage: 'true'
+          # - os: ubuntu-latest
+          #   version_python: 3.8
           - os: macos-latest
             version_python: 3.8
     env:

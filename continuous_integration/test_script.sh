@@ -18,7 +18,7 @@ if [[ "$COVERAGE" == "true" ]]; then
 fi
 
 set -x
-$TEST_CMD
+$TEST_CMD benchopt/tests/test_benchmarks.py::test_solver_install
 $TEST_CMD --skip-install --cov-append
 set +x
 
