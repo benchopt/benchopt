@@ -11,7 +11,7 @@ def fill_between_x(fig, x, q1, q9, y, color, marker, label, plotly=False):
         plt.loglog(x, y, color=color, marker=marker, label=label, linewidth=3)
         plt.fill_betweenx(y, q1, q9, color=color, alpha=.3)
         return fig
-
+    color = tuple(255*x if i != 3 else x for i, x in enumerate(color))
     color = f'rgba{color}'
     fig.add_trace(go.Scatter(
         x=x, y=y,
@@ -82,7 +82,7 @@ def _make_bars(fig, heights, ticks, width, colors, times, plotly=False):
         colors = [f'rgba{color}' for color in colors]
         xi, _ = zip(*ticks)
         text_ = ["Did not converge" if np.isnan(
-                                    time).any() else " " for time in times]
+            time).any() else " " for time in times]
         fig.add_trace(go.Bar(x=xi,
                              y=heights,
                              width=[width],
