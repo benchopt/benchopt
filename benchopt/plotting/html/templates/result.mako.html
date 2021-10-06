@@ -69,18 +69,18 @@
 %endfor
 </select>
 <label for='objective_selector'>Objective:</label>
-<select id='objective_selector' onchange="showMe(this);">
+<select id='objective_selector' onchange="showMe(this); set_visibility();">
 % for obj in result['objective_names']:
   <option value="${obj}">${obj}</option>
 %endfor
 </select>
-<select id='objective_column' onchange="showMe(this);">
+<select id='objective_column' onchange="showMe(this); set_visibility();">
 % for obj_col in result['obj_cols']:
   <option value="${obj_col}">${obj_col.replace('objective_', '')}</option>
 %endfor
 </select>
 <label for='plot_kind'>Kind:</label>
-<select id='plot_kind' onchange="showMe(this);">
+<select id='plot_kind' onchange="showMe(this); set_visibility();">
 % for kind in result['kinds']:
   <option value="${kind}">${kind}</option>
 %endfor
@@ -156,6 +156,7 @@
     }
   }
 
+
   $('.toggle').click(function() {
     $(this).find('svg').toggleClass('fa-plus-circle fa-minus-circle');
     var x = document.getElementById("subinfo")
@@ -169,10 +170,37 @@
 
   var obj = document.getElementById('dataset_selector');
   obj.onchange();
-  var obj = document.getElementById('objective_selector');
+  var prev_obj_selector = obj.value;
+  var obj = document.getElementById('objective_column');
   obj.onchange();
+  var prev_obj_col = obj.value;
   var obj = document.getElementById('plot_kind');
   obj.onchange();
+  var prev_kind = obj.value;
+
+  function set_visibility() {
+    var kind = document.getElementById('plot_kind').value;
+    var obj_select = document.getElementById("objective_selector").value;
+    var obj_col = document.getElementById("objective_column").value;
+    if(kind !== "histogram"){
+      if(prev_kind != null){
+        // old graph values
+        var graph_id = document.querySelector('[id$="' + prev_obj_selector + prev_obj_col + prev_kind + '"]').id;
+        var graph = document.getElementById(document.getElementById(graph_id).getElementsByTagName("div")[1].id);
+        var traces_visib = graph.data.map(trace => trace.visible);
+        // new graph values
+        var graph_id = document.querySelector('[id$="' + obj_select + obj_col + kind + '"]').id;
+        var graph = document.getElementById(document.getElementById(graph_id).getElementsByTagName("div")[1].id);
+        for(i=0; i < graph.data.length; i++){
+          graph.data[i].visible = traces_visib[i];
+        }
+        Plotly.redraw(graph);
+      }
+      prev_kind = kind;
+      prev_obj_col = obj_col;
+      prev_obj_selector = obj_select;
+    };
+  }
 
 </script>
 </body>
