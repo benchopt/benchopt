@@ -86,7 +86,7 @@ A dataset class also needs to inherit from a base class called
 Example using a real dataset
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/datasets/boston.py
+.. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/datasets/leukemia.py
 
 You can also define a parametrized simulated dataset for example to test
 across problem dimensions.
