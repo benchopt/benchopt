@@ -81,7 +81,7 @@ def plot_objective_curve(df, obj_col='objective_value', plotly=False,
 
         fill_between_x(
             fig, curve['time'], q1, q9, curve[obj_col], color=CMAP(i % CMAP.N),
-            marker=markers[i], label=solver_name, plotly=plotly
+            marker=markers[i % len(markers)], label=solver_name, plotly=plotly
         )
 
     if suboptimality and not relative:
