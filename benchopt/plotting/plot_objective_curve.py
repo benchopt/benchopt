@@ -4,7 +4,7 @@ from .helpers_compat import get_figure
 from .helpers_compat import add_h_line
 from .helpers_compat import fill_between_x
 
-CMAP = plt.get_cmap('tab20')
+CMAP = plt.get_cmap('tab10')
 
 
 def plot_objective_curve(df, obj_col='objective_value', plotly=False,
@@ -80,8 +80,8 @@ def plot_objective_curve(df, obj_col='objective_value', plotly=False,
         q9 = df_.groupby('stop_val')['time'].quantile(.9)
 
         fill_between_x(
-            fig, curve['time'], q1, q9, curve[obj_col],
-            color=CMAP(i), marker=markers[i], label=solver_name, plotly=plotly
+            fig, curve['time'], q1, q9, curve[obj_col], color=CMAP(i % CMAP.N),
+            marker=markers[i % len(markers)], label=solver_name, plotly=plotly
         )
 
     if suboptimality and not relative:
