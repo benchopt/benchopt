@@ -44,6 +44,5 @@ jobs:
       - name: Install benchopt and its dependencies
         run: |
           conda install -yq pip numpy scipy numba
-          pip install scikit-learn
-          ulimit -c unlimited && (python -c 'from sklearn.linear_model import Lasso' || (lldb -c `ls -t /cores/* | head -n1` \
-                 --batch -o 'thread backtrace all' -o 'quit' && exit 1))
+          pip install -i https://pypi.anaconda.org/scipy-wheels-nightly/simple scikit-learn
+          python -c 'from sklearn.linear_model import Lasso'
