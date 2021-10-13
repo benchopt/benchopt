@@ -56,7 +56,7 @@ jobs:
         run: |
           conda info
           conda install -yq pip
-          pip install -e .[test]
+          pip install .[test]
 
       - run: continuous_integration/test_script.sh
         name: 'Run the tests'
