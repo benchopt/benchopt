@@ -9,6 +9,8 @@ recursive-include benchopt *.py
 # Include html templates and css for plotting
 recursive-include benchopt/plotting *.html
 recursive-include benchopt/plotting *.css
+recursive-include benchopt/plotting *.js
+
 
 # Include doc generation files
 include doc/_static/style.css
