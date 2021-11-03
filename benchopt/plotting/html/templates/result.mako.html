@@ -84,6 +84,14 @@
         <option value="${kind}">${kind}</option>
         %endfor
     </select>
+    <label for='change_scaling'>Axis type</label>
+    <select id="change_scaling" onchange="changeScale(this)">
+        <option value="semilog-y">semilog-y</option>
+        <option value="semilog-x">semilog-x</option>
+        <option value="loglog">loglog</option>
+        <option value="linear">linear</option>
+    </select>
+
 
     % for data in result['dataset_names']:
     <div class="${data}">
@@ -91,10 +99,6 @@
         <div class="${obj}">
             % for obj_col in result['obj_cols']:
             <div class="${obj_col}">
-                <%
-        changed_names = [data + obj + obj_col + kinds
-                     for kinds in result['kinds'] if kinds != "histogram"]
-        %>
                 % for kind in result['kinds']:
                 <div class="${kind}">
                     <%
@@ -103,13 +107,6 @@
                     % if fig.endswith('.svg'):
                     <img src="${fig}"><br />
                     % else:
-                    <label for='change_scaling'>Axis type</label>
-                    <select id="change_scaling" onchange="changeScale(this,${changed_names})">
-                        <option value="semilog-y">semilog-y</option>
-                        <option value="semilog-x">semilog-x</option>
-                        <option value="loglog">loglog</option>
-                        <option value="linear">linear</option>
-                    </select>
                     <div id="${data + obj + obj_col + kind}">
                         ${fig}
                     </div>
