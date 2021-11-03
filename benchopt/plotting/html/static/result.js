@@ -49,6 +49,9 @@ function showMe(e) {
     }); // shift all new values to only replace one after
     globalState[e.id].shift(); // previous value is now at index 0
   }
+  if (e.id === "dataset_selector") {
+    document.getElementById("change_scaling").value = "semilog-y"; // default
+  }
   globalState[e.id][1] = e.value; // set new value of selector
   for (let opt of e.options) {
     allObj = document.getElementsByClassName(opt.value); // get all divs corresponding
@@ -90,23 +93,35 @@ function visibleTraces() {
 /**
  * Change y axis scale of plotly graph (loglog <-> semilog-y)
  * @param  {Object} e  dropdown for axis log type
- * @param  {Array} allIds  ids of containers of plots
  */
-function changeScale(e, allIds) {
-  for (which = 0; which < allIds.length; which++) {
-    container = document.getElementById(allIds[which]);
-    idGraph = container.getElementsByTagName("div")[1].id;
-    graph = document.getElementById(idGraph); // get plotly graph to change
-    layout = graph.layout; // get layout to recover only axis
-    switch (e.value) {
-      case "loglog":
-        layout.xaxis.type = "log";
-        break;
-      case "semilog-y":
-        layout.xaxis.type = "linear";
-        break;
+function changeScale(e) {
+  allContainers = document
+    .getElementsByClassName(globalState["dataset_selector"][1])[0]
+    .getElementsByClassName("plot-container plotly");
+  for (which = 0; which < allContainers.length; which++) {
+    graph = allContainers[which].parentNode; // get plotly graph to change
+    if (!graph.parentNode.parentNode.id.endsWith("histogram")) {
+      layout = graph.layout; // get layout to recover only axis
+      switch (e.value) {
+        case "loglog":
+          layout.xaxis.type = "log";
+          layout.yaxis.type = "log";
+          break;
+        case "semilog-y":
+          layout.xaxis.type = "linear";
+          layout.yaxis.type = "log";
+          break;
+        case "semilog-x":
+          layout.xaxis.type = "log";
+          layout.yaxis.type = "linear";
+          break;
+        case "linear":
+          layout.xaxis.type = "linear";
+          layout.yaxis.type = "linear";
+          break;
+      }
+      Plotly.relayout(graph.id, layout); // change axis type of plot
     }
-    Plotly.relayout(idGraph, layout); // change axis type of plot
   }
 }
 
