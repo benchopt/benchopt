@@ -101,9 +101,19 @@ function changeScale(e, allIds) {
     switch (e.value) {
       case "loglog":
         layout.xaxis.type = "log";
+        layout.yaxis.type = "log";
         break;
       case "semilog-y":
         layout.xaxis.type = "linear";
+        layout.yaxis.type = "log";
+        break;
+      case "semilog-x":
+        layout.xaxis.type = "log";
+        layout.yaxis.type = "linear";
+        break;
+      case "linear":
+        layout.xaxis.type = "linear";
+        layout.yaxis.type = "linear";
         break;
     }
     Plotly.relayout(idGraph, layout); // change axis type of plot

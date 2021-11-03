@@ -106,7 +106,9 @@
                     <label for='change_scaling'>Axis type</label>
                     <select id="change_scaling" onchange="changeScale(this,${changed_names})">
                         <option value="semilog-y">semilog-y</option>
+                        <option value="semilog-x">semilog-x</option>
                         <option value="loglog">loglog</option>
+                        <option value="linear">linear</option>
                     </select>
                     <div id="${data + obj + obj_col + kind}">
                         ${fig}
