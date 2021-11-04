@@ -57,6 +57,7 @@ jobs:
             name: Get Python running
             command: |
               mamba install python=3.8 julia r-base rpy2 numpy cython -yq
+              pip install --upgrade "setuptools<58.5"
               pip install --upgrade --progress-bar off julia
               pip install --upgrade --progress-bar off git+https://github.com/scikit-learn-contrib/lightning.git
               pip install --upgrade --progress-bar off -e .[doc]
