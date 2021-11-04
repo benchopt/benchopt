@@ -61,12 +61,15 @@
 
 
     <!-- Add selector to display only one plot -->
+    <div>
     <label for='dataset_selector'>Dataset:</label>
     <select id='dataset_selector' onchange="showMe(this);">
         % for data in result['dataset_names']:
         <option value="${data}">${data}</option>
         %endfor
     </select>
+    </div>
+    <div>
     <label for='objective_selector'>Objective:</label>
     <select id='objective_selector' onchange="showMe(this);">
         % for obj in result['objective_names']:
@@ -78,20 +81,21 @@
         <option value="${obj_col}">${obj_col.replace('objective_', '')}</option>
         %endfor
     </select>
+    </div>
+    <div>
     <label for='plot_kind'>Kind:</label>
     <select id='plot_kind' onchange="showMe(this);">
         % for kind in result['kinds']:
         <option value="${kind}">${kind}</option>
         %endfor
     </select>
-    <label for='change_scaling'>Axis type</label>
     <select id="change_scaling" onchange="changeScale(this)">
         <option value="semilog-y">semilog-y</option>
         <option value="semilog-x">semilog-x</option>
         <option value="loglog">loglog</option>
         <option value="linear">linear</option>
     </select>
-
+    </div>
 
     % for data in result['dataset_names']:
     <div class="${data}">
