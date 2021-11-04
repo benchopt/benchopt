@@ -15,12 +15,14 @@
 </head>
 
 <body>
-
+    <%
+    benchmark_name = benchmark.replace("benchmark_", "").replace("_", " ")
+    %>
     <a id="top"></a>
     <a href="${home}"><button class="btn"><i class="fa fa-home"></i></button></a>
-    <a href="${benchmark}.html"><button class="btn"><i class="fa fa-arrow-left"></i> ${benchmark}</button></a>
+    <a href="${benchmark}.html"><button class="btn"><i class="fa fa-arrow-left"></i> ${benchmark_name}</button></a>
 
-    <h1>Result on ${benchmark} benchmark</h1>
+    <h1>Result on ${benchmark_name} benchmark</h1>
     <summary></summary>
     <p><a href="${result['fname']}">
             <button class="btn"><i class="fa fa-download"></i> ${result["fname_short"]}</button>
