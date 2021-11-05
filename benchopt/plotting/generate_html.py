@@ -474,10 +474,14 @@ def plot_benchmark_html_all(patterns=(), benchmarks=(), root=None,
         root = Path(root)
         benchmarks = [
             f for f in root.iterdir()
-            if f.is_dir() and (f / 'outputs').is_dir()
+            if f.is_dir() and (f / 'outputs').is_dir() and f.name != "html"
         ]
     else:
-        benchmarks = [Path(b) for b in benchmarks]
+        benchmarks = [Path(b).resolve() for b in benchmarks]
+        benchmarks = [
+            b for b in benchmarks
+            if b.name != 'html' and (b / 'outputs').is_dir()
+        ]
     if not patterns:
         patterns = ['*']
 
