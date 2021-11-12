@@ -12,6 +12,8 @@
   src="https://code.jquery.com/jquery-3.5.1.min.js"
   integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0="
   crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+<link href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css" rel="stylesheet" type="text/css" />
 <script src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js"></script>
 <link href="https://cdn.datatables.net/1.10.22/css/jquery.dataTables.min.css" rel="stylesheet" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -90,13 +92,15 @@
     <td class="fname">
       <a href="${result['page']}">
         <%
-          fname = result["fname_short"]
-          fname, _ = fname.split('.')
-          fname = fname.replace("benchmark_", "").replace("_benchopt_run_", " ")
-          disp_sub = any([val != '' for val in result['sysinfo']['sub'].values()])
+        fname = result["fname_short"]
+        csv_name = "outputs/benchopt_run" + fname.split("benchopt_run")[1]
+        fname, _ = fname.split('.')
+        fname = fname.replace("benchmark_", "").replace("_benchopt_run_", " ")
+        disp_sub = any([val != '' for val in result['sysinfo']['sub'].values()])
         %>
         ${fname}
       </a>
+      <input type="checkbox" name="checkfiles" data-csv=${csv_name} data-html="${result['page']}" style="display:none;">
     </td>
     <td class="datasets">
     <ul style="list-style-type: none; margin-top: 0;">
@@ -162,7 +166,7 @@
       % endif
 
     </td>
-    <td class="buttons">
+    <td class="buttons" style='text-align: center'>
       <a href="${result['page']}">
         <button class="btn"><i class="fas fa-chart-line"></i></button>
       </a>
@@ -174,109 +178,12 @@
 %endfor
 </tbody>
 </table>
+<div id="dialogRm" hidden="hidden"> dialog text </div>
+<button class="btn" id="trashBtn" style="display:none;float:right;"><i class="fa fa-trash"></i></button>
 
 <a class="backtotop" title="Back to top" href="#top" style="z-index: 50;"><i class="fas fa-level-up-alt"></i></a>
 
-<script type="text/javascript">
-$(document).ready(function() {
-    $('.summary').dataTable( {
-        "order": [[ 0, "desc" ]]
-      }
-    )
-});
-
-$('table').each(function(a, tbl) {
-        var currentTableRows = $(tbl).find('tbody tr').length;
-        $(tbl).find('th').each(function(i) {
-            var remove = 0;
-            var currentTable = $(this).parents('table');
-            var tds = currentTable.find('tr td:nth-child(' + (i + 1) + ')');
-            tds.each(function(j) { if ($(this)[0].innerText.length == 0) remove++; });
-            if (remove == currentTableRows) {
-                $(this).hide();
-                tds.hide();
-            }
-        });
-    });
-
-function change(ll_item){
-  var td, i, fil;
-  var filter = new Array;
-  for (item = 0; item < ll_item.length; item++){
-    filter.push(document.getElementById("select"+ll_item[item].replace(/\s/g, "")).value.toUpperCase());
-  }
-  var table = document.getElementById("summary");
-  var tr = table.getElementsByTagName("tr");
-  for (i = 0; i < tr.length; i++) {
-    tr[i].style.display = "";
-    td = tr[i].getElementsByTagName("td")[2];
-    if (td){
-     for (fil = 0; fil < filter.length; fil++){
-       if (td.innerHTML.toUpperCase().indexOf(filter[fil]) > -1 && tr[i].style.display !== "none") {
-         tr[i].style.display = "";
-       }
-       else {
-         tr[i].style.display = "none";
-       }
-     }
-    }
-  }
-}
-
-function displaymore(id, loop_index) {
-  var x = document.getElementById("subinfo"+loop_index);
-  $(id).find('svg').toggleClass('fa-plus-circle fa-minus-circle');
-  if (x.style.display === 'none') {
-    x.style.display = "block";
-  }
-  else {
-    x.style.display = "none";
-  }
-}
-
-var openbtn = document.getElementById("open");
-if (openbtn){
-  var closebtn = document.getElementById("close");
-  openbtn.style.display = 'none';
-
-  function openSideNav() {
-      navbar = document.getElementById("sidenav")
-      navbar.style.visibility = "visible";
-      main = document.getElementById("main")
-      if ($(window).width() < 900) {
-        navbar.style.height = "100%";
-        main.style.marginLeft = "0";
-      }
-      else {
-        navbar.style.height = "1000px";
-        main.style.marginLeft = "200px";
-      }
-      navbar.style.opacity = "1";
-  	  openbtn.style.display = 'none';
-      closebtn.style.display = '';
-  }
-
-  if ($(window).width() > 900){
-    openSideNav()
-  }
-  else {
-    closeSideNav()
-  }
-
-  function closeSideNav() {
-      navbar = document.getElementById("sidenav")
-      main = document.getElementById("main")
-      navbar.style.visibility = "hidden";
-      navbar.style.opacity = "0";
-      navbar.style.height = "0";
-      if ($(window).width() > 900) {
-        main.style.marginLeft = "0px";
-      }
-      openbtn.style.display = '';
-      closebtn.style.display = 'none';
-    }
-}
-</script>
 </div>
+<script type="text/javascript" src="${static_dir}/benchmark.js"></script>
 </body>
 </html>
