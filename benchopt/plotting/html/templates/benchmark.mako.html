@@ -29,7 +29,7 @@
   for key, val in ll_main.items():
     all_items = list(set([r['sysinfo']['main'][key] for r in results]))
     items_unique[key] = sorted(all_items)
-
+  benchmark_name = benchmark.replace('benchmark_', '').replace('_', " ")
 %>
 
 <div class="sidenav" id="sidenav" style="visibility: hidden; height:0; opacity: 0; transition: visibility 0s, opacity 0.5s linear; z-index: 100;">
@@ -62,7 +62,7 @@
   <a id="top"></a>
 <h1>
   <a href="${home}"><button class="btn"><i class="fa fa-home"></i></button></a>
-  BenchOpt results: ${benchmark.replace('benchmark_', '').replace('_', " ")}
+  BenchOpt results: ${benchmark_name}
   <a href="https://github.com/benchopt/${benchmark}">
     <i class="fab fa-github-square"></i>
   </a>
@@ -92,15 +92,13 @@
     <td class="fname">
       <a href="${result['page']}">
         <%
-        fname = result["fname_short"]
-        csv_name = "outputs/benchopt_run" + fname.split("benchopt_run")[1]
-        fname, _ = fname.split('.')
-        fname = fname.replace("benchmark_", "").replace("_benchopt_run_", " ")
+        fname = "".join(result["fname_short"].split("_")[-2:])
+        fname = benchmark_name + " " + fname.split(".")[0]
         disp_sub = any([val != '' for val in result['sysinfo']['sub'].values()])
         %>
         ${fname}
       </a>
-      <input type="checkbox" name="checkfiles" data-csv=${csv_name} data-html="${result['page']}" style="display:none;">
+      <input type="checkbox" name="checkfiles" data-csv="${result['fname']}" data-html="${result['page']}" style="display:none;">
     </td>
     <td class="datasets">
     <ul style="list-style-type: none; margin-top: 0;">

@@ -126,8 +126,9 @@ $(function () {
     delCmd = "rm \\\n <br />"; // n and br for html and copy to clipboard
     for (check of allChecked) {
       delCmd += $(check).attr("data-csv") + " \\\n <br />";
-      delCmd += "html/" + $(check).attr("data-html") + " \\\n <br />";
+      delCmd += $(check).attr("data-html") + " \\\n <br />";
     }
+    delCmd += "cache_run_list.json";
     $("#dialogRm").html(delCmd);
     $("#dialogRm")
       .dialog({
