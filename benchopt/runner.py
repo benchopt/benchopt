@@ -171,6 +171,7 @@ class _Callback:
     time_callback : float
         The time when exiting the callback call.
     """
+
     def __init__(self, objective, meta, stopping_criterion):
         self.objective = objective
         self.meta = meta
@@ -276,7 +277,7 @@ def run_one_solver(benchmark, objective, solver, meta, max_runs, n_repetitions,
         for rep in range(n_repetitions):
             if show_progress:
                 progress_str = (
-                    f"{tag} {{progress}} ({rep} / {n_repetitions} reps)"
+                    f"{tag} {{progress}} ({rep + 1} / {n_repetitions} reps)"
                 )
             else:
                 progress_str = None
