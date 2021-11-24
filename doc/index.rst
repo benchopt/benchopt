@@ -51,7 +51,7 @@ And to get the **latest development version**, you can use:
     $ pip install -U https://github.com/benchopt/benchOpt/archive/master.zip
 
 This will install the command line tool to run the benchmark. Then, existing
-benchmarks can be retrieved from GitHUb or created locally. To discover which
+benchmarks can be retrieved from GitHub or created locally. To discover which
 benchmarks are presently available look for
 `benchmark_* repositories on GitHub <https://github.com/benchopt/>`_,
 such as for `Lasso -- l1-regularized linear regression <https://github.com/benchopt/benchmark_lasso>`_.
