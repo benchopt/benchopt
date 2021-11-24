@@ -105,7 +105,7 @@ def plot_objective_curve(df, obj_col='objective_value', plotly=False,
     else:
         plt.legend(fontsize=14)
         plt.xlabel("Time [sec]", fontsize=14)
-        plt.ylabel(y_label, fontsize=14)
+        plt.ylabel(obj_col[10:] + ': ' + y_label, fontsize=14)
         plt.title(title, fontsize=14)
         plt.tight_layout()
 
