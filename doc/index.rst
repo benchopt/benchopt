@@ -1,22 +1,22 @@
-Benchmark repository for optimization
-=====================================
+BenchOpt: Benchmark repository for optimization
+===============================================
 
 |Test Status| |Python 3.6+| |codecov|
 
-BenchOpt is a package to simplify, make more transparent and
-more reproducible the comparisons of optimization algorithms.
+BenchOpt is a package to make the comparison of optimizations algorithms simple, transparent and reproducible.
 
-BenchOpt is written in Python but it is available with
+It is written in Python but is available with
 `many programming languages <auto_examples/plot_run_benchmark_python_R_julia.html>`_.
 So far it has been tested with `Python <https://www.python.org/>`_,
 `R <https://www.r-project.org/>`_, `Julia <https://julialang.org/>`_
 and compiled binaries written in C/C++ available via a terminal
-command. If it can be installed via
-`conda <https://docs.conda.io/en/latest/>`_ it should just work!
+command.
+If a solver can be installed via
+`conda <https://docs.conda.io/en/latest/>`_, it should just work in BenchOpt!
 
 BenchOpt is used through a command line as documented
-in :ref:`cli_documentation`. Ultimately running and replicating an
-optimization benchmark should be **as simple as doing**:
+in the :ref:`cli_documentation`.
+Once BenchOpt is installed, running and replicating an optimization benchmark is **as simple as doing**:
 
 .. code-block::
 
@@ -25,7 +25,7 @@ optimization benchmark should be **as simple as doing**:
     $ benchopt run --env ./benchmark_logreg_l2
 
 Running these commands will fetch the benchmark files, install the benchmark
-requirements in a dedicated environment `benchopt_benchmark_logreg_l2` and
+requirements in a dedicated environment called ``benchopt_benchmark_logreg_l2`` and
 give you a benchmark plot on l2-regularized logistic regression:
 
 .. figure:: auto_examples/images/sphx_glr_plot_run_benchmark_003.png
@@ -38,7 +38,7 @@ Learn how to :ref:`how`.
 Install
 --------
 
-This package can be installed through `pip`. To get the **last release**, use:
+This package can be installed through `pip`. To get the **latest release**, use:
 
 .. code-block::
 
@@ -51,55 +51,62 @@ And to get the **latest development version**, you can use:
     $ pip install -U https://github.com/benchopt/benchOpt/archive/master.zip
 
 This will install the command line tool to run the benchmark. Then, existing
-benchmarks can be retrieved from git or created locally. To discover which
+benchmarks can be retrieved from GitHub or created locally. To discover which
 benchmarks are presently available look for
 `benchmark_* repositories on GitHub <https://github.com/benchopt/>`_,
 such as for `Lasso -- l1-regularized linear regression <https://github.com/benchopt/benchmark_lasso>`_.
-This benchmark can then be retrieved locally with:
+This benchmark can be retrieved locally with:
 
 .. code-block::
 
     $ git clone https://github.com/benchopt/benchmark_lasso.git
 
-Example of command line usage on the Lasso benchmark
-----------------------------------------------------
+Quickstart: command line usage on the Lasso benchmark
+-----------------------------------------------------
 
 This section illustrates benchopt's command line interface on the `Lasso benchmark <https://github.com/benchopt/benchmark_lasso>`_; the syntax is applicable to any benchmark.
+All this section assumes that you are in the parent folder of the ``benchmark_lasso`` folder.
+The ``--env`` flag specifies that everything is run in the ``benchopt_benchmark_lasso`` conda environment.
 
-To install all requirements and dependencies of the benchmark, run:
+**Installing benchmark dependencies**: to install all requirements of the benchmark, run:
 
 .. code-block::
 
     $ benchopt install --env ./benchmark_lasso
 
-To run benchmarks on all datasets and with all solvers, run:
+**Run a benchmark**: to run benchmarks on all datasets and with all solvers, run:
 
 .. code-block::
 
     $ benchopt run --env ./benchmark_lasso
 
-To run only the ``sklearn`` and ``celer`` solvers, on the ``simulated`` and ``finance`` datasets, run:
+**Run only some solvers and datasets**: to run only the ``sklearn`` and ``celer`` solvers, on the ``simulated`` and ``finance`` datasets, run:
 
 .. code-block::
 
     $ benchopt run --env ./benchmark_lasso -s sklearn -s celer -d simulated -d finance
 
-Some solvers and dataset have parameters; by default all combinations are run.
-If you want to run a specific configuration, pass it explicitly, e.g., to run the python-pgd solver only with its parameter ``use_acceleration`` set to True, use:
+**Run a solver or dataset with specific parameters**:  some solvers and datasets have parameters; by default all combinations are run.
+If you want to run a specific configuration, pass it explicitly, e.g., to run the ``python-pgd`` solver only with its parameter ``use_acceleration`` set to True, use:
 
 .. code-block::
 
     $ benchopt run --env ./benchmark_lasso -s python-pgd[use_acceleration=True]
 
+**Set the number of repetitions**: the benchmark are repeated 5 times by default for greater precision. To run the benchmark 10 times, run:
 
-Use
+.. code-block::
+
+    $ benchopt run --env ./benchmark_lasso -r 10
+
+**Getting help**: use
 
 .. code-block::
 
     $ benchopt run -h
 
-to get more details about the different options read the
-:ref:`cli_documentation`.
+to get more details about the different options.
+You can also read the :ref:`cli_documentation`.
 
 Some available benchmarks
 -------------------------

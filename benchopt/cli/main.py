@@ -40,7 +40,7 @@ main = click.Group(
 @click.option('--force-solver', '-f', 'forced_solvers',
               metavar="<solver_name>", multiple=True, type=str,
               help="Force the re-run for <solver_name>. This "
-              "avoids caching effect when adding a solver."
+              "avoids caching effect when adding a solver. "
               "To select multiple solvers, use multiple `-f` options.",
               autocompletion=get_solvers)
 @click.option('--dataset', '-d', 'dataset_names',
@@ -55,7 +55,7 @@ main = click.Group(
               help='Maximal number of runs for each solver. This corresponds '
               'to the number of points in the time/accuracy curve.')
 @click.option('--n-repetitions', '-r',
-              metavar='<int>', default=5, type=int,
+              metavar='<int>', default=5, show_default=True, type=int,
               help='Number of repetitions that are averaged to estimate the '
               'runtime.')
 @click.option('--timeout',

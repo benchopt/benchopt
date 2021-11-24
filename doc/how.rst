@@ -7,15 +7,16 @@ A benchmark is composed of three elements: an objective_ function,
 a list of datasets_, and a list of solvers_.
 
 A benchmark is defined in a folder that should respect a certain
-structure. For example::
+structure. For example
+
+.. code-block::
 
     my_benchmark/
-    ├── README.rst
-    ├── datasets
+    ├── objective.py  # contains the definition of the objective
+    ├── datasets/
     │   ├── simulated.py  # some dataset
     │   └── real.py  # some dataset
-    ├── objective.py  # contains the definition of the objective
-    └── solvers
+    └── solvers/
         ├── solver1.py  # some solver
         └── solver2.py  # some solver
 
@@ -41,20 +42,20 @@ This class allows to monitor the quantities of interest along the iterations
 of the solvers. Typically it allows to evaluate the objective function to
 be minimized by the solvers. An objective class should define 3 methods:
 
-  - ``set_data(**data)``: it allows to specify the data. See the data as a dictionary
-    of Python variables without any constraint.
-  - ``compute(x)``: it allows to evaluate the objective for a given value
-    of the iterate, here called ``x``. This method should take only one parameter,
-    the output returned by the solver. All other parameters should be stored
-    in the class with ``set_data`` method. The compute function should return
-    a float (understood as the objective value) or a dictionary. If a dictionary
-    is returned it should contain a key called ``value`` and all other keys
-    should have ``float`` values allowing to track more than one value
-    of interest (e.g. train and test errors).
-  - ``to_dict()``: method that returns a dictionary to be passed
-    to the ``set_objective`` methods of solvers_.
+- ``set_data(**data)``: it allows to specify the data. See the data as a dictionary
+  of Python variables without any constraint.
+- ``compute(x)``: it allows to evaluate the objective for a given value
+  of the iterate, here called ``x``. This method should take only one parameter,
+  the output returned by the solver. All other parameters should be stored
+  in the class with the ``set_data`` method. The ``compute`` function should return
+  a float (understood as the objective value) or a dictionary. If a dictionary
+  is returned it should contain a key called ``value`` (the objective value) and all other keys
+  should have ``float`` values allowing to track more than one value
+  of interest (e.g. train and test errors).
+- ``to_dict()``: method that returns a dictionary to be passed
+  to the ``set_objective`` methods of solvers_.
 
-An objective class also needs to inherit from a base class called
+An objective class also needs to inherit from a base class,
 :class:`benchopt.base.BaseObjective`.
 
 .. note::
@@ -88,8 +89,8 @@ Example using a real dataset
 
 .. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/datasets/leukemia.py
 
-You can also define a parametrized simulated dataset for example to test
-across problem dimensions.
+You can also define a parametrized simulated dataset, for example to test
+across multiple problem dimensions.
 
 Example of parametrized simulated dataset
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -98,7 +99,7 @@ Sometimes one wants to test the solvers for variants of the same dataset.
 For example, one may want to change the dataset size, the noise level, etc.
 To be able to specify parameters to get a dataset, you can use a class
 attribute called ``parameters``. This parameter must be a dictionary
-whose keys can be passed to the ``__init__`` of the class. Then BenchOpt
+whose keys are passed to the ``__init__`` of the dataset class. Then BenchOpt
 will automatically allow you to test all combinations of parameters.
 
 .. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/datasets/simulated.py
@@ -108,7 +109,7 @@ will automatically allow you to test all combinations of parameters.
 3. Solvers
 ----------
 
-A solver requires to define three methods:
+A solver must define three methods:
 
    - ``set_objective(**objective_dict)``: This method will be called with the
      dictionary ``objective_dict`` returned by the method ``to_dict``
@@ -116,10 +117,11 @@ A solver requires to define three methods:
      information to the solver so it can optimize the objective function.
 
    - ``run(stop_value)``: This method takes only one parameter that controls the stopping
-     condition of the solver. This is typically a number of iterations ``n_iter``
+     condition of the solver. Typically this is either a number of iterations ``n_iter``
      or a tolerance parameter ``tol``. Alternatively, a ``callback`` function that will be
-     called at each iteration can be passed. The callback returns ``False`` once the
-     computation should stop. The parameter is controlled by the ``stop_strategy``,
+     called at each iteration can be passed. The callback should return ``False`` once the
+     computation should stop.
+     The parameter ``stop_value`` is controlled by the ``stop_strategy``,
      see below for details.
 
    - ``get_result()``: This method returns a variable that can be passed
@@ -208,11 +210,11 @@ A ``.R`` file that contains the solver and a ``.py`` file that knows how to call
 R solver using `Rpy2 <https://pypi.org/project/rpy2/>`_. Only the extensions
 should differ between the two files. Here is the Python file:
 
-.. literalinclude:: ../benchmarks/lasso/solvers/r_pgd.py
+.. literalinclude:: ../benchmarks/benchmark_lasso/solvers/r_pgd.py
 
 It uses the R code in:
 
-.. literalinclude:: ../benchmarks/lasso/solvers/r_pgd.R
+.. literalinclude:: ../benchmarks/benchmark_lasso/solvers/r_pgd.R
     :language: R
 
 .. note::
@@ -231,11 +233,11 @@ A ``.jl`` file that contains the solver and a ``.py`` file that knows how to cal
 Julia solver using `PyJulia <https://pypi.org/project/julia/>`_. Only the extensions
 should differ between the two files. Here is the Python file:
 
-.. literalinclude:: ../benchmarks/lasso/solvers/julia_pgd.py
+.. literalinclude:: ../benchmarks/benchmark_lasso/solvers/julia_pgd.py
 
 It uses the Julia code in:
 
-.. literalinclude:: ../benchmarks/lasso/solvers/julia_pgd.jl
+.. literalinclude:: ../benchmarks/benchmark_lasso/solvers/julia_pgd.jl
     :language: julia
 
 .. _source_solvers:

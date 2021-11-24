@@ -25,7 +25,7 @@ def get_plot_kinds(ctx, args, incomplete):
 @click.option('--filename', '-f', type=str, default=None,
               autocompletion=get_output_files,
               help="Specify the file to select in the benchmark. If it is "
-              "not specified, take the latest on in the benchmark output "
+              "not specified, take the latest one in the benchmark output "
               "folder.")
 @click.option('--kind', '-k', 'kinds',
               multiple=True, show_default=True, type=str,
@@ -76,7 +76,7 @@ def plot(benchmark, filename=None, kinds=('suboptimality_curve',),
 @click.option('--filename', '-f', type=str, default=None,
               autocompletion=get_output_files,
               help="Specify the file to publish in the benchmark. If it is "
-              "not specified, take the latest on in the benchmark output "
+              "not specified, take the latest one in the benchmark output "
               "folder.")
 def publish(benchmark, token=None, filename=None):
 
