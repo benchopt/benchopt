@@ -19,12 +19,15 @@ BENCHMARK_PATH = (
 
 try:
     save_file = run_benchmark(
-        Benchmark(BENCHMARK_PATH), ['sklearn[liblinear]', 'sklearn[saga]',
-                                    'sklearn[newton-cg]', 'lightning'],
+        Benchmark(BENCHMARK_PATH), ['sklearn[liblinear]', 'sklearn[newton-cg]',
+                                    'lightning'],
         dataset_names=['Simulated*n_samples=200,n_features=500*'],
-        max_runs=100, timeout=20, n_repetitions=3,
-        plot_result=False, show_progress=False
+        objective_filters=[
+            'L2 Logistic Regression[fit_intercept=False,lmbd=1.0]'],
+        max_runs=100, timeout=20, n_repetitions=15,
+        plot_result=False, show_progress=True
     )
+
 except RuntimeError:
     raise RuntimeError(
         "This example can only work when Logreg-l2 benchmark is cloned in a "
