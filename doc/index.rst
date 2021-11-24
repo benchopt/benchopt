@@ -25,10 +25,10 @@ optimization benchmark should be **as simple as doing**:
     $ benchopt run --env ./benchmark_logreg_l2
 
 Running these commands will fetch the benchmark files, install the benchmark
-requirements in a dedicated environment `benchop_benchmark_logreg_l2` and
+requirements in a dedicated environment `benchopt_benchmark_logreg_l2` and
 give you a benchmark plot on l2-regularized logistic regression:
 
-.. figure:: auto_examples/images/sphx_glr_plot_run_benchmark_001.png
+.. figure:: auto_examples/images/sphx_glr_plot_run_benchmark_003.png
    :target: how.html
    :align: center
    :scale: 80%

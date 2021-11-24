@@ -19,7 +19,8 @@ BENCHMARK_PATH = (
 
 try:
     save_file = run_benchmark(
-        Benchmark(BENCHMARK_PATH), ['sklearn', 'lightning'],
+        Benchmark(BENCHMARK_PATH), ['sklearn[liblinear]', 'sklearn[saga]',
+                                    'sklearn[newton-cg]', 'lightning'],
         dataset_names=['Simulated*n_samples=200,n_features=500*'],
         max_runs=100, timeout=20, n_repetitions=3,
         plot_result=False, show_progress=False
