@@ -115,6 +115,8 @@ def create_conda_env(
     env_yaml.flush()
 
     try:
+        if not quiet:
+            print()
         _run_shell(
             f"{CONDA_CMD} env create {force} -n {env_name} -f {env_yaml.name}",
             capture_stdout=quiet, raise_on_error=True
