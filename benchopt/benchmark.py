@@ -191,7 +191,7 @@ class Benchmark:
             patterns to select solvers to install.
         include_datasets : list of str
             patterns to select datasets to install.
-        env_name: str or None
+        env_name : str or None (default: None)
             Name of the conda env where the class should be installed. If
             None, tries to install it in the current environment.
         force : boolean (default: False)
