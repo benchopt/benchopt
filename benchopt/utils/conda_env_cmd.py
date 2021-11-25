@@ -38,7 +38,8 @@ channels:
 """
 
 
-def create_conda_env(env_name, recreate=False, with_pytest=False, empty=False):
+def create_conda_env(
+        env_name, recreate=False, with_pytest=False, empty=False, quiet=False):
     """Create a conda env with name env_name and install basic utilities.
 
 
@@ -54,6 +55,8 @@ def create_conda_env(env_name, recreate=False, with_pytest=False, empty=False):
     empty : bool (default: False)
         If set to True, simply create an empty env. This is mainly for testing
         purposes.
+    quiet : bool (default: False)
+        If True, silences the output of conda commands.
     """
 
     # Get a list of all conda envs
@@ -61,7 +64,7 @@ def create_conda_env(env_name, recreate=False, with_pytest=False, empty=False):
 
     if env_name in existing_conda_envs and not recreate:
         print(
-            f"Conda env {env_name} already exists. Checking setup ...",
+            f"Conda env {env_name} already exists. Checking setup ... ",
             end='', flush=True
         )
         env_version, _ = get_benchopt_version_in_env(env_name)
@@ -82,7 +85,8 @@ def create_conda_env(env_name, recreate=False, with_pytest=False, empty=False):
                 "by either using the --recreate option or fixing the version "
                 f"of benchopt in conda env {env_name}."
             )
-        print('done')
+        if quiet:
+            print("done")
         return
 
     force = "--force" if recreate else ""
@@ -101,7 +105,7 @@ def create_conda_env(env_name, recreate=False, with_pytest=False, empty=False):
     if empty:
         benchopt_env = EMPTY_ENV
 
-    print(f"Creating conda env '{env_name}':...", end='', flush=True)
+    print(f"Creating conda env '{env_name}':... ", end='', flush=True)
     if DEBUG:
         print(f"\nconda env config:\n{'-' * 40}{benchopt_env}{'-' * 40}")
     env_yaml = tempfile.NamedTemporaryFile(
@@ -109,17 +113,19 @@ def create_conda_env(env_name, recreate=False, with_pytest=False, empty=False):
     )
     env_yaml.write(f"name: {env_name}{benchopt_env}")
     env_yaml.flush()
+
     try:
         _run_shell(
             f"{CONDA_CMD} env create {force} -n {env_name} -f {env_yaml.name}",
-            capture_stdout=False, raise_on_error=True
+            capture_stdout=quiet, raise_on_error=True
         )
         # the channels priorities cannot be set through the yaml file,
         # we need to do it at the env creation
         # see https://stackoverflow.com/questions/70098418/
         _run_shell_in_conda_env(
             f"{CONDA_CMD} config --env --prepend channels nodefaults " +
-            "--prepend channels conda-forge", env_name, capture_stdout=False)
+            "--prepend channels conda-forge", env_name,
+            capture_stdout=quiet)
         if empty:
             return
         # Check that the correct version of benchopt is installed in the env
@@ -133,10 +139,11 @@ def create_conda_env(env_name, recreate=False, with_pytest=False, empty=False):
         assert ((benchopt_editable and env_editable)
                 or env_version == benchopt.__version__), error_msg
     except RuntimeError:
-        print(" failed to create the environment.")
+        print("failed to create the environment.")
         raise
     else:
-        print(" done")
+        if quiet:
+            print("done")
 
 
 def get_benchopt_version_in_env(env_name):
