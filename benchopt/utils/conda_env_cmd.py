@@ -112,8 +112,14 @@ def create_conda_env(env_name, recreate=False, with_pytest=False, empty=False):
     try:
         _run_shell(
             f"{CONDA_CMD} env create {force} -n {env_name} -f {env_yaml.name}",
-            capture_stdout=True, raise_on_error=True
+            capture_stdout=False, raise_on_error=True
         )
+        # the channels priorities cannot be set through the yaml file,
+        # we need to do it at the env creation
+        # see https://stackoverflow.com/questions/70098418/
+        _run_shell_in_conda_env(
+            f"{CONDA_CMD} config --env --prepend channels nodefaults " +
+            "--prepend channels conda-forge", env_name, capture_stdout=False)
         if empty:
             return
         # Check that the correct version of benchopt is installed in the env
