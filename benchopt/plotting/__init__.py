@@ -69,8 +69,8 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
                     if kind not in PLOT_KINDS:
                         raise ValueError(
                             f"Requesting invalid plot '{kind}'."
-                            "Should be in:\n"
-                            f"{PLOT_KINDS}")
+                            f"Should be in:\n{PLOT_KINDS}"
+                        )
                     # plot histogram only when convergence has a meaning
                     if kind == "histogram":
                         if obj_col != "objective_value":
