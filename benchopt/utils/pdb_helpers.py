@@ -2,7 +2,8 @@
 from contextlib import contextmanager
 
 from .colorify import colorify
-from .colorify import LINE_LENGTH, RED, YELLOW
+from .colorify import RED, YELLOW
+from .colorify import print_normalize
 
 
 # Get config values
@@ -24,11 +25,11 @@ def exception_handler(tag=None, pdb=False):
         yield
     except KeyboardInterrupt:
         status = colorify("interrupted", YELLOW)
-        print(f"\r{tag} {status}".ljust(LINE_LENGTH))
+        print_normalize(f"\r{tag} {status}")
         raise SystemExit(1)
     except BaseException:
         status = colorify("error", RED)
-        print(f"{tag} {status}".ljust(LINE_LENGTH))
+        print_normalize(f"{tag} {status}")
 
         if pdb:
             # Use ipdb if it is available and default to pdb otherwise.
