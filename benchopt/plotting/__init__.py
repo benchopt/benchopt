@@ -71,10 +71,12 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
                             f"Requesting invalid plot '{kind}'."
                             f"Should be in:\n{PLOT_KINDS}"
                         )
-                    # plot histogram only when convergence has a meaning
-                    if kind == "histogram":
-                        if obj_col != "objective_value":
-                            continue
+                    # For now only plot histogram and suboptimality for
+                    # objective_value for which we monitor convergence
+                    # XXX - find a better solution
+                    if obj_col != "objective_value" and (
+                            kind == "histogram" or "subopt" in kind):
+                        continue
                     plot_func = globals()[PLOT_KINDS[kind]]
                     try:
                         fig = plot_func(df_obj, obj_col=obj_col, plotly=plotly)
