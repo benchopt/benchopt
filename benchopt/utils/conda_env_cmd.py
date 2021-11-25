@@ -85,8 +85,7 @@ def create_conda_env(
                 "by either using the --recreate option or fixing the version "
                 f"of benchopt in conda env {env_name}."
             )
-        if quiet:
-            print("done")
+        print("done")
         return
 
     force = "--force" if recreate else ""
