@@ -40,7 +40,7 @@ main = click.Group(
 @click.option('--force-solver', '-f', 'forced_solvers',
               metavar="<solver_name>", multiple=True, type=str,
               help="Force the re-run for <solver_name>. This "
-              "avoids caching effect when adding a solver."
+              "avoids caching effect when adding a solver. "
               "To select multiple solvers, use multiple `-f` options.",
               autocompletion=get_solvers)
 @click.option('--dataset', '-d', 'dataset_names',
@@ -55,7 +55,7 @@ main = click.Group(
               help='Maximal number of runs for each solver. This corresponds '
               'to the number of points in the time/accuracy curve.')
 @click.option('--n-repetitions', '-r',
-              metavar='<int>', default=5, type=int,
+              metavar='<int>', default=5, show_default=True, type=int,
               help='Number of repetitions that are averaged to estimate the '
               'runtime.')
 @click.option('--timeout',
@@ -214,12 +214,15 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
               help="If this flag is set, start with a fresh conda "
               "environment. It can only be used combined with options "
               "`-e/--env` or `--env-name`.")
+@click.option('--quiet', '-q', 'quiet', is_flag=True, default=False,
+              show_default=True,
+              help="If this flag is set, conda's output is silenced.")
 @click.option('--yes', '-y', 'confirm', is_flag=True,
               help="If this flag is set, no confirmation will be asked "
               "to the user to install requirements in the current environment."
               " Useless with options `-e/--env` or `--env-name`.")
 def install(benchmark, solver_names, dataset_names, force=False,
-            recreate=False, env_name='False', confirm=False):
+            recreate=False, env_name='False', confirm=False, quiet=False):
 
     # Check that the dataset/solver patterns match actual dataset
     benchmark = Benchmark(benchmark)
@@ -267,13 +270,13 @@ def install(benchmark, solver_names, dataset_names, force=False,
                 )
 
         # create environment if necessary
-        create_conda_env(env_name, recreate=recreate)
+        create_conda_env(env_name, recreate=recreate, quiet=quiet)
 
     # install requirements
     print("# Install", flush=True)
     benchmark.install_all_requirements(
         include_solvers=solver_names, include_datasets=dataset_names,
-        env_name=env_name, force=force
+        env_name=env_name, force=force,
     )
 
 

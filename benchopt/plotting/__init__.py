@@ -65,24 +65,31 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
 
                 plot_id = get_plot_id(benchmark.name, df_obj)
 
-                for k, obj_col in itertools.product(kinds, obj_cols):
-                    if k not in PLOT_KINDS:
+                for kind, obj_col in itertools.product(kinds, obj_cols):
+                    if kind not in PLOT_KINDS:
                         raise ValueError(
-                            f"Requesting invalid plot '{k}'. Should be in:\n"
-                            f"{PLOT_KINDS}")
-                    plot_func = globals()[PLOT_KINDS[k]]
+                            f"Requesting invalid plot '{kind}'."
+                            f"Should be in:\n{PLOT_KINDS}"
+                        )
+                    # For now only plot histogram and suboptimality for
+                    # objective_value for which we monitor convergence
+                    # XXX - find a better solution
+                    if obj_col != "objective_value" and (
+                            kind == "histogram" or "subopt" in kind):
+                        continue
+                    plot_func = globals()[PLOT_KINDS[kind]]
                     try:
                         fig = plot_func(df_obj, obj_col=obj_col, plotly=plotly)
                     except TypeError:
                         fig = plot_func(df_obj, obj_col=obj_col)
-                    save_name = output_dir / f"{plot_id}_{obj_col}_{k}"
+                    save_name = output_dir / f"{plot_id}_{obj_col}_{kind}"
                     if hasattr(fig, 'write_html'):
                         save_name = save_name.with_suffix('.html')
                         fig.write_html(str(save_name), include_mathjax='cdn')
                     else:
                         save_name = save_name.with_suffix('.pdf')
                         plt.savefig(save_name)
-                    print(f'Save {k} plot of {obj_col} for {data} and '
+                    print(f'Save {kind} plot of {obj_col} for {data} and '
                           f'{objective_name} as: {save_name}')
                     figs.append(fig)
         if display:

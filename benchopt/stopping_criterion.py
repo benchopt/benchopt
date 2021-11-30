@@ -3,7 +3,7 @@ import math
 
 
 from .config import DEBUG
-from .utils.colorify import LINE_LENGTH
+from .utils.colorify import print_normalize
 
 
 # Possible stop strategies
@@ -231,10 +231,9 @@ class StoppingCriterion():
         if self.progress_str is not None:
             if isinstance(progress, float):
                 progress = f'{progress:6.1%}'
-            print(
-                self.progress_str.format(progress=progress)
-                .ljust(LINE_LENGTH) + '\r',
-                end='', flush=True
+            print_normalize(
+                self.progress_str.format(progress=progress),
+                endline=False
             )
 
     def check_convergence(self, cost_curve):
