@@ -238,7 +238,8 @@ class Benchmark:
         )
         for install_script in shell_install_scripts:
             shell_install_in_conda_env(
-                install_script, env_name=env_name, quiet=quiet)
+                install_script, env_name=env_name, quiet=quiet
+            )
         for hooks in post_install_hooks:
             hooks(env_name=env_name)
         print(' done')
