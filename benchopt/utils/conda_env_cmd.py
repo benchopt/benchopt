@@ -168,7 +168,7 @@ def delete_conda_env(env_name):
                capture_stdout=True)
 
 
-def install_in_conda_env(*packages, env_name=None, force=False):
+def install_in_conda_env(*packages, env_name=None, force=False, quiet=False):
     """Install the packages with conda in the given environment"""
     if len(packages) == 0:
         return
@@ -194,15 +194,15 @@ def install_in_conda_env(*packages, env_name=None, force=False):
 
     _run_shell_in_conda_env(
         cmd, env_name=env_name, raise_on_error=error_msg,
-        capture_stdout=not DEBUG
+        capture_stdout=quiet
     )
 
 
-def shell_install_in_conda_env(script, env_name=None):
+def shell_install_in_conda_env(script, env_name=None, quiet=False):
     """Run a shell install script in the given environment"""
 
     cmd = f"{SHELL} {script} $CONDA_PREFIX"
-    _run_shell_in_conda_env(cmd, env_name=env_name,
+    _run_shell_in_conda_env(cmd, env_name=env_name, capture_stdout=quiet,
                             raise_on_error=f"Failed to run script {script}\n"
                             "Error: {output}")
 
