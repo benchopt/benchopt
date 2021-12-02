@@ -30,6 +30,7 @@ as for `Ordinary Least Square (OLS) <https://github.com/benchopt/benchmark_ols>`
 
     The simplest way to create a benchmark is to copy an existing folder and
     modify the element to fit the new structure.
+    A benchmark template is provided as a `GitHub template repo here <https://github.com/benchopt/template_benchmark>`_
 
 
 .. _objective:
@@ -254,7 +255,7 @@ as binaries from the package managers from either Python, R or Julia.
 
 Here is example using pip from a Python package on GitHub:
 
-.. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/solvers/celer.py
+.. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/solvers/sklearn.py
 
 .. note::
 
