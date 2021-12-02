@@ -1,7 +1,7 @@
 """
-==================================
-Demo benchmark with Julia/R/Python
-==================================
+============================
+Demo benchmark with R/Python
+============================
 
 """
 
@@ -15,22 +15,23 @@ from benchopt.plotting import plot_benchmark, PLOT_KINDS
 
 BENCHMARK_PATH = Path().resolve().parent / 'benchmarks' / 'benchmark_lasso'
 
-try:
-    save_file = run_benchmark(
-        Benchmark(BENCHMARK_PATH),
-        ['Python-PGD[^-]*use_acceleration=False', 'R-PGD', 'Julia-PGD'],
-        dataset_names=[SELECT_ONE_SIMULATED],
-        objective_filters=['*reg=0.5'],
-        max_runs=100, timeout=100, n_repetitions=5,
-        plot_result=False, show_progress=False
-    )
-except RuntimeError:
+if not BENCHMARK_PATH.exists():
     raise RuntimeError(
         "This example can only work when Lasso benchmark is cloned in the "
         "example folder. Please run:\n"
         "$ git clone https://github.com/benchopt/benchmark_lasso "
         f"{BENCHMARK_PATH.resolve()}"
     )
+
+save_file = run_benchmark(
+    Benchmark(BENCHMARK_PATH),
+    ['Python-PGD[use_acceleration=False]', 'R-PGD'],
+    dataset_names=[SELECT_ONE_SIMULATED],
+    objective_filters=['*reg=0.5,fit_intercept=False'],
+    max_runs=100, timeout=100, n_repetitions=5,
+    plot_result=False, show_progress=False
+)
+
 
 kinds = list(PLOT_KINDS.keys())
 figs = plot_benchmark(save_file, benchmark=Benchmark(BENCHMARK_PATH),
