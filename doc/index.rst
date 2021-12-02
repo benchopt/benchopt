@@ -6,7 +6,7 @@ BenchOpt: Benchmark repository for optimization
 BenchOpt is a package to make the comparison of optimizations algorithms simple, transparent and reproducible.
 
 It is written in Python but is available with
-`many programming languages <auto_examples/plot_run_benchmark_python_R_julia.html>`_.
+`many programming languages <auto_examples/plot_run_benchmark_python_R.html>`_.
 So far it has been tested with `Python <https://www.python.org/>`_,
 `R <https://www.r-project.org/>`_, `Julia <https://julialang.org/>`_
 and compiled binaries written in C/C++ available via a terminal
