@@ -1,9 +1,9 @@
-BenchOpt: Benchmark repository for optimization
+Benchopt: Benchmark repository for optimization
 ===============================================
 
 |Test Status| |Python 3.6+| |codecov|
 
-BenchOpt is a package to make the comparison of optimizations algorithms simple, transparent and reproducible.
+Benchopt is a package to make the comparison of optimizations algorithms simple, transparent and reproducible.
 
 It is written in Python but is available with
 `many programming languages <auto_examples/plot_run_benchmark_python_R.html>`_.
@@ -12,11 +12,11 @@ So far it has been tested with `Python <https://www.python.org/>`_,
 and compiled binaries written in C/C++ available via a terminal
 command.
 If a solver can be installed via
-`conda <https://docs.conda.io/en/latest/>`_, it should just work in BenchOpt!
+`conda <https://docs.conda.io/en/latest/>`_, it should just work in benchopt!
 
-BenchOpt is used through a command line as documented
+Benchopt is used through a command line as documented
 in the :ref:`cli_documentation`.
-Once BenchOpt is installed, running and replicating an optimization benchmark is **as simple as doing**:
+Once benchopt is installed, running and replicating an optimization benchmark is **as simple as doing**:
 
 .. code-block::
 
@@ -48,7 +48,7 @@ And to get the **latest development version**, you can use:
 
 .. code-block::
 
-    $ pip install -U https://github.com/benchopt/benchOpt/archive/master.zip
+    $ pip install -U https://github.com/benchopt/benchopt/archive/master.zip
 
 This will install the command line tool to run the benchmark. Then, existing
 benchmarks can be retrieved from GitHub or created locally. To discover which
@@ -195,9 +195,9 @@ See `benchmark_* repositories on GitHub <https://github.com/benchopt/>`_ for mor
 Benchmark results
 -----------------
 
-All the public benchmark results are available at `BenchOpt Benchmarks results <https://benchopt.github.io/results/>`_.
+All the public benchmark results are available at `Benchopt Benchmarks results <https://benchopt.github.io/results/>`_.
 
-**Publish results**: You can directly publish the result of a run of ``benchopt`` on `BenchOpt Benchmarks results <https://benchopt.github.io/results/>`_. You can have a look at this page to :ref:`publish_doc`.
+**Publish results**: You can directly publish the result of a run of ``benchopt`` on `Benchopt Benchmarks results <https://benchopt.github.io/results/>`_. You can have a look at this page to :ref:`publish_doc`.
 
 Contents
 ========
@@ -211,14 +211,14 @@ Contents
    publish
    config
    whats_new
-   Fork BenchOpt on Github <https://github.com/benchopt/benchopt>
+   Fork benchopt on Github <https://github.com/benchopt/benchopt>
 
-.. |Test Status| image:: https://github.com/benchopt/benchOpt/actions/workflows/test.yml/badge.svg
-   :target: https://github.com/benchopt/benchOpt/actions/workflows/test.yml
+.. |Test Status| image:: https://github.com/benchopt/benchopt/actions/workflows/test.yml/badge.svg
+   :target: https://github.com/benchopt/benchopt/actions/workflows/test.yml
 .. |Python 3.6+| image:: https://img.shields.io/badge/python-3.6%2B-blue
    :target: https://www.python.org/downloads/release/python-360/
-.. |codecov| image:: https://codecov.io/gh/benchopt/benchOpt/branch/master/graph/badge.svg
-   :target: https://codecov.io/gh/benchopt/benchOpt
+.. |codecov| image:: https://codecov.io/gh/benchopt/benchopt/branch/master/graph/badge.svg
+   :target: https://codecov.io/gh/benchopt/benchopt
 
 .. |Build Status OLS| image:: https://github.com/benchopt/benchmark_ols/workflows/Tests/badge.svg
    :target: https://github.com/benchopt/benchmark_ols/actions

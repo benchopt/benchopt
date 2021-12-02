@@ -105,7 +105,7 @@ CLI
 BUG
 ~~~
 
-- Throw a warning when BenchOpt version in conda env does not match the one of
+- Throw a warning when benchopt version in conda env does not match the one of
   calling ``benchopt``, by `Thomas Moreau`_ (:gh:`83`).
 
 - Fix Lapack issue with R code, by `Tanguy Lefort`_ (:gh:`97`).
