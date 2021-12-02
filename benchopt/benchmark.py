@@ -182,7 +182,7 @@ class Benchmark:
         return result_filename
 
     def install_all_requirements(self, include_solvers, include_datasets,
-                                 env_name=None, force=False):
+                                 env_name=None, force=False, quiet=False):
         """Install all classes that are required for the run.
 
         Parameters
@@ -194,8 +194,10 @@ class Benchmark:
         env_name : str or None (default: None)
             Name of the conda env where the class should be installed. If
             None, tries to install it in the current environment.
-        force : boolean (default: False)
+        force : bool (default: False)
             If set to True, forces reinstallation when using conda.
+        quiet : bool (default: False)
+            If True, silences the output of install commands.
         """
         # Collect all classes matching one of the patterns
         print("Collecting packages:")
@@ -231,10 +233,12 @@ class Benchmark:
         print(f"Installing required packages for:\n{list_install}\n...",
               end='', flush=True)
         install_in_conda_env(
-            *list(set(conda_reqs)), env_name=env_name, force=force
+            *list(set(conda_reqs)), env_name=env_name, force=force,
+            quiet=quiet
         )
         for install_script in shell_install_scripts:
-            shell_install_in_conda_env(install_script, env_name=env_name)
+            shell_install_in_conda_env(
+                install_script, env_name=env_name, quiet=quiet)
         for hooks in post_install_hooks:
             hooks(env_name=env_name)
         print(' done')
