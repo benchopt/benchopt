@@ -276,7 +276,7 @@ def install(benchmark, solver_names, dataset_names, force=False,
     print("# Install", flush=True)
     benchmark.install_all_requirements(
         include_solvers=solver_names, include_datasets=dataset_names,
-        env_name=env_name, force=force,
+        env_name=env_name, force=force, quiet=quiet,
     )
 
 
