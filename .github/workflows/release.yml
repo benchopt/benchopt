@@ -3,10 +3,10 @@ name: Release to PyPI 📦
 on:
   push:
     branches:
-      - master
+      - main
   pull_request:
     branches:
-      - master
+      - main
   create:
     tags:
       - '**'
@@ -51,10 +51,10 @@ jobs:
       run: |
         echo ${{ github.ref }}
         echo ${{ steps.wait-for-tests.outputs.conclusion }}
-        echo ${{ github.ref == 'refs/heads/master' && steps.wait-for-tests.outputs.conclusion == 'success' }}
+        echo ${{ github.ref == 'refs/heads/main' && steps.wait-for-tests.outputs.conclusion == 'success' }}
 
     - name: Publish distribution 📦 to Test PyPI
-      if: ${{ github.ref == 'refs/heads/master' && steps.wait-for-tests.outputs.conclusion == 'success' }}
+      if: ${{ github.ref == 'refs/heads/main' && steps.wait-for-tests.outputs.conclusion == 'success' }}
       uses: pypa/gh-action-pypi-publish@master
       with:
         password: ${{ secrets.TEST_PYPI_API_TOKEN }}
