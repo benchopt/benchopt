@@ -31,7 +31,7 @@ For benchmark config files, they are usually located in the benchmark folder wit
 Config File Structure
 ---------------------
 
-The config files for benchOpt follow the Microsoft Windows INI files structure. The global setting are grouped in a ``[benchopt]`` section:
+The config files for benchopt follow the Microsoft Windows INI files structure. The global setting are grouped in a ``[benchopt]`` section:
 
 .. code-block:: ini
 

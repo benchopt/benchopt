@@ -11,11 +11,11 @@ class DependenciesMixin:
     # be in {None, 'conda', 'shell'}. The API reads:
     #
     # - 'conda': The class should have an attribute `requirements`.
-    #          BenchOpt will conda install `$requirements`, except for entries
+    #          Benchopt will conda install `$requirements`, except for entries
     #          starting with `pip:` which will be installed with `pip` in the
     #          conda env.
     #
-    # - 'shell': The solver should have attribute `install_script`. BenchOpt
+    # - 'shell': The solver should have attribute `install_script`. Benchopt
     #           will run `install_script` in a shell and provide the conda
     #           env directory as an argument. The command should then be
     #           installed in the `bin` folder of the env and can be imported

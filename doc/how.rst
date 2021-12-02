@@ -21,7 +21,7 @@ structure. For example
         └── solver2.py  # some solver
 
 Examples of actual benchmarks are available in the
-`benchOpt organisation <https://github.com/benchopt/>`_ such
+`benchopt organisation <https://github.com/benchopt/>`_ such
 as for `Ordinary Least Square (OLS) <https://github.com/benchopt/benchmark_ols>`_,
 `Lasso <https://github.com/benchopt/benchmark_lasso>`_ or
 `L1-regularized logistic regression <https://github.com/benchopt/benchmark_logreg_l1>`_.
@@ -99,7 +99,7 @@ Sometimes one wants to test the solvers for variants of the same dataset.
 For example, one may want to change the dataset size, the noise level, etc.
 To be able to specify parameters to get a dataset, you can use a class
 attribute called ``parameters``. This parameter must be a dictionary
-whose keys are passed to the ``__init__`` of the dataset class. Then BenchOpt
+whose keys are passed to the ``__init__`` of the dataset class. Then Benchopt
 will automatically allow you to test all combinations of parameters.
 
 .. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/datasets/simulated.py
@@ -147,7 +147,7 @@ This ``stop_strategy`` can be:
       compute and store the objective and return ``False`` once the computations
       should stop.
 
-BenchOpt supports different types of solvers:
+Benchopt supports different types of solvers:
 
    - :ref:`python_solvers`
    - :ref:`r_solvers`
@@ -175,7 +175,7 @@ Here is an example in the same situation as above:
   :pyobject: Solver.run
 
 If your Python solver requires some packages such as `Numba <https://numba.pydata.org/>`_,
-BenchOpt allows you to list some requirements. The necessary packages should be available
+Benchopt allows you to list some requirements. The necessary packages should be available
 via `conda <https://docs.conda.io/en/latest/>`_ or
 `pip <https://packaging.python.org/guides/tool-recommendations/>`_.
 
@@ -195,7 +195,7 @@ not `conda-forge <https://conda-forge.org/>`_. See example:
 
 .. note::
 
-    Specifying the dependencies is necessary if you let BenchOpt
+    Specifying the dependencies is necessary if you let benchopt
     manage the creation of a dedicated environment. If you want to
     use your local environment the list of dependencies is
     not relevant. See :ref:`cli_documentation`.
