@@ -25,7 +25,7 @@ class Solver(BaseSolver):
     name = "R-PGD"
 
     install_cmd = 'conda'
-    requirements = ['r-base', 'rpy2']
+    requirements = ['r-base', 'rpy2', 'libunwind=1.5']
     stop_strategy = 'iteration'
     support_sparse = False
 
