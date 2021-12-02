@@ -51,7 +51,7 @@ class JuliaSolver(BaseSolver):
 
     # Requirements
     install_cmd = 'conda'
-    requirements = ['julia', 'libunwind=1.5' 'pip:julia']
+    requirements = ['julia', 'libunwind=1.5', 'pip:julia']
 
     @classmethod
     def is_installed(cls, env_name=None, raise_on_not_installed=None):
