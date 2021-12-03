@@ -33,7 +33,7 @@
 %>
 
 <div class="sidenav" id="sidenav" style="visibility: hidden; height:0; opacity: 0; transition: visibility 0s, opacity 0.5s linear; z-index: 100;">
-  <a href="javascript:void(0)" class="closebtn" onclick="closeSideNav()">&times;</a>
+  <a href="javascript:void(0)" class="closebtn">&times;</a>
   <div class="menu">
     % for key, val in ll_main.items():
     <label for=${'select'+str(key.replace(" ", ""))} style="padding: 8px; color: white;">
@@ -73,8 +73,8 @@
 </p>
 
 % if need_filter:
-<span id="close" style="font-size:30px;cursor:pointer" onclick="closeSideNav()">&#9776; Filter Informations</span>
-<span id="open" style="font-size:30px;cursor:pointer" onclick="openSideNav()">&#9776; Filter Informations</span>
+<span id="close" style="font-size:30px;cursor:pointer">&#9776; Filter Informations</span>
+<span id="open" style="font-size:30px;cursor:pointer">&#9776; Filter Informations</span>
 % endif
 
 <table class="summary display" id="summary">

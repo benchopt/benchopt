@@ -7,11 +7,12 @@
 * - Order the table based on run date.
 * - Add trash button if it is a local file.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-$(document).ready(function () {
+$(function () {
   // Sort the table by descending date order (date being in column 0)
   $(".summary").dataTable({
     order: [[0, "desc"]],
   }); // reorder table by date
+
   if (location.hostname === "") {
     // local file and not doc website
     $("[name='checkfiles']").css({
@@ -26,27 +27,26 @@ $(document).ready(function () {
       "margin-bottom": "5vh",
     });
   }
-});
-
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-* Hide the system information column if it is empty
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-$("table").each(function (a, tbl) {
-  var currentTableRows = $(tbl).find("tbody tr").length;
-  $(tbl)
-    .find("th") // also take care of table head
-    .each(function (i) {
-      var remove = 0;
-      var currentTable = $(this).parents("table");
-      var tds = currentTable.find("tr td:nth-child(" + (i + 1) + ")");
-      tds.each(function (j) {
-        if ($(this)[0].innerText.length == 0) remove++;
+  /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  * Hide the system information column if it is empty
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+  $("table").each(function (a, tbl) {
+    var currentTableRows = $(tbl).find("tbody tr").length;
+    $(tbl)
+      .find("th") // also take care of table head
+      .each(function (i) {
+        var remove = 0;
+        var currentTable = $(this).parents("table");
+        var tds = currentTable.find("tr td:nth-child(" + (i + 1) + ")");
+        tds.each(function (j) {
+          if ($(this)[0].innerText.length == 0) remove++;
+        });
+        if (remove == currentTableRows) {
+          $(this).hide();
+          tds.hide();
+        }
       });
-      if (remove == currentTableRows) {
-        $(this).hide();
-        tds.hide();
-      }
-    });
+  });
 });
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -99,54 +99,75 @@ function displayMore(id, loop_index) {
   }
 }
 
-// handle sidebar navigation
-var openbtn = document.getElementById("open");
-if (openbtn) {
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* Open or close sidebar when document ready
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+$(function () {
+  var openbtn = document.getElementById("open");
   var closebtn = document.getElementById("close");
-  openbtn.style.display = "none"; // only display close button is sidenav opened
-
-  // function to open the sidebar navigation
-  function openSideNav() {
-    navbar = document.getElementById("sidenav");
-    navbar.style.visibility = "visible";
-    main = document.getElementById("main");
-    if ($(window).width() < 900) {
-      // mobile adaptativity
-      navbar.style.height = "100%";
-      main.style.marginLeft = "0";
-    } else {
-      navbar.style.height = "1000px";
-      main.style.marginLeft = "200px";
-    }
-    navbar.style.opacity = "1";
-    openbtn.style.display = "none"; // hide open button
-    closebtn.style.display = ""; // show close button
-  }
-
-  // default display depending on device
-  if ($(window).width() > 900) {
-    openSideNav();
-  } else {
-    closeSideNav();
-  }
-
-  // function to close the sidebar navigation
-  function closeSideNav() {
-    navbar = document.getElementById("sidenav");
-    main = document.getElementById("main");
-    navbar.style.visibility = "hidden";
-    navbar.style.opacity = "0";
-    navbar.style.height = "0";
+  if (openbtn) {
+    openbtn.style.display = "none"; // only display close button is sidenav opened
+    // default display depending on device
     if ($(window).width() > 900) {
-      // adapt to devices
-      main.style.marginLeft = "0px";
+      openSideNav({ data: { op: openbtn, cl: closebtn } });
+    } else {
+      closeSideNav({ data: { op: openbtn, cl: closebtn } });
     }
-    openbtn.style.display = ""; // show open button
-    closebtn.style.display = "none"; // hide close button
   }
+  // click method is the recommended way
+  $("#open").click({ op: openbtn, cl: closebtn }, openSideNav);
+  $("#close").click({ op: openbtn, cl: closebtn }, closeSideNav);
+  $(".closebtn").click({ op: openbtn, cl: closebtn }, closeSideNav);
+});
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* Open sidebar: the argument must be an event
+* ie an object containing a data dictionnary
+* the data has a key op for the open button
+* and a key cl for the close button.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+function openSideNav(event) {
+  openbtn = event.data.op;
+  closebtn = event.data.cl;
+  navbar = document.getElementById("sidenav");
+  navbar.style.visibility = "visible";
+  main = document.getElementById("main");
+  if ($(window).width() < 900) {
+    // mobile adaptativity
+    navbar.style.height = "100%";
+    main.style.marginLeft = "0";
+  } else {
+    navbar.style.height = "1000px";
+    main.style.marginLeft = "200px";
+  }
+  navbar.style.opacity = "1";
+  openbtn.style.display = "none"; // hide open button
+  closebtn.style.display = ""; // show close button
 }
 
-// dialog box to get path of files we would like to remove
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* Same as openSideNav above but for closing
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+function closeSideNav(event) {
+  openbtn = event.data.op;
+  closebtn = event.data.cl;
+  navbar = document.getElementById("sidenav");
+  main = document.getElementById("main");
+  navbar.style.visibility = "hidden";
+  navbar.style.opacity = "0";
+  navbar.style.height = "0";
+  if ($(window).width() > 900) {
+    // adapt to devices
+    main.style.marginLeft = "0px";
+  }
+  openbtn.style.display = ""; // show open button
+  closebtn.style.display = "none"; // hide close button
+}
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* Launch a dialog box to hide rows in table or
+* get the files checked by user in local rendering.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 $(function () {
   $("#dialogRm").dialog({
     autoOpen: false, // only open when needed
