@@ -98,6 +98,13 @@
         <option value="linear">linear</option>
     </select>
     </div>
+    <div style="display: table-cell;vertical-align: middle;">
+    Quantiles:
+    <label for='change_shades' class="switch">
+        <input id="change_shades" type="checkbox" checked>
+        <span class="slider round"></span>
+    </label>
+    </div>
 
     % for data in result['dataset_names']:
     <div class="${data}">
