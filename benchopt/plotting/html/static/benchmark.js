@@ -1,3 +1,12 @@
+/*********************************************
+*  JS functions for the benchmark page.
+*********************************************/
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* Format the table once the page has been loaded.
+* - Order the table based on run date.
+* - Add trash button if it is a local file.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 $(document).ready(function () {
   // Sort the table by descending date order (date being in column 0)
   $(".summary").dataTable({
@@ -19,7 +28,9 @@ $(document).ready(function () {
   }
 });
 
-// hide columns without content (if system informations not available)
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* Hide the system information column if it is empty
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 $("table").each(function (a, tbl) {
   var currentTableRows = $(tbl).find("tbody tr").length;
   $(tbl)
@@ -38,9 +49,11 @@ $("table").each(function (a, tbl) {
     });
 });
 
-/**
- * Filter table from dropdown current value
- */
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* Callback for the side bar select box.
+* Filter the benchmark runs in the table
+* based on the current selected values
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 function change(ll_item) {
   var td, i, fil;
   var filter = new Array();
@@ -72,10 +85,10 @@ function change(ll_item) {
   }
 }
 
-/**
- * Display subinfo in the table
- * Toggle between + and - icon button
- */
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* Callback for the +/- button of system-info.
+* Display sub info in the table.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 function displaymore(id, loop_index) {
   var x = document.getElementById("subinfo" + loop_index);
   $(id).find("svg").toggleClass("fa-plus-circle fa-minus-circle");
@@ -162,7 +175,7 @@ $(function () {
             // copy content in clipboard
             navigator.clipboard.writeText($("#dialogRm").text());
           },
-          "Remove row": function () {
+          "Hide row": function () {
             // remove rows with checked checkboxes until refresh
             for (check of allChecked) {
               $(check).closest("tr").remove();
