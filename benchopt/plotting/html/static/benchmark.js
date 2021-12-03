@@ -1,6 +1,6 @@
 /*********************************************
-*  JS functions for the benchmark page.
-*********************************************/
+ *  JS functions for the benchmark page.
+ *********************************************/
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 * Format the table once the page has been loaded.
@@ -89,7 +89,7 @@ function change(ll_item) {
 * Callback for the +/- button of system-info.
 * Display sub info in the table.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-function displaymore(id, loop_index) {
+function displayMore(id, loop_index) {
   var x = document.getElementById("subinfo" + loop_index);
   $(id).find("svg").toggleClass("fa-plus-circle fa-minus-circle");
   if (x.style.display === "none") {

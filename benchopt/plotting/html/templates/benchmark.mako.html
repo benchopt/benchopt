@@ -135,7 +135,7 @@
           <li>
             <b>${key_main}</b>: ${val_main}
             % if disp_sub and disp_button:
-              <button onclick="displaymore(this,${idx_res})" id=${"btn_subinfo"+str(idx_res)} class="button buttoncent" style="float:right;">
+              <button onclick="displayMore(this,${idx_res})" id=${"btn_subinfo"+str(idx_res)} class="button buttoncent" style="float:right;">
                 <i class='fas fa-plus-circle'></i>
               </button>
               <% disp_button = False %>
@@ -147,7 +147,7 @@
       % if disp_sub:
         <!--Case where sub infos are available but somehow main infos are not-->
         % if disp_button:
-          <button onclick="displaymore(this,${idx_res})" id=${"btn_subinfo"+str(idx_res)} class="button buttoncent" style="float:right;">
+          <button onclick="displayMore(this,${idx_res})" id=${"btn_subinfo"+str(idx_res)} class="button buttoncent" style="float:right;">
             <i class='fas fa-plus-circle'></i>
           </button>
         % endif
