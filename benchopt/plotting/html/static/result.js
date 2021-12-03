@@ -156,7 +156,9 @@ function toggleShades() {
     return arr.map((elm, idx) => (elm.name == null ? idx : "")).filter(String);
   };
   whereToggle = allIndex(allTraces); // shade fills are without name
-  Plotly.restyle(graph, { visible: visible }, whereToggle); // toggle visibility
+  if (globalState.plot_kind[1] !== "histogram") {
+    Plotly.restyle(graph, { visible: visible }, whereToggle); // toggle visibility
+  }
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
