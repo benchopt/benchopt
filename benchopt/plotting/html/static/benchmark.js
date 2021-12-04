@@ -5,7 +5,8 @@
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 * Format the table once the page has been loaded.
 * - Order the table based on run date.
-* - Add trash button if it is a local file.
+* - Add trash button if it is a local file
+* - Hide sysinfo if the column is empty
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 $(function () {
   // Sort the table by descending date order (date being in column 0)
@@ -13,8 +14,8 @@ $(function () {
     order: [[0, "desc"]],
   }); // reorder table by date
 
+  //Add trash button if this is a local document
   if (location.hostname === "") {
-    // local file and not doc website
     $("[name='checkfiles']").css({
       // only show lines that not hidden by user
       display: "block",
@@ -27,9 +28,8 @@ $(function () {
       "margin-bottom": "5vh",
     });
   }
-  /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  * Hide the system information column if it is empty
-  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+  // Hide the system information column if it is empty
   $("table").each(function (a, tbl) {
     var currentTableRows = $(tbl).find("tbody tr").length;
     $(tbl)
@@ -89,9 +89,14 @@ function change(ll_item) {
 * Callback for the +/- button of system-info.
 * Display sub info in the table.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-function displayMore(id, loop_index) {
+$(function () {
+  $(".button.buttoncent").click(displayMore);
+});
+
+function displayMore() {
+  var loop_index = $(this).attr("data-idx");
   var x = document.getElementById("subinfo" + loop_index);
-  $(id).find("svg").toggleClass("fa-plus-circle fa-minus-circle");
+  $(this).find("svg").toggleClass("fa-plus-circle fa-minus-circle");
   if (x.style.display === "none") {
     x.style.display = "block";
   } else {
@@ -174,36 +179,43 @@ $(function () {
   });
 
   // click on delete button in the dialog box
-  $("#trashBtn").click(function () {
-    // get files with checheck checkbox
-    allChecked = document.querySelectorAll("input[name=checkfiles]:checked");
-    delCmd = "rm \\\n <br />"; // n and br for html and copy to clipboard
-    for (check of allChecked) {
-      delCmd += $(check).attr("data-csv") + " \\\n <br />";
-      delCmd += $(check).attr("data-html") + " \\\n <br />";
-    }
-    delCmd += "cache_run_list.json"; // add the cache file
-    $("#dialogRm").html(delCmd); // modify the content in the html file
-    $("#dialogRm") // dialog box
-      .dialog({
-        title: "Remove selected entries",
-        modal: true,
-        draggable: true, // the user can move it
-        resizable: false, // but not resize it
-        width: "auto",
-        buttons: {
-          "Copy to clipboard": function () {
-            // copy content in clipboard
-            navigator.clipboard.writeText($("#dialogRm").text());
-          },
-          "Hide row": function () {
-            // remove rows with checked checkboxes until refresh
-            for (check of allChecked) {
-              $(check).closest("tr").remove();
-            }
-          },
-        },
-      })
-      .dialog("open"); // open dialog box on click
-  });
+  $("#trashBtn").click(trashIconDialog);
 });
+
+// copy content from trash dialog box in clipboard
+function clipboardCopy() {
+  navigator.clipboard.writeText($("#dialogRm").text());
+}
+
+// remove rows with checked checkboxes until refresh
+function hideRows(allChecked) {
+  for (check of allChecked) {
+    $(check).closest("tr").remove();
+  }
+}
+
+// open dialog to get paths of checked files and/or hide table rows
+function trashIconDialog() {
+  // get files with checheck checkbox
+  allChecked = document.querySelectorAll("input[name=checkfiles]:checked");
+  delCmd = "rm \\\n <br />"; // n and br for html and copy to clipboard
+  for (check of allChecked) {
+    delCmd += $(check).attr("data-csv") + " \\\n <br />";
+    delCmd += $(check).attr("data-html") + " \\\n <br />";
+  }
+  delCmd += "cache_run_list.json"; // add the cache file
+  $("#dialogRm").html(delCmd); // modify the content in the html file
+  $("#dialogRm") // dialog box
+    .dialog({
+      title: "Remove selected entries",
+      modal: true,
+      draggable: true, // the user can move it
+      resizable: false, // but not resize it
+      width: "auto",
+      buttons: {
+        "Copy to clipboard": clipboardCopy,
+        "Hide row": hideRows.bind(null, allChecked), // binder to use params
+      },
+    })
+    .dialog("open"); // open dialog box on click
+}
