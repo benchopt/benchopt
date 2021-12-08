@@ -1,4 +1,4 @@
-import time
+import timeit
 from datetime import datetime
 
 from .utils import product_param
@@ -66,9 +66,8 @@ def run_one_resolution(objective, solver, meta, stop_val):
     if DEBUG:
         print(f"DEBUG - Calling solver {solver} with stop val: {stop_val}")
 
-    t_start = time.perf_counter()
-    solver.run(stop_val)
-    delta_t = time.perf_counter() - t_start
+    delta_t = timeit.timeit('solver.run(stop_val)', number=1)
+
     beta_hat_i = solver.get_result()
     objective_dict = objective(beta_hat_i)
 
