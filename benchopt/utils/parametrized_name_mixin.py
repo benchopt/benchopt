@@ -109,3 +109,27 @@ def _list_all_parametrized_names(*parametrized_classes):
                 cls._get_parametrized_name(**dataset_parameters)
             )
     return all_names
+
+
+def _list_all_objective_params(objective):
+    """List all possible objective filters"""
+    all_names = []
+
+    # Compute all parameters permutations
+    keys, values = zip(*objective.parameters.items())
+    permutations = [
+        dict(zip(keys, value)) for value in itertools.product(*values)
+    ]
+
+    # Create string from name and parameters
+    # Format: Name[param1=value1,param2=value2]
+    for permutation in permutations:
+        objective_filter = f"{objective.name}["
+        last_chr = ","
+        for idx, param_name in enumerate(permutation):
+            if idx == len(permutation) - 1:
+                last_chr = "]"
+            current = f"{param_name}={permutation[param_name]}{last_chr}"
+            objective_filter += current
+        all_names.append(objective_filter)
+    return all_names

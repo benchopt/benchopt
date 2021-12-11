@@ -8,7 +8,8 @@ from .base import BaseSolver, BaseDataset
 from .utils.colorify import colorify, YELLOW
 from .utils.dynamic_modules import _load_class_from_module
 from .utils.parametrized_name_mixin import product_param
-from .utils.parametrized_name_mixin import _list_all_parametrized_names
+from .utils.parametrized_name_mixin import (_list_all_parametrized_names,
+                                            _list_all_objective_params)
 
 from .utils.conda_env_cmd import install_in_conda_env
 from .utils.conda_env_cmd import shell_install_in_conda_env
@@ -276,6 +277,14 @@ class Benchmark:
         all_solvers = _list_all_parametrized_names(*self.get_solvers())
 
         _validate_patterns(all_solvers, solver_patterns, name_type='solver')
+
+    def validate_objective_filters(self, objective_params):
+        "Check that all objective filters match at least one objective setup"
+
+        # List all choices of objective parameters
+        all_params = _list_all_objective_params(self.get_benchmark_objective())
+
+        _validate_patterns(all_params, objective_params, name_type="objective")
 
 
 def _check_name_lists(*name_lists):

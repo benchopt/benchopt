@@ -105,6 +105,7 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
     benchmark = Benchmark(benchmark)
     benchmark.validate_dataset_patterns(dataset_names)
     benchmark.validate_solver_patterns(solver_names+forced_solvers)
+    benchmark.validate_objective_filters(objective_filters)
 
     # If env_name is False, the flag `--local` has been used (default) so
     # run in the current environement.
@@ -158,7 +159,7 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
     solvers_option = ' '.join(['-s ' + s for s in solver_names])
     forced_solvers_option = ' '.join(['-f ' + s for s in forced_solvers])
     datasets_option = ' '.join(['-d ' + d for d in dataset_names])
-    objective_option = ' '.join(['-p ' + p for p in objective_filters])
+    objective_option = ' '.join(['-p ' + f"'{p}'" for p in objective_filters])
     cmd = (
         rf"benchopt run --local {benchmark.benchmark_dir} "
         rf"--n-repetitions {n_repetitions} "
