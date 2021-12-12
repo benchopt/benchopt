@@ -8,8 +8,7 @@ from .base import BaseSolver, BaseDataset
 from .utils.colorify import colorify, YELLOW
 from .utils.dynamic_modules import _load_class_from_module
 from .utils.parametrized_name_mixin import product_param
-from .utils.parametrized_name_mixin import (_list_all_parametrized_names,
-                                            _list_all_objective_params)
+from .utils.parametrized_name_mixin import _list_all_parametrized_names
 
 from .utils.conda_env_cmd import install_in_conda_env
 from .utils.conda_env_cmd import shell_install_in_conda_env
@@ -282,9 +281,15 @@ class Benchmark:
         "Check that all objective filters match at least one objective setup"
 
         # List all choices of objective parameters
-        all_params = _list_all_objective_params(self.get_benchmark_objective())
+        all_objectives = _list_all_parametrized_names(
+            self.get_benchmark_objective()
+        )
 
-        _validate_patterns(all_params, objective_params, name_type="objective")
+        _validate_patterns(
+            all_objectives,
+            objective_params,
+            name_type="objective"
+        )
 
 
 def _check_name_lists(*name_lists):
