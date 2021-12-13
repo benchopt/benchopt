@@ -226,7 +226,7 @@ class StoppingCriterion():
         if stop and self.output is not None:
             self.output.debug(
                 f"Exit with delta_objective = {delta_objective:.2e} and "
-                "n_eval={n_eval:.1e}."
+                f"n_eval={n_eval:.1e}."
             )
 
         if is_flat:
