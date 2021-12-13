@@ -223,7 +223,7 @@ class StoppingCriterion():
             status = 'done' if stop else 'running'
             is_flat = delta_objective == 0
 
-        if stop:
+        if stop and self.output is not None:
             self.output.debug(
                 f"Exit with delta_objective = {delta_objective:.2e} and "
                 "n_eval={n_eval:.1e}."

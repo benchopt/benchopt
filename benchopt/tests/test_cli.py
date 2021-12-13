@@ -72,7 +72,7 @@ class TestRunCmd:
 
         out.check_output('Simulated', repetition=1)
         out.check_output('Dummy Sparse Regression', repetition=1)
-        out.check_output(r'Python-PGD\[step_size=1\]:', repetition=3)
+        out.check_output(r'Python-PGD\[step_size=1\]:', repetition=6)
         out.check_output(r'Python-PGD\[step_size=1.5\]:', repetition=0)
 
         # Make sure the results were saved in a result file
@@ -89,7 +89,7 @@ class TestRunCmd:
         out.check_output(f'conda activate {test_env_name}')
         out.check_output('Simulated', repetition=1)
         out.check_output('Dummy Sparse Regression', repetition=1)
-        out.check_output(r'Python-PGD\[step_size=1\]:', repetition=3)
+        out.check_output(r'Python-PGD\[step_size=1\]:', repetition=6)
         out.check_output(r'Python-PGD\[step_size=1.5\]:', repetition=0)
 
         # Make sure the results were saved in a result file
@@ -103,7 +103,7 @@ class TestRunCmd:
                        '--profile', '--no-plot']
             run(run_cmd, 'benchopt', standalone_mode=False)
 
-        out.check_output('Using profiling', repetition=1)
+        out.check_output('using profiling', repetition=1)
         out.check_output("File: .*benchopt/tests/test_benchmarks/"
                          "dummy_benchmark/solvers/python_pgd.py", repetition=1)
         out.check_output(r'\s+'.join([
@@ -111,10 +111,9 @@ class TestRunCmd:
             ]), repetition=1)
         out.check_output(r"def run\(self, n_iter\):", repetition=1)
 
-    def test_benchopt_caching(self):
+    @pytest.mark.parametrize('n_rep', [2, 3, 5])
+    def test_benchopt_caching(self, n_rep):
         # Check that the computation caching is working properly.
-
-        n_rep = 2
         run_cmd = [str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,
                    '-s', SELECT_ONE_PGD, '-n', '1', '-r', str(n_rep),
                    '-o', SELECT_ONE_OBJECTIVE, '--no-plot']
@@ -137,7 +136,7 @@ class TestRunCmd:
             run(run_cmd, 'benchopt', standalone_mode=False)
 
         out.check_output(r'Python-PGD\[step_size=1\]:',
-                         repetition=2*n_rep+1)
+                         repetition=5*n_rep+1)
 
 
 class TestInstallCmd:
