@@ -2,10 +2,6 @@ import time
 import math
 
 
-# Get config values
-from .config import DEBUG
-
-
 # Possible stop strategies
 STOP_STRATEGIES = {'iteration', 'tolerance', 'callback'}
 
@@ -156,11 +152,10 @@ class StoppingCriterion():
             INFINITY if self.strategy == 'tolerance' else 0
         )
 
-        if DEBUG:
-            print(f"DEBUG - Calling solver {self.solver} "
-                  f"with stop val: {stop_val}")
-
         if self.output is not None:
+            self.output.debug(
+                f"Calling solver {self.solver} with stop val: {stop_val}"
+            )
             self.output.progress('initialization')
         return stop_val
 
@@ -228,21 +223,22 @@ class StoppingCriterion():
             status = 'done' if stop else 'running'
             is_flat = delta_objective == 0
 
-        if stop and DEBUG:
-            print(f"DEBUG - Exit with delta_objective = {delta_objective:.2e} "
-                  f"and n_eval={n_eval:.1e}.")
+        if stop:
+            self.output.debug(
+                f"Exit with delta_objective = {delta_objective:.2e} and "
+                "n_eval={n_eval:.1e}."
+            )
 
         if is_flat:
             self.rho *= RHO_INC
-            if DEBUG:
-                print("DEBUG - curve is flat -> increasing rho:", self.rho)
+            self.output.debug(f"curve is flat -> increasing rho: {self.rho}")
 
         stop_val = self.get_next_stop_val(stop_val)
-        if DEBUG:
-            print(f"DEBUG - Calling solver {self.solver} "
-                  f"with stop val: {stop_val}")
 
         if status == 'running' and self.output is not None:
+            self.output.debug(
+                f"Calling solver {self.solver} with stop val: {stop_val}"
+            )
             self.output.progress(progress=progress)
 
         return stop, status, stop_val

@@ -2,6 +2,9 @@
 import shutil
 
 
+from ..config import DEBUG
+
+
 MIN_LINE_LENGTH = 20
 BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE = range(30, 38)
 
@@ -121,3 +124,7 @@ class TerminalOutput:
         )
         status = colorify(*STATUS[status])
         print_normalize(f"{tag} {status}")
+
+    def debug(self, msg):
+        if DEBUG:
+            print_normalize(f"{self.solver} [DEBUG] - {msg}")
