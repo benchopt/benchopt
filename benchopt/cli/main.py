@@ -36,7 +36,7 @@ main = click.Group(
               help="Include <solver_name> in the benchmark. By default, all "
               "solvers are included. When `-s` is used, only listed solvers"
               " are included. To include multiple solvers, "
-              "use multiple `-s` options.", autocompletion=get_solvers)
+              "use multiple `-s` options.", shell_complete=get_solvers)
 @click.option('--force-solver', '-f', 'forced_solvers',
               metavar="<solver_name>", multiple=True, type=str,
               help="Force the re-run for <solver_name>. This "
