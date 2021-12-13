@@ -67,7 +67,7 @@ class TestRunCmd:
     def test_benchopt_run(self):
         with CaptureRunOutput() as out:
             run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,
-                 '-f', SELECT_ONE_PGD, '-n', '1', '-r', '1', '-p',
+                 '-f', SELECT_ONE_PGD, '-n', '1', '-r', '1', '-o',
                  SELECT_ONE_OBJECTIVE], 'benchopt', standalone_mode=False)
 
         out.check_output('Simulated', repetition=1)
@@ -83,7 +83,7 @@ class TestRunCmd:
             with pytest.raises(SystemExit, match='False'):
                 run([str(DUMMY_BENCHMARK_PATH), '--env-name', test_env_name,
                      '-d', SELECT_ONE_SIMULATED, '-f', SELECT_ONE_PGD,
-                     '-n', '1', '-r', '1', '-p', SELECT_ONE_OBJECTIVE,
+                     '-n', '1', '-r', '1', '-o', SELECT_ONE_OBJECTIVE,
                      '--no-plot'], 'benchopt', standalone_mode=False)
 
         out.check_output(f'conda activate {test_env_name}')
@@ -99,7 +99,7 @@ class TestRunCmd:
         with CaptureRunOutput() as out:
             run_cmd = [str(DUMMY_BENCHMARK_PATH),
                        '-d', SELECT_ONE_SIMULATED, '-f', SELECT_ONE_PGD,
-                       '-n', '1', '-r', '1', '-p', SELECT_ONE_OBJECTIVE,
+                       '-n', '1', '-r', '1', '-o', SELECT_ONE_OBJECTIVE,
                        '--profile', '--no-plot']
             run(run_cmd, 'benchopt', standalone_mode=False)
 
@@ -117,7 +117,7 @@ class TestRunCmd:
         n_rep = 2
         run_cmd = [str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,
                    '-s', SELECT_ONE_PGD, '-n', '1', '-r', str(n_rep),
-                   '-p', SELECT_ONE_OBJECTIVE, '--no-plot']
+                   '-o', SELECT_ONE_OBJECTIVE, '--no-plot']
 
         # Make a first run that should be put in cache
         with CaptureRunOutput() as out:
@@ -200,7 +200,7 @@ class TestPlotCmd:
         "Make sure at least one result file is available"
         with SuppressStd() as out:
             run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,
-                 '-s', SELECT_ONE_PGD, '-n', '2', '-r', '1', '-p',
+                 '-s', SELECT_ONE_PGD, '-n', '2', '-r', '1', '-o',
                  SELECT_ONE_OBJECTIVE, '--no-plot'], 'benchopt',
                 standalone_mode=False)
         result_files = re.findall(r'Saving result in: (.*\.csv)', out.output)

@@ -160,7 +160,8 @@ class StoppingCriterion():
             print(f"DEBUG - Calling solver {self.solver} "
                   f"with stop val: {stop_val}")
 
-        self.output.progress('initialization')
+        if self.output is not None:
+            self.output.progress('initialization')
         return stop_val
 
     def should_stop(self, stop_val, cost_curve):
@@ -241,7 +242,7 @@ class StoppingCriterion():
             print(f"DEBUG - Calling solver {self.solver} "
                   f"with stop val: {stop_val}")
 
-        if status == 'running':
+        if status == 'running' and self.output is not None:
             self.output.progress(progress=progress)
 
         return stop, status, stop_val

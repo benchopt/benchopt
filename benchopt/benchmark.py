@@ -358,7 +358,6 @@ class Benchmark:
                     force = is_matched(
                         str(solver), forced_solvers, default=False
                     )
-                    print(dataset, objective, solver)
                     yield dataset, objective, solver, force
                 all_solvers = solvers_buffer
             all_objectives = objective_buffer
