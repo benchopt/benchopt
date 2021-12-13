@@ -277,6 +277,20 @@ class Benchmark:
 
         _validate_patterns(all_solvers, solver_patterns, name_type='solver')
 
+    def validate_objective_filters(self, objective_params):
+        "Check that all objective filters match at least one objective setup"
+
+        # List all choices of objective parameters
+        all_objectives = _list_all_parametrized_names(
+            self.get_benchmark_objective()
+        )
+
+        _validate_patterns(
+            all_objectives,
+            objective_params,
+            name_type="objective"
+        )
+
 
 def _check_name_lists(*name_lists):
     "Normalize name_list ot a list of lowercase str."
