@@ -21,7 +21,7 @@ try:
     save_file = run_benchmark(
         Benchmark(BENCHMARK_PATH), ['sklearn[liblinear]', 'sklearn[newton-cg]',
                                     'lightning'],
-        dataset_names=['Simulated*n_samples=200,n_features=500*'],
+        dataset_names=['Simulated*n_features=500,n_samples=200*'],
         objective_filters=[
             'L2 Logistic Regression[fit_intercept=False,lmbd=1.0]'
         ],
