@@ -159,7 +159,7 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
     solvers_option = ' '.join(['-s ' + s for s in solver_names])
     forced_solvers_option = ' '.join([f"-f '{s}'" for s in forced_solvers])
     datasets_option = ' '.join([f"-d '{d}'" for d in dataset_names])
-    objective_option = ' '.join(['-p ' + f"'{p}'" for p in objective_filters])
+    objective_option = ' '.join([f"-p '{p}'" for p in objective_filters])
     cmd = (
         rf"benchopt run --local {benchmark.benchmark_dir} "
         rf"--n-repetitions {n_repetitions} "
