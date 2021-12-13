@@ -157,8 +157,8 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
 
     # run the command in the conda env
     solvers_option = ' '.join(['-s ' + s for s in solver_names])
-    forced_solvers_option = ' '.join(['-f ' + s for s in forced_solvers])
-    datasets_option = ' '.join(['-d ' + d for d in dataset_names])
+    forced_solvers_option = ' '.join([f"-f '{s}'" for s in forced_solvers])
+    datasets_option = ' '.join([f"-d '{d}'" for d in dataset_names])
     objective_option = ' '.join(['-p ' + f"'{p}'" for p in objective_filters])
     cmd = (
         rf"benchopt run --local {benchmark.benchmark_dir} "
