@@ -20,8 +20,10 @@ class ParametrizedNameMixin():
         _parameters.update(parameters)
         self._parameters = _parameters
         if not hasattr(self, 'parameter_template'):
-            self.parameter_template = ",".join(
-                [f"{k}={v}" for k, v in _parameters.items()])
+            # sort parameters to make sure the representation is deterministic
+            self.parameter_template = ",".join([
+                f"{k}={_parameters[k]}" for k in sorted(_parameters)
+            ])
         for k, v in _parameters.items():
             if not hasattr(self, k):
                 setattr(self, k, v)
