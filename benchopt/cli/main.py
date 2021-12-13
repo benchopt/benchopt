@@ -188,16 +188,22 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
 @click.option('--solver', '-s', 'solver_names',
               metavar="<solver_name>", multiple=True, type=str,
               help="Include <solver_name> in the installation. "
-              "By default, all solvers are included. "
+              "By default, all solvers are included except "
+              "when -d flag is used. If -d flag is used, then "
+              "no solver is included by default. "
               "When `-s` is used, only listed estimators are included. "
-              "To include multiple solvers, use multiple `-s` options.",
+              "To include multiple solvers, use multiple `-s` options."
+              "To include all solvers, use -s 'all' option.",
               autocompletion=get_solvers)
 @click.option('--dataset', '-d', 'dataset_names',
               metavar="<dataset_name>", multiple=True, type=str,
               help="Install the dataset <dataset_name>. By default, all "
-              "datasets are included. When `-d` is used, only listed datasets "
+              "datasets are included, except when -s flag is used. "
+              "If -s flag is used, then no dataset is included. "
+              "When `-d` is used, only listed datasets "
               "are included. Note that <dataset_name> can be a regexp. "
-              "To include multiple datasets, use multiple `-d` options.",
+              "To include multiple datasets, use multiple `-d` options."
+              "To include all datasets, use -d 'all' option.",
               autocompletion=get_datasets)
 @click.option('--env', '-e', 'env_name',
               flag_value='True', type=str, default='False',
