@@ -10,6 +10,10 @@ from .utils.pdb_helpers import exception_handler
 
 from .utils.terminal_output import TerminalOutput
 
+# For compat with the lasso benchmark, expose INFINITY in this module.
+# Should be removed once benchopt/benchmark_lasso#55 is merged
+from .stopping_criterion import INFINITY  # noqa: F401
+
 
 ##################################
 # Time one run of a solver
