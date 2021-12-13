@@ -5,13 +5,18 @@ from pathlib import Path
 
 from .config import get_setting
 from .base import BaseSolver, BaseDataset
-from .utils.colorify import colorify, YELLOW
 from .utils.dynamic_modules import _load_class_from_module
 from .utils.parametrized_name_mixin import product_param
 from .utils.parametrized_name_mixin import _list_all_parametrized_names
 
+from .utils.terminal_output import YELLOW
+from .utils.terminal_output import colorify
+
 from .utils.conda_env_cmd import install_in_conda_env
 from .utils.conda_env_cmd import shell_install_in_conda_env
+
+# Get config values
+from .config import RAISE_INSTALL_ERROR
 
 
 CACHE_DIR = '__cache__'
@@ -102,7 +107,15 @@ class Benchmark:
 
     def get_solver_names(self):
         "List all available solver names for the benchmark."
-        return [s.name for s in self._list_benchmark_classes(BaseSolver)]
+        return [s.name for s in self.get_solvers()]
+
+    def validate_solver_patterns(self, solver_patterns):
+        "Check that all provided patterns match at least one solver"
+
+        # List all dataset strings.
+        all_solvers = _list_all_parametrized_names(*self.get_solvers())
+
+        _validate_patterns(all_solvers, solver_patterns, name_type='solver')
 
     def get_datasets(self):
         "List all available dataset classes for the benchmark."
@@ -110,11 +123,40 @@ class Benchmark:
 
     def get_dataset_names(self):
         "List all available dataset names for the benchmark."
-        return [d.name for d in self._list_benchmark_classes(BaseDataset)]
+        return [d.name for d in self.get_datasets()]
+
+    def validate_dataset_patterns(self, dataset_patterns):
+        "Check that all provided patterns match at least one dataset"
+
+        # List all dataset strings.
+        all_datasets = _list_all_parametrized_names(*self.get_datasets())
+
+        _validate_patterns(all_datasets, dataset_patterns, name_type='dataset')
 
     def get_cache_location(self):
         "Get the location for the cache of the benchmark."
         return self.benchmark_dir / CACHE_DIR
+
+    def cache(self, func, force=False, ignore=None):
+        """Create a cached function for the given function.
+
+        A special behavior is enforced for the 'force' kwargs. If it is present
+        and True, the function will always be recomputed.
+        """
+
+        # Create a cached function the computations in the benchmark folder
+        # and handle cases where we force the run.
+        func_cached = self.mem.cache(func, ignore=ignore)
+        if force:
+            def _func_cached(**kwargs):
+                return func_cached.call(**kwargs)[0]
+        else:
+            def _func_cached(**kwargs):
+                if kwargs.get('force', False):
+                    return func_cached.call(**kwargs)[0]
+                return func_cached(**kwargs)
+
+        return _func_cached
 
     def get_config_file(self):
         "Get the location for the config file of the benchmark."
@@ -261,21 +303,65 @@ class Benchmark:
             )
         print(' done')
 
-    def validate_dataset_patterns(self, dataset_patterns):
-        "Check that all provided patterns match at least one dataset"
+    def get_all_runs(self, solver_names=None, forced_solvers=None,
+                     dataset_names=None, objective_filters=None, output=None):
+        """Generator with all combinations to run for the benchmark.
 
-        # List all dataset strings.
-        all_datasets = _list_all_parametrized_names(*self.get_datasets())
+        Parameters
+        ----------
+        solver_names : list | None
+            List of solvers to include in the benchmark. If None
+            all solvers available are run.
+        forced_solvers : list | None
+            List of solvers to include in the benchmark and for
+            which one forces recomputation.
+        dataset_names : list | None
+            List of datasets to include. If None all available
+            datasets are used.
+        objective_filters : list | None
+            Filters to select specific objective parameters. If None,
+            all objective parameters are tested
+        output : TerminalOutput or None
+            Object to format string to display the progress of the solver.
 
-        _validate_patterns(all_datasets, dataset_patterns, name_type='dataset')
+        Yields
+        ------
+        dataset : BaseDataset instance
+        objective : BaseObjective instance
+        solver : BaseSolver instance
+        force : bool
+        """
+        all_datasets = _filter_classes(*self.get_datasets(),
+                                       filters=dataset_names)
+        all_objectives, objective_buffer = buffer_iterator(_filter_classes(
+            self.get_benchmark_objective(), filters=objective_filters
+        ))
+        all_solvers, solvers_buffer = buffer_iterator(_filter_classes(
+            *self.get_solvers(), filters=solver_names
+        ))
+        for dataset, is_installed in all_datasets:
+            output.set(dataset=dataset)
+            if not is_installed:
+                output.show_status('not installed', dataset=True)
+                continue
+            output.display_dataset()
+            for objective, _ in all_objectives:
+                output.set(objective=objective)
+                output.display_objective()
+                for solver, is_installed in all_solvers:
+                    output.set(solver=solver)
 
-    def validate_solver_patterns(self, solver_patterns):
-        "Check that all provided patterns match at least one solver"
+                    if not is_installed:
+                        output.show_status('not installed')
+                        continue
 
-        # List all dataset strings.
-        all_solvers = _list_all_parametrized_names(*self.get_solvers())
-
-        _validate_patterns(all_solvers, solver_patterns, name_type='solver')
+                    force = is_matched(
+                        str(solver), forced_solvers, default=False
+                    )
+                    print(dataset, objective, solver)
+                    yield dataset, objective, solver, force
+                all_solvers = solvers_buffer
+            all_objectives = objective_buffer
 
     def validate_objective_filters(self, objective_params):
         "Check that all objective filters match at least one objective setup"
@@ -302,13 +388,13 @@ def _check_name_lists(*name_lists):
     return res
 
 
-def is_matched(name, include_patterns=None):
+def is_matched(name, include_patterns=None, default=True):
     """Check if a certain name is matched by any pattern in include_patterns.
 
     When include_patterns is None or [], always return True.
     """
     if include_patterns is None or len(include_patterns) == 0:
-        return True
+        return default
     name = str(name)
     # we use [] to signal options in patterns, we must escape them for re
     substitutions = {"*": ".*", "[": r"\[", "]": r"\]"}
@@ -339,3 +425,35 @@ def _validate_patterns(all_names, patterns, name_type='dataset'):
             f"Patterns {invalid_patterns} did not match any {name_type}.\n"
             f"Available {name_type}s are:\n{all_names}"
         )
+
+
+def _filter_classes(*classes, filters=None):
+    """Filter a list of class based on its names."""
+    for klass in classes:
+        is_installed = None
+        for parameters in product_param(klass.parameters):
+            obj = klass.get_instance(**parameters)
+            if is_matched(str(obj), filters):
+                if is_installed is None:
+                    is_installed = (
+                        not hasattr(klass, 'is_installed')
+                        or klass.is_installed(
+                            raise_on_not_installed=RAISE_INSTALL_ERROR
+                        )
+                    )
+                if not is_installed:
+                    yield klass.name, False
+                    break
+                yield obj, True
+
+
+def buffer_iterator(it):
+    """Buffer the output of an iterator so to repeat it without recomputing."""
+    buffer = []
+
+    def buffered_it(buffer):
+        for val in it:
+            buffer.append(val)
+            yield val
+
+    return buffered_it(buffer), buffer

@@ -2,8 +2,8 @@ import time
 import math
 
 
+# Get config values
 from .config import DEBUG
-from .utils.colorify import print_normalize
 
 
 # Possible stop strategies
@@ -15,8 +15,9 @@ PATIENCE = 3
 
 # Define some constants
 # TODO: better parametrize this?
-MAX_ITER = int(1e12)
 MIN_TOL = 1e-15
+MAX_ITER = int(1e12)
+INFINITY = 3e38  # see: np.finfo('float32').max
 
 RHO = 1.5
 RHO_INC = 1.2  # multiplicative update if rho is too small
@@ -38,7 +39,7 @@ class StoppingCriterion():
 
     Similarly, sub-classes should implement `check-convergence` to check if the
     algorithm has converged. This function will be called internally as a hook
-    in `should_stop_solver`, which also handles `timeout`, `max_runs` and
+    in `should_stop`, which also handles `timeout`, `max_runs` and
     plateau detection.
 
     Parameters
@@ -68,7 +69,7 @@ class StoppingCriterion():
         self.kwargs = kwargs
         self.strategy = strategy
 
-    def get_runner_instance(self, max_runs=1, timeout=None, progress_str=None,
+    def get_runner_instance(self, max_runs=1, timeout=None, output=None,
                             solver=None):
         """Copy the stopping criterion and set the parameters that depends on
         how benchopt runner is called.
@@ -80,8 +81,8 @@ class StoppingCriterion():
             the convergence curve.
         timeout : float
             The maximum duration in seconds of the solver run.
-        progress_str : str or None
-            Format string to display the progress of the solver.
+        output : TerminalOutput or None
+            Object to format string to display the progress of the solver.
         solver : BaseSolver
             The solver for which this stopping criterion is called. Used to get
             overridden ``stop_strategy`` and ``get_next``.
@@ -121,7 +122,7 @@ class StoppingCriterion():
         stopping_criterion.rho = RHO
         stopping_criterion.timeout = timeout
         stopping_criterion.max_runs = max_runs
-        stopping_criterion.progress_str = progress_str
+        stopping_criterion.output = output
         stopping_criterion.solver = solver
 
         # Override get_next_stop_val if ``get_next`` is implemented for solver.
@@ -150,7 +151,19 @@ class StoppingCriterion():
 
         return stopping_criterion
 
-    def should_stop_solver(self, stop_val, cost_curve):
+    def init_stop_val(self):
+        stop_val = (
+            INFINITY if self.strategy == 'tolerance' else 0
+        )
+
+        if DEBUG:
+            print(f"DEBUG - Calling solver {self.solver} "
+                  f"with stop val: {stop_val}")
+
+        self.output.progress('initialization')
+        return stop_val
+
+    def should_stop(self, stop_val, cost_curve):
         """Base call to check if we should stop running a solver.
 
         This base call checks for the timeout and the max number of runs.
@@ -209,10 +222,9 @@ class StoppingCriterion():
 
             # Display the progress if necessary
             progress = max(n_eval / self.max_runs, progress)
-            self.show_progress(progress=progress)
 
             # Compute status and notify the runner if the curve is flat.
-            status = 'done' if stop else None
+            status = 'done' if stop else 'running'
             is_flat = delta_objective == 0
 
         if stop and DEBUG:
@@ -224,17 +236,15 @@ class StoppingCriterion():
             if DEBUG:
                 print("DEBUG - curve is flat -> increasing rho:", self.rho)
 
-        return stop, status, self.get_next_stop_val(stop_val)
+        stop_val = self.get_next_stop_val(stop_val)
+        if DEBUG:
+            print(f"DEBUG - Calling solver {self.solver} "
+                  f"with stop val: {stop_val}")
 
-    def show_progress(self, progress):
-        """Display progress in the CLI interface."""
-        if self.progress_str is not None:
-            if isinstance(progress, float):
-                progress = f'{progress:6.1%}'
-            print_normalize(
-                self.progress_str.format(progress=progress),
-                endline=False
-            )
+        if status == 'running':
+            self.output.progress(progress=progress)
+
+        return stop, status, stop_val
 
     def check_convergence(self, cost_curve):
         """Check if the solver should be stopped based on the objective curve.
@@ -267,7 +277,7 @@ class StoppingCriterion():
         )
         runner_kwargs = dict(
             max_runs=self.max_runs, timeout=self.timeout,
-            progress_str=self.progress_str, solver=self.solver
+            output=self.output, solver=self.solver
         )
         return self._reconstruct, (self.__class__, kwargs, runner_kwargs)
 

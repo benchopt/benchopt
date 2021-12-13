@@ -159,13 +159,15 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
             module_filename, 'Solver', pickled_module_hash
         )
         obj = Solver.get_instance(**parameters)
-        obj._set_objective(objective)
+        if objective is not None:
+            obj._set_objective(objective)
         return obj
 
     def __reduce__(self):
         module_hash = get_file_hash(self._module_filename)
-        return self._reconstruct, (self._module_filename, module_hash,
-                                   self._parameters, self._objective)
+        objective = getattr(self, '_objective', None)
+        return self._reconstruct, (self._module_filename, self._parameters,
+                                   objective, module_hash)
 
 
 class CommandLineSolver(BaseSolver, ABC):
@@ -215,13 +217,14 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
     def _get_data(self):
         "Wrapper to make sure the returned results are correctly formated."
 
-        dimension, data = self.get_data()
+        if not hasattr(self, 'data') or self.data is None:
+            self.dimension, self.data = self.get_data()
 
         # Make sure dimension is a tuple
-        if isinstance(dimension, numbers.Integral):
-            dimension = (dimension,)
+        if isinstance(self.dimension, numbers.Integral):
+            self.dimension = (self.dimension,)
 
-        return dimension, data
+        return self.dimension, self.data
 
     # Reduce the pickling and hashing burden by only pickling class parameters.
     @staticmethod
@@ -313,10 +316,12 @@ class BaseObjective(ParametrizedNameMixin):
             module_filename, 'Objective', pickled_module_hash
         )
         obj = Objective.get_instance(**parameters)
-        obj.set_dataset(dataset)
+        if dataset is not None:
+            obj.set_dataset(dataset)
         return obj
 
     def __reduce__(self):
         module_hash = get_file_hash(self._module_filename)
+        dataset = getattr(self, 'dataset', None)
         return self._reconstruct, (self._module_filename, module_hash,
-                                   self._parameters, self.dataset)
+                                   self._parameters, dataset)

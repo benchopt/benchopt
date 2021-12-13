@@ -27,7 +27,7 @@ main = click.Group(
 )
 @click.argument('benchmark', type=click.Path(exists=True),
                 autocompletion=get_benchmark)
-@click.option('--objective-filter', '-p', 'objective_filters',
+@click.option('--objective-filter', '-o', 'objective_filters',
               metavar='<objective_filter>', multiple=True, type=str,
               help="Filter the objective based on its parametrized name. This "
               "can be used to only include one set of parameters.")
@@ -50,6 +50,10 @@ main = click.Group(
               " are included. Note that <dataset_name> can be a regexp. "
               "To include multiple datasets, use multiple `-d` options.",
               autocompletion=get_datasets)
+@click.option('--n-workers', '-j',
+              metavar="<int>", default=1, show_default=True, type=int,
+              help='Maximal number of workers to run the benchmark in '
+              'parallel.')
 @click.option('--max-runs', '-n',
               metavar="<int>", default=100, show_default=True, type=int,
               help='Maximal number of runs for each solver. This corresponds '
@@ -91,7 +95,7 @@ main = click.Group(
               "named <env_name>. To install the required solvers and "
               "datasets, see the command `benchopt install`.")
 def run(benchmark, solver_names, forced_solvers, dataset_names,
-        objective_filters, max_runs, n_repetitions, timeout,
+        objective_filters, max_runs, n_repetitions, timeout, n_workers,
         plot=True, html=True, pdb=False, do_profile=False,
         env_name='False'):
 
@@ -115,7 +119,8 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
             dataset_names=dataset_names,
             objective_filters=objective_filters,
             max_runs=max_runs, n_repetitions=n_repetitions,
-            timeout=timeout, plot_result=plot, html=html, pdb=pdb
+            timeout=timeout, n_workers=n_workers,
+            plot_result=plot, html=html, pdb=pdb
         )
 
         print_stats()  # print profiling stats (does nothing if not profiling)
@@ -159,11 +164,12 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
     solvers_option = ' '.join(['-s ' + s for s in solver_names])
     forced_solvers_option = ' '.join([f"-f '{s}'" for s in forced_solvers])
     datasets_option = ' '.join([f"-d '{d}'" for d in dataset_names])
-    objective_option = ' '.join([f"-p '{p}'" for p in objective_filters])
+    objective_option = ' '.join([f"-o '{p}'" for p in objective_filters])
     cmd = (
         rf"benchopt run --local {benchmark.benchmark_dir} "
         rf"--n-repetitions {n_repetitions} "
         rf"--max-runs {max_runs} --timeout {timeout} "
+        rf"--n-workers {n_workers}"
         rf"{solvers_option} {forced_solvers_option} "
         rf"{datasets_option} {objective_option} "
         rf"{'--plot' if plot else '--no-plot'} "

@@ -1,35 +1,35 @@
 "A context manager to handle exception with option to open a debugger."
 from contextlib import contextmanager
 
-from .colorify import colorify
-from .colorify import RED, YELLOW
-from .colorify import print_normalize
-
 
 # Get config values
 from ..config import DEBUG
 
 
+class StatusHandler(object):
+    def __init__(self):
+        self.status = 'running'
+
+
 @contextmanager
-def exception_handler(tag=None, pdb=False):
+def exception_handler(output, pdb=False):
     """Context manager to handle exception with option to open a debugger.
 
     Parameter
     ---------
-    tag: str
-        Name to display before outputing error in red.
-    pdb: bool
+    output : TerminalOutput
+        Object to format string to display the progress of the solver.
+    pdb : bool
         If set to True, open a debugger if an error is raised.
     """
+    ctx = StatusHandler()
     try:
-        yield
+        yield ctx
     except KeyboardInterrupt:
-        status = colorify("interrupted", YELLOW)
-        print_normalize(f"\r{tag} {status}")
+        ctx.status = 'interrupted'
         raise SystemExit(1)
     except BaseException:
-        status = colorify("error", RED)
-        print_normalize(f"{tag} {status}")
+        ctx.status = 'interrupted'
 
         if pdb:
             # Use ipdb if it is available and default to pdb otherwise.

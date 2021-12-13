@@ -1,0 +1,123 @@
+"Helper function for colored terminal outputs"
+import shutil
+
+
+MIN_LINE_LENGTH = 20
+BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE = range(30, 38)
+
+STATUS = {
+    'error': ("error", RED),
+    'diverged': ("diverged", RED),
+    'not installed': ('not installed', RED),
+    'interrupted': ("interrupted", YELLOW),
+    'skip': ('skip', YELLOW),
+    'timeout': ("done (timeout)", YELLOW),
+    'max_runs': ("done (not enough run)", YELLOW),
+    'done': ("done", GREEN),
+}
+
+
+def colorify(message, color=BLUE):
+    """Change color of the standard output.
+
+    Parameters
+    ----------
+    message : str
+        The message to color.
+
+    Returns
+    -------
+    color_message : str
+        The colored message to be displayed in terminal.
+    """
+    return f"\033[1;{color}m" + message + "\033[0m"
+
+
+def print_normalize(msg, endline=True, verbose=True):
+    """Format the output to have the length of the terminal."""
+    if not verbose:
+        return
+
+    line_length = max(
+        MIN_LINE_LENGTH, shutil.get_terminal_size((100, 24)).columns
+    )
+    n_colors = msg.count('\033') // 2
+    msg = msg.ljust(line_length + n_colors * 11)
+
+    if endline:
+        print(msg)
+    else:
+        print(msg + '\r', end='', flush=True)
+
+
+class TerminalOutput:
+    def __init__(self, n_repetitions, show_progress):
+        self.n_repetitions = n_repetitions
+        self._show_progress = show_progress
+
+        self.solver = None
+        self.dataset = None
+        self.objective = None
+
+        self.rep = None
+        self.verbose = True
+
+    def set(self, solver=None, dataset=None, objective=None, verbose=None,
+            rep=None):
+
+        if dataset is not None:
+            self.dataset = f"{dataset}"
+
+        if objective is not None:
+            self.objective = f"|--{objective}"
+
+        if solver is not None:
+            self.solver = colorify(f"|----{solver}:")
+
+        if verbose is not None:
+            self.verbose = verbose
+
+        if rep is not None:
+            self.rep = rep
+
+    def skip(self, reason=None):
+        if self.rep == 0:
+            self.show_status(status='skip')
+            if reason is not None:
+                print(f'Reason: {reason}')
+
+    def savefile_status(self, save_file=None):
+        if save_file is None:
+            print_normalize(colorify('No output produced.', RED))
+        print_normalize(colorify(f'Saving result in: {save_file}', GREEN))
+
+    def _display_name(self, tag):
+        assert tag is not None, "Should not happened"
+        print_normalize(f"{tag}", verbose=self.verbose)
+
+    def display_dataset(self):
+        self._display_name(self.dataset)
+
+    def display_objective(self):
+        self._display_name(self.objective)
+
+    def progress(self, progress):
+        """Display progress in the CLI interface."""
+        if self._show_progress:
+            if isinstance(progress, float):
+                progress = f'{progress:6.1%}'
+            print_normalize(
+                f"{self.solver} {progress} "
+                f"({self.rep + 1} / {self.n_repetitions} reps)",
+                endline=False,  verbose=self.verbose
+            )
+
+    def show_status(self, status, dataset=False):
+        if dataset:
+            assert status == 'not installed'
+        tag = self.dataset if dataset else self.solver
+        assert status in STATUS, (
+            f"status should be in {list(STATUS)}. Got '{status}'"
+        )
+        status = colorify(*STATUS[status])
+        print_normalize(f"{tag} {status}")
