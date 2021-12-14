@@ -289,7 +289,7 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
             benchmark=benchmark, dataset=dataset, objective=objective,
             solver=solver, n_repetitions=n_repetitions, max_runs=max_runs,
             timeout=timeout, force=force, output=output, pdb=pdb
-        ) for dataset, objective, solver, force in all_runs
+        ) for dataset, objective, solver, force, output in all_runs
     )
 
     run_statistics = []

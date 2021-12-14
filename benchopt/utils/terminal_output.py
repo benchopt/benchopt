@@ -56,7 +56,7 @@ def print_normalize(msg, endline=True, verbose=True):
 class TerminalOutput:
     def __init__(self, n_repetitions, show_progress):
         self.n_repetitions = n_repetitions
-        self._show_progress = show_progress
+        self.show_progress = show_progress
 
         self.solver = None
         self.dataset = None
@@ -65,17 +65,28 @@ class TerminalOutput:
         self.rep = None
         self.verbose = True
 
+    def clone(self):
+        new_output = TerminalOutput(self.n_repetitions, self.show_progress)
+        new_output.set(
+            solver=self.solver, dataset=self.dataset, objective=self.objective,
+            verbose=self.verbose, rep=self.rep
+        )
+        return new_output
+
     def set(self, solver=None, dataset=None, objective=None, verbose=None,
             rep=None):
 
         if dataset is not None:
-            self.dataset = f"{dataset}"
+            self.dataset = dataset
+            self.dataset_tag = f"{dataset}"
 
         if objective is not None:
-            self.objective = f"|--{objective}"
+            self.objective = objective
+            self.objective_tag = f"|--{objective}"
 
         if solver is not None:
-            self.solver = colorify(f"|----{solver}:")
+            self.solver = solver
+            self.solver_tag = colorify(f"|----{solver}:")
 
         if verbose is not None:
             self.verbose = verbose
@@ -99,18 +110,18 @@ class TerminalOutput:
         print_normalize(f"{tag}", verbose=self.verbose)
 
     def display_dataset(self):
-        self._display_name(self.dataset)
+        self._display_name(self.dataset_tag)
 
     def display_objective(self):
-        self._display_name(self.objective)
+        self._display_name(self.objective_tag)
 
     def progress(self, progress):
         """Display progress in the CLI interface."""
-        if self._show_progress:
+        if self.show_progress:
             if isinstance(progress, float):
                 progress = f'{progress:6.1%}'
             print_normalize(
-                f"{self.solver} {progress} "
+                f"{self.solver_tag} {progress} "
                 f"({self.rep + 1} / {self.n_repetitions} reps)",
                 endline=False,  verbose=self.verbose
             )
@@ -118,7 +129,7 @@ class TerminalOutput:
     def show_status(self, status, dataset=False):
         if dataset:
             assert status == 'not installed'
-        tag = self.dataset if dataset else self.solver
+        tag = self.dataset_tag if dataset else self.solver_tag
         assert status in STATUS, (
             f"status should be in {list(STATUS)}. Got '{status}'"
         )
@@ -127,4 +138,4 @@ class TerminalOutput:
 
     def debug(self, msg):
         if DEBUG:
-            print_normalize(f"{self.solver} [DEBUG] - {msg}")
+            print_normalize(f"{self.solver_tag} [DEBUG] - {msg}")
