@@ -20,7 +20,7 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
               help='Print a flag if benchopt is installed in development mode')
 @click.pass_context
 def benchopt(ctx, version=False, check_editable=False):
-    """Command-line interface to benchOpt"""
+    """Command line interface to benchopt"""
     if version:
         output = __version__
         if check_editable:
