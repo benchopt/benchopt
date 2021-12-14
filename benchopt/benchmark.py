@@ -201,17 +201,36 @@ class Benchmark:
         """
         # Collect all classes matching one of the patterns
         print("Collecting packages:")
+
+        install_solvers = True
+        install_datasets = True
+
+        # If -d is used but not -s, then does not install any solver
+        if len(include_solvers) == 0 and len(include_datasets) > 0:
+            install_solvers = False
+
+        # If -s is used but not -d, then does not install any dataset
+        if len(include_datasets) == 0 and len(include_solvers) > 0:
+            install_datasets = False
+
+        # If -d or -s are followed by 'all' then all
+        # solvers or datasets are included
+        if 'all' in include_solvers:
+            include_solvers = []
+        if 'all' in include_datasets:
+            include_datasets = []
+
         conda_reqs, shell_install_scripts, post_install_hooks = [], [], []
         check_installs = []
-        for list_classes, include_patterns in [
-                (self.get_solvers(), include_solvers),
-                (self.get_datasets(), include_datasets)
+        for list_classes, include_patterns, to_install in [
+                (self.get_solvers(), include_solvers, install_solvers),
+                (self.get_datasets(), include_datasets, install_datasets)
         ]:
             include_patterns = _check_name_lists(include_patterns)
             for klass in list_classes:
                 for klass_parameters in product_param(klass.parameters):
                     name = klass._get_parametrized_name(**klass_parameters)
-                    if is_matched(name, include_patterns):
+                    if is_matched(name, include_patterns) and to_install:
                         reqs, scripts, hooks = (
                             klass.collect(env_name=env_name, force=force)
                         )
@@ -266,6 +285,7 @@ class Benchmark:
 
         # List all dataset strings.
         all_datasets = _list_all_parametrized_names(*self.get_datasets())
+        all_datasets += ["all"]
 
         _validate_patterns(all_datasets, dataset_patterns, name_type='dataset')
 
@@ -274,6 +294,7 @@ class Benchmark:
 
         # List all dataset strings.
         all_solvers = _list_all_parametrized_names(*self.get_solvers())
+        all_solvers += ["all"]
 
         _validate_patterns(all_solvers, solver_patterns, name_type='solver')
 
