@@ -67,7 +67,7 @@ def create_conda_env(
             f"Conda env {env_name} already exists. Checking setup ... ",
             end='', flush=True
         )
-        env_version, _ = get_benchopt_version_in_env(env_name)
+        env_version, editable_install = get_benchopt_version_in_env(env_name)
         if env_version is None:
             print()
             raise RuntimeError(
@@ -76,7 +76,7 @@ def create_conda_env(
                 "by either using the --recreate option or installing benchopt "
                 f"in conda env {env_name}."
             )
-        if benchopt.__version__ != env_version:
+        if benchopt.__version__ != env_version and not editable_install:
             print()
             warnings.warn(
                 f"The local version of benchopt ({benchopt.__version__}) and "

@@ -21,9 +21,9 @@ def get_plot_kinds(ctx, args, incomplete):
     help="Plot the result from a previously run benchmark."
 )
 @click.argument('benchmark', type=click.Path(exists=True),
-                autocompletion=get_benchmark)
+                shell_complete=get_benchmark)
 @click.option('--filename', '-f', type=str, default=None,
-              autocompletion=get_output_files,
+              shell_complete=get_output_files,
               help="Specify the file to select in the benchmark. If it is "
               "not specified, take the latest one in the benchmark output "
               "folder.")
@@ -32,7 +32,7 @@ def get_plot_kinds(ctx, args, incomplete):
               help="Specify the type of figure to plot:\n\n* " +
               "\n\n* ".join([f"``{name}``: {func.__doc__.splitlines()[0]}"
                              for name, func in PLOT_KINDS.items()]),
-              autocompletion=get_plot_kinds)
+              shell_complete=get_plot_kinds)
 @click.option('--display/--no-display', default=True,
               help="Whether or not to display the plot on the screen.")
 @click.option('--html/--no-html', default=True,
@@ -70,11 +70,11 @@ def plot(benchmark, filename=None, kinds=('suboptimality_curve',),
     "this command."
 )
 @click.argument('benchmark', type=click.Path(exists=True),
-                autocompletion=get_benchmark)
+                shell_complete=get_benchmark)
 @click.option('--token', '-t', type=str, default=None,
               help="Github token to access the result repo.")
 @click.option('--filename', '-f', type=str, default=None,
-              autocompletion=get_output_files,
+              shell_complete=get_output_files,
               help="Specify the file to publish in the benchmark. If it is "
               "not specified, take the latest one in the benchmark output "
               "folder.")
@@ -105,7 +105,7 @@ def publish(benchmark, token=None, filename=None):
 )
 @click.option('--benchmark', '-b', 'benchmarks', metavar="<bench>",
               multiple=True, type=click.Path(exists=True),
-              autocompletion=get_benchmark,
+              shell_complete=get_benchmark,
               help="Folders containing benchmarks to include.")
 @click.option('--pattern', '-k', 'patterns',
               metavar="<pattern>", multiple=True, type=str,
