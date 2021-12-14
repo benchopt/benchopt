@@ -24,7 +24,7 @@ helpers = click.Group(
     options_metavar=''
 )
 @click.argument('benchmark', type=click.Path(exists=True),
-                autocompletion=get_benchmark)
+                shell_complete=get_benchmark)
 def clean(benchmark, token=None, filename=None):
 
     benchmark = Benchmark(benchmark)
@@ -53,7 +53,7 @@ def sys_info():
 )
 @click.option('--benchmark', '-b', metavar='<benchmark>',
               type=click.Path(exists=True), default=None,
-              autocompletion=get_benchmark)
+              shell_complete=get_benchmark)
 @click.pass_context
 def config(ctx, benchmark, token=None, filename=None):
     ctx.ensure_object(dict)
