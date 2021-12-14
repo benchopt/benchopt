@@ -32,7 +32,7 @@ def get_benchmark(ctx, args, incomplete):
     # First try to list benchmarks that match the incomplete pattern.
     proposed_benchmarks = propose_from_list(all_benchmarks, incomplete)
     if len(proposed_benchmarks) > 0:
-        return proposed_benchmarks
+        return [str(b) for b in proposed_benchmarks]
 
     # Else do completion with sub-directories.
     matching_dirs = propose_from_list(all_dirs, incomplete)
@@ -40,7 +40,7 @@ def get_benchmark(ctx, args, incomplete):
         # If only one matches, complete the folder name and continue completion
         # from here.
         return get_benchmark(ctx, args, str(matching_dirs[0]))
-    return matching_dirs
+    return [str(b) for b in matching_dirs]
 
 
 def find_benchmark_in_args(args):
@@ -52,10 +52,10 @@ def find_benchmark_in_args(args):
     return None
 
 
-def get_solvers(ctx, args, incomplete):
+def get_solvers(ctx, param, incomplete):
     "Auto-completion for solvers."
     skip_import()
-    benchmark = find_benchmark_in_args(args)
+    benchmark = find_benchmark_in_args(ctx.args)
     if benchmark is None:
         return [("", 'Benchmark has not been provided before')]
     solvers = [s.lower() for s in benchmark.get_solver_names()]
