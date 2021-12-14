@@ -222,7 +222,7 @@ class Benchmark:
 
         conda_reqs, shell_install_scripts, post_install_hooks = [], [], []
         check_installs = []
-        for list_classes, include_patterns, install_pattern in [
+        for list_classes, include_patterns, to_install in [
                 (self.get_solvers(), include_solvers, install_solvers),
                 (self.get_datasets(), include_datasets, install_datasets)
         ]:
@@ -230,7 +230,7 @@ class Benchmark:
             for klass in list_classes:
                 for klass_parameters in product_param(klass.parameters):
                     name = klass._get_parametrized_name(**klass_parameters)
-                    if is_matched(name, include_patterns) and install_pattern:
+                    if is_matched(name, include_patterns) and to_install:
                         reqs, scripts, hooks = (
                             klass.collect(env_name=env_name, force=force)
                         )
