@@ -73,7 +73,7 @@ def complete_datasets(ctx, param, incomplete):
 
 
 def complete_output_files(ctx, param, incomplete):
-    "Auto-completion for datasets."
+    "Auto-completion for output files."
     skip_import()
     benchmark = find_benchmark_in_args(ctx.args)
     if benchmark is None:
