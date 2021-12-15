@@ -62,10 +62,10 @@ def get_solvers(ctx, param, incomplete):
     return propose_from_list(solvers, incomplete.lower())
 
 
-def get_datasets(ctx, args, incomplete):
+def get_datasets(ctx, param, incomplete):
     "Auto-completion for datasets."
     skip_import()
-    benchmark = find_benchmark_in_args(args)
+    benchmark = find_benchmark_in_args(ctx.args)
     if benchmark is None:
         return [("", 'Benchmark has not been provided before')]
     datasets = [d.lower() for d in benchmark.get_dataset_names()]
