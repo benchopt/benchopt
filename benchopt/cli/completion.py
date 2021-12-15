@@ -13,7 +13,7 @@ def propose_from_list(candidates, incomplete):
     return [c for c in candidates if incomplete in str(c)]
 
 
-def get_benchmark(ctx, args, incomplete):
+def complete_benchmarks(ctx, param, incomplete):
     "Auto-completion for benchmarks."
     skip_import()
 
@@ -39,7 +39,7 @@ def get_benchmark(ctx, args, incomplete):
     if len(matching_dirs) == 1:
         # If only one matches, complete the folder name and continue completion
         # from here.
-        return get_benchmark(ctx, args, str(matching_dirs[0]))
+        return complete_benchmarks(ctx, param, str(matching_dirs[0]))
     return [str(b) for b in matching_dirs]
 
 
@@ -52,7 +52,7 @@ def find_benchmark_in_args(args):
     return None
 
 
-def get_solvers(ctx, param, incomplete):
+def complete_solvers(ctx, param, incomplete):
     "Auto-completion for solvers."
     skip_import()
     benchmark = find_benchmark_in_args(ctx.args)
@@ -62,7 +62,7 @@ def get_solvers(ctx, param, incomplete):
     return propose_from_list(solvers, incomplete.lower())
 
 
-def get_datasets(ctx, param, incomplete):
+def complete_datasets(ctx, param, incomplete):
     "Auto-completion for datasets."
     skip_import()
     benchmark = find_benchmark_in_args(ctx.args)
@@ -72,10 +72,10 @@ def get_datasets(ctx, param, incomplete):
     return propose_from_list(datasets, incomplete.lower())
 
 
-def get_output_files(ctx, args, incomplete):
+def complete_output_files(ctx, param, incomplete):
     "Auto-completion for datasets."
     skip_import()
-    benchmark = find_benchmark_in_args(args)
+    benchmark = find_benchmark_in_args(ctx.args)
     if benchmark is None:
         return [("", 'Benchmark has not been provided before')]
     output_folder = benchmark.get_output_folder()
@@ -83,7 +83,7 @@ def get_output_files(ctx, args, incomplete):
     return propose_from_list(candidates, incomplete)
 
 
-def get_conda_envs(ctx, args, incomplete):
+def complete_conda_envs(ctx, param, incomplete):
     "Auto-completion for env-names."
     _, all_envs = list_conda_envs()
     return propose_from_list(all_envs, incomplete)
