@@ -7,13 +7,14 @@ from benchopt.utils.conda_env_cmd import list_conda_envs
 
 
 def propose_from_list(candidates, incomplete):
-    proposals = [c for c in candidates if str(c).startswith(incomplete)]
+    candidates = [str(c) for c in candidates]
+    proposals = [c for c in candidates if c.startswith(incomplete)]
     if len(proposals) > 0:
         return proposals
-    return [c for c in candidates if incomplete in str(c)]
+    return [c for c in candidates if incomplete in c]
 
 
-def get_benchmark(ctx, args, incomplete):
+def complete_benchmarks(ctx, param, incomplete):
     "Auto-completion for benchmarks."
     skip_import()
 
@@ -39,7 +40,7 @@ def get_benchmark(ctx, args, incomplete):
     if len(matching_dirs) == 1:
         # If only one matches, complete the folder name and continue completion
         # from here.
-        return get_benchmark(ctx, args, str(matching_dirs[0]))
+        return complete_benchmarks(ctx, param, matching_dirs[0])
     return matching_dirs
 
 
@@ -52,38 +53,38 @@ def find_benchmark_in_args(args):
     return None
 
 
-def get_solvers(ctx, args, incomplete):
+def complete_solvers(ctx, param, incomplete):
     "Auto-completion for solvers."
     skip_import()
-    benchmark = find_benchmark_in_args(args)
+    benchmark = find_benchmark_in_args(ctx.args)
     if benchmark is None:
-        return [("", 'Benchmark has not been provided before')]
+        return []
     solvers = [s.lower() for s in benchmark.get_solver_names()]
     return propose_from_list(solvers, incomplete.lower())
 
 
-def get_datasets(ctx, args, incomplete):
+def complete_datasets(ctx, param, incomplete):
     "Auto-completion for datasets."
     skip_import()
-    benchmark = find_benchmark_in_args(args)
+    benchmark = find_benchmark_in_args(ctx.args)
     if benchmark is None:
-        return [("", 'Benchmark has not been provided before')]
+        return []
     datasets = [d.lower() for d in benchmark.get_dataset_names()]
     return propose_from_list(datasets, incomplete.lower())
 
 
-def get_output_files(ctx, args, incomplete):
-    "Auto-completion for datasets."
+def complete_output_files(ctx, param, incomplete):
+    "Auto-completion for output files."
     skip_import()
-    benchmark = find_benchmark_in_args(args)
+    benchmark = find_benchmark_in_args(ctx.args)
     if benchmark is None:
-        return [("", 'Benchmark has not been provided before')]
+        return []
     output_folder = benchmark.get_output_folder()
     candidates = list(output_folder.glob('*.csv'))
     return propose_from_list(candidates, incomplete)
 
 
-def get_conda_envs(ctx, args, incomplete):
+def complete_conda_envs(ctx, param, incomplete):
     "Auto-completion for env-names."
     _, all_envs = list_conda_envs()
     return propose_from_list(all_envs, incomplete)

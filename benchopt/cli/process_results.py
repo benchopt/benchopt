@@ -3,8 +3,8 @@ import click
 from benchopt.config import get_setting
 from benchopt.benchmark import Benchmark
 from benchopt.constants import PLOT_KINDS
-from benchopt.cli.completion import get_benchmark
-from benchopt.cli.completion import get_output_files
+from benchopt.cli.completion import complete_benchmarks
+from benchopt.cli.completion import complete_output_files
 
 process_results = click.Group(
     name='Process Results',
@@ -21,9 +21,9 @@ def get_plot_kinds(ctx, args, incomplete):
     help="Plot the result from a previously run benchmark."
 )
 @click.argument('benchmark', type=click.Path(exists=True),
-                shell_complete=get_benchmark)
+                shell_complete=complete_benchmarks)
 @click.option('--filename', '-f', type=str, default=None,
-              shell_complete=get_output_files,
+              shell_complete=complete_output_files,
               help="Specify the file to select in the benchmark. If it is "
               "not specified, take the latest one in the benchmark output "
               "folder.")
@@ -70,11 +70,11 @@ def plot(benchmark, filename=None, kinds=('suboptimality_curve',),
     "this command."
 )
 @click.argument('benchmark', type=click.Path(exists=True),
-                shell_complete=get_benchmark)
+                shell_complete=complete_benchmarks)
 @click.option('--token', '-t', type=str, default=None,
               help="Github token to access the result repo.")
 @click.option('--filename', '-f', type=str, default=None,
-              shell_complete=get_output_files,
+              shell_complete=complete_output_files,
               help="Specify the file to publish in the benchmark. If it is "
               "not specified, take the latest one in the benchmark output "
               "folder.")
@@ -105,7 +105,7 @@ def publish(benchmark, token=None, filename=None):
 )
 @click.option('--benchmark', '-b', 'benchmarks', metavar="<bench>",
               multiple=True, type=click.Path(exists=True),
-              shell_complete=get_benchmark,
+              shell_complete=complete_benchmarks,
               help="Folders containing benchmarks to include.")
 @click.option('--pattern', '-k', 'patterns',
               metavar="<pattern>", multiple=True, type=str,
