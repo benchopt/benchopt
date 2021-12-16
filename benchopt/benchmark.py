@@ -23,6 +23,20 @@ CACHE_DIR = '__cache__'
 
 
 class Benchmark:
+    """Benchmark exposes all constituant of the bechmark folder.
+
+    Parameters
+    ----------
+    benchmark_dir : str or Path-like
+        Folder containing the benchmark. The folder should at least
+        contain an `objective.py` file defining the `Objective`
+        function for the benchmark.
+
+    Attributes
+    ----------
+    mem : joblib.Memory
+        Caching mechanism for the benchmark.
+    """
     def __init__(self, benchmark_dir):
         self.benchmark_dir = Path(benchmark_dir)
         self.name = self.benchmark_dir.resolve().name
@@ -36,20 +50,9 @@ class Benchmark:
                 "benchmark."
             )
 
-    @property
-    def mem(self):
-        from joblib import Memory
-        if not hasattr(self, '_mem'):
-            self._mem = Memory(location=self.get_cache_location(), verbose=0)
-        return self._mem
-
-    def get_setting(self, setting_name):
-        "Retrieve the setting value from benchmark config."
-
-        # Get the config file and read it
-        config_file = self.get_config_file()
-        return get_setting(name=setting_name, config_file=config_file,
-                           benchmark_name=self.name)
+    ####################################################################
+    # Helpers to access and validate objective, solvers and datasets
+    ####################################################################
 
     def get_benchmark_objective(self):
         """Load the objective function defined in the given benchmark.
@@ -67,39 +70,16 @@ class Benchmark:
 
         return _load_class_from_module(module_filename, "Objective")
 
-    def _list_benchmark_classes(self, base_class):
-        """Load all classes with the same name from a benchmark's subpackage.
+    def validate_objective_filters(self, objective_filters):
+        "Check that all objective filters match at least one objective setup."
 
-        Parameters
-        ----------
-        base_class : class
-            Base class for the classes to load.
+        # List all choices of objective parameters
+        all_objectives = _list_all_parametrized_names(
+            self.get_benchmark_objective()
+        )
 
-        Returns
-        -------
-        classes : List of class
-            A list with all the classes with base_class in the given subpkg of
-            the benchmark.
-        """
-
-        classes = []
-        # List all available module in benchmark.subpkg
-        class_name = base_class.__name__.replace('Base', '')
-        package = self.benchmark_dir / f'{class_name.lower()}s'
-        submodule_files = package.glob('*.py')
-        for module_filename in submodule_files:
-            # Get the class
-            cls = _load_class_from_module(module_filename, class_name)
-            if issubclass(cls, base_class):
-                classes.append(cls)
-            else:
-                print(colorify(
-                    f"WARNING: class {cls} in {module_filename} does not "
-                    f"derive from base class {base_class}", YELLOW
-                ))
-
-        classes.sort(key=lambda c: c.name.lower())
-        return classes
+        _validate_patterns(all_objectives, objective_filters,
+                           name_type="objective")
 
     def get_solvers(self):
         "List all available solver classes for the benchmark."
@@ -135,46 +115,43 @@ class Benchmark:
 
         _validate_patterns(all_datasets, dataset_patterns, name_type='dataset')
 
-    def get_cache_location(self):
-        "Get the location for the cache of the benchmark."
-        return self.benchmark_dir / CACHE_DIR
+    def _list_benchmark_classes(self, base_class):
+        """Load all classes with the same name from a benchmark's subpackage.
 
-    def cache(self, func, force=False, ignore=None):
-        """Create a cached function for the given function.
+        Parameters
+        ----------
+        base_class : class
+            Base class for the classes to load.
 
-        A special behavior is enforced for the 'force' kwargs. If it is present
-        and True, the function will always be recomputed.
+        Returns
+        -------
+        classes : List of class
+            A list with all the classes with base_class in the given subpkg of
+            the benchmark.
         """
 
-        # Create a cached function the computations in the benchmark folder
-        # and handle cases where we force the run.
-        func_cached = self.mem.cache(func, ignore=ignore)
-        if force:
-            def _func_cached(**kwargs):
-                return func_cached.call(**kwargs)[0]
-        else:
-            def _func_cached(**kwargs):
-                if kwargs.get('force', False):
-                    return func_cached.call(**kwargs)[0]
-                return func_cached(**kwargs)
+        classes = []
+        # List all available module in benchmark.subpkg
+        class_name = base_class.__name__.replace('Base', '')
+        package = self.benchmark_dir / f'{class_name.lower()}s'
+        submodule_files = package.glob('*.py')
+        for module_filename in submodule_files:
+            # Get the class
+            cls = _load_class_from_module(module_filename, class_name)
+            if issubclass(cls, base_class):
+                classes.append(cls)
+            else:
+                print(colorify(
+                    f"WARNING: class {cls} in {module_filename} does not "
+                    f"derive from base class {base_class}", YELLOW
+                ))
 
-        return _func_cached
+        classes.sort(key=lambda c: c.name.lower())
+        return classes
 
-    def get_config_file(self):
-        "Get the location for the config file of the benchmark."
-        return self.benchmark_dir / 'config.ini'
-
-    def get_test_config_file(self):
-        """Get the location for the test config file for the benchmark.
-
-        This file will be used to check if a test should be xfailed/skipped on
-        specific solvers and platforms when we have installation or running
-        issues. Returns None if this file does not exists.
-        """
-        test_config_file = self.benchmark_dir / 'test_config.py'
-        if not test_config_file.exists():
-            return None
-        return test_config_file
+    #####################################################
+    # Access to output files for the benchmark
+    #####################################################
 
     def get_output_folder(self):
         """Get the folder to store the output of the benchmark.
@@ -224,6 +201,74 @@ class Benchmark:
                 result_filename = all_csv_files
 
         return result_filename
+
+    #####################################################
+    # Caching mechanism
+    #####################################################
+
+    @property
+    def mem(self):
+        from joblib import Memory
+        if not hasattr(self, '_mem'):
+            self._mem = Memory(location=self.get_cache_location(), verbose=0)
+        return self._mem
+
+    def get_cache_location(self):
+        "Get the location for the cache of the benchmark."
+        return self.benchmark_dir / CACHE_DIR
+
+    def cache(self, func, force=False, ignore=None):
+        """Create a cached function for the given function.
+
+        A special behavior is enforced for the 'force' kwargs. If it is present
+        and True, the function will always be recomputed.
+        """
+
+        # Create a cached function the computations in the benchmark folder
+        # and handle cases where we force the run.
+        func_cached = self.mem.cache(func, ignore=ignore)
+        if force:
+            def _func_cached(**kwargs):
+                return func_cached.call(**kwargs)[0]
+        else:
+            def _func_cached(**kwargs):
+                if kwargs.get('force', False):
+                    return func_cached.call(**kwargs)[0]
+                return func_cached(**kwargs)
+
+        return _func_cached
+
+    #####################################################
+    # Configuration and settings for the benchmark
+    #####################################################
+
+    def get_config_file(self):
+        "Get the location for the config file of the benchmark."
+        return self.benchmark_dir / 'config.ini'
+
+    def get_setting(self, setting_name):
+        "Retrieve the setting value from benchmark config."
+
+        # Get the config file and read it
+        config_file = self.get_config_file()
+        return get_setting(name=setting_name, config_file=config_file,
+                           benchmark_name=self.name)
+
+    def get_test_config_file(self):
+        """Get the location for the test config file for the benchmark.
+
+        This file will be used to check if a test should be xfailed/skipped on
+        specific solvers and platforms when we have installation or running
+        issues. Returns None if this file does not exists.
+        """
+        test_config_file = self.benchmark_dir / 'test_config.py'
+        if not test_config_file.exists():
+            return None
+        return test_config_file
+
+    #####################################################
+    # Install and run helpers
+    #####################################################
 
     def install_all_requirements(self, include_solvers, include_datasets,
                                  env_name=None, force=False, quiet=False):
@@ -382,20 +427,6 @@ class Benchmark:
                     yield dataset, objective, solver, force, output.clone()
                 all_solvers = solvers_buffer
             all_objectives = objective_buffer
-
-    def validate_objective_filters(self, objective_params):
-        "Check that all objective filters match at least one objective setup"
-
-        # List all choices of objective parameters
-        all_objectives = _list_all_parametrized_names(
-            self.get_benchmark_objective()
-        )
-
-        _validate_patterns(
-            all_objectives,
-            objective_params,
-            name_type="objective"
-        )
 
 
 def _check_name_lists(*name_lists):
