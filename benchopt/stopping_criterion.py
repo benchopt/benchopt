@@ -192,6 +192,7 @@ class StoppingCriterion():
         n_eval = len(cost_curve) - 1
         objective_value = cost_curve[-1]['objective_value']
         delta_objective = self._prev_objective_value - objective_value
+        delta_objective /= cost_curve[0]['objective_value']
         self._prev_objective_value = objective_value
 
         # default value for is_flat
@@ -207,7 +208,7 @@ class StoppingCriterion():
             stop = True
             status = 'max_runs'
 
-        elif delta_objective < -1e10:
+        elif delta_objective < -1e5:
             stop = True
             status = 'diverged'
 
@@ -237,7 +238,7 @@ class StoppingCriterion():
 
         if status == 'running' and self.output is not None:
             self.output.debug(
-                f"Calling solver {self.solver} with stop val: {stop_val}"
+                f"Calling with stop val: {stop_val}"
             )
             self.output.progress(progress=progress)
 
@@ -343,6 +344,7 @@ class SufficientDescentCriterion(StoppingCriterion):
         # Compute the current objective
         objective_value = cost_curve[-1]['objective_value']
         delta_objective = self._objective_value - objective_value
+        delta_objective /= cost_curve[0]['objective_value']
         self._objective_value = objective_value
 
         # Store only the last ``patience`` values for progress
@@ -416,6 +418,7 @@ class SufficientProgressCriterion(StoppingCriterion):
         # Compute the current objective and update best value
         objective_value = cost_curve[-1]['objective_value']
         delta_objective = self._best_objective_value - objective_value
+        delta_objective /= cost_curve[0]['objective_value']
         self._best_objective_value = min(
             objective_value, self._best_objective_value
         )
