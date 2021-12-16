@@ -10,9 +10,10 @@ from benchopt.benchmark import Benchmark
 from benchopt.utils.files import rm_folder
 from benchopt.utils.sys_info import get_sys_info
 from benchopt.cli.completion import complete_benchmarks
+from benchopt.cli.completion import complete_conda_envs
+from benchopt.utils.conda_env_cmd import list_conda_envs
 from benchopt.config import get_global_config_file
 from benchopt.utils.dynamic_modules import _load_class_from_module
-from benchopt.cli.main import get_benchmark
 from benchopt.utils.shell_cmd import _run_shell_in_conda_env
 from benchopt.utils.colorify import colorify
 from benchopt.utils.colorify import RED, GREEN
@@ -63,22 +64,21 @@ def print_info(cls_list, env_name=None):
         # doc
         if hasattr(cls, '__doc__') and cls.__doc__ is not None and \
                 len(cls.__doc__) > 0:
-            print(f"- doc: {cls.__doc__}")
+            print(f"> doc: {cls.__doc__}")
         # parameters
         if hasattr(cls, 'parameters') and cls.parameters:
-            print(f"- parameters: {', '.join(cls.parameters)}")
+            print("> parameters:")
+            for param, value in cls.parameters.items():
+                values = '\', \''.join(map(str, value))
+                print(f"    - '{param}': '{values}'")
         # install command
-        if hasattr(cls, 'install_cmd') and cls.install_cmd:
-            print(f"- install cmd: {cls.install_cmd}")
+        if hasattr(cls, 'install_cmd') and cls.install_cmd and \
+            hasattr(cls, 'requirements') and cls.requirements:
+            print(f"> dependencies: {cls.install_cmd} install {' '.join(cls.requirements)}")
         else:
-            print("- no installation required")
-        # dependencies
-        if hasattr(cls, 'requirements') and cls.requirements:
-            print(f"- dependencies: {', '.join(cls.requirements)}")
-        else:
-            print("- no dependencies")
+            print("> no dependencies")
         # availability in env (if relevant)
-        if env_name is not None and env_name != 'False':
+        if env_name is not None:
             # check for dependency avaulability
             if cls.is_installed(env_name):
                 print(colorify(u'\u2713', GREEN), end='', flush=True)
@@ -98,7 +98,7 @@ def print_info(cls_list, env_name=None):
     "conda environment, see the command `benchopt install`."
 )
 @click.argument('benchmark', type=click.Path(exists=True),
-                autocompletion=get_benchmark)
+                autocompletion=complete_benchmarks)
 @click.option('--env', '-e', 'env_name',
               flag_value='True', type=str, default='False',
               help="Additional checks for requirement availability in "
@@ -106,33 +106,32 @@ def print_info(cls_list, env_name=None):
               "named 'benchopt_<BENCHMARK>'.")
 @click.option('--env-name', 'env_name',
               metavar="<env_name>", type=str, default='False',
+              shell_complete=complete_conda_envs,
               help="Additional checks for requirement availability in "
               "the conda environment named <env_name>.")
 def info(benchmark, env_name):
-
+    
+    # benchmark
     benchmark = Benchmark(benchmark)
     print(f"Info regarding '{benchmark.name}'")
 
     # get solvers and datasets in the benchmark
-    solvers = benchmark.list_benchmark_solvers()
-    datasets = benchmark.list_benchmark_datasets()
-
+    solvers = benchmark.get_solvers()
+    datasets = benchmark.get_datasets()
+    
+    # Get a list of all conda envs
+    default_conda_env, conda_envs = list_conda_envs()
+    
     # Check conda env (if relevant)
 
     # If env_name is False (default), check availability
     # in the current environement.
     if env_name == 'False':
         # check if any current conda environment
-        if 'CONDA_DEFAULT_ENV' in os.environ and \
-                os.environ['CONDA_DEFAULT_ENV'] is not None and \
-                len(os.environ['CONDA_DEFAULT_ENV']) > 0:
-            # current conda env
-            env_name = os.environ['CONDA_DEFAULT_ENV']
+        if default_conda_env is not None:
+            env_name = default_conda_env
         else:
-            msg = "No conda environment is activated. " + \
-                "Activate one or use one of the options '-e/--env' " + \
-                "or '--env-name'."
-            raise RuntimeError(msg)
+            raise RuntimeError("No conda environment is activated.")
     else:
         # If env_name is True, the flag `--env` has been used. Check the conda
         # env dedicated to the benchmark. Else, use the <env_name> value.
@@ -143,29 +142,34 @@ def info(benchmark, env_name):
             # (to avoid empty name like `--env-name ""`)
             if len(env_name) == 0:
                 raise RuntimeError("Empty environment name.")
+            if not env_name in conda_envs:
+                raise RuntimeError(
+                    f"{env_name} is not an existing conda environment."
+                )
 
-    # check if env_name exists
-    if env_name is not None and env_name != 'False':
-        check_benchopt = _run_shell_in_conda_env(
-            "benchopt --version", env_name=env_name, capture_stdout=True
-        )
-        if check_benchopt != 0:
-            msg = f"!! Environment '{env_name}' does not exist " + \
-                "or is not configurated for benchopt, " + \
-                "benchmark requirement availability will not be checked, " + \
-                "see the command `benchopt install`."
-            print(msg)
-            env_name = None
-        else:
-            msg = "Checking benchamrk requirement availability " + \
-                f"in env '{env_name}'."
-            print(msg)
+    # check env_name environment
+    check_benchopt = _run_shell_in_conda_env(
+        "benchopt --version", env_name=env_name, capture_stdout=True
+    )
+    if check_benchopt != 0:
+        msg = f"!! Environment '{env_name}' does not exist " + \
+            "or is not configurated for benchopt, " + \
+            "benchmark requirement availability will not be checked, " + \
+            "see the command `benchopt install`."
+        print(msg)
+        env_name = None
+    else:
+        msg = "Checking benchamrk requirement availability " + \
+            f"in env '{env_name}'."
+        print(msg)
+        
 
     # print information
-    print("# Datasets", flush=True)
+    print("-" * 10)
+    print("# DATASETS", flush=True)
     print_info(datasets, env_name)
 
-    print("# Solvers", flush=True)
+    print("# SOLVERS", flush=True)
     print_info(solvers, env_name)
 
 
