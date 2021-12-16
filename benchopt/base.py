@@ -2,15 +2,13 @@ import tempfile
 import numbers
 from abc import ABC, abstractmethod
 
+from .stopping_criterion import SufficientProgressCriterion
+
 from .utils.dynamic_modules import get_file_hash
 from .utils.dynamic_modules import _reconstruct_class
 
 from .utils.dependencies_mixin import DependenciesMixin
 from .utils.parametrized_name_mixin import ParametrizedNameMixin
-
-
-# Possible stop strategies
-STOP_STRATEGIES = ['iteration', 'tolerance']
 
 
 class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
@@ -46,7 +44,9 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
     """
 
     _base_class_name = 'Solver'
-    stop_strategy = 'iteration'
+    stopping_criterion = SufficientProgressCriterion(
+        strategy='iteration'
+    )
 
     def _set_objective(self, objective):
         """Store the objective for hashing/pickling and check its compatibility
@@ -94,11 +94,20 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         This function should not return the parameters which will be
         retrieved by a subsequent call to get_result.
 
+        If `stop_strategy` is set to `"callback"`, then `run` should call the
+        callback at each iteration. The callback will compute the time,
+        the objective function and store relevant quantities for BenchOpt.
+        Else, the `stop_val` parameter should be specified.
+
         Parameters
         ----------
-        stop_val : int | float
+        stop_val : int | float | callable
             Value for the stopping criterion of the solver for. It allows to
             sample the time/accuracy curve in the benchmark.
+            If it is a callable, then it should act as a callback. This
+            callback should be called once for each iteration with argument
+            the current iterate `parameters`. The callback returns False when
+            the computations should stop.
         """
         ...
 
@@ -247,7 +256,7 @@ class BaseObjective(ParametrizedNameMixin):
       the `dimension` value returned by `Dataset.get_data`. The output should
       be a float or a dictionary of floats.
       If a dictionary is returned, it should at least contain a key
-      `objective_value` associated to a scalar value which will be used to
+      `value` associated to a scalar value which will be used to
       detect convergence. With a dictionary, multiple metric values can be
       stored at once instead of runnning each separately.
     """
@@ -274,7 +283,18 @@ class BaseObjective(ParametrizedNameMixin):
         objective_dict = self.compute(beta)
 
         if not isinstance(objective_dict, dict):
-            objective_dict = {'objective_value': objective_dict}
+            objective_dict = {'value': objective_dict}
+
+        if 'name' in objective_dict:
+            raise ValueError(
+                "objective output cannot be called 'name'."
+            )
+
+        # To make the objective part clear in the results, we prefix all
+        # keys with `objective_`.
+        objective_dict = {
+            f'objective_{k}': v for k, v in objective_dict.items()
+        }
 
         return objective_dict
 

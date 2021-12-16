@@ -1,3 +1,15 @@
+[build-system]
+requires = [
+  "setuptools>=42",
+  "wheel",
+  "setuptools_scm>=6.2"
+]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools_scm]
+write_to = "benchopt/version.py"
+local_scheme = "no-local-version"
+
 [tool.pytest.ini_options]
 minversion = "6.0"
 addopts = "-v"
@@ -13,4 +25,5 @@ ignore = [
   "continuous_integration/*",
   "Makefile",
   "roadmap.md",
+  "benchopt/version.py"
 ]

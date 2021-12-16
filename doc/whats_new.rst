@@ -5,10 +5,37 @@ What's new
 
 .. currentmodule:: benchopt
 
+.. _changes_1_2:
+
+Version 1.2 - in progress
+-------------------------
+
+Changelog
+~~~~~~~~~
+
+- New ``--profile`` option to the ``run`` command in order to profile
+  with the line-profiler package all functions decorated with
+  :func:`benchopt.utils.profile`, by `Alexandre Gramfort`_ (:gh:`186`).
+
+- Replace ``SufficientDescentCriterion`` by ``SufficientProgressCriterion``,
+  which measures progress relatively to the best attained value instead of
+  the previous one, by `Thomas Moreau`_ (:gh:`176`)
+
+- Now all values returned by ``Objective.compute`` are included in reports,
+  by `Thomas Moreau`_ and `Alexandre Gramfort`_ (gh:`200`).
+
+API
+~~~
+
+- When returning a dict, ``Objective.compute`` should at least include
+  ``value`` key instead of ``objective_value``, by `Thomas Moreau`_ and
+  `Alexandre Gramfort`_ (gh:`200`).
+
+
 .. _changes_1_1:
 
-Version 1.1 - in progress
--------------------------
+Version 1.1 - 22-04-2021
+------------------------
 
 Changelog
 ~~~~~~~~~
@@ -19,11 +46,19 @@ Changelog
 - Support plotly for plotting functions, by `Thomas Moreau`_,
   `Tanguy Lefort`_ and `Joseph Salmon`_ (:gh:`110`, :gh:`111`, :gh:`112`).
 
-- Change envrionment variable for config from `BENCHO_*` to `BENCHOPT_*`,
+- Change envrionment variable for config from ``BENCHO_*`` to ``BENCHOPT_*``,
   by `Thomas Moreau`_ (:gh:`128`).
 
-- Add autocompletion support in the `benchopt` command,
-  by `Alexandre Gramfort`_, `Tanguy Lefort`_ and `Thomas Moreau`_ (:gh:`133`).
+- Add autocompletion support in the ``benchopt`` command,
+  by `Alexandre Gramfort`_, `Tanguy Lefort`_ and `Thomas Moreau`_
+  (:gh:`133`, :gh:`135`).
+
+- Move most CI to github action, with auto-release on pypi,
+  by `Thomas Moreau`_ (:gh:`150`, :gh:`154`).
+
+- Remove ``BENCHOPT_ALLOW_INSTALL`` and always install to requested env as
+  user now must request explicitely the install,
+  by `Thomas Moreau`_ (:gh:`155`).
 
 API
 ~~~
@@ -33,6 +68,15 @@ API
 
 - ``Solver.skip`` can now be used to skip objectives that are incompatible
   for the Solver, by `Thomas Moreau`_ (:gh:`113`).
+
+- ``Solver`` can now use ``stop_strategy = 'callback'`` to allow for
+  single call curve construction, by `Tanguy Lefort`_ and `Thomas Moreau`_
+  (:gh:`137`).
+
+- Add ``StoppingCriterion`` to reliably and flexibly assess a solver cvg.
+  For now, only ``SufficientDescentCriterion`` is implemented but better
+  API to set criterion per benchmark should be implemented in future release,
+  by `Thomas Moreau`_ (:gh:`151`)
 
 CLI
 ~~~
@@ -55,14 +99,18 @@ CLI
 - Add ``benchopt config`` command to allow easy configuration of ``benchopt``
   using the CLI, by `Thomas Moreau`_ (:gh:`128`).
 
+- Add ``benchopt install`` command to install benchmark requirements
+  (not done in ``benchopt run`` anymore) by `Ghislain Durif`_ (:gh:`135`).
+
 - Add ``benchopt info`` command to print information about a benchmark
   (including solvers, datasets, dependencies, etc.)
   by `Ghislain Durif`_ (:gh:`140`).
 
+
 BUG
 ~~~
 
-- Throw a warning when BenchOpt version in conda env does not match the one of
+- Throw a warning when benchopt version in conda env does not match the one of
   calling ``benchopt``, by `Thomas Moreau`_ (:gh:`83`).
 
 - Fix Lapack issue with R code, by `Tanguy Lefort`_ (:gh:`97`).
@@ -77,6 +125,17 @@ DOC
 
 - Add documentation on how to publish results, by `Alexandre Gramfort`_ (:gh:`118`).
 
+The committer list for this release is the following:
+
+  * `Alexandre Gramfort`_
+  * `Benoit Malézieux`_
+  * `Ghislain Durif`_
+  * `Joseph Salmon`_
+  * `Mathurin Massias`_
+  * `Nidham Gazagnadou`_
+  * `Tanguy Lefort`_
+  * `Thomas Moreau`_
+  * `Tom Dupré la Tour`_
 
 .. _changes_1_0:
 

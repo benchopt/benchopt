@@ -16,6 +16,7 @@ __pycache__
 benchopt_front_page_convergence.pdf
 
 # Package directory
+html/
 build/
 dist/
 
@@ -29,6 +30,7 @@ dist/
 
 # Config files
 benchopt.ini
+benchopt/version.py
 
 .DS_Store
 coverage.xml

@@ -8,7 +8,7 @@ from .base import BaseObjective
 # Context to allow safe imports
 from .utils.safe_import import safe_import_context
 
-__version__ = '1.1.0.dev0'
+from .version import version as __version__
 
 __all__ = [
     'BaseSolver', 'BaseDataset', 'BaseObjective', 'safe_import_context',

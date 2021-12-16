@@ -1,4 +1,3 @@
-import numpy as np
 from pathlib import Path
 
 from benchopt import BaseSolver
@@ -6,6 +5,7 @@ from benchopt import safe_import_context
 
 
 with safe_import_context() as import_ctx:
+    import numpy as np
 
     # Import helpers from rpy2 and benchopt.helpers.r_lang
     from rpy2 import robjects
@@ -35,8 +35,7 @@ class Solver(BaseSolver):
 
     def run(self, n_iter):
         coefs = self.r_pgd(self.X, self.y[:, None], self.lmbd, n_iter=n_iter)
-        as_matrix = robjects.r['as']
-        self.w = np.array(as_matrix(coefs, "matrix"))
+        self.w = np.asarray(coefs)
 
     def get_result(self):
         return self.w.flatten()

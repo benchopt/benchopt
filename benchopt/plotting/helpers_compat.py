@@ -11,20 +11,25 @@ def fill_between_x(fig, x, q1, q9, y, color, marker, label, plotly=False):
         plt.loglog(x, y, color=color, marker=marker, label=label, linewidth=3)
         plt.fill_betweenx(y, q1, q9, color=color, alpha=.3)
         return fig
-
+    color = tuple(255*x if i != 3 else x for i, x in enumerate(color))
     color = f'rgba{color}'
     fig.add_trace(go.Scatter(
         x=x, y=y,
         line_color=color, marker_symbol=marker, mode='lines+markers',
-        name=label, legendgroup=label,
+        marker_size=10, name=label, legendgroup=label,
+        hoverlabel=dict(namelength=-1),
+        hovertemplate='%{text} <br> (%{x:.1e},%{y:.1e}) <extra></extra>',
+        text=[label for _ in x], showlegend=True,
     ))
     fig.add_trace(go.Scatter(
         x=q1, y=y, mode='lines', showlegend=False,
         line={'width': 0, 'color': color}, legendgroup=label,
+        hovertemplate='(%{x:.1e},%{y:.1e}) <extra></extra>',
     ))
     fig.add_trace(go.Scatter(
         x=q9, y=y, mode='lines', fill='tonextx', showlegend=False,
         line={'width': 0, 'color': color}, legendgroup=label,
+        hovertemplate='(%{x:.1e},%{y:.1e}) <extra></extra>',
     ))
 
     return fig
@@ -51,11 +56,9 @@ def add_h_line(fig, val, xlim=None, plotly=False):
         plt.xlim(xlim)
         return fig
 
-    fig.add_trace(go.Scatter(
-        x=xlim, y=[val] * 2,
-        line_dash='dot', line_color='black',
-        mode='lines', showlegend=False
-    ))
+    fig.add_hline(y=val,
+                  line_dash="dot",
+                  line_color="black")
 
 
 def _make_bars(fig, heights, ticks, width, colors, times, plotly=False):
@@ -79,7 +82,7 @@ def _make_bars(fig, heights, ticks, width, colors, times, plotly=False):
         colors = [f'rgba{color}' for color in colors]
         xi, _ = zip(*ticks)
         text_ = ["Did not converge" if np.isnan(
-                                    time).any() else " " for time in times]
+            time).any() else " " for time in times]
         fig.add_trace(go.Bar(x=xi,
                              y=heights,
                              width=[width],

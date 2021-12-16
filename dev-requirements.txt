@@ -1,7 +1,0 @@
-numpy
-cython
-joblib
-pytest
-pytest-timeout
-pytest-cov
-coverage

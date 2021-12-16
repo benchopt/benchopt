@@ -4,17 +4,18 @@ import warnings
 import configparser
 from pathlib import Path
 from collections.abc import Iterable
+from benchopt.constants import PLOT_KINDS
+
 
 BOOLEAN_STATES = configparser.ConfigParser.BOOLEAN_STATES
 CONFIG_FILE_NAME = 'benchopt.ini'
 
 # Global config file should be only accessible to current user as it stores
-# senesible information such as the Github otken.
+# sensitive information such as the Github token.
 GLOBAL_CONFIG_FILE_MODE = stat.S_IFREG | stat.S_IRUSR | stat.S_IWUSR
 
 DEFAULT_GLOBAL_CONFIG = {
     'debug': False,
-    'allow_install': False,
     'raise_install_error': False,
     'github_token': None,
     'data_dir': './data/',
@@ -23,8 +24,6 @@ DEFAULT_GLOBAL_CONFIG = {
 }
 """
 * ``debug``: If set to true, enable debug logs.
-* ``allow_install``, *boolean*: Install in current env are disabled by
-  default. If set to true, enable installing in the current env.
 * ``raise_install_error``, *boolean*: If set to true, raise error when
   install fails.
 * ``github_token``, *str*: token to publish results on ``benchopt/results``
@@ -36,7 +35,7 @@ DEFAULT_GLOBAL_CONFIG = {
 """
 
 DEFAULT_BENCHMARK_CONFIG = {
-    'plots': ["suboptimality_curve"],
+    'plots': list(PLOT_KINDS),
 }
 """
 * ``plots``, *list*: Select the plots to display for the benchmark. Should be
@@ -200,5 +199,4 @@ class BooleanFlag(object):
 
 
 DEBUG = BooleanFlag('debug')
-ALLOW_INSTALL = BooleanFlag('allow_install')
 RAISE_INSTALL_ERROR = BooleanFlag('raise_install_error')

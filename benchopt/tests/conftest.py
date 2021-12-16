@@ -3,8 +3,9 @@ import uuid
 import pytest
 
 from benchopt.benchmark import Benchmark
-from benchopt.utils.shell_cmd import delete_conda_env
-from benchopt.utils.shell_cmd import create_conda_env
+from benchopt.utils.conda_env_cmd import create_conda_env
+from benchopt.utils.conda_env_cmd import delete_conda_env
+from benchopt.utils.dynamic_modules import _get_module_from_file
 
 from benchopt.tests import TEST_BENCHMARK_DIR
 
@@ -12,17 +13,13 @@ os.environ['BENCHOPT_DEBUG'] = '1'
 os.environ['BENCHOPT_RAISE_INSTALL_ERROR'] = '1'
 
 _TEST_ENV_NAME = None
+_EMPTY_ENV_NAME = None
 
 
-def class_ids(parameters):
-    name_id = ''
-    for p in parameters:
-        if hasattr(p, 'name'):
-            p = p.name.lower()
-        name_id = f'{name_id}-{p}'
-    if name_id.startswith('-'):
-        name_id = name_id[1:]
-    return name_id
+def class_ids(p):
+    if hasattr(p, 'name'):
+        return p.name.lower()
+    return str(p)
 
 
 def pytest_report_header(config):
@@ -61,28 +58,50 @@ def pytest_generate_tests(metafunc):
     """Generate the test on the fly to take --benchmark into account.
     """
     PARAMETRIZATION = {
-        'benchmark_dataset_simu': lambda benchmarks: [
+        ('benchmark', 'dataset_simu'): lambda benchmarks: [
             (benchmark, dataset_class) for benchmark in benchmarks
-            for dataset_class in benchmark.list_benchmark_datasets()
+            for dataset_class in benchmark.get_datasets()
             if dataset_class.name.lower() == 'simulated'
         ],
-        'benchmark_dataset': lambda benchmarks: [
+        ('benchmark', 'dataset_class'): lambda benchmarks: [
             (benchmark, dataset_class) for benchmark in benchmarks
-            for dataset_class in benchmark.list_benchmark_datasets()
+            for dataset_class in benchmark.get_datasets()
         ],
-        'benchmark_solver': lambda benchmarks: [
+        ('benchmark', 'solver_class'): lambda benchmarks: [
             (benchmark, solver) for benchmark in benchmarks
-            for solver in benchmark.list_benchmark_solvers()
+            for solver in benchmark.get_solvers()
         ]
     }
+
+    # Get all benchmarks
+    benchmarks = metafunc.config.getoption("benchmark")
+    if benchmarks is None or len(benchmarks) == 0:
+        benchmarks = TEST_BENCHMARK_DIR.glob('*/')
+    benchmarks = [Benchmark(b) for b in benchmarks]
+    benchmarks.sort()
+
+    # Parametrize the tests
     for params, func in PARAMETRIZATION.items():
-        if params in metafunc.fixturenames:
-            benchmarks = metafunc.config.getoption("benchmark")
-            if benchmarks is None or len(benchmarks) == 0:
-                benchmarks = TEST_BENCHMARK_DIR.glob('*/')
-            benchmarks = [Benchmark(b) for b in benchmarks]
-            benchmarks.sort()
+        if set(params).issubset(metafunc.fixturenames):
             metafunc.parametrize(params, func(benchmarks), ids=class_ids)
+
+
+@pytest.fixture
+def check_test(request):
+
+    if 'benchmark' not in request.fixturenames:
+        raise ValueError(
+            '`check_test` fixture should only be used in tests parametrized '
+            'with `benchmark` fixture'
+        )
+
+    benchmark = request.getfixturevalue('benchmark')
+    test_config_file = benchmark.get_test_config_file()
+    if test_config_file is None:
+        return None
+    test_config_module = _get_module_from_file(test_config_file)
+    check_func_name = f"check_{request.function.__name__}"
+    return getattr(test_config_module, check_func_name, None)
 
 
 @pytest.fixture(scope='session')
@@ -103,8 +122,32 @@ def test_env_name(request):
     return _TEST_ENV_NAME
 
 
+@pytest.fixture(scope='session')
+def empty_env_name(request):
+    global _EMPTY_ENV_NAME
+
+    if _EMPTY_ENV_NAME is None:
+        env_name = f"_benchopt_test_env_{uuid.uuid4()}"
+        request.addfinalizer(delete_empty_env)
+
+        _EMPTY_ENV_NAME = env_name
+
+        create_conda_env(_EMPTY_ENV_NAME, empty=True)
+
+    return _EMPTY_ENV_NAME
+
+
 def delete_test_env():
     global _TEST_ENV_NAME
 
     if _TEST_ENV_NAME is not None:
         delete_conda_env(_TEST_ENV_NAME)
+        _TEST_ENV_NAME = None
+
+
+def delete_empty_env():
+    global _EMPTY_ENV_NAME
+
+    if _EMPTY_ENV_NAME is not None:
+        delete_conda_env(_EMPTY_ENV_NAME)
+        _EMPTY_ENV_NAME = None

@@ -1,13 +1,13 @@
 Benchmark repository for optimization
 =====================================
 
-|Build Status| |Python 3.6+| |codecov|
+|Test Status| |Python 3.6+| |codecov|
 
 BenchOpt is a package to simplify, make more transparent and
 more reproducible the comparisons of optimization algorithms.
 
 BenchOpt is written in Python but it is available with
-`many programming languages <https://benchopt.github.io/auto_examples/plot_run_benchmark_python_R_julia.html>`_.
+`many programming languages <https://benchopt.github.io/auto_examples/plot_run_benchmark_python_R.html>`_.
 So far it has been tested with `Python <https://www.python.org/>`_,
 `R <https://www.r-project.org/>`_, `Julia <https://julialang.org/>`_
 and compiled binaries written in C/C++ available via a terminal
@@ -43,11 +43,17 @@ Learn how to `write a benchmark on our documentation <https://benchopt.github.io
 Install
 --------
 
-This package can be installed through `pip` using:
+This package can be installed through `pip`. To get the **last release**, use:
 
 .. code-block::
 
     $ pip install benchopt
+
+And to get the **latest development version**, you can use:
+
+.. code-block::
+
+    $ pip install -U https://github.com/benchopt/benchopt/archive/master.zip
 
 This will install the command line tool to run the benchmark. Then, existing
 benchmarks can be retrieved from git or created locally. For instance, the
@@ -80,22 +86,38 @@ to get more details about the different options or read the
 List of optimization problems available
 ---------------------------------------
 
-- `ols`_: ordinary least-squares.
-- `nnls`_: non-negative least-squares.
-- `lasso`_: l1-regularized least-squares.
-- `logreg_l2`_: l2-regularized logistic regression.
-- `logreg_l1`_: l1-regularized logistic regression.
+- `Ordinary Least Squares (OLS) <https://github.com/benchopt/benchmark_ols>`_ |Build Status OLS|
+- `Non-Negative Least Squares (NNLS) <https://github.com/benchopt/benchmark_nnls>`_ |Build Status NNLS|
+- `LASSO: L1-regularized least squares <https://github.com/benchopt/benchmark_lasso>`_ |Build Status Lasso|
+- `L2-regularized logistic regression <https://github.com/benchopt/benchmark_logreg_l2>`_ |Build Status LogRegL2|
+- `L1-regularized logistic regression <https://github.com/benchopt/benchmark_logreg_l1>`_ |Build Status LogRegL1|
+- `L2-regularized Huber regression <https://github.com/benchopt/benchmark_huber_l2>`_ |Build Status HuberL2|
+- `L1-regularized quantile regression <https://github.com/benchopt/benchmark_quantile_regression>`_ |Build Status QuantileRegL1|
+- `Linear SVM for binary classification <https://github.com/benchopt/benchmark_linear_svm_binary_classif_no_intercept>`_ |Build Status LinearSVM|
+- `Linear ICA <https://github.com/benchopt/benchmark_linear_ica>`_ |Build Status LinearICA|
 
-
-.. |Build Status| image:: https://dev.azure.com/benchopt/benchopt/_apis/build/status/benchopt.benchOpt?branchName=master
-   :target: https://dev.azure.com/benchopt/benchopt/_build/latest?definitionId=1&branchName=master
+.. |Test Status| image:: https://github.com/benchopt/benchopt/actions/workflows/test.yml/badge.svg
+   :target: https://github.com/benchopt/benchopt/actions/workflows/test.yml
 .. |Python 3.6+| image:: https://img.shields.io/badge/python-3.6%2B-blue
    :target: https://www.python.org/downloads/release/python-360/
-.. |codecov| image:: https://codecov.io/gh/benchopt/benchOpt/branch/master/graph/badge.svg
-   :target: https://codecov.io/gh/benchopt/benchOpt
+.. |codecov| image:: https://codecov.io/gh/benchopt/benchopt/branch/master/graph/badge.svg
+   :target: https://codecov.io/gh/benchopt/benchopt
 
-.. _`ols`: https://github.com/benchopt/benchmark_ols
-.. _`nnls`: https://github.com/benchopt/benchmark_nnls
-.. _`lasso`: https://github.com/benchopt/benchmark_lasso
-.. _`logreg_l1`: https://github.com/benchopt/benchmark_logreg_l1
-.. _`logreg_l2`: https://github.com/benchopt/benchmark_logreg_l2
+.. |Build Status OLS| image:: https://github.com/benchopt/benchmark_ols/workflows/Tests/badge.svg
+   :target: https://github.com/benchopt/benchmark_ols/actions
+.. |Build Status NNLS| image:: https://github.com/benchopt/benchmark_nnls/workflows/Tests/badge.svg
+   :target: https://github.com/benchopt/benchmark_nnls/actions
+.. |Build Status Lasso| image:: https://github.com/benchopt/benchmark_lasso/workflows/Tests/badge.svg
+   :target: https://github.com/benchopt/benchmark_lasso/actions
+.. |Build Status LogRegL2| image:: https://github.com/benchopt/benchmark_logreg_l2/workflows/Tests/badge.svg
+   :target: https://github.com/benchopt/benchmark_logreg_l2/actions
+.. |Build Status LogRegL1| image:: https://github.com/benchopt/benchmark_logreg_l1/workflows/Tests/badge.svg
+   :target: https://github.com/benchopt/benchmark_logreg_l1/actions
+.. |Build Status HuberL2| image:: https://github.com/benchopt/benchmark_huber_l2/workflows/Tests/badge.svg
+   :target: https://github.com/benchopt/benchmark_huber_l2/actions
+.. |Build Status QuantileRegL1| image:: https://github.com/benchopt/benchmark_quantile_regression/workflows/Tests/badge.svg
+   :target: https://github.com/benchopt/benchmark_quantile_regression/actions
+.. |Build Status LinearSVM| image:: https://github.com/benchopt/benchmark_linear_svm_binary_classif_no_intercept/workflows/Tests/badge.svg
+   :target: https://github.com/benchopt/benchmark_linear_svm_binary_classif_no_intercept/actions
+.. |Build Status LinearICA| image:: https://github.com/benchopt/benchmark_linear_ica/workflows/Tests/badge.svg
+   :target: https://github.com/benchopt/benchmark_linear_ica/actions

@@ -1,4 +1,3 @@
-from pathlib import Path
 from contextlib import contextmanager
 
 from benchopt.config import DEBUG
@@ -70,27 +69,6 @@ class JuliaSolver(BaseSolver):
             except Exception:
                 return False
         return success
-
-    @classmethod
-    def _pre_install_hook(cls, env_name=None):
-        """Make sure julia can be installed with conda
-
-        There is an ungoing issue with compat between libgit2 and julia which
-        makes the auto install of julia solver fails when cloning the General
-        repository from julia. To avoid this, we clone this on the system
-        directly.
-        See https://github.com/JuliaLang/julia/issues/33111
-        """
-        julia_dir = Path.home() / '.julia' / 'registries' / 'General'
-        if not julia_dir.exists():
-
-            cmd_clone = (
-                "git clone https://github.com/JuliaRegistries/General.git "
-                f"{julia_dir}"
-            )
-            _run_shell_in_conda_env(
-                cmd_clone, env_name=env_name, raise_on_error=True
-            )
 
     @classmethod
     def _post_install_hook(cls, env_name=None):

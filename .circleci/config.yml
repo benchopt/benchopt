@@ -2,148 +2,138 @@
 # Tagging a commit with [circle full] will build everything.
 version: 2
 jobs:
-    build_docs:
-      docker:
-        - image: circleci/python:3.8.1-buster
-      steps:
-        - checkout
-        - run:
-            name: Set BASH_ENV
-            command: |
-              echo "set -e" >> $BASH_ENV
-              echo "export DISPLAY=:99" >> $BASH_ENV
-              echo "export OPENBLAS_NUM_THREADS=4" >> $BASH_ENV
-              echo "BASH_ENV:"
-              cat $BASH_ENV
+  build_docs:
+    docker:
+      - image: circleci/python:3.8.1-buster
+    steps:
+      - checkout
+      - run:
+          name: Set BASH_ENV
+          command: |
+            echo "set -e" >> $BASH_ENV
+            echo "export DISPLAY=:99" >> $BASH_ENV
+            echo "export OPENBLAS_NUM_THREADS=4" >> $BASH_ENV
+            echo "BASH_ENV:"
+            cat $BASH_ENV
 
-        - run:
-            name: Merge with upstream
-            command: |
-              echo $(git log -1 --pretty=%B) | tee gitlog.txt
-              echo ${CI_PULL_REQUEST//*pull\//} | tee merge.txt
-              if [[ $(cat merge.txt) != "" ]]; then
-                echo "Merging $(cat merge.txt)";
-                git remote add upstream git://github.com/benchopt/benchOpt.git;
-                git pull --ff-only upstream "refs/pull/$(cat merge.txt)/merge";
-                git fetch upstream master;
-              fi
+      - run:
+          name: Merge with upstream
+          command: |
+            echo $(git log -1 --pretty=%B) | tee gitlog.txt
+            echo ${CI_PULL_REQUEST//*pull\//} | tee merge.txt
+            if [[ $(cat merge.txt) != "" ]]; then
+              echo "Merging $(cat merge.txt)";
+              git remote add upstream git://github.com/benchopt/benchopt.git;
+              git pull --ff-only upstream "refs/pull/$(cat merge.txt)/merge";
+              git fetch upstream main;
+            fi
 
-        # Load our data
-        - restore_cache:
-            keys:
-              - data-cache-0
-              - pip-cache
+      # Load our data
+      - restore_cache:
+          keys:
+            - pkgs-cache
 
-        - run:
-            name: Spin up Xvfb
-            command: |
-              /sbin/start-stop-daemon --start --quiet --pidfile /tmp/custom_xvfb_99.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :99 -screen 0 1400x900x24 -ac +extension GLX +render -noreset;
+      - run:
+          name: Spin up Xvfb
+          command: |
+            /sbin/start-stop-daemon --start --quiet --pidfile /tmp/custom_xvfb_99.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :99 -screen 0 1400x900x24 -ac +extension GLX +render -noreset;
 
-        - run:
-            name: Get conda running
-            command: |
-              wget -q https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh;
-              chmod +x ~/miniconda.sh;
-              ~/miniconda.sh -b -p ~/miniconda;
-              echo "export PATH=~/miniconda/bin:$PATH" >> $BASH_ENV;
+      - run:
+          name: Get conda running
+          command: |
 
-        - run:
-            name: Get Python running
-            command: |
-              pip install --upgrade --progress-bar off -r dev-requirements.txt
-              pip install --upgrade --progress-bar off -r doc/doc-requirements.txt
-              conda config --env --prepend channels conda-forge
+            wget -q https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-$(uname)-$(uname -m).sh -O ~/miniconda.sh;
+            chmod +x ~/miniconda.sh;
+            ~/miniconda.sh -b -p ~/miniconda;
+            echo "export PATH=~/miniconda/bin:$PATH" >> $BASH_ENV;
 
-              # There is an ungoing issue with compat between libgit2 and julia which
-              # makes the auto install of julia solver fails when cloning the General
-              # repository from julia. To avoid this, we clone this on the system directly.
-              # See https://github.com/JuliaLang/julia/issues/33111
-              git clone https://github.com/JuliaRegistries/General.git \
-                      $HOME/.julia/registries/General
+            # update conda pkgs cache
+            mkdir ~/conda_pkgs 2>/dev/null || echo 'already exists'
+            cp -r ~/miniconda/pkgs/* ~/conda_pkgs/
+            rm -rf ~/miniconda/pkgs
+            ln -s ~/conda_pkgs ~/miniconda/pkgs
 
-              conda install julia r-base rpy2
-              pip install julia
-              pip install -e .
+      - run:
+          name: Get Python running
+          command: |
+            mamba install python=3.8 julia r-base rpy2 numpy cython -yq
+            pip install --upgrade "setuptools<58.5"
+            pip install --upgrade --progress-bar off julia
+            pip install --upgrade --progress-bar off git+https://github.com/scikit-learn-contrib/lightning.git
+            pip install --upgrade --progress-bar off -e .[doc]
 
-        - save_cache:
-            key: pip-cache
-            paths:
-              - ~/.cache/pip
+      - save_cache:
+          key: pkgs-cache
+          paths:
+            - ~/.cache/pip
+            - ~/conda_pkgs
 
-        # Clone the benchmarks that are used in the examples
-        - run:
-            name: Clone benchmarks for examples
-            command: |
-              git clone https://github.com/benchopt/benchmark_logreg_l2 benchmarks/logreg_l2
-              git clone https://github.com/benchopt/benchmark_lasso benchmarks/lasso
+      # Look at what we have and fail early if there is some library conflict
+      - run:
+          name: Check installation
+          command: |
+            which python
+            python -c "import benchopt"
 
+      # Build docs
+      - run:
+          name: make html
+          command: |
+            cd doc;
+            make html;
 
-        # Look at what we have and fail early if there is some library conflict
-        - run:
-            name: Check installation
-            command: |
-               which python
-               python -c "import benchopt"
+      # Save the outputs
+      - store_artifacts:
+          path: doc/_build/html/
+          destination: dev
+      - persist_to_workspace:
+          root: doc/_build
+          paths:
+            - html
 
-        # Build docs
-        - run:
-            name: make html
-            command: |
-              cd doc;
-              make html;
-
-        # Save the outputs
-        - store_artifacts:
-            path: doc/_build/html/
-            destination: dev
-        - persist_to_workspace:
-            root: doc/_build
-            paths:
-              - html
-
-    deploy:
-      docker:
-        - image: circleci/python:3.8.1-buster
-      steps:
-        - attach_workspace:
-            at: /tmp/build
-        - run:
-            name: Fetch docs
-            command: |
-              set -e
-              mkdir -p ~/.ssh
-              echo -e "Host *\nStrictHostKeyChecking no" > ~/.ssh/config
-              chmod og= ~/.ssh/config
-              if [ ! -d ~/benchopt.github.io ]; then
-                git clone git@github.com:/benchopt/benchopt.github.io.git ~/benchopt.github.io --depth=1
-              fi
-        - run:
-            name: Deploy docs
-            command: |
-              set -e;
+  deploy:
+    docker:
+      - image: circleci/python:3.8.1-buster
+    steps:
+      - attach_workspace:
+          at: /tmp/build
+      - run:
+          name: Fetch docs
+          command: |
+            set -e
+            mkdir -p ~/.ssh
+            echo -e "Host *\nStrictHostKeyChecking no" > ~/.ssh/config
+            chmod og= ~/.ssh/config
+            if [ ! -d ~/benchopt.github.io ]; then
+              git clone git@github.com:/benchopt/benchopt.github.io.git ~/benchopt.github.io --depth=1
+            fi
+      - run:
+          name: Deploy docs
+          command: |
+            set -e;
+            cd ~/benchopt.github.io;
+            if [[ "${CIRCLE_BRANCH}" != "main" ]]; then
+              echo "No deployment (build: ${CIRCLE_BRANCH}).";
+            else
+              git config --global user.email "circle@benchopt.com";
+              git config --global user.name "Circle CI";
               cd ~/benchopt.github.io;
-              if [[ "${CIRCLE_BRANCH}" != "master" ]]; then
-                echo "No deployment (build: ${CIRCLE_BRANCH}).";
+              git checkout main
+              git remote -v
+              git fetch origin
+              git reset --hard origin/main
+              git clean -xdf
+              echo "Deploying dev docs for ${CIRCLE_BRANCH}.";
+              cp -a /tmp/build/html/* .;
+              if [[ -z $(git diff) ]]; then
+                echo "Nothing to commit"
               else
-                git config --global user.email "circle@benchopt.com";
-                git config --global user.name "Circle CI";
-                cd ~/benchopt.github.io;
-                git checkout master
-                git remote -v
-                git fetch origin
-                git reset --hard origin/master
-                git clean -xdf
-                echo "Deploying dev docs for ${CIRCLE_BRANCH}.";
-                cp -a /tmp/build/html/* .;
-                if [[ -z $(git diff) ]]; then
-                  echo "Nothing to commit"
-                else
-                  touch .nojekyll;
-                  git add -A;
-                  git commit -m "CircleCI update of dev docs (${CIRCLE_BUILD_NUM}).";
-                  git push origin master;
-                fi
+                touch .nojekyll;
+                git add -A;
+                git commit -m "CircleCI update of dev docs (${CIRCLE_BUILD_NUM}).";
+                git push origin main;
               fi
+            fi
 
 workflows:
   version: 2
@@ -157,4 +147,4 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - main

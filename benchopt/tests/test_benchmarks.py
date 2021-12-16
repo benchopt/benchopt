@@ -1,26 +1,25 @@
-import sys
 import pytest
 import numbers
 
 import numpy as np
 
-from benchopt.base import STOP_STRATEGIES
+from benchopt.runner import _Callback
+from benchopt.stopping_criterion import STOP_STRATEGIES
 
 
-def test_benchmark_objective(benchmark_dataset_simu):
+def test_benchmark_objective(benchmark, dataset_simu):
     """Check that the objective function and the datasets are well defined."""
-    benchmark, dataset_class = benchmark_dataset_simu
     objective_class = benchmark.get_benchmark_objective()
     objective = objective_class.get_instance()
 
-    dataset = dataset_class.get_instance()
+    dataset = dataset_simu.get_instance()
     dimension, data = dataset._get_data()
     objective.set_data(**data)
 
     # check that the reported dimension is correct and that the result of
     # the objective function is a dictionary containing a scalar value for
     # `objective_value`.
-    beta_hat = np.zeros(*dimension)
+    beta_hat = np.zeros(dimension)
     objective_dict = objective(beta_hat)
 
     assert 'objective_value' in objective_dict, (
@@ -34,9 +33,8 @@ def test_benchmark_objective(benchmark_dataset_simu):
     )
 
 
-def test_dataset_class(benchmark_dataset):
+def test_dataset_class(benchmark, dataset_class):
     """Check that all dataset_class respects the public API"""
-    _, dataset_class = benchmark_dataset
 
     # Check that the dataset_class exposes a name
     assert hasattr(dataset_class, 'name'), "All dataset should expose a name"
@@ -54,10 +52,9 @@ def test_dataset_class(benchmark_dataset):
     )
 
 
-def test_dataset_get_data(benchmark_dataset):
+def test_dataset_get_data(benchmark, dataset_class):
     """Check that all installed dataset_class.get_data return the right result
     """
-    _, dataset_class = benchmark_dataset
 
     # skip the test if the dataset is not installed
     if not dataset_class.is_installed():
@@ -91,10 +88,8 @@ def test_dataset_get_data(benchmark_dataset):
     )
 
 
-def test_solver_class(benchmark_solver):
+def test_solver_class(benchmark, solver_class):
     """Check that all installed solver_class respects the public API"""
-
-    _, solver_class = benchmark_solver
 
     # Check that the solver_class exposes a name
     assert hasattr(solver_class, 'name'), "All solver should expose a name"
@@ -103,12 +98,19 @@ def test_solver_class(benchmark_solver):
     )
 
     # Check that the solver_class uses a valid stop_strategy
-    assert solver_class.stop_strategy in STOP_STRATEGIES
+    if hasattr(solver_class, 'stop_strategy'):
+        msg = f"stop_strategy should be in {STOP_STRATEGIES}."
+        assert solver_class.stop_strategy in STOP_STRATEGIES
+
+    # Check that the solver_class uses a valid stop_strategy
+    if hasattr(solver_class, 'get_next'):
+        msg = "get_next should be a callable static method."
+        assert (callable(solver_class.get_next)
+                and type(solver_class.get_next) == staticmethod), msg
 
 
-def test_solver_install_api(benchmark_solver):
+def test_solver_install_api(benchmark, solver_class):
 
-    _, solver_class = benchmark_solver
     # Check that the solver_class exposes a known install cmd
     assert solver_class.install_cmd in [None, 'conda', 'shell']
 
@@ -120,45 +122,34 @@ def test_solver_install_api(benchmark_solver):
 
 
 @pytest.mark.requires_install
-def test_solver_install(test_env_name, benchmark_solver):
+def test_solver_install(test_env_name, benchmark, solver_class, check_test):
 
-    benchmark_name, solver_class = benchmark_solver
-
-    if solver_class.name.lower() == 'cyanure' and sys.platform == 'darwin':
-        pytest.skip('Cyanure is not easy to install on macos.')
-
-    # Skip test_solver_install for julia in OSX as there is a version
-    # conflict with conda packages for R
-    # See issue #64
-    if 'julia' in solver_class.name.lower() and sys.platform == 'darwin':
-        pytest.skip('Julia causes segfault on OSX for now.')
+    if check_test is not None:
+        check_test(solver_class)
 
     # assert that install works when forced to reinstalls
     solver_class.install(env_name=test_env_name)
-    solver_class.is_installed(env_name=test_env_name,
-                              raise_on_not_installed=True)
+    solver_class.is_installed(
+        env_name=test_env_name, raise_on_not_installed=True
+    )
 
 
-def test_solver(benchmark_solver):
+def test_solver(benchmark, solver_class):
 
-    benchmark, solver_class = benchmark_solver
     if not solver_class.is_installed():
         pytest.skip("Solver is not installed")
-
-    # Skip test_solver for julia in OSX as it throw a segfault
-    # See issue#64
-    if 'julia' in solver_class.name.lower() and sys.platform == 'darwin':
-        pytest.skip('Julia causes segfault on OSX for now.')
 
     objective_class = benchmark.get_benchmark_objective()
     objective = objective_class.get_instance()
 
-    datasets = benchmark.list_benchmark_datasets()
-    simulated_dataset = [d for d in datasets if d.name.lower() == 'simulated']
+    simulated_dataset = [
+        d for d in benchmark.get_datasets() if d.name.lower() == 'simulated'
+    ]
 
     assert len(simulated_dataset) == 1, (
         "All benchmark need to implement a simulated dataset for "
-        "testing purpose")
+        "testing purpose"
+    )
 
     dataset_class = simulated_dataset[0]
     dataset = dataset_class.get_instance()
@@ -168,16 +159,32 @@ def test_solver(benchmark_solver):
 
     solver = solver_class.get_instance()
     solver.set_objective(**objective.to_dict())
-    stop_val = 5000 if solver_class.stop_strategy == 'iteration' else 1e-15
-    solver.run(stop_val)
+
+    # Either call run_with_cb or run
+
+    solver_strategy = getattr(
+        solver, 'stop_strategy', solver.stopping_criterion.strategy
+    )
+    if solver_strategy == 'callback':
+        sc = solver.stopping_criterion.get_runner_instance(
+            max_runs=25, timeout=None, solver=solver
+        )
+        cb = _Callback(
+            objective, meta={}, stopping_criterion=sc
+        )
+        solver.run(cb)
+    else:
+        stop_val = 5000 if solver_strategy == 'iteration' else 1e-15
+        solver.run(stop_val)
+
     beta_hat_i = solver.get_result()
 
     assert beta_hat_i.shape == dimension
 
-    val_star = objective(beta_hat_i)['objective_value']
-
-    for _ in range(100):
-        eps = 1e-5 * np.random.randn(*dimension)
-        val_eps = objective(beta_hat_i + eps)['objective_value']
-        diff = val_eps - val_star
-        assert diff > 0
+    if getattr(objective, "is_convex", True):
+        val_star = objective(beta_hat_i)['objective_value']
+        for _ in range(100):
+            eps = 1e-5 * np.random.randn(*dimension)
+            val_eps = objective(beta_hat_i + eps)['objective_value']
+            diff = val_eps - val_star
+            assert diff >= 0

@@ -1,7 +1,8 @@
-import numpy as np
+from benchopt import BaseSolver, safe_import_context
+from benchopt.utils import profile
 
-
-from benchopt import BaseSolver
+with safe_import_context() as import_ctx:
+    import numpy as np
 
 
 class Solver(BaseSolver):
@@ -11,13 +12,14 @@ class Solver(BaseSolver):
     parameters = {'step_size': [1, 1.5]}
 
     # Store the information to compute the objective. The parameters of this
-    # function are the eys of the dictionary obtained when calling
+    # function are the keys of the dictionary obtained when calling
     # ``Objective.to_dict``.
     def set_objective(self, X, y, lmbd):
         self.X, self.y, self.lmbd = X, y, lmbd
 
     # Main function of the solver, which compute a solution estimate.
     # Here this is the proximal gradient descent.
+    @profile
     def run(self, n_iter):
         L = np.linalg.norm(self.X, ord=2) ** 2
         step_size = self.step_size / L
