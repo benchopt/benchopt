@@ -211,15 +211,19 @@ def info(benchmark, solver_names, dataset_names, env_name='False',
         "benchopt --version", env_name=env_name, capture_stdout=True
     )
     if check_benchopt != 0:
-        msg = f"!! Environment '{env_name}' does not exist " + \
-            "or is not configurated for benchopt, " + \
-            "benchmark requirement availability will not be checked, " + \
+        msg = (
+            f"!! Environment '{env_name}' does not exist "
+            "or is not configurated for benchopt, "
+            "benchmark requirement availability will not be checked, "
             "see the command `benchopt install`."
+        )
         print(msg)
         env_name = None
     else:
-        msg = "Checking benchamrk requirement availability " + \
+        msg = (
+            "Checking benchamrk requirement availability "
             f"in env '{env_name}'."
+        )
         print(msg)
 
     ## print information
