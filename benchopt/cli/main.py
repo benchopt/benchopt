@@ -2,10 +2,10 @@ import click
 from pathlib import Path
 
 from benchopt.benchmark import Benchmark
-from benchopt.cli.completion import get_solvers
-from benchopt.cli.completion import get_datasets
-from benchopt.cli.completion import get_benchmark
-from benchopt.cli.completion import get_conda_envs
+from benchopt.cli.completion import complete_solvers
+from benchopt.cli.completion import complete_datasets
+from benchopt.cli.completion import complete_benchmarks
+from benchopt.cli.completion import complete_conda_envs
 from benchopt.utils.conda_env_cmd import list_conda_envs
 from benchopt.utils.conda_env_cmd import create_conda_env
 from benchopt.utils.shell_cmd import _run_shell_in_conda_env
@@ -26,7 +26,7 @@ main = click.Group(
     "conda environment, see the command `benchopt install`."
 )
 @click.argument('benchmark', type=click.Path(exists=True),
-                shell_complete=get_benchmark)
+                shell_complete=complete_benchmarks)
 @click.option('--objective-filter', '-p', 'objective_filters',
               metavar='<objective_filter>', multiple=True, type=str,
               help="Filter the objective based on its parametrized name. This "
@@ -36,20 +36,20 @@ main = click.Group(
               help="Include <solver_name> in the benchmark. By default, all "
               "solvers are included. When `-s` is used, only listed solvers"
               " are included. To include multiple solvers, "
-              "use multiple `-s` options.", shell_complete=get_solvers)
+              "use multiple `-s` options.", shell_complete=complete_solvers)
 @click.option('--force-solver', '-f', 'forced_solvers',
               metavar="<solver_name>", multiple=True, type=str,
               help="Force the re-run for <solver_name>. This "
               "avoids caching effect when adding a solver. "
               "To select multiple solvers, use multiple `-f` options.",
-              shell_complete=get_solvers)
+              shell_complete=complete_solvers)
 @click.option('--dataset', '-d', 'dataset_names',
               metavar="<dataset_name>", multiple=True, type=str,
               help="Run the benchmark on <dataset_name>. By default, all "
               "datasets are included. When `-d` is used, only listed datasets"
               " are included. Note that <dataset_name> can be a regexp. "
               "To include multiple datasets, use multiple `-d` options.",
-              shell_complete=get_datasets)
+              shell_complete=complete_datasets)
 @click.option('--max-runs', '-n',
               metavar="<int>", default=100, show_default=True, type=int,
               help='Maximal number of runs for each solver. This corresponds '
@@ -86,7 +86,7 @@ main = click.Group(
               "benchopt_<BENCHMARK>.")
 @click.option('--env-name', 'env_name',
               metavar="<env_name>", type=str, default='False',
-              shell_complete=get_conda_envs,
+              shell_complete=complete_conda_envs,
               help="Run the benchmark in the conda environment "
               "named <env_name>. To install the required solvers and "
               "datasets, see the command `benchopt install`.")
@@ -180,7 +180,7 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
     help="Install the requirements (solvers/datasets) for a benchmark."
 )
 @click.argument('benchmark', type=click.Path(exists=True),
-                shell_complete=get_benchmark)
+                shell_complete=complete_benchmarks)
 @click.option('--force', '-f',
               is_flag=True,
               help="If this flag is set, the reinstallation of "
@@ -194,7 +194,7 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
               "When `-s` is used, only listed estimators are included. "
               "To include multiple solvers, use multiple `-s` options."
               "To include all solvers, use -s 'all' option.",
-              shell_complete=get_solvers)
+              shell_complete=complete_solvers)
 @click.option('--dataset', '-d', 'dataset_names',
               metavar="<dataset_name>", multiple=True, type=str,
               help="Install the dataset <dataset_name>. By default, all "
@@ -204,7 +204,7 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
               "are included. Note that <dataset_name> can be a regexp. "
               "To include multiple datasets, use multiple `-d` options."
               "To include all datasets, use -d 'all' option.",
-              shell_complete=get_datasets)
+              shell_complete=complete_datasets)
 @click.option('--env', '-e', 'env_name',
               flag_value='True', type=str, default='False',
               help="Install all requirements in a dedicated "
@@ -213,7 +213,7 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
               "solver dependencies and datasets are installed in it.")
 @click.option('--env-name', 'env_name',
               metavar="<env_name>", type=str, default='False',
-              shell_complete=get_conda_envs,
+              shell_complete=complete_conda_envs,
               help="Install the benchmark requirements in the "
               "conda environment named <env_name>. If it does not exist, "
               "it will be created by this command.")
@@ -292,9 +292,9 @@ def install(benchmark, solver_names, dataset_names, force=False,
     context_settings=dict(ignore_unknown_options=True)
 )
 @click.argument('benchmark', type=click.Path(exists=True),
-                shell_complete=get_benchmark)
+                shell_complete=complete_benchmarks)
 @click.option('--env-name', type=str, default=None, metavar='NAME',
-              shell_complete=get_conda_envs,
+              shell_complete=complete_conda_envs,
               help='Environment to run the test in. If it is not provided '
               'a temporary one is created for the test.')
 @click.argument('pytest_args', nargs=-1, type=click.UNPROCESSED)

@@ -3,6 +3,7 @@ from pathlib import Path
 
 import click
 import pytest
+from click.shell_completion import ShellComplete
 
 from benchopt.plotting import PLOT_KINDS
 from benchopt.utils.stream_redirection import SuppressStd
@@ -20,6 +21,42 @@ from benchopt.cli.main import run
 from benchopt.cli.main import install
 from benchopt.cli.process_results import plot
 from benchopt.cli.helpers import check_install
+
+
+BENCHMARK_COMPLETION_CASES = [
+    (str(DUMMY_BENCHMARK_PATH.parent), 1, str(DUMMY_BENCHMARK_PATH)),
+    (str(DUMMY_BENCHMARK_PATH.parent)[:-2], 1, str(DUMMY_BENCHMARK_PATH)),
+    (str(DUMMY_BENCHMARK_PATH)[:-2], 1, str(DUMMY_BENCHMARK_PATH))
+]
+SOLVER_COMPLETION_CASES = [
+    ('', 7, ['cd', 'julia-pgd', 'python-pgd', 'python-pgd-with-cb', 'r-pgd',
+             'sklearn', 'test-solver']),
+    ('sk', 1, 'sklearn'),
+    ('pgd', 4, ['julia-pgd', 'python-pgd', 'python-pgd-with-cb', 'r-pgd'])
+]
+DATASET_COMPLETION_CASES = [
+    ('', 3, ['leukemia', 'simulated', 'test-dataset']),
+    ('simu', 1, 'simulated'),
+    ('lated', 1, 'simulated'),
+]
+
+
+def _get_completion(cmd, args, incomplete):
+    complete = ShellComplete(cmd, {}, '', '')
+    proposals = complete.get_completions(args, incomplete)
+    return [c.value for c in proposals]
+
+
+def _test_shell_completion(cmd, args, test_cases):
+    for incomplete, n_res, expected in test_cases:
+        proposals = _get_completion(cmd, args, incomplete)
+        assert len(proposals) == n_res, (
+            f"Expected {n_res} completion proposal, got '{proposals}'"
+        )
+        if n_res == 1:
+            assert proposals[0] == expected, proposals
+        elif expected is not None:
+            assert set(proposals) == set(expected), proposals
 
 
 class TestCheckInstallCmd:
@@ -139,6 +176,20 @@ class TestRunCmd:
         out.check_output(r'Python-PGD\[step_size=1\]:',
                          repetition=2*n_rep+1)
 
+    def test_shell_complete(self):
+        # Completion for benchmark name
+        _test_shell_completion(run, [], BENCHMARK_COMPLETION_CASES)
+
+        # Completion for solvers
+        _test_shell_completion(
+            run, [str(DUMMY_BENCHMARK_PATH), '-s'], SOLVER_COMPLETION_CASES
+        )
+
+        # Completion for datasets
+        _test_shell_completion(
+            run, [str(DUMMY_BENCHMARK_PATH), '-d'], DATASET_COMPLETION_CASES
+        )
+
 
 class TestInstallCmd:
 
@@ -192,6 +243,20 @@ class TestInstallCmd:
             f"already available in '{test_env_name}'\n", repetition=2
         )
 
+    def test_shell_complete(self):
+        # Completion for benchmark name
+        _test_shell_completion(install, [], BENCHMARK_COMPLETION_CASES)
+
+        # Completion for solvers
+        _test_shell_completion(
+            run, [str(DUMMY_BENCHMARK_PATH), '-s'], SOLVER_COMPLETION_CASES
+        )
+
+        # Completion for datasets
+        _test_shell_completion(
+            run, [str(DUMMY_BENCHMARK_PATH), '-d'], DATASET_COMPLETION_CASES
+        )
+
 
 class TestPlotCmd:
 
@@ -239,3 +304,17 @@ class TestPlotCmd:
         assert kind in saved_file
 
         Path(saved_file).unlink()
+
+    def test_shell_complete(self):
+        # Completion for benchmark name
+        _test_shell_completion(plot, [], BENCHMARK_COMPLETION_CASES)
+
+        # Completion for solvers
+        _test_shell_completion(
+            run, [str(DUMMY_BENCHMARK_PATH), '-s'], SOLVER_COMPLETION_CASES
+        )
+
+        # Completion for datasets
+        _test_shell_completion(
+            run, [str(DUMMY_BENCHMARK_PATH), '-d'], DATASET_COMPLETION_CASES
+        )
