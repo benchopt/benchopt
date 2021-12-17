@@ -1,13 +1,13 @@
 import time
 import math
-
+import warnings
 
 from .config import DEBUG
 from .utils.colorify import print_normalize
 
 
 # Possible stop strategies
-STOP_STRATEGIES = {'iteration', 'tolerance', 'callback'}
+STOPPING_STRATEGIES = {'iteration', 'tolerance', 'callback'}
 
 EPS = 1e-10
 PATIENCE = 3
@@ -61,8 +61,8 @@ class StoppingCriterion():
 
     def __init__(self, strategy=None, **kwargs):
 
-        assert strategy in STOP_STRATEGIES, (
-            f"strategy should be in {STOP_STRATEGIES}. Got '{strategy}'."
+        assert strategy in STOPPING_STRATEGIES, (
+            f"strategy should be in {STOPPING_STRATEGIES}. Got '{strategy}'."
         )
 
         self.kwargs = kwargs
@@ -84,7 +84,7 @@ class StoppingCriterion():
             Format string to display the progress of the solver.
         solver : BaseSolver
             The solver for which this stopping criterion is called. Used to get
-            overridden ``stop_strategy`` and ``get_next``.
+            overridden ``stopping_strategy`` and ``get_next``.
 
         Returns
         -------
@@ -103,12 +103,24 @@ class StoppingCriterion():
                 "to implement a new StoppingCriterion."
             )
 
-        # If stop_strategy is defined as a class parameter, use this strategy.
+        # If stopping_strategy is defined as a class parameter,
+        # use this strategy.
         strategy = self.strategy
         if hasattr(solver, 'stop_strategy'):
+            warnings.warn(
+                "'stop_strategy' attribute is deprecated \
+                 use 'stopping_strategy' instead",
+                DeprecationWarning
+            )
             strategy = solver.stop_strategy
-            assert strategy in STOP_STRATEGIES, (
-                f"stop_strategy should be in {STOP_STRATEGIES}. "
+            assert strategy in STOPPING_STRATEGIES, (
+                f"stop_strategy should be in {STOPPING_STRATEGIES}. "
+                f"Got '{strategy}'."
+            )
+        elif hasattr(solver, 'stopping_strategy'):
+            strategy = solver.stopping_strategy
+            assert strategy in STOPPING_STRATEGIES, (
+                f"stopping_strategy should be in {STOPPING_STRATEGIES}. "
                 f"Got '{strategy}'."
             )
 

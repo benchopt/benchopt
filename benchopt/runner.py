@@ -1,4 +1,5 @@
 import time
+import warnings
 from datetime import datetime
 
 from .utils import product_param
@@ -50,7 +51,7 @@ def run_one_resolution(objective, solver, meta, stop_val):
     stop_val : int | float
         Corresponds to stopping criterion, such as
         tol or max_iter for the solver. It depends
-        on the stop_strategy for the solver.
+        on the stopping_strategy for the solver.
 
     Returns
     -------
@@ -290,9 +291,23 @@ def run_one_solver(benchmark, objective, solver, meta, max_runs, n_repetitions,
                 progress_str=progress_str, solver=solver
             )
 
-            solver_strategy = getattr(
-                solver, 'stop_strategy', solver.stopping_criterion.strategy
-            )
+            if hasattr(solver, 'stop_strategy'):
+                warnings.warn(
+                    "'stop_strategy' attribute is deprecated \
+                     use 'stopping_strategy' instead",
+                    DeprecationWarning
+                )
+                solver_strategy = getattr(
+                    solver,
+                    'stop_strategy',
+                    solver.stopping_criterion.strategy
+                )
+            else:
+                solver_strategy = getattr(
+                    solver,
+                    'stopping_strategy',
+                    solver.stopping_criterion.strategy
+                )
 
             if solver_strategy == "callback":
                 callback = _Callback(
