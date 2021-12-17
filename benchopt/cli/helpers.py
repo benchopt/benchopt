@@ -17,7 +17,7 @@ from benchopt.config import get_global_config_file
 from benchopt.utils.dynamic_modules import _load_class_from_module
 from benchopt.utils.shell_cmd import _run_shell_in_conda_env
 from benchopt.utils.colorify import colorify
-from benchopt.utils.colorify import RED, GREEN
+from benchopt.utils.colorify import RED, GREEN, TICK, CROSS
 
 helpers = click.Group(
     name='Helpers',
@@ -111,17 +111,17 @@ def print_info(cls_name_list, cls_list, env_name=None, verbose=False):
             if env_name is not None:
                 # check for dependency avaulability
                 if cls.is_installed(env_name):
-                    print(colorify(u'\u2713', GREEN), end='', flush=True)
+                    print(colorify(TICK, GREEN), end='', flush=True)
                     print(colorify(f" available in env '{env_name}'", GREEN))
                 else:
-                    print(colorify(u'\u2717', RED), end='', flush=True)
+                    print(colorify(CROSS, RED), end='', flush=True)
                     print(colorify(f" not available in env '{env_name}'", RED))
     
             print("-" * 10)
 
 
 @helpers.command(
-    help="List information and requirements (solvers/datasets) "
+    help="List information (solvers/datasets) and corresponding requirements "
     "for a given benchmark.",
     epilog="To (re-)install the required solvers and datasets "
     "in a benchmark-dedicated conda environment or in your own "
@@ -137,7 +137,8 @@ def print_info(cls_name_list, cls_list, env_name=None, verbose=False):
               "no solver is included by default. "
               "When `-s` is used, only listed estimators are included. "
               "To include multiple solvers, use multiple `-s` options."
-              "To include all solvers, use -s 'all' option.",
+              "To include all solvers, use `-s 'all'` option. "
+              "Using a `-s` option will trigger the verbose output.",
               shell_complete=complete_solvers)
 @click.option('--dataset', '-d', 'dataset_names',
               metavar="<dataset_name>", multiple=True, type=str,
@@ -147,7 +148,8 @@ def print_info(cls_name_list, cls_list, env_name=None, verbose=False):
               "When `-d` is used, only listed datasets "
               "are included. Note that <dataset_name> can be a regexp. "
               "To include multiple datasets, use multiple `-d` options."
-              "To include all datasets, use -d 'all' option.",
+              "To include all datasets, use `-d 'all'` option.",
+              "Using a `-d` option will trigger the verbose output.",
               shell_complete=complete_datasets)
 @click.option('--env', '-e', 'env_name',
               flag_value='True', type=str, default='False',
