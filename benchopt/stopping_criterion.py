@@ -36,6 +36,7 @@ class StoppingCriterion():
     algorithm has converged. This function will be called internally as a hook
     in `should_stop_solver`, which also handles `timeout`, `max_runs` and
     plateau detection.
+
     Parameters
     ----------
     **kwargs : dict
@@ -67,6 +68,7 @@ class StoppingCriterion():
                             solver=None):
         """Copy the stopping criterion and set the parameters that depends on
         how benchopt runner is called.
+
         Parameters
         ----------
         max_runs : int
@@ -79,6 +81,7 @@ class StoppingCriterion():
         solver : BaseSolver
             The solver for which this stopping criterion is called. Used to get
             overridden ``stopping_strategy`` and ``get_next``.
+
         Returns
         -------
         stopping_criterion : StoppingCriterion
@@ -160,6 +163,7 @@ class StoppingCriterion():
         This base call checks for the timeout and the max number of runs.
         It also notifies the runner if the curve is too flat, to increase
         the number of points between 2 evaluations of the objective.
+
         Parameters
         ----------
         stop_val : int | float
@@ -168,6 +172,7 @@ class StoppingCriterion():
         cost_curve : list of dict
             List of dict containing the values associated to the objective at
             each evaluated points.
+
         Returns
         -------
         stop : bool
@@ -240,11 +245,13 @@ class StoppingCriterion():
 
     def check_convergence(self, cost_curve):
         """Check if the solver should be stopped based on the objective curve.
+
         Parameters
         ----------
         cost_curve : list of dict
             List of dict containing the values associated to the objective at
             each evaluated points.
+
         Returns
         -------
         stop : bool
@@ -283,6 +290,7 @@ class SufficientDescentCriterion(StoppingCriterion):
     The solver will be stopped once successive evaluations do not make enough
     progress. The number of successive evaluation and the definition of
     sufficient progress is controled by ``eps`` and ``patience``.
+
     Parameters
     ----------
     eps :  float (default: benchopt.stopping_criterion.EPS)
@@ -315,11 +323,13 @@ class SufficientDescentCriterion(StoppingCriterion):
 
     def check_convergence(self, cost_curve):
         """Check if the solver should be stopped based on the objective curve.
+
         Parameters
         ----------
         cost_curve : list of dict
             List of dict containing the values associated to the objective at
             each evaluated points.
+
         Returns
         -------
         stop : bool
@@ -352,6 +362,7 @@ class SufficientProgressCriterion(StoppingCriterion):
     The solver will be stopped once successive evaluations do not make enough
     progress. The number of successive evaluation and the definition of
     sufficient progress is controled by ``eps`` and ``patience``.
+
     Parameters
     ----------
     eps :  float (default: benchopt.stopping_criterion.EPS)
@@ -384,11 +395,13 @@ class SufficientProgressCriterion(StoppingCriterion):
 
     def check_convergence(self, cost_curve):
         """Check if the solver should be stopped based on the objective curve.
+
         Parameters
         ----------
         cost_curve : list of dict
             List of dict containing the values associated to the objective at
             each evaluated points.
+
         Returns
         -------
         stop : bool
