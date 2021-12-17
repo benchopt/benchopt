@@ -32,7 +32,7 @@ API
   `Alexandre Gramfort`_ (gh:`200`).
 
 - 'stop_strategy' attribute is replaced by 'stopping_strategy' to harmonize
-  with 'stopping_criterion'
+  with 'stopping_criterion', by `Benoît Malézieux`_ (gh:`274`).
 
 .. _changes_1_1:
 

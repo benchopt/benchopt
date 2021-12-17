@@ -1,5 +1,5 @@
 import time
-import warnings
+
 from datetime import datetime
 
 from .utils import product_param
@@ -291,23 +291,11 @@ def run_one_solver(benchmark, objective, solver, meta, max_runs, n_repetitions,
                 progress_str=progress_str, solver=solver
             )
 
-            if hasattr(solver, 'stop_strategy'):
-                warnings.warn(
-                    "'stop_strategy' attribute is deprecated \
-                     use 'stopping_strategy' instead",
-                    DeprecationWarning
-                )
-                solver_strategy = getattr(
-                    solver,
-                    'stop_strategy',
-                    solver.stopping_criterion.strategy
-                )
-            else:
-                solver_strategy = getattr(
-                    solver,
-                    'stopping_strategy',
-                    solver.stopping_criterion.strategy
-                )
+            solver_strategy = getattr(
+                solver,
+                'stopping_strategy_api',
+                solver.stopping_criterion.strategy
+            )
 
             if solver_strategy == "callback":
                 callback = _Callback(

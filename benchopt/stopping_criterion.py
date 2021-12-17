@@ -1,6 +1,5 @@
 import time
 import math
-import warnings
 
 from .config import DEBUG
 from .utils.colorify import print_normalize
@@ -105,24 +104,15 @@ class StoppingCriterion():
 
         # If stopping_strategy is defined as a class parameter,
         # use this strategy.
-        strategy = self.strategy
-        if hasattr(solver, 'stop_strategy'):
-            warnings.warn(
-                "'stop_strategy' attribute is deprecated \
-                 use 'stopping_strategy' instead",
-                DeprecationWarning
-            )
-            strategy = solver.stop_strategy
+
+        if solver.stopping_strategy_api is not None:
+            strategy = solver.stopping_strategy_api
             assert strategy in STOPPING_STRATEGIES, (
                 f"stop_strategy should be in {STOPPING_STRATEGIES}. "
                 f"Got '{strategy}'."
             )
-        elif hasattr(solver, 'stopping_strategy'):
-            strategy = solver.stopping_strategy
-            assert strategy in STOPPING_STRATEGIES, (
-                f"stopping_strategy should be in {STOPPING_STRATEGIES}. "
-                f"Got '{strategy}'."
-            )
+        else:
+            strategy = self.strategy
 
         # Create a new instance of the class
         stopping_criterion = self.__class__(

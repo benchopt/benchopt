@@ -1,5 +1,7 @@
 import tempfile
 import numbers
+import warnings
+
 from abc import ABC, abstractmethod
 
 from .stopping_criterion import SufficientProgressCriterion
@@ -47,6 +49,21 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
     stopping_criterion = SufficientProgressCriterion(
         strategy='iteration'
     )
+
+    @property
+    def stopping_strategy_api(self):
+        """ Change stop_strategy to stopping_strategy """
+        if hasattr(self, 'stop_strategy'):
+            warnings.warn(
+                "'stop_strategy' attribute is deprecated \
+                    use 'stopping_strategy' instead",
+                DeprecationWarning
+            )
+            return getattr(self, 'stop_strategy')
+        elif hasattr(self, 'stopping_strategy'):
+            return getattr(self, 'stopping_strategy')
+        else:
+            return None
 
     def _set_objective(self, objective):
         """Store the objective for hashing/pickling and check its compatibility
