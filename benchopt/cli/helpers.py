@@ -1,4 +1,3 @@
-import os
 import click
 import pprint
 from pathlib import Path
@@ -53,8 +52,8 @@ def print_info(cls_list, env_name=None):
     cls_list : list
         List of objects (solvers or datasets) to print info from.
     env_name : str | None
-        name of environment where to check for object availability.
-        If None or 'False', no check is made.
+        Name of conda environment where to check for object availability.
+        If None or False, no check is made.
     """
 
     print("-" * 10)
@@ -68,18 +67,18 @@ def print_info(cls_list, env_name=None):
         if hasattr(cls, 'parameters') and cls.parameters:
             print("> parameters:")
             for param, value in cls.parameters.items():
-                values = '\', \''.join(map(str, value))
-                print(f"    '{param}': '{values}'")
+                values = ', '.join(map(str, value))
+                print(f"    {param}: {values}")
         # install command
         if hasattr(cls, 'requirements') and cls.requirements:
             print("> requirements:")
             packages = cls.requirements
-            pip_packages = [pkg[4:] for pkg in packages \
+            pip_packages = [pkg[4:] for pkg in packages
                                 if pkg.startswith('pip:')]
-            conda_packages = [pkg for pkg in packages \
+            conda_packages = [pkg for pkg in packages
                                 if not pkg.startswith('pip:')]
             if len(conda_packages) > 0:
-                print(f"    conda install -c conda-forge " + \
+                print("    conda install -c conda-forge " +
                         f"{' '.join(conda_packages)}")
             if len(pip_packages) > 0:
                 print(f"    pip install {' '.join(pip_packages)}")
@@ -118,7 +117,7 @@ def print_info(cls_list, env_name=None):
               help="Additional checks for requirement availability in "
               "the conda environment named <env_name>.")
 def info(benchmark, env_name):
-    
+
     # benchmark
     benchmark = Benchmark(benchmark)
     print(f"Info regarding '{benchmark.name}'")
@@ -126,10 +125,10 @@ def info(benchmark, env_name):
     # get solvers and datasets in the benchmark
     solvers = benchmark.get_solvers()
     datasets = benchmark.get_datasets()
-    
+
     # Get a list of all conda envs
     default_conda_env, conda_envs = list_conda_envs()
-    
+
     # Check conda env (if relevant)
 
     # If env_name is False (default), check availability
@@ -150,7 +149,7 @@ def info(benchmark, env_name):
             # (to avoid empty name like `--env-name ""`)
             if len(env_name) == 0:
                 raise RuntimeError("Empty environment name.")
-            if not env_name in conda_envs:
+            if env_name not in conda_envs:
                 raise RuntimeError(
                     f"{env_name} is not an existing conda environment."
                 )
