@@ -220,26 +220,32 @@ def info(benchmark, solver_names, dataset_names, env_name='False',
         print(msg)
         env_name = None
     else:
-        msg = (
-            "Checking benchamrk requirement availability "
-            f"in env '{env_name}'."
-        )
-        print(msg)
+        # enable verbosity if any solver/dataset are specified in input
+        if dataset_names or solver_names:
+            verbose = True
+        
+        # check benchmark
+        if verbose:
+            msg = (
+                "Checking benchamrk requirement availability "
+                f"in env '{env_name}'."
+            )
+            print(msg)
 
-    ## print information
-    print("-" * 10)
-
-    if not dataset_names and not solver_names:
-        dataset_names = ['all']
-        solver_names = ['all']
-
-    if dataset_names:
-        print("# DATASETS", flush=True)
-        print_info(dataset_names, all_datasets, env_name, verbose)
-
-    if solver_names:
-        print("# SOLVERS", flush=True)
-        print_info(solver_names, all_solvers, env_name, verbose)
+        ## print information
+        print("-" * 10)
+    
+        if not dataset_names and not solver_names:
+            dataset_names = ['all']
+            solver_names = ['all']
+    
+        if dataset_names:
+            print("# DATASETS", flush=True)
+            print_info(dataset_names, all_datasets, env_name, verbose)
+    
+        if solver_names:
+            print("# SOLVERS", flush=True)
+            print_info(solver_names, all_solvers, env_name, verbose)
 
 
 @helpers.command()
