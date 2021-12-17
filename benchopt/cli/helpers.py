@@ -46,7 +46,7 @@ def clean(benchmark, token=None, filename=None):
     rm_folder(cache_folder)
 
 
-def print_info(cls_name_list, cls_list, env_name=None):
+def print_info(cls_name_list, cls_list, env_name=None, verbose=False):
     """Print information for each element of input listed
 
     Parameters
@@ -58,8 +58,11 @@ def print_info(cls_name_list, cls_list, env_name=None):
     env_name : str | None
         Name of conda environment where to check for object availability.
         If None or False, no check is made.
+    verbose: bool
+        If True, list object (solver or dataset) full descriptions (including
+        name, parameters, dependencies and availability).
+        If False, only list object (solver or dataset) names.
     """
-    
     
     ## select objects to print info from
     include_cls = []
@@ -69,46 +72,52 @@ def print_info(cls_name_list, cls_list, env_name=None):
         include_cls = [
             item for item in cls_list if item.name in cls_name_list
         ]
-
-    print("-" * 10)
-
-    for cls in include_cls:
-        print(f"## {cls.name}")
-        # doc
-        if hasattr(cls, '__doc__') and cls.__doc__:
-            print(f"> doc: {cls.__doc__}")
-        # parameters
-        if hasattr(cls, 'parameters') and cls.parameters:
-            print("> parameters:")
-            for param, value in cls.parameters.items():
-                values = ', '.join(map(str, value))
-                print(f"    {param}: {values}")
-        # install command
-        if hasattr(cls, 'requirements') and cls.requirements:
-            print("> requirements:")
-            packages = cls.requirements
-            pip_packages = [pkg[4:] for pkg in packages
-                                if pkg.startswith('pip:')]
-            conda_packages = [pkg for pkg in packages
-                                if not pkg.startswith('pip:')]
-            if len(conda_packages) > 0:
-                print("    conda install -c conda-forge " +
-                        f"{' '.join(conda_packages)}")
-            if len(pip_packages) > 0:
-                print(f"    pip install {' '.join(pip_packages)}")
-        else:
-            print("> no dependencies")
-        # availability in env (if relevant)
-        if env_name is not None:
-            # check for dependency avaulability
-            if cls.is_installed(env_name):
-                print(colorify(u'\u2713', GREEN), end='', flush=True)
-                print(colorify(f" available in env '{env_name}'", GREEN))
-            else:
-                print(colorify(u'\u2717', RED), end='', flush=True)
-                print(colorify(f" not available in env '{env_name}'", RED))
-
+    
+    if not verbose:
+        # short output
+        name = [cls.name for cls in include_cls]
+        print(f"{', '.join(map(str, name))}")
         print("-" * 10)
+    else:
+        # long output
+        print("-" * 10)
+        for cls in include_cls:
+            print(f"## {cls.name}")
+            # doc
+            if hasattr(cls, '__doc__') and cls.__doc__:
+                print(f"> doc: {cls.__doc__}")
+            # parameters
+            if hasattr(cls, 'parameters') and cls.parameters:
+                print("> parameters:")
+                for param, value in cls.parameters.items():
+                    values = ', '.join(map(str, value))
+                    print(f"    {param}: {values}")
+            # install command
+            if hasattr(cls, 'requirements') and cls.requirements:
+                print("> requirements:")
+                packages = cls.requirements
+                pip_packages = [pkg[4:] for pkg in packages
+                                    if pkg.startswith('pip:')]
+                conda_packages = [pkg for pkg in packages
+                                    if not pkg.startswith('pip:')]
+                if len(conda_packages) > 0:
+                    print("    conda install -c conda-forge " +
+                            f"{' '.join(conda_packages)}")
+                if len(pip_packages) > 0:
+                    print(f"    pip install {' '.join(pip_packages)}")
+            else:
+                print("> no dependencies")
+            # availability in env (if relevant)
+            if env_name is not None:
+                # check for dependency avaulability
+                if cls.is_installed(env_name):
+                    print(colorify(u'\u2713', GREEN), end='', flush=True)
+                    print(colorify(f" available in env '{env_name}'", GREEN))
+                else:
+                    print(colorify(u'\u2717', RED), end='', flush=True)
+                    print(colorify(f" not available in env '{env_name}'", RED))
+    
+            print("-" * 10)
 
 
 @helpers.command(
@@ -150,7 +159,12 @@ def print_info(cls_name_list, cls_list, env_name=None):
               shell_complete=complete_conda_envs,
               help="Additional checks for requirement availability in "
               "the conda environment named <env_name>.")
-def info(benchmark, solver_names, dataset_names, env_name='False'):
+@click.option('--verbose', '-v',
+               is_flag=True,
+               help="If enabled, list solver/dataset "
+               "parameters, dependencies and availability.")
+def info(benchmark, solver_names, dataset_names, env_name='False',
+         verbose=False):
 
     # benchmark
     benchmark = Benchmark(benchmark)
@@ -217,11 +231,11 @@ def info(benchmark, solver_names, dataset_names, env_name='False'):
 
     if dataset_names:
         print("# DATASETS", flush=True)
-        print_info(dataset_names, all_datasets, env_name)
+        print_info(dataset_names, all_datasets, env_name, verbose)
 
     if solver_names:
         print("# SOLVERS", flush=True)
-        print_info(solver_names, all_solvers, env_name)
+        print_info(solver_names, all_solvers, env_name, verbose)
 
 
 @helpers.command()
