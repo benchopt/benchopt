@@ -105,8 +105,8 @@ class StoppingCriterion():
         # If stopping_strategy is defined as a class parameter,
         # use this strategy.
 
-        if solver.stopping_strategy_api is not None:
-            strategy = solver.stopping_strategy_api
+        if solver.solver_strategy is not None:
+            strategy = solver.solver_strategy
             assert strategy in STOPPING_STRATEGIES, (
                 f"stop_strategy should be in {STOPPING_STRATEGIES}. "
                 f"Got '{strategy}'."

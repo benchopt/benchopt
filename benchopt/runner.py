@@ -293,7 +293,7 @@ def run_one_solver(benchmark, objective, solver, meta, max_runs, n_repetitions,
 
             solver_strategy = getattr(
                 solver,
-                'stopping_strategy_api',
+                'solver_strategy',
                 solver.stopping_criterion.strategy
             )
 

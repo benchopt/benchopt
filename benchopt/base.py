@@ -51,7 +51,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
     )
 
     @property
-    def stopping_strategy_api(self):
+    def solver_strategy(self):
         """ Change stop_strategy to stopping_strategy """
         if hasattr(self, 'stop_strategy'):
             warnings.warn(
