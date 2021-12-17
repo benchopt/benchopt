@@ -1,4 +1,5 @@
 import time
+import warnings
 from datetime import datetime
 
 from .utils import product_param
@@ -37,7 +38,6 @@ def cache(func, benchmark, force=False, ignore=None):
 ##################################
 def run_one_resolution(objective, solver, meta, stop_val):
     """Run one resolution of the solver.
-
     Parameters
     ----------
     objective : instance of BaseObjective
@@ -50,8 +50,7 @@ def run_one_resolution(objective, solver, meta, stop_val):
     stop_val : int | float
         Corresponds to stopping criterion, such as
         tol or max_iter for the solver. It depends
-        on the stop_strategy for the solver.
-
+        on the stopping_strategy for the solver.
     Returns
     -------
     cost : dict
@@ -82,7 +81,6 @@ def run_one_resolution(objective, solver, meta, stop_val):
 def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
                    force=False):
     """Run all repetitions of the solver for a value of stopping criterion.
-
     Parameters
     ----------
     benchmark : benchopt.Benchmark object
@@ -99,7 +97,6 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
     force : bool
         If force is set to True, ignore the cache and run the computations
         for the solver anyway. Else, use the cache if available.
-
     Returns
     -------
     curve : list of Cost
@@ -134,7 +131,6 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
 
 class _Callback:
     """Callback class to monitor convergence.
-
     Parameters
     ----------
     objective : instance of BaseObjective
@@ -144,7 +140,6 @@ class _Callback:
         Contains objective and data names, problem dimension, etc.
     stopping_criterion : StoppingCriterion
         Object to check if we need to stop a solver.
-
     Attributes
     ----------
     objective : instance of BaseObjective
@@ -217,7 +212,6 @@ class _Callback:
 
     def get_results(self):
         """Get the results stored by the callback
-
         Returns
         -------
         curve : list
@@ -232,7 +226,6 @@ def run_one_solver(benchmark, objective, solver, meta, max_runs, n_repetitions,
                    timeout=None, tag=None, show_progress=True, force=False,
                    pdb=False):
     """Run all repetitions of the solver for a value of stopping criterion.
-
     Parameters
     ----------
     benchmark : benchopt.Benchmark object
@@ -260,7 +253,6 @@ def run_one_solver(benchmark, objective, solver, meta, max_runs, n_repetitions,
         for the solver anyway. Else, use the cache if available.
     pdb : bool
         If pdb is set to True, open a debugger on error.
-
     Returns
     -------
     curve : list of Cost
@@ -290,9 +282,23 @@ def run_one_solver(benchmark, objective, solver, meta, max_runs, n_repetitions,
                 progress_str=progress_str, solver=solver
             )
 
-            solver_strategy = getattr(
-                solver, 'stop_strategy', solver.stopping_criterion.strategy
-            )
+            if hasattr(solver, 'stop_strategy'):
+                warnings.warn(
+                    "'stop_strategy' attribute is deprecated \
+                     use 'stopping_strategy' instead",
+                    DeprecationWarning
+                )
+                solver_strategy = getattr(
+                    solver,
+                    'stop_strategy',
+                    solver.stopping_criterion.strategy
+                )
+            else:
+                solver_strategy = getattr(
+                    solver,
+                    'stopping_strategy',
+                    solver.stopping_criterion.strategy
+                )
 
             if solver_strategy == "callback":
                 callback = _Callback(
@@ -328,12 +334,11 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                   max_runs=10, n_repetitions=1, timeout=100,
                   plot_result=True, html=True, show_progress=True, pdb=False):
     """Run full benchmark.
-
     Parameters
     ----------
     benchmark : benchopt.Benchmark object
         Object to represent the benchmark.
-    solver_names : list | None
+    solver_names : list | None
         List of solvers to include in the benchmark. If None
         all solvers available are run.
     forced_solvers : list | None
@@ -362,7 +367,6 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
         If show_progress is set to True, display the progress of the benchmark.
     pdb : bool
         It pdb is set to True, open a debugger on error.
-
     Returns
     -------
     df : instance of pandas.DataFrame
