@@ -62,19 +62,27 @@ def print_info(cls_list, env_name=None):
     for cls in cls_list:
         print(f"## {cls.name}")
         # doc
-        if hasattr(cls, '__doc__') and cls.__doc__ is not None and \
-                len(cls.__doc__) > 0:
+        if hasattr(cls, '__doc__') and cls.__doc__:
             print(f"> doc: {cls.__doc__}")
         # parameters
         if hasattr(cls, 'parameters') and cls.parameters:
             print("> parameters:")
             for param, value in cls.parameters.items():
                 values = '\', \''.join(map(str, value))
-                print(f"    - '{param}': '{values}'")
+                print(f"    '{param}': '{values}'")
         # install command
-        if hasattr(cls, 'install_cmd') and cls.install_cmd and \
-            hasattr(cls, 'requirements') and cls.requirements:
-            print(f"> dependencies: {cls.install_cmd} install {' '.join(cls.requirements)}")
+        if hasattr(cls, 'requirements') and cls.requirements:
+            print("> requirements:")
+            packages = cls.requirements
+            pip_packages = [pkg[4:] for pkg in packages \
+                                if pkg.startswith('pip:')]
+            conda_packages = [pkg for pkg in packages \
+                                if not pkg.startswith('pip:')]
+            if len(conda_packages) > 0:
+                print(f"    conda install -c conda-forge " + \
+                        f"{' '.join(conda_packages)}")
+            if len(pip_packages) > 0:
+                print(f"    pip install {' '.join(pip_packages)}")
         else:
             print("> no dependencies")
         # availability in env (if relevant)
@@ -84,7 +92,7 @@ def print_info(cls_list, env_name=None):
                 print(colorify(u'\u2713', GREEN), end='', flush=True)
                 print(colorify(f" available in env '{env_name}'", GREEN))
             else:
-                print(colorify(u'\u274c', RED), end='', flush=True)
+                print(colorify(u'\u2717', RED), end='', flush=True)
                 print(colorify(f" not available in env '{env_name}'", RED))
 
         print("-" * 10)
@@ -162,7 +170,6 @@ def info(benchmark, env_name):
         msg = "Checking benchamrk requirement availability " + \
             f"in env '{env_name}'."
         print(msg)
-        
 
     # print information
     print("-" * 10)
