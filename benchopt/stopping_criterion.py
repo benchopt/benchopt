@@ -24,14 +24,18 @@ RHO_INC = 1.2  # multiplicative update if rho is too small
 
 class StoppingCriterion():
     """Class to check if we need to stop an algorithm.
+
     This base class will check for the timeout and the max_run.
     It should be sub-classed to check for the convergence of the algorithm.
+
     This class also handles the detection of diverging solvers and prints the
     progress if given a ``prgress_str``.
+
     Instances of this class should only be created with `cls._get_instance`,
     to make sure the class holds the proper attirbutes. This factory mechanism
     allow for easy subclassing without requesting to call the `super.__init___`
     in the subclass.
+
     Similarly, sub-classes should implement `check-convergence` to check if the
     algorithm has converged. This function will be called internally as a hook
     in `should_stop_solver`, which also handles `timeout`, `max_runs` and
@@ -160,6 +164,7 @@ class StoppingCriterion():
 
     def should_stop_solver(self, stop_val, cost_curve):
         """Base call to check if we should stop running a solver.
+
         This base call checks for the timeout and the max number of runs.
         It also notifies the runner if the curve is too flat, to increase
         the number of points between 2 evaluations of the objective.
@@ -287,6 +292,7 @@ class StoppingCriterion():
 
 class SufficientDescentCriterion(StoppingCriterion):
     """Stopping criterion based on sufficient descent.
+
     The solver will be stopped once successive evaluations do not make enough
     progress. The number of successive evaluation and the definition of
     sufficient progress is controled by ``eps`` and ``patience``.
@@ -359,6 +365,7 @@ class SufficientDescentCriterion(StoppingCriterion):
 
 class SufficientProgressCriterion(StoppingCriterion):
     """Stopping criterion based on sufficient progress.
+
     The solver will be stopped once successive evaluations do not make enough
     progress. The number of successive evaluation and the definition of
     sufficient progress is controled by ``eps`` and ``patience``.
