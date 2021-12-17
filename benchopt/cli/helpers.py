@@ -10,6 +10,8 @@ from benchopt.utils.files import rm_folder
 from benchopt.utils.sys_info import get_sys_info
 from benchopt.cli.completion import complete_benchmarks
 from benchopt.cli.completion import complete_conda_envs
+from benchopt.cli.completion import complete_datasets
+from benchopt.cli.completion import complete_solvers
 from benchopt.utils.conda_env_cmd import list_conda_envs
 from benchopt.config import get_global_config_file
 from benchopt.utils.dynamic_modules import _load_class_from_module
@@ -44,21 +46,33 @@ def clean(benchmark, token=None, filename=None):
     rm_folder(cache_folder)
 
 
-def print_info(cls_list, env_name=None):
+def print_info(cls_name_list, cls_list, env_name=None):
     """Print information for each element of input listed
 
     Parameters
     ----------
+    cls_name_list : list
+        List of object names (solvers or datasets) to be printed.
     cls_list : list
-        List of objects (solvers or datasets) to print info from.
+        List of all objects (solvers or datasets) to print info from.
     env_name : str | None
         Name of conda environment where to check for object availability.
         If None or False, no check is made.
     """
+    
+    
+    ## select objects to print info from
+    include_cls = []
+    if 'all' in cls_name_list:
+        include_cls = cls_list
+    else:
+        include_cls = [
+            item for item in cls_list if item.name in cls_name_list
+        ]
 
     print("-" * 10)
 
-    for cls in cls_list:
+    for cls in include_cls:
         print(f"## {cls.name}")
         # doc
         if hasattr(cls, '__doc__') and cls.__doc__:
@@ -106,6 +120,26 @@ def print_info(cls_list, env_name=None):
 )
 @click.argument('benchmark', type=click.Path(exists=True),
                 autocompletion=complete_benchmarks)
+@click.option('--solver', '-s', 'solver_names',
+              metavar="<solver_name>", multiple=True, type=str,
+              help="Include <solver_name> in the installation. "
+              "By default, all solvers are included except "
+              "when -d flag is used. If -d flag is used, then "
+              "no solver is included by default. "
+              "When `-s` is used, only listed estimators are included. "
+              "To include multiple solvers, use multiple `-s` options."
+              "To include all solvers, use -s 'all' option.",
+              shell_complete=complete_solvers)
+@click.option('--dataset', '-d', 'dataset_names',
+              metavar="<dataset_name>", multiple=True, type=str,
+              help="Install the dataset <dataset_name>. By default, all "
+              "datasets are included, except when -s flag is used. "
+              "If -s flag is used, then no dataset is included. "
+              "When `-d` is used, only listed datasets "
+              "are included. Note that <dataset_name> can be a regexp. "
+              "To include multiple datasets, use multiple `-d` options."
+              "To include all datasets, use -d 'all' option.",
+              shell_complete=complete_datasets)
 @click.option('--env', '-e', 'env_name',
               flag_value='True', type=str, default='False',
               help="Additional checks for requirement availability in "
@@ -116,15 +150,19 @@ def print_info(cls_list, env_name=None):
               shell_complete=complete_conda_envs,
               help="Additional checks for requirement availability in "
               "the conda environment named <env_name>.")
-def info(benchmark, env_name):
+def info(benchmark, solver_names, dataset_names, env_name='False'):
 
     # benchmark
     benchmark = Benchmark(benchmark)
     print(f"Info regarding '{benchmark.name}'")
 
+    # validate solvers and datasets
+    benchmark.validate_dataset_patterns(dataset_names)
+    benchmark.validate_solver_patterns(solver_names)
+
     # get solvers and datasets in the benchmark
-    solvers = benchmark.get_solvers()
-    datasets = benchmark.get_datasets()
+    all_solvers = benchmark.get_solvers()
+    all_datasets = benchmark.get_datasets()
 
     # Get a list of all conda envs
     default_conda_env, conda_envs = list_conda_envs()
@@ -170,13 +208,20 @@ def info(benchmark, env_name):
             f"in env '{env_name}'."
         print(msg)
 
-    # print information
+    ## print information
     print("-" * 10)
-    print("# DATASETS", flush=True)
-    print_info(datasets, env_name)
 
-    print("# SOLVERS", flush=True)
-    print_info(solvers, env_name)
+    if not dataset_names and not solver_names:
+        dataset_names = ['all']
+        solver_names = ['all']
+
+    if dataset_names:
+        print("# DATASETS", flush=True)
+        print_info(dataset_names, all_datasets, env_name)
+
+    if solver_names:
+        print("# SOLVERS", flush=True)
+        print_info(solver_names, all_solvers, env_name)
 
 
 @helpers.command()
