@@ -102,6 +102,11 @@ CLI
 - Add ``benchopt install`` command to install benchmark requirements
   (not done in ``benchopt run`` anymore) by `Ghislain Durif`_ (:gh:`135`).
 
+- Add ``benchopt info`` command to print information about a benchmark
+  (including solvers, datasets, dependencies, etc.)
+  by `Ghislain Durif`_ (:gh:`140`).
+
+
 BUG
 ~~~
 

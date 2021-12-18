@@ -5,6 +5,9 @@ import shutil
 MIN_LINE_LENGTH = 20
 BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE = range(30, 38)
 
+CROSS = u'\u2717'
+TICK = u'\u2713'
+
 
 def colorify(message, color=BLUE):
     """Change color of the standard output.
