@@ -291,11 +291,7 @@ def run_one_solver(benchmark, objective, solver, meta, max_runs, n_repetitions,
                 progress_str=progress_str, solver=solver
             )
 
-            solver_strategy = getattr(
-                solver,
-                'solver_strategy',
-                solver.stopping_criterion.strategy
-            )
+            solver_strategy = solver._solver_strategy
 
             if solver_strategy == "callback":
                 callback = _Callback(

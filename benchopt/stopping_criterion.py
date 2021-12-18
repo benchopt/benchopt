@@ -102,17 +102,12 @@ class StoppingCriterion():
                 "to implement a new StoppingCriterion."
             )
 
-        # If stopping_strategy is defined as a class parameter,
-        # use this strategy.
-
-        if solver.solver_strategy is not None:
-            strategy = solver.solver_strategy
-            assert strategy in STOPPING_STRATEGIES, (
-                f"stop_strategy should be in {STOPPING_STRATEGIES}. "
-                f"Got '{strategy}'."
-            )
-        else:
-            strategy = self.strategy
+        # Get strategy from solver
+        strategy = solver._solver_strategy
+        assert strategy in STOPPING_STRATEGIES, (
+            f"stop_strategy should be in {STOPPING_STRATEGIES}. "
+            f"Got '{strategy}'."
+        )
 
         # Create a new instance of the class
         stopping_criterion = self.__class__(

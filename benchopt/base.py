@@ -51,7 +51,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
     )
 
     @property
-    def solver_strategy(self):
+    def _solver_strategy(self):
         """ Change stop_strategy to stopping_strategy """
         if hasattr(self, 'stop_strategy'):
             warnings.warn(
@@ -59,11 +59,11 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
                     use 'stopping_strategy' instead",
                 DeprecationWarning
             )
-            return getattr(self, 'stop_strategy')
+            return self.stop_strategy
         elif hasattr(self, 'stopping_strategy'):
-            return getattr(self, 'stopping_strategy')
+            return self.stopping_strategy
         else:
-            return None
+            return self.stopping_criterion.strategy
 
     def _set_objective(self, objective):
         """Store the objective for hashing/pickling and check its compatibility
