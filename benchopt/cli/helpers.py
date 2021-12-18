@@ -84,8 +84,8 @@ def check_conda_env(env_name, benchmark_name=None):
             else:
                 raise RuntimeError("No conda environment is activated.")
         else:
-            # If env_name is 'True', the flag `--env` has been used. 
-            # Check the conda env dedicated to the benchmark. 
+            # If env_name is 'True', the flag `--env` has been used.
+            # Check the conda env dedicated to the benchmark.
             # Else, use the <env_name> value.
             if env_name == 'True':
                 env_name = f"benchopt_{benchmark_name}"
@@ -119,8 +119,8 @@ def print_info(cls_name_list, cls_list, env_name=None, verbose=False):
         name, parameters, dependencies and availability).
         If False, only list object (solver or dataset) names.
     """
-    
-    ## select objects to print info from
+
+    # select objects to print info from
     include_cls = []
     if 'all' in cls_name_list:
         include_cls = cls_list
@@ -128,7 +128,6 @@ def print_info(cls_name_list, cls_list, env_name=None, verbose=False):
         include_cls = [
             item for item in cls_list if item.name in cls_name_list
         ]
-    
     if not verbose:
         # short output
         name = [cls.name for cls in include_cls]
@@ -153,12 +152,12 @@ def print_info(cls_name_list, cls_list, env_name=None, verbose=False):
                 print("> requirements:")
                 packages = cls.requirements
                 pip_packages = [pkg[4:] for pkg in packages
-                                    if pkg.startswith('pip:')]
+                                if pkg.startswith('pip:')]
                 conda_packages = [pkg for pkg in packages
-                                    if not pkg.startswith('pip:')]
+                                  if not pkg.startswith('pip:')]
                 if len(conda_packages) > 0:
-                    print("    conda install -c conda-forge " +
-                            f"{' '.join(conda_packages)}")
+                    print("    conda install -c conda-forge "
+                          f"{' '.join(conda_packages)}")
                 if len(pip_packages) > 0:
                     print(f"    pip install {' '.join(pip_packages)}")
             else:
@@ -218,9 +217,9 @@ def print_info(cls_name_list, cls_list, env_name=None, verbose=False):
               help="Additional checks for requirement availability in "
               "the conda environment named <env_name>.")
 @click.option('--verbose', '-v',
-               is_flag=True,
-               help="If enabled, list solver/dataset "
-               "parameters, dependencies and availability.")
+              is_flag=True,
+              help="If enabled, list solver/dataset "
+              "parameters, dependencies and availability.")
 def info(benchmark, solver_names, dataset_names, env_name='False',
          verbose=False):
 
@@ -244,7 +243,6 @@ def info(benchmark, solver_names, dataset_names, env_name='False',
     if verbose:
         # Check conda env name
         env_name = check_conda_env(env_name, benchmark.name)
-        
         # check conda environment validity
         check_benchopt = _run_shell_in_conda_env(
             "benchopt --version", env_name=env_name, capture_stdout=True
@@ -267,12 +265,11 @@ def info(benchmark, solver_names, dataset_names, env_name='False',
                 "Note: you can install all dependencies from a benchmark "
                 "with the command `benchopt install`."
             )
-    
     # enable verbosity if any solver/dataset are specified in input
     if dataset_names or solver_names:
         verbose = True
 
-    ## print information
+    # print information
     print("-" * 10)
 
     if not dataset_names and not solver_names:
