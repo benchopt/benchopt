@@ -35,3 +35,7 @@ class Solver(BaseSolver):
 
     def get_result(self):
         return self.w
+
+    @staticmethod
+    def get_next(stop_val):
+        return stop_val + 1
