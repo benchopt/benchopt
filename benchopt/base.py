@@ -1,5 +1,7 @@
 import tempfile
 import numbers
+import warnings
+
 from abc import ABC, abstractmethod
 
 from .stopping_criterion import SufficientProgressCriterion
@@ -33,7 +35,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
       disk. This utility is necessary to reduce the impact of loading the
       result from the disk in the benchmark.
 
-    Note that two ``stop_strategy`` can be used to construct the benchmark
+    Note that two ``stopping_strategy`` can be used to construct the benchmark
     curve:
 
     - ``'iteration'``: call the run method with max_iter number increasing
@@ -47,6 +49,21 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
     stopping_criterion = SufficientProgressCriterion(
         strategy='iteration'
     )
+
+    @property
+    def _solver_strategy(self):
+        """ Change stop_strategy to stopping_strategy """
+        if hasattr(self, 'stop_strategy'):
+            warnings.warn(
+                "'stop_strategy' attribute is deprecated, "
+                "use 'stopping_strategy' instead",
+                DeprecationWarning
+            )
+            return self.stop_strategy
+        elif hasattr(self, 'stopping_strategy'):
+            return self.stopping_strategy
+        else:
+            return self.stopping_criterion.strategy
 
     def _set_objective(self, objective):
         """Store the objective for hashing/pickling and check its compatibility
@@ -94,8 +111,8 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         This function should not return the parameters which will be
         retrieved by a subsequent call to get_result.
 
-        If `stop_strategy` is set to `"callback"`, then `run` should call the
-        callback at each iteration. The callback will compute the time,
+        If `stopping_strategy` is set to `"callback"`, then `run` should call
+        the callback at each iteration. The callback will compute the time,
         the objective function and store relevant quantities for BenchOpt.
         Else, the `stop_val` parameter should be specified.
 

@@ -1,4 +1,5 @@
 import time
+
 from datetime import datetime
 
 from .utils import product_param
@@ -50,7 +51,7 @@ def run_one_resolution(objective, solver, meta, stop_val):
     stop_val : int | float
         Corresponds to stopping criterion, such as
         tol or max_iter for the solver. It depends
-        on the stop_strategy for the solver.
+        on the stopping_strategy for the solver.
 
     Returns
     -------
@@ -290,9 +291,7 @@ def run_one_solver(benchmark, objective, solver, meta, max_runs, n_repetitions,
                 progress_str=progress_str, solver=solver
             )
 
-            solver_strategy = getattr(
-                solver, 'stop_strategy', solver.stopping_criterion.strategy
-            )
+            solver_strategy = solver._solver_strategy
 
             if solver_strategy == "callback":
                 callback = _Callback(
@@ -333,7 +332,7 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
     ----------
     benchmark : benchopt.Benchmark object
         Object to represent the benchmark.
-    solver_names : list | None
+    solver_names : list | None
         List of solvers to include in the benchmark. If None
         all solvers available are run.
     forced_solvers : list | None

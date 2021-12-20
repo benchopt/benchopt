@@ -14,8 +14,8 @@ structure. For example
     my_benchmark/
     ├── objective.py  # contains the definition of the objective
     ├── datasets/
-    │   ├── simulated.py  # some dataset
-    │   └── real.py  # some dataset
+    │   ├── simulated.py  # some dataset
+    │   └── real.py  # some dataset
     └── solvers/
         ├── solver1.py  # some solver
         └── solver2.py  # some solver
@@ -122,7 +122,7 @@ A solver must define three methods:
      or a tolerance parameter ``tol``. Alternatively, a ``callback`` function that will be
      called at each iteration can be passed. The callback should return ``False`` once the
      computation should stop.
-     The parameter ``stop_value`` is controlled by the ``stop_strategy``,
+     The parameter ``stop_value`` is controlled by the ``stopping_strategy``,
      see below for details.
 
    - ``get_result()``: This method returns a variable that can be passed
@@ -131,8 +131,8 @@ A solver must define three methods:
 
 **Stop strategy:**
 
-A solver should also define a ``stop_strategy`` as class attribute.
-This ``stop_strategy`` can be:
+A solver should also define a ``stopping_strategy`` as class attribute.
+This ``stopping_strategy`` can be:
 
     - ``'iteration'``: in this case the ``run`` method of the solver
       is parametrized by the number of iterations computed. The parameter
@@ -168,8 +168,8 @@ with no other dependencies. Here is an example:
 .. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/solvers/python_pgd.py
 
 For solvers that allow access to each iterate of the solution, using ``"callback"``
-as a ``stop_strategy`` implies a slight modification for ``run``. A ``callback`` should be called at
-each iteration with parameter the current value of the iterate.
+as a ``stopping_strategy`` implies a slight modification for ``run``. A ``callback``
+should be called at each iteration with parameter the current value of the iterate.
 Here is an example in the same situation as above:
 
 .. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/solvers/python_pgd_callback.py

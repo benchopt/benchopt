@@ -5,7 +5,7 @@ import inspect
 import numpy as np
 
 from benchopt.runner import _Callback
-from benchopt.stopping_criterion import STOP_STRATEGIES
+from benchopt.stopping_criterion import STOPPING_STRATEGIES
 
 
 def test_benchmark_objective(benchmark, dataset_simu):
@@ -98,10 +98,10 @@ def test_solver_class(benchmark, solver_class):
         "The solver's name should be a string"
     )
 
-    # Check that the solver_class uses a valid stop_strategy
-    if hasattr(solver_class, 'stop_strategy'):
-        msg = f"stop_strategy should be in {STOP_STRATEGIES}."
-        assert solver_class.stop_strategy in STOP_STRATEGIES, msg
+    # Check that the solver_class uses a valid stopping_strategy
+    if hasattr(solver_class, 'stopping_strategy'):
+        msg = f"stopping_strategy should be in {STOPPING_STRATEGIES}."
+        assert solver_class.stopping_strategy in STOPPING_STRATEGIES, msg
 
     # Check that the solver_class uses a valid callable to override get_next.
     if hasattr(solver_class, 'get_next'):
@@ -171,7 +171,7 @@ def test_solver(benchmark, solver_class):
     # Either call run_with_cb or run
 
     solver_strategy = getattr(
-        solver, 'stop_strategy', solver.stopping_criterion.strategy
+        solver, 'stopping_strategy', solver.stopping_criterion.strategy
     )
     if solver_strategy == 'callback':
         sc = solver.stopping_criterion.get_runner_instance(
