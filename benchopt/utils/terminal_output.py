@@ -8,6 +8,10 @@ from ..config import DEBUG
 MIN_LINE_LENGTH = 20
 BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE = range(30, 38)
 
+CROSS = u'\u2717'
+TICK = u'\u2713'
+
+
 STATUS = {
     'error': ("error", RED),
     'diverged': ("diverged", RED),
