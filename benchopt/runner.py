@@ -1,4 +1,5 @@
 import time
+
 from datetime import datetime
 
 from joblib import Parallel, delayed
@@ -33,7 +34,7 @@ def run_one_resolution(objective, solver, meta, stop_val):
     stop_val : int | float
         Corresponds to stopping criterion, such as
         tol or max_iter for the solver. It depends
-        on the stop_strategy for the solver.
+        on the stopping_strategy for the solver.
 
     Returns
     -------
@@ -91,11 +92,7 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
     """
 
     with exception_handler(output, pdb=pdb) as ctx:
-        solver_strategy = getattr(
-            solver, 'stop_strategy', stopping_criterion.strategy
-        )
-
-        if solver_strategy == "callback":
+        if solver._solver_strategy == "callback":
             # If stopping strategy is 'callback', only call once to get the
             # results up to convergence.
             callback = _Callback(
@@ -231,7 +228,7 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
     ----------
     benchmark : benchopt.Benchmark object
         Object to represent the benchmark.
-    solver_names : list | None
+    solver_names : list | None
         List of solvers to include in the benchmark. If None
         all solvers available are run.
     forced_solvers : list | None
