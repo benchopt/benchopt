@@ -1,4 +1,5 @@
 "A context manager to handle exception with option to open a debugger."
+import traceback
 from contextlib import contextmanager
 
 
@@ -27,11 +28,14 @@ def exception_handler(output, pdb=False):
         yield ctx
     except KeyboardInterrupt:
         ctx.status = 'interrupted'
+        output.show_status('interrupted')
         raise SystemExit(1)
     except BaseException:
-        ctx.status = 'interrupted'
+        ctx.status = 'error'
 
         if pdb:
+            output.show_status('error')
+            traceback.print_exc()
             # Use ipdb if it is available and default to pdb otherwise.
             try:
                 from ipdb import post_mortem
@@ -40,7 +44,8 @@ def exception_handler(output, pdb=False):
             post_mortem()
 
         if DEBUG:
+            output.show_status('error')
             raise
         else:
-            import traceback
+            print()
             traceback.print_exc()

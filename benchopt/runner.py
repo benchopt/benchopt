@@ -91,7 +91,9 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
         The status on which the solver was stopped.
     """
 
+    curve = []
     with exception_handler(output, pdb=pdb) as ctx:
+
         if solver._solver_strategy == "callback":
             # If stopping strategy is 'callback', only call once to get the
             # results up to convergence.
@@ -111,7 +113,6 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
             # compute initial value
             call_args = dict(objective=objective, solver=solver, meta=meta)
 
-            curve = []
             stop = False
             stop_val = stopping_criterion.init_stop_val()
             while not stop:
@@ -198,10 +199,10 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
             stopping_criterion=stopping_criterion,
             force=force, output=output, pdb=pdb
         )
-        run_statistics.extend(curve)
-        states.append(status)
         if status in ['diverged', 'error', 'interrupted']:
             break
+        run_statistics.extend(curve)
+        states.append(status)
 
     else:
         if 'max_runs' in states:
@@ -211,11 +212,11 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
         else:
             status = 'done'
 
-        output.show_status(status=status)
+    output.show_status(status=status)
 
-        if status == 'interrupted':
-            raise SystemExit(1)
-        return run_statistics
+    if status == 'interrupted':
+        raise SystemExit(1)
+    return run_statistics
 
 
 def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
