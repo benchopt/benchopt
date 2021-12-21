@@ -105,7 +105,7 @@ class StoppingCriterion():
         # Get strategy from solver
         strategy = solver._solver_strategy
         assert strategy in STOPPING_STRATEGIES, (
-            f"stop_strategy should be in {STOPPING_STRATEGIES}. "
+            f"stopping_strategy should be in {STOPPING_STRATEGIES}. "
             f"Got '{strategy}'."
         )
 
