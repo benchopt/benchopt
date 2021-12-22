@@ -13,6 +13,9 @@ Version 1.2 - in progress
 Changelog
 ~~~~~~~~~
 
+- New ``benchopt info`` command to display information about solvers and datasets
+  of a benchmark, by `Ghislain Durif`_ (:gh:`140`).
+
 - New ``--profile`` option to the ``run`` command in order to profile
   with the line-profiler package all functions decorated with
   :func:`benchopt.utils.profile`, by `Alexandre Gramfort`_ (:gh:`186`).
@@ -22,17 +25,17 @@ Changelog
   the previous one, by `Thomas Moreau`_ (:gh:`176`)
 
 - Now all values returned by ``Objective.compute`` are included in reports,
-  by `Thomas Moreau`_ and `Alexandre Gramfort`_ (gh:`200`).
+  by `Thomas Moreau`_ and `Alexandre Gramfort`_ (:gh:`200`).
 
 API
 ~~~
 
 - When returning a dict, ``Objective.compute`` should at least include
   ``value`` key instead of ``objective_value``, by `Thomas Moreau`_ and
-  `Alexandre Gramfort`_ (gh:`200`).
+  `Alexandre Gramfort`_ (:gh:`200`).
 
 - 'stop_strategy' attribute is replaced by 'stopping_strategy' to harmonize
-  with 'stopping_criterion', by `Benoît Malézieux`_ (gh:`274`).
+  with 'stopping_criterion', by `Benoît Malézieux`_ (:gh:`274`).
 
 .. _changes_1_1:
 
@@ -66,7 +69,7 @@ API
 ~~~
 
 - ``Objective.compute`` can now return a dictionary with multiple outputs to
-  monitor several metrics at once, by `Thomas Moreau`_ (gh:`84`).
+  monitor several metrics at once, by `Thomas Moreau`_ (:gh:`84`).
 
 - ``Solver.skip`` can now be used to skip objectives that are incompatible
   for the Solver, by `Thomas Moreau`_ (:gh:`113`).
@@ -130,7 +133,7 @@ DOC
 The committer list for this release is the following:
 
   * `Alexandre Gramfort`_
-  * `Benoit Malézieux`_
+  * `Benoît Malézieux`_
   * `Ghislain Durif`_
   * `Joseph Salmon`_
   * `Mathurin Massias`_
