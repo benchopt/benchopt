@@ -98,7 +98,7 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
         objective_filters, max_runs, n_repetitions, timeout,
         plot=True, html=True, pdb=False, do_profile=False,
         env_name='False', old_objective_filters=None):
-    if old_objective_filters is not None:
+    if len(old_objective_filters):
         print("should warn but nothing is printed")
         warnings.warn(
             'Using the -p option is deprecated, use -o instead',
