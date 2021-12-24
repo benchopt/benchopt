@@ -28,8 +28,8 @@ class Benchmark:
             except RuntimeError:
                 raise click.BadParameter(
                     f"The folder '{benchmark_dir}' does not contain "
-                    "`objective.py`.\nMake sure you provide the path to a valid "
-                    "benchmark."
+                    "`objective.py`.\nMake sure you provide the path to a"
+                    "valid benchmark."
                 )
 
     @property
