@@ -12,7 +12,7 @@ class Solver(BaseSolver):
     parameters = {'step_size': [1, 1.5]}
 
     # Store the information to compute the objective. The parameters of this
-    # function are the eys of the dictionary obtained when calling
+    # function are the keys of the dictionary obtained when calling
     # ``Objective.to_dict``.
     def set_objective(self, X, y, lmbd):
         self.X, self.y, self.lmbd = X, y, lmbd

@@ -3,12 +3,12 @@
 Publish benchmark results
 =========================
 
-BenchOpt allows you to publish your benchmark results to
-the `BenchOpt Benchmarks website <https://benchopt.github.io/results/>`_
+Benchopt allows you to publish your benchmark results to
+the `Benchopt Benchmarks website <https://benchopt.github.io/results/>`_
 with one command ``benchopt publish``.
 
 The ``publish`` command will send your results to GitHub by opening
-a pull-request on the `BenchOpt results repository <https://github.com/benchopt/results>`_.
+a pull-request on the `Benchopt results repository <https://github.com/benchopt/results>`_.
 Once the pull-request is merged it will appear automatically online.
 
 Workflow example:
@@ -48,6 +48,6 @@ Then create a token named ``benchopt``, ticking the **repo** box as shown below:
    :align: center
 
 Then click on ``generate token`` and copy this token of 40 characters in a
-secure location. Note that the token can be stored in a config file for BenchOpt
+secure location. Note that the token can be stored in a config file for benchopt
 using ``benchopt config set github_token <TOKEN>``. More info on config files can
 be found in :ref:`config_doc`.

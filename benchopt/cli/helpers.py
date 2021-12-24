@@ -2,16 +2,23 @@ import click
 import pprint
 from pathlib import Path
 from collections.abc import Iterable
+import warnings
 
 from benchopt.config import set_setting
 from benchopt.config import get_setting
 from benchopt.benchmark import Benchmark
 from benchopt.utils.files import rm_folder
 from benchopt.utils.sys_info import get_sys_info
-from benchopt.cli.completion import get_benchmark
+from benchopt.cli.completion import complete_benchmarks
+from benchopt.cli.completion import complete_conda_envs
+from benchopt.cli.completion import complete_datasets
+from benchopt.cli.completion import complete_solvers
+from benchopt.utils.conda_env_cmd import list_conda_envs
 from benchopt.config import get_global_config_file
 from benchopt.utils.dynamic_modules import _load_class_from_module
-
+from benchopt.utils.shell_cmd import _run_shell_in_conda_env
+from benchopt.utils.colorify import colorify
+from benchopt.utils.colorify import RED, GREEN, TICK, CROSS
 
 helpers = click.Group(
     name='Helpers',
@@ -24,7 +31,7 @@ helpers = click.Group(
     options_metavar=''
 )
 @click.argument('benchmark', type=click.Path(exists=True),
-                autocompletion=get_benchmark)
+                shell_complete=complete_benchmarks)
 def clean(benchmark, token=None, filename=None):
 
     benchmark = Benchmark(benchmark)
@@ -40,6 +47,241 @@ def clean(benchmark, token=None, filename=None):
     rm_folder(cache_folder)
 
 
+def check_conda_env(env_name, benchmark_name=None):
+    """Return name of valid and existing conda environment.
+
+    Parameters
+    ----------
+    env_name : str | None
+        Expected name of conda environment to be used.
+        If 'False', default conda environment name is returned.
+        If 'True', benchmark specific conda environment, i.e.
+        "benchopt_{benchmark_name}", is returned.
+        If None, None is returned.
+        Otherwise 'env_name' is returned.
+        In any case but None, the conda environment existence is checked.
+    benchmark_name : str | None
+        Name of the benchmark that will be used.
+        Unused unless env_name=='True'.
+
+    Returns
+    -------
+    env_name : str | None
+        Name of valid conda environment or None.
+    """
+    # Check conda env (if relevant)
+    if env_name is not None:
+
+        # Get a list of all conda envs
+        default_conda_env, conda_envs = list_conda_envs()
+
+        # If env_name is False (default), check availability
+        # in the current environement.
+        if env_name == 'False':
+            # check if any current conda environment
+            if default_conda_env is not None:
+                env_name = default_conda_env
+            else:
+                raise RuntimeError("No conda environment is activated.")
+        else:
+            # If env_name is 'True', the flag `--env` has been used.
+            # Check the conda env dedicated to the benchmark.
+            # Else, use the <env_name> value.
+            if env_name == 'True':
+                env_name = f"benchopt_{benchmark_name}"
+            else:
+                # check provided <env_name>
+                # (to avoid empty name like `--env-name ""`)
+                if len(env_name) == 0:
+                    raise RuntimeError("Empty environment name.")
+                if env_name not in conda_envs:
+                    raise RuntimeError(
+                        f"{env_name} is not an existing conda environment."
+                    )
+    # output
+    return env_name
+
+
+def print_info(cls_name_list, cls_list, env_name=None, verbose=False):
+    """Print information for each element of input listed
+
+    Parameters
+    ----------
+    cls_name_list : list
+        List of object names (solvers or datasets) to be printed.
+    cls_list : list
+        List of all objects (solvers or datasets) to print info from.
+    env_name : str | None
+        Name of conda environment where to check for object availability.
+        If None or 'False', no check is made.
+    verbose: bool
+        If True, list object (solver or dataset) full descriptions (including
+        name, parameters, dependencies and availability).
+        If False, only list object (solver or dataset) names.
+    """
+
+    # select objects to print info from
+    include_cls = []
+    if 'all' in cls_name_list:
+        include_cls = cls_list
+    else:
+        include_cls = [
+            item for item in cls_list if item.name in cls_name_list
+        ]
+    if not verbose:
+        # short output
+        name = [cls.name for cls in include_cls]
+        print(f"{', '.join(map(str, name))}")
+        print("-" * 10)
+    else:
+        # long output
+        print("-" * 10)
+        for cls in include_cls:
+            print(f"## {cls.name}")
+            # availability in env (if relevant)
+            if env_name is not None:
+                # check for dependency avaulability
+                if cls.is_installed(env_name):
+                    print(colorify(TICK, GREEN), end='', flush=True)
+                    print(colorify(f" available in env '{env_name}'", GREEN))
+                else:
+                    print(colorify(CROSS, RED), end='', flush=True)
+                    print(colorify(f" not available in env '{env_name}'", RED))
+            # install command
+            if hasattr(cls, 'requirements') and cls.requirements:
+                print("> requirements:")
+                packages = cls.requirements
+                pip_packages = [pkg[4:] for pkg in packages
+                                if pkg.startswith('pip:')]
+                conda_packages = [pkg for pkg in packages
+                                  if not pkg.startswith('pip:')]
+                if len(conda_packages) > 0:
+                    print("    conda install -c conda-forge "
+                          f"{' '.join(conda_packages)}")
+                if len(pip_packages) > 0:
+                    print(f"    pip install {' '.join(pip_packages)}")
+            else:
+                print("> no dependencies")
+            # doc
+            if hasattr(cls, '__doc__') and cls.__doc__:
+                print(f"> doc: {cls.__doc__}")
+            # parameters
+            if hasattr(cls, 'parameters') and cls.parameters:
+                print("> parameters:")
+                for param, value in cls.parameters.items():
+                    values = ', '.join(map(str, value))
+                    print(f"    {param}: {values}")
+
+            print("-" * 10)
+
+
+@helpers.command(
+    help="List information (solvers/datasets) and corresponding requirements "
+    "for a given benchmark."
+)
+@click.argument('benchmark', type=click.Path(exists=True),
+                autocompletion=complete_benchmarks)
+@click.option('--solver', '-s', 'solver_names',
+              metavar="<solver_name>", multiple=True, type=str,
+              help="Display information about <solver_name>. "
+              "By default, all solvers are included except "
+              "when -d flag is used. If -d flag is used, then "
+              "no solver is included by default. "
+              "When `-s` is used, only listed estimators are included. "
+              "To include multiple solvers, use multiple `-s` options."
+              "To include all solvers, use `-s 'all'` option. "
+              "Using a `-s` option will trigger the verbose output.",
+              shell_complete=complete_solvers)
+@click.option('--dataset', '-d', 'dataset_names',
+              metavar="<dataset_name>", multiple=True, type=str,
+              help="Display information about <dataset_name>. By default, all "
+              "datasets are included, except when -s flag is used. "
+              "If -s flag is used, then no dataset is included. "
+              "When `-d` is used, only listed datasets "
+              "are included. Note that <dataset_name> can be a regexp. "
+              "To include multiple datasets, use multiple `-d` options."
+              "To include all datasets, use `-d 'all'` option."
+              "Using a `-d` option will trigger the verbose output.",
+              shell_complete=complete_datasets)
+@click.option('--env', '-e', 'env_name',
+              flag_value='True', type=str, default='False',
+              help="Additional checks for requirement availability in "
+              "the dedicated conda environment for the benchmark "
+              "named 'benchopt_<BENCHMARK>'.")
+@click.option('--env-name', 'env_name',
+              metavar="<env_name>", type=str, default='False',
+              shell_complete=complete_conda_envs,
+              help="Additional checks for requirement availability in "
+              "the conda environment named <env_name>.")
+@click.option('--verbose', '-v',
+              is_flag=True,
+              help="If used, list solver/dataset "
+              "parameters, dependencies and availability.")
+def info(benchmark, solver_names, dataset_names, env_name='False',
+         verbose=False):
+
+    # benchmark
+    benchmark = Benchmark(benchmark)
+    print(f"Info regarding the benchmark '{benchmark.name}'")
+
+    # validate solvers and datasets
+    benchmark.validate_dataset_patterns(dataset_names)
+    benchmark.validate_solver_patterns(solver_names)
+
+    # get solvers and datasets in the benchmark
+    all_solvers = benchmark.get_solvers()
+    all_datasets = benchmark.get_datasets()
+
+    # enable verbosity if any environment was provided
+    if env_name is not None and env_name != 'False':
+        verbose = True
+
+    # conda env check only in verbose case
+    if verbose:
+        # Check conda env name
+        env_name = check_conda_env(env_name, benchmark.name)
+        # check conda environment validity
+        check_benchopt = _run_shell_in_conda_env(
+            "benchopt --version", env_name=env_name, capture_stdout=True
+        )
+        if check_benchopt != 0:
+            warnings.warn(
+                f"Environment '{env_name}' does not exist "
+                "or is not configured for benchopt, "
+                "benchmark requirement availability will not be checked, "
+                "see the command `benchopt install`.",
+                UserWarning
+            )
+            env_name = None
+        else:
+            print(
+                "Checking benchmark requirement availability "
+                f"in env '{env_name}'."
+            )
+            print(
+                "Note: you can install all dependencies from a benchmark "
+                "with the command `benchopt install`."
+            )
+    # enable verbosity if any solver/dataset are specified in input
+    if dataset_names or solver_names:
+        verbose = True
+
+    # print information
+    print("-" * 10)
+
+    if not dataset_names and not solver_names:
+        dataset_names = ['all']
+        solver_names = ['all']
+
+    if dataset_names:
+        print("# DATASETS", flush=True)
+        print_info(dataset_names, all_datasets, env_name, verbose)
+
+    if solver_names:
+        print("# SOLVERS", flush=True)
+        print_info(solver_names, all_solvers, env_name, verbose)
+
+
 @helpers.command()
 def sys_info():
     "Get details on the system (processor, RAM, etc..)."
@@ -53,7 +295,7 @@ def sys_info():
 )
 @click.option('--benchmark', '-b', metavar='<benchmark>',
               type=click.Path(exists=True), default=None,
-              autocompletion=get_benchmark)
+              shell_complete=complete_benchmarks)
 @click.pass_context
 def config(ctx, benchmark, token=None, filename=None):
     ctx.ensure_object(dict)

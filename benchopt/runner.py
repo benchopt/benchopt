@@ -1,4 +1,5 @@
 import time
+
 from datetime import datetime
 
 from .utils import product_param
@@ -8,7 +9,8 @@ from .utils.sys_info import get_sys_info
 from .utils.pdb_helpers import exception_handler
 
 from .utils.colorify import colorify
-from .utils.colorify import LINE_LENGTH, RED, GREEN, YELLOW
+from .utils.colorify import print_normalize
+from .utils.colorify import RED, GREEN, YELLOW
 
 # Get config values
 from .config import DEBUG
@@ -49,7 +51,7 @@ def run_one_resolution(objective, solver, meta, stop_val):
     stop_val : int | float
         Corresponds to stopping criterion, such as
         tol or max_iter for the solver. It depends
-        on the stop_strategy for the solver.
+        on the stopping_strategy for the solver.
 
     Returns
     -------
@@ -171,6 +173,7 @@ class _Callback:
     time_callback : float
         The time when exiting the callback call.
     """
+
     def __init__(self, objective, meta, stopping_criterion):
         self.objective = objective
         self.meta = meta
@@ -276,7 +279,7 @@ def run_one_solver(benchmark, objective, solver, meta, max_runs, n_repetitions,
         for rep in range(n_repetitions):
             if show_progress:
                 progress_str = (
-                    f"{tag} {{progress}} ({rep} / {n_repetitions} reps)"
+                    f"{tag} {{progress}} ({rep + 1} / {n_repetitions} reps)"
                 )
             else:
                 progress_str = None
@@ -288,9 +291,7 @@ def run_one_solver(benchmark, objective, solver, meta, max_runs, n_repetitions,
                 progress_str=progress_str, solver=solver
             )
 
-            solver_strategy = getattr(
-                solver, 'stop_strategy', solver.stopping_criterion.strategy
-            )
+            solver_strategy = solver._solver_strategy
 
             if solver_strategy == "callback":
                 callback = _Callback(
@@ -317,7 +318,7 @@ def run_one_solver(benchmark, objective, solver, meta, max_runs, n_repetitions,
         else:
             final_status = colorify('done', GREEN)
 
-        print(f"{tag} {final_status}".ljust(LINE_LENGTH))
+        print_normalize(f"{tag} {final_status}")
     return curve
 
 
@@ -331,7 +332,7 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
     ----------
     benchmark : benchopt.Benchmark object
         Object to represent the benchmark.
-    solver_names : list | None
+    solver_names : list | None
         List of solvers to include in the benchmark. If None
         all solvers available are run.
     forced_solvers : list | None
@@ -369,7 +370,7 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
         by the objective is not the same for all parameters, the missing data
         is set to `NaN`.
     """
-    print("BenchOpt is running")
+    print("Benchopt is running")
 
     # Load the objective class for this benchmark and the datasets
     objective_class = benchmark.get_benchmark_objective()
@@ -385,11 +386,12 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
             dataset = dataset_class.get_instance(**dataset_parameters)
             if not is_matched(str(dataset), dataset_names):
                 continue
-            print(f"{dataset}".ljust(LINE_LENGTH))
+            print_normalize(f"{dataset}")
             if not dataset.is_installed(
                     raise_on_not_installed=RAISE_INSTALL_ERROR):
-                print(colorify(f"Dataset {dataset} is not installed.", RED)
-                      .ljust(LINE_LENGTH))
+                print_normalize(
+                    colorify(f"Dataset {dataset} is not installed.", RED)
+                )
                 continue
 
             dimension, data = dataset._get_data()
@@ -397,7 +399,7 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                 objective = objective_class.get_instance(**obj_parameters)
                 if not is_matched(str(objective), objective_filters):
                     continue
-                print(f"|--{objective}".ljust(LINE_LENGTH))
+                print_normalize(f"|--{objective}")
                 objective.set_dataset(dataset)
 
                 for solver_class in solver_classes:
@@ -419,14 +421,15 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                                 raise_on_not_installed=RAISE_INSTALL_ERROR
                         ):
                             status = colorify("not installed", RED)
-                            print(f"{tag} {status}".ljust(LINE_LENGTH))
+                            print_normalize(f"{tag} {status}")
                             continue
 
                         # Set objective an skip if necessary.
                         skip, reason = solver._set_objective(objective)
                         if skip:
-                            print(f"{tag} {colorify('skip', YELLOW)}"
-                                  .ljust(LINE_LENGTH))
+                            print_normalize(
+                                f"{tag} {colorify('skip', YELLOW)}"
+                            )
                             if reason is not None:
                                 print(f'Reason: {reason}')
                             continue
@@ -453,7 +456,7 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
     import pandas as pd
     df = pd.DataFrame(run_statistics)
     if df.empty:
-        print(colorify('No output produced.', RED).ljust(LINE_LENGTH))
+        print_normalize(colorify('No output produced.', RED))
         raise SystemExit(1)
 
     # Save output in CSV file in the benchmark folder

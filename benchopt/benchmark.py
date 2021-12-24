@@ -182,7 +182,7 @@ class Benchmark:
         return result_filename
 
     def install_all_requirements(self, include_solvers, include_datasets,
-                                 env_name=None, force=False):
+                                 env_name=None, force=False, quiet=False):
         """Install all classes that are required for the run.
 
         Parameters
@@ -191,25 +191,46 @@ class Benchmark:
             patterns to select solvers to install.
         include_datasets : list of str
             patterns to select datasets to install.
-        env_name: str or None
+        env_name : str or None (default: None)
             Name of the conda env where the class should be installed. If
             None, tries to install it in the current environment.
-        force : boolean (default: False)
+        force : bool (default: False)
             If set to True, forces reinstallation when using conda.
+        quiet : bool (default: False)
+            If True, silences the output of install commands.
         """
         # Collect all classes matching one of the patterns
         print("Collecting packages:")
+
+        install_solvers = True
+        install_datasets = True
+
+        # If -d is used but not -s, then does not install any solver
+        if len(include_solvers) == 0 and len(include_datasets) > 0:
+            install_solvers = False
+
+        # If -s is used but not -d, then does not install any dataset
+        if len(include_datasets) == 0 and len(include_solvers) > 0:
+            install_datasets = False
+
+        # If -d or -s are followed by 'all' then all
+        # solvers or datasets are included
+        if 'all' in include_solvers:
+            include_solvers = []
+        if 'all' in include_datasets:
+            include_datasets = []
+
         conda_reqs, shell_install_scripts, post_install_hooks = [], [], []
         check_installs = []
-        for list_classes, include_patterns in [
-                (self.get_solvers(), include_solvers),
-                (self.get_datasets(), include_datasets)
+        for list_classes, include_patterns, to_install in [
+                (self.get_solvers(), include_solvers, install_solvers),
+                (self.get_datasets(), include_datasets, install_datasets)
         ]:
             include_patterns = _check_name_lists(include_patterns)
             for klass in list_classes:
                 for klass_parameters in product_param(klass.parameters):
                     name = klass._get_parametrized_name(**klass_parameters)
-                    if is_matched(name, include_patterns):
+                    if is_matched(name, include_patterns) and to_install:
                         reqs, scripts, hooks = (
                             klass.collect(env_name=env_name, force=force)
                         )
@@ -231,10 +252,13 @@ class Benchmark:
         print(f"Installing required packages for:\n{list_install}\n...",
               end='', flush=True)
         install_in_conda_env(
-            *list(set(conda_reqs)), env_name=env_name, force=force
+            *list(set(conda_reqs)), env_name=env_name, force=force,
+            quiet=quiet
         )
         for install_script in shell_install_scripts:
-            shell_install_in_conda_env(install_script, env_name=env_name)
+            shell_install_in_conda_env(
+                install_script, env_name=env_name, quiet=quiet
+            )
         for hooks in post_install_hooks:
             hooks(env_name=env_name)
         print(' done')
@@ -261,6 +285,7 @@ class Benchmark:
 
         # List all dataset strings.
         all_datasets = _list_all_parametrized_names(*self.get_datasets())
+        all_datasets += ["all"]
 
         _validate_patterns(all_datasets, dataset_patterns, name_type='dataset')
 
@@ -269,8 +294,23 @@ class Benchmark:
 
         # List all dataset strings.
         all_solvers = _list_all_parametrized_names(*self.get_solvers())
+        all_solvers += ["all"]
 
         _validate_patterns(all_solvers, solver_patterns, name_type='solver')
+
+    def validate_objective_filters(self, objective_params):
+        "Check that all objective filters match at least one objective setup"
+
+        # List all choices of objective parameters
+        all_objectives = _list_all_parametrized_names(
+            self.get_benchmark_objective()
+        )
+
+        _validate_patterns(
+            all_objectives,
+            objective_params,
+            name_type="objective"
+        )
 
 
 def _check_name_lists(*name_lists):

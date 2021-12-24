@@ -1,13 +1,12 @@
 import time
 import math
 
-
 from .config import DEBUG
-from .utils.colorify import LINE_LENGTH
+from .utils.colorify import print_normalize
 
 
 # Possible stop strategies
-STOP_STRATEGIES = {'iteration', 'tolerance', 'callback'}
+STOPPING_STRATEGIES = {'iteration', 'tolerance', 'callback'}
 
 EPS = 1e-10
 PATIENCE = 3
@@ -61,8 +60,8 @@ class StoppingCriterion():
 
     def __init__(self, strategy=None, **kwargs):
 
-        assert strategy in STOP_STRATEGIES, (
-            f"strategy should be in {STOP_STRATEGIES}. Got '{strategy}'."
+        assert strategy in STOPPING_STRATEGIES, (
+            f"strategy should be in {STOPPING_STRATEGIES}. Got '{strategy}'."
         )
 
         self.kwargs = kwargs
@@ -84,7 +83,7 @@ class StoppingCriterion():
             Format string to display the progress of the solver.
         solver : BaseSolver
             The solver for which this stopping criterion is called. Used to get
-            overridden ``stop_strategy`` and ``get_next``.
+            overridden ``stopping_strategy`` and ``get_next``.
 
         Returns
         -------
@@ -103,14 +102,12 @@ class StoppingCriterion():
                 "to implement a new StoppingCriterion."
             )
 
-        # If stop_strategy is defined as a class parameter, use this strategy.
-        strategy = self.strategy
-        if hasattr(solver, 'stop_strategy'):
-            strategy = solver.stop_strategy
-            assert strategy in STOP_STRATEGIES, (
-                f"stop_strategy should be in {STOP_STRATEGIES}. "
-                f"Got '{strategy}'."
-            )
+        # Get strategy from solver
+        strategy = solver._solver_strategy
+        assert strategy in STOPPING_STRATEGIES, (
+            f"stopping_strategy should be in {STOPPING_STRATEGIES}. "
+            f"Got '{strategy}'."
+        )
 
         # Create a new instance of the class
         stopping_criterion = self.__class__(
@@ -231,10 +228,9 @@ class StoppingCriterion():
         if self.progress_str is not None:
             if isinstance(progress, float):
                 progress = f'{progress:6.1%}'
-            print(
-                self.progress_str.format(progress=progress)
-                .ljust(LINE_LENGTH) + '\r',
-                end='', flush=True
+            print_normalize(
+                self.progress_str.format(progress=progress),
+                endline=False
             )
 
     def check_convergence(self, cost_curve):

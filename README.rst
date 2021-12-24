@@ -7,7 +7,7 @@ BenchOpt is a package to simplify, make more transparent and
 more reproducible the comparisons of optimization algorithms.
 
 BenchOpt is written in Python but it is available with
-`many programming languages <https://benchopt.github.io/auto_examples/plot_run_benchmark_python_R_julia.html>`_.
+`many programming languages <https://benchopt.github.io/auto_examples/plot_run_benchmark_python_R.html>`_.
 So far it has been tested with `Python <https://www.python.org/>`_,
 `R <https://www.r-project.org/>`_, `Julia <https://julialang.org/>`_
 and compiled binaries written in C/C++ available via a terminal
@@ -53,7 +53,7 @@ And to get the **latest development version**, you can use:
 
 .. code-block::
 
-    $ pip install -U https://github.com/benchopt/benchOpt/archive/master.zip
+    $ pip install -U https://github.com/benchopt/benchopt/archive/master.zip
 
 This will install the command line tool to run the benchmark. Then, existing
 benchmarks can be retrieved from git or created locally. For instance, the
@@ -96,14 +96,12 @@ List of optimization problems available
 - `Linear SVM for binary classification <https://github.com/benchopt/benchmark_linear_svm_binary_classif_no_intercept>`_ |Build Status LinearSVM|
 - `Linear ICA <https://github.com/benchopt/benchmark_linear_ica>`_ |Build Status LinearICA|
 
-[![test]()]()
-
-.. |Test Status| image:: https://github.com/benchopt/benchOpt/actions/workflows/test.yml/badge.svg
-   :target: https://github.com/benchopt/benchOpt/actions/workflows/test.yml
+.. |Test Status| image:: https://github.com/benchopt/benchopt/actions/workflows/test.yml/badge.svg
+   :target: https://github.com/benchopt/benchopt/actions/workflows/test.yml
 .. |Python 3.6+| image:: https://img.shields.io/badge/python-3.6%2B-blue
    :target: https://www.python.org/downloads/release/python-360/
-.. |codecov| image:: https://codecov.io/gh/benchopt/benchOpt/branch/master/graph/badge.svg
-   :target: https://codecov.io/gh/benchopt/benchOpt
+.. |codecov| image:: https://codecov.io/gh/benchopt/benchopt/branch/master/graph/badge.svg
+   :target: https://codecov.io/gh/benchopt/benchopt
 
 .. |Build Status OLS| image:: https://github.com/benchopt/benchmark_ols/workflows/Tests/badge.svg
    :target: https://github.com/benchopt/benchmark_ols/actions

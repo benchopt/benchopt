@@ -1,10 +1,11 @@
 import pytest
 import numbers
+import inspect
 
 import numpy as np
 
 from benchopt.runner import _Callback
-from benchopt.stopping_criterion import STOP_STRATEGIES
+from benchopt.stopping_criterion import STOPPING_STRATEGIES
 
 
 def test_benchmark_objective(benchmark, dataset_simu):
@@ -97,16 +98,23 @@ def test_solver_class(benchmark, solver_class):
         "The solver's name should be a string"
     )
 
-    # Check that the solver_class uses a valid stop_strategy
-    if hasattr(solver_class, 'stop_strategy'):
-        msg = f"stop_strategy should be in {STOP_STRATEGIES}."
-        assert solver_class.stop_strategy in STOP_STRATEGIES
+    # Check that the solver_class uses a valid stopping_strategy
+    if hasattr(solver_class, 'stopping_strategy'):
+        msg = f"stopping_strategy should be in {STOPPING_STRATEGIES}."
+        assert solver_class.stopping_strategy in STOPPING_STRATEGIES, msg
 
-    # Check that the solver_class uses a valid stop_strategy
+    # Check that the solver_class uses a valid callable to override get_next.
     if hasattr(solver_class, 'get_next'):
-        msg = "get_next should be a callable static method."
-        assert (callable(solver_class.get_next)
-                and type(solver_class.get_next) == staticmethod), msg
+        is_static = isinstance(
+            inspect.getattr_static(solver_class, "get_next"),
+            staticmethod
+        )
+        assert (callable(solver_class.get_next) and is_static), (
+            "`get_next` for class Solver in "
+            f"'{solver_class.__module__}' should be a callable static method."
+        )
+        # Make sure the signature is def get_next(int):
+        solver_class.get_next(0)
 
 
 def test_solver_install_api(benchmark, solver_class):
@@ -162,10 +170,7 @@ def test_solver(benchmark, solver_class):
 
     # Either call run_with_cb or run
 
-    solver_strategy = getattr(
-        solver, 'stop_strategy', solver.stopping_criterion.strategy
-    )
-    if solver_strategy == 'callback':
+    if solver._solver_strategy == 'callback':
         sc = solver.stopping_criterion.get_runner_instance(
             max_runs=25, timeout=None, solver=solver
         )
@@ -174,7 +179,7 @@ def test_solver(benchmark, solver_class):
         )
         solver.run(cb)
     else:
-        stop_val = 5000 if solver_strategy == 'iteration' else 1e-15
+        stop_val = 5000 if solver._solver_strategy == 'iteration' else 1e-15
         solver.run(stop_val)
 
     beta_hat_i = solver.get_result()

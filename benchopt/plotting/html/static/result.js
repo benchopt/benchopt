@@ -8,7 +8,7 @@ var globalState = {
 /**
  * Initialize the global state of the selectors
  */
-$(document).ready(function () {
+$(function () {
   const selectors = [
     "dataset_selector",
     "objective_selector",
@@ -134,4 +134,36 @@ $(".toggle").click(function () {
   } else {
     x.style.display = "none";
   }
+});
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* Toggle shades on/off on plotly graph
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+function toggleShades() {
+  toggler = document.getElementById("change_shades");
+  if (toggler.checked === true) {
+    visible = true;
+  } else {
+    visible = false;
+  } // hide or show traces depending on toggler state
+
+  nowId = getId("now"); // id of current graph
+  graph = document.getElementById(
+    document.getElementById(nowId).getElementsByTagName("div")[1].id
+  );
+  allTraces = graph.data;
+  const allIndex = (arr) => {
+    return arr.map((elm, idx) => (elm.name == null ? idx : "")).filter(String);
+  };
+  whereToggle = allIndex(allTraces); // shade fills are without name
+  if (globalState.plot_kind[1] !== "histogram") {
+    Plotly.restyle(graph, { visible: visible }, whereToggle); // toggle visibility
+  }
+}
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* Toggle shades on/off on click
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+$(function () {
+  $("#change_shades").change(toggleShades);
 });

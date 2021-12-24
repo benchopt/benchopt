@@ -115,7 +115,7 @@ html_theme_options = {
         ("Write a benchmark", "how"),
         ("Results", "https://benchopt.github.io/results", True),
         ("What's new", "whats_new"),
-        ("GitHub", "https://github.com/benchopt/benchOpt", True)
+        ("GitHub", "https://github.com/benchopt/benchopt", True)
     ],
     # 'bootswatch_theme': "united",
     # 'bootswatch_theme': "sandstone",

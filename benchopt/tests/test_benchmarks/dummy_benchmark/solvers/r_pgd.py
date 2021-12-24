@@ -26,7 +26,7 @@ class Solver(BaseSolver):
 
     install_cmd = 'conda'
     requirements = ['r-base', 'rpy2']
-    stop_strategy = 'iteration'
+    stopping_strategy = 'iteration'
     support_sparse = False
 
     def set_objective(self, X, y, lmbd):

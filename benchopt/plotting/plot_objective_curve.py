@@ -7,6 +7,10 @@ from .helpers_compat import fill_between_x
 CMAP = plt.get_cmap('tab10')
 
 
+def _remove_prefix(text, prefix):
+    return text[len(prefix):] if text.startswith(prefix) else text
+
+
 def plot_objective_curve(df, obj_col='objective_value', plotly=False,
                          suboptimality=False, relative=False):
     """Plot objective curve for a given benchmark and dataset.
@@ -105,7 +109,8 @@ def plot_objective_curve(df, obj_col='objective_value', plotly=False,
     else:
         plt.legend(fontsize=14)
         plt.xlabel("Time [sec]", fontsize=14)
-        plt.ylabel(y_label, fontsize=14)
+        plt.ylabel(f"{_remove_prefix(obj_col, 'objective_')}: {y_label}",
+                   fontsize=14)
         plt.title(title, fontsize=14)
         plt.tight_layout()
 
