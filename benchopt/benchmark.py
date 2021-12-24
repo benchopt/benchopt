@@ -18,18 +18,19 @@ CACHE_DIR = '__cache__'
 
 
 class Benchmark:
-    def __init__(self, benchmark_dir):
+    def __init__(self, benchmark_dir, standalone=False):
         self.benchmark_dir = Path(benchmark_dir)
         self.name = self.benchmark_dir.resolve().name
 
-        try:
-            self.get_benchmark_objective()
-        except RuntimeError:
-            raise click.BadParameter(
-                f"The folder '{benchmark_dir}' does not contain "
-                "`objective.py`.\nMake sure you provide the path to a valid "
-                "benchmark."
-            )
+        if not standalone:
+            try:
+                self.get_benchmark_objective()
+            except RuntimeError:
+                raise click.BadParameter(
+                    f"The folder '{benchmark_dir}' does not contain "
+                    "`objective.py`.\nMake sure you provide the path to a valid "
+                    "benchmark."
+                )
 
     @property
     def mem(self):

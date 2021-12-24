@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 from mako.template import Template
 
 from ..constants import PLOT_KINDS
+from ..benchmark import Benchmark
 from .plot_histogram import plot_histogram  # noqa: F401
 from .plot_objective_curve import plot_objective_curve  # noqa: F401
 from .plot_objective_curve import plot_suboptimality_curve  # noqa: F401
@@ -473,11 +474,14 @@ def plot_benchmark_html_all(patterns=(), benchmarks=(), root=None,
     if not benchmarks:
         root = Path(root)
         benchmarks = [
-            f for f in root.iterdir()
-            if f.is_dir() and (f / 'outputs').is_dir()
+            Benchmark(f, standalone=True) for f in root.iterdir()
+            if f.is_dir() and (f / 'outputs').is_dir() and f.name != "html"
         ]
     else:
-        benchmarks = [Path(b) for b in benchmarks]
+        benchmarks = [
+            Benchmark(Path(b), standalone=True) for b in benchmarks
+            if Path(b).name != 'html'
+        ]
     if not patterns:
         patterns = ['*']
 
@@ -490,11 +494,11 @@ def plot_benchmark_html_all(patterns=(), benchmarks=(), root=None,
     # Loop over all benchmarks to
     len_fnames = []
     for benchmark in benchmarks:
-        print(f'Rendering benchmark: {benchmark}')
+        print(f'Rendering benchmark: {benchmark.name}')
 
         fnames = []
         for p in patterns:
-            fnames += (benchmark / 'outputs').glob(f"{p}.csv")
+            fnames += (benchmark.benchmark_dir / "outputs").glob(f"{p}.csv")
         fnames = sorted(set(fnames))
         results = get_results(
             fnames, PLOT_KINDS.keys(), root_html, benchmark.name, copy=True
