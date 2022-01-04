@@ -41,7 +41,7 @@ def make_correlated_data(
         :math:`[0, 1[`.
     snr: float or np.inf
         Signal-to-noise ratio.
-    w_true: np.array, shape (n_features,) | None
+    w_true: np.array, shape (n_features,) or (n_features, n_tasks)| None
         True regression coefficients. If None, a sparse array with standard
         Gaussian non zero entries is simulated.
     density: float
@@ -88,6 +88,9 @@ def make_correlated_data(
         w_true = np.zeros((n_features, n_tasks))
         support = rng.choice(n_features, nnz, replace=False)
         w_true[support, :] = rng.randn(nnz, n_tasks)
+    else:
+        if w_true.ndim == 1:
+            w_true = w_true[:, None]
 
     Y = X @ w_true
     noise = rng.randn(n_samples, n_tasks)
