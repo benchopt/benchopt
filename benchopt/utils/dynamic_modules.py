@@ -6,12 +6,19 @@ import importlib
 from pathlib import Path
 
 
-def _get_module_from_file(module_filename):
+def _get_module_from_file(module_filename, benchmark_dir=None):
     """Load a module from the name of the file"""
     module_filename = Path(module_filename)
-    package_name = '.'.join(
-        ['benchopt_benchmarks', *module_filename.with_suffix('').parts[-3:]]
-    )
+    if benchmark_dir is not None:
+        module_filename = module_filename.resolve()
+        benchmark_dir = Path(benchmark_dir).resolve().parent
+        package_name = module_filename.relative_to(benchmark_dir)
+        package_name = package_name.with_suffix('').parts
+    else:
+        package_name = module_filename.with_suffix('').parts[-3:]
+    if package_name[-1] == '__init__':
+        package_name = package_name[:-1]
+    package_name = '.'.join(['benchopt_benchmarks', *package_name])
 
     module = sys.modules.get(package_name, None)
     if module is None:
@@ -19,12 +26,12 @@ def _get_module_from_file(module_filename):
             package_name, module_filename
         )
         module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
         sys.modules[package_name] = module
+        spec.loader.exec_module(module)
     return module
 
 
-def _load_class_from_module(module_filename, class_name):
+def _load_class_from_module(module_filename, class_name, benchmark_dir=None):
     """Load a class from a module_filename.
 
     This helper also stores info necessary for DependenciesMixing to check the
@@ -36,6 +43,9 @@ def _load_class_from_module(module_filename, class_name):
         Path to the file defining the module to load the class from.
     class_name : str
         Name of the class to load
+    benchmark_dir : str or Path or None
+        Path to the benchmark_dir. If provided, will be used to set the package
+        name relative to it.
 
     Returns
     -------
@@ -43,7 +53,7 @@ def _load_class_from_module(module_filename, class_name):
         The klass requested from the given module.
     """
     module_filename = Path(module_filename)
-    module = _get_module_from_file(module_filename)
+    module = _get_module_from_file(module_filename, benchmark_dir)
     klass = getattr(module, class_name)
 
     # Store the info to easily reload the class

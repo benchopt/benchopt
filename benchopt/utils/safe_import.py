@@ -1,9 +1,12 @@
-import warnings
 import sys
+import warnings
+from pathlib import Path
 
 from ..config import RAISE_INSTALL_ERROR
+from .dynamic_modules import _get_module_from_file
 
 SKIP_IMPORT = False
+BENCHMARK_DIR = None
 
 
 class SkipWithBlock(Exception):
@@ -13,6 +16,11 @@ class SkipWithBlock(Exception):
 def skip_import():
     global SKIP_IMPORT
     SKIP_IMPORT = True
+
+
+def set_benchmark(benchmark_dir):
+    global BENCHMARK_DIR
+    BENCHMARK_DIR = Path(benchmark_dir)
 
 
 class safe_import_context:
@@ -38,6 +46,23 @@ class safe_import_context:
 
     def trace(self, frame, event, arg):
         raise SkipWithBlock()
+
+    def import_from(self, module_name, obj=None):
+        module_path = BENCHMARK_DIR / 'utils' / module_name.replace('.', '/')
+        if not module_path.exists():
+            module_path = module_path.with_suffix('.py')
+        elif module_path.is_dir():
+            module_path = module_path / '__init__.py'
+        if not module_path.exists():
+            raise ValueError(
+                f"Failed to import {module_name}. Check that file "
+                f" {module_path} exists in the benchmark."
+            )
+        module = _get_module_from_file(module_path, BENCHMARK_DIR)
+        if obj is None:
+            return module
+        else:
+            return getattr(module, obj)
 
     def __exit__(self, exc_type, exc_value, tb):
 
