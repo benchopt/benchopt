@@ -93,9 +93,14 @@ First, all code that need to be imported should be placed under
             ├── __init__.py  # some solver
             └── submodule1.py  # some solver
 
-Then, these modules and packages can be imported using the method :func:`benchopt.safe_import_context.import_from`. This method
+Then, these modules and packages can be imported using the method
+:func:`benchopt.safe_import_context.import_from`. This method
 takes as input the name of the module as a string and optionally
-the name of the object to load. It can be used as
+the name of the object to load. The imported package can
+either be a simple ``*.py`` file or a more complex package
+with a ``__init__.py`` file. The naming convention for import
+is the same as for regular import, with submodules
+separated with ``.``.
 
 .. code-block::
 

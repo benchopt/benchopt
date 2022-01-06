@@ -282,7 +282,7 @@ class BaseObjective(ParametrizedNameMixin):
 
     @abstractmethod
     def set_data(self, **data):
-        """Store the info on the data to be able to compute the objective.
+        """Store the info on a dataset to be able to compute the objective.
 
         Parameters
         ----------

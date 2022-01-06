@@ -10,6 +10,7 @@ def _get_module_from_file(module_filename, benchmark_dir=None):
     """Load a module from the name of the file"""
     module_filename = Path(module_filename)
     if benchmark_dir is not None:
+        # Use a package starting from the benchmark root folder.
         module_filename = module_filename.resolve()
         benchmark_dir = Path(benchmark_dir).resolve().parent
         package_name = module_filename.relative_to(benchmark_dir)
