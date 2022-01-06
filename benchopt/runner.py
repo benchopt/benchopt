@@ -95,6 +95,16 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
     with exception_handler(output, pdb=pdb) as ctx:
 
         if solver._solver_strategy == "callback":
+            output.progress('empty run for compilation')
+            run_once_cb = _Callback(
+                lambda x: {'objective_value': 1},
+                {},
+                stopping_criterion.get_runner_instance(
+                    solver=solver, max_runs=1
+                )
+            )
+            solver.run(run_once_cb)
+
             # If stopping strategy is 'callback', only call once to get the
             # results up to convergence.
             callback = _Callback(
@@ -164,7 +174,7 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
         The benchmark results.
     """
     run_one_to_cvg_cached = benchmark.cache(
-        run_one_to_cvg, ignore=['force', 'output']
+        run_one_to_cvg, ignore=['force', 'output', 'pdb']
     )
 
     # Set objective an skip if necessary.

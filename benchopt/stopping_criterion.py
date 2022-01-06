@@ -149,11 +149,8 @@ class StoppingCriterion():
             INFINITY if self.strategy == 'tolerance' else 0
         )
 
-        if self.output is not None:
-            self.output.debug(
-                f"Calling solver {self.solver} with stop val: {stop_val}"
-            )
-            self.output.progress('initialization')
+        self.debug(f"Calling solver {self.solver} with stop val: {stop_val}")
+        self.progress('initialization')
         return stop_val
 
     def should_stop(self, stop_val, cost_curve):
@@ -221,23 +218,21 @@ class StoppingCriterion():
             status = 'done' if stop else 'running'
             is_flat = delta_objective == 0
 
-        if stop and self.output is not None:
-            self.output.debug(
+        if stop:
+            self.debug(
                 f"Exit with delta_objective = {delta_objective:.2e} and "
                 f"n_eval={n_eval:.1e}."
             )
 
         if is_flat:
             self.rho *= RHO_INC
-            self.output.debug(f"curve is flat -> increasing rho: {self.rho}")
+            self.debug(f"curve is flat -> increasing rho: {self.rho}")
 
         stop_val = self.get_next_stop_val(stop_val)
 
-        if status == 'running' and self.output is not None:
-            self.output.debug(
-                f"Calling with stop val: {stop_val}"
-            )
-            self.output.progress(progress=progress)
+        if status == 'running':
+            self.debug(f"Calling with stop val: {stop_val}")
+            self.progress(progress=progress)
 
         return stop, status, stop_val
 
@@ -260,6 +255,16 @@ class StoppingCriterion():
             that the solver has converged.
         """
         return False, 0
+
+    def debug(self, msg):
+        """Helper to print debug messages."""
+        if self.output is not None:
+            self.output.debug(msg)
+
+    def progress(self, msg):
+        """Helper to print progress messages."""
+        if self.output is not None:
+            self.output.progress(msg)
 
     @staticmethod
     def _reconstruct(klass, kwargs, runner_kwargs):
@@ -351,6 +356,7 @@ class SufficientDescentCriterion(StoppingCriterion):
 
         delta = max(self._delta_objectives)
         if (-self.eps <= delta <= self.eps):
+            self.debug(f"Exit with delta_objective = {delta:.2e}.")
             return True, 1
 
         progress = math.log(max(abs(delta), self.eps)) / math.log(self.eps)
@@ -427,6 +433,7 @@ class SufficientProgressCriterion(StoppingCriterion):
 
         delta = max(self._progress)
         if delta <= self.eps * self._best_objective_value:
+            self.debug(f"Exit with delta = {delta:.2e}.")
             return True, 1
 
         progress = math.log(max(abs(delta), self.eps)) / math.log(self.eps)
