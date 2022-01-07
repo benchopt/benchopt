@@ -35,6 +35,36 @@ def fill_between_x(fig, x, q1, q9, y, color, marker, label, plotly=False):
     return fig
 
 
+def fill_between_y(fig, x, y, q1, q9, color, marker, label, plotly=False):
+    if not plotly:
+        plt.loglog(x, y, color=color, marker=marker, label=label, linewidth=3)
+        plt.fill_between(x, q1, q9, color=color, alpha=.3)
+        return fig
+    color = tuple(255*x if i != 3 else x for i, x in enumerate(color))
+    color = f'rgba{color}'
+    hovertemplate = '%{text} <br> (%{x:.1e},%{y:.1e}) <extra></extra>'
+    text = [label for _ in x]
+    fig.add_trace(go.Scatter(
+        x=x, y=y,
+        line_color=color, marker_symbol=marker, mode='lines+markers',
+        marker_size=10, name=label, legendgroup=label,
+        hoverlabel=dict(namelength=-1),
+        hovertemplate=hovertemplate, text=text, showlegend=True,
+    ))
+    fig.add_trace(go.Scatter(
+        x=x, y=q1, mode='lines', showlegend=False,
+        line={'width': 0, 'color': color}, legendgroup=label,
+        hovertemplate=hovertemplate, text=text,
+    ))
+    fig.add_trace(go.Scatter(
+        x=x, y=q9, mode='lines', fill='tonexty', showlegend=False,
+        line={'width': 0, 'color': color}, legendgroup=label,
+        hovertemplate=hovertemplate, text=text,
+    ))
+
+    return fig
+
+
 def get_figure(plotly=False):
     "Get matplotlib or plotly figure in a compatible way"
 

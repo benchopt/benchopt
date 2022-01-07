@@ -3,8 +3,10 @@ import matplotlib.pyplot as plt
 from .helpers_compat import get_figure
 from .helpers_compat import add_h_line
 from .helpers_compat import fill_between_x
+from .helpers_compat import fill_between_y
 
 CMAP = plt.get_cmap('tab10')
+EPS = 1e-10
 
 
 def _remove_prefix(text, prefix):
@@ -12,7 +14,7 @@ def _remove_prefix(text, prefix):
 
 
 def plot_objective_curve(df, obj_col='objective_value', plotly=False,
-                         suboptimality=False, relative=False):
+                         suboptimality=False, relative=False, iteration=False):
     """Plot objective curve for a given benchmark and dataset.
 
     Plot the objective value F(x) as a function of the time.
@@ -32,6 +34,10 @@ def plot_objective_curve(df, obj_col='objective_value', plotly=False,
     relative : bool
         If set to True, scale the objective value by 1 / F_0 where F_0 is
         computed as the largest objective value accross all initialization.
+    iteration : bool
+        If set to True, show the objective value as a function of the stop_val
+        and not the time. Note that the stop val might not correspond between
+        different solvers.
 
     Returns
     -------
@@ -51,9 +57,8 @@ def plot_objective_curve(df, obj_col='objective_value', plotly=False,
     df.query(f"`{obj_col}` not in [inf, -inf]", inplace=True)
     y_label = "F(x)"
     if suboptimality:
-        eps = 1e-10
         y_label = "F(x) - F(x*)"
-        c_star = df[obj_col].min() - eps
+        c_star = df[obj_col].min() - EPS
         df.loc[:, obj_col] -= c_star
 
     if relative:
@@ -80,24 +85,40 @@ def plot_objective_curve(df, obj_col='objective_value', plotly=False,
         df_ = df[df['solver_name'] == solver_name]
         curve = df_.groupby('stop_val').median()
 
-        q1 = df_.groupby('stop_val')['time'].quantile(.1)
-        q9 = df_.groupby('stop_val')['time'].quantile(.9)
+        if iteration:
+            q1 = df_.groupby('stop_val')[obj_col].quantile(.1)
+            q9 = df_.groupby('stop_val')[obj_col].quantile(.9)
+            fill_between_y(
+                fig, curve.index, y=curve[obj_col], q1=q1, q9=q9,
+                color=CMAP(i % CMAP.N), marker=markers[i % len(markers)],
+                label=solver_name, plotly=plotly
+            )
+        else:
+            q1 = df_.groupby('stop_val')['time'].quantile(.1)
+            q9 = df_.groupby('stop_val')['time'].quantile(.9)
 
-        fill_between_x(
-            fig, curve['time'], q1, q9, curve[obj_col], color=CMAP(i % CMAP.N),
-            marker=markers[i % len(markers)], label=solver_name, plotly=plotly
-        )
+            fill_between_x(
+                fig, curve['time'], q1, q9, curve[obj_col],
+                color=CMAP(i % CMAP.N), marker=markers[i % len(markers)],
+                label=solver_name, plotly=plotly
+            )
+
+    if iteration:
+        x_label = 'Iteration'
+        x_lim = (df['stop_val'].min(), df['stop_val'].max())
+    else:
+        x_label = "Time [sec]"
+        x_lim = (df['time'].min(), df['time'].max())
 
     if suboptimality and not relative:
-        add_h_line(fig, eps, [df['time'].min(), df['time'].max()],
-                   plotly=plotly)
+        add_h_line(fig, EPS, x_lim, plotly=plotly)
 
     # Format the plot to be nice
     if plotly:
         fig.update_layout(
             xaxis_type='linear',
             yaxis_type='log',
-            xaxis_title=r"Time [sec]",
+            xaxis_title=x_label,
             yaxis_title=y_label,
             yaxis_tickformat=".1e",
             xaxis_tickformat=".0e",
@@ -108,7 +129,7 @@ def plot_objective_curve(df, obj_col='objective_value', plotly=False,
 
     else:
         plt.legend(fontsize=14)
-        plt.xlabel("Time [sec]", fontsize=14)
+        plt.xlabel(x_label, fontsize=14)
         plt.ylabel(f"{_remove_prefix(obj_col, 'objective_')}: {y_label}",
                    fontsize=14)
         plt.title(title, fontsize=14)
@@ -165,3 +186,32 @@ def plot_relative_suboptimality_curve(df, obj_col='objective_value',
     """
     return plot_objective_curve(df, obj_col=obj_col, plotly=plotly,
                                 suboptimality=True, relative=True)
+
+
+def plot_iteration_suboptimality_curve(df, obj_col='objective_value',
+                                       plotly=False):
+    """Plot suboptimality curve for a given benchmark and dataset as a
+    function of the stop_val.
+
+    Plot suboptimality, that is F(x) - F(x^*) as a function of the stop_val,
+    where F(x^*) is the smallest value reached in df.
+
+    Note that this plot only makes sense if all solvers have been run with
+    similar stopping criterions.
+
+    Parameters
+    ----------
+    df : instance of pandas.DataFrame
+        The benchmark results.
+    obj_col : str
+        Column to select in the DataFrame for the plot.
+    plotly : bool
+        If set to True, output a plotly figure for HTML display.
+
+    Returns
+    -------
+    fig : instance of matplotlib.figure.Figure
+        The matplotlib figure.
+    """
+    return plot_objective_curve(df, obj_col=obj_col, plotly=plotly,
+                                suboptimality=True, iteration=True)
