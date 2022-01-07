@@ -41,6 +41,13 @@ API
   files and packages without install from `BENCHMARK_DIR/utils`,
   by `Thomas Moreau`_ (:gh:`286`).
 
+
+Plotting tools
+~~~~~~~~~~~~~~
+
+- Add plot relative to the number of iterations for research benchmarks,
+  by `Thomas Moreau`_ (:gh:`287`).
+
 .. _changes_1_1:
 
 Version 1.1 - 22-04-2021
