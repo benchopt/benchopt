@@ -37,6 +37,10 @@ API
 - 'stop_strategy' attribute is replaced by 'stopping_strategy' to harmonize
   with 'stopping_criterion', by `Benoît Malézieux`_ (:gh:`274`).
 
+- Add `import_from` method in `safe_import_context` to allow importing common
+  files and packages without install from `BENCHMARK_DIR/utils`,
+  by `Thomas Moreau`_ (:gh:`286`).
+
 .. _changes_1_1:
 
 Version 1.1 - 22-04-2021

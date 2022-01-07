@@ -282,14 +282,46 @@ class BaseObjective(ParametrizedNameMixin):
 
     @abstractmethod
     def set_data(self, **data):
+        """Store the info on a dataset to be able to compute the objective.
+
+        Parameters
+        ----------
+        **data: dict
+            Extra parameters of the objective. This dictionary is retrieved
+            by calling ``data = Dataset.get_data()``.
+        """
         ...
 
     @abstractmethod
     def to_dict(self):
+        """Return the objective parameters for the solver.
+
+        Returns
+        -------
+        objective_dict: dict
+            Parameters of the objective that will be given to the solver when
+            calling ``Solver.set_objective(**objective_dict)``.
+        """
         ...
 
     @abstractmethod
     def compute(self, beta):
+        """Compute the value of the objective given the current estimate beta.
+
+        Parameters
+        ----------
+        beta : ndarray or tuple of ndarray
+            The current estimate of the parameters being optimized.
+
+        Returns
+        -------
+        objective_value : float or dict {'name': float}
+            The value(s) of the objective function. If a dictionary is
+            returned, it should at least contain a key `value` associated to a
+            scalar value which will be used to detect convergence. With a
+            dictionary, multiple metric values can be stored at once instead
+            of runnning each separately.
+        """
         ...
 
     def __call__(self, beta):
