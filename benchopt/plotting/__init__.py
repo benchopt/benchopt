@@ -9,6 +9,7 @@ from .plot_objective_curve import plot_objective_curve  # noqa: F401
 from .plot_objective_curve import plot_suboptimality_curve  # noqa: F401
 from .plot_objective_curve import plot_relative_suboptimality_curve  # noqa: F401 E501
 from .plot_objective_curve import plot_iteration_suboptimality_curve  # noqa: F401 E501
+from .plot_objective_curve import plot_iteration_curve  # noqa: F401
 from .generate_html import plot_benchmark_html
 
 

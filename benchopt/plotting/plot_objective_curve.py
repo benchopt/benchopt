@@ -197,7 +197,7 @@ def plot_iteration_suboptimality_curve(df, obj_col='objective_value',
     where F(x^*) is the smallest value reached in df.
 
     Note that this plot only makes sense if all solvers have been run with
-    similar stopping criterions.
+    similar stopping strategy.
 
     Parameters
     ----------
@@ -215,3 +215,28 @@ def plot_iteration_suboptimality_curve(df, obj_col='objective_value',
     """
     return plot_objective_curve(df, obj_col=obj_col, plotly=plotly,
                                 suboptimality=True, iteration=True)
+
+
+def plot_iteration_curve(df, obj_col='objective_value', plotly=False):
+    """Plot objective for a given benchmark and dataset as a
+    function of the stop_val.
+
+    Note that this plot only makes sense if all solvers have been run with
+    similar stopping strategy.
+
+    Parameters
+    ----------
+    df : instance of pandas.DataFrame
+        The benchmark results.
+    obj_col : str
+        Column to select in the DataFrame for the plot.
+    plotly : bool
+        If set to True, output a plotly figure for HTML display.
+
+    Returns
+    -------
+    fig : instance of matplotlib.figure.Figure
+        The matplotlib figure.
+    """
+    return plot_objective_curve(df, obj_col=obj_col, plotly=plotly,
+                                iteration=True)
