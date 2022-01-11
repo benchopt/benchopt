@@ -178,16 +178,13 @@ def print_info(cls_name_list, cls_list, env_name=None, verbose=False):
 
 @helpers.command(
     help="List information (solvers/datasets) and corresponding requirements "
-    "for a given benchmark.",
-    epilog="To (re-)install the required solvers and datasets "
-    "in a benchmark-dedicated conda environment or in your own "
-    "conda environment, see the command `benchopt install`."
+    "for a given benchmark."
 )
 @click.argument('benchmark', type=click.Path(exists=True),
                 autocompletion=complete_benchmarks)
 @click.option('--solver', '-s', 'solver_names',
               metavar="<solver_name>", multiple=True, type=str,
-              help="Include <solver_name> in the installation. "
+              help="Display information about <solver_name>. "
               "By default, all solvers are included except "
               "when -d flag is used. If -d flag is used, then "
               "no solver is included by default. "
@@ -198,7 +195,7 @@ def print_info(cls_name_list, cls_list, env_name=None, verbose=False):
               shell_complete=complete_solvers)
 @click.option('--dataset', '-d', 'dataset_names',
               metavar="<dataset_name>", multiple=True, type=str,
-              help="Install the dataset <dataset_name>. By default, all "
+              help="Display information about <dataset_name>. By default, all "
               "datasets are included, except when -s flag is used. "
               "If -s flag is used, then no dataset is included. "
               "When `-d` is used, only listed datasets "
@@ -219,7 +216,7 @@ def print_info(cls_name_list, cls_list, env_name=None, verbose=False):
               "the conda environment named <env_name>.")
 @click.option('--verbose', '-v',
               is_flag=True,
-              help="If enabled, list solver/dataset "
+              help="If used, list solver/dataset "
               "parameters, dependencies and availability.")
 def info(benchmark, solver_names, dataset_names, env_name='False',
          verbose=False):

@@ -14,4 +14,4 @@
 
 .. _Ghislain Durif: https://gdurif.perso.math.cnrs.fr/
 
-.. _Benoit Malézieux: https://github.com/bmalezieux
+.. _Benoît Malézieux: https://github.com/bmalezieux

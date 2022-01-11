@@ -49,6 +49,20 @@ def test_correlated_w_true(density):
     assert all(w_new == w_true)
 
 
+@pytest.mark.parametrize('n_tasks', [1, 7])
+def test_correlated_n_tasks(n_tasks):
+    X, y, w_true = make_correlated_data(
+        n_tasks=n_tasks, random_state=42
+    )
+
+    if n_tasks == 1:
+        assert y.ndim == 1
+        assert w_true.ndim == 1
+    else:
+        assert y.ndim == 2
+        assert y.shape[1] == w_true.shape[1]
+
+
 @pytest.mark.parametrize('param_name, p_range', [
     ('rho', [0, 1]), ('density', [0, 1]), ('snr', [0, np.inf])
 ])

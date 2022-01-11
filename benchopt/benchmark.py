@@ -5,6 +5,8 @@ from pathlib import Path
 
 from .config import get_setting
 from .base import BaseSolver, BaseDataset
+
+from .utils.safe_import import set_benchmark
 from .utils.dynamic_modules import _load_class_from_module
 from .utils.parametrized_name_mixin import product_param
 from .utils.parametrized_name_mixin import _list_all_parametrized_names
@@ -41,6 +43,8 @@ class Benchmark:
         self.benchmark_dir = Path(benchmark_dir)
         self.name = self.benchmark_dir.resolve().name
 
+        set_benchmark(self.benchmark_dir)
+
         try:
             self.get_benchmark_objective()
         except RuntimeError:
@@ -68,7 +72,9 @@ class Benchmark:
                 "Did not find an `objective` module in benchmark."
             )
 
-        return _load_class_from_module(module_filename, "Objective")
+        return _load_class_from_module(
+            module_filename, "Objective", benchmark_dir=self.benchmark_dir
+        )
 
     def validate_objective_filters(self, objective_filters):
         "Check that all objective filters match at least one objective setup."
@@ -137,7 +143,9 @@ class Benchmark:
         submodule_files = package.glob('*.py')
         for module_filename in submodule_files:
             # Get the class
-            cls = _load_class_from_module(module_filename, class_name)
+            cls = _load_class_from_module(
+                module_filename, class_name, benchmark_dir=self.benchmark_dir
+            )
             if issubclass(cls, base_class):
                 classes.append(cls)
             else:

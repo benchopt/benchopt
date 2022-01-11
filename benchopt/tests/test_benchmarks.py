@@ -170,10 +170,7 @@ def test_solver(benchmark, solver_class):
 
     # Either call run_with_cb or run
 
-    solver_strategy = getattr(
-        solver, 'stopping_strategy', solver.stopping_criterion.strategy
-    )
-    if solver_strategy == 'callback':
+    if solver._solver_strategy == 'callback':
         sc = solver.stopping_criterion.get_runner_instance(
             max_runs=25, timeout=None, solver=solver
         )
@@ -182,7 +179,7 @@ def test_solver(benchmark, solver_class):
         )
         solver.run(cb)
     else:
-        stop_val = 5000 if solver_strategy == 'iteration' else 1e-15
+        stop_val = 5000 if solver._solver_strategy == 'iteration' else 1e-15
         solver.run(stop_val)
 
     beta_hat_i = solver.get_result()

@@ -210,6 +210,7 @@ Contents
    how
    publish
    config
+   advanced
    whats_new
    Fork benchopt on Github <https://github.com/benchopt/benchopt>
 
