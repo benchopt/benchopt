@@ -261,10 +261,10 @@ class StoppingCriterion():
         if self.output is not None:
             self.output.debug(msg)
 
-    def progress(self, msg):
+    def progress(self, progress):
         """Helper to print progress messages."""
         if self.output is not None:
-            self.output.progress(msg)
+            self.output.progress(progress)
 
     @staticmethod
     def _reconstruct(klass, kwargs, runner_kwargs):
