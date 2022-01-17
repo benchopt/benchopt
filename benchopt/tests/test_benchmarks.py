@@ -183,11 +183,9 @@ def test_solver(benchmark, solver_class):
         solver.run(stop_val)
 
     beta_hat_i = solver.get_result()
-
-    assert beta_hat_i.shape == dimension
+    val_star = objective(beta_hat_i)['objective_value']
 
     if getattr(objective, "is_convex", True):
-        val_star = objective(beta_hat_i)['objective_value']
         for _ in range(100):
             eps = 1e-5 * np.random.randn(*dimension)
             val_eps = objective(beta_hat_i + eps)['objective_value']

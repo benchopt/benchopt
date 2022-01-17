@@ -5,6 +5,8 @@ import hashlib
 import importlib
 from pathlib import Path
 
+from .safe_import import safe_import_context
+
 
 def _get_module_from_file(module_filename, benchmark_dir=None):
     """Load a module from the name of the file"""
@@ -59,7 +61,9 @@ def _load_class_from_module(module_filename, class_name, benchmark_dir=None):
 
     # Store the info to easily reload the class
     klass._module_filename = module_filename.resolve()
-    klass._import_ctx = getattr(module, 'import_ctx', None)
+    klass._import_ctx = getattr(
+            module, 'import_ctx', safe_import_context()
+    )
     return klass
 
 
