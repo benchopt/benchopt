@@ -7,8 +7,8 @@ from ..utils.checkers import check_random_state
 
 
 def make_correlated_data(
-        n_samples=100, n_features=50, n_tasks=1, rho=0.6, snr=3, X_density=1,
-        w_true=None, density=0.2, random_state=None):
+        n_samples=100, n_features=50, n_tasks=1, rho=0.6, snr=3,
+        w_true=None, density=0.2, random_state=None, X_density=1):
     r"""Generate a linear regression with decaying correlation for the design
     matrix :math:`\rho^{|i-j|}`.
 
@@ -40,8 +40,6 @@ def make_correlated_data(
         correlation :math:`C_{i, j}` between feature i and feature j will be
         :math:`\rho^{|i-j|}`. This parameter should be selected in
         :math:`[0, 1[`.
-    X_density: float in ]0, 1]
-        Proportion of elements of X which are non-zero.
     snr: float or np.inf
         Signal-to-noise ratio.
     w_true: np.array, shape (n_features,) or (n_features, n_tasks)| None
@@ -52,6 +50,8 @@ def make_correlated_data(
     random_state: int | RandomState instance | None (default)
         Determines random number generation for data generation. Use an int to
         make the randomness deterministic.
+    X_density: float in ]0, 1]
+        Proportion of elements of X which are non-zero.
 
     Returns
     -------
