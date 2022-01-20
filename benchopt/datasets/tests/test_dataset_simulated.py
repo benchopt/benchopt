@@ -1,5 +1,6 @@
 import pytest
 import numpy as np
+from scipy import sparse
 from numpy.linalg import norm
 
 from benchopt.datasets.simulated import make_correlated_data
@@ -61,6 +62,23 @@ def test_correlated_n_tasks(n_tasks):
     else:
         assert y.ndim == 2
         assert y.shape[1] == w_true.shape[1]
+
+
+@pytest.mark.parametrize("X_density", [-1, 0.2, 0.7, 1, 1.2])
+def test_correlated_sparse_X(X_density):
+    if not 0 < X_density <= 1:
+        np.testing.assert_raises(ValueError, make_correlated_data,
+                                 X_density=X_density)
+    else:
+        X, y, _ = make_correlated_data(X_density=X_density, random_state=0)
+        if X_density == 1:
+            assert isinstance(X, np.ndarray)
+        else:
+            assert isinstance(X, sparse.csc_matrix)
+            # check that X's density is equal to X_density up to sampling noise
+            np.testing.assert_allclose(
+                X_density * X.shape[0] * X.shape[1], len(X.indices - 1),
+                rtol=0.05)
 
 
 @pytest.mark.parametrize('param_name, p_range', [
