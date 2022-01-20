@@ -1,7 +1,6 @@
 """Helper to generate simulated data in benchopt."""
 import numpy as np
 from numpy.linalg import norm
-from scipy import sparse
 
 from ..utils.checkers import check_random_state
 
@@ -92,6 +91,7 @@ def make_correlated_data(
     if X_density != 1:
         zeros = rng.binomial(n=1, size=X.shape, p=1 - X_density).astype(bool)
         X[zeros] = 0.
+        from scipy import sparse
         X = sparse.csc_matrix(X)
 
     if w_true is None:
