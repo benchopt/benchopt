@@ -7,7 +7,7 @@ from ..utils.checkers import check_random_state
 
 def make_correlated_data(
         n_samples=100, n_features=50, n_tasks=1, rho=0.6, snr=3,
-        w_true=None, density=0.2, random_state=None):
+        w_true=None, density=0.2, X_density=1, random_state=None):
     r"""Generate a linear regression with decaying correlation for the design
     matrix :math:`\rho^{|i-j|}`.
 
@@ -49,10 +49,12 @@ def make_correlated_data(
     random_state: int | RandomState instance | None (default)
         Determines random number generation for data generation. Use an int to
         make the randomness deterministic.
+    X_density: float in ]0, 1]
+        Proportion of elements of X which are non-zero.
 
     Returns
     -------
-    X: ndarray, shape (n_samples, n_features)
+    X: ndarray or CSC matrix, shape (n_samples, n_features)
         A design matrix with Toeplitz covariance.
     y: ndarray, shape (n_samples,) or (n_samples, n_tasks)
         Observation vector/matrix.
@@ -63,6 +65,8 @@ def make_correlated_data(
         raise ValueError("The correlation `rho` should be chosen in [0, 1[.")
     if not 0 < density <= 1:
         raise ValueError("The density should be chosen in ]0, 1].")
+    if not 0 < X_density <= 1:
+        raise ValueError("The density of X should be chosen in ]0, 1].")
     if snr < 0:
         raise ValueError("The snr should be chosen in [0, inf].")
     rng = check_random_state(random_state)
@@ -83,6 +87,12 @@ def make_correlated_data(
             X[:, j] = U
     else:
         X = rng.randn(n_samples, n_features)
+
+    if X_density != 1:
+        zeros = rng.binomial(n=1, size=X.shape, p=1 - X_density).astype(bool)
+        X[zeros] = 0.
+        from scipy import sparse
+        X = sparse.csc_matrix(X)
 
     if w_true is None:
         w_true = np.zeros((n_features, n_tasks))
