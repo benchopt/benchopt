@@ -57,7 +57,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
             warnings.warn(
                 "'stop_strategy' attribute is deprecated, "
                 "use 'stopping_strategy' instead",
-                DeprecationWarning
+                FutureWarning
             )
             return self.stop_strategy
         elif hasattr(self, 'stopping_strategy'):
