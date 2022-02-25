@@ -135,7 +135,11 @@
 
     <a class="backtotop" title="Back to top" href="#top"><i class="fas fa-level-up-alt"></i></a>
 
-    <script type="text/javascript" src="${static_dir}/result.js"></script>
+    <script type="text/javascript" src="${static_dir}/result.js" onerror="
+    let resultjs = document.createElement('script');
+    resultjs.setAttribute('src', 'https://benchopt.github.io/results/static/result.js');
+    document.body.appendChild(resultjs);
+    "></script>
 </body>
 
 </html>
