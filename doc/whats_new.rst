@@ -13,6 +13,9 @@ Version 1.2 - in progress
 Changelog
 ~~~~~~~~~
 
+- New ``benchopt info`` command to display information about solvers and datasets
+  of a benchmark, by `Ghislain Durif`_ (:gh:`140`).
+
 - New ``--profile`` option to the ``run`` command in order to profile
   with the line-profiler package all functions decorated with
   :func:`benchopt.utils.profile`, by `Alexandre Gramfort`_ (:gh:`186`).
@@ -33,6 +36,13 @@ API
 
 - 'stop_strategy' attribute is replaced by 'stopping_strategy' to harmonize
   with 'stopping_criterion', by `Benoît Malézieux`_ (:gh:`274`).
+
+- Add ``import_from`` method in ``safe_import_context`` to allow importing common
+  files and packages without install from `BENCHMARK_DIR/utils`,
+  by `Thomas Moreau`_ (:gh:`286`).
+
+- Add ``X_density`` argument to ``datasets.make_correlated_data`` to simulate
+  sparse design matrices, by `Mathurin Massias`_ (:gh:`289`).
 
 CLI
 ~~~
@@ -135,7 +145,7 @@ DOC
 The committer list for this release is the following:
 
   * `Alexandre Gramfort`_
-  * `Benoit Malézieux`_
+  * `Benoît Malézieux`_
   * `Ghislain Durif`_
   * `Joseph Salmon`_
   * `Mathurin Massias`_
