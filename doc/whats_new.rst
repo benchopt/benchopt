@@ -44,6 +44,11 @@ API
 - Add ``X_density`` argument to ``datasets.make_correlated_data`` to simulate
   sparse design matrices, by `Mathurin Massias`_ (:gh:`289`).
 
+CLI
+~~~
+
+- Replace ``-p`` flag by ``-o`` for Objective, by `Mathurin Massias`_ (:gh:`281`).
+
 .. _changes_1_1:
 
 Version 1.1 - 22-04-2021

@@ -1,4 +1,5 @@
 import click
+import warnings
 from pathlib import Path
 
 from benchopt.benchmark import Benchmark
@@ -27,10 +28,13 @@ main = click.Group(
 )
 @click.argument('benchmark', type=click.Path(exists=True),
                 shell_complete=complete_benchmarks)
-@click.option('--objective-filter', '-p', 'objective_filters',
+@click.option('--objective-filter', '-o', 'objective_filters',
               metavar='<objective_filter>', multiple=True, type=str,
               help="Filter the objective based on its parametrized name. This "
               "can be used to only include one set of parameters.")
+@click.option('--old_objective-filter', '-p', 'old_objective_filters',
+              multiple=True, type=str,
+              help="Deprecated alias for --objective_filters/-o.")
 @click.option('--solver', '-s', 'solver_names',
               metavar="<solver_name>", multiple=True, type=str,
               help="Include <solver_name> in the benchmark. By default, all "
@@ -93,7 +97,13 @@ main = click.Group(
 def run(benchmark, solver_names, forced_solvers, dataset_names,
         objective_filters, max_runs, n_repetitions, timeout,
         plot=True, html=True, pdb=False, do_profile=False,
-        env_name='False'):
+        env_name='False', old_objective_filters=None):
+    if len(old_objective_filters):
+        warnings.warn(
+            'Using the -p option is deprecated, use -o instead',
+            FutureWarning,
+        )
+        objective_filters = old_objective_filters
 
     from benchopt.runner import run_benchmark
 
