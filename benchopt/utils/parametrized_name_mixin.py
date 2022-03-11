@@ -65,6 +65,16 @@ class ParametrizedNameMixin():
             pickled_module_hash=pickled_module_hash
         )
 
+    def set_run_seed(self, seed):
+        """Helper to control randomness of the run.
+        """
+        self.run_seed = seed
+
+    def get_run_rng(self):
+        import numpy as np
+        run_seed = getattr(self, 'run_seed', None)
+        return np.random.RandomState(run_seed)
+
 
 def expand(keys, values):
     """Expand the multiple parameters for itertools product"""

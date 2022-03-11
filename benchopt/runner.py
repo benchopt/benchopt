@@ -2,6 +2,7 @@ import time
 
 from datetime import datetime
 
+import numpy as np
 from joblib import Parallel, delayed
 
 from .callback import _Callback
@@ -14,6 +15,16 @@ from .utils.terminal_output import TerminalOutput
 # For compat with the lasso benchmark, expose INFINITY in this module.
 # Should be removed once benchopt/benchmark_lasso#55 is merged
 from .stopping_criterion import INFINITY  # noqa: F401
+
+
+MAX_SEED = 2 ** 32 - 1
+
+
+def seed_run(objective, dataset, solver, rng):
+    obj_seed, data_seed, solver_seed = rng.randint(MAX_SEED, size=3)
+    objective.set_run_seed(obj_seed)
+    dataset.set_run_seed(data_seed)
+    solver.set_run_seed(solver_seed)
 
 
 ##################################
@@ -140,7 +151,8 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
 
 
 def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
-                   max_runs, timeout, force=False, output=None, pdb=False):
+                   max_runs, timeout, force=False, output=None, pdb=False,
+                   random_state=None):
     """Run a benchmark for a given dataset, objective and solver.
 
     Parameters
@@ -167,6 +179,8 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
         Object to format string to display the progress of the solver.
     pdb : bool
         It pdb is set to True, open a debugger on error.
+    random_state : int or RandomState or None
+        Seed to control stochasticity in the datasets and computations.
 
     Returns
     -------
@@ -177,16 +191,18 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
         run_one_to_cvg, ignore=['force', 'output', 'pdb']
     )
 
-    # Set objective an skip if necessary.
-    objective.set_dataset(dataset)
-    skip, reason = solver._set_objective(objective)
-    if skip:
-        output.skip(reason)
-        return []
-
     states = []
     run_statistics = []
+    rng = np.random.RandomState(random_state)
     for rep in range(n_repetitions):
+        seed_run(objective, dataset, solver, rng)
+
+        # Set objective and skip if necessary.
+        objective._set_dataset(dataset)
+        skip, reason = solver._set_objective(objective)
+        if skip:
+            output.skip(reason)
+            return []
 
         output.set(rep=rep)
         # Get meta
@@ -194,7 +210,7 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
             objective_name=str(objective),
             solver_name=str(solver),
             data_name=str(dataset),
-            idx_rep=rep,
+            idx_rep=rep, random_state=random_state,
         )
 
         stopping_criterion = solver.stopping_criterion.get_runner_instance(
@@ -232,7 +248,8 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
 def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                   dataset_names=None, objective_filters=None,
                   max_runs=10, n_repetitions=1, timeout=100, n_workers=1,
-                  plot_result=True, html=True, show_progress=True, pdb=False):
+                  plot_result=True, html=True, show_progress=True, pdb=False,
+                  random_state=None):
     """Run full benchmark.
 
     Parameters
@@ -281,6 +298,10 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
     """
     print("Benchopt is running")
 
+    if random_state is None:
+        random_state = np.random.randint(2 ** 31)
+        print(f"Random seed: {random_state}")
+
     # List all datasets, objective and solvers to run based on the filters
     # provided. Merge the solver_names and forced to run all necessary solvers.
     solver_names = _check_name_lists(solver_names, forced_solvers)
@@ -296,7 +317,8 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
         delayed(run_one_solver)(
             benchmark=benchmark, dataset=dataset, objective=objective,
             solver=solver, n_repetitions=n_repetitions, max_runs=max_runs,
-            timeout=timeout, force=force, output=output, pdb=pdb
+            timeout=timeout, force=force, output=output, pdb=pdb,
+            random_state=random_state
         ) for dataset, objective, solver, force, output in all_runs
     )
 
