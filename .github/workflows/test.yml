@@ -36,7 +36,7 @@ jobs:
       JUNIT_XML: 'test-data.xml'
       VERSION_PYTHON: ${{ matrix.version_python }}
       COVERAGE: ${{ matrix.coverage }}
-      BENCHOPT_CONDA_CMD: ${{ matrix.conda_cmd }}
+      BENCHOPT_CONDA_CMD: ${{ matrix.conda_cmd || 'conda' }}
 
     defaults:
       run:
