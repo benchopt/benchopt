@@ -1,1 +1,0 @@
-benchopt/tests/conftest.py

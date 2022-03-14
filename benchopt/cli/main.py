@@ -309,7 +309,14 @@ def install(benchmark, solver_names, dataset_names, force=False,
               'a temporary one is created for the test.')
 @click.argument('pytest_args', nargs=-1, type=click.UNPROCESSED)
 def test(benchmark, env_name, pytest_args):
-    pytest_args = ' '.join(pytest_args)
+
+    from benchopt.tests import __file__ as _bench_test_module
+    _bench_test_module = Path(_bench_test_module).parent
+
+    pytest_args = ' '.join((
+        "-p benchopt.tests.fixtures", f"--rootdir {_bench_test_module}",
+        *pytest_args
+    ))
     if len(pytest_args) == 0:
         pytest_args = '-vl'
 
@@ -324,13 +331,10 @@ def test(benchmark, env_name, pytest_args):
             )
         env_option = f'--test-env {env_name}'
 
-    from benchopt.tests import __file__ as _bench_test_module
-    BENCHMARK_TEST_FILE = (
-        Path(_bench_test_module).parent / "test_benchmarks.py"
-    )
+    _bench_test_file = _bench_test_module / "test_benchmarks.py"
 
     cmd = (
-        f'pytest {pytest_args} {BENCHMARK_TEST_FILE} '
+        f'pytest {pytest_args} {_bench_test_file} '
         f'--benchmark {benchmark} {env_option} '
         # Make sure to not modify sys.path to add test file from current env
         # in sub conda env as there might be different python versions.
