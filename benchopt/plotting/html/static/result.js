@@ -153,7 +153,15 @@ function toggleShades() {
   );
   allTraces = graph.data;
   const allIndex = (arr) => {
-    return arr.map((elm, idx) => (elm.name == null ? idx : "")).filter(String);
+    return arr.map((elm, idx) => {
+      group = elm.legendgroup;
+      main = arr.find(function (el) { return el.legendgroup === group });
+      if ([undefined, true].includes(main.visible)) {
+        return elm.name == null ? idx : "";
+      }
+      else{ return "" }
+    }
+      ).filter(String);
   };
   whereToggle = allIndex(allTraces); // shade fills are without name
   if (globalState.plot_kind[1] !== "histogram") {
