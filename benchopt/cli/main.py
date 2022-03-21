@@ -195,6 +195,9 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
               is_flag=True,
               help="If this flag is set, the reinstallation of "
               "the benchmark requirements is forced.")
+@click.option('--minimal', is_flag=True,
+              help="If this flag is set, only install requirements for the "
+              "benchmark's objective.")
 @click.option('--solver', '-s', 'solver_names',
               metavar="<solver_name>", multiple=True, type=str,
               help="Include <solver_name> in the installation. "
@@ -238,7 +241,7 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
               help="If this flag is set, no confirmation will be asked "
               "to the user to install requirements in the current environment."
               " Useless with options `-e/--env` or `--env-name`.")
-def install(benchmark, solver_names, dataset_names, force=False,
+def install(benchmark, minimal, solver_names, dataset_names, force=False,
             recreate=False, env_name='False', confirm=False, quiet=False):
 
     # Check that the dataset/solver patterns match actual dataset
@@ -293,7 +296,7 @@ def install(benchmark, solver_names, dataset_names, force=False,
     print("# Install", flush=True)
     benchmark.install_all_requirements(
         include_solvers=solver_names, include_datasets=dataset_names,
-        env_name=env_name, force=force, quiet=quiet,
+        minimal=minimal, env_name=env_name, force=force, quiet=quiet,
     )
 
 
