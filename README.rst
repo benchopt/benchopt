@@ -38,7 +38,7 @@ such as for
 `l1-regularized logistic regression <https://github.com/benchopt/benchmark_logreg_l1>`_.
 
 
-Learn how to `write a benchmark on our documentation <https://benchopt.github.io/how.html>`_.
+Learn how to `write a benchmark on our documentation <https://benchopt.github.io/how.html>`_ and use `our template <https://github.com/benchopt/template_benchmark>`_ to kickstart it.
 
 Install
 --------
