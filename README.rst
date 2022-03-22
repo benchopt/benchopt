@@ -53,7 +53,7 @@ And to get the **latest development version**, you can use:
 
 .. code-block::
 
-    $ pip install -U https://github.com/benchopt/benchopt/archive/master.zip
+    $ pip install -U git+https://github.com/benchopt/benchopt.git#egg=benchopt
 
 This will install the command line tool to run the benchmark. Then, existing
 benchmarks can be retrieved from git or created locally. For instance, the
