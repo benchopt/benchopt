@@ -313,6 +313,8 @@ def install(benchmark, minimal, solver_names, dataset_names, force=False,
 @click.argument('pytest_args', nargs=-1, type=click.UNPROCESSED)
 def test(benchmark, env_name, pytest_args):
 
+    benchmark = Benchmark(benchmark)
+
     from benchopt.tests import __file__ as _bench_test_module
     _bench_test_module = Path(_bench_test_module).parent
 
@@ -332,13 +334,16 @@ def test(benchmark, env_name, pytest_args):
                 f"Please run `conda install -n {env_name} pytest` to test the "
                 "benchmark in this environment."
             )
+        objective = benchmark.get_benchmark_objective()
+        if not objective.is_installed():
+            objective.install(env_name=env_name)
         env_option = f'--test-env {env_name}'
 
     _bench_test_file = _bench_test_module / "test_benchmarks.py"
 
     cmd = (
         f'pytest {pytest_args} {_bench_test_file} '
-        f'--benchmark {benchmark} {env_option} '
+        f'--benchmark {benchmark.benchmark_dir} {env_option} '
         # Make sure to not modify sys.path to add test file from current env
         # in sub conda env as there might be different python versions.
         '--import-mode importlib'
