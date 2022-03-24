@@ -350,7 +350,7 @@ class BaseObjective(ParametrizedNameMixin):
     # Save the dataset object used to get the objective data so we can avoid
     # hashing the data directly.
     def set_dataset(self, dataset):
-        self.dataset = dataset
+        self._dataset = dataset
         _, data = dataset._get_data()
         return self.set_data(**data)
 
@@ -368,4 +368,4 @@ class BaseObjective(ParametrizedNameMixin):
     def __reduce__(self):
         module_hash = get_file_hash(self._module_filename)
         return self._reconstruct, (self._module_filename, module_hash,
-                                   self._parameters, self.dataset)
+                                   self._parameters, self._dataset)
