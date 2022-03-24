@@ -261,8 +261,8 @@ class TestInstallCmd:
         # XXX: run the bench
 
         with CaptureRunOutput() as out:
-            run_cmd = [str(REQUIREMENT_BENCHMARK_PATH), '-n', '10', '-r', '1',
-                       '--no-plot']
+            run_cmd = [str(REQUIREMENT_BENCHMARK_PATH), '--env-name',
+                       test_env_name, '-n', '10', '-r', '1', '--no-plot']
             run(run_cmd, 'benchopt', standalone_mode=False)
 
         out.check_output(r"done \(not enough run\)", repetition=1)
