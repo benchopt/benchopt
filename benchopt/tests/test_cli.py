@@ -67,22 +67,30 @@ class TestCheckInstallCmd:
     def test_solver_installed(self):
         pgd_solver = DUMMY_BENCHMARK_PATH / 'solvers' / 'python_pgd.py'
         with pytest.raises(SystemExit, match=r'0'):
-            check_install([str(pgd_solver.resolve()), 'Solver'], 'benchopt')
+            check_install([
+                str(DUMMY_BENCHMARK_PATH), str(pgd_solver.resolve()), 'Solver'
+            ], 'benchopt')
 
     def test_solver_does_not_exists(self):
         pgd_solver = DUMMY_BENCHMARK_PATH / 'solvers' / 'invalid.py'
         with pytest.raises(FileNotFoundError, match=r'invalid.py'):
-            check_install([str(pgd_solver.resolve()), 'Solver'], 'benchopt')
+            check_install([
+                str(DUMMY_BENCHMARK_PATH), str(pgd_solver.resolve()), 'Solver'
+            ], 'benchopt')
 
     def test_dataset_installed(self):
         pgd_solver = DUMMY_BENCHMARK_PATH / 'datasets' / 'simulated.py'
         with pytest.raises(SystemExit, match=r'0'):
-            check_install([str(pgd_solver.resolve()), 'Dataset'], 'benchopt')
+            check_install([
+                str(DUMMY_BENCHMARK_PATH), str(pgd_solver.resolve()), 'Dataset'
+            ], 'benchopt')
 
     def test_dataset_does_not_exists(self):
         pgd_solver = DUMMY_BENCHMARK_PATH / 'datasets' / 'invalid.py'
         with pytest.raises(FileNotFoundError, match=r'invalid.py'):
-            check_install([str(pgd_solver.resolve()), 'Dataset'], 'benchopt')
+            check_install([
+                str(DUMMY_BENCHMARK_PATH), str(pgd_solver.resolve()), 'Dataset'
+            ], 'benchopt')
 
 
 class TestRunCmd:
@@ -261,9 +269,10 @@ class TestInstallCmd:
         # XXX: run the bench
 
         with CaptureRunOutput() as out:
-            run_cmd = [str(REQUIREMENT_BENCHMARK_PATH), '--env-name',
-                       test_env_name, '-n', '10', '-r', '1', '--no-plot']
-            run(run_cmd, 'benchopt', standalone_mode=False)
+            with pytest.raises(SystemExit, match='False'):
+                run_cmd = [str(REQUIREMENT_BENCHMARK_PATH), '--env-name',
+                           test_env_name, '-n', '10', '-r', '1', '--no-plot']
+                run(run_cmd, 'benchopt', standalone_mode=False)
 
         out.check_output(r"done \(not enough run\)", repetition=1)
 
