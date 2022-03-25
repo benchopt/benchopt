@@ -374,10 +374,17 @@ def get(ctx, name):
     "class BASE_CLASS_NAME.",
     hidden=True
 )
+@click.argument('benchmark', type=click.Path(exists=True),
+                autocompletion=complete_benchmarks)
 @click.argument('module_filename', nargs=1, type=Path)
 @click.argument('base_class_name', nargs=1, type=str)
-def check_install(module_filename, base_class_name):
+def check_install(benchmark, module_filename, base_class_name):
+
+    # benchmark
+    benchmark = Benchmark(benchmark)
 
     # Get class to check
-    klass = _load_class_from_module(module_filename, base_class_name)
+    klass = _load_class_from_module(
+        module_filename, base_class_name, benchmark.benchmark_dir
+    )
     klass.is_installed(raise_on_not_installed=True)

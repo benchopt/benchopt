@@ -32,7 +32,7 @@ def _get_module_from_file(module_filename, benchmark_dir=None):
     return module
 
 
-def _load_class_from_module(module_filename, class_name, benchmark_dir=None):
+def _load_class_from_module(module_filename, class_name, benchmark_dir):
     """Load a class from a module_filename.
 
     This helper also stores info necessary for DependenciesMixing to check the
@@ -44,8 +44,8 @@ def _load_class_from_module(module_filename, class_name, benchmark_dir=None):
         Path to the file defining the module to load the class from.
     class_name : str
         Name of the class to load
-    benchmark_dir : str or Path or None
-        Path to the benchmark_dir. If provided, will be used to set the package
+    benchmark_dir : str or Path
+        Path to the benchmark_dir. It will be used to set the package
         name relative to it.
 
     Returns
@@ -60,6 +60,7 @@ def _load_class_from_module(module_filename, class_name, benchmark_dir=None):
     # Store the info to easily reload the class
     klass._module_filename = module_filename.resolve()
     klass._import_ctx = getattr(module, 'import_ctx', None)
+    klass._benchmark_dir = benchmark_dir.resolve()
     return klass
 
 

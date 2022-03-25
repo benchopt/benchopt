@@ -255,7 +255,7 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
                                    self._parameters)
 
 
-class BaseObjective(ParametrizedNameMixin):
+class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
     """Base class to define an objective function
 
     Objectives that derive from this class should implement three methods:
