@@ -17,7 +17,7 @@ def test_benchmark_objective(benchmark, dataset_simu):
     dimension, data = dataset._get_data()
     objective.set_data(**data)
 
-    if dimension is not None:
+    if dimension != 'object':
         # check that the reported dimension is correct and that the result of
         # the objective function is a dictionary containing a scalar value for
         # `objective_value`.
@@ -77,11 +77,11 @@ def test_dataset_get_data(benchmark, dataset_class):
 
     dimension, data = res
 
-    assert isinstance(dimension, (tuple, type(None))), (
+    assert isinstance(dimension, tuple) or dimension == 'object', (
         "First output of get_data should be an integer or a tuple of integers."
         f" Got {dimension}."
     )
-    if dimension is not None:
+    if dimension != 'object':
         assert all(isinstance(d, numbers.Integral) for d in dimension), (
             "First output of get_data should be an integer or a tuple of "
             f"integers. Got {dimension}."
@@ -170,26 +170,33 @@ def test_solver(benchmark, solver_class):
     solver = solver_class.get_instance()
     solver.set_objective(**objective.to_dict())
 
-    # Either call run_with_cb or run
+    is_convex = getattr(objective, "is_convex", True)
 
+    # Either call run_with_cb or run
     if solver._solver_strategy == 'callback':
         sc = solver.stopping_criterion.get_runner_instance(
             max_runs=25, timeout=None, solver=solver
         )
+        if not is_convex:
+            # Set large tolerance for the stopping criterion to stop fast
+            sc.eps = 5e-1
         cb = _Callback(
             objective, meta={}, stopping_criterion=sc
         )
         solver.run(cb)
     else:
-        stop_val = 5000 if solver._solver_strategy == 'iteration' else 1e-15
+        if solver._solver_strategy == 'iteration':
+            stop_val = 5000 if is_convex else 10
+        else:
+            stop_val = 1e-15 if is_convex else 1e-2
         solver.run(stop_val)
 
     beta_hat_i = solver.get_result()
 
-    if dimension is not None:
+    if dimension != 'object':
         assert beta_hat_i.shape == dimension
 
-        if getattr(objective, "is_convex", True):
+        if is_convex:
             val_star = objective(beta_hat_i)['objective_value']
             for _ in range(100):
                 eps = 1e-5 * np.random.randn(*dimension)
