@@ -17,21 +17,22 @@ def test_benchmark_objective(benchmark, dataset_simu):
     dimension, data = dataset._get_data()
     objective.set_data(**data)
 
-    # check that the reported dimension is correct and that the result of
-    # the objective function is a dictionary containing a scalar value for
-    # `objective_value`.
-    beta_hat = np.zeros(dimension)
-    objective_dict = objective(beta_hat)
+    if dimension is not None:
+        # check that the reported dimension is correct and that the result of
+        # the objective function is a dictionary containing a scalar value for
+        # `objective_value`.
+        beta_hat = np.zeros(dimension)
+        objective_dict = objective(beta_hat)
 
-    assert 'objective_value' in objective_dict, (
-        'When the output of objective is a dict, it should at least contain '
-        'a value associated to `objective_value` which will be used to detect '
-        'the convergence of the algorithm.'
-    )
-    assert np.isscalar(objective_dict['objective_value']), (
-        "The output of the objective function should be a scalar, or a dict "
-        "containing a scalar associated to `objective_value`."
-    )
+        assert 'objective_value' in objective_dict, (
+            "When the output of objective is a dict, it should at least "
+            "contain a value associated to `objective_value` which will be "
+            "used to detect the convergence of the algorithm."
+        )
+        assert np.isscalar(objective_dict['objective_value']), (
+            "The output of the objective function should be a scalar, or a "
+            "dict containing a scalar associated to `objective_value`."
+        )
 
 
 def test_dataset_class(benchmark, dataset_class):
@@ -76,14 +77,15 @@ def test_dataset_get_data(benchmark, dataset_class):
 
     dimension, data = res
 
-    assert isinstance(dimension, tuple), (
+    assert isinstance(dimension, (tuple, type(None))), (
         "First output of get_data should be an integer or a tuple of integers."
         f" Got {dimension}."
     )
-    assert all(isinstance(d, numbers.Integral) for d in dimension), (
-        "First output of get_data should be an integer or a tuple of integers."
-        f" Got {dimension}."
-    )
+    if dimension is not None:
+        assert all(isinstance(d, numbers.Integral) for d in dimension), (
+            "First output of get_data should be an integer or a tuple of "
+            f"integers. Got {dimension}."
+        )
     assert isinstance(data, dict), (
         f"Second output of get_data should be a dict. Got {data}."
     )
@@ -184,12 +186,13 @@ def test_solver(benchmark, solver_class):
 
     beta_hat_i = solver.get_result()
 
-    assert beta_hat_i.shape == dimension
+    if dimension is not None:
+        assert beta_hat_i.shape == dimension
 
-    if getattr(objective, "is_convex", True):
-        val_star = objective(beta_hat_i)['objective_value']
-        for _ in range(100):
-            eps = 1e-5 * np.random.randn(*dimension)
-            val_eps = objective(beta_hat_i + eps)['objective_value']
-            diff = val_eps - val_star
-            assert diff >= 0
+        if getattr(objective, "is_convex", True):
+            val_star = objective(beta_hat_i)['objective_value']
+            for _ in range(100):
+                eps = 1e-5 * np.random.randn(*dimension)
+                val_eps = objective(beta_hat_i + eps)['objective_value']
+                diff = val_eps - val_star
+                assert diff >= 0
