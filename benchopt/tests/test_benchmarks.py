@@ -17,22 +17,21 @@ def test_benchmark_objective(benchmark, dataset_simu):
     dimension, data = dataset._get_data()
     objective.set_data(**data)
 
-    if dimension != 'object':
-        # check that the reported dimension is correct and that the result of
-        # the objective function is a dictionary containing a scalar value for
-        # `objective_value`.
-        beta_hat = np.zeros(dimension)
-        objective_dict = objective(beta_hat)
+    # check that the reported dimension is correct and that the result of
+    # the objective function is a dictionary containing a scalar value for
+    # `objective_value`.
+    beta_hat = objective.get_one_beta()
+    objective_dict = objective(beta_hat)
 
-        assert 'objective_value' in objective_dict, (
-            "When the output of objective is a dict, it should at least "
-            "contain a value associated to `objective_value` which will be "
-            "used to detect the convergence of the algorithm."
-        )
-        assert np.isscalar(objective_dict['objective_value']), (
-            "The output of the objective function should be a scalar, or a "
-            "dict containing a scalar associated to `objective_value`."
-        )
+    assert 'objective_value' in objective_dict, (
+        "When the output of objective is a dict, it should at least "
+        "contain a value associated to `objective_value` which will be "
+        "used to detect the convergence of the algorithm."
+    )
+    assert np.isscalar(objective_dict['objective_value']), (
+        "The output of the objective function should be a scalar, or a "
+        "dict containing a scalar associated to `objective_value`."
+    )
 
 
 def test_dataset_class(benchmark, dataset_class):
@@ -164,8 +163,7 @@ def test_solver(benchmark, solver_class):
     dataset_class = simulated_dataset[0]
     dataset = dataset_class.get_instance()
 
-    dimension, data = dataset._get_data()
-    objective.set_data(**data)
+    objective.set_dataset(dataset)
 
     solver = solver_class.get_instance()
     solver.set_objective(**objective.to_dict())
@@ -191,15 +189,14 @@ def test_solver(benchmark, solver_class):
             stop_val = 1e-15 if is_convex else 1e-2
         solver.run(stop_val)
 
-    beta_hat_i = solver.get_result()
+    # Check that beta_hat is compatible to compute the objective function
+    beta_hat = solver.get_result()
+    objective(beta_hat)
 
-    if dimension != 'object':
-        assert beta_hat_i.shape == dimension
-
-        if is_convex:
-            val_star = objective(beta_hat_i)['objective_value']
-            for _ in range(100):
-                eps = 1e-5 * np.random.randn(*dimension)
-                val_eps = objective(beta_hat_i + eps)['objective_value']
-                diff = val_eps - val_star
-                assert diff >= 0
+    if is_convex:
+        val_star = objective(beta_hat)['objective_value']
+        for _ in range(100):
+            eps = 1e-5 * np.random.randn(*beta_hat.shape)
+            val_eps = objective(beta_hat + eps)['objective_value']
+            diff = val_eps - val_star
+            assert diff >= 0
