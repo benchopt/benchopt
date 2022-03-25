@@ -14,8 +14,7 @@ def test_benchmark_objective(benchmark, dataset_simu):
     objective = objective_class.get_instance()
 
     dataset = dataset_simu.get_instance()
-    dimension, data = dataset._get_data()
-    objective.set_data(**data)
+    objective.set_dataset(dataset)
 
     # check that the reported dimension is correct and that the result of
     # the objective function is a dictionary containing a scalar value for
