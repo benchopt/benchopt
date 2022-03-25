@@ -3,26 +3,29 @@ Benchmark repository for optimization
 
 |Test Status| |Python 3.6+| |codecov|
 
-BenchOpt is a package to simplify, make more transparent and
-more reproducible the comparisons of optimization algorithms.
+BenchOpt is a benchmarking suite for optimization algorithms.
+It is built for simplicity, transparency, and reproducibility.
 
-BenchOpt is written in Python but it is available with
-`many programming languages <https://benchopt.github.io/auto_examples/plot_run_benchmark_python_R.html>`_.
-So far it has been tested with `Python <https://www.python.org/>`_,
+BenchOpt is implemented in Python, and can run algorithms 
+written in **many programming languages**
+(`example <https://benchopt.github.io/auto_examples/plot_run_benchmark_python_R.html>`_).
+So far, BenchOpt has been tested with `Python <https://www.python.org/>`_,
 `R <https://www.r-project.org/>`_, `Julia <https://julialang.org/>`_
-and compiled binaries written in C/C++ available via a terminal
-command. If it can be installed via
-`conda <https://docs.conda.io/en/latest/>`_ it should just work!
+and `C/C++ <https://isocpp.org/>`_ (compiled binaries with a command line interface).
+Most programs available via
+`conda <https://docs.conda.io/en/latest/>`_ should be compatible.
 
-BenchOpt is used through a command line as described
-in `the API Documentation <https://benchopt.github.io/api.html>`_.
-Ultimately running and replicating an optimization benchmark should
+BenchOpt is run through a command line interface as described
+in the `API Documentation <https://benchopt.github.io/api.html>`_.
+Replicating an optimization benchmark should
 be **as simple as doing**:
 
 .. code-block::
 
-    $ git clone https://github.com/benchopt/benchmark_logreg_l2
-    $ benchopt run --env ./benchmark_logreg_l2
+    pip install benchopt
+    git clone https://github.com/benchopt/benchmark_logreg_l2
+    benchopt install -e benchmark_logreg_l2
+    benchopt run --env ./benchmark_logreg_l2
 
 Running this command will give you a benchmark plot on l2-regularized
 logistic regression:
@@ -32,36 +35,33 @@ logistic regression:
    :align: center
    :scale: 80%
 
-To discover which benchmarks are presently available look
-for `benchmark_* repositories on GitHub <https://github.com/benchopt/>`_,
-such as for
-`l1-regularized logistic regression <https://github.com/benchopt/benchmark_logreg_l1>`_.
+See the `List of optimization problems available`_ below.
 
-
-Learn how to `write a benchmark on our documentation <https://benchopt.github.io/how.html>`_ and use `our template <https://github.com/benchopt/template_benchmark>`_ to kickstart it.
+Learn how to `create a new benchmark <https://benchopt.github.io/how.html>`_
+using the `benchmark template <https://github.com/benchopt/template_benchmark>`_.
 
 Install
 --------
 
-This package can be installed through `pip`. To get the **last release**, use:
+The command line tool to run the benchmarks can be installed through `pip`.
+To get the **latest release**, use:
 
 .. code-block::
 
-    $ pip install benchopt
+    pip install benchopt
 
-And to get the **latest development version**, you can use:
-
-.. code-block::
-
-    $ pip install -U -i https://test.pypi.org/simple/ benchopt
-
-This will install the command line tool to run the benchmark. Then, existing
-benchmarks can be retrieved from git or created locally. For instance, the
-benchmark for Lasso can be retrieved with:
+To get the **latest development version**, you can use:
 
 .. code-block::
 
-    $ git clone https://github.com/benchopt/benchmark_lasso
+    pip install -U -i https://test.pypi.org/simple/ benchopt
+
+Then, existing benchmarks can be retrieved from git or created locally.
+For instance, the benchmark for Lasso can be retrieved with:
+
+.. code-block::
+
+    git clone https://github.com/benchopt/benchmark_lasso
 
 
 Command line usage
@@ -71,20 +71,20 @@ To run the Lasso benchmark on all datasets and with all solvers, run:
 
 .. code-block::
 
-    $ benchopt run --env ./benchmark_lasso
+    benchopt run --env ./benchmark_lasso
 
-Use
+To get more details about the different options, run:
 
 .. code-block::
 
-    $ benchopt run -h
+    benchopt run -h
 
-to get more details about the different options or read the
-`API Documentation <https://benchopt.github.io/api.html>`_.
-
+or read the `API Documentation <https://benchopt.github.io/api.html>`_.
 
 List of optimization problems available
 ---------------------------------------
+
+.. _list of benchmarks:
 
 - `Ordinary Least Squares (OLS) <https://github.com/benchopt/benchmark_ols>`_ |Build Status OLS|
 - `Non-Negative Least Squares (NNLS) <https://github.com/benchopt/benchmark_nnls>`_ |Build Status NNLS|
