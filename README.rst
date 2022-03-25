@@ -84,8 +84,6 @@ or read the `API Documentation <https://benchopt.github.io/api.html>`_.
 List of optimization problems available
 ---------------------------------------
 
-.. _list of benchmarks:
-
 - `Ordinary Least Squares (OLS) <https://github.com/benchopt/benchmark_ols>`_ |Build Status OLS|
 - `Non-Negative Least Squares (NNLS) <https://github.com/benchopt/benchmark_nnls>`_ |Build Status NNLS|
 - `LASSO: L1-regularized least squares <https://github.com/benchopt/benchmark_lasso>`_ |Build Status Lasso|
