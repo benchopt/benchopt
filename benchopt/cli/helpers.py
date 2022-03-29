@@ -180,7 +180,7 @@ def print_info(cls_name_list, cls_list, env_name=None, verbose=False):
     "for a given benchmark."
 )
 @click.argument('benchmark', type=click.Path(exists=True),
-                autocompletion=complete_benchmarks)
+                shell_complete=complete_benchmarks)
 @click.option('--solver', '-s', 'solver_names',
               metavar="<solver_name>", multiple=True, type=str,
               help="Display information about <solver_name>. "
@@ -375,7 +375,7 @@ def get(ctx, name):
     hidden=True
 )
 @click.argument('benchmark', type=click.Path(exists=True),
-                autocompletion=complete_benchmarks)
+                shell_complete=complete_benchmarks)
 @click.argument('module_filename', nargs=1, type=Path)
 @click.argument('base_class_name', nargs=1, type=str)
 def check_install(benchmark, module_filename, base_class_name):
