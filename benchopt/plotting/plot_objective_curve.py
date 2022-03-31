@@ -1,8 +1,10 @@
+import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
+from scipy.interpolate import interp1d
 
 from .helpers_compat import get_figure
 from .helpers_compat import add_h_line
-from .helpers_compat import fill_between_x
 from .helpers_compat import fill_between_y
 
 CMAP = plt.get_cmap('tab10')
@@ -11,6 +13,42 @@ EPS = 1e-10
 
 def _remove_prefix(text, prefix):
     return text[len(prefix):] if text.startswith(prefix) else text
+
+
+def _get_curve_interp(df, obj_col, q_min, q_max):
+    """Compute interpolation curve for a given solver.
+
+    Parameters
+    ----------
+    df : instance of pandas.DataFrame
+        The benchmark results filtered for one solver.
+    obj_col : str
+        Column to select in the DataFrame for the plot.
+    q_min, q_max : float
+        The quantile to display the error bars in the plot.
+    """
+    n_interp = min(100, df.groupby('idx_rep').size().max())
+    t = np.logspace(
+        np.log10(df['time'].min()), np.log10(df['time'].max()), n_interp
+    )
+    curve_t = (
+        df.groupby('idx_rep').apply(
+            lambda x: pd.DataFrame({
+                't': t,
+                # Linear interpolator to resample on a grid t
+                'v': interp1d(
+                    x['time'], x[obj_col],
+                    bounds_error=False,
+                    fill_value=(
+                        x[obj_col].iloc[0],
+                        x[obj_col].iloc[-1]
+                    )
+                )(t)
+            })
+        )
+    )
+    curve_t = curve_t.groupby('t')['v'].quantile([0.5, q_min, q_max]).unstack()
+    return curve_t
 
 
 def plot_objective_curve(df, obj_col='objective_value', plotly=False,
@@ -81,27 +119,25 @@ def plot_objective_curve(df, obj_col='objective_value', plotly=False,
             plt.text(0.5, 0.5, "Not Available")
         return fig
 
+    # use 2nd and 8th decile for now
+    q_min, q_max = 0.2, 0.8
     for i, solver_name in enumerate(solver_names):
         df_ = df[df['solver_name'] == solver_name]
-        curve = df_.groupby('stop_val').median()
 
         if iteration:
-            q1 = df_.groupby('stop_val')[obj_col].quantile(.1)
-            q9 = df_.groupby('stop_val')[obj_col].quantile(.9)
-            fill_between_y(
-                fig, curve.index, y=curve[obj_col], q1=q1, q9=q9,
-                color=CMAP(i % CMAP.N), marker=markers[i % len(markers)],
-                label=solver_name, plotly=plotly
+            curve_t = (
+                df_.groupby('stop_val')[obj_col]
+                .quantile([q_min, 0.5, q_max]).unstack()
             )
         else:
-            q1 = df_.groupby('stop_val')['time'].quantile(.1)
-            q9 = df_.groupby('stop_val')['time'].quantile(.9)
+            curve_t = _get_curve_interp(df_, obj_col, q_min=q_min, q_max=q_max)
 
-            fill_between_x(
-                fig, curve['time'], q1, q9, curve[obj_col],
-                color=CMAP(i % CMAP.N), marker=markers[i % len(markers)],
-                label=solver_name, plotly=plotly
-            )
+        fill_between_y(
+            fig, x=curve_t.index, y=curve_t[.5],
+            q_min=curve_t[q_min], q_max=curve_t[q_max],
+            color=CMAP(i % CMAP.N), marker=markers[i % len(markers)],
+            label=solver_name, plotly=plotly
+        )
 
     if iteration:
         x_label = 'Iteration'
