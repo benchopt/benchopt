@@ -67,6 +67,11 @@ function showMe(e) {
     // if at least another graph was displayed before (initialized)
     visibleTraces(); // keep traces coherent accross graphs
   }
+  if (
+    e.attributes.counter > 0
+  ) {
+    toggleShades();  // keep quantile curves coherent (must be after visibleTraces) and not dataset_selector dependent
+  }
   e.attributes.counter += 1; // out of initialization
 }
 
