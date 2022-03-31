@@ -57,7 +57,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
             warnings.warn(
                 "'stop_strategy' attribute is deprecated, "
                 "use 'stopping_strategy' instead",
-                DeprecationWarning
+                FutureWarning
             )
             return self.stop_strategy
         elif hasattr(self, 'stopping_strategy'):
@@ -255,7 +255,7 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
                                    self._parameters)
 
 
-class BaseObjective(ParametrizedNameMixin):
+class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
     """Base class to define an objective function
 
     Objectives that derive from this class should implement three methods:
@@ -350,9 +350,30 @@ class BaseObjective(ParametrizedNameMixin):
     # Save the dataset object used to get the objective data so we can avoid
     # hashing the data directly.
     def set_dataset(self, dataset):
-        self.dataset = dataset
-        _, data = dataset._get_data()
+        self._dataset = dataset
+        self._dimension, data = dataset._get_data()
         return self.set_data(**data)
+
+    def get_one_beta(self):
+        """Return one point in which the objective function can be evaluated.
+
+        This method is mainly for testing purposes, to check that the return
+        computation and the return type of `Objective.compute`. It should
+        return an object that can be passed to compute.
+
+        By default, if `Dataset.get_data` returns a shape, this function will
+        return an array full of 0. It can be overriden to provide a different
+        point. When `Dataset.get_data` returns "object", this method must be
+        overwritten.
+        """
+        if self._dimension == 'object':
+            raise NotImplementedError(
+                "If solvers return objects, `Objective.get_one_beta` should "
+                "be overriden to return an object compatible with `compute`."
+            )
+
+        import numpy as np
+        return np.zeros(self._dimension)
 
     # Reduce the pickling and hashing burden by only pickling class parameters.
     @staticmethod
@@ -368,4 +389,4 @@ class BaseObjective(ParametrizedNameMixin):
     def __reduce__(self):
         module_hash = get_file_hash(self._module_filename)
         return self._reconstruct, (self._module_filename, module_hash,
-                                   self._parameters, self.dataset)
+                                   self._parameters, self._dataset)

@@ -23,7 +23,7 @@ try:
                                     'lightning'],
         dataset_names=['Simulated*n_samples=200,n_features=500*'],
         objective_filters=[
-            'L2 Logistic Regression[fit_intercept=False,lmbd=1.0]'],
+            'L2 Logistic Regression[lmbd=1.0]'],
         max_runs=100, timeout=20, n_repetitions=15,
         plot_result=False, show_progress=True
     )

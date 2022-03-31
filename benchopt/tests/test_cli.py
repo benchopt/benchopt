@@ -15,6 +15,8 @@ from benchopt.tests import SELECT_ONE_SIMULATED
 from benchopt.tests import SELECT_ONE_OBJECTIVE
 from benchopt.tests import DUMMY_BENCHMARK
 from benchopt.tests import DUMMY_BENCHMARK_PATH
+from benchopt.tests import REQUIREMENT_BENCHMARK
+from benchopt.tests import REQUIREMENT_BENCHMARK_PATH
 
 
 from benchopt.cli.main import run
@@ -24,8 +26,10 @@ from benchopt.cli.helpers import check_install
 
 
 BENCHMARK_COMPLETION_CASES = [
-    (str(DUMMY_BENCHMARK_PATH.parent), 1, str(DUMMY_BENCHMARK_PATH)),
-    (str(DUMMY_BENCHMARK_PATH.parent)[:-2], 1, str(DUMMY_BENCHMARK_PATH)),
+    (str(DUMMY_BENCHMARK_PATH.parent), 2, [str(DUMMY_BENCHMARK_PATH),
+                                           str(REQUIREMENT_BENCHMARK_PATH)]),
+    (str(DUMMY_BENCHMARK_PATH.parent)[:-2], 2,
+     [str(DUMMY_BENCHMARK_PATH), str(REQUIREMENT_BENCHMARK_PATH)]),
     (str(DUMMY_BENCHMARK_PATH)[:-2], 1, str(DUMMY_BENCHMARK_PATH))
 ]
 SOLVER_COMPLETION_CASES = [
@@ -63,22 +67,30 @@ class TestCheckInstallCmd:
     def test_solver_installed(self):
         pgd_solver = DUMMY_BENCHMARK_PATH / 'solvers' / 'python_pgd.py'
         with pytest.raises(SystemExit, match=r'0'):
-            check_install([str(pgd_solver.resolve()), 'Solver'], 'benchopt')
+            check_install([
+                str(DUMMY_BENCHMARK_PATH), str(pgd_solver.resolve()), 'Solver'
+            ], 'benchopt')
 
     def test_solver_does_not_exists(self):
         pgd_solver = DUMMY_BENCHMARK_PATH / 'solvers' / 'invalid.py'
         with pytest.raises(FileNotFoundError, match=r'invalid.py'):
-            check_install([str(pgd_solver.resolve()), 'Solver'], 'benchopt')
+            check_install([
+                str(DUMMY_BENCHMARK_PATH), str(pgd_solver.resolve()), 'Solver'
+            ], 'benchopt')
 
     def test_dataset_installed(self):
         pgd_solver = DUMMY_BENCHMARK_PATH / 'datasets' / 'simulated.py'
         with pytest.raises(SystemExit, match=r'0'):
-            check_install([str(pgd_solver.resolve()), 'Dataset'], 'benchopt')
+            check_install([
+                str(DUMMY_BENCHMARK_PATH), str(pgd_solver.resolve()), 'Dataset'
+            ], 'benchopt')
 
     def test_dataset_does_not_exists(self):
         pgd_solver = DUMMY_BENCHMARK_PATH / 'datasets' / 'invalid.py'
         with pytest.raises(FileNotFoundError, match=r'invalid.py'):
-            check_install([str(pgd_solver.resolve()), 'Dataset'], 'benchopt')
+            check_install([
+                str(DUMMY_BENCHMARK_PATH), str(pgd_solver.resolve()), 'Dataset'
+            ], 'benchopt')
 
 
 class TestRunCmd:
@@ -104,7 +116,7 @@ class TestRunCmd:
     def test_benchopt_run(self):
         with CaptureRunOutput() as out:
             run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,
-                 '-f', SELECT_ONE_PGD, '-n', '1', '-r', '1', '-p',
+                 '-f', SELECT_ONE_PGD, '-n', '1', '-r', '1', '-o',
                  SELECT_ONE_OBJECTIVE], 'benchopt', standalone_mode=False)
 
         out.check_output('Simulated', repetition=1)
@@ -120,7 +132,7 @@ class TestRunCmd:
             with pytest.raises(SystemExit, match='False'):
                 run([str(DUMMY_BENCHMARK_PATH), '--env-name', test_env_name,
                      '-d', SELECT_ONE_SIMULATED, '-f', SELECT_ONE_PGD,
-                     '-n', '1', '-r', '1', '-p', SELECT_ONE_OBJECTIVE,
+                     '-n', '1', '-r', '1', '-o', SELECT_ONE_OBJECTIVE,
                      '--no-plot'], 'benchopt', standalone_mode=False)
 
         out.check_output(f'conda activate {test_env_name}')
@@ -136,7 +148,7 @@ class TestRunCmd:
         with CaptureRunOutput() as out:
             run_cmd = [str(DUMMY_BENCHMARK_PATH),
                        '-d', SELECT_ONE_SIMULATED, '-f', SELECT_ONE_PGD,
-                       '-n', '1', '-r', '1', '-p', SELECT_ONE_OBJECTIVE,
+                       '-n', '1', '-r', '1', '-o', SELECT_ONE_OBJECTIVE,
                        '--profile', '--no-plot']
             run(run_cmd, 'benchopt', standalone_mode=False)
 
@@ -144,8 +156,8 @@ class TestRunCmd:
         out.check_output("File: .*benchopt/tests/test_benchmarks/"
                          "dummy_benchmark/solvers/python_pgd.py", repetition=1)
         out.check_output(r'\s+'.join([
-                "Line #", "Hits", "Time", "Per Hit", "% Time", "Line Contents"
-            ]), repetition=1)
+            "Line #", "Hits", "Time", "Per Hit", "% Time", "Line Contents"
+        ]), repetition=1)
         out.check_output(r"def run\(self, n_iter\):", repetition=1)
 
     def test_benchopt_caching(self):
@@ -154,7 +166,7 @@ class TestRunCmd:
         n_rep = 2
         run_cmd = [str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,
                    '-s', SELECT_ONE_PGD, '-n', '1', '-r', str(n_rep),
-                   '-p', SELECT_ONE_OBJECTIVE, '--no-plot']
+                   '-o', SELECT_ONE_OBJECTIVE, '--no-plot']
 
         # Make a first run that should be put in cache
         with CaptureRunOutput() as out:
@@ -227,7 +239,7 @@ class TestInstallCmd:
             )
 
         out.check_output(f"Installing '{DUMMY_BENCHMARK.name}' requirements")
-        out.check_output("already available\n", repetition=2)
+        out.check_output("already available\n", repetition=3)
 
     def test_benchopt_install_in_env(self, test_env_name):
         with CaptureRunOutput() as out:
@@ -240,8 +252,29 @@ class TestInstallCmd:
         out.check_output(
             f"Installing '{DUMMY_BENCHMARK.name}' requirements")
         out.check_output(
-            f"already available in '{test_env_name}'\n", repetition=2
+            f"already available in '{test_env_name}'\n", repetition=3
         )
+
+    def test_benchopt_install_in_env_with_requirements(self, test_env_name):
+        objective = REQUIREMENT_BENCHMARK.get_benchmark_objective()
+        out = 'already installed but failed to import.'
+        if not objective.is_installed(env_name=test_env_name):
+            with CaptureRunOutput() as out:
+                install(
+                    [str(REQUIREMENT_BENCHMARK_PATH), '--env-name',
+                     test_env_name],
+                    'benchopt', standalone_mode=False
+                )
+        assert objective.is_installed(env_name=test_env_name), out
+        # XXX: run the bench
+
+        with CaptureRunOutput() as out:
+            with pytest.raises(SystemExit, match='False'):
+                run_cmd = [str(REQUIREMENT_BENCHMARK_PATH), '--env-name',
+                           test_env_name, '-n', '10', '-r', '1', '--no-plot']
+                run(run_cmd, 'benchopt', standalone_mode=False)
+
+        out.check_output(r"done \(not enough run\)", repetition=1)
 
     def test_shell_complete(self):
         # Completion for benchmark name
@@ -265,7 +298,7 @@ class TestPlotCmd:
         "Make sure at least one result file is available"
         with SuppressStd() as out:
             run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,
-                 '-s', SELECT_ONE_PGD, '-n', '2', '-r', '1', '-p',
+                 '-s', SELECT_ONE_PGD, '-n', '2', '-r', '1', '-o',
                  SELECT_ONE_OBJECTIVE, '--no-plot'], 'benchopt',
                 standalone_mode=False)
         result_files = re.findall(r'Saving result in: (.*\.csv)', out.output)
