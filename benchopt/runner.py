@@ -399,7 +399,7 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                 objective = objective_class.get_instance(**obj_parameters)
                 if not is_matched(str(objective), objective_filters):
                     continue
-                print_normalize(f"|--{objective}")
+                print_normalize(f" |--{objective}")
                 objective.set_dataset(dataset)
 
                 for solver_class in solver_classes:
