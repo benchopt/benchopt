@@ -4,7 +4,7 @@ version: 2
 jobs:
   build_docs:
     docker:
-      - image: circleci/python:3.9.1-buster
+      - image: cimg/python:3.9.11-browsers
     steps:
       - checkout
       - run:
@@ -23,7 +23,7 @@ jobs:
             echo ${CI_PULL_REQUEST//*pull\//} | tee merge.txt
             if [[ $(cat merge.txt) != "" ]]; then
               echo "Merging $(cat merge.txt)";
-              git remote add upstream git://github.com/benchopt/benchopt.git;
+              git remote add upstream https://github.com/benchopt/benchopt.git;
               git pull --ff-only upstream "refs/pull/$(cat merge.txt)/merge";
               git fetch upstream main;
             fi
@@ -93,7 +93,7 @@ jobs:
 
   deploy:
     docker:
-      - image: circleci/python:3.9.1-buster
+      - image: cimg/python:3.9.11-browsers
     steps:
       - attach_workspace:
           at: /tmp/build

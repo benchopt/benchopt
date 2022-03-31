@@ -12,7 +12,7 @@ local_scheme = "no-local-version"
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "-v"
+addopts = "-v -p benchopt.tests.fixtures"
 testpaths = [
     "benchopt",
 ]
