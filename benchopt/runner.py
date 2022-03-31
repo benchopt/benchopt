@@ -414,7 +414,7 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                             continue
 
                         # Get the solver's name
-                        tag = colorify(f"|----{solver}:")
+                        tag = colorify(f"  |----{solver}:")
 
                         # check if the module caught a failed import
                         if not solver.is_installed(
@@ -431,7 +431,7 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                                 f"{tag} {colorify('skip', YELLOW)}"
                             )
                             if reason is not None:
-                                print(f'Reason: {reason}')
+                                print(f'  Reason: {reason}')
                             continue
 
                         # Get meta
