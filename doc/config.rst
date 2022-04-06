@@ -71,3 +71,11 @@ Benchmark settings
 
 .. autodata:: benchopt.config.DEFAULT_BENCHMARK_CONFIG
 
+.. _config_mamba:
+
+Using ``mamba`` to install packages
+-----------------------------------
+
+When many packages need to be installed, ``conda`` can be slow or even fail to resolve the dependency graph. Using ``mamba`` can speed up this process and make it more reliable.
+
+To use ``mamba`` instead of ``conda`` when installing benchmark requirements, it is necessary to have ``mamba`` installed in the ``base`` conda environment, *e.g.* using ``conda install -n base mamba``. Then, ``benchopt`` can be configured to use this command instead of ``conda`` by either configuring the CLI using ``benchopt config set conda_cmd mamba`` or setting the environment variable ``BENCHOPT_CONDA_CMD=mamba``.
