@@ -59,11 +59,13 @@ jobs:
       - name: Install benchopt and its dependencies
         run: |
           conda info
-          conda install -yq pip ${{ env.BENCHOPT_CONDA_CMD }}
+          conda install -yq pip
           pip install -e .[test]
+          # Install mamba in base environment to make it accessible test env
+          test $BENCHOPT_CONDA_CMD == "mamba" && conda install -n base mamba
 
-      - run: continuous_integration/test_script.sh
-        name: 'Run the tests'
+      - name: 'Run the tests'
+        run: continuous_integration/test_script.sh
 
       - name: Publish Test Report
         uses: mikepenz/action-junit-report@v2
