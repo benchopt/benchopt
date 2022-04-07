@@ -400,7 +400,14 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                 if not is_matched(str(objective), objective_filters):
                     continue
                 print_normalize(f"|--{objective}")
-                objective.set_dataset(dataset)
+                skip, reason = objective.set_dataset(dataset)
+                if skip:
+                    print_normalize(
+                        f"{objective} {colorify('skip', YELLOW)}"
+                    )
+                    if reason is not None:
+                        print(f'Reason: {reason}')
+                    continue
 
                 for solver_class in solver_classes:
 
