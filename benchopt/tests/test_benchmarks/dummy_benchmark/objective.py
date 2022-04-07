@@ -1,5 +1,8 @@
-from benchopt.base import BaseObjective
+from benchopt import BaseObjective, safe_import_context
 
+
+with safe_import_context() as import_ctx:
+    import numpy as np
 
 class Objective(BaseObjective):
     name = "Dummy Sparse Regression"
@@ -15,6 +18,11 @@ class Objective(BaseObjective):
     def set_data(self, X, y):
         self.X, self.y = X, y
         self.lmbd = self.reg * self._get_lambda_max()
+
+    def skip(self):
+        if np.testing.assert_array_equal(self.X, np.zeros((2, 2))):
+            return True, 'X is all zeros'
+        return False, None
 
     def compute(self, beta):
         diff = self.y - self.X.dot(beta)
