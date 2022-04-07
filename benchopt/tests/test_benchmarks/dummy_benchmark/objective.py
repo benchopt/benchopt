@@ -20,7 +20,7 @@ class Objective(BaseObjective):
         self.lmbd = self.reg * self._get_lambda_max()
 
     def skip(self):
-        if np.testing.assert_array_equal(self.X, np.zeros((2, 2))):
+        if np.array_equal(self.X, np.zeros((2, 2))):
             return True, 'X is all zeros'
         return False, None
 
