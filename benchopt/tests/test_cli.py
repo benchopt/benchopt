@@ -39,7 +39,7 @@ SOLVER_COMPLETION_CASES = [
     ('pgd', 4, ['julia-pgd', 'python-pgd', 'python-pgd-with-cb', 'r-pgd'])
 ]
 DATASET_COMPLETION_CASES = [
-    ('', 4, ['leukemia', 'simulated', 'test-dataset', 'skipped-dataset']),
+    ('', 3, ['leukemia', 'simulated', 'test-dataset']),
     ('simu', 1, 'simulated'),
     ('lated', 1, 'simulated'),
 ]
