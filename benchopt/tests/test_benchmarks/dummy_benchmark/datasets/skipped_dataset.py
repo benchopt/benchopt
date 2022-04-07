@@ -1,7 +1,6 @@
 import numpy as np
 
 from benchopt import BaseDataset
-from benchopt.datasets import make_correlated_data
 
 
 class Dataset(BaseDataset):
