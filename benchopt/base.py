@@ -254,6 +254,50 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
         return self._reconstruct, (self._module_filename, module_hash,
                                    self._parameters)
 
+    def _set_objective(self, objective):
+        """Store the objective for hashing/pickling and check its compatibility
+
+        Parameters
+        ----------
+        objective: benchopt.BaseObjective
+            The objective function for the current optimization problem.
+
+        Returns
+        -------
+        skip : bool
+            Whether this dataset should be skipped or not for this objective.
+        reason : str | None
+            The reason why it should be skipped for display purposes.
+            If skip is False, the reason should be None.
+        """
+        self._objective = objective
+
+        # Check if the objective is compatible with the solver
+        skip, reason = self.skip(self._objective)
+        if skip:
+            return skip, reason
+
+        return False, None
+
+    @abstractmethod
+    def skip(self, objective):
+        """Used to decide if the ``Dataset`` is compatible with the objective.
+
+        Parameters
+        ----------
+        objective : benchopt.BaseObjective
+            The objective function for the current optimization problem.
+
+        Returns
+        -------
+        skip : bool
+            Whether this solver should be skipped or not for this objective.
+        reason : str | None
+            The reason why it should be skipped for display purposes.
+            If skip is False, the reason should be None.
+        """
+        ...
+
 
 class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
     """Base class to define an objective function
