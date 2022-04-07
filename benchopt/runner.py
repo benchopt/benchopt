@@ -387,11 +387,21 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
             if not is_matched(str(dataset), dataset_names):
                 continue
             print_normalize(f"{dataset}")
+            tag = f"Dataset {dataset}"
             if not dataset.is_installed(
                     raise_on_not_installed=RAISE_INSTALL_ERROR):
                 print_normalize(
-                    colorify(f"Dataset {dataset} is not installed.", RED)
+                    colorify(f"{tag} is not installed.", RED)
                 )
+                continue
+
+            skip, reason = dataset._set_objective(objective)
+            if skip:
+                print_normalize(
+                    f"{tag} {colorify('skip', YELLOW)}"
+                )
+                if reason is not None:
+                    print(f'Reason: {reason}')
                 continue
 
             dimension, data = dataset._get_data()
