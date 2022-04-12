@@ -1,4 +1,5 @@
 import click
+import warnings
 from pathlib import Path
 
 from benchopt.benchmark import Benchmark
@@ -31,6 +32,9 @@ main = click.Group(
               metavar='<objective_filter>', multiple=True, type=str,
               help="Filter the objective based on its parametrized name. This "
               "can be used to only include one set of parameters.")
+@click.option('--old_objective-filter', '-p', 'old_objective_filters',
+              multiple=True, type=str,
+              help="Deprecated alias for --objective_filters/-o.")
 @click.option('--solver', '-s', 'solver_names',
               metavar="<solver_name>", multiple=True, type=str,
               help="Include <solver_name> in the benchmark. By default, all "
@@ -97,7 +101,13 @@ main = click.Group(
 def run(benchmark, solver_names, forced_solvers, dataset_names,
         objective_filters, max_runs, n_repetitions, timeout, n_workers,
         plot=True, html=True, pdb=False, do_profile=False,
-        env_name='False'):
+        env_name='False', old_objective_filters=None):
+    if len(old_objective_filters):
+        warnings.warn(
+            'Using the -p option is deprecated, use -o instead',
+            FutureWarning,
+        )
+        objective_filters = old_objective_filters
 
     from benchopt.runner import run_benchmark
 
@@ -191,6 +201,9 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
               is_flag=True,
               help="If this flag is set, the reinstallation of "
               "the benchmark requirements is forced.")
+@click.option('--minimal', is_flag=True,
+              help="If this flag is set, only install requirements for the "
+              "benchmark's objective.")
 @click.option('--solver', '-s', 'solver_names',
               metavar="<solver_name>", multiple=True, type=str,
               help="Include <solver_name> in the installation. "
@@ -234,7 +247,7 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
               help="If this flag is set, no confirmation will be asked "
               "to the user to install requirements in the current environment."
               " Useless with options `-e/--env` or `--env-name`.")
-def install(benchmark, solver_names, dataset_names, force=False,
+def install(benchmark, minimal, solver_names, dataset_names, force=False,
             recreate=False, env_name='False', confirm=False, quiet=False):
 
     # Check that the dataset/solver patterns match actual dataset
@@ -289,7 +302,7 @@ def install(benchmark, solver_names, dataset_names, force=False,
     print("# Install", flush=True)
     benchmark.install_all_requirements(
         include_solvers=solver_names, include_datasets=dataset_names,
-        env_name=env_name, force=force, quiet=quiet,
+        minimal=minimal, env_name=env_name, force=force, quiet=quiet,
     )
 
 
@@ -305,7 +318,16 @@ def install(benchmark, solver_names, dataset_names, force=False,
               'a temporary one is created for the test.')
 @click.argument('pytest_args', nargs=-1, type=click.UNPROCESSED)
 def test(benchmark, env_name, pytest_args):
-    pytest_args = ' '.join(pytest_args)
+
+    benchmark = Benchmark(benchmark)
+
+    from benchopt.tests import __file__ as _bench_test_module
+    _bench_test_module = Path(_bench_test_module).parent
+
+    pytest_args = ' '.join((
+        "-p benchopt.tests.fixtures", f"--rootdir {_bench_test_module}",
+        *pytest_args
+    ))
     if len(pytest_args) == 0:
         pytest_args = '-vl'
 
@@ -318,16 +340,16 @@ def test(benchmark, env_name, pytest_args):
                 f"Please run `conda install -n {env_name} pytest` to test the "
                 "benchmark in this environment."
             )
+        objective = benchmark.get_benchmark_objective()
+        if not objective.is_installed():
+            objective.install(env_name=env_name)
         env_option = f'--test-env {env_name}'
 
-    from benchopt.tests import __file__ as _bench_test_module
-    BENCHMARK_TEST_FILE = (
-        Path(_bench_test_module).parent / "test_benchmarks.py"
-    )
+    _bench_test_file = _bench_test_module / "test_benchmarks.py"
 
     cmd = (
-        f'pytest {pytest_args} {BENCHMARK_TEST_FILE} '
-        f'--benchmark {benchmark} {env_option} '
+        f'pytest {pytest_args} {_bench_test_file} '
+        f'--benchmark {benchmark.benchmark_dir} {env_option} '
         # Make sure to not modify sys.path to add test file from current env
         # in sub conda env as there might be different python versions.
         '--import-mode importlib'

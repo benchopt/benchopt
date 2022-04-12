@@ -21,12 +21,9 @@
     <a id="top"></a>
     <a href="${home}"><button class="btn"><i class="fa fa-home"></i></button></a>
     <a href="${benchmark}.html"><button class="btn"><i class="fa fa-arrow-left"></i> ${benchmark_name}</button></a>
-
-    <h1>Result on ${benchmark_name} benchmark</h1>
+    <a href="${result['fname']}"><button class="btn"><i class="fa fa-download"></i> ${result["fname_short"]}</button></a>
+    <h1 style:>Result on ${benchmark_name} benchmark</h1>
     <summary></summary>
-    <p><a href="${result['fname']}">
-            <button class="btn"><i class="fa fa-download"></i> ${result["fname_short"]}</button>
-        </a></p>
 
     <!--Display all system informations if you want to-->
     % if any([val != "" for _, val in result['sysinfo']['sub'].items()]):
@@ -98,8 +95,8 @@
         <option value="linear">linear</option>
     </select>
     </div>
-    <div style="display: table-cell;vertical-align: middle;">
-    Quantiles:
+    <div style="display: flex; align-items: center;">
+    <p style="margin: 0; margin-right: 4px">Quantiles: </p>
     <label for='change_shades' class="switch">
         <input id="change_shades" type="checkbox" checked>
         <span class="slider round"></span>

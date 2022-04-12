@@ -279,7 +279,8 @@ class Benchmark:
     #####################################################
 
     def install_all_requirements(self, include_solvers, include_datasets,
-                                 env_name=None, force=False, quiet=False):
+                                 minimal=False, env_name=None,
+                                 force=False, quiet=False):
         """Install all classes that are required for the run.
 
         Parameters
@@ -288,6 +289,8 @@ class Benchmark:
             patterns to select solvers to install.
         include_datasets : list of str
             patterns to select datasets to install.
+        minimal : bool (default: False)
+            only install requirements for the objective function.
         env_name : str or None (default: None)
             Name of the conda env where the class should be installed. If
             None, tries to install it in the current environment.
@@ -299,8 +302,8 @@ class Benchmark:
         # Collect all classes matching one of the patterns
         print("Collecting packages:")
 
-        install_solvers = True
-        install_datasets = True
+        install_solvers = not minimal
+        install_datasets = not minimal
 
         # If -d is used but not -s, then does not install any solver
         if len(include_solvers) == 0 and len(include_datasets) > 0:
@@ -317,8 +320,13 @@ class Benchmark:
         if 'all' in include_datasets:
             include_datasets = []
 
-        conda_reqs, shell_install_scripts, post_install_hooks = [], [], []
         check_installs = []
+        objective = self.get_benchmark_objective()
+        conda_reqs, shell_install_scripts, post_install_hooks = (
+            objective.collect(env_name=env_name, force=force)
+        )
+        if len(shell_install_scripts) > 0 or len(conda_reqs) > 0:
+            check_installs += [objective]
         for list_classes, include_patterns, to_install in [
                 (self.get_solvers(), include_solvers, install_solvers),
                 (self.get_datasets(), include_datasets, install_datasets)

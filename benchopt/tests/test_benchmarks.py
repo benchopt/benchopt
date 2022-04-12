@@ -14,23 +14,22 @@ def test_benchmark_objective(benchmark, dataset_simu):
     objective = objective_class.get_instance()
 
     dataset = dataset_simu.get_instance()
-    dimension, data = dataset._get_data()
-    objective.set_data(**data)
+    objective.set_dataset(dataset)
 
     # check that the reported dimension is correct and that the result of
     # the objective function is a dictionary containing a scalar value for
     # `objective_value`.
-    beta_hat = np.zeros(dimension)
+    beta_hat = objective.get_one_beta()
     objective_dict = objective(beta_hat)
 
     assert 'objective_value' in objective_dict, (
-        'When the output of objective is a dict, it should at least contain '
-        'a value associated to `objective_value` which will be used to detect '
-        'the convergence of the algorithm.'
+        "When the output of objective is a dict, it should at least "
+        "contain a value associated to `objective_value` which will be "
+        "used to detect the convergence of the algorithm."
     )
     assert np.isscalar(objective_dict['objective_value']), (
-        "The output of the objective function should be a scalar, or a dict "
-        "containing a scalar associated to `objective_value`."
+        "The output of the objective function should be a scalar, or a "
+        "dict containing a scalar associated to `objective_value`."
     )
 
 
@@ -76,14 +75,15 @@ def test_dataset_get_data(benchmark, dataset_class):
 
     dimension, data = res
 
-    assert isinstance(dimension, tuple), (
+    assert isinstance(dimension, tuple) or dimension == 'object', (
         "First output of get_data should be an integer or a tuple of integers."
         f" Got {dimension}."
     )
-    assert all(isinstance(d, numbers.Integral) for d in dimension), (
-        "First output of get_data should be an integer or a tuple of integers."
-        f" Got {dimension}."
-    )
+    if dimension != 'object':
+        assert all(isinstance(d, numbers.Integral) for d in dimension), (
+            "First output of get_data should be an integer or a tuple of "
+            f"integers. Got {dimension}."
+        )
     assert isinstance(data, dict), (
         f"Second output of get_data should be a dict. Got {data}."
     )
@@ -162,32 +162,40 @@ def test_solver(benchmark, solver_class):
     dataset_class = simulated_dataset[0]
     dataset = dataset_class.get_instance()
 
-    dimension, data = dataset._get_data()
-    objective.set_data(**data)
+    objective.set_dataset(dataset)
 
     solver = solver_class.get_instance()
     solver.set_objective(**objective.to_dict())
 
-    # Either call run_with_cb or run
+    is_convex = getattr(objective, "is_convex", True)
 
+    # Either call run_with_cb or run
     if solver._solver_strategy == 'callback':
         sc = solver.stopping_criterion.get_runner_instance(
             max_runs=25, timeout=None, solver=solver
         )
+        if not is_convex:
+            # Set large tolerance for the stopping criterion to stop fast
+            sc.eps = 5e-1
         cb = _Callback(
             objective, meta={}, stopping_criterion=sc
         )
         solver.run(cb)
     else:
-        stop_val = 5000 if solver._solver_strategy == 'iteration' else 1e-15
+        if solver._solver_strategy == 'iteration':
+            stop_val = 5000 if is_convex else 10
+        else:
+            stop_val = 1e-15 if is_convex else 1e-2
         solver.run(stop_val)
 
-    beta_hat_i = solver.get_result()
-    val_star = objective(beta_hat_i)['objective_value']
+    # Check that beta_hat is compatible to compute the objective function
+    beta_hat = solver.get_result()
+    objective(beta_hat)
 
-    if getattr(objective, "is_convex", True):
+    if is_convex:
+        val_star = objective(beta_hat)['objective_value']
         for _ in range(100):
-            eps = 1e-5 * np.random.randn(*dimension)
-            val_eps = objective(beta_hat_i + eps)['objective_value']
+            eps = 1e-5 * np.random.randn(*beta_hat.shape)
+            val_eps = objective(beta_hat + eps)['objective_value']
             diff = val_eps - val_star
             assert diff >= 0

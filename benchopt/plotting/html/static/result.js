@@ -67,6 +67,11 @@ function showMe(e) {
     // if at least another graph was displayed before (initialized)
     visibleTraces(); // keep traces coherent accross graphs
   }
+  if (
+    e.attributes.counter > 0
+  ) {
+    toggleShades();  // keep quantile curves coherent (must be after visibleTraces) and not dataset_selector dependent
+  }
   e.attributes.counter += 1; // out of initialization
 }
 
@@ -153,7 +158,15 @@ function toggleShades() {
   );
   allTraces = graph.data;
   const allIndex = (arr) => {
-    return arr.map((elm, idx) => (elm.name == null ? idx : "")).filter(String);
+    return arr.map((elm, idx) => {
+      group = elm.legendgroup;
+      main = arr.find(function (el) { return el.legendgroup === group });
+      if ([undefined, true].includes(main.visible)) {
+        return elm.name == null ? idx : "";
+      }
+      else{ return "" }
+    }
+      ).filter(String);
   };
   whereToggle = allIndex(allTraces); // shade fills are without name
   if (globalState.plot_kind[1] !== "histogram") {

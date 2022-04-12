@@ -50,8 +50,7 @@ API
 CLI
 ~~~
 
-- Change short option ``-p`` to ``-o`` to filter ``objectives``,
-  by `Thomas Moreau`_ (:gh:`265`).
+- Replace ``-p`` flag by ``-o`` for Objective, by `Mathurin Massias`_ (:gh:`281`).
 
 .. _changes_1_1:
 
