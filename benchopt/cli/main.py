@@ -1,3 +1,4 @@
+import yaml
 import click
 import warnings
 from pathlib import Path
@@ -65,6 +66,8 @@ main = click.Group(
 @click.option('--timeout',
               metavar="<int>", default=100, show_default=True, type=int,
               help='Timeout a solver when run for more than <timeout> seconds')
+@click.option('--file', 'config_file', default=None,
+              help="YAML configuration file")
 @click.option('--plot/--no-plot', default=True,
               help="Whether or not to plot the results. Default is True.")
 @click.option('--html/--no-html', default=True,
@@ -95,7 +98,7 @@ main = click.Group(
               "named <env_name>. To install the required solvers and "
               "datasets, see the command `benchopt install`.")
 def run(benchmark, solver_names, forced_solvers, dataset_names,
-        objective_filters, max_runs, n_repetitions, timeout,
+        objective_filters, max_runs, n_repetitions, timeout, config_file,
         plot=True, html=True, pdb=False, do_profile=False,
         env_name='False', old_objective_filters=None):
     if len(old_objective_filters):
@@ -104,6 +107,18 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
             FutureWarning,
         )
         objective_filters = old_objective_filters
+
+    if config_file is not None:
+        with open(config_file, "r") as f:
+            config = yaml.safe_load(f)
+        # TODO automated wya to do this ?
+        # Todo warn if if config overrides CLI argument ?
+        solver_names = tuple(config.get("solvers", False)) or solver_names
+        dataset_names = tuple(config.get("datasets", False)) or dataset_names
+        repetitions = config.get("repetitions", False) or repetitions
+        objective_filters = tuple(config.get("objectives", False)) or objective_filters
+    # import ipdb
+    # ipdb.set_trace()
 
     from benchopt.runner import run_benchmark
 
