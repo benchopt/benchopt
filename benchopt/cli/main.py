@@ -117,8 +117,6 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
         dataset_names = tuple(config.get("datasets", False)) or dataset_names
         repetitions = config.get("repetitions", False) or repetitions
         objective_filters = tuple(config.get("objectives", False)) or objective_filters
-    # import ipdb
-    # ipdb.set_trace()
 
     from benchopt.runner import run_benchmark
 
