@@ -64,7 +64,6 @@ def _load_class_from_module(module_filename, class_name, benchmark_dir):
     klass._import_ctx = getattr(
             module, 'import_ctx', safe_import_context()
     )
-    # klass._import_ctx = getattr(module, 'import_ctx', None)
     klass._benchmark_dir = benchmark_dir.resolve()
     return klass
 
