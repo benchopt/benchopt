@@ -168,7 +168,6 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
 
         return False, None
 
-    # TODO: use this to allow parallel computation of the benchmark.
     @staticmethod
     def _reconstruct(module_filename, parameters, objective,
                      pickled_module_hash=None, benchmark_dir=None):
@@ -237,14 +236,14 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
     def _get_data(self):
         "Wrapper to make sure the returned results are correctly formated."
 
-        if not hasattr(self, 'data') or self.data is None:
-            self.dimension, self.data = self.get_data()
+        if not hasattr(self, '_data') or self._data is None:
+            self._dimension, self._data = self.get_data()
 
         # Make sure dimension is a tuple
-        if isinstance(self.dimension, numbers.Integral):
-            self.dimension = (self.dimension,)
+        if isinstance(self._dimension, numbers.Integral):
+            self._dimension = (self._dimension,)
 
-        return self.dimension, self.data
+        return self._dimension, self._data
 
     # Reduce the pickling and hashing burden by only pickling class parameters.
     @staticmethod
