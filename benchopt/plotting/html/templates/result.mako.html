@@ -30,7 +30,7 @@
     <p>System informations:
         % for name, val in result['sysinfo']['main'].items():
         % if val != "":
-        <b>${name}</b>: ${val}
+        <b>${name.upper()}</b>: ${val}
         % endif
         % endfor
         <button id="btn_subinfo" class="button buttonleft toggle">

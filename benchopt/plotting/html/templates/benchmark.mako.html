@@ -125,7 +125,7 @@
       % for key_main, val_main in result['sysinfo']['main'].items():
         % if val_main != "":
           <li>
-            <b>${key_main}</b>: ${val_main}
+            <b>${key_main.upper()}</b>: ${val_main}
             % if disp_sub and disp_button:
               <button data-idx=${idx_res} id=${"btn_subinfo"+str(idx_res)} class="button buttoncent" style="float:right;">
                 <i class='fas fa-plus-circle'></i>
