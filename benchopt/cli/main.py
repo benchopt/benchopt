@@ -21,6 +21,27 @@ main = click.Group(
 )
 
 
+def _get_run_args(cli_kwargs, config_file_kwargs):
+    config_file_kwargs.update(cli_kwargs)
+    return_names = [
+        "benchmark",
+        "solver_names",
+        "forced_solvers",
+        "dataset_names",
+        "objective_filters",
+        "max_runs",
+        "n_repetitions",
+        "timeout",
+        "plot",
+        "html",
+        "pdb",
+        "do_profile",
+        "env_name",
+        "old_objective_filters"
+    ]
+    return [config_file_kwargs[name] for name in return_names]
+
+
 @main.command(
     help="Run a benchmark with benchopt.",
     epilog="To (re-)install the required solvers and datasets "
@@ -97,26 +118,24 @@ main = click.Group(
               help="Run the benchmark in the conda environment "
               "named <env_name>. To install the required solvers and "
               "datasets, see the command `benchopt install`.")
-def run(benchmark, solver_names, forced_solvers, dataset_names,
-        objective_filters, max_runs, n_repetitions, timeout, config_file,
-        plot=True, html=True, pdb=False, do_profile=False,
-        env_name='False', old_objective_filters=None):
+def run(**kwargs):
+    config_file = kwargs.pop("config_file")
+    if config_file is not None:
+        with open(config_file, "r") as f:
+            config = yaml.safe_load(f)
+    else:
+        config = {}
+    (
+        benchmark, solver_names, forced_solvers, dataset_names,
+        objective_filters, max_runs, n_repetitions, timeout,
+        plot, html, pdb, do_profile, env_name, old_objective_filters
+    ) = _get_run_args(kwargs, config)
     if len(old_objective_filters):
         warnings.warn(
             'Using the -p option is deprecated, use -o instead',
             FutureWarning,
         )
         objective_filters = old_objective_filters
-
-    if config_file is not None:
-        with open(config_file, "r") as f:
-            config = yaml.safe_load(f)
-        # TODO automated wya to do this ?
-        # Todo warn if if config overrides CLI argument ?
-        solver_names = tuple(config.get("solvers", False)) or solver_names
-        dataset_names = tuple(config.get("datasets", False)) or dataset_names
-        repetitions = config.get("repetitions", False) or repetitions
-        objective_filters = tuple(config.get("objectives", False)) or objective_filters
 
     from benchopt.runner import run_benchmark
 
