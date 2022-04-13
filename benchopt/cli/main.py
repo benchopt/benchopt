@@ -22,7 +22,8 @@ main = click.Group(
 
 
 def _get_run_args(cli_kwargs, config_file_kwargs):
-    config_file_kwargs.update(cli_kwargs)
+    options = {OPT_TO_VAR['--' + k]: v for k, v in config_file_kwargs.items()}
+    options.update(cli_kwargs)
     return_names = [
         "benchmark",
         "solver_names",
@@ -39,7 +40,15 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
         "env_name",
         "old_objective_filters"
     ]
-    return [config_file_kwargs[name] for name in return_names]
+    return [options[name] for name in return_names]
+
+
+OPT_TO_VAR = {
+    '--objective-filter': 'objective_filters',
+    '--solver': 'solver_names',
+    '--dataset': 'dataset_names',
+    '--n-repetitions': 'n_repetitions',
+}
 
 
 @main.command(
@@ -50,14 +59,14 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
 )
 @click.argument('benchmark', type=click.Path(exists=True),
                 shell_complete=complete_benchmarks)
-@click.option('--objective-filter', '-o', 'objective_filters',
+@click.option('--objective-filter', '-o', OPT_TO_VAR['--objective-filter'],
               metavar='<objective_filter>', multiple=True, type=str,
               help="Filter the objective based on its parametrized name. This "
               "can be used to only include one set of parameters.")
 @click.option('--old_objective-filter', '-p', 'old_objective_filters',
               multiple=True, type=str,
               help="Deprecated alias for --objective_filters/-o.")
-@click.option('--solver', '-s', 'solver_names',
+@click.option('--solver', '-s', OPT_TO_VAR['--solver'],
               metavar="<solver_name>", multiple=True, type=str,
               help="Include <solver_name> in the benchmark. By default, all "
               "solvers are included. When `-s` is used, only listed solvers"
