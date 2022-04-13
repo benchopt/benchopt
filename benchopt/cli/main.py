@@ -22,33 +22,33 @@ main = click.Group(
 
 
 def _get_run_args(cli_kwargs, config_file_kwargs):
-    options = {OPT_TO_VAR['--' + k]: v for k, v in config_file_kwargs.items()}
-    options.update(cli_kwargs)
+    ctx = click.get_current_context()
+    for k, v in config_file_kwargs.items():
+        # click maps options names to variable names by removing '--' and
+        # replacing '-' by '_'. We use the same mapping to convert options from
+        # config_file., so that variable names match
+        var_name = k.replace('-', '_')
+        # only override CLI variables if they have their default value
+        if ctx.get_parameter_source(var_name).name == 'DEFAULT':
+            cli_kwargs[var_name] = v
+
     return_names = [
         "benchmark",
-        "solver_names",
-        "forced_solvers",
-        "dataset_names",
-        "objective_filters",
+        "solver",
+        "force_solver",
+        "dataset",
+        "objective_filter",
         "max_runs",
         "n_repetitions",
         "timeout",
         "plot",
         "html",
         "pdb",
-        "do_profile",
+        "profile",
         "env_name",
-        "old_objective_filters"
+        "old_objective_filter"
     ]
-    return [options[name] for name in return_names]
-
-
-OPT_TO_VAR = {
-    '--objective-filter': 'objective_filters',
-    '--solver': 'solver_names',
-    '--dataset': 'dataset_names',
-    '--n-repetitions': 'n_repetitions',
-}
+    return [cli_kwargs[name] for name in return_names]
 
 
 @main.command(
@@ -59,26 +59,26 @@ OPT_TO_VAR = {
 )
 @click.argument('benchmark', type=click.Path(exists=True),
                 shell_complete=complete_benchmarks)
-@click.option('--objective-filter', '-o', OPT_TO_VAR['--objective-filter'],
+@click.option('--objective-filter', '-o',
               metavar='<objective_filter>', multiple=True, type=str,
               help="Filter the objective based on its parametrized name. This "
               "can be used to only include one set of parameters.")
-@click.option('--old_objective-filter', '-p', 'old_objective_filters',
+@click.option('--old_objective-filter', '-p',
               multiple=True, type=str,
               help="Deprecated alias for --objective_filters/-o.")
-@click.option('--solver', '-s', OPT_TO_VAR['--solver'],
+@click.option('--solver', '-s',
               metavar="<solver_name>", multiple=True, type=str,
               help="Include <solver_name> in the benchmark. By default, all "
               "solvers are included. When `-s` is used, only listed solvers"
               " are included. To include multiple solvers, "
               "use multiple `-s` options.", shell_complete=complete_solvers)
-@click.option('--force-solver', '-f', 'forced_solvers',
+@click.option('--force-solver', '-f',
               metavar="<solver_name>", multiple=True, type=str,
               help="Force the re-run for <solver_name>. This "
               "avoids caching effect when adding a solver. "
               "To select multiple solvers, use multiple `-f` options.",
               shell_complete=complete_solvers)
-@click.option('--dataset', '-d', 'dataset_names',
+@click.option('--dataset', '-d',
               metavar="<dataset_name>", multiple=True, type=str,
               help="Run the benchmark on <dataset_name>. By default, all "
               "datasets are included. When `-d` is used, only listed datasets"
@@ -110,7 +110,7 @@ OPT_TO_VAR = {
 @click.option('--local', '-l', 'env_name',
               flag_value='False', default=True,
               help="Run the benchmark in the local conda environment.")
-@click.option('--profile', 'do_profile',
+@click.option('--profile',
               flag_value='True', default=False,
               help="Will do line profiling on all functions with @profile "
                    "decorator. Requires the line-profiler package. "
@@ -127,18 +127,20 @@ OPT_TO_VAR = {
               help="Run the benchmark in the conda environment "
               "named <env_name>. To install the required solvers and "
               "datasets, see the command `benchopt install`.")
-def run(**kwargs):
-    config_file = kwargs.pop("config_file")
+def run(config_file=None, **kwargs):
     if config_file is not None:
         with open(config_file, "r") as f:
             config = yaml.safe_load(f)
     else:
         config = {}
+    # print(config)
     (
         benchmark, solver_names, forced_solvers, dataset_names,
         objective_filters, max_runs, n_repetitions, timeout,
         plot, html, pdb, do_profile, env_name, old_objective_filters
     ) = _get_run_args(kwargs, config)
+    # import ipdb
+    # ipdb.set_trace()
     if len(old_objective_filters):
         warnings.warn(
             'Using the -p option is deprecated, use -o instead',
@@ -155,7 +157,8 @@ def run(**kwargs):
     # Check that the dataset/solver patterns match actual dataset
     benchmark = Benchmark(benchmark)
     benchmark.validate_dataset_patterns(dataset_names)
-    benchmark.validate_solver_patterns(solver_names+forced_solvers)
+    # pyyaml returns tuples: solver_names can be tuple and forced_solvers list
+    benchmark.validate_solver_patterns(list(solver_names) + list(forced_solvers))
     benchmark.validate_objective_filters(objective_filters)
 
     # If env_name is False, the flag `--local` has been used (default) so
