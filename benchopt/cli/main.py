@@ -157,9 +157,11 @@ def run(config_file=None, **kwargs):
     # Check that the dataset/solver patterns match actual dataset
     benchmark = Benchmark(benchmark)
     benchmark.validate_dataset_patterns(dataset_names)
-    # pyyaml returns tuples: solver_names can be tuple and forced_solvers list
-    benchmark.validate_solver_patterns(list(solver_names) + list(forced_solvers))
     benchmark.validate_objective_filters(objective_filters)
+    # pyyaml returns tuples: solver_names can be tuple and forced_solvers list
+    benchmark.validate_solver_patterns(
+        list(solver_names) + list(forced_solvers)
+    )
 
     # If env_name is False, the flag `--local` has been used (default) so
     # run in the current environement.
