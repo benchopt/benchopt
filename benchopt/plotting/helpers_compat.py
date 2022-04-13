@@ -6,10 +6,11 @@ except ImportError:
     go = None
 
 
-def fill_between_x(fig, x, q1, q9, y, color, marker, label, plotly=False):
+def fill_between_x(
+        fig, x, q_min, q_max, y, color, marker, label, plotly=False):
     if not plotly:
         plt.loglog(x, y, color=color, marker=marker, label=label, linewidth=3)
-        plt.fill_betweenx(y, q1, q9, color=color, alpha=.3)
+        plt.fill_betweenx(y, q_min, q_max, color=color, alpha=.3)
         return fig
     color = tuple(255*x if i != 3 else x for i, x in enumerate(color))
     color = f'rgba{color}'
@@ -22,12 +23,12 @@ def fill_between_x(fig, x, q1, q9, y, color, marker, label, plotly=False):
         text=[label for _ in x], showlegend=True,
     ))
     fig.add_trace(go.Scatter(
-        x=q1, y=y, mode='lines', showlegend=False,
+        x=q_min, y=y, mode='lines', showlegend=False,
         line={'width': 0, 'color': color}, legendgroup=label,
         hovertemplate='(%{x:.1e},%{y:.1e}) <extra></extra>',
     ))
     fig.add_trace(go.Scatter(
-        x=q9, y=y, mode='lines', fill='tonextx', showlegend=False,
+        x=q_max, y=y, mode='lines', fill='tonextx', showlegend=False,
         line={'width': 0, 'color': color}, legendgroup=label,
         hovertemplate='(%{x:.1e},%{y:.1e}) <extra></extra>',
     ))
@@ -35,7 +36,8 @@ def fill_between_x(fig, x, q1, q9, y, color, marker, label, plotly=False):
     return fig
 
 
-def fill_between_y(fig, x, y, q_min, q_max, color, marker, label, plotly=False):
+def fill_between_y(
+        fig, x, y, q_min, q_max, color, marker, label, plotly=False):
     if not plotly:
         plt.loglog(x, y, color=color, marker=marker, label=label, linewidth=3)
         plt.fill_between(x, q_min, q_max, color=color, alpha=.3)
