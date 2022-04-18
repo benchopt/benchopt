@@ -1,4 +1,5 @@
 import time
+import gc
 
 from datetime import datetime
 
@@ -67,9 +68,11 @@ def run_one_resolution(objective, solver, meta, stop_val):
     if DEBUG:
         print(f"DEBUG - Calling solver {solver} with stop val: {stop_val}")
 
+    gc.disable()
     t_start = time.perf_counter()
     solver.run(stop_val)
     delta_t = time.perf_counter() - t_start
+    gc.enable()
     beta_hat_i = solver.get_result()
     objective_dict = objective(beta_hat_i)
 
