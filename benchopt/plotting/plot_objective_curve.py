@@ -80,11 +80,11 @@ def plot_objective_curve(df, obj_col='objective_value', plotly=False,
         df_ = df[df['solver_name'] == solver_name]
         curve = df_.groupby('stop_val').median()
 
-        q3 = df_.groupby('stop_val')['time'].quantile(.3)
-        q7 = df_.groupby('stop_val')['time'].quantile(.7)
+        q25 = df_.groupby('stop_val')['time'].quantile(.25)
+        q75 = df_.groupby('stop_val')['time'].quantile(.75)
 
         fill_between_x(
-            fig, curve['time'], q3, q7, curve[obj_col], color=CMAP(i % CMAP.N),
+            fig, curve['time'], q25, q75, curve[obj_col], color=CMAP(i % CMAP.N),
             marker=markers[i % len(markers)], label=solver_name, plotly=plotly
         )
 
