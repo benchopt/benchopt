@@ -84,8 +84,9 @@ def plot_objective_curve(df, obj_col='objective_value', plotly=False,
         q75 = df_.groupby('stop_val')['time'].quantile(.75)
 
         fill_between_x(
-            fig, curve['time'], q25, q75, curve[obj_col], color=CMAP(i % CMAP.N),
-            marker=markers[i % len(markers)], label=solver_name, plotly=plotly
+            fig, curve['time'], q25, q75, curve[obj_col],
+            color=CMAP(i % CMAP.N), marker=markers[i % len(markers)],
+            label=solver_name, plotly=plotly
         )
 
     if suboptimality and not relative:
