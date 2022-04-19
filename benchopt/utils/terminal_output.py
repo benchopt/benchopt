@@ -86,11 +86,11 @@ class TerminalOutput:
 
         if objective is not None:
             self.objective = objective
-            self.objective_tag = f"|--{objective}"
+            self.objective_tag = f"  |--{objective}"
 
         if solver is not None:
             self.solver = solver
-            self.solver_tag = colorify(f"|----{solver}:")
+            self.solver_tag = colorify(f"    |--{solver}:")
 
         if verbose is not None:
             self.verbose = verbose
@@ -102,7 +102,7 @@ class TerminalOutput:
         if self.rep == 0:
             self.show_status(status='skip')
             if reason is not None:
-                print(f'Reason: {reason}')
+                print(f'    Reason: {reason}')
 
     def savefile_status(self, save_file=None):
         if save_file is None:
