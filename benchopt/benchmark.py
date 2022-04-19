@@ -427,8 +427,11 @@ class Benchmark:
                 output.show_status('not installed', dataset=True)
                 continue
             output.display_dataset()
-            for objective, _ in all_objectives:
+            for objective, is_installed in all_objectives:
                 output.set(objective=objective)
+                if not is_installed:
+                    output.show_status('not installed', objective=True)
+                    continue
                 output.display_objective()
                 for solver, is_installed in all_solvers:
                     output.set(solver=solver)

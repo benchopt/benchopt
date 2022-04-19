@@ -130,10 +130,13 @@ class TerminalOutput:
                 endline=False,  verbose=self.verbose
             )
 
-    def show_status(self, status, dataset=False):
-        if dataset:
+    def show_status(self, status, dataset=False, objective=False):
+        if dataset or objective:
             assert status == 'not installed'
-        tag = self.dataset_tag if dataset else self.solver_tag
+        tag = (
+            self.dataset_tag if dataset else
+            self.objective_tag if objective else self.solver_tag
+        )
         assert status in STATUS, (
             f"status should be in {list(STATUS)}. Got '{status}'"
         )
