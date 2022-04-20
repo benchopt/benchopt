@@ -8,7 +8,7 @@
 
 .. _Tanguy Lefort: https://github.com/tanglef
 
-.. _Tom Dupré La Tour: https://tomdlt.github.io
+.. _Tom Dupré la Tour: https://tomdlt.github.io
 
 .. _Nidham Gazagnadou: https://ngazagna.github.io
 
