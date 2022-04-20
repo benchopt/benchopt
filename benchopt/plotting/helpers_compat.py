@@ -6,8 +6,8 @@ except ImportError:
     go = None
 
 
-def fill_between_x(
-        fig, x, q_min, q_max, y, color, marker, label, plotly=False):
+def fill_between_x(fig, x, q_min, q_max, y, color, marker, label,
+                   plotly=False):
     if not plotly:
         plt.loglog(x, y, color=color, marker=marker, label=label, linewidth=3)
         plt.fill_betweenx(y, q_min, q_max, color=color, alpha=.3)
@@ -36,8 +36,8 @@ def fill_between_x(
     return fig
 
 
-def fill_between_y(
-        fig, x, y, q_min, q_max, color, marker, label, plotly=False):
+def fill_between_y(fig, x, y, q_min, q_max, color, marker, label,
+                   plotly=False):
     if not plotly:
         plt.loglog(x, y, color=color, marker=marker, label=label, linewidth=3)
         plt.fill_between(x, q_min, q_max, color=color, alpha=.3)
