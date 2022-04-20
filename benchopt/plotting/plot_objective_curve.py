@@ -18,6 +18,10 @@ def _remove_prefix(text, prefix):
 def _get_curve_interp(df, obj_col, q_min, q_max):
     """Compute interpolation curve for a given solver.
 
+    For each repetition, we compute an interpolation curve on a fixed
+    grid and then compute the median and the quartiles to display
+    a curve and the error curve.
+
     Parameters
     ----------
     df : instance of pandas.DataFrame
@@ -27,6 +31,9 @@ def _get_curve_interp(df, obj_col, q_min, q_max):
     q_min, q_max : float
         The quantile to display the error bars in the plot.
     """
+    # Compute the size of the grid as the min between 100 points
+    # and the number of point in the longest curve. The grid is then
+    # chosen in log scale between the min and max time.
     n_interp = min(100, df.groupby('idx_rep').size().max())
     t = np.logspace(
         np.log10(df['time'].min()), np.log10(df['time'].max()), n_interp
@@ -35,7 +42,8 @@ def _get_curve_interp(df, obj_col, q_min, q_max):
         df.groupby('idx_rep').apply(
             lambda x: pd.DataFrame({
                 't': t,
-                # Linear interpolator to resample on a grid t
+                # Linear interpolator to resample the objective curve
+                # (x['time'], x[obj_col]) on a grid t
                 'v': interp1d(
                     x['time'], x[obj_col],
                     bounds_error=False,
@@ -47,6 +55,7 @@ def _get_curve_interp(df, obj_col, q_min, q_max):
             })
         )
     )
+    # Compute the quartiles on the resampled curves.
     curve_t = curve_t.groupby('t')['v'].quantile([0.5, q_min, q_max]).unstack()
     return curve_t
 
