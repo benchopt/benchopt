@@ -120,7 +120,7 @@ def plot_objective_curve(df, obj_col='objective_value', plotly=False,
         return fig
 
     # use 2nd and 8th decile for now
-    q_min, q_max = 0.2, 0.8
+    q_min, q_max = 0.25, 0.75
     for i, solver_name in enumerate(solver_names):
         df_ = df[df['solver_name'] == solver_name]
 
