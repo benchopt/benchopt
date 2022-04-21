@@ -13,7 +13,7 @@ class _Callback:
     meta : dict
         Metadata passed to store in Cost results.
         Contains objective and data names, problem dimension, etc.
-    stopping_criterion : StoppingCriterion
+    stopping_criterion : instance of StoppingCriterion
         Object to check if we need to stop a solver.
 
     Attributes
@@ -59,7 +59,7 @@ class _Callback:
         self.time_callback = time.perf_counter()
 
     def __call__(self, x):
-        # Stop time and update computation time since the begining
+        # Stop time and update computation time since the beginning
         t0 = time.perf_counter()
 
         self.time_iter += t0 - self.time_callback

@@ -25,7 +25,7 @@ CACHE_DIR = '__cache__'
 
 
 class Benchmark:
-    """Benchmark exposes all constituant of the bechmark folder.
+    """Benchmark exposes all constituents of the benchmark folder.
 
     Parameters
     ----------
@@ -98,7 +98,7 @@ class Benchmark:
     def validate_solver_patterns(self, solver_patterns):
         "Check that all provided patterns match at least one solver"
 
-        # List all dataset strings.
+        # List all solver strings.
         all_solvers = _list_all_parametrized_names(*self.get_solvers())
         all_solvers += ["all"]
 
@@ -461,7 +461,7 @@ def _check_name_lists(*name_lists):
 def is_matched(name, include_patterns=None, default=True):
     """Check if a certain name is matched by any pattern in include_patterns.
 
-    When include_patterns is None or [], always return True.
+    When include_patterns is None or [], always return `default`.
     """
     if include_patterns is None or len(include_patterns) == 0:
         return default
@@ -518,7 +518,7 @@ def _filter_classes(*classes, filters=None):
 
 
 def buffer_iterator(it):
-    """Buffer the output of an iterator so to repeat it without recomputing."""
+    """Buffer the output of an iterator so as to repeat it without recomputing."""
     buffer = []
 
     def buffered_it(buffer):
