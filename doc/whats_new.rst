@@ -56,7 +56,7 @@ Plotting tools
 - Add plot relative to the number of iterations for research benchmarks,
   by `Thomas Moreau`_ (:gh:`287`).
 
-- Change quantiles for error bar to 0.25 and 0.75,
+- Change quantiles for error bars to 0.25 and 0.75,
   by `Tom Dupré la Tour`_ (:gh:`287`).
 
 .. _changes_1_1:

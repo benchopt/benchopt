@@ -29,7 +29,7 @@ def _get_curve_interp(df, obj_col, q_min, q_max):
     obj_col : str
         Column to select in the DataFrame for the plot.
     q_min, q_max : float
-        The quantile to display the error bars in the plot.
+        The quantiles to display the error bars in the plot.
     """
     # Compute the size of the grid as the min between 100 points
     # and the number of point in the longest curve. The grid is then
@@ -128,7 +128,7 @@ def plot_objective_curve(df, obj_col='objective_value', plotly=False,
             plt.text(0.5, 0.5, "Not Available")
         return fig
 
-    # use 2nd and 8th decile for now
+    # use 1st and 3rd quartile for error bars
     q_min, q_max = 0.25, 0.75
     for i, solver_name in enumerate(solver_names):
         df_ = df[df['solver_name'] == solver_name]
