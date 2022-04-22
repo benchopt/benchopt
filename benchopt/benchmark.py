@@ -518,7 +518,7 @@ def _filter_classes(*classes, filters=None):
 
 
 def buffer_iterator(it):
-    """Buffer the output of an iterator so as to repeat it without recomputing."""
+    """Buffer the output of an iterator to repeat it without recomputing."""
     buffer = []
 
     def buffered_it(buffer):
