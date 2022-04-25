@@ -404,7 +404,7 @@ class Benchmark:
             Filters to select specific objective parameters. If None,
             all objective parameters are tested
         output : TerminalOutput or None
-            Object to format string to display the progress of the solver.
+            Object to manage the output in the terminal.
 
         Yields
         ------
