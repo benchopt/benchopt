@@ -26,7 +26,7 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
     for k, v in config_file_kwargs.items():
         # click maps options names to variable names by removing '--' and
         # replacing '-' by '_'. We use the same mapping to convert options from
-        # config_file., so that variable names match
+        # config_file, so that variable names match
         var_name = k.replace('-', '_')
         # only override CLI variables if they have their default value
         if ctx.get_parameter_source(var_name).name == 'DEFAULT':
@@ -97,7 +97,7 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               metavar="<int>", default=100, show_default=True, type=int,
               help='Timeout a solver when run for more than <timeout> seconds')
 @click.option('--file', 'config_file', default=None,
-              help="YAML configuration file")
+              help="YAML configuration file containing benchmark options.")
 @click.option('--plot/--no-plot', default=True,
               help="Whether or not to plot the results. Default is True.")
 @click.option('--html/--no-html', default=True,
@@ -133,14 +133,13 @@ def run(config_file=None, **kwargs):
             config = yaml.safe_load(f)
     else:
         config = {}
-    # print(config)
+
     (
         benchmark, solver_names, forced_solvers, dataset_names,
         objective_filters, max_runs, n_repetitions, timeout,
         plot, html, pdb, do_profile, env_name, old_objective_filters
     ) = _get_run_args(kwargs, config)
-    # import ipdb
-    # ipdb.set_trace()
+
     if len(old_objective_filters):
         warnings.warn(
             'Using the -p option is deprecated, use -o instead',
@@ -164,7 +163,7 @@ def run(config_file=None, **kwargs):
     )
 
     # If env_name is False, the flag `--local` has been used (default) so
-    # run in the current environement.
+    # run in the current environment.
     if env_name == 'False':
         run_benchmark(
             benchmark, solver_names, forced_solvers,
