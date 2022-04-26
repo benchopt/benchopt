@@ -185,7 +185,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         objective = getattr(self, '_objective', None)
         return self._reconstruct, (
             self._module_filename, self._parameters, objective, module_hash,
-            self._import_ctx._benchmark_dir
+            str(self._import_ctx._benchmark_dir)
         )
 
 
@@ -260,7 +260,7 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
         module_hash = get_file_hash(self._module_filename)
         return self._reconstruct, (
             self._module_filename, module_hash, self._parameters,
-            self._import_ctx._benchmark_dir
+            str(self._import_ctx._benchmark_dir)
         )
 
 
@@ -399,8 +399,8 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
 
     def __reduce__(self):
         module_hash = get_file_hash(self._module_filename)
-        dataset = getattr(self, 'dataset', None)
+        dataset = getattr(self, '_dataset', None)
         return self._reconstruct, (
             self._module_filename, module_hash, self._parameters, dataset,
-            self._import_ctx._benchmark_dir
+            str(self._import_ctx._benchmark_dir)
         )

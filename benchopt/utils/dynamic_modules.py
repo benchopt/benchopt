@@ -55,6 +55,7 @@ def _load_class_from_module(module_filename, class_name, benchmark_dir):
     klass : class
         The klass requested from the given module.
     """
+    benchmark_dir = Path(benchmark_dir)
     module_filename = Path(module_filename)
     module = _get_module_from_file(module_filename, benchmark_dir)
     klass = getattr(module, class_name)
