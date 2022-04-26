@@ -77,7 +77,8 @@ def get_file_hash(filename):
     return hasher.hexdigest()
 
 
-def _reconstruct_class(module_filename, class_name, pickled_module_hash=None):
+def _reconstruct_class(module_filename, class_name, benchmark_dir,
+                       pickled_module_hash=None):
     """Retrieve a class in module defined by its filename.
 
     Parameters
@@ -101,4 +102,4 @@ def _reconstruct_class(module_filename, class_name, pickled_module_hash=None):
             'object should not be stored using pickle for long term storage.'
         )
 
-    return _load_class_from_module(module_filename, class_name)
+    return _load_class_from_module(module_filename, class_name, benchmark_dir)

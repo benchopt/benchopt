@@ -223,6 +223,8 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
             status = 'done'
 
     output.show_status(status=status)
+    # Make sure to flush so the parallel output is properly display
+    print(flush=True)
 
     if status == 'interrupted':
         raise SystemExit(1)

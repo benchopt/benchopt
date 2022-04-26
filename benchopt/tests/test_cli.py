@@ -113,11 +113,13 @@ class TestRunCmd:
             run([str(DUMMY_BENCHMARK_PATH), '-l', '-s', 'invalid_solver'],
                 'benchopt', standalone_mode=False)
 
-    def test_benchopt_run(self):
+    @pytest.mark.parametrize('n_workers', [1, 2])
+    def test_benchopt_run(self, n_workers):
         with CaptureRunOutput() as out:
             run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,
                  '-f', SELECT_ONE_PGD, '-n', '1', '-r', '1', '-o',
-                 SELECT_ONE_OBJECTIVE], 'benchopt', standalone_mode=False)
+                 SELECT_ONE_OBJECTIVE, '-j', n_workers, '--no-plot'],
+                'benchopt', standalone_mode=False)
 
         out.check_output('Simulated', repetition=1)
         out.check_output('Dummy Sparse Regression', repetition=1)

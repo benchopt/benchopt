@@ -173,7 +173,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
                      pickled_module_hash=None, benchmark_dir=None):
         set_benchmark(benchmark_dir)
         Solver = _reconstruct_class(
-            module_filename, 'Solver', pickled_module_hash
+            module_filename, 'Solver', benchmark_dir, pickled_module_hash,
         )
         obj = Solver.get_instance(**parameters)
         if objective is not None:
@@ -251,7 +251,7 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
                      benchmark_dir):
         set_benchmark(benchmark_dir)
         Dataset = _reconstruct_class(
-            module_filename, 'Dataset', pickled_module_hash
+            module_filename, 'Dataset', benchmark_dir, pickled_module_hash,
         )
         obj = Dataset.get_instance(**parameters)
         return obj
@@ -390,7 +390,7 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
                      dataset, benchmark_dir):
         set_benchmark(benchmark_dir)
         Objective = _reconstruct_class(
-            module_filename, 'Objective', pickled_module_hash
+            module_filename, 'Objective', benchmark_dir, pickled_module_hash,
         )
         obj = Objective.get_instance(**parameters)
         if dataset is not None:
