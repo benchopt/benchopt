@@ -99,7 +99,7 @@ main = click.Group(
               "named <env_name>. To install the required solvers and "
               "datasets, see the command `benchopt install`.")
 def run(benchmark, solver_names, forced_solvers, dataset_names,
-        objective_filters, max_runs, n_repetitions, timeout, n_workers,
+        objective_filters, max_runs, n_repetitions, timeout, n_jobs,
         plot=True, html=True, pdb=False, do_profile=False,
         env_name='False', old_objective_filters=None):
     if len(old_objective_filters):
@@ -129,7 +129,7 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
             dataset_names=dataset_names,
             objective_filters=objective_filters,
             max_runs=max_runs, n_repetitions=n_repetitions,
-            timeout=timeout, n_workers=n_workers,
+            timeout=timeout, n_jobs=n_jobs,
             plot_result=plot, html=html, pdb=pdb
         )
 
@@ -179,7 +179,7 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
         rf"benchopt run --local {benchmark.benchmark_dir} "
         rf"--n-repetitions {n_repetitions} "
         rf"--max-runs {max_runs} --timeout {timeout} "
-        rf"--n-workers {n_workers}"
+        rf"--n-workers {n_jobs}"
         rf"{solvers_option} {forced_solvers_option} "
         rf"{datasets_option} {objective_option} "
         rf"{'--plot' if plot else '--no-plot'} "

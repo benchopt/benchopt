@@ -233,7 +233,7 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
 
 def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                   dataset_names=None, objective_filters=None,
-                  max_runs=10, n_repetitions=1, timeout=100, n_workers=1,
+                  max_runs=10, n_repetitions=1, timeout=100, n_jobs=1,
                   plot_result=True, html=True, show_progress=True, pdb=False):
     """Run full benchmark.
 
@@ -260,7 +260,7 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
         The number of repetitions to run. Defaults to 1.
     timeout : float
         The maximum duration in seconds of the solver run.
-    n_workers : int
+    n_jobs : int
         Maximal number of workers to use to run the benchmark in parallel.
     plot_result : bool
         If set to True (default), display the result plot and save them in
@@ -294,7 +294,7 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
         output=output
     )
 
-    results = Parallel(n_jobs=n_workers)(
+    results = Parallel(n_jobs=n_jobs)(
         delayed(run_one_solver)(
             benchmark=benchmark, dataset=dataset, objective=objective,
             solver=solver, n_repetitions=n_repetitions, max_runs=max_runs,

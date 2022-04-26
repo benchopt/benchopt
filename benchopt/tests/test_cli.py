@@ -113,12 +113,12 @@ class TestRunCmd:
             run([str(DUMMY_BENCHMARK_PATH), '-l', '-s', 'invalid_solver'],
                 'benchopt', standalone_mode=False)
 
-    @pytest.mark.parametrize('n_workers', [1, 2])
-    def test_benchopt_run(self, n_workers):
+    @pytest.mark.parametrize('n_jobs', [1, 2])
+    def test_benchopt_run(self, n_jobs):
         with CaptureRunOutput() as out:
             run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,
                  '-f', SELECT_ONE_PGD, '-n', '1', '-r', '1', '-o',
-                 SELECT_ONE_OBJECTIVE, '-j', n_workers, '--no-plot'],
+                 SELECT_ONE_OBJECTIVE, '-j', n_jobs, '--no-plot'],
                 'benchopt', standalone_mode=False)
 
         out.check_output('Simulated', repetition=1)
