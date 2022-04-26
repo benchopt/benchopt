@@ -352,11 +352,22 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
     def set_dataset(self, dataset):
         self._dataset = dataset
         self._dimension, data = dataset._get_data()
-        self.set_data(**data)
-        return self.skip()
+        # Check if the dataset is compatible with the objective
+        skip, reason = self.skip(**data)
+        if skip:
+            return skip, reason
 
-    def skip(self):
+        self.set_data(**data)
+        return False,  None
+
+    def skip(self, **data):
         """Used to decide if the ``Objective`` is compatible with the data.
+
+        Parameters
+        ----------
+        **data: dict
+            Extra parameters of the objective. This dictionary is retrieved
+            by calling ``data = Dataset.get_data()``.
 
         Returns
         -------
