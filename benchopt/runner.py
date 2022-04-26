@@ -399,15 +399,16 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                 objective = objective_class.get_instance(**obj_parameters)
                 if not is_matched(str(objective), objective_filters):
                     continue
-                print_normalize(f"|--{objective}")
+                tag = f"  |--{objective}"
                 skip, reason = objective.set_dataset(dataset)
                 if skip:
                     print_normalize(
-                        f"{objective} {colorify('skip', YELLOW)}"
+                        f"{tag} - {colorify('skip', YELLOW)}"
                     )
                     if reason is not None:
                         print(f'Reason: {reason}')
                     continue
+                print_normalize(tag)
 
                 for solver_class in solver_classes:
 
@@ -421,7 +422,7 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                             continue
 
                         # Get the solver's name
-                        tag = colorify(f"|----{solver}:")
+                        tag = colorify(f"    |--{solver}:")
 
                         # check if the module caught a failed import
                         if not solver.is_installed(
@@ -438,7 +439,7 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                                 f"{tag} {colorify('skip', YELLOW)}"
                             )
                             if reason is not None:
-                                print(f'Reason: {reason}')
+                                print(f'    Reason: {reason}')
                             continue
 
                         # Get meta

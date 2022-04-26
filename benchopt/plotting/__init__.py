@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 from ..constants import PLOT_KINDS
 from .helpers import get_plot_id
-from .plot_histogram import plot_histogram  # noqa: F401
+from .plot_bar_chart import plot_bar_chart  # noqa: F401
 from .plot_objective_curve import plot_objective_curve  # noqa: F401
 from .plot_objective_curve import plot_suboptimality_curve  # noqa: F401
 from .plot_objective_curve import plot_relative_suboptimality_curve  # noqa: F401 E501
@@ -13,7 +13,7 @@ from .generate_html import plot_benchmark_html
 
 def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
                    html=True):
-    """Plot convergence curve and histogram for a given benchmark.
+    """Plot convergence curve and bar chart for a given benchmark.
 
     Parameters
     ----------
@@ -36,7 +36,7 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
     Returns
     -------
     figs : list
-        The matplotlib figures for convergence curve and histogram
+        The matplotlib figures for convergence curve and bar chart
         for each dataset.
     """
     config_kinds = benchmark.get_setting('plots')
@@ -71,11 +71,11 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
                             f"Requesting invalid plot '{kind}'."
                             f"Should be in:\n{PLOT_KINDS}"
                         )
-                    # For now only plot histogram and suboptimality for
+                    # For now only plot bar chart and suboptimality for
                     # objective_value for which we monitor convergence
                     # XXX - find a better solution
                     if obj_col != "objective_value" and (
-                            kind == "histogram" or "subopt" in kind):
+                            kind == "bar_chart" or "subopt" in kind):
                         continue
                     plot_func = globals()[PLOT_KINDS[kind]]
                     try:
