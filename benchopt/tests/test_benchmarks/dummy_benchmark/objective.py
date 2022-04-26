@@ -21,7 +21,7 @@ class Objective(BaseObjective):
         self.lmbd = self.reg * self._get_lambda_max()
 
     def skip(self, X, y):
-        if np.all(self.X == 0):
+        if np.all(X == 0):
             return True, 'X is all zeros'
         return False, None
 
