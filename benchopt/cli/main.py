@@ -54,7 +54,7 @@ main = click.Group(
               " are included. Note that <dataset_name> can be a regexp. "
               "To include multiple datasets, use multiple `-d` options.",
               shell_complete=complete_datasets)
-@click.option('--n-workers', '-j',
+@click.option('--n-jobs', '-j',
               metavar="<int>", default=1, show_default=True, type=int,
               help='Maximal number of workers to run the benchmark in '
               'parallel.')
