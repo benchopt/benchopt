@@ -178,6 +178,11 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
     )
 
     # Set objective an skip if necessary.
+    skip, reason = objective.set_dataset(dataset)
+    if skip:
+        output.skip(reason, objective=True)
+        return []
+
     objective.set_dataset(dataset)
     skip, reason = solver._set_objective(objective)
     if skip:

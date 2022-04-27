@@ -47,7 +47,7 @@ DEFAULT_BENCHMARK_CONFIG = {
 
     plots =
         suboptimality_curve
-        histogram
+        bar_chart
 """
 
 

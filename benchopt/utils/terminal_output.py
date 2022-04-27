@@ -78,7 +78,7 @@ class TerminalOutput:
         return new_output
 
     def set(self, solver=None, dataset=None, objective=None, verbose=None,
-            rep=None):
+            rep=None, i_solver=None):
 
         if dataset is not None:
             self.dataset = dataset
@@ -98,11 +98,15 @@ class TerminalOutput:
         if rep is not None:
             self.rep = rep
 
-    def skip(self, reason=None):
-        if self.rep == 0:
-            self.show_status(status='skip')
+        if i_solver is not None:
+            self.i_solver = i_solver
+
+    def skip(self, reason=None, objective=False):
+        if self.rep == 0 and (not objective or self.i_solver == 0):
+            self.show_status(status='skip', objective=objective)
             if reason is not None:
-                print(f'    Reason: {reason}')
+                indent = ' ' * (2 if objective else 4)
+                print(f'{indent}Reason: {reason}')
 
     def savefile_status(self, save_file=None):
         if save_file is None:

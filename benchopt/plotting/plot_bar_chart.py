@@ -6,8 +6,8 @@ from .helpers_compat import get_figure, _make_bars
 PLOTLY_GRAY = (.8627, .8627, .8627)
 
 
-def plot_histogram(df, obj_col='objective_value', plotly=False):
-    """Plot histogram for a given benchmark and dataset.
+def plot_bar_chart(df, obj_col='objective_value', plotly=False):
+    """Plot bar chart for a given benchmark and dataset.
 
     Parameters
     ----------

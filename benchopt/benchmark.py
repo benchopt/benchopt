@@ -433,8 +433,8 @@ class Benchmark:
                     output.show_status('not installed', objective=True)
                     continue
                 output.display_objective()
-                for solver, is_installed in all_solvers:
-                    output.set(solver=solver)
+                for i_solver, (solver, is_installed) in enumerate(all_solvers):
+                    output.set(solver=solver, i_solver=i_solver)
 
                     if not is_installed:
                         output.show_status('not installed')
