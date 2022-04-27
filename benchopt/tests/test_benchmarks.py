@@ -161,6 +161,7 @@ def test_solver(benchmark, solver_class):
 
     dataset_class = simulated_dataset[0]
     test_parameters = getattr(dataset_class, 'test_parameters', [{}])
+    solver_ran_once = False
     for test_params in test_parameters:
         dataset = dataset_class.get_instance(**test_params)
 
@@ -169,7 +170,8 @@ def test_solver(benchmark, solver_class):
         solver = solver_class.get_instance()
         skip, reason = solver._set_objective(objective)
         if skip:
-            pytest.skip(reason)
+            continue
+        solver_ran_once = True
 
         is_convex = getattr(objective, "is_convex", True)
 
@@ -203,3 +205,4 @@ def test_solver(benchmark, solver_class):
                 val_eps = objective(beta_hat + eps)['objective_value']
                 diff = val_eps - val_star
                 assert diff >= 0
+    assert solver_ran_once, 'Solver skipped all simulated dataset configs'
