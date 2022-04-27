@@ -160,44 +160,46 @@ def test_solver(benchmark, solver_class):
     )
 
     dataset_class = simulated_dataset[0]
-    dataset = dataset_class.get_instance()
+    test_parameters = getattr(dataset_class, 'test_parameters', [{}])
+    for test_params in test_parameters:
+        dataset = dataset_class.get_instance(**test_params)
 
-    objective.set_dataset(dataset)
+        objective.set_dataset(dataset)
 
-    solver = solver_class.get_instance()
-    skip, reason = solver._set_objective(objective)
-    if skip:
-        pytest.skip(reason)
+        solver = solver_class.get_instance()
+        skip, reason = solver._set_objective(objective)
+        if skip:
+            pytest.skip(reason)
 
-    is_convex = getattr(objective, "is_convex", True)
+        is_convex = getattr(objective, "is_convex", True)
 
-    # Either call run_with_cb or run
-    if solver._solver_strategy == 'callback':
-        sc = solver.stopping_criterion.get_runner_instance(
-            max_runs=25, timeout=None, solver=solver
-        )
-        if not is_convex:
-            # Set large tolerance for the stopping criterion to stop fast
-            sc.eps = 5e-1
-        cb = _Callback(
-            objective, meta={}, stopping_criterion=sc
-        )
-        solver.run(cb)
-    else:
-        if solver._solver_strategy == 'iteration':
-            stop_val = 5000 if is_convex else 10
+        # Either call run_with_cb or run
+        if solver._solver_strategy == 'callback':
+            sc = solver.stopping_criterion.get_runner_instance(
+                max_runs=25, timeout=None, solver=solver
+            )
+            if not is_convex:
+                # Set large tolerance for the stopping criterion to stop fast
+                sc.eps = 5e-1
+            cb = _Callback(
+                objective, meta={}, stopping_criterion=sc
+            )
+            solver.run(cb)
         else:
-            stop_val = 1e-15 if is_convex else 1e-2
-        solver.run(stop_val)
+            if solver._solver_strategy == 'iteration':
+                stop_val = 5000 if is_convex else 10
+            else:
+                stop_val = 1e-15 if is_convex else 1e-2
+            solver.run(stop_val)
 
-    # Check that beta_hat is compatible to compute the objective function
-    beta_hat = solver.get_result()
-    objective(beta_hat)
+        # Check that beta_hat is compatible to compute the objective function
+        beta_hat = solver.get_result()
+        objective(beta_hat)
 
-    if is_convex:
-        val_star = objective(beta_hat)['objective_value']
-        for _ in range(100):
-            eps = 1e-5 * np.random.randn(*beta_hat.shape)
-            val_eps = objective(beta_hat + eps)['objective_value']
-            diff = val_eps - val_star
-            assert diff >= 0
+        if is_convex:
+            val_star = objective(beta_hat)['objective_value']
+            for _ in range(100):
+                eps = 1e-5 * np.random.randn(*beta_hat.shape)
+                val_eps = objective(beta_hat + eps)['objective_value']
+                diff = val_eps - val_star
+                assert diff >= 0
