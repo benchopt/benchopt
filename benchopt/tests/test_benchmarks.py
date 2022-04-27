@@ -165,7 +165,12 @@ def test_solver(benchmark, solver_class):
     objective.set_dataset(dataset)
 
     solver = solver_class.get_instance()
-    solver.set_objective(**objective.to_dict())
+    skip, reason = solver._set_objective(objective)
+    if skip:
+        raise ValueError(
+            'Solver should be skipped for the simulated dataset'
+            f'because of reason: {reason}'
+        )
 
     is_convex = getattr(objective, "is_convex", True)
 
