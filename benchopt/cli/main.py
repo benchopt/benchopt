@@ -312,8 +312,7 @@ def install(benchmark, minimal, solver_names, dataset_names, force=False,
               shell_complete=complete_conda_envs,
               help='Environment to run the test in. If it is not provided '
               'a temporary one is created for the test.')
-@click.argument('pytest_args', nargs=-1, type=click.UNPROCESSED,
-                help='Arguments to pass to pytest, for example `--pdb`.')
+@click.argument('pytest_args', nargs=-1, type=click.UNPROCESSED)
 def test(benchmark, env_name, pytest_args):
 
     benchmark = Benchmark(benchmark)
