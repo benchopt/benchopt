@@ -15,6 +15,7 @@ from benchopt.tests import SELECT_ONE_SIMULATED
 from benchopt.tests import SELECT_ONE_OBJECTIVE
 from benchopt.tests import DUMMY_BENCHMARK
 from benchopt.tests import DUMMY_BENCHMARK_PATH
+from benchopt.tests import MANY_SIMULATED_BENCHMARK_PATH
 from benchopt.tests import REQUIREMENT_BENCHMARK
 from benchopt.tests import REQUIREMENT_BENCHMARK_PATH
 
@@ -26,10 +27,16 @@ from benchopt.cli.helpers import check_install
 
 
 BENCHMARK_COMPLETION_CASES = [
-    (str(DUMMY_BENCHMARK_PATH.parent), 2, [str(DUMMY_BENCHMARK_PATH),
-                                           str(REQUIREMENT_BENCHMARK_PATH)]),
-    (str(DUMMY_BENCHMARK_PATH.parent)[:-2], 2,
-     [str(DUMMY_BENCHMARK_PATH), str(REQUIREMENT_BENCHMARK_PATH)]),
+    (str(DUMMY_BENCHMARK_PATH.parent), 3, [
+        str(DUMMY_BENCHMARK_PATH),
+        str(REQUIREMENT_BENCHMARK_PATH),
+        str(MANY_SIMULATED_BENCHMARK_PATH),
+    ]),
+    (str(DUMMY_BENCHMARK_PATH.parent)[:-2], 3, [
+        str(DUMMY_BENCHMARK_PATH),
+        str(REQUIREMENT_BENCHMARK_PATH),
+        str(MANY_SIMULATED_BENCHMARK_PATH),
+    ]),
     (str(DUMMY_BENCHMARK_PATH)[:-2], 1, str(DUMMY_BENCHMARK_PATH))
 ]
 SOLVER_COMPLETION_CASES = [
