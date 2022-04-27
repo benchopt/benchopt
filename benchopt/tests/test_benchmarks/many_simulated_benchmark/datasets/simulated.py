@@ -13,5 +13,8 @@ class Dataset(BaseDataset):
         'n_samples': [1, 10],
     }
 
+    def __init__(self, n_samples=10):
+        self.n_samples = 10
+
     def get_data(self):
         return 10, dict(X=np.random.randn(self.n_samples, 10))
