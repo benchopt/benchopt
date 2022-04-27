@@ -39,13 +39,13 @@ def clean(benchmark, token=None, filename=None):
 
     # Delete result files
     output_folder = benchmark.get_output_folder()
-    print(f"rm -rf {output_folder}")
-    rm_folder(output_folder)
+    if output_folder.exists():
+        print(f"rm -rf {output_folder}")
+        rm_folder(output_folder)
 
     # Delete cache files
-    cache_folder = benchmark.get_cache_location()
-    print(f"rm -rf {cache_folder}")
-    rm_folder(cache_folder)
+    print("Clear joblib cache")
+    benchmark.mem.clear(warn=False)
 
 
 def check_conda_env(env_name, benchmark_name=None):
