@@ -165,7 +165,9 @@ def test_solver(benchmark, solver_class):
     objective.set_dataset(dataset)
 
     solver = solver_class.get_instance()
-    solver._set_objective(objective)
+    skip, reason = solver._set_objective(objective)
+    if skip:
+        pytest.skip(reason)
 
     is_convex = getattr(objective, "is_convex", True)
 
