@@ -6,6 +6,7 @@ import numpy as np
 
 from benchopt.runner import _Callback
 from benchopt.stopping_criterion import STOPPING_STRATEGIES
+from benchopt.utils import product_param
 
 
 def test_benchmark_objective(benchmark, dataset_simu):
@@ -160,7 +161,13 @@ def test_solver(benchmark, solver_class):
     )
 
     dataset_class = simulated_dataset[0]
-    test_parameters = getattr(dataset_class, 'test_parameters', [{}])
+    test_parameters = product_param(getattr(
+        dataset_class,
+        'test_parameters',
+        {},
+    ))
+    if not test_parameters:
+        test_parameters = [{}]
     solver_ran_once = False
     for test_params in test_parameters:
         dataset = dataset_class.get_instance(**test_params)
