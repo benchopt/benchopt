@@ -9,8 +9,8 @@ class Solver(BaseSolver):
     stopping_strategy = "callback"
 
     def skip(self, X):
-        if X.shape[0] == 0:
-            return True, "No features"
+        if X.shape[0] < 2:
+            return True, "Not enough samples"
         return False, None
 
     def set_objective(self, X):

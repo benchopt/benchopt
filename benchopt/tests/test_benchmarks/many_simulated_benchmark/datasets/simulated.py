@@ -10,7 +10,7 @@ class Dataset(BaseDataset):
     name = "Simulated"
 
     test_parameters = {
-        'n_samples': [0, 10],
+        'n_samples': [1, 10],
     }
 
     def get_data(self):
