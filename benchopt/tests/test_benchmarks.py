@@ -165,7 +165,7 @@ def test_solver(benchmark, solver_class):
     objective.set_dataset(dataset)
 
     solver = solver_class.get_instance()
-    solver.set_objective(**objective.to_dict())
+    solver._set_objective(objective)
 
     is_convex = getattr(objective, "is_convex", True)
 
