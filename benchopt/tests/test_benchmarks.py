@@ -145,6 +145,9 @@ def test_solver_install(test_env_name, benchmark, solver_class, check_test):
 
 def test_solver(benchmark, solver_class):
 
+    # Check that a solver run with at least one configuration of a simulated
+    # dataset.
+
     if not solver_class.is_installed():
         pytest.skip("Solver is not installed")
 
@@ -157,7 +160,7 @@ def test_solver(benchmark, solver_class):
 
     assert len(simulated_dataset) == 1, (
         "All benchmark need to implement a simulated dataset for "
-        "testing purpose"
+        "testing purpose. The dataset should have `name='simulated'."
     )
 
     dataset_class = simulated_dataset[0]
@@ -179,37 +182,46 @@ def test_solver(benchmark, solver_class):
         if skip:
             continue
         solver_ran_once = True
+        _test_solver_one_objective(solver, objective)
 
-        is_convex = getattr(objective, "is_convex", True)
+    assert solver_ran_once, (
+        'Solver skipped all simulated dataset configs. At least one simulated '
+        'dataset config should be compatible with a solver'
+    )
 
-        # Either call run_with_cb or run
-        if solver._solver_strategy == 'callback':
-            sc = solver.stopping_criterion.get_runner_instance(
-                max_runs=25, timeout=None, solver=solver
-            )
-            if not is_convex:
-                # Set large tolerance for the stopping criterion to stop fast
-                sc.eps = 5e-1
-            cb = _Callback(
-                objective, meta={}, stopping_criterion=sc
-            )
-            solver.run(cb)
+
+def _test_solver_one_objective(solver, objective):
+    # Test a solver runs with a given objective and give proper result.
+
+    is_convex = getattr(objective, "is_convex", True)
+
+    # Either call run_with_cb or run
+    if solver._solver_strategy == 'callback':
+        sc = solver.stopping_criterion.get_runner_instance(
+            max_runs=25, timeout=None, solver=solver
+        )
+        if not is_convex:
+            # Set large tolerance for the stopping criterion to stop fast
+            sc.eps = 5e-1
+        cb = _Callback(
+            objective, meta={}, stopping_criterion=sc
+        )
+        solver.run(cb)
+    else:
+        if solver._solver_strategy == 'iteration':
+            stop_val = 5000 if is_convex else 10
         else:
-            if solver._solver_strategy == 'iteration':
-                stop_val = 5000 if is_convex else 10
-            else:
-                stop_val = 1e-15 if is_convex else 1e-2
-            solver.run(stop_val)
+            stop_val = 1e-15 if is_convex else 1e-2
+        solver.run(stop_val)
 
-        # Check that beta_hat is compatible to compute the objective function
-        beta_hat = solver.get_result()
-        objective(beta_hat)
+    # Check that beta_hat is compatible to compute the objective function
+    beta_hat = solver.get_result()
+    objective(beta_hat)
 
-        if is_convex:
-            val_star = objective(beta_hat)['objective_value']
-            for _ in range(100):
-                eps = 1e-5 * np.random.randn(*beta_hat.shape)
-                val_eps = objective(beta_hat + eps)['objective_value']
-                diff = val_eps - val_star
-                assert diff >= 0
-    assert solver_ran_once, 'Solver skipped all simulated dataset configs'
+    if is_convex:
+        val_star = objective(beta_hat)['objective_value']
+        for _ in range(100):
+            eps = 1e-5 * np.random.randn(*beta_hat.shape)
+            val_eps = objective(beta_hat + eps)['objective_value']
+            diff = val_eps - val_star
+            assert diff >= 0
