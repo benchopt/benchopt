@@ -1,4 +1,8 @@
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+
+from scipy import stats
 
 from .helpers_compat import get_figure
 from .helpers_compat import add_h_line
@@ -9,7 +13,6 @@ CMAP = plt.get_cmap('tab10')
 
 def _remove_prefix(text, prefix):
     return text[len(prefix):] if text.startswith(prefix) else text
-
 
 def plot_objective_curve(df, obj_col='objective_value', plotly=False,
                          suboptimality=False, relative=False):
@@ -80,12 +83,38 @@ def plot_objective_curve(df, obj_col='objective_value', plotly=False,
         df_ = df[df['solver_name'] == solver_name]
         curve = df_.groupby('stop_val').median()
 
-        q1 = df_.groupby('stop_val')['time'].quantile(.1)
-        q9 = df_.groupby('stop_val')['time'].quantile(.9)
+        time = df_.groupby('stop_val')['time']
+
+        q_lower = time.quantile(.1)
+        q_upper = time.quantile(.9)
+
+        # compute 95% confidence intervals using percentile bootstrap method
+        ci_lower = None
+        ci_upper = None
+
+        if plotly:
+            ci = time.agg(
+                lambda x: stats.bootstrap(
+                    (x,), np.median, n_resamples=999, method="percentile"
+                ).confidence_interval
+                if len(x) > 1
+                else (np.median(x), np.median(x))
+            )
+            ci_lower = pd.Series(ci).str[0]
+            ci_upper = pd.Series(ci).str[1]
 
         fill_between_x(
-            fig, curve['time'], q1, q9, curve[obj_col], color=CMAP(i % CMAP.N),
-            marker=markers[i % len(markers)], label=solver_name, plotly=plotly
+            fig,
+            curve['time'],
+            q_lower,
+            q_upper,
+            ci_lower,
+            ci_upper,
+            curve[obj_col],
+            color=CMAP(i % CMAP.N),
+            marker=markers[i % len(markers)],
+            label=solver_name,
+            plotly=plotly
         )
 
     if suboptimality and not relative:

@@ -70,7 +70,7 @@ function showMe(e) {
   if (
     e.attributes.counter > 0
   ) {
-    toggleShades();  // keep quantile curves coherent (must be after visibleTraces) and not dataset_selector dependent
+    changeShades();  // keep interval shades coherent (must be after visibleTraces) and not dataset_selector dependent
   }
   e.attributes.counter += 1; // out of initialization
 }
@@ -144,39 +144,47 @@ $(".toggle").click(function () {
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 * Toggle shades on/off on plotly graph
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-function toggleShades() {
-  toggler = document.getElementById("change_shades");
-  if (toggler.checked === true) {
-    visible = true;
-  } else {
-    visible = false;
-  } // hide or show traces depending on toggler state
-
+function changeShades() {
+  input = document.getElementById("change_shades")
   nowId = getId("now"); // id of current graph
   graph = document.getElementById(
     document.getElementById(nowId).getElementsByTagName("div")[1].id
   );
   allTraces = graph.data;
-  const allIndex = (arr) => {
+
+  const allIndex = (arr, type) => {
     return arr.map((elm, idx) => {
       group = elm.legendgroup;
       main = arr.find(function (el) { return el.legendgroup === group });
       if ([undefined, true].includes(main.visible)) {
-        return elm.name == null ? idx : "";
+        if (type == "ci") {
+          return elm.uid == "ci_lower" || elm.uid == "ci_upper" ? idx : "";
+        } else if (type == "quantile") {
+          return elm.uid == "q_lower" || elm.uid == "q_upper" ? idx : "";
+        }
       }
       else{ return "" }
     }
       ).filter(String);
   };
-  whereToggle = allIndex(allTraces); // shade fills are without name
+
   if (globalState.plot_kind[1] !== "histogram") {
-    Plotly.restyle(graph, { visible: visible }, whereToggle); // toggle visibility
+    quantileIds = allIndex(allTraces, "quantile");
+    ciIds = allIndex(allTraces, "ci");
+
+    switch (input.value) {
+      case "quantiles":
+        Plotly.restyle(graph, { visible: false }, ciIds);
+        Plotly.restyle(graph, { visible: true }, quantileIds);
+        break;
+      case "ci":
+        Plotly.restyle(graph, { visible: false }, quantileIds);
+        Plotly.restyle(graph, { visible: true }, ciIds);
+        break;
+      case "none":
+        Plotly.restyle(graph, { visible: false }, quantileIds);
+        Plotly.restyle(graph, { visible: false }, ciIds);
+        break;
+    }
   }
 }
-
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-* Toggle shades on/off on click
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-$(function () {
-  $("#change_shades").change(toggleShades);
-});
