@@ -27,7 +27,7 @@ Changelog
 - Now all values returned by ``Objective.compute`` are included in reports,
   by `Thomas Moreau`_ and `Alexandre Gramfort`_ (:gh:`200`).
 
-- New ``--n-workers, -j`` option to run the benchmark in parallel with
+- New ``--n-jobs, -j`` option to run the benchmark in parallel with
   ``joblib``, by `Thomas Moreau`_ (:gh:`265`).
 
 API

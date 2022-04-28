@@ -179,7 +179,7 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
         rf"benchopt run --local {benchmark.benchmark_dir} "
         rf"--n-repetitions {n_repetitions} "
         rf"--max-runs {max_runs} --timeout {timeout} "
-        rf"--n-workers {n_jobs}"
+        rf"--n-jobs {n_jobs}"
         rf"{solvers_option} {forced_solvers_option} "
         rf"{datasets_option} {objective_option} "
         rf"{'--plot' if plot else '--no-plot'} "
