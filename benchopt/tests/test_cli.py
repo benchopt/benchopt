@@ -3,6 +3,7 @@ from pathlib import Path
 
 import click
 import pytest
+from joblib.memory import _FUNCTION_HASHES
 from click.shell_completion import ShellComplete
 
 from benchopt.plotting import PLOT_KINDS
@@ -21,6 +22,7 @@ from benchopt.tests import REQUIREMENT_BENCHMARK_PATH
 
 from benchopt.cli.main import run
 from benchopt.cli.main import install
+from benchopt.cli.helpers import clean
 from benchopt.cli.process_results import plot
 from benchopt.cli.helpers import check_install
 
@@ -113,15 +115,18 @@ class TestRunCmd:
             run([str(DUMMY_BENCHMARK_PATH), '-l', '-s', 'invalid_solver'],
                 'benchopt', standalone_mode=False)
 
-    def test_benchopt_run(self):
+    @pytest.mark.parametrize('n_jobs', [1, 2])
+    def test_benchopt_run(self, n_jobs):
+
         with CaptureRunOutput() as out:
             run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,
                  '-f', SELECT_ONE_PGD, '-n', '1', '-r', '1', '-o',
-                 SELECT_ONE_OBJECTIVE], 'benchopt', standalone_mode=False)
+                 SELECT_ONE_OBJECTIVE, '-j', n_jobs, '--no-plot'],
+                'benchopt', standalone_mode=False)
 
         out.check_output('Simulated', repetition=1)
         out.check_output('Dummy Sparse Regression', repetition=1)
-        out.check_output(r'Python-PGD\[step_size=1\]:', repetition=3)
+        out.check_output(r'Python-PGD\[step_size=1\]:', repetition=6)
         out.check_output(r'Python-PGD\[step_size=1.5\]:', repetition=0)
 
         # Make sure the results were saved in a result file
@@ -138,7 +143,7 @@ class TestRunCmd:
         out.check_output(f'conda activate {test_env_name}')
         out.check_output('Simulated', repetition=1)
         out.check_output('Dummy Sparse Regression', repetition=1)
-        out.check_output(r'Python-PGD\[step_size=1\]:', repetition=3)
+        out.check_output(r'Python-PGD\[step_size=1\]:', repetition=6)
         out.check_output(r'Python-PGD\[step_size=1.5\]:', repetition=0)
 
         # Make sure the results were saved in a result file
@@ -152,7 +157,7 @@ class TestRunCmd:
                        '--profile', '--no-plot']
             run(run_cmd, 'benchopt', standalone_mode=False)
 
-        out.check_output('Using profiling', repetition=1)
+        out.check_output('using profiling', repetition=1)
         out.check_output("File: .*benchopt/tests/test_benchmarks/"
                          "dummy_benchmark/solvers/python_pgd.py", repetition=1)
         out.check_output(r'\s+'.join([
@@ -160,10 +165,14 @@ class TestRunCmd:
         ]), repetition=1)
         out.check_output(r"def run\(self, n_iter\):", repetition=1)
 
-    def test_benchopt_caching(self):
-        # Check that the computation caching is working properly.
+    @pytest.mark.parametrize('n_rep', [2, 3, 5])
+    def test_benchopt_caching(self, n_rep):
+        clean([str(DUMMY_BENCHMARK_PATH)], 'benchopt', standalone_mode=False)
 
-        n_rep = 2
+        # XXX - remove once this is fixed upstream with joblib/joblib#1289
+        _FUNCTION_HASHES.clear()
+
+        # Check that the computation caching is working properly.
         run_cmd = [str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,
                    '-s', SELECT_ONE_PGD, '-n', '1', '-r', str(n_rep),
                    '-o', SELECT_ONE_OBJECTIVE, '--no-plot']
@@ -172,10 +181,22 @@ class TestRunCmd:
         with CaptureRunOutput() as out:
             run(run_cmd, 'benchopt', standalone_mode=False)
 
+        # Check that this run was properly done. If only one is detected, this
+        # could indicate that the clean command does not work properly.
+        out.check_output(r'Python-PGD\[step_size=1\]:',
+                         repetition=5*n_rep+1)
+
         # Now check that the cache is hit when running the benchmark a
         # second time without force
         with CaptureRunOutput() as out:
             run(run_cmd, 'benchopt', standalone_mode=False)
+
+        out.check_output(r'Python-PGD\[step_size=1\]:',
+                         repetition=1)
+
+        # Check that the cache is also hit when running in parallel
+        with CaptureRunOutput() as out:
+            run(run_cmd + ['-j', 2], 'benchopt', standalone_mode=False)
 
         out.check_output(r'Python-PGD\[step_size=1\]:',
                          repetition=1)
@@ -186,7 +207,7 @@ class TestRunCmd:
             run(run_cmd, 'benchopt', standalone_mode=False)
 
         out.check_output(r'Python-PGD\[step_size=1\]:',
-                         repetition=2*n_rep+1)
+                         repetition=5*n_rep+1)
 
     def test_shell_complete(self):
         # Completion for benchmark name

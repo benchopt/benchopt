@@ -29,7 +29,8 @@ DEFAULT_GLOBAL_CONFIG = {
 * ``github_token``, *str*: token to publish results on ``benchopt/results``
   via github.
 * ``conda_cmd``, *str*: can be used to give the path to ``conda`` if it is
-  not directly installed on ``$PATH``.
+  not directly installed on ``$PATH``. This can also be used to use ``mamba``
+  to install benchmarks instead of conda. See :ref:`config_mamba`.
 * ``shell``, *str*: can be used to specify the shell to use. Default to
   `SHELL` from env if it exists and ``'bash'`` otherwise.
 """
@@ -46,7 +47,7 @@ DEFAULT_BENCHMARK_CONFIG = {
 
     plots =
         suboptimality_curve
-        histogram
+        bar_chart
 """
 
 

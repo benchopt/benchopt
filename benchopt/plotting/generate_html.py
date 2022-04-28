@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from mako.template import Template
 
 from ..constants import PLOT_KINDS
-from .plot_histogram import plot_histogram  # noqa: F401
+from .plot_bar_chart import plot_bar_chart  # noqa: F401
 from .plot_objective_curve import plot_objective_curve  # noqa: F401
 from .plot_objective_curve import plot_suboptimality_curve  # noqa: F401
 from .plot_objective_curve import plot_relative_suboptimality_curve  # noqa: F401 E501
@@ -63,7 +63,7 @@ def generate_plot_benchmark(df, kinds, fname, fig_dir, benchmark_name):
     Returns
     -------
     dict
-        The figures for convergence curves and histograms
+        The figures for convergence curves and bar charts
         for each dataset.
     """
     dataset_names = df['data_name'].unique()
@@ -90,7 +90,7 @@ def generate_plot_benchmark(df, kinds, fname, fig_dir, benchmark_name):
                 plot_func = globals()[PLOT_KINDS[k]]
                 try:
                     fig = plot_func(df_obj, obj_col=obj_col, plotly=True)
-                    if PLOT_KINDS[k] == "plot_histogram":
+                    if PLOT_KINDS[k] == "plot_bar_chart":
                         fig.update_layout(autosize=False,
                                           width=900,
                                           height=650)

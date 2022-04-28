@@ -101,6 +101,15 @@ input, button, select {
   vertical-align: middle; /* Helps keep form elements roughly aligned */
 }
 
+select {
+  border: 1px solid #aaa;
+  border-radius: 3px;
+  padding: 5px;
+  background-color: transparent;
+  padding: 4px;
+  color: #333;
+}
+
 /* TABLES */
 table {
   border-collapse: collapse; /* Merges cell borders together */
@@ -210,7 +219,7 @@ a.anchor:link {
     color: #999;
 }
 div.dataTables_filter, div.dataTables_length {
-  padding: 30px;
+  padding: 20px;
 }
 
 .backtotop {
@@ -248,31 +257,12 @@ td.number {
   padding: 12px 16px; /* Some padding */
   font-size: 16px; /* Set a font size */
   cursor: pointer; /* Mouse pointer on hover */
+  min-height: 46px;
 }
 
 /* Darker background on mouse-over */
 .btn:hover {
   background-color: RoyalBlue;
-}
-
-
-/* sidebar for the filters */
-.sidenav {
-  margin: 0;
-  padding: 1%;  /* Text is not stuck to border */
-  top: 0; /* Sidebar begins at the very top of the page without blank space */
-  left: 0;
-  width: 200px;  /* Width to be careful with using mobile devices */
-  position: fixed;
-  height: 100%; /* On the whole page*/
-  overflow: auto;
-	background-color: #2c3e50;
-  transition: 0.5s;  /* Time of animation when appearing */
-}
-
-/* Closing button for sidenav: only displayed with mobile devices */
-.sidenav .closebtn{
-  display: none;
 }
 
 /* The main part of the page should adapt to the presence of the sidebar */
@@ -282,87 +272,3 @@ td.number {
   height: 1000px;
 }
 
-/* for medium sized screens */
-@media screen and (max-width: 900px) {
-  /* select menu is the sidebar (filters) */
-  .sidenav .myselect {float: none; /* position */
-                      width: 75vw; /* 75% of window width */
-                      text-align: center;  /* center */
-                      margin-bottom: 15px; /* space between menus */
-                    }
-  /* sidebar on medium screens */
-  .sidenav {
-    height: 0%; /* not showing */
-    width: 100%;
-    position: fixed;
-    z-index: 1; /* first plan */
-    top: 0; /* the whole screen is taken */
-    left: 0;
-    background-color: rgba(0,0,0, 0.9); /* black filter on the background */
-    overflow-y: hidden;
-    transition: 0.5s;  /* time for appearance animation */
-  }
-
-  /* close sidebar button with absolute position */
-  .sidenav .closebtn {
-    position: absolute;
-    font-size: 40px;
-    display: block;
-    }
-
-  /* main content on medium sized screens */
-  div.main {margin-left: 0;} /* no more sidebar so no more margin */
-  .menu { /* style menu for filters */
-    position: relative;
-    margin: auto;
-    text-align: center;
-    margin-top: 30px;
-    margin-left: 12.5vw;
-    display: block;
-    width: 75vw;
-  }
-
-  /* name of the dropdown menus placement */
-  .menu label{
-    font-size: 200%; /* twice bigger than normal */
-    float: left; /* on the left */
-  }
-}
-
-/* filters for very small screens (inherits from medium)*/
-@media screen and (max-width: 400px) {
-  .sidenav {
-    text-align: center;
-    float: none;
-  }
-}
-
-.sidenav .myselect {
-  padding: 1% 1% 1% 1.5%; /* paddings to avoid stuck on borders*/
-  text-decoration: none;
-  font-size: 25px;
-  color: #000;
-  display: block;
-}
-
-/* dropdown menus */
-.myselect {
-  width: 100%;
-  height: 50px;
-  font-size: 100%;
-  font-weight: bold;
-  cursor: pointer;  /* points when hovering and using */
-  border-radius: 10px;  /* size of rectangle borders */
-  background-color: DodgerBlue;  /* blue background */
-  border: none;
-  color: white;  /* text color in the options */
-  padding: 1%;
-  margin-bottom: 10%;
-}
-
-/* only when hovering */
-.myselect:hover {
-  color: #2c3e50;
-  background-color: white; /* white background */
-  border-bottom-color: #DCDCDC;  /* white-ish border */
-}

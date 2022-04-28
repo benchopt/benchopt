@@ -16,13 +16,14 @@ __pycache__
 benchopt_front_page_convergence.pdf
 
 # Package directory
-html/
-build/
-dist/
+/html/
+/build/
+/dist/
 
 # Benchmarks&results cloned for running tests/examples
 /benchmarks/
 /results/
+/ci_template.github/
 
 
 # IDE specific folders
