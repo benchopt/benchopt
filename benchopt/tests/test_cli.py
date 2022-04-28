@@ -15,7 +15,6 @@ from benchopt.tests import SELECT_ONE_SIMULATED
 from benchopt.tests import SELECT_ONE_OBJECTIVE
 from benchopt.tests import DUMMY_BENCHMARK
 from benchopt.tests import DUMMY_BENCHMARK_PATH
-from benchopt.tests import MANY_SIMULATED_BENCHMARK_PATH
 from benchopt.tests import REQUIREMENT_BENCHMARK
 from benchopt.tests import REQUIREMENT_BENCHMARK_PATH
 
@@ -27,28 +26,26 @@ from benchopt.cli.helpers import check_install
 
 
 BENCHMARK_COMPLETION_CASES = [
-    (str(DUMMY_BENCHMARK_PATH.parent), 3, [
+    (str(DUMMY_BENCHMARK_PATH.parent), [
         str(DUMMY_BENCHMARK_PATH),
         str(REQUIREMENT_BENCHMARK_PATH),
-        str(MANY_SIMULATED_BENCHMARK_PATH),
     ]),
-    (str(DUMMY_BENCHMARK_PATH.parent)[:-2], 3, [
+    (str(DUMMY_BENCHMARK_PATH.parent)[:-2], [
         str(DUMMY_BENCHMARK_PATH),
         str(REQUIREMENT_BENCHMARK_PATH),
-        str(MANY_SIMULATED_BENCHMARK_PATH),
     ]),
-    (str(DUMMY_BENCHMARK_PATH)[:-2], 1, str(DUMMY_BENCHMARK_PATH))
+    (str(DUMMY_BENCHMARK_PATH)[:-2], [str(DUMMY_BENCHMARK_PATH)])
 ]
 SOLVER_COMPLETION_CASES = [
-    ('', 7, ['cd', 'julia-pgd', 'python-pgd', 'python-pgd-with-cb', 'r-pgd',
-             'sklearn', 'test-solver']),
-    ('sk', 1, 'sklearn'),
-    ('pgd', 4, ['julia-pgd', 'python-pgd', 'python-pgd-with-cb', 'r-pgd'])
+    ('', ['cd', 'julia-pgd', 'python-pgd', 'python-pgd-with-cb', 'r-pgd',
+          'sklearn', 'test-solver']),
+    ('sk', ['sklearn']),
+    ('pgd', ['julia-pgd', 'python-pgd', 'python-pgd-with-cb', 'r-pgd'])
 ]
 DATASET_COMPLETION_CASES = [
-    ('', 3, ['leukemia', 'simulated', 'test-dataset']),
-    ('simu', 1, 'simulated'),
-    ('lated', 1, 'simulated'),
+    ('', ['leukemia', 'simulated', 'test-dataset']),
+    ('simu', ['simulated']),
+    ('lated', ['simulated']),
 ]
 
 
@@ -59,13 +56,14 @@ def _get_completion(cmd, args, incomplete):
 
 
 def _test_shell_completion(cmd, args, test_cases):
-    for incomplete, n_res, expected in test_cases:
+    for incomplete, expected in test_cases:
         proposals = _get_completion(cmd, args, incomplete)
+        n_res = len(expected)
         assert len(proposals) == n_res, (
             f"Expected {n_res} completion proposal, got '{proposals}'"
         )
         if n_res == 1:
-            assert proposals[0] == expected, proposals
+            assert proposals[0] == expected[0], proposals
         elif expected is not None:
             assert set(proposals) == set(expected), proposals
 

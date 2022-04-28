@@ -7,7 +7,6 @@ from benchopt.utils.stream_redirection import SuppressStd
 # Default benchmark
 TEST_BENCHMARK_DIR = Path(__file__).parent / 'test_benchmarks'
 DUMMY_BENCHMARK_PATH = TEST_BENCHMARK_DIR / 'dummy_benchmark'
-MANY_SIMULATED_BENCHMARK_PATH = TEST_BENCHMARK_DIR / 'many_simulated_benchmark'
 REQUIREMENT_BENCHMARK_PATH = TEST_BENCHMARK_DIR / 'requirement_benchmark'
 
 # Pattern to select specific datasets or solvers.
@@ -17,7 +16,6 @@ SELECT_ONE_OBJECTIVE = r'dummy*reg=0.1]'
 
 try:
     DUMMY_BENCHMARK = Benchmark(DUMMY_BENCHMARK_PATH)
-    MANY_SIMULATED_BENCHMARK = Benchmark(MANY_SIMULATED_BENCHMARK_PATH)
     REQUIREMENT_BENCHMARK = Benchmark(REQUIREMENT_BENCHMARK_PATH)
     TEST_OBJECTIVE = DUMMY_BENCHMARK.get_benchmark_objective()
     TEST_SOLVER = [s for s in DUMMY_BENCHMARK.get_solvers()
@@ -26,7 +24,6 @@ try:
                     if d.name == "Test-Dataset"][0]
 except Exception:
     DUMMY_BENCHMARK = None
-    MANY_SIMULATED_BENCHMARK = None
     REQUIREMENT_BENCHMARK = None
     TEST_OBJECTIVE = None
     TEST_SOLVER = None
