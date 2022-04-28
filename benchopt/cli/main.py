@@ -301,8 +301,9 @@ def install(benchmark, minimal, solver_names, dataset_names, force=False,
 
 
 @main.command(
-    help="Test a benchmark for benchopt. The benchmark must feature a simulated "
-    "dataset. For more info about the simulated dataset configurations, see"
+    help="Test a benchmark for benchopt. The benchmark must feature a "
+    "simulated dataset to test for all solvers. For more info about the "
+    "simulated dataset configurations, see"
     "benchopt.github.io/how.html#example-of-parametrized-simulated-dataset",
     context_settings=dict(ignore_unknown_options=True)
 )
