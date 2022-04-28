@@ -105,6 +105,15 @@ will automatically allow you to test all combinations of parameters.
 
 .. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/datasets/simulated.py
 
+However, all of these variants will not be tested during the call to ``benchopt test``.
+If you want to test different variants of the simulated dataset with ``benchopt test``,
+you may use the ``test_parameters`` class attribute.
+The construction of this attribute is similar to the one described above for
+``parameters``. This allows you to test solvers that could not be used for a single
+variant of the dataset.
+
+.. literalinclude:: ../benchopt/tests/test_benchmarks/many_simulated_datasets/datasets/simulated.py
+
 .. _solvers:
 
 3. Solvers
