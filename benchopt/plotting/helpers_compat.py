@@ -6,7 +6,19 @@ except ImportError:
     go = None
 
 
-def fill_between_x(fig, x, q_lower, q_upper, ci_lower, ci_upper, y, color, marker, label, plotly=False):
+def fill_between_x(
+    fig,
+    x,
+    q_lower,
+    q_upper,
+    ci_lower,
+    ci_upper,
+    y,
+    color,
+    marker,
+    label,
+    plotly=False
+):
     if not plotly:
         plt.loglog(x, y, color=color, marker=marker, label=label, linewidth=3)
         plt.fill_betweenx(y, q_lower, q_upper, color=color, alpha=.3)

@@ -14,8 +14,14 @@ CMAP = plt.get_cmap('tab10')
 def _remove_prefix(text, prefix):
     return text[len(prefix):] if text.startswith(prefix) else text
 
-def plot_objective_curve(df, obj_col='objective_value', plotly=False,
-                         suboptimality=False, relative=False):
+
+def plot_objective_curve(
+    df,
+    obj_col='objective_value',
+    plotly=False,
+    suboptimality=False,
+    relative=False
+):
     """Plot objective curve for a given benchmark and dataset.
 
     Plot the objective value F(x) as a function of the time.
