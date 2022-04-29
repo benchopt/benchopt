@@ -13,6 +13,14 @@ def get_benchopt_requirement():
     is_editable : bool
         Whether the current installation is in development mode or not.
     """
+    # Ignore distutils replacement warning when importing pip package. It is
+    # not clear why this started to trigger such warning in #265
+    # XXX - Investigate this warning and fix it.
+    import warnings
+    warnings.filterwarnings(
+        "ignore", message="Setuptools is replacing distutils.",
+        category=UserWarning
+    )
     from pip._internal.metadata import get_default_environment
     from pip._internal.operations.freeze import FrozenRequirement
 

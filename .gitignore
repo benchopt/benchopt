@@ -23,6 +23,7 @@ benchopt_front_page_convergence.pdf
 # Benchmarks&results cloned for running tests/examples
 /benchmarks/
 /results/
+/ci_template.github/
 
 
 # IDE specific folders

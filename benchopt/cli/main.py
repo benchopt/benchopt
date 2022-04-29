@@ -54,6 +54,10 @@ main = click.Group(
               " are included. Note that <dataset_name> can be a regexp. "
               "To include multiple datasets, use multiple `-d` options.",
               shell_complete=complete_datasets)
+@click.option('--n-jobs', '-j',
+              metavar="<int>", default=1, show_default=True, type=int,
+              help='Maximal number of workers to run the benchmark in '
+              'parallel.')
 @click.option('--max-runs', '-n',
               metavar="<int>", default=100, show_default=True, type=int,
               help='Maximal number of runs for each solver. This corresponds '
@@ -95,7 +99,7 @@ main = click.Group(
               "named <env_name>. To install the required solvers and "
               "datasets, see the command `benchopt install`.")
 def run(benchmark, solver_names, forced_solvers, dataset_names,
-        objective_filters, max_runs, n_repetitions, timeout,
+        objective_filters, max_runs, n_repetitions, timeout, n_jobs,
         plot=True, html=True, pdb=False, do_profile=False,
         env_name='False', old_objective_filters=None):
     if len(old_objective_filters):
@@ -125,7 +129,8 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
             dataset_names=dataset_names,
             objective_filters=objective_filters,
             max_runs=max_runs, n_repetitions=n_repetitions,
-            timeout=timeout, plot_result=plot, html=html, pdb=pdb
+            timeout=timeout, n_jobs=n_jobs,
+            plot_result=plot, html=html, pdb=pdb
         )
 
         print_stats()  # print profiling stats (does nothing if not profiling)
@@ -174,6 +179,7 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
         rf"benchopt run --local {benchmark.benchmark_dir} "
         rf"--n-repetitions {n_repetitions} "
         rf"--max-runs {max_runs} --timeout {timeout} "
+        rf"--n-jobs {n_jobs}"
         rf"{solvers_option} {forced_solvers_option} "
         rf"{datasets_option} {objective_option} "
         rf"{'--plot' if plot else '--no-plot'} "
@@ -301,7 +307,10 @@ def install(benchmark, minimal, solver_names, dataset_names, force=False,
 
 
 @main.command(
-    help="Test a benchmark for benchopt.",
+    help="Test a benchmark for benchopt. The benchmark must feature a "
+    "simulated dataset to test for all solvers. For more info about the "
+    "simulated dataset configurations, see"
+    "benchopt.github.io/how.html#example-of-parametrized-simulated-dataset",
     context_settings=dict(ignore_unknown_options=True)
 )
 @click.argument('benchmark', type=click.Path(exists=True),

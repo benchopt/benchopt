@@ -17,8 +17,9 @@ from benchopt.utils.conda_env_cmd import list_conda_envs
 from benchopt.config import get_global_config_file
 from benchopt.utils.dynamic_modules import _load_class_from_module
 from benchopt.utils.shell_cmd import _run_shell_in_conda_env
-from benchopt.utils.colorify import colorify
-from benchopt.utils.colorify import RED, GREEN, TICK, CROSS
+
+from benchopt.utils.terminal_output import colorify
+from benchopt.utils.terminal_output import RED, GREEN, TICK, CROSS
 
 helpers = click.Group(
     name='Helpers',
@@ -38,13 +39,13 @@ def clean(benchmark, token=None, filename=None):
 
     # Delete result files
     output_folder = benchmark.get_output_folder()
-    print(f"rm -rf {output_folder}")
-    rm_folder(output_folder)
+    if output_folder.exists():
+        print(f"rm -rf {output_folder}")
+        rm_folder(output_folder)
 
     # Delete cache files
-    cache_folder = benchmark.get_cache_location()
-    print(f"rm -rf {cache_folder}")
-    rm_folder(cache_folder)
+    print("Clear joblib cache")
+    benchmark.mem.clear(warn=False)
 
 
 def check_conda_env(env_name, benchmark_name=None):
