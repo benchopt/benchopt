@@ -250,6 +250,12 @@ It uses the Julia code in:
 .. literalinclude:: ../benchmarks/benchmark_lasso/solvers/julia_pgd.jl
     :language: julia
 
+.. admonition:: Installing Julia dependencies
+
+  Note that it is also possible to install ``julia`` dependencies using ``benchopt install`` with the class attribute ``julia_requirements``. This attribute should be a list of package names, whose string are directly passed to ``Pkg.add``.
+
+  In case it is necessary to install dependencies from a GitHub repository, one can use the following format: ``PkgName::https://github.com/org/Pkg.jl#branch_name``. This will be processed to recover both the url and the package name. Note that the ``branch_name`` is optional. Using the ``::`` to specify the ``PkgName`` is necessary to allow ``benchopt`` to check if it is installed in the targeted environment.
+
 .. _source_solvers:
 
 Solver from source

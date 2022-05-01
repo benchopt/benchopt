@@ -44,6 +44,21 @@ def get_jl_interpreter():
     return jl_interpreter
 
 
+JULIA_PKG_INSTALL = """
+using Pkg;
+import Pkg.REPLMode: parse_package, QString
+
+function parse_pkg(pkg::String)
+    pkg = [QString(pkg, false)]
+    return parse_package(pkg, []; add_or_dev=true)
+end
+
+for pkg in [{reqs}]
+    Pkg.add(parse_pkg(pkg));
+end
+"""
+
+
 class JuliaSolver(BaseSolver):
 
     # pyjulia does not support passing sparse matrix yet
@@ -65,7 +80,7 @@ class JuliaSolver(BaseSolver):
             try:
                 jl = get_jl_interpreter()
                 for pkg in cls.julia_requirements:
-                    jl.eval(f'using {pkg}')
+                    jl.eval(f'using {pkg.split("::")[0]}')
             except Exception:
                 return False
         return success
@@ -75,9 +90,9 @@ class JuliaSolver(BaseSolver):
         """Install dependencies on Julia packages"""
 
         if hasattr(cls, 'julia_requirements'):
-            julia_pkg_install = (
-                "using Pkg; " +
-                '; '.join([f'Pkg.add("{p}")' for p in cls.julia_requirements])
+            julia_pkg_install = JULIA_PKG_INSTALL.format(
+                reqs=','.join([f'"{p.split("::")[-1]}"'
+                               for p in cls.julia_requirements])
             )
             _run_shell_in_conda_env(
                 f"julia -e '{julia_pkg_install}'", env_name=env_name,
