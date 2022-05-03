@@ -346,18 +346,26 @@ class TestPlotCmd:
                  'benchopt', standalone_mode=False)
 
     @pytest.mark.parametrize('kind', PLOT_KINDS)
-    def test_valid_call(self, kind):
+    @pytest.mark.parametrize('html', [True, False])
+    def test_valid_call(self, kind, html):
 
         with SuppressStd() as out:
             plot([str(DUMMY_BENCHMARK_PATH), '-f', self.result_file,
-                  '-k', kind, '--no-display', '--no-html'],
+                  '-k', kind, '--html' if html else'--no-html',
+                  '--no-display'],
                  'benchopt', standalone_mode=False)
-        saved_files = re.findall(r'Save .* as: (.*\.pdf)', out.output)
-        assert len(saved_files) == 1
-        saved_file = saved_files[0]
-        assert kind in saved_file
 
-        Path(saved_file).unlink()
+        if html:
+            saved_files = re.findall(r'to (.*\.html)', out.output)
+            assert len(saved_files) == 2
+        else:
+            saved_files = re.findall(r'Save .* as: (.*\.pdf)', out.output)
+            assert len(saved_files) == 1
+            saved_file = saved_files[0]
+            assert kind in saved_file
+
+        for f in saved_files:
+            Path(f).unlink()
 
     def test_shell_complete(self):
         # Completion for benchmark name

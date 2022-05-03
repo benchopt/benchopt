@@ -57,3 +57,6 @@ class SuppressStd(object):
         self.tfile.seek(0, io.SEEK_SET)
         self.output = self.tfile.read().decode()
         self.tfile.close()
+
+    def __repr__(self):
+        return f"benchopt.utils.SupressStd(stdout:\n{self.output}\n)"

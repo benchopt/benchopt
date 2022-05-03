@@ -84,3 +84,6 @@ class CaptureRunOutput(object):
             assert len(matches) > 0, output
         else:
             assert len(matches) == repetition, output
+
+    def __repr__(self):
+        return f"benchopt.tests.CapturedRunOutput(output:\n{self.output}\n)"
