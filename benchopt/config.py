@@ -4,7 +4,7 @@ import warnings
 import configparser
 from pathlib import Path
 from collections.abc import Iterable
-from benchopt.constants import PLOT_KINDS
+from benchopt.plot_kinds import PLOT_KINDS
 
 
 BOOLEAN_STATES = configparser.ConfigParser.BOOLEAN_STATES

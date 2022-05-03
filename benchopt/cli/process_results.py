@@ -2,7 +2,7 @@ import click
 
 from benchopt.config import get_setting
 from benchopt.benchmark import Benchmark
-from benchopt.constants import PLOT_KINDS
+from benchopt.plot_kinds import PLOT_KINDS
 from benchopt.cli.completion import complete_benchmarks
 from benchopt.cli.completion import complete_output_files
 

@@ -6,7 +6,7 @@ import pytest
 from joblib.memory import _FUNCTION_HASHES
 from click.shell_completion import ShellComplete
 
-from benchopt.plotting import PLOT_KINDS
+from benchopt.plotting.base import PLOT_KINDS
 from benchopt.utils.stream_redirection import SuppressStd
 
 
