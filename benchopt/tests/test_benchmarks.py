@@ -198,7 +198,7 @@ def _test_solver_one_objective(solver, objective):
     # Either call run_with_cb or run
     if solver._solver_strategy == 'callback':
         sc = solver.stopping_criterion.get_runner_instance(
-            max_runs=25, timeout=None, solver=solver
+            max_runs=25 if is_convex else 2, timeout=None, solver=solver
         )
         if not is_convex:
             # Set large tolerance for the stopping criterion to stop fast
@@ -209,7 +209,7 @@ def _test_solver_one_objective(solver, objective):
         solver.run(cb)
     else:
         if solver._solver_strategy == 'iteration':
-            stop_val = 5000 if is_convex else 10
+            stop_val = 5000 if is_convex else 2
         else:
             stop_val = 1e-15 if is_convex else 1e-2
         solver.run(stop_val)
