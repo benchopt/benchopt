@@ -49,8 +49,7 @@ class DependenciesMixin:
             returns True if no import failure has been detected.
         """
         if env_name is None:
-            if (cls._import_ctx is not None
-                    and cls._import_ctx.failed_import):
+            if cls._import_ctx.failed_import:
                 if raise_on_not_installed:
                     exc_type, value, tb = cls._import_ctx.import_error
                     raise exc_type(value).with_traceback(tb)

@@ -105,6 +105,15 @@ will automatically allow you to test all combinations of parameters.
 
 .. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/datasets/simulated.py
 
+However, all of these variants will not be tested during the call to ``benchopt test``.
+If you want to test different variants of the simulated dataset with ``benchopt test``,
+you may use the ``test_parameters`` class attribute.
+The construction of this attribute is similar to the one described above for
+``parameters``. This allows you to test solvers that could not be used for a single
+variant of the dataset.
+
+.. literalinclude:: ../benchopt/tests/test_benchmarks/many_simulated_datasets/datasets/simulated.py
+
 .. _solvers:
 
 3. Solvers
@@ -240,6 +249,12 @@ It uses the Julia code in:
 
 .. literalinclude:: ../benchmarks/benchmark_lasso/solvers/julia_pgd.jl
     :language: julia
+
+.. admonition:: Installing Julia dependencies
+
+  Note that it is also possible to install ``julia`` dependencies using ``benchopt install`` with the class attribute ``julia_requirements``. This attribute should be a list of package names, whose string are directly passed to ``Pkg.add``.
+
+  In case it is necessary to install dependencies from a GitHub repository, one can use the following format: ``PkgName::https://github.com/org/Pkg.jl#branch_name``. This will be processed to recover both the url and the package name. Note that the ``branch_name`` is optional. Using the ``::`` to specify the ``PkgName`` is necessary to allow ``benchopt`` to check if it is installed in the targeted environment.
 
 .. _source_solvers:
 

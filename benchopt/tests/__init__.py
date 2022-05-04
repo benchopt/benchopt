@@ -1,6 +1,8 @@
 import re
 
 from pathlib import Path
+from joblib.executor import get_memmapping_executor
+
 from benchopt.benchmark import Benchmark
 from benchopt.utils.stream_redirection import SuppressStd
 
@@ -43,6 +45,12 @@ class CaptureRunOutput(object):
         self.output = None
         self.result_files = []
 
+        # To make it possible to capture stdout in the child worker, we need
+        # to make sure the execturor is spawned in the context so shutdown any
+        # existing executor.
+        e = get_memmapping_executor(2)
+        e.shutdown()
+
         # Redirect the stdout/stderr fd to temp file
         self.out.__enter__()
         return self
@@ -70,8 +78,9 @@ class CaptureRunOutput(object):
             print(self.output)
 
     def check_output(self, pattern, repetition=None):
-        matches = re.findall(pattern, self.output)
+        output = self.output
+        matches = re.findall(pattern, output)
         if repetition is None:
-            assert len(matches) > 0, self.output
+            assert len(matches) > 0, output
         else:
-            assert len(matches) == repetition, self.output
+            assert len(matches) == repetition, output

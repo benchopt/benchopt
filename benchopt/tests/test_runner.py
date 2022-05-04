@@ -21,3 +21,9 @@ def test_skip_api(capsys):
     skip, reason = solver._set_objective(objective)
     assert not skip
     assert reason is None
+
+    dataset = TEST_DATASET.get_instance(skip=True)
+    objective = TEST_OBJECTIVE.get_instance()
+    skip, reason = objective.set_dataset(dataset)
+    assert skip
+    assert reason == 'X is all zeros'
