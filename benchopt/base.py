@@ -389,7 +389,7 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
         """
         return False, None
 
-    def get_one_beta(self):
+    def get_one_solution(self):
         """Return one point in which the objective function can be evaluated.
 
         This method is mainly for testing purposes, to check that the return
@@ -403,8 +403,9 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
         """
         if self._dimension == 'object':
             raise NotImplementedError(
-                "If solvers return objects, `Objective.get_one_beta` should "
-                "be overriden to return an object compatible with `compute`."
+                "If solvers return objects, `Objective.get_one_solution` "
+                "should be overriden to return an object compatible with "
+                "`compute`."
             )
 
         import numpy as np
