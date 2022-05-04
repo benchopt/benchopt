@@ -3,7 +3,6 @@ import warnings
 from pathlib import Path
 
 from ..config import RAISE_INSTALL_ERROR
-from .dynamic_modules import _get_module_from_file
 
 SKIP_IMPORT = False
 BENCHMARK_DIR = None
@@ -45,6 +44,7 @@ class safe_import_context:
     def __init__(self):
         self.failed_import = False
         self.record = warnings.catch_warnings(record=True)
+        self._benchmark_dir = BENCHMARK_DIR
 
     def __enter__(self):
         # Skip context if necessary to speed up import
@@ -93,6 +93,9 @@ class safe_import_context:
                 f"Failed to import {module_name}. Check that file "
                 f" {module_path} exists in the benchmark."
             )
+
+        # import locally to avoid circular import
+        from .dynamic_modules import _get_module_from_file
         module = _get_module_from_file(module_path, BENCHMARK_DIR)
         if obj is None:
             return module

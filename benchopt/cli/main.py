@@ -41,6 +41,7 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
         "max_runs",
         "n_repetitions",
         "timeout",
+        "n_jobs",
         "plot",
         "html",
         "pdb",
@@ -85,6 +86,10 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               " are included. Note that <dataset_name> can be a regexp. "
               "To include multiple datasets, use multiple `-d` options.",
               shell_complete=complete_datasets)
+@click.option('--n-jobs', '-j',
+              metavar="<int>", default=1, show_default=True, type=int,
+              help='Maximal number of workers to run the benchmark in '
+              'parallel.')
 @click.option('--max-runs', '-n',
               metavar="<int>", default=100, show_default=True, type=int,
               help='Maximal number of runs for each solver. This corresponds '
@@ -136,7 +141,7 @@ def run(config_file=None, **kwargs):
 
     (
         benchmark, solver_names, forced_solvers, dataset_names,
-        objective_filters, max_runs, n_repetitions, timeout,
+        objective_filters, max_runs, n_repetitions, timeout, n_jobs,
         plot, html, pdb, do_profile, env_name, old_objective_filters
     ) = _get_run_args(kwargs, config)
 
@@ -170,7 +175,8 @@ def run(config_file=None, **kwargs):
             dataset_names=dataset_names,
             objective_filters=objective_filters,
             max_runs=max_runs, n_repetitions=n_repetitions,
-            timeout=timeout, plot_result=plot, html=html, pdb=pdb
+            timeout=timeout, n_jobs=n_jobs,
+            plot_result=plot, html=html, pdb=pdb
         )
 
         print_stats()  # print profiling stats (does nothing if not profiling)
@@ -214,11 +220,12 @@ def run(config_file=None, **kwargs):
     solvers_option = ' '.join(['-s ' + s for s in solver_names])
     forced_solvers_option = ' '.join([f"-f '{s}'" for s in forced_solvers])
     datasets_option = ' '.join([f"-d '{d}'" for d in dataset_names])
-    objective_option = ' '.join([f"-p '{p}'" for p in objective_filters])
+    objective_option = ' '.join([f"-o '{o}'" for o in objective_filters])
     cmd = (
         rf"benchopt run --local {benchmark.benchmark_dir} "
         rf"--n-repetitions {n_repetitions} "
         rf"--max-runs {max_runs} --timeout {timeout} "
+        rf"--n-jobs {n_jobs}"
         rf"{solvers_option} {forced_solvers_option} "
         rf"{datasets_option} {objective_option} "
         rf"{'--plot' if plot else '--no-plot'} "
@@ -346,7 +353,10 @@ def install(benchmark, minimal, solver_names, dataset_names, force=False,
 
 
 @main.command(
-    help="Test a benchmark for benchopt.",
+    help="Test a benchmark for benchopt. The benchmark must feature a "
+    "simulated dataset to test for all solvers. For more info about the "
+    "simulated dataset configurations, see"
+    "benchopt.github.io/how.html#example-of-parametrized-simulated-dataset",
     context_settings=dict(ignore_unknown_options=True)
 )
 @click.argument('benchmark', type=click.Path(exists=True),

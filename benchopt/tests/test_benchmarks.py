@@ -6,6 +6,7 @@ import numpy as np
 
 from benchopt.runner import _Callback
 from benchopt.stopping_criterion import STOPPING_STRATEGIES
+from benchopt.utils import product_param
 
 
 def test_benchmark_objective(benchmark, dataset_simu):
@@ -144,6 +145,9 @@ def test_solver_install(test_env_name, benchmark, solver_class, check_test):
 
 def test_solver(benchmark, solver_class):
 
+    # Check that a solver run with at least one configuration of a simulated
+    # dataset.
+
     if not solver_class.is_installed():
         pytest.skip("Solver is not installed")
 
@@ -156,23 +160,45 @@ def test_solver(benchmark, solver_class):
 
     assert len(simulated_dataset) == 1, (
         "All benchmark need to implement a simulated dataset for "
-        "testing purpose"
+        "testing purpose. The dataset should have `name='simulated'."
     )
 
     dataset_class = simulated_dataset[0]
-    dataset = dataset_class.get_instance()
+    test_parameters = product_param(getattr(
+        dataset_class,
+        'test_parameters',
+        {},
+    ))
+    if not test_parameters:
+        test_parameters = [{}]
+    solver_ran_once = False
+    for test_params in test_parameters:
+        dataset = dataset_class.get_instance(**test_params)
 
-    objective.set_dataset(dataset)
+        objective.set_dataset(dataset)
 
-    solver = solver_class.get_instance()
-    solver.set_objective(**objective.to_dict())
+        solver = solver_class.get_instance()
+        skip, reason = solver._set_objective(objective)
+        if skip:
+            continue
+        solver_ran_once = True
+        _test_solver_one_objective(solver, objective)
+
+    assert solver_ran_once, (
+        'Solver skipped all simulated dataset configs. At least one simulated '
+        'dataset config should be compatible with a solver'
+    )
+
+
+def _test_solver_one_objective(solver, objective):
+    # Test a solver runs with a given objective and give proper result.
 
     is_convex = getattr(objective, "is_convex", True)
 
     # Either call run_with_cb or run
     if solver._solver_strategy == 'callback':
         sc = solver.stopping_criterion.get_runner_instance(
-            max_runs=25, timeout=None, solver=solver
+            max_runs=25 if is_convex else 2, timeout=None, solver=solver
         )
         if not is_convex:
             # Set large tolerance for the stopping criterion to stop fast
@@ -183,7 +209,7 @@ def test_solver(benchmark, solver_class):
         solver.run(cb)
     else:
         if solver._solver_strategy == 'iteration':
-            stop_val = 5000 if is_convex else 10
+            stop_val = 5000 if is_convex else 2
         else:
             stop_val = 1e-15 if is_convex else 1e-2
         solver.run(stop_val)

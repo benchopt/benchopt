@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 
 from .stopping_criterion import SufficientProgressCriterion
 
+from .utils.safe_import import set_benchmark
 from .utils.dynamic_modules import get_file_hash
 from .utils.dynamic_modules import _reconstruct_class
 
@@ -167,22 +168,25 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
 
         return False, None
 
-    # TODO: use this to allow parallel computation of the benchmark.
     @staticmethod
     def _reconstruct(module_filename, parameters, objective,
-                     pickled_module_hash=None):
-
+                     pickled_module_hash=None, benchmark_dir=None):
+        set_benchmark(benchmark_dir)
         Solver = _reconstruct_class(
-            module_filename, 'Solver', pickled_module_hash
+            module_filename, 'Solver', benchmark_dir, pickled_module_hash,
         )
         obj = Solver.get_instance(**parameters)
-        obj._set_objective(objective)
+        if objective is not None:
+            obj._set_objective(objective)
         return obj
 
     def __reduce__(self):
         module_hash = get_file_hash(self._module_filename)
-        return self._reconstruct, (self._module_filename, module_hash,
-                                   self._parameters, self._objective)
+        objective = getattr(self, '_objective', None)
+        return self._reconstruct, (
+            self._module_filename, self._parameters, objective, module_hash,
+            str(self._import_ctx._benchmark_dir)
+        )
 
 
 class CommandLineSolver(BaseSolver, ABC):
@@ -232,27 +236,32 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
     def _get_data(self):
         "Wrapper to make sure the returned results are correctly formated."
 
-        dimension, data = self.get_data()
+        if not hasattr(self, '_data') or self._data is None:
+            self._dimension, self._data = self.get_data()
 
         # Make sure dimension is a tuple
-        if isinstance(dimension, numbers.Integral):
-            dimension = (dimension,)
+        if isinstance(self._dimension, numbers.Integral):
+            self._dimension = (self._dimension,)
 
-        return dimension, data
+        return self._dimension, self._data
 
     # Reduce the pickling and hashing burden by only pickling class parameters.
     @staticmethod
-    def _reconstruct(module_filename, pickled_module_hash, parameters):
+    def _reconstruct(module_filename, pickled_module_hash, parameters,
+                     benchmark_dir):
+        set_benchmark(benchmark_dir)
         Dataset = _reconstruct_class(
-            module_filename, 'Dataset', pickled_module_hash
+            module_filename, 'Dataset', benchmark_dir, pickled_module_hash,
         )
         obj = Dataset.get_instance(**parameters)
         return obj
 
     def __reduce__(self):
         module_hash = get_file_hash(self._module_filename)
-        return self._reconstruct, (self._module_filename, module_hash,
-                                   self._parameters)
+        return self._reconstruct, (
+            self._module_filename, module_hash, self._parameters,
+            str(self._import_ctx._benchmark_dir)
+        )
 
 
 class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
@@ -352,7 +361,33 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
     def set_dataset(self, dataset):
         self._dataset = dataset
         self._dimension, data = dataset._get_data()
-        return self.set_data(**data)
+        # Check if the dataset is compatible with the objective
+        skip, reason = self.skip(**data)
+        if skip:
+            return skip, reason
+
+        self.set_data(**data)
+        return False,  None
+
+    def skip(self, **data):
+        """Used to decide if the ``Objective`` is compatible with the data.
+
+        Parameters
+        ----------
+        **data: dict
+            Extra parameters of the objective. This dictionary is retrieved
+            by calling ``data = Dataset.get_data()``.
+
+        Returns
+        -------
+        skip : bool
+            Whether this objective should be skipped or not for this data
+            (accessible in the objective attributes).
+        reason : str | None
+            The reason why it should be skipped for display purposes.
+            If skip is False, the reason should be None.
+        """
+        return False, None
 
     def get_one_beta(self):
         """Return one point in which the objective function can be evaluated.
@@ -378,15 +413,20 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
     # Reduce the pickling and hashing burden by only pickling class parameters.
     @staticmethod
     def _reconstruct(module_filename, pickled_module_hash, parameters,
-                     dataset):
+                     dataset, benchmark_dir):
+        set_benchmark(benchmark_dir)
         Objective = _reconstruct_class(
-            module_filename, 'Objective', pickled_module_hash
+            module_filename, 'Objective', benchmark_dir, pickled_module_hash,
         )
         obj = Objective.get_instance(**parameters)
-        obj.set_dataset(dataset)
+        if dataset is not None:
+            obj.set_dataset(dataset)
         return obj
 
     def __reduce__(self):
         module_hash = get_file_hash(self._module_filename)
-        return self._reconstruct, (self._module_filename, module_hash,
-                                   self._parameters, self._dataset)
+        dataset = getattr(self, '_dataset', None)
+        return self._reconstruct, (
+            self._module_filename, module_hash, self._parameters, dataset,
+            str(self._import_ctx._benchmark_dir)
+        )

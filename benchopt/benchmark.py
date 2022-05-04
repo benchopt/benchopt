@@ -5,20 +5,40 @@ from pathlib import Path
 
 from .config import get_setting
 from .base import BaseSolver, BaseDataset
-from .utils.colorify import colorify, YELLOW
+
 from .utils.safe_import import set_benchmark
 from .utils.dynamic_modules import _load_class_from_module
 from .utils.parametrized_name_mixin import product_param
 from .utils.parametrized_name_mixin import _list_all_parametrized_names
 
+from .utils.terminal_output import YELLOW
+from .utils.terminal_output import colorify
+
 from .utils.conda_env_cmd import install_in_conda_env
 from .utils.conda_env_cmd import shell_install_in_conda_env
+
+# Get config values
+from .config import RAISE_INSTALL_ERROR
 
 
 CACHE_DIR = '__cache__'
 
 
 class Benchmark:
+    """Benchmark exposes all constituents of the benchmark folder.
+
+    Parameters
+    ----------
+    benchmark_dir : str or Path-like
+        Folder containing the benchmark. The folder should at least
+        contain an `objective.py` file defining the `Objective`
+        function for the benchmark.
+
+    Attributes
+    ----------
+    mem : joblib.Memory
+        Caching mechanism for the benchmark.
+    """
     def __init__(self, benchmark_dir):
         self.benchmark_dir = Path(benchmark_dir)
         self.name = self.benchmark_dir.resolve().name
@@ -34,20 +54,9 @@ class Benchmark:
                 "benchmark."
             )
 
-    @property
-    def mem(self):
-        from joblib import Memory
-        if not hasattr(self, '_mem'):
-            self._mem = Memory(location=self.get_cache_location(), verbose=0)
-        return self._mem
-
-    def get_setting(self, setting_name):
-        "Retrieve the setting value from benchmark config."
-
-        # Get the config file and read it
-        config_file = self.get_config_file()
-        return get_setting(name=setting_name, config_file=config_file,
-                           benchmark_name=self.name)
+    ####################################################################
+    # Helpers to access and validate objective, solvers and datasets
+    ####################################################################
 
     def get_benchmark_objective(self):
         """Load the objective function defined in the given benchmark.
@@ -66,6 +75,51 @@ class Benchmark:
         return _load_class_from_module(
             module_filename, "Objective", benchmark_dir=self.benchmark_dir
         )
+
+    def validate_objective_filters(self, objective_filters):
+        "Check that all objective filters match at least one objective setup."
+
+        # List all choices of objective parameters
+        all_objectives = _list_all_parametrized_names(
+            self.get_benchmark_objective()
+        )
+
+        _validate_patterns(all_objectives, objective_filters,
+                           name_type="objective")
+
+    def get_solvers(self):
+        "List all available solver classes for the benchmark."
+        return self._list_benchmark_classes(BaseSolver)
+
+    def get_solver_names(self):
+        "List all available solver names for the benchmark."
+        return [s.name for s in self.get_solvers()]
+
+    def validate_solver_patterns(self, solver_patterns):
+        "Check that all provided patterns match at least one solver"
+
+        # List all solver strings.
+        all_solvers = _list_all_parametrized_names(*self.get_solvers())
+        all_solvers += ["all"]
+
+        _validate_patterns(all_solvers, solver_patterns, name_type='solver')
+
+    def get_datasets(self):
+        "List all available dataset classes for the benchmark."
+        return self._list_benchmark_classes(BaseDataset)
+
+    def get_dataset_names(self):
+        "List all available dataset names for the benchmark."
+        return [d.name for d in self.get_datasets()]
+
+    def validate_dataset_patterns(self, dataset_patterns):
+        "Check that all provided patterns match at least one dataset"
+
+        # List all dataset strings.
+        all_datasets = _list_all_parametrized_names(*self.get_datasets())
+        all_datasets += ["all"]
+
+        _validate_patterns(all_datasets, dataset_patterns, name_type='dataset')
 
     def _list_benchmark_classes(self, base_class):
         """Load all classes with the same name from a benchmark's subpackage.
@@ -103,41 +157,9 @@ class Benchmark:
         classes.sort(key=lambda c: c.name.lower())
         return classes
 
-    def get_solvers(self):
-        "List all available solver classes for the benchmark."
-        return self._list_benchmark_classes(BaseSolver)
-
-    def get_solver_names(self):
-        "List all available solver names for the benchmark."
-        return [s.name for s in self._list_benchmark_classes(BaseSolver)]
-
-    def get_datasets(self):
-        "List all available dataset classes for the benchmark."
-        return self._list_benchmark_classes(BaseDataset)
-
-    def get_dataset_names(self):
-        "List all available dataset names for the benchmark."
-        return [d.name for d in self._list_benchmark_classes(BaseDataset)]
-
-    def get_cache_location(self):
-        "Get the location for the cache of the benchmark."
-        return self.benchmark_dir / CACHE_DIR
-
-    def get_config_file(self):
-        "Get the location for the config file of the benchmark."
-        return self.benchmark_dir / 'config.ini'
-
-    def get_test_config_file(self):
-        """Get the location for the test config file for the benchmark.
-
-        This file will be used to check if a test should be xfailed/skipped on
-        specific solvers and platforms when we have installation or running
-        issues. Returns None if this file does not exists.
-        """
-        test_config_file = self.benchmark_dir / 'test_config.py'
-        if not test_config_file.exists():
-            return None
-        return test_config_file
+    #####################################################
+    # Access to output files for the benchmark
+    #####################################################
 
     def get_output_folder(self):
         """Get the folder to store the output of the benchmark.
@@ -187,6 +209,74 @@ class Benchmark:
                 result_filename = all_csv_files
 
         return result_filename
+
+    #####################################################
+    # Caching mechanism
+    #####################################################
+
+    @property
+    def mem(self):
+        from joblib import Memory
+        if not hasattr(self, '_mem'):
+            self._mem = Memory(location=self.get_cache_location(), verbose=0)
+        return self._mem
+
+    def get_cache_location(self):
+        "Get the location for the cache of the benchmark."
+        return self.benchmark_dir / CACHE_DIR
+
+    def cache(self, func, force=False, ignore=None):
+        """Create a cached function for the given function.
+
+        A special behavior is enforced for the 'force' kwargs. If it is present
+        and True, the function will always be recomputed.
+        """
+
+        # Create a cached function the computations in the benchmark folder
+        # and handle cases where we force the run.
+        func_cached = self.mem.cache(func, ignore=ignore)
+        if force:
+            def _func_cached(**kwargs):
+                return func_cached.call(**kwargs)[0]
+        else:
+            def _func_cached(**kwargs):
+                if kwargs.get('force', False):
+                    return func_cached.call(**kwargs)[0]
+                return func_cached(**kwargs)
+
+        return _func_cached
+
+    #####################################################
+    # Configuration and settings for the benchmark
+    #####################################################
+
+    def get_config_file(self):
+        "Get the location for the config file of the benchmark."
+        return self.benchmark_dir / 'config.ini'
+
+    def get_setting(self, setting_name):
+        "Retrieve the setting value from benchmark config."
+
+        # Get the config file and read it
+        config_file = self.get_config_file()
+        return get_setting(name=setting_name, config_file=config_file,
+                           benchmark_name=self.name)
+
+    def get_test_config_file(self):
+        """Get the location for the test config file for the benchmark.
+
+        This file will be used to check if a test should be xfailed/skipped on
+        specific solvers and platforms when we have installation or running
+        issues. Returns None if this file does not exists.
+        """
+        test_config_file = self.benchmark_dir / 'test_config.py'
+        if not test_config_file.exists():
+            return None
+        return test_config_file
+
+    #####################################################
+    # Install and run helpers
+    #####################################################
 
     def install_all_requirements(self, include_solvers, include_datasets,
                                  minimal=False, env_name=None,
@@ -295,37 +385,67 @@ class Benchmark:
             )
         print(' done')
 
-    def validate_dataset_patterns(self, dataset_patterns):
-        "Check that all provided patterns match at least one dataset"
+    def get_all_runs(self, solver_names=None, forced_solvers=None,
+                     dataset_names=None, objective_filters=None, output=None):
+        """Generator with all combinations to run for the benchmark.
 
-        # List all dataset strings.
-        all_datasets = _list_all_parametrized_names(*self.get_datasets())
-        all_datasets += ["all"]
+        Parameters
+        ----------
+        solver_names : list | None
+            List of solvers to include in the benchmark. If None
+            all solvers available are run.
+        forced_solvers : list | None
+            List of solvers to include in the benchmark and for
+            which one forces recomputation.
+        dataset_names : list | None
+            List of datasets to include. If None all available
+            datasets are used.
+        objective_filters : list | None
+            Filters to select specific objective parameters. If None,
+            all objective parameters are tested
+        output : TerminalOutput or None
+            Object to manage the output in the terminal.
 
-        _validate_patterns(all_datasets, dataset_patterns, name_type='dataset')
+        Yields
+        ------
+        dataset : BaseDataset instance
+        objective : BaseObjective instance
+        solver : BaseSolver instance
+        force : bool
+        """
+        all_datasets = _filter_classes(*self.get_datasets(),
+                                       filters=dataset_names)
+        all_objectives, objective_buffer = buffer_iterator(_filter_classes(
+            self.get_benchmark_objective(), filters=objective_filters
+        ))
+        all_solvers, solvers_buffer = buffer_iterator(_filter_classes(
+            *self.get_solvers(), filters=solver_names
+        ))
+        for dataset, is_installed in all_datasets:
+            output.set(dataset=dataset)
+            if not is_installed:
+                output.show_status('not installed', dataset=True)
+                continue
+            output.display_dataset()
+            for objective, is_installed in all_objectives:
+                output.set(objective=objective)
+                if not is_installed:
+                    output.show_status('not installed', objective=True)
+                    continue
+                output.display_objective()
+                for i_solver, (solver, is_installed) in enumerate(all_solvers):
+                    output.set(solver=solver, i_solver=i_solver)
 
-    def validate_solver_patterns(self, solver_patterns):
-        "Check that all provided patterns match at least one solver"
+                    if not is_installed:
+                        output.show_status('not installed')
+                        continue
 
-        # List all dataset strings.
-        all_solvers = _list_all_parametrized_names(*self.get_solvers())
-        all_solvers += ["all"]
-
-        _validate_patterns(all_solvers, solver_patterns, name_type='solver')
-
-    def validate_objective_filters(self, objective_params):
-        "Check that all objective filters match at least one objective setup"
-
-        # List all choices of objective parameters
-        all_objectives = _list_all_parametrized_names(
-            self.get_benchmark_objective()
-        )
-
-        _validate_patterns(
-            all_objectives,
-            objective_params,
-            name_type="objective"
-        )
+                    force = is_matched(
+                        str(solver), forced_solvers, default=False
+                    )
+                    yield dataset, objective, solver, force, output.clone()
+                all_solvers = solvers_buffer
+            all_objectives = objective_buffer
 
 
 def _check_name_lists(*name_lists):
@@ -338,13 +458,13 @@ def _check_name_lists(*name_lists):
     return res
 
 
-def is_matched(name, include_patterns=None):
+def is_matched(name, include_patterns=None, default=True):
     """Check if a certain name is matched by any pattern in include_patterns.
 
-    When include_patterns is None or [], always return True.
+    When include_patterns is None or [], always return `default`.
     """
     if include_patterns is None or len(include_patterns) == 0:
-        return True
+        return default
     name = str(name)
     # we use [] to signal options in patterns, we must escape them for re
     substitutions = {"*": ".*", "[": r"\[", "]": r"\]"}
@@ -375,3 +495,35 @@ def _validate_patterns(all_names, patterns, name_type='dataset'):
             f"Patterns {invalid_patterns} did not match any {name_type}.\n"
             f"Available {name_type}s are:\n{all_names}"
         )
+
+
+def _filter_classes(*classes, filters=None):
+    """Filter a list of class based on its names."""
+    for klass in classes:
+        is_installed = None
+        for parameters in product_param(klass.parameters):
+            obj = klass.get_instance(**parameters)
+            if is_matched(str(obj), filters):
+                if is_installed is None:
+                    is_installed = (
+                        not hasattr(klass, 'is_installed')
+                        or klass.is_installed(
+                            raise_on_not_installed=RAISE_INSTALL_ERROR
+                        )
+                    )
+                if not is_installed:
+                    yield klass.name, False
+                    break
+                yield obj, True
+
+
+def buffer_iterator(it):
+    """Buffer the output of an iterator to repeat it without recomputing."""
+    buffer = []
+
+    def buffered_it(buffer):
+        for val in it:
+            buffer.append(val)
+            yield val
+
+    return buffered_it(buffer), buffer

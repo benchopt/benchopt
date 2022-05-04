@@ -60,7 +60,7 @@ function change(ll_item) {
   for (item = 0; item < ll_item.length; item++) {
     filter.push(
       document
-        .getElementById("select" + ll_item[item].replace(/\s/g, ""))
+        .getElementById("select_" + ll_item[item].replace(/\s/g, ""))
         .value.toUpperCase()
     ); // Add dropdown value on top of the array (order is necessary)
   }
@@ -104,70 +104,6 @@ function displayMore() {
   }
 }
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-* Open or close sidebar when document ready
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-$(function () {
-  var openbtn = document.getElementById("open");
-  var closebtn = document.getElementById("close");
-  if (openbtn) {
-    openbtn.style.display = "none"; // only display close button is sidenav opened
-    // default display depending on device
-    if ($(window).width() > 900) {
-      openSideNav({ data: { op: openbtn, cl: closebtn } });
-    } else {
-      closeSideNav({ data: { op: openbtn, cl: closebtn } });
-    }
-  }
-  // click method is the recommended way
-  $("#open").click({ op: openbtn, cl: closebtn }, openSideNav);
-  $("#close").click({ op: openbtn, cl: closebtn }, closeSideNav);
-  $(".closebtn").click({ op: openbtn, cl: closebtn }, closeSideNav);
-});
-
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-* Open sidebar: the argument must be an event
-* ie an object containing a data dictionnary
-* the data has a key op for the open button
-* and a key cl for the close button.
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-function openSideNav(event) {
-  openbtn = event.data.op;
-  closebtn = event.data.cl;
-  navbar = document.getElementById("sidenav");
-  navbar.style.visibility = "visible";
-  main = document.getElementById("main");
-  if ($(window).width() < 900) {
-    // mobile adaptativity
-    navbar.style.height = "100%";
-    main.style.marginLeft = "0";
-  } else {
-    navbar.style.height = "1000px";
-    main.style.marginLeft = "200px";
-  }
-  navbar.style.opacity = "1";
-  openbtn.style.display = "none"; // hide open button
-  closebtn.style.display = ""; // show close button
-}
-
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-* Same as openSideNav above but for closing
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-function closeSideNav(event) {
-  openbtn = event.data.op;
-  closebtn = event.data.cl;
-  navbar = document.getElementById("sidenav");
-  main = document.getElementById("main");
-  navbar.style.visibility = "hidden";
-  navbar.style.opacity = "0";
-  navbar.style.height = "0";
-  if ($(window).width() > 900) {
-    // adapt to devices
-    main.style.marginLeft = "0px";
-  }
-  openbtn.style.display = ""; // show open button
-  closebtn.style.display = "none"; // hide close button
-}
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 * Launch a dialog box to hide rows in table or
