@@ -123,11 +123,12 @@ def print_info(cls_name_list, cls_list, env_name=None, verbose=False):
 
     # select objects to print info from
     include_cls = []
+    cls_name_list = [item.upper() for item in cls_name_list]
     if 'all' in cls_name_list:
         include_cls = cls_list
     else:
         include_cls = [
-            item for item in cls_list if item.name in cls_name_list
+            item for item in cls_list if item.name.upper() in cls_name_list
         ]
     if not verbose:
         # short output
@@ -141,13 +142,17 @@ def print_info(cls_name_list, cls_list, env_name=None, verbose=False):
             print(f"## {cls.name}")
             # availability in env (if relevant)
             if env_name is not None:
-                # check for dependency avaulability
+                # check for dependency availability
+                if env_name == "False":
+                    disp_name = "running env"
+                else:
+                    disp_name = f"env: {env_name}"
                 if cls.is_installed(env_name):
                     print(colorify(TICK, GREEN), end='', flush=True)
-                    print(colorify(f" available in env '{env_name}'", GREEN))
+                    print(colorify(f" available in '{disp_name}'", GREEN))
                 else:
                     print(colorify(CROSS, RED), end='', flush=True)
-                    print(colorify(f" not available in env '{env_name}'", RED))
+                    print(colorify(f" not available in '{disp_name}'", RED))
             # install command
             if hasattr(cls, 'requirements') and cls.requirements:
                 print("> requirements:")
