@@ -1,12 +1,15 @@
 import re
 
 from pathlib import Path
+from joblib.executor import get_memmapping_executor
+
 from benchopt.benchmark import Benchmark
 from benchopt.utils.stream_redirection import SuppressStd
 
 # Default benchmark
 TEST_BENCHMARK_DIR = Path(__file__).parent / 'test_benchmarks'
 DUMMY_BENCHMARK_PATH = TEST_BENCHMARK_DIR / 'dummy_benchmark'
+REQUIREMENT_BENCHMARK_PATH = TEST_BENCHMARK_DIR / 'requirement_benchmark'
 
 # Pattern to select specific datasets or solvers.
 SELECT_ONE_SIMULATED = r'simulated*500*rho=0]'
@@ -15,6 +18,7 @@ SELECT_ONE_OBJECTIVE = r'dummy*reg=0.1]'
 
 try:
     DUMMY_BENCHMARK = Benchmark(DUMMY_BENCHMARK_PATH)
+    REQUIREMENT_BENCHMARK = Benchmark(REQUIREMENT_BENCHMARK_PATH)
     TEST_OBJECTIVE = DUMMY_BENCHMARK.get_benchmark_objective()
     TEST_SOLVER = [s for s in DUMMY_BENCHMARK.get_solvers()
                    if s.name == "Test-Solver"][0]
@@ -22,6 +26,7 @@ try:
                     if d.name == "Test-Dataset"][0]
 except Exception:
     DUMMY_BENCHMARK = None
+    REQUIREMENT_BENCHMARK = None
     TEST_OBJECTIVE = None
     TEST_SOLVER = None
     TEST_DATASET = None
@@ -39,6 +44,12 @@ class CaptureRunOutput(object):
     def __enter__(self):
         self.output = None
         self.result_files = []
+
+        # To make it possible to capture stdout in the child worker, we need
+        # to make sure the execturor is spawned in the context so shutdown any
+        # existing executor.
+        e = get_memmapping_executor(2)
+        e.shutdown()
 
         # Redirect the stdout/stderr fd to temp file
         self.out.__enter__()
@@ -67,8 +78,9 @@ class CaptureRunOutput(object):
             print(self.output)
 
     def check_output(self, pattern, repetition=None):
-        matches = re.findall(pattern, self.output)
+        output = self.output
+        matches = re.findall(pattern, output)
         if repetition is None:
-            assert len(matches) > 0, self.output
+            assert len(matches) > 0, output
         else:
-            assert len(matches) == repetition, self.output
+            assert len(matches) == repetition, output

@@ -197,8 +197,13 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
     for rep in range(n_repetitions):
         seed_run(objective, dataset, solver, rng)
 
-        # Set objective and skip if necessary.
-        objective._set_dataset(dataset)
+        # Set dataset with the run seed and skip if necessary.
+        skip, reason = objective._set_dataset(dataset)
+        if skip:
+            output.skip(reason, objective=True)
+            return []
+
+        # Set objective an skip if necessary.
         skip, reason = solver._set_objective(objective)
         if skip:
             output.skip(reason)
@@ -239,6 +244,8 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
             status = 'done'
 
     output.show_status(status=status)
+    # Make sure to flush so the parallel output is properly display
+    print(flush=True)
 
     if status == 'interrupted':
         raise SystemExit(1)
@@ -247,7 +254,7 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
 
 def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                   dataset_names=None, objective_filters=None,
-                  max_runs=10, n_repetitions=1, timeout=100, n_workers=1,
+                  max_runs=10, n_repetitions=1, timeout=100, n_jobs=1,
                   plot_result=True, html=True, show_progress=True, pdb=False,
                   random_state=None):
     """Run full benchmark.
@@ -275,7 +282,7 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
         The number of repetitions to run. Defaults to 1.
     timeout : float
         The maximum duration in seconds of the solver run.
-    n_workers : int
+    n_jobs : int
         Maximal number of workers to use to run the benchmark in parallel.
     plot_result : bool
         If set to True (default), display the result plot and save them in
@@ -313,7 +320,7 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
         output=output
     )
 
-    results = Parallel(n_jobs=n_workers)(
+    results = Parallel(n_jobs=n_jobs)(
         delayed(run_one_solver)(
             benchmark=benchmark, dataset=dataset, objective=objective,
             solver=solver, n_repetitions=n_repetitions, max_runs=max_runs,

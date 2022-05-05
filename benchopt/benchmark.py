@@ -25,7 +25,7 @@ CACHE_DIR = '__cache__'
 
 
 class Benchmark:
-    """Benchmark exposes all constituant of the bechmark folder.
+    """Benchmark exposes all constituents of the benchmark folder.
 
     Parameters
     ----------
@@ -98,7 +98,7 @@ class Benchmark:
     def validate_solver_patterns(self, solver_patterns):
         "Check that all provided patterns match at least one solver"
 
-        # List all dataset strings.
+        # List all solver strings.
         all_solvers = _list_all_parametrized_names(*self.get_solvers())
         all_solvers += ["all"]
 
@@ -279,7 +279,8 @@ class Benchmark:
     #####################################################
 
     def install_all_requirements(self, include_solvers, include_datasets,
-                                 env_name=None, force=False, quiet=False):
+                                 minimal=False, env_name=None,
+                                 force=False, quiet=False):
         """Install all classes that are required for the run.
 
         Parameters
@@ -288,6 +289,8 @@ class Benchmark:
             patterns to select solvers to install.
         include_datasets : list of str
             patterns to select datasets to install.
+        minimal : bool (default: False)
+            only install requirements for the objective function.
         env_name : str or None (default: None)
             Name of the conda env where the class should be installed. If
             None, tries to install it in the current environment.
@@ -299,8 +302,8 @@ class Benchmark:
         # Collect all classes matching one of the patterns
         print("Collecting packages:")
 
-        install_solvers = True
-        install_datasets = True
+        install_solvers = not minimal
+        install_datasets = not minimal
 
         # If -d is used but not -s, then does not install any solver
         if len(include_solvers) == 0 and len(include_datasets) > 0:
@@ -317,8 +320,13 @@ class Benchmark:
         if 'all' in include_datasets:
             include_datasets = []
 
-        conda_reqs, shell_install_scripts, post_install_hooks = [], [], []
         check_installs = []
+        objective = self.get_benchmark_objective()
+        conda_reqs, shell_install_scripts, post_install_hooks = (
+            objective.collect(env_name=env_name, force=force)
+        )
+        if len(shell_install_scripts) > 0 or len(conda_reqs) > 0:
+            check_installs += [objective]
         for list_classes, include_patterns, to_install in [
                 (self.get_solvers(), include_solvers, install_solvers),
                 (self.get_datasets(), include_datasets, install_datasets)
@@ -396,7 +404,7 @@ class Benchmark:
             Filters to select specific objective parameters. If None,
             all objective parameters are tested
         output : TerminalOutput or None
-            Object to format string to display the progress of the solver.
+            Object to manage the output in the terminal.
 
         Yields
         ------
@@ -419,11 +427,14 @@ class Benchmark:
                 output.show_status('not installed', dataset=True)
                 continue
             output.display_dataset()
-            for objective, _ in all_objectives:
+            for objective, is_installed in all_objectives:
                 output.set(objective=objective)
+                if not is_installed:
+                    output.show_status('not installed', objective=True)
+                    continue
                 output.display_objective()
-                for solver, is_installed in all_solvers:
-                    output.set(solver=solver)
+                for i_solver, (solver, is_installed) in enumerate(all_solvers):
+                    output.set(solver=solver, i_solver=i_solver)
 
                     if not is_installed:
                         output.show_status('not installed')
@@ -450,7 +461,7 @@ def _check_name_lists(*name_lists):
 def is_matched(name, include_patterns=None, default=True):
     """Check if a certain name is matched by any pattern in include_patterns.
 
-    When include_patterns is None or [], always return True.
+    When include_patterns is None or [], always return `default`.
     """
     if include_patterns is None or len(include_patterns) == 0:
         return default
@@ -507,7 +518,7 @@ def _filter_classes(*classes, filters=None):
 
 
 def buffer_iterator(it):
-    """Buffer the output of an iterator so to repeat it without recomputing."""
+    """Buffer the output of an iterator to repeat it without recomputing."""
     buffer = []
 
     def buffered_it(buffer):

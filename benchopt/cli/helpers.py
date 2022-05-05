@@ -39,13 +39,13 @@ def clean(benchmark, token=None, filename=None):
 
     # Delete result files
     output_folder = benchmark.get_output_folder()
-    print(f"rm -rf {output_folder}")
-    rm_folder(output_folder)
+    if output_folder.exists():
+        print(f"rm -rf {output_folder}")
+        rm_folder(output_folder)
 
     # Delete cache files
-    cache_folder = benchmark.get_cache_location()
-    print(f"rm -rf {cache_folder}")
-    rm_folder(cache_folder)
+    print("Clear joblib cache")
+    benchmark.mem.clear(warn=False)
 
 
 def check_conda_env(env_name, benchmark_name=None):
@@ -181,7 +181,7 @@ def print_info(cls_name_list, cls_list, env_name=None, verbose=False):
     "for a given benchmark."
 )
 @click.argument('benchmark', type=click.Path(exists=True),
-                autocompletion=complete_benchmarks)
+                shell_complete=complete_benchmarks)
 @click.option('--solver', '-s', 'solver_names',
               metavar="<solver_name>", multiple=True, type=str,
               help="Display information about <solver_name>. "
@@ -375,10 +375,17 @@ def get(ctx, name):
     "class BASE_CLASS_NAME.",
     hidden=True
 )
+@click.argument('benchmark', type=click.Path(exists=True),
+                shell_complete=complete_benchmarks)
 @click.argument('module_filename', nargs=1, type=Path)
 @click.argument('base_class_name', nargs=1, type=str)
-def check_install(module_filename, base_class_name):
+def check_install(benchmark, module_filename, base_class_name):
+
+    # benchmark
+    benchmark = Benchmark(benchmark)
 
     # Get class to check
-    klass = _load_class_from_module(module_filename, base_class_name)
+    klass = _load_class_from_module(
+        module_filename, base_class_name, benchmark.benchmark_dir
+    )
     klass.is_installed(raise_on_not_installed=True)

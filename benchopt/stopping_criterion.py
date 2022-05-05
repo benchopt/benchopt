@@ -27,10 +27,10 @@ class StoppingCriterion():
     This class also handles the detection of diverging solvers and prints the
     progress if given a ``prgress_str``.
 
-    Instances of this class should only be created with `cls._get_instance`,
-    to make sure the class holds the proper attirbutes. This factory mechanism
-    allow for easy subclassing without requesting to call the `super.__init___`
-    in the subclass.
+    Instances of this class should only be created with class method
+    `cls.get_runner_instance`, to make sure the class holds the proper
+    attributes. This factory mechanism allows for easy subclassing without
+    requesting to call the `super.__init___` in the subclass.
 
     Similarly, sub-classes should implement `check-convergence` to check if the
     algorithm has converged. This function will be called internally as a hook

@@ -7,7 +7,6 @@ from ..config import get_setting
 
 
 SHELL = get_setting('shell')
-CONDA_CMD = get_setting('conda_cmd')
 
 
 def _run_shell(script, raise_on_error=None, capture_stdout=True,
@@ -120,8 +119,8 @@ def _run_shell_in_conda_env(script, env_name=None, raise_on_error=None,
             # Run hook to setup conda and activate the env.
             # first line to use conda activate in bash script
             # see https://github.com/conda/conda/issues/7980
-            f'eval "$({CONDA_CMD} shell.bash hook)"\n'
-            f'{CONDA_CMD} activate {env_name}\n\n'
+            f'eval "$(conda shell.bash hook)"\n'
+            f'conda activate {env_name}\n\n'
 
             # Run the actual script
             f'# Run script\n{script}'

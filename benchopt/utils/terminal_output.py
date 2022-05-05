@@ -78,7 +78,7 @@ class TerminalOutput:
         return new_output
 
     def set(self, solver=None, dataset=None, objective=None, verbose=None,
-            rep=None):
+            rep=None, i_solver=None):
 
         if dataset is not None:
             self.dataset = dataset
@@ -86,11 +86,11 @@ class TerminalOutput:
 
         if objective is not None:
             self.objective = objective
-            self.objective_tag = f"|--{objective}"
+            self.objective_tag = f"  |--{objective}"
 
         if solver is not None:
             self.solver = solver
-            self.solver_tag = colorify(f"|----{solver}:")
+            self.solver_tag = colorify(f"    |--{solver}:")
 
         if verbose is not None:
             self.verbose = verbose
@@ -98,11 +98,15 @@ class TerminalOutput:
         if rep is not None:
             self.rep = rep
 
-    def skip(self, reason=None):
-        if self.rep == 0:
-            self.show_status(status='skip')
+        if i_solver is not None:
+            self.i_solver = i_solver
+
+    def skip(self, reason=None, objective=False):
+        if self.rep == 0 and (not objective or self.i_solver == 0):
+            self.show_status(status='skip', objective=objective)
             if reason is not None:
-                print(f'Reason: {reason}')
+                indent = ' ' * (2 if objective else 4)
+                print(f'{indent}Reason: {reason}')
 
     def savefile_status(self, save_file=None):
         if save_file is None:
@@ -130,10 +134,13 @@ class TerminalOutput:
                 endline=False,  verbose=self.verbose
             )
 
-    def show_status(self, status, dataset=False):
-        if dataset:
+    def show_status(self, status, dataset=False, objective=False):
+        if dataset or objective:
             assert status == 'not installed'
-        tag = self.dataset_tag if dataset else self.solver_tag
+        tag = (
+            self.dataset_tag if dataset else
+            self.objective_tag if objective else self.solver_tag
+        )
         assert status in STATUS, (
             f"status should be in {list(STATUS)}. Got '{status}'"
         )

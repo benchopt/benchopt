@@ -62,6 +62,7 @@ class ParametrizedNameMixin():
 
         return _reconstruct_class(
             cls._module_filename, cls._base_class_name,
+            cls._import_ctx.benchmark_dir,
             pickled_module_hash=pickled_module_hash
         )
 

@@ -58,7 +58,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
             warnings.warn(
                 "'stop_strategy' attribute is deprecated, "
                 "use 'stopping_strategy' instead",
-                DeprecationWarning
+                FutureWarning
             )
             return self.stop_strategy
         elif hasattr(self, 'stopping_strategy'):
@@ -168,14 +168,13 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
 
         return False, None
 
-    # TODO: use this to allow parallel computation of the benchmark.
     # TODO: factorize in parametrized_mixing?
     @staticmethod
     def _reconstruct(module_filename, parameters, objective,
                      pickled_module_hash, benchmark_dir, run_seed):
         set_benchmark(benchmark_dir)
         Solver = _reconstruct_class(
-            module_filename, 'Solver', pickled_module_hash
+            module_filename, 'Solver', benchmark_dir, pickled_module_hash,
         )
         solver = Solver.get_instance(**parameters)
         if run_seed is not None:
@@ -190,7 +189,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         objective = getattr(self, '_objective', None)
         return self._reconstruct, (
             self._module_filename, self._parameters, objective, module_hash,
-            self._import_ctx._benchmark_dir, run_seed
+            str(self._import_ctx._benchmark_dir), run_seed
         )
 
 
@@ -243,14 +242,14 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
         "Wrapper to make sure the returned results are correctly formated."
 
         if not self.determinist_data or (
-                not hasattr(self, 'data') or self.data is None):
-            self.dimension, self.data = self.get_data()
+                not hasattr(self, '_data') or self._data is None):
+            self.dimension, self._data = self.get_data()
 
         # Make sure dimension is a tuple
         if isinstance(self.dimension, numbers.Integral):
-            self.dimension = (self.dimension,)
+            self._dimension = (self._dimension,)
 
-        return self.dimension, self.data
+        return self._dimension, self._data
 
     # Reduce the pickling and hashing burden by only pickling class parameters.
     @staticmethod
@@ -258,7 +257,7 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
                      benchmark_dir, run_seed):
         set_benchmark(benchmark_dir)
         Dataset = _reconstruct_class(
-            module_filename, 'Dataset', pickled_module_hash
+            module_filename, 'Dataset', benchmark_dir, pickled_module_hash,
         )
         dataset = Dataset.get_instance(**parameters)
         if run_seed is not None:
@@ -274,7 +273,7 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
         )
 
 
-class BaseObjective(ParametrizedNameMixin):
+class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
     """Base class to define an objective function
 
     Objectives that derive from this class should implement three methods:
@@ -369,9 +368,56 @@ class BaseObjective(ParametrizedNameMixin):
     # Save the dataset object used to get the objective data so we can avoid
     # hashing the data directly.
     def _set_dataset(self, dataset):
-        self.dataset = dataset
-        _, data = dataset._get_data()
-        return self.set_data(**data)
+        self._dataset = dataset
+        self._dimension, data = dataset._get_data()
+        # Check if the dataset is compatible with the objective
+        skip, reason = self.skip(**data)
+        if skip:
+            return skip, reason
+
+        self.set_data(**data)
+        return False,  None
+
+    def skip(self, **data):
+        """Used to decide if the ``Objective`` is compatible with the data.
+
+        Parameters
+        ----------
+        **data: dict
+            Extra parameters of the objective. This dictionary is retrieved
+            by calling ``data = Dataset.get_data()``.
+
+        Returns
+        -------
+        skip : bool
+            Whether this objective should be skipped or not for this data
+            (accessible in the objective attributes).
+        reason : str | None
+            The reason why it should be skipped for display purposes.
+            If skip is False, the reason should be None.
+        """
+        return False, None
+
+    def get_one_beta(self):
+        """Return one point in which the objective function can be evaluated.
+
+        This method is mainly for testing purposes, to check that the return
+        computation and the return type of `Objective.compute`. It should
+        return an object that can be passed to compute.
+
+        By default, if `Dataset.get_data` returns a shape, this function will
+        return an array full of 0. It can be overriden to provide a different
+        point. When `Dataset.get_data` returns "object", this method must be
+        overwritten.
+        """
+        if self._dimension == 'object':
+            raise NotImplementedError(
+                "If solvers return objects, `Objective.get_one_beta` should "
+                "be overriden to return an object compatible with `compute`."
+            )
+
+        import numpy as np
+        return np.zeros(self._dimension)
 
     # Reduce the pickling and hashing burden by only pickling class parameters.
     @staticmethod
@@ -379,7 +425,7 @@ class BaseObjective(ParametrizedNameMixin):
                      dataset, benchmark_dir, run_seed):
         set_benchmark(benchmark_dir)
         Objective = _reconstruct_class(
-            module_filename, 'Objective', pickled_module_hash
+            module_filename, 'Objective', benchmark_dir, pickled_module_hash,
         )
         obj = Objective.get_instance(**parameters)
         if run_seed is not None:
