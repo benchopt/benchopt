@@ -249,7 +249,7 @@ def list_conda_envs():
                 conda_prefixes.append(p)
 
     all_envs = [get_env_name(prefix) for prefix in conda_prefixes]
-    active_envs = [e[0] for e in all_envs if e[1]]
+    active_envs = list(set([e[0] for e in all_envs if e[1]]))
     all_envs = [e[0] for e in all_envs]
 
     if len(active_envs) == 0:

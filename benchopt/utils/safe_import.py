@@ -116,7 +116,7 @@ class safe_import_context:
             self.import_error = exc_type, exc_value, tb
 
             # Prevent the error propagation
-            silence_error = not True
+            silence_error = True
 
         if not RAISE_INSTALL_ERROR:
             self.record.__exit__(exc_type, exc_value, tb)

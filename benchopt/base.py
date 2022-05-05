@@ -243,10 +243,10 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
 
         if not self.determinist_data or (
                 not hasattr(self, '_data') or self._data is None):
-            self.dimension, self._data = self.get_data()
+            self._dimension, self._data = self.get_data()
 
         # Make sure dimension is a tuple
-        if isinstance(self.dimension, numbers.Integral):
+        if isinstance(self._dimension, numbers.Integral):
             self._dimension = (self._dimension,)
 
         return self._dimension, self._data
@@ -269,7 +269,7 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
         run_seed = getattr(self, 'run_seed', None)
         return self._reconstruct, (
             self._module_filename, module_hash, self._parameters,
-            self._import_ctx._benchmark_dir, run_seed
+            str(self._import_ctx._benchmark_dir), run_seed
         )
 
 
@@ -437,8 +437,8 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
     def __reduce__(self):
         module_hash = get_file_hash(self._module_filename)
         run_seed = getattr(self, 'run_seed', None)
-        dataset = getattr(self, 'dataset', None)
+        dataset = getattr(self, '_dataset', None)
         return self._reconstruct, (
             self._module_filename, module_hash, self._parameters, dataset,
-            self._import_ctx._benchmark_dir, run_seed
+            str(self._import_ctx._benchmark_dir), run_seed
         )
