@@ -27,7 +27,7 @@ be **as simple as doing**:
     pip install benchopt
     git clone https://github.com/benchopt/benchmark_logreg_l2
     benchopt install -e benchmark_logreg_l2 -s cd -s sklearn
-    benchopt run --env ./benchmark_logreg_l2
+    benchopt run -e ./benchmark_logreg_l2 -s cd -s sklearn
 
 Running this command will give you a benchmark plot on l2-regularized
 logistic regression:
