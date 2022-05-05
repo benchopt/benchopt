@@ -32,28 +32,6 @@
   benchmark_name = benchmark.replace('benchmark_', '').replace('_', " ")
 %>
 
-<div class="sidenav" id="sidenav" style="visibility: hidden; height:0; opacity: 0; transition: visibility 0s, opacity 0.5s linear; z-index: 100;">
-  <a href="javascript:void(0)" class="closebtn">&times;</a>
-  <div class="menu">
-    % for key, val in ll_main.items():
-    <label for=${'select'+str(key.replace(" ", ""))} style="padding: 8px; color: white;">
-       ${key}
-    </label>
-    <select class="myselect" id=${'select'+str(key.replace(" ", ""))} onchange="change(${list(ll_main.keys())})">
-      <option value=""> Any </option>
-      % for current_item in items_unique[key]:
-        % if current_item != "":
-        <%
-          need_filter = True
-        %>
-          <option value="<b>${key}</b>: ${current_item}"> ${current_item} </option>
-        % endif
-      % endfor
-    </select>
-    % endfor
-  </div>
-</div>
-
 % if need_filter:
 <div class="main" id="main">
 % else:
@@ -72,10 +50,24 @@
   with <strong>${nb_total_benchs}</strong> benchmark results in total. <br>
 </p>
 
-% if need_filter:
-<span id="close" style="font-size:30px;cursor:pointer">&#9776; Filter Informations</span>
-<span id="open" style="font-size:30px;cursor:pointer">&#9776; Filter Informations</span>
-% endif
+<div class="menu" style="padding-left: 0px;">
+    % for key, val in ll_main.items():
+    <label for=${'select_'+str(key.replace(" ", ""))} style="padding-left: 20px; color: #333">
+       ${key.upper()}
+    </label>
+    <select id=${'select_'+str(key.replace(" ", ""))} onchange="change(${list(ll_main.keys())})">
+      <option value=""> Any </option>
+      % for current_item in items_unique[key]:
+        % if current_item != "":
+        <%
+          need_filter = True
+        %>
+          <option value="<b>${key}</b>: ${current_item}"> ${current_item} </option>
+        % endif
+      % endfor
+    </select>
+    % endfor
+  </div>
 
 <table class="summary display" id="summary">
 <thead style="background-color: dodgerblue; color: white;">
@@ -133,7 +125,7 @@
       % for key_main, val_main in result['sysinfo']['main'].items():
         % if val_main != "":
           <li>
-            <b>${key_main}</b>: ${val_main}
+            <b>${key_main.upper()}</b>: ${val_main}
             % if disp_sub and disp_button:
               <button data-idx=${idx_res} id=${"btn_subinfo"+str(idx_res)} class="button buttoncent" style="float:right;">
                 <i class='fas fa-plus-circle'></i>

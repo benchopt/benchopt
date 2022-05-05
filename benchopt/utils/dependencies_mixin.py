@@ -49,8 +49,7 @@ class DependenciesMixin:
             returns True if no import failure has been detected.
         """
         if env_name is None:
-            if (cls._import_ctx is not None
-                    and cls._import_ctx.failed_import):
+            if cls._import_ctx.failed_import:
                 if raise_on_not_installed:
                     exc_type, value, tb = cls._import_ctx.import_error
                     raise exc_type(value).with_traceback(tb)
@@ -59,8 +58,8 @@ class DependenciesMixin:
                 return True
         else:
             return _run_shell_in_conda_env(
-                f"benchopt check-install {cls._module_filename} "
-                f"{cls._base_class_name}",
+                f"benchopt check-install {cls._benchmark_dir} "
+                f"{cls._module_filename} {cls._base_class_name}",
                 env_name=env_name, raise_on_error=raise_on_not_installed
             ) == 0
 

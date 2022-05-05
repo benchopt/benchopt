@@ -168,13 +168,23 @@ figure.effect-ruby:hover p {
   margin-left: 1px; /* add margin */
 }
 
-/* Create a toggle button */
+
+/* switch slider with an adaptable height.
+Change switch-height and switch-padding, and all the dimensions are adjusted.
+See https://stackoverflow.com/questions/70590125/how-to-change-the-size-of-a-css-toggle-switch */
+* {
+  --switch-height: 20px;
+  --switch-padding: 2px;
+  --switch-width: calc((var(--switch-height) * 2) - var(--switch-padding));
+  --slider-height: calc(var(--switch-height) - var(--switch-padding));
+  --slider-on: calc(var(--switch-height) - var(--switch-padding));
+}
+
 .switch {
   position: relative;
   display: inline-block;
-  vertical-align: middle;
-  width: 60px;
-  height: 25px;
+  width: var(--switch-width);
+  height: var(--switch-height);
 }
 
 .switch input {
@@ -191,38 +201,36 @@ figure.effect-ruby:hover p {
   right: 0;
   bottom: 0;
   background-color: #ccc;
-  -webkit-transition: 0.4s;
-  transition: 0.4s;
+  -webkit-transition: .4s;
+  transition: .4s;
 }
 
 .slider:before {
-  position: absolute;
   content: "";
-  height: 16px;
-  width: 16px;
-  left: 4px;
-  bottom: 4px;
+  position: absolute;
+  height: var(--slider-height);
+  width: var(--slider-height);
+  left: calc(var(--switch-padding) / 2);
+  bottom: calc(var(--switch-padding) / 2);
   background-color: white;
-  -webkit-transition: 0.4s;
-  transition: 0.4s;
+  -webkit-transition: .4s;
+  transition: .4s;
 }
 
-input:checked + .slider {
-  background-color: DodgerBlue;
+input:checked+.slider {
+  background-color: #2196F3;
 }
 
-input:focus + .slider {
-  box-shadow: 0 0 1px DodgerBlue;
+input:focus+.slider {
+  box-shadow: 0 0 1px #2196F3;
 }
 
-input:checked + .slider:before {
-  -webkit-transform: translateX(36px);
-  transform: translateX(36px);
+input:checked+.slider:before {
+  transform: translateX(var(--slider-on));
 }
 
-/* Rounded sliders */
 .slider.round {
-  border-radius: 34px;
+  border-radius: var(--slider-height);
 }
 
 .slider.round:before {

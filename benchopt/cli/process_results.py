@@ -36,7 +36,8 @@ def get_plot_kinds(ctx, args, incomplete):
 @click.option('--display/--no-display', default=True,
               help="Whether or not to display the plot on the screen.")
 @click.option('--html/--no-html', default=True,
-              help="Whether or not to display the plot on the screen.")
+              help="Whether or not to get plots as an html page "
+                   "(otherwise use .png).")
 @click.option('--plotly', is_flag=True,
               help="If this flag is set, generate figure as HTML with plotly. "
               "This option does not work with all plot kinds and requires "

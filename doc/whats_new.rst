@@ -27,6 +27,9 @@ Changelog
 - Now all values returned by ``Objective.compute`` are included in reports,
   by `Thomas Moreau`_ and `Alexandre Gramfort`_ (:gh:`200`).
 
+- New ``--n-jobs, -j`` option to run the benchmark in parallel with
+  ``joblib``, by `Thomas Moreau`_ (:gh:`265`).
+
 API
 ~~~
 
@@ -36,6 +39,18 @@ API
 
 - 'stop_strategy' attribute is replaced by 'stopping_strategy' to harmonize
   with 'stopping_criterion', by `Benoît Malézieux`_ (:gh:`274`).
+
+- Add ``import_from`` method in ``safe_import_context`` to allow importing common
+  files and packages without install from `BENCHMARK_DIR/utils`,
+  by `Thomas Moreau`_ (:gh:`286`).
+
+- Add ``X_density`` argument to ``datasets.make_correlated_data`` to simulate
+  sparse design matrices, by `Mathurin Massias`_ (:gh:`289`).
+
+CLI
+~~~
+
+- Replace ``-p`` flag by ``-o`` for Objective, by `Mathurin Massias`_ (:gh:`281`).
 
 .. _changes_1_1:
 

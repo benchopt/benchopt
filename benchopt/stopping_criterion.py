@@ -1,10 +1,6 @@
 import time
 import math
 
-from .config import DEBUG
-from .utils.colorify import print_normalize
-
-
 # Possible stop strategies
 STOPPING_STRATEGIES = {'iteration', 'tolerance', 'callback'}
 
@@ -14,8 +10,9 @@ PATIENCE = 3
 
 # Define some constants
 # TODO: better parametrize this?
-MAX_ITER = int(1e12)
 MIN_TOL = 1e-15
+MAX_ITER = int(1e12)
+INFINITY = 3e38  # see: np.finfo('float32').max
 
 RHO = 1.5
 RHO_INC = 1.2  # multiplicative update if rho is too small
@@ -30,14 +27,14 @@ class StoppingCriterion():
     This class also handles the detection of diverging solvers and prints the
     progress if given a ``prgress_str``.
 
-    Instances of this class should only be created with `cls._get_instance`,
-    to make sure the class holds the proper attirbutes. This factory mechanism
-    allow for easy subclassing without requesting to call the `super.__init___`
-    in the subclass.
+    Instances of this class should only be created with class method
+    `cls.get_runner_instance`, to make sure the class holds the proper
+    attributes. This factory mechanism allows for easy subclassing without
+    requesting to call the `super.__init___` in the subclass.
 
     Similarly, sub-classes should implement `check-convergence` to check if the
     algorithm has converged. This function will be called internally as a hook
-    in `should_stop_solver`, which also handles `timeout`, `max_runs` and
+    in `should_stop`, which also handles `timeout`, `max_runs` and
     plateau detection.
 
     Parameters
@@ -67,7 +64,7 @@ class StoppingCriterion():
         self.kwargs = kwargs
         self.strategy = strategy
 
-    def get_runner_instance(self, max_runs=1, timeout=None, progress_str=None,
+    def get_runner_instance(self, max_runs=1, timeout=None, output=None,
                             solver=None):
         """Copy the stopping criterion and set the parameters that depends on
         how benchopt runner is called.
@@ -79,8 +76,8 @@ class StoppingCriterion():
             the convergence curve.
         timeout : float
             The maximum duration in seconds of the solver run.
-        progress_str : str or None
-            Format string to display the progress of the solver.
+        output : TerminalOutput or None
+            Object to format string to display the progress of the solver.
         solver : BaseSolver
             The solver for which this stopping criterion is called. Used to get
             overridden ``stopping_strategy`` and ``get_next``.
@@ -118,7 +115,7 @@ class StoppingCriterion():
         stopping_criterion.rho = RHO
         stopping_criterion.timeout = timeout
         stopping_criterion.max_runs = max_runs
-        stopping_criterion.progress_str = progress_str
+        stopping_criterion.output = output
         stopping_criterion.solver = solver
 
         # Override get_next_stop_val if ``get_next`` is implemented for solver.
@@ -147,7 +144,16 @@ class StoppingCriterion():
 
         return stopping_criterion
 
-    def should_stop_solver(self, stop_val, cost_curve):
+    def init_stop_val(self):
+        stop_val = (
+            INFINITY if self.strategy == 'tolerance' else 0
+        )
+
+        self.debug(f"Calling solver {self.solver} with stop val: {stop_val}")
+        self.progress('initialization')
+        return stop_val
+
+    def should_stop(self, stop_val, cost_curve):
         """Base call to check if we should stop running a solver.
 
         This base call checks for the timeout and the max number of runs.
@@ -180,6 +186,7 @@ class StoppingCriterion():
         n_eval = len(cost_curve) - 1
         objective_value = cost_curve[-1]['objective_value']
         delta_objective = self._prev_objective_value - objective_value
+        delta_objective /= cost_curve[0]['objective_value']
         self._prev_objective_value = objective_value
 
         # default value for is_flat
@@ -195,7 +202,7 @@ class StoppingCriterion():
             stop = True
             status = 'max_runs'
 
-        elif delta_objective < -1e10:
+        elif delta_objective < -1e5:
             stop = True
             status = 'diverged'
 
@@ -206,32 +213,28 @@ class StoppingCriterion():
 
             # Display the progress if necessary
             progress = max(n_eval / self.max_runs, progress)
-            self.show_progress(progress=progress)
 
             # Compute status and notify the runner if the curve is flat.
-            status = 'done' if stop else None
+            status = 'done' if stop else 'running'
             is_flat = delta_objective == 0
 
-        if stop and DEBUG:
-            print(f"DEBUG - Exit with delta_objective = {delta_objective:.2e} "
-                  f"and n_eval={n_eval:.1e}.")
+        if stop:
+            self.debug(
+                f"Exit with delta_objective = {delta_objective:.2e} and "
+                f"n_eval={n_eval:.1e}."
+            )
 
         if is_flat:
             self.rho *= RHO_INC
-            if DEBUG:
-                print("DEBUG - curve is flat -> increasing rho:", self.rho)
+            self.debug(f"curve is flat -> increasing rho: {self.rho}")
 
-        return stop, status, self.get_next_stop_val(stop_val)
+        stop_val = self.get_next_stop_val(stop_val)
 
-    def show_progress(self, progress):
-        """Display progress in the CLI interface."""
-        if self.progress_str is not None:
-            if isinstance(progress, float):
-                progress = f'{progress:6.1%}'
-            print_normalize(
-                self.progress_str.format(progress=progress),
-                endline=False
-            )
+        if status == 'running':
+            self.debug(f"Calling with stop val: {stop_val}")
+            self.progress(progress=progress)
+
+        return stop, status, stop_val
 
     def check_convergence(self, cost_curve):
         """Check if the solver should be stopped based on the objective curve.
@@ -253,6 +256,16 @@ class StoppingCriterion():
         """
         return False, 0
 
+    def debug(self, msg):
+        """Helper to print debug messages."""
+        if self.output is not None:
+            self.output.debug(msg)
+
+    def progress(self, progress):
+        """Helper to print progress messages."""
+        if self.output is not None:
+            self.output.progress(progress)
+
     @staticmethod
     def _reconstruct(klass, kwargs, runner_kwargs):
         criterion = klass(**kwargs)
@@ -264,7 +277,7 @@ class StoppingCriterion():
         )
         runner_kwargs = dict(
             max_runs=self.max_runs, timeout=self.timeout,
-            progress_str=self.progress_str, solver=self.solver
+            output=self.output, solver=self.solver
         )
         return self._reconstruct, (self.__class__, kwargs, runner_kwargs)
 
@@ -333,6 +346,7 @@ class SufficientDescentCriterion(StoppingCriterion):
         # Compute the current objective
         objective_value = cost_curve[-1]['objective_value']
         delta_objective = self._objective_value - objective_value
+        delta_objective /= cost_curve[0]['objective_value']
         self._objective_value = objective_value
 
         # Store only the last ``patience`` values for progress
@@ -342,6 +356,7 @@ class SufficientDescentCriterion(StoppingCriterion):
 
         delta = max(self._delta_objectives)
         if (-self.eps <= delta <= self.eps):
+            self.debug(f"Exit with delta_objective = {delta:.2e}.")
             return True, 1
 
         progress = math.log(max(abs(delta), self.eps)) / math.log(self.eps)
@@ -406,6 +421,7 @@ class SufficientProgressCriterion(StoppingCriterion):
         # Compute the current objective and update best value
         objective_value = cost_curve[-1]['objective_value']
         delta_objective = self._best_objective_value - objective_value
+        delta_objective /= cost_curve[0]['objective_value']
         self._best_objective_value = min(
             objective_value, self._best_objective_value
         )
@@ -417,6 +433,7 @@ class SufficientProgressCriterion(StoppingCriterion):
 
         delta = max(self._progress)
         if delta <= self.eps * self._best_objective_value:
+            self.debug(f"Exit with delta = {delta:.2e}.")
             return True, 1
 
         progress = math.log(max(abs(delta), self.eps)) / math.log(self.eps)

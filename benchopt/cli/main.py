@@ -1,4 +1,5 @@
 import click
+import warnings
 from pathlib import Path
 
 from benchopt.benchmark import Benchmark
@@ -27,10 +28,13 @@ main = click.Group(
 )
 @click.argument('benchmark', type=click.Path(exists=True),
                 shell_complete=complete_benchmarks)
-@click.option('--objective-filter', '-p', 'objective_filters',
+@click.option('--objective-filter', '-o', 'objective_filters',
               metavar='<objective_filter>', multiple=True, type=str,
               help="Filter the objective based on its parametrized name. This "
               "can be used to only include one set of parameters.")
+@click.option('--old_objective-filter', '-p', 'old_objective_filters',
+              multiple=True, type=str,
+              help="Deprecated alias for --objective_filters/-o.")
 @click.option('--solver', '-s', 'solver_names',
               metavar="<solver_name>", multiple=True, type=str,
               help="Include <solver_name> in the benchmark. By default, all "
@@ -50,6 +54,10 @@ main = click.Group(
               " are included. Note that <dataset_name> can be a regexp. "
               "To include multiple datasets, use multiple `-d` options.",
               shell_complete=complete_datasets)
+@click.option('--n-jobs', '-j',
+              metavar="<int>", default=1, show_default=True, type=int,
+              help='Maximal number of workers to run the benchmark in '
+              'parallel.')
 @click.option('--max-runs', '-n',
               metavar="<int>", default=100, show_default=True, type=int,
               help='Maximal number of runs for each solver. This corresponds '
@@ -91,9 +99,15 @@ main = click.Group(
               "named <env_name>. To install the required solvers and "
               "datasets, see the command `benchopt install`.")
 def run(benchmark, solver_names, forced_solvers, dataset_names,
-        objective_filters, max_runs, n_repetitions, timeout,
+        objective_filters, max_runs, n_repetitions, timeout, n_jobs,
         plot=True, html=True, pdb=False, do_profile=False,
-        env_name='False'):
+        env_name='False', old_objective_filters=None):
+    if len(old_objective_filters):
+        warnings.warn(
+            'Using the -p option is deprecated, use -o instead',
+            FutureWarning,
+        )
+        objective_filters = old_objective_filters
 
     from benchopt.runner import run_benchmark
 
@@ -115,7 +129,8 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
             dataset_names=dataset_names,
             objective_filters=objective_filters,
             max_runs=max_runs, n_repetitions=n_repetitions,
-            timeout=timeout, plot_result=plot, html=html, pdb=pdb
+            timeout=timeout, n_jobs=n_jobs,
+            plot_result=plot, html=html, pdb=pdb
         )
 
         print_stats()  # print profiling stats (does nothing if not profiling)
@@ -159,11 +174,12 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
     solvers_option = ' '.join(['-s ' + s for s in solver_names])
     forced_solvers_option = ' '.join([f"-f '{s}'" for s in forced_solvers])
     datasets_option = ' '.join([f"-d '{d}'" for d in dataset_names])
-    objective_option = ' '.join([f"-p '{p}'" for p in objective_filters])
+    objective_option = ' '.join([f"-o '{o}'" for o in objective_filters])
     cmd = (
         rf"benchopt run --local {benchmark.benchmark_dir} "
         rf"--n-repetitions {n_repetitions} "
         rf"--max-runs {max_runs} --timeout {timeout} "
+        rf"--n-jobs {n_jobs}"
         rf"{solvers_option} {forced_solvers_option} "
         rf"{datasets_option} {objective_option} "
         rf"{'--plot' if plot else '--no-plot'} "
@@ -185,6 +201,9 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
               is_flag=True,
               help="If this flag is set, the reinstallation of "
               "the benchmark requirements is forced.")
+@click.option('--minimal', is_flag=True,
+              help="If this flag is set, only install requirements for the "
+              "benchmark's objective.")
 @click.option('--solver', '-s', 'solver_names',
               metavar="<solver_name>", multiple=True, type=str,
               help="Include <solver_name> in the installation. "
@@ -228,7 +247,7 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
               help="If this flag is set, no confirmation will be asked "
               "to the user to install requirements in the current environment."
               " Useless with options `-e/--env` or `--env-name`.")
-def install(benchmark, solver_names, dataset_names, force=False,
+def install(benchmark, minimal, solver_names, dataset_names, force=False,
             recreate=False, env_name='False', confirm=False, quiet=False):
 
     # Check that the dataset/solver patterns match actual dataset
@@ -283,12 +302,15 @@ def install(benchmark, solver_names, dataset_names, force=False,
     print("# Install", flush=True)
     benchmark.install_all_requirements(
         include_solvers=solver_names, include_datasets=dataset_names,
-        env_name=env_name, force=force, quiet=quiet,
+        minimal=minimal, env_name=env_name, force=force, quiet=quiet,
     )
 
 
 @main.command(
-    help="Test a benchmark for benchopt.",
+    help="Test a benchmark for benchopt. The benchmark must feature a "
+    "simulated dataset to test for all solvers. For more info about the "
+    "simulated dataset configurations, see"
+    "benchopt.github.io/how.html#example-of-parametrized-simulated-dataset",
     context_settings=dict(ignore_unknown_options=True)
 )
 @click.argument('benchmark', type=click.Path(exists=True),
@@ -299,7 +321,16 @@ def install(benchmark, solver_names, dataset_names, force=False,
               'a temporary one is created for the test.')
 @click.argument('pytest_args', nargs=-1, type=click.UNPROCESSED)
 def test(benchmark, env_name, pytest_args):
-    pytest_args = ' '.join(pytest_args)
+
+    benchmark = Benchmark(benchmark)
+
+    from benchopt.tests import __file__ as _bench_test_module
+    _bench_test_module = Path(_bench_test_module).parent
+
+    pytest_args = ' '.join((
+        "-p benchopt.tests.fixtures", f"--rootdir {_bench_test_module}",
+        *pytest_args
+    ))
     if len(pytest_args) == 0:
         pytest_args = '-vl'
 
@@ -312,16 +343,16 @@ def test(benchmark, env_name, pytest_args):
                 f"Please run `conda install -n {env_name} pytest` to test the "
                 "benchmark in this environment."
             )
+        objective = benchmark.get_benchmark_objective()
+        if not objective.is_installed():
+            objective.install(env_name=env_name)
         env_option = f'--test-env {env_name}'
 
-    from benchopt.tests import __file__ as _bench_test_module
-    BENCHMARK_TEST_FILE = (
-        Path(_bench_test_module).parent / "test_benchmarks.py"
-    )
+    _bench_test_file = _bench_test_module / "test_benchmarks.py"
 
     cmd = (
-        f'pytest {pytest_args} {BENCHMARK_TEST_FILE} '
-        f'--benchmark {benchmark} {env_option} '
+        f'pytest {pytest_args} {_bench_test_file} '
+        f'--benchmark {benchmark.benchmark_dir} {env_option} '
         # Make sure to not modify sys.path to add test file from current env
         # in sub conda env as there might be different python versions.
         '--import-mode importlib'

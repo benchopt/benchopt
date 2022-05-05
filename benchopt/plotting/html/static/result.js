@@ -43,7 +43,7 @@ function getId(which) {
  * Only show the selected graph from dropdown menus
  */
 function showMe(e) {
-  if (globalState[e.id][1] !== "histogram") {
+  if (globalState[e.id][1] !== "bar_chart") {
     Object.values(globalState).forEach((arr, _) => {
       arr[0] = arr[1];
     }); // shift all new values to only replace one after
@@ -67,6 +67,11 @@ function showMe(e) {
     // if at least another graph was displayed before (initialized)
     visibleTraces(); // keep traces coherent accross graphs
   }
+  if (
+    e.attributes.counter > 0
+  ) {
+    toggleShades();  // keep quantile curves coherent (must be after visibleTraces) and not dataset_selector dependent
+  }
   e.attributes.counter += 1; // out of initialization
 }
 
@@ -74,7 +79,7 @@ function showMe(e) {
 function visibleTraces() {
   prevId = getId("previous"); // id of previous graph
   nowId = getId("now"); // id of current graph
-  if (globalState.plot_kind[1] !== "histogram") {
+  if (globalState.plot_kind[1] !== "bar_chart") {
     // only check name not type
     graph = document.getElementById(
       document.getElementById(prevId).getElementsByTagName("div")[1].id
@@ -100,7 +105,7 @@ function changeScale(e) {
     .getElementsByClassName("plot-container plotly");
   for (which = 0; which < allContainers.length; which++) {
     graph = allContainers[which].parentNode; // get plotly graph to change
-    if (!graph.parentNode.parentNode.id.endsWith("histogram")) {
+    if (!graph.parentNode.parentNode.id.endsWith("bar_chart")) {
       layout = graph.layout; // get layout to recover only axis
       switch (e.value) {
         case "loglog":
@@ -153,10 +158,18 @@ function toggleShades() {
   );
   allTraces = graph.data;
   const allIndex = (arr) => {
-    return arr.map((elm, idx) => (elm.name == null ? idx : "")).filter(String);
+    return arr.map((elm, idx) => {
+      group = elm.legendgroup;
+      main = arr.find(function (el) { return el.legendgroup === group });
+      if ([undefined, true].includes(main.visible)) {
+        return elm.name == null ? idx : "";
+      }
+      else{ return "" }
+    }
+      ).filter(String);
   };
   whereToggle = allIndex(allTraces); // shade fills are without name
-  if (globalState.plot_kind[1] !== "histogram") {
+  if (globalState.plot_kind[1] !== "bar_chart") {
     Plotly.restyle(graph, { visible: visible }, whereToggle); // toggle visibility
   }
 }
