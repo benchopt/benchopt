@@ -175,7 +175,7 @@ class TestRunCmd:
         dataset:
           - simulated
           - leukemia
-        repetitions: 5
+        repetitions: 7
         solver:
           - cd
           - sklearn
@@ -184,15 +184,15 @@ class TestRunCmd:
             f.write(config)
 
         run_cmd = [str(DUMMY_BENCHMARK_PATH),
-                   '-d', 'simulated', '-r' '4', '-o', SELECT_ONE_OBJECTIVE,
-                   '--file', 'config.yml',
+                   '-d', 'simulated', '-r' '1', '-o', SELECT_ONE_OBJECTIVE,
+                   '--file', 'config.yml', '--no-plot',
                    ]
         with CaptureRunOutput() as out:
             run(run_cmd, 'benchopt', standalone_mode=False)
 
-            out.check_output(r'sklearn:', repetition=4)
-            out.check_output(r'cd:', repetition=4)
-            out.check_output(r'leukemia:', repetition=0)
+        out.check_output(r'sklearn:', repetition=4)  # 4 simulated datasets
+        out.check_output(r'cd:', repetition=4   )  # same
+        out.check_output(r'leukemia:', repetition=0)
 
         Path("config.yml").unlink()
 

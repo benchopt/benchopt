@@ -29,7 +29,8 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
         # config_file, so that variable names match
         var_name = k.replace('-', '_')
         # only override CLI variables if they have their default value
-        if ctx.get_parameter_source(var_name).name == 'DEFAULT':
+        if (ctx.get_parameter_source(var_name) is not None and
+                ctx.get_parameter_source(var_name).name == 'DEFAULT'):
             cli_kwargs[var_name] = v
 
     return_names = [
