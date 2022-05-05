@@ -28,6 +28,10 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
         # replacing '-' by '_'. We use the same mapping to convert options from
         # config_file, so that variable names match
         var_name = k.replace('-', '_')
+
+        if var_name not in cli_kwargs:
+            raise ValueError(f"Unsupported config file option {k}.")
+
         # only override CLI variables if they have their default value
         if (ctx.get_parameter_source(var_name) is not None and
                 ctx.get_parameter_source(var_name).name == 'DEFAULT'):

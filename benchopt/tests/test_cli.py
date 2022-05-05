@@ -172,7 +172,13 @@ class TestRunCmd:
         out.check_output(r"def run\(self, n_iter\):", repetition=1)
 
     def test_benchopt_run_config_file(self):
-        # TODO invalid options should raise a ValueError
+        tmp = tempfile.NamedTemporaryFile(mode="w+")
+        tmp.write("some_unknown_option: 0")
+        tmp.flush()
+        with pytest.raises(ValueError, match="Invalid option"):
+            run(f'benchopt run . --file {tmp.name}', 'benchopt',
+                standalone_mode=False)
+
         config = f"""
         objective-filter:
           - {SELECT_ONE_OBJECTIVE}
