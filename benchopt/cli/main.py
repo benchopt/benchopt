@@ -99,14 +99,14 @@ main = click.Group(
               "named <env_name>. To install the required solvers and "
               "datasets, see the command `benchopt install`.")
 @click.option('--random-state',
-              metavar="<seed>", type=int, default=None,
+              metavar="<seed>", type=int, default=0,
               help="Random state to control the stochasticity of the "
               "benchmark. If it is not provided, a random seed is generated "
               "to make the benchmark reproducible.")
 def run(benchmark, solver_names, forced_solvers, dataset_names,
         objective_filters, max_runs, n_repetitions, timeout, n_jobs,
         plot=True, html=True, pdb=False, do_profile=False,
-        env_name='False', old_objective_filters=None, random_state=None):
+        env_name='False', old_objective_filters=None, random_state=0):
     if len(old_objective_filters):
         warnings.warn(
             'Using the -p option is deprecated, use -o instead',
