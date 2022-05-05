@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 from mako.template import Template
 
 from ..constants import PLOT_KINDS
+from ..benchmark import Benchmark
 from .plot_bar_chart import plot_bar_chart  # noqa: F401
 from .plot_objective_curve import plot_objective_curve  # noqa: F401
 from .plot_objective_curve import plot_suboptimality_curve  # noqa: F401
