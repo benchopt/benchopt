@@ -168,24 +168,28 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
 
         return False, None
 
+    # TODO: factorize in parametrized_mixing?
     @staticmethod
     def _reconstruct(module_filename, parameters, objective,
-                     pickled_module_hash=None, benchmark_dir=None):
+                     pickled_module_hash, benchmark_dir, run_seed):
         set_benchmark(benchmark_dir)
         Solver = _reconstruct_class(
             module_filename, 'Solver', benchmark_dir, pickled_module_hash,
         )
-        obj = Solver.get_instance(**parameters)
+        solver = Solver._get_instance(**parameters)
+        if run_seed is not None:
+            solver._set_run_seed(run_seed)
         if objective is not None:
-            obj._set_objective(objective)
-        return obj
+            solver._set_objective(objective)
+        return solver
 
     def __reduce__(self):
         module_hash = get_file_hash(self._module_filename)
+        run_seed = getattr(self, 'run_seed', None)
         objective = getattr(self, '_objective', None)
         return self._reconstruct, (
             self._module_filename, self._parameters, objective, module_hash,
-            str(self._import_ctx._benchmark_dir)
+            str(self._import_ctx._benchmark_dir), run_seed
         )
 
 
@@ -217,6 +221,7 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
     """
 
     _base_class_name = 'Dataset'
+    determinist_data = False
 
     @abstractmethod
     def get_data(self):
@@ -236,7 +241,8 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
     def _get_data(self):
         "Wrapper to make sure the returned results are correctly formated."
 
-        if not hasattr(self, '_data') or self._data is None:
+        if not self.determinist_data or (
+                not hasattr(self, '_data') or self._data is None):
             self._dimension, self._data = self.get_data()
 
         # Make sure dimension is a tuple
@@ -248,19 +254,22 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
     # Reduce the pickling and hashing burden by only pickling class parameters.
     @staticmethod
     def _reconstruct(module_filename, pickled_module_hash, parameters,
-                     benchmark_dir):
+                     benchmark_dir, run_seed):
         set_benchmark(benchmark_dir)
         Dataset = _reconstruct_class(
             module_filename, 'Dataset', benchmark_dir, pickled_module_hash,
         )
-        obj = Dataset.get_instance(**parameters)
-        return obj
+        dataset = Dataset._get_instance(**parameters)
+        if run_seed is not None:
+            dataset._set_run_seed(run_seed)
+        return dataset
 
     def __reduce__(self):
         module_hash = get_file_hash(self._module_filename)
+        run_seed = getattr(self, 'run_seed', None)
         return self._reconstruct, (
             self._module_filename, module_hash, self._parameters,
-            str(self._import_ctx._benchmark_dir)
+            str(self._import_ctx._benchmark_dir), run_seed
         )
 
 
@@ -358,7 +367,7 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
 
     # Save the dataset object used to get the objective data so we can avoid
     # hashing the data directly.
-    def set_dataset(self, dataset):
+    def _set_dataset(self, dataset):
         self._dataset = dataset
         self._dimension, data = dataset._get_data()
         # Check if the dataset is compatible with the objective
@@ -413,20 +422,23 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
     # Reduce the pickling and hashing burden by only pickling class parameters.
     @staticmethod
     def _reconstruct(module_filename, pickled_module_hash, parameters,
-                     dataset, benchmark_dir):
+                     dataset, benchmark_dir, run_seed):
         set_benchmark(benchmark_dir)
         Objective = _reconstruct_class(
             module_filename, 'Objective', benchmark_dir, pickled_module_hash,
         )
-        obj = Objective.get_instance(**parameters)
+        objective = Objective._get_instance(**parameters)
+        if run_seed is not None:
+            objective._set_run_seed(run_seed)
         if dataset is not None:
-            obj.set_dataset(dataset)
-        return obj
+            objective._set_dataset(dataset)
+        return objective
 
     def __reduce__(self):
         module_hash = get_file_hash(self._module_filename)
+        run_seed = getattr(self, 'run_seed', None)
         dataset = getattr(self, '_dataset', None)
         return self._reconstruct, (
             self._module_filename, module_hash, self._parameters, dataset,
-            str(self._import_ctx._benchmark_dir)
+            str(self._import_ctx._benchmark_dir), run_seed
         )

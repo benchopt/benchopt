@@ -98,10 +98,15 @@ main = click.Group(
               help="Run the benchmark in the conda environment "
               "named <env_name>. To install the required solvers and "
               "datasets, see the command `benchopt install`.")
+@click.option('--random-state',
+              metavar="<seed>", type=int, default=0,
+              help="Random state to control the stochasticity of the "
+              "benchmark. If it is not provided, a random seed is generated "
+              "to make the benchmark reproducible.")
 def run(benchmark, solver_names, forced_solvers, dataset_names,
         objective_filters, max_runs, n_repetitions, timeout, n_jobs,
         plot=True, html=True, pdb=False, do_profile=False,
-        env_name='False', old_objective_filters=None):
+        env_name='False', old_objective_filters=None, random_state=0):
     if len(old_objective_filters):
         warnings.warn(
             'Using the -p option is deprecated, use -o instead',
@@ -130,7 +135,8 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
             objective_filters=objective_filters,
             max_runs=max_runs, n_repetitions=n_repetitions,
             timeout=timeout, n_jobs=n_jobs,
-            plot_result=plot, html=html, pdb=pdb
+            plot_result=plot, html=html, pdb=pdb,
+            random_state=random_state
         )
 
         print_stats()  # print profiling stats (does nothing if not profiling)
@@ -176,15 +182,16 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
     datasets_option = ' '.join([f"-d '{d}'" for d in dataset_names])
     objective_option = ' '.join([f"-o '{o}'" for o in objective_filters])
     cmd = (
-        rf"benchopt run --local {benchmark.benchmark_dir} "
-        rf"--n-repetitions {n_repetitions} "
-        rf"--max-runs {max_runs} --timeout {timeout} "
-        rf"--n-jobs {n_jobs}"
+        f"benchopt run --local {benchmark.benchmark_dir} "
+        f"--n-repetitions {n_repetitions} "
+        f"--max-runs {max_runs} --timeout {timeout} "
+        f"--n-jobs {n_jobs}"
+        f"{'--plot' if plot else '--no-plot'} "
+        f"{'--html' if html else '--no-html'} "
+        f"{'--pdb' if pdb else ''} "
+        f"--random-state {random_state} " if random_state is not None else ''
         rf"{solvers_option} {forced_solvers_option} "
         rf"{datasets_option} {objective_option} "
-        rf"{'--plot' if plot else '--no-plot'} "
-        rf"{'--html' if html else '--no-html'} "
-        rf"{'--pdb' if pdb else ''} "
         .replace('\\', '\\\\')
     )
     raise SystemExit(_run_shell_in_conda_env(

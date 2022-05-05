@@ -391,7 +391,7 @@ class Benchmark:
 
         Parameters
         ----------
-        solver_names : list | None
+        solver_names : list | None
             List of solvers to include in the benchmark. If None
             all solvers available are run.
         forced_solvers : list | None
@@ -502,7 +502,7 @@ def _filter_classes(*classes, filters=None):
     for klass in classes:
         is_installed = None
         for parameters in product_param(klass.parameters):
-            obj = klass.get_instance(**parameters)
+            obj = klass._get_instance(**parameters)
             if is_matched(str(obj), filters):
                 if is_installed is None:
                     is_installed = (
