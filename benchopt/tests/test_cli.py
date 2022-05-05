@@ -1,4 +1,5 @@
 import re
+import tempfile
 from pathlib import Path
 
 import click
@@ -171,30 +172,60 @@ class TestRunCmd:
         out.check_output(r"def run\(self, n_iter\):", repetition=1)
 
     def test_benchopt_run_config_file(self):
-        config = """
+        # TODO invalid options should raise a ValueError
+        config = f"""
+        objective-filter:
+          - {SELECT_ONE_OBJECTIVE}
         dataset:
-          - simulated
-          - leukemia
-        repetitions: 7
-        solver:
-          - cd
+          - {SELECT_ONE_SIMULATED}
+        n-repetitions: 2
+        max-runs: 1
+        force-solver:
+          - Python-PGD-with-cb[use_acceleration=True]
           - sklearn
         """
-        with open("config.yml", "w") as f:
-            f.write(config)
+        tmp = tempfile.NamedTemporaryFile(mode="w+")
+        tmp.write(config)
+        tmp.flush()
 
         run_cmd = [str(DUMMY_BENCHMARK_PATH),
-                   '-d', 'simulated', '-r' '1', '-o', SELECT_ONE_OBJECTIVE,
-                   '--file', 'config.yml', '--no-plot',
+                   '--file', tmp.name, '--no-plot',
                    ]
         with CaptureRunOutput() as out:
             run(run_cmd, 'benchopt', standalone_mode=False)
 
-        out.check_output(r'sklearn:', repetition=4)  # 4 simulated datasets
-        out.check_output(r'cd:', repetition=4)  # same
-        out.check_output(r'leukemia:', repetition=0)
+        out.check_output(r'sklearn:', repetition=4)  # 2 datasets, 2 reps
+        out.check_output(
+            r'python-pgd[use_acceleration=True]:', repetition=4)  # same
 
-        Path("config.yml").unlink()
+        # TODO test that CLI options take precedence
+        # Path("config.yml").unlink()
+
+        # config = """
+        # dataset:
+        #   - simulated
+        #   - leukemia
+        # repetitions: 2
+        # solver:
+        #   - python-pgd[use_acceleration=True]
+        #   - sklearn
+        # """
+        # with open("config.yml", "w") as f:
+        #     f.write(config)
+
+        # run_cmd = [str(DUMMY_BENCHMARK_PATH),
+        #            '-d', 'simulated', '-r' '1', '-o', SELECT_ONE_OBJECTIVE,
+        #            '--file', 'config.yml', '--no-plot',
+        #            ]
+        # with CaptureRunOutput() as out:
+        #     run(run_cmd, 'benchopt', standalone_mode=False)
+
+        # out.check_output(r'sklearn:', repetition=4)  # 4 simulated datasets
+        # out.check_output(
+        #     r'python-pgd[use_acceleration=True]:', repetition=4)  # same
+        # out.check_output(r'leukemia:', repetition=0)
+
+        # Path("config.yml").unlink()
 
     @pytest.mark.parametrize('n_rep', [2, 3, 5])
     def test_benchopt_caching(self, n_rep):
