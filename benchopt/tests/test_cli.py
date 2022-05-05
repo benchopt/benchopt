@@ -172,14 +172,13 @@ class TestRunCmd:
 
     def test_benchopt_run_config_file(self):
         config = """
-        -dataset:
-          simulated
-          leukemia
-        -repetitions:
-          5
-        -solver:
-          cd
-          sklearn
+        dataset:
+          - simulated
+          - leukemia
+        repetitions: 5
+        solver:
+          - cd
+          - sklearn
         """
         with open("config.yml", "w") as f:
             f.write(config)
