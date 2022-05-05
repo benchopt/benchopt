@@ -22,9 +22,9 @@ MAX_SEED = 2 ** 32 - 1
 
 def seed_run(objective, dataset, solver, rng):
     obj_seed, data_seed, solver_seed = rng.randint(MAX_SEED, size=3)
-    objective.set_run_seed(obj_seed)
-    dataset.set_run_seed(data_seed)
-    solver.set_run_seed(solver_seed)
+    objective._set_run_seed(obj_seed)
+    dataset._set_run_seed(data_seed)
+    solver._set_run_seed(solver_seed)
 
 
 ##################################

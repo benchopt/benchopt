@@ -12,10 +12,10 @@ from benchopt.utils import product_param
 def test_benchmark_objective(benchmark, dataset_simu):
     """Check that the objective function and the datasets are well defined."""
     objective_class = benchmark.get_benchmark_objective()
-    objective = objective_class.get_instance()
+    objective = objective_class._get_instance()
 
-    dataset = dataset_simu.get_instance()
-    objective.set_dataset(dataset)
+    dataset = dataset_simu._get_instance()
+    objective._set_dataset(dataset)
 
     # check that the reported dimension is correct and that the result of
     # the objective function is a dictionary containing a scalar value for
@@ -44,7 +44,7 @@ def test_dataset_class(benchmark, dataset_class):
 
     # Ensure that the dataset exposes a `get_data` function
     # that is callable
-    dataset = dataset_class.get_instance()
+    dataset = dataset_class._get_instance()
     assert hasattr(dataset, 'get_data'), (
         "All dataset should implement get_data"
     )
@@ -61,7 +61,7 @@ def test_dataset_get_data(benchmark, dataset_class):
     if not dataset_class.is_installed():
         pytest.skip("Dataset is not installed")
 
-    dataset = dataset_class.get_instance()
+    dataset = dataset_class._get_instance()
 
     if dataset_class.name.lower() == 'finance':
         pytest.skip("Do not download finance.")
@@ -152,7 +152,7 @@ def test_solver(benchmark, solver_class):
         pytest.skip("Solver is not installed")
 
     objective_class = benchmark.get_benchmark_objective()
-    objective = objective_class.get_instance()
+    objective = objective_class._get_instance()
 
     simulated_dataset = [
         d for d in benchmark.get_datasets() if d.name.lower() == 'simulated'
@@ -173,11 +173,11 @@ def test_solver(benchmark, solver_class):
         test_parameters = [{}]
     solver_ran_once = False
     for test_params in test_parameters:
-        dataset = dataset_class.get_instance(**test_params)
+        dataset = dataset_class._get_instance(**test_params)
 
-        objective.set_dataset(dataset)
+        objective._set_dataset(dataset)
 
-        solver = solver_class.get_instance()
+        solver = solver_class._get_instance()
         skip, reason = solver._set_objective(objective)
         if skip:
             continue

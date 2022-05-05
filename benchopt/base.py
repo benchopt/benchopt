@@ -176,9 +176,9 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         Solver = _reconstruct_class(
             module_filename, 'Solver', benchmark_dir, pickled_module_hash,
         )
-        solver = Solver.get_instance(**parameters)
+        solver = Solver._get_instance(**parameters)
         if run_seed is not None:
-            solver.set_run_seed(run_seed)
+            solver._set_run_seed(run_seed)
         if objective is not None:
             solver._set_objective(objective)
         return solver
@@ -259,9 +259,9 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
         Dataset = _reconstruct_class(
             module_filename, 'Dataset', benchmark_dir, pickled_module_hash,
         )
-        dataset = Dataset.get_instance(**parameters)
+        dataset = Dataset._get_instance(**parameters)
         if run_seed is not None:
-            dataset.set_run_seed(run_seed)
+            dataset._set_run_seed(run_seed)
         return dataset
 
     def __reduce__(self):
@@ -427,12 +427,12 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
         Objective = _reconstruct_class(
             module_filename, 'Objective', benchmark_dir, pickled_module_hash,
         )
-        obj = Objective.get_instance(**parameters)
+        objective = Objective._get_instance(**parameters)
         if run_seed is not None:
-            obj.set_run_seed(run_seed)
+            objective._set_run_seed(run_seed)
         if dataset is not None:
-            obj.set_dataset(dataset)
-        return obj
+            objective._set_dataset(dataset)
+        return objective
 
     def __reduce__(self):
         module_hash = get_file_hash(self._module_filename)

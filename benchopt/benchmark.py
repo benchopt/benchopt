@@ -502,7 +502,7 @@ def _filter_classes(*classes, filters=None):
     for klass in classes:
         is_installed = None
         for parameters in product_param(klass.parameters):
-            obj = klass.get_instance(**parameters)
+            obj = klass._get_instance(**parameters)
             if is_matched(str(obj), filters):
                 if is_installed is None:
                     is_installed = (

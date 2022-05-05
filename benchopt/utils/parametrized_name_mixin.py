@@ -29,7 +29,7 @@ class ParametrizedNameMixin():
                 setattr(self, k, v)
 
     @classmethod
-    def get_instance(cls, **parameters):
+    def _get_instance(cls, **parameters):
         """Helper function to instantiate an object and save its parameters.
 
         Saving the parameters allow for cheap hashing and to compute parametric
@@ -55,7 +55,7 @@ class ParametrizedNameMixin():
     @classmethod
     def _get_parametrized_name(cls, **parameters):
         """Compute the parametrized name for a given set of parameters."""
-        return str(cls.get_instance(**parameters))
+        return str(cls._get_instance(**parameters))
 
     @classmethod
     def _reload_class(cls, pickled_module_hash=None):
@@ -66,7 +66,7 @@ class ParametrizedNameMixin():
             pickled_module_hash=pickled_module_hash
         )
 
-    def set_run_seed(self, seed):
+    def _set_run_seed(self, seed):
         """Helper to control randomness of the run.
         """
         self.run_seed = seed
