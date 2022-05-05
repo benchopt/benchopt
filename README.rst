@@ -45,7 +45,8 @@ using the `benchmark template <https://github.com/benchopt/template_benchmark>`_
 Install
 --------
 
-The command line tool to run the benchmarks can be installed through `pip`. This have to be done in a `conda` environment as benchopt will create a particular virtual environment to run each benchmark.
+The command line tool to run the benchmarks can be installed through `pip`. In order to allow `benchopt`
+to automatically install solvers dependencies, the install needs to be done in a `conda` environment.
 
 
 .. code-block::
