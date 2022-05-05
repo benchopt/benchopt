@@ -143,13 +143,16 @@ def print_info(cls_name_list, cls_list, env_name=None, verbose=False):
             # availability in env (if relevant)
             if env_name is not None:
                 # check for dependency availability
-                disp_name = "running env" if env_name == 'False' else env_name
+                if env_name == "False":
+                    disp_name = "running env"
+                else:
+                    disp_name = f"env: {env_name}"
                 if cls.is_installed(env_name):
                     print(colorify(TICK, GREEN), end='', flush=True)
-                    print(colorify(f" available in env '{disp_name}'", GREEN))
+                    print(colorify(f" available in '{disp_name}'", GREEN))
                 else:
                     print(colorify(CROSS, RED), end='', flush=True)
-                    print(colorify(f" not available in env '{disp_name}'", RED))
+                    print(colorify(f" not available in '{disp_name}'", RED))
             # install command
             if hasattr(cls, 'requirements') and cls.requirements:
                 print("> requirements:")
