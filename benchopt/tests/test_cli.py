@@ -170,6 +170,32 @@ class TestRunCmd:
         ]), repetition=1)
         out.check_output(r"def run\(self, n_iter\):", repetition=1)
 
+    def test_benchopt_run_config_file(self):
+        config = """
+        -dataset:
+          simulated
+          leukemia
+        -repetitions:
+          5
+        -solver:
+          cd
+          sklearn
+        """
+        with open("config.yml", "w") as f:
+            f.write(config)
+        run_cmd = [str(DUMMY_BENCHMARK_PATH),
+                   f'-d simulated -r 4 -o {SELECT_ONE_OBJECTIVE}',
+                   '--config config.yml'
+                   ]
+        with CaptureRunOutput() as out:
+            run(run_cmd, 'benchopt', standalone_mode=False)
+
+            out.check_output(r'sklearn:', repetition=4)
+            out.check_output(r'cd:', repetition=4)
+            out.check_output(r'leukemia:', repetition=0)
+
+        Path("config.yml").unlink()
+
     @pytest.mark.parametrize('n_rep', [2, 3, 5])
     def test_benchopt_caching(self, n_rep):
         clean([str(DUMMY_BENCHMARK_PATH)], 'benchopt', standalone_mode=False)
