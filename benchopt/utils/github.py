@@ -64,19 +64,17 @@ def publish_result_file(benchmark_name, file_path, token):
                          file_content, sha=prev_content_sha,
                          branch=branch)
 
-    # If no commit right, create a pull request
-    if not has_push_rights:
-        head = f"{username}:{branch}"
-        pulls = list(origin.get_pulls(head=head, state='open'))
-        if len(pulls) != 0:
-            assert len(pulls) == 1
-            print(f"Updating PR on benchopt results: {pulls[0].html_url}")
-        else:
-            pr = origin.create_pull(
-                title=f"RESULTS upload {file_name}",
-                body=f"Loading result file for benchmark {benchmark_name}.",
-                base=origin.default_branch, head=head
-            )
-            print(f"Created PR on benchopt results repo: {pr.html_url}")
+    head = f"{username}:{branch}"
+    pulls = list(origin.get_pulls(head=head, state='open'))
+    if len(pulls) != 0:
+        assert len(pulls) == 1
+        print(f"Updating PR on benchopt results: {pulls[0].html_url}")
+    else:
+        pr = origin.create_pull(
+            title=f"RESULTS upload {file_name}",
+            body=f"Loading result file for benchmark {benchmark_name}.",
+            base=origin.default_branch, head=head
+        )
+        print(f"Created PR on benchopt results repo: {pr.html_url}")
 
     print(f"Uploaded file {file_to_upload.name} in benchopt/results")
