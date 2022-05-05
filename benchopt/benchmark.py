@@ -26,21 +26,20 @@ CACHE_DIR = '__cache__'
 
 class Benchmark:
     def __init__(self, benchmark_dir, standalone=False):
-    """Benchmark exposes all constituents of the benchmark folder.
+        """Benchmark exposes all constituents of the benchmark folder.
 
-    Parameters
-    ----------
-    benchmark_dir : str or Path-like
-        Folder containing the benchmark. The folder should at least
-        contain an `objective.py` file defining the `Objective`
-        function for the benchmark.
+        Parameters
+        ----------
+        benchmark_dir : str or Path-like
+            Folder containing the benchmark. The folder should at least
+            contain an `objective.py` file defining the `Objective`
+            function for the benchmark.
 
-    Attributes
-    ----------
-    mem : joblib.Memory
-        Caching mechanism for the benchmark.
-    """
-    def __init__(self, benchmark_dir):
+        Attributes
+        ----------
+        mem : joblib.Memory
+            Caching mechanism for the benchmark.
+        """
         self.benchmark_dir = Path(benchmark_dir)
         self.name = self.benchmark_dir.resolve().name
 
@@ -51,8 +50,8 @@ class Benchmark:
             except RuntimeError:
                 raise click.BadParameter(
                     f"The folder '{benchmark_dir}' does not contain "
-                    "`objective.py`.\nMake sure you provide the path to a valid "
-                    "benchmark."
+                    "`objective.py`.\n"
+                    "Make sure you provide the path to a valid benchmark."
                 )
 
     ####################################################################
