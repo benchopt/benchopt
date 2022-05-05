@@ -220,13 +220,10 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
 
     @abstractmethod
     def get_data(self):
-        """Return the problem's dimension as well as the objective parameters.
+        """Return the data to feed to the objective .
 
         Returns
         -------
-        dimension: int or tuple
-            Dimension of the optimized parameter. The solvers should return a
-            parameter of shape ``(dimension,)`` or ``*dimension``.
         data: dict
             Extra parameters of the objective. The objective will be
             instanciated by calling ``Objective.set_data(**data)``.
