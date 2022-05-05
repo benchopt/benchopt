@@ -22,9 +22,11 @@ be **as simple as doing**:
 
 .. code-block::
 
+    conda create -n benchopt python=3.8
+    conda activate benchopt
     pip install benchopt
     git clone https://github.com/benchopt/benchmark_logreg_l2
-    benchopt install -e benchmark_logreg_l2
+    benchopt install -e benchmark_logreg_l2 -s cd -s sklearn
     benchopt run --env ./benchmark_logreg_l2
 
 Running this command will give you a benchmark plot on l2-regularized
@@ -43,7 +45,13 @@ using the `benchmark template <https://github.com/benchopt/template_benchmark>`_
 Install
 --------
 
-The command line tool to run the benchmarks can be installed through `pip`.
+The command line tool to run the benchmarks can be installed through `pip`. This have to be done in a `conda` environment as benchopt will create a particular virtual environment to run each benchmark.
+
+
+.. code-block::
+    conda create -n benchopt python=3.9
+    conda activate benchopt
+
 To get the **latest release**, use:
 
 .. code-block::
