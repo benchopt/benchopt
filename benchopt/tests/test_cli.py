@@ -191,7 +191,7 @@ class TestRunCmd:
             run(run_cmd, 'benchopt', standalone_mode=False)
 
         out.check_output(r'sklearn:', repetition=4)  # 4 simulated datasets
-        out.check_output(r'cd:', repetition=4   )  # same
+        out.check_output(r'cd:', repetition=4)  # same
         out.check_output(r'leukemia:', repetition=0)
 
         Path("config.yml").unlink()
