@@ -183,9 +183,10 @@ class TestRunCmd:
         """
         with open("config.yml", "w") as f:
             f.write(config)
+
         run_cmd = [str(DUMMY_BENCHMARK_PATH),
-                   f'-d simulated -r 4 -o {SELECT_ONE_OBJECTIVE}',
-                   '--config config.yml'
+                   '-d', 'simulated', '-r' '4', '-o', SELECT_ONE_OBJECTIVE,
+                   '--file', 'config.yml',
                    ]
         with CaptureRunOutput() as out:
             run(run_cmd, 'benchopt', standalone_mode=False)
