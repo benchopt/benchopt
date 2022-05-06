@@ -52,10 +52,17 @@ API
 - Add ``X_density`` argument to ``datasets.make_correlated_data`` to simulate
   sparse design matrices, by `Mathurin Massias`_ (:gh:`289`).
 
+- ``Dataset.get_data`` should now return a dict and not a tuple. A point for
+  testing  should be returned by a dedicated method
+  ``Objective.get_one_solution``, by `Thomas Moreau`_ (:gh:`345`).
+
 CLI
 ~~~
 
 - Replace ``-p`` flag by ``-o`` for Objective, by `Mathurin Massias`_ (:gh:`281`).
+
+- Add ``--config`` option to support passing argument with a ``yaml``
+  config file, by `Mathurin Massias`_ (:gh:`325`).
 
 .. _changes_1_1:
 
