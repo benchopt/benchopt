@@ -99,7 +99,7 @@ If you want to run a specific configuration, pass it explicitly, e.g., to run th
 
     $ benchopt run --env ./benchmark_lasso -r 10
 
-**Passing option through configuration file**: all options of ``benchopt run`` can be passed through a YAML configuration file, together with ``--file <configuration_file_name.yml>``.
+**Passing option through configuration file**: all options of ``benchopt run`` can be passed through a YAML configuration file, together with ``--config <configuration_file_name.yml>``.
 The options are defined using the same name as the CLI options.
 An example of configuration file is:
 

@@ -108,7 +108,7 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
 @click.option('--timeout',
               metavar="<int>", default=100, show_default=True, type=int,
               help='Timeout a solver when run for more than <timeout> seconds')
-@click.option('--file', 'config_file', default=None,
+@click.option('--config', 'config_file', default=None,
               help="YAML configuration file containing benchmark options.")
 @click.option('--plot/--no-plot', default=True,
               help="Whether or not to plot the results. Default is True.")
