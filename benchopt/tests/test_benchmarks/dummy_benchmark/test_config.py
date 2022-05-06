@@ -14,4 +14,4 @@ def check_test_solver_install(solver_class):
     # julia=1.6.4 broke on conda, see PR #252
     if 'julia' in solver_class.name.lower():
         # pytest.xfail('Julia causes segfault on OSX for now.')
-        pytest.xfail('Julia install via conda is broken for now.')
+        pytest.xfail('Julia install via conda is broken for now on macos.')
