@@ -9,7 +9,6 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 from benchopt import run_benchmark
 from benchopt.benchmark import Benchmark
-from benchopt.tests import SELECT_ONE_SIMULATED
 from benchopt.plotting import plot_benchmark, PLOT_KINDS
 
 
