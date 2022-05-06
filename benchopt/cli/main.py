@@ -30,7 +30,9 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
         var_name = k.replace('-', '_')
 
         if var_name not in cli_kwargs:
-            raise ValueError(f"Unsupported config file option {k}.")
+            raise ValueError(
+                f"Invalid config file option {k}. "
+                "See list of valid options with `benchopt run -h`.")
 
         # only override CLI variables if they have their default value
         if (ctx.get_parameter_source(var_name) is not None and

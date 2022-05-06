@@ -175,8 +175,8 @@ class TestRunCmd:
         tmp = tempfile.NamedTemporaryFile(mode="w+")
         tmp.write("some_unknown_option: 0")
         tmp.flush()
-        with pytest.raises(ValueError, match="Invalid option"):
-            run(f'benchopt run . --file {tmp.name}', 'benchopt',
+        with pytest.raises(ValueError, match="Invalid config file option"):
+            run(f'{str(DUMMY_BENCHMARK_PATH)} --file {tmp.name}'.split(), 'benchopt',
                 standalone_mode=False)
 
         config = f"""
