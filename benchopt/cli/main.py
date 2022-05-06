@@ -28,7 +28,10 @@ main = click.Group(
 )
 @click.argument('benchmark', type=click.Path(exists=True),
                 shell_complete=complete_benchmarks)
-@click.option('--objective-filter', '-o', 'objective_filters',
+@click.option('--objective-filter', 'deprecated_objective_filters',
+              metavar='<objective_filter>', multiple=True, type=str,
+              help="Deprecated alias for `--objective`.")
+@click.option('--objective', '-o', 'objective_filters',
               metavar='<objective_filter>', multiple=True, type=str,
               help="Filter the objective based on its parametrized name. This "
               "can be used to only include one set of parameters.")
@@ -99,6 +102,7 @@ main = click.Group(
               "named <env_name>. To install the required solvers and "
               "datasets, see the command `benchopt install`.")
 def run(benchmark, solver_names, forced_solvers, dataset_names,
+        deprecated_objective_filters,
         objective_filters, max_runs, n_repetitions, timeout, n_jobs,
         plot=True, html=True, pdb=False, do_profile=False,
         env_name='False', old_objective_filters=None):
@@ -108,6 +112,13 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
             FutureWarning,
         )
         objective_filters = old_objective_filters
+
+    if len(deprecated_objective_filters):
+        warnings.warn(
+            'Using the --objective-filters option is deprecated, '
+            'use --objective instead', FutureWarning
+        )
+        objective_filters = deprecated_objective_filters
 
     from benchopt.runner import run_benchmark
 
