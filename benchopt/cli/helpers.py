@@ -123,12 +123,12 @@ def print_info(cls_name_list, cls_list, env_name=None, verbose=False):
 
     # select objects to print info from
     include_cls = []
-    cls_name_list = [item.upper() for item in cls_name_list]
+    cls_name_list = [item.lower() for item in cls_name_list]
     if 'all' in cls_name_list:
         include_cls = cls_list
     else:
         include_cls = [
-            item for item in cls_list if item.name.upper() in cls_name_list
+            item for item in cls_list if item.name.lower() in cls_name_list
         ]
     if not verbose:
         # short output
@@ -237,7 +237,6 @@ def info(benchmark, solver_names, dataset_names, env_name='False',
     # get solvers and datasets in the benchmark
     all_solvers = benchmark.get_solvers()
     all_datasets = benchmark.get_datasets()
-
     # enable verbosity if any environment was provided
     if env_name is not None and env_name != 'False':
         verbose = True
@@ -278,7 +277,6 @@ def info(benchmark, solver_names, dataset_names, env_name='False',
     if not dataset_names and not solver_names:
         dataset_names = ['all']
         solver_names = ['all']
-
     if dataset_names:
         print("# DATASETS", flush=True)
         print_info(dataset_names, all_datasets, env_name, verbose)
