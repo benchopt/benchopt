@@ -107,7 +107,7 @@ def _run_shell_in_conda_env(script, env_name=None, raise_on_error=None,
     output: str
         If return_output=True, return the output of the command as a str.
     """
-    if env_name is not None:
+    if env_name not in [None, "False"]:
         # first line to use conda activate in bash script
         # Add necessary calls to make the script run in conda env.
         script = (

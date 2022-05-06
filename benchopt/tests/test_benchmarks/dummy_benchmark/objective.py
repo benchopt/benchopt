@@ -12,9 +12,12 @@ class Objective(BaseObjective):
         'reg': [0.05, .1, .5]
     }
 
-    def __init__(self, reg=.1, fit_intercept=False):
+    def __init__(self, reg=.1, fit_intercept=False, deprecated_dataset=False):
         self.reg = reg
         self.fit_intercept = fit_intercept
+
+        # XXX - remove in version 1.2
+        self.deprecated_dataset = deprecated_dataset
 
     def set_data(self, X, y):
         self.X, self.y = X, y
@@ -24,6 +27,13 @@ class Objective(BaseObjective):
         if np.all(X == 0):
             return True, 'X is all zeros'
         return False, None
+
+    def get_one_solution(self):
+        # XXX - remove in version 1.2
+        if self.deprecated_dataset:
+            return super().get_one_solution()
+
+        return np.zeros(self.X.shape[1])
 
     def compute(self, beta):
         diff = self.y - self.X.dot(beta)
