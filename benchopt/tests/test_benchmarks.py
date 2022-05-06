@@ -66,27 +66,30 @@ def test_dataset_get_data(benchmark, dataset_class):
     if dataset_class.name.lower() == 'finance':
         pytest.skip("Do not download finance.")
 
-    res = dataset._get_data()
-    assert isinstance(res, tuple), (
-        "Output of get_data should be a 2-tuple"
+    data = dataset._get_data()
+    assert isinstance(data, (tuple, dict)), (
+        "Output of get_data should be a 2-tuple or a dict."
     )
-    assert len(res) == 2, (
-        "Output of get_data should be a 2-tuple"
-    )
+    # XXX - remove in version 1.2
+    if isinstance(data, tuple):
+        assert len(data) == 2, (
+            "Output of get_data should be a 2-tuple"
+        )
 
-    dimension, data = res
+        dimension, data = data
 
-    assert isinstance(dimension, tuple) or dimension == 'object', (
-        "First output of get_data should be an integer or a tuple of integers."
-        f" Got {dimension}."
-    )
-    if dimension != 'object':
-        assert all(isinstance(d, numbers.Integral) for d in dimension), (
+        assert isinstance(dimension, tuple) or dimension == 'object', (
             "First output of get_data should be an integer or a tuple of "
             f"integers. Got {dimension}."
         )
+        if dimension != 'object':
+            assert all(isinstance(d, numbers.Integral) for d in dimension), (
+                "First output of get_data should be an integer or a tuple of "
+                f"integers. Got {dimension}."
+            )
+
     assert isinstance(data, dict), (
-        f"Second output of get_data should be a dict. Got {data}."
+        f"The returned data from get_data should be a dict. Got {data}."
     )
 
 
