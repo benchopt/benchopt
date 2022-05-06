@@ -187,7 +187,7 @@ class TestRunCmd:
         n-repetitions: 2
         max-runs: 1
         force-solver:
-          - Python-PGD-with-cb[use_acceleration=True]
+          - python-pgd[step_size=1.5]
           - sklearn
         """
         tmp = tempfile.NamedTemporaryFile(mode="w+")
@@ -200,38 +200,17 @@ class TestRunCmd:
         with CaptureRunOutput() as out:
             run(run_cmd, 'benchopt', standalone_mode=False)
 
-        out.check_output(r'sklearn:', repetition=4)  # 2 datasets, 2 reps
+        out.check_output(r'sklearn:', repetition=11)
         out.check_output(
-            r'python-pgd[use_acceleration=True]:', repetition=4)  # same
+            r'Python-PGD\[step_size=1.5\]:', repetition=11)
 
-        # TODO test that CLI options take precedence
-        # Path("config.yml").unlink()
+        # test that CLI options take precedence
+        with CaptureRunOutput() as out:
+            run(run_cmd + ['-f', 'sklearn'], 'benchopt', standalone_mode=False)
 
-        # config = """
-        # dataset:
-        #   - simulated
-        #   - leukemia
-        # repetitions: 2
-        # solver:
-        #   - python-pgd[use_acceleration=True]
-        #   - sklearn
-        # """
-        # with open("config.yml", "w") as f:
-        #     f.write(config)
-
-        # run_cmd = [str(DUMMY_BENCHMARK_PATH),
-        #            '-d', 'simulated', '-r' '1', '-o', SELECT_ONE_OBJECTIVE,
-        #            '--file', 'config.yml', '--no-plot',
-        #            ]
-        # with CaptureRunOutput() as out:
-        #     run(run_cmd, 'benchopt', standalone_mode=False)
-
-        # out.check_output(r'sklearn:', repetition=4)  # 4 simulated datasets
-        # out.check_output(
-        #     r'python-pgd[use_acceleration=True]:', repetition=4)  # same
-        # out.check_output(r'leukemia:', repetition=0)
-
-        # Path("config.yml").unlink()
+        out.check_output(r'sklearn:', repetition=11)
+        out.check_output(
+            r'Python-PGD\[step_size=1.5\]:', repetition=0)
 
     @pytest.mark.parametrize('n_rep', [2, 3, 5])
     def test_benchopt_caching(self, n_rep):
