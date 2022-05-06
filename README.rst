@@ -6,7 +6,7 @@ Benchmark repository for optimization
 BenchOpt is a benchmarking suite for optimization algorithms.
 It is built for simplicity, transparency, and reproducibility.
 
-Benchopt is implemented in Python, and can run algorithms 
+Benchopt is implemented in Python, and can run algorithms
 written in **many programming languages**
 (`example <https://benchopt.github.io/auto_examples/plot_run_benchmark_python_R.html>`_).
 So far, Benchopt has been tested with `Python <https://www.python.org/>`_,
@@ -22,7 +22,7 @@ be **as simple as doing**:
 
 .. code-block::
 
-    conda create -n benchopt python=3.8
+    conda create -n benchopt python
     conda activate benchopt
     pip install benchopt
     git clone https://github.com/benchopt/benchmark_logreg_l2
@@ -50,7 +50,8 @@ to automatically install solvers dependencies, the install needs to be done in a
 
 
 .. code-block::
-    conda create -n benchopt python=3.9
+
+    conda create -n benchopt python
     conda activate benchopt
 
 To get the **latest release**, use:

@@ -220,13 +220,10 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
 
     @abstractmethod
     def get_data(self):
-        """Return the problem's dimension as well as the objective parameters.
+        """Return the data to feed to the objective .
 
         Returns
         -------
-        dimension: int or tuple
-            Dimension of the optimized parameter. The solvers should return a
-            parameter of shape ``(dimension,)`` or ``*dimension``.
         data: dict
             Extra parameters of the objective. The objective will be
             instanciated by calling ``Objective.set_data(**data)``.
@@ -236,14 +233,29 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
     def _get_data(self):
         "Wrapper to make sure the returned results are correctly formated."
 
+        # Automatically cache the _data to avoid reloading it.s
         if not hasattr(self, '_data') or self._data is None:
-            self._dimension, self._data = self.get_data()
+            self._data = self.get_data()
 
-        # Make sure dimension is a tuple
-        if isinstance(self._dimension, numbers.Integral):
-            self._dimension = (self._dimension,)
+            # XXX - Remove in version 1.2
+            if type(self._data) != dict:
+                import warnings
+                warnings.warn(
+                    "`get_data` should return a dict containing the data. "
+                    "The dimension should not be returned anymore and "
+                    "Objective should have a method `get_one_solution` "
+                    "to provide one feasible point. This will cause an "
+                    "error starting version 1.2.",
+                    FutureWarning
+                )
+                dimension, data = self._data
 
-        return self._dimension, self._data
+                # Make sure dimension is a tuple
+                if isinstance(dimension, numbers.Integral):
+                    dimension = (dimension,)
+                self._data = (dimension, data)
+
+        return self._data
 
     # Reduce the pickling and hashing burden by only pickling class parameters.
     @staticmethod
@@ -360,7 +372,12 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
     # hashing the data directly.
     def set_dataset(self, dataset):
         self._dataset = dataset
-        self._dimension, data = dataset._get_data()
+        data = dataset._get_data()
+
+        # XXX - Remove in version 1.2
+        if type(data) != dict:
+            self._dimension, data = data
+
         # Check if the dataset is compatible with the objective
         skip, reason = self.skip(**data)
         if skip:
@@ -389,7 +406,7 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
         """
         return False, None
 
-    def get_one_beta(self):
+    def get_one_solution(self):
         """Return one point in which the objective function can be evaluated.
 
         This method is mainly for testing purposes, to check that the return
@@ -401,11 +418,21 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
         point. When `Dataset.get_data` returns "object", this method must be
         overwritten.
         """
-        if self._dimension == 'object':
+        if not hasattr(self, '_dimension'):
             raise NotImplementedError(
-                "If solvers return objects, `Objective.get_one_beta` should "
-                "be overriden to return an object compatible with `compute`."
+                "If solvers return objects, `Objective.get_one_solution` "
+                "should be overriden to return an object compatible with "
+                "`compute`."
             )
+
+        # XXX - make this an abstract class in version 1.2
+        import warnings
+        warnings.warn(
+            "Objective should have a method `get_one_solution` "
+            "to provide one feasible point. This will cause an "
+            "error starting version 1.2.",
+            FutureWarning
+        )
 
         import numpy as np
         return np.zeros(self._dimension)

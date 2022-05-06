@@ -48,7 +48,7 @@ And to get the **latest development version**, you can use:
 
 .. code-block::
 
-    $ pip install -U git+https://github.com/benchopt/benchopt.git#egg=benchopt
+    $ pip install -U -i https://test.pypi.org/simple/ benchopt
 
 This will install the command line tool to run the benchmark. Then, existing
 benchmarks can be retrieved from GitHub or created locally. To discover which
@@ -98,6 +98,25 @@ If you want to run a specific configuration, pass it explicitly, e.g., to run th
 .. code-block::
 
     $ benchopt run --env ./benchmark_lasso -r 10
+
+**Passing option through configuration file**: all options of ``benchopt run`` can be passed through a YAML configuration file, together with ``--config <configuration_file_name.yml>``.
+The options are defined using the same name as the CLI options.
+An example of configuration file is:
+
+.. code-block:: yaml
+
+    objective-filter:
+    - Lasso Regression[fit_intercept=False,reg=0.5]
+    dataset:
+    - simulated
+    - leukemia
+    solver:
+    - celer
+    force-solver:
+    - cd
+    n-repetitions: 1
+
+When options are passed both via file and CLI, the CLI takes precedence.
 
 **Getting help**: use
 
