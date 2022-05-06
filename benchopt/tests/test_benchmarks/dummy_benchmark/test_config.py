@@ -12,5 +12,4 @@ def check_test_solver_install(solver_class):
     # conflict with conda packages for R
     # See issue #64
     if 'julia' in solver_class.name.lower() and sys.platform == 'darwin':
-        # pytest.xfail('Julia causes segfault on OSX for now.')
-        pytest.xfail('Julia install via conda is broken for now on macos.')
+        pytest.xfail('Julia causes segfault on OSX for now.')
