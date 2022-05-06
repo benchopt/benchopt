@@ -7,8 +7,8 @@ What's new
 
 .. _changes_1_2:
 
-Version 1.2 - in progress
--------------------------
+Version 1.2 - 06/05/2022
+------------------------
 
 Changelog
 ~~~~~~~~~
