@@ -176,8 +176,8 @@ class TestRunCmd:
         tmp.write("some_unknown_option: 0")
         tmp.flush()
         with pytest.raises(ValueError, match="Invalid config file option"):
-            run(f'{str(DUMMY_BENCHMARK_PATH)} --file {tmp.name}'.split(), 'benchopt',
-                standalone_mode=False)
+            run(f'{str(DUMMY_BENCHMARK_PATH)} --file {tmp.name}'.split(),
+                'benchopt', standalone_mode=False)
 
         config = f"""
         objective-filter:
@@ -194,9 +194,7 @@ class TestRunCmd:
         tmp.write(config)
         tmp.flush()
 
-        run_cmd = [str(DUMMY_BENCHMARK_PATH),
-                   '--file', tmp.name, '--no-plot',
-                   ]
+        run_cmd = [str(DUMMY_BENCHMARK_PATH), '--file', tmp.name, '--no-plot']
         with CaptureRunOutput() as out:
             run(run_cmd, 'benchopt', standalone_mode=False)
 
