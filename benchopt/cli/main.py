@@ -154,7 +154,8 @@ def run(config_file=None, **kwargs):
     (
         benchmark, solver_names, forced_solvers, dataset_names,
         objective_filters, max_runs, n_repetitions, timeout, n_jobs,
-        plot, html, pdb, do_profile, env_name, deprecated_objective_filters, old_objective_filters
+        plot, html, pdb, do_profile, env_name, deprecated_objective_filters,
+        old_objective_filters
     ) = _get_run_args(kwargs, config)
 
     if len(old_objective_filters):
