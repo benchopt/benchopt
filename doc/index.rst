@@ -48,7 +48,7 @@ And to get the **latest development version**, you can use:
 
 .. code-block::
 
-    $ pip install -U git+https://github.com/benchopt/benchopt.git#egg=benchopt
+    $ pip install -U -i https://test.pypi.org/simple/ benchopt
 
 This will install the command line tool to run the benchmark. Then, existing
 benchmarks can be retrieved from GitHub or created locally. To discover which
