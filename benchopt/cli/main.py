@@ -1,3 +1,4 @@
+import yaml
 import click
 import warnings
 from pathlib import Path
@@ -20,6 +21,44 @@ main = click.Group(
 )
 
 
+def _get_run_args(cli_kwargs, config_file_kwargs):
+    ctx = click.get_current_context()
+    for k, v in config_file_kwargs.items():
+        # click maps options names to variable names by removing '--' and
+        # replacing '-' by '_'. We use the same mapping to convert options from
+        # config_file, so that variable names match
+        var_name = k.replace('-', '_')
+
+        if var_name not in cli_kwargs:
+            raise ValueError(
+                f"Invalid config file option {k}. "
+                "See list of valid options with `benchopt run -h`.")
+
+        # only override CLI variables if they have their default value
+        if (ctx.get_parameter_source(var_name) is not None and
+                ctx.get_parameter_source(var_name).name == 'DEFAULT'):
+            cli_kwargs[var_name] = v
+
+    return_names = [
+        "benchmark",
+        "solver",
+        "force_solver",
+        "dataset",
+        "objective_filter",
+        "max_runs",
+        "n_repetitions",
+        "timeout",
+        "n_jobs",
+        "plot",
+        "html",
+        "pdb",
+        "profile",
+        "env_name",
+        "old_objective_filter"
+    ]
+    return [cli_kwargs[name] for name in return_names]
+
+
 @main.command(
     help="Run a benchmark with benchopt.",
     epilog="To (re-)install the required solvers and datasets "
@@ -28,26 +67,26 @@ main = click.Group(
 )
 @click.argument('benchmark', type=click.Path(exists=True),
                 shell_complete=complete_benchmarks)
-@click.option('--objective-filter', '-o', 'objective_filters',
+@click.option('--objective-filter', '-o',
               metavar='<objective_filter>', multiple=True, type=str,
               help="Filter the objective based on its parametrized name. This "
               "can be used to only include one set of parameters.")
-@click.option('--old_objective-filter', '-p', 'old_objective_filters',
+@click.option('--old_objective-filter', '-p',
               multiple=True, type=str,
               help="Deprecated alias for --objective_filters/-o.")
-@click.option('--solver', '-s', 'solver_names',
+@click.option('--solver', '-s',
               metavar="<solver_name>", multiple=True, type=str,
               help="Include <solver_name> in the benchmark. By default, all "
               "solvers are included. When `-s` is used, only listed solvers"
               " are included. To include multiple solvers, "
               "use multiple `-s` options.", shell_complete=complete_solvers)
-@click.option('--force-solver', '-f', 'forced_solvers',
+@click.option('--force-solver', '-f',
               metavar="<solver_name>", multiple=True, type=str,
               help="Force the re-run for <solver_name>. This "
               "avoids caching effect when adding a solver. "
               "To select multiple solvers, use multiple `-f` options.",
               shell_complete=complete_solvers)
-@click.option('--dataset', '-d', 'dataset_names',
+@click.option('--dataset', '-d',
               metavar="<dataset_name>", multiple=True, type=str,
               help="Run the benchmark on <dataset_name>. By default, all "
               "datasets are included. When `-d` is used, only listed datasets"
@@ -69,6 +108,8 @@ main = click.Group(
 @click.option('--timeout',
               metavar="<int>", default=100, show_default=True, type=int,
               help='Timeout a solver when run for more than <timeout> seconds')
+@click.option('--config', 'config_file', default=None,
+              help="YAML configuration file containing benchmark options.")
 @click.option('--plot/--no-plot', default=True,
               help="Whether or not to plot the results. Default is True.")
 @click.option('--html/--no-html', default=True,
@@ -81,7 +122,7 @@ main = click.Group(
 @click.option('--local', '-l', 'env_name',
               flag_value='False', default=True,
               help="Run the benchmark in the local conda environment.")
-@click.option('--profile', 'do_profile',
+@click.option('--profile',
               flag_value='True', default=False,
               help="Will do line profiling on all functions with @profile "
                    "decorator. Requires the line-profiler package. "
@@ -98,10 +139,19 @@ main = click.Group(
               help="Run the benchmark in the conda environment "
               "named <env_name>. To install the required solvers and "
               "datasets, see the command `benchopt install`.")
-def run(benchmark, solver_names, forced_solvers, dataset_names,
+def run(config_file=None, **kwargs):
+    if config_file is not None:
+        with open(config_file, "r") as f:
+            config = yaml.safe_load(f)
+    else:
+        config = {}
+
+    (
+        benchmark, solver_names, forced_solvers, dataset_names,
         objective_filters, max_runs, n_repetitions, timeout, n_jobs,
-        plot=True, html=True, pdb=False, do_profile=False,
-        env_name='False', old_objective_filters=None):
+        plot, html, pdb, do_profile, env_name, old_objective_filters
+    ) = _get_run_args(kwargs, config)
+
     if len(old_objective_filters):
         warnings.warn(
             'Using the -p option is deprecated, use -o instead',
@@ -118,11 +168,14 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
     # Check that the dataset/solver patterns match actual dataset
     benchmark = Benchmark(benchmark)
     benchmark.validate_dataset_patterns(dataset_names)
-    benchmark.validate_solver_patterns(solver_names+forced_solvers)
     benchmark.validate_objective_filters(objective_filters)
+    # pyyaml returns tuples: solver_names can be tuple and forced_solvers list
+    benchmark.validate_solver_patterns(
+        list(solver_names) + list(forced_solvers)
+    )
 
     # If env_name is False, the flag `--local` has been used (default) so
-    # run in the current environement.
+    # run in the current environment.
     if env_name == 'False':
         run_benchmark(
             benchmark, solver_names, forced_solvers,

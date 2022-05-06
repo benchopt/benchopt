@@ -1,4 +1,5 @@
 import re
+import tempfile
 from pathlib import Path
 
 import click
@@ -169,6 +170,48 @@ class TestRunCmd:
             "Line #", "Hits", "Time", "Per Hit", "% Time", "Line Contents"
         ]), repetition=1)
         out.check_output(r"def run\(self, n_iter\):", repetition=1)
+
+    def test_benchopt_run_config_file(self):
+        tmp = tempfile.NamedTemporaryFile(mode="w+")
+        tmp.write("some_unknown_option: 0")
+        tmp.flush()
+        with pytest.raises(ValueError, match="Invalid config file option"):
+            run(f'{str(DUMMY_BENCHMARK_PATH)} --config {tmp.name}'.split(),
+                'benchopt', standalone_mode=False)
+
+        config = f"""
+        objective-filter:
+          - {SELECT_ONE_OBJECTIVE}
+        dataset:
+          - {SELECT_ONE_SIMULATED}
+        n-repetitions: 2
+        max-runs: 1
+        force-solver:
+          - python-pgd[step_size=1.5]
+          - Test-Solver
+        """
+        tmp = tempfile.NamedTemporaryFile(mode="w+")
+        tmp.write(config)
+        tmp.flush()
+
+        run_cmd = [str(DUMMY_BENCHMARK_PATH), '--config', tmp.name,
+                   '--no-plot']
+
+        with CaptureRunOutput() as out:
+            run(run_cmd, 'benchopt', standalone_mode=False)
+
+        out.check_output(r'Test-Solver:', repetition=11)
+        out.check_output(
+            r'Python-PGD\[step_size=1.5\]:', repetition=11)
+
+        # test that CLI options take precedence
+        with CaptureRunOutput() as out:
+            run(run_cmd + ['-f', 'Test-Solver'],
+                'benchopt', standalone_mode=False)
+
+        out.check_output(r'Test-Solver:', repetition=11)
+        out.check_output(
+            r'Python-PGD\[step_size=1.5\]:', repetition=0)
 
     @pytest.mark.parametrize('n_rep', [2, 3, 5])
     def test_benchopt_caching(self, n_rep):
