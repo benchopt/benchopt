@@ -207,6 +207,7 @@ Contents
 
    cli
    api
+   contrib
    how
    publish
    config
