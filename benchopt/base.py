@@ -248,11 +248,12 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
                     "error starting version 1.2.",
                     FutureWarning
                 )
-                self._dimension, self._data = self._data
+                dimension, data = self._data
 
                 # Make sure dimension is a tuple
-                if isinstance(self._dimension, numbers.Integral):
-                    self._dimension = (self._dimension,)
+                if isinstance(dimension, numbers.Integral):
+                    dimension = (dimension,)
+                self._data = (dimension, data)
 
         return self._data
 
