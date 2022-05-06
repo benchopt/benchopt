@@ -114,7 +114,7 @@ html_theme_options = {
         ("CLI", "cli"),
         ("API", "api"),
         ("Write a benchmark", "how"),
-        ("Contributing", "contrib"),
+        # ("Contributing", "contrib"),
         ("Results", "https://benchopt.github.io/results", True),
         ("What's new", "whats_new"),
         ("GitHub", "https://github.com/benchopt/benchopt", True)

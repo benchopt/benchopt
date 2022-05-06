@@ -74,7 +74,7 @@ modifying code and submitting a PR:
 
 7. Create a feature branch to hold your development changes:
 
-    .. prompt:: bash $
+   .. prompt:: bash $
 
         git switch -c my_feature
 
