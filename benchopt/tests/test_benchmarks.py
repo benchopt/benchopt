@@ -70,7 +70,7 @@ def test_dataset_get_data(benchmark, dataset_class):
     assert isinstance(data, (tuple, dict)), (
         "Output of get_data should be a 2-tuple or a dict."
     )
-    # XXX - remove in version 1.2
+    # XXX - Remove in version 1.3
     if isinstance(data, tuple):
         assert len(data) == 2, (
             "Output of get_data should be a 2-tuple"

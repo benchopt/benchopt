@@ -237,7 +237,7 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
         if not hasattr(self, '_data') or self._data is None:
             self._data = self.get_data()
 
-            # XXX - Remove in version 1.2
+            # XXX - Remove in version 1.3
             if type(self._data) != dict:
                 import warnings
                 warnings.warn(
@@ -245,7 +245,7 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
                     "The dimension should not be returned anymore and "
                     "Objective should have a method `get_one_solution` "
                     "to provide one feasible point. This will cause an "
-                    "error starting version 1.2.",
+                    "error starting from version 1.3.",
                     FutureWarning
                 )
                 dimension, data = self._data
@@ -374,7 +374,7 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
         self._dataset = dataset
         data = dataset._get_data()
 
-        # XXX - Remove in version 1.2
+        # XXX - Remove in version 1.3
         if type(data) != dict:
             self._dimension, data = data
 
@@ -425,12 +425,12 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
                 "`compute`."
             )
 
-        # XXX - make this an abstract class in version 1.2
+        # XXX - make this an abstract class in version 1.3
         import warnings
         warnings.warn(
             "Objective should have a method `get_one_solution` "
             "to provide one feasible point. This will cause an "
-            "error starting version 1.2.",
+            "error starting from version 1.3.",
             FutureWarning
         )
 
