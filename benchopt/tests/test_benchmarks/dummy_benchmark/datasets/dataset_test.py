@@ -44,7 +44,7 @@ class Dataset(BaseDataset):
 
         data = dict(X=X, y=y)
 
-        # XXX - remove in version 1.2
+        # XXX - Remove in version 1.3
         if self.deprecated_return:
             return self.n_features, data
         else:

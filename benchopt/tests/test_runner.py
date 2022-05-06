@@ -42,7 +42,7 @@ def test_get_one_solution():
     expected = np.zeros(objective.X.shape[1])
     assert all(one_solution == expected)
 
-    # XXX - remove this check in version 1.2
+    # XXX - Remove in version 1.3
     dataset = TEST_DATASET.get_instance(deprecated_return=True)
     objective = TEST_OBJECTIVE.get_instance(deprecated_dataset=True)
 

@@ -16,7 +16,7 @@ class Objective(BaseObjective):
         self.reg = reg
         self.fit_intercept = fit_intercept
 
-        # XXX - remove in version 1.2
+        # XXX - Remove in version 1.3
         self.deprecated_dataset = deprecated_dataset
 
     def set_data(self, X, y):
@@ -29,7 +29,7 @@ class Objective(BaseObjective):
         return False, None
 
     def get_one_solution(self):
-        # XXX - remove in version 1.2
+        # XXX - Remove in version 1.3
         if self.deprecated_dataset:
             return super().get_one_solution()
 
