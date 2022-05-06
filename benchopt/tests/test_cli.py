@@ -194,7 +194,9 @@ class TestRunCmd:
         tmp.write(config)
         tmp.flush()
 
-        run_cmd = [str(DUMMY_BENCHMARK_PATH), '--config', tmp.name, '--no-plot']
+        run_cmd = [str(DUMMY_BENCHMARK_PATH), '--config', tmp.name,
+                   '--no-plot']
+
         with CaptureRunOutput() as out:
             run(run_cmd, 'benchopt', standalone_mode=False)
 
