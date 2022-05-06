@@ -188,7 +188,7 @@ class TestRunCmd:
         max-runs: 1
         force-solver:
           - python-pgd[step_size=1.5]
-          - sklearn
+          - Test-Solver
         """
         tmp = tempfile.NamedTemporaryFile(mode="w+")
         tmp.write(config)
@@ -198,15 +198,16 @@ class TestRunCmd:
         with CaptureRunOutput() as out:
             run(run_cmd, 'benchopt', standalone_mode=False)
 
-        out.check_output(r'sklearn:', repetition=11)
+        out.check_output(r'Test-Solver:', repetition=11)
         out.check_output(
             r'Python-PGD\[step_size=1.5\]:', repetition=11)
 
         # test that CLI options take precedence
         with CaptureRunOutput() as out:
-            run(run_cmd + ['-f', 'sklearn'], 'benchopt', standalone_mode=False)
+            run(run_cmd + ['-f', 'Test-Solver'],
+                'benchopt', standalone_mode=False)
 
-        out.check_output(r'sklearn:', repetition=11)
+        out.check_output(r'Test-Solver:', repetition=11)
         out.check_output(
             r'Python-PGD\[step_size=1.5\]:', repetition=0)
 
