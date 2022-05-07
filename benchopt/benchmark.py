@@ -391,7 +391,7 @@ class Benchmark:
 
         Parameters
         ----------
-        solver_names : list | None
+        solver_names : list | None
             List of solvers to include in the benchmark. If None
             all solvers available are run.
         forced_solvers : list | None
@@ -449,7 +449,7 @@ class Benchmark:
 
 
 def _check_name_lists(*name_lists):
-    "Normalize name_list ot a list of lowercase str."
+    "Normalize name_list to a list of lowercase str."
     res = []
     for name_list in name_lists:
         if name_list is None:
@@ -466,14 +466,81 @@ def is_matched(name, include_patterns=None, default=True):
     if include_patterns is None or len(include_patterns) == 0:
         return default
     name = str(name)
+    name = _extract_options(name)[0]
     # we use [] to signal options in patterns, we must escape them for re
     substitutions = {"*": ".*", "[": r"\[", "]": r"\]"}
     for p in include_patterns:
+        p = _extract_options(p)[0]
         for old, new in substitutions.items():
             p = p.replace(old, new)
         if re.match(f"^{p}.*", name, flags=re.IGNORECASE) is not None:
             return True
     return False
+
+def _extract_options(name):
+    """Remove options indicated within '[]' from a name:
+
+    Parameters
+    ----------
+    name : str
+        Input name.
+
+    Returns
+    -------
+    basename : str
+        Name without options.
+    args : list
+        List of unnamed options.
+    kwargs : dict()
+        Dictionary with options.
+
+    Examples
+    --------
+    >>> _extract_options("foo")  # "foo", [], dict()
+    >>> _extract_options("foo[bar=2]")  # "foo", [], dict(bar=2)
+    >>> _extract_options("foo[baz]")  # "foo", ["baz"], dict()
+    """
+    if name.count("[") != name.count("]"):
+        raise ValueError("Invalid name: {}".format(name))
+
+    basename = "".join(re.split("\[.*\]", name))
+    matches = re.findall("\[.*\]", name)
+
+    args = []
+    kwargs = {}
+    for match in matches:
+        if match[0] != "[" or match[-1] != "]":
+            raise ValueError("Invalid name: {}".format(name))
+        match = match[1:-1]  # remove brackets
+
+        # split by commas, except commas within brackets
+        elements = re.split(",(?![^\[]*\])(?![^(]*\))", match)
+        for element in elements:
+            element = element.strip(" ")
+            if element == "":
+                continue
+            if "=" in element:
+                key, value = element.split("=")
+                kwargs[key] = _safe_eval(value)
+            else:
+                args.append(_safe_eval(element))
+
+    return basename, args, kwargs
+
+def _safe_eval(string):
+    """Evaluate a string as a python expression. If it fails, return the string
+
+    Examples
+    --------
+    >>> _safe_eval('1+1')  # return 2
+    >>> _safe_eval('True')  # return True
+    >>> _safe_eval('sgd')  # return 'sgd'
+    """
+    import ast
+    try:
+        return ast.literal_eval(string)
+    except ValueError:
+        return string
 
 
 def _validate_patterns(all_names, patterns, name_type='dataset'):
@@ -490,31 +557,69 @@ def _validate_patterns(all_names, patterns, name_type='dataset'):
 
     # If some patterns did not matched any dataset, raise an error
     if len(invalid_patterns) > 0:
-        all_names = '- ' + '\n- '.join(all_names)
+        all_names_ = '- ' + '\n- '.join(all_names)
         raise click.BadParameter(
             f"Patterns {invalid_patterns} did not match any {name_type}.\n"
-            f"Available {name_type}s are:\n{all_names}"
+            f"Available {name_type}s are:\n{all_names_}"
         )
 
 
 def _filter_classes(*classes, filters=None):
     """Filter a list of class based on its names."""
     for klass in classes:
-        is_installed = None
-        for parameters in product_param(klass.parameters):
-            obj = klass.get_instance(**parameters)
-            if is_matched(str(obj), filters):
-                if is_installed is None:
-                    is_installed = (
-                        not hasattr(klass, 'is_installed')
-                        or klass.is_installed(
-                            raise_on_not_installed=RAISE_INSTALL_ERROR
-                        )
-                    )
-                if not is_installed:
-                    yield klass.name, False
-                    break
-                yield obj, True
+
+        if is_matched(klass.name, filters):
+            # skip if not installed
+            is_installed = (
+                not hasattr(klass, 'is_installed')
+                or klass.is_installed(
+                    raise_on_not_installed=RAISE_INSTALL_ERROR
+                )
+            )
+            if not is_installed:
+                yield klass.name, False
+                break
+
+            # get list of parameters to use
+            if filters is None or len(filters) == 0:
+                used_parameters = product_param(klass.parameters)
+            else:
+                # get parameters from filter names
+                update_parameters = []
+                for filt in filters:
+                    if is_matched(klass.name, [filt]):
+                        _, args, kwargs = _extract_options(filt)
+                        
+                        if len(args) > 0:
+                            # if positional arguments, we assume there is only
+                            # one parameter in the class.
+                            if len(klass.parameters) > 1:
+                                raise ValueError(
+                                    f"Ambiguous positional parameter in {filt}.")
+                            elif len(kwargs) > 0:
+                                raise ValueError(
+                                    f"Both positional and keyword parameters in {filt}.")
+                            else:
+                                key = list(klass.parameters.keys())[0]
+                                kwargs = {key: args}
+                        
+                        # use product_param to get all combinations of parameters
+                        kwargs = {key: (val if isinstance(val, (list, tuple)) else [val])
+                                  for key, val in kwargs.items()}
+                        update_parameters.extend(product_param(kwargs))
+
+                # update default parameters (klass.parameters) with the
+                # parameters from filter names
+                used_parameters = []
+                for update in update_parameters:
+                    for default in product_param(klass.parameters):
+                        default = default.copy()  # avoid modifying the original
+                        default.update(update)
+                        if default not in used_parameters:  # avoid duplicates
+                            used_parameters.append(default)
+            
+            for parameters in used_parameters:
+                yield klass.get_instance(**parameters), True
 
 
 def buffer_iterator(it):
