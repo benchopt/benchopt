@@ -81,22 +81,21 @@ modifying code and submitting a PR:
    and start making changes. Always use a feature branch. It's good
    practice to never work on the ``main`` branch!
 
-
 8. Develop the feature on your feature branch on your computer, using Git to
-    do the version control. When you're done editing, add changed files using
-    ``git add`` and then ``git commit``:
+   do the version control. When you're done editing, add changed files using
+   ``git add`` and then ``git commit``:
 
-    .. prompt:: bash $
+   .. prompt:: bash $
 
-        git add modified_files
-        git commit
+      git add modified_files
+      git commit
 
-    to record your changes in Git, then push the changes to your GitHub
-    account with:
+   to record your changes in Git, then push the changes to your GitHub
+   account with:
 
-    .. prompt:: bash $
+   .. prompt:: bash $
 
-       git push -u origin my_feature
+      git push -u origin my_feature
 
 9. Follow `these <https://help.github.com/articles/creating-a-pull-request-from-a-fork>`_ instructions
    to create a pull request from your fork.
