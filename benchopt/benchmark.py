@@ -477,8 +477,9 @@ def is_matched(name, include_patterns=None, default=True):
             return True
     return False
 
+
 def _extract_options(name):
-    """Remove options indicated within '[]' from a name:
+    """Remove options indicated within '[]' from a name.
 
     Parameters
     ----------
@@ -503,8 +504,8 @@ def _extract_options(name):
     if name.count("[") != name.count("]"):
         raise ValueError("Invalid name: {}".format(name))
 
-    basename = "".join(re.split("\[.*\]", name))
-    matches = re.findall("\[.*\]", name)
+    basename = "".join(re.split(r"\[.*\]", name))
+    matches = re.findall(r"\[.*\]", name)
 
     args = []
     kwargs = {}
@@ -514,7 +515,7 @@ def _extract_options(name):
         match = match[1:-1]  # remove brackets
 
         # split by commas, except commas within brackets
-        elements = re.split(",(?![^\[]*\])(?![^(]*\))", match)
+        elements = re.split(r",(?![^\[]*\])(?![^(]*\))", match)
         for element in elements:
             element = element.strip(" ")
             if element == "":
@@ -526,6 +527,7 @@ def _extract_options(name):
                 args.append(_safe_eval(element))
 
     return basename, args, kwargs
+
 
 def _safe_eval(string):
     """Evaluate a string as a python expression. If it fails, return the string
@@ -567,59 +569,61 @@ def _validate_patterns(all_names, patterns, name_type='dataset'):
 def _filter_classes(*classes, filters=None):
     """Filter a list of class based on its names."""
     for klass in classes:
+        if not is_matched(klass.name, filters):
+            continue
 
-        if is_matched(klass.name, filters):
-            # skip if not installed
-            is_installed = (
-                not hasattr(klass, 'is_installed')
-                or klass.is_installed(
-                    raise_on_not_installed=RAISE_INSTALL_ERROR
-                )
-            )
-            if not is_installed:
-                yield klass.name, False
-                break
+        # skip if not installed
+        is_installed = (
+            not hasattr(klass, 'is_installed')
+            or klass.is_installed(raise_on_not_installed=RAISE_INSTALL_ERROR)
+        )
+        if not is_installed:
+            yield klass.name, False
+            break
 
-            # get list of parameters to use
-            if filters is None or len(filters) == 0:
-                used_parameters = product_param(klass.parameters)
-            else:
-                # get parameters from filter names
-                update_parameters = []
-                for filt in filters:
-                    if is_matched(klass.name, [filt]):
-                        _, args, kwargs = _extract_options(filt)
-                        
-                        if len(args) > 0:
-                            # if positional arguments, we assume there is only
-                            # one parameter in the class.
-                            if len(klass.parameters) > 1:
-                                raise ValueError(
-                                    f"Ambiguous positional parameter in {filt}.")
-                            elif len(kwargs) > 0:
-                                raise ValueError(
-                                    f"Both positional and keyword parameters in {filt}.")
-                            else:
-                                key = list(klass.parameters.keys())[0]
-                                kwargs = {key: args}
-                        
-                        # use product_param to get all combinations of parameters
-                        kwargs = {key: (val if isinstance(val, (list, tuple)) else [val])
-                                  for key, val in kwargs.items()}
-                        update_parameters.extend(product_param(kwargs))
+        # get list of parameters to use
+        if filters is None or len(filters) == 0:
+            used_parameters = product_param(klass.parameters)
+        else:
+            # get parameters from filter names
+            update_parameters = []
+            for filt in filters:
+                if is_matched(klass.name, [filt]):
+                    _, args, kwargs = _extract_options(filt)
 
-                # update default parameters (klass.parameters) with the
-                # parameters from filter names
-                used_parameters = []
-                for update in update_parameters:
-                    for default in product_param(klass.parameters):
-                        default = default.copy()  # avoid modifying the original
-                        default.update(update)
-                        if default not in used_parameters:  # avoid duplicates
-                            used_parameters.append(default)
-            
-            for parameters in used_parameters:
-                yield klass.get_instance(**parameters), True
+                    if len(args) > 0:
+                        # if positional arguments, we assume there is only
+                        # one parameter in the class.
+                        if len(klass.parameters) > 1:
+                            raise ValueError(
+                                f"Ambiguous positional parameter in {filt}.")
+                        elif len(kwargs) > 0:
+                            raise ValueError(
+                                "Both positional and keyword parameters "
+                                f"in {filt}.")
+                        else:
+                            key = list(klass.parameters.keys())[0]
+                            kwargs = {key: args}
+
+                    # use product_param to get all combinations of parameters
+                    kwargs = {
+                        key: (val if isinstance(val, (list, tuple)) else [val])
+                        for key, val in kwargs.items()
+                    }
+                    update_parameters.extend(product_param(kwargs))
+
+            # update default parameters (klass.parameters) with the
+            # parameters from filter names
+            used_parameters = []
+            for update in update_parameters:
+                for default in product_param(klass.parameters):
+                    default = default.copy()  # avoid modifying the original
+                    default.update(update)
+                    if default not in used_parameters:  # avoid duplicates
+                        used_parameters.append(default)
+
+        for parameters in used_parameters:
+            yield klass.get_instance(**parameters), True
 
 
 def buffer_iterator(it):

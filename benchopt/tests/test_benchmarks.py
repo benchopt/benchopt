@@ -238,11 +238,15 @@ def _assert_parameters_equal(instance, parameters):
         assert getattr(instance, key) == val
 
 
+
 def test_filter_classes():
     TEST_DATASET.parameters = {'n_samples': [10, 11], 'n_features': [20, 21]}
 
+    def run(filters):
+        return list(_filter_classes(TEST_DATASET, filters=filters))
+
     # no selection (default grid)
-    results = list(_filter_classes(TEST_DATASET, filters=["Test-Dataset"]))
+    results = run(["Test-Dataset"])
     assert len(results) == 4
     _assert_parameters_equal(results[0][0], dict(n_samples=10, n_features=20))
     _assert_parameters_equal(results[1][0], dict(n_samples=10, n_features=21))
@@ -250,53 +254,53 @@ def test_filter_classes():
     _assert_parameters_equal(results[3][0], dict(n_samples=11, n_features=21))
 
     # select one parameter (n_samples)
-    results = list(_filter_classes(TEST_DATASET, filters=["Test-Dataset[n_samples=42]"]))
+    results = run(["Test-Dataset[n_samples=42]"])
     assert len(results) == 2
     _assert_parameters_equal(results[0][0], dict(n_samples=42, n_features=20))
     _assert_parameters_equal(results[1][0], dict(n_samples=42, n_features=21))
 
     # select one parameter (n_features)
-    results = list(_filter_classes(TEST_DATASET, filters=["Test-Dataset[n_features=42]"]))
+    results = run(["Test-Dataset[n_features=42]"])
     assert len(results) == 2
     _assert_parameters_equal(results[0][0], dict(n_samples=10, n_features=42))
     _assert_parameters_equal(results[1][0], dict(n_samples=11, n_features=42))
 
     # select two parameters (n_samples, n_features)
-    results = list(_filter_classes(TEST_DATASET, filters=["Test-Dataset[n_samples=41, n_features=42]"]))
+    results = run(["Test-Dataset[n_samples=41, n_features=42]"])
     assert len(results) == 1
     _assert_parameters_equal(results[0][0], dict(n_samples=41, n_features=42))
 
     # get grid over one parameter (n_samples)
-    results = list(_filter_classes(TEST_DATASET, filters=["Test-Dataset[n_samples=[41,42], n_features=19]"]))
+    results = run(["Test-Dataset[n_samples=[41,42], n_features=19]"])
     assert len(results) == 2
     _assert_parameters_equal(results[0][0], dict(n_samples=41, n_features=19))
     _assert_parameters_equal(results[1][0], dict(n_samples=42, n_features=19))
 
     # select positional (unnamed) parameter
     TEST_DATASET.parameters = {'n_samples': [10, 11]}
-    results = list(_filter_classes(TEST_DATASET, filters=["Test-Dataset[42]"]))
+    results = run(["Test-Dataset[42]"])
     assert len(results) == 1
     _assert_parameters_equal(results[0][0], dict(n_samples=42))
 
     # get grid over positional (unnamed) parameter
     TEST_DATASET.parameters = {'n_samples': [10, 11]}
-    results = list(_filter_classes(TEST_DATASET, filters=["Test-Dataset[41,42]"]))
+    results = run(["Test-Dataset[41,42]"])
     assert len(results) == 2
     _assert_parameters_equal(results[0][0], dict(n_samples=41))
     _assert_parameters_equal(results[1][0], dict(n_samples=42))
 
     # invalid filters
     TEST_DATASET.parameters = {'n_samples': [10, 11]}
-    with pytest.raises(ValueError, match="Both positional and keyword parameters"):
-        list(_filter_classes(TEST_DATASET, filters=["Test-Dataset[41, n_samples=42]"]))
+    with pytest.raises(ValueError, match="Both positional and keyword "):
+        run(["Test-Dataset[41, n_samples=42]"])
 
     TEST_DATASET.parameters = {'n_samples': [10, 11], 'n_features': [20, 21]}
     with pytest.raises(ValueError, match="Ambiguous positional parameter"):
-        list(_filter_classes(TEST_DATASET, filters=["Test-Dataset[41,42]"]))
+        run(["Test-Dataset[41,42]"])
 
     TEST_DATASET.parameters = {'n_samples': [10, 11], 'n_features': [20, 21]}
     with pytest.raises(TypeError, match="unexpected keyword argument"):
-        list(_filter_classes(TEST_DATASET, filters=["Test-Dataset[n_targets=42]"]))
+        run(["Test-Dataset[n_targets=42]"])
 
 
 def test_extract_options():
@@ -315,7 +319,8 @@ def test_extract_options():
     assert len(args) == 0
     assert kwargs == dict(n_samples=41)
 
-    basename, args, kwargs = _extract_options("Dataset[n_samples=[41, 42], n_features=123.0]")
+    basename, args, kwargs = _extract_options(
+        "Dataset[n_samples=[41, 42], n_features=123.0]")
     assert basename == "Dataset"
     assert len(args) == 0
     assert kwargs == dict(n_samples=[41, 42], n_features=123.)
