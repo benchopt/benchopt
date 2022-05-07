@@ -238,7 +238,6 @@ def _assert_parameters_equal(instance, parameters):
         assert getattr(instance, key) == val
 
 
-
 def test_filter_classes():
     TEST_DATASET.parameters = {'n_samples': [10, 11], 'n_features': [20, 21]}
 
