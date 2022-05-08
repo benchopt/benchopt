@@ -26,7 +26,7 @@ save_file = run_benchmark(
     Benchmark(BENCHMARK_PATH),
     ['Python-PGD[use_acceleration=False]', 'R-PGD'],
     dataset_names=["Simulated[n_features=5000,n_samples=100,rho=0]"],
-    objective_filters=['*fit_intercept=False,reg=0.5'],
+    objective_filters=['*[fit_intercept=False,reg=0.5]'],
     max_runs=100, timeout=100, n_repetitions=5,
     plot_result=False, show_progress=False
 )
