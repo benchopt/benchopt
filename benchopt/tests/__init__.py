@@ -13,7 +13,7 @@ REQUIREMENT_BENCHMARK_PATH = TEST_BENCHMARK_DIR / 'requirement_benchmark'
 
 # Pattern to select specific datasets or solvers.
 SELECT_ONE_SIMULATED = r'simulated[n_features=200,rho=0]'
-SELECT_ONE_PGD = r'python-pgd[step_size=1]'
+SELECT_ONE_PGD = r'python-pgd$[step_size=1]'
 SELECT_ONE_OBJECTIVE = r'dummy[reg=0.1]'
 
 try:

@@ -175,6 +175,7 @@ class TestRunCmd:
         out.check_output(r'--Python-PGD\[step_size=1\]:', repetition=24)
         out.check_output(r'--Python-PGD\[step_size=2\]:', repetition=24)
         out.check_output(r'--Python-PGD\[step_size=1.5\]:', repetition=0)
+        out.check_output(r'--Python-PGD-with-cb', repetition=0)
 
     def test_benchopt_run_profile(self):
         with CaptureRunOutput() as out:
