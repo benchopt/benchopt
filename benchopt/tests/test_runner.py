@@ -5,6 +5,8 @@ import pytest
 from benchopt.tests import TEST_SOLVER
 from benchopt.tests import TEST_DATASET
 from benchopt.tests import TEST_OBJECTIVE
+from benchopt.benchmark import _filter_classes
+from benchopt.benchmark import _extract_options
 
 
 def test_skip_api():
@@ -53,3 +55,112 @@ def test_get_one_solution():
         one_solution = objective.get_one_solution()
     expected = np.zeros(objective.X.shape[1])
     assert all(one_solution == expected)
+
+
+def _assert_parameters_equal(instance, parameters):
+    for key, val in parameters.items():
+        assert getattr(instance, key) == val
+
+
+class TEST_DATASET_KEYWORDS(TEST_DATASET):
+    """Used to test the selection of datasets by keyword parameters."""
+    parameters = {'n_samples': [10, 11], 'n_features': [20, 21]}
+
+
+def test_filter_classes_parameters():
+    # Test the selection of dataset with optional parameters.
+
+    def filt_(filters):
+        return list(_filter_classes(TEST_DATASET_KEYWORDS, filters=filters))
+
+    # no selection (default grid)
+    results = filt_(["Test-Dataset"])
+    assert len(results) == 4
+    _assert_parameters_equal(results[0][0], dict(n_samples=10, n_features=20))
+    _assert_parameters_equal(results[1][0], dict(n_samples=10, n_features=21))
+    _assert_parameters_equal(results[2][0], dict(n_samples=11, n_features=20))
+    _assert_parameters_equal(results[3][0], dict(n_samples=11, n_features=21))
+
+    # select one parameter (n_samples)
+    results = filt_(["Test-Dataset[n_samples=42]"])
+    assert len(results) == 2
+    _assert_parameters_equal(results[0][0], dict(n_samples=42, n_features=20))
+    _assert_parameters_equal(results[1][0], dict(n_samples=42, n_features=21))
+
+    # select one parameter (n_features)
+    results = filt_(["Test-Dataset[n_features=42]"])
+    assert len(results) == 2
+    _assert_parameters_equal(results[0][0], dict(n_samples=10, n_features=42))
+    _assert_parameters_equal(results[1][0], dict(n_samples=11, n_features=42))
+
+    # select two parameters (n_samples, n_features)
+    results = filt_(["Test-Dataset[n_samples=41, n_features=42]"])
+    assert len(results) == 1
+    _assert_parameters_equal(results[0][0], dict(n_samples=41, n_features=42))
+
+    # get grid over one parameter (n_samples)
+    results = filt_(["Test-Dataset[n_samples=[41,42], n_features=19]"])
+    assert len(results) == 2
+    _assert_parameters_equal(results[0][0], dict(n_samples=41, n_features=19))
+    _assert_parameters_equal(results[1][0], dict(n_samples=42, n_features=19))
+
+    # invalid use of positional parameters
+    with pytest.raises(ValueError, match="Ambiguous positional parameter"):
+        filt_(["Test-Dataset[41,42]"])
+
+    # invalid use of unknown parameter
+    with pytest.raises(TypeError, match="unexpected keyword argument"):
+        filt_(["Test-Dataset[n_targets=42]"])
+
+
+class TEST_DATASET_POSITIONAL(TEST_DATASET):
+    """Used to test the selection of dataset with a positional parameter."""
+    parameters = {'n_samples': [10, 11]}
+
+
+def test_filter_classes_positional():
+    # Test the selection of dataset with a positional parameter.
+
+    def filt_(filters):
+        return list(_filter_classes(TEST_DATASET_POSITIONAL, filters=filters))
+
+    results = filt_(["Test-Dataset[42]"])
+    assert len(results) == 1
+    _assert_parameters_equal(results[0][0], dict(n_samples=42))
+
+    results = filt_(["Test-Dataset[41,42]"])
+    assert len(results) == 2
+    _assert_parameters_equal(results[0][0], dict(n_samples=41))
+    _assert_parameters_equal(results[1][0], dict(n_samples=42))
+
+    # invalid use of both positional and keyword parameter
+    with pytest.raises(ValueError, match="Both positional and keyword "):
+        filt_(["Test-Dataset[41, n_samples=42]"])
+
+
+def test_extract_options():
+    basename, args, kwargs = _extract_options("Dataset")
+    assert basename == "Dataset"
+    assert len(args) == 0
+    assert kwargs == dict()
+
+    basename, args, kwargs = _extract_options("Test-Dataset[n_samples=41]")
+    assert basename == "Test-Dataset"
+    assert len(args) == 0
+    assert kwargs == dict(n_samples=41)
+
+    basename, args, kwargs = _extract_options("n_samples[n_samples=41,]")
+    assert basename == "n_samples"
+    assert len(args) == 0
+    assert kwargs == dict(n_samples=41)
+
+    basename, args, kwargs = _extract_options(
+        "Dataset[n_samples=[41, 42], n_features=123.0]")
+    assert basename == "Dataset"
+    assert len(args) == 0
+    assert kwargs == dict(n_samples=[41, 42], n_features=123.)
+
+    with pytest.raises(ValueError, match="Invalid name"):
+        _extract_options("Dataset[n_samples=42")  # missing "]"
+    with pytest.raises(ValueError, match="Invalid name"):
+        _extract_options("Dataset[n_samples=[41, 42]")  # missing "]"

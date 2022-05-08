@@ -557,7 +557,7 @@ def _validate_patterns(all_names, patterns, name_type='dataset'):
         if not matched:
             invalid_patterns.append(p)
 
-    # If some patterns did not matched any dataset, raise an error
+    # If some patterns did not matched any class, raise an error
     if len(invalid_patterns) > 0:
         all_names_ = '- ' + '\n- '.join(all_names)
         raise click.BadParameter(
@@ -572,58 +572,58 @@ def _filter_classes(*classes, filters=None):
         if not is_matched(klass.name, filters):
             continue
 
-        # skip if not installed
-        is_installed = (
-            not hasattr(klass, 'is_installed')
-            or klass.is_installed(raise_on_not_installed=RAISE_INSTALL_ERROR)
-        )
-        if not is_installed:
+        if not klass.is_installed(raise_on_not_installed=RAISE_INSTALL_ERROR):
             yield klass.name, False
-            break
+            continue
 
-        # get list of parameters to use
-        if filters is None or len(filters) == 0:
-            used_parameters = product_param(klass.parameters)
-        else:
-            # get parameters from filter names
-            update_parameters = []
-            for filt in filters:
-                if is_matched(klass.name, [filt]):
-                    _, args, kwargs = _extract_options(filt)
-
-                    if len(args) > 0:
-                        # if positional arguments, we assume there is only
-                        # one parameter in the class.
-                        if len(klass.parameters) > 1:
-                            raise ValueError(
-                                f"Ambiguous positional parameter in {filt}.")
-                        elif len(kwargs) > 0:
-                            raise ValueError(
-                                "Both positional and keyword parameters "
-                                f"in {filt}.")
-                        else:
-                            key = list(klass.parameters.keys())[0]
-                            kwargs = {key: args}
-
-                    # use product_param to get all combinations of parameters
-                    kwargs = {
-                        key: (val if isinstance(val, (list, tuple)) else [val])
-                        for key, val in kwargs.items()
-                    }
-                    update_parameters.extend(product_param(kwargs))
-
-            # update default parameters (klass.parameters) with the
-            # parameters from filter names
-            used_parameters = []
-            for update in update_parameters:
-                for default in product_param(klass.parameters):
-                    default = default.copy()  # avoid modifying the original
-                    default.update(update)
-                    if default not in used_parameters:  # avoid duplicates
-                        used_parameters.append(default)
-
-        for parameters in used_parameters:
+        for parameters in _get_used_parameters(klass, filters):
             yield klass.get_instance(**parameters), True
+
+
+def _get_used_parameters(klass, filters):
+    """Get the list of parameters to use in the class."""
+
+    # Use the default parameters if no filters are provided.
+    if filters is None or len(filters) == 0:
+        return product_param(klass.parameters)
+
+    # If filters are provided, get the list of parameters from the names.
+    update_parameters = []
+    for filt in filters:
+        if is_matched(klass.name, [filt]):
+            # Extract the parameters from the filter name.
+            _, args, kwargs = _extract_options(filt)
+
+            if len(args) > 0:
+                # positional args are allowed only for single-parameter classes
+                if len(klass.parameters) > 1:
+                    raise ValueError(
+                        f"Ambiguous positional parameter in {filt}.")
+                elif len(kwargs) > 0:
+                    raise ValueError(
+                        f"Both positional and keyword parameters in {filt}.")
+                else:
+                    key = list(klass.parameters.keys())[0]
+                    kwargs = {key: args}
+
+            # Use product_param to get all combinations of parameters.
+            kwargs = {
+                key: (val if isinstance(val, (list, tuple)) else [val])
+                for key, val in kwargs.items()
+            }
+            update_parameters.extend(product_param(kwargs))
+
+    # Then, update the default parameters (klass.parameters) with the
+    # parameters extracted from filter names.
+    used_parameters = []
+    for update in update_parameters:
+        for default in product_param(klass.parameters):
+            default = default.copy()  # avoid modifying the original
+            default.update(update)
+            if default not in used_parameters:  # avoid duplicates
+                used_parameters.append(default)
+
+    return used_parameters
 
 
 def buffer_iterator(it):
