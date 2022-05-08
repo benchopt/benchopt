@@ -8,6 +8,7 @@ from benchopt.cli.completion import complete_solvers
 from benchopt.cli.completion import complete_datasets
 from benchopt.cli.completion import complete_benchmarks
 from benchopt.cli.completion import complete_conda_envs
+from benchopt.cli.completion import complete_config_files
 from benchopt.utils.conda_env_cmd import list_conda_envs
 from benchopt.utils.conda_env_cmd import create_conda_env
 from benchopt.utils.shell_cmd import _run_shell_in_conda_env
@@ -113,6 +114,7 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               metavar="<int>", default=100, show_default=True, type=int,
               help='Timeout a solver when run for more than <timeout> seconds')
 @click.option('--config', 'config_file', default=None,
+              shell_complete=complete_config_files,
               help="YAML configuration file containing benchmark options.")
 @click.option('--plot/--no-plot', default=True,
               help="Whether or not to plot the results. Default is True.")

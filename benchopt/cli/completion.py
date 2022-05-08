@@ -84,6 +84,17 @@ def complete_output_files(ctx, param, incomplete):
     return propose_from_list(candidates, incomplete)
 
 
+def complete_config_files(ctx, param, incomplete):
+    "Auto-completion for configuration files."
+    skip_import()
+    benchmark = find_benchmark_in_args(ctx.args)
+    if benchmark is None:
+        return []
+    benchmark_folder = benchmark.benchmark_dir
+    candidates = list(benchmark_folder.glob('*.yml'))
+    return propose_from_list(candidates, incomplete)
+
+
 def complete_conda_envs(ctx, param, incomplete):
     "Auto-completion for env-names."
     _, all_envs = list_conda_envs()
