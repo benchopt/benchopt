@@ -209,7 +209,7 @@ class TestRunCmd:
         n-repetitions: 2
         max-runs: 1
         force-solver:
-          - python-pgd[step_size=[2, 3]]
+          - python-pgd$[step_size=[2, 3]]
           - Test-Solver
         """
         tmp = tempfile.NamedTemporaryFile(mode="w+")

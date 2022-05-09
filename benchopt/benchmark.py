@@ -467,8 +467,7 @@ def is_matched(name, include_patterns=None, default=True):
         return default
     name = str(name)
     name = _extract_options(name)[0]
-    # we use [] to signal options in patterns, we must escape them for re
-    substitutions = {"*": ".*", "[": r"\[", "]": r"\]"}
+    substitutions = {"*": ".*"}
     for p in include_patterns:
         p = _extract_options(p)[0]
         for old, new in substitutions.items():
@@ -502,47 +501,78 @@ def _extract_options(name):
     >>> _extract_options("foo[baz]")  # "foo", ["baz"], dict()
     """
     if name.count("[") != name.count("]"):
-        raise ValueError("Invalid name: {}".format(name))
+        raise ValueError(f"Invalid name (missing bracket): {name}")
 
     basename = "".join(re.split(r"\[.*\]", name))
     matches = re.findall(r"\[.*\]", name)
 
-    args = []
-    kwargs = {}
-    for match in matches:
+    if len(matches) == 0:
+        return basename, [], {}
+    elif len(matches) > 1:
+        raise ValueError(f"Invalid name (multiple brackets): {name}")
+    else:
+        match = matches[0]
+
         if match[0] != "[" or match[-1] != "]":
-            raise ValueError("Invalid name: {}".format(name))
+            raise ValueError(f"Invalid name (missing bracket): {name}")
         match = match[1:-1]  # remove brackets
 
-        # split by commas, except commas within brackets
-        elements = re.split(r",(?![^\[]*\])(?![^(]*\))", match)
-        for element in elements:
-            element = element.strip(" ")
-            if element == "":
-                continue
-            if "=" in element:
-                key, value = element.split("=")
-                kwargs[key] = _safe_eval(value)
-            else:
-                args.append(_safe_eval(element))
-
-    return basename, args, kwargs
+        result =_extract_parameters(match)
+        if isinstance(result, dict):
+            return basename, [], result
+        elif isinstance(result, list):
+            return basename, result, {}
+        else:
+            raise ValueError("Impossible. Please report this bug.")
 
 
-def _safe_eval(string):
-    """Evaluate a string as a python expression. If it fails, return the string
+def _extract_parameters(string):
+    """Extract parameters from a string.
+
+    If the string contains a "=", returns a dict, otherwise returns a list.
 
     Examples
     --------
-    >>> _safe_eval('1+1')  # return 2
-    >>> _safe_eval('True')  # return True
-    >>> _safe_eval('sgd')  # return 'sgd'
+    >>> _extract_parameters("foo")  # ["foo"]
+    >>> _extract_parameters("foo, 42, True")  # ["foo", 42, True]
+    >>> _extract_parameters("foo=bar")  # {"foo": "bar"}
+    >>> _extract_parameters("foo=[bar, baz]")  # {"foo": ["bar", "baz"]}
+    >>> _extract_parameters("foo=1, baz=True")  # {"foo": 1, "baz": True}
+    >>> _extract_parameters("'foo, bar'=[(0, 1),(1, 0)]")
+    >>> # {"foo, bar": [(0, 1),(1, 0)]}
     """
     import ast
+    original = string
+
+    # First, replace all quoted names with their hashes, to avoid modification.
+    all_matches = re.findall(r"'[^']*'", string)
+    for match in all_matches:
+        string = string.replace(match, str(hash(match)))
+
+    # Second, add quotes to all variable names (foo -> 'foo').
+    string = re.sub(r"[a-zA-Z][a-zA-Z0-9_]*", r"'\g<0>'", string)
+
+    # Third, change back the hashes to their original names.
+    for match in all_matches:
+        string = string.replace(str(hash(match)), match)
+
+    # Prepare the sequence for AST parsing.
+    # Sequences with "=" are made into a dict expression {'foo': 'bar'}.
+    # Sequences without "=" are made into a list expression ['foo', 'bar'].
+    if "=" in string:
+        string = "{" + string.replace("=", ":")+ "}"
+    else:
+        string = "[" + string + "]"
+
+    # Remove quotes for some variable names
+    for word in ["True", "False", "None"]:
+        string = string.replace(f"'{word}'", word)
+    
+    # Evaluate the string.
     try:
         return ast.literal_eval(string)
-    except ValueError:
-        return string
+    except (ValueError, SyntaxError):
+        raise ValueError(f"Invalid name '{original}', evaluated as {string}.")
 
 
 def _validate_patterns(all_names, patterns, name_type='dataset'):
@@ -619,6 +649,14 @@ def _get_used_parameters(klass, filters):
     for update in update_parameters:
         for default in product_param(klass.parameters):
             default = default.copy()  # avoid modifying the original
+
+            # check that all parameters are defined in klass.parameters
+            for key in update:
+                if key not in default:
+                    raise ValueError(
+                        f"Unknown parameter '{key}', parameter must be in "
+                        f"{list(default.keys())}")
+                
             default.update(update)
             if default not in used_parameters:  # avoid duplicates
                 used_parameters.append(default)

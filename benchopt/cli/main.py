@@ -237,7 +237,7 @@ def run(config_file=None, **kwargs):
         )
 
     # run the command in the conda env
-    solvers_option = ' '.join(['-s ' + s for s in solver_names])
+    solvers_option = ' '.join([f"-s '{s}'" for s in solver_names])
     forced_solvers_option = ' '.join([f"-f '{s}'" for s in forced_solvers])
     datasets_option = ' '.join([f"-d '{d}'" for d in dataset_names])
     objective_option = ' '.join([f"-o '{o}'" for o in objective_filters])

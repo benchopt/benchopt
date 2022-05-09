@@ -22,15 +22,13 @@ be **as simple as doing**:
 
 .. code-block::
 
-    conda create -n benchopt python
-    conda activate benchopt
-    pip install benchopt
-    git clone https://github.com/benchopt/benchmark_logreg_l2
-    benchopt install -e ./benchmark_logreg_l2 \
-        -s lightning -s sklearn
-    benchopt run -e ./benchmark_logreg_l2 \
-        -s lightning -s "sklearn[liblinear, newton-cg]" \
-        -d "simulated[n_features=500,n_samples=200]"
+   conda create -n benchopt python
+   conda activate benchopt
+   pip install benchopt
+   git clone https://github.com/benchopt/benchmark_logreg_l2
+   cd benchmark_logreg_l2
+   benchopt install -e . -s lightning -s sklearn
+   benchopt run -e . --config ./config_example.yml
 
 Running this command will give you a benchmark plot on l2-regularized
 logistic regression:

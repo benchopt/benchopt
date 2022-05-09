@@ -7,6 +7,7 @@ from benchopt.tests import TEST_DATASET
 from benchopt.tests import TEST_OBJECTIVE
 from benchopt.benchmark import _filter_classes
 from benchopt.benchmark import _extract_options
+from benchopt.benchmark import _extract_parameters
 
 
 def test_skip_api():
@@ -104,12 +105,27 @@ def test_filter_classes_parameters():
     _assert_parameters_equal(results[0][0], dict(n_samples=41, n_features=19))
     _assert_parameters_equal(results[1][0], dict(n_samples=42, n_features=19))
 
+    # get grid over two parameter (n_samples, n_features)
+    results = filt_(["Test-Dataset[n_samples=[41,42], n_features=[19, 20]]"])
+    assert len(results) == 4
+    _assert_parameters_equal(results[0][0], dict(n_samples=41, n_features=19))
+    _assert_parameters_equal(results[1][0], dict(n_samples=41, n_features=20))
+    _assert_parameters_equal(results[2][0], dict(n_samples=42, n_features=19))
+    _assert_parameters_equal(results[3][0], dict(n_samples=42, n_features=20))
+
+    # get list of tuples
+    results = filt_(["Test-Dataset['n_samples, n_features'"
+                     "=[(41, 19), (42, 20)]]"])
+    assert len(results) == 2
+    _assert_parameters_equal(results[0][0], dict(n_samples=41, n_features=19))
+    _assert_parameters_equal(results[1][0], dict(n_samples=42, n_features=20))
+
     # invalid use of positional parameters
     with pytest.raises(ValueError, match="Ambiguous positional parameter"):
         filt_(["Test-Dataset[41,42]"])
 
     # invalid use of unknown parameter
-    with pytest.raises(TypeError, match="unexpected keyword argument"):
+    with pytest.raises(ValueError, match="Unknown parameter 'n_targets'"):
         filt_(["Test-Dataset[n_targets=42]"])
 
 
@@ -133,8 +149,14 @@ def test_filter_classes_positional():
     _assert_parameters_equal(results[0][0], dict(n_samples=41))
     _assert_parameters_equal(results[1][0], dict(n_samples=42))
 
+    # test recursive eval within list, to eval strings
+    results = filt_(["Test-Dataset[n_samples=[foo,True]]"])
+    assert len(results) == 2
+    _assert_parameters_equal(results[0][0], dict(n_samples="foo"))
+    _assert_parameters_equal(results[1][0], dict(n_samples=True))
+
     # invalid use of both positional and keyword parameter
-    with pytest.raises(ValueError, match="Both positional and keyword "):
+    with pytest.raises(ValueError, match="Invalid name"):
         filt_(["Test-Dataset[41, n_samples=42]"])
 
 
@@ -164,3 +186,28 @@ def test_extract_options():
         _extract_options("Dataset[n_samples=42")  # missing "]"
     with pytest.raises(ValueError, match="Invalid name"):
         _extract_options("Dataset[n_samples=[41, 42]")  # missing "]"
+
+
+def test_extract_parameters():
+    # Test the conversion of parameters.
+
+    # Convert to a list
+    assert _extract_parameters("42") == [42]
+    assert _extract_parameters("True") == [True]
+    assert _extract_parameters("foo") == ["foo"]
+    assert _extract_parameters("1, 2, 3") == [1, 2, 3]
+
+    assert _extract_parameters("42, True, foo") == [42, True, "foo"]
+    assert _extract_parameters("42, (1, 2, 3)") == [42, (1, 2, 3)]
+    assert _extract_parameters("foo,bar ") == ["foo", "bar"]
+    assert _extract_parameters("foo, bar") == ["foo", "bar"]
+    assert _extract_parameters("foo,bar,") == ["foo", "bar"]
+    assert _extract_parameters("foo, (bar, baz)") == ["foo", ("bar", "baz")]
+    
+    # Convert to a dict
+    assert _extract_parameters("foo=(bar, baz)") == {'foo': ('bar', 'baz')}
+    assert _extract_parameters("foo=(0, 1),bar=2") == {'foo': (0, 1), 'bar': 2}
+
+    # Special case with a list of tuple parameters
+    assert _extract_parameters("'foo, bar'=[(0, 1),(1, 0)]") == \
+        {'foo, bar': [(0, 1), (1, 0)]}
