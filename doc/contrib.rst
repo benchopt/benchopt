@@ -122,6 +122,7 @@ HTML output by typing, in a shell:
 
 .. prompt:: bash $
 
+    pip install benchopt[doc]
     cd doc/
     make html
     firefox _build/html/index.html
