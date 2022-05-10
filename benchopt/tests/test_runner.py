@@ -203,7 +203,7 @@ def test_extract_parameters():
     assert _extract_parameters("foo, bar") == ["foo", "bar"]
     assert _extract_parameters("foo,bar,") == ["foo", "bar"]
     assert _extract_parameters("foo, (bar, baz)") == ["foo", ("bar", "baz")]
-    
+
     # Convert to a dict
     assert _extract_parameters("foo=(bar, baz)") == {'foo': ('bar', 'baz')}
     assert _extract_parameters("foo=(0, 1),bar=2") == {'foo': (0, 1), 'bar': 2}

@@ -517,7 +517,7 @@ def _extract_options(name):
             raise ValueError(f"Invalid name (missing bracket): {name}")
         match = match[1:-1]  # remove brackets
 
-        result =_extract_parameters(match)
+        result = _extract_parameters(match)
         if isinstance(result, dict):
             return basename, [], result
         elif isinstance(result, list):
@@ -560,14 +560,14 @@ def _extract_parameters(string):
     # Sequences with "=" are made into a dict expression {'foo': 'bar'}.
     # Sequences without "=" are made into a list expression ['foo', 'bar'].
     if "=" in string:
-        string = "{" + string.replace("=", ":")+ "}"
+        string = "{" + string.replace("=", ":") + "}"
     else:
         string = "[" + string + "]"
 
     # Remove quotes for some variable names
     for word in ["True", "False", "None"]:
         string = string.replace(f"'{word}'", word)
-    
+
     # Evaluate the string.
     try:
         return ast.literal_eval(string)
@@ -656,7 +656,7 @@ def _get_used_parameters(klass, filters):
                     raise ValueError(
                         f"Unknown parameter '{key}', parameter must be in "
                         f"{list(default.keys())}")
-                
+
             default.update(update)
             if default not in used_parameters:  # avoid duplicates
                 used_parameters.append(default)
