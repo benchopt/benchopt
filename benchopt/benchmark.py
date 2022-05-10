@@ -568,6 +568,12 @@ def _extract_parameters(string):
     for word in ["True", "False", "None"]:
         string = string.replace(f"'{word}'", word)
 
+    # Remove deprecated regex syntax in the parameters
+    if "*" in string:
+        warnings.warn("Regular expressions in the parameters is deprecated.",
+                      DeprecationWarning)
+        string = string.replace("*", "")
+
     # Evaluate the string.
     try:
         return ast.literal_eval(string)
