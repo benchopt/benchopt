@@ -73,8 +73,9 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               help="Deprecated alias for `--objective`.")
 @click.option('--objective', '-o',
               metavar='<objective_filter>', multiple=True, type=str,
-              help="Filter the objective based on its parametrized name. This "
-              "can be used to only include one set of parameters.")
+              help="Select the objective based on its parameters, with the "
+              "syntax `objective[parameter=value]`. This can be used to only "
+              "include one set of parameters. ")
 @click.option('--old-objective-filter', '-p',
               multiple=True, type=str,
               help="Deprecated alias for --objective_filter/-o.")
@@ -82,7 +83,9 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               metavar="<solver_name>", multiple=True, type=str,
               help="Include <solver_name> in the benchmark. By default, all "
               "solvers are included. When `-s` is used, only listed solvers"
-              " are included. To include multiple solvers, "
+              " are included. Note that <solver_name> can include parameters,"
+              " with the syntax `solver[parameter=value]`. "
+              "To include multiple solvers, "
               "use multiple `-s` options.", shell_complete=complete_solvers)
 @click.option('--force-solver', '-f',
               metavar="<solver_name>", multiple=True, type=str,
@@ -94,7 +97,8 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               metavar="<dataset_name>", multiple=True, type=str,
               help="Run the benchmark on <dataset_name>. By default, all "
               "datasets are included. When `-d` is used, only listed datasets"
-              " are included. Note that <dataset_name> can be a regexp. "
+              " are included. Note that <dataset_name> can include parameters,"
+              " with the syntax `dataset[parameter=value]`. "
               "To include multiple datasets, use multiple `-d` options.",
               shell_complete=complete_datasets)
 @click.option('--n-jobs', '-j',
@@ -286,7 +290,8 @@ def run(config_file=None, **kwargs):
               "datasets are included, except when -s flag is used. "
               "If -s flag is used, then no dataset is included. "
               "When `-d` is used, only listed datasets "
-              "are included. Note that <dataset_name> can be a regexp. "
+              "are included. Note that <dataset_name> can include parameters "
+              "with the syntax `dataset[parameter=value]`. "
               "To include multiple datasets, use multiple `-d` options."
               "To include all datasets, use -d 'all' option.",
               shell_complete=complete_datasets)
