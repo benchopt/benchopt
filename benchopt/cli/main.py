@@ -254,6 +254,7 @@ def run(config_file=None, **kwargs):
         rf"{'--html' if html else '--no-html'} "
         rf"{'--pdb' if pdb else ''} "
         .replace('\\', '\\\\')
+        .replace('[', r'\[').replace(']', r'\]')
     )
     raise SystemExit(_run_shell_in_conda_env(
         cmd, env_name=env_name, capture_stdout=False
