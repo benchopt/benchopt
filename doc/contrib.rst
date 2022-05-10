@@ -123,6 +123,6 @@ HTML output by typing, in a shell:
 .. prompt:: bash $
 
     cd doc/
-    make html-noplot                # make html
+    make html
     firefox _build/html/index.html
 
