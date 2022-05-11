@@ -523,7 +523,10 @@ def _extract_options(name):
         elif isinstance(result, list):
             return basename, result, {}
         else:
-            raise ValueError("Impossible. Please report this bug.")
+            raise ValueError(
+                f"Impossible. Please report this bug.\n"
+                f"_extract_parameters returned '{result}'"
+            )
 
 
 def _extract_parameters(string):
@@ -550,7 +553,7 @@ def _extract_parameters(string):
         string = string.replace(match, str(hash(match)))
 
     # Second, add quotes to all variable names (foo -> 'foo').
-    string = re.sub(r"[a-zA-Z][a-zA-Z0-9_-]*", r"'\g<0>'", string)
+    string = re.sub(r"[A-z][A-z0-9_-]*", r"'\g<0>'", string)
 
     # Third, change back the hashes to their original names.
     for match in all_matches:
@@ -564,7 +567,7 @@ def _extract_parameters(string):
     else:
         string = "[" + string + "]"
 
-    # Remove quotes for some variable names
+    # Remove quotes for python language tokens
     for word in ["True", "False", "None"]:
         string = string.replace(f"'{word}'", word)
 
