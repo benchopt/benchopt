@@ -145,6 +145,6 @@ if SAVEFIG:
     main_fig.savefig(f"figures/{figname}.svg")
 
     leg_fig_name = f"figures/{figname}_legend.pdf"
-    leg_fig.savefig(leg_fig_name)
+    leg_fig.savefig(leg_fig_name, dpi=300)
     os.system(f"pdfcrop {leg_fig_name} {leg_fig_name}")
     leg_fig.savefig(f"figures/{figname}_legend.svg", dpi=300)
