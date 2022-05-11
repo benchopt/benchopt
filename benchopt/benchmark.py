@@ -566,6 +566,7 @@ def _extract_parameters(string):
 
     # Remove quotes for python language tokens
     for word in ["True", "False", "None"]:
+        string = string.replace(f"'{word.lower()}'", word)
         string = string.replace(f"'{word}'", word)
 
     # Evaluate the string.

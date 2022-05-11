@@ -211,3 +211,8 @@ def test_extract_parameters():
     # Special case with a list of tuple parameters
     assert _extract_parameters("'foo, bar'=[(0, 1),(1, 0)]") == \
         {'foo, bar': [(0, 1), (1, 0)]}
+
+    # lowercase tokens
+    assert _extract_parameters("true") == [True]
+    assert _extract_parameters("false") == [False]
+    assert _extract_parameters("none") == [None]

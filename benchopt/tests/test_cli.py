@@ -157,7 +157,7 @@ class TestRunCmd:
 
     def test_benchopt_run_custom_parameters(self):
         SELECT_DATASETS = r'simulated[n_features=[100, 200]]'
-        SELECT_SOLVERS = r'python-pgd[step_size=[1, 2]]'
+        SELECT_SOLVERS = r'python-pgd-with-cb[use_acceleration=[True, False]]'
         SELECT_OBJECTIVES = r'dummy*[0.1, 0.2]'
 
         with CaptureRunOutput() as out:
@@ -172,10 +172,11 @@ class TestRunCmd:
         out.check_output(r'Dummy Sparse Regression\[reg=0.1\]', repetition=2)
         out.check_output(r'Dummy Sparse Regression\[reg=0.2\]', repetition=2)
         out.check_output(r'Dummy Sparse Regression\[reg=0.05\]', repetition=0)
-        out.check_output(r'--Python-PGD\[step_size=1\]:', repetition=24)
-        out.check_output(r'--Python-PGD\[step_size=2\]:', repetition=24)
-        out.check_output(r'--Python-PGD\[step_size=1.5\]:', repetition=0)
-        out.check_output(r'--Python-PGD-with-cb', repetition=0)
+        out.check_output(r'--Python-PGD\[', repetition=0)
+        out.check_output(r'--Python-PGD-with-cb\[use_acceleration=False\]:',
+                         repetition=28)
+        out.check_output(r'--Python-PGD-with-cb\[use_acceleration=True\]:',
+                         repetition=28)
 
     def test_benchopt_run_profile(self):
         with CaptureRunOutput() as out:
