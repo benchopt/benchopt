@@ -157,8 +157,8 @@ class TestRunCmd:
 
     def test_benchopt_run_custom_parameters(self):
         SELECT_DATASETS = r'simulated[n_features=[100, 200]]'
-        SELECT_SOLVERS = r'python-pgd$[step_size=[1, 2]]'
-        SELECT_OBJECTIVES = r'dummy[0.1, 0.2]'
+        SELECT_SOLVERS = r'python-pgd[step_size=[1, 2]]'
+        SELECT_OBJECTIVES = r'dummy*[0.1, 0.2]'
 
         with CaptureRunOutput() as out:
             run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_DATASETS,

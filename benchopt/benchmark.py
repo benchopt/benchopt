@@ -472,7 +472,7 @@ def is_matched(name, include_patterns=None, default=True):
         p = _extract_options(p)[0]
         for old, new in substitutions.items():
             p = p.replace(old, new)
-        if re.match(f"^{p}.*", name, flags=re.IGNORECASE) is not None:
+        if re.match(f"^{p}$", name, flags=re.IGNORECASE) is not None:
             return True
     return False
 
