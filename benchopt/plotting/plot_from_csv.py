@@ -140,7 +140,7 @@ plt.show(block=False)
 if SAVEFIG:
     Path('./figures').mkdir(exist_ok=True)
     main_fig_name = f"figures/{figname}.pdf"
-    main_fig.savefig(main_fig_name)
+    main_fig.savefig(main_fig_name, dpi=300)
     os.system(f"pdfcrop {main_fig_name} {main_fig_name}")
     main_fig.savefig(f"figures/{figname}.svg")
 
