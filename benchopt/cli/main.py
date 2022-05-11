@@ -292,6 +292,10 @@ def run(config_file=None, **kwargs):
               "To include multiple datasets, use multiple `-d` options."
               "To include all datasets, use -d 'all' option.",
               shell_complete=complete_datasets)
+@click.option('--config', 'config_file', default=None,
+              shell_complete=complete_config_files,
+              help="YAML configuration file containing benchmark options, "
+              "whose solvers and datasets will be installed.")
 @click.option('--env', '-e', 'env_name',
               flag_value='True', type=str, default='False',
               help="Install all requirements in a dedicated "
@@ -315,8 +319,20 @@ def run(config_file=None, **kwargs):
               help="If this flag is set, no confirmation will be asked "
               "to the user to install requirements in the current environment."
               " Useless with options `-e/--env` or `--env-name`.")
-def install(benchmark, minimal, solver_names, dataset_names, force=False,
-            recreate=False, env_name='False', confirm=False, quiet=False):
+def install(
+        benchmark, minimal, solver_names, dataset_names, config_file=None,
+        force=False, recreate=False, env_name='False', confirm=False,
+        quiet=False):
+
+    if config_file is not None:
+        with open(config_file, "r") as f:
+            config = yaml.safe_load(f)
+        if not dataset_names:
+            dataset_names = config.get("dataset", tuple())
+        if not solver_names:
+            solver_names = config.get("solver", tuple())
+            forced_solvers = config.get("force-solver", tuple())
+            solver_names = list(set(solver_names).union(set(forced_solvers)))
 
     # Check that the dataset/solver patterns match actual dataset
     benchmark = Benchmark(benchmark)
