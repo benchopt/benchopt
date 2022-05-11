@@ -202,7 +202,6 @@ def test_extract_parameters():
     assert _extract_parameters("foo,bar ") == ["foo", "bar"]
     assert _extract_parameters("foo, bar") == ["foo", "bar"]
     assert _extract_parameters("foo,bar,") == ["foo", "bar"]
-    assert _extract_parameters("foo,bar,*") == ["foo", "bar"]
     assert _extract_parameters("foo, (bar, baz)") == ["foo", ("bar", "baz")]
 
     # Convert to a dict

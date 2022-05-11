@@ -512,9 +512,6 @@ def _extract_options(name):
         raise ValueError(f"Invalid name (multiple brackets): {name}")
     else:
         match = matches[0]
-
-        if match[0] != "[" or match[-1] != "]":
-            raise ValueError(f"Invalid name (missing bracket): {name}")
         match = match[1:-1]  # remove brackets
 
         result = _extract_parameters(match)
@@ -570,12 +567,6 @@ def _extract_parameters(string):
     # Remove quotes for python language tokens
     for word in ["True", "False", "None"]:
         string = string.replace(f"'{word}'", word)
-
-    # Remove deprecated regex syntax in the parameters
-    if "*" in string:
-        warnings.warn("Regular expressions in the parameters is deprecated.",
-                      DeprecationWarning)
-        string = string.replace("*", "")
 
     # Evaluate the string.
     try:
