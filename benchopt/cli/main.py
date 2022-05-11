@@ -85,8 +85,8 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               "solvers are included. When `-s` is used, only listed solvers"
               " are included. Note that <solver_name> can include parameters,"
               " with the syntax `solver[parameter=value]`. "
-              "To include multiple solvers, "
-              "use multiple `-s` options.", shell_complete=complete_solvers)
+              "To include multiple solvers, use multiple `-s` options.",
+              shell_complete=complete_solvers)
 @click.option('--force-solver', '-f',
               metavar="<solver_name>", multiple=True, type=str,
               help="Force the re-run for <solver_name>. This "
