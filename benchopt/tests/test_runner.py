@@ -207,6 +207,7 @@ def test_extract_parameters():
     # Convert to a dict
     assert _extract_parameters("foo=(bar, baz)") == {'foo': ('bar', 'baz')}
     assert _extract_parameters("foo=(0, 1),bar=2") == {'foo': (0, 1), 'bar': 2}
+    assert _extract_parameters("foo=[100, 200]") == {'foo': (100, 200)}
 
     # Special case with a list of tuple parameters
     assert _extract_parameters("'foo, bar'=[(0, 1),(1, 0)]") == \

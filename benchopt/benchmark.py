@@ -550,7 +550,7 @@ def _extract_parameters(string):
         string = string.replace(match, str(hash(match)))
 
     # Second, add quotes to all variable names (foo -> 'foo').
-    string = re.sub(r"[A-z][A-z0-9_-]*", r"'\g<0>'", string)
+    string = re.sub(r"[a-zA-Z][a-zA-Z0-9_-]*", r"'\g<0>'", string)
 
     # Third, change back the hashes to their original names.
     for match in all_matches:
