@@ -63,16 +63,16 @@ def _assert_parameters_equal(instance, parameters):
         assert getattr(instance, key) == val
 
 
-class TEST_DATASET_KEYWORDS(TEST_DATASET):
+class TEST_DATASET_TWO_PARAMS(TEST_DATASET):
     """Used to test the selection of datasets by keyword parameters."""
     parameters = {'n_samples': [10, 11], 'n_features': [20, 21]}
 
 
-def test_filter_classes_parameters():
+def test_filter_classes_two_parameters():
     # Test the selection of dataset with optional parameters.
 
     def filt_(filters):
-        return list(_filter_classes(TEST_DATASET_KEYWORDS, filters=filters))
+        return list(_filter_classes(TEST_DATASET_TWO_PARAMS, filters=filters))
 
     # no selection (default grid)
     results = filt_(["Test-Dataset"])
@@ -129,27 +129,29 @@ def test_filter_classes_parameters():
         filt_(["Test-Dataset[n_targets=42]"])
 
 
-class TEST_DATASET_POSITIONAL(TEST_DATASET):
+class TEST_DATASET_ONE_PARAM(TEST_DATASET):
     """Used to test the selection of dataset with a positional parameter."""
     parameters = {'n_samples': [10, 11]}
 
 
-def test_filter_classes_positional():
-    # Test the selection of dataset with a positional parameter.
+def test_filter_classes_on_param():
+    # Test the selection of dataset with only one parameter.
 
     def filt_(filters):
-        return list(_filter_classes(TEST_DATASET_POSITIONAL, filters=filters))
+        return list(_filter_classes(TEST_DATASET_ONE_PARAM, filters=filters))
 
+    # test positional parameter
     results = filt_(["Test-Dataset[42]"])
     assert len(results) == 1
     _assert_parameters_equal(results[0][0], dict(n_samples=42))
 
+    # test grid of positional parameter
     results = filt_(["Test-Dataset[41,42]"])
     assert len(results) == 2
     _assert_parameters_equal(results[0][0], dict(n_samples=41))
     _assert_parameters_equal(results[1][0], dict(n_samples=42))
 
-    # test recursive eval within list, to eval strings
+    # test grid of keyword parameter
     results = filt_(["Test-Dataset[n_samples=[foo,True]]"])
     assert len(results) == 2
     _assert_parameters_equal(results[0][0], dict(n_samples="foo"))
