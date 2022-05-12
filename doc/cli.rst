@@ -20,13 +20,13 @@ The `benchopt` command also comes with tab completion for the solver name
 and the dataset name.
 
 .. note::
-    **Optional parameter syntax:** For some CLI parameter (solver, objective,
-    dataset), additional parameters can be given with the following syntax:
+    **Optional parameters syntax:** For some CLI parameters (solver, objective,
+    dataset), additional values can be given with the following syntax:
 
     .. code-block:: bash
 
         # Run a particular solver with a particular set of parameters:
-        --solver solver_name[param_1=value_1, param_2=100]
+        --solver solver_name[param_1=method_name, param_2=100]
         # To select a grid of parameters, the following syntax is allowed:
         --solver solver_name[param_1=[True, False]]
         # For objects with only one parameter, the name can be omitted:
