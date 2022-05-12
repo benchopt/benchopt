@@ -113,9 +113,21 @@ def test_filter_classes_two_parameters():
     _assert_parameters_equal(results[2][0], dict(n_samples=42, n_features=19))
     _assert_parameters_equal(results[3][0], dict(n_samples=42, n_features=20))
 
+    results = filt_(
+        ["Test-Dataset[n_samples=[foo,bar], n_features=[True, False]]"])
+    assert len(results) == 4
+    _assert_parameters_equal(results[0][0],
+                             dict(n_samples="foo", n_features=True))
+    _assert_parameters_equal(results[1][0],
+                             dict(n_samples="foo", n_features=False))
+    _assert_parameters_equal(results[2][0],
+                             dict(n_samples="bar", n_features=True))
+    _assert_parameters_equal(results[3][0],
+                             dict(n_samples="bar", n_features=False))
+
     # get list of tuples
-    results = filt_(["Test-Dataset['n_samples, n_features'"
-                     "=[(41, 19), (42, 20)]]"])
+    results = filt_(
+        ["Test-Dataset['n_samples, n_features'=[(41, 19), (42, 20)]]"])
     assert len(results) == 2
     _assert_parameters_equal(results[0][0], dict(n_samples=41, n_features=19))
     _assert_parameters_equal(results[1][0], dict(n_samples=42, n_features=20))
@@ -150,6 +162,12 @@ def test_filter_classes_one_param():
     assert len(results) == 2
     _assert_parameters_equal(results[0][0], dict(n_samples=41))
     _assert_parameters_equal(results[1][0], dict(n_samples=42))
+
+    results = filt_(["Test-Dataset[foo, 'bar', None]"])
+    assert len(results) == 3
+    _assert_parameters_equal(results[0][0], dict(n_samples="foo"))
+    _assert_parameters_equal(results[1][0], dict(n_samples="bar"))
+    _assert_parameters_equal(results[2][0], dict(n_samples=None))
 
     # test grid of keyword parameter
     results = filt_(["Test-Dataset[n_samples=[foo,True]]"])
@@ -197,6 +215,7 @@ def test_extract_parameters():
     assert _extract_parameters("42") == [42]
     assert _extract_parameters("True") == [True]
     assert _extract_parameters("foo") == ["foo"]
+    assert _extract_parameters("foo-bar") == ["foo-bar"]
     assert _extract_parameters("1, 2, 3") == [1, 2, 3]
 
     assert _extract_parameters("42, True, foo") == [42, True, "foo"]
