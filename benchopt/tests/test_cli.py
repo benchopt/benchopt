@@ -155,6 +155,29 @@ class TestRunCmd:
         # Make sure the results were saved in a result file
         assert len(out.result_files) == 1, out.output
 
+    def test_benchopt_run_custom_parameters(self):
+        SELECT_DATASETS = r'simulated[n_features=[100, 200]]'
+        SELECT_SOLVERS = r'python-pgd-with-cb[use_acceleration=[True, False]]'
+        SELECT_OBJECTIVES = r'dummy*[0.1, 0.2]'
+
+        with CaptureRunOutput() as out:
+            run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_DATASETS,
+                 '-f', SELECT_SOLVERS, '-n', '1', '-r', '1', '-o',
+                 SELECT_OBJECTIVES, '--no-plot'],
+                'benchopt', standalone_mode=False)
+
+        out.check_output(r'Simulated\[n_features=100,', repetition=1)
+        out.check_output(r'Simulated\[n_features=200,', repetition=1)
+        out.check_output(r'Simulated\[n_features=5000,', repetition=0)
+        out.check_output(r'Dummy Sparse Regression\[reg=0.1\]', repetition=2)
+        out.check_output(r'Dummy Sparse Regression\[reg=0.2\]', repetition=2)
+        out.check_output(r'Dummy Sparse Regression\[reg=0.05\]', repetition=0)
+        out.check_output(r'--Python-PGD\[', repetition=0)
+        out.check_output(r'--Python-PGD-with-cb\[use_acceleration=False\]:',
+                         repetition=28)
+        out.check_output(r'--Python-PGD-with-cb\[use_acceleration=True\]:',
+                         repetition=28)
+
     def test_benchopt_run_profile(self):
         with CaptureRunOutput() as out:
             run_cmd = [str(DUMMY_BENCHMARK_PATH),
@@ -187,7 +210,7 @@ class TestRunCmd:
         n-repetitions: 2
         max-runs: 1
         force-solver:
-          - python-pgd[step_size=1.5]
+          - python-pgd[step_size=[2, 3]]
           - Test-Solver
         """
         tmp = tempfile.NamedTemporaryFile(mode="w+")
@@ -201,8 +224,8 @@ class TestRunCmd:
             run(run_cmd, 'benchopt', standalone_mode=False)
 
         out.check_output(r'Test-Solver:', repetition=11)
-        out.check_output(
-            r'Python-PGD\[step_size=1.5\]:', repetition=11)
+        out.check_output(r'Python-PGD\[step_size=2\]:', repetition=11)
+        out.check_output(r'Python-PGD\[step_size=3\]:', repetition=11)
 
         # test that CLI options take precedence
         with CaptureRunOutput() as out:
