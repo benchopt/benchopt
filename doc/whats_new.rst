@@ -7,8 +7,16 @@ What's new
 
 .. _changes_1_3:
 
-Versioni 1.3 - in development
------------------------------
+Version 1.3 - in development
+----------------------------
+
+CLI
+~~~
+
+- Add support for custom parameters in CLI for objectives, datasets, and
+  solvers, through the syntax ``-s solver_name[parameter=value]``. See the `CLI
+  documentation <https://benchopt.github.io/cli.html>`_ for more details on the
+  syntax. By `Tom Dupré la Tour`_ (:gh:`362`).
 
 .. _changes_1_2:
 
