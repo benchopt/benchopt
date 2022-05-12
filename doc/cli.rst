@@ -19,8 +19,9 @@ For example using BASH shell you need to run:
 The `benchopt` command also comes with tab completion for the solver name
 and the dataset name.
 
-.. note::
-    **Optional parameters syntax:** For some CLI parameters (solver, objective,
+.. admonition:: Optional parameters syntax
+
+    For some CLI parameters (solver, objective,
     dataset), additional values can be given with the following syntax:
 
     .. code-block:: bash
