@@ -67,7 +67,7 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
     "in a benchmark-dedicated conda environment or in your own "
     "conda environment, see the command `benchopt install`."
 )
-@click.argument('benchmark', type=click.Path(exists=True),
+@click.argument('benchmark', default=Path.cwd(), type=click.Path(exists=True),
                 shell_complete=complete_benchmarks)
 @click.option('--objective-filter',
               metavar='<objective_filter>', multiple=True, type=str,
@@ -267,7 +267,7 @@ def run(config_file=None, **kwargs):
 @main.command(
     help="Install the requirements (solvers/datasets) for a benchmark."
 )
-@click.argument('benchmark', type=click.Path(exists=True),
+@click.argument('benchmark', default=Path.cwd(), type=click.Path(exists=True),
                 shell_complete=complete_benchmarks)
 @click.option('--force', '-f',
               is_flag=True,
@@ -402,7 +402,7 @@ def install(
     "benchopt.github.io/how.html#example-of-parametrized-simulated-dataset",
     context_settings=dict(ignore_unknown_options=True)
 )
-@click.argument('benchmark', type=click.Path(exists=True),
+@click.argument('benchmark', default=Path.cwd(), type=click.Path(exists=True),
                 shell_complete=complete_benchmarks)
 @click.option('--env-name', type=str, default=None, metavar='NAME',
               shell_complete=complete_conda_envs,

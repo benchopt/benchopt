@@ -31,7 +31,7 @@ helpers = click.Group(
     help="Clean the cache and the outputs from a benchmark.",
     options_metavar=''
 )
-@click.argument('benchmark', type=click.Path(exists=True),
+@click.argument('benchmark', default=Path.cwd(), type=click.Path(exists=True),
                 shell_complete=complete_benchmarks)
 def clean(benchmark, token=None, filename=None):
 
@@ -185,7 +185,7 @@ def print_info(cls_name_list, cls_list, env_name=None, verbose=False):
     help="List information (solvers/datasets) and corresponding requirements "
     "for a given benchmark."
 )
-@click.argument('benchmark', type=click.Path(exists=True),
+@click.argument('benchmark', default=Path.cwd(), type=click.Path(exists=True),
                 shell_complete=complete_benchmarks)
 @click.option('--solver', '-s', 'solver_names',
               metavar="<solver_name>", multiple=True, type=str,
@@ -378,7 +378,7 @@ def get(ctx, name):
     "class BASE_CLASS_NAME.",
     hidden=True
 )
-@click.argument('benchmark', type=click.Path(exists=True),
+@click.argument('benchmark', default=Path.cwd(), type=click.Path(exists=True),
                 shell_complete=complete_benchmarks)
 @click.argument('module_filename', nargs=1, type=Path)
 @click.argument('base_class_name', nargs=1, type=str)
