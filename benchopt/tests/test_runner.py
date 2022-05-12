@@ -216,6 +216,7 @@ def test_extract_parameters():
     assert _extract_parameters("True") == [True]
     assert _extract_parameters("foo") == ["foo"]
     assert _extract_parameters("foo-bar") == ["foo-bar"]
+    assert _extract_parameters("foo.bar") == ["foo.bar"]
     assert _extract_parameters("1, 2, 3") == [1, 2, 3]
 
     assert _extract_parameters("42, True, foo") == [42, True, "foo"]
