@@ -106,7 +106,8 @@ def publish(benchmark, token=None, filename=None):
     help="Generate result website from list of benchmarks."
 )
 @click.option('--benchmark', '-b', 'benchmarks', metavar="<bench>",
-              multiple=True, default=[Path.cwd()], type=click.Path(exists=True),
+              multiple=True, default=[Path.cwd()],
+              type=click.Path(exists=True),
               shell_complete=complete_benchmarks,
               help="Folders containing benchmarks to include.")
 @click.option('--pattern', '-k', 'patterns',
