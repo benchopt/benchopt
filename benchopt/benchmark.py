@@ -545,7 +545,8 @@ def _extract_parameters(string):
     original = string
 
     # First, replace all quoted names with their hashes, to avoid modification.
-    all_matches = re.findall(r"'[^']*'", string)
+    all_matches = re.findall(r"'[^'\"]*'", string)
+    all_matches += re.findall(r'"[^\'"]*"', string)
     for match in all_matches:
         string = string.replace(match, str(hash(match)))
 
@@ -565,9 +566,9 @@ def _extract_parameters(string):
         string = "[" + string + "]"
 
     # Remove quotes for python language tokens
-    for word in ["True", "False", "None"]:
-        string = string.replace(f"'{word.lower()}'", word)
-        string = string.replace(f"'{word}'", word)
+    for token in ["True", "False", "None"]:
+        string = string.replace(f'"{token}"', token)
+        string = string.replace(f"'{token}'", token)
 
     # Evaluate the string.
     try:

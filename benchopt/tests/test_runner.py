@@ -134,7 +134,7 @@ class TEST_DATASET_ONE_PARAM(TEST_DATASET):
     parameters = {'n_samples': [10, 11]}
 
 
-def test_filter_classes_on_param():
+def test_filter_classes_one_param():
     # Test the selection of dataset with only one parameter.
 
     def filt_(filters):
@@ -204,6 +204,8 @@ def test_extract_parameters():
     assert _extract_parameters("foo,bar ") == ["foo", "bar"]
     assert _extract_parameters("foo, bar") == ["foo", "bar"]
     assert _extract_parameters("foo,bar,") == ["foo", "bar"]
+    assert _extract_parameters("'foo, bar'") == ["foo, bar"]
+    assert _extract_parameters('"foo, bar"') == ["foo, bar"]
     assert _extract_parameters("foo, (bar, baz)") == ["foo", ("bar", "baz")]
 
     # Convert to a dict
@@ -214,8 +216,10 @@ def test_extract_parameters():
     # Special case with a list of tuple parameters
     assert _extract_parameters("'foo, bar'=[(0, 1),(1, 0)]") == \
         {'foo, bar': [(0, 1), (1, 0)]}
+    assert _extract_parameters('"foo, bar"=[(0, 1),(1, 0)]') == \
+        {'foo, bar': [(0, 1), (1, 0)]}
 
-    # lowercase tokens
-    assert _extract_parameters("true") == [True]
-    assert _extract_parameters("false") == [False]
-    assert _extract_parameters("none") == [None]
+    for token in [True, False, None]:  # python tokens
+        assert _extract_parameters(f"{token}") == [token]
+        assert _extract_parameters(f"'{token}'") == [token]
+        assert _extract_parameters(f"\"{token}\"") == [token]
