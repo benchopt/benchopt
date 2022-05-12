@@ -549,7 +549,6 @@ def _extract_parameters(string):
     all_matches += re.findall(r'"[^\'"]*"', string)
     for match in all_matches:
         string = string.replace(match, str(hash(match)))
-    # print("###############", string)
 
     # Second, add quotes to all variable names (foo -> 'foo').
     string = re.sub(r"[a-zA-Z][a-zA-Z0-9._-]*", r"'\g<0>'", string)
