@@ -549,7 +549,7 @@ def _extract_parameters(string):
     all_matches = re.findall(r"'[^'\"]*'", string)
     all_matches += re.findall(r'"[^\'"]*"', string)
     # - numbers of the form "1e-3"
-    all_matches += re.findall(  
+    all_matches += re.findall(
         r"(?<![a-zA-Z])[+-]?[0-9]+[.]?[0-9]*[eE][-+]?[0-9]+", string)
     for match in all_matches:
         string = string.replace(match, str(hash(match)))
