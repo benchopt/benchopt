@@ -31,9 +31,15 @@ def _get_cuda_version():
         return None
     command = ["nvidia-smi", "-q", "-x"]
     out = subprocess.check_output(command).strip().decode("utf-8")
-    version = re.search('<cuda_version>(.*)</cuda_version>', out).group(1)
-    name = re.search('<product_name>(.*)</product_name>', out).group(1)
-    return f"{name}: cuda_{version}"
+    try:
+        version = re.search('<cuda_version>(.*)</cuda_version>', out).group(1)
+        name = re.search('<product_name>(.*)</product_name>', out).group(1)
+        return f"{name}: cuda_{version}"
+    except AttributeError:
+        import warnings
+        warngings.warn("Found `nvidia-smi` but could not parse cuda version "
+                                  "or device name.")
+        return None
 
 
 def _get_numpy_libs():
