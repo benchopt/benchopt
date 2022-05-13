@@ -22,6 +22,5 @@ class Dataset(BaseDataset):
         X, y = fetch_openml("leukemia", return_X_y=True)
         X = X.to_numpy()
         y = LabelBinarizer().fit_transform(y)[:, 0].astype(X.dtype)
-        data = dict(X=X, y=y)
 
-        return X.shape[1], data
+        return dict(X=X, y=y)
