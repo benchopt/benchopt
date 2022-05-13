@@ -50,6 +50,7 @@ DATASET_COMPLETION_CASES = [
     ('simu', ['simulated']),
     ('lated', ['simulated']),
 ]
+CURRENT_DIR = Path.cwd()
 
 
 def _get_completion(cmd, args, incomplete):
@@ -105,11 +106,15 @@ class TestRunCmd:
 
     @pytest.mark.parametrize('invalid_benchmark, match', [
         ('invalid_benchmark', "Path 'invalid_benchmark' does not exist."),
-        ('.', "The folder '.' does not contain `objective.py`")],
-        ids=['invalid_path', 'no_objective'])
+        ('.', "The folder '.' does not contain `objective.py`"),
+        ("", rf"The folder '{CURRENT_DIR}' does not contain `objective.py`")],
+        ids=['invalid_path', 'no_objective', "no_objective in default"])
     def test_invalid_benchmark(self, invalid_benchmark, match):
         with pytest.raises(click.BadParameter, match=match):
-            run([invalid_benchmark], 'benchopt', standalone_mode=False)
+            if len(invalid_benchmark) > 0:
+                run([invalid_benchmark], 'benchopt', standalone_mode=False)
+            else:
+                run([], 'benchopt', standalone_mode=False)
 
     def test_invalid_dataset(self):
         with pytest.raises(click.BadParameter, match=r"invalid_dataset"):

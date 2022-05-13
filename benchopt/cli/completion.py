@@ -46,6 +46,7 @@ def complete_benchmarks(ctx, param, incomplete):
 
 def find_benchmark_in_args(args):
     "Find the benchmark in preceeding args for benchmark dependent completion."
+    args.extend([Path.cwd()])  # default path is current working directory
     for b in args:
         if (Path(b) / "objective.py").exists():
             return Benchmark(b)
