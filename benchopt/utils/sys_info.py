@@ -26,13 +26,14 @@ def _get_processor_name():
 
 
 def _get_cuda_version():
-    "Return CUDA version."
-    if which("nvcc") is None:
+    "Return GPU name and CUDA version."
+    if which("nvidia-smi") is None:
         return None
-    command = ["nvcc", "--version"]
+    command = ["nvidia-smi", "-q", "-x"]
     out = subprocess.check_output(command).strip().decode("utf-8")
-    out = out.splitlines()[-1]  # take only last line
-    return out
+    version = re.search('<cuda_version>(.*)</cuda_version>', out).group(1)
+    name = re.search('<product_name>(.*)</product_name>', out).group(1)
+    return f"{name}: cuda_{version}"
 
 
 def _get_numpy_libs():
