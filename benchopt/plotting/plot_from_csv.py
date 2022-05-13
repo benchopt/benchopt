@@ -33,18 +33,52 @@ CMAP = plt.get_cmap('tab20')
 SAVEFIG = False
 figname = "demo_fig"
 
-BENCH_NAME = './dist_outputs/benchopt_run_2022-05-11_11h21m02.csv'  # meg + leukemia
+BENCH_NAME = '../../../benchs/lasso/dist_outputs/benchopt_run_2022-05-11_11h21m02.csv'  # meg + leukemia
 
 FLOATING_PRECISION = 1e-8
 MIN_XLIM = 1e-3
 
+all_solvers = [
+    'Blitz', 'cd', 'Celer', 'glmnet', 'lars', 'Lightning',
+    'ModOpt-FISTA[restart_strategy=adaptive-1]',
+    'ModOpt-FISTA[restart_strategy=greedy]',
+    'Python-PGD[use_acceleration=False]',
+    'Python-PGD[use_acceleration=True]', 'skglm', 'sklearn',
+    'snapml[gpu=False]', 'snapml[gpu=True]'
+]
+
+
 DICT_XLIM = {
     "libsvm[dataset=rcv1.binary]": 1e-2,
     "libsvm[dataset=news20.binary]": 1e-1,
+    "libsvm[dataset=kkda_train]": 1e-1,
     "MEG": 1e-2,
     "finance": 1e-1,
+    'leukemia': 1e-3,
 }
 
+DICT_TITLE = {
+    'Lasso Regression[fit_intercept=False,reg=0.1]': r'$\lambda = 0.1 \lambda_{\mathrm{max}}$',
+    'Lasso Regression[fit_intercept=False,reg=0.01]': r'$\lambda = 0.01 \lambda_{\mathrm{max}}$',
+    'Lasso Regression[fit_intercept=False,reg=0.001]': r'$\lambda = 0.001 \lambda_{\mathrm{max}}$',
+}
+
+DICT_YLABEL = {
+    'libsvm[dataset=rcv1.binary]': "rcv1.binary",
+    'libsvm[dataset=news20.binary]': "news20.binary",
+    'libsvm[dataset=kdda_train]': "kkda train",
+    'leukemia': 'leukemia',
+    'MEG': 'MEG',
+}
+
+DICT_YTICKS = {
+    'libsvm[dataset=rcv1.binary]': [1e3, 1, 1e-3, 1e-6],
+    'libsvm[dataset=news20.binary]': [1e3, 1, 1e-3, 1e-6],
+    'libsvm[dataset=kdda_train]': [1e3, 1, 1e-3, 1e-6],
+    'leukemia': [1e1, 1e-2, 1e-5, 1e-8],
+    'MEG': [1e1, 1e-2, 1e-5, 1e-8],
+}
+STYLE = {solv: (CMAP(i), MARKERS[i]) for i, solv in enumerate(all_solvers)}
 
 df = pd.read_csv(BENCH_NAME, header=0, index_col=0)
 
@@ -92,17 +126,22 @@ for idx_data, dataset in enumerate(datasets):
             df3 = df2[df2['solver_name'] == solver_name]
             curve = df3.groupby('stop_val').median()
 
+            q1 = df3.groupby('stop_val')['time'].quantile(.1)
+            q9 = df3.groupby('stop_val')['time'].quantile(.9)
             y = curve["objective_value"] - c_star
 
             ax.loglog(
-                curve["time"], y, color=CMAP(i), marker=MARKERS[i], markersize=6,
+                curve["time"], y, color=STYLE[solver_name][0],
+                marker=STYLE[solver_name][1], markersize=6,
                 label=solver_name, linewidth=2, markevery=3)
 
         ax.set_xlim([DICT_XLIM.get(dataset, MIN_XLIM), ax.get_xlim()[1]])
         axarr[len(datasets)-1, idx_obj].set_xlabel(
             "Time (s)", fontsize=fontsize - 2)
         axarr[0, idx_obj].set_title(
-            '\n'.join(regex.search(objective).group(1).split(",")), fontsize=fontsize - 2)
+            # '\n'.join(regex.search(objective).group(1).split(",")), fontsize=fontsize - 2)
+            DICT_TITLE[objective])
+
         ax.tick_params(axis='both', which='major', labelsize=labelsize)
         ax.grid()
 
@@ -112,7 +151,10 @@ for idx_data, dataset in enumerate(datasets):
     else:
         dataset_label = dataset
     axarr[idx_data, 0].set_ylabel(
-        dataset_label, fontsize=fontsize - 6)
+        # dataset_label,
+        DICT_YLABEL[dataset],
+        fontsize=fontsize - 6)
+    axarr[idx_data, 0].set_yticks(DICT_YTICKS[dataset])
 
 main_fig.suptitle(regex.sub('', objective), fontsize=fontsize)
 plt.show(block=False)
