@@ -96,7 +96,7 @@ for idx_data, dataset in enumerate(datasets):
 
             ax.loglog(
                 curve["time"], y, color=CMAP(i), marker=MARKERS[i], markersize=6,
-                label=solver_name, linewidth=2)
+                label=solver_name, linewidth=2, markevery=3)
 
         ax.set_xlim([DICT_XLIM.get(dataset, MIN_XLIM), ax.get_xlim()[1]])
         axarr[len(datasets)-1, idx_obj].set_xlabel(
@@ -104,6 +104,7 @@ for idx_data, dataset in enumerate(datasets):
         axarr[0, idx_obj].set_title(
             '\n'.join(regex.search(objective).group(1).split(",")), fontsize=fontsize - 2)
         ax.tick_params(axis='both', which='major', labelsize=labelsize)
+        ax.grid()
 
     if regex.search(dataset) is not None:
         dataset_label = (regex.sub("", dataset) + '\n' +
