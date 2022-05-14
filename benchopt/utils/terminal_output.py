@@ -49,7 +49,7 @@ def print_normalize(msg, endline=True, verbose=True):
         MIN_LINE_LENGTH, shutil.get_terminal_size((100, 24)).columns
     )
     n_colors = msg.count('\033') // 2
-    msg = msg.ljust(line_length + n_colors * 11)
+    msg = msg.ljust(line_length + n_colors * 11 - 1)
 
     if endline:
         print(msg)
