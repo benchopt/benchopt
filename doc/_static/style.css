@@ -56,5 +56,6 @@ code {
 
 #sidebar {
     text-overflow: ellipsis;
-    overflow: hidden;
+    max-height: 80%;
+    overflow-y: auto;
 }
