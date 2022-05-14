@@ -59,3 +59,20 @@ code {
     max-height: 80%;
     overflow-y: auto;
 }
+
+
+.bs-sidenav .nav .nav > li > a {
+    padding-left: 30px;
+    padding-top: 1px;
+    padding-bottom: 1px;
+}
+.bs-sidenav .nav .nav .nav > li > a {
+    padding-left: 50px;
+    padding-top: 1px;
+    padding-bottom: 1px;
+}
+.bs-sidenav .nav .nav .nav .nav > li > a {
+    padding-left: 70px;
+    padding-top: 1px;
+    padding-bottom: 1px;
+}
