@@ -183,7 +183,6 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
         output.skip(reason, objective=True)
         return []
 
-    objective.set_dataset(dataset)
     skip, reason = solver._set_objective(objective)
     if skip:
         output.skip(reason)
@@ -215,6 +214,7 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
             force=force, output=output, pdb=pdb
         )
         if status in ['diverged', 'error', 'interrupted']:
+            run_statistics = []
             break
         run_statistics.extend(curve)
         states.append(status)
@@ -229,7 +229,7 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
 
     output.show_status(status=status)
     # Make sure to flush so the parallel output is properly display
-    print(flush=True)
+    print(end='', flush=True)
 
     if status == 'interrupted':
         raise SystemExit(1)

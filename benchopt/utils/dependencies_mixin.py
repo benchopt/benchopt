@@ -1,3 +1,5 @@
+import traceback
+
 from ..config import RAISE_INSTALL_ERROR
 
 from .class_property import classproperty
@@ -50,9 +52,10 @@ class DependenciesMixin:
         """
         if env_name is None:
             if cls._import_ctx.failed_import:
+                exc_type, value, tb = cls._import_ctx.import_error
                 if raise_on_not_installed:
-                    exc_type, value, tb = cls._import_ctx.import_error
                     raise exc_type(value).with_traceback(tb)
+                traceback.print_exception(exc_type, value, tb)
                 return False
             else:
                 return True
