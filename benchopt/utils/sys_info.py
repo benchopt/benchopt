@@ -1,11 +1,11 @@
+import io
 import os
 import re
 import platform
+import contextlib
 import subprocess
 from shutil import which
 from pathlib import Path
-
-from .stream_redirection import SuppressStd
 
 
 def _get_processor_name():
@@ -41,9 +41,9 @@ def _get_numpy_libs():
     # Import is nested to avoid long import time.
     import numpy as np
 
-    with SuppressStd() as capture:
+    with contextlib.redirect_stdout(io.StringIO()) as capture:
         np.show_config()
-    lines = capture.output.splitlines()
+    lines = capture.getvalue().splitlines()
     libs = []
     for li, line in enumerate(lines):
         for key in ("lapack", "blas"):
