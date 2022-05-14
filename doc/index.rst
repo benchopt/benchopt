@@ -33,7 +33,6 @@ give you a benchmark plot on l2-regularized logistic regression:
    :align: center
    :scale: 80%
 
-Learn how to :ref:`how`.
 
 Install
 --------
@@ -69,8 +68,8 @@ This benchmark can be retrieved locally with:
 
     git clone https://github.com/benchopt/benchmark_lasso.git
 
-Quickstart
-----------
+Run a benchmark
+---------------
 
 This section illustrates benchopt's command line interface on the `Lasso benchmark <https://github.com/benchopt/benchmark_lasso>`_; the syntax is applicable to any benchmark.
 All this section assumes that you are in the parent folder of the ``benchmark_lasso`` folder.
@@ -134,6 +133,13 @@ When options are passed both via file and CLI, the CLI takes precedence.
 
 to get more details about the different options.
 You can also read the :ref:`cli_documentation`.
+
+Write a benchmark
+-----------------
+
+Learn how to :ref:`how`, including creating an objective, a solver, and
+a dataset.
+
 
 Available benchmarks
 --------------------

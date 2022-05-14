@@ -1,4 +1,4 @@
-.. _how:
+.. _advanced:
 
 Advanced functionalities in a benchmark
 =======================================
