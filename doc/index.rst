@@ -114,14 +114,14 @@ An example of configuration file is:
 .. code-block:: yaml
 
     objective-filter:
-    - Lasso Regression[fit_intercept=False,reg=0.5]
+      - Lasso Regression[fit_intercept=False,reg=0.5]
     dataset:
-    - simulated
-    - leukemia
+      - simulated
+      - leukemia
     solver:
-    - celer
+      - celer
     force-solver:
-    - cd
+      - cd
     n-repetitions: 1
 
 When options are passed both via file and CLI, the CLI takes precedence.
