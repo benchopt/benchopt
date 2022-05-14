@@ -37,8 +37,9 @@ def get_cuda_version():
         return f"{name}: cuda_{version}"
     except AttributeError:
         import warnings
-        warnings.warn("Found `nvidia-smi` but could not parse cuda version "
-                      "or device name.")
+        warnings.warn(
+            "Could not parse cuda version or device name from `nvidia-smi`."
+         )
         return None
 
 
