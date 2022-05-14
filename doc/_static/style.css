@@ -60,7 +60,7 @@ code {
     overflow-y: auto;
 }
 
-
+/* Make the sidebar table of content more compact and with larger indent */
 .bs-sidenav .nav .nav > li > a {
     padding-left: 30px;
     padding-top: 1px;
@@ -76,3 +76,10 @@ code {
     padding-top: 1px;
     padding-bottom: 1px;
 }
+
+/* Hide the search box for medium size screen */
+@media (min-width: 768px) and (max-width: 1000px) {
+    .navbar-form {
+        display: none;
+    }
+ }
