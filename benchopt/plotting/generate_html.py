@@ -235,7 +235,7 @@ def get_sysinfo(df):
                 return (
                     str(df["platform"].unique()[0]) +
                     str(df["platform-release"].unique()[0]) + "-" +
-                    (df["platform-architecture"].unique()[0])
+                    str(df["platform-architecture"].unique()[0])
                 )
             else:
                 val = df[key].unique()[0]
