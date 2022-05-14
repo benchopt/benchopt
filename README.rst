@@ -75,9 +75,10 @@ For instance, the benchmark for Lasso can be retrieved with:
     git clone https://github.com/benchopt/benchmark_lasso
 
 
-Command line usage
-------------------
+Command line interface
+----------------------
 
+The preferred way to run the benchmarks is through the command line interface.
 To run the Lasso benchmark on all datasets and with all solvers, run:
 
 .. code-block::
@@ -90,7 +91,10 @@ To get more details about the different options, run:
 
     benchopt run -h
 
-or read the `API Documentation <https://benchopt.github.io/api.html>`_.
+or read the `CLI documentation <https://benchopt.github.io/cli.html>`_.
+
+Benchopt also provides a Python API described in the
+`API documentation <https://benchopt.github.io/api.html>`_.
 
 List of optimization problems available
 ---------------------------------------
