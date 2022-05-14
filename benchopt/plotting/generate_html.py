@@ -427,7 +427,7 @@ def plot_benchmark_html(fnames, benchmark, kinds, display=True):
     for result, html in zip(results, htmls):
         result_filename = root_html / result['page']
         print(f"Writing results to {result_filename}")
-        with open(result_filename, "w") as f:
+        with open(result_filename, "w", encoding="utf-8") as f:
             f.write(html)
 
     # Fetch run list from the benchmark and update the benchmark front page.
@@ -436,7 +436,7 @@ def plot_benchmark_html(fnames, benchmark, kinds, display=True):
         run_list, benchmark.name, static_dir=static_dir, home=home
     )
     print(f"Writing {benchmark.name} results to {bench_index}")
-    with open(bench_index, "w") as f:
+    with open(bench_index, "w", encoding="utf-8") as f:
         f.write(rendered)
 
     # Display the file in the default browser
@@ -515,7 +515,7 @@ def plot_benchmark_html_all(patterns=(), benchmarks=(), root=None,
         for result, html in zip(results, htmls):
             result_filename = root_html / result['page']
             print(f"Writing results to {result_filename}")
-            with open(result_filename, "w") as f:
+            with open(result_filename, "w", encoding="utf-8") as f:
                 f.write(html)
 
     # Create an index that lists all benchmarks.
@@ -523,7 +523,7 @@ def plot_benchmark_html_all(patterns=(), benchmarks=(), root=None,
                             len_fnames)
     index_filename = DEFAULT_HTML_DIR / 'index.html'
     print(f"Writing index to {index_filename}")
-    with open(index_filename, "w") as f:
+    with open(index_filename, "w", encoding="utf-8") as f:
         f.write(rendered)
 
     # Display the file in the default browser
