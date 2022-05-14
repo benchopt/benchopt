@@ -25,7 +25,7 @@ def _get_processor_name():
     return out
 
 
-def _get_cuda_version():
+def get_cuda_version():
     "Return GPU name and CUDA version."
     if which("nvidia-smi") is None:
         return None
@@ -96,7 +96,7 @@ def get_sys_info():
     )
 
     # Info on dependency libs
-    info["version-cuda"] = _get_cuda_version()
+    info["version-cuda"] = get_cuda_version()
     info["version-numpy"] = (np.__version__, _get_numpy_libs())
     info["version-scipy"] = scipy.__version__
 
