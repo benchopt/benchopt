@@ -69,8 +69,8 @@ This benchmark can be retrieved locally with:
 
     git clone https://github.com/benchopt/benchmark_lasso.git
 
-Quickstart: command line usage on the Lasso benchmark
------------------------------------------------------
+Quickstart
+----------
 
 This section illustrates benchopt's command line interface on the `Lasso benchmark <https://github.com/benchopt/benchmark_lasso>`_; the syntax is applicable to any benchmark.
 All this section assumes that you are in the parent folder of the ``benchmark_lasso`` folder.
@@ -135,8 +135,8 @@ When options are passed both via file and CLI, the CLI takes precedence.
 to get more details about the different options.
 You can also read the :ref:`cli_documentation`.
 
-Some available benchmarks
--------------------------
+Available benchmarks
+--------------------
 
 **Notation:**  In what follows, n (or n_samples) stands for the number of samples and p (or n_features) stands for the number of features.
 

@@ -17,8 +17,8 @@ from benchopt.utils.profiling import print_stats
 
 
 main = click.Group(
-    name='Principal Commands',
-    help="Principal commands that are used in ``benchopt``."
+    name='Main commands',
+    help="Main commands that are used in ``benchopt``."
 )
 
 

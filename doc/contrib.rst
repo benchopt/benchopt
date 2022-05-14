@@ -4,8 +4,8 @@ How to contribute
 =================
 
 
-Submitting a bug report or a feature request
---------------------------------------------
+Bug report and feature request
+------------------------------
 
 We use benchopt `GitHub repo <https://github.com/benchopt/benchopt/issues>`_ to track all bugs and feature requests; feel free to open
 an issue if you have found a bug or wish to see a feature implemented.
@@ -13,7 +13,7 @@ an issue if you have found a bug or wish to see a feature implemented.
 
 
 
-Contributing code
+Code contribution
 -----------------
 
 The preferred way to contribute to benchopt is to fork the `main

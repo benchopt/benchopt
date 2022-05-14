@@ -7,7 +7,7 @@ from benchopt.cli.completion import complete_benchmarks
 from benchopt.cli.completion import complete_output_files
 
 process_results = click.Group(
-    name='Process Results',
+    name='Process results',
     help="Utilities to process benchmark outputs produced by benchopt."
 )
 

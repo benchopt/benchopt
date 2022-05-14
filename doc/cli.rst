@@ -1,8 +1,8 @@
 .. _cli_documentation:
 
-==========================================
-Command Line Interface (CLI) Documentation
-==========================================
+============================
+Command line interface (CLI)
+============================
 
 The following commands are built using the
 `click <https://click.palletsprojects.com/en/8.0.x/>`_ package which provides tab
