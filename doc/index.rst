@@ -138,6 +138,11 @@ You can also read the :ref:`cli_documentation`.
 Available benchmarks
 --------------------
 
+.. note::
+    Some benchmarks are briefly described in the list below. For a complete
+    list of benchmarks, see GitHub repositories of the form `benchopt/benchmark_*
+    <https://github.com/orgs/benchopt/repositories?q=benchmark_&type=all&language=&sort=stargazers/>`_.
+
 **Notation:**  In what follows, n (or n_samples) stands for the number of samples and p (or n_features) stands for the number of features.
 
 .. math::
@@ -217,7 +222,6 @@ linear ICA is to recover :math:`A` up to permutation and scaling of its columns.
 The objective in this benchmark is related to some estimation on :math:`A`
 quantified with the so-called AMARI distance.
 
-See `benchmark_* repositories on GitHub <https://github.com/benchopt/>`_ for more.
 
 Benchmark results
 -----------------
@@ -228,8 +232,8 @@ All the public benchmark results are available at `Benchopt Benchmarks results <
 
 .. include:: contrib.rst
 
-Contents
-========
+Website contents
+================
 
 .. toctree::
    :maxdepth: 1
