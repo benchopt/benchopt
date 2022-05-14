@@ -234,7 +234,7 @@ def get_sysinfo(df):
             if key == 'platform':
                 return (
                     df["platform"].unique()[0] +
-                    df["platform-release"].unique()[0] + "-" +
+                    str(df["platform-release"].unique()[0]) + "-" +
                     df["platform-architecture"].unique()[0]
                 )
             else:
