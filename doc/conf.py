@@ -113,7 +113,7 @@ html_theme_options = {
         # ("Examples", "auto_examples/index"),
         ("CLI", "cli"),
         ("API", "api"),
-        ("Write a benchmark", "how"),
+        # ("Write a benchmark", "how"),
         ("Results", "https://benchopt.github.io/results", True),
         ("What's new", "whats_new"),
         ("GitHub", "https://github.com/benchopt/benchopt", True)
