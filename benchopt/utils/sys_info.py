@@ -30,7 +30,14 @@ def get_cuda_version():
     if which("nvidia-smi") is None:
         return None
     command = ["nvidia-smi", "-q", "-x"]
-    out = subprocess.check_output(command).strip().decode("utf-8")
+    try:
+        out = subprocess.check_output(command).strip().decode("utf-8")
+    except subprocess.CalledProcessError:
+        import warnings
+        warnings.warn(
+            "Could not run `nvidia-smi -q -x` command."
+        )
+        return None
     try:
         version = re.search('<cuda_version>(.*)</cuda_version>', out).group(1)
         name = re.search('<product_name>(.*)</product_name>', out).group(1)
