@@ -1,8 +1,8 @@
 .. _api_documentation:
 
-========================
-Python API Documentation
-========================
+==========
+Python API
+==========
 
 Here is a list of Python function available to construct a new benchmark.
 

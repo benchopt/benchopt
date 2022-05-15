@@ -33,7 +33,6 @@ give you a benchmark plot on l2-regularized logistic regression:
    :align: center
    :scale: 80%
 
-Learn how to :ref:`how`.
 
 Install
 --------
@@ -69,8 +68,8 @@ This benchmark can be retrieved locally with:
 
     git clone https://github.com/benchopt/benchmark_lasso.git
 
-Quickstart: command line usage on the Lasso benchmark
------------------------------------------------------
+Run a benchmark
+---------------
 
 This section illustrates benchopt's command line interface on the `Lasso benchmark <https://github.com/benchopt/benchmark_lasso>`_; the syntax is applicable to any benchmark.
 All this section assumes that you are in the parent folder of the ``benchmark_lasso`` folder.
@@ -114,14 +113,14 @@ An example of configuration file is:
 .. code-block:: yaml
 
     objective-filter:
-    - Lasso Regression[fit_intercept=False,reg=0.5]
+      - Lasso Regression[fit_intercept=False,reg=0.5]
     dataset:
-    - simulated
-    - leukemia
+      - simulated
+      - leukemia
     solver:
-    - celer
+      - celer
     force-solver:
-    - cd
+      - cd
     n-repetitions: 1
 
 When options are passed both via file and CLI, the CLI takes precedence.
@@ -135,8 +134,20 @@ When options are passed both via file and CLI, the CLI takes precedence.
 to get more details about the different options.
 You can also read the :ref:`cli_documentation`.
 
-Some available benchmarks
--------------------------
+Write a benchmark
+-----------------
+
+Learn how to :ref:`how`, including creating an objective, a solver, and
+a dataset.
+
+
+Available benchmarks
+--------------------
+
+.. note::
+    Some benchmarks are briefly described in the list below. For a complete
+    list of benchmarks, see GitHub repositories of the form `benchopt/benchmark_*
+    <https://github.com/orgs/benchopt/repositories?q=benchmark_&type=all&language=&sort=stargazers/>`_.
 
 **Notation:**  In what follows, n (or n_samples) stands for the number of samples and p (or n_features) stands for the number of features.
 
@@ -217,7 +228,6 @@ linear ICA is to recover :math:`A` up to permutation and scaling of its columns.
 The objective in this benchmark is related to some estimation on :math:`A`
 quantified with the so-called AMARI distance.
 
-See `benchmark_* repositories on GitHub <https://github.com/benchopt/>`_ for more.
 
 Benchmark results
 -----------------
@@ -228,8 +238,8 @@ All the public benchmark results are available at `Benchopt Benchmarks results <
 
 .. include:: contrib.rst
 
-Contents
-========
+Website contents
+================
 
 .. toctree::
    :maxdepth: 1
