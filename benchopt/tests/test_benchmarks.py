@@ -66,6 +66,11 @@ def test_dataset_get_data(benchmark, dataset_class):
     if dataset_class.name.lower() == 'finance':
         pytest.skip("Do not download finance.")
 
+    # XXX TODO remove when scikit-learn releases the fix
+    # see https://github.com/scikit-learn/scikit-learn/pull/23358
+    if dataset_class.name.lower() == 'leukemia':
+        pytest.skip("Leukemia download is broken in scikit-learn 1.1.0")
+
     data = dataset._get_data()
     assert isinstance(data, (tuple, dict)), (
         "Output of get_data should be a 2-tuple or a dict."

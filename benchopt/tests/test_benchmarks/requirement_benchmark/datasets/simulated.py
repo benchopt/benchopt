@@ -10,4 +10,4 @@ class Dataset(BaseDataset):
     name = "Simulated"
 
     def get_data(self):
-        return 10, dict(X=np.random.randn(10, 10))
+        return dict(X=np.random.randn(10, 10))

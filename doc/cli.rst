@@ -11,7 +11,7 @@ completion by following the instructions given in the
 `click documentation <https://click.palletsprojects.com/en/8.0.x/shell-completion/#enabling-completion>`_.
 For example using BASH shell you need to run:
 
-.. code-block::
+.. prompt:: bash $
 
     eval "$(_BENCHOPT_COMPLETE=bash_source benchopt)"
 
