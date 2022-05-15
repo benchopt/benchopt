@@ -35,7 +35,7 @@ def get_cuda_version():
     except subprocess.CalledProcessError:
         import warnings
         warnings.warn(
-            "Could not run `nvidia-smi -q -x` command."
+            "`nvidia-smi` has failed. Please check NVIDIA driver install."
         )
         return None
     try:
