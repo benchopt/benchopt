@@ -1,4 +1,5 @@
 import click
+from pathlib import Path
 
 from benchopt.config import get_setting
 from benchopt.benchmark import Benchmark
@@ -20,7 +21,7 @@ def get_plot_kinds(ctx, args, incomplete):
 @process_results.command(
     help="Plot the result from a previously run benchmark."
 )
-@click.argument('benchmark', type=click.Path(exists=True),
+@click.argument('benchmark', default=Path.cwd(), type=click.Path(exists=True),
                 shell_complete=complete_benchmarks)
 @click.option('--filename', '-f', type=str, default=None,
               shell_complete=complete_output_files,
@@ -70,7 +71,7 @@ def plot(benchmark, filename=None, kinds=('suboptimality_curve',),
     "See the :ref:`publish_doc` documentation for more info on how to use "
     "this command."
 )
-@click.argument('benchmark', type=click.Path(exists=True),
+@click.argument('benchmark', default=Path.cwd(), type=click.Path(exists=True),
                 shell_complete=complete_benchmarks)
 @click.option('--token', '-t', type=str, default=None,
               help="Github token to access the result repo.")
@@ -105,7 +106,8 @@ def publish(benchmark, token=None, filename=None):
     help="Generate result website from list of benchmarks."
 )
 @click.option('--benchmark', '-b', 'benchmarks', metavar="<bench>",
-              multiple=True, type=click.Path(exists=True),
+              multiple=True, default=[Path.cwd()],
+              type=click.Path(exists=True),
               shell_complete=complete_benchmarks,
               help="Folders containing benchmarks to include.")
 @click.option('--pattern', '-k', 'patterns',
