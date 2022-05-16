@@ -15,10 +15,10 @@ def rm_folder(folder):
 
 def uniquify_results(file_path):
     "Add a number to filename if it already exists"
-    parent = file_path.parent
-    stem = file_path.stem
-    suffix = file_path.suffix
     if file_path.exists():
+        parent = file_path.parent
+        stem = file_path.stem
+        suffix = file_path.suffix
         i = 1
         while (parent / f"{stem}_{i}{suffix}").exists():
             i += 1

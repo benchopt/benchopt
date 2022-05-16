@@ -285,6 +285,20 @@ class TestRunCmd:
         out.check_output(r'Python-PGD\[step_size=1\]:',
                          repetition=5*n_rep+1)
 
+    @pytest.mark.parametrize('output_name, file_name', [
+        ('tmp_res', "tmp_res"), ("tmp_res", "tmp_res_1")])
+    def test_changing_output_name(self, output_name, file_name):
+        with SuppressStd() as out:
+            run([
+                str(DUMMY_BENCHMARK_PATH), '-l', '-s', SELECT_ONE_PGD,
+                '-d', SELECT_ONE_SIMULATED,
+                '-n', '1', '--output-name', str(output_name),
+                '--no-plot'],
+                'benchopt', standalone_mode=False)
+        result_file = re.findall(r'Saving result in: (.*\.csv)', out.output)[0]
+        name = Path(result_file).stem
+        assert name == file_name
+
     def test_shell_complete(self):
         # Completion for benchmark name
         _test_shell_completion(run, [], BENCHMARK_COMPLETION_CASES)
