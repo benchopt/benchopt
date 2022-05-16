@@ -1,6 +1,7 @@
 "Helper function for colored terminal outputs"
 import shutil
-
+import ctypes
+import platform
 
 from ..config import DEBUG
 
@@ -59,6 +60,11 @@ def print_normalize(msg, endline=True, verbose=True):
 
 class TerminalOutput:
     def __init__(self, n_repetitions, show_progress):
+        # enable ANSI colors in Windows
+        if platform.system() == "Windows":
+            kernel32 = ctypes.windll.kernel32
+            kernel32.SetConsoleMode(kernel32.GetStdHandle(-11), 7)
+
         self.n_repetitions = n_repetitions
         self.show_progress = show_progress
 
