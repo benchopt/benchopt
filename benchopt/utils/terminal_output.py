@@ -49,6 +49,10 @@ def print_normalize(msg, endline=True, verbose=True):
     line_length = max(
         MIN_LINE_LENGTH, shutil.get_terminal_size((100, 24)).columns
     )
+
+    # We add colors to messages using `\033[1;XXm{}\0033[0m`. This adds 11
+    # invisible characters for each color we add. Don't take this into
+    # account for the line length.
     n_colors = msg.count('\033') // 2
     msg = msg.ljust(line_length + n_colors * 11)
 
@@ -72,7 +76,7 @@ class TerminalOutput:
         self.dataset = None
         self.objective = None
 
-        self.rep = None
+        self.rep = 0
         self.verbose = True
 
     def clone(self):
