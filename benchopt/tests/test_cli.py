@@ -292,7 +292,7 @@ class TestRunCmd:
             run([
                 str(DUMMY_BENCHMARK_PATH), '-l', '-s', SELECT_ONE_PGD,
                 '-d', SELECT_ONE_SIMULATED,
-                '-n', '1', '--output-name', str(output_name),
+                '-n', '1', '--output', str(output_name),
                 '--no-plot'],
                 'benchopt', standalone_mode=False)
         result_file = re.findall(r'Saving result in: (.*\.csv)', out.output)[0]

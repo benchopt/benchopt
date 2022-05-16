@@ -241,7 +241,7 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                   dataset_names=None, objective_filters=None,
                   max_runs=10, n_repetitions=1, timeout=100, n_jobs=1,
                   plot_result=True, html=True, show_progress=True, pdb=False,
-                  output_name=None):
+                  output=None):
     """Run full benchmark.
 
     Parameters
@@ -291,6 +291,7 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
         is set to `NaN`.
     """
     print("Benchopt is running")
+    output_name = output
 
     # List all datasets, objective and solvers to run based on the filters
     # provided. Merge the solver_names and forced to run all necessary solvers.
@@ -324,7 +325,7 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
     # Save output in CSV file in the benchmark folder
     timestamp = datetime.now().strftime('%Y-%m-%d_%Hh%Mm%S')
     output_dir = benchmark.get_output_folder()
-    if output_name is None:
+    if output is None:
         save_file = output_dir / f'benchopt_run_{timestamp}.csv'
     else:
         save_file = output_dir / f"{output_name}.csv"
