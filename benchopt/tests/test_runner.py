@@ -220,6 +220,7 @@ def test_extract_parameters():
     assert _extract_parameters("1, 2, 3") == [1, 2, 3]
     assert _extract_parameters("1e1, -.1e-3, 12.e+1") == [10.0, -0.0001, 120.0]
     assert _extract_parameters("foo42e1, bar1.0e4") == ["foo42e1", "bar1.0e4"]
+    assert _extract_parameters("foo_4e2, bar.1e3") == ["foo_4e2", "bar.1e3"]
 
     assert _extract_parameters("42, True, foo") == [42, True, "foo"]
     assert _extract_parameters("42, (1, 2, 3)") == [42, (1, 2, 3)]
