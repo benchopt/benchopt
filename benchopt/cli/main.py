@@ -55,6 +55,7 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
         "pdb",
         "profile",
         "env_name",
+        "output_name",
         "objective_filter",
         "old_objective_filter",
     ]
@@ -149,6 +150,10 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               help="Run the benchmark in the conda environment "
               "named <env_name>. To install the required solvers and "
               "datasets, see the command `benchopt install`.")
+@click.option("--output-name", "output_name", default=None,
+              type=click.Path(exists=False),
+              help="Name of the output file. If another result file has "
+              "the same name, appends a number to distinguish them.")
 def run(config_file=None, **kwargs):
     if config_file is not None:
         with open(config_file, "r") as f:
@@ -160,8 +165,8 @@ def run(config_file=None, **kwargs):
     (
         benchmark, solver_names, forced_solvers, dataset_names,
         objective_filters, max_runs, n_repetitions, timeout, n_jobs,
-        plot, html, pdb, do_profile, env_name, deprecated_objective_filters,
-        old_objective_filters
+        plot, html, pdb, do_profile, env_name, output_name,
+        deprecated_objective_filters, old_objective_filters
     ) = _get_run_args(kwargs, config)
 
     if len(old_objective_filters):
@@ -202,7 +207,8 @@ def run(config_file=None, **kwargs):
             objective_filters=objective_filters,
             max_runs=max_runs, n_repetitions=n_repetitions,
             timeout=timeout, n_jobs=n_jobs,
-            plot_result=plot, html=html, pdb=pdb
+            plot_result=plot, html=html, pdb=pdb,
+            output_name=output_name
         )
 
         print_stats()  # print profiling stats (does nothing if not profiling)
@@ -257,6 +263,7 @@ def run(config_file=None, **kwargs):
         rf"{'--plot' if plot else '--no-plot'} "
         rf"{'--html' if html else '--no-html'} "
         rf"{'--pdb' if pdb else ''} "
+        rf"--output-name {output_name}"
         .replace('\\', '\\\\')
     )
     raise SystemExit(_run_shell_in_conda_env(
