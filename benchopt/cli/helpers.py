@@ -55,7 +55,6 @@ def clean(benchmark, token=None, filename='all'):
                 print(f"rm {file}")
                 file.unlink()
 
-
     # Delete cache files
     print("Clear joblib cache")
     benchmark.mem.clear(warn=False)
