@@ -544,18 +544,24 @@ def _extract_parameters(string):
     import ast
     original = string
 
-    # First, replace all quoted names with their hashes, to avoid modification.
+    # First, replace some expressions with their hashes, to avoid modification:
+    # - quoted names
     all_matches = re.findall(r"'[^'\"]*'", string)
     all_matches += re.findall(r'"[^\'"]*"', string)
+    # - numbers of the form "1e-3" (but not names like "foo1e3")
+    all_matches += re.findall(
+        r"(?<![a-zA-Z0-9_])[+-]?[0-9]+[.]?[0-9]*[eE][-+]?[0-9]+", string)
     for match in all_matches:
         string = string.replace(match, str(hash(match)))
 
     # Second, add quotes to all variable names (foo -> 'foo').
+    # Accepts dots and dashes within names.
     string = re.sub(r"[a-zA-Z][a-zA-Z0-9._-]*", r"'\g<0>'", string)
 
     # Third, change back the hashes to their original names.
     for match in all_matches:
         string = string.replace(str(hash(match)), match)
+
     # Prepare the sequence for AST parsing.
     # Sequences with "=" are made into a dict expression {'foo': 'bar'}.
     # Sequences without "=" are made into a list expression ['foo', 'bar'].
