@@ -33,15 +33,28 @@ helpers = click.Group(
 )
 @click.argument('benchmark', default=Path.cwd(), type=click.Path(exists=True),
                 shell_complete=complete_benchmarks)
-def clean(benchmark, token=None, filename=None):
+@click.option("--filename", "-f", "filename",
+              type=str, default="all",
+              help="Name of the output file to remove.")
+def clean(benchmark, token=None, filename='all'):
 
     benchmark = Benchmark(benchmark)
-
     # Delete result files
     output_folder = benchmark.get_output_folder()
-    if output_folder.exists():
+    if output_folder.exists() and filename == 'all':
         print(f"rm -rf {output_folder}")
         rm_folder(output_folder)
+    else:
+        for ext in [".csv", ".html"]:
+            if ext == ".html":
+                to_remove = output_folder / f"{benchmark.name}_{filename}"
+            else:
+                to_remove = output_folder / filename
+            file = to_remove.with_suffix(ext)
+            if file.exists():
+                print(f"rm {file}")
+                file.unlink()
+
 
     # Delete cache files
     print("Clear joblib cache")
