@@ -75,7 +75,7 @@ This section illustrates benchopt's command line interface on the `Lasso benchma
 All this section assumes that you are in the parent folder of the ``benchmark_lasso`` folder.
 The ``--env`` flag specifies that everything is run in the ``benchopt_benchmark_lasso`` conda environment.
 
-**Installing benchmark dependencies**: to install all requirements of the benchmark, run:
+**Installing benchmark dependencies**: to install all requirements of the benchmark, make sure a conda environment is activated and run:
 
 .. prompt:: bash $
 
@@ -86,6 +86,9 @@ The ``--env`` flag specifies that everything is run in the ``benchopt_benchmark_
 .. prompt:: bash $
 
     benchopt run --env ./benchmark_lasso
+
+The command ```benchopt run``` can also be used outside of a conda environment without the flag ```-e/--env```.
+In that case, the benchmark will only run solvers that are currently installed.
 
 **Run only some solvers and datasets**: to run only the ``sklearn`` and ``celer`` solvers, on the ``simulated`` and ``finance`` datasets, run:
 

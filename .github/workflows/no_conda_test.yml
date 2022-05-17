@@ -1,0 +1,68 @@
+name: no_conda_test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  create:
+    tags:
+      - "**"
+  schedule:
+    # Run every day at 8:42am UTC.
+    - cron: "42 8 * * *"
+
+jobs:
+  test_benchopt:
+    name: Test without conda
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            version_python: 3.7
+            coverage: "true"
+          - os: ubuntu-latest
+            version_python: 3.8
+          - os: ubuntu-latest
+            version_python: 3.9
+            conda_cmd: "mamba"
+          - os: macos-latest
+            version_python: 3.8
+    env:
+      JUNIT_XML: "test-data.xml"
+      VERSION_PYTHON: ${{ matrix.version_python }}
+
+    defaults:
+      run:
+        # Need to use this shell to get cond working properly.
+        # See https://github.com/marketplace/actions/setup-miniconda#important
+        shell: bash -l {0}
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install benchopt and its dependencies
+        run: pip install -e .[test]
+
+      - name: Run benchopt without conda
+        run: benchopt run benchopt/tests/test_benchmarks/dummy_benchmark
+
+  report_test:
+    if: ${{ always() }}
+    needs: test_benchopt
+    runs-on: ubuntu-latest
+    env:
+      TEST_OUTCOME: ${{ needs.test_benchopt.result }}
+
+    steps:
+      - name: "Gather test results."
+        run: |
+          if [[ $TEST_OUTCOME == 'success' ]]; then
+            exit 0;
+          else
+            exit 1;
+          fi
+        shell: bash
