@@ -383,7 +383,18 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
         if skip:
             return skip, reason
 
+        # Check if parameters are modified by set_data
+        parameters = {}
+        for key in self._parameters:
+            parameters[key] = getattr(self, key)
         self.set_data(**data)
+        for key in self._parameters:
+            if parameters[key] != getattr(self, key):
+                raise ValueError(
+                    "Parameters of Objective should not be "
+                    "modified by 'set_data'"
+                )
+
         return False,  None
 
     def skip(self, **data):
