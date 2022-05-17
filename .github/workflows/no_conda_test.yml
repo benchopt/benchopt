@@ -35,12 +35,6 @@ jobs:
       JUNIT_XML: "test-data.xml"
       VERSION_PYTHON: ${{ matrix.version_python }}
 
-    defaults:
-      run:
-        # Need to use this shell to get cond working properly.
-        # See https://github.com/marketplace/actions/setup-miniconda#important
-        shell: bash -l {0}
-
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v3
@@ -48,7 +42,7 @@ jobs:
           python-version: ${{ env.VERSION_PYTHON }}
 
       - name: Install benchopt and its dependencies
-        run: python3 -m pip install -e .[test]
+        run: pip install -e .[test]
 
       - name: Run benchopt without conda
         run: benchopt run benchopt/tests/test_benchmarks/dummy_benchmark
