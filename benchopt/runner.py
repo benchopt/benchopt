@@ -325,7 +325,7 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
     # Save output in CSV file in the benchmark folder
     timestamp = datetime.now().strftime('%Y-%m-%d_%Hh%Mm%S')
     output_dir = benchmark.get_output_folder()
-    if output is None:
+    if output_name is None:
         save_file = output_dir / f'benchopt_run_{timestamp}.csv'
     else:
         save_file = output_dir / f"{output_name}.csv"
