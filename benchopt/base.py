@@ -391,8 +391,10 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
         for key in self._parameters:
             if parameters[key] != getattr(self, key):
                 raise ValueError(
+                    f"Parameter {key} has been changed from {parameters[key]} "
+                    f"to {getattr(self, key)}. "
                     "Parameters of Objective should not be "
-                    "modified by 'set_data'"
+                    "modified by 'set_data'."
                 )
 
         return False,  None
