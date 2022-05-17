@@ -22,15 +22,9 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            version_python: 3.7
-            coverage: "true"
-          - os: ubuntu-latest
-            version_python: 3.8
-          - os: ubuntu-latest
             version_python: 3.9
-            conda_cmd: "mamba"
           - os: macos-latest
-            version_python: 3.8
+            version_python: 3.9
     env:
       JUNIT_XML: "test-data.xml"
       VERSION_PYTHON: ${{ matrix.version_python }}
@@ -42,24 +36,7 @@ jobs:
           python-version: ${{ env.VERSION_PYTHON }}
 
       - name: Install benchopt and its dependencies
-        run: pip install -e .[test]
+        run: pip install -e .
 
       - name: Run benchopt without conda
         run: benchopt run benchopt/tests/test_benchmarks/dummy_benchmark
-
-  report_test:
-    if: ${{ always() }}
-    needs: test_benchopt
-    runs-on: ubuntu-latest
-    env:
-      TEST_OUTCOME: ${{ needs.test_benchopt.result }}
-
-    steps:
-      - name: "Gather test results."
-        run: |
-          if [[ $TEST_OUTCOME == 'success' ]]; then
-            exit 0;
-          else
-            exit 1;
-          fi
-        shell: bash
