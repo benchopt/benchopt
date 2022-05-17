@@ -48,7 +48,7 @@ jobs:
           python-version: ${{ env.VERSION_PYTHON }}
 
       - name: Install benchopt and its dependencies
-        run: pip install -e .[test]
+        run: python3 -m pip install -e .[test]
 
       - name: Run benchopt without conda
         run: benchopt run benchopt/tests/test_benchmarks/dummy_benchmark
