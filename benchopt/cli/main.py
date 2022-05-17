@@ -209,10 +209,20 @@ def run(config_file=None, **kwargs):
 
         return
 
-    _, all_conda_envs = list_conda_envs()
+    default_conda_env, all_conda_envs = list_conda_envs()
+
     # If env_name is True, the flag `--env` has been used. Create a conda env
     # specific to the benchmark (if not existing).
     # Else, use the <env_name> value.
+
+    # check if any current conda environment
+    if default_conda_env is None:
+        raise RuntimeError(
+            "No conda environment is activated. "
+            "You should be in a conda environment to use "
+            "'benchopt run' with options '-e/--env' or '--env-name'."
+        )
+
     if env_name == 'True':
         env_name = f"benchopt_{benchmark.name}"
         install_cmd = f"`benchopt install -e {benchmark.benchmark_dir}`"
@@ -348,26 +358,31 @@ def install(
     # Get a list of all conda envs
     default_conda_env, conda_envs = list_conda_envs()
 
-    # If env_name is False (default), installation in the current environement.
+    # check if any current conda environment
+    if default_conda_env is None:
+        raise RuntimeError(
+            "No conda environment is activated. "
+            "You should be in a conda environment to use "
+            "'benchopt install'."
+        )
+
+    # If env_name is False (default), installation in the current environment.
     if env_name == 'False':
         env_name = None
         # incompatible with the 'recreate' flag to avoid messing with the
-        # user environement
+        # user environment
         if recreate:
             msg = "Cannot recreate conda env without using options " + \
                 "'-e/--env' or '--env-name'."
             raise RuntimeError(msg)
 
-        # check if any current conda environment
-        if default_conda_env is not None:
-            # ask for user confirmation to install in current conda env
-            if not confirm:
-                click.confirm(
-                    f"Install in the current env '{default_conda_env}'?",
-                    abort=True
-                )
-        else:
-            raise RuntimeError("No conda environment is activated.")
+        # ask for user confirmation to install in current conda env
+        if not confirm:
+            click.confirm(
+                f"Install in the current env '{default_conda_env}'?",
+                abort=True
+            )
+
     else:
         # If env_name is True, the flag `--env` has been used. Create a conda
         # env specific to the benchmark. Else, use the <env_name> value.
