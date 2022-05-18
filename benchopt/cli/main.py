@@ -150,10 +150,11 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               help="Run the benchmark in the conda environment "
               "named <env_name>. To install the required solvers and "
               "datasets, see the command `benchopt install`.")
-@click.option("--output", "output", default=None,
-              type=click.Path(exists=False),
-              help="Name of the output file. If another result file has "
-              "the same name, appends a number to distinguish them.")
+@click.option("--output", default="None", type=str,
+              help="Filename for the csv output. If given, the results will "
+              "be stored at <BENCHMARK>/outputs/<filename>.csv, "
+              "if another result file has the same name, a number is happened "
+              "to distinguish them (ex: <BENCHMARK>/outputs/<filename>_1.csv).")
 def run(config_file=None, **kwargs):
     if config_file is not None:
         with open(config_file, "r") as f:
