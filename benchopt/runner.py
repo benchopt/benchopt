@@ -8,6 +8,7 @@ from .callback import _Callback
 from .benchmark import _check_name_lists
 from .utils.sys_info import get_sys_info
 from .utils.pdb_helpers import exception_handler
+from .utils.files import uniquify_results
 
 from .utils.terminal_output import TerminalOutput
 
@@ -239,7 +240,8 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
 def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                   dataset_names=None, objective_filters=None,
                   max_runs=10, n_repetitions=1, timeout=100, n_jobs=1,
-                  plot_result=True, html=True, show_progress=True, pdb=False):
+                  plot_result=True, html=True, show_progress=True, pdb=False,
+                  output="None"):
     """Run full benchmark.
 
     Parameters
@@ -277,6 +279,9 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
         If show_progress is set to True, display the progress of the benchmark.
     pdb : bool
         It pdb is set to True, open a debugger on error.
+    output_name : str
+        Filename for the csv output. If given, the results will
+        be stored at <BENCHMARK>/outputs/<filename>.csv.
 
     Returns
     -------
@@ -287,6 +292,7 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
         is set to `NaN`.
     """
     print("Benchopt is running")
+    output_name = output
 
     # List all datasets, objective and solvers to run based on the filters
     # provided. Merge the solver_names and forced to run all necessary solvers.
@@ -320,7 +326,11 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
     # Save output in CSV file in the benchmark folder
     timestamp = datetime.now().strftime('%Y-%m-%d_%Hh%Mm%S')
     output_dir = benchmark.get_output_folder()
-    save_file = output_dir / f'benchopt_run_{timestamp}.csv'
+    if output_name == "None":
+        save_file = output_dir / f'benchopt_run_{timestamp}.csv'
+    else:
+        save_file = output_dir / f"{output_name}.csv"
+        save_file = uniquify_results(save_file)
     df.to_csv(save_file)
     output.savefile_status(save_file=save_file)
 

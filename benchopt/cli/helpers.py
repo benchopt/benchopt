@@ -3,6 +3,7 @@ import pprint
 from pathlib import Path
 from collections.abc import Iterable
 import warnings
+import json
 
 from benchopt.config import set_setting
 from benchopt.config import get_setting
@@ -33,16 +34,37 @@ helpers = click.Group(
 )
 @click.argument('benchmark', default=Path.cwd(), type=click.Path(exists=True),
                 shell_complete=complete_benchmarks)
-def clean(benchmark, token=None, filename=None):
+@click.option("--filename", "-f", "filename",
+              type=str, default="all",
+              help="Name of the output file to remove.")
+def clean(benchmark, token=None, filename='all'):
 
     benchmark = Benchmark(benchmark)
-
     # Delete result files
     output_folder = benchmark.get_output_folder()
-    if output_folder.exists():
+    if output_folder.exists() and filename == 'all':
         print(f"rm -rf {output_folder}")
         rm_folder(output_folder)
-
+    else:
+        was_removed = False
+        for ext in [".csv", ".html"]:
+            if ext == ".html":
+                to_remove = output_folder / f"{benchmark.name}_{filename}"
+            else:
+                to_remove = output_folder / filename
+            file = to_remove.with_suffix(ext)
+            if file.exists():
+                was_removed = True
+                print(f"rm {file}")
+                file.unlink()
+            json_path = output_folder / "cache_run_list.json"
+            if was_removed and json_path.exists():
+                print(f"Removing {filename}.csv entry from {json_path}")
+                with open(json_path, "r") as cache_run:
+                    json_file = json.load(cache_run)
+                json_file.pop(f"{filename}.csv", None)
+                with open(json_path, "w") as cache_run:
+                    json.dump(json_file, cache_run)
     # Delete cache files
     print("Clear joblib cache")
     benchmark.mem.clear(warn=False)
