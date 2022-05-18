@@ -285,19 +285,20 @@ class TestRunCmd:
         out.check_output(r'Python-PGD\[step_size=1\]:',
                          repetition=5*n_rep+1)
 
-    @pytest.mark.parametrize('output_name, file_name', [
-        ('tmp_res', "tmp_res"), ("tmp_res", "tmp_res_1")])
-    def test_changing_output_name(self, output_name, file_name):
-        with SuppressStd() as out:
-            run([
+    def test_changing_output_name(self):
+        command = [
                 str(DUMMY_BENCHMARK_PATH), '-l', '-s', SELECT_ONE_PGD,
                 '-d', SELECT_ONE_SIMULATED,
-                '-n', '1', '--output', str(output_name),
-                '--no-plot'],
-                'benchopt', standalone_mode=False)
-        result_file = re.findall(r'Saving result in: (.*\.csv)', out.output)[0]
-        name = Path(result_file).stem
-        assert name == file_name
+                '-n', '1', '--output', 'unique_name',
+                '--no-plot'
+                ]
+        with CaptureRunOutput() as out:
+            run(command, 'benchopt', standalone_mode=False)
+            run(command, 'benchopt', standalone_mode=False)
+
+        result_files = re.findall(r'Saving result in: (.*\.csv)', out.output)
+        names = [Path(result_file).stem for result_file in result_files]
+        assert names[0] == 'unique_name' and names[1] == 'unique_name_1'
 
     def test_shell_complete(self):
         # Completion for benchmark name
