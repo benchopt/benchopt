@@ -155,6 +155,8 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               "be stored at <BENCHMARK>/outputs/<filename>.csv, "
               "if another result file has the same name, a number is happened "
               "to distinguish them (ex: <BENCHMARK>/outputs/<filename>_1.csv)."
+              " If not provided, the output will be saved as "
+              "<BENCHMARK>/outputs/benchopt_run_<timestamp>.csv."
               )
 def run(config_file=None, **kwargs):
     if config_file is not None:
