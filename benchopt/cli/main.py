@@ -1,3 +1,4 @@
+from email.policy import default
 import yaml
 import click
 import warnings
@@ -283,6 +284,38 @@ def run(config_file=None, **kwargs):
     raise SystemExit(_run_shell_in_conda_env(
         cmd, env_name=env_name, capture_stdout=False
     ) != 0)
+
+
+@main.command(help="wanna some help")
+@click.argument('dir_path', default="./")
+@click.option('--template', '-t', 'template')
+@click.option('--name', '-n', 'file_name')
+def cookiecutter(dir_path, template, file_name):
+    from github import Github
+    import os
+
+    assert template in ('solver', 'objective', 'dataset')
+
+    template_path = f"bench_cookiecutter/"
+    if template != 'objective':
+        template_path += f"{template}s/{template}.py"
+    else:
+        template_path += f"{template}.py"
+
+    benchopt_repo = Github().get_repo("Badr-MOUFAD/benchopt")
+    template_content = benchopt_repo.get_contents(
+        path=template_path,
+        ref='cookiecutter'  # this will be come 'main' after merge
+    )
+
+    relative_path = os.path.join(dir_path, f"{file_name}.py")
+    with open(relative_path, 'x') as f:
+        f.write(
+            template_content
+            .decoded_content
+            .decode('utf-8')
+            .format(name=file_name)
+        )
 
 
 @main.command(

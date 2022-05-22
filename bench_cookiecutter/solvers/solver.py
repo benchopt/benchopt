@@ -19,4 +19,4 @@ class Solver(BaseSolver):
         pass
 
     def get_result(self):
-        return  # output of your solver
+        return
