@@ -1,4 +1,3 @@
-from email.policy import default
 import yaml
 import click
 import warnings
@@ -286,13 +285,13 @@ def run(config_file=None, **kwargs):
     ) != 0)
 
 
-@main.command(help="wanna some help")
+@main.command(help="wanna some help?")
 @click.argument('dir_path', default="./")
 @click.option('--template', '-t', 'template')
 @click.option('--name', '-n', 'file_name')
 def cookiecutter(dir_path, template, file_name):
-    from github import Github
     import os
+    from github import Github
 
     assert template in ('solver', 'objective', 'dataset')
 
