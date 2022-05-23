@@ -20,7 +20,7 @@ def test_benchmark_objective(benchmark, dataset_simu):
     # check that the reported dimension is correct and that the result of
     # the objective function is a dictionary containing a scalar value for
     # `objective_value`.
-    beta_hat = objective.get_one_beta()
+    beta_hat = objective.get_one_solution()
     objective_dict = objective(beta_hat)
 
     assert 'objective_value' in objective_dict, (
@@ -66,27 +66,35 @@ def test_dataset_get_data(benchmark, dataset_class):
     if dataset_class.name.lower() == 'finance':
         pytest.skip("Do not download finance.")
 
-    res = dataset._get_data()
-    assert isinstance(res, tuple), (
-        "Output of get_data should be a 2-tuple"
-    )
-    assert len(res) == 2, (
-        "Output of get_data should be a 2-tuple"
-    )
+    # XXX TODO remove when scikit-learn releases the fix
+    # see https://github.com/scikit-learn/scikit-learn/pull/23358
+    if dataset_class.name.lower() == 'leukemia':
+        pytest.skip("Leukemia download is broken in scikit-learn 1.1.0")
 
-    dimension, data = res
-
-    assert isinstance(dimension, tuple) or dimension == 'object', (
-        "First output of get_data should be an integer or a tuple of integers."
-        f" Got {dimension}."
+    data = dataset._get_data()
+    assert isinstance(data, (tuple, dict)), (
+        "Output of get_data should be a 2-tuple or a dict."
     )
-    if dimension != 'object':
-        assert all(isinstance(d, numbers.Integral) for d in dimension), (
+    # XXX - Remove in version 1.3
+    if isinstance(data, tuple):
+        assert len(data) == 2, (
+            "Output of get_data should be a 2-tuple"
+        )
+
+        dimension, data = data
+
+        assert isinstance(dimension, tuple) or dimension == 'object', (
             "First output of get_data should be an integer or a tuple of "
             f"integers. Got {dimension}."
         )
+        if dimension != 'object':
+            assert all(isinstance(d, numbers.Integral) for d in dimension), (
+                "First output of get_data should be an integer or a tuple of "
+                f"integers. Got {dimension}."
+            )
+
     assert isinstance(data, dict), (
-        f"Second output of get_data should be a dict. Got {data}."
+        f"The returned data from get_data should be a dict. Got {data}."
     )
 
 

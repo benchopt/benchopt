@@ -1,4 +1,5 @@
 import re
+import tempfile
 from pathlib import Path
 
 import click
@@ -49,6 +50,7 @@ DATASET_COMPLETION_CASES = [
     ('simu', ['simulated']),
     ('lated', ['simulated']),
 ]
+CURRENT_DIR = Path.cwd()
 
 
 def _get_completion(cmd, args, incomplete):
@@ -104,11 +106,15 @@ class TestRunCmd:
 
     @pytest.mark.parametrize('invalid_benchmark, match', [
         ('invalid_benchmark', "Path 'invalid_benchmark' does not exist."),
-        ('.', "The folder '.' does not contain `objective.py`")],
-        ids=['invalid_path', 'no_objective'])
+        ('.', "The folder '.' does not contain `objective.py`"),
+        ("", rf"The folder '{CURRENT_DIR}' does not contain `objective.py`")],
+        ids=['invalid_path', 'no_objective', "no_objective in default"])
     def test_invalid_benchmark(self, invalid_benchmark, match):
         with pytest.raises(click.BadParameter, match=match):
-            run([invalid_benchmark], 'benchopt', standalone_mode=False)
+            if len(invalid_benchmark) > 0:
+                run([invalid_benchmark], 'benchopt', standalone_mode=False)
+            else:
+                run([], 'benchopt', standalone_mode=False)
 
     def test_invalid_dataset(self):
         with pytest.raises(click.BadParameter, match=r"invalid_dataset"):
@@ -154,6 +160,29 @@ class TestRunCmd:
         # Make sure the results were saved in a result file
         assert len(out.result_files) == 1, out.output
 
+    def test_benchopt_run_custom_parameters(self):
+        SELECT_DATASETS = r'simulated[n_features=[100, 200]]'
+        SELECT_SOLVERS = r'python-pgd-with-cb[use_acceleration=[True, False]]'
+        SELECT_OBJECTIVES = r'dummy*[0.1, 0.2]'
+
+        with CaptureRunOutput() as out:
+            run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_DATASETS,
+                 '-f', SELECT_SOLVERS, '-n', '1', '-r', '1', '-o',
+                 SELECT_OBJECTIVES, '--no-plot'],
+                'benchopt', standalone_mode=False)
+
+        out.check_output(r'Simulated\[n_features=100,', repetition=1)
+        out.check_output(r'Simulated\[n_features=200,', repetition=1)
+        out.check_output(r'Simulated\[n_features=5000,', repetition=0)
+        out.check_output(r'Dummy Sparse Regression\[reg=0.1\]', repetition=2)
+        out.check_output(r'Dummy Sparse Regression\[reg=0.2\]', repetition=2)
+        out.check_output(r'Dummy Sparse Regression\[reg=0.05\]', repetition=0)
+        out.check_output(r'--Python-PGD\[', repetition=0)
+        out.check_output(r'--Python-PGD-with-cb\[use_acceleration=False\]:',
+                         repetition=28)
+        out.check_output(r'--Python-PGD-with-cb\[use_acceleration=True\]:',
+                         repetition=28)
+
     def test_benchopt_run_profile(self):
         with CaptureRunOutput() as out:
             run_cmd = [str(DUMMY_BENCHMARK_PATH),
@@ -169,6 +198,48 @@ class TestRunCmd:
             "Line #", "Hits", "Time", "Per Hit", "% Time", "Line Contents"
         ]), repetition=1)
         out.check_output(r"def run\(self, n_iter\):", repetition=1)
+
+    def test_benchopt_run_config_file(self):
+        tmp = tempfile.NamedTemporaryFile(mode="w+")
+        tmp.write("some_unknown_option: 0")
+        tmp.flush()
+        with pytest.raises(ValueError, match="Invalid config file option"):
+            run(f'{str(DUMMY_BENCHMARK_PATH)} --config {tmp.name}'.split(),
+                'benchopt', standalone_mode=False)
+
+        config = f"""
+        objective-filter:
+          - {SELECT_ONE_OBJECTIVE}
+        dataset:
+          - {SELECT_ONE_SIMULATED}
+        n-repetitions: 2
+        max-runs: 1
+        force-solver:
+          - python-pgd[step_size=[2, 3]]
+          - Test-Solver
+        """
+        tmp = tempfile.NamedTemporaryFile(mode="w+")
+        tmp.write(config)
+        tmp.flush()
+
+        run_cmd = [str(DUMMY_BENCHMARK_PATH), '--config', tmp.name,
+                   '--no-plot']
+
+        with CaptureRunOutput() as out:
+            run(run_cmd, 'benchopt', standalone_mode=False)
+
+        out.check_output(r'Test-Solver:', repetition=11)
+        out.check_output(r'Python-PGD\[step_size=2\]:', repetition=11)
+        out.check_output(r'Python-PGD\[step_size=3\]:', repetition=11)
+
+        # test that CLI options take precedence
+        with CaptureRunOutput() as out:
+            run(run_cmd + ['-f', 'Test-Solver'],
+                'benchopt', standalone_mode=False)
+
+        out.check_output(r'Test-Solver:', repetition=11)
+        out.check_output(
+            r'Python-PGD\[step_size=1.5\]:', repetition=0)
 
     @pytest.mark.parametrize('n_rep', [2, 3, 5])
     def test_benchopt_caching(self, n_rep):
@@ -213,6 +284,21 @@ class TestRunCmd:
 
         out.check_output(r'Python-PGD\[step_size=1\]:',
                          repetition=5*n_rep+1)
+
+    def test_changing_output_name(self):
+        command = [
+                str(DUMMY_BENCHMARK_PATH), '-l', '-s', SELECT_ONE_PGD,
+                '-d', SELECT_ONE_SIMULATED,
+                '-n', '1', '--output', 'unique_name',
+                '--no-plot'
+                ]
+        with CaptureRunOutput() as out:
+            run(command, 'benchopt', standalone_mode=False)
+            run(command, 'benchopt', standalone_mode=False)
+
+        result_files = re.findall(r'Saving result in: (.*\.csv)', out.output)
+        names = [Path(result_file).stem for result_file in result_files]
+        assert names[0] == 'unique_name' and names[1] == 'unique_name_1'
 
     def test_shell_complete(self):
         # Completion for benchmark name

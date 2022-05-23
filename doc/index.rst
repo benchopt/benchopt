@@ -18,11 +18,11 @@ Benchopt is used through a command line as documented
 in the :ref:`cli_documentation`.
 Once benchopt is installed, running and replicating an optimization benchmark is **as simple as doing**:
 
-.. code-block::
+.. prompt:: bash $
 
-    $ git clone https://github.com/benchopt/benchmark_logreg_l2
-    $ benchopt install --env ./benchmark_logreg_l2
-    $ benchopt run --env ./benchmark_logreg_l2
+    git clone https://github.com/benchopt/benchmark_logreg_l2
+    benchopt install --env ./benchmark_logreg_l2
+    benchopt run --env ./benchmark_logreg_l2
 
 Running these commands will fetch the benchmark files, install the benchmark
 requirements in a dedicated environment called ``benchopt_benchmark_logreg_l2`` and
@@ -33,22 +33,29 @@ give you a benchmark plot on l2-regularized logistic regression:
    :align: center
    :scale: 80%
 
-Learn how to :ref:`how`.
 
 Install
 --------
 
-This package can be installed through `pip`. To get the **latest release**, use:
+This package can be installed through `pip`.  In order to allow benchopt to automatically
+install solvers dependencies, the install needs to be done in a `conda` environment.
 
-.. code-block::
+.. prompt:: bash $
 
-    $ pip install benchopt
+    conda create -n benchopt python
+    conda activate benchopt
+
+To get the **latest release**, use:
+
+.. prompt:: bash $
+
+    pip install benchopt
 
 And to get the **latest development version**, you can use:
 
-.. code-block::
+.. prompt:: bash $
 
-    $ pip install -U git+https://github.com/benchopt/benchopt.git#egg=benchopt
+    pip install -U -i https://test.pypi.org/simple/ benchopt
 
 This will install the command line tool to run the benchmark. Then, existing
 benchmarks can be retrieved from GitHub or created locally. To discover which
@@ -57,59 +64,95 @@ benchmarks are presently available look for
 such as for `Lasso -- l1-regularized linear regression <https://github.com/benchopt/benchmark_lasso>`_.
 This benchmark can be retrieved locally with:
 
-.. code-block::
+.. prompt:: bash $
 
-    $ git clone https://github.com/benchopt/benchmark_lasso.git
+    git clone https://github.com/benchopt/benchmark_lasso.git
 
-Quickstart: command line usage on the Lasso benchmark
------------------------------------------------------
+Run a benchmark
+---------------
 
 This section illustrates benchopt's command line interface on the `Lasso benchmark <https://github.com/benchopt/benchmark_lasso>`_; the syntax is applicable to any benchmark.
 All this section assumes that you are in the parent folder of the ``benchmark_lasso`` folder.
-The ``--env`` flag specifies that everything is run in the ``benchopt_benchmark_lasso`` conda environment.
+The ``--env`` flag specifies that everything is run in the ``benchopt_benchmark_lasso`` ``conda`` environment.
 
-**Installing benchmark dependencies**: to install all requirements of the benchmark, run:
+**Installing benchmark dependencies**: ``benchopt`` exposes a CLI to install solvers' dependencies automatically.
+It only works inside a ``conda`` environment. To install all requirements of the benchmark, make sure a ``conda``
+environment is activated and run:
 
-.. code-block::
+.. prompt:: bash $
 
-    $ benchopt install --env ./benchmark_lasso
+    benchopt install --env ./benchmark_lasso
 
 **Run a benchmark**: to run benchmarks on all datasets and with all solvers, run:
 
-.. code-block::
+.. prompt:: bash $
 
-    $ benchopt run --env ./benchmark_lasso
+    benchopt run --env ./benchmark_lasso
+
+The command ``benchopt run`` can also be used outside of a ``conda`` environment without the flag ``-e/--env``.
+In that case, the benchmark will only run solvers that are currently installed.
 
 **Run only some solvers and datasets**: to run only the ``sklearn`` and ``celer`` solvers, on the ``simulated`` and ``finance`` datasets, run:
 
-.. code-block::
+.. prompt:: bash $
 
-    $ benchopt run --env ./benchmark_lasso -s sklearn -s celer -d simulated -d finance
+    benchopt run --env ./benchmark_lasso -s sklearn -s celer -d simulated -d finance
 
 **Run a solver or dataset with specific parameters**:  some solvers and datasets have parameters; by default all combinations are run.
 If you want to run a specific configuration, pass it explicitly, e.g., to run the ``python-pgd`` solver only with its parameter ``use_acceleration`` set to True, use:
 
-.. code-block::
+.. prompt:: bash $
 
-    $ benchopt run --env ./benchmark_lasso -s python-pgd[use_acceleration=True]
+    benchopt run --env ./benchmark_lasso -s python-pgd[use_acceleration=True]
 
 **Set the number of repetitions**: the benchmark are repeated 5 times by default for greater precision. To run the benchmark 10 times, run:
 
-.. code-block::
+.. prompt:: bash $
 
-    $ benchopt run --env ./benchmark_lasso -r 10
+    benchopt run --env ./benchmark_lasso -r 10
+
+**Passing option through configuration file**: all options of ``benchopt run`` can be passed through a YAML configuration file, together with ``--config <configuration_file_name.yml>``.
+The options are defined using the same name as the CLI options.
+An example of configuration file is:
+
+.. code-block:: yaml
+
+    objective-filter:
+      - Lasso Regression[fit_intercept=False,reg=0.5]
+    dataset:
+      - simulated
+      - leukemia
+    solver:
+      - celer
+    force-solver:
+      - cd
+    n-repetitions: 1
+
+When options are passed both via file and CLI, the CLI takes precedence.
 
 **Getting help**: use
 
-.. code-block::
+.. prompt:: bash $
 
-    $ benchopt run -h
+    benchopt run -h
 
 to get more details about the different options.
 You can also read the :ref:`cli_documentation`.
 
-Some available benchmarks
--------------------------
+Write a benchmark
+-----------------
+
+Learn how to :ref:`how`, including creating an objective, a solver, and
+a dataset.
+
+
+Available benchmarks
+--------------------
+
+.. note::
+    Some benchmarks are briefly described in the list below. For a complete
+    list of benchmarks, see GitHub repositories of the form `benchopt/benchmark_*
+    <https://github.com/orgs/benchopt/repositories?q=benchmark_&type=all&language=&sort=stargazers/>`_.
 
 **Notation:**  In what follows, n (or n_samples) stands for the number of samples and p (or n_features) stands for the number of features.
 
@@ -190,7 +233,6 @@ linear ICA is to recover :math:`A` up to permutation and scaling of its columns.
 The objective in this benchmark is related to some estimation on :math:`A`
 quantified with the so-called AMARI distance.
 
-See `benchmark_* repositories on GitHub <https://github.com/benchopt/>`_ for more.
 
 Benchmark results
 -----------------
@@ -199,8 +241,10 @@ All the public benchmark results are available at `Benchopt Benchmarks results <
 
 **Publish results**: You can directly publish the result of a run of ``benchopt`` on `Benchopt Benchmarks results <https://benchopt.github.io/results/>`_. You can have a look at this page to :ref:`publish_doc`.
 
-Contents
-========
+.. include:: contrib.rst
+
+Website contents
+================
 
 .. toctree::
    :maxdepth: 1

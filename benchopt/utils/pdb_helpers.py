@@ -34,8 +34,8 @@ def exception_handler(output, pdb=False):
         ctx.status = 'error'
 
         if pdb:
-            traceback.print_exc()
             output.show_status('error')
+            traceback.print_exc()
             # Use ipdb if it is available and default to pdb otherwise.
             try:
                 from ipdb import post_mortem

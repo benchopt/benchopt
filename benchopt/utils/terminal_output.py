@@ -1,6 +1,7 @@
 "Helper function for colored terminal outputs"
 import shutil
-
+import ctypes
+import platform
 
 from ..config import DEBUG
 
@@ -48,6 +49,10 @@ def print_normalize(msg, endline=True, verbose=True):
     line_length = max(
         MIN_LINE_LENGTH, shutil.get_terminal_size((100, 24)).columns
     )
+
+    # We add colors to messages using `\033[1;XXm{}\0033[0m`. This adds 11
+    # invisible characters for each color we add. Don't take this into
+    # account for the line length.
     n_colors = msg.count('\033') // 2
     msg = msg.ljust(line_length + n_colors * 11)
 
@@ -59,6 +64,11 @@ def print_normalize(msg, endline=True, verbose=True):
 
 class TerminalOutput:
     def __init__(self, n_repetitions, show_progress):
+        # enable ANSI colors in Windows
+        if platform.system() == "Windows":
+            kernel32 = ctypes.windll.kernel32
+            kernel32.SetConsoleMode(kernel32.GetStdHandle(-11), 7)
+
         self.n_repetitions = n_repetitions
         self.show_progress = show_progress
 
@@ -66,7 +76,7 @@ class TerminalOutput:
         self.dataset = None
         self.objective = None
 
-        self.rep = None
+        self.rep = 0
         self.verbose = True
 
     def clone(self):

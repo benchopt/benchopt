@@ -1,3 +1,4 @@
+import yaml
 import click
 import warnings
 from pathlib import Path
@@ -7,6 +8,7 @@ from benchopt.cli.completion import complete_solvers
 from benchopt.cli.completion import complete_datasets
 from benchopt.cli.completion import complete_benchmarks
 from benchopt.cli.completion import complete_conda_envs
+from benchopt.cli.completion import complete_config_files
 from benchopt.utils.conda_env_cmd import list_conda_envs
 from benchopt.utils.conda_env_cmd import create_conda_env
 from benchopt.utils.shell_cmd import _run_shell_in_conda_env
@@ -15,9 +17,49 @@ from benchopt.utils.profiling import print_stats
 
 
 main = click.Group(
-    name='Principal Commands',
-    help="Principal commands that are used in ``benchopt``."
+    name='Main commands',
+    help="Main commands that are used in ``benchopt``."
 )
+
+
+def _get_run_args(cli_kwargs, config_file_kwargs):
+    ctx = click.get_current_context()
+    for k, v in config_file_kwargs.items():
+        # click maps options names to variable names by removing '--' and
+        # replacing '-' by '_'. We use the same mapping to convert options from
+        # config_file, so that variable names match
+        var_name = k.replace('-', '_')
+
+        if var_name not in cli_kwargs:
+            raise ValueError(
+                f"Invalid config file option {k}. "
+                "See list of valid options with `benchopt run -h`.")
+
+        # only override CLI variables if they have their default value
+        if (ctx.get_parameter_source(var_name) is not None and
+                ctx.get_parameter_source(var_name).name == 'DEFAULT'):
+            cli_kwargs[var_name] = v
+
+    return_names = [
+        "benchmark",
+        "solver",
+        "force_solver",
+        "dataset",
+        "objective",
+        "max_runs",
+        "n_repetitions",
+        "timeout",
+        "n_jobs",
+        "plot",
+        "html",
+        "pdb",
+        "profile",
+        "env_name",
+        "output",
+        "objective_filter",
+        "old_objective_filter",
+    ]
+    return [cli_kwargs[name] for name in return_names]
 
 
 @main.command(
@@ -26,32 +68,39 @@ main = click.Group(
     "in a benchmark-dedicated conda environment or in your own "
     "conda environment, see the command `benchopt install`."
 )
-@click.argument('benchmark', type=click.Path(exists=True),
+@click.argument('benchmark', default=Path.cwd(), type=click.Path(exists=True),
                 shell_complete=complete_benchmarks)
-@click.option('--objective-filter', '-o', 'objective_filters',
+@click.option('--objective-filter',
               metavar='<objective_filter>', multiple=True, type=str,
-              help="Filter the objective based on its parametrized name. This "
-              "can be used to only include one set of parameters.")
-@click.option('--old_objective-filter', '-p', 'old_objective_filters',
+              help="Deprecated alias for `--objective`.")
+@click.option('--objective', '-o',
+              metavar='<objective_filter>', multiple=True, type=str,
+              help="Select the objective based on its parameters, with the "
+              "syntax `objective[parameter=value]`. This can be used to only "
+              "include one set of parameters. ")
+@click.option('--old-objective-filter', '-p',
               multiple=True, type=str,
-              help="Deprecated alias for --objective_filters/-o.")
-@click.option('--solver', '-s', 'solver_names',
+              help="Deprecated alias for --objective_filter/-o.")
+@click.option('--solver', '-s',
               metavar="<solver_name>", multiple=True, type=str,
               help="Include <solver_name> in the benchmark. By default, all "
               "solvers are included. When `-s` is used, only listed solvers"
-              " are included. To include multiple solvers, "
-              "use multiple `-s` options.", shell_complete=complete_solvers)
-@click.option('--force-solver', '-f', 'forced_solvers',
+              " are included. Note that <solver_name> can include parameters,"
+              " with the syntax `solver[parameter=value]`. "
+              "To include multiple solvers, use multiple `-s` options.",
+              shell_complete=complete_solvers)
+@click.option('--force-solver', '-f',
               metavar="<solver_name>", multiple=True, type=str,
               help="Force the re-run for <solver_name>. This "
               "avoids caching effect when adding a solver. "
               "To select multiple solvers, use multiple `-f` options.",
               shell_complete=complete_solvers)
-@click.option('--dataset', '-d', 'dataset_names',
+@click.option('--dataset', '-d',
               metavar="<dataset_name>", multiple=True, type=str,
               help="Run the benchmark on <dataset_name>. By default, all "
               "datasets are included. When `-d` is used, only listed datasets"
-              " are included. Note that <dataset_name> can be a regexp. "
+              " are included. Note that <dataset_name> can include parameters,"
+              " with the syntax `dataset[parameter=value]`. "
               "To include multiple datasets, use multiple `-d` options.",
               shell_complete=complete_datasets)
 @click.option('--n-jobs', '-j',
@@ -69,6 +118,9 @@ main = click.Group(
 @click.option('--timeout',
               metavar="<int>", default=100, show_default=True, type=int,
               help='Timeout a solver when run for more than <timeout> seconds')
+@click.option('--config', 'config_file', default=None,
+              shell_complete=complete_config_files,
+              help="YAML configuration file containing benchmark options.")
 @click.option('--plot/--no-plot', default=True,
               help="Whether or not to plot the results. Default is True.")
 @click.option('--html/--no-html', default=True,
@@ -81,7 +133,7 @@ main = click.Group(
 @click.option('--local', '-l', 'env_name',
               flag_value='False', default=True,
               help="Run the benchmark in the local conda environment.")
-@click.option('--profile', 'do_profile',
+@click.option('--profile',
               flag_value='True', default=False,
               help="Will do line profiling on all functions with @profile "
                    "decorator. Requires the line-profiler package. "
@@ -98,16 +150,42 @@ main = click.Group(
               help="Run the benchmark in the conda environment "
               "named <env_name>. To install the required solvers and "
               "datasets, see the command `benchopt install`.")
-def run(benchmark, solver_names, forced_solvers, dataset_names,
+@click.option("--output", default="None", type=str,
+              help="Filename for the csv output. If given, the results will "
+              "be stored at <BENCHMARK>/outputs/<filename>.csv, "
+              "if another result file has the same name, a number is happened "
+              "to distinguish them (ex: <BENCHMARK>/outputs/<filename>_1.csv)."
+              " If not provided, the output will be saved as "
+              "<BENCHMARK>/outputs/benchopt_run_<timestamp>.csv."
+              )
+def run(config_file=None, **kwargs):
+    if config_file is not None:
+        with open(config_file, "r") as f:
+            config = yaml.safe_load(f)
+    else:
+        config = {}
+
+    # XXX - Remove old and deprecated objective filters in version 1.3
+    (
+        benchmark, solver_names, forced_solvers, dataset_names,
         objective_filters, max_runs, n_repetitions, timeout, n_jobs,
-        plot=True, html=True, pdb=False, do_profile=False,
-        env_name='False', old_objective_filters=None):
+        plot, html, pdb, do_profile, env_name, output,
+        deprecated_objective_filters, old_objective_filters
+    ) = _get_run_args(kwargs, config)
+
     if len(old_objective_filters):
         warnings.warn(
             'Using the -p option is deprecated, use -o instead',
             FutureWarning,
         )
         objective_filters = old_objective_filters
+
+    if len(deprecated_objective_filters):
+        warnings.warn(
+            'Using the --objective-filters option is deprecated, '
+            'use --objective instead', FutureWarning
+        )
+        objective_filters = deprecated_objective_filters
 
     from benchopt.runner import run_benchmark
 
@@ -118,11 +196,14 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
     # Check that the dataset/solver patterns match actual dataset
     benchmark = Benchmark(benchmark)
     benchmark.validate_dataset_patterns(dataset_names)
-    benchmark.validate_solver_patterns(solver_names+forced_solvers)
     benchmark.validate_objective_filters(objective_filters)
+    # pyyaml returns tuples: solver_names can be tuple and forced_solvers list
+    benchmark.validate_solver_patterns(
+        list(solver_names) + list(forced_solvers)
+    )
 
     # If env_name is False, the flag `--local` has been used (default) so
-    # run in the current environement.
+    # run in the current environment.
     if env_name == 'False':
         run_benchmark(
             benchmark, solver_names, forced_solvers,
@@ -130,17 +211,28 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
             objective_filters=objective_filters,
             max_runs=max_runs, n_repetitions=n_repetitions,
             timeout=timeout, n_jobs=n_jobs,
-            plot_result=plot, html=html, pdb=pdb
+            plot_result=plot, html=html, pdb=pdb,
+            output=output
         )
 
         print_stats()  # print profiling stats (does nothing if not profiling)
 
         return
 
-    _, all_conda_envs = list_conda_envs()
+    default_conda_env, all_conda_envs = list_conda_envs()
+
     # If env_name is True, the flag `--env` has been used. Create a conda env
     # specific to the benchmark (if not existing).
     # Else, use the <env_name> value.
+
+    # check if any current conda environment
+    if default_conda_env is None:
+        raise RuntimeError(
+            "No conda environment is activated. "
+            "You should be in a conda environment to use "
+            "'benchopt run' with options '-e/--env' or '--env-name'."
+        )
+
     if env_name == 'True':
         env_name = f"benchopt_{benchmark.name}"
         install_cmd = f"`benchopt install -e {benchmark.benchmark_dir}`"
@@ -171,7 +263,7 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
         )
 
     # run the command in the conda env
-    solvers_option = ' '.join(['-s ' + s for s in solver_names])
+    solvers_option = ' '.join([f"-s '{s}'" for s in solver_names])
     forced_solvers_option = ' '.join([f"-f '{s}'" for s in forced_solvers])
     datasets_option = ' '.join([f"-d '{d}'" for d in dataset_names])
     objective_option = ' '.join([f"-o '{o}'" for o in objective_filters])
@@ -179,12 +271,13 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
         rf"benchopt run --local {benchmark.benchmark_dir} "
         rf"--n-repetitions {n_repetitions} "
         rf"--max-runs {max_runs} --timeout {timeout} "
-        rf"--n-jobs {n_jobs}"
+        rf"--n-jobs {n_jobs} "
         rf"{solvers_option} {forced_solvers_option} "
         rf"{datasets_option} {objective_option} "
         rf"{'--plot' if plot else '--no-plot'} "
         rf"{'--html' if html else '--no-html'} "
         rf"{'--pdb' if pdb else ''} "
+        rf"--output {output}"
         .replace('\\', '\\\\')
     )
     raise SystemExit(_run_shell_in_conda_env(
@@ -195,7 +288,7 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
 @main.command(
     help="Install the requirements (solvers/datasets) for a benchmark."
 )
-@click.argument('benchmark', type=click.Path(exists=True),
+@click.argument('benchmark', default=Path.cwd(), type=click.Path(exists=True),
                 shell_complete=complete_benchmarks)
 @click.option('--force', '-f',
               is_flag=True,
@@ -220,10 +313,15 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
               "datasets are included, except when -s flag is used. "
               "If -s flag is used, then no dataset is included. "
               "When `-d` is used, only listed datasets "
-              "are included. Note that <dataset_name> can be a regexp. "
+              "are included. Note that <dataset_name> can include parameters "
+              "with the syntax `dataset[parameter=value]`. "
               "To include multiple datasets, use multiple `-d` options."
               "To include all datasets, use -d 'all' option.",
               shell_complete=complete_datasets)
+@click.option('--config', 'config_file', default=None,
+              shell_complete=complete_config_files,
+              help="YAML configuration file containing benchmark options, "
+              "whose solvers and datasets will be installed.")
 @click.option('--env', '-e', 'env_name',
               flag_value='True', type=str, default='False',
               help="Install all requirements in a dedicated "
@@ -247,8 +345,20 @@ def run(benchmark, solver_names, forced_solvers, dataset_names,
               help="If this flag is set, no confirmation will be asked "
               "to the user to install requirements in the current environment."
               " Useless with options `-e/--env` or `--env-name`.")
-def install(benchmark, minimal, solver_names, dataset_names, force=False,
-            recreate=False, env_name='False', confirm=False, quiet=False):
+def install(
+        benchmark, minimal, solver_names, dataset_names, config_file=None,
+        force=False, recreate=False, env_name='False', confirm=False,
+        quiet=False):
+
+    if config_file is not None:
+        with open(config_file, "r") as f:
+            config = yaml.safe_load(f)
+        if not dataset_names:
+            dataset_names = config.get("dataset", tuple())
+        if not solver_names:
+            solver_names = config.get("solver", tuple())
+            forced_solvers = config.get("force-solver", tuple())
+            solver_names = list(set(solver_names).union(set(forced_solvers)))
 
     # Check that the dataset/solver patterns match actual dataset
     benchmark = Benchmark(benchmark)
@@ -259,26 +369,31 @@ def install(benchmark, minimal, solver_names, dataset_names, force=False,
     # Get a list of all conda envs
     default_conda_env, conda_envs = list_conda_envs()
 
-    # If env_name is False (default), installation in the current environement.
+    # check if any current conda environment
+    if default_conda_env is None:
+        raise RuntimeError(
+            "No conda environment is activated. "
+            "You should be in a conda environment to use "
+            "'benchopt install'."
+        )
+
+    # If env_name is False (default), installation in the current environment.
     if env_name == 'False':
         env_name = None
         # incompatible with the 'recreate' flag to avoid messing with the
-        # user environement
+        # user environment
         if recreate:
             msg = "Cannot recreate conda env without using options " + \
                 "'-e/--env' or '--env-name'."
             raise RuntimeError(msg)
 
-        # check if any current conda environment
-        if default_conda_env is not None:
-            # ask for user confirmation to install in current conda env
-            if not confirm:
-                click.confirm(
-                    f"Install in the current env '{default_conda_env}'?",
-                    abort=True
-                )
-        else:
-            raise RuntimeError("No conda environment is activated.")
+        # ask for user confirmation to install in current conda env
+        if not confirm:
+            click.confirm(
+                f"Install in the current env '{default_conda_env}'?",
+                abort=True
+            )
+
     else:
         # If env_name is True, the flag `--env` has been used. Create a conda
         # env specific to the benchmark. Else, use the <env_name> value.
@@ -313,7 +428,7 @@ def install(benchmark, minimal, solver_names, dataset_names, force=False,
     "benchopt.github.io/how.html#example-of-parametrized-simulated-dataset",
     context_settings=dict(ignore_unknown_options=True)
 )
-@click.argument('benchmark', type=click.Path(exists=True),
+@click.argument('benchmark', default=Path.cwd(), type=click.Path(exists=True),
                 shell_complete=complete_benchmarks)
 @click.option('--env-name', type=str, default=None, metavar='NAME',
               shell_complete=complete_conda_envs,

@@ -61,9 +61,6 @@ end
 
 class JuliaSolver(BaseSolver):
 
-    # pyjulia does not support passing sparse matrix yet
-    support_sparse = False
-
     # Requirements
     install_cmd = 'conda'
     requirements = ['julia', 'pip:julia']

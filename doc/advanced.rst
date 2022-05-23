@@ -1,9 +1,9 @@
-.. _how:
+.. _advanced:
 
-Advanced functionnalities in a benchmark
-=========================================
+Advanced functionalities in a benchmark
+=======================================
 
-This page intends to list some advanced functionnality
+This page intends to list some advanced functionality
 to make it easier to use the benchmark.
 
 .. _skiping_solver:

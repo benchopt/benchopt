@@ -6,7 +6,7 @@ Benchmark repository for optimization
 BenchOpt is a benchmarking suite for optimization algorithms.
 It is built for simplicity, transparency, and reproducibility.
 
-Benchopt is implemented in Python, and can run algorithms 
+Benchopt is implemented in Python, and can run algorithms
 written in **many programming languages**
 (`example <https://benchopt.github.io/auto_examples/plot_run_benchmark_python_R.html>`_).
 So far, Benchopt has been tested with `Python <https://www.python.org/>`_,
@@ -22,10 +22,13 @@ be **as simple as doing**:
 
 .. code-block::
 
-    pip install benchopt
-    git clone https://github.com/benchopt/benchmark_logreg_l2
-    benchopt install -e benchmark_logreg_l2
-    benchopt run --env ./benchmark_logreg_l2
+   conda create -n benchopt python
+   conda activate benchopt
+   pip install benchopt
+   git clone https://github.com/benchopt/benchmark_logreg_l2
+   cd benchmark_logreg_l2
+   benchopt install -e . -s lightning -s sklearn
+   benchopt run -e . --config ./config_example.yml
 
 Running this command will give you a benchmark plot on l2-regularized
 logistic regression:
@@ -43,7 +46,15 @@ using the `benchmark template <https://github.com/benchopt/template_benchmark>`_
 Install
 --------
 
-The command line tool to run the benchmarks can be installed through `pip`.
+The command line tool to run the benchmarks can be installed through `pip`. In order to allow `benchopt`
+to automatically install solvers dependencies, the install needs to be done in a `conda` environment.
+
+
+.. code-block::
+
+    conda create -n benchopt python
+    conda activate benchopt
+
 To get the **latest release**, use:
 
 .. code-block::
@@ -64,9 +75,10 @@ For instance, the benchmark for Lasso can be retrieved with:
     git clone https://github.com/benchopt/benchmark_lasso
 
 
-Command line usage
-------------------
+Command line interface
+----------------------
 
+The preferred way to run the benchmarks is through the command line interface.
 To run the Lasso benchmark on all datasets and with all solvers, run:
 
 .. code-block::
@@ -79,7 +91,10 @@ To get more details about the different options, run:
 
     benchopt run -h
 
-or read the `API Documentation <https://benchopt.github.io/api.html>`_.
+or read the `CLI documentation <https://benchopt.github.io/cli.html>`_.
+
+Benchopt also provides a Python API described in the
+`API documentation <https://benchopt.github.io/api.html>`_.
 
 List of optimization problems available
 ---------------------------------------

@@ -5,10 +5,23 @@ What's new
 
 .. currentmodule:: benchopt
 
+.. _changes_1_3:
+
+Version 1.3 - in development
+----------------------------
+
+CLI
+~~~
+
+- Add support for custom parameters in CLI for objectives, datasets, and
+  solvers, through the syntax ``-s solver_name[parameter=value]``. See the `CLI
+  documentation <https://benchopt.github.io/cli.html>`_ for more details on the
+  syntax. By `Tom Dupré la Tour`_ (:gh:`362`).
+
 .. _changes_1_2:
 
-Version 1.2 - in progress
--------------------------
+Version 1.2 - 06/05/2022
+------------------------
 
 Changelog
 ~~~~~~~~~
@@ -47,10 +60,17 @@ API
 - Add ``X_density`` argument to ``datasets.make_correlated_data`` to simulate
   sparse design matrices, by `Mathurin Massias`_ (:gh:`289`).
 
+- ``Dataset.get_data`` should now return a dict and not a tuple. A point for
+  testing  should be returned by a dedicated method
+  ``Objective.get_one_solution``, by `Thomas Moreau`_ (:gh:`345`).
+
 CLI
 ~~~
 
 - Replace ``-p`` flag by ``-o`` for Objective, by `Mathurin Massias`_ (:gh:`281`).
+
+- Add ``--config`` option to support passing argument with a ``yaml``
+  config file, by `Mathurin Massias`_ (:gh:`325`).
 
 .. _changes_1_1:
 

@@ -193,19 +193,17 @@ class StoppingCriterion():
         is_flat = False
 
         # check the different conditions:
-        #     timeout / max_runs / diverging / stopping_criterion
-        if self._deadline is not None and time.time() > self._deadline:
+        #     diverging / timeout / max_runs / stopping_criterion
+        if math.isnan(objective_value) or delta_objective < -1e5:
+            stop = True
+            status = 'diverged'
+        elif self._deadline is not None and time.time() > self._deadline:
             stop = True
             status = 'timeout'
 
         elif n_eval == self.max_runs:
             stop = True
             status = 'max_runs'
-
-        elif delta_objective < -1e5:
-            stop = True
-            status = 'diverged'
-
         else:
             # Call the sub-class hook, used to check stopping criterion
             # on the curve.
