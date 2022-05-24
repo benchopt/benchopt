@@ -223,7 +223,11 @@ class Benchmark:
 
     def get_cache_location(self):
         "Get the location for the cache of the benchmark."
-        return self.benchmark_dir / CACHE_DIR
+        benchopt_cache_dir = get_setting("cache")
+        if benchopt_cache_dir is None:
+            return self.benchmark_dir / CACHE_DIR
+
+        return Path(benchopt_cache_dir) / self.name
 
     def cache(self, func, force=False, ignore=None):
         """Create a cached function for the given function.
@@ -443,7 +447,10 @@ class Benchmark:
                     force = is_matched(
                         str(solver), forced_solvers, default=False
                     )
-                    yield dataset, objective, solver, force, output.clone()
+                    yield dict(
+                        dataset=dataset, objective=objective, solver=solver,
+                        force=force, output=output.clone()
+                    )
                 all_solvers = solvers_buffer
             all_objectives = objective_buffer
 
