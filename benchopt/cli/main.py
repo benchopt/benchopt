@@ -112,7 +112,8 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
 @click.option('--slurm',
               metavar="<slurm_config.yaml>", default=None,
               help='Run the computation using submitit on a SLURM cluster. '
-              'The config for the job is described using a YAML file.')
+              'The YAML file provided to this argument is used to setup the '
+              'SLURM job. See `slurm_run`_ for a detailed description.')
 @click.option('--max-runs', '-n',
               metavar="<int>", default=100, show_default=True, type=int,
               help='Maximal number of runs for each solver. This corresponds '
