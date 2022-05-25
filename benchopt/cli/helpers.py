@@ -111,10 +111,9 @@ def archive(benchmark, with_outputs):
     with tarfile.open(archive_name, "w:gz") as tar:
         for elem_pattern in to_archive:
             for sub_elem in bench_dir.glob(elem_pattern):
-                print(sub_elem)
                 tar.add(sub_elem, sub_elem.relative_to(bench_dir.parent),
                         filter=clean_archive)
-    print("done")
+    print(f"done, results are in {archive_name}")
 
 
 def check_conda_env(env_name, benchmark_name=None):
