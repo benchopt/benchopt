@@ -18,6 +18,10 @@ CLI
   documentation <https://benchopt.github.io/cli.html>`_ for more details on the
   syntax. By `Tom Dupré la Tour`_ (:gh:`362`).
 
+- Add ``benchopt archive`` to create a ``tar.gz`` archive with the benchmark's
+  files for sharing with others or as supplementary materials for papers.
+  By `Thomas Moreau`_ (:gh:`408`).
+
 .. _changes_1_2:
 
 Version 1.2 - 06/05/2022
