@@ -18,6 +18,10 @@ CLI
   documentation <https://benchopt.github.io/cli.html>`_ for more details on the
   syntax. By `Tom Dupré la Tour`_ (:gh:`362`).
 
+- Add ``--slurm`` option in ``benchopt run`` to allow running the benchmark on
+  a SLURM cluster. See the :ref:`slurm_run` for more details on the config.
+  By `Thomas Moreau`_ (:gh:`407`)
+
 .. _changes_1_2:
 
 Version 1.2 - 06/05/2022
