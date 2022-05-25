@@ -21,6 +21,10 @@ CLI
 - Add ``--slurm`` option in ``benchopt run`` to allow running the benchmark on
   a SLURM cluster. See the :ref:`slurm_run` for more details on the config.
   By `Thomas Moreau`_ (:gh:`407`)
+  
+- Add ``benchopt archive`` to create a ``tar.gz`` archive with the benchmark's
+  files for sharing with others or as supplementary materials for papers.
+  By `Thomas Moreau`_ (:gh:`408`).
 
 .. _changes_1_2:
 
