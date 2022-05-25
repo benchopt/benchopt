@@ -25,6 +25,8 @@ Note that for some clusters with shared python installation, it is necessary
 to call ``pip install --user`` to install the packages in the user space and
 not in the the system one.
 
+.. XXX - update this to point to the submitit doc if it is created.
+
 Using the ``--slurm`` option for ``benchopt run``, one can pass a config file
 used to setup the SLURM jobs. This file is a YAML file that can contain any key
 to be passed to the |update_params|_ method of |SlurmExecutor|_.
