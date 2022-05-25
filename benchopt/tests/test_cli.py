@@ -1,4 +1,5 @@
 import re
+import tarfile
 import tempfile
 from pathlib import Path
 
@@ -24,8 +25,9 @@ from benchopt.tests import REQUIREMENT_BENCHMARK_PATH
 from benchopt.cli.main import run
 from benchopt.cli.main import install
 from benchopt.cli.helpers import clean
-from benchopt.cli.process_results import plot
+from benchopt.cli.helpers import archive
 from benchopt.cli.helpers import check_install
+from benchopt.cli.process_results import plot
 
 
 BENCHMARK_COMPLETION_CASES = [
@@ -444,11 +446,14 @@ class TestPlotCmd:
                   '-k', kind, '--no-display', '--no-html'],
                  'benchopt', standalone_mode=False)
         saved_files = re.findall(r'Save .* as: (.*\.pdf)', out.output)
-        assert len(saved_files) == 1
-        saved_file = saved_files[0]
-        assert kind in saved_file
-
-        Path(saved_file).unlink()
+        try:
+            assert len(saved_files) == 1
+            saved_file = saved_files[0]
+            assert kind in saved_file
+        finally:
+            # Make sure to clean up all files even when the test fails
+            for f in saved_files:
+                Path(f).unlink()
 
     def test_shell_complete(self):
         # Completion for benchmark name
@@ -456,10 +461,109 @@ class TestPlotCmd:
 
         # Completion for solvers
         _test_shell_completion(
-            run, [str(DUMMY_BENCHMARK_PATH), '-s'], SOLVER_COMPLETION_CASES
+            plot, [str(DUMMY_BENCHMARK_PATH), '-f'], [
+                ('', [self.result_file]),
+                (self.result_file[:-4], [self.result_file]),
+                ('_invalid_file', []),
+            ]
         )
 
-        # Completion for datasets
-        _test_shell_completion(
-            run, [str(DUMMY_BENCHMARK_PATH), '-d'], DATASET_COMPLETION_CASES
-        )
+
+class TestArchiveCmd:
+
+    @classmethod
+    def setup_class(cls):
+        "Make sure at least one result file is available"
+        with SuppressStd() as out:
+            run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,
+                 '-s', SELECT_ONE_PGD, '-n', '2', '-r', '1', '-o',
+                 SELECT_ONE_OBJECTIVE, '--no-plot'], 'benchopt',
+                standalone_mode=False)
+        result_file = re.findall(r'Saving result in: (.*\.csv)', out.output)
+        assert len(result_file) == 1, out.output
+        cls.result_file = result_file[0]
+
+    @classmethod
+    def teardown_class(cls):
+        "Clean up the result file."
+        Path(cls.result_file).unlink()
+
+    @pytest.mark.parametrize('invalid_benchmark, match', [
+        ('invalid_benchmark', "Path 'invalid_benchmark' does not exist."),
+        ('.', "The folder '.' does not contain `objective.py`"),
+        ("", rf"The folder '{CURRENT_DIR}' does not contain `objective.py`")],
+        ids=['invalid_path', 'no_objective', "no_objective in default"])
+    def test_invalid_benchmark(self, invalid_benchmark, match):
+        with pytest.raises(click.BadParameter, match=match):
+            if len(invalid_benchmark) > 0:
+                run([invalid_benchmark], 'benchopt', standalone_mode=False)
+            else:
+                run([], 'benchopt', standalone_mode=False)
+
+    def test_call(self):
+
+        with SuppressStd() as out:
+            archive([str(DUMMY_BENCHMARK_PATH)], 'benchopt',
+                    standalone_mode=False)
+        saved_files = re.findall(r'Results are in (.*\.tar.gz)', out.output)
+        try:
+            assert len(saved_files) == 1
+            saved_file = saved_files[0]
+
+            counts = {k: 0 for k in [
+                "__pycache__", "outputs", "objective.py", "datasets",
+                "solvers", "README"
+            ]}
+
+            with tarfile.open(saved_file, "r:gz") as tar:
+                for elem in tar.getmembers():
+                    for k in counts:
+                        counts[k] += k in elem.name
+                    assert elem.uname == "benchopt"
+
+            assert counts["README"] == 1, counts
+            assert counts["objective.py"] == 1, counts
+            assert counts["datasets"] >= 1, counts
+            assert counts["solvers"] >= 1, counts
+            assert counts["outputs"] == 0, counts
+            assert counts["__pycache__"] == 0, counts
+        finally:
+            # Make sure to clean up all files even when the test fails
+            for f in saved_files:
+                Path(f).unlink()
+
+    def test_call_with_outputs(self):
+
+        with SuppressStd() as out:
+            archive([str(DUMMY_BENCHMARK_PATH), "--with-outputs"], 'benchopt',
+                    standalone_mode=False)
+        saved_files = re.findall(r'Results are in (.*\.tar.gz)', out.output)
+        try:
+            assert len(saved_files) == 1
+            saved_file = saved_files[0]
+
+            counts = {k: 0 for k in [
+                "__pycache__", "outputs", "objective.py", "datasets",
+                "solvers", "README"
+            ]}
+
+            with tarfile.open(saved_file, "r:gz") as tar:
+                for elem in tar.getmembers():
+                    for k in counts:
+                        counts[k] += k in elem.name
+                    assert elem.uname == "benchopt"
+
+            assert counts["README"] == 1, counts
+            assert counts["objective.py"] == 1, counts
+            assert counts["datasets"] >= 1, counts
+            assert counts["solvers"] >= 1, counts
+            assert counts["outputs"] >= 1, counts
+            assert counts["__pycache__"] == 0, counts
+        finally:
+            # Make sure to clean up all files even when the test fails
+            for f in saved_files:
+                Path(f).unlink()
+
+    def test_shell_complete(self):
+        # Completion for benchmark name
+        _test_shell_completion(archive, [], BENCHMARK_COMPLETION_CASES)

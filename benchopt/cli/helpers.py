@@ -113,7 +113,7 @@ def archive(benchmark, with_outputs):
             for sub_elem in bench_dir.glob(elem_pattern):
                 tar.add(sub_elem, sub_elem.relative_to(bench_dir.parent),
                         filter=clean_archive)
-    print(f"done, results are in {archive_name}")
+    print(f"done\nResults are in {archive_name}")
 
 
 def check_conda_env(env_name, benchmark_name=None):
