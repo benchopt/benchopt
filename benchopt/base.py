@@ -44,8 +44,8 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
     - ``'tolerance'``: call the run method with tolerance deacreasing
       logarithmically to get more and more precise points.
     - ``'callback'``: a callable that should be called after each iteration or
-      epoch. This callable computes the loss periodically and returns False
-      when the solver should stop.
+      epoch. This callable periodically calls the objective's `compute`
+      and returns False when the solver should stop.
 
     """
 

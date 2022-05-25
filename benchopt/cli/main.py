@@ -110,7 +110,7 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               help='Maximal number of workers to run the benchmark in '
               'parallel.')
 @click.option('--slurm',
-              metavar="<slurm_config.yaml>", default=None,
+              metavar="<slurm_config.yml>", default=None,
               help='Run the computation using submitit on a SLURM cluster. '
               'The YAML file provided to this argument is used to setup the '
               'SLURM job. See `slurm_run`_ for a detailed description.')

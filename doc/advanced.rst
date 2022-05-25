@@ -8,10 +8,10 @@ to make it easier to use the benchmark.
 
 .. _slurm_run:
 
-Running the benchmark on SLURM cluster
+Running the benchmark on a SLURM cluster
 --------------------------------------
 
-``benchopt`` also allows to easily run the benchmark in parallel on a SLURM
+``benchopt`` also allows easily running the benchmark in parallel on a SLURM
 cluster. Using the ``--slurm`` option for ``benchopt run``, one can pass
 a config file used to setup the SLURM jobs. This file is a YAML file that can
 contain any key to be passed to ``submitit.Executor.update_parameters``.

@@ -17,7 +17,7 @@ def get_executor_jzay(slurm_config, timeout=100, job_name="benchopt_run"):
     with open(slurm_config, "r") as f:
         config = yaml.safe_load(f)
 
-    # It the job timeout is not specified in the config file, use 1.5x the
+    # If the job timeout is not specified in the config file, use 1.5x the
     # benchopt timeout. This value is a trade-off between helping the
     # scheduler (low slurm_time allow for faster accept) and avoiding
     # killing the job too early.
