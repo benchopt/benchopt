@@ -9,7 +9,7 @@ to make it easier to use the benchmark.
 .. _slurm_run:
 
 Running the benchmark on a SLURM cluster
---------------------------------------
+----------------------------------------
 
 ``benchopt`` also allows easily running the benchmark in parallel on a SLURM
 cluster. To install the necessary dependencies, please run:
@@ -27,7 +27,7 @@ not in the the system one.
 
 Using the ``--slurm`` option for ``benchopt run``, one can pass a config file
 used to setup the SLURM jobs. This file is a YAML file that can contain any key
-to be passed to ``submitit.Executor.update_parameters``.
+to be passed to the |update_params|_ method of |SlurmExecutor|_.
 Hereafter is an example of such config file:
 
 .. code-block:: yaml
@@ -162,3 +162,10 @@ separated with ``.``.
         helper1 = import_ctx.import_from('helper1')
         func1 = import_ctx.import_from('helper1', 'func1')
         func2 = import_ctx.import_from('helper_module.submodule1', 'func2')
+
+
+.. |update_params| replace:: ``update_parameters``
+.. _update_params: https://github.com/facebookincubator/submitit/blob/main/submitit/slurm/slurm.py#L386
+
+.. |SlurmExecutor| replace:: ``submitit.SlurmExecutor``
+.. _SlurmExecutor: https://github.com/facebookincubator/submitit/blob/main/submitit/slurm/slurm.py#L214
