@@ -4,15 +4,25 @@ try:
     import submitit
     from submitit.helpers import as_completed
     from rich import progress
+
+    _SLURM_INSTALLED = True
 except ImportError:
-    raise ImportError(
-        "Benchopt needs submitit and rich to launch computation on a SLURM "
-        "cluster. Please use `pip install submitit rich` to use the --slurm "
-        "option."
-    )
+    _SLURM_INSTALLED = False
 
 
-def get_executor_jzay(slurm_config, timeout=100, job_name="benchopt_run"):
+_LAUNCHING_SLURM = False
+
+
+def set_slurm_launch():
+    global _LAUNCHING_SLURM
+    _LAUNCHING_SLURM = True
+
+
+def get_slurm_launch():
+    return _LAUNCHING_SLURM
+
+
+def get_slurm_executor(slurm_config, timeout=100, job_name="benchopt_run"):
 
     with open(slurm_config, "r") as f:
         config = yaml.safe_load(f)
@@ -31,7 +41,15 @@ def get_executor_jzay(slurm_config, timeout=100, job_name="benchopt_run"):
 
 
 def run_on_slurm(slurm_config, run_one_solver, common_kwargs, all_runs):
-    executor = get_executor_jzay(slurm_config, common_kwargs["timeout"])
+
+    if not _SLURM_INSTALLED:
+        raise ImportError(
+            "Benchopt needs submitit and rich to launch computation on a "
+            "SLURM cluster. Please use `pip install submitit rich` to use "
+            "the --slurm option."
+        )
+
+    executor = get_slurm_executor(slurm_config, common_kwargs["timeout"])
     with executor.batch():
         tasks = [
             executor.submit(run_one_solver, **common_kwargs, **kwargs)

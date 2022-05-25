@@ -294,7 +294,6 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
         by the objective is not the same for all parameters, the missing data
         is set to `NaN`.
     """
-    print("Benchopt is running")
     output_name = output
 
     # List all datasets, objective and solvers to run based on the filters

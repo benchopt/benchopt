@@ -12,9 +12,22 @@ Running the benchmark on a SLURM cluster
 --------------------------------------
 
 ``benchopt`` also allows easily running the benchmark in parallel on a SLURM
-cluster. Using the ``--slurm`` option for ``benchopt run``, one can pass
-a config file used to setup the SLURM jobs. This file is a YAML file that can
-contain any key to be passed to ``submitit.Executor.update_parameters``.
+cluster. To install the necessary dependencies, please run:
+
+.. prompt:: bash $
+
+    pip install benchopt[slurm]
+
+    # Or for dev install
+    pip install -e .[slurm]
+
+Note that for some clusters with shared python installation, it is necessary
+to call ``pip install --user`` to install the packages in the user space and
+not in the the system one.
+
+Using the ``--slurm`` option for ``benchopt run``, one can pass a config file
+used to setup the SLURM jobs. This file is a YAML file that can contain any key
+to be passed to ``submitit.Executor.update_parameters``.
 Hereafter is an example of such config file:
 
 .. code-block:: yaml
@@ -40,6 +53,10 @@ simultaneous jobs that are run.
 If ``slurm_time`` is not set in the config file, ``benchopt`` uses by default
 the value of ``--timeout`` multiplied by ``1.5`` for each job.
 Note that the logs of each benchmark run can be found in ``./benchopt_run/``.
+
+As we rely on ``joblib.Memory`` for caching the results, the cache should work
+exactly as if you were running the computation sequentially, as long as you have
+a shared file-system between the nodes used for the computations.
 
 .. _skiping_solver:
 

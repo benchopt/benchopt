@@ -14,7 +14,7 @@ from benchopt.utils.conda_env_cmd import create_conda_env
 from benchopt.utils.shell_cmd import _run_shell_in_conda_env
 from benchopt.utils.conda_env_cmd import get_benchopt_version_in_env
 from benchopt.utils.profiling import print_stats
-from benchopt.helpers.requires_gpu import set_run_slurm
+from benchopt.utils.slurm_executor import set_slurm_launch
 
 
 main = click.Group(
@@ -180,10 +180,6 @@ def run(config_file=None, **kwargs):
         deprecated_objective_filters, old_objective_filters
     ) = _get_run_args(kwargs, config)
 
-    if slurm is not None:
-        print("Running on SLURM")
-        set_run_slurm()
-
     if len(old_objective_filters):
         warnings.warn(
             'Using the -p option is deprecated, use -o instead',
@@ -198,24 +194,32 @@ def run(config_file=None, **kwargs):
         )
         objective_filters = deprecated_objective_filters
 
-    from benchopt.runner import run_benchmark
-
-    if do_profile:
-        from benchopt.utils.profiling import use_profile
-        use_profile()  # needs to be called before validate_solver_patterns
-
-    # Check that the dataset/solver patterns match actual dataset
+    # Create the Benchmark object
     benchmark = Benchmark(benchmark)
-    benchmark.validate_dataset_patterns(dataset_names)
-    benchmark.validate_objective_filters(objective_filters)
-    # pyyaml returns tuples: solver_names can be tuple and forced_solvers list
-    benchmark.validate_solver_patterns(
-        list(solver_names) + list(forced_solvers)
-    )
 
     # If env_name is False, the flag `--local` has been used (default) so
     # run in the current environment.
     if env_name == 'False':
+
+        print("Benchopt is running")
+        if slurm is not None:
+            print("Running on SLURM")
+            set_slurm_launch()
+
+        from benchopt.runner import run_benchmark
+
+        if do_profile:
+            from benchopt.utils.profiling import use_profile
+            use_profile()  # needs to be called before validate_solver_patterns
+
+        # Check that the dataset/solver patterns match actual dataset
+        benchmark.validate_dataset_patterns(dataset_names)
+        benchmark.validate_objective_filters(objective_filters)
+        # pyyaml returns tuples: make sure everything is a list
+        benchmark.validate_solver_patterns(
+            list(solver_names) + list(forced_solvers)
+        )
+
         run_benchmark(
             benchmark, solver_names, forced_solvers,
             dataset_names=dataset_names,
@@ -265,6 +269,8 @@ def run(config_file=None, **kwargs):
             f"does not exist. Make sure to run {install_cmd} to create the "
             "benchmark and install the dependencies."
         )
+
+    print(f"Launching benchopt in env {env_name}")
 
     # check if environment was set up with benchopt
     if get_benchopt_version_in_env(env_name) is None:

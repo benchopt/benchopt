@@ -1,12 +1,5 @@
 from ..utils.sys_info import get_cuda_version
-
-
-_RUN_SLURM = False
-
-
-def set_run_slurm():
-    global _RUN_SLURM
-    _RUN_SLURM = True
+from ..utils.slurm_executor import get_slurm_launch
 
 
 def requires_gpu():
@@ -19,5 +12,5 @@ def requires_gpu():
     if cuda_version is not None:
         return cuda_version.split("cuda_", 1)[1][:4]
     else:
-        if not _RUN_SLURM:
+        if not get_slurm_launch():
             raise ImportError("cuML solver needs a nvidia GPU.")
