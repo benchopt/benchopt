@@ -238,8 +238,8 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
 
 
 def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
-                  dataset_names=None, objective_filters=None,
-                  max_runs=10, n_repetitions=1, timeout=100, n_jobs=1,
+                  dataset_names=None, objective_filters=None, max_runs=10,
+                  n_repetitions=1, timeout=100, n_jobs=1, slurm=None,
                   plot_result=True, html=True, show_progress=True, pdb=False,
                   output="None"):
     """Run full benchmark.
@@ -269,6 +269,9 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
         The maximum duration in seconds of the solver run.
     n_jobs : int
         Maximal number of workers to use to run the benchmark in parallel.
+    slurm : Path | None
+        If not None, launch the job on a slurm cluster using the file to get
+        the cluster config parameters.
     plot_result : bool
         If set to True (default), display the result plot and save them in
         the benchmark directory.
@@ -291,7 +294,6 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
         by the objective is not the same for all parameters, the missing data
         is set to `NaN`.
     """
-    print("Benchopt is running")
     output_name = output
 
     # List all datasets, objective and solvers to run based on the filters
@@ -304,14 +306,19 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
         solver_names, forced_solvers, dataset_names, objective_filters,
         output=output
     )
-
-    results = Parallel(n_jobs=n_jobs)(
-        delayed(run_one_solver)(
-            benchmark=benchmark, dataset=dataset, objective=objective,
-            solver=solver, n_repetitions=n_repetitions, max_runs=max_runs,
-            timeout=timeout, force=force, output=output, pdb=pdb
-        ) for dataset, objective, solver, force, output in all_runs
+    common_kwargs = dict(
+        benchmark=benchmark, n_repetitions=n_repetitions, max_runs=max_runs,
+        timeout=timeout, pdb=pdb
     )
+
+    if slurm is not None:
+        from .utils.slurm_executor import run_on_slurm
+        results = run_on_slurm(slurm, run_one_solver, common_kwargs, all_runs)
+    else:
+        results = Parallel(n_jobs=n_jobs)(
+            delayed(run_one_solver)(**common_kwargs, **kwargs)
+            for kwargs in all_runs
+        )
 
     run_statistics = []
     for curve in results:

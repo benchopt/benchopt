@@ -14,6 +14,7 @@ from benchopt.utils.conda_env_cmd import create_conda_env
 from benchopt.utils.shell_cmd import _run_shell_in_conda_env
 from benchopt.utils.conda_env_cmd import get_benchopt_version_in_env
 from benchopt.utils.profiling import print_stats
+from benchopt.utils.slurm_executor import set_slurm_launch
 
 
 main = click.Group(
@@ -50,6 +51,7 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
         "n_repetitions",
         "timeout",
         "n_jobs",
+        "slurm",
         "plot",
         "html",
         "pdb",
@@ -107,6 +109,11 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               metavar="<int>", default=1, show_default=True, type=int,
               help='Maximal number of workers to run the benchmark in '
               'parallel.')
+@click.option('--slurm',
+              metavar="<slurm_config.yml>", default=None,
+              help='Run the computation using submitit on a SLURM cluster. '
+              'The YAML file provided to this argument is used to setup the '
+              'SLURM job. See :ref:`slurm_run` for a detailed description.')
 @click.option('--max-runs', '-n',
               metavar="<int>", default=100, show_default=True, type=int,
               help='Maximal number of runs for each solver. This corresponds '
@@ -168,7 +175,7 @@ def run(config_file=None, **kwargs):
     # XXX - Remove old and deprecated objective filters in version 1.3
     (
         benchmark, solver_names, forced_solvers, dataset_names,
-        objective_filters, max_runs, n_repetitions, timeout, n_jobs,
+        objective_filters, max_runs, n_repetitions, timeout, n_jobs, slurm,
         plot, html, pdb, do_profile, env_name, output,
         deprecated_objective_filters, old_objective_filters
     ) = _get_run_args(kwargs, config)
@@ -187,30 +194,38 @@ def run(config_file=None, **kwargs):
         )
         objective_filters = deprecated_objective_filters
 
-    from benchopt.runner import run_benchmark
-
-    if do_profile:
-        from benchopt.utils.profiling import use_profile
-        use_profile()  # needs to be called before validate_solver_patterns
-
-    # Check that the dataset/solver patterns match actual dataset
+    # Create the Benchmark object
     benchmark = Benchmark(benchmark)
-    benchmark.validate_dataset_patterns(dataset_names)
-    benchmark.validate_objective_filters(objective_filters)
-    # pyyaml returns tuples: solver_names can be tuple and forced_solvers list
-    benchmark.validate_solver_patterns(
-        list(solver_names) + list(forced_solvers)
-    )
 
     # If env_name is False, the flag `--local` has been used (default) so
     # run in the current environment.
     if env_name == 'False':
+
+        print("Benchopt is running")
+        if slurm is not None:
+            print("Running on SLURM")
+            set_slurm_launch()
+
+        from benchopt.runner import run_benchmark
+
+        if do_profile:
+            from benchopt.utils.profiling import use_profile
+            use_profile()  # needs to be called before validate_solver_patterns
+
+        # Check that the dataset/solver patterns match actual dataset
+        benchmark.validate_dataset_patterns(dataset_names)
+        benchmark.validate_objective_filters(objective_filters)
+        # pyyaml returns tuples: make sure everything is a list
+        benchmark.validate_solver_patterns(
+            list(solver_names) + list(forced_solvers)
+        )
+
         run_benchmark(
             benchmark, solver_names, forced_solvers,
             dataset_names=dataset_names,
             objective_filters=objective_filters,
             max_runs=max_runs, n_repetitions=n_repetitions,
-            timeout=timeout, n_jobs=n_jobs,
+            timeout=timeout, n_jobs=n_jobs, slurm=slurm,
             plot_result=plot, html=html, pdb=pdb,
             output=output
         )
@@ -255,6 +270,8 @@ def run(config_file=None, **kwargs):
             "benchmark and install the dependencies."
         )
 
+    print(f"Launching benchopt in env {env_name}")
+
     # check if environment was set up with benchopt
     if get_benchopt_version_in_env(env_name) is None:
         raise RuntimeError(
@@ -271,7 +288,7 @@ def run(config_file=None, **kwargs):
         rf"benchopt run --local {benchmark.benchmark_dir} "
         rf"--n-repetitions {n_repetitions} "
         rf"--max-runs {max_runs} --timeout {timeout} "
-        rf"--n-jobs {n_jobs} "
+        rf"--n-jobs {n_jobs} {'--slurm' if slurm else ''} "
         rf"{solvers_option} {forced_solvers_option} "
         rf"{datasets_option} {objective_option} "
         rf"{'--plot' if plot else '--no-plot'} "

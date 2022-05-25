@@ -1,6 +1,7 @@
 import io
 import os
 import re
+import warnings
 import platform
 import contextlib
 import subprocess
@@ -33,7 +34,6 @@ def get_cuda_version():
     try:
         out = subprocess.check_output(command).strip().decode("utf-8")
     except subprocess.CalledProcessError:
-        import warnings
         warnings.warn(
             "`nvidia-smi` has failed. Please check NVIDIA driver install."
         )
@@ -43,7 +43,6 @@ def get_cuda_version():
         name = re.search('<product_name>(.*)</product_name>', out).group(1)
         return f"{name}: cuda_{version}"
     except AttributeError:
-        import warnings
         warnings.warn(
             "Could not parse cuda version or device name from `nvidia-smi`."
          )

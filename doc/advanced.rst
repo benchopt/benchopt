@@ -6,6 +6,60 @@ Advanced functionalities in a benchmark
 This page intends to list some advanced functionality
 to make it easier to use the benchmark.
 
+.. _slurm_run:
+
+Running the benchmark on a SLURM cluster
+----------------------------------------
+
+``benchopt`` also allows easily running the benchmark in parallel on a SLURM
+cluster. To install the necessary dependencies, please run:
+
+.. prompt:: bash $
+
+    pip install benchopt[slurm]
+
+    # Or for dev install
+    pip install -e .[slurm]
+
+Note that for some clusters with shared python installation, it is necessary
+to call ``pip install --user`` to install the packages in the user space and
+not in the the system one.
+
+.. XXX - update this to point to the submitit doc if it is created.
+
+Using the ``--slurm`` option for ``benchopt run``, one can pass a config file
+used to setup the SLURM jobs. This file is a YAML file that can contain any key
+to be passed to the |update_params|_ method of |SlurmExecutor|_.
+Hereafter is an example of such config file:
+
+.. code-block:: yaml
+
+    slurm_time: 01:00:00        # max runtime 1 hour
+    slurm_gres: gpu:1           # requires 1 GPU per job
+    slurm_additional_parameters:
+      ntasks: 1                 # Number of tasks per job
+      cpus-per-task: 10         # requires 10 CPUs per job
+      qos: QOS_NAME             # Queue used for the jobs
+      distribution: block:block # Distribution on the node's architectures
+      account: ACC@NAME         # Account for the jobs
+    slurm_setup:  # sbatch script commands added before the main job
+      - '#SBATCH -C v100-16g'
+      - module purge
+      - module load cuda/10.1.2 cudnn/7.6.5.32-cuda-10.1 nccl/2.5.6-2-cuda
+
+Using such option, each configuration of ``(dataset, objective, solver)`` with
+unique parameters are launched as a separated job in a job-array on the SLURM
+cluster. Note that by default, no limitation is used on the number of
+simultaneous jobs that are run.
+
+If ``slurm_time`` is not set in the config file, ``benchopt`` uses by default
+the value of ``--timeout`` multiplied by ``1.5`` for each job.
+Note that the logs of each benchmark run can be found in ``./benchopt_run/``.
+
+As we rely on ``joblib.Memory`` for caching the results, the cache should work
+exactly as if you were running the computation sequentially, as long as you have
+a shared file-system between the nodes used for the computations.
+
 .. _skiping_solver:
 
 Skipping a solver for a given problem
@@ -110,3 +164,10 @@ separated with ``.``.
         helper1 = import_ctx.import_from('helper1')
         func1 = import_ctx.import_from('helper1', 'func1')
         func2 = import_ctx.import_from('helper_module.submodule1', 'func2')
+
+
+.. |update_params| replace:: ``update_parameters``
+.. _update_params: https://github.com/facebookincubator/submitit/blob/main/submitit/slurm/slurm.py#L386
+
+.. |SlurmExecutor| replace:: ``submitit.SlurmExecutor``
+.. _SlurmExecutor: https://github.com/facebookincubator/submitit/blob/main/submitit/slurm/slurm.py#L214
