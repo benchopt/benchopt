@@ -419,6 +419,7 @@ class TestPlotCmd:
         assert len(result_files) == 1, out.output
         result_file = result_files[0]
         cls.result_file = result_file
+        cls.result_file = str(Path(result_file).relative_to(Path().resolve()))
 
     @classmethod
     def teardown_class(cls):
