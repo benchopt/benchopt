@@ -202,7 +202,44 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
             f"{result['fname_short'].replace('.csv', '.html')}"
         )
 
+        result['json'] = benchmark_dataframe_to_json(df)
+
     return results
+
+def benchmark_dataframe_to_json(df):
+    json_data = {}
+
+    # Retrieve interesting data from the dataframe
+    datasets = df['data_name'].unique() # Array of str
+    objectives = df['objective_name'].unique() # Array of str
+    solvers = df['solver_name'].unique() # Array of str
+
+    columns = ['objective_value', 'objective_support_size', 'objective_duality_gap']
+
+    # Add datasets to json
+    for dataset in datasets:
+        json_data[dataset] = {}
+        # Add objectives to each dataset
+        for objective in objectives:
+            json_data[dataset][objective] = {}
+            # Add objective columns to each objective
+            for column in columns:
+                json_data[dataset][objective][column] = {}
+                # Add solvers to each objective column
+                for solver in solvers:
+                    df_filtered = df[(df['data_name'] == dataset) & (df['objective_name'] == objective) & (df['solver_name'] == solver)]
+                    json_data[dataset][objective][column][solver] = {
+                        'raw_data': {
+                            'x': df_filtered['time'].tolist(),
+                            'y': df_filtered[column].tolist()
+                        },
+                        'transformers': {
+                            'c_star': float(df_filtered[column].min() - 1e-10),
+                            'max_f_0': float(df_filtered[df_filtered['stop_val'] == 1][column].max())
+                        }
+                    }
+
+    return json.dumps(json_data)
 
 
 def get_sysinfo(df):
