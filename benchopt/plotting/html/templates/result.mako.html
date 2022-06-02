@@ -62,7 +62,7 @@
     <!-- Add selector to display only one plot -->
     <div>
     <label for='dataset_selector'>Dataset:</label>
-    <select id='dataset_selector' onchange="showMe(this);">
+    <select id='dataset_selector' onchange="setState({dataset: this.value});showMe(this);">
         % for data in result['dataset_names']:
         <option value="${data}">${data}</option>
         %endfor
@@ -70,12 +70,12 @@
     </div>
     <div>
     <label for='objective_selector'>Objective:</label>
-    <select id='objective_selector' onchange="showMe(this);">
+    <select id='objective_selector' onchange="setState({objective: this.value});showMe(this);">
         % for obj in result['objective_names']:
         <option value="${obj}">${obj}</option>
         %endfor
     </select>
-    <select id='objective_column' onchange="showMe(this);">
+    <select id='objective_column' onchange="setState({objective_columns: this.value});showMe(this);">
         % for obj_col in result['obj_cols']:
         <option value="${obj_col}">${obj_col.replace('objective_', '')}</option>
         %endfor
@@ -83,7 +83,7 @@
     </div>
     <div>
     <label for='plot_kind'>Chart type:</label>
-    <select id='plot_kind' onchange="showMe(this);">
+    <select id='plot_kind' onchange="setState({plot_kind: this.value});showMe(this);">
         % for kind in result['kinds']:
         <option value="${kind}">${kind.replace('_', ' ')}</option>
         %endfor
@@ -138,12 +138,15 @@
 
     <script>
         window.data = ${result['json']};
-        window.state = {
-            'dataset': '${result['dataset_names'][0]}',
-            'objective': '${result['objective_names'][0]}',
-            'objective_column': '${result['obj_cols'][0]}',
-            'plot_kind': '${result['kinds'][0]}',
-        };
+
+        $(function () {
+            setState({
+                'dataset': '${result['dataset_names'][0]}',
+                'objective': '${result['objective_names'][0]}',
+                'objective_column': '${result['obj_cols'][0]}',
+                'plot_kind': '${result['kinds'][0]}',
+            });
+        });
     </script>
 
     <script type="text/javascript" src="${static_dir}/result.js"></script>

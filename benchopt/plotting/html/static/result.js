@@ -23,35 +23,68 @@ $(function () {
   }
 });
 
-$(function () {
-  makePlot(window.state);
-});
+/*
+ * ===============================
+ * State management
+ * ===============================
+ */
 
-const makePlot = state => {
+const setState = partialState => {
+  window.state = {...state(), ...partialState};
+  makePlot();
+}
+
+/**
+ * 
+ * @returns Object
+ */
+const state = () => window.state;
+
+/*
+ * ===============================
+ * Plot management
+ * ===============================
+ */
+
+const makePlot = () => {
   const plot_div = document.getElementById('unique_plot');
   const data = [];
-  const solvers = Object.keys(window.data[state.dataset][state.objective][state.objective_column]);
+  const solvers = getSolvers();
 
   solvers.forEach(solver => {
     data.push({
-      x: window.data[state.dataset][state.objective][state.objective_column][solver].raw_data.x,
-      y: useTransformer(window.data[state.dataset][state.objective][state.objective_column][solver].raw_data.y),
+      x: window.data[state().dataset][state().objective][state().objective_column][solver].raw_data.x,
+      y: useTransformer(window.data[state().dataset][state().objective][state().objective_column][solver].raw_data.y),
     });
   });
 
-  layout = getPlotLayout(state, solvers.length);
+  layout = getPlotLayout(solvers.length);
 
   Plotly.react(plot_div, data, layout);
 };
 
 const useTransformer = data => {
   return data;
-}
+};
 
-const getPlotLayout = (state, nb_solvers) => {
+/*
+ * ===============================
+ * Data transfomers
+ * ===============================
+ */
+
+
+
+/*
+ * ===============================
+ * Tools
+ * ===============================
+ */
+
+const getPlotLayout = nb_solvers => {
   return {
     'width': 900,
-    'height': state.plot_kind == 'bar_chart' ? 650 : 700 + (nb_solvers < 10 ? 10 : 100) * getObjectiveNamesLength(state),
+    'height': state().plot_kind == 'bar_chart' ? 650 : 700 + (nb_solvers < 10 ? 10 : 100) * countObjectives(),
     'autosize': false,
     'legend': {
       "xanchor": "center",
@@ -62,16 +95,16 @@ const getPlotLayout = (state, nb_solvers) => {
     'xaxis_type': 'linear',
     'yaxis_type': 'log',
     'xaxis_title': 'Time [sec]',
-    'yaxis_title': getYLabel(state),
+    'yaxis_title': getYLabel(),
     'yaxis_tickformat': ".1e",
     'xaxis_tickformat': ".1e",
     'xaxis_tickangle': -45,
-    'title': `${state.objective}\nData: ${state.dataset}`,
+    'title': `${state().objective}\nData: ${state().dataset}`,
     'legend_title': 'solver',
   };
 };
 
-const getYLabel = ({ plot_kind }) => {
+const getYLabel = () => {
   switch(plot_kind) {
     case 'objective_curve':
       return 'F(x)';
@@ -83,11 +116,13 @@ const getYLabel = ({ plot_kind }) => {
       return 'unknown'; // TODO: Replace unknown label
     default:
       return 'unknown';
-  }
-}
+  };
+};
 
-const getObjectiveNamesLength = state => {
-  return Object.keys(window.data[state.dataset]).length;
+const getSolvers = () => Object.keys(window.data[state().dataset][state().objective][state().objective_column]);;
+
+const countObjectives = () => {
+  return Object.keys(window.data[state().dataset]).length;
 };
 
 /**
