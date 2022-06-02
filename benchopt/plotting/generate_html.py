@@ -24,7 +24,6 @@ FIGURES = "figures"
 TEMPLATE_INDEX = ROOT / "templates" / "index.mako.html"
 TEMPLATE_BENCHMARK = ROOT / "templates" / "benchmark.mako.html"
 TEMPLATE_RESULT = ROOT / "templates" / "result.mako.html"
-TEMPLATE_LOCAL_RESULT = ROOT / "templates" / "local_result.mako.html"
 
 SYS_INFO = {
     "main": [('system-cpus', 'cpu'),
