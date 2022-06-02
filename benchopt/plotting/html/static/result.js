@@ -23,6 +23,73 @@ $(function () {
   }
 });
 
+$(function () {
+  makePlot(window.state);
+});
+
+const makePlot = state => {
+  const plot_div = document.getElementById('unique_plot');
+  const data = [];
+  const solvers = Object.keys(window.data[state.dataset][state.objective][state.objective_column]);
+
+  solvers.forEach(solver => {
+    data.push({
+      x: window.data[state.dataset][state.objective][state.objective_column][solver].raw_data.x,
+      y: useTransformer(window.data[state.dataset][state.objective][state.objective_column][solver].raw_data.y),
+    });
+  });
+
+  layout = getPlotLayout(state, solvers.length);
+
+  Plotly.react(plot_div, data, layout);
+};
+
+const useTransformer = data => {
+  return data;
+}
+
+const getPlotLayout = (state, nb_solvers) => {
+  return {
+    'width': 900,
+    'height': state.plot_kind == 'bar_chart' ? 650 : 700 + (nb_solvers < 10 ? 10 : 100) * getObjectiveNamesLength(state),
+    'autosize': false,
+    'legend': {
+      "xanchor": "center",
+      "yanchor": "top",
+      "y": -.2,
+      "x": .5
+    },
+    'xaxis_type': 'linear',
+    'yaxis_type': 'log',
+    'xaxis_title': 'Time [sec]',
+    'yaxis_title': getYLabel(state),
+    'yaxis_tickformat': ".1e",
+    'xaxis_tickformat': ".1e",
+    'xaxis_tickangle': -45,
+    'title': `${state.objective}\nData: ${state.dataset}`,
+    'legend_title': 'solver',
+  };
+};
+
+const getYLabel = ({ plot_kind }) => {
+  switch(plot_kind) {
+    case 'objective_curve':
+      return 'F(x)';
+    case 'suboptimality_curve':
+      return 'F(x) - F(x*)';
+    case 'relative_suboptimality_curve':
+      return 'F(x) - F(x*) / F(x0) - F(x*)'
+    case 'bar_chart':
+      return 'unknown'; // TODO: Replace unknown label
+    default:
+      return 'unknown';
+  }
+}
+
+const getObjectiveNamesLength = state => {
+  return Object.keys(window.data[state.dataset]).length;
+};
+
 /**
  * Get the id of the div containing the plotly graph div
  * @param  {String} which previous for previous graph state, anything for current
