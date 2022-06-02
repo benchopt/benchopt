@@ -103,6 +103,10 @@
     </label>
     </div>
 
+    <div style="background-color: gray; min-height: 1000px; margin-top: 50px; margin-bottom: 50px;">
+        <div id="unique_plot" style="width:600px;height:250px;"></div>
+    </div>
+
     % for data in result['dataset_names']:
     <div class="${data}">
         % for obj in result['objective_names']:
@@ -131,6 +135,16 @@
     %endfor
 
     <a class="backtotop" title="Back to top" href="#top"><i class="fas fa-level-up-alt"></i></a>
+
+    <script>
+        window.data = ${result['json']};
+        window.state = {
+            'dataset': '${result['dataset_names'][0]}',
+            'objective': '${result['objective_names'][0]}',
+            'objective_column': '${result['obj_cols'][0]}',
+            'plot_kind': '${result['kinds'][0]}',
+        };
+    </script>
 
     <script type="text/javascript" src="${static_dir}/result.js"></script>
 </body>
