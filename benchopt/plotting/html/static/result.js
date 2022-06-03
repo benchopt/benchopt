@@ -23,108 +23,6 @@ $(function () {
   }
 });
 
-/*
- * ===============================
- * State management
- * ===============================
- */
-
-const setState = partialState => {
-  window.state = {...state(), ...partialState};
-  makePlot();
-}
-
-/**
- * 
- * @returns Object
- */
-const state = () => window.state;
-
-/*
- * ===============================
- * Plot management
- * ===============================
- */
-
-const makePlot = () => {
-  const plot_div = document.getElementById('unique_plot');
-  const data = [];
-  const solvers = getSolvers();
-
-  solvers.forEach(solver => {
-    data.push({
-      x: window.data[state().dataset][state().objective][state().objective_column][solver].raw_data.x,
-      y: useTransformer(window.data[state().dataset][state().objective][state().objective_column][solver].raw_data.y),
-    });
-  });
-
-  layout = getPlotLayout(solvers.length);
-
-  Plotly.react(plot_div, data, layout);
-};
-
-const useTransformer = data => {
-  return data;
-};
-
-/*
- * ===============================
- * Data transfomers
- * ===============================
- */
-
-
-
-/*
- * ===============================
- * Tools
- * ===============================
- */
-
-const getPlotLayout = nb_solvers => {
-  return {
-    'width': 900,
-    'height': state().plot_kind == 'bar_chart' ? 650 : 700 + (nb_solvers < 10 ? 10 : 100) * countObjectives(),
-    'autosize': false,
-    'legend': {
-      "xanchor": "center",
-      "yanchor": "top",
-      "y": -.2,
-      "x": .5
-    },
-    'xaxis_type': 'linear',
-    'yaxis_type': 'log',
-    'xaxis_title': 'Time [sec]',
-    'yaxis_title': getYLabel(),
-    'yaxis_tickformat': ".1e",
-    'xaxis_tickformat': ".1e",
-    'xaxis_tickangle': -45,
-    'title': `${state().objective}\nData: ${state().dataset}`,
-    'legend_title': 'solver',
-  };
-};
-
-const getYLabel = () => {
-  switch(plot_kind) {
-    case 'objective_curve':
-      return 'F(x)';
-    case 'suboptimality_curve':
-      return 'F(x) - F(x*)';
-    case 'relative_suboptimality_curve':
-      return 'F(x) - F(x*) / F(x0) - F(x*)'
-    case 'bar_chart':
-      return 'unknown'; // TODO: Replace unknown label
-    default:
-      return 'unknown';
-  };
-};
-
-const getSolvers = () => Object.keys(window.data[state().dataset][state().objective][state().objective_column]);;
-
-const countObjectives = () => {
-  return Object.keys(window.data[state().dataset]).length;
-};
-
 /**
  * Get the id of the div containing the plotly graph div
  * @param  {String} which previous for previous graph state, anything for current
@@ -282,3 +180,137 @@ function toggleShades() {
 $(function () {
   $("#change_shades").change(toggleShades);
 });
+
+/*
+ * ===============================
+ * Plot state management
+ * ===============================
+ */
+
+const setState = partialState => {
+  window.state = {...state(), ...partialState};
+  makePlot();
+}
+
+/**
+ * 
+ * @returns Object
+ */
+const state = () => window.state;
+
+/*
+ * ===============================
+ * Plot management
+ * ===============================
+ */
+
+const makePlot = () => {
+  const plot_div = document.getElementById('unique_plot');
+  const data = [];
+  const solvers = getSolvers();
+
+  solvers.forEach(solver => {
+    data.push({
+      x: window.data[state().dataset][state().objective][state().objective_column][solver].raw_data.x,
+      y: useTransformer(solver, window.data[state().dataset][state().objective][state().objective_column][solver].raw_data.y),
+    });
+  });
+
+  layout = getPlotLayout(solvers.length);
+
+  Plotly.react(plot_div, data, layout);
+};
+
+const useTransformer = (solver, data) => {
+  // Check if "state related" transformer function exists
+  if (!(('transformer_' + state().plot_kind) in window.transformers)) {
+    console.error('Trying to call unknown transformer.');
+    return data;
+  }
+
+  // Call one of the function of Data Transformers section
+  return window.transformers['transformer_' + state().plot_kind](solver, data);
+};
+
+/*
+ * ===============================
+ * Data transformers
+ * ===============================
+ */
+
+const transformer_objective_curve = (solver, data) => {
+  return data
+};
+
+const transformer_suboptimality_curve = (solver, data) => {
+  // Retrieve c_star value
+  const c_star = window.data[state().dataset][state().objective][state().objective_column][solver].transformers.c_star;
+  
+  // Compute suboptimality for each data
+  return data.map(value => value - c_star);
+};
+
+const transformer_relative_suboptimality_curve = (solver, data) => {
+  return data;
+};
+
+const transformer_bar_chart = (solver, data) => {
+  return data;
+};
+
+window.transformers = {
+  transformer_objective_curve,
+  transformer_suboptimality_curve,
+  transformer_relative_suboptimality_curve,
+  transformer_bar_chart
+}
+
+/*
+ * ===============================
+ * Tools
+ * ===============================
+ */
+
+const getPlotLayout = nb_solvers => {
+  return {
+    'width': 900,
+    'height': state().plot_kind == 'bar_chart' ? 650 : 700 + (nb_solvers < 10 ? 10 : 100) * countObjectives(),
+    'autosize': false,
+    'legend': {
+      "xanchor": "center",
+      "yanchor": "top",
+      "y": -.2,
+      "x": .5
+    },
+    'xaxis_type': 'linear',
+    'yaxis_type': 'log',
+    'xaxis_title': 'Time [sec]',
+    'yaxis_title': getYLabel(),
+    'yaxis_tickformat': ".1e",
+    'xaxis_tickformat': ".1e",
+    'xaxis_tickangle': -45,
+    'title': `${state().objective}\nData: ${state().dataset}`,
+    'legend_title': 'solver',
+  };
+};
+
+const getYLabel = () => {
+  switch(plot_kind) {
+    case 'objective_curve':
+      return 'F(x)';
+    case 'suboptimality_curve':
+      return 'F(x) - F(x*)';
+    case 'relative_suboptimality_curve':
+      return 'F(x) - F(x*) / F(x0) - F(x*)'
+    case 'bar_chart':
+      return 'unknown'; // TODO: Replace unknown label
+    default:
+      return 'unknown';
+  };
+};
+
+const getSolvers = () => Object.keys(window.data[state().dataset][state().objective][state().objective_column]);
+
+const countObjectives = () => {
+  return Object.keys(window.data[state().dataset]).length;
+};
