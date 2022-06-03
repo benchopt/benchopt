@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html>
 
 <head>
@@ -75,7 +76,7 @@
         <option value="${obj}">${obj}</option>
         %endfor
     </select>
-    <select id='objective_column' onchange="setState({objective_columns: this.value});showMe(this);">
+    <select id='objective_column' onchange="setState({objective_column: this.value});showMe(this);">
         % for obj_col in result['obj_cols']:
         <option value="${obj_col}">${obj_col.replace('objective_', '')}</option>
         %endfor
