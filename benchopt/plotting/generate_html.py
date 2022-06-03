@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from mako.template import Template
 
 from ..constants import PLOT_KINDS
-from .plot_bar_chart import plot_bar_chart  # noqa: F401
+from .plot_bar_chart import plot_bar_chart, computeBarChartData  # noqa: F401
 from .plot_objective_curve import plot_objective_curve  # noqa: F401
 from .plot_objective_curve import plot_suboptimality_curve  # noqa: F401
 from .plot_objective_curve import plot_relative_suboptimality_curve  # noqa: F401 E501
@@ -224,23 +224,27 @@ def benchmark_dataframe_to_json(df):
             json_data[dataset][objective] = {}
             # Add objective columns to each objective
             for column in columns:
-                json_data[dataset][objective][column] = {}
+                json_data[dataset][objective][column] = {
+                    'computed_data': { # Used to avoid complex computation in javascript
+                        'bar_chart': computeBarChartData(df[df['objective_name'] == objective], column)
+                    },
+                    'solvers': {}
+                }
                 # Add solvers to each objective column
                 for solver in solvers:
                     df_filtered = df[(df['data_name'] == dataset) & (df['objective_name'] == objective) & (df['solver_name'] == solver)]
-                    json_data[dataset][objective][column][solver] = {
-                        'raw_data': {
+                    json_data[dataset][objective][column]['solvers'][solver] = {
+                        'raw_data': { # data without computation
                             'x': df_filtered['time'].tolist(),
                             'y': df_filtered[column].tolist()
                         },
-                        'transformers': {
+                        'transformers': { # Some values used in javascript to do computation
                             'c_star': float(df_filtered[column].min() - 1e-10),
                             'max_f_0': float(df_filtered[df_filtered['stop_val'] == 1][column].max())
                         }
                     }
 
     return json.dumps(json_data)
-
 
 def get_sysinfo(df):
     """Get a dictionnary of the recorded system informations.
