@@ -82,3 +82,37 @@ def plot_bar_chart(df, obj_col='objective_value', plotly=False):
         ax.set_title(title, fontsize=12)
         fig.tight_layout()
     return fig
+
+def computeBarChartData(df, obj_col):
+    solver_names = df['solver_name'].unique()
+    n_solvers = len(solver_names)
+    plotly = True
+
+    eps = 1e-6
+    width = 1 / (n_solvers + 2)
+    colors = _color_palette(n_solvers)
+
+    height_list = []
+    ticks_list = []
+    times_list = []
+    c_star = df[obj_col].min() + eps
+    for i, solver_name in enumerate(solver_names):
+        xi = (i + 1.5) * width
+        ticks_list.append((xi, solver_name))
+        df_ = df[df['solver_name'] == solver_name]
+
+        # Find the first stop_val which reach a given tolerance
+        df_tol = df_.groupby('stop_val').filter(
+            lambda x: x[obj_col].max() < c_star)
+        if df_tol.empty:
+            colors[i] = "w" if not plotly else PLOTLY_GRAY
+            #print(f"Solver {solver_name} did not reach precision {eps}.")
+            height_list.append(df.time.max())
+            times_list.append(np.nan)
+            continue
+        stop_val = df_tol['stop_val'].min()
+        this_df = df_[df_['stop_val'] == stop_val]
+        height_list.append(this_df['time'].median())
+        times_list.append(this_df['time'])
+    
+    return height_list
