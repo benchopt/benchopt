@@ -483,7 +483,7 @@ def plot_benchmark_html(fnames, benchmark, kinds, display=True):
 
 def plot_benchmark_html_all(patterns=(), benchmarks=(), root=None,
                             display=True):
-    """Generate a HTML rerport for multiple benchmarks.
+    """Generate a HTML report for multiple benchmarks.
 
     This utility is the one used to create https://benchopt.github.io/results.
     It will open all benchmarks in `root` and create a website to browse them.
