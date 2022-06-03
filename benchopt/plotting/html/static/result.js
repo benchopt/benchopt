@@ -182,9 +182,9 @@ $(function () {
 });
 
 /*
- * ===============================
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * Plot state management
- * ===============================
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 
 const setState = partialState => {
@@ -199,103 +199,153 @@ const setState = partialState => {
 const state = () => window.state;
 
 /*
- * ===============================
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * Plot management
- * ===============================
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 
 const makePlot = () => {
-  const plot_div = document.getElementById('unique_plot');
-  const data = [];
-  const solvers = getSolvers();
+  const div = document.getElementById('unique_plot');
+  const data = isBarChart() ? getBarFormattedData() : getScatterFormattedData();
+  const layout = isBarChart() ? getBarChartLayout() : getScatterChartLayout();
 
-  solvers.forEach(solver => {
-    data.push({
-      x: window.data[state().dataset][state().objective][state().objective_column][solver].raw_data.x,
-      y: useTransformer(solver, window.data[state().dataset][state().objective][state().objective_column][solver].raw_data.y),
-    });
-  });
-
-  layout = getPlotLayout(solvers.length);
-
-  Plotly.react(plot_div, data, layout);
+  Plotly.react(div, data, layout);
 };
 
-const useTransformer = (solver, data) => {
-  // Check if "state related" transformer function exists
-  if (!(('transformer_' + state().plot_kind) in window.transformers)) {
-    console.error('Trying to call unknown transformer.');
-    return data;
-  }
+const getBarFormattedData = () => {
+  return [{
+    type: 'bar',
+    x: useTransformer(data(), null, 'x'),
+    y: useTransformer(data(), null, 'y'),
+  }];
+};
 
-  // Call one of the function of Data Transformers section
-  return window.transformers['transformer_' + state().plot_kind](solver, data);
+const getScatterFormattedData = () => {
+  return getSolvers().map(solver => {
+    return {
+      type: 'scatter',
+      x: useTransformer(data(), solver, 'x'),
+      y: useTransformer(data(), solver, 'y'),
+    };
+  });
 };
 
 /*
- * ===============================
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * Data transformers
- * ===============================
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 
-const transformer_objective_curve = (solver, data) => {
-  return data
+const useTransformer = (data, solver, axis) => {
+  try {
+    let transformer = 'transformer_' + axis + '_' + state().plot_kind;
+    return window.transformers[transformer](data, solver);
+  } catch(e) {
+    console.warn('Trying to call unknown transformer. The raw data is returned.');
+    return data.solvers[solver].raw_data[axis];
+  }
 };
 
-const transformer_suboptimality_curve = (solver, data) => {
+const transformer_x_bar_chart = (data, solver) => {
+  return getSolvers();
+};
+
+const transformer_y_suboptimality_curve = (data, solver) => {
+  let y = data.solvers[solver].raw_data.y;
   // Retrieve c_star value
-  const c_star = window.data[state().dataset][state().objective][state().objective_column][solver].transformers.c_star;
+  const c_star = data.solvers[solver].transformers.c_star;
   
   // Compute suboptimality for each data
-  return data.map(value => value - c_star);
+  return y.map(value => value - c_star);
 };
 
-const transformer_relative_suboptimality_curve = (solver, data) => {
-  return data;
+const transformer_y_relative_suboptimality_curve = (data, solver) => {
+  let y = data.solvers[solver].raw_data.y;
+  // Retrieve transformer values
+  const c_star = data.solvers[solver].transformers.c_star;
+  const max_f_0 = data.solvers[solver].transformers.max_f_0;
+
+  // Compute relative suboptimality for each data
+  return y.map(value => (value - c_star) / (max_f_0 - c_star));
 };
 
-const transformer_bar_chart = (solver, data) => {
-  return data;
+const transformer_y_bar_chart = (data, solver) => {
+  return data.computed_data.bar_chart;
 };
 
 window.transformers = {
-  transformer_objective_curve,
-  transformer_suboptimality_curve,
-  transformer_relative_suboptimality_curve,
-  transformer_bar_chart
-}
+  transformer_x_bar_chart,
+  transformer_y_suboptimality_curve,
+  transformer_y_relative_suboptimality_curve,
+  transformer_y_bar_chart
+};
 
 /*
- * ===============================
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * Tools
- * ===============================
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 
-const getPlotLayout = nb_solvers => {
+const data = () => window.data[state().dataset][state().objective][state().objective_column];
+
+const getSolvers = () => Object.keys(data().solvers)
+
+const getObjectives = () => Object.keys(window.data[state().dataset]).length;
+
+const isBarChart = () => state().plot_kind === 'bar_chart';
+
+const getScatterChartLayout = () => {
   return {
     'width': 900,
-    'height': state().plot_kind == 'bar_chart' ? 650 : 700 + (nb_solvers < 10 ? 10 : 100) * countObjectives(),
+    'height': 700 + (getSolvers().length < 10 ? 10 : 100) * getObjectives().length,
     'autosize': false,
     'legend': {
+      'title': {
+        'text': 'solver',
+      },
       "xanchor": "center",
       "yanchor": "top",
       "y": -.2,
       "x": .5
     },
-    'xaxis_type': 'linear',
-    'yaxis_type': 'log',
-    'xaxis_title': 'Time [sec]',
-    'yaxis_title': getYLabel(),
-    'yaxis_tickformat': ".1e",
-    'xaxis_tickformat': ".1e",
-    'xaxis_tickangle': -45,
+    'xaxis': {
+      'type': 'linear',
+      'title': 'Time [sec]',
+      'tickformat': '.1e',
+      'tickangle': -45,
+    },
+    'yaxis': {
+      'type': 'log',
+      'title': getYLabel(),
+      'tickformat': '.1e',
+    },
     'title': `${state().objective}\nData: ${state().dataset}`,
-    'legend_title': 'solver',
+  };
+};
+
+const getBarChartLayout = () => {
+  return {
+    'width': 900,
+    'height': 650,
+    'autosize': false,
+    'yaxis': {
+      'type': 'log',
+      'title': 'Time [sec]',
+      'tickformat': '.1e',
+    },
+    'xaxis': {
+      'tickmode': 'array',
+      'tickangle': -60,
+      'ticktext': getSolvers(),
+      'tickvals': getBarColumnPositions(),
+      'range': [0, 1]
+    },
+    'title': `${state().objective}\nData: ${state().dataset}`,
   };
 };
 
 const getYLabel = () => {
-  switch(plot_kind) {
+  switch(state().plot_kind) {
     case 'objective_curve':
       return 'F(x)';
     case 'suboptimality_curve':
@@ -303,14 +353,21 @@ const getYLabel = () => {
     case 'relative_suboptimality_curve':
       return 'F(x) - F(x*) / F(x0) - F(x*)'
     case 'bar_chart':
-      return 'unknown'; // TODO: Replace unknown label
+      return 'Time [sec]';
     default:
       return 'unknown';
   };
 };
 
-const getSolvers = () => Object.keys(window.data[state().dataset][state().objective][state().objective_column]);
+const getBarColumnPositions = () => {
+  const width = 1 / (getSolvers().length + 2);
+  const xi = [];
 
-const countObjectives = () => {
-  return Object.keys(window.data[state().dataset]).length;
+  for (let i = 0; i < getSolvers().length; i++) {
+    xi.push((i + 1.5) * width);
+  }
+
+  console.log(xi);
+
+  return xi;
 };
