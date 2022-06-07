@@ -49,7 +49,7 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
 
     else:
         # Load the results.
-        df = pd.read_csv(fname)
+        df = pd.read_csv(fname, comment='#')
         obj_cols = [
             k for k in df.columns
             if k.startswith('objective_') and k != 'objective_name'

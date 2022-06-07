@@ -4,12 +4,13 @@ from datetime import datetime
 
 from joblib import Parallel, delayed
 
+from .config import DEBUG
 from .callback import _Callback
+from .utils.shell_cmd import _run_shell
 from .benchmark import _check_name_lists
 from .utils.sys_info import get_sys_info
-from .utils.pdb_helpers import exception_handler
 from .utils.files import uniquify_results
-
+from .utils.pdb_helpers import exception_handler
 from .utils.terminal_output import TerminalOutput
 
 # For compat with the lasso benchmark, expose INFINITY in this module.
@@ -324,6 +325,12 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
     for curve in results:
         run_statistics.extend(curve)
 
+    err, tag = _run_shell("git describe --tags --abbrev=0", return_output=True)
+    if err != 0:
+        if DEBUG:
+            print(err, tag)
+        tag = None
+
     import pandas as pd
     df = pd.DataFrame(run_statistics)
     if df.empty:
@@ -338,7 +345,10 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
     else:
         save_file = output_dir / f"{output_name}.csv"
         save_file = uniquify_results(save_file)
-    df.to_csv(save_file)
+    with open(save_file, 'a') as f:
+        f.write(f'#tag: {tag}\n')
+        df.to_csv(f)
+
     output.savefile_status(save_file=save_file)
 
     if plot_result:
