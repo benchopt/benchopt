@@ -345,7 +345,7 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
     else:
         save_file = output_dir / f"{output_name}.csv"
         save_file = uniquify_results(save_file)
-    with open(save_file, 'a') as f:
+    with open(save_file, 'w') as f:
         f.write(f'# benchmark-git-tag: {tag}\n')
         df.to_csv(f)
 
