@@ -147,8 +147,13 @@
                 'objective_column': document.getElementById('objective_column').value,
                 'plot_kind': document.getElementById('plot_kind').value,
                 'scale': document.getElementById('change_scaling').value,
-                'with_quantiles': document.getElementById('change_shades').checked
+                'with_quantiles': document.getElementById('change_shades').checked,
+                'hidden_curves': []
             });
+
+            document.getElementById('unique_plot').on('plotly_legendclick', data => {
+                manageHiddenCurves(data);
+            })
         });
     </script>
 

@@ -233,6 +233,7 @@ const getScatterCurves = () => {
       },
       legendgroup: solver,
       hovertemplate: solver + ' <br> (%{x:.1e},%{y:.1e}) <extra></extra>',
+      visible: isVisible(solver) ? true : 'legendonly',
       x: useTransformer(data(), solver, 'x'),
       y: useTransformer(data(), solver, 'y'),
     });
@@ -248,6 +249,7 @@ const getScatterCurves = () => {
         },
         legendgroup: solver,
         hovertemplate: '(%{x:.1e},%{y:.1e}) <extra></extra>',
+        visible: isVisible(solver) ? true : 'legendonly',
         x: useTransformer(data(), solver, 'q1'),
         y: useTransformer(data(), solver, 'y'),
       }, {
@@ -261,6 +263,7 @@ const getScatterCurves = () => {
         },
         legendgroup: solver,
         hovertemplate: '(%{x:.1e},%{y:.1e}) <extra></extra>',
+        visible: isVisible(solver) ? true : 'legendonly',
         x: useTransformer(data(), solver, 'q9'),
         y: useTransformer(data(), solver, 'y'),
       });
@@ -336,6 +339,8 @@ const getSolvers = () => Object.keys(data().solvers)
 const getObjectives = () => Object.keys(window.data[state().dataset]);
 
 const isBarChart = () => state().plot_kind === 'bar_chart';
+
+const isVisible = solver => !state().hidden_curves.includes(solver);
 
 const getScale = () => {
   switch (state().scale) {
@@ -439,3 +444,15 @@ const getBarColumnPositions = () => {
 
   return xi;
 };
+
+const manageHiddenCurves = event => {
+  const curveNumber = event.curveNumber;
+  const index = state().hidden_curves.indexOf(event.data[curveNumber].name);
+
+  if (index > -1) {
+    state().hidden_curves.splice(index, 1);
+    return;
+  }
+
+  state().hidden_curves.push(event.data[curveNumber].name);
+}
