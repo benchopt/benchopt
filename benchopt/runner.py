@@ -334,7 +334,6 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
     else:
         save_file = output_dir / f"{output_name}.csv"
         save_file = uniquify_results(save_file)
-
     write_results(df, save_file)
     output.savefile_status(save_file=save_file)
 

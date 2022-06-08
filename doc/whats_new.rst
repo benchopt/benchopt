@@ -32,6 +32,10 @@ API
 
 - Add latest git tag via `benchmark-git-tag` comment in CSV results files,
   together with ``read_results`` and ``write_results`` functions to handle the CSVs.
+  Note that this change might break the compatiblity of newest result file
+  with pre-existing plotting script, as the results need to be loaded with
+  ``pd.read_csv(..., comment="#")``. For future compatibility, we advise using
+  helper ``benchopt.utils.files.read_results`` which returns the ``pd.DataFrame``
   By `Mathurin Massias`_ (:gh:`421`).
 
 .. _changes_1_2:

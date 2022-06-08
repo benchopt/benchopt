@@ -38,7 +38,7 @@ def uniquify_results(file_path):
 
 
 def read_results(file_path):
-    """Read benchmark results as pandas DataFrame."""
+    """Read benchmark results from CSV file."""
     with open(file_path, "r") as f:
         metadata = {}
         for line in takewhile(lambda s: s.startswith("#"), f):
