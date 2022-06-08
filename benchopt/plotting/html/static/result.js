@@ -236,12 +236,19 @@ const getScatterFormattedData = () => {
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 
+window.transformers = {
+  transformer_x_bar_chart,
+  transformer_y_suboptimality_curve,
+  transformer_y_relative_suboptimality_curve,
+  transformer_y_bar_chart
+};
+
 const useTransformer = (data, solver, axis) => {
   try {
     let transformer = 'transformer_' + axis + '_' + state().plot_kind;
     return window.transformers[transformer](data, solver);
   } catch(e) {
-    console.warn('Trying to call unknown transformer. The raw data is returned.');
+    console.warn('Trying to call unknown transformer for ' + axis + ' axis. The raw data is returned.');
     return data.solvers[solver].raw_data[axis];
   }
 };
@@ -253,7 +260,7 @@ const transformer_x_bar_chart = (data, solver) => {
 const transformer_y_suboptimality_curve = (data, solver) => {
   let y = data.solvers[solver].raw_data.y;
   // Retrieve c_star value
-  const c_star = data.solvers[solver].transformers.c_star;
+  const c_star = data.transformers.c_star;
   
   // Compute suboptimality for each data
   return y.map(value => value - c_star);
@@ -262,8 +269,8 @@ const transformer_y_suboptimality_curve = (data, solver) => {
 const transformer_y_relative_suboptimality_curve = (data, solver) => {
   let y = data.solvers[solver].raw_data.y;
   // Retrieve transformer values
-  const c_star = data.solvers[solver].transformers.c_star;
-  const max_f_0 = data.solvers[solver].transformers.max_f_0;
+  const c_star = data.transformers.c_star;
+  const max_f_0 = data.transformers.max_f_0;
 
   // Compute relative suboptimality for each data
   return y.map(value => (value - c_star) / (max_f_0 - c_star));
@@ -271,13 +278,6 @@ const transformer_y_relative_suboptimality_curve = (data, solver) => {
 
 const transformer_y_bar_chart = (data, solver) => {
   return data.computed_data.bar_chart;
-};
-
-window.transformers = {
-  transformer_x_bar_chart,
-  transformer_y_suboptimality_curve,
-  transformer_y_relative_suboptimality_curve,
-  transformer_y_bar_chart
 };
 
 /*
@@ -290,9 +290,36 @@ const data = () => window.data[state().dataset][state().objective][state().objec
 
 const getSolvers = () => Object.keys(data().solvers)
 
-const getObjectives = () => Object.keys(window.data[state().dataset]).length;
+const getObjectives = () => Object.keys(window.data[state().dataset]);
 
 const isBarChart = () => state().plot_kind === 'bar_chart';
+
+const getScale = () => {
+  switch (state().scale) {
+    case 'loglog':
+      return {
+        xaxis: 'log',
+        yaxis: 'log',
+      };
+    case "semilog-y":
+      return {
+        xaxis: 'linear',
+        yaxis: 'log',
+      };
+    case "semilog-x":
+      return {
+        xaxis: 'log',
+        yaxis: 'linear',
+      };
+    case "linear":
+      return {
+        xaxis: 'linear',
+        yaxis: 'linear',
+      };
+    default:
+      console.error('Unknown scale value : ' + state().scale);
+  }
+}
 
 const getScatterChartLayout = () => {
   return {
@@ -309,13 +336,13 @@ const getScatterChartLayout = () => {
       "x": .5
     },
     'xaxis': {
-      'type': 'linear',
+      'type': getScale().xaxis,
       'title': 'Time [sec]',
       'tickformat': '.1e',
       'tickangle': -45,
     },
     'yaxis': {
-      'type': 'log',
+      'type': getScale().yaxis,
       'title': getYLabel(),
       'tickformat': '.1e',
     },
@@ -366,8 +393,6 @@ const getBarColumnPositions = () => {
   for (let i = 0; i < getSolvers().length; i++) {
     xi.push((i + 1.5) * width);
   }
-
-  console.log(xi);
 
   return xi;
 };

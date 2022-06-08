@@ -89,7 +89,7 @@
         <option value="${kind}">${kind.replace('_', ' ')}</option>
         %endfor
     </select>
-    <select id="change_scaling" onchange="changeScale(this)">
+    <select id="change_scaling" onchange="setState({scale: this.value});changeScale(this)">
         <option value="semilog-y">semilog-y</option>
         <option value="semilog-x">semilog-x</option>
         <option value="loglog">loglog</option>
@@ -142,10 +142,11 @@
 
         $(function () {
             setState({
-                'dataset': '${result['dataset_names'][0]}',
-                'objective': '${result['objective_names'][0]}',
-                'objective_column': '${result['obj_cols'][0]}',
-                'plot_kind': '${result['kinds'][0]}',
+                'dataset': document.getElementById("dataset_selector").value,
+                'objective': document.getElementById("objective_selector").value,
+                'objective_column': document.getElementById("objective_column").value,
+                'plot_kind': document.getElementById("plot_kind").value,
+                'scale': document.getElementById("change_scaling").value
             });
         });
     </script>
