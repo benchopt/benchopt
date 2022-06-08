@@ -202,49 +202,70 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
             f"{result['fname_short'].replace('.csv', '.html')}"
         )
 
-        result['json'] = benchmark_dataframe_to_json(df)
+        result['json'] = json.dumps(shape_datasets_for_html(df))
 
     return results
 
-def benchmark_dataframe_to_json(df):
-    json_data = {}
+def shape_datasets_for_html(df):
+    datasets_data = {}
+    datasets = df['data_name'].unique()
 
-    # Retrieve interesting data from the dataframe
-    datasets = df['data_name'].unique() # Array of str
-    objectives = df['objective_name'].unique() # Array of str
-    solvers = df['solver_name'].unique() # Array of str
-
-    columns = ['objective_value', 'objective_support_size', 'objective_duality_gap']
-
-    # Add datasets to json
     for dataset in datasets:
-        json_data[dataset] = {}
-        # Add objectives to each dataset
-        for objective in objectives:
-            json_data[dataset][objective] = {}
-            # Add objective columns to each objective
-            for column in columns:
-                json_data[dataset][objective][column] = {
-                    'computed_data': { # Used to avoid complex computation in javascript
-                        'bar_chart': computeBarChartData(df[df['objective_name'] == objective], column)
-                    },
-                    'solvers': {}
-                }
-                # Add solvers to each objective column
-                for solver in solvers:
-                    df_filtered = df[(df['data_name'] == dataset) & (df['objective_name'] == objective) & (df['solver_name'] == solver)]
-                    json_data[dataset][objective][column]['solvers'][solver] = {
-                        'raw_data': { # data without computation
-                            'x': df_filtered['time'].tolist(),
-                            'y': df_filtered[column].tolist()
-                        },
-                        'transformers': { # Some values used in javascript to do computation
-                            'c_star': float(df_filtered[column].min() - 1e-10),
-                            'max_f_0': float(df_filtered[df_filtered['stop_val'] == 1][column].max())
-                        }
-                    }
+        datasets_data[dataset] = shape_objectives_for_html(df, dataset)
 
-    return json.dumps(json_data)
+    return datasets_data
+
+def shape_objectives_for_html(df, dataset):
+    objectives_data = {}
+    objectives = df['objective_name'].unique()
+
+    for objective in objectives:
+        objectives_data[objective] = shape_objectives_columns_for_html(df, dataset, objective)
+
+    return objectives_data
+
+def shape_objectives_columns_for_html(df, dataset, objective):
+    objective_columns_data = {}
+    columns = [
+        c for c in df.columns
+        if c.startswith('objective_') and c != 'objective_name'
+    ]
+    for column in columns:
+        df_filtered = df.query("data_name == @dataset & objective_name == @objective")
+        objective_columns_data[column] = {
+            # Store complex computations to avoid them in javascript
+            'computed_data': {
+                'bar_chart': computeBarChartData(
+                    df.query('objective_name == @objective'), column
+                )
+            },
+            'solvers': shape_solvers_for_html(df_filtered, dataset, objective, column),
+            # Some values used in javascript to do computation
+            'transformers': {
+                'c_star': float(df_filtered[column].min() - 1e-10),
+                'max_f_0': float(df_filtered[df_filtered['stop_val'] == 1][column].max())
+            }
+        }
+
+    return objective_columns_data
+
+def shape_solvers_for_html(df, dataset, objective, objective_column):
+    solver_data = {}
+    solvers = df['solver_name'].unique()
+    for solver in solvers:
+        df_filtered = df.query("solver_name == @solver")
+        q1, q9 = computeQuantiles(df_filtered, solver)
+        solver_data[solver] = {
+            'raw_data': { # data without computation
+                'x': df_filtered.groupby('stop_val')['time']
+                    .median().tolist(),
+                'y': df_filtered.groupby('stop_val')[objective_column]
+                    .median().tolist(),
+                'q1': 
+            }
+        }
+
+    return solver_data
 
 def get_sysinfo(df):
     """Get a dictionnary of the recorded system informations.
