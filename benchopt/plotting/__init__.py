@@ -1,9 +1,9 @@
 import itertools
-import pandas as pd
 import matplotlib.pyplot as plt
 
 from ..constants import PLOT_KINDS
 from .helpers import get_plot_id
+from ..utils.files import read_results
 from .plot_bar_chart import plot_bar_chart  # noqa: F401
 from .plot_objective_curve import plot_objective_curve  # noqa: F401
 from .plot_objective_curve import plot_suboptimality_curve  # noqa: F401
@@ -49,7 +49,7 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
 
     else:
         # Load the results.
-        df = pd.read_csv(fname, comment='#')
+        df, _ = read_results(fname)
         obj_cols = [
             k for k in df.columns
             if k.startswith('objective_') and k != 'objective_name'

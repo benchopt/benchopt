@@ -30,8 +30,9 @@ CLI
 API
 ~~~
 
-- Add `benchmark-git-tag` comment in CSV results files, containing latest git tag
-  when banchmark was run. By `Mathurin Massias`_ (:gh:`421`).
+- Add latest git tag via `benchmark-git-tag` comment in CSV results files,
+  together with ``read_results`` and ``write_results`` functions to handle the CSVs.
+  By `Mathurin Massias`_ (:gh:`421`).
 
 .. _changes_1_2:
 
