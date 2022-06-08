@@ -376,8 +376,9 @@ const getScatterChartLayout = () => {
     autosize: false,
     legend: {
       title: {
-        text: 'solver',
+        text: 'solvers',
       },
+      orientation: 'h',
       xanchor: 'center',
       yanchor: 'top',
       y: -.2,
