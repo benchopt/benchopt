@@ -9,7 +9,7 @@ from .benchmark import _check_name_lists
 from .utils.sys_info import get_sys_info
 from .utils.pdb_helpers import exception_handler
 from .utils.terminal_output import TerminalOutput
-from .utils.files import uniquify_results, write_results
+from .utils.files import uniquify_results
 
 ##################################
 # Time one run of a solver
@@ -334,7 +334,7 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
     else:
         save_file = output_dir / f"{output_name}.csv"
         save_file = uniquify_results(save_file)
-    write_results(df, save_file)
+    df.to_csv(save_file)
     output.savefile_status(save_file=save_file)
 
     if plot_result:

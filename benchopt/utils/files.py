@@ -1,11 +1,5 @@
 import warnings
 from pathlib import Path
-from itertools import takewhile
-
-import pandas as pd
-
-from ..config import DEBUG
-from .shell_cmd import _run_shell
 
 
 def rm_folder(folder):
@@ -35,26 +29,3 @@ def uniquify_results(file_path):
         return alternative
     else:
         return file_path
-
-
-def read_results(file_path):
-    """Read benchmark results from CSV file."""
-    with open(file_path, "r") as f:
-        metadata = {}
-        for line in takewhile(lambda s: s.startswith("#"), f):
-            k, v = line.split(':')
-            metadata[k.strip('#')] = v.strip('\n')
-        df = pd.read_csv(f, comment='#')
-    return df, metadata
-
-
-def write_results(df, file_path):
-    """Write benchmark results to CSV file."""
-    err, tag = _run_shell("git describe --tags --abbrev=0", return_output=True)
-    if err != 0:
-        if DEBUG:
-            print(err, tag)
-        tag = None
-    with open(file_path, 'w') as f:
-        f.write(f'# benchmark-git-tag: {tag}\n')
-        df.to_csv(f)

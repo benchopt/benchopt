@@ -178,7 +178,7 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
     for fname in fnames:
         print(f"Processing {fname}")
 
-        df, _ = read_results(fname)
+        df = pd.read_csv(fname)
         datasets = list(df['data_name'].unique())
         sysinfo = get_sysinfo(df)
         # Copy CSV if necessary and give a relative path for HTML page access
