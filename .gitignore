@@ -36,3 +36,4 @@ benchopt/version.py
 
 .DS_Store
 coverage.xml
+benchopt.code-workspace
