@@ -206,13 +206,13 @@ const state = () => window.state;
 
 const makePlot = () => {
   const div = document.getElementById('unique_plot');
-  const data = isBarChart() ? getBarFormattedData() : getScatterFormattedData();
+  const data = isBarChart() ? getBarData() : getScatterCurves();
   const layout = isBarChart() ? getBarChartLayout() : getScatterChartLayout();
 
   Plotly.react(div, data, layout);
 };
 
-const getBarFormattedData = () => {
+const getBarData = () => {
   return [{
     type: 'bar',
     x: useTransformer(data(), null, 'x'),
@@ -220,28 +220,64 @@ const getBarFormattedData = () => {
   }];
 };
 
-const getScatterFormattedData = () => {
-  return getSolvers().map(solver => {
-    return {
+const getScatterCurves = () => {
+  const curves = [];
+
+  getSolvers().forEach(solver => {
+    curves.push({
       type: 'scatter',
+      name: solver,
+      mode: 'lines+markers',
+      line: {
+        color: data().solvers[solver].color,
+      },
+      legendgroup: solver,
+      hovertemplate: solver + ' <br> (%{x:.1e},%{y:.1e}) <extra></extra>',
       x: useTransformer(data(), solver, 'x'),
       y: useTransformer(data(), solver, 'y'),
-    };
+    });
+
+    if (state().with_quantiles) {
+      curves.push({
+        type: 'scatter',
+        mode: 'lines',
+        showlegend: false,
+        line: {
+          width: 0,
+          color: data().solvers[solver].color,
+        },
+        legendgroup: solver,
+        hovertemplate: '(%{x:.1e},%{y:.1e}) <extra></extra>',
+        x: useTransformer(data(), solver, 'q1'),
+        y: useTransformer(data(), solver, 'y'),
+      }, {
+        type: 'scatter',
+        mode: 'lines',
+        showlegend: false,
+        fill: 'tonextx',
+        line: {
+          width: 0,
+          color: data().solvers[solver].color,
+        },
+        legendgroup: solver,
+        hovertemplate: '(%{x:.1e},%{y:.1e}) <extra></extra>',
+        x: useTransformer(data(), solver, 'q9'),
+        y: useTransformer(data(), solver, 'y'),
+      });
+    }
   });
+
+  return curves;
 };
 
 /*
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * Data transformers
+ * 
+ * WARNING : If you add a new transformer function,
+ * don't forget to register it in the object : window.tranformers
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
-
-window.transformers = {
-  transformer_x_bar_chart,
-  transformer_y_suboptimality_curve,
-  transformer_y_relative_suboptimality_curve,
-  transformer_y_bar_chart
-};
 
 const useTransformer = (data, solver, axis) => {
   try {
@@ -249,7 +285,7 @@ const useTransformer = (data, solver, axis) => {
     return window.transformers[transformer](data, solver);
   } catch(e) {
     console.warn('Trying to call unknown transformer for ' + axis + ' axis. The raw data is returned.');
-    return data.solvers[solver].raw_data[axis];
+    return data.solvers[solver][axis];
   }
 };
 
@@ -258,7 +294,7 @@ const transformer_x_bar_chart = (data, solver) => {
 };
 
 const transformer_y_suboptimality_curve = (data, solver) => {
-  let y = data.solvers[solver].raw_data.y;
+  let y = data.solvers[solver].y;
   // Retrieve c_star value
   const c_star = data.transformers.c_star;
   
@@ -267,7 +303,7 @@ const transformer_y_suboptimality_curve = (data, solver) => {
 };
 
 const transformer_y_relative_suboptimality_curve = (data, solver) => {
-  let y = data.solvers[solver].raw_data.y;
+  let y = data.solvers[solver].y;
   // Retrieve transformer values
   const c_star = data.transformers.c_star;
   const max_f_0 = data.transformers.max_f_0;
@@ -278,6 +314,13 @@ const transformer_y_relative_suboptimality_curve = (data, solver) => {
 
 const transformer_y_bar_chart = (data, solver) => {
   return data.computed_data.bar_chart;
+};
+
+window.transformers = {
+  transformer_x_bar_chart,
+  transformer_y_suboptimality_curve,
+  transformer_y_relative_suboptimality_curve,
+  transformer_y_bar_chart
 };
 
 /*
@@ -323,51 +366,51 @@ const getScale = () => {
 
 const getScatterChartLayout = () => {
   return {
-    'width': 900,
-    'height': 700 + (getSolvers().length < 10 ? 10 : 100) * getObjectives().length,
-    'autosize': false,
-    'legend': {
-      'title': {
-        'text': 'solver',
+    width: 900,
+    height: 700 + (getSolvers().length < 10 ? 10 : 100) * getObjectives().length,
+    autosize: false,
+    legend: {
+      title: {
+        text: 'solver',
       },
-      "xanchor": "center",
-      "yanchor": "top",
-      "y": -.2,
-      "x": .5
+      xanchor: 'center',
+      yanchor: 'top',
+      y: -.2,
+      x: .5
     },
-    'xaxis': {
-      'type': getScale().xaxis,
-      'title': 'Time [sec]',
-      'tickformat': '.1e',
-      'tickangle': -45,
+    xaxis: {
+      type: getScale().xaxis,
+      title: 'Time [sec]',
+      tickformat: '.1e',
+      tickangle: -45,
     },
-    'yaxis': {
-      'type': getScale().yaxis,
-      'title': getYLabel(),
-      'tickformat': '.1e',
+    yaxis: {
+      type: getScale().yaxis,
+      title: getYLabel(),
+      tickformat: '.1e',
     },
-    'title': `${state().objective}\nData: ${state().dataset}`,
+    title: `${state().objective}\nData: ${state().dataset}`,
   };
 };
 
 const getBarChartLayout = () => {
   return {
-    'width': 900,
-    'height': 650,
-    'autosize': false,
-    'yaxis': {
-      'type': 'log',
-      'title': 'Time [sec]',
-      'tickformat': '.1e',
+    width: 900,
+    height: 650,
+    autosize: false,
+    yaxis: {
+      type: 'log',
+      title: 'Time [sec]',
+      tickformat: '.1e',
     },
-    'xaxis': {
-      'tickmode': 'array',
-      'tickangle': -60,
-      'ticktext': getSolvers(),
-      'tickvals': getBarColumnPositions(),
-      'range': [0, 1]
+    xaxis: {
+      tickmode: 'array',
+      tickangle: -60,
+      ticktext: getSolvers(),
+      tickvals: getBarColumnPositions(),
+      range: [0, 1]
     },
-    'title': `${state().objective}\nData: ${state().dataset}`,
+    title: `${state().objective}\nData: ${state().dataset}`,
   };
 };
 

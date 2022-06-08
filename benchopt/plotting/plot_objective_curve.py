@@ -165,3 +165,16 @@ def plot_relative_suboptimality_curve(df, obj_col='objective_value',
     """
     return plot_objective_curve(df, obj_col=obj_col, plotly=plotly,
                                 suboptimality=True, relative=True)
+
+def computeQuantiles(df_filtered):
+    q1 = df_filtered.groupby('stop_val')['time'].quantile(.1)
+    q9 = df_filtered.groupby('stop_val')['time'].quantile(.9)
+
+    return q1, q9
+
+def get_curve_color(i):
+    color = CMAP(i % CMAP.N)
+    color = tuple(255*x if i != 3 else x for i, x in enumerate(color))
+    color = f'rgba{color}'
+
+    return color

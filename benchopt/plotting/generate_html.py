@@ -11,7 +11,7 @@ from mako.template import Template
 
 from ..constants import PLOT_KINDS
 from .plot_bar_chart import plot_bar_chart, computeBarChartData  # noqa: F401
-from .plot_objective_curve import plot_objective_curve  # noqa: F401
+from .plot_objective_curve import computeQuantiles, get_curve_color, plot_objective_curve  # noqa: F401
 from .plot_objective_curve import plot_suboptimality_curve  # noqa: F401
 from .plot_objective_curve import plot_relative_suboptimality_curve  # noqa: F401 E501
 
@@ -89,8 +89,8 @@ def generate_plot_benchmark(df, kinds, fname, fig_dir, benchmark_name):
                     fig = plot_func(df_obj, obj_col=obj_col, plotly=True)
                     if PLOT_KINDS[k] == "plot_bar_chart":
                         fig.update_layout(autosize=False,
-                                          width=900,
-                                          height=650)
+                                            width=900,
+                                            height=650)
                     else:
                         if len(df_obj["solver_name"].unique()) < 10:
                             fact_ = 10
@@ -252,17 +252,17 @@ def shape_objectives_columns_for_html(df, dataset, objective):
 def shape_solvers_for_html(df, dataset, objective, objective_column):
     solver_data = {}
     solvers = df['solver_name'].unique()
-    for solver in solvers:
+    for index, solver in enumerate(solvers):
         df_filtered = df.query("solver_name == @solver")
-        q1, q9 = computeQuantiles(df_filtered, solver)
+        q1, q9 = computeQuantiles(df_filtered)
         solver_data[solver] = {
-            'raw_data': { # data without computation
-                'x': df_filtered.groupby('stop_val')['time']
-                    .median().tolist(),
-                'y': df_filtered.groupby('stop_val')[objective_column]
-                    .median().tolist(),
-                'q1': 
-            }
+            'x': df_filtered.groupby('stop_val')['time']
+                .median().tolist(),
+            'y': df_filtered.groupby('stop_val')[objective_column]
+                .median().tolist(),
+            'q1': q1.tolist(),
+            'q9': q9.tolist(),
+            'color': get_curve_color(index)
         }
 
     return solver_data

@@ -99,13 +99,13 @@
     <div style="display: flex; align-items: center;">
     <p style="margin: 0; margin-right: 4px">Quantiles: </p>
     <label for='change_shades' class="switch">
-        <input id="change_shades" type="checkbox" checked>
+        <input id="change_shades" type="checkbox" checked onchange="setState({with_quantiles: this.checked})">
         <span class="slider round"></span>
     </label>
     </div>
 
-    <div style="background-color: gray; min-height: 1000px; margin-top: 50px; margin-bottom: 50px;">
-        <div id="unique_plot" style="width:600px;height:250px;"></div>
+    <div style="margin-top: 50px; margin-bottom: 50px;">
+        <div id="unique_plot"></div>
     </div>
 
     % for data in result['dataset_names']:
@@ -142,11 +142,12 @@
 
         $(function () {
             setState({
-                'dataset': document.getElementById("dataset_selector").value,
-                'objective': document.getElementById("objective_selector").value,
-                'objective_column': document.getElementById("objective_column").value,
-                'plot_kind': document.getElementById("plot_kind").value,
-                'scale': document.getElementById("change_scaling").value
+                'dataset': document.getElementById('dataset_selector').value,
+                'objective': document.getElementById('objective_selector').value,
+                'objective_column': document.getElementById('objective_column').value,
+                'plot_kind': document.getElementById('plot_kind').value,
+                'scale': document.getElementById('change_scaling').value,
+                'with_quantiles': document.getElementById('change_shades').checked
             });
         });
     </script>
