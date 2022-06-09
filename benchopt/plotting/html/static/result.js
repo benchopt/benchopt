@@ -191,9 +191,7 @@ const getScale = () => {
 
 const getScatterChartLayout = () => {
   return {
-    width: 900,
-    height: 700,
-    autosize: false,
+    autosize: true,
     legend: {
       title: {
         text: 'solvers',
