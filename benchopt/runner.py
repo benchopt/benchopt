@@ -7,9 +7,9 @@ from joblib import Parallel, delayed
 from .callback import _Callback
 from .benchmark import _check_name_lists
 from .utils.sys_info import get_sys_info
+from .utils.files import uniquify_results
 from .utils.pdb_helpers import exception_handler
 from .utils.terminal_output import TerminalOutput
-from .utils.files import uniquify_results
 
 ##################################
 # Time one run of a solver
