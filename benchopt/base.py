@@ -392,9 +392,9 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
             parameters[key] = getattr(self, key)
         self.set_data(**data)
         for key in self._parameters:
-            has_changed = (any(parameters[key] != getattr(self, key))
-                           if hasattr(parameters[key], '__iter__')
-                           else parameters[key] != getattr(self, key))
+            has_changed = (parameters[key] != getattr(self, key)
+                           if not hasattr(parameters[key], '__iter__')
+                           else any(parameters[key] != getattr(self, key)))
 
             if has_changed:
                 raise ValueError(
