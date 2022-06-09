@@ -232,13 +232,16 @@ const getScatterChartLayout = () => {
       title: 'Time [sec]',
       tickformat: '.1e',
       tickangle: -45,
+      gridcolor: '#ffffff',
     },
     yaxis: {
       type: getScale().yaxis,
       title: getYLabel(),
       tickformat: '.1e',
+      gridcolor: '#ffffff',
     },
     title: `${state().objective}\nData: ${state().dataset}`,
+    plot_bgcolor: '#e5ecf6',
   };
 };
 
