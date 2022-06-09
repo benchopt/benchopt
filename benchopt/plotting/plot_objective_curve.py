@@ -4,7 +4,7 @@ from .helpers_compat import get_figure
 from .helpers_compat import add_h_line
 from .helpers_compat import fill_between_x
 
-CMAP = plt.get_cmap('tab10')
+CMAP = plt.get_cmap('tab20')
 
 
 def _remove_prefix(text, prefix):
@@ -178,3 +178,8 @@ def get_curve_color(i):
     color = f'rgba{color}'
 
     return color
+
+def get_curve_marker(i):
+    markers = {i: i for i, v in enumerate(plt.Line2D.markers)}
+    
+    return markers[i % len(markers)]

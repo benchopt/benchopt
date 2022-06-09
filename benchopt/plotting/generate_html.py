@@ -11,7 +11,7 @@ from mako.template import Template
 
 from ..constants import PLOT_KINDS
 from .plot_bar_chart import plot_bar_chart, computeBarChartData  # noqa: F401
-from .plot_objective_curve import computeQuantiles, get_curve_color, plot_objective_curve  # noqa: F401
+from .plot_objective_curve import computeQuantiles, get_curve_color, get_curve_marker, plot_objective_curve  # noqa: F401
 from .plot_objective_curve import plot_suboptimality_curve  # noqa: F401
 from .plot_objective_curve import plot_relative_suboptimality_curve  # noqa: F401 E501
 
@@ -262,7 +262,8 @@ def shape_solvers_for_html(df, dataset, objective, objective_column):
                 .median().tolist(),
             'q1': q1.tolist(),
             'q9': q9.tolist(),
-            'color': get_curve_color(index)
+            'color': get_curve_color(index),
+            'marker': get_curve_marker(index)
         }
 
     return solver_data
