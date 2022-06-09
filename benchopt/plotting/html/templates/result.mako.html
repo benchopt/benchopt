@@ -47,7 +47,8 @@
             % endif
             % endfor
             <button id="btn_subinfo" class="button buttonleft toggle">
-                <i class='fas fa-plus-circle' id="logo_btn_info"></i>
+                <svg id="btn_plus" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M0 256C0 114.6 114.6 0 256 0C397.4 0 512 114.6 512 256C512 397.4 397.4 512 256 512C114.6 512 0 397.4 0 256zM256 368C269.3 368 280 357.3 280 344V280H344C357.3 280 368 269.3 368 256C368 242.7 357.3 232 344 232H280V168C280 154.7 269.3 144 256 144C242.7 144 232 154.7 232 168V232H168C154.7 232 144 242.7 144 256C144 269.3 154.7 280 168 280H232V344C232 357.3 242.7 368 256 368z"/></svg>
+                <svg id="btn_minus" style="display: none;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M0 256C0 114.6 114.6 0 256 0C397.4 0 512 114.6 512 256C512 397.4 397.4 512 256 512C114.6 512 0 397.4 0 256zM168 232C154.7 232 144 242.7 144 256C144 269.3 154.7 280 168 280H344C357.3 280 368 269.3 368 256C368 242.7 357.3 232 344 232H168z"/></svg>
             </button>
             <div id="subinfo" style="display:none;transition: 0.5s;">
                 <ul>
@@ -75,7 +76,7 @@
         <!-- Add selector to display only one plot -->
         <div>
             <label for='dataset_selector'>Dataset:</label>
-            <select id='dataset_selector' onchange="setState({dataset: this.value});showMe(this);">
+            <select id='dataset_selector' onchange="setState({dataset: this.value});">
                 % for data in result['dataset_names']:
                 <option value="${data}">${data}</option>
                 %endfor
@@ -83,12 +84,12 @@
         </div>
         <div>
             <label for='objective_selector'>Objective:</label>
-            <select id='objective_selector' onchange="setState({objective: this.value});showMe(this);">
+            <select id='objective_selector' onchange="setState({objective: this.value});">
                 % for obj in result['objective_names']:
                 <option value="${obj}">${obj}</option>
                 %endfor
             </select>
-            <select id='objective_column' onchange="setState({objective_column: this.value});showMe(this);">
+            <select id='objective_column' onchange="setState({objective_column: this.value});">
                 % for obj_col in result['obj_cols']:
                 <option value="${obj_col}">${obj_col.replace('objective_', '')}</option>
                 %endfor
@@ -96,12 +97,12 @@
         </div>
         <div>
             <label for='plot_kind'>Chart type:</label>
-            <select id='plot_kind' onchange="setState({plot_kind: this.value});showMe(this);">
+            <select id='plot_kind' onchange="setState({plot_kind: this.value});">
                 % for kind in result['kinds']:
                 <option value="${kind}">${kind.replace('_', ' ')}</option>
                 %endfor
             </select>
-            <select id="change_scaling" onchange="setState({scale: this.value});changeScale(this)">
+            <select id="change_scaling" onchange="setState({scale: this.value});">
                 <option value="semilog-y">semilog-y</option>
                 <option value="semilog-x">semilog-x</option>
                 <option value="loglog">loglog</option>
@@ -123,6 +124,9 @@
             window.data = ${result['json']};
 
             window.addEventListener("load", () => {
+                /**
+                 * Initialise plot state
+                 */ 
                 setState({
                     'dataset': document.getElementById('dataset_selector').value,
                     'objective': document.getElementById('objective_selector').value,
@@ -135,7 +139,7 @@
 
                 document.getElementById('unique_plot').on('plotly_legendclick', data => {
                     manageHiddenCurves(data);
-                })
+                });
             });
         </script>
 

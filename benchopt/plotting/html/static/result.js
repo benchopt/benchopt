@@ -148,6 +148,29 @@ window.transformers = {
   transformer_y_bar_chart
 };
 
+/**
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * Event registrations
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
+document.getElementById('btn_subinfo').addEventListener('click', event => {
+  const elmt = document.getElementById('subinfo');
+  const plus = document.getElementById('btn_plus');
+  const minus = document.getElementById('btn_minus');
+
+  if (elmt.style.display === 'none') {
+      elmt.style.display = 'block';
+      plus.style.display = 'none';
+      minus.style.display = 'inline';
+
+      return;
+  }
+
+  elmt.style.display = 'none';
+  plus.style.display = 'inline';
+  minus.style.display = 'none';
+});
+
 /*
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * Tools
