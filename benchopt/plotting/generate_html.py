@@ -9,7 +9,7 @@ from mako.template import Template
 
 from ..constants import PLOT_KINDS
 from .plot_bar_chart import computeBarChartData  # noqa: F401
-from .plot_objective_curve import computeQuantiles, get_curve_color, get_curve_marker, plot_objective_curve  # noqa: F401
+from .plot_objective_curve import compute_quantiles, get_solver_color, get_solver_marker, plot_objective_curve  # noqa: F401
 
 
 ROOT = Path(__file__).parent / "html"
@@ -144,9 +144,9 @@ def shape_objectives_columns_for_html(df, dataset, objective):
 def shape_solvers_for_html(df, dataset, objective, objective_column):
     solver_data = {}
     solvers = df['solver_name'].unique()
-    for index, solver in enumerate(solvers):
+    for solver in solvers:
         df_filtered = df.query("solver_name == @solver")
-        q1, q9 = computeQuantiles(df_filtered)
+        q1, q9 = compute_quantiles(df_filtered)
         solver_data[solver] = {
             'x': df_filtered.groupby('stop_val')['time']
                 .median().tolist(),
@@ -154,8 +154,8 @@ def shape_solvers_for_html(df, dataset, objective, objective_column):
                 .median().tolist(),
             'q1': q1.tolist(),
             'q9': q9.tolist(),
-            'color': get_curve_color(index),
-            'marker': get_curve_marker(index)
+            'color': get_solver_color(solver),
+            'marker': get_solver_marker(solver)
         }
 
     return solver_data
