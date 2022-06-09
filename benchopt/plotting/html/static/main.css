@@ -258,6 +258,9 @@ td.number {
   font-size: 16px; /* Set a font size */
   cursor: pointer; /* Mouse pointer on hover */
   min-height: 46px;
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
 }
 
 /* Darker background on mouse-over */
@@ -272,3 +275,12 @@ td.number {
   height: 1000px;
 }
 
+.btn svg {
+  width: 1.5rem;
+  height: 1.5rem;
+  color: white;
+}
+
+.btn > * + * {
+  margin-left: 0.5rem;
+}
