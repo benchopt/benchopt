@@ -78,8 +78,10 @@ const getBarData = () => {
  * @returns {array}
  */
 const getScatterCurves = () => {
+  // create a list of object to plot in plotly
   const curves = [];
 
+  // For each solver, add the median curve with proper style and visibility.
   getSolvers().forEach(solver => {
     curves.push({
       type: 'scatter',
@@ -100,6 +102,7 @@ const getScatterCurves = () => {
     });
 
     if (state().with_quantiles) {
+      // Add shaded area for each solver, with proper style and visibility.
       curves.push({
         type: 'scatter',
         mode: 'lines',

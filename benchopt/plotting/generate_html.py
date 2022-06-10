@@ -83,7 +83,7 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
             sysinfo=sysinfo,
             dataset_names=df['data_name'].unique(),
             objective_names=df['objective_name'].unique(),
-            obj_cols = [k for k in df.columns if k.startswith('objective_') and k != 'objective_name'],
+            obj_cols=[k for k in df.columns if k.startswith('objective_') and k != 'objective_name'],
             kinds=list(kinds),
         )
         results.append(result)
@@ -99,6 +99,7 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
     return results
 
 def shape_datasets_for_html(df):
+    """Return a dictionary with plotting data for each dataset.""""
     datasets_data = {}
 
     for dataset in df['data_name'].unique():
@@ -132,7 +133,7 @@ def shape_objectives_columns_for_html(df, dataset, objective):
                 )
             },
             'solvers': shape_solvers_for_html(df_filtered, column),
-            # Some values used in javascript to do computation
+            # Values used in javascript to do computation
             'transformers': {
                 'c_star': float(df_filtered[column].min() - 1e-10),
                 'max_f_0': float(df_filtered[df_filtered['stop_val'] == 1][column].max())
