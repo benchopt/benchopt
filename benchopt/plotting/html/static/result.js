@@ -17,7 +17,7 @@
  *   - plot_kind (string),
  *   - scale (string)
  *   - with_quantiles (boolean)
- *   - hidden_curves (array)
+ *   - hidden_solvers (array)
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 
@@ -27,9 +27,9 @@
  * 
  * @param {Object} partialState 
  */
-const setState = partialState => {
+const setState = (partialState, updatePlot = true) => {
   window.state = {...state(), ...partialState};
-  makePlot();
+  if (updatePlot) makePlot();
 }
 
 /**
@@ -165,7 +165,6 @@ const useTransformer = (data, solver, axis) => {
     let transformer = 'transformer_' + axis + '_' + state().plot_kind;
     return window.transformers[transformer](data, solver);
   } catch(e) {
-    console.warn('Trying to call unknown transformer for ' + axis + ' axis. The raw data is returned.');
     return data.solvers[solver][axis];
   }
 };
@@ -279,7 +278,9 @@ const getSolvers = () => Object.keys(data().solvers);
 
 const isBarChart = () => state().plot_kind === 'bar_chart';
 
-const isVisible = solver => !state().hidden_curves.includes(solver);
+const isVisible = solver => !state().hidden_solvers.includes(solver);
+
+const getSolverNameFromPlotlyEvent = event => event.data[event.curveNumber].name;
 
 const getScale = () => {
   switch (state().scale) {
@@ -395,21 +396,46 @@ const getBarColumnPositions = () => {
   return xi;
 };
 
+/*
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * MANAGE HIDDEN SOLVERS
+ * 
+ * Functions to hide/display and memorize solvers which were clicked
+ * by user on the legend of the plot.
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
+const getSolverFromPlotlyEvent = event => event.data[event.curveNumber].name;
+
+const purgeHiddenSolvers = () => setState({hidden_solvers: []}, false);
+
+const hideAllSolversExcept = solver => {setState({hidden_solvers: getSolvers().filter(elmt => elmt !== solver)}, false)};
+
+const hideSolver = solver => isVisible(solver) ? setState({hidden_solvers: [...state().hidden_solvers, solver]}, false) : null;
+
+const showSolver = solver => setState({hidden_solvers: state().hidden_solvers.filter(hidden => hidden !== solver)}, false);
+
 /**
  * Add or remove solver name from the list of hidden solvers.
  * 
- * @param {*} event data sent by plotlyJS when listening to plotly_legendclick event.
+ * @param {String} solver
  * @returns {void}
  */
-const manageHiddenCurves = event => {
-  const curveNumber = event.curveNumber;
-  const index = state().hidden_curves.indexOf(event.data[curveNumber].name);
+const handleSolverClick = solver => {
+  if (!isVisible(solver)) {
+    showSolver(solver);
 
-  // If solver have been found in the list of hidden curves, remove it from the list.
-  if (index > -1) {
-    state().hidden_curves.splice(index, 1);
     return;
   }
 
-  state().hidden_curves.push(event.data[curveNumber].name);
-}
+  hideSolver(solver);
+};
+
+const handleSolverDoubleClick = solver => {
+  if (!isVisible(solver)) {
+    purgeHiddenSolvers();
+
+    return;
+  }
+
+  hideAllSolversExcept(solver);
+};

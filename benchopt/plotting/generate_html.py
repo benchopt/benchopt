@@ -99,7 +99,7 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
     return results
 
 def shape_datasets_for_html(df):
-    """Return a dictionary with plotting data for each dataset.""""
+    """Return a dictionary with plotting data for each dataset."""
     datasets_data = {}
 
     for dataset in df['data_name'].unique():

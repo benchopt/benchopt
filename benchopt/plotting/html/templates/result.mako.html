@@ -134,11 +134,19 @@
                     'plot_kind': document.getElementById('plot_kind').value,
                     'scale': document.getElementById('change_scaling').value,
                     'with_quantiles': document.getElementById('change_shades').checked,
-                    'hidden_curves': []
+                    'hidden_solvers': []
                 });
 
-                document.getElementById('unique_plot').on('plotly_legendclick', data => {
-                    manageHiddenCurves(data);
+                document.getElementById('unique_plot').on('plotly_legenddoubleclick', event => {
+                    const solver = getSolverFromPlotlyEvent(event);
+                    handleSolverDoubleClick(solver);
+                });
+
+                document.getElementById('unique_plot').on('plotly_legendclick', event => {
+                    const solver = getSolverFromPlotlyEvent(event);
+                    handleSolverClick(solver);
+
+                    console.log(event);
                 });
             });
         </script>
