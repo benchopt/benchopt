@@ -100,23 +100,23 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
 
 def shape_datasets_for_html(df):
     datasets_data = {}
-    datasets = df['data_name'].unique()
 
-    for dataset in datasets:
+    for dataset in df['data_name'].unique():
         datasets_data[dataset] = shape_objectives_for_html(df, dataset)
 
     return datasets_data
 
 def shape_objectives_for_html(df, dataset):
+    """Return a dictionary with plotting data for each objective."""
     objectives_data = {}
-    objectives = df['objective_name'].unique()
 
-    for objective in objectives:
+    for objective in df['objective_name'].unique():
         objectives_data[objective] = shape_objectives_columns_for_html(df, dataset, objective)
 
     return objectives_data
 
 def shape_objectives_columns_for_html(df, dataset, objective):
+    """Return a dictionary with plotting data for each objective column."""
     objective_columns_data = {}
     columns = [
         c for c in df.columns
@@ -131,7 +131,7 @@ def shape_objectives_columns_for_html(df, dataset, objective):
                     df.query('objective_name == @objective'), column
                 )
             },
-            'solvers': shape_solvers_for_html(df_filtered, dataset, objective, column),
+            'solvers': shape_solvers_for_html(df_filtered, column),
             # Some values used in javascript to do computation
             'transformers': {
                 'c_star': float(df_filtered[column].min() - 1e-10),
@@ -141,10 +141,10 @@ def shape_objectives_columns_for_html(df, dataset, objective):
 
     return objective_columns_data
 
-def shape_solvers_for_html(df, dataset, objective, objective_column):
+def shape_solvers_for_html(df, objective_column):
+    """Return a dictionary with plotting data for each solver."""
     solver_data = {}
-    solvers = df['solver_name'].unique()
-    for solver in solvers:
+    for solver in df['solver_name'].unique():
         df_filtered = df.query("solver_name == @solver")
         q1, q9 = compute_quantiles(df_filtered)
         solver_data[solver] = {

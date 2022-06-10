@@ -84,6 +84,21 @@ def plot_bar_chart(df, obj_col='objective_value', plotly=False):
     return fig
 
 def computeBarChartData(df, obj_col):
+    """Gives the list of bar chart values.
+
+    Parameters
+    ----------
+    df : instance of pandas.DataFrame
+        The benchmark results.
+    obj_col : str
+        Column to select in the DataFrame for the plot.
+    plotly : bool
+        If set to True, creates a figure with plotly instead of matplotlib.
+
+    Returns
+    -------
+    list : bar chart values.
+    """
     solver_names = df['solver_name'].unique()
     n_solvers = len(solver_names)
     plotly = True

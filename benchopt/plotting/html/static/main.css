@@ -258,6 +258,10 @@ td.number {
   font-size: 16px; /* Set a font size */
   cursor: pointer; /* Mouse pointer on hover */
   min-height: 46px;
+  /**
+   * Vertically align the icon and the text
+   * inside the button
+   */
   display: inline-flex;
   flex-direction: row;
   align-items: center;

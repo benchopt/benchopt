@@ -177,8 +177,8 @@ def get_solver_color(solver):
     if solver in html_solver_styles and 'color' in html_solver_styles[solver]:
         return html_solver_styles[solver]['color']
 
-    i = len(html_solver_styles.keys()) + 1
-    color = CMAP(i % CMAP.N)
+    idx = len(html_solver_styles.keys())
+    color = CMAP(idx % CMAP.N)
     color = tuple(255*x if i != 3 else x for i, x in enumerate(color))
     color = f'rgba{color}'
 
@@ -195,9 +195,9 @@ def get_solver_marker(solver):
     if solver in html_solver_styles and 'marker' in html_solver_styles[solver]:
         return html_solver_styles[solver]['marker']
 
-    i = len(html_solver_styles.keys()) + 1
     markers = {i: i for i, v in enumerate(plt.Line2D.markers)}
 
+    i = len(html_solver_styles.keys())
     marker = markers[i % len(markers)]
 
     if solver in html_solver_styles:

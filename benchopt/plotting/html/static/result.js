@@ -1,15 +1,39 @@
 /*
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- * Plot state management
+ * STATE MANAGEMENT
+ * 
+ * The state represent the plot state. It's an object
+ * that is stored into the window.state variable.
+ * 
+ * Do not manually update window.state,
+ * instead, foreach state modification,
+ * you shoud call the setState() function
+ * to keep the graph in sync with its state.
+ * 
+ * The state contains the following keys :
+ *   - dataset (string),
+ *   - objective (string),
+ *   - objective_column (string),
+ *   - plot_kind (string),
+ *   - scale (string)
+ *   - with_quantiles (boolean)
+ *   - hidden_curves (array)
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 
+/**
+ * Update the state and create/update the plot
+ * using the new state.
+ * 
+ * @param {Object} partialState 
+ */
 const setState = partialState => {
   window.state = {...state(), ...partialState};
   makePlot();
 }
 
 /**
+ * Retrieve the state object from window.state
  * 
  * @returns Object
  */
@@ -17,10 +41,16 @@ const state = () => window.state;
 
 /*
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- * Plot management
+ * PLOT MANAGEMENT
+ * 
+ * Retrieve formatted data for PlotlyJS using state
+ * and create/update the plot.
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 
+/**
+ * Create/Update the plot.
+ */
 const makePlot = () => {
   const div = document.getElementById('unique_plot');
   const data = isBarChart() ? getBarData() : getScatterCurves();
@@ -29,6 +59,11 @@ const makePlot = () => {
   Plotly.react(div, data, layout);
 };
 
+/**
+ * Gives the data formatted for plotlyJS bar chart.
+ * 
+ * @returns {array}
+ */
 const getBarData = () => {
   return [{
     type: 'bar',
@@ -37,6 +72,11 @@ const getBarData = () => {
   }];
 };
 
+/**
+ * Gives the data formatted for plotlyJS scatter chart.
+ * 
+ * @returns {array}
+ */
 const getScatterCurves = () => {
   const curves = [];
 
@@ -96,7 +136,10 @@ const getScatterCurves = () => {
 
 /*
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- * Data transformers
+ * DATA TRANSFORMERS
+ * 
+ * Transformers are used to modify data
+ * on the fly.
  * 
  * WARNING : If you add a new transformer function,
  * don't forget to register it in the object : window.tranformers,
@@ -104,6 +147,16 @@ const getScatterCurves = () => {
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 
+/**
+ * Select the right transformer according to the state.
+ * If the requested transformer does not exists,
+ * it returns raw data.
+ * 
+ * @param {Object} data 
+ * @param {String} solver 
+ * @param {String} axis it could be x, y, q1, q9
+ * @returns {array}
+ */
 const useTransformer = (data, solver, axis) => {
   try {
     let transformer = 'transformer_' + axis + '_' + state().plot_kind;
@@ -114,10 +167,24 @@ const useTransformer = (data, solver, axis) => {
   }
 };
 
+/**
+ * Transform data on the x axis for bar chart.
+ * 
+ * @param {Object} data 
+ * @param {String} solver 
+ * @returns {array}
+ */
 const transformer_x_bar_chart = (data, solver) => {
   return getSolvers();
 };
 
+/**
+ * Transform data on the y axis for subotimality curve.
+ * 
+ * @param {Object} data 
+ * @param {String} solver 
+ * @returns {array}
+ */
 const transformer_y_suboptimality_curve = (data, solver) => {
   let y = data.solvers[solver].y;
   // Retrieve c_star value
@@ -127,6 +194,13 @@ const transformer_y_suboptimality_curve = (data, solver) => {
   return y.map(value => value - c_star);
 };
 
+/**
+ * Transform data ont the y axis for relative suboptimality curve.
+ * 
+ * @param {Object} data 
+ * @param {String} solver 
+ * @returns {array}
+ */
 const transformer_y_relative_suboptimality_curve = (data, solver) => {
   let y = data.solvers[solver].y;
   // Retrieve transformer values
@@ -137,10 +211,21 @@ const transformer_y_relative_suboptimality_curve = (data, solver) => {
   return y.map(value => (value - c_star) / (max_f_0 - c_star));
 };
 
+/**
+ * Transform data ont the y axis for bar chart.
+ * 
+ * @param {Object} data 
+ * @param {String} solver 
+ * @returns {array}
+ */
 const transformer_y_bar_chart = (data, solver) => {
   return data.computed_data.bar_chart;
 };
 
+/**
+ * Store all the transformer functions to be callable
+ * by the useTransformer function.
+ */
 window.transformers = {
   transformer_x_bar_chart,
   transformer_y_suboptimality_curve,
@@ -150,8 +235,14 @@ window.transformers = {
 
 /**
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- * Event registrations
+ * EVENT REGISTRATIONS
+ * 
+ * Some events are also registered in result.html.
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
+
+/**
+ * Listener on the system information "+" button
  */
 document.getElementById('btn_subinfo').addEventListener('click', event => {
   const elmt = document.getElementById('subinfo');
@@ -173,7 +264,9 @@ document.getElementById('btn_subinfo').addEventListener('click', event => {
 
 /*
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- * Tools
+ * TOOLS
+ * 
+ * Various functions to simplify life.
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 
@@ -219,7 +312,7 @@ const getScatterChartLayout = () => {
     autosize: false,
     legend: {
       title: {
-        text: 'solvers',
+        text: 'Solvers',
       },
       orientation: 'h',
       xanchor: 'center',
@@ -283,6 +376,11 @@ const getYLabel = () => {
   };
 };
 
+/**
+ * Gives an array with the position of bars for the bar chart.
+ * 
+ * @returns {array}
+ */
 const getBarColumnPositions = () => {
   const width = 1 / (getSolvers().length + 2);
   const xi = [];
@@ -294,10 +392,17 @@ const getBarColumnPositions = () => {
   return xi;
 };
 
+/**
+ * Add or remove solver name from the list of hidden solvers.
+ * 
+ * @param {*} event data sent by plotlyJS when listening to plotly_legendclick event.
+ * @returns {void}
+ */
 const manageHiddenCurves = event => {
   const curveNumber = event.curveNumber;
   const index = state().hidden_curves.indexOf(event.data[curveNumber].name);
 
+  // If solver have been found in the list of hidden curves, remove it from the list.
   if (index > -1) {
     state().hidden_curves.splice(index, 1);
     return;
