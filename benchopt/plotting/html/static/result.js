@@ -29,6 +29,7 @@
  */
 const setState = (partialState, updatePlot = true) => {
   window.state = {...state(), ...partialState};
+  showScaleSelector(!isBarChart());
   if (updatePlot) makePlot();
 }
 
@@ -281,6 +282,10 @@ const isBarChart = () => state().plot_kind === 'bar_chart';
 const isVisible = solver => !state().hidden_solvers.includes(solver);
 
 const getSolverNameFromPlotlyEvent = event => event.data[event.curveNumber].name;
+
+const showScaleSelector = visible => visible ?
+  document.getElementById('change_scaling').style.display = 'inline-block'
+  : document.getElementById('change_scaling').style.display = 'none';
 
 const getScale = () => {
   switch (state().scale) {
