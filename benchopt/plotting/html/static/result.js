@@ -331,6 +331,7 @@ const getScatterChartLayout = () => {
       tickangle: -45,
       gridcolor: '#ffffff',
       zeroline : false,
+      rangemode : 'tozero',
     },
     yaxis: {
       type: getScale().yaxis,
@@ -338,6 +339,7 @@ const getScatterChartLayout = () => {
       tickformat: '.1e',
       gridcolor: '#ffffff',
       zeroline : false,
+      rangemode : 'tozero',
     },
     title: `${state().objective}\nData: ${state().dataset}`,
     plot_bgcolor: '#e5ecf6',
