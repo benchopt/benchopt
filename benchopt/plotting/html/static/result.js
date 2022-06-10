@@ -38,6 +38,7 @@ const getBarData = () => {
 };
 
 const getScatterCurves = () => {
+  // create a list of object to plot in plotly
   const curves = [];
 
   getSolvers().forEach(solver => {
