@@ -133,7 +133,7 @@ def shape_objectives_columns_for_html(df, dataset, objective):
                 )
             },
             'solvers': shape_solvers_for_html(df_filtered, dataset, objective, column),
-            # Some values used in javascript to do computation
+            # Values used in javascript to do computation
             'transformers': {
                 'c_star': float(df_filtered[column].min() - 1e-10),
                 'max_f_0': float(df_filtered[df_filtered['stop_val'] == 1][column].max())
