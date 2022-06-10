@@ -41,6 +41,7 @@ const getScatterCurves = () => {
   // create a list of object to plot in plotly
   const curves = [];
 
+  // For each solver, add the median curve with proper style and visibility.
   getSolvers().forEach(solver => {
     curves.push({
       type: 'scatter',
