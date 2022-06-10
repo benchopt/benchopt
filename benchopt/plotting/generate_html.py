@@ -83,7 +83,7 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
             sysinfo=sysinfo,
             dataset_names=df['data_name'].unique(),
             objective_names=df['objective_name'].unique(),
-            obj_cols = [k for k in df.columns if k.startswith('objective_') and k != 'objective_name'],
+            obj_cols=[k for k in df.columns if k.startswith('objective_') and k != 'objective_name'],
             kinds=list(kinds),
         )
         results.append(result)
