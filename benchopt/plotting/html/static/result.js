@@ -60,6 +60,7 @@ const getScatterCurves = () => {
     });
 
     if (state().with_quantiles) {
+      // Add shaded area for each solver, with proper style and visibility.
       curves.push({
         type: 'scatter',
         mode: 'lines',
