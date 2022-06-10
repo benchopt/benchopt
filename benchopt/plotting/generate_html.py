@@ -394,6 +394,7 @@ def plot_benchmark_html(fnames, benchmark, kinds, display=True):
     with open(bench_index, "w", encoding="utf-8") as f:
         f.write(rendered)
 
+    print(f"Rendering benchmark results...")
     # Display the file in the default browser
     if display:
         result_filename = (root_html / results[-1]['page']).absolute()
