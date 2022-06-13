@@ -162,14 +162,6 @@ def get_benchopt_version_in_env(env_name):
         return None, None
     benchopt_version, is_editable = output.split()
 
-    # check against running version
-    benchopt_version_running = benchopt.__version__
-    _, is_editable_running = get_benchopt_requirement()
-    if (benchopt_version_running != benchopt_version and not
-            (is_editable_running and is_editable)):
-        warnings.warn(
-            f"Benchopt running version ({benchopt_version_running}) "
-            f"and version in env {env_name} ({benchopt_version}) differ")
     return benchopt_version, is_editable == 'True'
 
 
