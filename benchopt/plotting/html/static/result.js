@@ -215,7 +215,7 @@ const transformer_y_relative_suboptimality_curve = (data, solver) => {
 };
 
 /**
- * Transform data ont the y axis for bar chart.
+ * Transform data on the y axis for bar chart.
  * 
  * @param {Object} data 
  * @param {String} solver 
@@ -281,6 +281,26 @@ const isBarChart = () => state().plot_kind === 'bar_chart';
 
 const isVisible = solver => !state().hidden_solvers.includes(solver);
 
+const isSolverAvailable = solver => data().solvers[solver].y.filter(value => !isNaN(value)).length > 0
+
+/**
+ * Check for each solver
+ * if data is available
+ * 
+ * @returns {Boolean}
+ */
+const isAvailable = () => {
+  let isNotAvailable = true;
+
+  getSolvers().forEach(solver => {
+    if (isSolverAvailable(solver)) {
+      isNotAvailable = false;
+    }
+  });
+
+  return !isNotAvailable;
+}
+
 const displayScaleSelector = shouldBeVisible => shouldBeVisible ?
   document.getElementById('change_scaling').style.display = 'inline-block'
   : document.getElementById('change_scaling').style.display = 'none';
@@ -313,7 +333,7 @@ const getScale = () => {
 }
 
 const getScatterChartLayout = () => {
-  return {
+  const layout = {
     width: 900,
     height: 700,
     autosize: false,
@@ -345,6 +365,23 @@ const getScatterChartLayout = () => {
     title: `${state().objective}\nData: ${state().dataset}`,
     plot_bgcolor: '#e5ecf6',
   };
+
+  if (!isAvailable()) {
+    layout.annotations = [{
+      xref: 'paper',
+      yref: 'paper',
+      x: 0.5,
+      y: 0.5,
+      text: 'Not available',
+      showarrow: false,
+      font: {
+        color: 'black',
+        size: 32,
+      }
+    }];
+  };
+
+  return layout;
 };
 
 const getBarChartLayout = () => {
