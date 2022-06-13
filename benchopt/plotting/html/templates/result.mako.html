@@ -124,9 +124,7 @@
             window.data = ${result['json']};
 
             window.addEventListener("load", () => {
-                /**
-                 * Initialise plot state
-                 */ 
+                // Initialize plot state
                 setState({
                     'dataset': document.getElementById('dataset_selector').value,
                     'objective': document.getElementById('objective_selector').value,

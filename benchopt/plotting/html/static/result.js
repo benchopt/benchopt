@@ -8,7 +8,7 @@
  * Do not manually update window.state,
  * instead, foreach state modification,
  * you shoud call the setState() function
- * to keep the graph in sync with its state.
+ * to keep the plot in sync with its state.
  * 
  * The state contains the following keys :
  *   - dataset (string),
@@ -29,7 +29,7 @@
  */
 const setState = (partialState, updatePlot = true) => {
   window.state = {...state(), ...partialState};
-  showScaleSelector(!isBarChart());
+  displayScaleSelector(!isBarChart());
   if (updatePlot) makePlot();
 }
 
@@ -281,9 +281,7 @@ const isBarChart = () => state().plot_kind === 'bar_chart';
 
 const isVisible = solver => !state().hidden_solvers.includes(solver);
 
-const getSolverNameFromPlotlyEvent = event => event.data[event.curveNumber].name;
-
-const showScaleSelector = visible => visible ?
+const displayScaleSelector = shouldBeVisible => shouldBeVisible ?
   document.getElementById('change_scaling').style.display = 'inline-block'
   : document.getElementById('change_scaling').style.display = 'none';
 
@@ -336,7 +334,6 @@ const getScatterChartLayout = () => {
       tickangle: -45,
       gridcolor: '#ffffff',
       zeroline : false,
-      rangemode : 'tozero',
     },
     yaxis: {
       type: getScale().yaxis,
@@ -344,7 +341,6 @@ const getScatterChartLayout = () => {
       tickformat: '.1e',
       gridcolor: '#ffffff',
       zeroline : false,
-      rangemode : 'tozero',
     },
     title: `${state().objective}\nData: ${state().dataset}`,
     plot_bgcolor: '#e5ecf6',
