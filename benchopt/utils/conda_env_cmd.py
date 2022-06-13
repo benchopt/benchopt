@@ -155,11 +155,13 @@ def get_benchopt_version_in_env(env_name):
         "benchopt --version --check-editable",
         env_name=env_name, capture_stdout=True, return_output=True
     )
+
     if check_benchopt != 0:
         if DEBUG:
             print(output)
         return None, None
     benchopt_version, is_editable = output.split()
+
     return benchopt_version, is_editable == 'True'
 
 
