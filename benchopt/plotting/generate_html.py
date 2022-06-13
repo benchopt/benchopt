@@ -5,10 +5,11 @@ from pathlib import Path
 from datetime import datetime
 
 import pandas as pd
+import numpy as np
 from mako.template import Template
 
 from ..constants import PLOT_KINDS
-from .plot_bar_chart import computeBarChartData  # noqa: F401
+from .plot_bar_chart import PLOTLY_GRAY, computeBarChartData  # noqa: F401
 from .plot_objective_curve import compute_quantiles, get_solver_color, get_solver_marker, plot_objective_curve  # noqa: F401
 
 
@@ -123,14 +124,27 @@ def shape_objectives_columns_for_html(df, dataset, objective):
         c for c in df.columns
         if c.startswith('objective_') and c != 'objective_name'
     ]
+    solvers = df['solver_name'].unique()
     for column in columns:
         df_filtered = df.query("data_name == @dataset & objective_name == @objective")
+        bar_chart_data = computeBarChartData(df_filtered, column)
+        colors = []
+        for index, time in enumerate(bar_chart_data["times"]):
+            if np.isnan(time).any():
+                colors.append(f'rgba{PLOTLY_GRAY}')
+            else:
+                colors.append(get_solver_color(solvers[index]))
+
         objective_columns_data[column] = {
             # Store complex computations to avoid them in javascript
             'computed_data': {
-                'bar_chart': computeBarChartData(
-                    df.query('objective_name == @objective'), column
-                )
+                'bar_chart': {
+                    'colors': colors,
+                    'y': bar_chart_data["y"],
+                    'ticks': bar_chart_data["ticks"],
+                    'times': bar_chart_data["times"],
+                    'texts': bar_chart_data["texts"]
+                }
             },
             'solvers': shape_solvers_for_html(df_filtered, column),
             # Values used in javascript to do computation
