@@ -163,14 +163,12 @@ def get_benchopt_version_in_env(env_name):
     benchopt_version, is_editable = output.split()
 
     # check against running version
-    _, output = _run_shell_in_conda_env(
-        "benchopt --version --check-editable",
-        env_name=None, capture_stdout=True, return_output=True
-    )
-    version_running = output.split()[0]
-    if version_running != benchopt_version:
+    benchopt_version_running = benchopt.__version__
+    _, is_editable_running = get_benchopt_requirement()
+    if (benchopt_version_running != benchopt_version and not
+            (is_editable_running and is_editable)):
         warnings.warn(
-            f"Benchopt running version ({version_running}) "
+            f"Benchopt running version ({benchopt_version_running}) "
             f"and version in env {env_name} ({benchopt_version}) differ")
     return benchopt_version, is_editable == 'True'
 
