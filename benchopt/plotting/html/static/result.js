@@ -66,11 +66,39 @@ const makePlot = () => {
  * @returns {array}
  */
 const getBarData = () => {
-  return [{
+  const barData = [{
     type: 'bar',
     x: useTransformer(data(), null, 'x'),
     y: useTransformer(data(), null, 'y'),
+    marker: {
+      color: data().computed_data.bar_chart.colors,
+    },
+    text: data().computed_data.bar_chart.texts,
+    textposition: 'inside',
+    insidetextanchor: 'middle',
+    textangle: '-90',
   }];
+
+  getSolvers().forEach((solver, index) => {
+    if (data().computed_data.bar_chart.texts[index] === '') {
+      let nbTimes = data().computed_data.bar_chart.times[index].length
+
+      barData.push({
+        type: 'scatter',
+        x: new Array(nbTimes).fill(solver),
+        y: data().computed_data.bar_chart.times[index],
+        marker: {
+          color: 'black',
+          symbol: 'line-ew-open'
+        },
+        line: {
+          width: 0
+        },
+      });
+    }
+  });
+
+  return barData;
 };
 
 /**
@@ -222,7 +250,7 @@ const transformer_y_relative_suboptimality_curve = (data, solver) => {
  * @returns {array}
  */
 const transformer_y_bar_chart = (data, solver) => {
-  return data.computed_data.bar_chart;
+  return data.computed_data.bar_chart.y;
 };
 
 /**
@@ -387,21 +415,21 @@ const getScatterChartLayout = () => {
 const getBarChartLayout = () => {
   return {
     width: 900,
-    height: 650,
+    height: 700,
     autosize: false,
     yaxis: {
       type: 'log',
       title: 'Time [sec]',
       tickformat: '.1e',
+      gridcolor: '#ffffff',
     },
     xaxis: {
-      tickmode: 'array',
       tickangle: -60,
       ticktext: getSolvers(),
-      tickvals: getBarColumnPositions(),
-      range: [0, 1]
     },
+    showlegend: false,
     title: `${state().objective}\nData: ${state().dataset}`,
+    plot_bgcolor: '#e5ecf6',
   };
 };
 
@@ -418,22 +446,6 @@ const getYLabel = () => {
     default:
       return 'unknown';
   };
-};
-
-/**
- * Gives an array with the position of bars for the bar chart.
- * 
- * @returns {array}
- */
-const getBarColumnPositions = () => {
-  const width = 1 / (getSolvers().length + 2);
-  const xi = [];
-
-  for (let i = 0; i < getSolvers().length; i++) {
-    xi.push((i + 1.5) * width);
-  }
-
-  return xi;
 };
 
 /*
