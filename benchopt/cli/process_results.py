@@ -1,4 +1,5 @@
 import click
+import warnings
 from pathlib import Path
 
 from benchopt.config import get_setting
@@ -55,6 +56,10 @@ def plot(benchmark, filename=None, kinds=('suboptimality_curve',),
         )
         assert html, '`--all` can only be used for HTML plot generation.'
         filename = 'all'
+
+    if html and len(kinds) > 0:
+        warnings.warn("Cannot specify '--kind' for HTML plot, this options "
+                      "will be ignored.")
 
     # Get the result file
     benchmark = Benchmark(benchmark)

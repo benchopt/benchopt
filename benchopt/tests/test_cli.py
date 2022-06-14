@@ -429,15 +429,20 @@ class TestPlotCmd:
     def test_plot_invalid_file(self):
 
         with pytest.raises(FileNotFoundError, match=r"invalid_file"):
-            plot([str(DUMMY_BENCHMARK_PATH), '-f', 'invalid_file'],
-                 'benchopt', standalone_mode=False)
+            plot([str(DUMMY_BENCHMARK_PATH), '-f', 'invalid_file', '--no-html',
+                  '--no-display'], 'benchopt', standalone_mode=False)
 
     def test_plot_invalid_kind(self):
 
         with pytest.raises(ValueError, match=r"invalid_kind"):
+            plot([str(DUMMY_BENCHMARK_PATH), '-k', 'invalid_kind', '--no-html',
+                  '--no-display'], 'benchopt', standalone_mode=False)
 
-            plot([str(DUMMY_BENCHMARK_PATH), '-k', 'invalid_kind'],
-                 'benchopt', standalone_mode=False)
+    def test_plot_html_ignore_kind(self):
+
+        with pytest.warns(UserWarning, match=r"Cannot specify '--kind'"):
+            plot([str(DUMMY_BENCHMARK_PATH), '-k', 'invalid_kind', '--html',
+                  '--no-display'], 'benchopt', standalone_mode=False)
 
     @pytest.mark.parametrize('kind', PLOT_KINDS)
     def test_valid_call(self, kind):
