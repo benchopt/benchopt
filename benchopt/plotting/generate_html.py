@@ -133,14 +133,16 @@ def shape_objectives_columns_for_html(df, dataset, objective):
     ]
     for column in columns:
         df_filtered = df.query(
-            "data_name == @dataset & objective_name == @objective")
+            "data_name == @dataset & objective_name == @objective"
+        )
         objective_columns_data[column] = {
             'solvers': shape_solvers_for_html(df_filtered, column),
             # Values used in javascript to do computation
             'transformers': {
                 'c_star': float(df_filtered[column].min() - 1e-10),
                 'max_f_0': float(
-                    df_filtered[df_filtered['stop_val'] == 1][column].max())
+                    df_filtered[df_filtered['stop_val'] == 1][column].max()
+                )
             }
         }
 
