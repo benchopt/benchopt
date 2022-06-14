@@ -469,14 +469,17 @@ def plot_benchmark_html_all(patterns=(), benchmarks=(), root=None,
             fnames, PLOT_KINDS.keys(), root_html, benchmark.name, copy=True
         )
         len_fnames.append(len(fnames))
-        rendered = render_benchmark(
-            results, benchmark.name, static_dir=static_dir
-        )
+        if len(results) > 0:
+            rendered = render_benchmark(
+                results, benchmark.name, static_dir=static_dir
+            )
 
-        benchmark_filename = (root_html / benchmark.name).with_suffix('.html')
-        print(f"Writing {benchmark.name} results to {benchmark_filename}")
-        with open(benchmark_filename, "w") as f:
-            f.write(rendered)
+            benchmark_filename = (
+                root_html / benchmark.name
+            ).with_suffix('.html')
+            print(f"Writing {benchmark.name} results to {benchmark_filename}")
+            with open(benchmark_filename, "w") as f:
+                f.write(rendered)
 
         htmls = render_all_results(
             results, benchmark.name, static_dir=static_dir
