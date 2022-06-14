@@ -109,7 +109,7 @@ jobs:
 
   report_test:
     if: ${{ always() }}
-    needs: [test_benchopt test_no_conda]
+    needs: [test_benchopt, test_no_conda]
     runs-on: ubuntu-latest
     env:
       TEST_BENCHOPT: ${{ needs.test_benchopt.result }}
