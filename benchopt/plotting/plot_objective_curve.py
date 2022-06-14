@@ -8,6 +8,7 @@ CMAP = plt.get_cmap('tab20')
 
 html_solver_styles = {}
 
+
 def _remove_prefix(text, prefix):
     return text[len(prefix):] if text.startswith(prefix) else text
 
@@ -167,11 +168,13 @@ def plot_relative_suboptimality_curve(df, obj_col='objective_value',
     return plot_objective_curve(df, obj_col=obj_col, plotly=plotly,
                                 suboptimality=True, relative=True)
 
+
 def compute_quantiles(df_filtered):
     q1 = df_filtered.groupby('stop_val')['time'].quantile(.1)
     q9 = df_filtered.groupby('stop_val')['time'].quantile(.9)
 
     return q1, q9
+
 
 def get_solver_color(solver):
     if solver in html_solver_styles and 'color' in html_solver_styles[solver]:
@@ -191,6 +194,7 @@ def get_solver_color(solver):
 
     return color
 
+
 def get_solver_marker(solver):
     if solver in html_solver_styles and 'marker' in html_solver_styles[solver]:
         return html_solver_styles[solver]['marker']
@@ -206,5 +210,5 @@ def get_solver_marker(solver):
         html_solver_styles[solver] = {
             'marker': marker
         }
-    
+
     return marker

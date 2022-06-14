@@ -5,12 +5,13 @@ from pathlib import Path
 from datetime import datetime
 
 import pandas as pd
-import numpy as np
 from mako.template import Template
 
 from ..constants import PLOT_KINDS
-from .plot_bar_chart import PLOTLY_GRAY, computeBarChartData  # noqa: F401
-from .plot_objective_curve import compute_quantiles, get_solver_color, get_solver_marker, plot_objective_curve  # noqa: F401
+from .plot_bar_chart import computeBarChartData  # noqa: F401
+from .plot_objective_curve import compute_quantiles   # noqa: F401
+from .plot_objective_curve import get_solver_color   # noqa: F401
+from .plot_objective_curve import get_solver_marker  # noqa: F401
 
 
 ROOT = Path(__file__).parent / "html"
@@ -35,6 +36,7 @@ SYS_INFO = {
             ("version-scipy", "scipy")
             ]
 }
+
 
 def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
     """Generate figures from a list of csv files.
@@ -84,7 +86,8 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
             sysinfo=sysinfo,
             dataset_names=df['data_name'].unique(),
             objective_names=df['objective_name'].unique(),
-            obj_cols=[k for k in df.columns if k.startswith('objective_') and k != 'objective_name'],
+            obj_cols=[k for k in df.columns if k.startswith('objective_')
+                      and k != 'objective_name'],
             kinds=list(kinds),
         )
         results.append(result)
@@ -99,6 +102,7 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
 
     return results
 
+
 def shape_datasets_for_html(df):
     """Return a dictionary with plotting data for each dataset."""
     datasets_data = {}
@@ -108,14 +112,17 @@ def shape_datasets_for_html(df):
 
     return datasets_data
 
+
 def shape_objectives_for_html(df, dataset):
     """Return a dictionary with plotting data for each objective."""
     objectives_data = {}
 
     for objective in df['objective_name'].unique():
-        objectives_data[objective] = shape_objectives_columns_for_html(df, dataset, objective)
+        objectives_data[objective] = shape_objectives_columns_for_html(
+            df, dataset, objective)
 
     return objectives_data
+
 
 def shape_objectives_columns_for_html(df, dataset, objective):
     """Return a dictionary with plotting data for each objective column."""
@@ -125,17 +132,20 @@ def shape_objectives_columns_for_html(df, dataset, objective):
         if c.startswith('objective_') and c != 'objective_name'
     ]
     for column in columns:
-        df_filtered = df.query("data_name == @dataset & objective_name == @objective")
+        df_filtered = df.query(
+            "data_name == @dataset & objective_name == @objective")
         objective_columns_data[column] = {
             'solvers': shape_solvers_for_html(df_filtered, column),
             # Values used in javascript to do computation
             'transformers': {
                 'c_star': float(df_filtered[column].min() - 1e-10),
-                'max_f_0': float(df_filtered[df_filtered['stop_val'] == 1][column].max())
+                'max_f_0': float(
+                    df_filtered[df_filtered['stop_val'] == 1][column].max())
             }
         }
 
     return objective_columns_data
+
 
 def shape_solvers_for_html(df, objective_column):
     """Return a dictionary with plotting data for each solver."""
@@ -146,9 +156,9 @@ def shape_solvers_for_html(df, objective_column):
         solver_data[solver] = {
             'scatter': {
                 'x': df_filtered.groupby('stop_val')['time']
-                    .median().tolist(),
+                                .median().tolist(),
                 'y': df_filtered.groupby('stop_val')[objective_column]
-                    .median().tolist(),
+                                .median().tolist(),
                 'q1': q1.tolist(),
                 'q9': q9.tolist(),
             },
@@ -160,6 +170,7 @@ def shape_solvers_for_html(df, objective_column):
         }
 
     return solver_data
+
 
 def get_sysinfo(df):
     """Get a dictionnary of the recorded system informations.
@@ -394,7 +405,7 @@ def plot_benchmark_html(fnames, benchmark, kinds, display=True):
     with open(bench_index, "w", encoding="utf-8") as f:
         f.write(rendered)
 
-    print(f"Rendering benchmark results...")
+    print("Rendering benchmark results...")
     # Display the file in the default browser
     if display:
         result_filename = (root_html / results[-1]['page']).absolute()

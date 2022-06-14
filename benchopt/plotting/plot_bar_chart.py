@@ -1,7 +1,5 @@
 import numpy as np
 
-from benchopt.plotting.plot_objective_curve import get_solver_color
-
 from .helpers import _color_palette
 from .helpers_compat import get_figure, _make_bars
 
@@ -85,6 +83,7 @@ def plot_bar_chart(df, obj_col='objective_value', plotly=False):
         fig.tight_layout()
 
     return height_list
+
 
 def computeBarChartData(df, obj_col, solver):
     """Gives the list of bar chart values.
