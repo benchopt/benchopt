@@ -285,6 +285,7 @@ td.number {
   color: white;
 }
 
+/* Select all elements after any other element in a .btn */
 .btn > * + * {
   margin-left: 0.5rem;
 }
