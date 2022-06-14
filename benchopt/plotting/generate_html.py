@@ -124,28 +124,9 @@ def shape_objectives_columns_for_html(df, dataset, objective):
         c for c in df.columns
         if c.startswith('objective_') and c != 'objective_name'
     ]
-    solvers = df['solver_name'].unique()
     for column in columns:
         df_filtered = df.query("data_name == @dataset & objective_name == @objective")
-        bar_chart_data = computeBarChartData(df_filtered, column)
-        colors = []
-        for index, time in enumerate(bar_chart_data["times"]):
-            if np.isnan(time).any():
-                colors.append(f'rgba{PLOTLY_GRAY}')
-            else:
-                colors.append(get_solver_color(solvers[index]))
-
         objective_columns_data[column] = {
-            # Store complex computations to avoid them in javascript
-            'computed_data': {
-                'bar_chart': {
-                    'colors': colors,
-                    'y': bar_chart_data["y"],
-                    'ticks': bar_chart_data["ticks"],
-                    'times': bar_chart_data["times"],
-                    'texts': bar_chart_data["texts"]
-                }
-            },
             'solvers': shape_solvers_for_html(df_filtered, column),
             # Values used in javascript to do computation
             'transformers': {
@@ -163,12 +144,17 @@ def shape_solvers_for_html(df, objective_column):
         df_filtered = df.query("solver_name == @solver")
         q1, q9 = compute_quantiles(df_filtered)
         solver_data[solver] = {
-            'x': df_filtered.groupby('stop_val')['time']
-                .median().tolist(),
-            'y': df_filtered.groupby('stop_val')[objective_column]
-                .median().tolist(),
-            'q1': q1.tolist(),
-            'q9': q9.tolist(),
+            'scatter': {
+                'x': df_filtered.groupby('stop_val')['time']
+                    .median().tolist(),
+                'y': df_filtered.groupby('stop_val')[objective_column]
+                    .median().tolist(),
+                'q1': q1.tolist(),
+                'q9': q9.tolist(),
+            },
+            'bar': {
+                **computeBarChartData(df, objective_column, solver)
+            },
             'color': get_solver_color(solver),
             'marker': get_solver_marker(solver)
         }

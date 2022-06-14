@@ -1,5 +1,7 @@
 import numpy as np
 
+from benchopt.plotting.plot_objective_curve import get_solver_color
+
 from .helpers import _color_palette
 from .helpers_compat import get_figure, _make_bars
 
@@ -84,7 +86,7 @@ def plot_bar_chart(df, obj_col='objective_value', plotly=False):
 
     return height_list
 
-def computeBarChartData(df, obj_col):
+def computeBarChartData(df, obj_col, solver):
     """Gives the list of bar chart values.
 
     Parameters
@@ -100,41 +102,23 @@ def computeBarChartData(df, obj_col):
     -------
     list : bar chart values.
     """
-    plotly=True
-    solver_names = df['solver_name'].unique()
-    dataset_name = df['data_name'].unique()[0]
-    objective_name = df['objective_name'].unique()[0]
-    n_solvers = len(solver_names)
-
     eps = 1e-6
-    width = 1 / (n_solvers + 2)
-    colors = _color_palette(n_solvers)
-
-    height_list = []
-    ticks_list = []
-    times_list = []
-    text_list = []
-    fig = get_figure(plotly)
     c_star = df[obj_col].min() + eps
-    for i, solver_name in enumerate(solver_names):
-        xi = (i + 1.5) * width
-        ticks_list.append(solver_name)
-        df_ = df[df['solver_name'] == solver_name]
 
-        # Find the first stop_val which reach a given tolerance
-        df_tol = df_.groupby('stop_val').filter(
-            lambda x: x[obj_col].max() < c_star)
-        if df_tol.empty:
-            colors[i] = "w" if not plotly else PLOTLY_GRAY
-            #print(f"Solver {solver_name} did not reach precision {eps}.")
-            text_list.append('Did not converge')
-            height_list.append(df.time.max())
-            times_list.append(np.nan)
-            continue
+    df_ = df[df['solver_name'] == solver]
+
+    # Find the first stop_val which reach a given tolerance
+    df_tol = df_.groupby('stop_val').filter(
+        lambda x: x[obj_col].max() < c_star)
+    if df_tol.empty:
+        text = 'Did not converge'
+        height = df.time.max()
+        times = np.nan
+    else:
         stop_val = df_tol['stop_val'].min()
         this_df = df_[df_['stop_val'] == stop_val]
-        height_list.append(this_df['time'].median())
-        times_list.append(this_df['time'].tolist())
-        text_list.append('')
+        text = ''
+        height = this_df['time'].median()
+        times = this_df['time'].tolist()
 
-    return dict(y=height_list, ticks=ticks_list, times=times_list, texts=text_list)
+    return dict(y=height, times=times, text=text)

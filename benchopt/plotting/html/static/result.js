@@ -1,3 +1,5 @@
+const NON_CONVERGENT_COLOR = 'rgba(0.8627, 0.8627, 0.8627)'
+
 /*
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * STATE MANAGEMENT
@@ -66,27 +68,32 @@ const makePlot = () => {
  * @returns {array}
  */
 const getBarData = () => {
+  const {x, y, colors, texts} = barDataToArrays()
+
+  // Add bars
   const barData = [{
     type: 'bar',
-    x: useTransformer(data(), null, 'x'),
-    y: useTransformer(data(), null, 'y'),
+    x: x,
+    y: y,
     marker: {
-      color: data().computed_data.bar_chart.colors,
+      color: colors,
     },
-    text: data().computed_data.bar_chart.texts,
+    text: texts,
     textposition: 'inside',
     insidetextanchor: 'middle',
     textangle: '-90',
   }];
 
-  getSolvers().forEach((solver, index) => {
-    if (data().computed_data.bar_chart.texts[index] === '') {
-      let nbTimes = data().computed_data.bar_chart.times[index].length
+  x.forEach(solver => {
+    // Add times for each convergent solver
+    // Check if text is not 'Did not converge'
+    if (data(solver).bar.text === '') {
+      let nbTimes = data(solver).bar.times.length
 
       barData.push({
         type: 'scatter',
         x: new Array(nbTimes).fill(solver),
-        y: data().computed_data.bar_chart.times[index],
+        y: data(solver).bar.times,
         marker: {
           color: 'black',
           symbol: 'line-ew-open'
@@ -117,17 +124,17 @@ const getScatterCurves = () => {
       name: solver,
       mode: 'lines+markers',
       line: {
-        color: data().solvers[solver].color,
+        color: data(solver).color,
       },
       marker: {
-        symbol: data().solvers[solver].marker,
+        symbol: data(solver).marker,
         size: 10,
       },
       legendgroup: solver,
       hovertemplate: solver + ' <br> (%{x:.1e},%{y:.1e}) <extra></extra>',
       visible: isVisible(solver) ? true : 'legendonly',
-      x: useTransformer(data(), solver, 'x'),
-      y: useTransformer(data(), solver, 'y'),
+      x: data(solver).scatter.x,
+      y: useTransformer(data(solver).scatter.y, 'y', data().transformers),
     });
 
     if (state().with_quantiles) {
@@ -138,13 +145,13 @@ const getScatterCurves = () => {
         showlegend: false,
         line: {
           width: 0,
-          color: data().solvers[solver].color,
+          color: data(solver).color,
         },
         legendgroup: solver,
         hovertemplate: '(%{x:.1e},%{y:.1e}) <extra></extra>',
         visible: isVisible(solver) ? true : 'legendonly',
-        x: useTransformer(data(), solver, 'q1'),
-        y: useTransformer(data(), solver, 'y'),
+        x: data(solver).scatter.q1,
+        y: data(solver).scatter.y,
       }, {
         type: 'scatter',
         mode: 'lines',
@@ -152,13 +159,13 @@ const getScatterCurves = () => {
         fill: 'tonextx',
         line: {
           width: 0,
-          color: data().solvers[solver].color,
+          color: data(solver).color,
         },
         legendgroup: solver,
         hovertemplate: '(%{x:.1e},%{y:.1e}) <extra></extra>',
         visible: isVisible(solver) ? true : 'legendonly',
-        x: useTransformer(data(), solver, 'q9'),
-        y: useTransformer(data(), solver, 'y'),
+        x: data(solver).scatter.q9,
+        y: data(solver).scatter.y,
       });
     }
   });
@@ -189,24 +196,13 @@ const getScatterCurves = () => {
  * @param {String} axis it could be x, y, q1, q9
  * @returns {array}
  */
-const useTransformer = (data, solver, axis) => {
+const useTransformer = (data, axis, options) => {
   try {
     let transformer = 'transformer_' + axis + '_' + state().plot_kind;
-    return window.transformers[transformer](data, solver);
-  } catch(e) {
-    return data.solvers[solver][axis];
+    return window.transformers[transformer](data, options);
+  } catch(error) {
+    return data;
   }
-};
-
-/**
- * Transform data on the x axis for bar chart.
- * 
- * @param {Object} data 
- * @param {String} solver 
- * @returns {array}
- */
-const transformer_x_bar_chart = (data, solver) => {
-  return getSolvers();
 };
 
 /**
@@ -216,10 +212,9 @@ const transformer_x_bar_chart = (data, solver) => {
  * @param {String} solver 
  * @returns {array}
  */
-const transformer_y_suboptimality_curve = (data, solver) => {
-  let y = data.solvers[solver].y;
+const transformer_y_suboptimality_curve = (y, options) => {
   // Retrieve c_star value
-  const c_star = data.transformers.c_star;
+  const c_star = options.c_star;
   
   // Compute suboptimality for each data
   return y.map(value => value - c_star);
@@ -232,25 +227,13 @@ const transformer_y_suboptimality_curve = (data, solver) => {
  * @param {String} solver 
  * @returns {array}
  */
-const transformer_y_relative_suboptimality_curve = (data, solver) => {
-  let y = data.solvers[solver].y;
+const transformer_y_relative_suboptimality_curve = (y, options) => {
   // Retrieve transformer values
-  const c_star = data.transformers.c_star;
-  const max_f_0 = data.transformers.max_f_0;
+  const c_star = options.c_star;
+  const max_f_0 = options.max_f_0;
 
   // Compute relative suboptimality for each data
   return y.map(value => (value - c_star) / (max_f_0 - c_star));
-};
-
-/**
- * Transform data on the y axis for bar chart.
- * 
- * @param {Object} data 
- * @param {String} solver 
- * @returns {array}
- */
-const transformer_y_bar_chart = (data, solver) => {
-  return data.computed_data.bar_chart.y;
 };
 
 /**
@@ -258,40 +241,9 @@ const transformer_y_bar_chart = (data, solver) => {
  * by the useTransformer function.
  */
 window.transformers = {
-  transformer_x_bar_chart,
   transformer_y_suboptimality_curve,
   transformer_y_relative_suboptimality_curve,
-  transformer_y_bar_chart
 };
-
-/**
- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- * EVENT REGISTRATIONS
- * 
- * Some events are also registered in result.html.
- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- */
-
-/**
- * Listener on the system information "+" button
- */
-document.getElementById('btn_subinfo').addEventListener('click', event => {
-  const elmt = document.getElementById('subinfo');
-  const plus = document.getElementById('btn_plus');
-  const minus = document.getElementById('btn_minus');
-
-  if (elmt.style.display === 'none') {
-      elmt.style.display = 'block';
-      plus.style.display = 'none';
-      minus.style.display = 'inline';
-
-      return;
-  }
-
-  elmt.style.display = 'none';
-  plus.style.display = 'inline';
-  minus.style.display = 'none';
-});
 
 /*
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -301,7 +253,11 @@ document.getElementById('btn_subinfo').addEventListener('click', event => {
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 
-const data = () => window.data[state().dataset][state().objective][state().objective_column];
+const data = (solver = null) => {
+  return solver ?
+    window.data[state().dataset][state().objective][state().objective_column].solvers[solver]:
+    window.data[state().dataset][state().objective][state().objective_column]
+}
 
 const getSolvers = () => Object.keys(data().solvers);
 
@@ -309,7 +265,7 @@ const isBarChart = () => state().plot_kind === 'bar_chart';
 
 const isVisible = solver => !state().hidden_solvers.includes(solver);
 
-const isSolverAvailable = solver => data().solvers[solver].y.filter(value => !isNaN(value)).length > 0
+const isSolverAvailable = solver => data(solver).scatter.y.filter(value => !isNaN(value)).length > 0
 
 /**
  * Check for each solver
@@ -332,6 +288,19 @@ const isAvailable = () => {
 const displayScaleSelector = shouldBeVisible => shouldBeVisible ?
   document.getElementById('change_scaling').style.display = 'inline-block'
   : document.getElementById('change_scaling').style.display = 'none';
+
+const barDataToArrays = () => {
+  const colors = [], texts = [], x = [], y = [];
+
+  getSolvers().forEach(solver => {
+    x.push(solver);
+    y.push(data(solver).bar.y);
+    colors.push(data(solver).bar.text === '' ? data(solver).color : NON_CONVERGENT_COLOR);
+    texts.push(data(solver).bar.text);
+  });
+
+  return {x, y, colors, texts}
+}
 
 const getScale = () => {
   switch (state().scale) {
@@ -491,3 +460,32 @@ const handleSolverDoubleClick = solver => {
 
   hideAllSolversExcept(solver);
 };
+
+/**
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * EVENT REGISTRATIONS
+ * 
+ * Some events are also registered in result.html.
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
+
+/**
+ * Listener on the system information "+" button
+ */
+document.getElementById('btn_subinfo').addEventListener('click', event => {
+  const elmt = document.getElementById('subinfo');
+  const plus = document.getElementById('btn_plus');
+  const minus = document.getElementById('btn_minus');
+
+  if (elmt.style.display === 'none') {
+      elmt.style.display = 'block';
+      plus.style.display = 'none';
+      minus.style.display = 'inline';
+
+      return;
+  }
+
+  elmt.style.display = 'none';
+  plus.style.display = 'inline';
+  minus.style.display = 'none';
+});
