@@ -25,8 +25,8 @@ from benchopt.utils.terminal_output import RED, GREEN, TICK, CROSS
 
 
 ARCHIVE_ELEMENTS = [
-    'README*', '*.yml', 'objective.py', 'plot_results.py', 'test_config.py',
-    'solvers/*', 'datasets/*', 'utils/**', 'install_scripts/**', 'tests/**'
+    'README*', '*.yml', 'objective.py',
+    'solvers/*', 'datasets/*', 'utils/**'
 ]
 
 helpers = click.Group(

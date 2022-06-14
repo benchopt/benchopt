@@ -204,6 +204,7 @@ input:checked+.slider:before {
             window.data = ${result['json']};
 
             window.addEventListener("load", () => {
+                // Initialize plot state
                 setState({
                     'dataset': document.getElementById('dataset_selector').value,
                     'objective': document.getElementById('objective_selector').value,
@@ -211,12 +212,18 @@ input:checked+.slider:before {
                     'plot_kind': document.getElementById('plot_kind').value,
                     'scale': document.getElementById('change_scaling').value,
                     'with_quantiles': document.getElementById('change_shades').checked,
-                    'hidden_curves': []
+                    'hidden_solvers': []
                 });
 
-                document.getElementById('unique_plot').on('plotly_legendclick', data => {
-                    manageHiddenCurves(data);
-                })
+                document.getElementById('unique_plot').on('plotly_legenddoubleclick', event => {
+                    const solver = getSolverFromPlotlyEvent(event);
+                    handleSolverDoubleClick(solver);
+                });
+
+                document.getElementById('unique_plot').on('plotly_legendclick', event => {
+                    const solver = getSolverFromPlotlyEvent(event);
+                    handleSolverClick(solver);
+                });
             });
         </script>
         <script type="text/javascript" src="${static_dir}/result.js"></script>
