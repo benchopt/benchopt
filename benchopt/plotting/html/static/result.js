@@ -68,6 +68,8 @@ const makePlot = () => {
  * @returns {array}
  */
 const getBarData = () => {
+  if (!isAvailable()) return [{type:'bar'}];
+
   const {x, y, colors, texts} = barDataToArrays()
 
   // Add bars
@@ -382,7 +384,7 @@ const getScatterChartLayout = () => {
 };
 
 const getBarChartLayout = () => {
-  return {
+  const layout = {
     width: 900,
     height: 700,
     autosize: false,
@@ -400,6 +402,23 @@ const getBarChartLayout = () => {
     title: `${state().objective}\nData: ${state().dataset}`,
     plot_bgcolor: '#e5ecf6',
   };
+
+  if (!isAvailable()) {
+    layout.annotations = [{
+      xref: 'paper',
+      yref: 'paper',
+      x: 0.5,
+      y: 0.5,
+      text: 'Not available',
+      showarrow: false,
+      font: {
+        color: 'black',
+        size: 32,
+      }
+    }];
+  };
+
+  return layout;
 };
 
 const getYLabel = () => {
