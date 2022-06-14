@@ -287,9 +287,15 @@ const isAvailable = () => {
   return !isNotAvailable;
 }
 
-const displayScaleSelector = shouldBeVisible => shouldBeVisible ?
-  document.getElementById('change_scaling').style.display = 'inline-block'
-  : document.getElementById('change_scaling').style.display = 'none';
+const displayScaleSelector = shouldBeVisible => {
+  if (shouldBeVisible) {
+    document.getElementById('scale-form-group').style.display = 'block'
+    document.getElementById('quantiles-form-group').style.display = 'block'
+  } else {
+    document.getElementById('scale-form-group').style.display = 'none'
+    document.getElementById('quantiles-form-group').style.display = 'none'
+  }
+}
 
 const barDataToArrays = () => {
   const colors = [], texts = [], x = [], y = [];
@@ -383,9 +389,7 @@ const getScatterChartLayout = () => {
 
 const getBarChartLayout = () => {
   const layout = {
-    width: 900,
-    height: 700,
-    autosize: false,
+    autosize: true,
     yaxis: {
       type: 'log',
       title: 'Time [sec]',
@@ -486,23 +490,26 @@ const handleSolverDoubleClick = solver => {
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 
-/**
- * Listener on the system information "+" button
- */
-document.getElementById('btn_subinfo').addEventListener('click', event => {
-  const elmt = document.getElementById('subinfo');
-  const plus = document.getElementById('btn_plus');
-  const minus = document.getElementById('btn_minus');
+document.getElementById('btn-plot-config').addEventListener('click', () => {
+  const elmt = document.getElementById('mobile-plot-form');
 
-  if (elmt.style.display === 'none') {
-      elmt.style.display = 'block';
-      plus.style.display = 'none';
-      minus.style.display = 'inline';
+  if (elmt.style.display === 'block') {
+      elmt.style.display = 'none';
 
       return;
   }
 
-  elmt.style.display = 'none';
-  plus.style.display = 'inline';
-  minus.style.display = 'none';
+  elmt.style.display = 'block';
+});
+
+document.getElementById('btn-main-menu').addEventListener('click', () => {
+  const elmt = document.getElementById('mobile-menu');
+
+  if (elmt.style.display === 'block') {
+      elmt.style.display = 'none';
+
+      return;
+  }
+
+  elmt.style.display = 'block';
 });
