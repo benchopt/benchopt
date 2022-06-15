@@ -100,3 +100,17 @@ input:checked+.slider:before {
 .slider.round:before {
   border-radius: 50%;
 }
+
+@media (min-width: 768px) {
+  #unique_plot {
+    flex: 1 1 0%;
+  }
+}
+
+@media (max-width: 767px) {
+  #unique_plot {
+    height: 700px;
+    flex: initial;
+    flex-shrink: 0;
+  }
+}
