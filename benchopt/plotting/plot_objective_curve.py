@@ -4,7 +4,9 @@ from .helpers_compat import get_figure
 from .helpers_compat import add_h_line
 from .helpers_compat import fill_between_x
 
-CMAP = plt.get_cmap('tab10')
+CMAP = plt.get_cmap('tab20')
+
+html_solver_styles = {}
 
 
 def _remove_prefix(text, prefix):
@@ -165,3 +167,48 @@ def plot_relative_suboptimality_curve(df, obj_col='objective_value',
     """
     return plot_objective_curve(df, obj_col=obj_col, plotly=plotly,
                                 suboptimality=True, relative=True)
+
+
+def compute_quantiles(df_filtered):
+    q1 = df_filtered.groupby('stop_val')['time'].quantile(.1)
+    q9 = df_filtered.groupby('stop_val')['time'].quantile(.9)
+
+    return q1, q9
+
+
+def get_solver_color(solver):
+    if solver in html_solver_styles and 'color' in html_solver_styles[solver]:
+        return html_solver_styles[solver]['color']
+
+    idx = len(html_solver_styles)
+    color = CMAP(idx % CMAP.N)
+    color = tuple(255*x if i != 3 else x for i, x in enumerate(color))
+    color = f'rgba{color}'
+
+    if solver in html_solver_styles:
+        html_solver_styles[solver]['color'] = color
+    else:
+        html_solver_styles[solver] = {
+            'color': color
+        }
+
+    return color
+
+
+def get_solver_marker(solver):
+    if solver in html_solver_styles and 'marker' in html_solver_styles[solver]:
+        return html_solver_styles[solver]['marker']
+
+    markers = {i: i for i, v in enumerate(plt.Line2D.markers)}
+
+    i = len(html_solver_styles)
+    marker = markers[i % len(markers)]
+
+    if solver in html_solver_styles:
+        html_solver_styles[solver]['marker'] = marker
+    else:
+        html_solver_styles[solver] = {
+            'marker': marker
+        }
+
+    return marker

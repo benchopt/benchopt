@@ -1,182 +1,510 @@
-var globalState = {
-  dataset_selector: [,],
-  objective_selector: [,],
-  objective_column: [,],
-  plot_kind: [,],
-}; // Object storing previous and current value of the dropdown selectors
+const NON_CONVERGENT_COLOR = 'rgba(0.8627, 0.8627, 0.8627)'
+
+/*
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * STATE MANAGEMENT
+ * 
+ * The state represent the plot state. It's an object
+ * that is stored into the window.state variable.
+ * 
+ * Do not manually update window.state,
+ * instead, foreach state modification,
+ * you shoud call the setState() function
+ * to keep the plot in sync with its state.
+ * 
+ * The state contains the following keys :
+ *   - dataset (string),
+ *   - objective (string),
+ *   - objective_column (string),
+ *   - plot_kind (string),
+ *   - scale (string)
+ *   - with_quantiles (boolean)
+ *   - hidden_solvers (array)
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
 
 /**
- * Initialize the global state of the selectors
+ * Update the state and create/update the plot
+ * using the new state.
+ * 
+ * @param {Object} partialState 
  */
-$(function () {
-  const selectors = [
-    "dataset_selector",
-    "objective_selector",
-    "objective_column",
-    "plot_kind",
-  ];
-  for (sel of selectors) {
-    obj = document.getElementById(sel);
-    globalState[sel][1] = globalState[sel][0] = obj.value;
-    obj.attributes.counter = 0; // initialize dropdown counter
-    showMe(obj); // display initial figure + one pass on all dropdowns
-  }
-});
-
-/**
- * Get the id of the div containing the plotly graph div
- * @param  {String} which previous for previous graph state, anything for current
- * @return {String}       concatenated dataset,objectives and plot kind as id
- */
-function getId(which) {
-  if (which === "previous") index = 0;
-  // previous states
-  else index = 1; // new states
-  return Object.values(globalState) // all values of selectors
-    .map(function (value) {
-      return value[index]; // select only column of interest
-    })
-    .join(""); // join as string for complete id
+const setState = (partialState, updatePlot = true) => {
+  window.state = {...state(), ...partialState};
+  displayScaleSelector(!isBarChart());
+  if (updatePlot) makePlot();
 }
 
 /**
- * Only show the selected graph from dropdown menus
+ * Retrieve the state object from window.state
+ * 
+ * @returns Object
  */
-function showMe(e) {
-  if (globalState[e.id][1] !== "bar_chart") {
-    Object.values(globalState).forEach((arr, _) => {
-      arr[0] = arr[1];
-    }); // shift all new values to only replace one after
-    globalState[e.id].shift(); // previous value is now at index 0
-  }
-  if (e.id === "dataset_selector") {
-    document.getElementById("change_scaling").value = "semilog-y"; // default
-  }
-  globalState[e.id][1] = e.value; // set new value of selector
-  for (let opt of e.options) {
-    allObj = document.getElementsByClassName(opt.value); // get all divs corresponding
-    for (let obj of allObj) {
-      if (opt.value === e.value) obj.style.display = "block";
-      else obj.style.display = "none"; // hide non necessary divs
-    }
-  }
-  if (
-    e.attributes.counter > 0 &&
-    globalState.dataset_selector[0] === globalState.dataset_selector[1]
-  ) {
-    // if at least another graph was displayed before (initialized)
-    visibleTraces(); // keep traces coherent accross graphs
-  }
-  if (
-    e.attributes.counter > 0
-  ) {
-    toggleShades();  // keep quantile curves coherent (must be after visibleTraces) and not dataset_selector dependent
-  }
-  e.attributes.counter += 1; // out of initialization
-}
+const state = () => window.state;
 
-// update the traces accross the different plots
-function visibleTraces() {
-  prevId = getId("previous"); // id of previous graph
-  nowId = getId("now"); // id of current graph
-  if (globalState.plot_kind[1] !== "bar_chart") {
-    // only check name not type
-    graph = document.getElementById(
-      document.getElementById(prevId).getElementsByTagName("div")[1].id
-    ); // get revious plotly figure
-    tracesVisib = graph.data.map((trace) => trace.visible); // get previous visible traces
-    graph = document.getElementById(
-      document.getElementById(nowId).getElementsByTagName("div")[1].id
-    );
-    for (i = 0; i < graph.data.length; i++) {
-      graph.data[i].visible = tracesVisib[i]; // set visible traces for new graph
-    }
-    Plotly.redraw(graph); // redraw with cohesive visible traces
-  }
-}
+/*
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * PLOT MANAGEMENT
+ * 
+ * Retrieve formatted data for PlotlyJS using state
+ * and create/update the plot.
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
 
 /**
- * Change y axis scale of plotly graph (loglog <-> semilog-y)
- * @param  {Object} e  dropdown for axis log type
+ * Create/Update the plot.
  */
-function changeScale(e) {
-  allContainers = document
-    .getElementsByClassName(globalState["dataset_selector"][1])[0]
-    .getElementsByClassName("plot-container plotly");
-  for (which = 0; which < allContainers.length; which++) {
-    graph = allContainers[which].parentNode; // get plotly graph to change
-    if (!graph.parentNode.parentNode.id.endsWith("bar_chart")) {
-      layout = graph.layout; // get layout to recover only axis
-      switch (e.value) {
-        case "loglog":
-          layout.xaxis.type = "log";
-          layout.yaxis.type = "log";
-          break;
-        case "semilog-y":
-          layout.xaxis.type = "linear";
-          layout.yaxis.type = "log";
-          break;
-        case "semilog-x":
-          layout.xaxis.type = "log";
-          layout.yaxis.type = "linear";
-          break;
-        case "linear":
-          layout.xaxis.type = "linear";
-          layout.yaxis.type = "linear";
-          break;
-      }
-      Plotly.relayout(graph.id, layout); // change axis type of plot
+const makePlot = () => {
+  const div = document.getElementById('unique_plot');
+  const data = isBarChart() ? getBarData() : getScatterCurves();
+  const layout = isBarChart() ? getBarChartLayout() : getScatterChartLayout();
+
+  Plotly.react(div, data, layout);
+};
+
+/**
+ * Gives the data formatted for plotlyJS bar chart.
+ * 
+ * @returns {array}
+ */
+const getBarData = () => {
+  if (!isAvailable()) return [{type:'bar'}];
+
+  const {x, y, colors, texts} = barDataToArrays()
+
+  // Add bars
+  const barData = [{
+    type: 'bar',
+    x: x,
+    y: y,
+    marker: {
+      color: colors,
+    },
+    text: texts,
+    textposition: 'inside',
+    insidetextanchor: 'middle',
+    textangle: '-90',
+  }];
+
+  x.forEach(solver => {
+    // Add times for each convergent solver
+    // Check if text is not 'Did not converge'
+    if (data(solver).bar.text === '') {
+      let nbTimes = data(solver).bar.times.length
+
+      barData.push({
+        type: 'scatter',
+        x: new Array(nbTimes).fill(solver),
+        y: data(solver).bar.times,
+        marker: {
+          color: 'black',
+          symbol: 'line-ew-open'
+        },
+        line: {
+          width: 0
+        },
+      });
     }
+  });
+
+  return barData;
+};
+
+/**
+ * Gives the data formatted for plotlyJS scatter chart.
+ * 
+ * @returns {array}
+ */
+const getScatterCurves = () => {
+  // create a list of object to plot in plotly
+  const curves = [];
+
+  // For each solver, add the median curve with proper style and visibility.
+  getSolvers().forEach(solver => {
+    curves.push({
+      type: 'scatter',
+      name: solver,
+      mode: 'lines+markers',
+      line: {
+        color: data(solver).color,
+      },
+      marker: {
+        symbol: data(solver).marker,
+        size: 10,
+      },
+      legendgroup: solver,
+      hovertemplate: solver + ' <br> (%{x:.1e},%{y:.1e}) <extra></extra>',
+      visible: isVisible(solver) ? true : 'legendonly',
+      x: data(solver).scatter.x,
+      y: useTransformer(data(solver).scatter.y, 'y', data().transformers),
+    });
+
+    if (state().with_quantiles) {
+      // Add shaded area for each solver, with proper style and visibility.
+      curves.push({
+        type: 'scatter',
+        mode: 'lines',
+        showlegend: false,
+        line: {
+          width: 0,
+          color: data(solver).color,
+        },
+        legendgroup: solver,
+        hovertemplate: '(%{x:.1e},%{y:.1e}) <extra></extra>',
+        visible: isVisible(solver) ? true : 'legendonly',
+        x: data(solver).scatter.q1,
+        y: data(solver).scatter.y,
+      }, {
+        type: 'scatter',
+        mode: 'lines',
+        showlegend: false,
+        fill: 'tonextx',
+        line: {
+          width: 0,
+          color: data(solver).color,
+        },
+        legendgroup: solver,
+        hovertemplate: '(%{x:.1e},%{y:.1e}) <extra></extra>',
+        visible: isVisible(solver) ? true : 'legendonly',
+        x: data(solver).scatter.q9,
+        y: data(solver).scatter.y,
+      });
+    }
+  });
+
+  return curves;
+};
+
+/*
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * DATA TRANSFORMERS
+ * 
+ * Transformers are used to modify data
+ * on the fly.
+ * 
+ * WARNING : If you add a new transformer function,
+ * don't forget to register it in the object : window.tranformers,
+ * at the end of this section.
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
+
+/**
+ * Select the right transformer according to the state.
+ * If the requested transformer does not exists,
+ * it returns raw data.
+ * 
+ * @param {Object} data 
+ * @param {String} solver 
+ * @param {String} axis it could be x, y, q1, q9
+ * @returns {array}
+ */
+const useTransformer = (data, axis, options) => {
+  try {
+    let transformer = 'transformer_' + axis + '_' + state().plot_kind;
+    return window.transformers[transformer](data, options);
+  } catch(error) {
+    return data;
+  }
+};
+
+/**
+ * Transform data on the y axis for subotimality curve.
+ * 
+ * @param {Object} data 
+ * @param {String} solver 
+ * @returns {array}
+ */
+const transformer_y_suboptimality_curve = (y, options) => {
+  // Retrieve c_star value
+  const c_star = options.c_star;
+  
+  // Compute suboptimality for each data
+  return y.map(value => value - c_star);
+};
+
+/**
+ * Transform data ont the y axis for relative suboptimality curve.
+ * 
+ * @param {Object} data 
+ * @param {String} solver 
+ * @returns {array}
+ */
+const transformer_y_relative_suboptimality_curve = (y, options) => {
+  // Retrieve transformer values
+  const c_star = options.c_star;
+  const max_f_0 = options.max_f_0;
+
+  // Compute relative suboptimality for each data
+  return y.map(value => (value - c_star) / (max_f_0 - c_star));
+};
+
+/**
+ * Store all the transformer functions to be callable
+ * by the useTransformer function.
+ */
+window.transformers = {
+  transformer_y_suboptimality_curve,
+  transformer_y_relative_suboptimality_curve,
+};
+
+/*
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * TOOLS
+ * 
+ * Various functions to simplify life.
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
+
+const data = (solver = null) => {
+  return solver ?
+    window.data[state().dataset][state().objective][state().objective_column].solvers[solver]:
+    window.data[state().dataset][state().objective][state().objective_column]
+}
+
+const getSolvers = () => Object.keys(data().solvers);
+
+const isBarChart = () => state().plot_kind === 'bar_chart';
+
+const isVisible = solver => !state().hidden_solvers.includes(solver);
+
+const isSolverAvailable = solver => data(solver).scatter.y.filter(value => !isNaN(value)).length > 0
+
+/**
+ * Check for each solver
+ * if data is available
+ * 
+ * @returns {Boolean}
+ */
+const isAvailable = () => {
+  let isNotAvailable = true;
+
+  getSolvers().forEach(solver => {
+    if (isSolverAvailable(solver)) {
+      isNotAvailable = false;
+    }
+  });
+
+  return !isNotAvailable;
+}
+
+const displayScaleSelector = shouldBeVisible => shouldBeVisible ?
+  document.getElementById('change_scaling').style.display = 'inline-block'
+  : document.getElementById('change_scaling').style.display = 'none';
+
+const barDataToArrays = () => {
+  const colors = [], texts = [], x = [], y = [];
+
+  getSolvers().forEach(solver => {
+    x.push(solver);
+    y.push(data(solver).bar.y);
+    colors.push(data(solver).bar.text === '' ? data(solver).color : NON_CONVERGENT_COLOR);
+    texts.push(data(solver).bar.text);
+  });
+
+  return {x, y, colors, texts}
+}
+
+const getScale = () => {
+  switch (state().scale) {
+    case 'loglog':
+      return {
+        xaxis: 'log',
+        yaxis: 'log',
+      };
+    case "semilog-y":
+      return {
+        xaxis: 'linear',
+        yaxis: 'log',
+      };
+    case "semilog-x":
+      return {
+        xaxis: 'log',
+        yaxis: 'linear',
+      };
+    case "linear":
+      return {
+        xaxis: 'linear',
+        yaxis: 'linear',
+      };
+    default:
+      console.error('Unknown scale value : ' + state().scale);
   }
 }
 
-// modify the + into a - when clicking to show more system informations
-$(".toggle").click(function () {
-  $(this).find("svg").toggleClass("fa-plus-circle fa-minus-circle");
-  x = document.getElementById("subinfo");
-  if (x.style.display === "none") {
-    x.style.display = "block";
-  } else {
-    x.style.display = "none";
-  }
-});
-
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-* Toggle shades on/off on plotly graph
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-function toggleShades() {
-  toggler = document.getElementById("change_shades");
-  if (toggler.checked === true) {
-    visible = true;
-  } else {
-    visible = false;
-  } // hide or show traces depending on toggler state
-
-  nowId = getId("now"); // id of current graph
-  graph = document.getElementById(
-    document.getElementById(nowId).getElementsByTagName("div")[1].id
-  );
-  allTraces = graph.data;
-  const allIndex = (arr) => {
-    return arr.map((elm, idx) => {
-      group = elm.legendgroup;
-      main = arr.find(function (el) { return el.legendgroup === group });
-      if ([undefined, true].includes(main.visible)) {
-        return elm.name == null ? idx : "";
-      }
-      else{ return "" }
-    }
-      ).filter(String);
+const getScatterChartLayout = () => {
+  const layout = {
+    width: 900,
+    height: 700,
+    autosize: false,
+    legend: {
+      title: {
+        text: 'Solvers',
+      },
+      orientation: 'h',
+      xanchor: 'center',
+      yanchor: 'top',
+      y: -.2,
+      x: .5
+    },
+    xaxis: {
+      type: getScale().xaxis,
+      title: 'Time [sec]',
+      tickformat: '.1e',
+      tickangle: -45,
+      gridcolor: '#ffffff',
+      zeroline : false,
+    },
+    yaxis: {
+      type: getScale().yaxis,
+      title: getYLabel(),
+      tickformat: '.1e',
+      gridcolor: '#ffffff',
+      zeroline : false,
+    },
+    title: `${state().objective}\nData: ${state().dataset}`,
+    plot_bgcolor: '#e5ecf6',
   };
-  whereToggle = allIndex(allTraces); // shade fills are without name
-  if (globalState.plot_kind[1] !== "bar_chart") {
-    Plotly.restyle(graph, { visible: visible }, whereToggle); // toggle visibility
-  }
-}
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-* Toggle shades on/off on click
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-$(function () {
-  $("#change_shades").change(toggleShades);
+  if (!isAvailable()) {
+    layout.annotations = [{
+      xref: 'paper',
+      yref: 'paper',
+      x: 0.5,
+      y: 0.5,
+      text: 'Not available',
+      showarrow: false,
+      font: {
+        color: 'black',
+        size: 32,
+      }
+    }];
+  };
+
+  return layout;
+};
+
+const getBarChartLayout = () => {
+  const layout = {
+    width: 900,
+    height: 700,
+    autosize: false,
+    yaxis: {
+      type: 'log',
+      title: 'Time [sec]',
+      tickformat: '.1e',
+      gridcolor: '#ffffff',
+    },
+    xaxis: {
+      tickangle: -60,
+      ticktext: getSolvers(),
+    },
+    showlegend: false,
+    title: `${state().objective}\nData: ${state().dataset}`,
+    plot_bgcolor: '#e5ecf6',
+  };
+
+  if (!isAvailable()) {
+    layout.annotations = [{
+      xref: 'paper',
+      yref: 'paper',
+      x: 0.5,
+      y: 0.5,
+      text: 'Not available',
+      showarrow: false,
+      font: {
+        color: 'black',
+        size: 32,
+      }
+    }];
+  };
+
+  return layout;
+};
+
+const getYLabel = () => {
+  switch(state().plot_kind) {
+    case 'objective_curve':
+      return 'F(x)';
+    case 'suboptimality_curve':
+      return 'F(x) - F(x*)';
+    case 'relative_suboptimality_curve':
+      return 'F(x) - F(x*) / F(x0) - F(x*)'
+    case 'bar_chart':
+      return 'Time [sec]';
+    default:
+      return 'unknown';
+  };
+};
+
+/*
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * MANAGE HIDDEN SOLVERS
+ * 
+ * Functions to hide/display and memorize solvers which were clicked
+ * by user on the legend of the plot.
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
+const getSolverFromPlotlyEvent = event => event.data[event.curveNumber].name;
+
+const purgeHiddenSolvers = () => setState({hidden_solvers: []}, false);
+
+const hideAllSolversExcept = solver => {setState({hidden_solvers: getSolvers().filter(elmt => elmt !== solver)}, false)};
+
+const hideSolver = solver => isVisible(solver) ? setState({hidden_solvers: [...state().hidden_solvers, solver]}, false) : null;
+
+const showSolver = solver => setState({hidden_solvers: state().hidden_solvers.filter(hidden => hidden !== solver)}, false);
+
+/**
+ * Add or remove solver name from the list of hidden solvers.
+ * 
+ * @param {String} solver
+ * @returns {void}
+ */
+const handleSolverClick = solver => {
+  if (!isVisible(solver)) {
+    showSolver(solver);
+
+    return;
+  }
+
+  hideSolver(solver);
+};
+
+const handleSolverDoubleClick = solver => {
+  if (!isVisible(solver)) {
+    purgeHiddenSolvers();
+
+    return;
+  }
+
+  hideAllSolversExcept(solver);
+};
+
+/**
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * EVENT REGISTRATIONS
+ * 
+ * Some events are also registered in result.html.
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
+
+/**
+ * Listener on the system information "+" button
+ */
+document.getElementById('btn_subinfo').addEventListener('click', event => {
+  const elmt = document.getElementById('subinfo');
+  const plus = document.getElementById('btn_plus');
+  const minus = document.getElementById('btn_minus');
+
+  if (elmt.style.display === 'none') {
+      elmt.style.display = 'block';
+      plus.style.display = 'none';
+      minus.style.display = 'inline';
+
+      return;
+  }
+
+  elmt.style.display = 'none';
+  plus.style.display = 'inline';
+  minus.style.display = 'none';
 });
