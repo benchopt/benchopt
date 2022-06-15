@@ -35,8 +35,12 @@ class ParametrizedNameMixin():
         Saving the parameters allow for cheap hashing and to compute parametric
         names for the objects.
         """
-        obj = cls(**parameters)
-        obj.save_parameters(**parameters)
+        try:
+            obj = cls(**parameters)
+            obj.save_parameters(**parameters)
+        except Exception:
+            print(cls)
+            raise
         return obj
 
     @property

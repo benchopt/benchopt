@@ -1,8 +1,10 @@
 import click
 import pprint
+import tarfile
 from pathlib import Path
 from collections.abc import Iterable
 import warnings
+import json
 
 from benchopt.config import set_setting
 from benchopt.config import get_setting
@@ -21,6 +23,12 @@ from benchopt.utils.shell_cmd import _run_shell_in_conda_env
 from benchopt.utils.terminal_output import colorify
 from benchopt.utils.terminal_output import RED, GREEN, TICK, CROSS
 
+
+ARCHIVE_ELEMENTS = [
+    'README*', '*.yml', 'objective.py',
+    'solvers/*', 'datasets/*', 'utils/**'
+]
+
 helpers = click.Group(
     name='Helpers',
     help="Helpers to clean and config ``benchopt``."
@@ -31,21 +39,81 @@ helpers = click.Group(
     help="Clean the cache and the outputs from a benchmark.",
     options_metavar=''
 )
-@click.argument('benchmark', type=click.Path(exists=True),
+@click.argument('benchmark', default=Path.cwd(), type=click.Path(exists=True),
                 shell_complete=complete_benchmarks)
-def clean(benchmark, token=None, filename=None):
+@click.option("--filename", "-f", "filename",
+              type=str, default="all",
+              help="Name of the output file to remove.")
+def clean(benchmark, token=None, filename='all'):
 
     benchmark = Benchmark(benchmark)
-
     # Delete result files
     output_folder = benchmark.get_output_folder()
-    if output_folder.exists():
+    if output_folder.exists() and filename == 'all':
         print(f"rm -rf {output_folder}")
         rm_folder(output_folder)
-
+    else:
+        was_removed = False
+        for ext in [".csv", ".html"]:
+            if ext == ".html":
+                to_remove = output_folder / f"{benchmark.name}_{filename}"
+            else:
+                to_remove = output_folder / filename
+            file = to_remove.with_suffix(ext)
+            if file.exists():
+                was_removed = True
+                print(f"rm {file}")
+                file.unlink()
+            json_path = output_folder / "cache_run_list.json"
+            if was_removed and json_path.exists():
+                print(f"Removing {filename}.csv entry from {json_path}")
+                with open(json_path, "r") as cache_run:
+                    json_file = json.load(cache_run)
+                json_file.pop(f"{filename}.csv", None)
+                with open(json_path, "w") as cache_run:
+                    json.dump(json_file, cache_run)
     # Delete cache files
     print("Clear joblib cache")
     benchmark.mem.clear(warn=False)
+
+
+def clean_archive(info):
+    if "__pycache__" in info.name:
+        return None
+
+    # reset the username and info in the archive
+    info.uid = info.gid = 0
+    info.uname = info.gname = "benchopt"
+
+    return info
+
+
+@helpers.command(
+    help="Create an archive of the benchmark that can easily be shared."
+)
+@click.argument('benchmark', default=Path.cwd(), type=click.Path(exists=True),
+                shell_complete=complete_benchmarks)
+@click.option('--with-outputs',
+              is_flag=True,
+              help="If this flag is set, also store the outputs of the "
+              "benchmark in the archive.")
+def archive(benchmark, with_outputs):
+
+    benchmark = Benchmark(benchmark)
+    bench_dir = benchmark.benchmark_dir
+
+    to_archive = ARCHIVE_ELEMENTS
+    if with_outputs:
+        to_archive = to_archive + ['outputs/*']
+
+    archive_name = f"{benchmark.name}.tar.gz"
+    print(f"Creating {archive_name}...", end='', flush=True)
+    with tarfile.open(archive_name, "w:gz") as tar:
+        for elem_pattern in to_archive:
+            for sub_elem in bench_dir.glob(elem_pattern):
+                tar.add(sub_elem, sub_elem.relative_to(bench_dir.parent),
+                        filter=clean_archive)
+    print(f"done\nResults are in {archive_name}")
 
 
 def check_conda_env(env_name, benchmark_name=None):
@@ -123,11 +191,12 @@ def print_info(cls_name_list, cls_list, env_name=None, verbose=False):
 
     # select objects to print info from
     include_cls = []
+    cls_name_list = [item.lower() for item in cls_name_list]
     if 'all' in cls_name_list:
         include_cls = cls_list
     else:
         include_cls = [
-            item for item in cls_list if item.name in cls_name_list
+            item for item in cls_list if item.name.lower() in cls_name_list
         ]
     if not verbose:
         # short output
@@ -141,13 +210,17 @@ def print_info(cls_name_list, cls_list, env_name=None, verbose=False):
             print(f"## {cls.name}")
             # availability in env (if relevant)
             if env_name is not None:
-                # check for dependency avaulability
+                # check for dependency availability
+                if env_name == "False":
+                    disp_name = "running env"
+                else:
+                    disp_name = f"env: {env_name}"
                 if cls.is_installed(env_name):
                     print(colorify(TICK, GREEN), end='', flush=True)
-                    print(colorify(f" available in env '{env_name}'", GREEN))
+                    print(colorify(f" available in '{disp_name}'", GREEN))
                 else:
                     print(colorify(CROSS, RED), end='', flush=True)
-                    print(colorify(f" not available in env '{env_name}'", RED))
+                    print(colorify(f" not available in '{disp_name}'", RED))
             # install command
             if hasattr(cls, 'requirements') and cls.requirements:
                 print("> requirements:")
@@ -180,7 +253,7 @@ def print_info(cls_name_list, cls_list, env_name=None, verbose=False):
     help="List information (solvers/datasets) and corresponding requirements "
     "for a given benchmark."
 )
-@click.argument('benchmark', type=click.Path(exists=True),
+@click.argument('benchmark', default=Path.cwd(), type=click.Path(exists=True),
                 shell_complete=complete_benchmarks)
 @click.option('--solver', '-s', 'solver_names',
               metavar="<solver_name>", multiple=True, type=str,
@@ -232,7 +305,6 @@ def info(benchmark, solver_names, dataset_names, env_name='False',
     # get solvers and datasets in the benchmark
     all_solvers = benchmark.get_solvers()
     all_datasets = benchmark.get_datasets()
-
     # enable verbosity if any environment was provided
     if env_name is not None and env_name != 'False':
         verbose = True
@@ -273,7 +345,6 @@ def info(benchmark, solver_names, dataset_names, env_name='False',
     if not dataset_names and not solver_names:
         dataset_names = ['all']
         solver_names = ['all']
-
     if dataset_names:
         print("# DATASETS", flush=True)
         print_info(dataset_names, all_datasets, env_name, verbose)
@@ -375,7 +446,7 @@ def get(ctx, name):
     "class BASE_CLASS_NAME.",
     hidden=True
 )
-@click.argument('benchmark', type=click.Path(exists=True),
+@click.argument('benchmark', default=Path.cwd(), type=click.Path(exists=True),
                 shell_complete=complete_benchmarks)
 @click.argument('module_filename', nargs=1, type=Path)
 @click.argument('base_class_name', nargs=1, type=str)

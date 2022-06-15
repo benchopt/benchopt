@@ -27,10 +27,10 @@ class StoppingCriterion():
     This class also handles the detection of diverging solvers and prints the
     progress if given a ``prgress_str``.
 
-    Instances of this class should only be created with `cls._get_instance`,
-    to make sure the class holds the proper attirbutes. This factory mechanism
-    allow for easy subclassing without requesting to call the `super.__init___`
-    in the subclass.
+    Instances of this class should only be created with class method
+    `cls.get_runner_instance`, to make sure the class holds the proper
+    attributes. This factory mechanism allows for easy subclassing without
+    requesting to call the `super.__init___` in the subclass.
 
     Similarly, sub-classes should implement `check-convergence` to check if the
     algorithm has converged. This function will be called internally as a hook
@@ -193,19 +193,17 @@ class StoppingCriterion():
         is_flat = False
 
         # check the different conditions:
-        #     timeout / max_runs / diverging / stopping_criterion
-        if self._deadline is not None and time.time() > self._deadline:
+        #     diverging / timeout / max_runs / stopping_criterion
+        if math.isnan(objective_value) or delta_objective < -1e5:
+            stop = True
+            status = 'diverged'
+        elif self._deadline is not None and time.time() > self._deadline:
             stop = True
             status = 'timeout'
 
         elif n_eval == self.max_runs:
             stop = True
             status = 'max_runs'
-
-        elif delta_objective < -1e5:
-            stop = True
-            status = 'diverged'
-
         else:
             # Call the sub-class hook, used to check stopping criterion
             # on the curve.

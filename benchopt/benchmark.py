@@ -223,7 +223,11 @@ class Benchmark:
 
     def get_cache_location(self):
         "Get the location for the cache of the benchmark."
-        return self.benchmark_dir / CACHE_DIR
+        benchopt_cache_dir = get_setting("cache")
+        if benchopt_cache_dir is None:
+            return self.benchmark_dir / CACHE_DIR
+
+        return Path(benchopt_cache_dir) / self.name
 
     def cache(self, func, force=False, ignore=None):
         """Create a cached function for the given function.
@@ -391,7 +395,7 @@ class Benchmark:
 
         Parameters
         ----------
-        solver_names : list | None
+        solver_names : list | None
             List of solvers to include in the benchmark. If None
             all solvers available are run.
         forced_solvers : list | None
@@ -443,18 +447,21 @@ class Benchmark:
                     force = is_matched(
                         str(solver), forced_solvers, default=False
                     )
-                    yield dataset, objective, solver, force, output.clone()
+                    yield dict(
+                        dataset=dataset, objective=objective, solver=solver,
+                        force=force, output=output.clone()
+                    )
                 all_solvers = solvers_buffer
             all_objectives = objective_buffer
 
 
 def _check_name_lists(*name_lists):
-    "Normalize name_list ot a list of lowercase str."
+    "Normalize name_list to a list of string."
     res = []
     for name_list in name_lists:
         if name_list is None:
             continue
-        res.extend([str(name).lower() for name in name_list])
+        res.extend([str(name) for name in name_list])
     return res
 
 
@@ -466,14 +473,120 @@ def is_matched(name, include_patterns=None, default=True):
     if include_patterns is None or len(include_patterns) == 0:
         return default
     name = str(name)
-    # we use [] to signal options in patterns, we must escape them for re
-    substitutions = {"*": ".*", "[": r"\[", "]": r"\]"}
+    name = _extract_options(name)[0]
+    substitutions = {"*": ".*"}
     for p in include_patterns:
+        p = _extract_options(p)[0]
         for old, new in substitutions.items():
             p = p.replace(old, new)
-        if re.match(f"^{p}.*", name, flags=re.IGNORECASE) is not None:
+        if re.match(f"^{p}$", name, flags=re.IGNORECASE) is not None:
             return True
     return False
+
+
+def _extract_options(name):
+    """Remove options indicated within '[]' from a name.
+
+    Parameters
+    ----------
+    name : str
+        Input name.
+
+    Returns
+    -------
+    basename : str
+        Name without options.
+    args : list
+        List of unnamed options.
+    kwargs : dict()
+        Dictionary with options.
+
+    Examples
+    --------
+    >>> _extract_options("foo")  # "foo", [], dict()
+    >>> _extract_options("foo[bar=2]")  # "foo", [], dict(bar=2)
+    >>> _extract_options("foo[baz]")  # "foo", ["baz"], dict()
+    """
+    if name.count("[") != name.count("]"):
+        raise ValueError(f"Invalid name (missing bracket): {name}")
+
+    basename = "".join(re.split(r"\[.*\]", name))
+    matches = re.findall(r"\[.*\]", name)
+
+    if len(matches) == 0:
+        return basename, [], {}
+    elif len(matches) > 1:
+        raise ValueError(f"Invalid name (multiple brackets): {name}")
+    else:
+        match = matches[0]
+        match = match[1:-1]  # remove brackets
+
+        result = _extract_parameters(match)
+        if isinstance(result, dict):
+            return basename, [], result
+        elif isinstance(result, list):
+            return basename, result, {}
+        else:
+            raise ValueError(
+                f"Impossible. Please report this bug.\n"
+                f"_extract_parameters returned '{result}'"
+            )
+
+
+def _extract_parameters(string):
+    """Extract parameters from a string.
+
+    If the string contains a "=", returns a dict, otherwise returns a list.
+
+    Examples
+    --------
+    >>> _extract_parameters("foo")  # ["foo"]
+    >>> _extract_parameters("foo, 42, True")  # ["foo", 42, True]
+    >>> _extract_parameters("foo=bar")  # {"foo": "bar"}
+    >>> _extract_parameters("foo=[bar, baz]")  # {"foo": ["bar", "baz"]}
+    >>> _extract_parameters("foo=1, baz=True")  # {"foo": 1, "baz": True}
+    >>> _extract_parameters("'foo, bar'=[(0, 1),(1, 0)]")
+    >>> # {"foo, bar": [(0, 1),(1, 0)]}
+    """
+    import ast
+    original = string
+
+    # First, replace some expressions with their hashes, to avoid modification:
+    # - quoted names
+    all_matches = re.findall(r"'[^'\"]*'", string)
+    all_matches += re.findall(r'"[^\'"]*"', string)
+    # - numbers of the form "1e-3" (but not names like "foo1e3")
+    all_matches += re.findall(
+        r"(?<![a-zA-Z0-9_])[+-]?[0-9]+[.]?[0-9]*[eE][-+]?[0-9]+", string)
+    for match in all_matches:
+        string = string.replace(match, str(hash(match)))
+
+    # Second, add quotes to all variable names (foo -> 'foo').
+    # Accepts dots and dashes within names.
+    string = re.sub(r"[a-zA-Z][a-zA-Z0-9._-]*", r"'\g<0>'", string)
+
+    # Third, change back the hashes to their original names.
+    for match in all_matches:
+        string = string.replace(str(hash(match)), match)
+
+    # Prepare the sequence for AST parsing.
+    # Sequences with "=" are made into a dict expression {'foo': 'bar'}.
+    # Sequences without "=" are made into a list expression ['foo', 'bar'].
+    if "=" in string:
+        string = "{" + string.replace("=", ":") + "}"
+    else:
+        string = "[" + string + "]"
+
+    # Remove quotes for python language tokens
+    for token in ["True", "False", "None"]:
+        string = string.replace(f'"{token}"', token)
+        string = string.replace(f"'{token}'", token)
+
+    # Evaluate the string.
+    try:
+        return ast.literal_eval(string)
+    except (ValueError, SyntaxError):
+        raise ValueError(f"Invalid name '{original}', evaluated as {string}.")
 
 
 def _validate_patterns(all_names, patterns, name_type='dataset'):
@@ -488,33 +601,81 @@ def _validate_patterns(all_names, patterns, name_type='dataset'):
         if not matched:
             invalid_patterns.append(p)
 
-    # If some patterns did not matched any dataset, raise an error
+    # If some patterns did not matched any class, raise an error
     if len(invalid_patterns) > 0:
-        all_names = '- ' + '\n- '.join(all_names)
+        all_names_ = '- ' + '\n- '.join(all_names)
         raise click.BadParameter(
             f"Patterns {invalid_patterns} did not match any {name_type}.\n"
-            f"Available {name_type}s are:\n{all_names}"
+            f"Available {name_type}s are:\n{all_names_}"
         )
 
 
 def _filter_classes(*classes, filters=None):
     """Filter a list of class based on its names."""
     for klass in classes:
-        is_installed = None
-        for parameters in product_param(klass.parameters):
-            obj = klass.get_instance(**parameters)
-            if is_matched(str(obj), filters):
-                if is_installed is None:
-                    is_installed = (
-                        not hasattr(klass, 'is_installed')
-                        or klass.is_installed(
-                            raise_on_not_installed=RAISE_INSTALL_ERROR
-                        )
-                    )
-                if not is_installed:
-                    yield klass.name, False
-                    break
-                yield obj, True
+        if not is_matched(klass.name, filters):
+            continue
+
+        if not klass.is_installed(raise_on_not_installed=RAISE_INSTALL_ERROR):
+            yield klass.name, False
+            continue
+
+        for parameters in _get_used_parameters(klass, filters):
+            yield klass.get_instance(**parameters), True
+
+
+def _get_used_parameters(klass, filters):
+    """Get the list of parameters to use in the class."""
+
+    # Use the default parameters if no filters are provided.
+    if filters is None or len(filters) == 0:
+        return product_param(klass.parameters)
+
+    # If filters are provided, get the list of parameters from the names.
+    update_parameters = []
+    for filt in filters:
+        if is_matched(klass.name, [filt]):
+            # Extract the parameters from the filter name.
+            _, args, kwargs = _extract_options(filt)
+
+            if len(args) > 0:
+                # positional args are allowed only for single-parameter classes
+                if len(klass.parameters) > 1:
+                    raise ValueError(
+                        f"Ambiguous positional parameter in {filt}.")
+                elif len(kwargs) > 0:
+                    raise ValueError(
+                        f"Both positional and keyword parameters in {filt}.")
+                else:
+                    key = list(klass.parameters.keys())[0]
+                    kwargs = {key: args}
+
+            # Use product_param to get all combinations of parameters.
+            kwargs = {
+                key: (val if isinstance(val, (list, tuple)) else [val])
+                for key, val in kwargs.items()
+            }
+            update_parameters.extend(product_param(kwargs))
+
+    # Then, update the default parameters (klass.parameters) with the
+    # parameters extracted from filter names.
+    used_parameters = []
+    for update in update_parameters:
+        for default in product_param(klass.parameters):
+            default = default.copy()  # avoid modifying the original
+
+            # check that all parameters are defined in klass.parameters
+            for key in update:
+                if key not in default:
+                    raise ValueError(
+                        f"Unknown parameter '{key}', parameter must be in "
+                        f"{list(default.keys())}")
+
+            default.update(update)
+            if default not in used_parameters:  # avoid duplicates
+                used_parameters.append(default)
+
+    return used_parameters
 
 
 def buffer_iterator(it):

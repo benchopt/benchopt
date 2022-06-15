@@ -7,18 +7,15 @@ from joblib import Parallel, delayed
 from .callback import _Callback
 from .benchmark import _check_name_lists
 from .utils.sys_info import get_sys_info
+from .utils.files import uniquify_results
 from .utils.pdb_helpers import exception_handler
-
 from .utils.terminal_output import TerminalOutput
-
-# For compat with the lasso benchmark, expose INFINITY in this module.
-# Should be removed once benchopt/benchmark_lasso#55 is merged
-from .stopping_criterion import INFINITY  # noqa: F401
-
 
 ##################################
 # Time one run of a solver
 ##################################
+
+
 def run_one_resolution(objective, solver, meta, stop_val):
     """Run one resolution of the solver.
 
@@ -183,7 +180,6 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
         output.skip(reason, objective=True)
         return []
 
-    objective.set_dataset(dataset)
     skip, reason = solver._set_objective(objective)
     if skip:
         output.skip(reason)
@@ -215,6 +211,7 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
             force=force, output=output, pdb=pdb
         )
         if status in ['diverged', 'error', 'interrupted']:
+            run_statistics = []
             break
         run_statistics.extend(curve)
         states.append(status)
@@ -229,7 +226,7 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
 
     output.show_status(status=status)
     # Make sure to flush so the parallel output is properly display
-    print(flush=True)
+    print(end='', flush=True)
 
     if status == 'interrupted':
         raise SystemExit(1)
@@ -237,9 +234,10 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
 
 
 def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
-                  dataset_names=None, objective_filters=None,
-                  max_runs=10, n_repetitions=1, timeout=100, n_jobs=1,
-                  plot_result=True, html=True, show_progress=True, pdb=False):
+                  dataset_names=None, objective_filters=None, max_runs=10,
+                  n_repetitions=1, timeout=100, n_jobs=1, slurm=None,
+                  plot_result=True, html=True, show_progress=True, pdb=False,
+                  output="None"):
     """Run full benchmark.
 
     Parameters
@@ -267,6 +265,9 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
         The maximum duration in seconds of the solver run.
     n_jobs : int
         Maximal number of workers to use to run the benchmark in parallel.
+    slurm : Path | None
+        If not None, launch the job on a slurm cluster using the file to get
+        the cluster config parameters.
     plot_result : bool
         If set to True (default), display the result plot and save them in
         the benchmark directory.
@@ -277,6 +278,9 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
         If show_progress is set to True, display the progress of the benchmark.
     pdb : bool
         It pdb is set to True, open a debugger on error.
+    output_name : str
+        Filename for the csv output. If given, the results will
+        be stored at <BENCHMARK>/outputs/<filename>.csv.
 
     Returns
     -------
@@ -286,7 +290,7 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
         by the objective is not the same for all parameters, the missing data
         is set to `NaN`.
     """
-    print("Benchopt is running")
+    output_name = output
 
     # List all datasets, objective and solvers to run based on the filters
     # provided. Merge the solver_names and forced to run all necessary solvers.
@@ -298,14 +302,19 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
         solver_names, forced_solvers, dataset_names, objective_filters,
         output=output
     )
-
-    results = Parallel(n_jobs=n_jobs)(
-        delayed(run_one_solver)(
-            benchmark=benchmark, dataset=dataset, objective=objective,
-            solver=solver, n_repetitions=n_repetitions, max_runs=max_runs,
-            timeout=timeout, force=force, output=output, pdb=pdb
-        ) for dataset, objective, solver, force, output in all_runs
+    common_kwargs = dict(
+        benchmark=benchmark, n_repetitions=n_repetitions, max_runs=max_runs,
+        timeout=timeout, pdb=pdb
     )
+
+    if slurm is not None:
+        from .utils.slurm_executor import run_on_slurm
+        results = run_on_slurm(slurm, run_one_solver, common_kwargs, all_runs)
+    else:
+        results = Parallel(n_jobs=n_jobs)(
+            delayed(run_one_solver)(**common_kwargs, **kwargs)
+            for kwargs in all_runs
+        )
 
     run_statistics = []
     for curve in results:
@@ -320,7 +329,11 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
     # Save output in CSV file in the benchmark folder
     timestamp = datetime.now().strftime('%Y-%m-%d_%Hh%Mm%S')
     output_dir = benchmark.get_output_folder()
-    save_file = output_dir / f'benchopt_run_{timestamp}.csv'
+    if output_name == "None":
+        save_file = output_dir / f'benchopt_run_{timestamp}.csv'
+    else:
+        save_file = output_dir / f"{output_name}.csv"
+        save_file = uniquify_results(save_file)
     df.to_csv(save_file)
     output.savefile_status(save_file=save_file)
 

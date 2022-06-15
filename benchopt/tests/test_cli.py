@@ -1,4 +1,7 @@
 import re
+import time
+import tarfile
+import tempfile
 from pathlib import Path
 
 import click
@@ -23,28 +26,35 @@ from benchopt.tests import REQUIREMENT_BENCHMARK_PATH
 from benchopt.cli.main import run
 from benchopt.cli.main import install
 from benchopt.cli.helpers import clean
-from benchopt.cli.process_results import plot
+from benchopt.cli.helpers import archive
 from benchopt.cli.helpers import check_install
+from benchopt.cli.process_results import plot
+from benchopt.cli.process_results import generate_results
 
 
 BENCHMARK_COMPLETION_CASES = [
-    (str(DUMMY_BENCHMARK_PATH.parent), 2, [str(DUMMY_BENCHMARK_PATH),
-                                           str(REQUIREMENT_BENCHMARK_PATH)]),
-    (str(DUMMY_BENCHMARK_PATH.parent)[:-2], 2,
-     [str(DUMMY_BENCHMARK_PATH), str(REQUIREMENT_BENCHMARK_PATH)]),
-    (str(DUMMY_BENCHMARK_PATH)[:-2], 1, str(DUMMY_BENCHMARK_PATH))
+    (str(DUMMY_BENCHMARK_PATH.parent), [
+        str(DUMMY_BENCHMARK_PATH),
+        str(REQUIREMENT_BENCHMARK_PATH),
+    ]),
+    (str(DUMMY_BENCHMARK_PATH.parent)[:-2], [
+        str(DUMMY_BENCHMARK_PATH),
+        str(REQUIREMENT_BENCHMARK_PATH),
+    ]),
+    (str(DUMMY_BENCHMARK_PATH)[:-2], [str(DUMMY_BENCHMARK_PATH)])
 ]
 SOLVER_COMPLETION_CASES = [
-    ('', 7, ['cd', 'julia-pgd', 'python-pgd', 'python-pgd-with-cb', 'r-pgd',
-             'sklearn', 'test-solver']),
-    ('sk', 1, 'sklearn'),
-    ('pgd', 4, ['julia-pgd', 'python-pgd', 'python-pgd-with-cb', 'r-pgd'])
+    ('', ['cd', 'julia-pgd', 'python-pgd', 'python-pgd-with-cb', 'r-pgd',
+          'sklearn', 'test-solver']),
+    ('sk', ['sklearn']),
+    ('pgd', ['julia-pgd', 'python-pgd', 'python-pgd-with-cb', 'r-pgd'])
 ]
 DATASET_COMPLETION_CASES = [
-    ('', 3, ['leukemia', 'simulated', 'test-dataset']),
-    ('simu', 1, 'simulated'),
-    ('lated', 1, 'simulated'),
+    ('', ['leukemia', 'simulated', 'test-dataset']),
+    ('simu', ['simulated']),
+    ('lated', ['simulated']),
 ]
+CURRENT_DIR = Path.cwd()
 
 
 def _get_completion(cmd, args, incomplete):
@@ -54,13 +64,14 @@ def _get_completion(cmd, args, incomplete):
 
 
 def _test_shell_completion(cmd, args, test_cases):
-    for incomplete, n_res, expected in test_cases:
+    for incomplete, expected in test_cases:
         proposals = _get_completion(cmd, args, incomplete)
+        n_res = len(expected)
         assert len(proposals) == n_res, (
             f"Expected {n_res} completion proposal, got '{proposals}'"
         )
         if n_res == 1:
-            assert proposals[0] == expected, proposals
+            assert proposals[0] == expected[0], proposals
         elif expected is not None:
             assert set(proposals) == set(expected), proposals
 
@@ -99,11 +110,15 @@ class TestRunCmd:
 
     @pytest.mark.parametrize('invalid_benchmark, match', [
         ('invalid_benchmark', "Path 'invalid_benchmark' does not exist."),
-        ('.', "The folder '.' does not contain `objective.py`")],
-        ids=['invalid_path', 'no_objective'])
+        ('.', "The folder '.' does not contain `objective.py`"),
+        ("", rf"The folder '{CURRENT_DIR}' does not contain `objective.py`")],
+        ids=['invalid_path', 'no_objective', "no_objective in default"])
     def test_invalid_benchmark(self, invalid_benchmark, match):
         with pytest.raises(click.BadParameter, match=match):
-            run([invalid_benchmark], 'benchopt', standalone_mode=False)
+            if len(invalid_benchmark) > 0:
+                run([invalid_benchmark], 'benchopt', standalone_mode=False)
+            else:
+                run([], 'benchopt', standalone_mode=False)
 
     def test_invalid_dataset(self):
         with pytest.raises(click.BadParameter, match=r"invalid_dataset"):
@@ -149,6 +164,29 @@ class TestRunCmd:
         # Make sure the results were saved in a result file
         assert len(out.result_files) == 1, out.output
 
+    def test_benchopt_run_custom_parameters(self):
+        SELECT_DATASETS = r'simulated[n_features=[100, 200]]'
+        SELECT_SOLVERS = r'python-pgd-with-cb[use_acceleration=[True, False]]'
+        SELECT_OBJECTIVES = r'dummy*[0.1, 0.2]'
+
+        with CaptureRunOutput() as out:
+            run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_DATASETS,
+                 '-f', SELECT_SOLVERS, '-n', '1', '-r', '1', '-o',
+                 SELECT_OBJECTIVES, '--no-plot'],
+                'benchopt', standalone_mode=False)
+
+        out.check_output(r'Simulated\[n_features=100,', repetition=1)
+        out.check_output(r'Simulated\[n_features=200,', repetition=1)
+        out.check_output(r'Simulated\[n_features=5000,', repetition=0)
+        out.check_output(r'Dummy Sparse Regression\[reg=0.1\]', repetition=2)
+        out.check_output(r'Dummy Sparse Regression\[reg=0.2\]', repetition=2)
+        out.check_output(r'Dummy Sparse Regression\[reg=0.05\]', repetition=0)
+        out.check_output(r'--Python-PGD\[', repetition=0)
+        out.check_output(r'--Python-PGD-with-cb\[use_acceleration=False\]:',
+                         repetition=28)
+        out.check_output(r'--Python-PGD-with-cb\[use_acceleration=True\]:',
+                         repetition=28)
+
     def test_benchopt_run_profile(self):
         with CaptureRunOutput() as out:
             run_cmd = [str(DUMMY_BENCHMARK_PATH),
@@ -164,6 +202,48 @@ class TestRunCmd:
             "Line #", "Hits", "Time", "Per Hit", "% Time", "Line Contents"
         ]), repetition=1)
         out.check_output(r"def run\(self, n_iter\):", repetition=1)
+
+    def test_benchopt_run_config_file(self):
+        tmp = tempfile.NamedTemporaryFile(mode="w+")
+        tmp.write("some_unknown_option: 0")
+        tmp.flush()
+        with pytest.raises(ValueError, match="Invalid config file option"):
+            run(f'{str(DUMMY_BENCHMARK_PATH)} --config {tmp.name}'.split(),
+                'benchopt', standalone_mode=False)
+
+        config = f"""
+        objective-filter:
+          - {SELECT_ONE_OBJECTIVE}
+        dataset:
+          - {SELECT_ONE_SIMULATED}
+        n-repetitions: 2
+        max-runs: 1
+        force-solver:
+          - python-pgd[step_size=[2, 3]]
+          - Test-Solver
+        """
+        tmp = tempfile.NamedTemporaryFile(mode="w+")
+        tmp.write(config)
+        tmp.flush()
+
+        run_cmd = [str(DUMMY_BENCHMARK_PATH), '--config', tmp.name,
+                   '--no-plot']
+
+        with CaptureRunOutput() as out:
+            run(run_cmd, 'benchopt', standalone_mode=False)
+
+        out.check_output(r'Test-Solver:', repetition=11)
+        out.check_output(r'Python-PGD\[step_size=2\]:', repetition=11)
+        out.check_output(r'Python-PGD\[step_size=3\]:', repetition=11)
+
+        # test that CLI options take precedence
+        with CaptureRunOutput() as out:
+            run(run_cmd + ['-f', 'Test-Solver'],
+                'benchopt', standalone_mode=False)
+
+        out.check_output(r'Test-Solver:', repetition=11)
+        out.check_output(
+            r'Python-PGD\[step_size=1.5\]:', repetition=0)
 
     @pytest.mark.parametrize('n_rep', [2, 3, 5])
     def test_benchopt_caching(self, n_rep):
@@ -208,6 +288,21 @@ class TestRunCmd:
 
         out.check_output(r'Python-PGD\[step_size=1\]:',
                          repetition=5*n_rep+1)
+
+    def test_changing_output_name(self):
+        command = [
+                str(DUMMY_BENCHMARK_PATH), '-l', '-s', SELECT_ONE_PGD,
+                '-d', SELECT_ONE_SIMULATED,
+                '-n', '1', '--output', 'unique_name',
+                '--no-plot'
+                ]
+        with CaptureRunOutput() as out:
+            run(command, 'benchopt', standalone_mode=False)
+            run(command, 'benchopt', standalone_mode=False)
+
+        result_files = re.findall(r'Saving result in: (.*\.csv)', out.output)
+        names = [Path(result_file).stem for result_file in result_files]
+        assert names[0] == 'unique_name' and names[1] == 'unique_name_1'
 
     def test_shell_complete(self):
         # Completion for benchmark name
@@ -326,6 +421,7 @@ class TestPlotCmd:
         assert len(result_files) == 1, out.output
         result_file = result_files[0]
         cls.result_file = result_file
+        cls.result_file = str(Path(result_file).relative_to(Path().resolve()))
 
     @classmethod
     def teardown_class(cls):
@@ -335,37 +431,54 @@ class TestPlotCmd:
     def test_plot_invalid_file(self):
 
         with pytest.raises(FileNotFoundError, match=r"invalid_file"):
-            plot([str(DUMMY_BENCHMARK_PATH), '-f', 'invalid_file'],
-                 'benchopt', standalone_mode=False)
+            plot([str(DUMMY_BENCHMARK_PATH), '-f', 'invalid_file', '--no-html',
+                  '--no-display'], 'benchopt', standalone_mode=False)
 
     def test_plot_invalid_kind(self):
 
         with pytest.raises(ValueError, match=r"invalid_kind"):
+            plot([str(DUMMY_BENCHMARK_PATH), '-k', 'invalid_kind', '--no-html',
+                  '--no-display'], 'benchopt', standalone_mode=False)
 
-            plot([str(DUMMY_BENCHMARK_PATH), '-k', 'invalid_kind'],
-                 'benchopt', standalone_mode=False)
+    def test_plot_html_ignore_kind(self):
+
+        with pytest.warns(UserWarning, match=r"Cannot specify '--kind'"):
+            plot([str(DUMMY_BENCHMARK_PATH), '-k', 'invalid_kind', '--html',
+                  '--no-display'], 'benchopt', standalone_mode=False)
 
     @pytest.mark.parametrize('kind', PLOT_KINDS)
-    @pytest.mark.parametrize('html', [True, False])
-    def test_valid_call(self, kind, html):
+    def test_valid_call(self, kind):
 
         with SuppressStd() as out:
             plot([str(DUMMY_BENCHMARK_PATH), '-f', self.result_file,
-                  '-k', kind, '--no-display',
-                  '--html' if html else '--no-html'],
+                  '-k', kind, '--no-display', '--no-html'],
                  'benchopt', standalone_mode=False)
-        if html:
-            saved_files = re.findall(
-                r'Writing.* results to (.*\.html)', out.output
-            )
-            assert len(saved_files) == 2
-        else:
-            saved_files = re.findall(r'Save .* as: (.*\.pdf)', out.output)
+
+        saved_files = re.findall(r'Save .* as: (.*\.pdf)', out.output)
+        try:
             assert len(saved_files) == 1
             assert kind in saved_files[0]
+        finally:
+            # Make sure to clean up all files even when the test fails
+            for f in saved_files:
+                Path(f).unlink()
 
-        for f in saved_files:
-            Path(f).unlink()
+    def test_valid_call_html(self):
+
+        with SuppressStd() as out:
+            plot([str(DUMMY_BENCHMARK_PATH), '-f', self.result_file,
+                  '-k', kind, '--no-display', '--html'],
+                 'benchopt', standalone_mode=False)
+
+        saved_files = re.findall(
+            r'Writing.* results to (.*\.html)', out.output
+        )
+        try:
+            assert len(saved_files) == 2
+        finally:
+            # Make sure to clean up all files even when the test fails
+            for f in saved_files:
+                Path(f).unlink()
 
     def test_shell_complete(self):
         # Completion for benchmark name
@@ -373,10 +486,164 @@ class TestPlotCmd:
 
         # Completion for solvers
         _test_shell_completion(
-            run, [str(DUMMY_BENCHMARK_PATH), '-s'], SOLVER_COMPLETION_CASES
+            plot, [str(DUMMY_BENCHMARK_PATH), '-f'], [
+                ('', [self.result_file]),
+                (self.result_file[:-4], [self.result_file]),
+                ('_invalid_file', []),
+            ]
         )
 
-        # Completion for datasets
-        _test_shell_completion(
-            run, [str(DUMMY_BENCHMARK_PATH), '-d'], DATASET_COMPLETION_CASES
+
+class TestGenerateResultCmd:
+
+    @classmethod
+    def setup_class(cls):
+        "Make sure at least one result file is available"
+        with SuppressStd() as out:
+            clean([str(DUMMY_BENCHMARK_PATH)],
+                  'benchopt', standalone_mode=False)
+            clean([str(REQUIREMENT_BENCHMARK_PATH)],
+                  'benchopt', standalone_mode=False)
+            run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,
+                 '-s', SELECT_ONE_PGD, '-n', '2', '-r', '1', '-o',
+                 SELECT_ONE_OBJECTIVE, '--no-plot'], 'benchopt',
+                standalone_mode=False)
+            time.sleep(1)  # Make sure there is 2 separate files
+            run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,
+                 '-s', SELECT_ONE_PGD, '-n', '2', '-r', '1', '-o',
+                 SELECT_ONE_OBJECTIVE, '--no-plot'], 'benchopt',
+                standalone_mode=False)
+        result_files = re.findall(r'Saving result in: (.*\.csv)', out.output)
+        assert len(result_files) == 2, out.output
+        cls.result_files = result_files
+
+    @classmethod
+    def teardown_class(cls):
+        "Make sure at least one result file is available"
+        for f in cls.result_files:
+            Path(f).unlink()
+
+    def test_call(self):
+
+        with SuppressStd() as out:
+            generate_results([
+                '--root', str(DUMMY_BENCHMARK_PATH.parent), '--no-display'
+            ], 'benchopt', standalone_mode=False)
+        html_results = re.findall(r'Writing results to (.*\.html)', out.output)
+        html_benchmark = re.findall(
+            rf'Writing {DUMMY_BENCHMARK.name} results to (.*\.html)',
+            out.output
         )
+        html_index = re.findall(r'Writing index to (.*\.html)', out.output)
+        try:
+            assert len(html_index) == 1, out.output
+            assert len(html_benchmark) == 1, out.output
+            assert len(html_results) == len(self.result_files), out.output
+            print(out.output)
+            for f in self.result_files:
+                basename = Path(f).stem
+                assert any(basename in res for res in html_results)
+        finally:
+            # Make sure to clean up all files even when the test fails
+            for f in html_results + html_benchmark + html_index:
+                Path(f).unlink()
+
+
+class TestArchiveCmd:
+
+    @classmethod
+    def setup_class(cls):
+        "Make sure at least one result file is available"
+        with SuppressStd() as out:
+            run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,
+                 '-s', SELECT_ONE_PGD, '-n', '2', '-r', '1', '-o',
+                 SELECT_ONE_OBJECTIVE, '--no-plot'], 'benchopt',
+                standalone_mode=False)
+        result_file = re.findall(r'Saving result in: (.*\.csv)', out.output)
+        assert len(result_file) == 1, out.output
+        cls.result_file = result_file[0]
+
+    @classmethod
+    def teardown_class(cls):
+        "Clean up the result file."
+        Path(cls.result_file).unlink()
+
+    @pytest.mark.parametrize('invalid_benchmark, match', [
+        ('invalid_benchmark', "Path 'invalid_benchmark' does not exist."),
+        ('.', "The folder '.' does not contain `objective.py`"),
+        ("", rf"The folder '{CURRENT_DIR}' does not contain `objective.py`")],
+        ids=['invalid_path', 'no_objective', "no_objective in default"])
+    def test_invalid_benchmark(self, invalid_benchmark, match):
+        with pytest.raises(click.BadParameter, match=match):
+            if len(invalid_benchmark) > 0:
+                run([invalid_benchmark], 'benchopt', standalone_mode=False)
+            else:
+                run([], 'benchopt', standalone_mode=False)
+
+    def test_call(self):
+
+        with SuppressStd() as out:
+            archive([str(DUMMY_BENCHMARK_PATH)], 'benchopt',
+                    standalone_mode=False)
+        saved_files = re.findall(r'Results are in (.*\.tar.gz)', out.output)
+        try:
+            assert len(saved_files) == 1
+            saved_file = saved_files[0]
+
+            counts = {k: 0 for k in [
+                "__pycache__", "outputs", "objective.py", "datasets",
+                "solvers", "README"
+            ]}
+
+            with tarfile.open(saved_file, "r:gz") as tar:
+                for elem in tar.getmembers():
+                    for k in counts:
+                        counts[k] += k in elem.name
+                    assert elem.uname == "benchopt"
+
+            assert counts["README"] == 1, counts
+            assert counts["objective.py"] == 1, counts
+            assert counts["datasets"] >= 1, counts
+            assert counts["solvers"] >= 1, counts
+            assert counts["outputs"] == 0, counts
+            assert counts["__pycache__"] == 0, counts
+        finally:
+            # Make sure to clean up all files even when the test fails
+            for f in saved_files:
+                Path(f).unlink()
+
+    def test_call_with_outputs(self):
+
+        with SuppressStd() as out:
+            archive([str(DUMMY_BENCHMARK_PATH), "--with-outputs"], 'benchopt',
+                    standalone_mode=False)
+        saved_files = re.findall(r'Results are in (.*\.tar.gz)', out.output)
+        try:
+            assert len(saved_files) == 1
+            saved_file = saved_files[0]
+
+            counts = {k: 0 for k in [
+                "__pycache__", "outputs", "objective.py", "datasets",
+                "solvers", "README"
+            ]}
+
+            with tarfile.open(saved_file, "r:gz") as tar:
+                for elem in tar.getmembers():
+                    for k in counts:
+                        counts[k] += k in elem.name
+                    assert elem.uname == "benchopt"
+
+            assert counts["README"] == 1, counts
+            assert counts["objective.py"] == 1, counts
+            assert counts["datasets"] >= 1, counts
+            assert counts["solvers"] >= 1, counts
+            assert counts["outputs"] >= 1, counts
+            assert counts["__pycache__"] == 0, counts
+        finally:
+            # Make sure to clean up all files even when the test fails
+            for f in saved_files:
+                Path(f).unlink()
+
+    def test_shell_complete(self):
+        # Completion for benchmark name
+        _test_shell_completion(archive, [], BENCHMARK_COMPLETION_CASES)

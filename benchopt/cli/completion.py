@@ -46,6 +46,7 @@ def complete_benchmarks(ctx, param, incomplete):
 
 def find_benchmark_in_args(args):
     "Find the benchmark in preceeding args for benchmark dependent completion."
+    args.extend([Path.cwd()])  # default path is current working directory
     for b in args:
         if (Path(b) / "objective.py").exists():
             return Benchmark(b)
@@ -80,7 +81,30 @@ def complete_output_files(ctx, param, incomplete):
     if benchmark is None:
         return []
     output_folder = benchmark.get_output_folder()
-    candidates = list(output_folder.glob('*.csv'))
+
+    # Only use absolute path to make sure we can use relative_to to
+    # autocompletion with relative paths
+    cwd = Path().resolve()
+    candidates = [
+        p.resolve().relative_to(cwd) for p in output_folder.glob('*.csv')
+    ]
+    return propose_from_list(candidates, incomplete)
+
+
+def complete_config_files(ctx, param, incomplete):
+    "Auto-completion for configuration files."
+    skip_import()
+    benchmark = find_benchmark_in_args(ctx.args)
+    if benchmark is None:
+        return []
+    benchmark_folder = benchmark.benchmark_dir
+
+    # Only use absolute path to make sure we can use relative_to to
+    # autocompletion with relative paths
+    cwd = Path().resolve()
+    candidates = [
+        p.resolve().relative_to(cwd) for p in benchmark_folder.glob('*.yml')
+    ]
     return propose_from_list(candidates, incomplete)
 
 
