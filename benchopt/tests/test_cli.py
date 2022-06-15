@@ -453,11 +453,27 @@ class TestPlotCmd:
             plot([str(DUMMY_BENCHMARK_PATH), '-f', self.result_file,
                   '-k', kind, '--no-display', '--no-html'],
                  'benchopt', standalone_mode=False)
+
         saved_files = re.findall(r'Save .* as: (.*\.pdf)', out.output)
         try:
             assert len(saved_files) == 1
-            saved_file = saved_files[0]
-            assert kind in saved_file
+            assert kind in saved_files[0]
+        finally:
+            # Make sure to clean up all files even when the test fails
+            for f in saved_files:
+                Path(f).unlink()
+
+    def test_valid_call_html(self):
+
+        with SuppressStd() as out:
+            plot([str(DUMMY_BENCHMARK_PATH), '-f', self.result_file,
+                  '--no-display', '--html'], 'benchopt', standalone_mode=False)
+
+        saved_files = re.findall(
+            r'Writing.* results to (.*\.html)', out.output
+        )
+        try:
+            assert len(saved_files) == 2
         finally:
             # Make sure to clean up all files even when the test fails
             for f in saved_files:
