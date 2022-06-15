@@ -8,6 +8,9 @@ import subprocess
 from shutil import which
 from pathlib import Path
 
+from ..config import DEBUG
+from .shell_cmd import _run_shell
+
 
 def _get_processor_name():
     "Return processor name in a cross-platform way."
@@ -45,7 +48,7 @@ def get_cuda_version():
     except AttributeError:
         warnings.warn(
             "Could not parse cuda version or device name from `nvidia-smi`."
-         )
+        )
         return None
 
 
@@ -73,6 +76,15 @@ def _get_numpy_libs():
                 libs += [f"{key}={lib}"]
     libs = ", ".join(libs)
     return libs
+
+
+def _get_git_tag():
+    err, tag = _run_shell("git describe --tags --abbrev=0", return_output=True)
+    if err != 0:
+        if DEBUG:
+            print(err, tag)
+        tag = None
+    return tag
 
 
 def get_sys_info():
@@ -106,5 +118,8 @@ def get_sys_info():
     info["version-cuda"] = get_cuda_version()
     info["version-numpy"] = (np.__version__, _get_numpy_libs())
     info["version-scipy"] = scipy.__version__
+
+    # Info on benchmark version
+    info["benchmark-git-tag"] = _get_git_tag()
 
     return info

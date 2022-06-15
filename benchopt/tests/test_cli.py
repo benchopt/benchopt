@@ -1,4 +1,5 @@
 import re
+import time
 import tarfile
 import tempfile
 from pathlib import Path
@@ -28,6 +29,7 @@ from benchopt.cli.helpers import clean
 from benchopt.cli.helpers import archive
 from benchopt.cli.helpers import check_install
 from benchopt.cli.process_results import plot
+from benchopt.cli.process_results import generate_results
 
 
 BENCHMARK_COMPLETION_CASES = [
@@ -429,15 +431,20 @@ class TestPlotCmd:
     def test_plot_invalid_file(self):
 
         with pytest.raises(FileNotFoundError, match=r"invalid_file"):
-            plot([str(DUMMY_BENCHMARK_PATH), '-f', 'invalid_file'],
-                 'benchopt', standalone_mode=False)
+            plot([str(DUMMY_BENCHMARK_PATH), '-f', 'invalid_file', '--no-html',
+                  '--no-display'], 'benchopt', standalone_mode=False)
 
     def test_plot_invalid_kind(self):
 
         with pytest.raises(ValueError, match=r"invalid_kind"):
+            plot([str(DUMMY_BENCHMARK_PATH), '-k', 'invalid_kind', '--no-html',
+                  '--no-display'], 'benchopt', standalone_mode=False)
 
-            plot([str(DUMMY_BENCHMARK_PATH), '-k', 'invalid_kind'],
-                 'benchopt', standalone_mode=False)
+    def test_plot_html_ignore_kind(self):
+
+        with pytest.warns(UserWarning, match=r"Cannot specify '--kind'"):
+            plot([str(DUMMY_BENCHMARK_PATH), '-k', 'invalid_kind', '--html',
+                  '--no-display'], 'benchopt', standalone_mode=False)
 
     @pytest.mark.parametrize('kind', PLOT_KINDS)
     def test_valid_call(self, kind):
@@ -468,6 +475,61 @@ class TestPlotCmd:
                 ('_invalid_file', []),
             ]
         )
+
+
+class TestGenerateResultCmd:
+
+    @classmethod
+    def setup_class(cls):
+        "Make sure at least one result file is available"
+        with SuppressStd() as out:
+            clean([str(DUMMY_BENCHMARK_PATH)],
+                  'benchopt', standalone_mode=False)
+            clean([str(REQUIREMENT_BENCHMARK_PATH)],
+                  'benchopt', standalone_mode=False)
+            run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,
+                 '-s', SELECT_ONE_PGD, '-n', '2', '-r', '1', '-o',
+                 SELECT_ONE_OBJECTIVE, '--no-plot'], 'benchopt',
+                standalone_mode=False)
+            time.sleep(1)  # Make sure there is 2 separate files
+            run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,
+                 '-s', SELECT_ONE_PGD, '-n', '2', '-r', '1', '-o',
+                 SELECT_ONE_OBJECTIVE, '--no-plot'], 'benchopt',
+                standalone_mode=False)
+        result_files = re.findall(r'Saving result in: (.*\.csv)', out.output)
+        assert len(result_files) == 2, out.output
+        cls.result_files = result_files
+
+    @classmethod
+    def teardown_class(cls):
+        "Make sure at least one result file is available"
+        for f in cls.result_files:
+            Path(f).unlink()
+
+    def test_call(self):
+
+        with SuppressStd() as out:
+            generate_results([
+                '--root', str(DUMMY_BENCHMARK_PATH.parent), '--no-display'
+            ], 'benchopt', standalone_mode=False)
+        html_results = re.findall(r'Writing results to (.*\.html)', out.output)
+        html_benchmark = re.findall(
+            rf'Writing {DUMMY_BENCHMARK.name} results to (.*\.html)',
+            out.output
+        )
+        html_index = re.findall(r'Writing index to (.*\.html)', out.output)
+        try:
+            assert len(html_index) == 1, out.output
+            assert len(html_benchmark) == 1, out.output
+            assert len(html_results) == len(self.result_files), out.output
+            print(out.output)
+            for f in self.result_files:
+                basename = Path(f).stem
+                assert any(basename in res for res in html_results)
+        finally:
+            # Make sure to clean up all files even when the test fails
+            for f in html_results + html_benchmark + html_index:
+                Path(f).unlink()
 
 
 class TestArchiveCmd:

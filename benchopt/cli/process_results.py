@@ -1,4 +1,5 @@
 import click
+import warnings
 from pathlib import Path
 
 from benchopt.config import get_setting
@@ -56,6 +57,10 @@ def plot(benchmark, filename=None, kinds=('suboptimality_curve',),
         assert html, '`--all` can only be used for HTML plot generation.'
         filename = 'all'
 
+    if html and len(kinds) > 0:
+        warnings.warn("Cannot specify '--kind' for HTML plot, this options "
+                      "will be ignored.")
+
     # Get the result file
     benchmark = Benchmark(benchmark)
     result_filename = benchmark.get_result_file(filename)
@@ -106,7 +111,7 @@ def publish(benchmark, token=None, filename=None):
     help="Generate result website from list of benchmarks."
 )
 @click.option('--benchmark', '-b', 'benchmarks', metavar="<bench>",
-              multiple=True, default=[Path.cwd()],
+              multiple=True,
               type=click.Path(exists=True),
               shell_complete=complete_benchmarks,
               help="Folders containing benchmarks to include.")

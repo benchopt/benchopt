@@ -287,15 +287,9 @@ const isAvailable = () => {
   return !isNotAvailable;
 }
 
-const displayScaleSelector = shouldBeVisible => {
-  if (shouldBeVisible) {
-    document.getElementById('scale-form-group').style.display = 'block'
-    document.getElementById('quantiles-form-group').style.display = 'block'
-  } else {
-    document.getElementById('scale-form-group').style.display = 'none'
-    document.getElementById('quantiles-form-group').style.display = 'none'
-  }
-}
+const displayScaleSelector = shouldBeVisible => shouldBeVisible ?
+  document.getElementById('change_scaling').style.display = 'inline-block'
+  : document.getElementById('change_scaling').style.display = 'none';
 
 const barDataToArrays = () => {
   const colors = [], texts = [], x = [], y = [];

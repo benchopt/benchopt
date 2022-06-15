@@ -7,19 +7,15 @@ from joblib import Parallel, delayed
 from .callback import _Callback
 from .benchmark import _check_name_lists
 from .utils.sys_info import get_sys_info
-from .utils.pdb_helpers import exception_handler
 from .utils.files import uniquify_results
-
+from .utils.pdb_helpers import exception_handler
 from .utils.terminal_output import TerminalOutput
-
-# For compat with the lasso benchmark, expose INFINITY in this module.
-# Should be removed once benchopt/benchmark_lasso#55 is merged
-from .stopping_criterion import INFINITY  # noqa: F401
-
 
 ##################################
 # Time one run of a solver
 ##################################
+
+
 def run_one_resolution(objective, solver, meta, stop_val):
     """Run one resolution of the solver.
 

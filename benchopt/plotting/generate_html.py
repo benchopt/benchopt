@@ -133,14 +133,16 @@ def shape_objectives_columns_for_html(df, dataset, objective):
     ]
     for column in columns:
         df_filtered = df.query(
-            "data_name == @dataset & objective_name == @objective")
+            "data_name == @dataset & objective_name == @objective"
+        )
         objective_columns_data[column] = {
             'solvers': shape_solvers_for_html(df_filtered, column),
             # Values used in javascript to do computation
             'transformers': {
                 'c_star': float(df_filtered[column].min() - 1e-10),
                 'max_f_0': float(
-                    df_filtered[df_filtered['stop_val'] == 1][column].max())
+                    df_filtered[df_filtered['stop_val'] == 1][column].max()
+                )
             }
         }
 
@@ -467,14 +469,17 @@ def plot_benchmark_html_all(patterns=(), benchmarks=(), root=None,
             fnames, PLOT_KINDS.keys(), root_html, benchmark.name, copy=True
         )
         len_fnames.append(len(fnames))
-        rendered = render_benchmark(
-            results, benchmark.name, static_dir=static_dir
-        )
+        if len(results) > 0:
+            rendered = render_benchmark(
+                results, benchmark.name, static_dir=static_dir
+            )
 
-        benchmark_filename = (root_html / benchmark.name).with_suffix('.html')
-        print(f"Writing {benchmark.name} results to {benchmark_filename}")
-        with open(benchmark_filename, "w") as f:
-            f.write(rendered)
+            benchmark_filename = (
+                root_html / benchmark.name
+            ).with_suffix('.html')
+            print(f"Writing {benchmark.name} results to {benchmark_filename}")
+            with open(benchmark_filename, "w") as f:
+                f.write(rendered)
 
         htmls = render_all_results(
             results, benchmark.name, static_dir=static_dir

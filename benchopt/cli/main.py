@@ -9,6 +9,7 @@ from benchopt.cli.completion import complete_datasets
 from benchopt.cli.completion import complete_benchmarks
 from benchopt.cli.completion import complete_conda_envs
 from benchopt.cli.completion import complete_config_files
+from benchopt.utils.misc import get_benchopt_requirement
 from benchopt.utils.conda_env_cmd import list_conda_envs
 from benchopt.utils.conda_env_cmd import create_conda_env
 from benchopt.utils.shell_cmd import _run_shell_in_conda_env
@@ -273,11 +274,20 @@ def run(config_file=None, **kwargs):
     print(f"Launching benchopt in env {env_name}")
 
     # check if environment was set up with benchopt
-    if get_benchopt_version_in_env(env_name) is None:
+    benchopt_version, is_editable = get_benchopt_version_in_env(env_name)
+    if benchopt_version is None:
         raise RuntimeError(
             f"benchopt is not installed in env '{env_name}', "
             "see the command `benchopt install` to setup the environment."
         )
+    # check against running version
+    from benchopt import __version__ as benchopt_version_running
+    _, is_editable_running = get_benchopt_requirement()
+    if (benchopt_version_running != benchopt_version and not
+            (is_editable_running and is_editable)):
+        warnings.warn(
+            f"Benchopt running version ({benchopt_version_running}) "
+            f"and version in env {env_name} ({benchopt_version}) differ")
 
     # run the command in the conda env
     solvers_option = ' '.join([f"-s '{s}'" for s in solver_names])
