@@ -394,7 +394,7 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
         for key in self._parameters:
             has_changed = parameters[key] != getattr(self, key)
             if hasattr(has_changed, '__iter__'):
-                 has_changed = any(has_changed)
+                has_changed = any(has_changed)
 
             if has_changed:
                 raise ValueError(
