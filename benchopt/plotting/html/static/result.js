@@ -29,10 +29,11 @@ const NON_CONVERGENT_COLOR = 'rgba(0.8627, 0.8627, 0.8627)'
  * 
  * @param {Object} partialState 
  */
-const setState = (partialState, updatePlot = true) => {
+const setState = (partialState) => {
   window.state = {...state(), ...partialState};
   displayScaleSelector(!isBarChart());
-  if (updatePlot) makePlot();
+  makePlot();
+  makeLegend();
 }
 
 /**
@@ -444,15 +445,25 @@ const getYLabel = () => {
  * by user on the legend of the plot.
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
-const getSolverFromPlotlyEvent = event => event.data[event.curveNumber].name;
+const getSolverFromEvent = event => {
+  const target = event.currentTarget;
 
-const purgeHiddenSolvers = () => setState({hidden_solvers: []}, false);
+  for (let i = 0; i < target.children.length; i++) {
+    if (target.children[i].className == 'solver') {
+      return target.children[i].firstChild.nodeValue;
+    }
+  }
 
-const hideAllSolversExcept = solver => {setState({hidden_solvers: getSolvers().filter(elmt => elmt !== solver)}, false)};
+  return null;
+};
 
-const hideSolver = solver => isVisible(solver) ? setState({hidden_solvers: [...state().hidden_solvers, solver]}, false) : null;
+const purgeHiddenSolvers = () => setState({hidden_solvers: []});
 
-const showSolver = solver => setState({hidden_solvers: state().hidden_solvers.filter(hidden => hidden !== solver)}, false);
+const hideAllSolversExcept = solver => {setState({hidden_solvers: getSolvers().filter(elmt => elmt !== solver)})};
+
+const hideSolver = solver => isVisible(solver) ? setState({hidden_solvers: [...state().hidden_solvers, solver]}) : null;
+
+const showSolver = solver => setState({hidden_solvers: state().hidden_solvers.filter(hidden => hidden !== solver)});
 
 /**
  * Add or remove solver name from the list of hidden solvers.
@@ -479,6 +490,88 @@ const handleSolverDoubleClick = solver => {
 
   hideAllSolversExcept(solver);
 };
+
+/**
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * MANAGE PLOT LEGEND
+ * 
+ * We don't use the plotly legend to keep control
+ * on the size of the plot.
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
+const makeLegend = () => {
+  const legend = document.getElementById('plot_legend');
+
+  legend.innerHTML = '';
+
+  Object.keys(data().solvers).forEach(solver => {
+    const color = data().solvers[solver].color;
+    const symbolNumber = data().solvers[solver].marker;
+
+    legend.appendChild(createLegendItem(solver, color, symbolNumber));
+  });
+}
+
+const createLegendItem = (title, color, symbolNumber) => {
+  const item = document.createElement('div');
+  item.style.display = 'flex';
+  item.style.flexDirection = 'row';
+  item.style.alignItems = 'center';
+  item.style.position = 'relative';
+  item.style.cursor = 'pointer';
+
+  item.addEventListener('click', event => {
+    solver = getSolverFromEvent(event);
+
+    if (!solver) {
+      console.error('Any solver was found in the click event.');
+      return;
+    }
+    
+    handleSolverClick(solver);
+  });
+
+  item.addEventListener('dblclick', event => {
+    solver = getSolverFromEvent(event);
+
+    if (!solver) {
+      console.error('Any solver was found in the dblclick event.');
+      return;
+    }
+
+    handleSolverDoubleClick(solver);
+  });
+
+  const textContainer = document.createElement('div');
+  textContainer.style.marginLeft = '0.5rem';
+  textContainer.className = 'solver';
+  textContainer.appendChild(document.createTextNode(title));
+
+  const hBar = document.createElement('div');
+  hBar.style.height = '2px';
+  hBar.style.width = '30px';
+  hBar.style.backgroundColor = color;
+  hBar.style.position = 'absolute';
+  hBar.style.left = 0;
+
+  item.appendChild(createSymbol(symbolNumber, color));
+  item.appendChild(hBar);
+  item.appendChild(textContainer);
+
+  return item;
+}
+
+const createSymbol = (symbolNumber, color) => {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+
+  svg.setAttribute('width', 30);
+  svg.setAttribute('height', 30);
+
+  // makePathElement() come from the local file symbols.js
+  svg.appendChild(createPathElement(symbolNumber, color));
+
+  return svg;
+}
 
 /**
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

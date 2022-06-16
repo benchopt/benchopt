@@ -119,6 +119,8 @@
 
         <div id="unique_plot"></div>
 
+        <div id="plot_legend" class="space-x-4"></div>
+
         <script src="https://cdn.plot.ly/plotly-2.12.1.min.js"></script>
         <script>
             window.data = ${result['json']};
@@ -134,19 +136,9 @@
                     'with_quantiles': document.getElementById('change_shades').checked,
                     'hidden_solvers': []
                 });
-
-                document.getElementById('unique_plot').on('plotly_legenddoubleclick', event => {
-                    const solver = getSolverFromPlotlyEvent(event);
-                    handleSolverDoubleClick(solver);
-                });
-
-                document.getElementById('unique_plot').on('plotly_legendclick', event => {
-                    const solver = getSolverFromPlotlyEvent(event);
-                    handleSolverClick(solver);
-                });
             });
         </script>
-
+        <script type="text/javascript" src="${static_dir}/symbols.js"></script>
         <script type="text/javascript" src="${static_dir}/result.js"></script>
     </body>
 </html>
