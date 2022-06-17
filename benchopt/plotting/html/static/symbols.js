@@ -554,81 +554,65 @@ const SYMBOLDEFS = {
 
 const DOTPATH = 'M0,0.5L0.5,0L0,-0.5L-0.5,0Z';
 
-const drawing = {};
-
-drawing.symbolNames = [];
-drawing.symbolFuncs = [];
-drawing.symbolNeedLines = {};
-drawing.symbolNoDot = {};
-drawing.symbolNoFill = {};
-drawing.symbolList = [];
+const drawing = {
+    symbolFuncs: [],
+};
 
 /**
- * Create arrays of symbol informations
+ * Create arrays of symbol functions.
  * https://plotly.com/javascript/reference/scatter/#scatter-marker-symbol
  */
 Object.keys(SYMBOLDEFS).forEach(function(k) {
     var symDef = SYMBOLDEFS[k];
     var n = symDef.n;
-    drawing.symbolList.push(
-        n,
-        String(n),
-        k,
-
-        n + 100,
-        String(n + 100),
-        k + '-open'
-    );
-    drawing.symbolNames[n] = k;
     drawing.symbolFuncs[n] = symDef.f;
-
-    if(symDef.needLine) {
-        drawing.symbolNeedLines[n] = true;
-    }
-    if(symDef.noDot) {
-        drawing.symbolNoDot[n] = true;
-    } else {
-        drawing.symbolList.push(
-            n + 200,
-            String(n + 200),
-            k + '-dot',
-
-            n + 300,
-            String(n + 300),
-            k + '-open-dot'
-        );
-    }
-    if(symDef.noFill) {
-        drawing.symbolNoFill[n] = true;
-    }
 });
 
 /**
- * Returns an svg as HTMLElement 
+ * Returns a <path></path> element that have to be placed in a <svg></svg> element.
  * 
+ * @param {int} symbolNumber
+ * @param {String} color
  * @return {Element}
  */
 const createPathElement = (symbolNumber, color) => {
     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    // d is the shape of the symbol.
     path.setAttribute('d', createPathString(symbolNumber, 5));
+    // Translation must be the half of the svg size to have the symbol centered.
     path.setAttribute('transform', 'translate(15, 15)');
 
-    // If svg is type "open" : https://plotly.com/javascript/reference/scatter/#scatter-marker-symbol
-    if (100 <= symbolNumber && symbolNumber < 200) {
+    // If svg is type "open" or "open-dot" : https://plotly.com/javascript/reference/scatter/#scatter-marker-symbol
+    if ((100 <= symbolNumber && symbolNumber < 200) || 300 <= symbolNumber) {
         path.setAttribute('stroke', color);
         path.setAttribute('stroke-width', 0.5);
         path.setAttribute('stroke-opacity', 1);
+        path.setAttribute('fill', 'white');
     }
 
     // If svg is type "normal" or "dot" : https://plotly.com/javascript/reference/scatter/#scatter-marker-symbol
-    if (symbolNumber < 100 || (200 <= symbolNumber && symbolNumber < 300)) { 
+    if (symbolNumber < 100 || (200 <= symbolNumber && symbolNumber < 300)) {
         path.setAttribute('fill-opacity', 1);
         path.setAttribute('fill', color);
+    }
+
+    // If svg is type "dot" : https://plotly.com/javascript/reference/scatter/#scatter-marker-symbol
+    if (200 <= symbolNumber && symbolNumber < 300) {
+        path.setAttribute('stroke', 'black');
+        path.setAttribute('stroke-width', 0.5);
+        path.setAttribute('stroke-opacity', 1);
     }
     
     return path;
 }
 
+/**
+ * Returns the string corresponding of the symbol shape requested by symbolNumber.
+ * 
+ * @param {int} symbolNumber
+ * @param {int} r size of the symbol (currently, we request a 5)
+ * @returns {String} this string must be placed in the "d" attribute of <path></path> SVG element.
+ */
 function createPathString(symbolNumber, r) {
     var base = symbolNumber % 100;
     return drawing.symbolFuncs[base](r) + (symbolNumber >= 200 ? DOTPATH : '');
