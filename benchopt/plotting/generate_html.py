@@ -1,6 +1,7 @@
 import json
 import shutil
 import webbrowser
+import math
 from pathlib import Path
 from datetime import datetime
 
@@ -154,6 +155,7 @@ def shape_solvers_for_html(df, objective_column):
     solver_data = {}
     for solver in df['solver_name'].unique():
         df_filtered = df.query("solver_name == @solver")
+        df_filtered = df_filtered[df_filtered[objective_column] != math.inf]
         q1, q9 = compute_quantiles(df_filtered)
         solver_data[solver] = {
             'scatter': {
