@@ -112,6 +112,12 @@ Available optimization problems
      - |Build Status NNLS|
    * - `LASSO: L1-regularized least squares <https://github.com/benchopt/benchmark_lasso>`_
      - |Build Status Lasso|
+   * - `LASSO Path <https://github.com/jolars/benchmark_lasso_path>`_
+     - |Build Status Lasso Path|
+   * - `Elastic Net <https://github.com/benchopt/benchmark_elastic_net>`_
+     - |Build Status ElasticNet|
+   * - `MCP <https://github.com/benchopt/benchmark_mcp>`_
+     - |Build Status MCP|
    * - `L2-regularized logistic regression <https://github.com/benchopt/benchmark_logreg_l2>`_
      - |Build Status LogRegL2|
    * - `L1-regularized logistic regression <https://github.com/benchopt/benchmark_logreg_l1>`_
@@ -124,6 +130,12 @@ Available optimization problems
      - |Build Status LinearSVM|
    * - `Linear ICA <https://github.com/benchopt/benchmark_linear_ica>`_
      - |Build Status LinearICA|
+   * - `1D Total Variation Denoising <https://github.com/benchopt/benchmark_tv_1d>`_
+     - |Build Status TV1D|
+   * - `2D Total Variation Denoising <https://github.com/benchopt/benchmark_tv_2d>`_
+     - |Build Status TV2D|
+   * - `ResNet Classification <https://github.com/benchopt/benchmark_resnet_classif>`_
+     - |Build Status ResNetClassif|
 
 
 .. |Test Status| image:: https://github.com/benchopt/benchopt/actions/workflows/test.yml/badge.svg
@@ -139,6 +151,12 @@ Available optimization problems
    :target: https://github.com/benchopt/benchmark_nnls/actions
 .. |Build Status Lasso| image:: https://github.com/benchopt/benchmark_lasso/workflows/Tests/badge.svg
    :target: https://github.com/benchopt/benchmark_lasso/actions
+.. |Build Status Lasso Path| image:: https://github.com/jolars/benchmark_lasso_path/workflows/Tests/badge.svg
+   :target: https://github.com/benchopt/benchmark_lasso_path/actions
+.. |Build Status ElasticNet| image:: https://github.com/benchopt/benchmark_elastic_net/workflows/Tests/badge.svg
+   :target: https://github.com/benchopt/benchmark_elastic_net/actions
+.. |Build Status MCP| image:: https://github.com/benchopt/benchmark_linear_mcp/workflows/Tests/badge.svg
+   :target: https://github.com/benchopt/benchmark_mcp/actions
 .. |Build Status LogRegL2| image:: https://github.com/benchopt/benchmark_logreg_l2/workflows/Tests/badge.svg
    :target: https://github.com/benchopt/benchmark_logreg_l2/actions
 .. |Build Status LogRegL1| image:: https://github.com/benchopt/benchmark_logreg_l1/workflows/Tests/badge.svg
@@ -151,3 +169,9 @@ Available optimization problems
    :target: https://github.com/benchopt/benchmark_linear_svm_binary_classif_no_intercept/actions
 .. |Build Status LinearICA| image:: https://github.com/benchopt/benchmark_linear_ica/workflows/Tests/badge.svg
    :target: https://github.com/benchopt/benchmark_linear_ica/actions
+.. |Build Status TV1D| image:: https://github.com/benchopt/benchmark_tv_1d/workflows/Tests/badge.svg
+   :target: https://github.com/benchopt/benchmark_tv_1d/actions
+.. |Build Status TV2D| image:: https://github.com/benchopt/benchmark_tv_2d/workflows/Tests/badge.svg
+   :target: https://github.com/benchopt/benchmark_tv_2d/actions
+.. |Build Status ResNetClassif| image:: https://github.com/benchopt/benchmark_resnet_classif/workflows/Tests/badge.svg
+   :target: https://github.com/benchopt/benchmark_resnet_classif/actions
