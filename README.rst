@@ -96,7 +96,11 @@ or read the `CLI documentation <https://benchopt.github.io/cli.html>`_.
 Benchopt also provides a Python API described in the
 `API documentation <https://benchopt.github.io/api.html>`_.
 
-.. list-table:: Available optimization problems
+
+Available optimization problems
+-------------------------------
+
+.. list-table::
    :widths: 80 20
    :header-rows: 1
 
