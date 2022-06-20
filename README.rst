@@ -155,7 +155,7 @@ Available optimization problems
    :target: https://github.com/benchopt/benchmark_lasso_path/actions
 .. |Build Status ElasticNet| image:: https://github.com/benchopt/benchmark_elastic_net/workflows/Tests/badge.svg
    :target: https://github.com/benchopt/benchmark_elastic_net/actions
-.. |Build Status MCP| image:: https://github.com/benchopt/benchmark_linear_mcp/workflows/Tests/badge.svg
+.. |Build Status MCP| image:: https://github.com/benchopt/benchmark_mcp/workflows/Tests/badge.svg
    :target: https://github.com/benchopt/benchmark_mcp/actions
 .. |Build Status LogRegL2| image:: https://github.com/benchopt/benchmark_logreg_l2/workflows/Tests/badge.svg
    :target: https://github.com/benchopt/benchmark_logreg_l2/actions
