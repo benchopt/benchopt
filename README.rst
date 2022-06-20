@@ -120,6 +120,7 @@ Available optimization problems
      - `Results <https://benchopt.github.io/results/benchmark_lasso_path.html>`_
      - |Build Status Lasso Path|
    * - `Elastic Net <https://github.com/benchopt/benchmark_elastic_net>`_
+     - 
      - |Build Status ElasticNet|
    * - `MCP <https://github.com/benchopt/benchmark_mcp>`_
      - `Results <https://benchopt.github.io/results/benchmark_mcp.html>`_
@@ -131,17 +132,22 @@ Available optimization problems
      - `Results <https://benchopt.github.io/results/benchmark_logreg_l1.html>`_
      - |Build Status LogRegL1|
    * - `L2-regularized Huber regression <https://github.com/benchopt/benchmark_huber_l2>`_
+     - 
      - |Build Status HuberL2|
    * - `L1-regularized quantile regression <https://github.com/benchopt/benchmark_quantile_regression>`_
      - `Results <https://benchopt.github.io/results/benchmark_quantile_regression.html>`_
      - |Build Status QuantileRegL1|
    * - `Linear SVM for binary classification <https://github.com/benchopt/benchmark_linear_svm_binary_classif_no_intercept>`_
+     - 
      - |Build Status LinearSVM|
    * - `Linear ICA <https://github.com/benchopt/benchmark_linear_ica>`_
+     - 
      - |Build Status LinearICA|
    * - `1D Total Variation Denoising <https://github.com/benchopt/benchmark_tv_1d>`_
+     - 
      - |Build Status TV1D|
    * - `2D Total Variation Denoising <https://github.com/benchopt/benchmark_tv_2d>`_
+     - 
      - |Build Status TV2D|
    * - `ResNet Classification <https://github.com/benchopt/benchmark_resnet_classif>`_
      - `Results <https://benchopt.github.io/results/benchmark_resnet_classif.html>`_
