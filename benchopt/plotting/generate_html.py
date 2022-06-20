@@ -99,6 +99,21 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
         )
 
         result['json'] = json.dumps(shape_datasets_for_html(df))
+        
+        with open(root_html / 'static' / 'result.js') as js_file:
+            js_code = js_file.read()
+        
+        result['js'] = js_code
+        
+        with open(root_html / 'static' / 'main.css') as css_file:
+            css_code = css_file.read()
+        
+        result['main_css'] = css_code
+        
+        with open(root_html / 'static' / 'main.css') as css_file:
+            css_code = css_file.read()
+        
+        result['hover_css'] = css_code
 
     return results
 
