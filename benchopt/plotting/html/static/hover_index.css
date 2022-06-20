@@ -90,6 +90,8 @@ input:focus+.slider {
 }
 
 input:checked+.slider:before {
+  -webkit-transform: translateX(var(--slider-on));
+  -ms-transform: translateX(var(--slider-on));
   transform: translateX(var(--slider-on));
 }
 
@@ -113,4 +115,8 @@ input:checked+.slider:before {
     flex: initial;
     flex-shrink: 0;
   }
+}
+
+.js-plotly-plot .plotly .modebar {
+  transform: translateX(-30px);
 }

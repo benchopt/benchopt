@@ -1230,6 +1230,10 @@ video {
   .md\:text-left {
     text-align: left;
   }
+
+  .md\:block {
+    display:block;
+  }
 }
 
 @media (min-width: 1024px) {
@@ -1252,4 +1256,8 @@ video {
   .lg\:justify-between {
     justify-content: space-between;
   }
+}
+
+.overflow-scroll {
+  overflow: scroll;
 }

@@ -267,7 +267,9 @@ const isBarChart = () => state().plot_kind === 'bar_chart';
 
 const isVisible = solver => !state().hidden_solvers.includes(solver);
 
-const isSolverAvailable = solver => data(solver).scatter.y.filter(value => !isNaN(value)).length > 0
+const isSolverAvailable = solver => data(solver).scatter.y.filter(value => !isNaN(value)).length > 0;
+
+const isSmallScreen = () => window.screen.availWidth < 768;
 
 /**
  * Check for each solver
@@ -333,7 +335,10 @@ const getScale = () => {
 
 const getScatterChartLayout = () => {
   const layout = {
-    autosize: true,
+    autosize: !isSmallScreen(),
+    modebar: {
+      orientation: 'v',
+    },
     legend: {
       title: {
         text: 'Solvers',
@@ -359,9 +364,15 @@ const getScatterChartLayout = () => {
       gridcolor: '#ffffff',
       zeroline : false,
     },
-    title: `${state().objective}\nData: ${state().dataset}`,
+    title: `${state().objective}<br />Data: ${state().dataset}`,
     plot_bgcolor: '#e5ecf6',
   };
+
+  if (isSmallScreen()) {
+    layout.width = 900;
+    layout.height = 700;
+    layout.dragmode = false;
+  }
 
   if (!isAvailable()) {
     layout.annotations = [{
@@ -382,8 +393,12 @@ const getScatterChartLayout = () => {
 };
 
 const getBarChartLayout = () => {
+
   const layout = {
-    autosize: true,
+    autosize: !isSmallScreen(),
+    modebar: {
+      orientation: 'v',
+    },
     yaxis: {
       type: 'log',
       title: 'Time [sec]',
@@ -395,9 +410,15 @@ const getBarChartLayout = () => {
       ticktext: getSolvers(),
     },
     showlegend: false,
-    title: `${state().objective}\nData: ${state().dataset}`,
+    title: `${state().objective}<br />Data: ${state().dataset}`,
     plot_bgcolor: '#e5ecf6',
   };
+
+  if (isSmallScreen()) {
+    layout.width = 900;
+    layout.height = 700;
+    layout.dragmode = false;
+  }
 
   if (!isAvailable()) {
     layout.annotations = [{
