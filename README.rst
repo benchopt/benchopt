@@ -96,18 +96,32 @@ or read the `CLI documentation <https://benchopt.github.io/cli.html>`_.
 Benchopt also provides a Python API described in the
 `API documentation <https://benchopt.github.io/api.html>`_.
 
-List of optimization problems available
----------------------------------------
+.. list-table:: Available optimization problems
+   :widths: 80 20
+   :header-rows: 1
 
-- `Ordinary Least Squares (OLS) <https://github.com/benchopt/benchmark_ols>`_ |Build Status OLS|
-- `Non-Negative Least Squares (NNLS) <https://github.com/benchopt/benchmark_nnls>`_ |Build Status NNLS|
-- `LASSO: L1-regularized least squares <https://github.com/benchopt/benchmark_lasso>`_ |Build Status Lasso|
-- `L2-regularized logistic regression <https://github.com/benchopt/benchmark_logreg_l2>`_ |Build Status LogRegL2|
-- `L1-regularized logistic regression <https://github.com/benchopt/benchmark_logreg_l1>`_ |Build Status LogRegL1|
-- `L2-regularized Huber regression <https://github.com/benchopt/benchmark_huber_l2>`_ |Build Status HuberL2|
-- `L1-regularized quantile regression <https://github.com/benchopt/benchmark_quantile_regression>`_ |Build Status QuantileRegL1|
-- `Linear SVM for binary classification <https://github.com/benchopt/benchmark_linear_svm_binary_classif_no_intercept>`_ |Build Status LinearSVM|
-- `Linear ICA <https://github.com/benchopt/benchmark_linear_ica>`_ |Build Status LinearICA|
+   * - Problem
+     - Build Status
+   * - `Ordinary Least Squares (OLS) <https://github.com/benchopt/benchmark_ols>`
+     - `Ordinary Least Squares (OLS) <https://github.com/benchopt/benchmark_ols>`
+     - `Non-Negative Least Squares (NNLS) <https://github.com/benchopt/benchmark_nnls>`
+     - `LASSO: L1-regularized least squares <https://github.com/benchopt/benchmark_lasso>`
+     - `L2-regularized logistic regression <https://github.com/benchopt/benchmark_logreg_l2>`
+     - `L1-regularized logistic regression <https://github.com/benchopt/benchmark_logreg_l1>`
+     - `L2-regularized Huber regression <https://github.com/benchopt/benchmark_huber_l2>`
+     - `L1-regularized quantile regression <https://github.com/benchopt/benchmark_quantile_regression>`
+     - `Linear SVM for binary classification <https://github.com/benchopt/benchmark_linear_svm_binary_classif_no_intercept>`
+     - `Linear ICA <https://github.com/benchopt/benchmark_linear_ica>`
+   * - |Build Status OLS|
+     - |Build Status NNLS|
+     - |Build Status Lasso|
+     - |Build Status LogRegL2|
+     - |Build Status LogRegL1|
+     - |Build Status HuberL2|
+     - |Build Status QuantileRegL1|
+     - |Build Status LinearSVM|
+     - |Build Status LinearICA|
+
 
 .. |Test Status| image:: https://github.com/benchopt/benchopt/actions/workflows/test.yml/badge.svg
    :target: https://github.com/benchopt/benchopt/actions/workflows/test.yml
