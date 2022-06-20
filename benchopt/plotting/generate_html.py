@@ -1,10 +1,9 @@
 import json
 import shutil
 import webbrowser
-import math
 from pathlib import Path
 from datetime import datetime
-
+import numpy as np
 import pandas as pd
 from mako.template import Template
 
@@ -13,7 +12,6 @@ from .plot_bar_chart import computeBarChartData  # noqa: F401
 from .plot_objective_curve import compute_quantiles   # noqa: F401
 from .plot_objective_curve import get_solver_color   # noqa: F401
 from .plot_objective_curve import get_solver_marker  # noqa: F401
-
 
 ROOT = Path(__file__).parent / "html"
 DEFAULT_HTML_DIR = Path("html")
@@ -132,6 +130,11 @@ def shape_objectives_columns_for_html(df, dataset, objective):
         c for c in df.columns
         if c.startswith('objective_') and c != 'objective_name'
     ]
+
+    # remove infinite values
+    df.replace([np.inf, -np.inf], np.nan, inplace=True)
+    df.dropna(subset=columns, inplace=True)
+
     for column in columns:
         df_filtered = df.query(
             "data_name == @dataset & objective_name == @objective"
@@ -155,7 +158,6 @@ def shape_solvers_for_html(df, objective_column):
     solver_data = {}
     for solver in df['solver_name'].unique():
         df_filtered = df.query("solver_name == @solver")
-        df_filtered = df_filtered[df_filtered[objective_column] != math.inf]
         q1, q9 = compute_quantiles(df_filtered)
         solver_data[solver] = {
             'scatter': {
