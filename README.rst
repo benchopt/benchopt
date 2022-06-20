@@ -38,7 +38,7 @@ logistic regression:
    :align: center
    :scale: 80%
 
-See the `List of optimization problems available`_ below.
+See the `Available optimization problems`_ below.
 
 Learn how to `create a new benchmark <https://benchopt.github.io/how.html>`_
 using the `benchmark template <https://github.com/benchopt/template_benchmark>`_.
