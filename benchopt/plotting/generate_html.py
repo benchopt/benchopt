@@ -131,10 +131,6 @@ def shape_objectives_columns_for_html(df, dataset, objective):
         if c.startswith('objective_') and c != 'objective_name'
     ]
 
-    # remove infinite values
-    df.replace([np.inf, -np.inf], np.nan, inplace=True)
-    df.dropna(subset=columns, inplace=True)
-
     for column in columns:
         df_filtered = df.query(
             "data_name == @dataset & objective_name == @objective"
@@ -158,6 +154,11 @@ def shape_solvers_for_html(df, objective_column):
     solver_data = {}
     for solver in df['solver_name'].unique():
         df_filtered = df.query("solver_name == @solver")
+
+        # remove infinite values
+        df_filtered = df_filtered.replace([np.inf, -np.inf], np.nan)
+        df_filtered = df_filtered.dropna(subset=[objective_column])
+
         q1, q9 = compute_quantiles(df_filtered)
         solver_data[solver] = {
             'scatter': {
