@@ -76,7 +76,7 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
             fname_in_output = out_dir / f"{benchmark_name}_{fname.name}"
             shutil.copy(fname, fname_in_output)
             fname = fname_in_output
-        fname = fname.relative_to(root_html)
+        fname = fname.absolute().relative_to(root_html.absolute())
 
         # Generate figures
         result = dict(
