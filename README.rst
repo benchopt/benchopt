@@ -101,7 +101,7 @@ Available optimization problems
 -------------------------------
 
 .. list-table::
-   :widths: 80 20
+   :widths: 70 15 15
    :header-rows: 1
 
    * - Problem
