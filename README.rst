@@ -116,7 +116,7 @@ Available optimization problems
    * - `LASSO: L1-regularized least squares <https://github.com/benchopt/benchmark_lasso>`_
      - `Results <https://benchopt.github.io/results/benchmark_lasso.html>`_
      - |Build Status Lasso|
-   * - `LASSO Path <https://github.com/jolars/benchmark_lasso_path>`_
+   * - `LASSO path <https://github.com/jolars/benchmark_lasso_path>`_
      - `Results <https://benchopt.github.io/results/benchmark_lasso_path.html>`_
      - |Build Status Lasso Path|
    * - `Elastic Net <https://github.com/benchopt/benchmark_elastic_net>`_
