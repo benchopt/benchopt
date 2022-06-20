@@ -103,23 +103,22 @@ Benchopt also provides a Python API described in the
    * - Problem
      - Build Status
    * - `Ordinary Least Squares (OLS) <https://github.com/benchopt/benchmark_ols>`_
-     - `Ordinary Least Squares (OLS) <https://github.com/benchopt/benchmark_ols>`_
-     - `Non-Negative Least Squares (NNLS) <https://github.com/benchopt/benchmark_nnls>`_
-     - `LASSO: L1-regularized least squares <https://github.com/benchopt/benchmark_lasso>`_
-     - `L2-regularized logistic regression <https://github.com/benchopt/benchmark_logreg_l2>`_
-     - `L1-regularized logistic regression <https://github.com/benchopt/benchmark_logreg_l1>`_
-     - `L2-regularized Huber regression <https://github.com/benchopt/benchmark_huber_l2>`_
-     - `L1-regularized quantile regression <https://github.com/benchopt/benchmark_quantile_regression>`_
-     - `Linear SVM for binary classification <https://github.com/benchopt/benchmark_linear_svm_binary_classif_no_intercept>`_
-     - `Linear ICA <https://github.com/benchopt/benchmark_linear_ica>`_
-   * - |Build Status OLS|
+     - |Build Status OLS|
+   * - `Non-Negative Least Squares (NNLS) <https://github.com/benchopt/benchmark_nnls>`_
      - |Build Status NNLS|
+   * - `LASSO: L1-regularized least squares <https://github.com/benchopt/benchmark_lasso>`_
      - |Build Status Lasso|
+   * - `L2-regularized logistic regression <https://github.com/benchopt/benchmark_logreg_l2>`_
      - |Build Status LogRegL2|
+   * - `L1-regularized logistic regression <https://github.com/benchopt/benchmark_logreg_l1>`_
      - |Build Status LogRegL1|
+   * - `L2-regularized Huber regression <https://github.com/benchopt/benchmark_huber_l2>`_
      - |Build Status HuberL2|
+   * - `L1-regularized quantile regression <https://github.com/benchopt/benchmark_quantile_regression>`_
      - |Build Status QuantileRegL1|
+   * - `Linear SVM for binary classification <https://github.com/benchopt/benchmark_linear_svm_binary_classif_no_intercept>`_
      - |Build Status LinearSVM|
+   * - `Linear ICA <https://github.com/benchopt/benchmark_linear_ica>`_
      - |Build Status LinearICA|
 
 
