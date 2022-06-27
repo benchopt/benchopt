@@ -130,3 +130,30 @@ def generate_results(patterns=(), benchmarks=(), root=None, display=True):
     plot_benchmark_html_all(
         patterns=patterns, benchmarks=benchmarks, root=root, display=display
     )
+
+
+@process_results.command(
+    help="Convert a result file of type parquet into the requested type."
+)
+@click.argument('parquet_file',
+                default=Path.cwd(),
+                type=click.Path(exists=True))
+@click.option('--to', '-t', 'requested_formats',
+              metavar="<to>", multiple=True, type=str,
+              help="Choose the conversion format (CSV, JSON, Excel, etc.).")
+def convert(parquet_file, requested_formats):
+    import os
+    import pandas as pd
+    # remove parquet file extension
+    filename = os.path.splitext(parquet_file)[0]
+    accepted_types = ['csv', 'json', 'html']
+    methods = {}
+    for accepted in accepted_types:
+        methods[accepted] = "to_" + accepted
+
+    df = pd.read_parquet(parquet_file)
+    for requested_format in requested_formats:
+        print(f"Formatting results to {requested_format} ...")
+        getattr(df, methods[requested_format])(
+            f"{filename}.{requested_format}"
+        )
