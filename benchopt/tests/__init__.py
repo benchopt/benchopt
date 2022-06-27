@@ -61,12 +61,12 @@ class CaptureRunOutput(object):
 
         # Make sure to delete all the result that created by the run command.
         self.result_files = re.findall(
-            r'Saving result in: (.*\.csv)', self.output
+            r'Saving result in: (.*\.(csv|parquet))', self.output
         )
         if len(self.result_files) >= 1:
             for result_file in self.result_files:
                 result_path = Path(result_file)
-                result_path.unlink()  # remove csv file
+                result_path.unlink()  # remove result file
                 result_dir = result_path.parents[0]
                 stem = result_path.stem
                 for html_file in result_dir.glob(f'*{stem}*.html'):

@@ -177,36 +177,42 @@ class Benchmark:
         ----------
         filename : str
             Select a specific file from the benchmark. If None, this will
-            select the most recent CSV file in the benchmark output folder.
+            select the most recent result file in the benchmark output folder.
         """
         # List all result files
         output_folder = self.get_output_folder()
-        all_csv_files = output_folder.glob("*.csv")
-        all_csv_files = sorted(
-            all_csv_files, key=lambda t: t.stat().st_mtime
+        all_result_files = output_folder.glob("*.(csv|parquet)")
+        all_result_files = sorted(
+            all_result_files, key=lambda t: t.stat().st_mtime
         )
 
         if filename is not None and filename != 'all':
-            result_filename = (output_folder / filename).with_suffix('.csv')
+            result_path = (output_folder / filename)
+            result_filename = result_path.with_suffix('.parquet')
+
+            if not result_filename.exists():
+                result_filename = result_path.with_suffix('.csv')
+
             if not result_filename.exists():
                 if Path(filename).exists():
                     result_filename = Path(filename)
                 else:
-                    all_csv_files = '\n- '.join([
-                        str(s) for s in all_csv_files
+                    all_result_files = '\n- '.join([
+                        str(s) for s in all_result_files
                     ])
                     raise FileNotFoundError(
                         f"Could not find result file {filename}. Available "
-                        f"result files are:\n- {all_csv_files}"
+                        f"result files are:\n- {all_result_files}"
                     )
         else:
-            if len(all_csv_files) == 0:
+            if len(all_result_files) == 0:
                 raise RuntimeError(
-                    f"Could not find any CSV result files in {output_folder}."
+                    "Could not find any Parquet nor"
+                    f"CSV result files in {output_folder}."
                 )
-            result_filename = all_csv_files[-1]
+            result_filename = all_result_files[-1]
             if filename == 'all':
-                result_filename = all_csv_files
+                result_filename = all_result_files
 
         return result_filename
 
