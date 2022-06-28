@@ -67,10 +67,10 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
     for fname in fnames:
         print(f"Processing {fname}")
 
-        if fname.with_suffix('.parquet').exists():
+        if fname.suffix == '.parquet':
             df = pd.read_parquet(fname)
         else:
-            df = pd.read_csv(fname.with_suffix('.csv'))
+            df = pd.read_csv(fname)
 
         datasets = list(df['data_name'].unique())
         sysinfo = get_sysinfo(df)
@@ -96,11 +96,15 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
         )
         results.append(result)
 
-    for result in results:
+    for result in results:        
+        if fname.suffix == '.csv':
+            html_file_name = f"{result['fname_short'].replace('.csv', '.html')}"
+        else:
+            html_file_name = f"{result['fname_short'].replace('.parquet', '.html')}"
+            
         result['page'] = (
             f"{benchmark_name}_"
-            f"{result['fname_short'].replace('.csv', '.html')}"
-            f"{result['fname_short'].replace('.parquet', '.html')}"
+            f"{html_file_name}"
         )
 
         # JSON
@@ -218,11 +222,18 @@ def get_sysinfo(df):
 
     def get_val(df, key):
         if key in df:
-            df['version-numpy'] = df['version-numpy'].astype(str)
-            val = df[key].unique()[0]
-            if not pd.isnull(val):
-                return str(val)
-            return ''
+            if key == 'platform':
+                return (
+                    str(df["platform"].unique()[0]) +
+                    str(df["platform-release"].unique()[0]) + "-" +
+                    str(df["platform-architecture"].unique()[0])
+                )
+            else:
+                df['version-numpy'] = df['version-numpy'].astype(str)
+                val = df[key].unique()[0]
+                if not pd.isnull(val):
+                    return str(val)
+                return ''
         else:
             return ''
     sysinfo = {
