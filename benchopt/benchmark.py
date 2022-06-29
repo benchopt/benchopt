@@ -207,7 +207,7 @@ class Benchmark:
         else:
             if len(all_result_files) == 0:
                 raise RuntimeError(
-                    "Could not find any Parquet nor"
+                    "Could not find any Parquet nor "
                     f"CSV result files in {output_folder}."
                 )
             result_filename = all_result_files[-1]
