@@ -86,9 +86,8 @@ def complete_output_files(ctx, param, incomplete):
     # autocompletion with relative paths
     cwd = Path().resolve()
     candidates = [
-        p.resolve().relative_to(cwd) for p in list(
-            output_folder.glob("*.parquet")
-        ) + list(output_folder.glob("*.csv"))
+        p.resolve().relative_to(cwd) for ext in ['csv', 'parquet']
+        for p in output_folder.glob(f"*.{ext}")
     ]
     return propose_from_list(candidates, incomplete)
 
