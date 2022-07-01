@@ -181,7 +181,9 @@ class Benchmark:
         """
         # List all result files
         output_folder = self.get_output_folder()
-        all_result_files = list(output_folder.glob("*.parquet")) + list(output_folder.glob("*.csv"))
+        all_result_files = list(
+            output_folder.glob("*.parquet")
+        ) + list(output_folder.glob("*.csv"))
         all_result_files = sorted(
             all_result_files, key=lambda t: t.stat().st_mtime
         )
@@ -213,10 +215,11 @@ class Benchmark:
             result_filename = all_result_files[-1]
             if filename == 'all':
                 result_filename = all_result_files
-                
-        
+
         if result_filename.suffix == ".csv":
-            print('CSV files are deprecated. Please use Parquet files instead.')
+            print(
+                'CSV files are deprecated. Please use Parquet files instead.'
+            )
 
         return result_filename
 

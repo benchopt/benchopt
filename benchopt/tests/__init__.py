@@ -61,7 +61,7 @@ class CaptureRunOutput(object):
 
         # Make sure to delete all the result that created by the run command.
         self.result_files = re.findall(
-            r'Saving result in: (.*\.csv|.*\.parquet)', self.output
+            r'Saving result in: (.*\.parquet)', self.output
         )
         if len(self.result_files) >= 1:
             for result_file in self.result_files:

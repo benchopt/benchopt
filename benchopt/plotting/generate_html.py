@@ -96,10 +96,10 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
         )
         results.append(result)
 
-    for result in results:        
+    for result in results:
         html_file_name = f"{result['fname_short'].replace('.csv', '.html')}"
         html_file_name = f"{html_file_name.replace('.parquet', '.html')}"
-            
+
         result['page'] = (
             f"{benchmark_name}_"
             f"{html_file_name}"
@@ -485,7 +485,9 @@ def plot_benchmark_html_all(patterns=(), benchmarks=(), root=None,
 
         fnames = []
         for p in patterns:
-            fnames += list((benchmark / 'outputs').glob(f"{p}.parquet")) + list((benchmark / 'outputs').glob(f"{p}.csv"))
+            fnames += list(
+                (benchmark / 'outputs').glob(f"{p}.parquet")
+            ) + list((benchmark / 'outputs').glob(f"{p}.csv"))
         fnames = sorted(set(fnames))
         results = get_results(
             fnames, PLOT_KINDS.keys(), root_html, benchmark.name, copy=True

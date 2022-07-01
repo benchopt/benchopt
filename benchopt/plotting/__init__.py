@@ -53,7 +53,7 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
             df = pd.read_parquet(fname)
         else:
             df = pd.read_csv(fname)
-        
+
         obj_cols = [
             k for k in df.columns
             if k.startswith('objective_') and k != 'objective_name'
