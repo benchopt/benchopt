@@ -181,7 +181,7 @@ class Benchmark:
         """
         # List all result files
         output_folder = self.get_output_folder()
-        all_result_files = output_folder.glob("*.(csv|parquet)")
+        all_result_files = output_folder.glob("*.csv") + output_folder.glob("*.parquet")
         all_result_files = sorted(
             all_result_files, key=lambda t: t.stat().st_mtime
         )
