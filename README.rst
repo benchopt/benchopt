@@ -38,7 +38,7 @@ logistic regression:
    :align: center
    :scale: 80%
 
-See the `List of optimization problems available`_ below.
+See the `Available optimization problems`_ below.
 
 Learn how to `create a new benchmark <https://benchopt.github.io/how.html>`_
 using the `benchmark template <https://github.com/benchopt/template_benchmark>`_.
@@ -96,18 +96,63 @@ or read the `CLI documentation <https://benchopt.github.io/cli.html>`_.
 Benchopt also provides a Python API described in the
 `API documentation <https://benchopt.github.io/api.html>`_.
 
-List of optimization problems available
----------------------------------------
 
-- `Ordinary Least Squares (OLS) <https://github.com/benchopt/benchmark_ols>`_ |Build Status OLS|
-- `Non-Negative Least Squares (NNLS) <https://github.com/benchopt/benchmark_nnls>`_ |Build Status NNLS|
-- `LASSO: L1-regularized least squares <https://github.com/benchopt/benchmark_lasso>`_ |Build Status Lasso|
-- `L2-regularized logistic regression <https://github.com/benchopt/benchmark_logreg_l2>`_ |Build Status LogRegL2|
-- `L1-regularized logistic regression <https://github.com/benchopt/benchmark_logreg_l1>`_ |Build Status LogRegL1|
-- `L2-regularized Huber regression <https://github.com/benchopt/benchmark_huber_l2>`_ |Build Status HuberL2|
-- `L1-regularized quantile regression <https://github.com/benchopt/benchmark_quantile_regression>`_ |Build Status QuantileRegL1|
-- `Linear SVM for binary classification <https://github.com/benchopt/benchmark_linear_svm_binary_classif_no_intercept>`_ |Build Status LinearSVM|
-- `Linear ICA <https://github.com/benchopt/benchmark_linear_ica>`_ |Build Status LinearICA|
+Available optimization problems
+-------------------------------
+
+.. list-table::
+   :widths: 70 15 15
+   :header-rows: 1
+
+   * - Problem
+     - Results
+     - Build Status
+   * - `Ordinary Least Squares (OLS) <https://github.com/benchopt/benchmark_ols>`_
+     - `Results <https://benchopt.github.io/results/benchmark_ols.html>`_
+     - |Build Status OLS|
+   * - `Non-Negative Least Squares (NNLS) <https://github.com/benchopt/benchmark_nnls>`_
+     - `Results <https://benchopt.github.io/results/benchmark_nnls.html>`_
+     - |Build Status NNLS|
+   * - `LASSO: L1-Regularized Least Squares <https://github.com/benchopt/benchmark_lasso>`_
+     - `Results <https://benchopt.github.io/results/benchmark_lasso.html>`_
+     - |Build Status Lasso|
+   * - `LASSO Path <https://github.com/jolars/benchmark_lasso_path>`_
+     - `Results <https://benchopt.github.io/results/benchmark_lasso_path.html>`_
+     - |Build Status Lasso Path|
+   * - `Elastic Net <https://github.com/benchopt/benchmark_elastic_net>`_
+     - 
+     - |Build Status ElasticNet|
+   * - `MCP <https://github.com/benchopt/benchmark_mcp>`_
+     - `Results <https://benchopt.github.io/results/benchmark_mcp.html>`_
+     - |Build Status MCP|
+   * - `L2-Regularized Logistic Regression <https://github.com/benchopt/benchmark_logreg_l2>`_
+     - `Results <https://benchopt.github.io/results/benchmark_logreg_l2.html>`_
+     - |Build Status LogRegL2|
+   * - `L1-Regularized Logistic Regression <https://github.com/benchopt/benchmark_logreg_l1>`_
+     - `Results <https://benchopt.github.io/results/benchmark_logreg_l1.html>`_
+     - |Build Status LogRegL1|
+   * - `L2-regularized Huber regression <https://github.com/benchopt/benchmark_huber_l2>`_
+     - 
+     - |Build Status HuberL2|
+   * - `L1-Regularized Quantile Regression <https://github.com/benchopt/benchmark_quantile_regression>`_
+     - `Results <https://benchopt.github.io/results/benchmark_quantile_regression.html>`_
+     - |Build Status QuantileRegL1|
+   * - `Linear SVM for Binary Classification <https://github.com/benchopt/benchmark_linear_svm_binary_classif_no_intercept>`_
+     - 
+     - |Build Status LinearSVM|
+   * - `Linear ICA <https://github.com/benchopt/benchmark_linear_ica>`_
+     - 
+     - |Build Status LinearICA|
+   * - `1D Total Variation Denoising <https://github.com/benchopt/benchmark_tv_1d>`_
+     - 
+     - |Build Status TV1D|
+   * - `2D Total Variation Denoising <https://github.com/benchopt/benchmark_tv_2d>`_
+     - 
+     - |Build Status TV2D|
+   * - `ResNet Classification <https://github.com/benchopt/benchmark_resnet_classif>`_
+     - `Results <https://benchopt.github.io/results/benchmark_resnet_classif.html>`_
+     - |Build Status ResNetClassif|
+
 
 .. |Test Status| image:: https://github.com/benchopt/benchopt/actions/workflows/test.yml/badge.svg
    :target: https://github.com/benchopt/benchopt/actions/workflows/test.yml
@@ -122,6 +167,12 @@ List of optimization problems available
    :target: https://github.com/benchopt/benchmark_nnls/actions
 .. |Build Status Lasso| image:: https://github.com/benchopt/benchmark_lasso/workflows/Tests/badge.svg
    :target: https://github.com/benchopt/benchmark_lasso/actions
+.. |Build Status Lasso Path| image:: https://github.com/jolars/benchmark_lasso_path/workflows/Tests/badge.svg
+   :target: https://github.com/benchopt/benchmark_lasso_path/actions
+.. |Build Status ElasticNet| image:: https://github.com/benchopt/benchmark_elastic_net/workflows/Tests/badge.svg
+   :target: https://github.com/benchopt/benchmark_elastic_net/actions
+.. |Build Status MCP| image:: https://github.com/benchopt/benchmark_mcp/workflows/Tests/badge.svg
+   :target: https://github.com/benchopt/benchmark_mcp/actions
 .. |Build Status LogRegL2| image:: https://github.com/benchopt/benchmark_logreg_l2/workflows/Tests/badge.svg
    :target: https://github.com/benchopt/benchmark_logreg_l2/actions
 .. |Build Status LogRegL1| image:: https://github.com/benchopt/benchmark_logreg_l1/workflows/Tests/badge.svg
@@ -134,3 +185,9 @@ List of optimization problems available
    :target: https://github.com/benchopt/benchmark_linear_svm_binary_classif_no_intercept/actions
 .. |Build Status LinearICA| image:: https://github.com/benchopt/benchmark_linear_ica/workflows/Tests/badge.svg
    :target: https://github.com/benchopt/benchmark_linear_ica/actions
+.. |Build Status TV1D| image:: https://github.com/benchopt/benchmark_tv_1d/workflows/Tests/badge.svg
+   :target: https://github.com/benchopt/benchmark_tv_1d/actions
+.. |Build Status TV2D| image:: https://github.com/benchopt/benchmark_tv_2d/workflows/Tests/badge.svg
+   :target: https://github.com/benchopt/benchmark_tv_2d/actions
+.. |Build Status ResNetClassif| image:: https://github.com/benchopt/benchmark_resnet_classif/workflows/Tests/badge.svg
+   :target: https://github.com/benchopt/benchmark_resnet_classif/actions
