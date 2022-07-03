@@ -143,8 +143,11 @@ Available optimization problems
    * - `Linear ICA <https://github.com/benchopt/benchmark_linear_ica>`_
      - 
      - |Build Status LinearICA|
-   * - `1D Total Variation Denoising <https://github.com/benchopt/benchmark_tv_1d>`_
+   * - `Approximate Joint Diagonalization (AJD) <https://github.com/benchopt/benchmark_jointdiag>`_
      - 
+     - |Build Status JointDiag|
+   * - `1D Total Variation Denoising <https://github.com/benchopt/benchmark_tv_1d>`_
+     -
      - |Build Status TV1D|
    * - `2D Total Variation Denoising <https://github.com/benchopt/benchmark_tv_2d>`_
      - 
@@ -185,6 +188,8 @@ Available optimization problems
    :target: https://github.com/benchopt/benchmark_linear_svm_binary_classif_no_intercept/actions
 .. |Build Status LinearICA| image:: https://github.com/benchopt/benchmark_linear_ica/workflows/Tests/badge.svg
    :target: https://github.com/benchopt/benchmark_linear_ica/actions
+.. |Build Status JointDiag| image:: https://github.com/benchopt/benchmark_jointdiag/workflows/Tests/badge.svg
+   :target: https://github.com/benchopt/benchmark_jointdiag/actions
 .. |Build Status TV1D| image:: https://github.com/benchopt/benchmark_tv_1d/workflows/Tests/badge.svg
    :target: https://github.com/benchopt/benchmark_tv_1d/actions
 .. |Build Status TV2D| image:: https://github.com/benchopt/benchmark_tv_2d/workflows/Tests/badge.svg
