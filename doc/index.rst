@@ -233,6 +233,19 @@ linear ICA is to recover :math:`A` up to permutation and scaling of its columns.
 The objective in this benchmark is related to some estimation on :math:`A`
 quantified with the so-called AMARI distance.
 
+- `Approximate Joint Diagonalization (AJD) <https://github.com/benchopt/benchmark_jointdiag>`_: |Build Status JointDiag|
+
+Given n square symmetric positive matrices :math:`C^i`, it consists of solving
+the following problem:
+
+.. math::
+    \min_B \frac{1}{2n} \sum_{i=1}^n \log |\textrm{diag} (B C^i B^{\top}) | - \log | B C^i B^{\top} |
+
+where :math:`|\cdot|` stands for the matrix determinant and :math:`\textrm{diag}` stands
+for the operator that keeps only the diagonal elements of a matrix. Optionally, the
+matrix :math:`B` can be enforced to be orthogonal.
+
+See `benchmark_* repositories on GitHub <https://github.com/benchopt/>`_ for more.
 
 Benchmark results
 -----------------
@@ -283,3 +296,5 @@ Website contents
    :target: https://github.com/benchopt/benchmark_linear_svm_binary_classif_no_intercept/actions
 .. |Build Status LinearICA| image:: https://github.com/benchopt/benchmark_linear_ica/workflows/Tests/badge.svg
    :target: https://github.com/benchopt/benchmark_linear_ica/actions
+.. |Build Status JointDiag| image:: https://github.com/benchopt/benchmark_jointdiag/workflows/Tests/badge.svg
+   :target: https://github.com/benchopt/benchmark_jointdiag/actions
