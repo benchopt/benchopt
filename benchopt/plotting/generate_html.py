@@ -109,7 +109,7 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
         result['json'] = json.dumps(shape_datasets_for_html(df))
 
         # Assets
-        assets = ['result.js', 'main.css', 'hover_index.css',
+        assets = ['result.js', 'symbols.js', 'main.css', 'hover_index.css',
                   'arrow_left.svg', 'home.svg', 'download.svg']
         for asset in assets:
             with open(root_html / 'static' / asset) as asset_file:
