@@ -123,6 +123,11 @@
 
         <div id="unique_plot"></div>
 
+        <div id="legend_title">
+            Solvers <span id="legend_help">(Click on a solver to hide it or double click to hide all the others)</span>
+        </div>
+        <div id="plot_legend" class="space-r-4"></div>
+
         <script src="https://cdn.plot.ly/plotly-2.12.1.min.js"></script>
         <script>
             window.data = ${result['json']};
@@ -138,20 +143,10 @@
                     'with_quantiles': document.getElementById('change_shades').checked,
                     'hidden_solvers': []
                 });
-
-                document.getElementById('unique_plot').on('plotly_legenddoubleclick', event => {
-                    const solver = getSolverFromPlotlyEvent(event);
-                    handleSolverDoubleClick(solver);
-                });
-
-                document.getElementById('unique_plot').on('plotly_legendclick', event => {
-                    const solver = getSolverFromPlotlyEvent(event);
-                    handleSolverClick(solver);
-                });
             });
         </script>
-
         <script type="text/javascript">
+            ${result['symbols.js']}
             ${result['result.js']}
         </script>
     </body>

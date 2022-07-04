@@ -29,10 +29,11 @@ const NON_CONVERGENT_COLOR = 'rgba(0.8627, 0.8627, 0.8627)'
  * 
  * @param {Object} partialState 
  */
-const setState = (partialState, updatePlot = true) => {
+const setState = (partialState) => {
   window.state = {...state(), ...partialState};
-  displayScaleSelector(!isBarChart());
-  if (updatePlot) makePlot();
+  displayScatterElements(!isBarChart());
+  makePlot();
+  makeLegend();
 }
 
 /**
@@ -287,9 +288,17 @@ const isAvailable = () => {
   return !isNotAvailable;
 }
 
-const displayScaleSelector = shouldBeVisible => shouldBeVisible ?
-  document.getElementById('change_scaling').style.display = 'inline-block'
-  : document.getElementById('change_scaling').style.display = 'none';
+const displayScatterElements = shouldBeVisible => {
+  if (shouldBeVisible) {
+    document.getElementById('change_scaling').style.display = 'inline-block';
+    document.getElementById('legend_title').style.display = 'block';
+    document.getElementById('plot_legend').style.display = 'flex';
+  } else {
+    document.getElementById('change_scaling').style.display = 'none';
+    document.getElementById('legend_title').style.display = 'none';
+    document.getElementById('plot_legend').style.display = 'none';
+  }
+};
 
 const barDataToArrays = () => {
   const colors = [], texts = [], x = [], y = [];
@@ -336,6 +345,7 @@ const getScatterChartLayout = () => {
     width: 900,
     height: 700,
     autosize: false,
+    showlegend: false,
     legend: {
       title: {
         text: 'Solvers',
@@ -444,15 +454,25 @@ const getYLabel = () => {
  * by user on the legend of the plot.
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
-const getSolverFromPlotlyEvent = event => event.data[event.curveNumber].name;
+const getSolverFromEvent = event => {
+  const target = event.currentTarget;
 
-const purgeHiddenSolvers = () => setState({hidden_solvers: []}, false);
+  for (let i = 0; i < target.children.length; i++) {
+    if (target.children[i].className == 'solver') {
+      return target.children[i].firstChild.nodeValue;
+    }
+  }
 
-const hideAllSolversExcept = solver => {setState({hidden_solvers: getSolvers().filter(elmt => elmt !== solver)}, false)};
+  return null;
+};
 
-const hideSolver = solver => isVisible(solver) ? setState({hidden_solvers: [...state().hidden_solvers, solver]}, false) : null;
+const purgeHiddenSolvers = () => setState({hidden_solvers: []});
 
-const showSolver = solver => setState({hidden_solvers: state().hidden_solvers.filter(hidden => hidden !== solver)}, false);
+const hideAllSolversExcept = solver => {setState({hidden_solvers: getSolvers().filter(elmt => elmt !== solver)})};
+
+const hideSolver = solver => isVisible(solver) ? setState({hidden_solvers: [...state().hidden_solvers, solver]}) : null;
+
+const showSolver = solver => setState({hidden_solvers: state().hidden_solvers.filter(hidden => hidden !== solver)});
 
 /**
  * Add or remove solver name from the list of hidden solvers.
@@ -471,7 +491,8 @@ const handleSolverClick = solver => {
 };
 
 const handleSolverDoubleClick = solver => {
-  if (!isVisible(solver)) {
+  // If all solvers except one are hidden, so double click should show all solvers
+  if (state().hidden_solvers.length === getSolvers().length - 1) {
     purgeHiddenSolvers();
 
     return;
@@ -479,6 +500,129 @@ const handleSolverDoubleClick = solver => {
 
   hideAllSolversExcept(solver);
 };
+
+/**
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * MANAGE PLOT LEGEND
+ * 
+ * We don't use the plotly legend to keep control
+ * on the size of the plot.
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
+
+/**
+ * Creates the legend at the bottom of the plot.
+ */
+const makeLegend = () => {
+  const legend = document.getElementById('plot_legend');
+
+  legend.innerHTML = '';
+
+  Object.keys(data().solvers).forEach(solver => {
+    const color = data().solvers[solver].color;
+    const symbolNumber = data().solvers[solver].marker;
+
+    legend.appendChild(createLegendItem(solver, color, symbolNumber));
+  });
+}
+
+/**
+ * Creates a legend item which contains the solver name,
+ * the solver marker as an SVG and an horizontal bar with
+ * the solver color.
+ * 
+ * @param {String} solver
+ * @param {String} color
+ * @param {int} symbolNumber
+ * @retuns {HTMLElement}
+ */
+const createLegendItem = (solver, color, symbolNumber) => {
+  // Create item container
+  const item = document.createElement('div');
+  item.style.display = 'flex';
+  item.style.flexDirection = 'row';
+  item.style.alignItems = 'center';
+  item.style.position = 'relative';
+  item.style.cursor = 'pointer';
+
+  if (!isVisible(solver)) {
+    item.style.opacity = 0.5;
+  }
+
+  // Click on a solver in the legend
+  item.addEventListener('click', event => {
+    solver = getSolverFromEvent(event);
+
+    if (!getSolvers().includes(solver)) {
+      console.error('An invalid solver has been handled during the click event.');
+
+      return;
+    }
+
+    // In javascript we must simulate double click.
+    // So first click is handled and kept in memory (window.clickedSolver)
+    // during 500ms, if nothing else happen timeout will execute
+    // single click function. However, if an other click happen during this
+    // 500ms, it clears the timeout and execute the double click function.
+    if (!window.clickedSolver) {
+      window.clickedSolver = solver;
+
+      // Timeout will execute single click function after 500ms
+      window.clickedTimeout = setTimeout(() => {
+        window.clickedSolver = null;
+        
+        handleSolverClick(solver);
+      }, 500);
+    } else if (window.clickedSolver === solver) {
+      clearTimeout(window.clickedTimeout);
+      window.clickedSolver = null;
+      handleSolverDoubleClick(solver);
+    }
+  });
+
+  // Create the HTML text node for the solver name in the legend
+  const textContainer = document.createElement('div');
+  textContainer.style.marginLeft = '0.5rem';
+  textContainer.className = 'solver';
+  textContainer.appendChild(document.createTextNode(solver));
+
+  // Create the horizontal bar in the legend to represent the curve
+  const hBar = document.createElement('div');
+  hBar.style.height = '2px';
+  hBar.style.width = '30px';
+  hBar.style.backgroundColor = color;
+  hBar.style.position = 'absolute';
+  hBar.style.left = 0;
+  hBar.style.zIndex = 10;
+
+  // Append elements to the legend item
+  item.appendChild(createSymbol(symbolNumber, color));
+  item.appendChild(hBar);
+  item.appendChild(textContainer);
+
+  return item;
+}
+
+/**
+ * Create the same svg symbol as plotly.
+ * Returns an <svg> HTML Element
+ * 
+ * @param {int} symbolNumber 
+ * @param {String} color 
+ * @returns {HTMLElement}
+ */
+const createSymbol = (symbolNumber, color) => {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+
+  svg.setAttribute('width', 30);
+  svg.setAttribute('height', 30);
+  svg.style.zIndex = 20;
+
+  // createPathElement() come from the local file symbols.js
+  svg.appendChild(createPathElement(symbolNumber, color));
+
+  return svg;
+}
 
 /**
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -491,7 +635,7 @@ const handleSolverDoubleClick = solver => {
 /**
  * Listener on the system information "+" button
  */
-document.getElementById('btn_subinfo').addEventListener('click', event => {
+document.getElementById('btn_subinfo').addEventListener('click', () => {
   const elmt = document.getElementById('subinfo');
   const plus = document.getElementById('btn_plus');
   const minus = document.getElementById('btn_minus');

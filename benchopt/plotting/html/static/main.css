@@ -290,6 +290,10 @@ td.number {
   margin-left: 0.5rem;
 }
 
+.space-r-4 > * {
+  margin-right: 1rem;
+}
+
 #btn_subinfo:hover {
   cursor: pointer;
 }
@@ -297,4 +301,21 @@ td.number {
 #btn_subinfo svg {
   width: 1rem;
   height: 1rem;
+}
+
+#plot_legend {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  padding: 10px;
+}
+
+#legend_title {
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+#legend_help {
+  font-size: 0.75rem;
+  color: #475569;
 }
