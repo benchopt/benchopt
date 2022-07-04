@@ -300,7 +300,9 @@ class TestRunCmd:
             run(command, 'benchopt', standalone_mode=False)
             run(command, 'benchopt', standalone_mode=False)
 
-        result_files = re.findall(r'Saving result in: (.*\.csv)', out.output)
+        result_files = re.findall(
+            r'Saving result in: (.*\.parquet)', out.output
+        )
         names = [Path(result_file).stem for result_file in result_files]
         assert names[0] == 'unique_name' and names[1] == 'unique_name_1'
 
@@ -417,7 +419,9 @@ class TestPlotCmd:
                  '-s', SELECT_ONE_PGD, '-n', '2', '-r', '1', '-o',
                  SELECT_ONE_OBJECTIVE, '--no-plot'], 'benchopt',
                 standalone_mode=False)
-        result_files = re.findall(r'Saving result in: (.*\.csv)', out.output)
+        result_files = re.findall(
+            r'Saving result in: (.*\.parquet)', out.output
+        )
         assert len(result_files) == 1, out.output
         result_file = result_files[0]
         cls.result_file = result_file
@@ -453,11 +457,27 @@ class TestPlotCmd:
             plot([str(DUMMY_BENCHMARK_PATH), '-f', self.result_file,
                   '-k', kind, '--no-display', '--no-html'],
                  'benchopt', standalone_mode=False)
+
         saved_files = re.findall(r'Save .* as: (.*\.pdf)', out.output)
         try:
             assert len(saved_files) == 1
-            saved_file = saved_files[0]
-            assert kind in saved_file
+            assert kind in saved_files[0]
+        finally:
+            # Make sure to clean up all files even when the test fails
+            for f in saved_files:
+                Path(f).unlink()
+
+    def test_valid_call_html(self):
+
+        with SuppressStd() as out:
+            plot([str(DUMMY_BENCHMARK_PATH), '-f', self.result_file,
+                  '--no-display', '--html'], 'benchopt', standalone_mode=False)
+
+        saved_files = re.findall(
+            r'Writing.* results to (.*\.html)', out.output
+        )
+        try:
+            assert len(saved_files) == 2
         finally:
             # Make sure to clean up all files even when the test fails
             for f in saved_files:
@@ -496,7 +516,9 @@ class TestGenerateResultCmd:
                  '-s', SELECT_ONE_PGD, '-n', '2', '-r', '1', '-o',
                  SELECT_ONE_OBJECTIVE, '--no-plot'], 'benchopt',
                 standalone_mode=False)
-        result_files = re.findall(r'Saving result in: (.*\.csv)', out.output)
+        result_files = re.findall(
+            r'Saving result in: (.*\.parquet)', out.output
+        )
         assert len(result_files) == 2, out.output
         cls.result_files = result_files
 
@@ -542,7 +564,9 @@ class TestArchiveCmd:
                  '-s', SELECT_ONE_PGD, '-n', '2', '-r', '1', '-o',
                  SELECT_ONE_OBJECTIVE, '--no-plot'], 'benchopt',
                 standalone_mode=False)
-        result_file = re.findall(r'Saving result in: (.*\.csv)', out.output)
+        result_file = re.findall(
+            r'Saving result in: (.*\.parquet)', out.output
+        )
         assert len(result_file) == 1, out.output
         cls.result_file = result_file[0]
 

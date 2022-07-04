@@ -3,7 +3,7 @@ import shutil
 import webbrowser
 from pathlib import Path
 from datetime import datetime
-
+import numpy as np
 import pandas as pd
 from mako.template import Template
 
@@ -12,7 +12,6 @@ from .plot_bar_chart import computeBarChartData  # noqa: F401
 from .plot_objective_curve import compute_quantiles   # noqa: F401
 from .plot_objective_curve import get_solver_color   # noqa: F401
 from .plot_objective_curve import get_solver_marker  # noqa: F401
-
 
 ROOT = Path(__file__).parent / "html"
 DEFAULT_HTML_DIR = Path("html")
@@ -39,12 +38,12 @@ SYS_INFO = {
 
 
 def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
-    """Generate figures from a list of csv files.
+    """Generate figures from a list of result files.
 
     Parameters
     ----------
     fnames : list of Path
-        list of csv files containing the benchmark results.
+        list of result files containing the benchmark results.
     kinds : list of str
         List of the kind of plots that will be generated. This needs to be a
         sub-list of PLOT_KINDS.keys().
@@ -68,15 +67,20 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
     for fname in fnames:
         print(f"Processing {fname}")
 
-        df = pd.read_csv(fname)
+        if fname.suffix == '.parquet':
+            df = pd.read_parquet(fname)
+        else:
+            df = pd.read_csv(fname)
+
         datasets = list(df['data_name'].unique())
         sysinfo = get_sysinfo(df)
-        # Copy CSV if necessary and give a relative path for HTML page access
+        # Copy result file if necessary
+        # and give a relative path for HTML page access
         if copy:
             fname_in_output = out_dir / f"{benchmark_name}_{fname.name}"
             shutil.copy(fname, fname_in_output)
             fname = fname_in_output
-        fname = fname.relative_to(root_html)
+        fname = fname.absolute().relative_to(root_html.absolute())
 
         # Generate figures
         result = dict(
@@ -93,12 +97,23 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
         results.append(result)
 
     for result in results:
+        html_file_name = f"{result['fname_short'].replace('.csv', '.html')}"
+        html_file_name = f"{html_file_name.replace('.parquet', '.html')}"
+
         result['page'] = (
             f"{benchmark_name}_"
-            f"{result['fname_short'].replace('.csv', '.html')}"
+            f"{html_file_name}"
         )
 
+        # JSON
         result['json'] = json.dumps(shape_datasets_for_html(df))
+
+        # Assets
+        assets = ['result.js', 'main.css', 'hover_index.css',
+                  'arrow_left.svg', 'home.svg', 'download.svg']
+        for asset in assets:
+            with open(root_html / 'static' / asset) as asset_file:
+                result[asset] = asset_file.read()
 
     return results
 
@@ -131,6 +146,7 @@ def shape_objectives_columns_for_html(df, dataset, objective):
         c for c in df.columns
         if c.startswith('objective_') and c != 'objective_name'
     ]
+
     for column in columns:
         df_filtered = df.query(
             "data_name == @dataset & objective_name == @objective"
@@ -154,6 +170,11 @@ def shape_solvers_for_html(df, objective_column):
     solver_data = {}
     for solver in df['solver_name'].unique():
         df_filtered = df.query("solver_name == @solver")
+
+        # remove infinite values
+        df_filtered = df_filtered.replace([np.inf, -np.inf], np.nan)
+        df_filtered = df_filtered.dropna(subset=[objective_column])
+
         q1, q9 = compute_quantiles(df_filtered)
         solver_data[solver] = {
             'scatter': {
@@ -206,6 +227,7 @@ def get_sysinfo(df):
                     str(df["platform-architecture"].unique()[0])
                 )
             else:
+                df['version-numpy'] = df['version-numpy'].astype(str)
                 val = df[key].unique()[0]
                 if not pd.isnull(val):
                     return str(val)
@@ -463,7 +485,9 @@ def plot_benchmark_html_all(patterns=(), benchmarks=(), root=None,
 
         fnames = []
         for p in patterns:
-            fnames += (benchmark / 'outputs').glob(f"{p}.csv")
+            fnames += list(
+                (benchmark / 'outputs').glob(f"{p}.parquet")
+            ) + list((benchmark / 'outputs').glob(f"{p}.csv"))
         fnames = sorted(set(fnames))
         results = get_results(
             fnames, PLOT_KINDS.keys(), root_html, benchmark.name, copy=True
