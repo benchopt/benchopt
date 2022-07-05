@@ -26,7 +26,11 @@ def publish_result_file(benchmark_name, file_path, token):
             f"Could not upload file {file_to_upload}."
         )
 
-    file_content = pd.read_parquet(file_to_upload).to_csv()
+    if file_to_upload.suffix == ".csv":
+        with file_to_upload.open('r') as f:
+            file_content = f.read()
+    else:
+        file_content = pd.read_parquet(file_to_upload).to_csv()
 
     git_path = f"benchmarks/{benchmark_name}/outputs/{file_to_upload.name}"
     file_name = f'{benchmark_name}/{file_to_upload.name}'
