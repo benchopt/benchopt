@@ -25,7 +25,7 @@ def publish_result_file(benchmark_name, file_path, token):
         raise FileNotFoundError(
             f"Could not upload file {file_to_upload}."
         )
-    
+
     file_content = pd.read_parquet(file_to_upload).to_csv()
 
     git_path = f"benchmarks/{benchmark_name}/outputs/{file_to_upload.name}"
