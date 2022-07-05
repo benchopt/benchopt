@@ -1,6 +1,7 @@
 from pathlib import Path
 from github import Github
 from github import GithubException
+import pandas as pd
 
 
 BENCHOPT_RESULT_REPO = 'benchopt/results'
@@ -24,8 +25,8 @@ def publish_result_file(benchmark_name, file_path, token):
         raise FileNotFoundError(
             f"Could not upload file {file_to_upload}."
         )
-    with file_to_upload.open('r') as f:
-        file_content = f.read()
+    
+    file_content = pd.read_parquet(file_to_upload).to_csv()
 
     git_path = f"benchmarks/{benchmark_name}/outputs/{file_to_upload.name}"
     file_name = f'{benchmark_name}/{file_to_upload.name}'
