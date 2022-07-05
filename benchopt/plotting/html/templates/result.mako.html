@@ -25,73 +25,75 @@
         <!-- Two main columns container -->
         <div class="flex">
             <!-- Left column on big screen (plot selectors) -->
-            <div class="hidden md:flex flex-col w-96 bg-gray-700">
-                <div class="px-8 h-16 flex items-center bg-gray-800">
-                    <h1 class="ml11">
-                        <span class="text-wrapper">
-                            <span class="line line1"></span>
-                            <span id="brand" class="hidden letters text-2xl text-white">Benchopt</span>
-                        </span>
-                    </h1>
-                </div>
-                <div class="flex-1 flex flex-col">
-                    <div class="mt-10 px-8">
-                        <label for="dataset_selector" class="block text-sm font-medium text-white">Dataset:</label>
-                        <div class="mt-1 rounded-md shadow-sm">
-                            <select id="dataset_selector" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({dataset: this.value})">
-                                % for data in result['dataset_names']:
-                                <option value="${data}">${data}</option>
-                                %endfor
-                            </select>
-                        </div>
+            <div class="hidden lg:flex flex-col w-96 bg-gray-700">
+                <div class="h-screen">
+                    <div class="px-8 h-16 flex items-center bg-gray-800">
+                        <h1 class="ml11">
+                            <span class="text-wrapper">
+                                <span class="line line1"></span>
+                                <span id="brand" class="hidden letters text-2xl text-white">Benchopt</span>
+                            </span>
+                        </h1>
                     </div>
-                    <div class="mt-8 px-8">
-                        <label for="objective_selector" class="block text-sm font-medium text-white">Objective:</label>
-                        <div class="mt-1 rounded-md shadow-sm">
-                            <select id="objective_selector" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({objective: this.value})">
-                                % for obj in result['objective_names']:
-                                <option value="${obj}">${obj}</option>
-                                %endfor
-                            </select>
+                    <div class="flex-1 flex flex-col">
+                        <div class="mt-10 px-8">
+                            <label for="dataset_selector" class="block text-sm font-medium text-white">Dataset:</label>
+                            <div class="mt-1 rounded-md shadow-sm">
+                                <select id="dataset_selector" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({dataset: this.value})">
+                                    % for data in result['dataset_names']:
+                                    <option value="${data}">${data}</option>
+                                    %endfor
+                                </select>
+                            </div>
                         </div>
-                    </div>
-                    <div class="mt-8 px-8">
-                        <label for="objective_column" class="block text-sm font-medium text-white">Objective column</label>
-                        <div class="mt-1 rounded-md shadow-sm">
-                            <select id="objective_column" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({objective_column: this.value})">
-                                % for obj_col in result['obj_cols']:
-                                <option value="${obj_col}">${obj_col}</option>
-                                %endfor
-                            </select>
+                        <div class="mt-8 px-8">
+                            <label for="objective_selector" class="block text-sm font-medium text-white">Objective:</label>
+                            <div class="mt-1 rounded-md shadow-sm">
+                                <select id="objective_selector" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({objective: this.value})">
+                                    % for obj in result['objective_names']:
+                                    <option value="${obj}">${obj}</option>
+                                    %endfor
+                                </select>
+                            </div>
                         </div>
-                    </div>
-                    <div class="mt-8 px-8">
-                        <label for="plot_kind" class="block text-sm font-medium text-white">Chart type</label>
-                        <div class="mt-1 rounded-md shadow-sm">
-                            <select id="plot_kind" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({plot_kind: this.value})">
-                                % for kind in result['kinds']:
-                                <option value="${kind}">${kind}</option>
-                                %endfor
-                            </select>
+                        <div class="mt-8 px-8">
+                            <label for="objective_column" class="block text-sm font-medium text-white">Objective column</label>
+                            <div class="mt-1 rounded-md shadow-sm">
+                                <select id="objective_column" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({objective_column: this.value})">
+                                    % for obj_col in result['obj_cols']:
+                                    <option value="${obj_col}">${obj_col}</option>
+                                    %endfor
+                                </select>
+                            </div>
                         </div>
-                    </div>
-                    <div id="scale-form-group" class="mt-8 px-8">
-                        <label for="change_scaling" class="block text-sm font-medium text-white">Scale</label>
-                        <div class="mt-1 rounded-md shadow-sm">
-                            <select id="change_scaling" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({scale: this.value})">
-                                <option value="semilog-y">semilog-y</option>
-                                <option value="semilog-x">semilog-x</option>
-                                <option value="loglog">loglog</option>
-                                <option value="linear">linear</option>
-                            </select>
+                        <div class="mt-8 px-8">
+                            <label for="plot_kind" class="block text-sm font-medium text-white">Chart type</label>
+                            <div class="mt-1 rounded-md shadow-sm">
+                                <select id="plot_kind" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({plot_kind: this.value})">
+                                    % for kind in result['kinds']:
+                                    <option value="${kind}">${kind}</option>
+                                    %endfor
+                                </select>
+                            </div>
                         </div>
-                    </div>
-                    <div class="flex items-center justify-between mt-8 px-8">
-                        <div class="block text-sm font-medium text-white">Quantiles</div>
-                        <label class="block switch">
-                            <input id="change_shades" type="checkbox" checked onchange="setState({with_quantiles: this.checked})">
-                            <span class="slider round"></span>
-                        </label>
+                        <div id="scale-form-group" class="mt-8 px-8">
+                            <label for="change_scaling" class="block text-sm font-medium text-white">Scale</label>
+                            <div class="mt-1 rounded-md shadow-sm">
+                                <select id="change_scaling" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({scale: this.value})">
+                                    <option value="semilog-y">semilog-y</option>
+                                    <option value="semilog-x">semilog-x</option>
+                                    <option value="loglog">loglog</option>
+                                    <option value="linear">linear</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between mt-8 px-8">
+                            <div class="block text-sm font-medium text-white">Quantiles</div>
+                            <label class="block switch">
+                                <input id="change_shades" type="checkbox" checked onchange="setState({with_quantiles: this.checked})">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -102,7 +104,7 @@
                     <div class="px-4">
                         <div class="relative flex items-center justify-between h-16">
                             <!-- mobile navbar -->
-                            <div class="absolute inset-0 flex items-center justify-between md:hidden">
+                            <div class="absolute inset-0 flex items-center justify-between lg:hidden">
                                 <!-- Mobile menu brand text -->
                                 <span class="text-white text-xl">
                                     Benchopt
@@ -119,8 +121,8 @@
                                 </button>
                             </div>
                             <!-- big screen navbar-->
-                            <div class="flex-1 flex items-center justify-center md:items-stretch md:justify-start">
-                                <div class="hidden md:block">
+                            <div class="flex-1 flex items-center justify-center lg:items-stretch lg:justify-start">
+                                <div class="hidden lg:block">
                                     <div class="flex space-x-4">
                                         <a href="${home}" class="text-gray-100 hover:bg-blue-800 hover:text-white px-3 py-2 rounded-md text-sm font-medium" aria-current="page">Home</a>
                                         <a href="https://benchopt.github.io" class="text-gray-100 hover:bg-blue-800 hover:text-white px-3 py-2 rounded-md text-sm font-medium" target="_blank">Website</a>
@@ -142,10 +144,10 @@
                 </nav>
 
                 <!-- Plot menu for mobiles -->
-                <nav class="md:hidden bg-gray-700">
+                <nav class="lg:hidden bg-gray-700">
                     <div class="px-4" id="btn-plot-config">
                         <div class="relative flex items-center justify-between h-10">
-                            <div class="absolute inset-0 flex items-center justify-between md:hidden">
+                            <div class="absolute inset-0 flex items-center justify-between lg:hidden">
                                 <!-- Mobile menu button-->
                                 <span class="flex items-center space-x-2 text-white">
                                     <span>Change plot</span>
@@ -231,11 +233,11 @@
                 <!-- Page heading -->
                 <div class="px-4 py-4 lg:flex lg:items-center lg:justify-between">
                     <div class="flex-1 min-w-0">
-                        <h2 class="w-full text-center md:text-left text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">Result on ${benchmark_name} benchmark</h2>
-                        <div class="mt-1 flex flex-wrap justify-center md:justify-start sm:mt-0 space-x-4 sm:space-x-6">
+                        <h2 class="w-full text-center lg:text-left text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">Result on ${benchmark_name} benchmark</h2>
+                        <div class="mt-1 flex flex-wrap justify-center lg:justify-start sm:mt-0">
                             % for name, val in result['sysinfo']['main'].items():
                             % if val != "":
-                            <div class="mt-2 flex items-center text-sm text-gray-500">
+                            <div class="mt-2 sm:mr-6 flex items-center text-sm text-gray-500">
                                 <span class="font-bold"></span>${name.upper()} : ${val}
                             </div>
                             % endif
@@ -250,13 +252,13 @@
                             </div>
                         </div>
                     </div>
-                    <div class="hidden md:flex mt-5 lg:mt-0 lg:ml-4">
-                        <span class="sm:ml-3">
+                    <div class="hidden lg:flex mt-5 lg:mt-0 lg:ml-4">
+                        <span>
                             <a href="${result['fname']}" class="inline-flex items-center px-4 py-2 space-x-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                                 </svg>
-                                <span class="hidden md:inline">Download data</span>
+                                <span class="hidden lg:inline">Download data</span>
                             </a>
                         </span>
                     </div>
@@ -264,11 +266,11 @@
     
                 <!-- Plot -->
                 <div id="unique_plot"></div>
-                <div>
-                    <div id="legend_title" class="px-10 px-4">
+                <div class="py-10 bg-slate-200">
+                    <div id="legend_title" class="px-10 mb-4">
                         Solvers <span id="legend_help">(Click on a solver to hide it or double click to hide all the others)</span>
                     </div>
-                    <div id="plot_legend" class="px-10 space-y-4 space-r-4"></div>
+                    <div id="plot_legend" class="px-10 space-r-4"></div>
                 </div>
             </div>
         </div>

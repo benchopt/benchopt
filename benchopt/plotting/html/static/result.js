@@ -561,6 +561,7 @@ const createLegendItem = (solver, color, symbolNumber) => {
   item.style.alignItems = 'center';
   item.style.position = 'relative';
   item.style.cursor = 'pointer';
+  item.className = 'bg-white p-4 shadow-sm mt-4 rounded'
 
   if (!isVisible(solver)) {
     item.style.opacity = 0.5;
@@ -609,7 +610,7 @@ const createLegendItem = (solver, color, symbolNumber) => {
   hBar.style.width = '30px';
   hBar.style.backgroundColor = color;
   hBar.style.position = 'absolute';
-  hBar.style.left = 0;
+  hBar.style.left = '1em';
   hBar.style.zIndex = 10;
 
   // Append elements to the legend item
