@@ -293,11 +293,11 @@ const isAvailable = () => {
 const displayScatterElements = shouldBeVisible => {
   if (shouldBeVisible) {
     document.getElementById('change_scaling').style.display = 'inline-block';
-    document.getElementById('legend_title').style.display = 'block';
+    document.getElementById('legend_container').style.display = 'block';
     document.getElementById('plot_legend').style.display = 'flex';
   } else {
     document.getElementById('change_scaling').style.display = 'none';
-    document.getElementById('legend_title').style.display = 'none';
+    document.getElementById('legend_container').style.display = 'none';
     document.getElementById('plot_legend').style.display = 'none';
   }
 };
