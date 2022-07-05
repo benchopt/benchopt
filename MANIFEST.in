@@ -10,6 +10,7 @@ recursive-include benchopt *.py
 recursive-include benchopt/plotting *.html
 recursive-include benchopt/plotting *.css
 recursive-include benchopt/plotting *.js
+recursive-include benchopt/plotting *.svg
 
 
 # Include doc generation files

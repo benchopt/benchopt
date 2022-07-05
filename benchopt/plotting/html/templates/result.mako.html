@@ -14,12 +14,18 @@
         <link rel="stylesheet" href="./static/hover_index.css">
 
         <title>Result on ${benchmark_name} benchmark</title>
+
+        <style>
+            ${result['utilities.css']}
+
+            ${result['hover_index.css']}
+        </style>
     </head>
     <body>
         <!-- Two main columns container -->
         <div class="flex">
             <!-- Left column on big screen (plot selectors) -->
-            <div class="hidden md:flex flex-col w-96 h-screen bg-gray-700">
+            <div class="hidden md:flex flex-col w-96 bg-gray-700">
                 <div class="px-8 h-16 flex items-center bg-gray-800">
                     <h1 class="ml11">
                         <span class="text-wrapper">
@@ -28,7 +34,7 @@
                         </span>
                     </h1>
                 </div>
-                <div class="flex-1 flex flex-col justify-center">
+                <div class="flex-1 flex flex-col">
                     <div class="mt-10 px-8">
                         <label for="dataset_selector" class="block text-sm font-medium text-white">Dataset:</label>
                         <div class="mt-1 rounded-md shadow-sm">
@@ -90,7 +96,7 @@
                 </div>
             </div>
             <!-- Right column on big screen and main column on mobile -->
-            <div class="w-full h-screen flex flex-col overflow-scroll">
+            <div class="w-full flex flex-col overflow-scroll">
                 <!-- Main menu -->
                 <nav class="bg-blue-600">
                     <div class="px-4">
@@ -130,7 +136,7 @@
                             <a href="${home}" class="text-white block px-3 py-2 rounded-md text-base font-medium" aria-current="page">Home</a>
                             <a href="https://benchopt.github.io" class="text-white block px-3 py-2 rounded-md text-base font-medium">Website</a>
                             <a href="https://github.com/benchopt/benchopt" class="text-white block px-3 py-2 rounded-md text-base font-medium">Github</a>
-                            <a href="${result['fname']}" class="text-white block px-3 py-2 rounded-md text-base font-medium">Download CSV</a>
+                            <a href="${result['fname']}" class="text-white block px-3 py-2 rounded-md text-base font-medium">Download data</a>
                         </div>
                     </div>
                 </nav>
@@ -250,7 +256,7 @@
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                                 </svg>
-                                <span class="hidden md:inline">Download CSV</span>
+                                <span class="hidden md:inline">Download data</span>
                             </a>
                         </span>
                     </div>
@@ -258,6 +264,12 @@
     
                 <!-- Plot -->
                 <div id="unique_plot"></div>
+                <div>
+                    <div id="legend_title" class="px-10 px-4">
+                        Solvers <span id="legend_help">(Click on a solver to hide it or double click to hide all the others)</span>
+                    </div>
+                    <div id="plot_legend" class="px-10 space-y-4 space-r-4"></div>
+                </div>
             </div>
         </div>
 
@@ -363,18 +375,11 @@
                     'with_quantiles': document.getElementById('change_shades').checked,
                     'hidden_solvers': []
                 });
-
-                document.getElementById('unique_plot').on('plotly_legenddoubleclick', event => {
-                    const solver = getSolverFromPlotlyEvent(event);
-                    handleSolverDoubleClick(solver);
-                });
-
-                document.getElementById('unique_plot').on('plotly_legendclick', event => {
-                    const solver = getSolverFromPlotlyEvent(event);
-                    handleSolverClick(solver);
-                });
             });
         </script>
-        <script type="text/javascript" src="${static_dir}/result.js"></script>
+        <script type="text/javascript">
+            ${result['symbols.js']}
+            ${result['result.js']}
+        </script>
     </body>
 </html>
