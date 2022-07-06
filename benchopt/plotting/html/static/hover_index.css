@@ -315,6 +315,6 @@ input:checked+.slider:before {
   color: #475569;
 }
 
-.space-r-4 > * {
-  margin-right: 1rem;
+.space-r-2 > * {
+  margin-right: 0.5rem;
 }

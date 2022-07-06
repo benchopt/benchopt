@@ -561,7 +561,7 @@ const createLegendItem = (solver, color, symbolNumber) => {
   item.style.alignItems = 'center';
   item.style.position = 'relative';
   item.style.cursor = 'pointer';
-  item.className = 'bg-white p-4 shadow-sm mt-4 rounded'
+  item.className = 'bg-white py-1 px-4 shadow-sm mt-2 rounded'
 
   if (!isVisible(solver)) {
     item.style.opacity = 0.5;
