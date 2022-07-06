@@ -1,7 +1,6 @@
 from pathlib import Path
 from github import Github
 from github import GithubException
-import pandas as pd
 
 
 BENCHOPT_RESULT_REPO = 'benchopt/results'
@@ -26,8 +25,8 @@ def publish_result_file(benchmark_name, file_path, token):
             f"Could not upload file {file_to_upload}."
         )
 
-    file_mode = "r" if file_to_upload.suffix == ".csv"  else "rb"
-        
+    file_mode = "r" if file_to_upload.suffix == ".csv" else "rb"
+
     with file_to_upload.open(file_mode) as f:
         file_content = f.read()
 
