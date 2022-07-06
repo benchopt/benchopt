@@ -1,6 +1,7 @@
 name: Create HTML artifact
 
 on:
+  push:
   pull_request:
     branches:
       - main
