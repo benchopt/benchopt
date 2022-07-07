@@ -34,4 +34,4 @@ jobs:
       - uses: actions/upload-artifact@v3
         with:
           name: html-artifact
-          path: benchopt/tests/test_benchmarks/dummy_benchmark/outputs/benchopt_run_*.html
+          path: benchopt/tests/test_benchmarks/dummy_benchmark/outputs/dummy_benchmark_benchopt_run_*.html
