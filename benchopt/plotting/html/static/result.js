@@ -270,7 +270,7 @@ const isVisible = solver => !state().hidden_solvers.includes(solver);
 
 const isSolverAvailable = solver => data(solver).scatter.y.filter(value => !isNaN(value)).length > 0;
 
-const isSmallScreen = () => window.screen.availWidth < 768;
+const isSmallScreen = () => window.screen.availHeight < 900;
 
 /**
  * Check for each solver
@@ -381,6 +381,7 @@ const getScatterChartLayout = () => {
 
   if (isSmallScreen()) {
     layout.width = 900;
+    layout.height = window.screen.availHeight - 200;
     layout.dragmode = false;
   }
 
@@ -426,7 +427,7 @@ const getBarChartLayout = () => {
 
   if (isSmallScreen()) {
     layout.width = 900;
-    layout.height = 700;
+    layout.height = window.screen.availHeight - 200;
     layout.dragmode = false;
   }
 

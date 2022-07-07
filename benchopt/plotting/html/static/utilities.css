@@ -912,6 +912,18 @@ video {
   padding-top: 0.5rem;
 }
 
+.pt-4 {
+  padding-top: 1rem;
+}
+
+.pb-0 {
+  padding-bottom: 0;
+}
+
+.pb-1 {
+  padding-bottom: 0.25rem;
+}
+
 .pb-3 {
   padding-bottom: 0.75rem;
 }
@@ -1245,7 +1257,11 @@ video {
   }
 
   .md\:block {
-    display:block;
+    display: block;
+  }
+
+  .md\:inline-block {
+    display: inline-block;
   }
 }
 

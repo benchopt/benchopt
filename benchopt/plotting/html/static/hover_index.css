@@ -285,7 +285,6 @@ input:checked+.slider:before {
 
 @media (max-width: 767px) {
   #unique_plot {
-    height: 700px;
     flex: initial;
     flex-shrink: 0;
   }
