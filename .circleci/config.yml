@@ -99,7 +99,7 @@ jobs:
       # Save the results
       - store_artifacts:
           path: benchopt/tests/test_benchmarks/dummy_benchmark/outputs/dummy_benchmark_artifact.html
-          destination: dev
+          destination: render
 
   deploy:
     docker:
