@@ -7,31 +7,13 @@ on:
       - main
 
 jobs:
-  build:
-    name: Create HTML artifact
+  circleci_result_artifact_redirector_job:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-latest
-            version_python: 3.9
-    env:
-      JUNIT_XML: "test-data.xml"
-      VERSION_PYTHON: ${{ matrix.version_python }}
-
+    name: Run CircleCI result artifact redirector
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v3
+      - name: Redirect to Circle CI artifact
+        uses: larsoner/circleci-artifacts-redirector-action@master
         with:
-          python-version: ${{ env.VERSION_PYTHON }}
-
-      - name: Install benchopt and its dependencies
-        run: pip install -e .
-
-      - name: Run benchopt without conda
-        run: benchopt run benchopt/tests/test_benchmarks/dummy_benchmark -d Simulated[n_features=100,n_samples=100,rho=0]  -o "*[reg=0.1]" -s python-pgd -r 1 -n 10
-
-      - uses: actions/upload-artifact@v3
-        with:
-          name: html-artifact
-          path: benchopt/tests/test_benchmarks/dummy_benchmark/outputs/dummy_benchmark_benchopt_run_*.html
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-path: 0/result.html
+          circleci-jobs: build_docs
