@@ -91,6 +91,16 @@ jobs:
           paths:
             - html
 
+      - run:
+          name: make result
+          command: |
+            benchopt run benchopt/tests/test_benchmarks/dummy_benchmark -d Simulated[n_features=100,n_samples=100,rho=0]  -o "*[reg=0.1]" -s python-pgd -r 1 -n 10
+
+      # Save the results
+      - store_artifacts:
+          path: benchopt/tests/test_benchmarks/dummy_benchmark/outputs/dummy_benchmark_benchopt_run_*.html
+          destination: result.html
+
   deploy:
     docker:
       - image: cimg/python:3.8.11-browsers
