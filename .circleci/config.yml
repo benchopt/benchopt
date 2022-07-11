@@ -94,12 +94,12 @@ jobs:
       - run:
           name: make result
           command: |
-            benchopt run benchopt/tests/test_benchmarks/dummy_benchmark -d Simulated[n_features=100,n_samples=100,rho=0]  -o "*[reg=0.1]" -s python-pgd -r 1 -n 10
+            benchopt run benchopt/tests/test_benchmarks/dummy_benchmark -d Simulated[n_features=100,n_samples=100,rho=0]  -o "*[reg=0.1]" -s python-pgd -r 1 -n 10 --output artifact
 
       # Save the results
       - store_artifacts:
-          path: benchopt/tests/test_benchmarks/dummy_benchmark/outputs/dummy_benchmark_benchopt_run_*.html
-          destination: result.html 
+          path: benchopt/tests/test_benchmarks/dummy_benchmark/outputs/artifact.html
+          destination: dev
 
   deploy:
     docker:
