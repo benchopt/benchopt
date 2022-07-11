@@ -1,11 +1,5 @@
 name: Create HTML artifact
-
-on:
-  push:
-  pull_request:
-    branches:
-      - main
-
+on: [status]
 jobs:
   circleci_result_artifact_redirector_job:
     runs-on: ubuntu-latest
