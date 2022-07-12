@@ -92,9 +92,15 @@ jobs:
             - html
 
       - run:
+          name: install solvers
+          command: |
+            pip install sklearn
+            pip install gd
+
+      - run:
           name: make result
           command: |
-            benchopt run benchopt/tests/test_benchmarks/dummy_benchmark -d Simulated[n_features=100,n_samples=100,rho=0]  -o "*[reg=0.1]" -s python-pgd -s lightning -r 5 -n 15 --output artifact
+            benchopt run benchopt/tests/test_benchmarks/dummy_benchmark -d Simulated[n_features=100,n_samples=100,rho=0]  -o "*[reg=0.1]" -s python-pgd -s cd -s sklearn -r 5 -n 15 --output artifact
 
       # Save the results
       - store_artifacts:
