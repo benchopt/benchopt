@@ -258,9 +258,9 @@ def render_index(benchmarks, static_dir, len_fnames):
         A str with the HTML code for the index page.
     """
     pretty_names = [get_pretty_name(b) for b in benchmarks]
-    
+
     benchmark_names = [b.name for b in benchmarks]
-    
+
     pretty_names, len_fnames, benchmark_names = map(
         list, zip(*sorted(zip(pretty_names, len_fnames, benchmark_names),
                           reverse=False))
@@ -277,9 +277,10 @@ def render_index(benchmarks, static_dir, len_fnames):
         len_fnames=len_fnames
     )
 
+
 def get_pretty_name(bench_path):
     benchmark = Benchmark(bench_path)
-    
+
     return benchmark.pretty_name
 
 
