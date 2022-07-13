@@ -10,6 +10,7 @@ recursive-include benchopt *.py
 recursive-include benchopt/plotting *.html
 recursive-include benchopt/plotting *.css
 recursive-include benchopt/plotting *.js
+recursive-include benchopt/plotting *.svg
 
 
 # Include doc generation files
@@ -33,10 +34,11 @@ recursive-include examples *.txt
 recursive-include benchopt/tests/test_benchmarks *.R
 recursive-include benchopt/tests/test_benchmarks *.jl
 recursive-include benchopt/tests/test_benchmarks *.py
+recursive-include benchopt/tests/test_benchmarks *.md
 include benchopt/datasets/tests/test_dataset_simulated.py
 
 # Exclude joblib folders in dummy_benchmark
-prune benchopt/tests/test_benchmarks/dummy_benchmark/joblib
-prune benchopt/tests/test_benchmarks/dummy_benchmark/__cache__
+prune benchopt/tests/test_benchmarks/*/joblib
+prune benchopt/tests/test_benchmarks/*/__cache__
 
 exclude .mailmap

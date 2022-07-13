@@ -3,7 +3,7 @@
 def get_benchopt_requirement():
     """Specification for pip requirement to install benchopt in conda env.
 
-    Find out how benchopt where installed so we can install the same version
+    Find out how benchopt was installed so we can install the same version
     even if it was installed in develop mode. This requires pip version >= 20.1
 
     Returns

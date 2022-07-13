@@ -20,7 +20,8 @@ DEFAULT_GLOBAL_CONFIG = {
     'github_token': None,
     'data_dir': './data/',
     'conda_cmd': 'conda',
-    'shell': os.environ.get('SHELL', 'bash')
+    'shell': os.environ.get('SHELL', 'bash'),
+    'cache': None,
 }
 """
 * ``debug``: If set to true, enable debug logs.
@@ -33,6 +34,10 @@ DEFAULT_GLOBAL_CONFIG = {
   to install benchmarks instead of conda. See :ref:`config_mamba`.
 * ``shell``, *str*: can be used to specify the shell to use. Default to
   `SHELL` from env if it exists and ``'bash'`` otherwise.
+* ``cache``, *str*: can be used to specify where the cache for the benchmarks
+  should be stored. By default, the cache files are stored in the benchmark
+  directory, under the folder __cache__. Setting this configuration would
+  results in having the cache for benchmark `B1` stored in `${cache}/B1/`.
 """
 
 DEFAULT_BENCHMARK_CONFIG = {

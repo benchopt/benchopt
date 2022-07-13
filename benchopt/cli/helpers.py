@@ -1,5 +1,6 @@
 import click
 import pprint
+import tarfile
 from pathlib import Path
 from collections.abc import Iterable
 import warnings
@@ -21,6 +22,12 @@ from benchopt.utils.shell_cmd import _run_shell_in_conda_env
 
 from benchopt.utils.terminal_output import colorify
 from benchopt.utils.terminal_output import RED, GREEN, TICK, CROSS
+
+
+ARCHIVE_ELEMENTS = [
+    'README*', '*.yml', 'objective.py',
+    'solvers/*', 'datasets/*', 'utils/**'
+]
 
 helpers = click.Group(
     name='Helpers',
@@ -47,7 +54,7 @@ def clean(benchmark, token=None, filename='all'):
         rm_folder(output_folder)
     else:
         was_removed = False
-        for ext in [".csv", ".html"]:
+        for ext in [".csv", ".html", ".parquet"]:
             if ext == ".html":
                 to_remove = output_folder / f"{benchmark.name}_{filename}"
             else:
@@ -59,15 +66,54 @@ def clean(benchmark, token=None, filename='all'):
                 file.unlink()
             json_path = output_folder / "cache_run_list.json"
             if was_removed and json_path.exists():
-                print(f"Removing {filename}.csv entry from {json_path}")
+                print(f"Removing {filename}.{ext} entry from {json_path}")
                 with open(json_path, "r") as cache_run:
                     json_file = json.load(cache_run)
-                json_file.pop(f"{filename}.csv", None)
+                json_file.pop(f"{filename}.{ext}", None)
                 with open(json_path, "w") as cache_run:
                     json.dump(json_file, cache_run)
     # Delete cache files
     print("Clear joblib cache")
     benchmark.mem.clear(warn=False)
+
+
+def clean_archive(info):
+    if "__pycache__" in info.name:
+        return None
+
+    # reset the username and info in the archive
+    info.uid = info.gid = 0
+    info.uname = info.gname = "benchopt"
+
+    return info
+
+
+@helpers.command(
+    help="Create an archive of the benchmark that can easily be shared."
+)
+@click.argument('benchmark', default=Path.cwd(), type=click.Path(exists=True),
+                shell_complete=complete_benchmarks)
+@click.option('--with-outputs',
+              is_flag=True,
+              help="If this flag is set, also store the outputs of the "
+              "benchmark in the archive.")
+def archive(benchmark, with_outputs):
+
+    benchmark = Benchmark(benchmark)
+    bench_dir = benchmark.benchmark_dir
+
+    to_archive = ARCHIVE_ELEMENTS
+    if with_outputs:
+        to_archive = to_archive + ['outputs/*']
+
+    archive_name = f"{benchmark.name}.tar.gz"
+    print(f"Creating {archive_name}...", end='', flush=True)
+    with tarfile.open(archive_name, "w:gz") as tar:
+        for elem_pattern in to_archive:
+            for sub_elem in bench_dir.glob(elem_pattern):
+                tar.add(sub_elem, sub_elem.relative_to(bench_dir.parent),
+                        filter=clean_archive)
+    print(f"done\nResults are in {archive_name}")
 
 
 def check_conda_env(env_name, benchmark_name=None):

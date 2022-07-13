@@ -18,6 +18,23 @@ CLI
   documentation <https://benchopt.github.io/cli.html>`_ for more details on the
   syntax. By `Tom Dupré la Tour`_ (:gh:`362`).
 
+- Add ``--slurm`` option in ``benchopt run`` to allow running the benchmark on
+  a SLURM cluster. See the :ref:`slurm_run` for more details on the config.
+  By `Thomas Moreau`_ (:gh:`407`)
+
+- Add ``benchopt archive`` to create a ``tar.gz`` archive with the benchmark's
+  files for sharing with others or as supplementary materials for papers.
+  By `Thomas Moreau`_ (:gh:`408`).
+
+- Now the result data are saved in the Parquet format. The use of CSV file is deprecated.
+  By `Melvine Nargeot`_ (:gh:`433`).
+
+API
+~~~
+
+- Add latest git tag via ``benchmark-git-tag`` key in :func:`benchopt.utils.sys_info.get_sys_info`.
+  By `Mathurin Massias`_ (:gh:`421`).
+
 .. _changes_1_2:
 
 Version 1.2 - 06/05/2022

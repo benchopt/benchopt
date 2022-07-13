@@ -81,7 +81,14 @@ def complete_output_files(ctx, param, incomplete):
     if benchmark is None:
         return []
     output_folder = benchmark.get_output_folder()
-    candidates = list(output_folder.glob('*.csv'))
+
+    # Only use absolute path to make sure we can use relative_to to
+    # autocompletion with relative paths
+    cwd = Path().resolve()
+    candidates = [
+        p.resolve().relative_to(cwd) for ext in ['csv', 'parquet']
+        for p in output_folder.glob(f"*.{ext}")
+    ]
     return propose_from_list(candidates, incomplete)
 
 
@@ -92,7 +99,13 @@ def complete_config_files(ctx, param, incomplete):
     if benchmark is None:
         return []
     benchmark_folder = benchmark.benchmark_dir
-    candidates = list(benchmark_folder.glob('*.yml'))
+
+    # Only use absolute path to make sure we can use relative_to to
+    # autocompletion with relative paths
+    cwd = Path().resolve()
+    candidates = [
+        p.resolve().relative_to(cwd) for p in benchmark_folder.glob('*.yml')
+    ]
     return propose_from_list(candidates, incomplete)
 
 
