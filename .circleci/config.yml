@@ -4,7 +4,7 @@ version: 2
 jobs:
   build_docs:
     docker:
-      - image: cimg/python:3.8.11-browsers
+      - image: cimg/python:3.9.11-browsers
     steps:
       - checkout
       - run:
@@ -56,7 +56,7 @@ jobs:
       - run:
           name: Get Python running
           command: |
-            mamba install python=3.8 julia r-base rpy2 numpy cython -yq
+            mamba install python=3.9 julia r-base rpy2 numpy cython -yq
             pip install --upgrade "setuptools<58.5"
             pip install --upgrade --progress-bar off julia
             pip install --upgrade --progress-bar off git+https://github.com/scikit-learn-contrib/lightning.git
@@ -93,7 +93,7 @@ jobs:
 
   deploy:
     docker:
-      - image: cimg/python:3.8.11-browsers
+      - image: cimg/python:3.9.11-browsers
     steps:
       - attach_workspace:
           at: /tmp/build
