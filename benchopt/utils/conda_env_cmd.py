@@ -22,7 +22,7 @@ channels:
   - conda-forge
   - nodefaults
 dependencies:
-  - python
+  - python=3.9
   - numpy
   - cython
   - compilers
