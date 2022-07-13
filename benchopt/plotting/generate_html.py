@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 from mako.template import Template
 
+from benchopt.benchmark import Benchmark
 from ..constants import PLOT_KINDS
 from .plot_bar_chart import computeBarChartData  # noqa: F401
 from .plot_objective_curve import compute_quantiles   # noqa: F401
@@ -241,7 +242,7 @@ def get_sysinfo(df):
     return sysinfo
 
 
-def render_index(benchmark_names, static_dir, len_fnames):
+def render_index(benchmarks, static_dir, len_fnames):
     """Render a result index home page for all rendered benchmarks.
 
     Parameters
@@ -256,10 +257,10 @@ def render_index(benchmark_names, static_dir, len_fnames):
     rendered : str
         A str with the HTML code for the index page.
     """
-
-    pretty_names = [name.replace("benchmark_", "").replace("_",
-                                                           " ").capitalize()
-                    for name in benchmark_names]
+    pretty_names = [get_pretty_name(b) for b in benchmarks]
+    
+    benchmark_names = [b.name for b in benchmarks]
+    
     pretty_names, len_fnames, benchmark_names = map(
         list, zip(*sorted(zip(pretty_names, len_fnames, benchmark_names),
                           reverse=False))
@@ -275,6 +276,11 @@ def render_index(benchmark_names, static_dir, len_fnames):
         pretty_names=pretty_names,
         len_fnames=len_fnames
     )
+
+def get_pretty_name(bench_path):
+    benchmark = Benchmark(bench_path)
+    
+    return benchmark.pretty_name
 
 
 def render_benchmark(results, benchmark_name, static_dir, home='index.html'):
@@ -515,7 +521,7 @@ def plot_benchmark_html_all(patterns=(), benchmarks=(), root=None,
                 f.write(html)
 
     # Create an index that lists all benchmarks.
-    rendered = render_index([b.name for b in benchmarks], static_dir,
+    rendered = render_index(benchmarks, static_dir,
                             len_fnames)
     index_filename = DEFAULT_HTML_DIR / 'index.html'
     print(f"Writing index to {index_filename}")
