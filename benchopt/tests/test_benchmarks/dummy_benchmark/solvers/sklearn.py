@@ -1,5 +1,4 @@
 import warnings
-import numpy as np
 from benchopt import BaseSolver
 from benchopt import safe_import_context
 
@@ -23,11 +22,8 @@ class Solver(BaseSolver):
         warnings.filterwarnings('ignore', category=ConvergenceWarning)
 
     def run(self, n_iter):
-        if n_iter == 0:
-            self.coef = np.zeros([self.X.shape[1] + self.fit_intercept])
-        else:
-            self.clf.max_iter = n_iter
-            self.clf.fit(self.X, self.y)
+        self.clf.max_iter = n_iter
+        self.clf.fit(self.X, self.y)
 
     def get_result(self):
         return self.clf.coef_.flatten()
