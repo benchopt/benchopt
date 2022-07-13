@@ -4,7 +4,7 @@ version: 2
 jobs:
   build_docs:
     docker:
-      - image: cimg/python:3.8.11-browsers
+      - image: cimg/python:3.9.11-browsers
     steps:
       - checkout
       - run:
@@ -56,7 +56,7 @@ jobs:
       - run:
           name: Get Python running
           command: |
-            mamba install python=3.8 julia r-base rpy2 numpy cython -yq
+            mamba install python=3.9 julia r-base rpy2 numpy cython -yq
             pip install --upgrade "setuptools<58.5"
             pip install --upgrade --progress-bar off julia
             pip install --upgrade --progress-bar off git+https://github.com/scikit-learn-contrib/lightning.git
@@ -91,9 +91,20 @@ jobs:
           paths:
             - html
 
+      - run:
+          name: make result
+          command: |
+            pip install -U numba
+            benchopt run benchopt/tests/test_benchmarks/dummy_benchmark -d Simulated[n_features=100,n_samples=100,rho=0]  -o "*[reg=0.1]" -s python-pgd -s cd -s Test-Solver -r 5 -n 15 --output benchmark-result
+
+      # Save the results
+      - store_artifacts:
+          path: benchopt/tests/test_benchmarks/dummy_benchmark/outputs/dummy_benchmark_benchmark-result.html
+          destination: result.html
+
   deploy:
     docker:
-      - image: cimg/python:3.8.11-browsers
+      - image: cimg/python:3.9.11-browsers
     steps:
       - attach_workspace:
           at: /tmp/build

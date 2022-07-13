@@ -10,7 +10,7 @@ def get_file_content(repo, branch, git_path):
     "Get content and sha of the file if it exists else return None."
     try:
         prev_content = repo.get_contents(git_path, ref=branch)
-        return prev_content.decoded_content.decode('utf-8'), prev_content.sha
+        return prev_content.decoded_content, prev_content.sha
     except GithubException:
         return None, None
 
@@ -24,7 +24,10 @@ def publish_result_file(benchmark_name, file_path, token):
         raise FileNotFoundError(
             f"Could not upload file {file_to_upload}."
         )
-    with file_to_upload.open('r') as f:
+
+    file_mode = "r" if file_to_upload.suffix == ".csv" else "rb"
+
+    with file_to_upload.open(file_mode) as f:
         file_content = f.read()
 
     git_path = f"benchmarks/{benchmark_name}/outputs/{file_to_upload.name}"
@@ -34,20 +37,15 @@ def publish_result_file(benchmark_name, file_path, token):
     g = Github(login_or_token=token)
     origin = g.get_repo(BENCHOPT_RESULT_REPO)
     username = g.get_user().login
-    has_push_rights = origin.permissions.push
 
-    # If no push rights, get a fork of the repo and a branch with the file name
-    if not has_push_rights:
-        repo = origin.create_fork()
-        branch = f"{username}/{benchmark_name}"
-        try:
-            repo.get_branch(branch)
-        except GithubException:
-            master_sha = origin.get_branch(origin.default_branch).commit.sha
-            repo.create_git_ref(f'refs/heads/{branch}', master_sha)
-    else:
-        repo = origin
-        branch = origin.default_branch
+    # Get a fork of the repo and a branch with the file name
+    repo = origin.create_fork()
+    branch = f"{username}/{benchmark_name}"
+    try:
+        repo.get_branch(branch)
+    except GithubException:
+        master_sha = origin.get_branch(origin.default_branch).commit.sha
+        repo.create_git_ref(f'refs/heads/{branch}', master_sha)
 
     # If file already exists and is the same, do nothing.
     prev_content, prev_content_sha = get_file_content(repo, branch, git_path)

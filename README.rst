@@ -108,34 +108,34 @@ Available optimization problems
      - Results
      - Build Status
    * - `Ordinary Least Squares (OLS) <https://github.com/benchopt/benchmark_ols>`_
-     - `Results <https://benchopt.github.io/results/benchmark_ols.html>`_
+     - `Results <https://benchopt.github.io/results/benchmark_ols.html>`__
      - |Build Status OLS|
    * - `Non-Negative Least Squares (NNLS) <https://github.com/benchopt/benchmark_nnls>`_
-     - `Results <https://benchopt.github.io/results/benchmark_nnls.html>`_
+     - `Results <https://benchopt.github.io/results/benchmark_nnls.html>`__
      - |Build Status NNLS|
    * - `LASSO: L1-Regularized Least Squares <https://github.com/benchopt/benchmark_lasso>`_
-     - `Results <https://benchopt.github.io/results/benchmark_lasso.html>`_
+     - `Results <https://benchopt.github.io/results/benchmark_lasso.html>`__
      - |Build Status Lasso|
    * - `LASSO Path <https://github.com/jolars/benchmark_lasso_path>`_
-     - `Results <https://benchopt.github.io/results/benchmark_lasso_path.html>`_
+     - `Results <https://benchopt.github.io/results/benchmark_lasso_path.html>`__
      - |Build Status Lasso Path|
    * - `Elastic Net <https://github.com/benchopt/benchmark_elastic_net>`_
      - 
      - |Build Status ElasticNet|
    * - `MCP <https://github.com/benchopt/benchmark_mcp>`_
-     - `Results <https://benchopt.github.io/results/benchmark_mcp.html>`_
+     - `Results <https://benchopt.github.io/results/benchmark_mcp.html>`__
      - |Build Status MCP|
    * - `L2-Regularized Logistic Regression <https://github.com/benchopt/benchmark_logreg_l2>`_
-     - `Results <https://benchopt.github.io/results/benchmark_logreg_l2.html>`_
+     - `Results <https://benchopt.github.io/results/benchmark_logreg_l2.html>`__
      - |Build Status LogRegL2|
    * - `L1-Regularized Logistic Regression <https://github.com/benchopt/benchmark_logreg_l1>`_
-     - `Results <https://benchopt.github.io/results/benchmark_logreg_l1.html>`_
+     - `Results <https://benchopt.github.io/results/benchmark_logreg_l1.html>`__
      - |Build Status LogRegL1|
    * - `L2-regularized Huber regression <https://github.com/benchopt/benchmark_huber_l2>`_
      - 
      - |Build Status HuberL2|
    * - `L1-Regularized Quantile Regression <https://github.com/benchopt/benchmark_quantile_regression>`_
-     - `Results <https://benchopt.github.io/results/benchmark_quantile_regression.html>`_
+     - `Results <https://benchopt.github.io/results/benchmark_quantile_regression.html>`__
      - |Build Status QuantileRegL1|
    * - `Linear SVM for Binary Classification <https://github.com/benchopt/benchmark_linear_svm_binary_classif_no_intercept>`_
      - 
@@ -153,7 +153,7 @@ Available optimization problems
      - 
      - |Build Status TV2D|
    * - `ResNet Classification <https://github.com/benchopt/benchmark_resnet_classif>`_
-     - `Results <https://benchopt.github.io/results/benchmark_resnet_classif.html>`_
+     - `Results <https://benchopt.github.io/results/benchmark_resnet_classif.html>`__
      - |Build Status ResNetClassif|
 
 
