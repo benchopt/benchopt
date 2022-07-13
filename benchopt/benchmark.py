@@ -46,7 +46,8 @@ class Benchmark:
         set_benchmark(self.benchmark_dir)
 
         try:
-            self.get_benchmark_objective()
+            objective = self.get_benchmark_objective()
+            self.pretty_name = objective.name
         except RuntimeError:
             raise click.BadParameter(
                 f"The folder '{benchmark_dir}' does not contain "
