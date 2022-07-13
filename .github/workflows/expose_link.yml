@@ -12,7 +12,7 @@ jobs:
           artifact-path: 0/result.html
           circleci-jobs: build_docs
 
-  circleci_artifacts_redirector_job:
+  circleci_docs_artifacts_redirector_job:
     runs-on: ubuntu-latest
     name: Run CircleCI artifacts redirector
     steps:
