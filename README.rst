@@ -160,16 +160,17 @@ Available optimization problems
 Citing Benchopt
 ---------------
 
-If you use ``Benchopt`` in scientific publication, please consider citing the following paper
+If you use ``Benchopt`` in a scientific publication, please cite the following paper
 
 .. code-block:: bibtex
 
    @article{benchopt,
-      author = {Thomas Moreau, Mathurin Massias, Alexandre Gramfort, Pierre Ablin,
-                Pierre-Antoine Bannier, Benjamin Charlier, Mathieu Dagréou, Tom Dupré la Tour,
-                Ghislain Durif, Cassio F. Dantas, Quentin Klopfenstein, Johan Larsson, En Lai,
-                Tanguy Lefort, Benoit Malézieux, Badr Moufad, Binh T. Nguyen, Alain Rakotomamonjy, 
-                Zaccharie Ramzi, Joseph Salmon, Samuel Vaiter},
+      author = {Moreau, Thomas and Massias, Mathurin and Gramfort, Alexandre and Ablin, Pierre 
+                and Bannier, Pierre-Antoine and Charlier, Benjamin and Dagréou, Mathieu and Dupré la Tour, Tom 
+                and Durif, Ghislain and F. Dantas, Cassio and Klopfenstein, Quentin 
+                and Larsson, Johan and Lai, En and Lefort, Tanguy and Malézieux, Benoit 
+                and Moufad, Badr and T. Nguyen, Binh and Rakotomamonjy, Alain and Ramzi, Zaccharie 
+                and Salmon, Joseph and Vaiter, Samuel},
       title  = {Benchopt: Reproducible, efficient and collaborative optimization benchmarks},
       year   = {2022},
       url    = {https://arxiv.org/abs/2206.13424}
