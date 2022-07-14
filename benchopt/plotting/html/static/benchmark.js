@@ -136,7 +136,7 @@ function trashIconDialog() {
   allChecked = document.querySelectorAll("input[name=checkfiles]:checked");
   delCmd = "rm \\\n <br />"; // n and br for html and copy to clipboard
   for (check of allChecked) {
-    delCmd += $(check).attr("data-csv") + " \\\n <br />";
+    delCmd += $(check).attr("data-result") + " \\\n <br />";
     delCmd += $(check).attr("data-html") + " \\\n <br />";
   }
   delCmd += "cache_run_list.json"; // add the cache file

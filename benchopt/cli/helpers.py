@@ -54,7 +54,7 @@ def clean(benchmark, token=None, filename='all'):
         rm_folder(output_folder)
     else:
         was_removed = False
-        for ext in [".csv", ".html"]:
+        for ext in [".csv", ".html", ".parquet"]:
             if ext == ".html":
                 to_remove = output_folder / f"{benchmark.name}_{filename}"
             else:
@@ -66,10 +66,10 @@ def clean(benchmark, token=None, filename='all'):
                 file.unlink()
             json_path = output_folder / "cache_run_list.json"
             if was_removed and json_path.exists():
-                print(f"Removing {filename}.csv entry from {json_path}")
+                print(f"Removing {filename}.{ext} entry from {json_path}")
                 with open(json_path, "r") as cache_run:
                     json_file = json.load(cache_run)
-                json_file.pop(f"{filename}.csv", None)
+                json_file.pop(f"{filename}.{ext}", None)
                 with open(json_path, "w") as cache_run:
                     json.dump(json_file, cache_run)
     # Delete cache files

@@ -26,6 +26,8 @@ CLI
   files for sharing with others or as supplementary materials for papers.
   By `Thomas Moreau`_ (:gh:`408`).
 
+- Now the result data are saved in the Parquet format. The use of CSV file is deprecated.
+  By `Melvine Nargeot`_ (:gh:`433`).
 
 API
 ~~~
