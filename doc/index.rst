@@ -256,6 +256,26 @@ All the public benchmark results are available at `Benchopt Benchmarks results <
 
 .. include:: contrib.rst
 
+
+Citing Benchopt
+---------------
+
+If you use ``Benchopt`` in scientific publication, please consider citing the following paper
+
+.. code-block:: bibtex
+
+   @article{benchopt,
+      author = {Thomas Moreau, Mathurin Massias, Alexandre Gramfort, Pierre Ablin,
+                Pierre-Antoine Bannier, Benjamin Charlier, Mathieu Dagréou, Tom Dupré la Tour,
+                Ghislain Durif, Cassio F. Dantas, Quentin Klopfenstein, Johan Larsson, En Lai,
+                Tanguy Lefort, Benoit Malézieux, Badr Moufad, Binh T. Nguyen, Alain Rakotomamonjy, 
+                Zaccharie Ramzi, Joseph Salmon, Samuel Vaiter},
+      title  = {Benchopt: Reproducible, efficient and collaborative optimization benchmarks},
+      year   = {2022},
+      url    = {https://arxiv.org/abs/2206.13424}
+   }
+
+
 Website contents
 ================
 
