@@ -157,6 +157,25 @@ Available optimization problems
      - |Build Status ResNetClassif|
 
 
+Citing Benchopt
+---------------
+
+If you use ``Benchopt`` in scientific publication, please consider citing the following paper
+
+.. code-block:: bibtex
+
+   @article{benchopt,
+      author = {Thomas Moreau, Mathurin Massias, Alexandre Gramfort, Pierre Ablin,
+                Pierre-Antoine Bannier, Benjamin Charlier, Mathieu Dagréou, Tom Dupré la Tour,
+                Ghislain Durif, Cassio F. Dantas, Quentin Klopfenstein, Johan Larsson, En Lai,
+                Tanguy Lefort, Benoit Malézieux, Badr Moufad, Binh T. Nguyen, Alain Rakotomamonjy, 
+                Zaccharie Ramzi, Joseph Salmon, Samuel Vaiter},
+      title  = {Benchopt: Reproducible, efficient and collaborative optimization benchmarks},
+      year   = {2022},
+      url    = {https://arxiv.org/abs/2206.13424}
+   }
+
+
 .. |Test Status| image:: https://github.com/benchopt/benchopt/actions/workflows/test.yml/badge.svg
    :target: https://github.com/benchopt/benchopt/actions/workflows/test.yml
 .. |Python 3.6+| image:: https://img.shields.io/badge/python-3.6%2B-blue
