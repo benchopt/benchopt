@@ -7,7 +7,8 @@ from ..utils.checkers import check_random_state
 
 def make_correlated_data(
         n_samples=100, n_features=50, n_tasks=1, rho=0.6, snr=3,
-        w_true=None, density=0.2, X_density=1, random_state=None):
+        w_true=None, density=0.2, X_density=1, random_state=None,
+        pos_data=False):
     r"""Generate a linear regression with decaying correlation for the design
     matrix :math:`\rho^{|i-j|}`.
 
@@ -51,6 +52,8 @@ def make_correlated_data(
         make the randomness deterministic.
     X_density: float in ]0, 1]
         Proportion of elements of X which are non-zero.
+    pos_data: boolean
+        Generate non-negative data (both design matrix and observation vector)
 
     Returns
     -------
@@ -101,6 +104,10 @@ def make_correlated_data(
     else:
         if w_true.ndim == 1:
             w_true = w_true[:, None]
+
+    if pos_data:
+        X = abs(X)
+        w_true = abs(w_true)
 
     Y = X @ w_true
     noise = rng.randn(n_samples, n_tasks)
