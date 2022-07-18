@@ -105,9 +105,9 @@ def make_correlated_data(
         if w_true.ndim == 1:
             w_true = w_true[:, None]
 
-    if pos_data:
-        X = abs(X)
-        w_true = abs(w_true)
+    if positive:
+        X = np.abs(X)
+        w_true = np.abs(w_true)
 
     Y = X @ w_true
     noise = rng.randn(n_samples, n_tasks)
