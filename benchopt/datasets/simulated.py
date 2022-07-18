@@ -52,7 +52,7 @@ def make_correlated_data(
         make the randomness deterministic.
     X_density: float in ]0, 1]
         Proportion of elements of X which are non-zero.
-    pos_data: boolean
+    positive: bool
         Generate non-negative data (both design matrix and observation vector)
 
     Returns
