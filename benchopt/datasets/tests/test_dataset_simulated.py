@@ -81,6 +81,14 @@ def test_correlated_sparse_X(X_density):
                 rtol=0.05)
 
 
+@pytest.mark.parametrize('positive', [True, False])
+def test_correlated_positive(positive):
+    X, y, w_true = make_correlated_data(positive=positive)
+
+    # check that X and w_true have only non-negative entries
+    assert np.all(X>=0) and np.all(w_true>=0)
+
+
 @pytest.mark.parametrize('param_name, p_range', [
     ('rho', [0, 1]), ('density', [0, 1]), ('snr', [0, np.inf])
 ])
