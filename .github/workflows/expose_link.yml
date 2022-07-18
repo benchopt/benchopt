@@ -6,7 +6,7 @@ jobs:
     name: Run CircleCI result artifact redirector
     strategy:
       matrix:
-        path: [0/result.html, 0/dev/index.html]
+        path: [0/dev/index.html, 0/result.html]
     steps:
       - name: Redirect to Circle CI artifact
         uses: larsoner/circleci-artifacts-redirector-action@master
