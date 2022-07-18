@@ -3,7 +3,7 @@ on: [status]
 jobs:
   circleci_result_artifact_redirector_job:
     runs-on: ubuntu-latest
-    name: Run CircleCI result artifact redirector
+    name: Link to CircleCI result artifact
     steps:
       - name: Redirect to Circle CI artifact
         uses: larsoner/circleci-artifacts-redirector-action@master
@@ -14,7 +14,7 @@ jobs:
           job-title: benchmark result artifact
   circleci_docs_artifact_redirector_job:
     runs-on: ubuntu-latest
-    name: Run CircleCI result artifact redirector
+    name: Link to CircleCI documentation artifact
     steps:
       - name: Redirect to Circle CI artifact
         uses: larsoner/circleci-artifacts-redirector-action@master
