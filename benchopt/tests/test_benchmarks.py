@@ -229,7 +229,12 @@ def _test_solver_one_objective(solver, objective):
     if is_convex:
         val_star = objective(beta_hat)['objective_value']
         for _ in range(100):
-            eps = 1e-5 * np.random.randn(*beta_hat.shape)
-            val_eps = objective(beta_hat + eps)['objective_value']
+            if isinstance(beta_hat, np.ndarray):
+                eps = 1e-5 * np.random.randn(*beta_hat.shape)
+                val_eps = objective(beta_hat + eps)['objective_value']
+            else: # assume list of arrays is returned
+                val_eps = objective(
+                    [b + 1e-5 * np.random.randn(*b.shape) for b in beta_hat])
+
             diff = val_eps - val_star
             assert diff >= 0
