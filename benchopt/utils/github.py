@@ -65,14 +65,25 @@ def publish_result_file(benchmark, file_path, token):
         repo.update_file(git_path, f"RESULT update {file_name}",
                          file_content, sha=prev_content_sha,
                          branch=branch)
-        
+
     # Check if benchmark_meta.json file exists
-    meta, _ = get_file_content(repo, branch, f"benchmarks/{benchmark_name}/benchmark_meta.json")
-    if meta is None:
-        json_content = {
-            "pretty_name": benchmark.pretty_name
-        }
-        repo.create_file(f"benchmarks/{benchmark_name}/benchmark_meta.json", "Create benchmark_meta.json", json.dumps(json_content), branch=branch)
+    meta_content = {
+        "pretty_name": benchmark.pretty_name
+    }
+    meta_prev_content, meta_prev_content_sha = get_file_content(repo, branch, f"benchmarks/{benchmark_name}/benchmark_meta.json")
+    meta_content = json.dumps(meta_content)
+    if meta_prev_content == meta_content:
+        print("INFO: benchmark_meta.json already exists.")
+
+    if meta_prev_content is None:
+        repo.create_file(f"benchmarks/{benchmark_name}/benchmark_meta.json",
+                         "Create benchmark_meta.json",
+                         meta_content, branch=branch)
+    else:
+        repo.update_file(f"benchmarks/{benchmark_name}/benchmark_meta.json",
+                         "Update benchmark_meta.json",
+                         meta_content, sha=meta_prev_content_sha,
+                         branch=branch)
 
     head = f"{username}:{branch}"
     pulls = list(origin.get_pulls(head=head, state='open'))
