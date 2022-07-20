@@ -522,7 +522,8 @@ def plot_benchmark_html_all(patterns=(), benchmark_paths=(), root=None,
             ) + list((benchmark_path / 'outputs').glob(f"{p}.csv"))
         fnames = sorted(set(fnames))
         results = get_results(
-            fnames, PLOT_KINDS.keys(), root_html, benchmark_path.name, copy=True
+            fnames, PLOT_KINDS.keys(),
+            root_html, benchmark_path.name, copy=True
         )
         len_fnames.append(len(fnames))
         if len(results) > 0:
@@ -533,7 +534,10 @@ def plot_benchmark_html_all(patterns=(), benchmark_paths=(), root=None,
             benchmark_filename = (
                 root_html / benchmark_path.name
             ).with_suffix('.html')
-            print(f"Writing {benchmark_path.name} results to {benchmark_filename}")
+            print(
+                f"Writing {benchmark_path.name} "
+                f"results to {benchmark_filename}"
+            )
             with open(benchmark_filename, "w") as f:
                 f.write(rendered)
 
