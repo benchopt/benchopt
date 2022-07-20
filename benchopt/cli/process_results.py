@@ -128,5 +128,5 @@ def generate_results(patterns=(), benchmarks=(), root=None, display=True):
 
     from benchopt.plotting.generate_html import plot_benchmark_html_all
     plot_benchmark_html_all(
-        patterns=patterns, benchmarks=benchmarks, root=root, display=display
+        patterns=patterns, benchmark_paths=benchmarks, root=root, display=display
     )

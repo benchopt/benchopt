@@ -469,7 +469,7 @@ def plot_benchmark_html(fnames, benchmark, kinds, display=True):
         webbrowser.open_new_tab('file://' + str(result_filename))
 
 
-def plot_benchmark_html_all(patterns=(), benchmarks=(), root=None,
+def plot_benchmark_html_all(patterns=(), benchmark_paths=(), root=None,
                             display=True):
     """Generate a HTML report for multiple benchmarks.
 
@@ -480,7 +480,7 @@ def plot_benchmark_html_all(patterns=(), benchmarks=(), root=None,
     ----------
     patterns : tuple of str
         Only include result files that match the provided patterns.
-    benchmarks : tuple of Path
+    benchmark_paths : tuple of Path
         Explicitly provides the benchmarks that should be display in the
         report.
     root : Path | None
@@ -494,14 +494,14 @@ def plot_benchmark_html_all(patterns=(), benchmarks=(), root=None,
     None
     """
     # Parse the arguments adn get the list of benchmarks and patterns.
-    if not benchmarks:
+    if not benchmark_paths:
         root = Path(root)
-        benchmarks = [
+        benchmark_paths = [
             f for f in root.iterdir()
             if f.is_dir() and (f / 'outputs').is_dir()
         ]
     else:
-        benchmarks = [Path(b) for b in benchmarks]
+        benchmark_paths = [Path(b) for b in benchmark_paths]
     if not patterns:
         patterns = ['*']
 
@@ -511,35 +511,35 @@ def plot_benchmark_html_all(patterns=(), benchmarks=(), root=None,
     (root_html / OUTPUTS).mkdir(exist_ok=True, parents=True)
     static_dir = copy_static()
 
-    # Loop over all benchmarks to
+    # Loop over all benchmark paths to
     len_fnames = []
-    for benchmark in benchmarks:
-        print(f'Rendering benchmark: {benchmark}')
+    for benchmark_path in benchmark_paths:
+        print(f'Rendering benchmark: {benchmark_path}')
 
         fnames = []
         for p in patterns:
             fnames += list(
-                (benchmark / 'outputs').glob(f"{p}.parquet")
-            ) + list((benchmark / 'outputs').glob(f"{p}.csv"))
+                (benchmark_path / 'outputs').glob(f"{p}.parquet")
+            ) + list((benchmark_path / 'outputs').glob(f"{p}.csv"))
         fnames = sorted(set(fnames))
         results = get_results(
-            fnames, PLOT_KINDS.keys(), root_html, benchmark.name, copy=True
+            fnames, PLOT_KINDS.keys(), root_html, benchmark_path.name, copy=True
         )
         len_fnames.append(len(fnames))
         if len(results) > 0:
             rendered = render_benchmark(
-                results, benchmark.name, static_dir=static_dir
+                results, benchmark_path.name, static_dir=static_dir
             )
 
             benchmark_filename = (
-                root_html / benchmark.name
+                root_html / benchmark_path.name
             ).with_suffix('.html')
-            print(f"Writing {benchmark.name} results to {benchmark_filename}")
+            print(f"Writing {benchmark_path.name} results to {benchmark_filename}")
             with open(benchmark_filename, "w") as f:
                 f.write(rendered)
 
         htmls = render_all_results(
-            results, benchmark.name, static_dir=static_dir
+            results, benchmark_path.name, static_dir=static_dir
         )
         for result, html in zip(results, htmls):
             result_filename = root_html / result['page']
@@ -548,7 +548,7 @@ def plot_benchmark_html_all(patterns=(), benchmarks=(), root=None,
                 f.write(html)
 
     # Create an index that lists all benchmarks.
-    rendered = render_index(benchmarks, static_dir,
+    rendered = render_index(benchmark_paths, static_dir,
                             len_fnames)
     index_filename = DEFAULT_HTML_DIR / 'index.html'
     print(f"Writing index to {index_filename}")
