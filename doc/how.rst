@@ -44,7 +44,7 @@ of the solvers. Typically it allows to evaluate the objective function to
 be minimized by the solvers. An objective class should define 3 methods:
 
 - ``get_one_solution()``: it returns one solution that can be returned by a solver.
-  This defines the shape of the solution and will be use to test that the
+  This defines the shape of the solution and will be used to test that the
   benchmark works properly.
 - ``set_data(**data)``: it allows to specify the data. See the data as a dictionary
   of Python variables without any constraint.
