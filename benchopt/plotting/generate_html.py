@@ -297,15 +297,14 @@ def get_pretty_name(bench_path):
     if exists(bench_path / "objective.py"):
         benchmark = Benchmark(bench_path)
         pretty_name = benchmark.pretty_name
+    elif exists(bench_path / "benchmark_meta.json"):
+        with open(bench_path / "benchmark_meta.json") as f:
+            meta = json.load(f)
+            pretty_name = meta["pretty_name"]
     else:
-        if exists(bench_path / "benchmark_meta.json"):
-            with open(bench_path / "benchmark_meta.json") as f:
-                meta = json.load(f)
-                pretty_name = meta["pretty_name"]
-        else:
-            raise FileNotFoundError(
-                "Can't find file called objective.py or benchmark_meta.json"
-            )
+        raise FileNotFoundError(
+            "Can't find file called objective.py or benchmark_meta.json"
+        )
 
     return pretty_name
 
