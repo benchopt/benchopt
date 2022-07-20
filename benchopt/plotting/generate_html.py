@@ -6,6 +6,7 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 from mako.template import Template
+from os.path import exists
 
 from benchopt.benchmark import Benchmark
 from ..constants import PLOT_KINDS
@@ -280,9 +281,33 @@ def render_index(benchmarks, static_dir, len_fnames):
 
 
 def get_pretty_name(bench_path):
-    benchmark = Benchmark(bench_path)
+    """Return the benchmark name defined in
+       objective.py or benchmark_meta.json
 
-    return benchmark.pretty_name
+    Parameters
+    ----------
+    bench_path : Path
+        Path to the benchmark folder.
+
+    Returns
+    -------
+    pretty_name : str
+        The name of the benchmark
+    """
+    if exists(bench_path / "objective.py"):
+        benchmark = Benchmark(bench_path)
+        pretty_name = benchmark.pretty_name
+    else:
+        if exists(bench_path / "benchmark_meta.json"):
+            with open(bench_path / "benchmark_meta.json") as f:
+                meta = json.load(f)
+                pretty_name = meta["pretty_name"]
+        else:
+            raise FileNotFoundError(
+                "Can't find file called objective.py or benchmark_meta.json"
+            )
+
+    return pretty_name
 
 
 def render_benchmark(results, benchmark_name, static_dir, home='index.html'):
