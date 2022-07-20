@@ -1,7 +1,9 @@
+import json
 from pathlib import Path
 from github import Github
 from github import GithubException
 
+from benchopt.benchmark import Benchmark
 
 BENCHOPT_RESULT_REPO = 'benchopt/results'
 
@@ -15,8 +17,10 @@ def get_file_content(repo, branch, git_path):
         return None, None
 
 
-def publish_result_file(benchmark_name, file_path, token):
+def publish_result_file(benchmark, file_path, token):
     "Upload a result file to github for a given benchmark."
+    
+    benchmark_name = benchmark.name
 
     # Get file to upload and content
     file_to_upload = Path(file_path)
@@ -61,6 +65,14 @@ def publish_result_file(benchmark_name, file_path, token):
         repo.update_file(git_path, f"RESULT update {file_name}",
                          file_content, sha=prev_content_sha,
                          branch=branch)
+        
+    # Check if benchmark_meta.json file exists
+    meta, _ = get_file_content(repo, branch, f"benchmarks/{benchmark_name}/benchmark_meta.json")
+    if meta is None:
+        json_content = {
+            "pretty_name": benchmark.pretty_name
+        }
+        repo.create_file(f"benchmarks/{benchmark_name}/benchmark_meta.json", "Create benchmark_meta.json", json.dumps(json_content), branch=branch)
 
     head = f"{username}:{branch}"
     pulls = list(origin.get_pulls(head=head, state='open'))

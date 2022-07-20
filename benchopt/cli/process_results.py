@@ -104,7 +104,7 @@ def publish(benchmark, token=None, filename=None):
 
     # Publish the result.
     from benchopt.utils.github import publish_result_file
-    publish_result_file(benchmark.name, result_filename, token)
+    publish_result_file(benchmark, result_filename, token)
 
 
 @process_results.command(
