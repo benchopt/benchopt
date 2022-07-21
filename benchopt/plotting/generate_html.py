@@ -6,7 +6,6 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 from mako.template import Template
-from os.path import exists
 
 from benchopt.benchmark import Benchmark
 from ..constants import PLOT_KINDS
