@@ -94,6 +94,10 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
                       and k != 'objective_name'],
             kinds=list(kinds),
         )
+
+        # JSON
+        result['json'] = json.dumps(shape_datasets_for_html(df))
+        
         results.append(result)
 
     for result in results:
@@ -104,9 +108,6 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
             f"{benchmark_name}_"
             f"{html_file_name}"
         )
-
-        # JSON
-        result['json'] = json.dumps(shape_datasets_for_html(df))
 
         # Assets
         assets = ['result.js', 'symbols.js', 'hover_index.css',
