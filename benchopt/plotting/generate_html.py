@@ -294,7 +294,7 @@ def get_pretty_name(bench_path):
     pretty_name : str
         The name of the benchmark
     """
-    if exists(bench_path / "objective.py"):
+    if (bench_path / "objective.py").exists():
         benchmark = Benchmark(bench_path)
         pretty_name = benchmark.pretty_name
     elif exists(bench_path / "benchmark_meta.json"):
