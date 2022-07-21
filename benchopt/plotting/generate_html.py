@@ -97,7 +97,7 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
 
         # JSON
         result['json'] = json.dumps(shape_datasets_for_html(df))
-        
+
         results.append(result)
 
     for result in results:
