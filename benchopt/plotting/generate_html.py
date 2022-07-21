@@ -297,7 +297,7 @@ def get_pretty_name(bench_path):
     if (bench_path / "objective.py").exists():
         benchmark = Benchmark(bench_path)
         pretty_name = benchmark.pretty_name
-    elif exists(bench_path / "benchmark_meta.json"):
+    elif (bench_path / "benchmark_meta.json").exists():
         with open(bench_path / "benchmark_meta.json") as f:
             meta = json.load(f)
             pretty_name = meta["pretty_name"]
