@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 from mako.template import Template
 
+from benchopt.benchmark import Benchmark
 from ..constants import PLOT_KINDS
 from .plot_bar_chart import computeBarChartData  # noqa: F401
 from .plot_objective_curve import compute_quantiles   # noqa: F401
@@ -94,6 +95,10 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
                       and k != 'objective_name'],
             kinds=list(kinds),
         )
+
+        # JSON
+        result['json'] = json.dumps(shape_datasets_for_html(df))
+
         results.append(result)
 
     for result in results:
@@ -104,9 +109,6 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
             f"{benchmark_name}_"
             f"{html_file_name}"
         )
-
-        # JSON
-        result['json'] = json.dumps(shape_datasets_for_html(df))
 
         # Assets
         assets = ['result.js', 'symbols.js', 'hover_index.css',
@@ -242,7 +244,7 @@ def get_sysinfo(df):
     return sysinfo
 
 
-def render_index(benchmark_names, static_dir, len_fnames):
+def render_index(benchmarks, static_dir, len_fnames):
     """Render a result index home page for all rendered benchmarks.
 
     Parameters
@@ -257,10 +259,10 @@ def render_index(benchmark_names, static_dir, len_fnames):
     rendered : str
         A str with the HTML code for the index page.
     """
+    pretty_names = [get_pretty_name(b) for b in benchmarks]
 
-    pretty_names = [name.replace("benchmark_", "").replace("_",
-                                                           " ").capitalize()
-                    for name in benchmark_names]
+    benchmark_names = [b.name for b in benchmarks]
+
     pretty_names, len_fnames, benchmark_names = map(
         list, zip(*sorted(zip(pretty_names, len_fnames, benchmark_names),
                           reverse=False))
@@ -276,6 +278,35 @@ def render_index(benchmark_names, static_dir, len_fnames):
         pretty_names=pretty_names,
         len_fnames=len_fnames
     )
+
+
+def get_pretty_name(bench_path):
+    """Return the benchmark name defined in
+       objective.py or benchmark_meta.json
+
+    Parameters
+    ----------
+    bench_path : Path
+        Path to the benchmark folder.
+
+    Returns
+    -------
+    pretty_name : str
+        The name of the benchmark
+    """
+    if (bench_path / "objective.py").exists():
+        benchmark = Benchmark(bench_path)
+        pretty_name = benchmark.pretty_name
+    elif (bench_path / "benchmark_meta.json").exists():
+        with open(bench_path / "benchmark_meta.json") as f:
+            meta = json.load(f)
+            pretty_name = meta["pretty_name"]
+    else:
+        raise FileNotFoundError(
+            "Can't find file called objective.py or benchmark_meta.json"
+        )
+
+    return pretty_name
 
 
 def render_benchmark(results, benchmark_name, static_dir, home='index.html'):
@@ -437,7 +468,7 @@ def plot_benchmark_html(fnames, benchmark, kinds, display=True):
         webbrowser.open_new_tab('file://' + str(result_filename))
 
 
-def plot_benchmark_html_all(patterns=(), benchmarks=(), root=None,
+def plot_benchmark_html_all(patterns=(), benchmark_paths=(), root=None,
                             display=True):
     """Generate a HTML report for multiple benchmarks.
 
@@ -448,7 +479,7 @@ def plot_benchmark_html_all(patterns=(), benchmarks=(), root=None,
     ----------
     patterns : tuple of str
         Only include result files that match the provided patterns.
-    benchmarks : tuple of Path
+    benchmark_paths : tuple of Path
         Explicitly provides the benchmarks that should be display in the
         report.
     root : Path | None
@@ -462,14 +493,14 @@ def plot_benchmark_html_all(patterns=(), benchmarks=(), root=None,
     None
     """
     # Parse the arguments adn get the list of benchmarks and patterns.
-    if not benchmarks:
+    if not benchmark_paths:
         root = Path(root)
-        benchmarks = [
+        benchmark_paths = [
             f for f in root.iterdir()
             if f.is_dir() and (f / 'outputs').is_dir()
         ]
     else:
-        benchmarks = [Path(b) for b in benchmarks]
+        benchmark_paths = [Path(b) for b in benchmark_paths]
     if not patterns:
         patterns = ['*']
 
@@ -479,35 +510,39 @@ def plot_benchmark_html_all(patterns=(), benchmarks=(), root=None,
     (root_html / OUTPUTS).mkdir(exist_ok=True, parents=True)
     static_dir = copy_static()
 
-    # Loop over all benchmarks to
+    # Loop over all benchmark paths to
     len_fnames = []
-    for benchmark in benchmarks:
-        print(f'Rendering benchmark: {benchmark}')
+    for benchmark_path in benchmark_paths:
+        print(f'Rendering benchmark: {benchmark_path}')
 
         fnames = []
         for p in patterns:
             fnames += list(
-                (benchmark / 'outputs').glob(f"{p}.parquet")
-            ) + list((benchmark / 'outputs').glob(f"{p}.csv"))
+                (benchmark_path / 'outputs').glob(f"{p}.parquet")
+            ) + list((benchmark_path / 'outputs').glob(f"{p}.csv"))
         fnames = sorted(set(fnames))
         results = get_results(
-            fnames, PLOT_KINDS.keys(), root_html, benchmark.name, copy=True
+            fnames, PLOT_KINDS.keys(), root_html, benchmark_path.name,
+            copy=True
         )
         len_fnames.append(len(fnames))
         if len(results) > 0:
             rendered = render_benchmark(
-                results, benchmark.name, static_dir=static_dir
+                results, benchmark_path.name, static_dir=static_dir
             )
 
             benchmark_filename = (
-                root_html / benchmark.name
+                root_html / benchmark_path.name
             ).with_suffix('.html')
-            print(f"Writing {benchmark.name} results to {benchmark_filename}")
+            print(
+                f"Writing {benchmark_path.name} "
+                f"results to {benchmark_filename}"
+            )
             with open(benchmark_filename, "w") as f:
                 f.write(rendered)
 
         htmls = render_all_results(
-            results, benchmark.name, static_dir=static_dir
+            results, benchmark_path.name, static_dir=static_dir
         )
         for result, html in zip(results, htmls):
             result_filename = root_html / result['page']
@@ -516,7 +551,7 @@ def plot_benchmark_html_all(patterns=(), benchmarks=(), root=None,
                 f.write(html)
 
     # Create an index that lists all benchmarks.
-    rendered = render_index([b.name for b in benchmarks], static_dir,
+    rendered = render_index(benchmark_paths, static_dir,
                             len_fnames)
     index_filename = DEFAULT_HTML_DIR / 'index.html'
     print(f"Writing index to {index_filename}")
