@@ -123,9 +123,9 @@ figure.effect-ruby:hover img {
 
 /* Apply effect to problem name */
 figure.effect-ruby h2 {
-  margin-top: 10; /* default margin */
+  margin-top: 0;
   transition: transform 0.35s; /* transition time */
-  transform: translate3d(0, 40px, 0);
+  transform: translate3d(0, calc((150px - 100%)/2), 0);
   font-size: 1.25em; /* default font */
 }
 
