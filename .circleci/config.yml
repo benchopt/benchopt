@@ -13,7 +13,6 @@ jobs:
             echo "set -e" >> $BASH_ENV
             echo "export DISPLAY=:99" >> $BASH_ENV
             echo "export OPENBLAS_NUM_THREADS=4" >> $BASH_ENV
-            echo "export BUILD_ENV='build_env'" >> $BASH_ENV
             echo "BASH_ENV:"
             cat $BASH_ENV
 
@@ -57,10 +56,9 @@ jobs:
       - run:
           name: Get Python running
           command: |
-            mamba create -n $BUILD_ENV python=3.9 julia r-base rpy2 \
-                                       numpy cython -yq
-            export 'mamba activate $BUILD_ENV' >> $BASH_ENV
-            mamba activate $BUILD_ENV
+            mamba clean --all -y
+            mamba install python=3.9 julia r-base rpy2 \
+                          numpy cython -yq
             pip install --upgrade "setuptools<58.5"
             pip install --upgrade --progress-bar off julia
             pip install --upgrade --progress-bar off git+https://github.com/scikit-learn-contrib/lightning.git
