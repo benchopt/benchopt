@@ -56,7 +56,7 @@ jobs:
       - run:
           name: Get Python running
           command: |
-            mamba clean --all -y
+            # mamba clean --all -y
             mamba install python=3.9 julia r-base rpy2 \
                           numpy cython -yq
             pip install --upgrade "setuptools<58.5"
