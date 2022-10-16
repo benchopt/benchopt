@@ -479,19 +479,24 @@ def plot_benchmark_html_all(patterns=(), benchmark_paths=(), root=None,
         root = Path(root)
         benchmark_paths = [
             f for f in root.iterdir()
-            if f.is_dir() and (f / 'outputs').is_dir()
+            if f.is_dir() and (f / 'outputs').is_dir() and f.name != "html"
         ]
     else:
         benchmark_paths = [Path(b) for b in benchmark_paths]
     if not patterns:
         patterns = ['*']
 
+    if not benchmark_paths:
+        raise ValueError(
+            "Could not find any benchmark to render. Check that the provided "
+            "root folder contains at least one benchmark.")
+
     # make sure the `html` folder exists and copy static files.
     root_html = DEFAULT_HTML_DIR
     (root_html / FIGURES).mkdir(exist_ok=True, parents=True)
     (root_html / OUTPUTS).mkdir(exist_ok=True, parents=True)
 
-    # Loop over all benchmark paths to
+    # Loop over all benchmark paths to create there result pages
     len_fnames = []
     for benchmark_path in benchmark_paths:
         print(f'Rendering benchmark: {benchmark_path}')

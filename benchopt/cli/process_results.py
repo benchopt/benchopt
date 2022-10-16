@@ -119,7 +119,7 @@ def publish(benchmark, token=None, filename=None):
               metavar="<pattern>", multiple=True, type=str,
               help="Include results matching <pattern>.")
 @click.option('--root', 'root', metavar="<root>",
-              type=click.Path(exists=True),
+              type=click.Path(exists=True), default=Path.cwd(),
               help="If no benchmark is provided, include all benchmark in "
               "sub-directories of <root>. Default to current dir.")
 @click.option('--display/--no-display', default=True,
