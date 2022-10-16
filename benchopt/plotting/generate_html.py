@@ -496,7 +496,7 @@ def plot_benchmark_html_all(patterns=(), benchmark_paths=(), root=None,
     (root_html / FIGURES).mkdir(exist_ok=True, parents=True)
     (root_html / OUTPUTS).mkdir(exist_ok=True, parents=True)
 
-    # Loop over all benchmark paths to create there result pages
+    # Loop over all benchmark paths to create the associated result pages
     len_fnames = []
     for benchmark_path in benchmark_paths:
         print(f'Rendering benchmark: {benchmark_path}')
