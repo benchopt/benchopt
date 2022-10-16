@@ -38,6 +38,17 @@ SYS_INFO = {
 }
 
 
+# Populate static file dictionary
+STATIC = {}
+STATIC_DIR = ROOT / "static"
+
+# List all assets in static dir.
+for asset in STATIC_DIR.glob("**/*"):
+    if not asset.is_file():
+        continue
+    STATIC[asset.relative_to(STATIC_DIR).name] = asset.read_text()
+
+
 def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
     """Generate figures from a list of result files.
 
@@ -109,14 +120,6 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
             f"{benchmark_name}_"
             f"{html_file_name}"
         )
-
-        # Assets
-        assets = ['result.js', 'symbols.js', 'hover_index.css',
-                  'utilities.css', 'arrow_left.svg', 'home.svg',
-                  'download.svg']
-        for asset in assets:
-            with open(root_html / 'static' / asset) as asset_file:
-                result[asset] = asset_file.read()
 
     return results
 
@@ -244,7 +247,7 @@ def get_sysinfo(df):
     return sysinfo
 
 
-def render_index(benchmarks, static_dir, len_fnames):
+def render_index(benchmarks, len_fnames):
     """Render a result index home page for all rendered benchmarks.
 
     Parameters
@@ -273,7 +276,7 @@ def render_index(benchmarks, static_dir, len_fnames):
     ).render(
         benchmarks=benchmark_names,
         nb_total_benchs=len(benchmark_names),
-        max_rows=15, static_dir=static_dir,
+        max_rows=15, static=STATIC,
         last_updated=datetime.now(),
         pretty_names=pretty_names,
         len_fnames=len_fnames
@@ -309,7 +312,7 @@ def get_pretty_name(bench_path):
     return pretty_name
 
 
-def render_benchmark(results, benchmark_name, static_dir, home='index.html'):
+def render_benchmark(results, benchmark_name, home='index.html'):
     """Render a page indexing all runs for one benchmark.
 
     Parameters
@@ -318,8 +321,6 @@ def render_benchmark(results, benchmark_name, static_dir, home='index.html'):
         List of all the run available for this benchmark.
     benchmark_name : str
         Named of the rendered benchmark.
-    static_dir : str
-        Relative path from HTML root to the static files.
     home : str
         URL of the home page.
 
@@ -336,11 +337,11 @@ def render_benchmark(results, benchmark_name, static_dir, home='index.html'):
         benchmark=benchmark_name,
         max_rows=15, nb_total_benchs=len(results),
         last_updated=datetime.now(),
-        static_dir=static_dir, home=home
+        static=STATIC, home=home
     )
 
 
-def render_all_results(results, benchmark_name, static_dir, home='index.html'):
+def render_all_results(results, benchmark_name, home='index.html'):
     """Create an html file containing the plots from a benchmark run.
 
     Parameters
@@ -349,8 +350,6 @@ def render_all_results(results, benchmark_name, static_dir, home='index.html'):
         List of all the run that have been rendered for this benchmark.
     benchmark_name : str
         Named of the rendered benchmark.
-    static_dir : str
-        Relative path from HTML root to the static files.
     home : str
         URL of the home page.
 
@@ -368,22 +367,10 @@ def render_all_results(results, benchmark_name, static_dir, home='index.html'):
         ).render(
             result=result,
             benchmark=benchmark_name,
-            static_dir=static_dir,
-            home=home
+            static=STATIC, home=home
         )
         htmls.append(html)
     return htmls
-
-
-def copy_static(root_html=None):
-    "Copy static files in the HTML output folder."
-    if root_html is None:
-        root_html = DEFAULT_HTML_DIR
-    static_dir = root_html / 'static'
-    if static_dir.exists():
-        shutil.rmtree(static_dir)
-    shutil.copytree(ROOT / 'static', static_dir)
-    return static_dir.relative_to(root_html)
 
 
 def _fetch_cached_run_list(new_results, benchmark_html):
@@ -435,15 +422,12 @@ def plot_benchmark_html(fnames, benchmark, kinds, display=True):
     # figures directory and static files.
     root_html = benchmark.get_output_folder()
     (root_html / FIGURES).mkdir(exist_ok=True)
-    static_dir = copy_static(root_html)
     bench_index = (root_html / benchmark.name).with_suffix('.html')
     home = bench_index.relative_to(root_html)
 
     # Create the figures and render the page as a html.
     results = get_results(fnames, kinds, root_html, benchmark.name)
-    htmls = render_all_results(
-        results, benchmark.name, static_dir=static_dir, home=home
-    )
+    htmls = render_all_results(results, benchmark.name, home=home)
 
     # Save the resulting page in the HTML folder
     for result, html in zip(results, htmls):
@@ -454,9 +438,7 @@ def plot_benchmark_html(fnames, benchmark, kinds, display=True):
 
     # Fetch run list from the benchmark and update the benchmark front page.
     run_list = _fetch_cached_run_list(results, root_html)
-    rendered = render_benchmark(
-        run_list, benchmark.name, static_dir=static_dir, home=home
-    )
+    rendered = render_benchmark(run_list, benchmark.name, home=home)
     print(f"Writing {benchmark.name} results to {bench_index}")
     with open(bench_index, "w", encoding="utf-8") as f:
         f.write(rendered)
@@ -497,20 +479,24 @@ def plot_benchmark_html_all(patterns=(), benchmark_paths=(), root=None,
         root = Path(root)
         benchmark_paths = [
             f for f in root.iterdir()
-            if f.is_dir() and (f / 'outputs').is_dir()
+            if f.is_dir() and (f / 'outputs').is_dir() and f.name != "html"
         ]
     else:
         benchmark_paths = [Path(b) for b in benchmark_paths]
     if not patterns:
         patterns = ['*']
 
+    if not benchmark_paths:
+        raise ValueError(
+            "Could not find any benchmark to render. Check that the provided "
+            "root folder contains at least one benchmark.")
+
     # make sure the `html` folder exists and copy static files.
     root_html = DEFAULT_HTML_DIR
     (root_html / FIGURES).mkdir(exist_ok=True, parents=True)
     (root_html / OUTPUTS).mkdir(exist_ok=True, parents=True)
-    static_dir = copy_static()
 
-    # Loop over all benchmark paths to
+    # Loop over all benchmark paths to create the associated result pages
     len_fnames = []
     for benchmark_path in benchmark_paths:
         print(f'Rendering benchmark: {benchmark_path}')
@@ -527,9 +513,7 @@ def plot_benchmark_html_all(patterns=(), benchmark_paths=(), root=None,
         )
         len_fnames.append(len(fnames))
         if len(results) > 0:
-            rendered = render_benchmark(
-                results, benchmark_path.name, static_dir=static_dir
-            )
+            rendered = render_benchmark(results, benchmark_path.name)
 
             benchmark_filename = (
                 root_html / benchmark_path.name
@@ -541,9 +525,7 @@ def plot_benchmark_html_all(patterns=(), benchmark_paths=(), root=None,
             with open(benchmark_filename, "w") as f:
                 f.write(rendered)
 
-        htmls = render_all_results(
-            results, benchmark_path.name, static_dir=static_dir
-        )
+        htmls = render_all_results(results, benchmark_path.name)
         for result, html in zip(results, htmls):
             result_filename = root_html / result['page']
             print(f"Writing results to {result_filename}")
@@ -551,8 +533,7 @@ def plot_benchmark_html_all(patterns=(), benchmark_paths=(), root=None,
                 f.write(html)
 
     # Create an index that lists all benchmarks.
-    rendered = render_index(benchmark_paths, static_dir,
-                            len_fnames)
+    rendered = render_index(benchmark_paths, len_fnames)
     index_filename = DEFAULT_HTML_DIR / 'index.html'
     print(f"Writing index to {index_filename}")
     with open(index_filename, "w", encoding="utf-8") as f:

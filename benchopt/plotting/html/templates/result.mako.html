@@ -10,15 +10,13 @@
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300&display=swap" rel="stylesheet">
-        <link rel="stylesheet" href="./static/utilities.css">
-        <link rel="stylesheet" href="./static/hover_index.css">
 
         <title>Result on ${benchmark_name} benchmark</title>
 
         <style>
-            ${result['utilities.css']}
+            ${static['utilities.css']}
 
-            ${result['hover_index.css']}
+            ${static['hover_index.css']}
         </style>
     </head>
     <body>
@@ -229,7 +227,7 @@
                         </div>
                     </div>
                 </nav>
-    
+
                 <!-- Page heading -->
                 <div class="px-4 pt-4 pb-1 md:py-4 lg:flex lg:items-center lg:justify-between">
                     <div class="flex-1 min-w-0">
@@ -264,7 +262,7 @@
                         </span>
                     </div>
                 </div>
-    
+
                 <!-- Plot -->
                 <div id="unique_plot"></div>
                 <div id="legend_container" class="py-10 bg-slate-200">
@@ -386,8 +384,8 @@
             });
         </script>
         <script type="text/javascript">
-            ${result['symbols.js']}
-            ${result['result.js']}
+            ${static['symbols.js']}
+            ${static['result.js']}
         </script>
     </body>
 </html>
