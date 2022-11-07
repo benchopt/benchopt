@@ -120,7 +120,7 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               help='Maximal number of runs for each solver. This corresponds '
               'to the number of points in the time/accuracy curve.')
 @click.option('--n-repetitions', '-r',
-              metavar='<int>', default=5, show_default=True, type=int,
+              metavar='<int>', default=1, show_default=True, type=int,
               help='Number of repetitions that are averaged to estimate the '
               'runtime.')
 @click.option('--timeout',
@@ -159,12 +159,14 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               "named <env_name>. To install the required solvers and "
               "datasets, see the command `benchopt install`.")
 @click.option("--output", default="None", type=str,
-              help="Filename for the csv output. If given, the results will "
-              "be stored at <BENCHMARK>/outputs/<filename>.csv, "
+              help="Filename for the result output. "
+              "If given, the results will "
+              "be stored at <BENCHMARK>/outputs/<filename>.parquet, "
               "if another result file has the same name, a number is happened "
-              "to distinguish them (ex: <BENCHMARK>/outputs/<filename>_1.csv)."
+              "to distinguish them "
+              "(ex: <BENCHMARK>/outputs/<filename>_1.parquet)."
               " If not provided, the output will be saved as "
-              "<BENCHMARK>/outputs/benchopt_run_<timestamp>.csv."
+              "<BENCHMARK>/outputs/benchopt_run_<timestamp>.parquet."
               )
 def run(config_file=None, **kwargs):
     if config_file is not None:

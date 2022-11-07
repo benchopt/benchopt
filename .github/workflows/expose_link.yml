@@ -1,0 +1,24 @@
+name: Expose result artifact
+on: [status]
+jobs:
+  circleci_result_artifact_redirector_job:
+    runs-on: ubuntu-latest
+    name: Link to CircleCI result artifact
+    steps:
+      - name: Redirect to Circle CI artifact
+        uses: larsoner/circleci-artifacts-redirector-action@master
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-path: 0/result.html
+          circleci-jobs: build_docs
+          job-title: benchmark result artifact
+  circleci_docs_artifact_redirector_job:
+    runs-on: ubuntu-latest
+    name: Link to CircleCI documentation artifact
+    steps:
+      - name: Redirect to Circle CI artifact
+        uses: larsoner/circleci-artifacts-redirector-action@master
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-path: 0/dev/index.html
+          circleci-jobs: build_docs

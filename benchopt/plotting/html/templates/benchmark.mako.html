@@ -2,8 +2,11 @@
 <head>
 <meta charset="utf-8"/>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📈</text></svg>">
-<link href="${static_dir}/hover_index.css" rel="stylesheet" />
-<link href="${static_dir}/main.css" rel="stylesheet" />
+<style>
+  ${static['main.css']}
+
+  ${static['hover_index.css']}
+</style>
 
 <script defer src="https://use.fontawesome.com/releases/v5.0.10/js/all.js" integrity="sha384-slN8GvtUJGnv6ca26v8EzVaR9DC58QEwsIk9q1QXdCU8Yu8ck/tL/5szYlBbqmS+" crossorigin="anonymous"></script>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.css" rel="stylesheet" />
@@ -17,7 +20,6 @@
   <script src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js"></script>
 <link href="https://cdn.datatables.net/1.10.22/css/jquery.dataTables.min.css" rel="stylesheet" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<script type="text/javascript" src="${static_dir}/benchmark.js" async></script>
 </head>
 
 <body>
@@ -90,7 +92,7 @@
         %>
         ${fname}
       </a>
-      <input type="checkbox" name="checkfiles" data-csv="${result['fname']}" data-html="${result['page']}" style="display:none;">
+      <input type="checkbox" name="checkfiles" data-result="${result['fname']}" data-html="${result['page']}" style="display:none;">
     </td>
     <td class="datasets">
     <ul style="list-style-type: none; margin-top: 0;">
@@ -174,5 +176,8 @@
 <a class="backtotop" title="Back to top" href="#top" style="z-index: 50;"><i class="fas fa-level-up-alt"></i></a>
 
 </div>
+<script type="text/javascript">
+    ${static['benchmark.js']}
+</script>
 </body>
 </html>

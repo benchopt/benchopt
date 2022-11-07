@@ -233,6 +233,19 @@ linear ICA is to recover :math:`A` up to permutation and scaling of its columns.
 The objective in this benchmark is related to some estimation on :math:`A`
 quantified with the so-called AMARI distance.
 
+- `Approximate Joint Diagonalization (AJD) <https://github.com/benchopt/benchmark_jointdiag>`_: |Build Status JointDiag|
+
+Given n square symmetric positive matrices :math:`C^i`, it consists of solving
+the following problem:
+
+.. math::
+    \min_B \frac{1}{2n} \sum_{i=1}^n \log |\textrm{diag} (B C^i B^{\top}) | - \log | B C^i B^{\top} |
+
+where :math:`|\cdot|` stands for the matrix determinant and :math:`\textrm{diag}` stands
+for the operator that keeps only the diagonal elements of a matrix. Optionally, the
+matrix :math:`B` can be enforced to be orthogonal.
+
+See `benchmark_* repositories on GitHub <https://github.com/benchopt/>`_ for more.
 
 Benchmark results
 -----------------
@@ -242,6 +255,27 @@ All the public benchmark results are available at `Benchopt Benchmarks results <
 **Publish results**: You can directly publish the result of a run of ``benchopt`` on `Benchopt Benchmarks results <https://benchopt.github.io/results/>`_. You can have a look at this page to :ref:`publish_doc`.
 
 .. include:: contrib.rst
+
+
+Citing Benchopt
+---------------
+
+If you use ``Benchopt`` in a scientific publication, please cite the following paper
+
+.. code-block:: bibtex
+
+   @article{benchopt,
+      author = {Moreau, Thomas and Massias, Mathurin and Gramfort, Alexandre and Ablin, Pierre 
+                and Bannier, Pierre-Antoine and Charlier, Benjamin and Dagréou, Mathieu and Dupré la Tour, Tom 
+                and Durif, Ghislain and F. Dantas, Cassio and Klopfenstein, Quentin 
+                and Larsson, Johan and Lai, En and Lefort, Tanguy and Malézieux, Benoit 
+                and Moufad, Badr and T. Nguyen, Binh and Rakotomamonjy, Alain and Ramzi, Zaccharie 
+                and Salmon, Joseph and Vaiter, Samuel},
+      title  = {Benchopt: Reproducible, efficient and collaborative optimization benchmarks},
+      year   = {2022},
+      url    = {https://arxiv.org/abs/2206.13424}
+   }
+
 
 Website contents
 ================
@@ -283,3 +317,5 @@ Website contents
    :target: https://github.com/benchopt/benchmark_linear_svm_binary_classif_no_intercept/actions
 .. |Build Status LinearICA| image:: https://github.com/benchopt/benchmark_linear_ica/workflows/Tests/badge.svg
    :target: https://github.com/benchopt/benchmark_linear_ica/actions
+.. |Build Status JointDiag| image:: https://github.com/benchopt/benchmark_jointdiag/workflows/Tests/badge.svg
+   :target: https://github.com/benchopt/benchmark_jointdiag/actions

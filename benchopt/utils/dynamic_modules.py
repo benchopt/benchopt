@@ -29,8 +29,8 @@ def _get_module_from_file(module_filename, benchmark_dir=None):
             package_name, module_filename
         )
         module = importlib.util.module_from_spec(spec)
-        sys.modules[package_name] = module
         spec.loader.exec_module(module)
+        sys.modules[package_name] = module
     return module
 
 

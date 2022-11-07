@@ -104,13 +104,13 @@ def publish(benchmark, token=None, filename=None):
 
     # Publish the result.
     from benchopt.utils.github import publish_result_file
-    publish_result_file(benchmark.name, result_filename, token)
+    publish_result_file(benchmark, result_filename, token)
 
 
 @process_results.command(
     help="Generate result website from list of benchmarks."
 )
-@click.option('--benchmark', '-b', 'benchmarks', metavar="<bench>",
+@click.option('--benchmark', '-b', 'benchmark_paths', metavar="<bench>",
               multiple=True,
               type=click.Path(exists=True),
               shell_complete=complete_benchmarks,
@@ -119,14 +119,15 @@ def publish(benchmark, token=None, filename=None):
               metavar="<pattern>", multiple=True, type=str,
               help="Include results matching <pattern>.")
 @click.option('--root', 'root', metavar="<root>",
-              type=click.Path(exists=True),
+              type=click.Path(exists=True), default=Path.cwd(),
               help="If no benchmark is provided, include all benchmark in "
               "sub-directories of <root>. Default to current dir.")
 @click.option('--display/--no-display', default=True,
               help="Whether or not to display the plot on the screen.")
-def generate_results(patterns=(), benchmarks=(), root=None, display=True):
+def generate_results(patterns=(), benchmark_paths=(), root=None, display=True):
 
     from benchopt.plotting.generate_html import plot_benchmark_html_all
     plot_benchmark_html_all(
-        patterns=patterns, benchmarks=benchmarks, root=root, display=display
+        patterns=patterns, benchmark_paths=benchmark_paths,
+        root=root, display=display
     )

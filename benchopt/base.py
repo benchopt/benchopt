@@ -436,7 +436,7 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
         return False,  None
 
     def get_one_solution(self):
-        """Return one point in which the objective function can be evaluated.
+        """Return one solution for which the objective can be evaluated.
 
         This method is mainly for testing purposes, to check that the return
         computation and the return type of `Objective.compute`. It should

@@ -279,8 +279,8 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
     pdb : bool
         It pdb is set to True, open a debugger on error.
     output_name : str
-        Filename for the csv output. If given, the results will
-        be stored at <BENCHMARK>/outputs/<filename>.csv.
+        Filename for the parquet output. If given, the results will
+        be stored at <BENCHMARK>/outputs/<filename>.parquet.
 
     Returns
     -------
@@ -326,15 +326,15 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
         output.savefile_status()
         raise SystemExit(1)
 
-    # Save output in CSV file in the benchmark folder
+    # Save output in parquet file in the benchmark folder
     timestamp = datetime.now().strftime('%Y-%m-%d_%Hh%Mm%S')
     output_dir = benchmark.get_output_folder()
     if output_name == "None":
-        save_file = output_dir / f'benchopt_run_{timestamp}.csv'
+        save_file = output_dir / f'benchopt_run_{timestamp}.parquet'
     else:
-        save_file = output_dir / f"{output_name}.csv"
+        save_file = output_dir / f"{output_name}.parquet"
         save_file = uniquify_results(save_file)
-    df.to_csv(save_file)
+    df.to_parquet(save_file)
     output.savefile_status(save_file=save_file)
 
     if plot_result:

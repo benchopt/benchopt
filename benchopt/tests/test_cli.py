@@ -300,7 +300,9 @@ class TestRunCmd:
             run(command, 'benchopt', standalone_mode=False)
             run(command, 'benchopt', standalone_mode=False)
 
-        result_files = re.findall(r'Saving result in: (.*\.csv)', out.output)
+        result_files = re.findall(
+            r'Saving result in: (.*\.parquet)', out.output
+        )
         names = [Path(result_file).stem for result_file in result_files]
         assert names[0] == 'unique_name' and names[1] == 'unique_name_1'
 
@@ -417,7 +419,9 @@ class TestPlotCmd:
                  '-s', SELECT_ONE_PGD, '-n', '2', '-r', '1', '-o',
                  SELECT_ONE_OBJECTIVE, '--no-plot'], 'benchopt',
                 standalone_mode=False)
-        result_files = re.findall(r'Saving result in: (.*\.csv)', out.output)
+        result_files = re.findall(
+            r'Saving result in: (.*\.parquet)', out.output
+        )
         assert len(result_files) == 1, out.output
         result_file = result_files[0]
         cls.result_file = result_file
@@ -512,7 +516,9 @@ class TestGenerateResultCmd:
                  '-s', SELECT_ONE_PGD, '-n', '2', '-r', '1', '-o',
                  SELECT_ONE_OBJECTIVE, '--no-plot'], 'benchopt',
                 standalone_mode=False)
-        result_files = re.findall(r'Saving result in: (.*\.csv)', out.output)
+        result_files = re.findall(
+            r'Saving result in: (.*\.parquet)', out.output
+        )
         assert len(result_files) == 2, out.output
         cls.result_files = result_files
 
@@ -558,7 +564,9 @@ class TestArchiveCmd:
                  '-s', SELECT_ONE_PGD, '-n', '2', '-r', '1', '-o',
                  SELECT_ONE_OBJECTIVE, '--no-plot'], 'benchopt',
                 standalone_mode=False)
-        result_file = re.findall(r'Saving result in: (.*\.csv)', out.output)
+        result_file = re.findall(
+            r'Saving result in: (.*\.parquet)', out.output
+        )
         assert len(result_file) == 1, out.output
         cls.result_file = result_file[0]
 
