@@ -312,7 +312,7 @@ class SufficientDescentCriterion(StoppingCriterion):
         the callback should be called with the current iterate solution.
     """
 
-    def __init__(self, eps=EPS, patience=PATIENCE, strategy='iteration'):
+    def __init__(self, eps=EPS, patience=PATIENCE, strategy='iteration', key="objective_value"):
         self.eps = eps
         self.patience = patience
 
