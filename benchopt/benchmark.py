@@ -432,6 +432,7 @@ class Benchmark:
                 continue
             output.display_dataset()
             for objective, is_installed in all_objectives:
+                objective.set_dataset(dataset)
                 output.set(objective=objective)
                 if not is_installed:
                     output.show_status('not installed', objective=True)

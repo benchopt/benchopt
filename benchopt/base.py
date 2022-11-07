@@ -381,11 +381,6 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
         if type(data) != dict:
             self._dimension, data = data
 
-        # Check if the dataset is compatible with the objective
-        skip, reason = self.skip(**data)
-        if skip:
-            return skip, reason
-
         # Check if parameters are modified by set_data
         parameters = {}
         for key in self._parameters:
@@ -403,8 +398,6 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
                     "Parameters of Objective should not be "
                     "modified by 'set_data'."
                 )
-
-        return False,  None
 
     def skip(self, **data):
         """Used to decide if the ``Objective`` is compatible with the data.
@@ -425,6 +418,22 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
             If skip is False, the reason should be None.
         """
         return False, None
+
+    def _skip(self, dataset):
+        self._dataset = dataset
+        data = dataset._get_data()
+
+        # XXX - Remove in version 1.3
+        if type(data) != dict:
+            self._dimension, data = data
+
+        # Check if the dataset is compatible with the objective
+        skip, reason = self.skip(**data)
+
+        if skip:
+            return skip, reason
+
+        return False,  None
 
     def get_one_solution(self):
         """Return one point in which the objective function can be evaluated.

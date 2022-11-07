@@ -31,7 +31,7 @@ def test_skip_api():
 
     dataset = TEST_DATASET.get_instance(skip=True)
     objective = TEST_OBJECTIVE.get_instance()
-    skip, reason = objective.set_dataset(dataset)
+    skip, reason = objective._skip(dataset)
     assert skip
     assert reason == 'X is all zeros'
 
