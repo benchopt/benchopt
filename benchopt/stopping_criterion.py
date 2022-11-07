@@ -314,12 +314,15 @@ class SufficientDescentCriterion(StoppingCriterion):
         The objective to check for tracking progress.
     """
 
-    def __init__(self, eps=EPS, patience=PATIENCE, strategy='iteration', key_to_monitor='objective_value'):
+    def __init__(self, eps=EPS, patience=PATIENCE, strategy='iteration',
+                 key_to_monitor='objective_value'):
         self.eps = eps
         self.patience = patience
 
         self._delta_objectives = []
         self._objective_value = 1e100
+
+        self.key_to_monitor = key_to_monitor
 
         super().__init__(
             eps=eps, patience=patience, strategy=strategy
@@ -391,12 +394,15 @@ class SufficientProgressCriterion(StoppingCriterion):
         The objective to check for tracking progress.
     """
 
-    def __init__(self, eps=EPS, patience=PATIENCE, strategy='iteration', key_to_monitor='objective_value'):
+    def __init__(self, eps=EPS, patience=PATIENCE, strategy='iteration',
+                 key_to_monitor='objective_value'):
         self.eps = eps
         self.patience = patience
 
         self._progress = []
         self._best_objective_value = 1e100
+
+        self.key_to_monitor = key_to_monitor
 
         super().__init__(
             eps=eps, patience=patience, strategy=strategy
