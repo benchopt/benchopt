@@ -310,9 +310,11 @@ class SufficientDescentCriterion(StoppingCriterion):
         - ``'callback'``: call the run method with a callback that will compute
         the objective function on a logarithmic scale. After each iteration,
         the callback should be called with the current iterate solution.
+    key_to_monitor : str (default: 'objective_value')
+        The objective to check for tracking progress.
     """
 
-    def __init__(self, eps=EPS, patience=PATIENCE, strategy='iteration', key="objective_value"):
+    def __init__(self, eps=EPS, patience=PATIENCE, strategy='iteration', key_to_monitor='objective_value'):
         self.eps = eps
         self.patience = patience
 
@@ -342,9 +344,9 @@ class SufficientDescentCriterion(StoppingCriterion):
             that the solver has converged.
         """
         # Compute the current objective
-        objective_value = cost_curve[-1]['objective_value']
+        objective_value = cost_curve[-1][self.key_to_monitor]
         delta_objective = self._objective_value - objective_value
-        delta_objective /= abs(cost_curve[0]['objective_value'])
+        delta_objective /= abs(cost_curve[0][self.key_to_monitor])
         self._objective_value = objective_value
 
         # Store only the last ``patience`` values for progress
@@ -385,9 +387,11 @@ class SufficientProgressCriterion(StoppingCriterion):
         - ``'callback'``: call the run method with a callback that will compute
         the objective function on a logarithmic scale. After each iteration,
         the callback should be called with the current iterate solution.
+    key_to_monitor : str (default: 'objective_value')
+        The objective to check for tracking progress.
     """
 
-    def __init__(self, eps=EPS, patience=PATIENCE, strategy='iteration'):
+    def __init__(self, eps=EPS, patience=PATIENCE, strategy='iteration', key_to_monitor='objective_value'):
         self.eps = eps
         self.patience = patience
 
@@ -417,9 +421,9 @@ class SufficientProgressCriterion(StoppingCriterion):
             that the solver has converged.
         """
         # Compute the current objective and update best value
-        objective_value = cost_curve[-1]['objective_value']
+        objective_value = cost_curve[-1][self.key_to_monitor]
         delta_objective = self._best_objective_value - objective_value
-        delta_objective /= abs(cost_curve[0]['objective_value'])
+        delta_objective /= abs(cost_curve[0][self.key_to_monitor])
         self._best_objective_value = min(
             objective_value, self._best_objective_value
         )
