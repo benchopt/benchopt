@@ -538,7 +538,7 @@ const makeLegend = () => {
 
   var aggregateName = aggregateButton = aggregateDiv =  null;
 
-  for(solver of data().solvers) {
+  for(let solver in data().solvers) {
     const solverName = solver.split("[")[0];
     const color = data().solvers[solver].color;
     const symbolNumber = data().solvers[solver].marker;
@@ -555,7 +555,7 @@ const makeLegend = () => {
 
     // create div to gather the solvers with other bench params
     aggregateDiv = document.createElement("div");
-    aggregateDiv.style.display = state().hidden_boxes.includes(current_solver) ? "none" : "block"; 
+    aggregateDiv.style.display = state().disabled_solvers_accordions.includes(solverName) ? "none" : "block"; 
 
     // add event handler for accordion
     aggregateButton.addEventListener('click', function () {
@@ -564,13 +564,13 @@ const makeLegend = () => {
       if (aggregateDiv.display === "block") {  
         setState({
           hidden_solvers: state().hidden_solvers.concat(solversInAggregate),
-          disabled_solvers_accordions: state().hidden_boxes.concat(solverName)
+          disabled_solvers_accordions: state().disabled_solvers_accordions.concat(solverName)
         });
       } 
       else {
         setState({
           hidden_solvers: state().hidden_solvers.filter(hidden => !arr.includes(hidden)),
-          disabled_solvers_accordions: state().hidden_boxes.filter(hidden => !(hidden === solverName))
+          disabled_solvers_accordions: state().disabled_solvers_accordions.filter(hidden => !(hidden === solverName))
         });
       }
     });
