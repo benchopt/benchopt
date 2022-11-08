@@ -76,7 +76,7 @@ def test_diverged(criterion_class, strategy):
     SufficientDescentCriterion, SufficientProgressCriterion
 ])
 def test_key_to_monitor(criterion_class, strategy):
-    "Check that the benchmark stops when diverging."
+    "Check that the criterion tracks the right objective key."
     key = 'test'
     criterion = criterion_class(strategy=strategy, key_to_monitor=key)
 
