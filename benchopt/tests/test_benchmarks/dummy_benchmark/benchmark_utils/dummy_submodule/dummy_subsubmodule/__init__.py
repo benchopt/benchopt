@@ -1,2 +1,2 @@
-def func_in_subsubmodule():
-    pass
+def error_raiser():
+    raise ValueError("This functions raises an error.")

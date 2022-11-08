@@ -3,6 +3,8 @@ import pytest
 from benchopt.tests import DUMMY_BENCHMARK
 from benchopt.utils.dynamic_modules import _load_class_from_module
 
+from benchopt.cli.main import run
+
 
 def test_template_dataset():
     # Make sure that importing template_dataset raises an error.
@@ -32,3 +34,9 @@ def test_template_solver():
     # Make sure that this error is not raised when listing all solvers from
     # the benchmark.
     DUMMY_BENCHMARK.get_solvers()
+
+
+def test_benchmark_submodule():
+    with pytest.raises(ValueError, match="raises an error"):
+        run([DUMMY_BENCHMARK.name, '-s', 'Solver-Test[raise_error=True]'],
+            'benchopt', standalone_mode=False)
