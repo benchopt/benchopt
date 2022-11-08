@@ -29,8 +29,8 @@ def set_benchmark_module(benchmark_dir):
             PACKAGE_NAME, module_file
         )
         module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
         sys.modules[PACKAGE_NAME] = module
+        spec.loader.exec_module(module)
 
 
 class safe_import_context:

@@ -4,6 +4,7 @@ from benchopt import safe_import_context
 with safe_import_context() as import_ctx:
     import numpy as np
     from benchmark_utils import dummy_function
+    from benchmark_utils.dummy_submodule.dummy_subsubmodule import func_in_subsubmodule
 
 
 class Solver(BaseSolver):

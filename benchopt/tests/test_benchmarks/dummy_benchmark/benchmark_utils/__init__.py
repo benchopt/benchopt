@@ -1,3 +1,1 @@
-# from .dummy_submodule import dummy_function
-def dummy_function():
-    pass
+from benchmark_utils.dummy_submodule import dummy_function
