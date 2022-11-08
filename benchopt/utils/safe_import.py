@@ -6,6 +6,7 @@ from pathlib import Path
 from ..config import RAISE_INSTALL_ERROR
 
 SKIP_IMPORT = False
+BENCHMARK_DIR = None
 PACKAGE_NAME = "benchmark_utils"
 
 
@@ -19,6 +20,8 @@ def skip_import():
 
 
 def set_benchmark_module(benchmark_dir):
+    global BENCHMARK_DIR
+    BENCHMARK_DIR = Path(benchmark_dir)
     # add PACKAGE_NAME as a module if it exists:
     module_file = Path(benchmark_dir) / PACKAGE_NAME / '__init__.py'
     if module_file.exists():

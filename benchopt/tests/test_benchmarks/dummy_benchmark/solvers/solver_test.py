@@ -3,6 +3,7 @@ from benchopt import safe_import_context
 
 with safe_import_context() as import_ctx:
     import numpy as np
+    from benchmark_utils import dummy_function
 
 
 class Solver(BaseSolver):
@@ -17,7 +18,7 @@ class Solver(BaseSolver):
         self.X, self.y, self.lmbd = X, y, lmbd
 
     def run(self, n_iter):
-
+        dummy_function()
         L = np.linalg.norm(self.X) ** 2
 
         n_features = self.X.shape[1]

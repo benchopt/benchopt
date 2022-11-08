@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 
 from .stopping_criterion import SufficientProgressCriterion
 
-from .utils.safe_import import set_benchmark
+from .utils.safe_import import set_benchmark_module
 from .utils.dynamic_modules import get_file_hash
 from .utils.dynamic_modules import _reconstruct_class
 
@@ -174,7 +174,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
     @staticmethod
     def _reconstruct(module_filename, parameters, objective,
                      pickled_module_hash=None, benchmark_dir=None):
-        set_benchmark(benchmark_dir)
+        set_benchmark_module(benchmark_dir)
         Solver = _reconstruct_class(
             module_filename, 'Solver', benchmark_dir, pickled_module_hash,
         )
@@ -264,7 +264,7 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
     @staticmethod
     def _reconstruct(module_filename, pickled_module_hash, parameters,
                      benchmark_dir):
-        set_benchmark(benchmark_dir)
+        set_benchmark_module(benchmark_dir)
         Dataset = _reconstruct_class(
             module_filename, 'Dataset', benchmark_dir, pickled_module_hash,
         )
@@ -461,7 +461,7 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
     @staticmethod
     def _reconstruct(module_filename, pickled_module_hash, parameters,
                      dataset, benchmark_dir):
-        set_benchmark(benchmark_dir)
+        set_benchmark_module(benchmark_dir)
         Objective = _reconstruct_class(
             module_filename, 'Objective', benchmark_dir, pickled_module_hash,
         )
