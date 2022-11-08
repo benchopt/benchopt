@@ -25,7 +25,7 @@ class StoppingCriterion():
     It should be sub-classed to check for the convergence of the algorithm.
 
     This class also handles the detection of diverging solvers and prints the
-    progress if given a ``prgress_str``.
+    progress if given a ``progress_str``.
 
     Instances of this class should only be created with class method
     `cls.get_runner_instance`, to make sure the class holds the proper
@@ -40,14 +40,14 @@ class StoppingCriterion():
     Parameters
     ----------
     **kwargs : dict
-        All parameters passed when instanciating the StoppingCriterion. This
+        All parameters passed when instantiating the StoppingCriterion. This
         will be used to re-create the criterion with extra arguments in the
         runner.
     strategy : str in {'iteration', 'tolerance', 'callback'}
         How the different precision solvers are called. Can be one of:
         - ``'iteration'``: call the run method with max_iter number increasing
         logarithmically to get more an more precise points.
-        - ``'tolerance'``: call the run method with tolerance deacreasing
+        - ``'tolerance'``: call the run method with tolerance decreasing
         logarithmically to get more and more precise points.
         - ``'callback'``: call the run method with a callback that will compute
         the objective function on a logarithmic scale. After each iteration,
@@ -291,7 +291,7 @@ class SufficientDescentCriterion(StoppingCriterion):
 
     The solver will be stopped once successive evaluations do not make enough
     progress. The number of successive evaluation and the definition of
-    sufficient progress is controled by ``eps`` and ``patience``.
+    sufficient progress is controlled by ``eps`` and ``patience``.
 
     Parameters
     ----------
@@ -305,7 +305,7 @@ class SufficientDescentCriterion(StoppingCriterion):
         How the different precision solvers are called. Can be one of:
         - ``'iteration'``: call the run method with max_iter number increasing
         logarithmically to get more an more precise points.
-        - ``'tolerance'``: call the run method with tolerance deacreasing
+        - ``'tolerance'``: call the run method with tolerance decreasing
         logarithmically to get more and more precise points.
         - ``'callback'``: call the run method with a callback that will compute
         the objective function on a logarithmic scale. After each iteration,
@@ -366,7 +366,7 @@ class SufficientProgressCriterion(StoppingCriterion):
 
     The solver will be stopped once successive evaluations do not make enough
     progress. The number of successive evaluation and the definition of
-    sufficient progress is controled by ``eps`` and ``patience``.
+    sufficient progress is controlled by ``eps`` and ``patience``.
 
     Parameters
     ----------
@@ -380,7 +380,7 @@ class SufficientProgressCriterion(StoppingCriterion):
         How the different precision solvers are called. Can be one of:
         - ``'iteration'``: call the run method with max_iter number increasing
         logarithmically to get more an more precise points.
-        - ``'tolerance'``: call the run method with tolerance deacreasing
+        - ``'tolerance'``: call the run method with tolerance decreasing
         logarithmically to get more and more precise points.
         - ``'callback'``: call the run method with a callback that will compute
         the objective function on a logarithmic scale. After each iteration,
