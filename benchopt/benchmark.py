@@ -6,7 +6,7 @@ from pathlib import Path
 from .config import get_setting
 from .base import BaseSolver, BaseDataset
 
-from .utils.safe_import import set_benchmark
+from .utils.safe_import import set_benchmark_module
 from .utils.dynamic_modules import _load_class_from_module
 from .utils.parametrized_name_mixin import product_param
 from .utils.parametrized_name_mixin import _list_all_parametrized_names
@@ -43,7 +43,7 @@ class Benchmark:
         self.benchmark_dir = Path(benchmark_dir)
         self.name = self.benchmark_dir.resolve().name
 
-        set_benchmark(self.benchmark_dir)
+        set_benchmark_module(self.benchmark_dir)
 
         try:
             objective = self.get_benchmark_objective()

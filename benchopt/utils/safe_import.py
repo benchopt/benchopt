@@ -6,7 +6,6 @@ from pathlib import Path
 from ..config import RAISE_INSTALL_ERROR
 
 SKIP_IMPORT = False
-BENCHMARK_DIR = None
 PACKAGE_NAME = "benchmark_utils"
 
 
@@ -19,16 +18,16 @@ def skip_import():
     SKIP_IMPORT = True
 
 
-def set_benchmark(benchmark_dir):
-    global BENCHMARK_DIR
-    BENCHMARK_DIR = Path(benchmark_dir)
-    # add PACKAGE_NAME as a module:
-    spec = importlib.util.spec_from_file_location(
-        PACKAGE_NAME, BENCHMARK_DIR / PACKAGE_NAME / '__init__.py'
-    )
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    sys.modules[PACKAGE_NAME] = module
+def set_benchmark_module(benchmark_dir):
+    # add PACKAGE_NAME as a module if it exists:
+    module_file = Path(benchmark_dir) / PACKAGE_NAME / '__init__.py'
+    if module_file.exists():
+        spec = importlib.util.spec_from_file_location(
+            PACKAGE_NAME, module_file
+        )
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        sys.modules[PACKAGE_NAME] = module
 
 
 class safe_import_context:
