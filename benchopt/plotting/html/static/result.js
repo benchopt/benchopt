@@ -536,14 +536,64 @@ const makeLegend = () => {
 
   legend.innerHTML = '';
 
-  Object.keys(data().solvers).forEach(solver => {
+  var aggregateName = aggregateButton = aggregateDiv =  null;
+
+  for(solver of data().solvers) {
+    const solverName = solver.split("[")[0];
     const color = data().solvers[solver].color;
     const symbolNumber = data().solvers[solver].marker;
 
-    legend.appendChild(createLegendItem(solver, color, symbolNumber));
-  });
+    if(solverName === aggregateName) {
+      aggregateDiv.appendChild(createLegendItem(solver, color, symbolNumber));
+      continue;
+    }
+
+    // create button to toggle accordion
+    aggregateButton = document.createElement("button");
+    aggregateButton.innerText = solverName;
+    aggregateButton.className = 'solver-accordion';
+
+    // create div to gather the solvers with other bench params
+    aggregateDiv = document.createElement("div");
+    aggregateDiv.style.display = state().hidden_boxes.includes(current_solver) ? "none" : "block"; 
+
+    // add event handler for accordion
+    aggregateButton.addEventListener('click', function () {
+      solversInAggregate = getSolverInAggregate(aggregateDiv);
+
+      if (aggregateDiv.display === "block") {  
+        setState({
+          hidden_solvers: state().hidden_solvers.concat(solversInAggregate),
+          disabled_solvers_accordions: state().hidden_boxes.concat(solverName)
+        });
+      } 
+      else {
+        setState({
+          hidden_solvers: state().hidden_solvers.filter(hidden => !arr.includes(hidden)),
+          disabled_solvers_accordions: state().hidden_boxes.filter(hidden => !(hidden === solverName))
+        });
+      }
+    });
+      
+    legend.appendChild(aggregateButton);
+    legend.appendChild(aggregateDiv);
+    aggregateDiv.appendChild(createLegendItem(solver, color, symbolNumber));
+
+    aggregateName = solverName;
+  }
 }
 
+getSolverInAggregate = (agg) => {
+  let arr = [];
+
+  for (let ele of agg.children) {
+    arr.push(
+      ele.querySelector(".solver").firstChild.nodeValue
+    )
+  }
+
+  return arr
+}
 /**
  * Creates a legend item which contains the solver name,
  * the solver marker as an SVG and an horizontal bar with
