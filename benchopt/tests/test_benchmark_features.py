@@ -14,7 +14,7 @@ def test_template_dataset():
             template_dataset, 'Dataset', DUMMY_BENCHMARK.benchmark_dir
         )
 
-    # Make sure that this error is not raised when listing all dataset from
+    # Make sure that this error is not raised when listing all datasets from
     # the benchmark.
     DUMMY_BENCHMARK.get_datasets()
 
@@ -29,6 +29,6 @@ def test_template_solver():
             template_dataset, 'Solver', DUMMY_BENCHMARK.benchmark_dir
         )
 
-    # Make sure that this error is not raised when listing all dataset from
+    # Make sure that this error is not raised when listing all solvers from
     # the benchmark.
     DUMMY_BENCHMARK.get_solvers()
