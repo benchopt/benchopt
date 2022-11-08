@@ -234,7 +234,6 @@ class StoppingCriterion():
             self.rho *= RHO_INC
             self.debug(f"curve is flat -> increasing rho: {self.rho}")
 
-
         if status == 'running':
             stop_val = self.get_next_stop_val(stop_val)
             self.debug(f"Calling with stop val: {stop_val}")

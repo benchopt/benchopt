@@ -51,7 +51,6 @@ def test_diverged(criterion_class, strategy):
     "Check that the benchmark stops when diverging."
     criterion = criterion_class(strategy=strategy)
 
-
     criterion = criterion.get_runner_instance(max_runs=100)
     stop_val = criterion.init_stop_val()
     cost_curve = [{'objective_value': 1}]
