@@ -1,11 +1,13 @@
 import sys
 import warnings
+import importlib
 from pathlib import Path
 
 from ..config import RAISE_INSTALL_ERROR
 
 SKIP_IMPORT = False
 BENCHMARK_DIR = None
+PACKAGE_NAME = "benchmark_utils"
 
 
 class SkipWithBlock(Exception):
@@ -20,6 +22,13 @@ def skip_import():
 def set_benchmark(benchmark_dir):
     global BENCHMARK_DIR
     BENCHMARK_DIR = Path(benchmark_dir)
+    # add PACKAGE_NAME as a module:
+    spec = importlib.util.spec_from_file_location(
+        PACKAGE_NAME, BENCHMARK_DIR / PACKAGE_NAME / '__init__.py'
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    sys.modules[PACKAGE_NAME] = module
 
 
 class safe_import_context:
