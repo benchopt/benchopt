@@ -536,7 +536,7 @@ const makeLegend = () => {
 
   legend.innerHTML = '';
 
-  var aggregateName = aggregateButton = aggregateDiv =  null;
+  let aggregateName = aggregateButton = aggregateDiv = null;
 
   for(let solver in data().solvers) {
     const solverName = solver.split("[")[0];
@@ -559,9 +559,10 @@ const makeLegend = () => {
 
     // add event handler for accordion
     aggregateButton.addEventListener('click', function () {
-      solversInAggregate = getSolverInAggregate(aggregateDiv);
+      let currentAggregateDiv = this.nextElementSibling;
+      let solversInAggregate = getSolverInAggregate(currentAggregateDiv);
 
-      if (aggregateDiv.display === "block") {  
+      if (currentAggregateDiv.style.display === "block") {
         setState({
           hidden_solvers: state().hidden_solvers.concat(solversInAggregate),
           disabled_solvers_accordions: state().disabled_solvers_accordions.concat(solverName)
@@ -569,7 +570,7 @@ const makeLegend = () => {
       } 
       else {
         setState({
-          hidden_solvers: state().hidden_solvers.filter(hidden => !arr.includes(hidden)),
+          hidden_solvers: state().hidden_solvers.filter(hidden => !solversInAggregate.includes(hidden)),
           disabled_solvers_accordions: state().disabled_solvers_accordions.filter(hidden => !(hidden === solverName))
         });
       }
