@@ -21,6 +21,7 @@ BENCHOPT_ENV = """
 channels:
   - conda-forge
   - nodefaults
+  - r
 dependencies:
   - python=3.9
   - numpy
@@ -35,6 +36,7 @@ EMPTY_ENV = """
 channels:
   - conda-forge
   - nodefaults
+  - r
 """
 
 
