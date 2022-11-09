@@ -136,7 +136,7 @@ const getScatterCurves = () => {
       legendgroup: solver,
       hovertemplate: solver + ' <br> (%{x:.1e},%{y:.1e}) <extra></extra>',
       visible: isVisible(solver) ? true : 'legendonly',
-      x: data(solver).scatter.x,
+      x: (!state().xaxis_with_iteration) ? data(solver).scatter.x :  [...Array(data(solver).scatter.x.length).keys()],
       y: useTransformer(data(solver).scatter.y, 'y', data().transformers),
     });
 

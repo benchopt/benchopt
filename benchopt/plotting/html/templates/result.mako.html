@@ -92,6 +92,13 @@
                                 <span class="slider round"></span>
                             </label>
                         </div>
+                        <div class="flex items-center justify-between mt-8 px-8">
+                            <div class="block text-sm font-medium text-white">Iterations</div>
+                            <label class="block switch">
+                                <input id="xaxis_with_iteration" type="checkbox" checked onchange="setState({xaxis_with_iteration: this.checked})"">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -379,6 +386,7 @@
                     'plot_kind': document.getElementById('plot_kind').value,
                     'scale': document.getElementById('change_scaling').value,
                     'with_quantiles': document.getElementById('change_shades').checked,
+                    'xaxis_with_iteration':  document.getElementById('xaxis_with_iteration').checked,
                     'hidden_solvers': []
                 });
             });
