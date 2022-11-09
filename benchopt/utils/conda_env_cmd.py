@@ -127,7 +127,7 @@ def create_conda_env(
         # see https://stackoverflow.com/questions/70098418/
         _run_shell_in_conda_env(
             f"{CONDA_CMD} config --env --prepend channels nodefaults " +
-            "--prepend channels conda-forge", env_name,
+            "--prepend channels conda-forge --prepend channels r", env_name,
             capture_stdout=quiet)
         if empty:
             return
