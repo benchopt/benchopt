@@ -195,7 +195,6 @@ class StoppingCriterion():
         delta_objective = self._prev_objective - objective
         delta_objective /= abs(cost_curve[0][self.key_to_monitor])
         self._prev_objective = objective
-        print(delta_objective)
 
         # default value for is_flat
         is_flat = False
