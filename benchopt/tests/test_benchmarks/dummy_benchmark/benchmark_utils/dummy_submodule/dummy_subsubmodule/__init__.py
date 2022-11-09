@@ -1,2 +1,2 @@
 def error_raiser():
-    raise ValueError("This functions raises an error.")
+    raise ValueError("This function raises an error.")

@@ -11,6 +11,8 @@ with safe_import_context() as import_ctx:
 class Solver(BaseSolver):
     name = 'Test-Solver'
 
+    parameters = {'raise_error': [False]}
+
     def __init__(self, raise_error=False):
         self.raise_error = raise_error
 

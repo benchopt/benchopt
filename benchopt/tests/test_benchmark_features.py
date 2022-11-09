@@ -38,5 +38,6 @@ def test_template_solver():
 
 def test_benchmark_submodule():
     with pytest.raises(ValueError, match="raises an error"):
-        run([DUMMY_BENCHMARK.name, '-s', 'Solver-Test[raise_error=True]'],
+        run([str(DUMMY_BENCHMARK.benchmark_dir), '-s',
+             'Test-Solver[raise_error=True]'],
             'benchopt', standalone_mode=False)
