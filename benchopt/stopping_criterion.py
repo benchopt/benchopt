@@ -309,6 +309,7 @@ class SufficientDescentCriterion(StoppingCriterion):
         The solver is stopped after ``patience`` successive insufficient
         updates.
     strategy : str in {'iteration', 'tolerance', 'callback'}
+        (default: 'iteration')
         How the different precision solvers are called. Can be one of:
         - ``'iteration'``: call the run method with max_iter number increasing
         logarithmically to get more an more precise points.
@@ -388,6 +389,7 @@ class SufficientProgressCriterion(StoppingCriterion):
         The solver is stopped after ``patience`` successive insufficient
         updates.
     strategy : str in {'iteration', 'tolerance', 'callback'}
+        (default: 'iteration')
         How the different precision solvers are called. Can be one of:
         - ``'iteration'``: call the run method with max_iter number increasing
         logarithmically to get more an more precise points.
