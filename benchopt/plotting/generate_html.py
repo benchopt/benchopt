@@ -182,12 +182,12 @@ def shape_solvers_for_html(df, objective_column):
         df_filtered = df_filtered.dropna(subset=[objective_column])
 
         q1, q9 = compute_quantiles(df_filtered)
+        groupby_stop_val_median = df_filtered.groupby('stop_val').median()
         solver_data[solver] = {
             'scatter': {
-                'x': df_filtered.groupby('stop_val')['time']
-                                .median().tolist(),
-                'y': df_filtered.groupby('stop_val')[objective_column]
-                                .median().tolist(),
+                'x': groupby_stop_val_median['time'].tolist(),
+                'y': groupby_stop_val_median[objective_column].tolist(),
+                'stop_val': groupby_stop_val_median.index.tolist(),
                 'q1': q1.tolist(),
                 'q9': q9.tolist(),
             },
