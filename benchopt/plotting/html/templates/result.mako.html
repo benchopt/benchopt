@@ -93,9 +93,9 @@
                             </label>
                         </div>
                         <div class="flex items-center justify-between mt-8 px-8">
-                            <div class="block text-sm font-medium text-white">Iterations</div>
+                            <div class="block text-sm font-medium text-white">Stopping criterion</div>
                             <label class="block switch">
-                                <input id="xaxis_with_iteration" type="checkbox" checked onchange="setState({xaxis_with_iteration: this.checked})"">
+                                <input id="xaxis_with_stop_val" type="checkbox" onchange="setState({xaxis_with_stop_val: this.checked})"">
                                 <span class="slider round"></span>
                             </label>
                         </div>
@@ -386,7 +386,7 @@
                     'plot_kind': document.getElementById('plot_kind').value,
                     'scale': document.getElementById('change_scaling').value,
                     'with_quantiles': document.getElementById('change_shades').checked,
-                    'xaxis_with_iteration':  document.getElementById('xaxis_with_iteration').checked,
+                    'xaxis_with_stop_val':  document.getElementById('xaxis_with_stop_val').checked,
                     'hidden_solvers': []
                 });
             });
