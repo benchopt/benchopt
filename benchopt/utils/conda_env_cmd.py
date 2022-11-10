@@ -175,7 +175,7 @@ def delete_conda_env(env_name):
 def get_cmd_from_requirements(packages):
     """Process the packages from requirements and create the install cmd.
 
-    This detect the packages that needs to be installed with pip and also
+    This detects the packages that need to be installed with pip and also
     the additional channels for conda packages.
     """
     pip_packages = [pkg[4:] for pkg in packages if pkg.startswith('pip:')]
