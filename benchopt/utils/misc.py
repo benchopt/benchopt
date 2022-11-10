@@ -25,6 +25,7 @@ def get_benchopt_requirement():
     from pip._internal.operations.freeze import FrozenRequirement
 
     dist = get_default_environment().get_distribution('benchopt')
+    req = FrozenRequirement.from_dist(dist)
 
     # If benchopt is installed in editable mode, get the module path to install
     # it directly from the folder. Else, install it correctly even if it is
@@ -32,8 +33,15 @@ def get_benchopt_requirement():
     assert dist is not None, (
         'benchopt is not installed in the current environment?'
     )
-    req = FrozenRequirement.from_dist(dist)
-    if req.editable:
-        return f'-e {dist.location}', True
+
+    # If pip version >= 21.3, use editable detection from dist.
+    if hasattr(dist, 'editable_project_location'):
+        if dist.editable:
+            return f'-e {dist.editable_project_location}', True
+    # Else, resort to req.editable and dist.location, as dist.editable
+    # and dist.editable_project_location were not implemented before
+    else:
+        if req.editable:
+            return f'-e {dist.location}', True
 
     return str(req), False
