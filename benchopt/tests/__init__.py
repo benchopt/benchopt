@@ -6,8 +6,9 @@ from joblib.executor import get_memmapping_executor
 from benchopt.benchmark import Benchmark
 from benchopt.utils.stream_redirection import SuppressStd
 
+from .fixtures import TEST_BENCHMARK_DIR
+
 # Default benchmark
-TEST_BENCHMARK_DIR = Path(__file__).parent / 'test_benchmarks'
 DUMMY_BENCHMARK_PATH = TEST_BENCHMARK_DIR / 'dummy_benchmark'
 REQUIREMENT_BENCHMARK_PATH = TEST_BENCHMARK_DIR / 'requirement_benchmark'
 

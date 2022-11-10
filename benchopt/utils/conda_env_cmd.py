@@ -172,30 +172,44 @@ def delete_conda_env(env_name):
                capture_stdout=True)
 
 
+def get_cmd_from_requirements(packages):
+    """Process the packages from requirements and create the install cmd.
+
+    This detect the packages that needs to be installed with pip and also
+    the additional channels for conda packages.
+    """
+    pip_packages = [pkg[4:] for pkg in packages if pkg.startswith('pip:')]
+    conda_packages = [pkg for pkg in packages if not pkg.startswith('pip:')]
+
+    cmd = []
+    if conda_packages:
+        channels = ' '.join(set(
+            f"-c {pkg.split(':')[0]}" for pkg in conda_packages if ':' in pkg
+        ))
+        packages = ' '.join(pkg.split(':')[-1] for pkg in conda_packages)
+        cmd.append(
+            f"{CONDA_CMD} install jsdg --update-all -y {channels}  {packages}"
+        )
+
+    if pip_packages:
+        packages = ' '.join(pip_packages)
+        cmd.append(f"pip install {packages}")
+    return cmd
+
+
 def install_in_conda_env(*packages, env_name=None, force=False, quiet=False):
     """Install the packages with conda in the given environment"""
     if len(packages) == 0:
         return
 
-    pip_packages = [pkg[4:] for pkg in packages if pkg.startswith('pip:')]
-    conda_packages = [pkg for pkg in packages if not pkg.startswith('pip:')]
-
-    error_msg = ("Failed to conda install packages "
-                 f"{packages if len(packages) > 1 else packages[0]}\n"
-                 "Error:{output}")
-    cmd = []
-    if conda_packages:
-        packages = ' '.join(conda_packages)
-        cmd.append(f"{CONDA_CMD} install --update-all -y {packages}")
-
-    if pip_packages:
-        packages = ' '.join(pip_packages)
-        cmd.append(f"pip install {packages}")
-
+    cmd = get_cmd_from_requirements(packages)
     if force:
         cmd = [c + ' --force-reinstall' for c in cmd]
     cmd = '\n'.join(cmd)
 
+    error_msg = ("Failed to conda install packages "
+                 f"{packages if len(packages) > 1 else packages[0]}\n"
+                 "Error:{output}")
     _run_shell_in_conda_env(
         cmd, env_name=env_name, raise_on_error=error_msg,
         capture_stdout=quiet
