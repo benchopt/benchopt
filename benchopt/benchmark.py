@@ -143,6 +143,9 @@ class Benchmark:
         package = self.benchmark_dir / f'{class_name.lower()}s'
         submodule_files = package.glob('*.py')
         for module_filename in submodule_files:
+            if module_filename.name.startswith("template_"):
+                # skip template solvers and datasets
+                continue
             # Get the class
             cls = _load_class_from_module(
                 module_filename, class_name, benchmark_dir=self.benchmark_dir

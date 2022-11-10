@@ -18,6 +18,9 @@ SELECT_ONE_OBJECTIVE = r'dummy*[reg=0.1]'
 
 try:
     DUMMY_BENCHMARK = Benchmark(DUMMY_BENCHMARK_PATH)
+except Exception:
+    DUMMY_BENCHMARK = None
+try:
     REQUIREMENT_BENCHMARK = Benchmark(REQUIREMENT_BENCHMARK_PATH)
     TEST_OBJECTIVE = DUMMY_BENCHMARK.get_benchmark_objective()
     TEST_SOLVER = [s for s in DUMMY_BENCHMARK.get_solvers()
@@ -25,7 +28,6 @@ try:
     TEST_DATASET = [d for d in DUMMY_BENCHMARK.get_datasets()
                     if d.name == "Test-Dataset"][0]
 except Exception:
-    DUMMY_BENCHMARK = None
     REQUIREMENT_BENCHMARK = None
     TEST_OBJECTIVE = None
     TEST_SOLVER = None
