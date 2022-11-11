@@ -533,8 +533,17 @@ const handleSolverDoubleClick = solver => {
  */
 const makeLegend = () => {
   const legend = document.getElementById('plot_legend');
-
   legend.innerHTML = '';
+
+  // div where to put solver run with a single configuration
+  const divIndependentSolvers = document.createElement("div");
+  divIndependentSolvers.className = "flex inline-block px-10 space-r-2";
+  legend.appendChild(divIndependentSolvers);
+  // pattern to check whether solver is benchmarked with more than one configuration
+  // examples:
+  //   solver_name[param1=val,param2=val] --> true
+  //   solver_name[param1]                --> false
+  pattern = new RegExp('\\[\\w+=\\w+.+\\]');
 
   let aggregateName = aggregateButton = aggregateDiv = null;
 
@@ -543,6 +552,13 @@ const makeLegend = () => {
     const color = data().solvers[solver].color;
     const symbolNumber = data().solvers[solver].marker;
 
+    // case solver with one configuration (solver doesn't verify pattern)
+    if(!pattern.test(solver)) {
+      divIndependentSolvers.appendChild(createLegendItem(solver, color, symbolNumber));
+      continue;
+    }
+
+    // case aggregation of solvers already exist
     if(solverName === aggregateName) {
       aggregateDiv.appendChild(createLegendItem(solver, color, symbolNumber));
       continue;
@@ -555,23 +571,24 @@ const makeLegend = () => {
 
     // create div to gather the solvers with other bench params
     aggregateDiv = document.createElement("div");
-    aggregateDiv.style.display = state().disabled_solvers_accordions.includes(solverName) ? "none" : "block"; 
+    displayAggregatedSolvers = state().disabled_solvers_accordions.includes(solverName) ? "hidden" : "";
+    aggregateDiv.className = `${displayAggregatedSolvers} flex inline-block px-10 space-r-2`;
 
     // add event handler for accordion
     aggregateButton.addEventListener('click', function () {
       let currentAggregateDiv = this.nextElementSibling;
       let solversInAggregate = getSolverInAggregate(currentAggregateDiv);
 
-      if (currentAggregateDiv.style.display === "block") {
+      if (currentAggregateDiv.className.includes("hidden")) {
         setState({
-          hidden_solvers: state().hidden_solvers.concat(solversInAggregate),
-          disabled_solvers_accordions: state().disabled_solvers_accordions.concat(solverName)
+          hidden_solvers: state().hidden_solvers.filter(hidden => !solversInAggregate.includes(hidden)),
+          disabled_solvers_accordions: state().disabled_solvers_accordions.filter(hidden => !(hidden === solverName))
         });
       } 
       else {
         setState({
-          hidden_solvers: state().hidden_solvers.filter(hidden => !solversInAggregate.includes(hidden)),
-          disabled_solvers_accordions: state().disabled_solvers_accordions.filter(hidden => !(hidden === solverName))
+          hidden_solvers: state().hidden_solvers.concat(solversInAggregate),
+          disabled_solvers_accordions: state().disabled_solvers_accordions.concat(solverName)
         });
       }
     });
