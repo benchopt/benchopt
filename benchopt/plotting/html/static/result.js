@@ -537,7 +537,7 @@ const makeLegend = () => {
 
   // div where to put solver run with a single configuration
   const divIndependentSolvers = document.createElement("div");
-  divIndependentSolvers.className = "flex inline-block px-10 space-r-2";
+  divIndependentSolvers.className = "flex flex-wrap inline-block space-r-2";
   legend.appendChild(divIndependentSolvers);
   // pattern to check whether solver is benchmarked with more than one configuration
   // examples:
@@ -572,7 +572,7 @@ const makeLegend = () => {
     // create div to gather the solvers with other bench params
     aggregateDiv = document.createElement("div");
     displayAggregatedSolvers = state().disabled_solvers_accordions.includes(solverName) ? "hidden" : "";
-    aggregateDiv.className = `${displayAggregatedSolvers} flex inline-block px-10 space-r-2`;
+    aggregateDiv.className = `${displayAggregatedSolvers} flex flex-wrap inline-block space-r-2`;
 
     // add event handler for accordion
     aggregateButton.addEventListener('click', function () {
