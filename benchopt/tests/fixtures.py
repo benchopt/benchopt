@@ -1,21 +1,19 @@
 import os
 import uuid
 import pytest
-from pathlib import Path
 
 from benchopt.benchmark import Benchmark
 from benchopt.utils.conda_env_cmd import create_conda_env
 from benchopt.utils.conda_env_cmd import delete_conda_env
 from benchopt.utils.dynamic_modules import _get_module_from_file
 
+from benchopt.tests import TEST_BENCHMARK_DIR
+
 os.environ['BENCHOPT_DEBUG'] = '1'
 os.environ['BENCHOPT_RAISE_INSTALL_ERROR'] = '1'
 
 _TEST_ENV_NAME = None
 _EMPTY_ENV_NAME = None
-
-
-TEST_BENCHMARK_DIR = Path(__file__).parent / 'test_benchmarks'
 
 
 def class_ids(p):
