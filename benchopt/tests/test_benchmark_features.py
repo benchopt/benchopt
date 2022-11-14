@@ -1,9 +1,9 @@
 import pytest
 
+from benchopt.cli.main import run
 from benchopt.tests import DUMMY_BENCHMARK
+from benchopt.tests import SELECT_ONE_SIMULATED
 from benchopt.utils.dynamic_modules import _load_class_from_module
-
-# from benchopt.cli.main import run
 
 
 def test_template_dataset():
@@ -36,8 +36,8 @@ def test_template_solver():
     DUMMY_BENCHMARK.get_solvers()
 
 
-# def test_benchmark_submodule():
-#     with pytest.raises(ValueError, match="raises an error"):
-#         run([str(DUMMY_BENCHMARK.benchmark_dir), '-s',
-#              'Test-Solver[raise_error=True]'],
-#             'benchopt', standalone_mode=False)
+def test_benchmark_submodule():
+    with pytest.raises(ValueError, match="raises an error"):
+        run([str(DUMMY_BENCHMARK.benchmark_dir), '-s',
+             'Test-Solver[raise_error=True]', '-d', SELECT_ONE_SIMULATED],
+            'benchopt', standalone_mode=False)
