@@ -3,7 +3,7 @@ import pytest
 from benchopt.tests import DUMMY_BENCHMARK
 from benchopt.utils.dynamic_modules import _load_class_from_module
 
-from benchopt.cli.main import run
+# from benchopt.cli.main import run
 
 
 def test_template_dataset():
