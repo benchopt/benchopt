@@ -25,10 +25,11 @@ class Solver(BaseSolver):
         self.X, self.y, self.lmbd = X, y, lmbd
 
     def run(self, n_iter):
+        dummy_function()
+
         if self.raise_error:
             error_raiser()
 
-        dummy_function()
         L = np.linalg.norm(self.X) ** 2
 
         n_features = self.X.shape[1]
