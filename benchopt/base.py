@@ -295,7 +295,7 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
     - `set_data(**data)`: stores the info from a given dataset to be able to
       compute the objective value on these data.
 
-    - `get_objective()`: exports the data from the dataset as well as the parameters
+    - `get_objective()`: exports the data from the dataset and the parameters
       from the objective function as a dictionary that will be passed as
       parameters of the solver's `set_objective` method in order to specify the
       objective function of the benchmark.
