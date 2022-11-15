@@ -54,5 +54,5 @@ class Objective(BaseObjective):
     def _get_lambda_max(self):
         return abs(self.X.T.dot(self.y)).max()
 
-    def to_dict(self):
+    def get_objective(self):
         return dict(X=self.X, y=self.y, lmbd=self.lmbd)
