@@ -341,12 +341,6 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
         ...
 
     @abstractmethod
-    def to_dict(self):
-        """Deprecated alias of `get_objective`.
-        """
-        ...
-
-    @abstractmethod
     def compute(self, beta):
         """Compute the value of the objective given the current estimate beta.
 
