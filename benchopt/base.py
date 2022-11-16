@@ -328,7 +328,8 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
         """
         ...
 
-    @abstractmethod
+    # to uncomment in version 1.4, once `to_dict` has been deprecated.
+    # @abstractmethod
     def get_objective(self):
         """Return the objective parameters for the solver.
 
