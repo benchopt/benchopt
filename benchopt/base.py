@@ -21,7 +21,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
 
     - ``set_objective(self, **objective_parameters)``: prepares the solver to
       be called on a given problem. ``**objective_parameters`` is the output of
-      the method ``set_objective`` from the benchmark objective. In particular,
+      the method ``get_objective`` from the benchmark objective. In particular,
       this method should dumps the parameter to compute the objective function
       in a file for command line solvers to reduce the impact of dumping the
       data to the disk in the benchmark.
