@@ -203,7 +203,10 @@ def run(config_file=None, **kwargs):
     if benchmark.min_version is not None:
         from packaging.version import parse
         from benchopt import __version__
-        if parse(__version__) < parse(benchmark.min_version):
+
+        # Avoid dev versions
+        normalized_version = parse(parse(__version__).base_version)
+        if normalized_version < parse(benchmark.min_version):
             raise RuntimeError(
                 f"benchopt version {__version__} is too old to run this  "
                 f"benchmark, version {benchmark.min_version} is required. "

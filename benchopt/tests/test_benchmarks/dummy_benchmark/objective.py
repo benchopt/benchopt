@@ -9,7 +9,7 @@ class Objective(BaseObjective):
     name = "Dummy Sparse Regression"
 
     # Make sure we can run with the current version
-    min_benchopt_version = "0.0.0dev1001"
+    min_benchopt_version = "0.0.0"
     parameters = {
         'reg': [0.05, .1, .5]
     }

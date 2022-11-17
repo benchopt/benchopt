@@ -9,6 +9,7 @@ import pytest
 from joblib.memory import _FUNCTION_HASHES
 from click.shell_completion import ShellComplete
 
+from benchopt.benchmark import Benchmark
 from benchopt.plotting import PLOT_KINDS
 from benchopt.utils.stream_redirection import SuppressStd
 
@@ -20,7 +21,6 @@ from benchopt.tests import SELECT_ONE_OBJECTIVE
 from benchopt.tests import TEST_BENCHMARK_DIR
 from benchopt.tests import DUMMY_BENCHMARK
 from benchopt.tests import DUMMY_BENCHMARK_PATH
-from benchopt.tests import REQUIREMENT_BENCHMARK
 from benchopt.tests import REQUIREMENT_BENCHMARK_PATH
 
 
@@ -371,7 +371,9 @@ class TestInstallCmd:
         )
 
     def test_benchopt_install_in_env_with_requirements(self, test_env_name):
-        objective = REQUIREMENT_BENCHMARK.get_benchmark_objective()
+        objective = Benchmark(
+            REQUIREMENT_BENCHMARK_PATH
+        ).get_benchmark_objective()
         out = 'already installed but failed to import.'
         if not objective.is_installed(env_name=test_env_name):
             with CaptureRunOutput() as out:
