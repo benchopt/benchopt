@@ -26,5 +26,5 @@ class Objective(BaseObjective):
         Xb = self.X @ beta
         return .5 * Xb.T.dot(Xb)
 
-    def to_dict(self):
+    def get_objective(self):
         return dict(X=self.X)

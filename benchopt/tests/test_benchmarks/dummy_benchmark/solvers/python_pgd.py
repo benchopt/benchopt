@@ -13,7 +13,7 @@ class Solver(BaseSolver):
 
     # Store the information to compute the objective. The parameters of this
     # function are the keys of the dictionary obtained when calling
-    # ``Objective.to_dict``.
+    # ``Objective.get_objective``.
     def set_objective(self, X, y, lmbd):
         self.X, self.y, self.lmbd = X, y, lmbd
 

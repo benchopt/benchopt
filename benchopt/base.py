@@ -20,8 +20,8 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
     Solvers that derive from this class should implement three methods:
 
     - ``set_objective(self, **objective_parameters)``: prepares the solver to
-      be called on a given problem. ``**objective_parameters`` are the output
-      of the method ``to_dict`` from the benchmark objective. In particular,
+      be called on a given problem. ``**objective_parameters`` is the output of
+      the method ``get_objective`` from the benchmark objective. In particular,
       this method should dumps the parameter to compute the objective function
       in a file for command line solvers to reduce the impact of dumping the
       data to the disk in the benchmark.
@@ -86,7 +86,19 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
             If skip is False, the reason should be None.
         """
         self._objective = objective
-        objective_dict = objective.to_dict()
+        # XXX remove in version 1.4
+        objective_dict = objective.get_objective()
+        if objective_dict is None:
+            assert hasattr(objective, "to_dict"), (
+                "Objective needs to implement `get_objective` that returns "
+                "a dictionary to be passed to `set_objective`"
+            )
+            warnings.warn(
+                "The method ``Objective.to_dict`` has been deprecated in "
+                "favor of ``Objective.get_objective``. Using it will no "
+                "longer work in version 1.4", FutureWarning
+            )
+            objective_dict = objective.to_dict()
 
         # Check if the objective is compatible with the solver
         skip, reason = self.skip(**objective_dict)
@@ -103,8 +115,8 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         Parameters
         ----------
         **objective_parameters : dict
-            Dictionary obtained as the output of the method ``to_dict`` from
-            the benchmark ``Objective``.
+            Dictionary obtained as the output of the method ``get_objective``
+            from the benchmark ``Objective``.
         """
         ...
 
@@ -151,8 +163,8 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         Parameters
         ----------
         **objective_parameters : dict
-            Dictionary obtained as the output of the method ``to_dict`` from
-            the benchmark ``Objective``.
+            Dictionary obtained as the output of the method ``get_objective``
+            from the benchmark ``Objective``.
 
         Returns
         -------
@@ -287,7 +299,7 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
     - `set_data(**data)`: stores the info from a given dataset to be able to
       compute the objective value on these data.
 
-    - `to_dict()`: exports the data from the dataset as well as the parameters
+    - `get_objective()`: exports the data from the dataset and the parameters
       from the objective function as a dictionary that will be passed as
       parameters of the solver's `set_objective` method in order to specify the
       objective function of the benchmark.
@@ -316,8 +328,9 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
         """
         ...
 
-    @abstractmethod
-    def to_dict(self):
+    # to uncomment in version 1.4, once `to_dict` has been deprecated.
+    # @abstractmethod
+    def get_objective(self):
         """Return the objective parameters for the solver.
 
         Returns
