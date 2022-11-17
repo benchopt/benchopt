@@ -200,6 +200,20 @@ def run(config_file=None, **kwargs):
     # Create the Benchmark object
     benchmark = Benchmark(benchmark)
 
+    if benchmark.min_version is not None:
+        from packaging.version import parse
+        from benchopt import __version__
+
+        # Avoid dev versions
+        normalized_version = parse(parse(__version__).base_version)
+        if normalized_version < parse(benchmark.min_version):
+            raise RuntimeError(
+                f"benchopt version {__version__} is too old to run this  "
+                f"benchmark, version {benchmark.min_version} is required. "
+                "Please update benchopt with `pip install -U benchopt` "
+                "for this benchmark."
+            )
+
     # If env_name is False, the flag `--local` has been used (default) so
     # run in the current environment.
     if env_name == 'False':
@@ -391,7 +405,6 @@ def install(
 
     # Check that the dataset/solver patterns match actual dataset
     benchmark = Benchmark(benchmark)
-    print(f"Installing '{benchmark.name}' requirements")
     benchmark.validate_dataset_patterns(dataset_names)
     benchmark.validate_solver_patterns(solver_names)
 
@@ -406,6 +419,7 @@ def install(
             "'benchopt install'."
         )
 
+    print(f"Installing '{benchmark.name}' requirements")
     # If env_name is False (default), installation in the current environment.
     if env_name == 'False':
         env_name = None

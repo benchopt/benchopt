@@ -9,6 +9,7 @@ import pytest
 from joblib.memory import _FUNCTION_HASHES
 from click.shell_completion import ShellComplete
 
+from benchopt.benchmark import Benchmark
 from benchopt.plotting import PLOT_KINDS
 from benchopt.utils.stream_redirection import SuppressStd
 
@@ -17,9 +18,9 @@ from benchopt.tests import CaptureRunOutput
 from benchopt.tests import SELECT_ONE_PGD
 from benchopt.tests import SELECT_ONE_SIMULATED
 from benchopt.tests import SELECT_ONE_OBJECTIVE
+from benchopt.tests import TEST_BENCHMARK_DIR
 from benchopt.tests import DUMMY_BENCHMARK
 from benchopt.tests import DUMMY_BENCHMARK_PATH
-from benchopt.tests import REQUIREMENT_BENCHMARK
 from benchopt.tests import REQUIREMENT_BENCHMARK_PATH
 
 
@@ -32,15 +33,11 @@ from benchopt.cli.process_results import plot
 from benchopt.cli.process_results import generate_results
 
 
+ALL_BENCHMARKS = [str(p) for p in TEST_BENCHMARK_DIR.glob("*")]
+
 BENCHMARK_COMPLETION_CASES = [
-    (str(DUMMY_BENCHMARK_PATH.parent), [
-        str(DUMMY_BENCHMARK_PATH),
-        str(REQUIREMENT_BENCHMARK_PATH),
-    ]),
-    (str(DUMMY_BENCHMARK_PATH.parent)[:-2], [
-        str(DUMMY_BENCHMARK_PATH),
-        str(REQUIREMENT_BENCHMARK_PATH),
-    ]),
+    (str(DUMMY_BENCHMARK_PATH.parent), ALL_BENCHMARKS),
+    (str(DUMMY_BENCHMARK_PATH.parent)[:-2], ALL_BENCHMARKS),
     (str(DUMMY_BENCHMARK_PATH)[:-2], [str(DUMMY_BENCHMARK_PATH)])
 ]
 SOLVER_COMPLETION_CASES = [
@@ -374,7 +371,9 @@ class TestInstallCmd:
         )
 
     def test_benchopt_install_in_env_with_requirements(self, test_env_name):
-        objective = REQUIREMENT_BENCHMARK.get_benchmark_objective()
+        objective = Benchmark(
+            REQUIREMENT_BENCHMARK_PATH
+        ).get_benchmark_objective()
         out = 'already installed but failed to import.'
         if not objective.is_installed(env_name=test_env_name):
             with CaptureRunOutput() as out:

@@ -8,6 +8,8 @@ with safe_import_context() as import_ctx:
 class Objective(BaseObjective):
     name = "Dummy Sparse Regression"
 
+    # Make sure we can run with the current version
+    min_benchopt_version = "0.0.0"
     parameters = {
         'reg': [0.05, .1, .5]
     }
