@@ -17,6 +17,7 @@ from benchopt.tests import CaptureRunOutput
 from benchopt.tests import SELECT_ONE_PGD
 from benchopt.tests import SELECT_ONE_SIMULATED
 from benchopt.tests import SELECT_ONE_OBJECTIVE
+from benchopt.tests import TEST_BENCHMARK_DIR
 from benchopt.tests import DUMMY_BENCHMARK
 from benchopt.tests import DUMMY_BENCHMARK_PATH
 from benchopt.tests import REQUIREMENT_BENCHMARK
@@ -32,15 +33,11 @@ from benchopt.cli.process_results import plot
 from benchopt.cli.process_results import generate_results
 
 
+ALL_BENCHMARKS = [str(p) for p in TEST_BENCHMARK_DIR.glob("*")]
+
 BENCHMARK_COMPLETION_CASES = [
-    (str(DUMMY_BENCHMARK_PATH.parent), [
-        str(DUMMY_BENCHMARK_PATH),
-        str(REQUIREMENT_BENCHMARK_PATH),
-    ]),
-    (str(DUMMY_BENCHMARK_PATH.parent)[:-2], [
-        str(DUMMY_BENCHMARK_PATH),
-        str(REQUIREMENT_BENCHMARK_PATH),
-    ]),
+    (str(DUMMY_BENCHMARK_PATH.parent), ALL_BENCHMARKS),
+    (str(DUMMY_BENCHMARK_PATH.parent)[:-2], ALL_BENCHMARKS),
     (str(DUMMY_BENCHMARK_PATH)[:-2], [str(DUMMY_BENCHMARK_PATH)])
 ]
 SOLVER_COMPLETION_CASES = [
