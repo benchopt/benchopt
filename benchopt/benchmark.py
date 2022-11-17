@@ -48,6 +48,7 @@ class Benchmark:
         try:
             objective = self.get_benchmark_objective()
             self.pretty_name = objective.name
+            self.min_version = getattr(objective, 'min_benchopt_version', None)
         except RuntimeError:
             raise click.BadParameter(
                 f"The folder '{benchmark_dir}' does not contain "
