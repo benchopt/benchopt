@@ -205,7 +205,8 @@ def run(config_file=None, **kwargs):
         from benchopt import __version__
         if parse(__version__) < parse(benchmark.min_version):
             raise RuntimeError(
-                "benchopt version is too old to run this benchmark. "
+                f"benchopt version {__version__} is too old to run this  "
+                f"benchmark, version {benchmark.min_version} is required. "
                 "Please update benchopt with `pip install -U benchopt` "
                 "for this benchmark."
             )

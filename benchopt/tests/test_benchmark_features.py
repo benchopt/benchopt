@@ -42,11 +42,11 @@ def test_template_solver():
 
 
 def test_benchopt_min_version():
-    # Make sure that importing template_dataset raises an error.
     with pytest.raises(RuntimeError, match="pip install -U"):
         run([str(FUTURE_BENCHMARK_PATH)], 'benchopt', standalone_mode=False)
 
     with CaptureRunOutput() as out:
+        # check than benchmark with low requirement runs
         run([
             str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,
             '-f', SELECT_ONE_PGD, '-n', '1', '-r', '1', '-o',
