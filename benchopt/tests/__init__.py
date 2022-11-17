@@ -9,6 +9,7 @@ from benchopt.utils.stream_redirection import SuppressStd
 # Default benchmark
 TEST_BENCHMARK_DIR = Path(__file__).parent / 'test_benchmarks'
 DUMMY_BENCHMARK_PATH = TEST_BENCHMARK_DIR / 'dummy_benchmark'
+FUTURE_BENCHMARK_PATH = TEST_BENCHMARK_DIR / 'future_benchmark'
 REQUIREMENT_BENCHMARK_PATH = TEST_BENCHMARK_DIR / 'requirement_benchmark'
 
 # Pattern to select specific datasets or solvers.

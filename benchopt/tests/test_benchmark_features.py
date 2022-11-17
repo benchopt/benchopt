@@ -1,6 +1,8 @@
 import pytest
 
+from benchopt.cli.main import run
 from benchopt.tests import DUMMY_BENCHMARK
+from benchopt.tests import FUTURE_BENCHMARK_PATH
 from benchopt.utils.dynamic_modules import _load_class_from_module
 
 
@@ -32,3 +34,9 @@ def test_template_solver():
     # Make sure that this error is not raised when listing all solvers from
     # the benchmark.
     DUMMY_BENCHMARK.get_solvers()
+
+
+def test_benchopt_min_version():
+    # Make sure that importing template_dataset raises an error.
+    with pytest.raises(RuntimeError, match="pip install -U"):
+        run([str(FUTURE_BENCHMARK_PATH)], 'benchopt', standalone_mode=False)
