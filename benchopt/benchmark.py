@@ -8,11 +8,13 @@ from .base import BaseSolver, BaseDataset
 
 from .utils.safe_import import set_benchmark_module
 from .utils.dynamic_modules import _load_class_from_module
+from .utils.dependencies_mixin import DependenciesMixin
 from .utils.parametrized_name_mixin import product_param
+from .utils.parametrized_name_mixin import ParametrizedNameMixin
 from .utils.parametrized_name_mixin import _list_all_parametrized_names
 
-from .utils.terminal_output import YELLOW
 from .utils.terminal_output import colorify
+from .utils.terminal_output import YELLOW
 
 from .utils.conda_env_cmd import install_in_conda_env
 from .utils.conda_env_cmd import shell_install_in_conda_env
@@ -148,16 +150,42 @@ class Benchmark:
                 # skip template solvers and datasets
                 continue
             # Get the class
-            cls = _load_class_from_module(
-                module_filename, class_name, benchmark_dir=self.benchmark_dir
-            )
-            if issubclass(cls, base_class):
-                classes.append(cls)
-            else:
-                print(colorify(
-                    f"WARNING: class {cls} in {module_filename} does not "
-                    f"derive from base class {base_class}", YELLOW
-                ))
+            try:
+                cls = _load_class_from_module(
+                    module_filename, class_name,
+                    benchmark_dir=self.benchmark_dir
+                )
+                if not issubclass(cls, base_class):
+                    warnings.warn(colorify(
+                        f"class {cls.__name__} in {module_filename} is not a "
+                        f"subclass from base class benchopt."
+                        f"{base_class.__name__}", YELLOW
+                    ))
+
+            except Exception:
+
+                import traceback
+                tb_to_print = traceback.format_exc(chain=False)
+
+                class FailedImport(ParametrizedNameMixin, DependenciesMixin):
+                    "Object for the class list that raises error if used."
+
+                    name = get_failed_import_object_name(
+                        module_filename, class_name
+                    )
+
+                    @classmethod
+                    def is_installed(cls, **kwargs):
+                        print(
+                            f"Failed to import {class_name} from "
+                            f"{module_filename}. Please fix the following "
+                            "error to use this file with benchopt:\n"
+                            f"{tb_to_print}"
+                        )
+                        return False
+
+                cls = FailedImport
+            classes.append(cls)
 
         classes.sort(key=lambda c: c.name.lower())
         return classes
@@ -437,8 +465,9 @@ class Benchmark:
         solver : BaseSolver instance
         force : bool
         """
-        all_datasets = _filter_classes(*self.get_datasets(),
-                                       filters=dataset_names)
+        all_datasets = _filter_classes(
+            *self.get_datasets(), filters=dataset_names
+        )
         all_objectives, objective_buffer = buffer_iterator(_filter_classes(
             self.get_benchmark_objective(), filters=objective_filters
         ))
@@ -708,3 +737,28 @@ def buffer_iterator(it):
             yield val
 
     return buffered_it(buffer), buffer
+
+
+def get_failed_import_object_name(module_file, cls_name):
+    # Parse the module file to find the name of the failing object
+
+    import ast
+    module_ast = ast.parse(Path(module_file).read_text())
+    classdef = [
+        c for c in module_ast.body
+        if isinstance(c, ast.ClassDef) and c.name == cls_name
+    ]
+    if len(classdef) == 0:
+        raise ValueError(f"Could not find {cls_name} in module {module_file}.")
+    c = classdef[-1]
+    name_assign = [
+        a for a in c.body
+        if (isinstance(a, ast.Assign) and any(list(
+            (isinstance(t, ast.Name) and t.id == "name") for t in a.targets
+        )))
+    ]
+    if len(name_assign) == 0:
+        raise ValueError(
+            f"Could not find {cls_name} name in module {module_file}"
+        )
+    return name_assign[-1].value.value
