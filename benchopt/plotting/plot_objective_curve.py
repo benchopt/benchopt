@@ -37,7 +37,6 @@ def plot_objective_curve(df, obj_col='objective_value',
     fig : matplotlib.Figure
         The rendered figure, used to create HTML reports.
     """
-#    markers = {i: v for i, v in enumerate(plt.Line2D.markers)}
 
     df = df.copy()
     solver_names = df['solver_name'].unique()
@@ -147,6 +146,7 @@ def compute_quantiles(df_filtered):
 
 
 def get_solver_color(solver, plotly=True):
+    print(f'{plotly=}')
     if solver in html_solver_styles and 'color' in html_solver_styles[solver]:
         return html_solver_styles[solver]['color']
 
