@@ -15,3 +15,5 @@
 .. _Ghislain Durif: https://gdurif.perso.math.cnrs.fr/
 
 .. _Benoît Malézieux: https://github.com/bmalezieux
+
+.. _Amélie Vernay: https://github.com/AmelieVernay
