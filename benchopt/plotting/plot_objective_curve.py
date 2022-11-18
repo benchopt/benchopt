@@ -37,7 +37,7 @@ def plot_objective_curve(df, obj_col='objective_value',
     fig : matplotlib.Figure
         The rendered figure, used to create HTML reports.
     """
-    markers = {i: v for i, v in enumerate(plt.Line2D.markers)}
+#    markers = {i: v for i, v in enumerate(plt.Line2D.markers)}
 
     df = df.copy()
     solver_names = df['solver_name'].unique()
@@ -74,8 +74,8 @@ def plot_objective_curve(df, obj_col='objective_value',
         q9 = df_.groupby('stop_val')['time'].quantile(.9)
 
         col = get_solver_color(solver_name, plotly=False)
-        plt.loglog(curve['time'], curve[obj_col], color=col,
-                   marker=markers[i % len(markers)],
+        mrk = get_solver_marker(solver_name, plotly=False)
+        plt.loglog(curve['time'], curve[obj_col], color=col, marker=mrk,
                    label=solver_name, linewidth=3)
         plt.fill_betweenx(curve[obj_col], q1, q9, color=col, alpha=.3)
 
@@ -167,14 +167,17 @@ def get_solver_color(solver, plotly=True):
     return color
 
 
-def get_solver_marker(solver):
+def get_solver_marker(solver, plotly=True):
     if solver in html_solver_styles and 'marker' in html_solver_styles[solver]:
         return html_solver_styles[solver]['marker']
 
-    markers = {i: i for i, v in enumerate(plt.Line2D.markers)}
+    if plotly:
+        markers = {i: i for i, v in enumerate(plt.Line2D.markers)}
+    else:
+        markers = {i: v for i, v in enumerate(plt.Line2D.markers)}
 
-    i = len(html_solver_styles)
-    marker = markers[i % len(markers)]
+    idx = len(html_solver_styles)
+    marker = markers[idx % len(markers)]
 
     if solver in html_solver_styles:
         html_solver_styles[solver]['marker'] = marker
