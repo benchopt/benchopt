@@ -1,8 +1,15 @@
 import pytest
 
 from benchopt.cli.main import run
-from benchopt.tests import DUMMY_BENCHMARK
+
+from benchopt.tests import CaptureRunOutput
+from benchopt.tests import SELECT_ONE_PGD
 from benchopt.tests import SELECT_ONE_SIMULATED
+from benchopt.tests import SELECT_ONE_OBJECTIVE
+from benchopt.tests import DUMMY_BENCHMARK
+from benchopt.tests import DUMMY_BENCHMARK_PATH
+from benchopt.tests import FUTURE_BENCHMARK_PATH
+
 from benchopt.utils.dynamic_modules import _load_class_from_module
 
 
@@ -41,3 +48,18 @@ def test_benchmark_submodule():
         run([str(DUMMY_BENCHMARK.benchmark_dir), '-s',
              'Test-Solver[raise_error=True]', '-d', SELECT_ONE_SIMULATED],
             'benchopt', standalone_mode=False)
+
+
+def test_benchopt_min_version():
+    with pytest.raises(RuntimeError, match="pip install -U"):
+        run([str(FUTURE_BENCHMARK_PATH)], 'benchopt', standalone_mode=False)
+
+    with CaptureRunOutput() as out:
+        # check than benchmark with low requirement runs
+        run([
+            str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,
+            '-f', SELECT_ONE_PGD, '-n', '1', '-r', '1', '-o',
+            SELECT_ONE_OBJECTIVE, '--no-plot'
+        ], 'benchopt', standalone_mode=False)
+
+    out.check_output('Simulated', repetition=1)

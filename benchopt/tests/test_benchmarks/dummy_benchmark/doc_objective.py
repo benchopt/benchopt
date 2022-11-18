@@ -42,6 +42,6 @@ class Objective(BaseObjective):
         objective_value = .5 * diff @ diff + self.lmbd * abs(beta).sum()
         return objective_value  # or return dict(value=objective_value)
 
-    def to_dict(self):
+    def get_objective(self):
         "Returns a dict to pass to the set_objective method of a solver."
         return dict(X=self.X, y=self.y, lmbd=self.lmbd)
