@@ -72,7 +72,7 @@ def plot_objective_curve(df, obj_col='objective_value',
 
         q1 = df_.groupby('stop_val')['time'].quantile(.1)
         q9 = df_.groupby('stop_val')['time'].quantile(.9)
-        
+
         col = get_solver_color(solver_name, plotly=False)
         plt.loglog(curve['time'], curve[obj_col], color=col,
                    marker=markers[i % len(markers)],
