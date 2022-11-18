@@ -229,6 +229,10 @@ def run(config_file=None, **kwargs):
             from benchopt.utils.profiling import use_profile
             use_profile()  # needs to be called before validate_solver_patterns
 
+        # Check that the objective is installed or raise an error
+        objective = benchmark.get_benchmark_objective()
+        objective.is_installed(raise_on_not_installed=True)
+
         # Check that the dataset/solver patterns match actual dataset
         benchmark.validate_dataset_patterns(dataset_names)
         benchmark.validate_objective_filters(objective_filters)
