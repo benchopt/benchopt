@@ -542,10 +542,11 @@ const makeLegend = () => {
   // pattern to check whether solver is benchmarked with more than one configuration
   // examples:
   //   solver_name[param1=val,param2=val] --> true
+  //   solver_name                        --> false
   //   solver_name[param1]                --> false
   pattern = new RegExp('\\[\\w+=\\w+.+\\]');
 
-  let aggregateName = aggregateButton = aggregateDiv = null;
+  let aggregateName = aggregateButton = aggregateDiv = masterAggregateDiv =  null;
 
   for(let solver in data().solvers) {
     const solverName = solver.split("[")[0];
@@ -567,12 +568,18 @@ const makeLegend = () => {
     // create button to toggle accordion
     aggregateButton = document.createElement("button");
     aggregateButton.innerText = solverName;
-    aggregateButton.className = 'solver-accordion';
+    aggregateButton.className = 'text-white bg-gray-700 py-1 px-4 shadow-sm mt-2 rounded cursor-pointer w-full';
 
     // create div to gather the solvers with other bench params
     aggregateDiv = document.createElement("div");
     displayAggregatedSolvers = state().disabled_solvers_accordions.includes(solverName) ? "hidden" : "";
     aggregateDiv.className = `${displayAggregatedSolvers} flex flex-wrap inline-block space-r-2`;
+
+    // create div gather button and aggregate div
+    masterAggregateDiv = document.createElement("div");
+    masterAggregateDiv.className = "flex-wrap block";
+    masterAggregateDiv.appendChild(aggregateButton);
+    masterAggregateDiv.appendChild(aggregateDiv);
 
     // add event handler for accordion
     aggregateButton.addEventListener('click', function () {
@@ -592,9 +599,8 @@ const makeLegend = () => {
         });
       }
     });
-      
-    legend.appendChild(aggregateButton);
-    legend.appendChild(aggregateDiv);
+
+    legend.appendChild(masterAggregateDiv);
     aggregateDiv.appendChild(createLegendItem(solver, color, symbolNumber));
 
     aggregateName = solverName;
