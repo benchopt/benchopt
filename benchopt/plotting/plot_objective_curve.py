@@ -73,9 +73,9 @@ def plot_objective_curve(df, obj_col='objective_value',
         q1 = df_.groupby('stop_val')['time'].quantile(.1)
         q9 = df_.groupby('stop_val')['time'].quantile(.9)
         
-        col = colors[i % len(colors)]
-        plt.loglog(curve['time'], curve[obj_col],
-                   color=col, marker=markers[i % len(markers)],
+        col = get_solver_color(solver_name, plotly=False)
+        plt.loglog(curve['time'], curve[obj_col], color=col,
+                   marker=markers[i % len(markers)],
                    label=solver_name, linewidth=3)
         plt.fill_betweenx(curve[obj_col], q1, q9, color=col, alpha=.3)
 
@@ -135,7 +135,7 @@ def plot_relative_suboptimality_curve(df, obj_col='objective_value'):
     fig : instance of matplotlib.figure.Figure
         The matplotlib figure.
     """
-    return plot_objective_curve(df, obj_col=obj_col,suboptimality=True,
+    return plot_objective_curve(df, obj_col=obj_col, suboptimality=True,
                                 relative=True)
 
 
@@ -146,12 +146,17 @@ def compute_quantiles(df_filtered):
     return q1, q9
 
 
-def get_solver_color(solver):
-    if solver in html_solver_styles and 'color' in html_solver_styles[solver]:
+def get_solver_color(solver, plotly=True):
+    if (plotly and solver in html_solver_styles and
+            'color' in html_solver_styles[solver]):
         return html_solver_styles[solver]['color']
 
     idx = len(html_solver_styles)
-    color = colors[idx % CMAP.N]
+    color = colors[idx % len(colors)]
+
+    if not plotly:
+        return color
+
     color = tuple(255*x if i != 3 else x for i, x in enumerate(color))
     color = f'rgba{color}'
 
