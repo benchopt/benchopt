@@ -3,10 +3,19 @@ from benchopt import safe_import_context
 
 with safe_import_context() as import_ctx:
     import numpy as np
+    from benchmark_utils import dummy_function
+    from benchmark_utils.dummy_submodule.dummy_subsubmodule import (
+        error_raiser
+    )
 
 
 class Solver(BaseSolver):
     name = 'Test-Solver'
+
+    parameters = {'raise_error': [False]}
+
+    def __init__(self, raise_error=False):
+        self.raise_error = raise_error
 
     def skip(self, X, y, lmbd):
         if lmbd == 0:
@@ -17,6 +26,10 @@ class Solver(BaseSolver):
         self.X, self.y, self.lmbd = X, y, lmbd
 
     def run(self, n_iter):
+        dummy_function()
+
+        if self.raise_error:
+            error_raiser()
 
         L = np.linalg.norm(self.X) ** 2
 

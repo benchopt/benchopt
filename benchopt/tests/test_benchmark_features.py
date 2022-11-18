@@ -1,6 +1,7 @@
 import pytest
 
 from benchopt.cli.main import run
+
 from benchopt.tests import CaptureRunOutput
 from benchopt.tests import SELECT_ONE_PGD
 from benchopt.tests import SELECT_ONE_SIMULATED
@@ -8,6 +9,7 @@ from benchopt.tests import SELECT_ONE_OBJECTIVE
 from benchopt.tests import DUMMY_BENCHMARK
 from benchopt.tests import DUMMY_BENCHMARK_PATH
 from benchopt.tests import FUTURE_BENCHMARK_PATH
+
 from benchopt.utils.dynamic_modules import _load_class_from_module
 
 
@@ -39,6 +41,13 @@ def test_template_solver():
     # Make sure that this error is not raised when listing all solvers from
     # the benchmark.
     DUMMY_BENCHMARK.get_solvers()
+
+
+def test_benchmark_submodule():
+    with pytest.raises(ValueError, match="raises an error"):
+        run([str(DUMMY_BENCHMARK.benchmark_dir), '-s',
+             'Test-Solver[raise_error=True]', '-d', SELECT_ONE_SIMULATED],
+            'benchopt', standalone_mode=False)
 
 
 def test_benchopt_min_version():

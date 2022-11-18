@@ -217,7 +217,7 @@ class TestRunCmd:
         max-runs: 1
         force-solver:
           - python-pgd[step_size=[2, 3]]
-          - Test-Solver
+          - Test-Solver[raise_error=False]
         """
         tmp = tempfile.NamedTemporaryFile(mode="w+")
         tmp.write(config)
@@ -229,7 +229,7 @@ class TestRunCmd:
         with CaptureRunOutput() as out:
             run(run_cmd, 'benchopt', standalone_mode=False)
 
-        out.check_output(r'Test-Solver:', repetition=11)
+        out.check_output(r'Test-Solver\[raise_error=False\]:', repetition=11)
         out.check_output(r'Python-PGD\[step_size=2\]:', repetition=11)
         out.check_output(r'Python-PGD\[step_size=3\]:', repetition=11)
 
@@ -238,7 +238,7 @@ class TestRunCmd:
             run(run_cmd + ['-f', 'Test-Solver'],
                 'benchopt', standalone_mode=False)
 
-        out.check_output(r'Test-Solver:', repetition=11)
+        out.check_output(r'Test-Solver\[raise_error=False\]:', repetition=11)
         out.check_output(
             r'Python-PGD\[step_size=1.5\]:', repetition=0)
 
@@ -288,11 +288,11 @@ class TestRunCmd:
 
     def test_changing_output_name(self):
         command = [
-                str(DUMMY_BENCHMARK_PATH), '-l', '-s', SELECT_ONE_PGD,
-                '-d', SELECT_ONE_SIMULATED,
-                '-n', '1', '--output', 'unique_name',
-                '--no-plot'
-                ]
+            str(DUMMY_BENCHMARK_PATH), '-l', '-s', SELECT_ONE_PGD,
+            '-d', SELECT_ONE_SIMULATED,
+            '-n', '1', '--output', 'unique_name',
+            '--no-plot'
+        ]
         with CaptureRunOutput() as out:
             run(command, 'benchopt', standalone_mode=False)
             run(command, 'benchopt', standalone_mode=False)
