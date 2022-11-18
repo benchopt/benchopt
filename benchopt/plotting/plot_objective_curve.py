@@ -1,9 +1,5 @@
 import matplotlib.pyplot as plt
 
-from .helpers_compat import get_figure
-from .helpers_compat import add_h_line
-from .helpers_compat import fill_between_x
-
 CMAP = plt.get_cmap('tab20')
 colors = [CMAP(i) for i in range(CMAP.N)]
 colors = colors[::2] + colors[1::2]
@@ -77,14 +73,16 @@ def plot_objective_curve(df, obj_col='objective_value',
         q1 = df_.groupby('stop_val')['time'].quantile(.1)
         q9 = df_.groupby('stop_val')['time'].quantile(.9)
         
-        fill_between_x(
-            fig, curve['time'], q1, q9, curve[obj_col], color=colors[i % CMAP.N],
-            marker=markers[i % len(markers)], label=solver_name, plotly=False
-        )
+        col = colors[i % len(colors)]
+        plt.loglog(curve['time'], curve[obj_col],
+                   color=col, marker=markers[i % len(markers)],
+                   label=solver_name, linewidth=3)
+        plt.fill_betweenx(curve[obj_col], q1, q9, color=col, alpha=.3)
 
     if suboptimality and not relative:
-        add_h_line(fig, eps, [df['time'].min(), df['time'].max()],
-                   plotly=False)
+        plt.hlines(eps, df['time'].min(), df['time'].max(), color='k',
+                   linestyle='--')
+        plt.xlim(df['time'].min(), df['time'].max())
 
     # Format the plot to be nice
     plt.legend(fontsize=14)
@@ -184,4 +182,3 @@ def get_solver_marker(solver):
         }
 
     return marker
-
