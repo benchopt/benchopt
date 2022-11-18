@@ -147,18 +147,15 @@ def compute_quantiles(df_filtered):
 
 
 def get_solver_color(solver, plotly=True):
-    if (plotly and solver in html_solver_styles and
-            'color' in html_solver_styles[solver]):
+    if solver in html_solver_styles and 'color' in html_solver_styles[solver]:
         return html_solver_styles[solver]['color']
 
     idx = len(html_solver_styles)
     color = colors[idx % len(colors)]
 
-    if not plotly:
-        return color
-
-    color = tuple(255*x if i != 3 else x for i, x in enumerate(color))
-    color = f'rgba{color}'
+    if plotly:
+        color = tuple(255*x if i != 3 else x for i, x in enumerate(color))
+        color = f'rgba{color}'
 
     if solver in html_solver_styles:
         html_solver_styles[solver]['color'] = color
