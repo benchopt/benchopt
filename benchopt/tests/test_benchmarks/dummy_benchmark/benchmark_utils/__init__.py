@@ -1,1 +1,3 @@
-from benchmark_utils.dummy_submodule import dummy_function  # noqa F401
+from benchmark_utils.dummy_submodule import dummy_function
+
+__all__ = ["dummy_function"]
