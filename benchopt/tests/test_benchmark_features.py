@@ -66,25 +66,37 @@ def test_benchopt_min_version():
     out.check_output('Simulated', repetition=1)
 
 
-def test_error_reporting():
+@pytest.mark.parametrize('raise_install_error', [0, 1])
+def test_error_reporting(raise_install_error):
+
+    expected_exc = ImportError if raise_install_error else SystemExit
 
     import os
-    os.environ['BENCHOPT_RAISE_INSTALL_ERROR'] = '0'
+    prev_value = os.environ.get('BENCHOPT_RAISE_INSTALL_ERROR', '0')
 
-    with CaptureRunOutput() as out:
-        with pytest.raises(SystemExit):
-            run([
-                str(DUMMY_BENCHMARK_PATH), '-s', "importerror",
-                '-d', SELECT_ONE_SIMULATED
-            ], 'benchopt', standalone_mode=False)
+    try:
+        os.environ['BENCHOPT_RAISE_INSTALL_ERROR'] = str(raise_install_error)
+        with CaptureRunOutput() as out:
+            with pytest.raises(expected_exc):
+                run([
+                    str(DUMMY_BENCHMARK_PATH), '-s', "importerror",
+                    '-d', SELECT_ONE_SIMULATED
+                ], 'benchopt', standalone_mode=False)
 
-    assert "ImportError: This should not be imported" in out.output
+        if not raise_install_error:
+            out.check_output(
+                "ImportError: This should not be imported", repetition=1
+            )
 
-    with CaptureRunOutput() as out:
-        with pytest.raises(SystemExit):
-            run([
-                str(DUMMY_BENCHMARK_PATH), '-s', "valueerror",
-                '-d', SELECT_ONE_SIMULATED
-            ], 'benchopt', standalone_mode=False)
+        with CaptureRunOutput() as out:
+            with pytest.raises(SystemExit):
+                run([
+                    str(DUMMY_BENCHMARK_PATH), '-s', "valueerror",
+                    '-d', SELECT_ONE_SIMULATED
+                ], 'benchopt', standalone_mode=False)
 
-    assert "ValueError: This should not be run" in out.output
+        out.check_output(
+            "ValueError: This should not be run", repetition=1
+        )
+    finally:
+        os.environ['BENCHOPT_RAISE_INSTALL_ERROR'] = prev_value

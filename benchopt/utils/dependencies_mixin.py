@@ -24,6 +24,8 @@ class DependenciesMixin:
     #           with import_shell_cmd in the safe_import_context.
     install_cmd = None
 
+    _error_displayed = False
+
     @classproperty
     def benchmark(cls):
         return cls.__module__.split('.')[1]
@@ -55,7 +57,9 @@ class DependenciesMixin:
                 exc_type, value, tb = cls._import_ctx.import_error
                 if raise_on_not_installed:
                     raise exc_type(value).with_traceback(tb)
-                traceback.print_exception(exc_type, value, tb)
+                if not cls._error_displayed:
+                    traceback.print_exception(exc_type, value, tb)
+                    cls._error_displayed = True
                 return False
             else:
                 return True
