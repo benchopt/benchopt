@@ -113,7 +113,7 @@ jobs:
         version-python: [3.9, 3.10]
         version-pip: ["21.3", "22.1", "22.2", "22.3", latest"]
     env:
-      PIP_VERSION: ${{ matrix.version_pip }}
+      VERSION_PIP: ${{ matrix.version_pip }}
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v3
