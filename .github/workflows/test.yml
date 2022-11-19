@@ -110,8 +110,13 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        version_python: ["3.9", "3.10"]
-        version_pip: ["21.3", "22.1", "22.2", "22.3", "latest"]
+        include:
+          - version_python: "3.9"
+            version_pip: "21.3"
+          - version_python: "3.9"
+            version_pip: "22.2"
+          - version_python: "3.10"
+            version_pip: "latest"
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v3
