@@ -1,3 +1,17 @@
+import sys
+from pathlib import Path
+
+# Drop when dropping support for 3.8
+if sys.version_info < (3, 9):
+    def is_relative_to(p1, p2):
+        try:
+            p1.relative_to(p2)
+            return True
+        except ValueError:
+            return False
+else:
+    def is_relative_to(p1, p2):
+        return p1.is_relative_to(p2)
 
 
 def get_benchopt_requirement():
@@ -38,10 +52,15 @@ def get_benchopt_requirement():
     if hasattr(dist, 'editable_project_location'):
         if dist.editable:
             return f'-e {dist.editable_project_location}', True
+        # handle the case where benchopt is local. In this case, use an
+        # editable install, as this is not possible to distinguish between
+        # the two behavior.
+        if is_relative_to(Path(dist.location), Path().resolve()):
+            return f'-e {dist.location}', True
+
     # Else, resort to req.editable and dist.location, as dist.editable
     # and dist.editable_project_location were not implemented before
     else:
         if req.editable:
             return f'-e {dist.location}', True
-
-    return str(req), False
+    return str(req).strip('\n'), False
