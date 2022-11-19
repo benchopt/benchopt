@@ -105,6 +105,29 @@ jobs:
       - name: Run benchopt without conda
         run: benchopt run benchopt/tests/test_benchmarks/dummy_benchmark -d Simulated[n_features=100,n_samples=100,rho=0]  -o "*[reg=0.1]" -s python-pgd -r 1 -n 10 --no-plot
 
+  test_benchopt_reqs:
+    name: Test benchopt requirements detection
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        version-python: [3.9, 3.10]
+        version-pip: [21.3, 22.1, 22.2, 22.3]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.version_python }}
+      - name: Install specific version of pip
+        run: |
+          if [[ "${{ matrix.version_pip }}" != "latest" ]]
+          then
+              pip install pip==${{ matrix.version_pip }}
+          else
+              pip install -U pip
+          fi
+      - name: Test package installation detection
+        run: continuous_integration/test_req_detection.sh
+
   report_test:
     if: ${{ always() }}
     needs: [test_benchopt, test_no_conda]

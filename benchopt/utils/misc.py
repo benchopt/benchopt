@@ -44,10 +44,10 @@ def get_benchopt_requirement():
         # the two behavior.
         if Path(dist.location).is_relative_to(Path().resolve()):
             return f'-e {dist.location}', True
+
     # Else, resort to req.editable and dist.location, as dist.editable
     # and dist.editable_project_location were not implemented before
     else:
         if req.editable:
             return f'-e {dist.location}', True
-
-    return str(req), False
+    return str(req).strip('\n'), False
