@@ -29,11 +29,29 @@ CLI
 - Now the result data are saved in the Parquet format. The use of CSV file is deprecated.
   By `Melvine Nargeot`_ (:gh:`433`).
 
+- Change default number of repetitions to ``1``.
+  By `Benoît Malézieux`_ (:gh:`457`).
+
 API
 ~~~
 
+- Allow to change tracked metric in `StoppingCriterion`.
+  By `Amélie Vernay`_ and `Thomas Moreau`_ (:gh:`461`).
+
 - Add latest git tag via ``benchmark-git-tag`` key in :func:`benchopt.utils.sys_info.get_sys_info`.
   By `Mathurin Massias`_ (:gh:`421`).
+
+- Deprecate ``Objective.to_dict`` in favor of :func:`~benchopt.BaseObjective.get_objective`.
+  By `Mathurin Massias`_ (:gh:`489`).
+
+- Deprecate `import_from` in favor of a `benchmark_utils` module dynamically installed
+  when running a benchmark. By `Mathurin Massias`_ and `Thomas Moreau`_ (:gh:`472`).
+
+- Allow to specify channels for conda requirements with synthax `chan:deps`.
+  By `Thomas Moreau`_ (:gh:`483`).
+
+- Allow for template `Solver` and `Dataset` in `datasets/solvers` directory.
+  By `Thomas Moreau`_ (:gh:`473`).
 
 .. _changes_1_2:
 
