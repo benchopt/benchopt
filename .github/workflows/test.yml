@@ -111,7 +111,9 @@ jobs:
     strategy:
       matrix:
         version-python: [3.9, 3.10]
-        version-pip: [21.3, 22.1, 22.2, 22.3]
+        version-pip: ["21.3", "22.1", "22.2", "22.3", latest"]
+    env:
+      PIP_VERSION: ${{ matrix.version_pip }}
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v3
@@ -119,9 +121,9 @@ jobs:
           python-version: ${{ matrix.version_python }}
       - name: Install specific version of pip
         run: |
-          if [[ "${{ matrix.version_pip }}" != "latest" ]]
+          if [[ "$VERSION_PIP" != "latest" ]]
           then
-              pip install pip==${{ matrix.version_pip }}
+              pip install pip==$VERSION_PIP
           else
               pip install -U pip
           fi
