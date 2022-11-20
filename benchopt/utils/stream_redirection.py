@@ -35,6 +35,7 @@ class SuppressStd(object):
 
         # Make sure to flush stdout
         print(flush=True)
+        print(flush=True, file=sys.stderr)
 
         # Restore the stdout/stderr object.
         sys.stdout = self.stdout_obj
