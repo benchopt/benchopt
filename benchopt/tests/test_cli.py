@@ -41,13 +41,12 @@ BENCHMARK_COMPLETION_CASES = [
     (str(DUMMY_BENCHMARK_PATH)[:-2], [str(DUMMY_BENCHMARK_PATH)])
 ]
 SOLVER_COMPLETION_CASES = [
-    ('', ['cd', 'julia-pgd', 'python-pgd', 'python-pgd-with-cb', 'r-pgd',
-          'sklearn', 'test-solver']),
+    ('', [n.lower() for n in DUMMY_BENCHMARK.get_solver_names()]),
     ('sk', ['sklearn']),
     ('pgd', ['julia-pgd', 'python-pgd', 'python-pgd-with-cb', 'r-pgd'])
 ]
 DATASET_COMPLETION_CASES = [
-    ('', ['leukemia', 'simulated', 'test-dataset']),
+    ('', [n.lower() for n in DUMMY_BENCHMARK.get_dataset_names()]),
     ('simu', ['simulated']),
     ('lated', ['simulated']),
 ]
@@ -365,7 +364,8 @@ class TestInstallCmd:
             )
 
         out.check_output(
-            f"Installing '{DUMMY_BENCHMARK.name}' requirements")
+            f"Installing '{DUMMY_BENCHMARK.name}' requirements"
+        )
         out.check_output(
             f"already available in '{test_env_name}'\n", repetition=3
         )

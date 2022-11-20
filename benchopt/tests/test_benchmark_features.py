@@ -17,10 +17,10 @@ def test_template_dataset():
     # Make sure that importing template_dataset raises an error.
     with pytest.raises(ImportError):
         template_dataset = (
-            DUMMY_BENCHMARK.benchmark_dir / 'datasets' / 'template_dataset.py'
+            DUMMY_BENCHMARK_PATH / 'datasets' / 'template_dataset.py'
         )
         _load_class_from_module(
-            template_dataset, 'Dataset', DUMMY_BENCHMARK.benchmark_dir
+            template_dataset, 'Dataset', DUMMY_BENCHMARK_PATH
         )
 
     # Make sure that this error is not raised when listing all datasets from
@@ -32,10 +32,10 @@ def test_template_solver():
     # Make sure that importing template_dataset raises an error.
     with pytest.raises(ImportError):
         template_dataset = (
-            DUMMY_BENCHMARK.benchmark_dir / 'solvers' / 'template_solver.py'
+            DUMMY_BENCHMARK_PATH / 'solvers' / 'template_solver.py'
         )
         _load_class_from_module(
-            template_dataset, 'Solver', DUMMY_BENCHMARK.benchmark_dir
+            template_dataset, 'Solver', DUMMY_BENCHMARK_PATH
         )
 
     # Make sure that this error is not raised when listing all solvers from
@@ -45,9 +45,10 @@ def test_template_solver():
 
 def test_benchmark_submodule():
     with pytest.raises(ValueError, match="raises an error"):
-        run([str(DUMMY_BENCHMARK.benchmark_dir), '-s',
-             'Test-Solver[raise_error=True]', '-d', SELECT_ONE_SIMULATED],
-            'benchopt', standalone_mode=False)
+        run([
+            str(DUMMY_BENCHMARK_PATH), '-s', 'Test-Solver[raise_error=True]',
+            '-d', SELECT_ONE_SIMULATED
+        ], 'benchopt', standalone_mode=False)
 
 
 def test_benchopt_min_version():
@@ -63,3 +64,39 @@ def test_benchopt_min_version():
         ], 'benchopt', standalone_mode=False)
 
     out.check_output('Simulated', repetition=1)
+
+
+@pytest.mark.parametrize('raise_install_error', [0, 1])
+def test_error_reporting(raise_install_error):
+
+    expected_exc = ImportError if raise_install_error else SystemExit
+
+    import os
+    prev_value = os.environ.get('BENCHOPT_RAISE_INSTALL_ERROR', '0')
+
+    try:
+        os.environ['BENCHOPT_RAISE_INSTALL_ERROR'] = str(raise_install_error)
+        with CaptureRunOutput() as out:
+            with pytest.raises(expected_exc):
+                run([
+                    str(DUMMY_BENCHMARK_PATH), '-s', "importerror",
+                    '-d', SELECT_ONE_SIMULATED
+                ], 'benchopt', standalone_mode=False)
+
+        if not raise_install_error:
+            out.check_output(
+                "ImportError: This should not be imported", repetition=1
+            )
+
+        with CaptureRunOutput() as out:
+            with pytest.raises(SystemExit):
+                run([
+                    str(DUMMY_BENCHMARK_PATH), '-s', "valueerror",
+                    '-d', SELECT_ONE_SIMULATED
+                ], 'benchopt', standalone_mode=False)
+
+        out.check_output(
+            "ValueError: This should not be run", repetition=1
+        )
+    finally:
+        os.environ['BENCHOPT_RAISE_INSTALL_ERROR'] = prev_value
