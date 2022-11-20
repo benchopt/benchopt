@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 CMAP = plt.get_cmap('tab20')
 colors = [CMAP(i) for i in range(CMAP.N)]
 colors = colors[::2] + colors[1::2]
+markers = {i: v for i, v in enumerate(plt.Line2D.markers)}
 
 
 html_solver_styles = {}
@@ -35,7 +36,7 @@ def plot_objective_curve(df, obj_col='objective_value',
     Returns
     -------
     fig : matplotlib.Figure
-        The rendered figure, used to create HTML reports.
+        The rendered figure.
     """
 
     df = df.copy()
@@ -72,11 +73,10 @@ def plot_objective_curve(df, obj_col='objective_value',
         q1 = df_.groupby('stop_val')['time'].quantile(.1)
         q9 = df_.groupby('stop_val')['time'].quantile(.9)
 
-        col = get_solver_color(solver_name, plotly=False)
-        mrk = get_solver_marker(solver_name, plotly=False)
-        plt.loglog(curve['time'], curve[obj_col], color=col, marker=mrk,
+        color, marker = get_solver_style(solver_name, plotly=False)
+        plt.loglog(curve['time'], curve[obj_col], color=color, marker=marker,
                    label=solver_name, linewidth=3)
-        plt.fill_betweenx(curve[obj_col], q1, q9, color=col, alpha=.3)
+        plt.fill_betweenx(curve[obj_col], q1, q9, color=color, alpha=.3)
 
     if suboptimality and not relative:
         plt.hlines(eps, df['time'].min(), df['time'].max(), color='k',
@@ -145,45 +145,70 @@ def compute_quantiles(df_filtered):
     return q1, q9
 
 
-def get_solver_color(solver, plotly=True):
-    print(f'{plotly=}')
-    if solver in html_solver_styles and 'color' in html_solver_styles[solver]:
-        return html_solver_styles[solver]['color']
+#def get_solver_color(solver, plotly=True):
+#    print(f'{plotly=}')
+#    if solver in html_solver_styles and 'color' in html_solver_styles[solver]:
+#        return html_solver_styles[solver]['color']
+#
+#    idx = len(html_solver_styles)
+#    color = colors[idx % len(colors)]
+#
+#    if plotly:
+#        color = tuple(255*x if i != 3 else x for i, x in enumerate(color))
+#        color = f'rgba{color}'
+#
+#    if solver in html_solver_styles:
+#        html_solver_styles[solver]['color'] = color
+#    else:
+#        html_solver_styles[solver] = {
+#            'color': color
+#        }
+#
+#    return color
+
+
+#def get_solver_marker(solver, plotly=True):
+#    if solver in html_solver_styles and 'marker' in html_solver_styles[solver]:
+#        return html_solver_styles[solver]['marker']
+#
+#    if plotly:
+#        markers = {i: i for i, v in enumerate(plt.Line2D.markers)}
+#    else:
+#        markers = {i: v for i, v in enumerate(plt.Line2D.markers)}
+#
+#    idx = len(html_solver_styles)
+#    marker = markers[idx % len(markers)]
+#
+#    if solver in html_solver_styles:
+#        html_solver_styles[solver]['marker'] = marker
+#    else:
+#        html_solver_styles[solver] = {
+#            'marker': marker
+#        }
+#
+#    return marker
+
+def get_solver_style(solver, plotly=True):
+    if solver in html_solver_styles:
+        return html_solver_styles[solver]['color'], html_solver_styles[solver]['marker']
 
     idx = len(html_solver_styles)
     color = colors[idx % len(colors)]
+    marker = markers[idx % len(markers)]
 
     if plotly:
         color = tuple(255*x if i != 3 else x for i, x in enumerate(color))
         color = f'rgba{color}'
-
+        marker = list(markers.values()).index(marker)
+    
     if solver in html_solver_styles:
         html_solver_styles[solver]['color'] = color
-    else:
-        html_solver_styles[solver] = {
-            'color': color
-        }
-
-    return color
-
-
-def get_solver_marker(solver, plotly=True):
-    if solver in html_solver_styles and 'marker' in html_solver_styles[solver]:
-        return html_solver_styles[solver]['marker']
-
-    if plotly:
-        markers = {i: i for i, v in enumerate(plt.Line2D.markers)}
-    else:
-        markers = {i: v for i, v in enumerate(plt.Line2D.markers)}
-
-    idx = len(html_solver_styles)
-    marker = markers[idx % len(markers)]
-
-    if solver in html_solver_styles:
         html_solver_styles[solver]['marker'] = marker
     else:
         html_solver_styles[solver] = {
+            'color': color,
             'marker': marker
         }
+    return color, marker
 
-    return marker
+
