@@ -148,10 +148,10 @@ def compute_quantiles(df_filtered):
 def get_solver_style(solver, plotly=True):
     global html_solver_styles
     if (len(html_solver_styles) != 0 and
-        not plotly and
-        'rgb' in html_solver_styles[next(iter(html_solver_styles))]['color']):
+            not plotly and
+            'rgb' in html_solver_styles[next(iter(html_solver_styles))]['color']):
         html_solver_styles = {}
-    
+
     if solver in html_solver_styles:
         return html_solver_styles[solver]['color'], \
                 html_solver_styles[solver]['marker']
