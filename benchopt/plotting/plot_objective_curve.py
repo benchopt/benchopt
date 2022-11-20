@@ -149,7 +149,8 @@ def get_solver_style(solver, plotly=True):
     global html_solver_styles
     if (len(html_solver_styles) != 0 and
             not plotly and
-            'rgb' in html_solver_styles[next(iter(html_solver_styles))]['color']):
+            'rgb' in html_solver_styles[
+                next(iter(html_solver_styles))]['color']):
         html_solver_styles = {}
 
     if solver in html_solver_styles:
