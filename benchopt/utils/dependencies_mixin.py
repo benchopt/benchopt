@@ -1,3 +1,4 @@
+import sys
 import traceback
 
 from ..config import RAISE_INSTALL_ERROR
@@ -35,7 +36,8 @@ class DependenciesMixin:
         return cls.__module__.split('.')[-1]
 
     @classmethod
-    def is_installed(cls, env_name=None, raise_on_not_installed=None):
+    def is_installed(cls, env_name=None, raise_on_not_installed=None,
+                     quiet=False):
         """Check if the module caught a failed import to assert install.
 
         Parameters
@@ -46,6 +48,8 @@ class DependenciesMixin:
         raise_on_not_installed: boolean or None
             If set to True, raise an error if the requirements are not
             installed. This is mainly for testing purposes.
+        quiet: boolean
+            Hide import error information.
 
         Returns
         -------
@@ -57,8 +61,11 @@ class DependenciesMixin:
                 exc_type, value, tb = cls._import_ctx.import_error
                 if raise_on_not_installed:
                     raise exc_type(value).with_traceback(tb)
-                if not cls._error_displayed:
-                    traceback.print_exception(exc_type, value, tb)
+                if not cls._error_displayed and not quiet:
+                    print("Debug")
+                    traceback.print_exception(
+                        exc_type, value, tb, file=sys.stdout
+                    )
                     cls._error_displayed = True
                 return False
             else:

@@ -364,7 +364,8 @@ class TestInstallCmd:
             )
 
         out.check_output(
-            f"Installing '{DUMMY_BENCHMARK.name}' requirements")
+            f"Installing '{DUMMY_BENCHMARK.name}' requirements"
+        )
         out.check_output(
             f"already available in '{test_env_name}'\n", repetition=3
         )

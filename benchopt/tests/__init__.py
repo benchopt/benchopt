@@ -82,6 +82,11 @@ class CaptureRunOutput(object):
         output = self.output
         matches = re.findall(pattern, output)
         if repetition is None:
-            assert len(matches) > 0, output
+            assert len(matches) > 0, (
+                f"Could not find '{pattern}' in output:\n{output}"
+            )
         else:
-            assert len(matches) == repetition, output
+            assert len(matches) == repetition, (
+                f"Could not find {repetition} x '{pattern}' in output:\n"
+                f"{output}"
+            )
