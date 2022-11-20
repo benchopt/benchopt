@@ -23,12 +23,12 @@ jobs:
         include:
           - os: ubuntu-latest
             version_python: 3.8
-          # - os: ubuntu-latest
-          #   version_python: 3.9
-          #   conda_cmd: 'mamba'
-          #   coverage: 'true'
-          # - os: macos-latest
-          #   version_python: 3.9
+          - os: ubuntu-latest
+            version_python: 3.9
+            conda_cmd: 'mamba'
+            coverage: 'true'
+          - os: macos-latest
+            version_python: 3.9
     env:
       CONDA_ENV: 'testcondaenv'
       JUNIT_XML: 'test-data.xml'
@@ -87,8 +87,8 @@ jobs:
         include:
           - os: ubuntu-latest
             version_python: 3.9
-          # - os: macos-latest
-          #   version_python: 3.9
+          - os: macos-latest
+            version_python: 3.9
     env:
       JUNIT_XML: "test-data.xml"
       VERSION_PYTHON: ${{ matrix.version_python }}
