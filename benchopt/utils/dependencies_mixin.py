@@ -62,9 +62,11 @@ class DependenciesMixin:
                 if raise_on_not_installed:
                     raise exc_type(value).with_traceback(tb)
                 if not cls._error_displayed and not quiet:
+                    print("Debug stdout", file=sys.stdout)
+                    print("Debug stderr", file=sys.stderr)
                     print("Debug")
                     traceback.print_exception(
-                        exc_type, value, tb, file=sys.stdout
+                        exc_type, value, tb, file=sys.stderr
                     )
                     cls._error_displayed = True
                 return False

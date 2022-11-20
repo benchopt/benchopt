@@ -23,12 +23,12 @@ jobs:
         include:
           - os: ubuntu-latest
             version_python: 3.8
-          - os: ubuntu-latest
-            version_python: 3.9
-            conda_cmd: 'mamba'
-            coverage: 'true'
-          - os: macos-latest
-            version_python: 3.9
+          # - os: ubuntu-latest
+          #   version_python: 3.9
+          #   conda_cmd: 'mamba'
+          #   coverage: 'true'
+          # - os: macos-latest
+          #   version_python: 3.9
     env:
       CONDA_ENV: 'testcondaenv'
       JUNIT_XML: 'test-data.xml'
@@ -79,31 +79,31 @@ jobs:
           fail_ci_if_error: true
           verbose: true
 
-  test_no_conda:
-    name: Test without conda
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-latest
-            version_python: 3.9
-          - os: macos-latest
-            version_python: 3.9
-    env:
-      JUNIT_XML: "test-data.xml"
-      VERSION_PYTHON: ${{ matrix.version_python }}
+  # test_no_conda:
+  #   name: Test without conda
+  #   runs-on: ${{ matrix.os }}
+  #   strategy:
+  #     matrix:
+  #       include:
+  #         - os: ubuntu-latest
+  #           version_python: 3.9
+  #         - os: macos-latest
+  #           version_python: 3.9
+  #   env:
+  #     JUNIT_XML: "test-data.xml"
+  #     VERSION_PYTHON: ${{ matrix.version_python }}
 
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v3
-        with:
-          python-version: ${{ env.VERSION_PYTHON }}
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - uses: actions/setup-python@v3
+  #       with:
+  #         python-version: ${{ env.VERSION_PYTHON }}
 
-      - name: Install benchopt and its dependencies
-        run: pip install -e .
+  #     - name: Install benchopt and its dependencies
+  #       run: pip install -e .
 
-      - name: Run benchopt without conda
-        run: benchopt run benchopt/tests/test_benchmarks/dummy_benchmark -d Simulated[n_features=100,n_samples=100,rho=0]  -o "*[reg=0.1]" -s python-pgd -r 1 -n 10 --no-plot
+  #     - name: Run benchopt without conda
+  #       run: benchopt run benchopt/tests/test_benchmarks/dummy_benchmark -d Simulated[n_features=100,n_samples=100,rho=0]  -o "*[reg=0.1]" -s python-pgd -r 1 -n 10 --no-plot
 
   report_test:
     if: ${{ always() }}
