@@ -145,52 +145,16 @@ def compute_quantiles(df_filtered):
     return q1, q9
 
 
-#def get_solver_color(solver, plotly=True):
-#    print(f'{plotly=}')
-#    if solver in html_solver_styles and 'color' in html_solver_styles[solver]:
-#        return html_solver_styles[solver]['color']
-#
-#    idx = len(html_solver_styles)
-#    color = colors[idx % len(colors)]
-#
-#    if plotly:
-#        color = tuple(255*x if i != 3 else x for i, x in enumerate(color))
-#        color = f'rgba{color}'
-#
-#    if solver in html_solver_styles:
-#        html_solver_styles[solver]['color'] = color
-#    else:
-#        html_solver_styles[solver] = {
-#            'color': color
-#        }
-#
-#    return color
-
-
-#def get_solver_marker(solver, plotly=True):
-#    if solver in html_solver_styles and 'marker' in html_solver_styles[solver]:
-#        return html_solver_styles[solver]['marker']
-#
-#    if plotly:
-#        markers = {i: i for i, v in enumerate(plt.Line2D.markers)}
-#    else:
-#        markers = {i: v for i, v in enumerate(plt.Line2D.markers)}
-#
-#    idx = len(html_solver_styles)
-#    marker = markers[idx % len(markers)]
-#
-#    if solver in html_solver_styles:
-#        html_solver_styles[solver]['marker'] = marker
-#    else:
-#        html_solver_styles[solver] = {
-#            'marker': marker
-#        }
-#
-#    return marker
-
 def get_solver_style(solver, plotly=True):
+    global html_solver_styles
+    if (len(html_solver_styles) != 0 and
+        not plotly and
+        'rgb' in html_solver_styles[next(iter(html_solver_styles))]['color']):
+        html_solver_styles = {}
+    
     if solver in html_solver_styles:
-        return html_solver_styles[solver]['color'], html_solver_styles[solver]['marker']
+        return html_solver_styles[solver]['color'], \
+                html_solver_styles[solver]['marker']
 
     idx = len(html_solver_styles)
     color = colors[idx % len(colors)]
@@ -200,7 +164,7 @@ def get_solver_style(solver, plotly=True):
         color = tuple(255*x if i != 3 else x for i, x in enumerate(color))
         color = f'rgba{color}'
         marker = list(markers.values()).index(marker)
-    
+
     if solver in html_solver_styles:
         html_solver_styles[solver]['color'] = color
         html_solver_styles[solver]['marker'] = marker
@@ -210,5 +174,3 @@ def get_solver_style(solver, plotly=True):
             'marker': marker
         }
     return color, marker
-
-
