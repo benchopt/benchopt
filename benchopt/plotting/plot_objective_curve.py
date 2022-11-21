@@ -6,7 +6,7 @@ colors = colors[::2] + colors[1::2]
 markers = {i: v for i, v in enumerate(plt.Line2D.markers)}
 
 
-html_solver_styles = {}
+solvers_idx = {}
 
 
 def _remove_prefix(text, prefix):
@@ -146,18 +146,9 @@ def compute_quantiles(df_filtered):
 
 
 def get_solver_style(solver, plotly=True):
-    global html_solver_styles
-    if (len(html_solver_styles) != 0 and
-            not plotly and
-            'rgb' in html_solver_styles[
-                next(iter(html_solver_styles))]['color']):
-        html_solver_styles = {}
+    idx = solvers_idx.get(solver, len(solvers_idx))
+    solvers_idx[solver] = idx
 
-    if solver in html_solver_styles:
-        return html_solver_styles[solver]['color'], \
-                html_solver_styles[solver]['marker']
-
-    idx = len(html_solver_styles)
     color = colors[idx % len(colors)]
     marker = markers[idx % len(markers)]
 
@@ -166,12 +157,4 @@ def get_solver_style(solver, plotly=True):
         color = f'rgba{color}'
         marker = list(markers.values()).index(marker)
 
-    if solver in html_solver_styles:
-        html_solver_styles[solver]['color'] = color
-        html_solver_styles[solver]['marker'] = marker
-    else:
-        html_solver_styles[solver] = {
-            'color': color,
-            'marker': marker
-        }
     return color, marker
