@@ -3,6 +3,7 @@ from benchopt import safe_import_context
 
 with safe_import_context() as import_ctx:
     import numpy as np
+    import dummy_solver_import
     from benchmark_utils import dummy_function
     from benchmark_utils.dummy_submodule.dummy_subsubmodule import (
         error_raiser
@@ -10,7 +11,7 @@ with safe_import_context() as import_ctx:
 
 
 class Solver(BaseSolver):
-    name = 'Test-Solver'
+    name = 'Solver-Test'
 
     parameters = {'raise_error': [False]}
 
@@ -26,6 +27,8 @@ class Solver(BaseSolver):
         self.X, self.y, self.lmbd = X, y, lmbd
 
     def run(self, n_iter):
+        # make sure that the imported modules are working
+        dummy_solver_import.__version__
         dummy_function()
 
         if self.raise_error:

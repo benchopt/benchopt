@@ -1,16 +1,15 @@
 import pytest
 
 from benchopt.cli.main import run
+from benchopt.utils.dynamic_modules import _load_class_from_module
 
-from benchopt.tests import CaptureRunOutput
 from benchopt.tests import SELECT_ONE_PGD
 from benchopt.tests import SELECT_ONE_SIMULATED
 from benchopt.tests import SELECT_ONE_OBJECTIVE
 from benchopt.tests import DUMMY_BENCHMARK
 from benchopt.tests import DUMMY_BENCHMARK_PATH
-from benchopt.tests import FUTURE_BENCHMARK_PATH
-
-from benchopt.utils.dynamic_modules import _load_class_from_module
+from benchopt.tests.utils import patch_benchmark
+from benchopt.tests.utils import CaptureRunOutput
 
 
 def test_template_dataset():
@@ -52,8 +51,11 @@ def test_benchmark_submodule():
 
 
 def test_benchopt_min_version():
-    with pytest.raises(RuntimeError, match="pip install -U"):
-        run([str(FUTURE_BENCHMARK_PATH)], 'benchopt', standalone_mode=False)
+    with patch_benchmark(DUMMY_BENCHMARK, component="objective",
+                         min_benchopt_version="99.0"):
+        with pytest.raises(RuntimeError, match="pip install -U"):
+            run([str(DUMMY_BENCHMARK_PATH)], 'benchopt',
+                standalone_mode=False)
 
     with CaptureRunOutput() as out:
         # check than benchmark with low requirement runs
