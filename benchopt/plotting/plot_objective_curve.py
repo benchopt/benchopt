@@ -155,6 +155,6 @@ def get_solver_style(solver, plotly=True):
     if plotly:
         color = tuple(255*x if i != 3 else x for i, x in enumerate(color))
         color = f'rgba{color}'
-        marker = list(markers.values()).index(marker)
+        marker = idx
 
     return color, marker
