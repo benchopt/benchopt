@@ -149,8 +149,8 @@ def get_solver_style(solver, plotly=True):
     idx = solvers_idx.get(solver, len(solvers_idx))
     solvers_idx[solver] = idx
 
-    color = colors[idx % len(colors)]
-    marker = markers[idx % len(markers)]
+    color = COLORS[idx % len(COLORS)]
+    marker = MARKERS[idx % len(MARKERS)]
 
     if plotly:
         color = tuple(255*x if i != 3 else x for i, x in enumerate(color))
