@@ -1,9 +1,9 @@
 import matplotlib.pyplot as plt
 
 CMAP = plt.get_cmap('tab20')
-colors = [CMAP(i) for i in range(CMAP.N)]
-colors = colors[::2] + colors[1::2]
-markers = {i: v for i, v in enumerate(plt.Line2D.markers)}
+COLORS = [CMAP(i) for i in range(CMAP.N)]
+COLORS = COLORS[::2] + COLORS[1::2]
+MARKERS = {i: v for i, v in enumerate(plt.Line2D.markers)}
 
 
 solvers_idx = {}
