@@ -13,6 +13,3 @@ def check_test_solver_install(solver_class):
     # See issue #64
     if 'julia' in solver_class.name.lower() and sys.platform == 'darwin':
         pytest.xfail('Julia causes segfault on OSX for now.')
-
-    if solver_class.name.lower() in ["importerror", "valueerror"]:
-        pytest.skip('Test solvers that cannot be installed, skippign.')
