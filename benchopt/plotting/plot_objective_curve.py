@@ -1,19 +1,19 @@
 import matplotlib.pyplot as plt
 
-from .helpers_compat import get_figure
-from .helpers_compat import add_h_line
-from .helpers_compat import fill_between_x
-
 CMAP = plt.get_cmap('tab20')
+COLORS = [CMAP(i) for i in range(CMAP.N)]
+COLORS = COLORS[::2] + COLORS[1::2]
+MARKERS = {i: v for i, v in enumerate(plt.Line2D.markers)}
 
-html_solver_styles = {}
+
+solvers_idx = {}
 
 
 def _remove_prefix(text, prefix):
     return text[len(prefix):] if text.startswith(prefix) else text
 
 
-def plot_objective_curve(df, obj_col='objective_value', plotly=False,
+def plot_objective_curve(df, obj_col='objective_value',
                          suboptimality=False, relative=False):
     """Plot objective curve for a given benchmark and dataset.
 
@@ -25,8 +25,6 @@ def plot_objective_curve(df, obj_col='objective_value', plotly=False,
         The benchmark results.
     obj_col : str
         Column to select in the DataFrame for the plot.
-    plotly : bool
-        If set to True, output a plotly figure for HTML display.
     suboptimality : bool
         If set to True, remove the optimal objective value F(x^*). Here the
         value of F(x^*) is taken as the smallest value reached across all
@@ -37,13 +35,9 @@ def plot_objective_curve(df, obj_col='objective_value', plotly=False,
 
     Returns
     -------
-    fig : matplotlib.Figure or pyplot.Figure
-        The rendered figure, used to create HTML reports.
+    fig : matplotlib.Figure
+        The rendered figure.
     """
-    if plotly:
-        markers = {i: i for i, v in enumerate(plt.Line2D.markers)}
-    else:
-        markers = {i: v for i, v in enumerate(plt.Line2D.markers)}
 
     df = df.copy()
     solver_names = df['solver_name'].unique()
@@ -66,60 +60,41 @@ def plot_objective_curve(df, obj_col='objective_value', plotly=False,
         max_f_0 = df[df['stop_val'] == 1][obj_col].max()
         df.loc[:, obj_col] /= max_f_0
 
-    fig = get_figure(plotly)
+    fig = plt.figure()
 
     if df[obj_col].count() == 0:  # missing values
-        if plotly:
-            fig.add_annotation(text="Not Available",
-                               xref="paper", yref="paper",
-                               x=0.5, y=0.5, showarrow=False,
-                               font=dict(color="black", size=32))
-        else:
-            plt.text(0.5, 0.5, "Not Available")
+        plt.text(0.5, 0.5, "Not Available")
         return fig
 
     for i, solver_name in enumerate(solver_names):
         df_ = df[df['solver_name'] == solver_name]
-        curve = df_.groupby('stop_val').median()
+        curve = df_.groupby('stop_val').median(numeric_only=True)
 
         q1 = df_.groupby('stop_val')['time'].quantile(.1)
         q9 = df_.groupby('stop_val')['time'].quantile(.9)
 
-        fill_between_x(
-            fig, curve['time'], q1, q9, curve[obj_col], color=CMAP(i % CMAP.N),
-            marker=markers[i % len(markers)], label=solver_name, plotly=plotly
-        )
+        color, marker = get_solver_style(solver_name, plotly=False)
+        plt.loglog(curve['time'], curve[obj_col], color=color, marker=marker,
+                   label=solver_name, linewidth=3)
+        plt.fill_betweenx(curve[obj_col], q1, q9, color=color, alpha=.3)
 
     if suboptimality and not relative:
-        add_h_line(fig, eps, [df['time'].min(), df['time'].max()],
-                   plotly=plotly)
+        plt.hlines(eps, df['time'].min(), df['time'].max(), color='k',
+                   linestyle='--')
+        plt.xlim(df['time'].min(), df['time'].max())
 
     # Format the plot to be nice
-    if plotly:
-        fig.update_layout(
-            xaxis_type='linear',
-            yaxis_type='log',
-            xaxis_title=r"Time [sec]",
-            yaxis_title=y_label,
-            yaxis_tickformat=".1e",
-            xaxis_tickformat=".1e",
-            xaxis_tickangle=-45,
-            title=title,
-            legend_title='solver',
-        )
-
-    else:
-        plt.legend(fontsize=14)
-        plt.xlabel("Time [sec]", fontsize=14)
-        plt.ylabel(f"{_remove_prefix(obj_col, 'objective_')}: {y_label}",
-                   fontsize=14)
-        plt.title(title, fontsize=14)
-        plt.tight_layout()
+    plt.legend(fontsize=14)
+    plt.xlabel("Time [sec]", fontsize=14)
+    plt.ylabel(f"{_remove_prefix(obj_col, 'objective_')}: {y_label}",
+               fontsize=14)
+    plt.title(title, fontsize=14)
+    plt.tight_layout()
 
     return fig
 
 
-def plot_suboptimality_curve(df, obj_col='objective_value', plotly=False):
+def plot_suboptimality_curve(df, obj_col='objective_value'):
     """Plot suboptimality curve for a given benchmark and dataset.
 
     Plot suboptimality, that is F(x) - F(x^*) as a function of time,
@@ -131,20 +106,16 @@ def plot_suboptimality_curve(df, obj_col='objective_value', plotly=False):
         The benchmark results.
     obj_col : str
         Column to select in the DataFrame for the plot.
-    plotly : bool
-        If set to True, output a plotly figure for HTML display.
 
     Returns
     -------
     fig : instance of matplotlib.figure.Figure
         The matplotlib figure.
     """
-    return plot_objective_curve(df, obj_col=obj_col, plotly=plotly,
-                                suboptimality=True)
+    return plot_objective_curve(df, obj_col=obj_col, suboptimality=True)
 
 
-def plot_relative_suboptimality_curve(df, obj_col='objective_value',
-                                      plotly=False):
+def plot_relative_suboptimality_curve(df, obj_col='objective_value'):
     """Plot relative suboptimality curve for a given benchmark and dataset.
 
     Plot relative suboptimality, that is (F(x) - F(x*)) / (F_0 - F(x*)) as a
@@ -157,16 +128,14 @@ def plot_relative_suboptimality_curve(df, obj_col='objective_value',
         The benchmark results.
     obj_col : str
         Column to select in the DataFrame for the plot.
-    plotly : bool
-        If set to True, output a plotly figure for HTML display.
 
     Returns
     -------
     fig : instance of matplotlib.figure.Figure
         The matplotlib figure.
     """
-    return plot_objective_curve(df, obj_col=obj_col, plotly=plotly,
-                                suboptimality=True, relative=True)
+    return plot_objective_curve(df, obj_col=obj_col, suboptimality=True,
+                                relative=True)
 
 
 def compute_quantiles(df_filtered):
@@ -176,39 +145,16 @@ def compute_quantiles(df_filtered):
     return q1, q9
 
 
-def get_solver_color(solver):
-    if solver in html_solver_styles and 'color' in html_solver_styles[solver]:
-        return html_solver_styles[solver]['color']
+def get_solver_style(solver, plotly=True):
+    idx = solvers_idx.get(solver, len(solvers_idx))
+    solvers_idx[solver] = idx
 
-    idx = len(html_solver_styles)
-    color = CMAP(idx % CMAP.N)
-    color = tuple(255*x if i != 3 else x for i, x in enumerate(color))
-    color = f'rgba{color}'
+    color = COLORS[idx % len(COLORS)]
+    marker = MARKERS[idx % len(MARKERS)]
 
-    if solver in html_solver_styles:
-        html_solver_styles[solver]['color'] = color
-    else:
-        html_solver_styles[solver] = {
-            'color': color
-        }
+    if plotly:
+        color = tuple(255*x if i != 3 else x for i, x in enumerate(color))
+        color = f'rgba{color}'
+        marker = idx
 
-    return color
-
-
-def get_solver_marker(solver):
-    if solver in html_solver_styles and 'marker' in html_solver_styles[solver]:
-        return html_solver_styles[solver]['marker']
-
-    markers = {i: i for i, v in enumerate(plt.Line2D.markers)}
-
-    i = len(html_solver_styles)
-    marker = markers[i % len(markers)]
-
-    if solver in html_solver_styles:
-        html_solver_styles[solver]['marker'] = marker
-    else:
-        html_solver_styles[solver] = {
-            'marker': marker
-        }
-
-    return marker
+    return color, marker
