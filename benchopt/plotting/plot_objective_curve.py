@@ -68,7 +68,7 @@ def plot_objective_curve(df, obj_col='objective_value',
 
     for i, solver_name in enumerate(solver_names):
         df_ = df[df['solver_name'] == solver_name]
-        curve = df_.groupby('stop_val').median()
+        curve = df_.groupby('stop_val').median(numeric_only=True)
 
         q1 = df_.groupby('stop_val')['time'].quantile(.1)
         q9 = df_.groupby('stop_val')['time'].quantile(.9)
