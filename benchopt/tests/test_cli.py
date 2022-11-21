@@ -100,12 +100,12 @@ class TestRunCmd:
     def test_objective_not_installed(self):
 
         def import_error():
-            raise ModuleNotFoundError("no module named dummy_package")
+            raise ModuleNotFoundError("no module named 'dummy_package'")
 
         with patch_import(dummy_package=import_error):
             with pytest.raises(
                     ModuleNotFoundError,
-                    match="No module named 'dummy_package'"
+                    match="no module named 'dummy_package'"
             ):
                 run(
                     [str(REQUIREMENT_BENCHMARK_PATH), '-n', '1'],

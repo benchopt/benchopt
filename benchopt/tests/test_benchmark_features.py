@@ -1,4 +1,3 @@
-import sys
 import pytest
 
 from benchopt.cli.main import run
@@ -84,11 +83,6 @@ def test_error_reporting(error, raise_install_error):
 
     def raise_error():
         raise error("important debug message")
-
-    # Make sure we reimport the solver with the patched import
-    solver_module = 'benchopt_benchmarks.dummy_benchmark.solvers.solver_test'
-    if solver_module in sys.modules:
-        del sys.modules[solver_module]
 
     try:
         os.environ['BENCHOPT_RAISE_INSTALL_ERROR'] = str(raise_install_error)

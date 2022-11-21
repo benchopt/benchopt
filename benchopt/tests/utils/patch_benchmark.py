@@ -1,3 +1,4 @@
+import sys
 import builtins
 from contextlib import contextmanager
 
@@ -40,6 +41,11 @@ def patch_import(**func_import):
     """
 
     builtins_import = builtins.__import__
+
+    # Make sure we reimport the benchmark component after patching the imports
+    for k in list(sys.modules):
+        if 'benchopt_benchmarks' in k:
+            del sys.modules[k]
 
     def fake_import(name, *args, **kwargs):
         if name in func_import:
