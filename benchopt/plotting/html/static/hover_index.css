@@ -277,19 +277,6 @@ input:checked+.slider:before {
 /***** Plot *****/
 /*----------------------------------------*/
 
-@media (min-width: 768px) {
-  #unique_plot {
-    flex: 1 1 0%;
-  }
-}
-
-@media (max-width: 767px) {
-  #unique_plot {
-    flex: initial;
-    flex-shrink: 0;
-  }
-}
-
 .js-plotly-plot .plotly .modebar {
   transform: translateX(-30px);
 }
