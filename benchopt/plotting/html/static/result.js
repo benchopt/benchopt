@@ -59,8 +59,11 @@ const makePlot = () => {
   const div = document.getElementById('unique_plot');
   const data = isBarChart() ? getBarData() : getScatterCurves();
   const layout = isBarChart() ? getBarChartLayout() : getScatterChartLayout();
+  const config = {
+    responsive: true
+  }
 
-  Plotly.react(div, data, layout);
+  Plotly.react(div, data, layout, config);
 };
 
 /**
