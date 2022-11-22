@@ -554,10 +554,10 @@ const makeLegend = () => {
     const symbolNumber = data().solvers[solver].marker;
 
     // case solver with one configuration (solver doesn't verify pattern)
-    if(!pattern.test(solver)) {
-      divIndependentSolvers.appendChild(createLegendItem(solver, color, symbolNumber));
-      continue;
-    }
+    // if(!pattern.test(solver)) {
+    //   divIndependentSolvers.appendChild(createLegendItem(solver, color, symbolNumber));
+    //   continue;
+    // }
 
     // case aggregation of solvers already exist
     if(solverName === aggregateName) {
