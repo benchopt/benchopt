@@ -133,7 +133,7 @@ but imported dynamically to avoid installation issues, we resort to
 a special way of importing modules and functions defined for a benchmark.
 
 First, all code that need to be imported should be placed under
-``BENCHMARK_DIR/utils/``, as described here:
+``BENCHMARK_DIR/benchmark_utils/``, as described here:
 
 .. code-block::
 
@@ -141,29 +141,22 @@ First, all code that need to be imported should be placed under
     ├── objective.py  # contains the definition of the objective
     ├── datasets/
     ├── solvers/
-    └── utils/
+    └── benchmark_utils/
+        ├── __init__.py
         ├── helper1.py  # some helper
-        └─── helper_module  # some solver
-            ├── __init__.py  # some solver
-            └── submodule1.py  # some solver
+        └─── helper_module  # a submodule
+            ├── __init__.py
+            └── submodule1.py  # some more helpers
 
-Then, these modules and packages can be imported using the method
-:func:`benchopt.safe_import_context.import_from`. This method
-takes as input the name of the module as a string and optionally
-the name of the object to load. The imported package can
-either be a simple ``*.py`` file or a more complex package
-with a ``__init__.py`` file. The naming convention for import
-is the same as for regular import, with submodules
-separated with ``.``.
-
+Then, these modules and packages can be imported as a regular package, i.e.,
 .. code-block::
 
     from benchopt import safe_import_context
 
     with safe_import_context() as import_ctx:
-        helper1 = import_ctx.import_from('helper1')
-        func1 = import_ctx.import_from('helper1', 'func1')
-        func2 = import_ctx.import_from('helper_module.submodule1', 'func2')
+        from benchmark_utils import helper1
+        from benchmark_utils.helper1 import func1
+        from benchmark_utils.helper_module.submodule1 import func2
 
 
 .. |update_params| replace:: ``update_parameters``

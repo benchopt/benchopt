@@ -9,18 +9,20 @@ import pytest
 from joblib.memory import _FUNCTION_HASHES
 from click.shell_completion import ShellComplete
 
+from benchopt.benchmark import Benchmark
 from benchopt.plotting import PLOT_KINDS
 from benchopt.utils.stream_redirection import SuppressStd
 
 
-from benchopt.tests import CaptureRunOutput
 from benchopt.tests import SELECT_ONE_PGD
 from benchopt.tests import SELECT_ONE_SIMULATED
 from benchopt.tests import SELECT_ONE_OBJECTIVE
+from benchopt.tests import TEST_BENCHMARK_DIR
 from benchopt.tests import DUMMY_BENCHMARK
 from benchopt.tests import DUMMY_BENCHMARK_PATH
-from benchopt.tests import REQUIREMENT_BENCHMARK
 from benchopt.tests import REQUIREMENT_BENCHMARK_PATH
+from benchopt.tests.utils import patch_import
+from benchopt.tests.utils import CaptureRunOutput
 
 
 from benchopt.cli.main import run
@@ -32,25 +34,20 @@ from benchopt.cli.process_results import plot
 from benchopt.cli.process_results import generate_results
 
 
+ALL_BENCHMARKS = [str(p) for p in TEST_BENCHMARK_DIR.glob("*")]
+
 BENCHMARK_COMPLETION_CASES = [
-    (str(DUMMY_BENCHMARK_PATH.parent), [
-        str(DUMMY_BENCHMARK_PATH),
-        str(REQUIREMENT_BENCHMARK_PATH),
-    ]),
-    (str(DUMMY_BENCHMARK_PATH.parent)[:-2], [
-        str(DUMMY_BENCHMARK_PATH),
-        str(REQUIREMENT_BENCHMARK_PATH),
-    ]),
+    (str(DUMMY_BENCHMARK_PATH.parent), ALL_BENCHMARKS),
+    (str(DUMMY_BENCHMARK_PATH.parent)[:-2], ALL_BENCHMARKS),
     (str(DUMMY_BENCHMARK_PATH)[:-2], [str(DUMMY_BENCHMARK_PATH)])
 ]
 SOLVER_COMPLETION_CASES = [
-    ('', ['cd', 'julia-pgd', 'python-pgd', 'python-pgd-with-cb', 'r-pgd',
-          'sklearn', 'test-solver']),
+    ('', [n.lower() for n in DUMMY_BENCHMARK.get_solver_names()]),
     ('sk', ['sklearn']),
     ('pgd', ['julia-pgd', 'python-pgd', 'python-pgd-with-cb', 'r-pgd'])
 ]
 DATASET_COMPLETION_CASES = [
-    ('', ['leukemia', 'simulated', 'test-dataset']),
+    ('', [n.lower() for n in DUMMY_BENCHMARK.get_dataset_names()]),
     ('simu', ['simulated']),
     ('lated', ['simulated']),
 ]
@@ -76,36 +73,6 @@ def _test_shell_completion(cmd, args, test_cases):
             assert set(proposals) == set(expected), proposals
 
 
-class TestCheckInstallCmd:
-    def test_solver_installed(self):
-        pgd_solver = DUMMY_BENCHMARK_PATH / 'solvers' / 'python_pgd.py'
-        with pytest.raises(SystemExit, match=r'0'):
-            check_install([
-                str(DUMMY_BENCHMARK_PATH), str(pgd_solver.resolve()), 'Solver'
-            ], 'benchopt')
-
-    def test_solver_does_not_exists(self):
-        pgd_solver = DUMMY_BENCHMARK_PATH / 'solvers' / 'invalid.py'
-        with pytest.raises(FileNotFoundError, match=r'invalid.py'):
-            check_install([
-                str(DUMMY_BENCHMARK_PATH), str(pgd_solver.resolve()), 'Solver'
-            ], 'benchopt')
-
-    def test_dataset_installed(self):
-        pgd_solver = DUMMY_BENCHMARK_PATH / 'datasets' / 'simulated.py'
-        with pytest.raises(SystemExit, match=r'0'):
-            check_install([
-                str(DUMMY_BENCHMARK_PATH), str(pgd_solver.resolve()), 'Dataset'
-            ], 'benchopt')
-
-    def test_dataset_does_not_exists(self):
-        pgd_solver = DUMMY_BENCHMARK_PATH / 'datasets' / 'invalid.py'
-        with pytest.raises(FileNotFoundError, match=r'invalid.py'):
-            check_install([
-                str(DUMMY_BENCHMARK_PATH), str(pgd_solver.resolve()), 'Dataset'
-            ], 'benchopt')
-
-
 class TestRunCmd:
 
     @pytest.mark.parametrize('invalid_benchmark, match', [
@@ -121,14 +88,29 @@ class TestRunCmd:
                 run([], 'benchopt', standalone_mode=False)
 
     def test_invalid_dataset(self):
-        with pytest.raises(click.BadParameter, match=r"invalid_dataset"):
+        with pytest.raises(click.BadParameter, match="invalid_dataset"):
             run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', 'invalid_dataset',
                  '-s', 'pgd'], 'benchopt', standalone_mode=False)
 
     def test_invalid_solver(self):
-        with pytest.raises(click.BadParameter, match=r"invalid_solver"):
+        with pytest.raises(click.BadParameter, match="invalid_solver"):
             run([str(DUMMY_BENCHMARK_PATH), '-l', '-s', 'invalid_solver'],
                 'benchopt', standalone_mode=False)
+
+    def test_objective_not_installed(self):
+
+        def import_error():
+            raise ModuleNotFoundError("no module named 'dummy_package'")
+
+        with patch_import(dummy_package=import_error):
+            with pytest.raises(
+                    ModuleNotFoundError,
+                    match="no module named 'dummy_package'"
+            ):
+                run(
+                    [str(REQUIREMENT_BENCHMARK_PATH), '-n', '1'],
+                    'benchopt', standalone_mode=False
+                )
 
     @pytest.mark.parametrize('n_jobs', [1, 2])
     def test_benchopt_run(self, n_jobs):
@@ -220,7 +202,7 @@ class TestRunCmd:
         max-runs: 1
         force-solver:
           - python-pgd[step_size=[2, 3]]
-          - Test-Solver
+          - Solver-Test[raise_error=False]
         """
         tmp = tempfile.NamedTemporaryFile(mode="w+")
         tmp.write(config)
@@ -232,16 +214,16 @@ class TestRunCmd:
         with CaptureRunOutput() as out:
             run(run_cmd, 'benchopt', standalone_mode=False)
 
-        out.check_output(r'Test-Solver:', repetition=11)
+        out.check_output(r'Solver-Test\[raise_error=False\]:', repetition=11)
         out.check_output(r'Python-PGD\[step_size=2\]:', repetition=11)
         out.check_output(r'Python-PGD\[step_size=3\]:', repetition=11)
 
         # test that CLI options take precedence
         with CaptureRunOutput() as out:
-            run(run_cmd + ['-f', 'Test-Solver'],
+            run(run_cmd + ['-f', 'Solver-Test'],
                 'benchopt', standalone_mode=False)
 
-        out.check_output(r'Test-Solver:', repetition=11)
+        out.check_output(r'Solver-Test\[raise_error=False\]:', repetition=11)
         out.check_output(
             r'Python-PGD\[step_size=1.5\]:', repetition=0)
 
@@ -291,11 +273,11 @@ class TestRunCmd:
 
     def test_changing_output_name(self):
         command = [
-                str(DUMMY_BENCHMARK_PATH), '-l', '-s', SELECT_ONE_PGD,
-                '-d', SELECT_ONE_SIMULATED,
-                '-n', '1', '--output', 'unique_name',
-                '--no-plot'
-                ]
+            str(DUMMY_BENCHMARK_PATH), '-l', '-s', SELECT_ONE_PGD,
+            '-d', SELECT_ONE_SIMULATED,
+            '-n', '1', '--output', 'unique_name',
+            '--no-plot'
+        ]
         with CaptureRunOutput() as out:
             run(command, 'benchopt', standalone_mode=False)
             run(command, 'benchopt', standalone_mode=False)
@@ -368,13 +350,16 @@ class TestInstallCmd:
             )
 
         out.check_output(
-            f"Installing '{DUMMY_BENCHMARK.name}' requirements")
+            f"Installing '{DUMMY_BENCHMARK.name}' requirements"
+        )
         out.check_output(
             f"already available in '{test_env_name}'\n", repetition=3
         )
 
     def test_benchopt_install_in_env_with_requirements(self, test_env_name):
-        objective = REQUIREMENT_BENCHMARK.get_benchmark_objective()
+        objective = Benchmark(
+            REQUIREMENT_BENCHMARK_PATH
+        ).get_benchmark_objective()
         out = 'already installed but failed to import.'
         if not objective.is_installed(env_name=test_env_name):
             with CaptureRunOutput() as out:
@@ -389,7 +374,7 @@ class TestInstallCmd:
         with CaptureRunOutput() as out:
             with pytest.raises(SystemExit, match='False'):
                 run_cmd = [str(REQUIREMENT_BENCHMARK_PATH), '--env-name',
-                           test_env_name, '-n', '10', '-r', '1', '--no-plot']
+                           test_env_name, '-n', '2', '-r', '1', '--no-plot']
                 run(run_cmd, 'benchopt', standalone_mode=False)
 
         out.check_output(r"done \(not enough run\)", repetition=1)
@@ -654,3 +639,33 @@ class TestArchiveCmd:
     def test_shell_complete(self):
         # Completion for benchmark name
         _test_shell_completion(archive, [], BENCHMARK_COMPLETION_CASES)
+
+
+class TestCheckInstallCmd:
+    def test_solver_installed(self):
+        pgd_solver = DUMMY_BENCHMARK_PATH / 'solvers' / 'python_pgd.py'
+        with pytest.raises(SystemExit, match=r'0'):
+            check_install([
+                str(DUMMY_BENCHMARK_PATH), str(pgd_solver.resolve()), 'Solver'
+            ], 'benchopt')
+
+    def test_solver_does_not_exists(self):
+        pgd_solver = DUMMY_BENCHMARK_PATH / 'solvers' / 'invalid.py'
+        with pytest.raises(FileNotFoundError, match=r'invalid.py'):
+            check_install([
+                str(DUMMY_BENCHMARK_PATH), str(pgd_solver.resolve()), 'Solver'
+            ], 'benchopt')
+
+    def test_dataset_installed(self):
+        pgd_solver = DUMMY_BENCHMARK_PATH / 'datasets' / 'simulated.py'
+        with pytest.raises(SystemExit, match=r'0'):
+            check_install([
+                str(DUMMY_BENCHMARK_PATH), str(pgd_solver.resolve()), 'Dataset'
+            ], 'benchopt')
+
+    def test_dataset_does_not_exists(self):
+        pgd_solver = DUMMY_BENCHMARK_PATH / 'datasets' / 'invalid.py'
+        with pytest.raises(FileNotFoundError, match=r'invalid.py'):
+            check_install([
+                str(DUMMY_BENCHMARK_PATH), str(pgd_solver.resolve()), 'Dataset'
+            ], 'benchopt')

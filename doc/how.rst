@@ -56,7 +56,7 @@ be minimized by the solvers. An objective class should define 3 methods:
   is returned it should contain a key called ``value`` (the objective value) and all other keys
   should have ``float`` values allowing to track more than one value
   of interest (e.g. train and test errors).
-- ``to_dict()``: method that returns a dictionary to be passed
+- ``get_objective()``: method that returns a dictionary to be passed
   to the ``set_objective`` methods of solvers_.
 
 An objective class also needs to inherit from a base class,
@@ -125,7 +125,7 @@ variant of the dataset.
 A solver must define three methods:
 
    - ``set_objective(**objective_dict)``: This method will be called with the
-     dictionary ``objective_dict`` returned by the method ``to_dict``
+     dictionary ``objective_dict`` returned by the method ``get_objective``
      from the objective. The goal of this method is to provide all necessary
      information to the solver so it can optimize the objective function.
 

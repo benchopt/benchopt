@@ -6,35 +6,6 @@ except ImportError:
     go = None
 
 
-def fill_between_x(fig, x, q1, q9, y, color, marker, label, plotly=False):
-    if not plotly:
-        plt.loglog(x, y, color=color, marker=marker, label=label, linewidth=3)
-        plt.fill_betweenx(y, q1, q9, color=color, alpha=.3)
-        return fig
-    color = tuple(255*x if i != 3 else x for i, x in enumerate(color))
-    color = f'rgba{color}'
-    fig.add_trace(go.Scatter(
-        x=x, y=y,
-        line_color=color, marker_symbol=marker, mode='lines+markers',
-        marker_size=10, name=label, legendgroup=label,
-        hoverlabel=dict(namelength=-1),
-        hovertemplate='%{text} <br> (%{x:.1e},%{y:.1e}) <extra></extra>',
-        text=[label for _ in x], showlegend=True,
-    ))
-    fig.add_trace(go.Scatter(
-        x=q1, y=y, mode='lines', showlegend=False,
-        line={'width': 0, 'color': color}, legendgroup=label,
-        hovertemplate='(%{x:.1e},%{y:.1e}) <extra></extra>',
-    ))
-    fig.add_trace(go.Scatter(
-        x=q9, y=y, mode='lines', fill='tonextx', showlegend=False,
-        line={'width': 0, 'color': color}, legendgroup=label,
-        hovertemplate='(%{x:.1e},%{y:.1e}) <extra></extra>',
-    ))
-
-    return fig
-
-
 def get_figure(plotly=False):
     "Get matplotlib or plotly figure in a compatible way"
 
@@ -47,18 +18,6 @@ def get_figure(plotly=False):
             "Please run `pip install plotly`."
         )
     return go.Figure()
-
-
-def add_h_line(fig, val, xlim=None, plotly=False):
-    "Add an horizontal black dash line with value val."
-    if not plotly:
-        plt.hlines(val, *xlim, color='k', linestyle='--')
-        plt.xlim(xlim)
-        return fig
-
-    fig.add_hline(y=val,
-                  line_dash="dot",
-                  line_color="black")
 
 
 def _make_bars(fig, heights, ticks, width, colors, times, plotly=False):

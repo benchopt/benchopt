@@ -8,6 +8,8 @@ with safe_import_context() as import_ctx:
 class Objective(BaseObjective):
     name = "Dummy Sparse Regression"
 
+    # Make sure we can run with the current version
+    min_benchopt_version = "0.0.0"
     parameters = {
         'reg': [0.05, .1, .5]
     }
@@ -54,5 +56,5 @@ class Objective(BaseObjective):
     def _get_lambda_max(self):
         return abs(self.X.T.dot(self.y)).max()
 
-    def to_dict(self):
+    def get_objective(self):
         return dict(X=self.X, y=self.y, lmbd=self.lmbd)
