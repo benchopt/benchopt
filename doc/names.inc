@@ -18,4 +18,4 @@
 
 .. _Amélie Vernay: https://github.com/AmelieVernay
 
-.. Melvine Nargeot: https://github.com/Melvin-klein
+.. _Melvine Nargeot: https://github.com/Melvin-klein
