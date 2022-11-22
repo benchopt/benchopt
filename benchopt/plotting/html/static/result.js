@@ -535,29 +535,12 @@ const makeLegend = () => {
   const legend = document.getElementById('plot_legend');
   legend.innerHTML = '';
 
-  // div where to put solver run with a single configuration
-  const divIndependentSolvers = document.createElement("div");
-  divIndependentSolvers.className = "flex flex-wrap inline-block space-r-2";
-  legend.appendChild(divIndependentSolvers);
-  // pattern to check whether solver is benchmarked with more than one configuration
-  // examples:
-  //   solver_name[param1=val,param2=val] --> true
-  //   solver_name                        --> false
-  //   solver_name[param1]                --> false
-  pattern = new RegExp('\\[\\w+=\\w+.+\\]');
-
   let aggregateName = aggregateButton = aggregateDiv = masterAggregateDiv =  null;
 
   for(let solver in data().solvers) {
     const solverName = solver.split("[")[0];
     const color = data().solvers[solver].color;
     const symbolNumber = data().solvers[solver].marker;
-
-    // case solver with one configuration (solver doesn't verify pattern)
-    // if(!pattern.test(solver)) {
-    //   divIndependentSolvers.appendChild(createLegendItem(solver, color, symbolNumber));
-    //   continue;
-    // }
 
     // case aggregation of solvers already exist
     if(solverName === aggregateName) {
