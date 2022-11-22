@@ -548,15 +548,16 @@ const makeLegend = () => {
       continue;
     }
 
-    // create button to toggle accordion
-    aggregateButton = document.createElement("button");
-    aggregateButton.innerText = solverName;
-    aggregateButton.className = 'text-white bg-gray-700 py-1 px-4 shadow-sm mt-2 rounded cursor-pointer w-full';
-
     // create div to gather the solvers with other bench params
     aggregateDiv = document.createElement("div");
-    displayAggregatedSolvers = state().disabled_solvers_accordions.includes(solverName) ? "hidden" : "";
-    aggregateDiv.className = `${displayAggregatedSolvers} flex flex-wrap inline-block space-r-2`;
+    displayAggregatedSolvers = state().disabled_solvers_accordions.includes(solverName) ? "invisible" : "";
+    aggregateDiv.className = `flex flex-wrap inline-block space-r-2 ${displayAggregatedSolvers}`;
+
+     // create button to toggle accordion
+     aggregateButton = document.createElement("button");
+     aggregateButton.innerText = solverName;
+     aggregateButton.className = `text-white bg-gray-700 py-1 px-4 shadow-sm mt-2 rounded cursor-pointer w-full`;
+     aggregateButton.style.opacity = state().disabled_solvers_accordions.includes(solverName) ? 0.5 : 1;
 
     // create div gather button and aggregate div
     masterAggregateDiv = document.createElement("div");
@@ -569,7 +570,7 @@ const makeLegend = () => {
       let currentAggregateDiv = this.nextElementSibling;
       let solversInAggregate = getSolverInAggregate(currentAggregateDiv);
 
-      if (currentAggregateDiv.className.includes("hidden")) {
+      if (currentAggregateDiv.className.includes("invisible")) {
         setState({
           hidden_solvers: state().hidden_solvers.filter(hidden => !solversInAggregate.includes(hidden)),
           disabled_solvers_accordions: state().disabled_solvers_accordions.filter(hidden => !(hidden === solverName))
