@@ -58,13 +58,13 @@ API
 - Deprecate ``Objective.to_dict`` in favor of :func:`~benchopt.BaseObjective.get_objective`.
   By `Mathurin Massias`_ (:gh:`489`).
 
-- Deprecate `import_from` in favor of a `benchmark_utils` module dynamically installed
+- Deprecate ``import_from`` in favor of a ``benchmark_utils`` module dynamically installed
   when running a benchmark. By `Mathurin Massias`_ and `Thomas Moreau`_ (:gh:`472`).
 
 - Allow specifying channels for conda requirements with syntax ``chan:deps``.
   By `Thomas Moreau`_ (:gh:`483`).
 
-- Allow for template ``Solver`` and ``Dataset`` in ``datasets``/``solvers`` directory.
+- Allow for template ``Solver`` and ``Dataset`` in ``datasets``/ ``solvers`` directory.
   By `Thomas Moreau`_ (:gh:`473`).
 
 .. _changes_1_2:
@@ -158,7 +158,7 @@ API
 - ``Solver.skip`` can now be used to skip objectives that are incompatible
   for the Solver, by `Thomas Moreau`_ (:gh:`113`).
 
-- ``Solver`` can now use ``stop_strategy = 'callback'`` to allow for
+- ``Solver`` can now use ``stop_strategy='callback'`` to allow for
   single call curve construction, by `Tanguy Lefort`_ and `Thomas Moreau`_
   (:gh:`137`).
 
@@ -210,7 +210,7 @@ DOC
 
 - Improve how-to narrative documentation, by `Alexandre Gramfort`_ (:gh:`93`).
 
-- Add what's a new page, by `Alexandre Gramfort`_ (:gh:`114`).
+- Add what's new page, by `Alexandre Gramfort`_ (:gh:`114`).
 
 - Add documentation on how to publish results, by `Alexandre Gramfort`_ (:gh:`118`).
 
