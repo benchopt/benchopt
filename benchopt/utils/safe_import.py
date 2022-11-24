@@ -35,7 +35,7 @@ def set_benchmark_module(benchmark_dir):
         warnings.warn(
             "Folder `benchmark_utils` exists but is missing `__init__.py`. "
             "Make sure it is a proper module to allow importing from it.",
-            warnings.ImportWarning
+            ImportWarning
         )
 
 
