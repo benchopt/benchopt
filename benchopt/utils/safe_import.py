@@ -105,7 +105,7 @@ class safe_import_context:
         warnings.warn(
             "import_from is deprecated. Please import reusable code for the "
             "benchmark from `benchmark_utils` module in the root dir of the "
-            "benchmark folder.", warnings.FutureWarning
+            "benchmark folder.", FutureWarning
         )
 
         module_path = BENCHMARK_DIR / 'utils' / module_name.replace('.', '/')
