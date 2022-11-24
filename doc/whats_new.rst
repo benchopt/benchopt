@@ -5,10 +5,24 @@ What's new
 
 .. currentmodule:: benchopt
 
+.. _changes_1_4:
+
+Version 1.4 - in development
+----------------------------
+
+Changelog
+~~~~~~~~~
+
+CLI
+~~~
+
+API
+~~~
+
 .. _changes_1_3:
 
-Version 1.3 - in development
-----------------------------
+Version 1.3 - 21/11/2022
+------------------------
 
 CLI
 ~~~

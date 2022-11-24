@@ -28,7 +28,7 @@ be **as simple as doing**:
    git clone https://github.com/benchopt/benchmark_logreg_l2
    cd benchmark_logreg_l2
    benchopt install -e . -s lightning -s sklearn
-   benchopt run -e . --config ./config_example.yml
+   benchopt run -e . --config ./example_config.yml
 
 Running this command will give you a benchmark plot on l2-regularized
 logistic regression:
