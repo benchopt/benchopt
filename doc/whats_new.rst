@@ -40,16 +40,16 @@ CLI
   files for sharing with others or as supplementary materials for papers.
   By `Thomas Moreau`_ (:gh:`408`).
 
-- Now the result data are saved in the Parquet format. The use of CSV file is deprecated.
+- Now the result data are saved in the Parquet format. The use of CSV files is deprecated.
   By `Melvine Nargeot`_ (:gh:`433`).
 
-- Change default number of repetitions to ``1``.
+- Change the default number of repetitions to ``1``.
   By `Benoît Malézieux`_ (:gh:`457`).
 
 API
 ~~~
 
-- Allow to change tracked metric in `StoppingCriterion`.
+- Allow changing tracked metric in ``StoppingCriterion``.
   By `Amélie Vernay`_ and `Thomas Moreau`_ (:gh:`461`).
 
 - Add latest git tag via ``benchmark-git-tag`` key in :func:`benchopt.utils.sys_info.get_sys_info`.
@@ -58,13 +58,13 @@ API
 - Deprecate ``Objective.to_dict`` in favor of :func:`~benchopt.BaseObjective.get_objective`.
   By `Mathurin Massias`_ (:gh:`489`).
 
-- Deprecate `import_from` in favor of a `benchmark_utils` module dynamically installed
+- Deprecate ``import_from`` in favor of a ``benchmark_utils`` module dynamically installed
   when running a benchmark. By `Mathurin Massias`_ and `Thomas Moreau`_ (:gh:`472`).
 
-- Allow to specify channels for conda requirements with synthax `chan:deps`.
+- Allow specifying channels for conda requirements with syntax ``chan:deps``.
   By `Thomas Moreau`_ (:gh:`483`).
 
-- Allow for template `Solver` and `Dataset` in `datasets/solvers` directory.
+- Allow for template ``Solver`` and ``Dataset`` in ``datasets``/ ``solvers`` directory.
   By `Thomas Moreau`_ (:gh:`473`).
 
 .. _changes_1_2:
@@ -83,7 +83,7 @@ Changelog
   :func:`benchopt.utils.profile`, by `Alexandre Gramfort`_ (:gh:`186`).
 
 - Replace ``SufficientDescentCriterion`` by ``SufficientProgressCriterion``,
-  which measures progress relatively to the best attained value instead of
+  which measures progress relative to the best attained value instead of
   the previous one, by `Thomas Moreau`_ (:gh:`176`)
 
 - Now all values returned by ``Objective.compute`` are included in reports,
@@ -95,21 +95,21 @@ Changelog
 API
 ~~~
 
-- When returning a dict, ``Objective.compute`` should at least include
+- When returning a dictionary, ``Objective.compute`` should at least include
   ``value`` key instead of ``objective_value``, by `Thomas Moreau`_ and
   `Alexandre Gramfort`_ (:gh:`200`).
 
-- 'stop_strategy' attribute is replaced by 'stopping_strategy' to harmonize
-  with 'stopping_criterion', by `Benoît Malézieux`_ (:gh:`274`).
+- ``stop_strategy`` attribute is replaced by ``stopping_strategy`` to harmonize
+  with ``stopping_criterion``, by `Benoît Malézieux`_ (:gh:`274`).
 
 - Add ``import_from`` method in ``safe_import_context`` to allow importing common
-  files and packages without install from `BENCHMARK_DIR/utils`,
+  files and packages without installation from `BENCHMARK_DIR/utils`,
   by `Thomas Moreau`_ (:gh:`286`).
 
 - Add ``X_density`` argument to ``datasets.make_correlated_data`` to simulate
   sparse design matrices, by `Mathurin Massias`_ (:gh:`289`).
 
-- ``Dataset.get_data`` should now return a dict and not a tuple. A point for
+- ``Dataset.get_data`` should now return a dictionary and not a tuple. A point for
   testing  should be returned by a dedicated method
   ``Objective.get_one_solution``, by `Thomas Moreau`_ (:gh:`345`).
 
@@ -132,7 +132,7 @@ Changelog
 - New plotting functions with different optimality criteria,
   by `Nidham Gazagnadou`_ (:gh:`96`).
 
-- Support plotly for plotting functions, by `Thomas Moreau`_,
+- Support Plotly for plotting functions, by `Thomas Moreau`_,
   `Tanguy Lefort`_ and `Joseph Salmon`_ (:gh:`110`, :gh:`111`, :gh:`112`).
 
 - Change envrionment variable for config from ``BENCHO_*`` to ``BENCHOPT_*``,
@@ -142,11 +142,11 @@ Changelog
   by `Alexandre Gramfort`_, `Tanguy Lefort`_ and `Thomas Moreau`_
   (:gh:`133`, :gh:`135`).
 
-- Move most CI to github action, with auto-release on pypi,
+- Move most CI to GitHub action, with auto-release on PyPi,
   by `Thomas Moreau`_ (:gh:`150`, :gh:`154`).
 
 - Remove ``BENCHOPT_ALLOW_INSTALL`` and always install to requested env as
-  user now must request explicitely the install,
+  the user now must request explicitly the install,
   by `Thomas Moreau`_ (:gh:`155`).
 
 API
@@ -158,13 +158,13 @@ API
 - ``Solver.skip`` can now be used to skip objectives that are incompatible
   for the Solver, by `Thomas Moreau`_ (:gh:`113`).
 
-- ``Solver`` can now use ``stop_strategy = 'callback'`` to allow for
+- ``Solver`` can now use ``stop_strategy='callback'`` to allow for
   single call curve construction, by `Tanguy Lefort`_ and `Thomas Moreau`_
   (:gh:`137`).
 
-- Add ``StoppingCriterion`` to reliably and flexibly assess a solver cvg.
+- Add ``StoppingCriterion`` to reliably and flexibly assess a solver convergence (cvg).
   For now, only ``SufficientDescentCriterion`` is implemented but better
-  API to set criterion per benchmark should be implemented in future release,
+  API to set criterion per benchmark should be implemented in a future release,
   by `Thomas Moreau`_ (:gh:`151`)
 
 CLI
@@ -182,7 +182,7 @@ CLI
 - Add ``benchopt publish`` command to push benchmark results to GitHub,
   by `Thomas Moreau`_ (:gh:`110`).
 
-- Add ``benchopt clean`` command to remove cached file and output files locally,
+- Add ``benchopt clean`` command to remove cached files and output files locally,
   by `Thomas Moreau`_ (:gh:`128`).
 
 - Add ``benchopt config`` command to allow easy configuration of ``benchopt``
@@ -208,7 +208,7 @@ BUG
 DOC
 ~~~
 
-- Improve how-to narative documentation, by `Alexandre Gramfort`_ (:gh:`93`).
+- Improve how-to narrative documentation, by `Alexandre Gramfort`_ (:gh:`93`).
 
 - Add what's new page, by `Alexandre Gramfort`_ (:gh:`114`).
 
