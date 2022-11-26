@@ -162,7 +162,8 @@ def compute_quantiles(df_filtered):
 
 def reset_solvers_idx():
     keys = list(solvers_idx.keys())
-    for key in keys: del solvers_idx[key]
+    for key in keys:
+        del solvers_idx[key]
     return None
 
 
