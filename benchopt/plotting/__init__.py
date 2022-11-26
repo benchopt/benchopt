@@ -12,7 +12,7 @@ from .generate_html import plot_benchmark_html
 
 
 def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
-                   html=True):
+                   html=True, reset_style=False):
     """Plot convergence curve and bar chart for a given benchmark.
 
     Parameters
@@ -32,6 +32,9 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
     html : bool
         If True plot the benchmark in an HTML page. If True, plotly
         is necessarily used.
+    reset_style : bool
+        If set to true, reset the colors and markers associated with each
+        solver before generating the plots.
 
     Returns
     -------
@@ -83,9 +86,11 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
                         continue
                     plot_func = globals()[PLOT_KINDS[kind]]
                     try:
-                        fig = plot_func(df_obj, obj_col=obj_col, plotly=plotly)
+                        fig = plot_func(df_obj, obj_col=obj_col,
+                                        plotly=plotly, reset_style=reset_style)
                     except TypeError:
-                        fig = plot_func(df_obj, obj_col=obj_col)
+                        fig = plot_func(df_obj, obj_col=obj_col,
+                                        reset_style=reset_style)
                     save_name = output_dir / f"{plot_id}_{obj_col}_{kind}"
                     if hasattr(fig, 'write_html'):
                         save_name = save_name.with_suffix('.html')

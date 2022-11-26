@@ -14,7 +14,8 @@ def _remove_prefix(text, prefix):
 
 
 def plot_objective_curve(df, obj_col='objective_value',
-                         suboptimality=False, relative=False):
+                         suboptimality=False, relative=False,
+                         reset_style=False):
     """Plot objective curve for a given benchmark and dataset.
 
     Plot the objective value F(x) as a function of the time.
@@ -32,6 +33,9 @@ def plot_objective_curve(df, obj_col='objective_value',
     relative : bool
         If set to True, scale the objective value by 1 / F_0 where F_0 is
         computed as the largest objective value accross all initialization.
+    reset_style : bool
+        If set to true, reset the colors and markers associated with each
+        solver before generating the plots.
 
     Returns
     -------
@@ -73,6 +77,8 @@ def plot_objective_curve(df, obj_col='objective_value',
         q1 = df_.groupby('stop_val')['time'].quantile(.1)
         q9 = df_.groupby('stop_val')['time'].quantile(.9)
 
+        if reset_style and i == 0:
+            reset_solvers_idx()
         color, marker = get_solver_style(solver_name, plotly=False)
         plt.loglog(curve['time'], curve[obj_col], color=color, marker=marker,
                    label=solver_name, linewidth=3)
@@ -94,7 +100,8 @@ def plot_objective_curve(df, obj_col='objective_value',
     return fig
 
 
-def plot_suboptimality_curve(df, obj_col='objective_value'):
+def plot_suboptimality_curve(df, obj_col='objective_value',
+                             reset_style=False):
     """Plot suboptimality curve for a given benchmark and dataset.
 
     Plot suboptimality, that is F(x) - F(x^*) as a function of time,
@@ -106,16 +113,21 @@ def plot_suboptimality_curve(df, obj_col='objective_value'):
         The benchmark results.
     obj_col : str
         Column to select in the DataFrame for the plot.
+    reset_style : bool
+        If set to true, reset the colors and markers associated with each
+        solver before generating the plots.
 
     Returns
     -------
     fig : instance of matplotlib.figure.Figure
         The matplotlib figure.
     """
-    return plot_objective_curve(df, obj_col=obj_col, suboptimality=True)
+    return plot_objective_curve(df, obj_col=obj_col, suboptimality=True,
+                                reset_style=reset_style)
 
 
-def plot_relative_suboptimality_curve(df, obj_col='objective_value'):
+def plot_relative_suboptimality_curve(df, obj_col='objective_value',
+                                      reset_style=False):
     """Plot relative suboptimality curve for a given benchmark and dataset.
 
     Plot relative suboptimality, that is (F(x) - F(x*)) / (F_0 - F(x*)) as a
@@ -128,6 +140,9 @@ def plot_relative_suboptimality_curve(df, obj_col='objective_value'):
         The benchmark results.
     obj_col : str
         Column to select in the DataFrame for the plot.
+    reset_style : bool
+        If set to true, reset the colors and markers associated with each
+        solver before generating the plots.
 
     Returns
     -------
@@ -135,7 +150,7 @@ def plot_relative_suboptimality_curve(df, obj_col='objective_value'):
         The matplotlib figure.
     """
     return plot_objective_curve(df, obj_col=obj_col, suboptimality=True,
-                                relative=True)
+                                relative=True, reset_style=reset_style)
 
 
 def compute_quantiles(df_filtered):
@@ -143,6 +158,12 @@ def compute_quantiles(df_filtered):
     q9 = df_filtered.groupby('stop_val')['time'].quantile(.9)
 
     return q1, q9
+
+
+def reset_solvers_idx():
+    keys = list(solvers_idx.keys())
+    for key in keys: del solvers_idx[key]
+    return None
 
 
 def get_solver_style(solver, plotly=True):
