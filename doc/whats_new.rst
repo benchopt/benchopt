@@ -5,19 +5,23 @@ What's new
 
 .. currentmodule:: benchopt
 
-.. _changes_1_4:
+.. _changes_1_3_1:
 
-Version 1.4 - in development
-----------------------------
+Version 1.3.1 - 01/12/2022
+--------------------------
 
-Changelog
-~~~~~~~~~
+Bug fix release
 
-CLI
+FIX
 ~~~
 
-API
-~~~
+- Typo in README and doc
+
+- Barchart solver color to be the same as the other plots.
+
+- Warning for deprecation not using the right class
+
+- Plot quantile incorrect display
 
 .. _changes_1_3:
 
