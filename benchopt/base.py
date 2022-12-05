@@ -4,6 +4,8 @@ import warnings
 
 from abc import ABC, abstractmethod
 
+from .callback import _Callback
+from .stopping_criterion import SingleRunCriterion
 from .stopping_criterion import SufficientProgressCriterion
 
 from .utils.safe_import import set_benchmark_module
@@ -182,6 +184,21 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
                 return True, f"{self} does not support sparse data."
 
         return False, None
+
+    def warmup_solver(self):
+        "Hook to pre-compile the solver dependencies."
+
+        if self._solver_strategy == "callback":
+            run_once_cb = _Callback(
+                lambda x: {'objective_value': 1},
+                {},
+                SingleRunCriterion().get_runner_instance(
+                    solver=self, max_runs=1
+                )
+            )
+            self.run(run_once_cb)
+        else:
+            self.run(1)
 
     @staticmethod
     def _reconstruct(module_filename, parameters, objective,
