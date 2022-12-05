@@ -15,9 +15,12 @@ CLI
 
 API
 ---
-- Add ``SingleRunCriterion`` for solver where we are interested in
-  objective value at convergence.
+
+- Add :class:`~benchopt.stopping_criterion.SingleRunCriterion` for solver where
+  we are interested in objective value at convergence.
   By `Thomas Moreau`_ (:gh:`511`)
+- Add :func:`~benchopt.BaseSolver.warmup_solver` hook for to control Solvers
+  warmup easily. By `Thomas Moreau`_ (:gh:`511`)
 
 
 FIX
