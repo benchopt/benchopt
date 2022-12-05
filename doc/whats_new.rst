@@ -15,6 +15,10 @@ CLI
 
 API
 ---
+- Add ``SingleRunCriterion`` for solver where we are interested in
+  objective value at convergence.
+  By `Thomas Moreau`_ (:gh:`511`)
+
 
 FIX
 ---
