@@ -4,7 +4,7 @@
 Python API
 ==========
 
-Here is a list of Python function available to construct a new benchmark with
+Here is a list of Python functions available to construct a new benchmark with
 :py:mod:`benchopt`:
 
 
@@ -30,9 +30,11 @@ Benchopt run hooks
 :func:`~benchopt.BaseSolver.skip`: hook to allow skipping some configurations.
 Also available for ``Dataset`` and ``Objective``.
 
-:func:`~benchopt.BaseSolver.warmup_solver`: hook to allow to run precomputation and warmup for specific library.
+:func:`~benchopt.BaseSolver.warmup_solver`: hook to allow to run precomputation
+and warmup for specific library.
 
-:func:`~benchopt.BaseSolver.get_next`: hook to change the sampling points for a given solver.
+:func:`~benchopt.BaseSolver.get_next`: hook to change the sampling points for
+a given solver.
 
 
 Benchopt utils
