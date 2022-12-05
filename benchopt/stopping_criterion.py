@@ -136,7 +136,7 @@ class StoppingCriterion():
                 # and type(solver.get_next) == staticmethod
             ), "if defined, get_next should be a static method of the solver."
             try:
-                solver.get_next(0)
+                solver.get_next(1)
             except TypeError:
                 raise ValueError(
                     "get_next(0) throw a TypeError. Verify that `get_next` "

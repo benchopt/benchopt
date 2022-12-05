@@ -160,7 +160,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         ...
 
     def skip(self, **objective_dict):
-        """Used to decide if the ``Solver`` is compatible with the objective.
+        """Hook to decide if the ``Solver`` is compatible with the objective.
 
         Parameters
         ----------
@@ -186,7 +186,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         return False, None
 
     def warmup_solver(self):
-        "Hook to pre-compile the solver dependencies."
+        "Hook to warmup the solver dependency, in particular pre-compilations."
 
         if self._solver_strategy == "callback":
             run_once_cb = _Callback(
