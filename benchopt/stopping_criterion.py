@@ -160,7 +160,7 @@ class StoppingCriterion():
         self.progress('initialization')
         return stop_val
 
-    def should_stop(self, stop_val, cost_curve):
+    def should_stop(self, stop_val, objective_list):
         """Base call to check if we should stop running a solver.
 
         This base call checks for the timeout and the max number of runs.
@@ -172,7 +172,7 @@ class StoppingCriterion():
         stop_val : int | float
             Corresponds to stopping criterion of the underlying algorithm, such
             as ``tol`` or ``max_iter``.
-        cost_curve : list of dict
+        objective_list : list of dict
             List of dict containing the values associated to the objective at
             each evaluated points.
 
@@ -190,10 +190,10 @@ class StoppingCriterion():
         # - compute the number of run with the curve. We need to remove 1 as
         #   it contains the initial evaluation.
         # - compute the delta_objective for debugging and stalled progress.
-        n_eval = len(cost_curve) - 1
-        objective = cost_curve[-1][self.key_to_monitor]
+        n_eval = len(objective_list) - 1
+        objective = objective_list[-1][self.key_to_monitor]
         delta_objective = self._prev_objective - objective
-        delta_objective /= abs(cost_curve[0][self.key_to_monitor])
+        delta_objective /= abs(objective_list[0][self.key_to_monitor])
         self._prev_objective = objective
 
         # default value for is_flat
@@ -214,7 +214,7 @@ class StoppingCriterion():
         else:
             # Call the sub-class hook, used to check stopping criterion
             # on the curve.
-            stop, progress = self.check_convergence(cost_curve)
+            stop, progress = self.check_convergence(objective_list)
 
             # Display the progress if necessary
             progress = max(n_eval / self.max_runs, progress)
@@ -240,12 +240,12 @@ class StoppingCriterion():
 
         return stop, status, stop_val
 
-    def check_convergence(self, cost_curve):
+    def check_convergence(self, objective_list):
         """Check if the solver should be stopped based on the objective curve.
 
         Parameters
         ----------
-        cost_curve : list of dict
+        objective_list : list of dict
             List of dict containing the values associated to the objective at
             each evaluated points.
 
@@ -334,12 +334,12 @@ class SufficientDescentCriterion(StoppingCriterion):
             key_to_monitor=key_to_monitor
         )
 
-    def check_convergence(self, cost_curve):
+    def check_convergence(self, objective_list):
         """Check if the solver should be stopped based on the objective curve.
 
         Parameters
         ----------
-        cost_curve : list of dict
+        objective_list : list of dict
             List of dict containing the values associated to the objective at
             each evaluated points.
 
@@ -353,9 +353,9 @@ class SufficientDescentCriterion(StoppingCriterion):
             that the solver has converged.
         """
         # Compute the current objective
-        objective = cost_curve[-1][self.key_to_monitor]
+        objective = objective_list[-1][self.key_to_monitor]
         delta_objective = self._objective - objective
-        delta_objective /= abs(cost_curve[0][self.key_to_monitor])
+        delta_objective /= abs(objective_list[0][self.key_to_monitor])
         self._objective = objective
 
         # Store only the last ``patience`` values for progress
@@ -414,12 +414,12 @@ class SufficientProgressCriterion(StoppingCriterion):
             key_to_monitor=key_to_monitor
         )
 
-    def check_convergence(self, cost_curve):
+    def check_convergence(self, objective_list):
         """Check if the solver should be stopped based on the objective curve.
 
         Parameters
         ----------
-        cost_curve : list of dict
+        objective_list : list of dict
             List of dict containing the values associated to the objective at
             each evaluated points.
 
@@ -433,9 +433,9 @@ class SufficientProgressCriterion(StoppingCriterion):
             that the solver has converged.
         """
         # Compute the current objective and update best value
-        objective = cost_curve[-1][self.key_to_monitor]
+        objective = objective_list[-1][self.key_to_monitor]
         delta_objective = self._best_objective - objective
-        delta_objective /= abs(cost_curve[0][self.key_to_monitor])
+        delta_objective /= abs(objective_list[0][self.key_to_monitor])
         self._best_objective = min(
             objective, self._best_objective
         )
