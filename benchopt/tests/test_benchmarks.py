@@ -176,18 +176,30 @@ def test_solver(benchmark, solver_class):
     )
 
     dataset_class = simulated_dataset[0]
-    dataset = dataset_class.get_instance(**dataset_config)
-    objective.set_dataset(dataset)
+    dataset_test_parameters = product_param(getattr(
+        dataset_class, 'test_parameters', {}
+    ))
+    if not dataset_test_parameters:
+        dataset_test_parameters = [{}]
+    solver_ran_once = False
+    for params in dataset_test_parameters:
+        params.update(dataset_config)
+        dataset = dataset_class.get_instance(**params)
 
-    solver = solver_class.get_instance()
-    skip, reason = solver._set_objective(objective)
-    if skip:
-        raise ValueError(
-            'Solver skipped run test configuration. One simulated dataset and '
-            'objective config should be compatible with a solver, potentially '
-            'provided through "test_config" class attribute.'
-        )
-    _test_solver_one_objective(solver, objective)
+        objective.set_dataset(dataset)
+        solver = solver_class.get_instance()
+        skip, reason = solver._set_objective(objective)
+        if skip:
+            continue
+        solver_ran_once = True
+        _test_solver_one_objective(solver, objective)
+
+    assert solver_ran_once, (
+        'Solver skipped all test configuration. At least one simulated '
+        'dataset and one objective config should be compatible with the '
+        'solver, potentially provided through "Solver.test_config" class '
+        'attribute or with `Dataset.test_parameters`.'
+    )
 
 
 def _test_solver_one_objective(solver, objective):
