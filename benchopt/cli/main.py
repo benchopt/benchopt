@@ -471,8 +471,7 @@ def install(
 @main.command(
     help="Test a benchmark for benchopt. The benchmark must feature a "
     "simulated dataset to test for all solvers. For more info about the "
-    "simulated dataset configurations, see"
-    "benchopt.github.io/how.html#example-of-parametrized-simulated-dataset",
+    "benchmark tests configuration and requirements, see :ref:`test_config`.",
     context_settings=dict(ignore_unknown_options=True)
 )
 @click.argument('benchmark', default=Path.cwd(), type=click.Path(exists=True),
