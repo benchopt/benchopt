@@ -1,13 +1,12 @@
 import numpy as np
 
 from .helpers_compat import get_figure, _make_bars
-from .plot_objective_curve import get_solver_style, reset_solvers_idx
+from .plot_objective_curve import get_solver_style
 
 PLOTLY_GRAY = (.8627, .8627, .8627)
 
 
-def plot_bar_chart(df, obj_col='objective_value', plotly=False,
-                   reset_style=False):
+def plot_bar_chart(df, obj_col='objective_value', plotly=False):
     """Plot bar chart for a given benchmark and dataset.
 
     Parameters
@@ -18,9 +17,6 @@ def plot_bar_chart(df, obj_col='objective_value', plotly=False,
         Column to select in the DataFrame for the plot.
     plotly : bool
         If set to True, creates a figure with plotly instead of matplotlib.
-    reset_style : bool
-        If set to true, reset the colors and markers associated with each
-        solver before generating the plots.
 
     Returns
     -------
@@ -42,8 +38,6 @@ def plot_bar_chart(df, obj_col='objective_value', plotly=False,
     fig = get_figure(plotly)
     c_star = df[obj_col].min() + eps
     for i, solver_name in enumerate(solver_names):
-        if reset_style and i == 0:
-            reset_solvers_idx()
         col, _ = get_solver_style(solver_name, plotly=False)
         colors.append(col)
         xi = (i + 1.5) * width

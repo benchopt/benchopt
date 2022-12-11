@@ -8,11 +8,12 @@ from .plot_bar_chart import plot_bar_chart  # noqa: F401
 from .plot_objective_curve import plot_objective_curve  # noqa: F401
 from .plot_objective_curve import plot_suboptimality_curve  # noqa: F401
 from .plot_objective_curve import plot_relative_suboptimality_curve  # noqa: F401 E501
+from .plot_objective_curve import reset_solver_styles_idx
 from .generate_html import plot_benchmark_html
 
 
 def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
-                   html=True, reset_style=False):
+                   html=True):
     """Plot convergence curve and bar chart for a given benchmark.
 
     Parameters
@@ -32,9 +33,6 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
     html : bool
         If True plot the benchmark in an HTML page. If True, plotly
         is necessarily used.
-    reset_style : bool
-        If set to true, reset the colors and markers associated with each
-        solver before generating the plots.
 
     Returns
     -------
@@ -86,11 +84,9 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
                         continue
                     plot_func = globals()[PLOT_KINDS[kind]]
                     try:
-                        fig = plot_func(df_obj, obj_col=obj_col,
-                                        plotly=plotly, reset_style=reset_style)
+                        fig = plot_func(df_obj, obj_col=obj_col, plotly=plotly)
                     except TypeError:
-                        fig = plot_func(df_obj, obj_col=obj_col,
-                                        reset_style=reset_style)
+                        fig = plot_func(df_obj, obj_col=obj_col)
                     save_name = output_dir / f"{plot_id}_{obj_col}_{kind}"
                     if hasattr(fig, 'write_html'):
                         save_name = save_name.with_suffix('.html')
