@@ -8,7 +8,6 @@ from .plot_bar_chart import plot_bar_chart  # noqa: F401
 from .plot_objective_curve import plot_objective_curve  # noqa: F401
 from .plot_objective_curve import plot_suboptimality_curve  # noqa: F401
 from .plot_objective_curve import plot_relative_suboptimality_curve  # noqa: F401 E501
-from .plot_objective_curve import reset_solver_styles_idx
 from .generate_html import plot_benchmark_html
 
 
