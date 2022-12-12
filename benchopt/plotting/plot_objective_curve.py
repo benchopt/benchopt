@@ -145,6 +145,11 @@ def compute_quantiles(df_filtered):
     return q1, q9
 
 
+def reset_solver_styles_idx():
+    "Reset solvers indices used to define colors and markers."
+    solvers_idx.clear()
+
+
 def get_solver_style(solver, plotly=True):
     idx = solvers_idx.get(solver, len(solvers_idx))
     solvers_idx[solver] = idx
