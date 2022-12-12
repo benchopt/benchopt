@@ -90,8 +90,6 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
 
     curve = []
     with exception_handler(output, pdb=pdb) as ctx:
-        output.progress('empty run for compilation')
-        solver.warmup_solver()
 
         if solver._solver_strategy == "callback":
 
@@ -173,9 +171,8 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
         output.skip(reason, objective=True)
         return []
 
-    skip, reason = solver._set_objective(objective)
+    skip = solver._set_objective(objective, output=output)
     if skip:
-        output.skip(reason)
         return []
 
     states = []
