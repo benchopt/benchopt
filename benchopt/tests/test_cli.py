@@ -123,7 +123,7 @@ class TestRunCmd:
 
         out.check_output('Simulated', repetition=1)
         out.check_output('Dummy Sparse Regression', repetition=1)
-        out.check_output(r'Python-PGD\[step_size=1\]:', repetition=7)
+        out.check_output(r'Python-PGD\[step_size=1\]:', repetition=6)
         out.check_output(r'Python-PGD\[step_size=1.5\]:', repetition=0)
 
         # Make sure the results were saved in a result file
@@ -140,7 +140,7 @@ class TestRunCmd:
         out.check_output(f'conda activate {test_env_name}')
         out.check_output('Simulated', repetition=1)
         out.check_output('Dummy Sparse Regression', repetition=1)
-        out.check_output(r'Python-PGD\[step_size=1\]:', repetition=7)
+        out.check_output(r'Python-PGD\[step_size=1\]:', repetition=6)
         out.check_output(r'Python-PGD\[step_size=1.5\]:', repetition=0)
 
         # Make sure the results were saved in a result file
@@ -165,9 +165,9 @@ class TestRunCmd:
         out.check_output(r'Dummy Sparse Regression\[reg=0.05\]', repetition=0)
         out.check_output(r'--Python-PGD\[', repetition=0)
         out.check_output(r'--Python-PGD-with-cb\[use_acceleration=False\]:',
-                         repetition=28)
+                         repetition=24)
         out.check_output(r'--Python-PGD-with-cb\[use_acceleration=True\]:',
-                         repetition=28)
+                         repetition=24)
 
     def test_benchopt_run_profile(self):
         with CaptureRunOutput() as out:
@@ -214,16 +214,16 @@ class TestRunCmd:
         with CaptureRunOutput() as out:
             run(run_cmd, 'benchopt', standalone_mode=False)
 
-        out.check_output(r'Solver-Test\[raise_error=False\]:', repetition=13)
-        out.check_output(r'Python-PGD\[step_size=2\]:', repetition=13)
-        out.check_output(r'Python-PGD\[step_size=3\]:', repetition=13)
+        out.check_output(r'Solver-Test\[raise_error=False\]:', repetition=11)
+        out.check_output(r'Python-PGD\[step_size=2\]:', repetition=11)
+        out.check_output(r'Python-PGD\[step_size=3\]:', repetition=11)
 
         # test that CLI options take precedence
         with CaptureRunOutput() as out:
             run(run_cmd + ['-f', 'Solver-Test'],
                 'benchopt', standalone_mode=False)
 
-        out.check_output(r'Solver-Test\[raise_error=False\]:', repetition=13)
+        out.check_output(r'Solver-Test\[raise_error=False\]:', repetition=11)
         out.check_output(
             r'Python-PGD\[step_size=1.5\]:', repetition=0)
 
@@ -246,7 +246,7 @@ class TestRunCmd:
         # Check that this run was properly done. If only one is detected, this
         # could indicate that the clean command does not work properly.
         out.check_output(r'Python-PGD\[step_size=1\]:',
-                         repetition=6*n_rep+1)
+                         repetition=5*n_rep+1)
 
         # Now check that the cache is hit when running the benchmark a
         # second time without force
@@ -269,7 +269,7 @@ class TestRunCmd:
             run(run_cmd, 'benchopt', standalone_mode=False)
 
         out.check_output(r'Python-PGD\[step_size=1\]:',
-                         repetition=6*n_rep+1)
+                         repetition=5*n_rep+1)
 
     def test_changing_output_name(self):
         command = [
