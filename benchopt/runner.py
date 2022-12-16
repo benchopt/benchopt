@@ -58,7 +58,7 @@ def run_one_resolution(objective, solver, meta, stop_val):
 
 
 def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
-                   force=False, output=None, pdb=False):
+                   force=False, output=None, pdb=False, wandb=False):
     """Run all repetitions of the solver for a value of stopping criterion.
 
     Parameters
@@ -79,6 +79,10 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
         for the solver anyway. Else, use the cache if available.
     pdb : bool
         It pdb is set to True, open a debugger on error.
+    wandb : bool
+        It wandb is set to True, send the results to a wandb page. This option
+        needs to have wandb installed and configured. See the wandb
+        documentation: https://wandb.ai/quickstart.
 
     Returns
     -------
@@ -105,7 +109,7 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
             # If stopping strategy is 'callback', only call once to get the
             # results up to convergence.
             callback = _Callback(
-                objective, meta, stopping_criterion
+                objective, meta, stopping_criterion, wandb
             )
             solver.run(callback)
             curve, ctx.status = callback.get_results()
@@ -117,6 +121,19 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
                 run_one_resolution, force
             )
 
+            # Configure W&B if necessary
+            if wandb:
+                try:
+                    import wandb as wb
+                except ImportError:
+                    raise ImportError(
+                        "To be able to use wandb, install and configure it."
+                    )
+                run = wb.init(
+                    name=meta['solver_name'],
+                    project=meta['benchmark_name'], config=meta, reinit=True
+                )
+
             # compute initial value
             call_args = dict(objective=objective, solver=solver, meta=meta)
 
@@ -127,17 +144,24 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
                 cost = run_one_resolution_cached(stop_val=stop_val,
                                                  **call_args)
                 curve.append(cost)
+                if wandb:
+                    wb.log({
+                        k: v for k, v in cost.items() if k.startswith('objective')
+                    })
 
                 # Check the stopping criterion and update rho if necessary.
                 stop, ctx.status, stop_val = stopping_criterion.should_stop(
                     stop_val, curve
                 )
+            if wandb:
+                run.finish(quiet=True)
 
     return curve, ctx.status
 
 
 def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
-                   max_runs, timeout, force=False, output=None, pdb=False):
+                   max_runs, timeout, force=False, output=None, pdb=False,
+                   wandb=False):
     """Run a benchmark for a given dataset, objective and solver.
 
     Parameters
@@ -164,6 +188,10 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
         Object to format string to display the progress of the solver.
     pdb : bool
         It pdb is set to True, open a debugger on error.
+    wandb : bool
+        It wandb is set to True, send the results to a wandb page. This option
+        needs to have wandb installed and configured. See the wandb
+        documentation: https://wandb.ai/quickstart.
 
     Returns
     -------
@@ -171,7 +199,7 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
         The benchmark results.
     """
     run_one_to_cvg_cached = benchmark.cache(
-        run_one_to_cvg, ignore=['force', 'output', 'pdb']
+        run_one_to_cvg, ignore=['force', 'output', 'pdb', 'wandb']
     )
 
     # Set objective an skip if necessary.
@@ -192,6 +220,7 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
         output.set(rep=rep)
         # Get meta
         meta = dict(
+            benchmark_name=benchmark.name,
             objective_name=str(objective),
             solver_name=str(solver),
             data_name=str(dataset),
@@ -208,7 +237,7 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
             benchmark=benchmark, objective=objective,
             solver=solver, meta=meta,
             stopping_criterion=stopping_criterion,
-            force=force, output=output, pdb=pdb
+            force=force, output=output, pdb=pdb, wandb=wandb
         )
         if status in ['diverged', 'error', 'interrupted']:
             run_statistics = []
@@ -237,7 +266,7 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                   dataset_names=None, objective_filters=None, max_runs=10,
                   n_repetitions=1, timeout=100, n_jobs=1, slurm=None,
                   plot_result=True, html=True, show_progress=True, pdb=False,
-                  output="None"):
+                  wandb=False, output="None"):
     """Run full benchmark.
 
     Parameters
@@ -278,6 +307,10 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
         If show_progress is set to True, display the progress of the benchmark.
     pdb : bool
         It pdb is set to True, open a debugger on error.
+    wandb : bool
+        It wandb is set to True, send the results to a wandb page. This option
+        needs to have wandb installed and configured. See the wandb
+        documentation: https://wandb.ai/quickstart.
     output_name : str
         Filename for the parquet output. If given, the results will
         be stored at <BENCHMARK>/outputs/<filename>.parquet.
@@ -304,7 +337,7 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
     )
     common_kwargs = dict(
         benchmark=benchmark, n_repetitions=n_repetitions, max_runs=max_runs,
-        timeout=timeout, pdb=pdb
+        timeout=timeout, pdb=pdb, wandb=wandb
     )
 
     if slurm is not None:
