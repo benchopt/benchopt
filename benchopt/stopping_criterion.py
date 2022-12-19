@@ -139,7 +139,7 @@ class StoppingCriterion():
                 solver.get_next(1)
             except TypeError:
                 raise ValueError(
-                    "get_next(0) throw a TypeError. Verify that `get_next` "
+                    "get_next(1) throw a TypeError. Verify that `get_next` "
                     "signature is get_next(stop_val) and that it is "
                     "a staticmethod."
                 )
