@@ -19,8 +19,8 @@ API
 - Add :class:`~benchopt.stopping_criterion.SingleRunCriterion` to run a solver
   only once. This can be used for benchmarking methods where we are interested
   in objective value at convergence. By `Thomas Moreau`_ (:gh:`511`)
-- Add :func:`~benchopt.BaseSolver.warmup_solver` hook for to control solvers
-  warmup easily. By `Thomas Moreau`_ (:gh:`511`)
+- Add :func:`~benchopt.BaseSolver.run_once` helper to easily warmup solvers
+  with callback. By `Thomas Moreau`_ (:gh:`511`)
 
 
 FIX

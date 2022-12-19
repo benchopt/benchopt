@@ -30,9 +30,6 @@ Benchopt run hooks
 :func:`~benchopt.BaseSolver.skip`: hook to allow skipping some configurations.
 Also available for ``Dataset`` and ``Objective``.
 
-:func:`~benchopt.BaseSolver.warmup_solver`: hook to allow to run precomputation
-and warmup for specific library.
-
 :func:`~benchopt.BaseSolver.get_next`: hook to change the sampling points for
 a given solver.
 

@@ -437,32 +437,39 @@ class SufficientProgressCriterion(StoppingCriterion):
 class SingleRunCriterion(StoppingCriterion):
     """Stopping criterion for single run solvers.
 
-    The solver will be stopped after one iteration.
+    The solver will be stopped after one call to the objective.
 
-    This criterion should have no parameter.
+    Parameters
+    ----------
+    stop_val : int or float, (default: 1)
+        Value of ``stop_val`` with which the objective function will be called.
+        This value will be passed as ``n_iter`` or ``tol`` parameter for the
+        ``run`` method of solver with ``stopping_strategy`` respectively equals
+        to ``'iteration'`` or ``'tolerance'``, or the number of callback calls
+        minus one for the ``'callback'`` strategy.
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, stop_val=1, *args, **kwargs):
         # Necessary as the criterion is given a strategy argument when
         # instanciated for an instance.
-        super().__init__(strategy="iteration")
+        super().__init__(strategy="iteration", stop_val=stop_val)
+        self.stop_val = stop_val
+
+    def init_stop_val(self):
+        return self.stop_val
+
+    def get_runner_instance(self, max_runs=1, timeout=None, output=None,
+                            solver=None):
+
+        return super().get_runner_instance(1, timeout, output, solver)
 
     def check_convergence(self, cost_curve):
-        """Check if the solver should be stopped based on the objective curve.
-
-        Parameters
-        ----------
-        cost_curve : list of dict
-            List of dict containing the values associated to the objective at
-            each evaluated points.
-
-        Returns
-        -------
-        stop : bool
-            Whether or not we should stop the algorithm.
-        progress : float
-            Measure of how far the solver is from convergence.
-            This should be in [0, 1], 0 meaning no progress and 1 meaning
-            that the solver has converged.
-        """
         return True, 1
+
+
+class NoCriterion(StoppingCriterion):
+    """Run the solvers for a number of time fixed by max_iter and timeout.
+    """
+
+    def check_convergence(self, cost_curve):
+        return False, 0

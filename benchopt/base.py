@@ -187,8 +187,21 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
 
         return False, None
 
-    def run_once(self):
-        "Run the solver once, to cache warmup times (e.g. pre-compilations)."
+    def run_once(self, stop_val=1):
+        """Run the solver once, to cache warmup times (e.g. pre-compilations).
+
+        This function is intended to be call in `Solver.set_objective` method
+        to avoid taking into account a solver's warmup costs.
+
+        Parameters
+        ----------
+        stop_val : int or float, (default: 1)
+            If `stopping_strategy` is {'iterations', 'callback'}, this should
+            be an integer corresponding to the number of iteration the solver
+            is run for.
+            If it is 'tolerance', this can be a float which is passed to call
+            the solver on an easy to solve problem.
+        """
 
         if hasattr(self, '_output'):
             self._output.progress('caching warmup times.')
@@ -197,13 +210,13 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
             run_once_cb = _Callback(
                 lambda x: {'objective_value': 1},
                 {},
-                SingleRunCriterion().get_runner_instance(
-                    solver=self, max_runs=1
+                SingleRunCriterion(stop_val=stop_val).get_runner_instance(
+                    solver=self
                 )
             )
             self.run(run_once_cb)
         else:
-            self.run(1)
+            self.run(stop_val)
 
     @staticmethod
     def _reconstruct(module_filename, parameters, objective, output,
