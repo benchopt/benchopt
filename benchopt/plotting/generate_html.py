@@ -6,6 +6,7 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 from mako.template import Template
+from numpydoc import NumpyDocString
 
 from benchopt.benchmark import Benchmark
 from ..constants import PLOT_KINDS
@@ -281,6 +282,15 @@ def render_index(benchmarks, len_fnames):
         pretty_names=pretty_names,
         len_fnames=len_fnames
     )
+
+
+def get_objective_descr(bench_path):
+    if (bench_path / "objective.py").exists():
+        benchmark = Benchmark(bench_path)
+    else:
+        raise FileNotFoundError(f"No objective.py in {bench_path.resolve()}")
+    doc = NumpyDocString(benchmark.get_objective().compute.__doc__)
+    returns = doc["Returns"]
 
 
 def get_pretty_name(bench_path):
