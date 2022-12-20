@@ -141,7 +141,7 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               "ipdb if it is installed and default to pdb otherwise.")
 @click.option('--wandb',
               is_flag=True,
-              help="Log the results in WandB. This option reauires having "
+              help="Log the results in WandB. This option requires having "
               "installed wandb. See the wandb documentation: "
               "https://wandb.ai/quickstart.")
 @click.option('--local', '-l', 'env_name',

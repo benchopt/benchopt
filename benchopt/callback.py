@@ -70,7 +70,6 @@ class _Callback:
                 project=meta['benchmark_name'], config=meta, reinit=True
             )
         else:
-
             self.wandb = None
 
     def __call__(self, x):
