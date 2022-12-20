@@ -2,6 +2,7 @@
 """
 import sys
 import hashlib
+import warnings
 import importlib
 from pathlib import Path
 
@@ -69,6 +70,9 @@ def _load_class_from_module(module_filename, class_name, benchmark_dir):
             var = getattr(module, var_name)
             if isinstance(var, safe_import_context):
                 klass._import_ctx = var
+                warnings.warn(
+                    "Import contexts should preferably be named import_ctx, "
+                    f"got {var_name}.",  UserWarning)
                 break
         else:
             klass._import_ctx = safe_import_context()
