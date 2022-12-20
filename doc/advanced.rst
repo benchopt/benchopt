@@ -159,6 +159,37 @@ Then, these modules and packages can be imported as a regular package, i.e.,
         from benchmark_utils.helper_module.submodule1 import func2
 
 
+
+.. _precompilation:
+
+Caching pre-compilation and warmup effects
+------------------------------------------
+
+For some solvers, such as solver relying on just-in-time compilation with
+``numba`` or ``jax``, the first iteration might be longer due to "warmup"
+effects. To avoid having such effect in the benchmark results, it is usually
+advised to call the solver once before running the benchmark, in the
+``Solver.set_objective`` method. For solvers with ``stopping_strategy`` in
+``{'tolerance',  'iteration'}``, simply calling the ``Solver.run`` with a
+simple enough value is usually enough. For solvers with ``stopping_strategy``
+set to ``'callback'``, it is possible to call ``Solver.run_once``, which will
+call the ``run`` method with a simple callback that does not compute the
+objective value and stops after ``n_iter`` calls to callback (default to 1).
+
+
+.. code-block:: python
+
+    class Solver(BaseSolver):
+        ...
+
+        def set_objective(**objective):
+            ...
+            # Cache pre-compilation and other one-time setups that should
+            # not be included in the benchmark timing.
+            self.run(1)  # For stopping_strategy == 'iteration' | 'tolerance'
+            self.run_once()  # For stopping_strategy == 'callback'
+
+
 .. |update_params| replace:: ``update_parameters``
 .. _update_params: https://github.com/facebookincubator/submitit/blob/main/submitit/slurm/slurm.py#L386
 

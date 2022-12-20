@@ -4,6 +4,8 @@ import warnings
 
 from abc import ABC, abstractmethod
 
+from .callback import _Callback
+from .stopping_criterion import SingleRunCriterion
 from .stopping_criterion import SufficientProgressCriterion
 
 from .utils.safe_import import set_benchmark_module
@@ -69,7 +71,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         else:
             return self.stopping_criterion.strategy
 
-    def _set_objective(self, objective):
+    def _set_objective(self, objective, output=None):
         """Store the objective for hashing/pickling and check its compatibility
 
         Parameters
@@ -86,6 +88,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
             If skip is False, the reason should be None.
         """
         self._objective = objective
+        self._output = output
         # XXX remove in version 1.4
         objective_dict = objective.get_objective()
         if objective_dict is None:
@@ -103,10 +106,11 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         # Check if the objective is compatible with the solver
         skip, reason = self.skip(**objective_dict)
         if skip:
-            return skip, reason
+            self._output.skip(reason)
+            return True
 
         self.set_objective(**objective_dict)
-        return False, None
+        return False
 
     @abstractmethod
     def set_objective(self, **objective_dict):
@@ -158,7 +162,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         ...
 
     def skip(self, **objective_dict):
-        """Used to decide if the ``Solver`` is compatible with the objective.
+        """Hook to decide if the ``Solver`` is compatible with the objective.
 
         Parameters
         ----------
@@ -183,8 +187,40 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
 
         return False, None
 
+    def run_once(self, stop_val=1):
+        """Run the solver once, to cache warmup times (e.g. pre-compilations).
+
+        This function is intended to be called in ``Solver.set_objective``
+        method to avoid taking into account a solver's warmup costs.
+
+        Parameters
+        ----------
+        stop_val : int or float, (default: 1)
+            If ``stopping_strategy`` is 'iteration', this should be an integer
+            corresponding to the number of iterations the solver is run for.
+            If it is 'callback', it is an integer corresponding to the number
+            of times the callback is called.
+            If it is 'tolerance', it is a float which can be passed to call
+            the solver on an easy to solve problem.
+        """
+
+        if hasattr(self, '_output'):
+            self._output.progress('caching warmup times.')
+
+        if self._solver_strategy == "callback":
+            run_once_cb = _Callback(
+                lambda x: {'objective_value': 1},
+                {},
+                SingleRunCriterion(stop_val=stop_val).get_runner_instance(
+                    solver=self
+                )
+            )
+            self.run(run_once_cb)
+        else:
+            self.run(stop_val)
+
     @staticmethod
-    def _reconstruct(module_filename, parameters, objective,
+    def _reconstruct(module_filename, parameters, objective, output,
                      pickled_module_hash=None, benchmark_dir=None):
         set_benchmark_module(benchmark_dir)
         Solver = _reconstruct_class(
@@ -192,15 +228,16 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         )
         obj = Solver.get_instance(**parameters)
         if objective is not None:
-            obj._set_objective(objective)
+            obj._set_objective(objective, output=output)
         return obj
 
     def __reduce__(self):
         module_hash = get_file_hash(self._module_filename)
         objective = getattr(self, '_objective', None)
+        output = getattr(self, '_output', None)
         return self._reconstruct, (
-            self._module_filename, self._parameters, objective, module_hash,
-            str(self._import_ctx._benchmark_dir)
+            self._module_filename, self._parameters, objective, output,
+            module_hash, str(self._import_ctx._benchmark_dir)
         )
 
 

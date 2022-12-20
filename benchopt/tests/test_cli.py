@@ -165,9 +165,9 @@ class TestRunCmd:
         out.check_output(r'Dummy Sparse Regression\[reg=0.05\]', repetition=0)
         out.check_output(r'--Python-PGD\[', repetition=0)
         out.check_output(r'--Python-PGD-with-cb\[use_acceleration=False\]:',
-                         repetition=28)
+                         repetition=24)
         out.check_output(r'--Python-PGD-with-cb\[use_acceleration=True\]:',
-                         repetition=28)
+                         repetition=24)
 
     def test_benchopt_run_profile(self):
         with CaptureRunOutput() as out:

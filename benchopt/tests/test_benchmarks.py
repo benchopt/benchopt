@@ -188,7 +188,7 @@ def test_solver(benchmark, solver_class):
 
         objective.set_dataset(dataset)
         solver = solver_class.get_instance()
-        skip, reason = solver._set_objective(objective)
+        skip = solver._set_objective(objective)
         if skip:
             continue
         solver_ran_once = True
