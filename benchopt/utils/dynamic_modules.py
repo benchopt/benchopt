@@ -63,9 +63,8 @@ def _load_class_from_module(module_filename, class_name, benchmark_dir):
     # Store the info to easily reload the class
     klass._module_filename = module_filename.resolve()
 
-    try:
-        klass._import_ctx = getattr(module, 'import_ctx')
-    except AttributeError:
+    klass._import_ctx = getattr(module, 'import_ctx', None)
+    if klass._import_ctx is None:
         for var_name in dir(module):
             var = getattr(module, var_name)
             if isinstance(var, safe_import_context):
