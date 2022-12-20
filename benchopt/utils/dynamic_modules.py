@@ -66,7 +66,6 @@ def _load_class_from_module(module_filename, class_name, benchmark_dir):
     try:
         klass._import_ctx = getattr(module, 'import_ctx')
     except AttributeError:
-        import_ctx = None
         for var_name in dir(module):
             var = getattr(module, var_name)
             if isinstance(var, safe_import_context):
