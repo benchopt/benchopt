@@ -190,16 +190,17 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
     def run_once(self, stop_val=1):
         """Run the solver once, to cache warmup times (e.g. pre-compilations).
 
-        This function is intended to be call in `Solver.set_objective` method
-        to avoid taking into account a solver's warmup costs.
+        This function is intended to be called in ``Solver.set_objective``
+        method to avoid taking into account a solver's warmup costs.
 
         Parameters
         ----------
         stop_val : int or float, (default: 1)
-            If `stopping_strategy` is {'iterations', 'callback'}, this should
-            be an integer corresponding to the number of iteration the solver
-            is run for.
-            If it is 'tolerance', this can be a float which is passed to call
+            If ``stopping_strategy`` is 'iteration', this should be an integer
+            corresponding to the number of iterations the solver is run for.
+            If it is 'callback', it is an integer corresponding to the number
+            of times the callback is called.
+            If it is 'tolerance', it is a float which can be passed to call
             the solver on an easy to solve problem.
         """
 
