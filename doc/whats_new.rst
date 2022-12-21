@@ -19,12 +19,18 @@ API
 - Add :class:`~benchopt.stopping_criterion.SingleRunCriterion` to run a solver
   only once. This can be used for benchmarking methods where we are interested
   in objective value at convergence. By `Thomas Moreau`_ (:gh:`511`)
+
 - Add :func:`~benchopt.BaseSolver.run_once` helper to easily warmup solvers
   with callback. By `Thomas Moreau`_ (:gh:`511`)
 
+- Add :func:`~benchopt.BaseSolver.pre_run_hook` hook to ignore cost that cannot
+  be cached globally for a solver. By `Thomas Moreau`_ (:gh:`525`)
 
 FIX
 ---
+
+- Do not fail and raise a warning when ``safe_import_context`` is not named
+  ``import_ctx``. By `Mathurin Massias`_ (:gh:`524`)
 
 
 .. _changes_1_3_1:
