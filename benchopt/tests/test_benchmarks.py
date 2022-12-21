@@ -218,6 +218,7 @@ def _test_solver_one_objective(solver, objective):
         cb = _Callback(
             objective, meta={}, stopping_criterion=sc
         )
+        cb.start()
         solver.run(cb)
     else:
         if solver._solver_strategy == 'iteration':
