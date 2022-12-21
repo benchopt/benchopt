@@ -323,7 +323,8 @@ class TestRunCmd:
                 return np.zeros(self.X.shape[1])
         """
         with tempfile.NamedTemporaryFile(
-                dir=DUMMY_BENCHMARK_PATH / "solvers", mode='w') as f:
+                dir=DUMMY_BENCHMARK_PATH / "solvers",
+                mode='w', suffix='.py') as f:
             f.write(solver)
 
             run_cmd = [str(DUMMY_BENCHMARK_PATH), '-d', SELECT_ONE_SIMULATED,
