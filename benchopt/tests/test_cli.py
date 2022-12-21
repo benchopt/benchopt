@@ -1,6 +1,7 @@
 import re
 import time
 import tarfile
+import inspect
 import tempfile
 from pathlib import Path
 
@@ -12,6 +13,7 @@ from click.shell_completion import ShellComplete
 from benchopt.benchmark import Benchmark
 from benchopt.plotting import PLOT_KINDS
 from benchopt.utils.stream_redirection import SuppressStd
+from benchopt.utils.dynamic_modules import _load_class_from_module
 
 
 from benchopt.tests import SELECT_ONE_PGD
@@ -301,6 +303,31 @@ class TestRunCmd:
         _test_shell_completion(
             run, [str(DUMMY_BENCHMARK_PATH), '-d'], DATASET_COMPLETION_CASES
         )
+
+    def test_import_ctx_name(self):
+        solver = inspect.cleandoc("""
+            from benchopt import BaseSolver, safe_import_context
+            with safe_import_context() as import_ctx_wrong_name:
+                import numpy as np
+
+
+            class Solver(BaseSolver):
+                name = "test_import_ctx"
+
+            """)
+        with tempfile.NamedTemporaryFile(
+                dir=DUMMY_BENCHMARK_PATH / "solvers",
+                mode='w', suffix='.py') as f:
+            f.write(solver)
+            f.flush()
+
+            err_msg = ("Import contexts should preferably be named import_ctx,"
+                       " got import_ctx_wrong_name.")
+            with pytest.warns(UserWarning, match=err_msg):
+                _load_class_from_module(
+                    f.name, "Solver",
+                    benchmark_dir=DUMMY_BENCHMARK_PATH
+                )
 
 
 class TestInstallCmd:
