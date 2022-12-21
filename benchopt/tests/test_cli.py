@@ -303,7 +303,7 @@ class TestRunCmd:
         )
 
     def test_import_ctx_name(self):
-        solver = f"""
+        solver = """
         from benchopt import BaseSolver, safe_import_context
 
         with safe_import_context() as import_ctx_wrong_name:
