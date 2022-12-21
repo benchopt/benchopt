@@ -1,6 +1,7 @@
 import re
 import time
 import tarfile
+import inspect
 import tempfile
 from pathlib import Path
 
@@ -303,29 +304,30 @@ class TestRunCmd:
         )
 
     def test_import_ctx_name(self):
-        solver = """
-        from benchopt import BaseSolver, safe_import_context
+        solver = inspect.cleandoc(
+            """
+            from benchopt import BaseSolver, safe_import_context
+            with safe_import_context() as import_ctx_wrong_name:
+                import numpy as np
 
-        with safe_import_context() as import_ctx_wrong_name:
-            import numpy as np
 
+            class Solver(BaseSolver):
+                name = "test_import_ctx"
 
-        class Solver(BaseSolver):
-            name = "test_import_ctx"
+                def set_objective(self, X, y, lmbd):
+                    self.X, self.y, self.lmbd = X, y, lmbd
 
-            def set_objective(self, X, y, lmbd):
-                self.X, self.y, self.lmbd = X, y, lmbd
+                def run(self, n_iter):
+                    pass
 
-            def run(self, n_iter):
-                pass
-
-            def get_result(self):
-                return np.zeros(self.X.shape[1])
-        """
+                def get_result(self):
+                    return np.zeros(self.X.shape[1])
+            """)
         with tempfile.NamedTemporaryFile(
                 dir=DUMMY_BENCHMARK_PATH / "solvers",
                 mode='w', suffix='.py') as f:
             f.write(solver)
+            f.flush()
 
             run_cmd = [str(DUMMY_BENCHMARK_PATH), '-d', SELECT_ONE_SIMULATED,
                        '-s', "test_import_ctx", '-n', '1',
