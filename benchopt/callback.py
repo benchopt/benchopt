@@ -56,6 +56,8 @@ class _Callback:
         self.it = 0
         self.time_iter = 0.
         self.next_stopval = self.stopping_criterion.init_stop_val()
+
+    def start(self):
         self.time_callback = time.perf_counter()
 
     def __call__(self, x):

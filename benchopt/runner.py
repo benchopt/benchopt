@@ -44,6 +44,7 @@ def run_one_resolution(objective, solver, meta, stop_val):
             f"Failure during import in {solver.__module__}."
         )
 
+    solver.pre_run_hook(stop_val)
     t_start = time.perf_counter()
     solver.run(stop_val)
     delta_t = time.perf_counter() - t_start
@@ -98,6 +99,8 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
             callback = _Callback(
                 objective, meta, stopping_criterion
             )
+            solver.pre_run_hook(callback)
+            callback.start()
             solver.run(callback)
             curve, ctx.status = callback.get_results()
         else:

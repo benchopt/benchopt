@@ -124,6 +124,24 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         """
         ...
 
+    def pre_run_hook(self, stop_val):
+        """Hook to run pre-run operations.
+
+        This is mostly necessary to cache stop_val dependent computations, for
+        instance in ``jax`` with different number of iterations in a for loop.
+
+        Parameters
+        ----------
+        stop_val : int | float | callable
+            Value for the stopping criterion of the solver for. It allows to
+            sample the time/accuracy curve in the benchmark.
+            If it is a callable, then it should act as a callback. This
+            callback should be called once for each iteration with argument
+            the current iterate `parameters`. The callback returns False when
+            the computations should stop.
+        """
+        ...
+
     @abstractmethod
     def run(self, stop_val):
         """Call the solver with the given stop_val.
