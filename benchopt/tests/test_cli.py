@@ -302,6 +302,38 @@ class TestRunCmd:
             run, [str(DUMMY_BENCHMARK_PATH), '-d'], DATASET_COMPLETION_CASES
         )
 
+    def test_import_ctx_name(self):
+        solver = f"""
+        from benchopt import BaseSolver, safe_import_context
+
+        with safe_import_context() as import_ctx_wrong_name:
+            import numpy as np
+
+
+        class Solver(BaseSolver):
+            name = "test_import_ctx"
+
+            def set_objective(self, X, y, lmbd):
+                self.X, self.y, self.lmbd = X, y, lmbd
+
+            def run(self, n_iter):
+                pass
+
+            def get_result(self):
+                return np.zeros(self.X.shape[1])
+        """
+        with tempfile.NamedTemporaryFile(
+                dir=DUMMY_BENCHMARK_PATH / "solvers", mode='w') as f:
+            f.write(solver)
+
+            run_cmd = [str(DUMMY_BENCHMARK_PATH), '-d', SELECT_ONE_SIMULATED,
+                       '-s', "test_import_ctx", '-n', '1',
+                       '-o', SELECT_ONE_OBJECTIVE, '--no-plot']
+            err_msg = ("Import contexts should preferably be named import_ctx,"
+                       " got import_ctx_wrong_name.")
+            with pytest.raises(UserWarning, match=err_msg):
+                run(run_cmd, "benchopt", standalone_mode=False)
+
 
 class TestInstallCmd:
 
