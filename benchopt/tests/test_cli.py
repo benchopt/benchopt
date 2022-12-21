@@ -305,8 +305,7 @@ class TestRunCmd:
         )
 
     def test_import_ctx_name(self):
-        solver = inspect.cleandoc(
-            """
+        solver = inspect.cleandoc("""
             from benchopt import BaseSolver, safe_import_context
             with safe_import_context() as import_ctx_wrong_name:
                 import numpy as np
@@ -315,14 +314,6 @@ class TestRunCmd:
             class Solver(BaseSolver):
                 name = "test_import_ctx"
 
-                def set_objective(self, X, y, lmbd):
-                    self.X, self.y, self.lmbd = X, y, lmbd
-
-                def run(self, n_iter):
-                    pass
-
-                def get_result(self):
-                    return np.zeros(self.X.shape[1])
             """)
         with tempfile.NamedTemporaryFile(
                 dir=DUMMY_BENCHMARK_PATH / "solvers",
@@ -335,7 +326,8 @@ class TestRunCmd:
             with pytest.warns(UserWarning, match=err_msg):
                 _load_class_from_module(
                     f.name, "Solver",
-                    benchmark_dir=DUMMY_BENCHMARK_PATH)
+                    benchmark_dir=DUMMY_BENCHMARK_PATH
+                )
 
 
 class TestInstallCmd:
