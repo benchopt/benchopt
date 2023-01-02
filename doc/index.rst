@@ -146,6 +146,11 @@ Learn how to :ref:`how`, including creating an objective, a solver, and
 a dataset.
 
 
+Frequently asked questions
+--------------------------
+
+- :ref:`convergence_curves`
+
 Available benchmarks
 --------------------
 
@@ -265,11 +270,11 @@ If you use ``Benchopt`` in a scientific publication, please cite the following p
 .. code-block:: bibtex
 
    @article{benchopt,
-      author = {Moreau, Thomas and Massias, Mathurin and Gramfort, Alexandre and Ablin, Pierre 
-                and Bannier, Pierre-Antoine and Charlier, Benjamin and Dagréou, Mathieu and Dupré la Tour, Tom 
-                and Durif, Ghislain and F. Dantas, Cassio and Klopfenstein, Quentin 
-                and Larsson, Johan and Lai, En and Lefort, Tanguy and Malézieux, Benoit 
-                and Moufad, Badr and T. Nguyen, Binh and Rakotomamonjy, Alain and Ramzi, Zaccharie 
+      author = {Moreau, Thomas and Massias, Mathurin and Gramfort, Alexandre and Ablin, Pierre
+                and Bannier, Pierre-Antoine and Charlier, Benjamin and Dagréou, Mathieu and Dupré la Tour, Tom
+                and Durif, Ghislain and F. Dantas, Cassio and Klopfenstein, Quentin
+                and Larsson, Johan and Lai, En and Lefort, Tanguy and Malézieux, Benoit
+                and Moufad, Badr and T. Nguyen, Binh and Rakotomamonjy, Alain and Ramzi, Zaccharie
                 and Salmon, Joseph and Vaiter, Samuel},
       title  = {Benchopt: Reproducible, efficient and collaborative optimization benchmarks},
       year   = {2022},

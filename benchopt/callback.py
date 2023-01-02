@@ -69,7 +69,7 @@ class _Callback:
             if self.log_value(x):
                 return False
 
-        # Update iteration number and restart time measurment.
+        # Update iteration number and restart time measurement.
         self.it += 1
         self.time_callback = time.perf_counter()
         return True
