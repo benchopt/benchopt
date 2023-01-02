@@ -1,7 +1,7 @@
 .. _convergence_curves:
 
-Sampling of the convergence curves
-==================================
+How are the convergence curves sampled?
+=======================================
 
 For each solver, there are two ways to create a convergence curve.
 They are chosen by the ``stopping_strategy`` attribute of the solver.

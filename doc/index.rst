@@ -146,10 +146,10 @@ Learn how to :ref:`how`, including creating an objective, a solver, and
 a dataset.
 
 
-How are convergence curves created?
------------------------------------
+Frequently asked questions
+--------------------------
 
-Check here for more details on the :ref:`convergence_curves`.
+- :ref:`convergence_curves`
 
 Available benchmarks
 --------------------
