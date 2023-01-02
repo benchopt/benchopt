@@ -9,6 +9,7 @@ from .benchmark import _check_name_lists
 from .utils.sys_info import get_sys_info
 from .utils.files import uniquify_results
 from .utils.pdb_helpers import exception_handler
+from .utils.logging.wandb import wandb_ctx
 from .utils.terminal_output import TerminalOutput
 
 ##################################
@@ -93,7 +94,8 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
     """
 
     curve = []
-    with exception_handler(output, pdb=pdb) as ctx:
+    with (exception_handler(output, pdb=pdb) as ctx,
+          wandb_ctx(meta=meta, wandb=wandb) as wandb_cb):
 
         if solver._solver_strategy == "callback":
             output.progress('empty run for compilation')
@@ -109,7 +111,7 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
             # If stopping strategy is 'callback', only call once to get the
             # results up to convergence.
             callback = _Callback(
-                objective, meta, stopping_criterion, wandb
+                objective, meta, stopping_criterion, wandb_cb=wandb_cb
             )
             solver.run(callback)
             curve, ctx.status = callback.get_results()
@@ -121,19 +123,6 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
                 run_one_resolution, force
             )
 
-            # Configure W&B if necessary
-            if wandb:
-                try:
-                    import wandb as wb
-                except ImportError:
-                    raise ImportError(
-                        "To be able to use wandb, install and configure it."
-                    )
-                run = wb.init(
-                    name=meta['solver_name'],
-                    project=meta['benchmark_name'], config=meta, reinit=True
-                )
-
             # compute initial value
             call_args = dict(objective=objective, solver=solver, meta=meta)
 
@@ -144,17 +133,13 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
                 cost = run_one_resolution_cached(stop_val=stop_val,
                                                  **call_args)
                 curve.append(cost)
-                if wandb:
-                    wb.log({
-                        k: v for k, v in cost.items() if k.startswith('objective')
-                    })
+                if wandb_cb is not None:
+                    wandb_cb(cost)
 
                 # Check the stopping criterion and update rho if necessary.
                 stop, ctx.status, stop_val = stopping_criterion.should_stop(
                     stop_val, curve
                 )
-            if wandb:
-                run.finish(quiet=True)
 
     return curve, ctx.status
 

@@ -15,6 +15,8 @@ class _Callback:
         Contains objective and data names, problem dimension, etc.
     stopping_criterion : instance of StoppingCriterion
         Object to check if we need to stop a solver.
+    wandb_cb : callable or None
+        Callback to log
 
     Attributes
     ----------
@@ -44,10 +46,11 @@ class _Callback:
         The time when exiting the callback call.
     """
 
-    def __init__(self, objective, meta, stopping_criterion, wandb):
+    def __init__(self, objective, meta, stopping_criterion, wandb_cb=None):
         self.objective = objective
         self.meta = meta
         self.stopping_criterion = stopping_criterion
+        self.wandb_cb = wandb_cb
 
         # Initialize local variables
         self.info = get_sys_info()
@@ -57,20 +60,6 @@ class _Callback:
         self.time_iter = 0.
         self.next_stopval = self.stopping_criterion.init_stop_val()
         self.time_callback = time.perf_counter()
-
-        if wandb:
-            try:
-                import wandb as wb
-                self.wandb = wb
-            except ImportError:
-                raise ImportError(
-                    "To be able to use wandb, install and configure it."
-                )
-            wb.init(
-                project=meta['benchmark_name'], config=meta, reinit=True
-            )
-        else:
-            self.wandb = None
 
     def __call__(self, x):
         # Stop time and update computation time since the beginning
@@ -99,16 +88,14 @@ class _Callback:
             time=self.time_iter,
             **objective_dict, **self.info
         ))
-        if self.wandb is not None:
-            self.wandb.log(objective_dict)
+        if self.wandb_cb is not None:
+            self.wandb_cb(self.curve[-1])
 
         # Check the stopping criterion
         should_stop_res = self.stopping_criterion.should_stop(
             self.next_stopval, self.curve
         )
         stop, self.status, self.next_stopval = should_stop_res
-        if stop:
-            self.wandb.finish()
         return stop
 
     def get_results(self):
