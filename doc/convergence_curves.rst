@@ -15,7 +15,7 @@ This is used for black box solvers, where one can only get the result of the sol
 This stopping strategy creates curves by calling ``Solver.run(stop_val)`` several times with different values for the ``stop_val`` parameter:
 
 - if the solver's ``stopping_strategy`` is ``"iteration"``, ``stop_val`` is the number of iterations passed to ``run``.
-  It increases geometrically by at least 1, starting from 1 with a factor 1.5.
+  It increases geometrically by at least 1, starting from 1 with a factor :math:`\rho=1.5`.
   Note that the first call uses a number of iterations of 0.
   The value from one call to the other follows:
 
@@ -24,7 +24,7 @@ This stopping strategy creates curves by calling ``Solver.run(stop_val)`` severa
     \text{stop_val} = \max(\text{stop_val} + 1, \text{int}(\rho * \text{stop_val}))
 
 - if the solver's ``stopping_strategy`` is ``"tolerance"``, the ``stop_val`` parameter corresponds to the numerical tolerance.
-  It decreases geometrically by a factor of 1.5 between each call to ``run``, starting from 1 at the second call.
+  It decreases geometrically by a factor :math:`\rho=1.5` between each call to ``run``, starting from 1 at the second call.
   Note that the first call uses a tolerance of 1e38.
   The value from one call to the other follows:
 
@@ -45,7 +45,19 @@ Restarting the solver from scratch, though inevitable to handle black box solver
 
 When a solver exposes the intermediate values of the iterates, it is possible to create the curve in a single solver run, by using ``stopping_strategy = "callback"``.
 In that case, the argument passed to ``Solver.run`` will be a callable object, ``callback``.
-Every time it is called inside ``Solver.run`` with the current iterate ``x`` as argument, this object will store the objective value at the current iterate, and the current running time.
+Like with ``stopping_strategy == "iteration"``, the loss is computed after a number of callback's calls that grows geometrically. If the loss was computed after :math:`n` calls, the loss and timing will be computed again when reaching :math:`\max(n+1, \rho * n)` calls to the callback.
+The callback makes sure we do not account for loss computation time and also check for convergence every time the loss is computed (as described in the next section).
+It returns ``False`` when the solver should be stopped. A classical usage pattern is:
+
+.. code:: python
+
+    def run(self, callback):
+        x = ... # Initialize iterate
+
+        while callback(x):
+            x = ...  # Update iterate
+        self.x = x
+
 Each call to ``callback`` also calls  ``Solver.StoppingCriterion.should_stop`` and returns a boolean indicating whether or not the ``StoppingCriterion`` deems the solver should be stoppped.
 
 
