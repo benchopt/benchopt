@@ -94,8 +94,8 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
     """
 
     curve = []
-    with (exception_handler(output, pdb=pdb) as ctx,
-          wandb_ctx(meta=meta, wandb=wandb) as wandb_cb):
+    with exception_handler(output, pdb=pdb) as ctx, \
+            wandb_ctx(meta=meta, wandb=wandb) as wandb_cb:
 
         if solver._solver_strategy == "callback":
             output.progress('empty run for compilation')
