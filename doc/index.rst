@@ -149,7 +149,7 @@ a dataset.
 How are convergence curves created?
 -----------------------------------
 
-Check here how to :ref:`convergence_curves`.
+Check here for more details on the :ref:`convergence_curves`.
 
 Available benchmarks
 --------------------
