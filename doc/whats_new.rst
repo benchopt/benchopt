@@ -13,6 +13,9 @@ Version 1.4 - in development
 CLI
 ---
 
+- Add support for wandb upload of the benchmark results.
+  By `Thomas Moreau`_ (:gh:`520`)
+
 API
 ---
 
