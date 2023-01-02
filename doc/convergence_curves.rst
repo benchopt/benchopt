@@ -11,7 +11,7 @@ They are chosen by the ``stopping_strategy`` attribute of the solver.
 
 
 The first way is to use ``Solver.stopping_strategy = "iteration"`` or ``Solver.stopping_strategy = "tolerance"``.
-This is used for black box solvers, where one can only get the result of the solver for a given number of iterations or numerical tolerance.
+This is used for black box solvers, where one can only get the result of the solver for a given number of iterations or for a given numerical tolerance.
 This stopping strategy creates curves by calling ``Solver.run(stop_val)`` several times with different values for the ``stop_val`` parameter:
 
 - if the solver's ``stopping_strategy`` is ``"iteration"``, ``stop_val`` is the number of iterations passed to ``run``.
@@ -53,10 +53,14 @@ Each call to ``callback`` also calls  ``Solver.StoppingCriterion.should_stop`` a
 When are the solvers stopped?
 =============================
 
-For each of the sampling strategies above, the solvers continue running (i.e. the callback returns ``True``, the number of iterations passed to ``Solver.run`` increases or the tolerance passed to ``Solver.run`` decreases) until ``Solver.StoppingCriterion.should_stop()`` returns ``True``.
+For each of the sampling strategies above, the solvers continue running (i.e. the callback returns ``True``, the number of iterations passed to ``Solver.run`` increases or the tolerance passed to ``Solver.run`` decreases) until it the ``StoppingCriterion.should_stop()`` associated to the solver ``Solver.stopping_criterion`` returns ``True``.
 
-This value is determined by ``Solver.StoppingCriterion.check_convergence()``, based on the objective curve so far.
-For example, the ``check_convergence`` method of a ``SufficientDescentCriterion(eps, patience)`` returns ``True`` when the relative decrease of the objective was less than a tolerance ``eps`` for more than ``patience`` calls to ``check_convergence``.
+This method takes into account the maximal number of runs given as ``--max-runs``, the timeout given by ``--timeout`` and also tries to stop the solver if it has converged.
+The convergence of a solver is determined by  the ``StoppingCriterion.check_convergence()`` method, based on the objective curve so far.
+There are three ``StoppingCriterion`` implemented in ``benchopt``:
+- ``SufficientDescentCriterion(eps, patience)`` considers that the solver has converged when the relative decrease of the objective was less than a tolerance ``eps`` for more than ``patience`` calls to ``check_convergence``.
+- ``SufficientProgressCriterion(eps, patience)`` considers that the solver has converged when the objective has not decreased by more than a tolerance ``eps`` for more than ``patience`` calls to ``check_convergence``.
+- ``SingleRunCriterion(stop_val)`` only call the solver once with the given stop_val. This criterion designed for methods that converge to a given value, when one aim to benchmark final performance of multiple solvers.
 
 
 
