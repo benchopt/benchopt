@@ -58,9 +58,6 @@ It returns ``False`` when the solver should be stopped. A classical usage patter
             x = ...  # Update iterate
         self.x = x
 
-Each call to ``callback`` also calls  ``Solver.StoppingCriterion.should_stop`` and returns a boolean indicating whether or not the ``StoppingCriterion`` deems the solver should be stoppped.
-
-
 
 When are the solvers stopped?
 =============================
