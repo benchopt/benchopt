@@ -183,7 +183,7 @@ objective value and stops after ``n_iter`` calls to callback (default to 1).
     class Solver(BaseSolver):
         ...
 
-        def set_objective(**objective):
+        def set_objective(self, **objective):
             ...
             # Cache pre-compilation and other one-time setups that should
             # not be included in the benchmark timing.
