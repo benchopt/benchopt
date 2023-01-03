@@ -139,119 +139,6 @@ When options are passed both via file and CLI, the CLI takes precedence.
 to get more details about the different options.
 You can also read the :ref:`cli_documentation`.
 
-Write a benchmark
------------------
-
-Learn how to :ref:`how`, including creating an objective, a solver, and
-a dataset.
-
-
-Frequently asked questions
---------------------------
-
-- :ref:`convergence_curves`
-
-Available benchmarks
---------------------
-
-.. note::
-    Some benchmarks are briefly described in the list below. For a complete
-    list of benchmarks, see GitHub repositories of the form `benchopt/benchmark_*
-    <https://github.com/orgs/benchopt/repositories?q=benchmark_&type=all&language=&sort=stargazers/>`_.
-
-**Notation:**  In what follows, n (or n_samples) stands for the number of samples and p (or n_features) stands for the number of features.
-
-.. math::
-
- y \in \mathbb{R}^n, X = [x_1^\top, \dots, x_n^\top]^\top \in \mathbb{R}^{n \times p}
-
-- `Ordinary Least Squares (OLS) <https://github.com/benchopt/benchmark_ols>`_: |Build Status OLS|
-
-.. math::
-
-    \min_w \frac{1}{2} \|y - Xw\|^2_2
-
-- `Non-Negative Least Squares (NNLS) <https://github.com/benchopt/benchmark_nnls>`_: |Build Status NNLS|
-
-.. math::
-
-    \min_{w \geq 0} \frac{1}{2} \|y - Xw\|^2_2
-
-- `LASSO: L1-regularized least squares <https://github.com/benchopt/benchmark_lasso>`_: |Build Status Lasso|
-
-.. math::
-
-    \min_w \frac{1}{2} \|y - Xw\|^2_2 + \lambda \|w\|_1
-
-- `L2-regularized logistic regression <https://github.com/benchopt/benchmark_logreg_l2>`_: |Build Status LogRegL2|
-
-.. math::
-
-    \min_w \sum_{i=1}^{n} \log(1 + \exp(-y_i x_i^\top w)) + \frac{\lambda}{2} \|w\|_2^2
-
-- `L1-regularized logistic regression <https://github.com/benchopt/benchmark_logreg_l1>`_: |Build Status LogRegL1|
-
-.. math::
-
-    \min_w \sum_{i=1}^{n} \log(1 + \exp(-y_i x_i^\top w)) + \lambda \|w\|_1
-
-- `L2-regularized Huber regression <https://github.com/benchopt/benchmark_huber_l2>`_: |Build Status HuberL2|
-
-.. math::
-
-  \min_{w, \sigma} {\sum_{i=1}^n \left(\sigma + H_{\epsilon}\left(\frac{X_{i}w - y_{i}}{\sigma}\right)\sigma\right) + \lambda {\|w\|_2}^2}
-
-where
-
-.. math::
-
-  H_{\epsilon}(z) = \begin{cases}
-         z^2, & \text {if } |z| < \epsilon, \\
-         2\epsilon|z| - \epsilon^2, & \text{otherwise}
-  \end{cases}
-
-- `L1-regularized quantile regression <https://github.com/benchopt/benchmark_quantile_regression>`_: |Build Status QuantileRegL1|
-
-.. math::
-    \min_{w} \frac{1}{n} \sum_{i=1}^{n} PB_q(y_i - X_i w) + \lambda ||w||_1.
-
-where :math:`PB_q` is the pinball loss:
-
-.. math::
-    PB_q(t) = q \max(t, 0) + (1 - q) \max(-t, 0) =
-    \begin{cases}
-        q t, & t > 0, \\
-        0,    & t = 0, \\
-        (1-q) t, & t < 0
-    \end{cases}
-
-- `Linear ICA <https://github.com/benchopt/benchmark_linear_ica>`_: |Build Status LinearICA|
-
-Given some data :math:`X  \in \mathbb{R}^{d \times n}` assumed to be linearly
-related to unknown independent sources :math:`S  \in \mathbb{R}^{d \times n}` with
-
-.. math::
-    X = A S
-
-where :math:`A  \in \mathbb{R}^{d \times d}` is also unknown, the objective of
-linear ICA is to recover :math:`A` up to permutation and scaling of its columns.
-The objective in this benchmark is related to some estimation on :math:`A`
-quantified with the so-called AMARI distance.
-
-- `Approximate Joint Diagonalization (AJD) <https://github.com/benchopt/benchmark_jointdiag>`_: |Build Status JointDiag|
-
-Given n square symmetric positive matrices :math:`C^i`, it consists of solving
-the following problem:
-
-.. math::
-    \min_B \frac{1}{2n} \sum_{i=1}^n \log |\textrm{diag} (B C^i B^{\top}) | - \log | B C^i B^{\top} |
-
-where :math:`|\cdot|` stands for the matrix determinant and :math:`\textrm{diag}` stands
-for the operator that keeps only the diagonal elements of a matrix. Optionally, the
-matrix :math:`B` can be enforced to be orthogonal.
-
-See `benchmark_* repositories on GitHub <https://github.com/benchopt/>`_ for more.
-
 Benchmark results
 -----------------
 
@@ -259,7 +146,31 @@ All the public benchmark results are available at `Benchopt Benchmarks results <
 
 **Publish results**: You can directly publish the result of a run of ``benchopt`` on `Benchopt Benchmarks results <https://benchopt.github.io/results/>`_. You can have a look at this page to :ref:`publish_doc`.
 
-.. include:: contrib.rst
+
+
+Frequently asked questions (FAQ)
+================================
+
+Write a benchmark
+-----------------
+
+Learn how to :ref:`how`, including creating an objective, a solver, and
+a dataset.
+
+Curve sampling
+--------------
+
+Benchopt allows to sample both black-boxed solvers and solvers that allow for callbacks. Learn :ref:`convergence_curves`. Note that the sampling strategy can also be tweaked on a per-solver basis, as described in: :ref:`sampling_strategy`.
+
+Re-using code in a benchmark
+----------------------------
+
+For some solver and datasets, it is necessary to share some operations or pre-processing steps. Benchopt allows to factorize this code by :ref:`benchmark_utils_import`.
+
+Parallel run
+------------
+
+Benchopt allows to run different benchmarked methods in parallel, either with ``joblib`` using ``-j 4`` to run on multiple CPUs of a single machine or using SLURM, as described in :ref:`slurm_run`.
 
 
 Citing Benchopt
@@ -269,7 +180,7 @@ If you use ``Benchopt`` in a scientific publication, please cite the following p
 
 .. code-block:: bibtex
 
-   @article{benchopt,
+   @inproceedings{benchopt,
       author = {Moreau, Thomas and Massias, Mathurin and Gramfort, Alexandre and Ablin, Pierre
                 and Bannier, Pierre-Antoine and Charlier, Benjamin and Dagréou, Mathieu and Dupré la Tour, Tom
                 and Durif, Ghislain and F. Dantas, Cassio and Klopfenstein, Quentin
@@ -278,9 +189,20 @@ If you use ``Benchopt`` in a scientific publication, please cite the following p
                 and Salmon, Joseph and Vaiter, Samuel},
       title  = {Benchopt: Reproducible, efficient and collaborative optimization benchmarks},
       year   = {2022},
+      booktitle = {NeurIPS},
       url    = {https://arxiv.org/abs/2206.13424}
    }
 
+Other functionalities
+---------------------
+
+- Some solvers are not compatible with certain datasets or objective configurations. This can be accommodated by :ref:`skiping_solver`.
+- For some solvers, it is necessary to cache some pre-compilation for fair benchmarks. This can easily be done with benchopt, as described in :ref:`precompilation`.
+
+
+.. include:: contrib.rst
+
+.. include:: benchmark_list.rst
 
 Website contents
 ================
@@ -303,24 +225,3 @@ Website contents
    :target: https://www.python.org/downloads/release/python-360/
 .. |codecov| image:: https://codecov.io/gh/benchopt/benchopt/branch/master/graph/badge.svg
    :target: https://codecov.io/gh/benchopt/benchopt
-
-.. |Build Status OLS| image:: https://github.com/benchopt/benchmark_ols/workflows/Tests/badge.svg
-   :target: https://github.com/benchopt/benchmark_ols/actions
-.. |Build Status NNLS| image:: https://github.com/benchopt/benchmark_nnls/workflows/Tests/badge.svg
-   :target: https://github.com/benchopt/benchmark_nnls/actions
-.. |Build Status Lasso| image:: https://github.com/benchopt/benchmark_lasso/workflows/Tests/badge.svg
-   :target: https://github.com/benchopt/benchmark_lasso/actions
-.. |Build Status LogRegL2| image:: https://github.com/benchopt/benchmark_logreg_l2/workflows/Tests/badge.svg
-   :target: https://github.com/benchopt/benchmark_logreg_l2/actions
-.. |Build Status LogRegL1| image:: https://github.com/benchopt/benchmark_logreg_l1/workflows/Tests/badge.svg
-   :target: https://github.com/benchopt/benchmark_logreg_l1/actions
-.. |Build Status HuberL2| image:: https://github.com/benchopt/benchmark_huber_l2/workflows/Tests/badge.svg
-   :target: https://github.com/benchopt/benchmark_huber_l2/actions
-.. |Build Status QuantileRegL1| image:: https://github.com/benchopt/benchmark_quantile_regression/workflows/Tests/badge.svg
-   :target: https://github.com/benchopt/benchmark_quantile_regression/actions
-.. |Build Status LinearSVM| image:: https://github.com/benchopt/benchmark_linear_svm_binary_classif_no_intercept/workflows/Tests/badge.svg
-   :target: https://github.com/benchopt/benchmark_linear_svm_binary_classif_no_intercept/actions
-.. |Build Status LinearICA| image:: https://github.com/benchopt/benchmark_linear_ica/workflows/Tests/badge.svg
-   :target: https://github.com/benchopt/benchmark_linear_ica/actions
-.. |Build Status JointDiag| image:: https://github.com/benchopt/benchmark_jointdiag/workflows/Tests/badge.svg
-   :target: https://github.com/benchopt/benchmark_jointdiag/actions

@@ -108,7 +108,7 @@ some cases, this exponential growth might hide some effects, or might
 not be adapted to a given solver.
 
 The way this value is changed can be specified for each solver by
-implementing the ``get_next`` method in the ``Solver`` class.
+implementing a static  ``get_next`` method in the ``Solver`` class.
 This method takes as input the previous value where the objective
 function have been logged, and output the next one. For instance,
 if a solver needs to be evaluated every 10 iterations, we would have
@@ -117,7 +117,8 @@ if a solver needs to be evaluated every 10 iterations, we would have
 
     class Solver(BaseSolver):
         ...
-        def get_next(self, stop_val):
+        @staticmethod
+        def get_next(stop_val):
             return stop_val + 10
 
 
@@ -182,7 +183,7 @@ objective value and stops after ``n_iter`` calls to callback (default to 1).
     class Solver(BaseSolver):
         ...
 
-        def set_objective(**objective):
+        def set_objective(self, **objective):
             ...
             # Cache pre-compilation and other one-time setups that should
             # not be included in the benchmark timing.

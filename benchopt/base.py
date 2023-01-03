@@ -262,10 +262,9 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
 
     Datasets that derive from this class should implement one method:
 
-    - ``get_data()``: retrieves/simulates the data contains in this data set
-      and returns the ``dimension`` of the data as well as a dictionary
-      containing the data. This dictionary is passed as arguments of the
-      objective function method ``set_data``.
+    - ``get_data()``: retrieves/simulates the data contained in this data set
+      and returns a dictionary containing the data. This dictionary is passed
+      as arguments of the objective's method ``set_data``.
     """
 
     _base_class_name = 'Dataset'
