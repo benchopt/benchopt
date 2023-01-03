@@ -6,7 +6,7 @@ Some available benchmarks
     list of benchmarks, see GitHub repositories of the form `benchopt/benchmark_*
     <https://github.com/orgs/benchopt/repositories?q=benchmark_&type=all&language=&sort=stargazers/>`_.
 
-**Notation:**  In what follows, n (or n_samples) stands for the number of samples and p (or n_features) stands for the number of features.
+**Notation:**  In what follows, :math:`n` (or ``n_samples``) stands for the number of samples and :math:`p`` (or ``n_features``) stands for the number of features.
 
 .. math::
 
@@ -69,7 +69,7 @@ where :math:`PB_q` is the pinball loss:
     \begin{cases}
         q t, & t > 0, \\
         0,    & t = 0, \\
-        (1-q) t, & t < 0
+        (q - 1) t, & t < 0
     \end{cases}
 
 - `Linear ICA <https://github.com/benchopt/benchmark_linear_ica>`_: |Build Status LinearICA|
