@@ -33,6 +33,10 @@ Also available for ``Dataset`` and ``Objective``.
 :func:`~benchopt.BaseSolver.get_next`: hook to change the sampling points for
 a given solver.
 
+:func:`~benchopt.BaseSolver.pre_run_hook`: hook called before each call to
+``run``, with the same argument. Allows to skip certain computation that
+cannot be cached globally, such as precompilation with different number of
+iterations in for jitted ``jax`` functions.
 
 Benchopt utils
 ~~~~~~~~~~~~~~
