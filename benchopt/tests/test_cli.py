@@ -148,6 +148,25 @@ class TestRunCmd:
         # Make sure the results were saved in a result file
         assert len(out.result_files) == 1, out.output
 
+    @pytest.mark.parametrize('timeout', ['10', '1m', '0.03h', '100s'])
+    def test_benchopt_run_in_env_timeout(self, test_env_name, timeout):
+        with CaptureRunOutput() as out:
+            with pytest.raises(SystemExit, match='False'):
+                run([str(DUMMY_BENCHMARK_PATH), '--env-name', test_env_name,
+                     '-d', SELECT_ONE_SIMULATED, '-f', SELECT_ONE_PGD,
+                     '-n', '1', '-r', '1', '-o', SELECT_ONE_OBJECTIVE,
+                     '--no-plot', '--timeout', timeout], 'benchopt',
+                    standalone_mode=False)
+
+        out.check_output(f'conda activate {test_env_name}')
+        out.check_output('Simulated', repetition=1)
+        out.check_output('Dummy Sparse Regression', repetition=1)
+        out.check_output(r'Python-PGD\[step_size=1\]:', repetition=6)
+        out.check_output(r'Python-PGD\[step_size=1.5\]:', repetition=0)
+
+        # Make sure the results were saved in a result file
+        assert len(out.result_files) == 1, out.output
+
     def test_benchopt_run_custom_parameters(self):
         SELECT_DATASETS = r'simulated[n_features=[100, 200]]'
         SELECT_SOLVERS = r'python-pgd-with-cb[use_acceleration=[True, False]]'

@@ -186,7 +186,7 @@ def run(config_file=None, **kwargs):
     ) = _get_run_args(kwargs, config)
 
     try:
-        timeout = int(timeout)
+        timeout = int(float(timeout))
     except ValueError:  # already under string format
         import pandas as pd
         timeout = pd.to_timedelta(timeout).total_seconds()
