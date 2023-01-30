@@ -188,7 +188,7 @@ def run(config_file=None, **kwargs):
 
     try:
         timeout = int(timeout)
-        timeout = f'{timeout}s'
+        timeout = f'{int(1000 * timeout)}ms'
     except ValueError:
         pass
     timeout = pd.to_timedelta(timeout).total_seconds()
