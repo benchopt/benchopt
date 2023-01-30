@@ -1,7 +1,6 @@
 import yaml
 import click
 import warnings
-import pandas as pd
 from pathlib import Path
 
 from benchopt.benchmark import Benchmark
@@ -188,10 +187,9 @@ def run(config_file=None, **kwargs):
 
     try:
         timeout = int(timeout)
-        timeout = f'{int(1000 * timeout)}ms'
-    except ValueError:
-        pass
-    timeout = pd.to_timedelta(timeout).total_seconds()
+    except ValueError:  # already under string format
+        import pandas as pd
+        timeout = pd.to_timedelta(timeout).total_seconds()
 
     if len(old_objective_filters):
         warnings.warn(
