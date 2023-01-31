@@ -13,6 +13,10 @@ Version 1.4 - in development
 CLI
 ---
 
+- Add support for minute and hour unit suffix in timeout limit through the syntax
+  ``--timeout 10m`` or ``--timeout 1h``.
+  By `Mathurin Massias`_ (:gh:`535`).
+
 API
 ---
 
