@@ -161,7 +161,7 @@ Available optimization problems
 Finding helps
 -------------
 
-If you need any help in using ``benchopt`` to run or construct a benchmark, or if you wanna discuss the future directions and features that ``benchopt`` should take, feel free to join our [discord server](https://discord.gg/rBXYeR5Z)! Our community will be happy to help you solve the problems you might have encountered!
+If you need any help in using ``benchopt`` to run or construct a benchmark, or if you wanna discuss the future directions and features that ``benchopt`` should take, feel free to join our `discord server <https://discord.gg/CpKjJFqE>`_ Our community will be happy to help you solve the problems you might have encountered!
 
 
 Citing Benchopt
