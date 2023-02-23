@@ -11,8 +11,7 @@ from benchopt.benchmark import Benchmark
 from ..constants import PLOT_KINDS
 from .plot_bar_chart import computeBarChartData  # noqa: F401
 from .plot_objective_curve import compute_quantiles   # noqa: F401
-from .plot_objective_curve import get_solver_color   # noqa: F401
-from .plot_objective_curve import get_solver_marker  # noqa: F401
+from .plot_objective_curve import get_solver_style
 
 ROOT = Path(__file__).parent / "html"
 DEFAULT_HTML_DIR = Path("html")
@@ -183,6 +182,7 @@ def shape_solvers_for_html(df, objective_column):
 
         q1, q9 = compute_quantiles(df_filtered)
         groupby_stop_val_median = df_filtered.groupby('stop_val').median()
+        color, marker = get_solver_style(solver)
         solver_data[solver] = {
             'scatter': {
                 'x': groupby_stop_val_median['time'].tolist(),
@@ -194,8 +194,8 @@ def shape_solvers_for_html(df, objective_column):
             'bar': {
                 **computeBarChartData(df, objective_column, solver)
             },
-            'color': get_solver_color(solver),
-            'marker': get_solver_marker(solver)
+            'color': color,
+            'marker': marker
         }
 
     return solver_data

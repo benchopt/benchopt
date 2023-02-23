@@ -33,8 +33,9 @@ class SuppressStd(object):
 
     def __exit__(self, exc_class, value, traceback):
 
-        # Make sure to flush stdout
+        # Make sure to flush stdout and stderr
         print(flush=True)
+        print(flush=True, file=sys.stderr)
 
         # Restore the stdout/stderr object.
         sys.stdout = self.stdout_obj

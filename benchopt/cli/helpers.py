@@ -217,7 +217,7 @@ def print_info(cls_name_list, cls_list, env_name=None, verbose=False):
                     disp_name = f"env: {env_name}"
                 if cls.is_installed(env_name):
                     print(colorify(TICK, GREEN), end='', flush=True)
-                    print(colorify(f" available in '{disp_name}'", GREEN))
+                    print(colorify(f" available in {disp_name}", GREEN))
                 else:
                     print(colorify(CROSS, RED), end='', flush=True)
                     print(colorify(f" not available in '{disp_name}'", RED))

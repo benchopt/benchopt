@@ -1,11 +1,13 @@
 import sys
 import warnings
+import importlib
 from pathlib import Path
 
 from ..config import RAISE_INSTALL_ERROR
 
 SKIP_IMPORT = False
 BENCHMARK_DIR = None
+PACKAGE_NAME = "benchmark_utils"
 
 
 class SkipWithBlock(Exception):
@@ -17,9 +19,24 @@ def skip_import():
     SKIP_IMPORT = True
 
 
-def set_benchmark(benchmark_dir):
+def set_benchmark_module(benchmark_dir):
     global BENCHMARK_DIR
     BENCHMARK_DIR = Path(benchmark_dir)
+    # add PACKAGE_NAME as a module if it exists:
+    module_file = Path(benchmark_dir) / PACKAGE_NAME / '__init__.py'
+    if module_file.exists():
+        spec = importlib.util.spec_from_file_location(
+            PACKAGE_NAME, module_file
+        )
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[PACKAGE_NAME] = module
+        spec.loader.exec_module(module)
+    elif module_file.parent.exists():
+        warnings.warn(
+            "Folder `benchmark_utils` exists but is missing `__init__.py`. "
+            "Make sure it is a proper module to allow importing from it.",
+            ImportWarning
+        )
 
 
 class safe_import_context:
@@ -83,6 +100,14 @@ class safe_import_context:
         module or obj: object
             Module or object imported dynamically.
         """
+
+        # XXX: To remove in benchopt 1.4
+        warnings.warn(
+            "import_from is deprecated. Please import reusable code for the "
+            "benchmark from `benchmark_utils` module in the root dir of the "
+            "benchmark folder.", FutureWarning
+        )
+
         module_path = BENCHMARK_DIR / 'utils' / module_name.replace('.', '/')
         if not module_path.exists():
             module_path = module_path.with_suffix('.py')

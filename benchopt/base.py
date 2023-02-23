@@ -4,9 +4,11 @@ import warnings
 
 from abc import ABC, abstractmethod
 
+from .callback import _Callback
+from .stopping_criterion import SingleRunCriterion
 from .stopping_criterion import SufficientProgressCriterion
 
-from .utils.safe_import import set_benchmark
+from .utils.safe_import import set_benchmark_module
 from .utils.dynamic_modules import get_file_hash
 from .utils.dynamic_modules import _reconstruct_class
 
@@ -20,8 +22,8 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
     Solvers that derive from this class should implement three methods:
 
     - ``set_objective(self, **objective_parameters)``: prepares the solver to
-      be called on a given problem. ``**objective_parameters`` are the output
-      of the method ``to_dict`` from the benchmark objective. In particular,
+      be called on a given problem. ``**objective_parameters`` is the output of
+      the method ``get_objective`` from the benchmark objective. In particular,
       this method should dumps the parameter to compute the objective function
       in a file for command line solvers to reduce the impact of dumping the
       data to the disk in the benchmark.
@@ -69,7 +71,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         else:
             return self.stopping_criterion.strategy
 
-    def _set_objective(self, objective):
+    def _set_objective(self, objective, output=None):
         """Store the objective for hashing/pickling and check its compatibility
 
         Parameters
@@ -86,15 +88,29 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
             If skip is False, the reason should be None.
         """
         self._objective = objective
-        objective_dict = objective.to_dict()
+        self._output = output
+        # XXX remove in version 1.4
+        objective_dict = objective.get_objective()
+        if objective_dict is None:
+            assert hasattr(objective, "to_dict"), (
+                "Objective needs to implement `get_objective` that returns "
+                "a dictionary to be passed to `set_objective`"
+            )
+            warnings.warn(
+                "The method ``Objective.to_dict`` has been deprecated in "
+                "favor of ``Objective.get_objective``. Using it will no "
+                "longer work in version 1.4", FutureWarning
+            )
+            objective_dict = objective.to_dict()
 
         # Check if the objective is compatible with the solver
         skip, reason = self.skip(**objective_dict)
         if skip:
-            return skip, reason
+            self._output.skip(reason)
+            return True
 
         self.set_objective(**objective_dict)
-        return False, None
+        return False
 
     @abstractmethod
     def set_objective(self, **objective_dict):
@@ -103,8 +119,26 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         Parameters
         ----------
         **objective_parameters : dict
-            Dictionary obtained as the output of the method ``to_dict`` from
-            the benchmark ``Objective``.
+            Dictionary obtained as the output of the method ``get_objective``
+            from the benchmark ``Objective``.
+        """
+        ...
+
+    def pre_run_hook(self, stop_val):
+        """Hook to run pre-run operations.
+
+        This is mostly necessary to cache stop_val dependent computations, for
+        instance in ``jax`` with different number of iterations in a for loop.
+
+        Parameters
+        ----------
+        stop_val : int | float | callable
+            Value for the stopping criterion of the solver for. It allows to
+            sample the time/accuracy curve in the benchmark.
+            If it is a callable, then it should act as a callback. This
+            callback should be called once for each iteration with argument
+            the current iterate `parameters`. The callback returns False when
+            the computations should stop.
         """
         ...
 
@@ -146,13 +180,13 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         ...
 
     def skip(self, **objective_dict):
-        """Used to decide if the ``Solver`` is compatible with the objective.
+        """Hook to decide if the ``Solver`` is compatible with the objective.
 
         Parameters
         ----------
         **objective_parameters : dict
-            Dictionary obtained as the output of the method ``to_dict`` from
-            the benchmark ``Objective``.
+            Dictionary obtained as the output of the method ``get_objective``
+            from the benchmark ``Objective``.
 
         Returns
         -------
@@ -171,24 +205,57 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
 
         return False, None
 
+    def run_once(self, stop_val=1):
+        """Run the solver once, to cache warmup times (e.g. pre-compilations).
+
+        This function is intended to be called in ``Solver.set_objective``
+        method to avoid taking into account a solver's warmup costs.
+
+        Parameters
+        ----------
+        stop_val : int or float, (default: 1)
+            If ``stopping_strategy`` is 'iteration', this should be an integer
+            corresponding to the number of iterations the solver is run for.
+            If it is 'callback', it is an integer corresponding to the number
+            of times the callback is called.
+            If it is 'tolerance', it is a float which can be passed to call
+            the solver on an easy to solve problem.
+        """
+
+        if hasattr(self, '_output'):
+            self._output.progress('caching warmup times.')
+
+        if self._solver_strategy == "callback":
+            run_once_cb = _Callback(
+                lambda x: {'objective_value': 1},
+                {},
+                SingleRunCriterion(stop_val=stop_val).get_runner_instance(
+                    solver=self
+                )
+            )
+            self.run(run_once_cb)
+        else:
+            self.run(stop_val)
+
     @staticmethod
-    def _reconstruct(module_filename, parameters, objective,
+    def _reconstruct(module_filename, parameters, objective, output,
                      pickled_module_hash=None, benchmark_dir=None):
-        set_benchmark(benchmark_dir)
+        set_benchmark_module(benchmark_dir)
         Solver = _reconstruct_class(
             module_filename, 'Solver', benchmark_dir, pickled_module_hash,
         )
         obj = Solver.get_instance(**parameters)
         if objective is not None:
-            obj._set_objective(objective)
+            obj._set_objective(objective, output=output)
         return obj
 
     def __reduce__(self):
         module_hash = get_file_hash(self._module_filename)
         objective = getattr(self, '_objective', None)
+        output = getattr(self, '_output', None)
         return self._reconstruct, (
-            self._module_filename, self._parameters, objective, module_hash,
-            str(self._import_ctx._benchmark_dir)
+            self._module_filename, self._parameters, objective, output,
+            module_hash, str(self._import_ctx._benchmark_dir)
         )
 
 
@@ -213,10 +280,9 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
 
     Datasets that derive from this class should implement one method:
 
-    - ``get_data()``: retrieves/simulates the data contains in this data set
-      and returns the ``dimension`` of the data as well as a dictionary
-      containing the data. This dictionary is passed as arguments of the
-      objective function method ``set_data``.
+    - ``get_data()``: retrieves/simulates the data contained in this data set
+      and returns a dictionary containing the data. This dictionary is passed
+      as arguments of the objective's method ``set_data``.
     """
 
     _base_class_name = 'Dataset'
@@ -264,7 +330,7 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
     @staticmethod
     def _reconstruct(module_filename, pickled_module_hash, parameters,
                      benchmark_dir):
-        set_benchmark(benchmark_dir)
+        set_benchmark_module(benchmark_dir)
         Dataset = _reconstruct_class(
             module_filename, 'Dataset', benchmark_dir, pickled_module_hash,
         )
@@ -287,7 +353,7 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
     - `set_data(**data)`: stores the info from a given dataset to be able to
       compute the objective value on these data.
 
-    - `to_dict()`: exports the data from the dataset as well as the parameters
+    - `get_objective()`: exports the data from the dataset and the parameters
       from the objective function as a dictionary that will be passed as
       parameters of the solver's `set_objective` method in order to specify the
       objective function of the benchmark.
@@ -316,8 +382,9 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
         """
         ...
 
-    @abstractmethod
-    def to_dict(self):
+    # to uncomment in version 1.4, once `to_dict` has been deprecated.
+    # @abstractmethod
+    def get_objective(self):
         """Return the objective parameters for the solver.
 
         Returns
@@ -461,7 +528,7 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
     @staticmethod
     def _reconstruct(module_filename, pickled_module_hash, parameters,
                      dataset, benchmark_dir):
-        set_benchmark(benchmark_dir)
+        set_benchmark_module(benchmark_dir)
         Objective = _reconstruct_class(
             module_filename, 'Objective', benchmark_dir, pickled_module_hash,
         )

@@ -28,7 +28,7 @@ be **as simple as doing**:
    git clone https://github.com/benchopt/benchmark_logreg_l2
    cd benchmark_logreg_l2
    benchopt install -e . -s lightning -s sklearn
-   benchopt run -e . --config ./config_example.yml
+   benchopt run -e . --config ./example_config.yml
 
 Running this command will give you a benchmark plot on l2-regularized
 logistic regression:
@@ -44,7 +44,7 @@ Learn how to `create a new benchmark <https://benchopt.github.io/how.html>`_
 using the `benchmark template <https://github.com/benchopt/template_benchmark>`_.
 
 Install
---------
+-------
 
 The command line tool to run the benchmarks can be installed through `pip`. In order to allow `benchopt`
 to automatically install solvers dependencies, the install needs to be done in a `conda` environment.
@@ -120,7 +120,7 @@ Available optimization problems
      - `Results <https://benchopt.github.io/results/benchmark_lasso_path.html>`__
      - |Build Status Lasso Path|
    * - `Elastic Net <https://github.com/benchopt/benchmark_elastic_net>`_
-     - 
+     -
      - |Build Status ElasticNet|
    * - `MCP <https://github.com/benchopt/benchmark_mcp>`_
      - `Results <https://benchopt.github.io/results/benchmark_mcp.html>`__
@@ -132,29 +132,36 @@ Available optimization problems
      - `Results <https://benchopt.github.io/results/benchmark_logreg_l1.html>`__
      - |Build Status LogRegL1|
    * - `L2-regularized Huber regression <https://github.com/benchopt/benchmark_huber_l2>`_
-     - 
+     -
      - |Build Status HuberL2|
    * - `L1-Regularized Quantile Regression <https://github.com/benchopt/benchmark_quantile_regression>`_
      - `Results <https://benchopt.github.io/results/benchmark_quantile_regression.html>`__
      - |Build Status QuantileRegL1|
    * - `Linear SVM for Binary Classification <https://github.com/benchopt/benchmark_linear_svm_binary_classif_no_intercept>`_
-     - 
+     -
      - |Build Status LinearSVM|
    * - `Linear ICA <https://github.com/benchopt/benchmark_linear_ica>`_
-     - 
+     -
      - |Build Status LinearICA|
    * - `Approximate Joint Diagonalization (AJD) <https://github.com/benchopt/benchmark_jointdiag>`_
-     - 
+     -
      - |Build Status JointDiag|
    * - `1D Total Variation Denoising <https://github.com/benchopt/benchmark_tv_1d>`_
      -
      - |Build Status TV1D|
    * - `2D Total Variation Denoising <https://github.com/benchopt/benchmark_tv_2d>`_
-     - 
+     -
      - |Build Status TV2D|
    * - `ResNet Classification <https://github.com/benchopt/benchmark_resnet_classif>`_
      - `Results <https://benchopt.github.io/results/benchmark_resnet_classif.html>`__
      - |Build Status ResNetClassif|
+
+
+
+Finding helps
+-------------
+
+If you need any help in using ``benchopt`` to run or construct a benchmark, or if you wanna discuss the future directions and features that ``benchopt`` should take, feel free to join our `discord server <https://discord.gg/CpKjJFqE>`_ Our community will be happy to help you solve the problems you might have encountered!
 
 
 Citing Benchopt
@@ -164,15 +171,16 @@ If you use ``Benchopt`` in a scientific publication, please cite the following p
 
 .. code-block:: bibtex
 
-   @article{benchopt,
-      author = {Moreau, Thomas and Massias, Mathurin and Gramfort, Alexandre and Ablin, Pierre 
-                and Bannier, Pierre-Antoine and Charlier, Benjamin and Dagréou, Mathieu and Dupré la Tour, Tom 
-                and Durif, Ghislain and F. Dantas, Cassio and Klopfenstein, Quentin 
-                and Larsson, Johan and Lai, En and Lefort, Tanguy and Malézieux, Benoit 
-                and Moufad, Badr and T. Nguyen, Binh and Rakotomamonjy, Alain and Ramzi, Zaccharie 
+   @inproceedings{benchopt,
+      author = {Moreau, Thomas and Massias, Mathurin and Gramfort, Alexandre and Ablin, Pierre
+                and Bannier, Pierre-Antoine and Charlier, Benjamin and Dagréou, Mathieu and Dupré la Tour, Tom
+                and Durif, Ghislain and F. Dantas, Cassio and Klopfenstein, Quentin
+                and Larsson, Johan and Lai, En and Lefort, Tanguy and Malézieux, Benoit
+                and Moufad, Badr and T. Nguyen, Binh and Rakotomamonjy, Alain and Ramzi, Zaccharie
                 and Salmon, Joseph and Vaiter, Samuel},
       title  = {Benchopt: Reproducible, efficient and collaborative optimization benchmarks},
       year   = {2022},
+      booktitle = {NeurIPS},
       url    = {https://arxiv.org/abs/2206.13424}
    }
 

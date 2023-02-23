@@ -124,8 +124,10 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               help='Number of repetitions that are averaged to estimate the '
               'runtime.')
 @click.option('--timeout',
-              metavar="<int>", default=100, show_default=True, type=int,
-              help='Timeout a solver when run for more than <timeout> seconds')
+              default=100, show_default=True, type=str,
+              help='Stop a solver when run for more than <timeout> seconds.'
+              ' The syntax 10h or 10m can be used to denote 10 hours or '
+              'minutes respectively.')
 @click.option('--config', 'config_file', default=None,
               shell_complete=complete_config_files,
               help="YAML configuration file containing benchmark options.")
@@ -183,6 +185,12 @@ def run(config_file=None, **kwargs):
         deprecated_objective_filters, old_objective_filters
     ) = _get_run_args(kwargs, config)
 
+    try:
+        timeout = int(float(timeout))
+    except ValueError:  # already under string format
+        import pandas as pd
+        timeout = pd.to_timedelta(timeout).total_seconds()
+
     if len(old_objective_filters):
         warnings.warn(
             'Using the -p option is deprecated, use -o instead',
@@ -200,6 +208,20 @@ def run(config_file=None, **kwargs):
     # Create the Benchmark object
     benchmark = Benchmark(benchmark)
 
+    if benchmark.min_version is not None:
+        from packaging.version import parse
+        from benchopt import __version__
+
+        # Avoid dev versions
+        normalized_version = parse(parse(__version__).base_version)
+        if normalized_version < parse(benchmark.min_version):
+            raise RuntimeError(
+                f"benchopt version {__version__} is too old to run this  "
+                f"benchmark, version {benchmark.min_version} is required. "
+                "Please update benchopt with `pip install -U benchopt` "
+                "for this benchmark."
+            )
+
     # If env_name is False, the flag `--local` has been used (default) so
     # run in the current environment.
     if env_name == 'False':
@@ -214,6 +236,10 @@ def run(config_file=None, **kwargs):
         if do_profile:
             from benchopt.utils.profiling import use_profile
             use_profile()  # needs to be called before validate_solver_patterns
+
+        # Check that the objective is installed or raise an error
+        objective = benchmark.get_benchmark_objective()
+        objective.is_installed(raise_on_not_installed=True)
 
         # Check that the dataset/solver patterns match actual dataset
         benchmark.validate_dataset_patterns(dataset_names)
@@ -391,7 +417,6 @@ def install(
 
     # Check that the dataset/solver patterns match actual dataset
     benchmark = Benchmark(benchmark)
-    print(f"Installing '{benchmark.name}' requirements")
     benchmark.validate_dataset_patterns(dataset_names)
     benchmark.validate_solver_patterns(solver_names)
 
@@ -406,6 +431,7 @@ def install(
             "'benchopt install'."
         )
 
+    print(f"Installing '{benchmark.name}' requirements")
     # If env_name is False (default), installation in the current environment.
     if env_name == 'False':
         env_name = None
@@ -453,8 +479,7 @@ def install(
 @main.command(
     help="Test a benchmark for benchopt. The benchmark must feature a "
     "simulated dataset to test for all solvers. For more info about the "
-    "simulated dataset configurations, see"
-    "benchopt.github.io/how.html#example-of-parametrized-simulated-dataset",
+    "benchmark tests configuration and requirements, see :ref:`test_config`.",
     context_settings=dict(ignore_unknown_options=True)
 )
 @click.argument('benchmark', default=Path.cwd(), type=click.Path(exists=True),

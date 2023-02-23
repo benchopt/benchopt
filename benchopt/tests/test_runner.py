@@ -10,6 +10,14 @@ from benchopt.benchmark import _extract_options
 from benchopt.benchmark import _extract_parameters
 
 
+class MockOutput:
+    def __init__(self):
+        self.reason = None
+
+    def skip(self, reason):
+        self.reason = reason
+
+
 def test_skip_api():
 
     dataset = TEST_DATASET.get_instance()
@@ -18,16 +26,18 @@ def test_skip_api():
 
     solver = TEST_SOLVER.get_instance()
 
-    skip, reason = solver._set_objective(objective)
+    out = MockOutput()
+    skip = solver._set_objective(objective, out)
     assert skip
-    assert reason == 'lmbd=0'
+    assert out.reason == 'lmbd=0'
 
     objective = TEST_OBJECTIVE.get_instance(reg=1)
     objective.set_dataset(dataset)
 
-    skip, reason = solver._set_objective(objective)
+    out = MockOutput()
+    skip = solver._set_objective(objective, out)
     assert not skip
-    assert reason is None
+    assert out.reason is None
 
     dataset = TEST_DATASET.get_instance(skip=True)
     objective = TEST_OBJECTIVE.get_instance()
