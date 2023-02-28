@@ -29,7 +29,7 @@ as for `Ordinary Least Square (OLS) <https://github.com/benchopt/benchmark_ols>`
 .. note::
 
     The simplest way to create a benchmark is to copy an existing folder and
-    modify the element to fit the new structure.
+    to adapt its content.
     A benchmark template is provided as a `GitHub template repo here <https://github.com/benchopt/template_benchmark>`_
 
 
@@ -60,7 +60,7 @@ be minimized by the solvers. An objective class should define 3 methods:
   to the ``set_objective`` methods of solvers_.
 
 An objective class also needs to inherit from a base class,
-:class:`benchopt.base.BaseObjective`.
+:class:`benchopt.BaseObjective`.
 
 .. note::
   Multiple values can be computed in one objective as long as they are
@@ -80,10 +80,8 @@ Example
 A dataset defines what can be passed to an objective. More specifically,
 a dataset should implement one method:
 
-   - ``get_data()``: A method whose output consists of two things. First it outputs
-     the dimension of the optimization problem (size of the iterates). Second it
-     outputs a dictionary that can be passed as keyword arguments ``**data`` to
-     the ``set_data`` method of an objective_.
+- ``get_data()``: A method which outputs a dictionary that can be passed as
+  keyword arguments ``**data`` to the ``set_data`` method of an objective_.
 
 A dataset class also needs to inherit from a base class called
 :class:`benchopt.BaseDataset`.

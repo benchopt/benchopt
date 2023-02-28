@@ -108,7 +108,7 @@ some cases, this exponential growth might hide some effects, or might
 not be adapted to a given solver.
 
 The way this value is changed can be specified for each solver by
-implementing the ``get_next`` method in the ``Solver`` class.
+implementing a static  ``get_next`` method in the ``Solver`` class.
 This method takes as input the previous value where the objective
 function have been logged, and output the next one. For instance,
 if a solver needs to be evaluated every 10 iterations, we would have
@@ -117,7 +117,8 @@ if a solver needs to be evaluated every 10 iterations, we would have
 
     class Solver(BaseSolver):
         ...
-        def get_next(self, stop_val):
+        @staticmethod
+        def get_next(stop_val):
             return stop_val + 10
 
 
@@ -157,6 +158,37 @@ Then, these modules and packages can be imported as a regular package, i.e.,
         from benchmark_utils import helper1
         from benchmark_utils.helper1 import func1
         from benchmark_utils.helper_module.submodule1 import func2
+
+
+
+.. _precompilation:
+
+Caching pre-compilation and warmup effects
+------------------------------------------
+
+For some solvers, such as solver relying on just-in-time compilation with
+``numba`` or ``jax``, the first iteration might be longer due to "warmup"
+effects. To avoid having such effect in the benchmark results, it is usually
+advised to call the solver once before running the benchmark, in the
+``Solver.set_objective`` method. For solvers with ``stopping_strategy`` in
+``{'tolerance',  'iteration'}``, simply calling the ``Solver.run`` with a
+simple enough value is usually enough. For solvers with ``stopping_strategy``
+set to ``'callback'``, it is possible to call ``Solver.run_once``, which will
+call the ``run`` method with a simple callback that does not compute the
+objective value and stops after ``n_iter`` calls to callback (default to 1).
+
+
+.. code-block:: python
+
+    class Solver(BaseSolver):
+        ...
+
+        def set_objective(self, **objective):
+            ...
+            # Cache pre-compilation and other one-time setups that should
+            # not be included in the benchmark timing.
+            self.run(1)  # For stopping_strategy == 'iteration' | 'tolerance'
+            self.run_once()  # For stopping_strategy == 'callback'
 
 
 .. |update_params| replace:: ``update_parameters``

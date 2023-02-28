@@ -70,13 +70,19 @@ def plot_objective_curve(df, obj_col='objective_value',
         df_ = df[df['solver_name'] == solver_name]
         curve = df_.groupby('stop_val').median(numeric_only=True)
 
-        q1 = df_.groupby('stop_val')['time'].quantile(.1)
-        q9 = df_.groupby('stop_val')['time'].quantile(.9)
+        # XXX: necessary since numpy 1.24.0 broke matplotolib compat
+        # with pandas. Remove once matplotlib/matplotlib#24773 is solved.
+        q1 = df_.groupby('stop_val')['time'].quantile(.1).to_numpy()
+        q9 = df_.groupby('stop_val')['time'].quantile(.9).to_numpy()
 
         color, marker = get_solver_style(solver_name, plotly=False)
         plt.loglog(curve['time'], curve[obj_col], color=color, marker=marker,
                    label=solver_name, linewidth=3)
-        plt.fill_betweenx(curve[obj_col], q1, q9, color=color, alpha=.3)
+
+        # XXX: ditto from above, remove to_numpy once compat is restored.
+        plt.fill_betweenx(
+            curve[obj_col].to_numpy(), q1, q9, color=color, alpha=.3
+        )
 
     if suboptimality and not relative:
         plt.hlines(eps, df['time'].min(), df['time'].max(), color='k',
@@ -143,6 +149,11 @@ def compute_quantiles(df_filtered):
     q9 = df_filtered.groupby('stop_val')['time'].quantile(.9)
 
     return q1, q9
+
+
+def reset_solver_styles_idx():
+    "Reset solvers indices used to define colors and markers."
+    solvers_idx.clear()
 
 
 def get_solver_style(solver, plotly=True):

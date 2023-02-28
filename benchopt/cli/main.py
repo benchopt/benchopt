@@ -124,8 +124,10 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               help='Number of repetitions that are averaged to estimate the '
               'runtime.')
 @click.option('--timeout',
-              metavar="<int>", default=100, show_default=True, type=int,
-              help='Timeout a solver when run for more than <timeout> seconds')
+              default=100, show_default=True, type=str,
+              help='Stop a solver when run for more than <timeout> seconds.'
+              ' The syntax 10h or 10m can be used to denote 10 hours or '
+              'minutes respectively.')
 @click.option('--config', 'config_file', default=None,
               shell_complete=complete_config_files,
               help="YAML configuration file containing benchmark options.")
@@ -182,6 +184,12 @@ def run(config_file=None, **kwargs):
         plot, html, pdb, do_profile, env_name, output,
         deprecated_objective_filters, old_objective_filters
     ) = _get_run_args(kwargs, config)
+
+    try:
+        timeout = int(float(timeout))
+    except ValueError:  # already under string format
+        import pandas as pd
+        timeout = pd.to_timedelta(timeout).total_seconds()
 
     if len(old_objective_filters):
         warnings.warn(
@@ -471,8 +479,7 @@ def install(
 @main.command(
     help="Test a benchmark for benchopt. The benchmark must feature a "
     "simulated dataset to test for all solvers. For more info about the "
-    "simulated dataset configurations, see"
-    "benchopt.github.io/how.html#example-of-parametrized-simulated-dataset",
+    "benchmark tests configuration and requirements, see :ref:`test_config`.",
     context_settings=dict(ignore_unknown_options=True)
 )
 @click.argument('benchmark', default=Path.cwd(), type=click.Path(exists=True),
