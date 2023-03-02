@@ -183,6 +183,7 @@ def shape_solvers_for_html(df, objective_column):
         q1, q9 = compute_quantiles(df_filtered)
         groupby_stop_val_median = df_filtered.groupby('stop_val').median()
         color, marker = get_solver_style(solver)
+        stopping_strategy = df_filtered['stopping_strategy'][0]
         solver_data[solver] = {
             'scatter': {
                 'x': groupby_stop_val_median['time'].tolist(),
@@ -195,7 +196,8 @@ def shape_solvers_for_html(df, objective_column):
                 **computeBarChartData(df, objective_column, solver)
             },
             'color': color,
-            'marker': marker
+            'marker': marker,
+            'stopping_strategy': stopping_strategy
         }
 
     return solver_data
