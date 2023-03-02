@@ -121,7 +121,19 @@ const getScatterCurves = () => {
   const curves = [];
 
   // For each solver, add the median curve with proper style and visibility.
+  xaxisType = state().xaxis_type
+
   getSolvers().forEach(solver => {
+    solverStoppingStrategy = data(solver)['stopping_strategy'];
+
+    // plot only solvers that were stopped using xaxis type
+    // plot all solver if xaxis type is `time`
+    if(xaxisType !== "time" && solverStoppingStrategy !== xaxisType) {
+      return
+    }
+
+    ScatterXaxisProperty = xaxisType === "time" ? 'x' : 'stop_val';
+
     curves.push({
       type: 'scatter',
       name: solver,
@@ -136,12 +148,23 @@ const getScatterCurves = () => {
       legendgroup: solver,
       hovertemplate: solver + ' <br> (%{x:.1e},%{y:.1e}) <extra></extra>',
       visible: isVisible(solver) ? true : 'legendonly',
-      x: data(solver).scatter['x'],
+      x: data(solver).scatter[ScatterXaxisProperty],
       y: useTransformer(data(solver).scatter.y, 'y', data().transformers),
     });
 
     if (state().with_quantiles) {
       // Add shaded area for each solver, with proper style and visibility.
+
+      solverStoppingStrategy = data(solver)['stopping_strategy'];
+
+      // plot only solvers that were stopped using xaxis type
+      // plot all solver if xaxis type is `time`
+      if(xaxisType !== "time" && solverStoppingStrategy !== xaxisType) {
+        return
+      }
+
+      scatterXaxisProperties = xaxisType === "time" ? ['q1', 'q9'] : ['stop_val', 'stop_val'];
+  
       curves.push({
         type: 'scatter',
         mode: 'lines',
@@ -153,7 +176,7 @@ const getScatterCurves = () => {
         legendgroup: solver,
         hovertemplate: '(%{x:.1e},%{y:.1e}) <extra></extra>',
         visible: isVisible(solver) ? true : 'legendonly',
-        x: data(solver).scatter.q1,
+        x: data(solver).scatter[scatterXaxisProperties[0]],
         y: useTransformer(data(solver).scatter.y, 'y', data().transformers),
       }, {
         type: 'scatter',
@@ -167,7 +190,7 @@ const getScatterCurves = () => {
         legendgroup: solver,
         hovertemplate: '(%{x:.1e},%{y:.1e}) <extra></extra>',
         visible: isVisible(solver) ? true : 'legendonly',
-        x: data(solver).scatter.q9,
+        x: data(solver).scatter[scatterXaxisProperties[1]],
         y: useTransformer(data(solver).scatter.y, 'y', data().transformers),
       });
     }
