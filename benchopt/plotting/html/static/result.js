@@ -121,7 +121,6 @@ const getScatterCurves = () => {
   const curves = [];
 
   // For each solver, add the median curve with proper style and visibility.
-  let timeOrStopVal = (state().xaxis_with_stop_val) ? 'stop_val' : 'x';
   getSolvers().forEach(solver => {
     curves.push({
       type: 'scatter',
@@ -137,7 +136,7 @@ const getScatterCurves = () => {
       legendgroup: solver,
       hovertemplate: solver + ' <br> (%{x:.1e},%{y:.1e}) <extra></extra>',
       visible: isVisible(solver) ? true : 'legendonly',
-      x: data(solver).scatter[timeOrStopVal] ,
+      x: data(solver).scatter['x'],
       y: useTransformer(data(solver).scatter.y, 'y', data().transformers),
     });
 
