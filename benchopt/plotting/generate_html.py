@@ -185,6 +185,17 @@ def shape_solvers_for_html(df, objective_column):
         color, marker = get_solver_style(solver)
 
         stopping_strategy = df_filtered['stopping_strategy'].unique()
+
+        if len(stopping_strategy) != 1:
+            found_stopping_strategies = ', '.join(
+                f"`{item}`" for item in stopping_strategy)
+
+            raise Exception(
+                "Solver can be run using only one stopping strategy. "
+                f"Expected one stopping strategy "
+                f"but found {found_stopping_strategies}"
+            )
+
         stopping_strategy = stopping_strategy[0]
 
         solver_data[solver] = {
