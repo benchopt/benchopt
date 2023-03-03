@@ -32,6 +32,7 @@ const NON_CONVERGENT_COLOR = 'rgba(0.8627, 0.8627, 0.8627)'
 const setState = (partialState) => {
   window.state = {...state(), ...partialState};
   displayScatterElements(!isBarChart());
+  updateXaxis();
   makePlot();
   makeLegend();
 }
@@ -121,7 +122,7 @@ const getScatterCurves = () => {
   const curves = [];
 
   // For each solver, add the median curve with proper style and visibility.
-  xaxisType = state().xaxis_type
+  let xaxisType = state().xaxis_type || "time";
 
   getSolvers().forEach(solver => {
     solverStoppingStrategy = data(solver)['stopping_strategy'];
@@ -644,6 +645,32 @@ const createLegendItem = (solver, color, symbolNumber) => {
   item.appendChild(textContainer);
 
   return item;
+}
+
+
+function updateXaxis() {
+  let selection = document.getElementById("change_xaxis_type");
+  selection.innerHTML = "";
+
+  let xaxisType = state()["xaxis_type"];
+  let options = new Set(['time']);
+
+  // get solvers run for selected (dataset, objective, objective colum)
+  // and select their unique stopping strategies
+  let solvers = data()['solvers'];
+  Object.values(solvers).forEach(solver => options.add(solver['stopping_strategy']));
+
+  // create xaxis type options
+  options.forEach(option => {
+    element = document.createElement('option');
+    element.setAttribute('value', option);
+    element.innerText = option;
+
+    selection.append(element);
+  });
+
+  // set selected value
+  selection.value = options.has(xaxisType) ? xaxisType : "time";
 }
 
 /**

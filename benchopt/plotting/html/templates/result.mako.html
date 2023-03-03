@@ -85,22 +85,20 @@
                                 </select>
                             </div>
                         </div>
+                        <div id="xaxis-type-form-group" class="mt-8 px-8">
+                            <label for="change_scaling" class="block text-sm font-medium text-white">X-axis</label>
+                            <div class="mt-1 rounded-md shadow-sm">
+                                <select id="change_xaxis_type" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({xaxis_type: this.value})">
+                                   <!-- options will be added dynamically -->
+                                </select>
+                            </div>
+                        </div>
                         <div class="flex items-center justify-between mt-8 px-8">
                             <div class="block text-sm font-medium text-white">Quantiles</div>
                             <label class="block switch">
                                 <input id="change_shades" type="checkbox" checked onchange="setState({with_quantiles: this.checked})">
                                 <span class="slider round"></span>
                             </label>
-                        </div>
-                        <div id="xaxis-type-form-group" class="mt-8 px-8">
-                            <label for="change_scaling" class="block text-sm font-medium text-white">X axis type</label>
-                            <div class="mt-1 rounded-md shadow-sm">
-                                <select id="change_xaxis_type" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({xaxis_type: this.value})">
-                                    <option value="time">Time</option>
-                                    <option value="iteration">Iteration</option>
-                                    <option value="tolerance">Tolerance</option>
-                                </select>
-                            </div>
                         </div>
                     </div>
                 </div>
