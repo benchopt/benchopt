@@ -150,7 +150,7 @@ class DependenciesMixin:
         if force or not is_installed:
             cls._pre_install_hook(env_name=env_name)
             if cls.install_cmd == 'conda':
-                conda_reqs = cls.requirements
+                conda_reqs = getattr(cls, "requirements", [])
             elif cls.install_cmd == 'shell':
                 shell_install_scripts = [
                     cls._module_filename.parents[1] / 'install_scripts' /
