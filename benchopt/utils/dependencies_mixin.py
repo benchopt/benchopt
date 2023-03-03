@@ -10,7 +10,7 @@ from .conda_env_cmd import shell_install_in_conda_env
 
 class DependenciesMixin:
     # Information on how to install the class. The value of install_cmd should
-    # be in {None, 'conda', 'shell'}. The API reads:
+    # be in {'conda', 'shell'}. The API reads:
     #
     # - 'conda': The class should have an attribute `requirements`.
     #          Benchopt will conda install `$requirements`, except for entries
@@ -22,7 +22,7 @@ class DependenciesMixin:
     #           env directory as an argument. The command should then be
     #           installed in the `bin` folder of the env and can be imported
     #           with import_shell_cmd in the safe_import_context.
-    install_cmd = None
+    install_cmd = 'conda'
 
     _error_displayed = False
 
@@ -150,7 +150,7 @@ class DependenciesMixin:
         if force or not is_installed:
             cls._pre_install_hook(env_name=env_name)
             if cls.install_cmd == 'conda':
-                conda_reqs = cls.requirements
+                conda_reqs = getattr(cls, "requirements", [])
             elif cls.install_cmd == 'shell':
                 shell_install_scripts = [
                     cls._module_filename.parents[1] / 'install_scripts' /

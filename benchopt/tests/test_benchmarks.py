@@ -132,8 +132,6 @@ def test_solver_install_api(benchmark, solver_class):
     assert solver_class.install_cmd in [None, 'conda', 'shell']
 
     # Check that the solver_class exposes a known install cmd
-    if solver_class.install_cmd == 'conda':
-        assert hasattr(solver_class, 'requirements')
     if solver_class.install_cmd == 'shell':
         assert hasattr(solver_class, 'install_script')
 
