@@ -180,6 +180,13 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
 
     states = []
     run_statistics = []
+
+    # get stopping strategy
+    # for plotting purpose consider 'callback' as 'iteration'
+    stopping_strategy = solver._solver_strategy
+    if stopping_strategy == 'callback':
+        stopping_strategy = 'iteration'
+
     for rep in range(n_repetitions):
 
         output.set(rep=rep)
@@ -189,7 +196,7 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
             solver_name=str(solver),
             data_name=str(dataset),
             idx_rep=rep,
-            stopping_strategy=solver._solver_strategy
+            stopping_strategy=stopping_strategy
         )
 
         stopping_criterion = solver.stopping_criterion.get_runner_instance(
