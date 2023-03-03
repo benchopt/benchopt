@@ -153,18 +153,14 @@ const getScatterCurves = () => {
       y: useTransformer(data(solver).scatter.y, 'y', data().transformers),
     });
 
+    // skip plotting quantiles if xaxis is not time
+    // as stop_val are predefined and hence deterministic 
+    if(xaxisType !== "time") {
+      return
+    }
+
     if (state().with_quantiles) {
       // Add shaded area for each solver, with proper style and visibility.
-
-      solverStoppingStrategy = data(solver)['stopping_strategy'];
-
-      // plot only solvers that were stopped using xaxis type
-      // plot all solver if xaxis type is `time`
-      if(xaxisType !== "time" && solverStoppingStrategy !== xaxisType) {
-        return
-      }
-
-      scatterXaxisProperties = xaxisType === "time" ? ['q1', 'q9'] : ['stop_val', 'stop_val'];
   
       curves.push({
         type: 'scatter',
@@ -177,7 +173,7 @@ const getScatterCurves = () => {
         legendgroup: solver,
         hovertemplate: '(%{x:.1e},%{y:.1e}) <extra></extra>',
         visible: isVisible(solver) ? true : 'legendonly',
-        x: data(solver).scatter[scatterXaxisProperties[0]],
+        x: data(solver).scatter['q1'],
         y: useTransformer(data(solver).scatter.y, 'y', data().transformers),
       }, {
         type: 'scatter',
@@ -191,7 +187,7 @@ const getScatterCurves = () => {
         legendgroup: solver,
         hovertemplate: '(%{x:.1e},%{y:.1e}) <extra></extra>',
         visible: isVisible(solver) ? true : 'legendonly',
-        x: data(solver).scatter[scatterXaxisProperties[1]],
+        x: data(solver).scatter['q9'],
         y: useTransformer(data(solver).scatter.y, 'y', data().transformers),
       });
     }
