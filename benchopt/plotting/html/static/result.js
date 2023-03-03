@@ -122,7 +122,7 @@ const getScatterCurves = () => {
   const curves = [];
 
   // For each solver, add the median curve with proper style and visibility.
-  let xaxisType = state().xaxis_type || "time";
+  let xaxisType = state().xaxis_type;
 
   getSolvers().forEach(solver => {
     solverStoppingStrategy = data(solver)['stopping_strategy'];
@@ -363,7 +363,8 @@ const getScale = () => {
 }
 
 const getScatterChartLayout = () => {
-  let withStopVal = state().xaxis_with_stop_val;
+  let xaxisType = state().xaxis_type;
+
   const layout = {
     autosize: !isSmallScreen(),
     modebar: {
@@ -383,8 +384,8 @@ const getScatterChartLayout = () => {
     },
     xaxis: {
       type: getScale().xaxis,
-      title: withStopVal ? 'Stop value': 'Time [sec]',
-      tickformat: '.1e',
+      title: xaxisType === "time" ? "Time [sec]": xaxisType,
+      tickformat: xaxisType === "time" ? '.1e': '',
       tickangle: -45,
       gridcolor: '#ffffff',
       zeroline : false,
