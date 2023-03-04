@@ -32,7 +32,13 @@ const NON_CONVERGENT_COLOR = 'rgba(0.8627, 0.8627, 0.8627)'
 const setState = (partialState) => {
   window.state = {...state(), ...partialState};
   displayScatterElements(!isBarChart());
-  updateXaxis();
+
+  // TODO: `listIdXaxisSelection` to be removed after 
+  // implementing responsiveness through breakpoints 
+  // and removing content duplication between big screen and mobile
+  let listIdXaxisSelection = ["change_xaxis_type", "change_xaxis_type_mobile"];
+  listIdXaxisSelection.forEach(idXaxisSelection => updateXaxis(idXaxisSelection))
+
   makePlot();
   makeLegend();
 }
@@ -645,8 +651,8 @@ const createLegendItem = (solver, color, symbolNumber) => {
 }
 
 
-function updateXaxis() {
-  let selection = document.getElementById("change_xaxis_type");
+function updateXaxis(idXaxisTypeSelection) {
+  let selection = document.getElementById(idXaxisTypeSelection);
   selection.innerHTML = "";
 
   let xaxisType = state()["xaxis_type"];
