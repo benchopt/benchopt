@@ -135,11 +135,11 @@ const getScatterCurves = () => {
 
     // plot only solvers that were stopped using xaxis type
     // plot all solver if xaxis type is `time`
-    if(xaxisType !== "time" && solverStoppingStrategy !== xaxisType) {
+    if(xaxisType !== "Time" && solverStoppingStrategy !== xaxisType) {
       return
     }
 
-    ScatterXaxisProperty = xaxisType === "time" ? 'x' : 'stop_val';
+    ScatterXaxisProperty = xaxisType === "Time" ? 'x' : 'stop_val';
 
     curves.push({
       type: 'scatter',
@@ -161,7 +161,7 @@ const getScatterCurves = () => {
 
     // skip plotting quantiles if xaxis is not time
     // as stop_val are predefined and hence deterministic 
-    if(xaxisType !== "time") {
+    if(xaxisType !== "Time") {
       return
     }
 
@@ -390,8 +390,8 @@ const getScatterChartLayout = () => {
     },
     xaxis: {
       type: getScale().xaxis,
-      title: xaxisType === "time" ? "Time [sec]": xaxisType,
-      tickformat: xaxisType === "time" ? '.1e': '',
+      title: xaxisType === "Time" ? "Time [sec]": xaxisType,
+      tickformat:  ["Time", "Tolerance"].includes(xaxisType) ? '.1e': '',
       tickangle: -45,
       gridcolor: '#ffffff',
       zeroline : false,
@@ -656,7 +656,7 @@ function updateXaxis(idXaxisTypeSelection) {
   selection.innerHTML = "";
 
   let xaxisType = state()["xaxis_type"];
-  let options = new Set(['time']);
+  let options = new Set(['Time']);
 
   // get solvers run for selected (dataset, objective, objective colum)
   // and select their unique stopping strategies
@@ -673,7 +673,7 @@ function updateXaxis(idXaxisTypeSelection) {
   });
 
   // set selected value
-  selection.value = options.has(xaxisType) ? xaxisType : "time";
+  selection.value = options.has(xaxisType) ? xaxisType : "Time";
 }
 
 /**
