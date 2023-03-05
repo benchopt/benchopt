@@ -32,6 +32,13 @@ const NON_CONVERGENT_COLOR = 'rgba(0.8627, 0.8627, 0.8627)'
 const setState = (partialState) => {
   window.state = {...state(), ...partialState};
   displayScatterElements(!isBarChart());
+
+  // TODO: `listIdXaxisSelection` to be removed after 
+  // implementing responsiveness through breakpoints 
+  // and removing content duplication between big screen and mobile
+  let listIdXaxisSelection = ["change_xaxis_type", "change_xaxis_type_mobile"];
+  listIdXaxisSelection.forEach(idXaxisSelection => updateXaxis(idXaxisSelection))
+
   makePlot();
   makeLegend();
 }
@@ -121,7 +128,19 @@ const getScatterCurves = () => {
   const curves = [];
 
   // For each solver, add the median curve with proper style and visibility.
+  let xaxisType = state().xaxis_type;
+
   getSolvers().forEach(solver => {
+    solverStoppingStrategy = data(solver)['stopping_strategy'];
+
+    // plot only solvers that were stopped using xaxis type
+    // plot all solver if xaxis type is `time`
+    if(xaxisType !== "Time" && solverStoppingStrategy !== xaxisType) {
+      return
+    }
+
+    ScatterXaxisProperty = xaxisType === "Time" ? 'x' : 'stop_val';
+
     curves.push({
       type: 'scatter',
       name: solver,
@@ -136,12 +155,19 @@ const getScatterCurves = () => {
       legendgroup: solver,
       hovertemplate: solver + ' <br> (%{x:.1e},%{y:.1e}) <extra></extra>',
       visible: isVisible(solver) ? true : 'legendonly',
-      x: data(solver).scatter.x,
+      x: data(solver).scatter[ScatterXaxisProperty],
       y: useTransformer(data(solver).scatter.y, 'y', data().transformers),
     });
 
+    // skip plotting quantiles if xaxis is not time
+    // as stop_val are predefined and hence deterministic 
+    if(xaxisType !== "Time") {
+      return
+    }
+
     if (state().with_quantiles) {
       // Add shaded area for each solver, with proper style and visibility.
+  
       curves.push({
         type: 'scatter',
         mode: 'lines',
@@ -153,7 +179,7 @@ const getScatterCurves = () => {
         legendgroup: solver,
         hovertemplate: '(%{x:.1e},%{y:.1e}) <extra></extra>',
         visible: isVisible(solver) ? true : 'legendonly',
-        x: data(solver).scatter.q1,
+        x: data(solver).scatter['q1'],
         y: useTransformer(data(solver).scatter.y, 'y', data().transformers),
       }, {
         type: 'scatter',
@@ -167,7 +193,7 @@ const getScatterCurves = () => {
         legendgroup: solver,
         hovertemplate: '(%{x:.1e},%{y:.1e}) <extra></extra>',
         visible: isVisible(solver) ? true : 'legendonly',
-        x: data(solver).scatter.q9,
+        x: data(solver).scatter['q9'],
         y: useTransformer(data(solver).scatter.y, 'y', data().transformers),
       });
     }
@@ -343,6 +369,8 @@ const getScale = () => {
 }
 
 const getScatterChartLayout = () => {
+  let xaxisType = state().xaxis_type;
+
   const layout = {
     autosize: !isSmallScreen(),
     modebar: {
@@ -362,8 +390,8 @@ const getScatterChartLayout = () => {
     },
     xaxis: {
       type: getScale().xaxis,
-      title: 'Time [sec]',
-      tickformat: '.1e',
+      title: xaxisType === "Time" ? "Time [sec]": xaxisType,
+      tickformat:  ["Time", "Tolerance"].includes(xaxisType) ? '.1e': '',
       tickangle: -45,
       gridcolor: '#ffffff',
       zeroline : false,
@@ -620,6 +648,32 @@ const createLegendItem = (solver, color, symbolNumber) => {
   item.appendChild(textContainer);
 
   return item;
+}
+
+
+function updateXaxis(idXaxisTypeSelection) {
+  let selection = document.getElementById(idXaxisTypeSelection);
+  selection.innerHTML = "";
+
+  let xaxisType = state()["xaxis_type"];
+  let options = new Set(['Time']);
+
+  // get solvers run for selected (dataset, objective, objective colum)
+  // and select their unique stopping strategies
+  let solvers = data()['solvers'];
+  Object.values(solvers).forEach(solver => options.add(solver['stopping_strategy']));
+
+  // create xaxis type options
+  options.forEach(option => {
+    element = document.createElement('option');
+    element.setAttribute('value', option);
+    element.innerText = option;
+
+    selection.append(element);
+  });
+
+  // set selected value
+  selection.value = options.has(xaxisType) ? xaxisType : "Time";
 }
 
 /**
