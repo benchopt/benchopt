@@ -317,3 +317,43 @@ input:checked+.slider:before {
 .space-r-2 > * {
   margin-right: 0.5rem;
 }
+
+/* Description solver when hovered */
+.solver-description-container {
+  position: relative;
+  display: inline-flex;
+}
+
+.solver-description-content {
+  visibility: hidden;
+  background-color: rgb(55 65 81);
+  color: #fff;
+  text-align: center;
+  border-radius: 6px;
+  padding: 0.5em;
+  opacity: 90%;
+	
+  width: 200px;
+  
+  /* position description with respect to container and put it top-center */
+  position: absolute;
+  transform: translate(-50px, -100%) translate(100px, 0px);
+  z-index: 99999;
+}
+
+/* Show description when hovered */
+.solver-description-container:hover .solver-description-content {
+  visibility: visible;
+}
+
+/*Arrow at the bottom of the description*/
+.solver-description-container .solver-description-content::after {
+  content: " ";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: rgb(55 65 81) transparent transparent transparent;
+}
