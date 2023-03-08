@@ -568,7 +568,16 @@ const makeLegend = () => {
     const color = data().solvers[solver].color;
     const symbolNumber = data().solvers[solver].marker;
 
-    legend.appendChild(createLegendItem(solver, color, symbolNumber));
+    let legendItem = createLegendItem(solver, color, symbolNumber);
+
+    let description = `
+    I was hovered so I can provide additional information about
+    <b>${solver}</b>. Bla bla bla works using Ta ta ...
+    `;
+
+    legend.appendChild(
+      createSolverDescription(legendItem, description)
+    );
   });
 }
 
@@ -648,6 +657,20 @@ const createLegendItem = (solver, color, symbolNumber) => {
   item.appendChild(textContainer);
 
   return item;
+}
+
+
+function createSolverDescription(legendItem, descriptionText) {
+  let description = document.createElement("div");
+  description.setAttribute("class", "solver-description-container")
+
+  description.innerHTML = `
+    <span class="solver-description-content">${descriptionText}</span>
+  `;
+
+  description.prepend(legendItem);
+
+  return description;
 }
 
 
