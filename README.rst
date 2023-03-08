@@ -1,7 +1,7 @@
 Benchmark repository for optimization
 =====================================
 
-|Test Status| |Python 3.6+| |codecov|
+|Test Status| |Python 3.6+| |codecov| |SWH|
 
 BenchOpt is a benchmarking suite for optimization algorithms.
 It is built for simplicity, transparency, and reproducibility.
@@ -191,6 +191,8 @@ If you use ``Benchopt`` in a scientific publication, please cite the following p
    :target: https://www.python.org/downloads/release/python-360/
 .. |codecov| image:: https://codecov.io/gh/benchopt/benchopt/branch/master/graph/badge.svg
    :target: https://codecov.io/gh/benchopt/benchopt
+.. |SWH| image:: https://archive.softwareheritage.org/badge/origin/https://github.com/benchopt/benchopt/
+    :target: https://archive.softwareheritage.org/browse/origin/?origin_url=https://github.com/benchopt/benchopt
 
 .. |Build Status OLS| image:: https://github.com/benchopt/benchmark_ols/workflows/Tests/badge.svg
    :target: https://github.com/benchopt/benchmark_ols/actions
