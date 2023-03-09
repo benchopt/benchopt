@@ -34,7 +34,7 @@ PLOT
 ~~~~
 
 - Enable visualizing the objective as function of ``stopping_criterion``: time,
-  iteration, or tolerance. By `Badr Moufad`_ (:gh:`546`)
+  iteration, or tolerance. By `Badr Moufad`_ (:gh:`479`)
 
 FIX
 ~~~
