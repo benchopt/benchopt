@@ -199,7 +199,7 @@ def shape_solvers_for_html(df, objective_column):
         if len(stopping_strategy) != 1:
             found_stopping_strategies = ', '.join(
                 f"`{item}`" for item in stopping_strategy
-                )
+            )
 
             raise Exception(
                 "Solver can be run using only one stopping strategy. "
