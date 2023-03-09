@@ -189,7 +189,25 @@ def shape_solvers_for_html(df, objective_column):
         q1, q9 = compute_quantiles(df_filtered)
 
         color, marker = get_solver_style(solver)
-        stopping_strategy = _get_solver_stopping_strategy(df_filtered)
+        # to preserve support of previous benchopt version
+        # where 'stopping_strategy' wasn't saved in solver meta
+        try:
+            stopping_strategy = df_filtered['stopping_strategy'].unique()
+        except KeyError:
+            stopping_strategy = ["Time"]
+
+        if len(stopping_strategy) != 1:
+            found_stopping_strategies = ', '.join(
+                f"`{item}`" for item in stopping_strategy
+                )
+
+            raise Exception(
+                "Solver can be run using only one stopping strategy. "
+                f"Expected one stopping strategy "
+                f"but found {found_stopping_strategies}"
+            )
+
+        stopping_strategy = stopping_strategy[0]
 
         solver_data[solver] = {
             'scatter': {
@@ -208,29 +226,6 @@ def shape_solvers_for_html(df, objective_column):
         }
 
     return solver_data
-
-
-def _get_solver_stopping_strategy(df_filtered):
-    # to preserve support of previous benchopt version
-    # where 'stopping_strategy' wasn't saved in solver meta
-    if 'stopping_strategy' not in df_filtered.columns:
-        return "Time"
-
-    stopping_strategy = df_filtered['stopping_strategy'].unique()
-
-    if len(stopping_strategy) != 1:
-        found_stopping_strategies = ', '.join(
-            f"`{item}`" for item in stopping_strategy
-            )
-
-        raise Exception(
-            "Solver can be run using only one stopping strategy. "
-            f"Expected one stopping strategy "
-            f"but found {found_stopping_strategies}"
-        )
-
-    stopping_strategy = stopping_strategy[0]
-    return stopping_strategy
 
 
 def get_sysinfo(df):
