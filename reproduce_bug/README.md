@@ -5,7 +5,7 @@ $$\min_{x \in \mathbb{R}} (ax + b)^2, \quad \mathrm{ with } \ a, b \in \mathbb{R
 
 # Solver
 
-Solve problem a solver that performs ``n-epochs`` gradient descent step
+Use a solver that performs ``n-epochs`` gradient descent step to solve problem
 
 ```python
 x = 0.
