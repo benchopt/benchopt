@@ -370,14 +370,13 @@ class TestRunCmd:
             - python-pgd[step_size=2]
             """
 
-        # init contexts for temporary dataset and config file
-        ctx_tmp_dir = tempfile.NamedTemporaryFile(
+        # use contexts for temporary dataset and config file
+        tmp_dataset_kwargs = dict(
             mode="w+", suffix='.py', dir=DUMMY_BENCHMARK_PATH/"datasets"
         )
-        ctx_tmp_config = tempfile.NamedTemporaryFile(mode="w+")
 
-        with (ctx_tmp_dir as tmp_dataset,
-              ctx_tmp_config as tmp_config):
+        with (tempfile.NamedTemporaryFile(**tmp_dataset_kwargs) as tmp_dataset,
+              tempfile.NamedTemporaryFile(mode="w+") as tmp_config):
 
             tmp_dataset.write(dataset_src)
             tmp_dataset.flush()
