@@ -47,8 +47,8 @@ class ParametrizedNameMixin():
             # Extend exception error message
             # TODO: use `add_note` when requiring python>=3.11
             exception.args = (
-                f"Error when initializing `{cls_type}: {cls_name}`. "
-                f"{'. '.join(exception.args)}",)
+                f'Error when initializing {cls_type}: "{cls_name}". '
+                f'{". ".join(exception.args)}',)
             raise
 
         return obj
