@@ -348,6 +348,26 @@ class TestRunCmd:
                     benchmark_dir=DUMMY_BENCHMARK_PATH
                 )
 
+    def test_handle_class_init_error(self):
+        config = f"""
+            objective-filter:
+            - {SELECT_ONE_OBJECTIVE}
+            dataset:
+            - buggy-dataset
+            max-runs: 1
+            solver:
+            - python-pgd[step_size=[2, 3]]
+            """
+        tmp = tempfile.NamedTemporaryFile(mode="w+")
+        tmp.write(config)
+        tmp.flush()
+
+        run_cmd = [str(DUMMY_BENCHMARK_PATH), '--config', tmp.name,
+                   '--no-plot']
+
+        with pytest.raises(TypeError, match=r"""Dataset: "buggy-dataset".*'n_featuressss'"""):
+            run(run_cmd, 'benchopt', standalone_mode=False)
+
 
 class TestInstallCmd:
 
