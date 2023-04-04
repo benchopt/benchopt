@@ -365,7 +365,8 @@ class TestRunCmd:
         run_cmd = [str(DUMMY_BENCHMARK_PATH), '--config', tmp.name,
                    '--no-plot']
 
-        with pytest.raises(TypeError, match=r"""Dataset: "buggy-dataset".*'n_featuressss'"""):
+        error_match = r"""Dataset: "buggy-dataset".*'n_featuressss'"""
+        with pytest.raises(TypeError, match=error_match):
             run(run_cmd, 'benchopt', standalone_mode=False)
 
 
