@@ -354,20 +354,12 @@ class TestRunCmd:
             "from benchopt import BaseDataset\n"
             "class Dataset(BaseDataset):\n"
             "    name = 'buggy-dataset'\n"
-            "    parameters = {'wrong_param_name': [100]}\n"
-            "    def __init__(self, param=1., deprecated_return=False):\n"
+            "    parameters = {'wrong_param_name': [1]}\n"
+            "    def __init__(self, param=1.):\n"
             "        self.param = param\n"
-            "        self.deprecated_return = deprecated_return\n"
             "    def get_data(self):\n"
-            "        X = [[1, 0], [0, 1]]\n"
-            "        y = [1, 1]\n"
-            "        return dict(X=X, y=y)\n"
+            "        return dict()\n"
         )
-        dataset_tmp = tempfile.NamedTemporaryFile(
-            mode="w+", suffix='.py', dir=DUMMY_BENCHMARK_PATH / "datasets")
-        dataset_tmp.write(dataset_src)
-        dataset_tmp.flush()
-
         config = f"""
             objective-filter:
             - {SELECT_ONE_OBJECTIVE}
@@ -375,18 +367,30 @@ class TestRunCmd:
             - buggy-dataset
             max-runs: 1
             solver:
-            - python-pgd[step_size=[2, 3]]
+            - python-pgd[step_size=2]
             """
-        config_tmp = tempfile.NamedTemporaryFile(mode="w+")
-        config_tmp.write(config)
-        config_tmp.flush()
 
-        run_cmd = [str(DUMMY_BENCHMARK_PATH), '--config', config_tmp.name,
-                   '--no-plot']
+        # init contexts for temporary dataset and config file
+        ctx_tmp_dir = tempfile.NamedTemporaryFile(
+            mode="w+", suffix='.py', dir=DUMMY_BENCHMARK_PATH/"datasets"
+        )
+        ctx_tmp_config = tempfile.NamedTemporaryFile(mode="w+")
 
-        error_match = r"""Dataset: "buggy-dataset".*'wrong_param_name'"""
-        with pytest.raises(TypeError, match=error_match):
-            run(run_cmd, 'benchopt', standalone_mode=False)
+        with (ctx_tmp_dir as tmp_dataset,
+              ctx_tmp_config as tmp_config):
+
+            tmp_dataset.write(dataset_src)
+            tmp_dataset.flush()
+
+            tmp_config.write(config)
+            tmp_config.flush()
+
+            run_cmd = [str(DUMMY_BENCHMARK_PATH), '--config', tmp_config.name,
+                       '--no-plot']
+
+            error_match = r"""Dataset: "buggy-dataset".*'wrong_param_name'"""
+            with pytest.raises(TypeError, match=error_match):
+                run(run_cmd, 'benchopt', standalone_mode=False)
 
 
 class TestInstallCmd:
