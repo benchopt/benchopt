@@ -349,6 +349,25 @@ class TestRunCmd:
                 )
 
     def test_handle_class_init_error(self):
+        # dataset with a wrong param name
+        dataset_src = (
+            "from benchopt import BaseDataset\n"
+            "class Dataset(BaseDataset):\n"
+            "    name = 'buggy-dataset'\n"
+            "    parameters = {'wrong_param_name': [100]}\n"
+            "    def __init__(self, param=1., deprecated_return=False):\n"
+            "        self.param = param\n"
+            "        self.deprecated_return = deprecated_return\n"
+            "    def get_data(self):\n"
+            "        X = [[1, 0], [0, 1]]\n"
+            "        y = [1, 1]\n"
+            "        return dict(X=X, y=y)\n"
+        )
+        dataset_tmp = tempfile.NamedTemporaryFile(
+            mode="w+", suffix='.py', dir=DUMMY_BENCHMARK_PATH / "datasets")
+        dataset_tmp.write(dataset_src)
+        dataset_tmp.flush()
+
         config = f"""
             objective-filter:
             - {SELECT_ONE_OBJECTIVE}
@@ -358,14 +377,14 @@ class TestRunCmd:
             solver:
             - python-pgd[step_size=[2, 3]]
             """
-        tmp = tempfile.NamedTemporaryFile(mode="w+")
-        tmp.write(config)
-        tmp.flush()
+        config_tmp = tempfile.NamedTemporaryFile(mode="w+")
+        config_tmp.write(config)
+        config_tmp.flush()
 
-        run_cmd = [str(DUMMY_BENCHMARK_PATH), '--config', tmp.name,
-                   '--no-plot']
+        run_cmd = [str(DUMMY_BENCHMARK_PATH), '--config', config_tmp.name,
+                '--no-plot']
 
-        error_match = r"""Dataset: "buggy-dataset".*'n_featuressss'"""
+        error_match = r"""Dataset: "buggy-dataset".*'wrong_param_name'"""
         with pytest.raises(TypeError, match=error_match):
             run(run_cmd, 'benchopt', standalone_mode=False)
 
