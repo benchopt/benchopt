@@ -77,8 +77,8 @@ Replicating and exiting benchmark is simple.
    benchopt run . --config ./example_config.yml
 
 
-These steps illustrate how to reproduce the `L2-logistic Regression benchmark https://github.com/benchopt/benchmark_logreg_l2`_.
-Find the complete list of the :ref:`Available benchmarks`. Also, refer to the `documentation https://benchopt.github.io/`_ to learn more
+These steps illustrate how to reproduce the `L2-logistic Regression benchmark <https://github.com/benchopt/benchmark_logreg_l2>`_.
+Find the complete list of the :ref:`Available benchmarks`. Also, refer to the `documentation <https://benchopt.github.io/>`_ to learn more
 about ``benchopt`` CLI and its features.
 
 
@@ -123,6 +123,7 @@ Join us in this endeavor! If you use ``benchopt`` in a scientific publication, p
 
 
 .. _Available benchmarks:
+
 Available benchmarks
 --------------------
 
