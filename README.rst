@@ -5,11 +5,9 @@ Benchmark repository for optimization
 
 ``Benchopt`` is a benchmarking suite for optimization algorithms.
 It is built for simplicity, transparency, and reproducibility.
-
-``Benchopt`` is implemented in Python yet can run algorithms
-written in **many programming languages**
+It is implemented in Python yet can run algorithms written in **many programming languages**
 (`example <https://benchopt.github.io/auto_examples/plot_run_benchmark_python_R.html>`_).
-So far, ``Benchopt`` has been tested with `Python <https://www.python.org/>`_,
+So far, ``benchopt`` has been tested with `Python <https://www.python.org/>`_,
 `R <https://www.r-project.org/>`_, `Julia <https://julialang.org/>`_
 and `C/C++ <https://isocpp.org/>`_ (compiled binaries with a command line interface).
 Programs available via `conda <https://docs.conda.io/en/latest/>`_ should be compatible.
@@ -79,8 +77,8 @@ Replicating and exiting benchmark is simple.
    benchopt run . --config ./example_config.yml
 
 
-These steps illustrate how to reproduce the `$\ell_2$ Logistic Regression benchmark `_.
-Find the complete list of the :ref:`Available benchmarks`. Also, refer to the `documentation `_ to learn more
+These steps illustrate how to reproduce the `L2-logistic Regression benchmark https://github.com/benchopt/benchmark_logreg_l2`_.
+Find the complete list of the :ref:`Available benchmarks`. Also, refer to the `documentation https://benchopt.github.io/`_ to learn more
 about ``benchopt`` CLI and its features.
 
 
