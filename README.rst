@@ -19,7 +19,7 @@ It is implemented in Python but can run algorithms written in **many programming
 So far, ``benchopt`` has been tested with `Python <https://www.python.org/>`_,
 `R <https://www.r-project.org/>`_, `Julia <https://julialang.org/>`_
 and `C/C++ <https://isocpp.org/>`_ (compiled binaries with a command line interface).
-Programs available via `conda <https://docs.conda.io/en/latest/>`_ should be compatible. See an `example of usage <https://benchopt.github.io/auto_examples/plot_run_benchmark_python_R.html>`_ with ``R``.
+Programs available via `conda <https://docs.conda.io/en/latest/>`_ should be compatible as well. See an `example of usage <https://benchopt.github.io/auto_examples/plot_run_benchmark_python_R.html>`_ with ``R``.
 
 
 
@@ -30,7 +30,7 @@ It is recommended to use ``benchopt`` within a ``conda`` environment to fully-be
 from ``benchopt`` Command Line Interface (CLI).  
 
 
-To install it, start by creating a new ``conda`` environment and then activate it
+To install ``benchopt``, start by creating a new ``conda`` environment and then activate it
 
 .. code-block::
 
@@ -65,7 +65,8 @@ After installing ``benchopt``, you can
 Using an existing benchmark
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Replicating and exiting benchmark is simple. 
+Replicating and exiting benchmark is simple.
+Here is how to do it for the `L2-logistic Regression benchmark <https://github.com/benchopt/benchmark_logreg_l2>`_.
 
 1. Clone the benchmark repository and ``cd`` to it
 
