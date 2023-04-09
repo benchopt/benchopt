@@ -1,12 +1,11 @@
 .. raw:: html
 
     <embed>
-        <div class="container" align="center">
-         <img src="https://raw.githubusercontent.com/benchopt/communication_materials/main/posters/images/logo_benchopt.png" width="300em"/>
-        </div>
+        <h1 class="container" align="center">
+         <img src="https://raw.githubusercontent.com/benchopt/communication_materials/main/posters/images/logo_benchopt.png" width="350em"/>
+        </h1>
+        <em>—Making your benchmark of optimization algorithms simple and open—</em>
     </embed>
-
-*—Making your benchmark of optimization algorithms simple and open—*
 
 
 |Test Status| |Python 3.6+| |install-per-months| |codecov| |discord| 
