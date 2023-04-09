@@ -7,6 +7,8 @@ Benchmark repository for optimization
 It is built for simplicity, transparency, and reproducibility.
 It is implemented in Python yet can run algorithms written in **many programming languages**
 (`example <https://benchopt.github.io/auto_examples/plot_run_benchmark_python_R.html>`_).
+
+
 So far, ``benchopt`` has been tested with `Python <https://www.python.org/>`_,
 `R <https://www.r-project.org/>`_, `Julia <https://julialang.org/>`_
 and `C/C++ <https://isocpp.org/>`_ (compiled binaries with a command line interface).
@@ -70,16 +72,22 @@ Replicating and exiting benchmark is simple.
 
    benchopt install . -s lightning -s sklearn
 
-3. Run the benchmark
+3. Run the benchmark to get the figure below
 
 .. code-block:: bash
 
    benchopt run . --config ./example_config.yml
 
 
+.. figure:: https://benchopt.github.io/_images/sphx_glr_plot_run_benchmark_001.png
+   :target: how.html
+   :align: center
+   :scale: 80%
+
+
 These steps illustrate how to reproduce the `L2-logistic Regression benchmark <https://github.com/benchopt/benchmark_logreg_l2>`_.
-Find the complete list of the :ref:`Available benchmarks`. Also, refer to the `documentation <https://benchopt.github.io/>`_ to learn more
-about ``benchopt`` CLI and its features.
+Find the complete list of the `available benchmarks <https://github.com/Badr-MOUFAD/benchopt/tree/update-readme#available-benchmarks>`_.
+Also, refer to the `documentation <https://benchopt.github.io/>`_ to learn more about ``benchopt`` CLI and its features.
 
 
 Creating a benchmark
