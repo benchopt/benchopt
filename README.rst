@@ -1,12 +1,12 @@
 .. raw:: html
 
     <embed>
-        <h1>Benchopt</h1>
+        <div class="container" align="center">
+         <img src="https://raw.githubusercontent.com/benchopt/communication_materials/main/posters/images/logo_benchopt.png" width="300em"/>
+        </div>
     </embed>
 
 *—Making your benchmark of optimization algorithms simple and open—*
-
-____________________
 
 
 |Test Status| |Python 3.6+| |install-per-months| |codecov| |discord| 
@@ -208,7 +208,7 @@ Available benchmarks
    :target: https://www.python.org/downloads/release/python-360/
 .. |codecov| image:: https://codecov.io/gh/benchopt/benchopt/branch/master/graph/badge.svg
    :target: https://codecov.io/gh/benchopt/benchopt
-.. |discord| image:: https://img.shields.io/discord/.svg?color=7389D8&labelColor=6A7EC2&logo=discord&logoColor=ffffff&style=flat-square
+.. |discord| image:: https://img.shields.io/discord/.svg?color=7389D8&labelColor=6A7EC2&logo=discord&logoColor=ffffff&style=plastic
    :target: https://discord.gg/Rxwjh9ApR9
 .. |install-per-months| image:: https://static.pepy.tech/badge/benchopt/month
    :target: https://pepy.tech/project/benchopt
