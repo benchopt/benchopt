@@ -1,7 +1,7 @@
 Benchmark repository for optimization
 =====================================
 
-|Test Status| |Python 3.6+| |codecov|
+|Test Status| |Python 3.6+| |install-per-months| |codecov| |discord| 
 
 ``Benchopt`` is a benchmarking suite for optimization algorithms.
 It is built for simplicity, transparency, and reproducibility.
@@ -79,22 +79,25 @@ Replicating and exiting benchmark is simple.
    benchopt run . --config ./example_config.yml
 
 
-These steps illustrate how to reproduce the $\ell_2$ Logistic Regression benchmark.
-Find the complete list of the available benchmarks. Also, refer to the documentation to learn more
+These steps illustrate how to reproduce the `$\ell_2$ Logistic Regression benchmark `_.
+Find the complete list of the :ref:`Available benchmarks`. Also, refer to the `documentation `_ to learn more
 about ``benchopt`` CLI and its features.
 
 
 Creating a benchmark
 ^^^^^^^^^^^^^^^^^^^^
 
-the section `Write a benchmark` of the documentation provides a nice tutorial for creating a benchmark.
-The ``benchopt`` community also maintains a template benchmark to easily and quickly write a benchmark.
+the section `Write a benchmark <https://benchopt.github.io/how.html>`_ of the documentation provides a nice tutorial
+for creating a benchmark. The ``benchopt`` community also maintains 
+a `template benchmark <https://github.com/benchopt/template_benchmark>`_ to easily and quickly write a benchmark.
 
 
 Finding helps
 -------------
 
-Join ``benchopt`` discord server and get in touch with the community! Feel free to drop us a message to get help with running/constructing benchmarks or (why not) discuss new features to be added and future directions that ``benchopt`` should take.
+Join ``benchopt`` `discord server <https://discord.gg/Rxwjh9ApR9>`_ and get in touch with the community!
+Feel free to drop us a message to get help with running/constructing benchmarks 
+or (why not) discuss new features to be added and future directions that ``benchopt`` should take.
 
 
 
@@ -121,6 +124,7 @@ Join us in this endeavor! If you use ``benchopt`` in a scientific publication, p
    }
 
 
+.. _Available benchmarks:
 Available benchmarks
 --------------------
 
@@ -189,6 +193,11 @@ Available benchmarks
    :target: https://www.python.org/downloads/release/python-360/
 .. |codecov| image:: https://codecov.io/gh/benchopt/benchopt/branch/master/graph/badge.svg
    :target: https://codecov.io/gh/benchopt/benchopt
+.. |discord| image:: https://img.shields.io/discord/.svg?color=7389D8&labelColor=6A7EC2&logo=discord&logoColor=ffffff&style=flat-square
+   :target: https://discord.gg/Rxwjh9ApR9
+.. |install-per-months| image:: https://static.pepy.tech/badge/benchopt/month
+   :target: https://pepy.tech/project/benchopt
+
 
 .. |Build Status OLS| image:: https://github.com/benchopt/benchmark_ols/workflows/Tests/badge.svg
    :target: https://github.com/benchopt/benchmark_ols/actions
