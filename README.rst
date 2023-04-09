@@ -82,7 +82,7 @@ Replicating and exiting benchmark is simple.
 .. figure:: https://benchopt.github.io/_images/sphx_glr_plot_run_benchmark_001.png
    :target: how.html
    :align: center
-   :scale: 60%
+   :scale: 40%
 
 
 These steps illustrate how to reproduce the `L2-logistic Regression benchmark <https://github.com/benchopt/benchmark_logreg_l2>`_.
