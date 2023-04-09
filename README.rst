@@ -1,18 +1,26 @@
-Benchmark repository for optimization
-=====================================
+.. raw:: html
+
+    <embed>
+        <h1>Benchopt</h1>
+    </embed>
+
+*—Making your benchmark of optimization algorithms simple and open—*
+
+____________________
+
 
 |Test Status| |Python 3.6+| |install-per-months| |codecov| |discord| 
 
 ``Benchopt`` is a benchmarking suite for optimization algorithms.
 It is built for simplicity, transparency, and reproducibility.
-It is implemented in Python yet can run algorithms written in **many programming languages**
-(`example <https://benchopt.github.io/auto_examples/plot_run_benchmark_python_R.html>`_).
+It is implemented in Python but can run algorithms written in **many programming languages**.
 
 
 So far, ``benchopt`` has been tested with `Python <https://www.python.org/>`_,
 `R <https://www.r-project.org/>`_, `Julia <https://julialang.org/>`_
 and `C/C++ <https://isocpp.org/>`_ (compiled binaries with a command line interface).
-Programs available via `conda <https://docs.conda.io/en/latest/>`_ should be compatible.
+Programs available via `conda <https://docs.conda.io/en/latest/>`_ should be compatible. See an `example of usage <https://benchopt.github.io/auto_examples/plot_run_benchmark_python_R.html>`_ with ``R``.
+
 
 
 Install
@@ -86,7 +94,7 @@ Replicating and exiting benchmark is simple.
 
 
 These steps illustrate how to reproduce the `L2-logistic Regression benchmark <https://github.com/benchopt/benchmark_logreg_l2>`_.
-Find the complete list of the `available benchmarks <https://github.com/Badr-MOUFAD/benchopt/tree/update-readme#available-benchmarks>`_.
+Find the complete list of the `Available benchmarks`_.
 Also, refer to the `documentation <https://benchopt.github.io/>`_ to learn more about ``benchopt`` CLI and its features.
 
 
@@ -96,6 +104,7 @@ Creating a benchmark
 the section `Write a benchmark <https://benchopt.github.io/how.html>`_ of the documentation provides a nice tutorial
 for creating a benchmark. The ``benchopt`` community also maintains 
 a `template benchmark <https://github.com/benchopt/template_benchmark>`_ to easily and quickly write a benchmark.
+
 
 
 Finding helps
@@ -130,7 +139,6 @@ Join us in this endeavor! If you use ``benchopt`` in a scientific publication, p
    }
 
 
-.. _Available benchmarks:
 
 Available benchmarks
 --------------------
