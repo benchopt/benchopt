@@ -4,12 +4,12 @@
         <div class="container" align="center">
          <img src="https://raw.githubusercontent.com/benchopt/communication_materials/main/posters/images/logo_benchopt.png" width="350em"/>
         </div>
-        <em>—Making your benchmark of optimization algorithms simple and open—</em>
+        <em>—Making your optimization benchmarks simple and open—</em>
         <h1></h1>
     </embed>
 
 
-|Test Status| |Python 3.6+| |install-per-months| |codecov| |discord| 
+|Test Status| |codecov| |Python 3.6+| |install-per-months| |discord| 
 
 ``Benchopt`` is a benchmarking suite for optimization algorithms.
 It is built for simplicity, transparency, and reproducibility.
@@ -102,9 +102,9 @@ Also, refer to the `documentation <https://benchopt.github.io/>`_ to learn more 
 Creating a benchmark
 ^^^^^^^^^^^^^^^^^^^^
 
-the section `Write a benchmark <https://benchopt.github.io/how.html>`_ of the documentation provides a nice tutorial
+The section `Write a benchmark <https://benchopt.github.io/how.html>`_ of the documentation provides a nice tutorial
 for creating a benchmark. The ``benchopt`` community also maintains 
-a `template benchmark <https://github.com/benchopt/template_benchmark>`_ to easily and quickly write a benchmark.
+a `template benchmark <https://github.com/benchopt/template_benchmark>`_ to quickly and easily write a benchmark.
 
 
 
@@ -113,7 +113,7 @@ Finding helps
 
 Join ``benchopt`` `discord server <https://discord.gg/Rxwjh9ApR9>`_ and get in touch with the community!
 Feel free to drop us a message to get help with running/constructing benchmarks 
-or (why not) discuss new features to be added and future directions that ``benchopt`` should take.
+or (why not) discuss new features to be added and future development directions that ``benchopt`` should take.
 
 
 
@@ -209,7 +209,7 @@ Available benchmarks
    :target: https://www.python.org/downloads/release/python-360/
 .. |codecov| image:: https://codecov.io/gh/benchopt/benchopt/branch/master/graph/badge.svg
    :target: https://codecov.io/gh/benchopt/benchopt
-.. |discord| image:: https://img.shields.io/discord/.svg?color=7389D8&labelColor=6A7EC2&logo=discord&logoColor=ffffff&style=plastic
+.. |discord| image:: https://dcbadge.vercel.app/api/server/JjUyAkv5?style=flat
    :target: https://discord.gg/Rxwjh9ApR9
 .. |install-per-months| image:: https://static.pepy.tech/badge/benchopt/month
    :target: https://pepy.tech/project/benchopt
