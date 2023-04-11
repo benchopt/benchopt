@@ -66,7 +66,7 @@ After installing ``benchopt``, you can
 Using an existing benchmark
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Replicating and exiting benchmark is simple.
+Replicating an existing benchmark is simple.
 Here is how to do it for the `L2-logistic Regression benchmark <https://github.com/benchopt/benchmark_logreg_l2>`_.
 
 1. Clone the benchmark repository and ``cd`` to it
