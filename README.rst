@@ -39,7 +39,7 @@ To install ``benchopt``, start by creating a new ``conda`` environment and then 
     conda activate benchopt
 
 
-Finally run the following command to install the **latest release** of ``benchopt``
+Then run the following command to install the **latest release** of ``benchopt``
 
 .. code-block::
 
