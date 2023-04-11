@@ -1,104 +1,151 @@
-Benchmark repository for optimization
-=====================================
+.. raw:: html
 
-|Test Status| |Python 3.6+| |codecov|
+    <embed>
+        <div class="container" align="center">
+         <img src="https://raw.githubusercontent.com/benchopt/communication_materials/main/posters/images/logo_benchopt.png" width="350em"/>
+        </div>
+        <em>—Making your optimization benchmarks simple and open—</em>
+        <h1></h1>
+    </embed>
 
-BenchOpt is a benchmarking suite for optimization algorithms.
+
+|Test Status| |codecov| |Python 3.6+| |install-per-months| |discord| 
+
+``Benchopt`` is a benchmarking suite for optimization algorithms.
 It is built for simplicity, transparency, and reproducibility.
+It is implemented in Python but can run algorithms written in **many programming languages**.
 
-Benchopt is implemented in Python, and can run algorithms
-written in **many programming languages**
-(`example <https://benchopt.github.io/auto_examples/plot_run_benchmark_python_R.html>`_).
-So far, Benchopt has been tested with `Python <https://www.python.org/>`_,
+
+So far, ``benchopt`` has been tested with `Python <https://www.python.org/>`_,
 `R <https://www.r-project.org/>`_, `Julia <https://julialang.org/>`_
 and `C/C++ <https://isocpp.org/>`_ (compiled binaries with a command line interface).
-Programs available via
-`conda <https://docs.conda.io/en/latest/>`_ should be compatible.
+Programs available via `conda <https://docs.conda.io/en/latest/>`_ should be compatible as well.
+See for instance an `example of usage <https://benchopt.github.io/auto_examples/plot_run_benchmark_python_R.html>`_ with ``R``.
 
-BenchOpt is run through a command line interface as described
-in the `API Documentation <https://benchopt.github.io/api.html>`_.
-Replicating an optimization benchmark should
-be **as simple as doing**:
 
-.. code-block::
-
-   conda create -n benchopt python
-   conda activate benchopt
-   pip install benchopt
-   git clone https://github.com/benchopt/benchmark_logreg_l2
-   cd benchmark_logreg_l2
-   benchopt install -e . -s lightning -s sklearn
-   benchopt run -e . --config ./example_config.yml
-
-Running this command will give you a benchmark plot on l2-regularized
-logistic regression:
-
-.. figure:: https://benchopt.github.io/_images/sphx_glr_plot_run_benchmark_001.png
-   :target: how.html
-   :align: center
-   :scale: 80%
-
-See the `Available optimization problems`_ below.
-
-Learn how to `create a new benchmark <https://benchopt.github.io/how.html>`_
-using the `benchmark template <https://github.com/benchopt/template_benchmark>`_.
 
 Install
 -------
 
-The command line tool to run the benchmarks can be installed through `pip`. In order to allow `benchopt`
-to automatically install solvers dependencies, the install needs to be done in a `conda` environment.
+It is recommended to use ``benchopt`` within a ``conda`` environment to fully-benefit
+from ``benchopt`` Command Line Interface (CLI).  
 
+
+To install ``benchopt``, start by creating a new ``conda`` environment and then activate it
 
 .. code-block::
 
     conda create -n benchopt python
     conda activate benchopt
 
-To get the **latest release**, use:
+
+Then run the following command to install the **latest release** of ``benchopt``
 
 .. code-block::
 
-    pip install benchopt
+    pip install -U benchopt
 
-To get the **latest development version**, use:
 
-.. code-block::
-
-    pip install -U -i https://test.pypi.org/simple/ benchopt
-
-Then, existing benchmarks can be retrieved from git or created locally.
-For instance, the benchmark for Lasso can be retrieved with:
+It is also possible to use the **latest development version**. To do so, run instead
 
 .. code-block::
 
-    git clone https://github.com/benchopt/benchmark_lasso
+    pip install -U -i https://test.pypi.org/simple/benchopt
 
 
-Command line interface
-----------------------
 
-The preferred way to run the benchmarks is through the command line interface.
-To run the Lasso benchmark on all datasets and with all solvers, run:
+Getting started 
+---------------
 
-.. code-block::
+After installing ``benchopt``, you can
 
-    benchopt run --env ./benchmark_lasso
-
-To get more details about the different options, run:
-
-.. code-block::
-
-    benchopt run -h
-
-or read the `CLI documentation <https://benchopt.github.io/cli.html>`_.
-
-Benchopt also provides a Python API described in the
-`API documentation <https://benchopt.github.io/api.html>`_.
+- replicate/modify an existing benchmark
+- create your own benchmark
 
 
-Available optimization problems
--------------------------------
+Using an existing benchmark
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Replicating an existing benchmark is simple.
+Here is how to do so for the `L2-logistic Regression benchmark <https://github.com/benchopt/benchmark_logreg_l2>`_.
+
+1. Clone the benchmark repository and ``cd`` to it
+
+.. code-block:: bash
+
+   git clone https://github.com/benchopt/benchmark_logreg_l2
+   cd benchmark_logreg_l2
+
+2. Install the desired solvers automatically with ``benchopt``
+
+.. code-block:: bash
+
+   benchopt install . -s lightning -s sklearn
+
+3. Run the benchmark to get the figure below
+
+.. code-block:: bash
+
+   benchopt run . --config ./example_config.yml
+
+
+.. figure:: https://benchopt.github.io/_images/sphx_glr_plot_run_benchmark_001.png
+   :target: how.html
+   :align: center
+   :scale: 40%
+
+
+These steps illustrate how to reproduce the `L2-logistic Regression benchmark <https://github.com/benchopt/benchmark_logreg_l2>`_.
+Find the complete list of the `Available benchmarks`_.
+Also, refer to the `documentation <https://benchopt.github.io/>`_ to learn more about ``benchopt`` CLI and its features.
+You can also easily extend this benchmark by adding a dataset, solver or metric.
+Learn that and more in the `Write a benchmark <https://benchopt.github.io/how.html>`_ tutorial.
+
+
+Creating a benchmark
+^^^^^^^^^^^^^^^^^^^^
+
+The section `Write a benchmark <https://benchopt.github.io/how.html>`_ of the documentation provides a tutorial
+for creating a benchmark. The ``benchopt`` community also maintains 
+a `template benchmark <https://github.com/benchopt/template_benchmark>`_ to quickly and easily start a new benchmark.
+
+
+
+Finding helps
+-------------
+
+Join ``benchopt`` `discord server <https://discord.gg/Rxwjh9ApR9>`_ and get in touch with the community!
+Feel free to drop us a message to get help with running/constructing benchmarks 
+or (why not) discuss new features to be added and future development directions that ``benchopt`` should take.
+
+
+
+Citing Benchopt
+---------------
+
+``Benchopt`` is a continuous effort to make reproducible and transparent optimization benchmarks.
+Join us in this endeavor! If you use ``benchopt`` in a scientific publication, please cite
+
+.. code-block:: bibtex
+
+   @inproceedings{benchopt,
+      author    = {Moreau, Thomas and Massias, Mathurin and Gramfort, Alexandre 
+                   and Ablin, Pierre and Bannier, Pierre-Antoine 
+                   and Charlier, Benjamin and Dagréou, Mathieu and Dupré la Tour, Tom
+                   and Durif, Ghislain and F. Dantas, Cassio and Klopfenstein, Quentin
+                   and Larsson, Johan and Lai, En and Lefort, Tanguy 
+                   and Malézieux, Benoit and Moufad, Badr and T. Nguyen, Binh and Rakotomamonjy, 
+                   Alain and Ramzi, Zaccharie and Salmon, Joseph and Vaiter, Samuel},
+      title     = {Benchopt: Reproducible, efficient and collaborative optimization benchmarks},
+      year      = {2022},
+      booktitle = {NeurIPS},
+      url       = {https://arxiv.org/abs/2206.13424}
+   }
+
+
+
+Available benchmarks
+--------------------
 
 .. list-table::
    :widths: 70 15 15
@@ -158,32 +205,6 @@ Available optimization problems
 
 
 
-Finding helps
--------------
-
-If you need any help in using ``benchopt`` to run or construct a benchmark, or if you wanna discuss the future directions and features that ``benchopt`` should take, feel free to join our `discord server <https://discord.gg/CpKjJFqE>`_ Our community will be happy to help you solve the problems you might have encountered!
-
-
-Citing Benchopt
----------------
-
-If you use ``Benchopt`` in a scientific publication, please cite the following paper
-
-.. code-block:: bibtex
-
-   @inproceedings{benchopt,
-      author = {Moreau, Thomas and Massias, Mathurin and Gramfort, Alexandre and Ablin, Pierre
-                and Bannier, Pierre-Antoine and Charlier, Benjamin and Dagréou, Mathieu and Dupré la Tour, Tom
-                and Durif, Ghislain and F. Dantas, Cassio and Klopfenstein, Quentin
-                and Larsson, Johan and Lai, En and Lefort, Tanguy and Malézieux, Benoit
-                and Moufad, Badr and T. Nguyen, Binh and Rakotomamonjy, Alain and Ramzi, Zaccharie
-                and Salmon, Joseph and Vaiter, Samuel},
-      title  = {Benchopt: Reproducible, efficient and collaborative optimization benchmarks},
-      year   = {2022},
-      booktitle = {NeurIPS},
-      url    = {https://arxiv.org/abs/2206.13424}
-   }
-
 
 .. |Test Status| image:: https://github.com/benchopt/benchopt/actions/workflows/test.yml/badge.svg
    :target: https://github.com/benchopt/benchopt/actions/workflows/test.yml
@@ -191,6 +212,11 @@ If you use ``Benchopt`` in a scientific publication, please cite the following p
    :target: https://www.python.org/downloads/release/python-360/
 .. |codecov| image:: https://codecov.io/gh/benchopt/benchopt/branch/master/graph/badge.svg
    :target: https://codecov.io/gh/benchopt/benchopt
+.. |discord| image:: https://dcbadge.vercel.app/api/server/JjUyAkv5?style=flat
+   :target: https://discord.gg/Rxwjh9ApR9
+.. |install-per-months| image:: https://static.pepy.tech/badge/benchopt/month
+   :target: https://pepy.tech/project/benchopt
+
 
 .. |Build Status OLS| image:: https://github.com/benchopt/benchmark_ols/workflows/Tests/badge.svg
    :target: https://github.com/benchopt/benchmark_ols/actions
