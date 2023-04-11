@@ -107,7 +107,7 @@ Creating a benchmark
 
 The section `Write a benchmark <https://benchopt.github.io/how.html>`_ of the documentation provides a tutorial
 for creating a benchmark. The ``benchopt`` community also maintains 
-a `template benchmark <https://github.com/benchopt/template_benchmark>`_ to quickly and easily write a benchmark.
+a `template benchmark <https://github.com/benchopt/template_benchmark>`_ to quickly and easily start a new benchmark.
 
 
 
