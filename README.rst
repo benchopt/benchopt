@@ -76,7 +76,7 @@ Here is how to do it for the `L2-logistic Regression benchmark <https://github.c
    git clone https://github.com/benchopt/benchmark_logreg_l2
    cd benchmark_logreg_l2
 
-2. Install the desired solvers
+2. Install the desired solvers automatically with ``benchopt``
 
 .. code-block:: bash
 
