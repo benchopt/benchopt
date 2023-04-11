@@ -46,7 +46,7 @@ Then run the following command to install the **latest release** of ``benchopt``
     pip install -U benchopt
 
 
-It is possible to use the **latest development version**. To do so, run instead
+It is also possible to use the **latest development version**. To do so, run instead
 
 .. code-block::
 
