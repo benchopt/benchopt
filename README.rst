@@ -59,7 +59,7 @@ Getting started
 
 After installing ``benchopt``, you can
 
-- replicate/modify and existing benchmark
+- replicate/modify an existing benchmark
 - create your own benchmark
 
 
@@ -99,7 +99,7 @@ These steps illustrate how to reproduce the `L2-logistic Regression benchmark <h
 Find the complete list of the `Available benchmarks`_.
 Also, refer to the `documentation <https://benchopt.github.io/>`_ to learn more about ``benchopt`` CLI and its features.
 You can also easily extend this benchmark by adding a dataset, solver or metric.
-Learn how to do so in the different sections of this tutorial: `Write a benchmark <https://benchopt.github.io/how.html>`_.
+Learn that and more in the `Write a benchmark <https://benchopt.github.io/how.html>`_ tutorial.
 
 
 Creating a benchmark
