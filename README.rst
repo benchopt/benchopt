@@ -212,7 +212,7 @@ Available benchmarks
    :target: https://www.python.org/downloads/release/python-360/
 .. |codecov| image:: https://codecov.io/gh/benchopt/benchopt/branch/master/graph/badge.svg
    :target: https://codecov.io/gh/benchopt/benchopt
-.. |discord| image:: https://dcbadge.vercel.app/api/server/JjUyAkv5?style=flat
+.. |discord| image:: https://dcbadge.vercel.app/api/server/EA2HGQb7nv?style=flat
    :target: https://discord.gg/EA2HGQb7nv
 .. |install-per-months| image:: https://static.pepy.tech/badge/benchopt/month
    :target: https://pepy.tech/project/benchopt
