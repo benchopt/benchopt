@@ -114,7 +114,7 @@ a `template benchmark <https://github.com/benchopt/template_benchmark>`_ to quic
 Finding helps
 -------------
 
-Join ``benchopt`` `discord server <https://discord.gg/Rxwjh9ApR9>`_ and get in touch with the community!
+Join ``benchopt`` `discord server <https://discord.gg/EA2HGQb7nv>`_ and get in touch with the community!
 Feel free to drop us a message to get help with running/constructing benchmarks 
 or (why not) discuss new features to be added and future development directions that ``benchopt`` should take.
 
@@ -213,7 +213,7 @@ Available benchmarks
 .. |codecov| image:: https://codecov.io/gh/benchopt/benchopt/branch/master/graph/badge.svg
    :target: https://codecov.io/gh/benchopt/benchopt
 .. |discord| image:: https://dcbadge.vercel.app/api/server/JjUyAkv5?style=flat
-   :target: https://discord.gg/Rxwjh9ApR9
+   :target: https://discord.gg/EA2HGQb7nv
 .. |install-per-months| image:: https://static.pepy.tech/badge/benchopt/month
    :target: https://pepy.tech/project/benchopt
 
