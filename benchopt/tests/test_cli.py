@@ -370,11 +370,11 @@ class TestRunCmd:
             - python-pgd[step_size=2]
             """
 
-        tmp_file_ctx = tempfile.NamedTemporaryFile
+        TmpFileCtx = tempfile.NamedTemporaryFile
         dataset_dir = DUMMY_BENCHMARK_PATH / "datasets"
 
-        with tmp_file_ctx("w+", suffix='.py', dir=dataset_dir) as tmp_dataset, \
-             tmp_file_ctx("w+") as tmp_config:
+        with TmpFileCtx("w+", suffix='.py', dir=dataset_dir) as tmp_dataset, \
+             TmpFileCtx("w+") as tmp_config:
 
             tmp_dataset.write(dataset_src)
             tmp_dataset.flush()
