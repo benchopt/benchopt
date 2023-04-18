@@ -370,22 +370,24 @@ class TestRunCmd:
             - python-pgd[step_size=2]
             """
 
-        tmp_dataset = tempfile.NamedTemporaryFile(
-            mode="w+", suffix='.py', dir=DUMMY_BENCHMARK_PATH/"datasets"
-        )
-        tmp_dataset.write(dataset_src)
-        tmp_dataset.flush()
+        tmp_file_ctx = tempfile.NamedTemporaryFile
+        dataset_dir = DUMMY_BENCHMARK_PATH / "datasets"
 
-        tmp_config = tempfile.NamedTemporaryFile(mode="w+")
-        tmp_config.write(config)
-        tmp_config.flush()
+        with tmp_file_ctx("w+", suffix='.py', dir=dataset_dir) as tmp_dataset, \
+             tmp_file_ctx("w+") as tmp_config:
 
-        run_cmd = [str(DUMMY_BENCHMARK_PATH), '--config', tmp_config.name,
-                   '--no-plot']
+            tmp_dataset.write(dataset_src)
+            tmp_dataset.flush()
 
-        error_match = r"""Dataset: "buggy-dataset".*'wrong_param_name'"""
-        with pytest.raises(TypeError, match=error_match):
-            run(run_cmd, 'benchopt', standalone_mode=False)
+            tmp_config.write(config)
+            tmp_config.flush()
+
+            run_cmd = [str(DUMMY_BENCHMARK_PATH), '--config', tmp_config.name,
+                       '--no-plot']
+
+            error_match = r"""Dataset: "buggy-dataset".*'wrong_param_name'"""
+            with pytest.raises(TypeError, match=error_match):
+                run(run_cmd, 'benchopt', standalone_mode=False)
 
 
 class TestInstallCmd:
