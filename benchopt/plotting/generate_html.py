@@ -48,7 +48,8 @@ for asset in STATIC_DIR.glob("**/*"):
     STATIC[asset.relative_to(STATIC_DIR).name] = asset.read_text()
 
 
-def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
+def get_results(fnames, kinds, root_html, benchmark_name, copy=False,
+                plot_config=None):
     """Generate figures from a list of result files.
 
     Parameters
@@ -65,6 +66,8 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
     copy : bool (default: False)
         If set to True, copy each file in the root_html / OUTPUTS
         directory, to make sure it can be downloaded.
+    plot_config: dict (default: None)
+        If given, allows to specify the plot options.
 
     Returns
     -------
@@ -83,7 +86,7 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
         else:
             df = pd.read_csv(fname)
 
-        datasets = list(df['data_name'].unique())
+        datasets = list(df['data_name'].unique())  # XXX TODO
         sysinfo = get_sysinfo(df)
         # Copy result file if necessary
         # and give a relative path for HTML page access
@@ -421,7 +424,8 @@ def _fetch_cached_run_list(new_results, benchmark_html):
     return list(results.values())
 
 
-def plot_benchmark_html(fnames, benchmark, kinds, display=True):
+def plot_benchmark_html(fnames, benchmark, kinds, display=True,                
+                        plot_config=None):
     """Plot a given benchmark as an HTML report. This function can either plot
     a single run or multiple ones.
 
@@ -437,6 +441,8 @@ def plot_benchmark_html(fnames, benchmark, kinds, display=True):
     display : bool
         If set to True, display the curves by opening
         the default browser.
+    plot_config: dict
+        If given, allows to specify the plot options. Defaults to None.
 
     Returns
     -------
@@ -453,7 +459,8 @@ def plot_benchmark_html(fnames, benchmark, kinds, display=True):
     home = bench_index.relative_to(root_html)
 
     # Create the figures and render the page as a html.
-    results = get_results(fnames, kinds, root_html, benchmark.name)
+    results = get_results(fnames, kinds, root_html, benchmark.name,
+                          plot_config)
     htmls = render_all_results(results, benchmark.name, home=home)
 
     # Save the resulting page in the HTML folder
