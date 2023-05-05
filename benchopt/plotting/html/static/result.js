@@ -50,6 +50,13 @@ const setState = (partialState) => {
  */
 const state = () => window.state;
 
+/**
+ * Retrieve the plot_config object from window.data.plot_config
+ *
+ * @returns Object
+ */
+const plotconfig = () => window.data.plot_config;
+
 /*
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * PLOT MANAGEMENT
@@ -395,6 +402,7 @@ const getScatterChartLayout = () => {
       tickangle: -45,
       gridcolor: '#ffffff',
       zeroline : false,
+      range: plotconfig()[state().plot_kind].xaxis == null ? null: [plotconfig()[state().plot_kind].xaxis[0], plotconfig()[state().plot_kind].xaxis[1]],
     },
     yaxis: {
       type: getScale().yaxis,
@@ -402,6 +410,7 @@ const getScatterChartLayout = () => {
       tickformat: '.1e',
       gridcolor: '#ffffff',
       zeroline : false,
+      range: plotconfig()[state().plot_kind].yaxis == null ? null: [plotconfig()[state().plot_kind].yaxis[0], plotconfig()[state().plot_kind].yaxis[1]],
     },
     title: `${state().objective}<br />Data: ${state().dataset}`,
     plot_bgcolor: '#e5ecf6',
@@ -443,6 +452,7 @@ const getBarChartLayout = () => {
       title: 'Time [sec]',
       tickformat: '.1e',
       gridcolor: '#ffffff',
+      range: plotconfig()[state().plot_kind].yaxis == null ? null: [plotconfig()[state().plot_kind].yaxis[0], plotconfig()[state().plot_kind].yaxis[1]],
     },
     xaxis: {
       tickangle: -60,
