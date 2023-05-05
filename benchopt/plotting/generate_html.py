@@ -86,7 +86,7 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False,
         else:
             df = pd.read_csv(fname)
 
-        datasets = list(df['data_name'].unique())  # XXX TODO
+        datasets = list(df['data_name'].unique())
         sysinfo = get_sysinfo(df)
         # Copy result file if necessary
         # and give a relative path for HTML page access
@@ -110,7 +110,7 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False,
         )
 
         # JSON
-        result['json'] = json.dumps(shape_datasets_for_html(df))
+        result['json'] = json.dumps(shape_datasets_for_html(df, plot_config))
 
         results.append(result)
 
@@ -126,9 +126,10 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False,
     return results
 
 
-def shape_datasets_for_html(df):
+def shape_datasets_for_html(df, plot_config=None):
     """Return a dictionary with plotting data for each dataset."""
     datasets_data = {}
+    datasets_data["plot_config"] = plot_config
 
     for dataset in df['data_name'].unique():
         datasets_data[dataset] = shape_objectives_for_html(df, dataset)
@@ -460,7 +461,7 @@ def plot_benchmark_html(fnames, benchmark, kinds, display=True,
 
     # Create the figures and render the page as a html.
     results = get_results(fnames, kinds, root_html, benchmark.name,
-                          plot_config)
+                          plot_config=plot_config)
     htmls = render_all_results(results, benchmark.name, home=home)
 
     # Save the resulting page in the HTML folder

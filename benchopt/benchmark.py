@@ -304,6 +304,9 @@ class Benchmark:
 
     def get_config_file(self):
         "Get the location for the config file of the benchmark."
+        yml_path = self.benchmark_dir / "config.yml"
+        if yml_path.exists():
+            return yml_path
         return self.benchmark_dir / 'config.ini'
 
     def get_setting(self, setting_name):

@@ -2,6 +2,7 @@ import os
 import stat
 import warnings
 import configparser
+import yaml
 from pathlib import Path
 from collections.abc import Iterable
 from benchopt.constants import PLOT_KINDS
@@ -40,9 +41,14 @@ DEFAULT_GLOBAL_CONFIG = {
   results in having the cache for benchmark `B1` stored in `${cache}/B1/`.
 """
 
-DEFAULT_BENCHMARK_CONFIG = {
-    'plots': list(PLOT_KINDS),
+DEFAULT_BENCHMARK_CONFIG = {"plots": list(PLOT_KINDS), "datasets": None}
+plot_config = {
+    kind: {"xaxis": None, "yaxis": None, "scale": "linear"}
+    for kind in list(PLOT_KINDS)
 }
+plot_config["bar_chart"] = {"yaxis": None}
+DEFAULT_BENCHMARK_CONFIG = {**DEFAULT_BENCHMARK_CONFIG, **plot_config}
+
 """
 * ``plots``, *list*: Select the plots to display for the benchmark. Should be
   valid plot kinds. The list can simply be one item by line, with each item
@@ -133,15 +139,20 @@ def get_setting(name, config_file=None, benchmark_name=None):
     assert name in default_config, f"Unknown config key {name}"
     default_value = default_config[name]
 
-    # Get config file
-    config = configparser.ConfigParser()
-    config.read(config_file)
-
     # Get the name of the environment variable associated to this setting
     env_var_name = f"BENCHOPT_{name.upper()}"
 
-    # Get setting with order: 1. env var / 2. config file / 3. default value
-    value = config.get(benchmark_name, name, fallback=default_value)
+    # Get config file
+    if config_file.suffix == ".ini":
+        config = configparser.ConfigParser()
+        config.read(config_file)
+        # Get setting with order: 1. env var / 2. config file / 3. default value
+        value = config.get(benchmark_name, name, fallback=default_value)
+    else:
+        with open(config_file, "r") as f:
+            config = yaml.safe_load(f)
+        value = config[benchmark_name].get(name, default_value)
+
     value = os.environ.get(env_var_name, value)
 
     # Parse the value to the correct type

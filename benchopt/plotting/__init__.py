@@ -40,12 +40,17 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
         for each dataset.
     """
     dict_config = {}
-    for param in ["plots", "xaxis", "yaxis", "datasets", "scale"]:
-        ll = benchmark.get_setting(param)
-        if ll is not None:
-            dict_config[param] = ll
+    params = ["plots", "datasets"]
+    params.extend([kind for kind in PLOT_KINDS])
+    for param in params:
+        options = benchmark.get_setting(param)
+        if options is not None:
+            dict_config[param] = options
+        else:
+            dict_config[param] = []
+    config_kinds = dict_config["plots"]
     if kinds is None or len(kinds) == 0:
-        kinds = dict_config["plots"]
+        kinds = config_kinds
 
     if html:
         plot_benchmark_html(fname, benchmark, dict_config["plots"], display,
