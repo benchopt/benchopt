@@ -147,11 +147,33 @@ def get_setting(name, config_file=None, benchmark_name=None):
         config = configparser.ConfigParser()
         config.read(config_file)
         # Get setting with order: 1. env var / 2. config file / 3. default value
-        value = config.get(benchmark_name, name, fallback=default_value)
+        if name.startswith("benchmark"):
+            value = config.get(benchmark_name, name, fallback=default_value)
+        else:
+            if name in config.sections():
+                options = list(config[name].keys())
+                value = {
+                    key: config.get(name, key, fallback=default_value[key])
+                    for key in options
+                    }
+            else:
+                value = default_value
+
     else:
         with open(config_file, "r") as f:
             config = yaml.safe_load(f)
-        value = config[benchmark_name].get(name, default_value)
+        if name.startswith("benchmark"):
+            value = config[benchmark_name].get(name, default_value)
+        else:
+            if name in config.keys():
+                options = list(config[name].keys())
+                value = {
+                    key: config[name].get(key, default_value[key])
+                    for key in options
+                    }
+            else:
+                value = default_value
+
 
     value = os.environ.get(env_var_name, value)
 
