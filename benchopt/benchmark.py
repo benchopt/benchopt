@@ -48,14 +48,15 @@ class Benchmark:
         set_benchmark_module(self.benchmark_dir)
         if not standalone:
             try:
-               objective = self.get_benchmark_objective()
-               self.pretty_name = objective.name
-               self.min_version = getattr(objective, 'min_benchopt_version', None)
+                objective = self.get_benchmark_objective()
+                self.pretty_name = objective.name
+                self.min_version = getattr(
+                    objective, 'min_benchopt_version', None)
             except RuntimeError:
-               raise click.BadParameter(
-                  f"The folder '{benchmark_dir}' does not contain "
-                 "`objective.py`.\nMake sure you provide the path to a valid "
-                    "benchmark."
+                raise click.BadParameter(
+                    f"The folder '{benchmark_dir}' does not contain "
+                    "`objective.py`.\nMake sure you provide the path"
+                    "to a valid benchmark."
                 )
 
     ####################################################################
