@@ -1,3 +1,5 @@
+import traceback
+
 from ..config import RAISE_INSTALL_ERROR
 
 from .class_property import classproperty
@@ -8,7 +10,7 @@ from .conda_env_cmd import shell_install_in_conda_env
 
 class DependenciesMixin:
     # Information on how to install the class. The value of install_cmd should
-    # be in {None, 'conda', 'shell'}. The API reads:
+    # be in {'conda', 'shell'}. The API reads:
     #
     # - 'conda': The class should have an attribute `requirements`.
     #          Benchopt will conda install `$requirements`, except for entries
@@ -20,7 +22,9 @@ class DependenciesMixin:
     #           env directory as an argument. The command should then be
     #           installed in the `bin` folder of the env and can be imported
     #           with import_shell_cmd in the safe_import_context.
-    install_cmd = None
+    install_cmd = 'conda'
+
+    _error_displayed = False
 
     @classproperty
     def benchmark(cls):
@@ -31,7 +35,8 @@ class DependenciesMixin:
         return cls.__module__.split('.')[-1]
 
     @classmethod
-    def is_installed(cls, env_name=None, raise_on_not_installed=None):
+    def is_installed(cls, env_name=None, raise_on_not_installed=None,
+                     quiet=False):
         """Check if the module caught a failed import to assert install.
 
         Parameters
@@ -42,6 +47,8 @@ class DependenciesMixin:
         raise_on_not_installed: boolean or None
             If set to True, raise an error if the requirements are not
             installed. This is mainly for testing purposes.
+        quiet: boolean
+            Hide import error information.
 
         Returns
         -------
@@ -50,9 +57,12 @@ class DependenciesMixin:
         """
         if env_name is None:
             if cls._import_ctx.failed_import:
+                exc_type, value, tb = cls._import_ctx.import_error
                 if raise_on_not_installed:
-                    exc_type, value, tb = cls._import_ctx.import_error
                     raise exc_type(value).with_traceback(tb)
+                if not cls._error_displayed and not quiet:
+                    traceback.print_exception(exc_type, value, tb)
+                    cls._error_displayed = True
                 return False
             else:
                 return True
@@ -140,7 +150,7 @@ class DependenciesMixin:
         if force or not is_installed:
             cls._pre_install_hook(env_name=env_name)
             if cls.install_cmd == 'conda':
-                conda_reqs = cls.requirements
+                conda_reqs = getattr(cls, "requirements", [])
             elif cls.install_cmd == 'shell':
                 shell_install_scripts = [
                     cls._module_filename.parents[1] / 'install_scripts' /

@@ -22,15 +22,13 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            version_python: 3.7
-            coverage: 'true'
-          - os: ubuntu-latest
             version_python: 3.8
           - os: ubuntu-latest
             version_python: 3.9
             conda_cmd: 'mamba'
+            coverage: 'true'
           - os: macos-latest
-            version_python: 3.8
+            version_python: 3.9
     env:
       CONDA_ENV: 'testcondaenv'
       JUNIT_XML: 'test-data.xml'
@@ -45,7 +43,7 @@ jobs:
         shell: bash -l {0}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Setup Conda
         uses: conda-incubator/setup-miniconda@v2
         with:
@@ -81,17 +79,72 @@ jobs:
           fail_ci_if_error: true
           verbose: true
 
+  test_no_conda:
+    name: Test without conda
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            version_python: 3.9
+          - os: macos-latest
+            version_python: 3.9
+    env:
+      JUNIT_XML: "test-data.xml"
+      VERSION_PYTHON: ${{ matrix.version_python }}
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v3
+        with:
+          python-version: ${{ env.VERSION_PYTHON }}
+
+      - name: Install benchopt and its dependencies
+        run: pip install -e .
+
+      - name: Run benchopt without conda
+        run: benchopt run benchopt/tests/test_benchmarks/dummy_benchmark -d Simulated[n_features=100,n_samples=100,rho=0]  -o "*[reg=0.1]" -s python-pgd -r 1 -n 10 --no-plot
+
+  test_benchopt_reqs:
+    name: Test benchopt requirements detection
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - version_python: "3.9"
+            version_pip: "21.3"
+          - version_python: "3.9"
+            version_pip: "22.2"
+          - version_python: "3.10"
+            version_pip: "latest"
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.version_python }}
+      - name: Install specific version of pip
+        run: |
+          if [[ "${{ matrix.version_pip }}" != "latest" ]]
+          then
+              pip install pip==${{ matrix.version_pip }}
+          else
+              pip install -U pip
+          fi
+      - name: Test package installation detection
+        run: continuous_integration/test_req_detection.sh
+
   report_test:
     if: ${{ always() }}
-    needs: test_benchopt
+    needs: [test_benchopt, test_no_conda]
     runs-on: ubuntu-latest
     env:
-      TEST_OUTCOME: ${{ needs.test_benchopt.result }}
+      TEST_BENCHOPT: ${{ needs.test_benchopt.result }}
+      TEST_NO_CONDA: ${{ needs.test_no_conda.result }}
 
     steps:
       - name: "Gather test results."
         run: |
-          if [[ $TEST_OUTCOME == 'success' ]]; then
+          if [[ $TEST_BENCHOPT == 'success' && $TEST_NO_CONDA == 'success' ]]; then
             exit 0;
           else
             exit 1;

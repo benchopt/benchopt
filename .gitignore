@@ -28,6 +28,7 @@ benchopt_front_page_convergence.pdf
 
 # IDE specific folders
 .vscode
+.idea
 
 # Config files
 benchopt.ini

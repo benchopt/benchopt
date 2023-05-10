@@ -29,7 +29,7 @@ as for `Ordinary Least Square (OLS) <https://github.com/benchopt/benchmark_ols>`
 .. note::
 
     The simplest way to create a benchmark is to copy an existing folder and
-    modify the element to fit the new structure.
+    to adapt its content.
     A benchmark template is provided as a `GitHub template repo here <https://github.com/benchopt/template_benchmark>`_
 
 
@@ -43,6 +43,9 @@ This class allows to monitor the quantities of interest along the iterations
 of the solvers. Typically it allows to evaluate the objective function to
 be minimized by the solvers. An objective class should define 3 methods:
 
+- ``get_one_solution()``: it returns one solution that can be returned by a solver.
+  This defines the shape of the solution and will be used to test that the
+  benchmark works properly.
 - ``set_data(**data)``: it allows to specify the data. See the data as a dictionary
   of Python variables without any constraint.
 - ``compute(x)``: it allows to evaluate the objective for a given value
@@ -53,11 +56,11 @@ be minimized by the solvers. An objective class should define 3 methods:
   is returned it should contain a key called ``value`` (the objective value) and all other keys
   should have ``float`` values allowing to track more than one value
   of interest (e.g. train and test errors).
-- ``to_dict()``: method that returns a dictionary to be passed
+- ``get_objective()``: method that returns a dictionary to be passed
   to the ``set_objective`` methods of solvers_.
 
 An objective class also needs to inherit from a base class,
-:class:`benchopt.base.BaseObjective`.
+:class:`benchopt.BaseObjective`.
 
 .. note::
   Multiple values can be computed in one objective as long as they are
@@ -77,10 +80,8 @@ Example
 A dataset defines what can be passed to an objective. More specifically,
 a dataset should implement one method:
 
-   - ``get_data()``: A method whose output consists of two things. First it outputs
-     the dimension of the optimization problem (size of the iterates). Second it
-     outputs a dictionary that can be passed as keyword arguments ``**data`` to
-     the ``set_data`` method of an objective_.
+- ``get_data()``: A method which outputs a dictionary that can be passed as
+  keyword arguments ``**data`` to the ``set_data`` method of an objective_.
 
 A dataset class also needs to inherit from a base class called
 :class:`benchopt.BaseDataset`.
@@ -122,7 +123,7 @@ variant of the dataset.
 A solver must define three methods:
 
    - ``set_objective(**objective_dict)``: This method will be called with the
-     dictionary ``objective_dict`` returned by the method ``to_dict``
+     dictionary ``objective_dict`` returned by the method ``get_objective``
      from the objective. The goal of this method is to provide all necessary
      information to the solver so it can optimize the objective function.
 

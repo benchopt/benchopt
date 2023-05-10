@@ -33,6 +33,7 @@ sys.path.append(os.path.abspath(os.path.join(curdir, 'sphinxext')))
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    'sphinx-prompt',
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
     'sphinx.ext.doctest',
@@ -58,7 +59,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'benchopt'
-copyright = u'2020-2020, Benchopt contributors'
+copyright = u'2020-2022, Benchopt contributors'
 author = u'Benchopt contributors'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -112,7 +113,7 @@ html_theme_options = {
         # ("Examples", "auto_examples/index"),
         ("CLI", "cli"),
         ("API", "api"),
-        ("Write a benchmark", "how"),
+        # ("Write a benchmark", "how"),
         ("Results", "https://benchopt.github.io/results", True),
         ("What's new", "whats_new"),
         ("GitHub", "https://github.com/benchopt/benchopt", True)

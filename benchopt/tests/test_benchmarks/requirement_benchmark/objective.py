@@ -19,8 +19,10 @@ class Objective(BaseObjective):
 
     def compute(self, beta):
         dummy_package.__version__  # make sure this was imported
-        Xb = self.X @ beta
-        return .5 * Xb.T.dot(Xb)
+        return 1
 
-    def to_dict(self):
+    def get_one_solution(self):
+        pass
+
+    def get_objective(self):
         return dict(X=self.X)

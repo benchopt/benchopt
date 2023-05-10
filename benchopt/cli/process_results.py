@@ -1,4 +1,6 @@
 import click
+import warnings
+from pathlib import Path
 
 from benchopt.config import get_setting
 from benchopt.benchmark import Benchmark
@@ -7,7 +9,7 @@ from benchopt.cli.completion import complete_benchmarks
 from benchopt.cli.completion import complete_output_files
 
 process_results = click.Group(
-    name='Process Results',
+    name='Process results',
     help="Utilities to process benchmark outputs produced by benchopt."
 )
 
@@ -20,7 +22,7 @@ def get_plot_kinds(ctx, args, incomplete):
 @process_results.command(
     help="Plot the result from a previously run benchmark."
 )
-@click.argument('benchmark', type=click.Path(exists=True),
+@click.argument('benchmark', default=Path.cwd(), type=click.Path(exists=True),
                 shell_complete=complete_benchmarks)
 @click.option('--filename', '-f', type=str, default=None,
               shell_complete=complete_output_files,
@@ -55,6 +57,10 @@ def plot(benchmark, filename=None, kinds=('suboptimality_curve',),
         assert html, '`--all` can only be used for HTML plot generation.'
         filename = 'all'
 
+    if html and len(kinds) > 0:
+        warnings.warn("Cannot specify '--kind' for HTML plot, this options "
+                      "will be ignored.")
+
     # Get the result file
     benchmark = Benchmark(benchmark)
     result_filename = benchmark.get_result_file(filename)
@@ -70,7 +76,7 @@ def plot(benchmark, filename=None, kinds=('suboptimality_curve',),
     "See the :ref:`publish_doc` documentation for more info on how to use "
     "this command."
 )
-@click.argument('benchmark', type=click.Path(exists=True),
+@click.argument('benchmark', default=Path.cwd(), type=click.Path(exists=True),
                 shell_complete=complete_benchmarks)
 @click.option('--token', '-t', type=str, default=None,
               help="Github token to access the result repo.")
@@ -98,28 +104,30 @@ def publish(benchmark, token=None, filename=None):
 
     # Publish the result.
     from benchopt.utils.github import publish_result_file
-    publish_result_file(benchmark.name, result_filename, token)
+    publish_result_file(benchmark, result_filename, token)
 
 
 @process_results.command(
     help="Generate result website from list of benchmarks."
 )
-@click.option('--benchmark', '-b', 'benchmarks', metavar="<bench>",
-              multiple=True, type=click.Path(exists=True),
+@click.option('--benchmark', '-b', 'benchmark_paths', metavar="<bench>",
+              multiple=True,
+              type=click.Path(exists=True),
               shell_complete=complete_benchmarks,
               help="Folders containing benchmarks to include.")
 @click.option('--pattern', '-k', 'patterns',
               metavar="<pattern>", multiple=True, type=str,
               help="Include results matching <pattern>.")
 @click.option('--root', 'root', metavar="<root>",
-              type=click.Path(exists=True),
+              type=click.Path(exists=True), default=Path.cwd(),
               help="If no benchmark is provided, include all benchmark in "
               "sub-directories of <root>. Default to current dir.")
 @click.option('--display/--no-display', default=True,
               help="Whether or not to display the plot on the screen.")
-def generate_results(patterns=(), benchmarks=(), root=None, display=True):
+def generate_results(patterns=(), benchmark_paths=(), root=None, display=True):
 
     from benchopt.plotting.generate_html import plot_benchmark_html_all
     plot_benchmark_html_all(
-        patterns=patterns, benchmarks=benchmarks, root=root, display=display
+        patterns=patterns, benchmark_paths=benchmark_paths,
+        root=root, display=display
     )

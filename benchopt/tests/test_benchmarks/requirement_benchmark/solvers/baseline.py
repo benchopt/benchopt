@@ -1,7 +1,4 @@
-from benchopt import BaseSolver, safe_import_context
-
-with safe_import_context() as import_ctx:
-    import numpy as np
+from benchopt import BaseSolver
 
 
 class Solver(BaseSolver):
@@ -13,13 +10,10 @@ class Solver(BaseSolver):
 
     def run(self, callback):
 
-        n_features = self.X.shape[1]
-        w = np.ones(n_features)
+        while callback(0):
+            pass
 
-        while callback(w):
-            w *= 0.9
-
-        self.w = w
+        self.w = 0
 
     def get_result(self):
         return self.w

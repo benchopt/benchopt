@@ -1,11 +1,15 @@
+import io
 import os
 import re
+import warnings
 import platform
+import contextlib
 import subprocess
 from shutil import which
 from pathlib import Path
 
-from .stream_redirection import SuppressStd
+from ..config import DEBUG
+from .shell_cmd import _run_shell
 
 
 def _get_processor_name():
@@ -25,14 +29,27 @@ def _get_processor_name():
     return out
 
 
-def _get_cuda_version():
-    "Return CUDA version."
-    if which("nvcc") is None:
+def get_cuda_version():
+    "Return GPU name and CUDA version."
+    if which("nvidia-smi") is None:
         return None
-    command = ["nvcc", "--version"]
-    out = subprocess.check_output(command).strip().decode("utf-8")
-    out = out.splitlines()[-1]  # take only last line
-    return out
+    command = ["nvidia-smi", "-q", "-x"]
+    try:
+        out = subprocess.check_output(command).strip().decode("utf-8")
+    except subprocess.CalledProcessError:
+        warnings.warn(
+            "`nvidia-smi` has failed. Please check NVIDIA driver install."
+        )
+        return None
+    try:
+        version = re.search('<cuda_version>(.*)</cuda_version>', out).group(1)
+        name = re.search('<product_name>(.*)</product_name>', out).group(1)
+        return f"{name}: cuda_{version}"
+    except AttributeError:
+        warnings.warn(
+            "Could not parse cuda version or device name from `nvidia-smi`."
+        )
+        return None
 
 
 def _get_numpy_libs():
@@ -41,9 +58,9 @@ def _get_numpy_libs():
     # Import is nested to avoid long import time.
     import numpy as np
 
-    with SuppressStd() as capture:
+    with contextlib.redirect_stdout(io.StringIO()) as capture:
         np.show_config()
-    lines = capture.output.splitlines()
+    lines = capture.getvalue().splitlines()
     libs = []
     for li, line in enumerate(lines):
         for key in ("lapack", "blas"):
@@ -59,6 +76,15 @@ def _get_numpy_libs():
                 libs += [f"{key}={lib}"]
     libs = ", ".join(libs)
     return libs
+
+
+def _get_git_tag():
+    err, tag = _run_shell("git describe --tags --abbrev=0", return_output=True)
+    if err != 0:
+        if DEBUG:
+            print(err, tag)
+        tag = None
+    return tag
 
 
 def get_sys_info():
@@ -89,8 +115,11 @@ def get_sys_info():
     )
 
     # Info on dependency libs
-    info["version-cuda"] = _get_cuda_version()
+    info["version-cuda"] = get_cuda_version()
     info["version-numpy"] = (np.__version__, _get_numpy_libs())
     info["version-scipy"] = scipy.__version__
+
+    # Info on benchmark version
+    info["benchmark-git-tag"] = _get_git_tag()
 
     return info

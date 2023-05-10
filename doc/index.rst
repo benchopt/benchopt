@@ -18,11 +18,11 @@ Benchopt is used through a command line as documented
 in the :ref:`cli_documentation`.
 Once benchopt is installed, running and replicating an optimization benchmark is **as simple as doing**:
 
-.. code-block::
+.. prompt:: bash $
 
-    $ git clone https://github.com/benchopt/benchmark_logreg_l2
-    $ benchopt install --env ./benchmark_logreg_l2
-    $ benchopt run --env ./benchmark_logreg_l2
+    git clone https://github.com/benchopt/benchmark_logreg_l2
+    benchopt install --env ./benchmark_logreg_l2
+    benchopt run --env ./benchmark_logreg_l2
 
 Running these commands will fetch the benchmark files, install the benchmark
 requirements in a dedicated environment called ``benchopt_benchmark_logreg_l2`` and
@@ -33,22 +33,29 @@ give you a benchmark plot on l2-regularized logistic regression:
    :align: center
    :scale: 80%
 
-Learn how to :ref:`how`.
 
 Install
 --------
 
-This package can be installed through `pip`. To get the **latest release**, use:
+This package can be installed through `pip`.  In order to allow benchopt to automatically
+install solvers dependencies, the install needs to be done in a `conda` environment.
 
-.. code-block::
+.. prompt:: bash $
 
-    $ pip install benchopt
+    conda create -n benchopt python
+    conda activate benchopt
+
+To get the **latest release**, use:
+
+.. prompt:: bash $
+
+    pip install benchopt
 
 And to get the **latest development version**, you can use:
 
-.. code-block::
+.. prompt:: bash $
 
-    $ pip install -U git+https://github.com/benchopt/benchopt.git#egg=benchopt
+    pip install -U -i https://test.pypi.org/simple/ benchopt
 
 This will install the command line tool to run the benchmark. Then, existing
 benchmarks can be retrieved from GitHub or created locally. To discover which
@@ -57,140 +64,80 @@ benchmarks are presently available look for
 such as for `Lasso -- l1-regularized linear regression <https://github.com/benchopt/benchmark_lasso>`_.
 This benchmark can be retrieved locally with:
 
-.. code-block::
+.. prompt:: bash $
 
-    $ git clone https://github.com/benchopt/benchmark_lasso.git
+    git clone https://github.com/benchopt/benchmark_lasso.git
 
-Quickstart: command line usage on the Lasso benchmark
------------------------------------------------------
+Run a benchmark
+---------------
 
 This section illustrates benchopt's command line interface on the `Lasso benchmark <https://github.com/benchopt/benchmark_lasso>`_; the syntax is applicable to any benchmark.
 All this section assumes that you are in the parent folder of the ``benchmark_lasso`` folder.
-The ``--env`` flag specifies that everything is run in the ``benchopt_benchmark_lasso`` conda environment.
+The ``--env`` flag specifies that everything is run in the ``benchopt_benchmark_lasso`` ``conda`` environment.
 
-**Installing benchmark dependencies**: to install all requirements of the benchmark, run:
+**Installing benchmark dependencies**: ``benchopt`` exposes a CLI to install solvers' dependencies automatically.
+It only works inside a ``conda`` environment. To install all requirements of the benchmark, make sure a ``conda``
+environment is activated and run:
 
-.. code-block::
+.. prompt:: bash $
 
-    $ benchopt install --env ./benchmark_lasso
+    benchopt install --env ./benchmark_lasso
 
 **Run a benchmark**: to run benchmarks on all datasets and with all solvers, run:
 
-.. code-block::
+.. prompt:: bash $
 
-    $ benchopt run --env ./benchmark_lasso
+    benchopt run --env ./benchmark_lasso
+
+The command ``benchopt run`` can also be used outside of a ``conda`` environment without the flag ``-e/--env``.
+In that case, the benchmark will only run solvers that are currently installed.
 
 **Run only some solvers and datasets**: to run only the ``sklearn`` and ``celer`` solvers, on the ``simulated`` and ``finance`` datasets, run:
 
-.. code-block::
+.. prompt:: bash $
 
-    $ benchopt run --env ./benchmark_lasso -s sklearn -s celer -d simulated -d finance
+    benchopt run --env ./benchmark_lasso -s sklearn -s celer -d simulated -d finance
 
 **Run a solver or dataset with specific parameters**:  some solvers and datasets have parameters; by default all combinations are run.
 If you want to run a specific configuration, pass it explicitly, e.g., to run the ``python-pgd`` solver only with its parameter ``use_acceleration`` set to True, use:
 
-.. code-block::
+.. prompt:: bash $
 
-    $ benchopt run --env ./benchmark_lasso -s python-pgd[use_acceleration=True]
+    benchopt run --env ./benchmark_lasso -s python-pgd[use_acceleration=True]
 
 **Set the number of repetitions**: the benchmark are repeated 5 times by default for greater precision. To run the benchmark 10 times, run:
 
-.. code-block::
+.. prompt:: bash $
 
-    $ benchopt run --env ./benchmark_lasso -r 10
+    benchopt run --env ./benchmark_lasso -r 10
+
+**Passing option through configuration file**: all options of ``benchopt run`` can be passed through a YAML configuration file, together with ``--config <configuration_file_name.yml>``.
+The options are defined using the same name as the CLI options.
+An example of configuration file is:
+
+.. code-block:: yaml
+
+    objective-filter:
+      - Lasso Regression[fit_intercept=False,reg=0.5]
+    dataset:
+      - simulated
+      - leukemia
+    solver:
+      - celer
+    force-solver:
+      - cd
+    n-repetitions: 1
+
+When options are passed both via file and CLI, the CLI takes precedence.
 
 **Getting help**: use
 
-.. code-block::
+.. prompt:: bash $
 
-    $ benchopt run -h
+    benchopt run -h
 
 to get more details about the different options.
 You can also read the :ref:`cli_documentation`.
-
-Some available benchmarks
--------------------------
-
-**Notation:**  In what follows, n (or n_samples) stands for the number of samples and p (or n_features) stands for the number of features.
-
-.. math::
-
- y \in \mathbb{R}^n, X = [x_1^\top, \dots, x_n^\top]^\top \in \mathbb{R}^{n \times p}
-
-- `Ordinary Least Squares (OLS) <https://github.com/benchopt/benchmark_ols>`_: |Build Status OLS|
-
-.. math::
-
-    \min_w \frac{1}{2} \|y - Xw\|^2_2
-
-- `Non-Negative Least Squares (NNLS) <https://github.com/benchopt/benchmark_nnls>`_: |Build Status NNLS|
-
-.. math::
-
-    \min_{w \geq 0} \frac{1}{2} \|y - Xw\|^2_2
-
-- `LASSO: L1-regularized least squares <https://github.com/benchopt/benchmark_lasso>`_: |Build Status Lasso|
-
-.. math::
-
-    \min_w \frac{1}{2} \|y - Xw\|^2_2 + \lambda \|w\|_1
-
-- `L2-regularized logistic regression <https://github.com/benchopt/benchmark_logreg_l2>`_: |Build Status LogRegL2|
-
-.. math::
-
-    \min_w \sum_{i=1}^{n} \log(1 + \exp(-y_i x_i^\top w)) + \frac{\lambda}{2} \|w\|_2^2
-
-- `L1-regularized logistic regression <https://github.com/benchopt/benchmark_logreg_l1>`_: |Build Status LogRegL1|
-
-.. math::
-
-    \min_w \sum_{i=1}^{n} \log(1 + \exp(-y_i x_i^\top w)) + \lambda \|w\|_1
-
-- `L2-regularized Huber regression <https://github.com/benchopt/benchmark_huber_l2>`_: |Build Status HuberL2|
-
-.. math::
-
-  \min_{w, \sigma} {\sum_{i=1}^n \left(\sigma + H_{\epsilon}\left(\frac{X_{i}w - y_{i}}{\sigma}\right)\sigma\right) + \lambda {\|w\|_2}^2}
-
-where
-
-.. math::
-
-  H_{\epsilon}(z) = \begin{cases}
-         z^2, & \text {if } |z| < \epsilon, \\
-         2\epsilon|z| - \epsilon^2, & \text{otherwise}
-  \end{cases}
-
-- `L1-regularized quantile regression <https://github.com/benchopt/benchmark_quantile_regression>`_: |Build Status QuantileRegL1|
-
-.. math::
-    \min_{w} \frac{1}{n} \sum_{i=1}^{n} PB_q(y_i - X_i w) + \lambda ||w||_1.
-
-where :math:`PB_q` is the pinball loss:
-
-.. math::
-    PB_q(t) = q \max(t, 0) + (1 - q) \max(-t, 0) =
-    \begin{cases}
-        q t, & t > 0, \\
-        0,    & t = 0, \\
-        (1-q) t, & t < 0
-    \end{cases}
-
-- `Linear ICA <https://github.com/benchopt/benchmark_linear_ica>`_: |Build Status LinearICA|
-
-Given some data :math:`X  \in \mathbb{R}^{d \times n}` assumed to be linearly
-related to unknown independent sources :math:`S  \in \mathbb{R}^{d \times n}` with
-
-.. math::
-    X = A S
-
-where :math:`A  \in \mathbb{R}^{d \times d}` is also unknown, the objective of
-linear ICA is to recover :math:`A` up to permutation and scaling of its columns.
-The objective in this benchmark is related to some estimation on :math:`A`
-quantified with the so-called AMARI distance.
-
-See `benchmark_* repositories on GitHub <https://github.com/benchopt/>`_ for more.
 
 Benchmark results
 -----------------
@@ -199,8 +146,66 @@ All the public benchmark results are available at `Benchopt Benchmarks results <
 
 **Publish results**: You can directly publish the result of a run of ``benchopt`` on `Benchopt Benchmarks results <https://benchopt.github.io/results/>`_. You can have a look at this page to :ref:`publish_doc`.
 
-Contents
-========
+
+
+Frequently asked questions (FAQ)
+================================
+
+Write a benchmark
+-----------------
+
+Learn how to :ref:`how`, including creating an objective, a solver, and
+a dataset.
+
+Curve sampling
+--------------
+
+Benchopt allows to sample both black-boxed solvers and solvers that allow for callbacks. Learn :ref:`convergence_curves`. Note that the sampling strategy can also be tweaked on a per-solver basis, as described in: :ref:`sampling_strategy`.
+
+Re-using code in a benchmark
+----------------------------
+
+For some solver and datasets, it is necessary to share some operations or pre-processing steps. Benchopt allows to factorize this code by :ref:`benchmark_utils_import`.
+
+Parallel run
+------------
+
+Benchopt allows to run different benchmarked methods in parallel, either with ``joblib`` using ``-j 4`` to run on multiple CPUs of a single machine or using SLURM, as described in :ref:`slurm_run`.
+
+
+Citing Benchopt
+---------------
+
+If you use ``Benchopt`` in a scientific publication, please cite the following paper
+
+.. code-block:: bibtex
+
+   @inproceedings{benchopt,
+      author = {Moreau, Thomas and Massias, Mathurin and Gramfort, Alexandre and Ablin, Pierre
+                and Bannier, Pierre-Antoine and Charlier, Benjamin and Dagréou, Mathieu and Dupré la Tour, Tom
+                and Durif, Ghislain and F. Dantas, Cassio and Klopfenstein, Quentin
+                and Larsson, Johan and Lai, En and Lefort, Tanguy and Malézieux, Benoit
+                and Moufad, Badr and T. Nguyen, Binh and Rakotomamonjy, Alain and Ramzi, Zaccharie
+                and Salmon, Joseph and Vaiter, Samuel},
+      title  = {Benchopt: Reproducible, efficient and collaborative optimization benchmarks},
+      year   = {2022},
+      booktitle = {NeurIPS},
+      url    = {https://arxiv.org/abs/2206.13424}
+   }
+
+Other functionalities
+---------------------
+
+- Some solvers are not compatible with certain datasets or objective configurations. This can be accommodated by :ref:`skiping_solver`.
+- For some solvers, it is necessary to cache some pre-compilation for fair benchmarks. This can easily be done with benchopt, as described in :ref:`precompilation`.
+
+
+.. include:: contrib.rst
+
+.. include:: benchmark_list.rst
+
+Website contents
+================
 
 .. toctree::
    :maxdepth: 1
@@ -220,22 +225,3 @@ Contents
    :target: https://www.python.org/downloads/release/python-360/
 .. |codecov| image:: https://codecov.io/gh/benchopt/benchopt/branch/master/graph/badge.svg
    :target: https://codecov.io/gh/benchopt/benchopt
-
-.. |Build Status OLS| image:: https://github.com/benchopt/benchmark_ols/workflows/Tests/badge.svg
-   :target: https://github.com/benchopt/benchmark_ols/actions
-.. |Build Status NNLS| image:: https://github.com/benchopt/benchmark_nnls/workflows/Tests/badge.svg
-   :target: https://github.com/benchopt/benchmark_nnls/actions
-.. |Build Status Lasso| image:: https://github.com/benchopt/benchmark_lasso/workflows/Tests/badge.svg
-   :target: https://github.com/benchopt/benchmark_lasso/actions
-.. |Build Status LogRegL2| image:: https://github.com/benchopt/benchmark_logreg_l2/workflows/Tests/badge.svg
-   :target: https://github.com/benchopt/benchmark_logreg_l2/actions
-.. |Build Status LogRegL1| image:: https://github.com/benchopt/benchmark_logreg_l1/workflows/Tests/badge.svg
-   :target: https://github.com/benchopt/benchmark_logreg_l1/actions
-.. |Build Status HuberL2| image:: https://github.com/benchopt/benchmark_huber_l2/workflows/Tests/badge.svg
-   :target: https://github.com/benchopt/benchmark_huber_l2/actions
-.. |Build Status QuantileRegL1| image:: https://github.com/benchopt/benchmark_quantile_regression/workflows/Tests/badge.svg
-   :target: https://github.com/benchopt/benchmark_quantile_regression/actions
-.. |Build Status LinearSVM| image:: https://github.com/benchopt/benchmark_linear_svm_binary_classif_no_intercept/workflows/Tests/badge.svg
-   :target: https://github.com/benchopt/benchmark_linear_svm_binary_classif_no_intercept/actions
-.. |Build Status LinearICA| image:: https://github.com/benchopt/benchmark_linear_ica/workflows/Tests/badge.svg
-   :target: https://github.com/benchopt/benchmark_linear_ica/actions

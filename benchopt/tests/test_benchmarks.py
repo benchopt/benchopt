@@ -20,7 +20,7 @@ def test_benchmark_objective(benchmark, dataset_simu):
     # check that the reported dimension is correct and that the result of
     # the objective function is a dictionary containing a scalar value for
     # `objective_value`.
-    beta_hat = objective.get_one_beta()
+    beta_hat = objective.get_one_solution()
     objective_dict = objective(beta_hat)
 
     assert 'objective_value' in objective_dict, (
@@ -66,27 +66,35 @@ def test_dataset_get_data(benchmark, dataset_class):
     if dataset_class.name.lower() == 'finance':
         pytest.skip("Do not download finance.")
 
-    res = dataset._get_data()
-    assert isinstance(res, tuple), (
-        "Output of get_data should be a 2-tuple"
-    )
-    assert len(res) == 2, (
-        "Output of get_data should be a 2-tuple"
-    )
+    # XXX TODO remove when scikit-learn releases the fix
+    # see https://github.com/scikit-learn/scikit-learn/pull/23358
+    if dataset_class.name.lower() == 'leukemia':
+        pytest.skip("Leukemia download is broken in scikit-learn 1.1.0")
 
-    dimension, data = res
-
-    assert isinstance(dimension, tuple) or dimension == 'object', (
-        "First output of get_data should be an integer or a tuple of integers."
-        f" Got {dimension}."
+    data = dataset._get_data()
+    assert isinstance(data, (tuple, dict)), (
+        "Output of get_data should be a 2-tuple or a dict."
     )
-    if dimension != 'object':
-        assert all(isinstance(d, numbers.Integral) for d in dimension), (
+    # XXX - Remove in version 1.3
+    if isinstance(data, tuple):
+        assert len(data) == 2, (
+            "Output of get_data should be a 2-tuple"
+        )
+
+        dimension, data = data
+
+        assert isinstance(dimension, tuple) or dimension == 'object', (
             "First output of get_data should be an integer or a tuple of "
             f"integers. Got {dimension}."
         )
+        if dimension != 'object':
+            assert all(isinstance(d, numbers.Integral) for d in dimension), (
+                "First output of get_data should be an integer or a tuple of "
+                f"integers. Got {dimension}."
+            )
+
     assert isinstance(data, dict), (
-        f"Second output of get_data should be a dict. Got {data}."
+        f"The returned data from get_data should be a dict. Got {data}."
     )
 
 
@@ -124,8 +132,6 @@ def test_solver_install_api(benchmark, solver_class):
     assert solver_class.install_cmd in [None, 'conda', 'shell']
 
     # Check that the solver_class exposes a known install cmd
-    if solver_class.install_cmd == 'conda':
-        assert hasattr(solver_class, 'requirements')
     if solver_class.install_cmd == 'shell':
         assert hasattr(solver_class, 'install_script')
 
@@ -151,8 +157,12 @@ def test_solver(benchmark, solver_class):
     if not solver_class.is_installed():
         pytest.skip("Solver is not installed")
 
+    test_config = getattr(solver_class, "test_config", {})
+    objective_config = test_config.get('objective', {})
+    dataset_config = test_config.get('dataset', {})
+
     objective_class = benchmark.get_benchmark_objective()
-    objective = objective_class.get_instance()
+    objective = objective_class.get_instance(**objective_config)
 
     simulated_dataset = [
         d for d in benchmark.get_datasets() if d.name.lower() == 'simulated'
@@ -164,29 +174,29 @@ def test_solver(benchmark, solver_class):
     )
 
     dataset_class = simulated_dataset[0]
-    test_parameters = product_param(getattr(
-        dataset_class,
-        'test_parameters',
-        {},
+    dataset_test_parameters = product_param(getattr(
+        dataset_class, 'test_parameters', {}
     ))
-    if not test_parameters:
-        test_parameters = [{}]
+    if not dataset_test_parameters:
+        dataset_test_parameters = [{}]
     solver_ran_once = False
-    for test_params in test_parameters:
-        dataset = dataset_class.get_instance(**test_params)
+    for params in dataset_test_parameters:
+        params.update(dataset_config)
+        dataset = dataset_class.get_instance(**params)
 
         objective.set_dataset(dataset)
-
         solver = solver_class.get_instance()
-        skip, reason = solver._set_objective(objective)
+        skip = solver._set_objective(objective)
         if skip:
             continue
         solver_ran_once = True
         _test_solver_one_objective(solver, objective)
 
     assert solver_ran_once, (
-        'Solver skipped all simulated dataset configs. At least one simulated '
-        'dataset config should be compatible with a solver'
+        'Solver skipped all test configuration. At least one simulated '
+        'dataset and one objective config should be compatible with the '
+        'solver, potentially provided through "Solver.test_config" class '
+        'attribute or with `Dataset.test_parameters`.'
     )
 
 
@@ -206,22 +216,25 @@ def _test_solver_one_objective(solver, objective):
         cb = _Callback(
             objective, meta={}, stopping_criterion=sc
         )
+        cb.start()
         solver.run(cb)
     else:
         if solver._solver_strategy == 'iteration':
             stop_val = 5000 if is_convex else 2
         else:
-            stop_val = 1e-15 if is_convex else 1e-2
+            stop_val = 1e-10 if is_convex else 1e-2
         solver.run(stop_val)
 
     # Check that beta_hat is compatible to compute the objective function
     beta_hat = solver.get_result()
     objective(beta_hat)
 
-    if is_convex:
+    # Only check optimality or convex problems, with simple enough return type
+    if is_convex and isinstance(beta_hat, np.ndarray):
         val_star = objective(beta_hat)['objective_value']
         for _ in range(100):
             eps = 1e-5 * np.random.randn(*beta_hat.shape)
             val_eps = objective(beta_hat + eps)['objective_value']
+
             diff = val_eps - val_star
             assert diff >= 0

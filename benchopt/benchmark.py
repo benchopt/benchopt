@@ -6,13 +6,15 @@ from pathlib import Path
 from .config import get_setting
 from .base import BaseSolver, BaseDataset
 
-from .utils.safe_import import set_benchmark
+from .utils.safe_import import set_benchmark_module
 from .utils.dynamic_modules import _load_class_from_module
+from .utils.dependencies_mixin import DependenciesMixin
 from .utils.parametrized_name_mixin import product_param
+from .utils.parametrized_name_mixin import ParametrizedNameMixin
 from .utils.parametrized_name_mixin import _list_all_parametrized_names
 
-from .utils.terminal_output import YELLOW
 from .utils.terminal_output import colorify
+from .utils.terminal_output import YELLOW
 
 from .utils.conda_env_cmd import install_in_conda_env
 from .utils.conda_env_cmd import shell_install_in_conda_env
@@ -43,15 +45,17 @@ class Benchmark:
         self.benchmark_dir = Path(benchmark_dir)
         self.name = self.benchmark_dir.resolve().name
 
-        set_benchmark(self.benchmark_dir)
+        set_benchmark_module(self.benchmark_dir)
         if not standalone:
             try:
-                self.get_benchmark_objective()
+               objective = self.get_benchmark_objective()
+               self.pretty_name = objective.name
+               self.min_version = getattr(objective, 'min_benchopt_version', None)
             except RuntimeError:
-                raise click.BadParameter(
-                    f"The folder '{benchmark_dir}' does not contain "
-                    "`objective.py`.\n"
-                    "Make sure you provide the path to a valid benchmark."
+               raise click.BadParameter(
+                  f"The folder '{benchmark_dir}' does not contain "
+                 "`objective.py`.\nMake sure you provide the path to a valid "
+                    "benchmark."
                 )
 
     ####################################################################
@@ -142,17 +146,46 @@ class Benchmark:
         package = self.benchmark_dir / f'{class_name.lower()}s'
         submodule_files = package.glob('*.py')
         for module_filename in submodule_files:
+            if module_filename.name.startswith("template_"):
+                # skip template solvers and datasets
+                continue
             # Get the class
-            cls = _load_class_from_module(
-                module_filename, class_name, benchmark_dir=self.benchmark_dir
-            )
-            if issubclass(cls, base_class):
-                classes.append(cls)
-            else:
-                print(colorify(
-                    f"WARNING: class {cls} in {module_filename} does not "
-                    f"derive from base class {base_class}", YELLOW
-                ))
+            try:
+                cls = _load_class_from_module(
+                    module_filename, class_name,
+                    benchmark_dir=self.benchmark_dir
+                )
+                if not issubclass(cls, base_class):
+                    warnings.warn(colorify(
+                        f"class {cls.__name__} in {module_filename} is not a "
+                        f"subclass from base class benchopt."
+                        f"{base_class.__name__}", YELLOW
+                    ))
+
+            except Exception:
+
+                import traceback
+                tb_to_print = traceback.format_exc(chain=False)
+
+                class FailedImport(ParametrizedNameMixin, DependenciesMixin):
+                    "Object for the class list that raises error if used."
+
+                    name = get_failed_import_object_name(
+                        module_filename, class_name
+                    )
+
+                    @classmethod
+                    def is_installed(cls, **kwargs):
+                        print(
+                            f"Failed to import {class_name} from "
+                            f"{module_filename}. Please fix the following "
+                            "error to use this file with benchopt:\n"
+                            f"{tb_to_print}"
+                        )
+                        return False
+
+                cls = FailedImport
+            classes.append(cls)
 
         classes.sort(key=lambda c: c.name.lower())
         return classes
@@ -177,36 +210,51 @@ class Benchmark:
         ----------
         filename : str
             Select a specific file from the benchmark. If None, this will
-            select the most recent CSV file in the benchmark output folder.
+            select the most recent result file in the benchmark output folder.
         """
         # List all result files
         output_folder = self.get_output_folder()
-        all_csv_files = output_folder.glob("*.csv")
-        all_csv_files = sorted(
-            all_csv_files, key=lambda t: t.stat().st_mtime
+        all_result_files = list(
+            output_folder.glob("*.parquet")
+        ) + list(output_folder.glob("*.csv"))
+        all_result_files = sorted(
+            all_result_files, key=lambda t: t.stat().st_mtime
         )
 
         if filename is not None and filename != 'all':
-            result_filename = (output_folder / filename).with_suffix('.csv')
+            result_path = (output_folder / filename)
+            result_filename = result_path.with_suffix('.parquet')
+
+            if not result_filename.exists():
+                result_filename = result_path.with_suffix('.csv')
+
             if not result_filename.exists():
                 if Path(filename).exists():
                     result_filename = Path(filename)
                 else:
-                    all_csv_files = '\n- '.join([
-                        str(s) for s in all_csv_files
+                    all_result_files = '\n- '.join([
+                        str(s) for s in all_result_files
                     ])
                     raise FileNotFoundError(
                         f"Could not find result file {filename}. Available "
-                        f"result files are:\n- {all_csv_files}"
+                        f"result files are:\n- {all_result_files}"
                     )
         else:
-            if len(all_csv_files) == 0:
+            if len(all_result_files) == 0:
                 raise RuntimeError(
-                    f"Could not find any CSV result files in {output_folder}."
+                    "Could not find any Parquet nor "
+                    f"CSV result files in {output_folder}."
                 )
-            result_filename = all_csv_files[-1]
+            result_filename = all_result_files[-1]
             if filename == 'all':
-                result_filename = all_csv_files
+                result_filename = all_result_files
+
+        if result_filename.suffix == ".csv":
+            print(colorify(
+                "WARNING: CSV files are deprecated."
+                "Please use Parquet files instead.",
+                YELLOW
+            ))
 
         return result_filename
 
@@ -223,7 +271,11 @@ class Benchmark:
 
     def get_cache_location(self):
         "Get the location for the cache of the benchmark."
-        return self.benchmark_dir / CACHE_DIR
+        benchopt_cache_dir = get_setting("cache")
+        if benchopt_cache_dir is None:
+            return self.benchmark_dir / CACHE_DIR
+
+        return Path(benchopt_cache_dir) / self.name
 
     def cache(self, func, force=False, ignore=None):
         """Create a cached function for the given function.
@@ -391,7 +443,7 @@ class Benchmark:
 
         Parameters
         ----------
-        solver_names : list | None
+        solver_names : list | None
             List of solvers to include in the benchmark. If None
             all solvers available are run.
         forced_solvers : list | None
@@ -413,8 +465,9 @@ class Benchmark:
         solver : BaseSolver instance
         force : bool
         """
-        all_datasets = _filter_classes(*self.get_datasets(),
-                                       filters=dataset_names)
+        all_datasets = _filter_classes(
+            *self.get_datasets(), filters=dataset_names
+        )
         all_objectives, objective_buffer = buffer_iterator(_filter_classes(
             self.get_benchmark_objective(), filters=objective_filters
         ))
@@ -443,18 +496,21 @@ class Benchmark:
                     force = is_matched(
                         str(solver), forced_solvers, default=False
                     )
-                    yield dataset, objective, solver, force, output.clone()
+                    yield dict(
+                        dataset=dataset, objective=objective, solver=solver,
+                        force=force, output=output.clone()
+                    )
                 all_solvers = solvers_buffer
             all_objectives = objective_buffer
 
 
 def _check_name_lists(*name_lists):
-    "Normalize name_list ot a list of lowercase str."
+    "Normalize name_list to a list of string."
     res = []
     for name_list in name_lists:
         if name_list is None:
             continue
-        res.extend([str(name).lower() for name in name_list])
+        res.extend([str(name) for name in name_list])
     return res
 
 
@@ -466,14 +522,120 @@ def is_matched(name, include_patterns=None, default=True):
     if include_patterns is None or len(include_patterns) == 0:
         return default
     name = str(name)
-    # we use [] to signal options in patterns, we must escape them for re
-    substitutions = {"*": ".*", "[": r"\[", "]": r"\]"}
+    name = _extract_options(name)[0]
+    substitutions = {"*": ".*"}
     for p in include_patterns:
+        p = _extract_options(p)[0]
         for old, new in substitutions.items():
             p = p.replace(old, new)
-        if re.match(f"^{p}.*", name, flags=re.IGNORECASE) is not None:
+        if re.match(f"^{p}$", name, flags=re.IGNORECASE) is not None:
             return True
     return False
+
+
+def _extract_options(name):
+    """Remove options indicated within '[]' from a name.
+
+    Parameters
+    ----------
+    name : str
+        Input name.
+
+    Returns
+    -------
+    basename : str
+        Name without options.
+    args : list
+        List of unnamed options.
+    kwargs : dict()
+        Dictionary with options.
+
+    Examples
+    --------
+    >>> _extract_options("foo")  # "foo", [], dict()
+    >>> _extract_options("foo[bar=2]")  # "foo", [], dict(bar=2)
+    >>> _extract_options("foo[baz]")  # "foo", ["baz"], dict()
+    """
+    if name.count("[") != name.count("]"):
+        raise ValueError(f"Invalid name (missing bracket): {name}")
+
+    basename = "".join(re.split(r"\[.*\]", name))
+    matches = re.findall(r"\[.*\]", name)
+
+    if len(matches) == 0:
+        return basename, [], {}
+    elif len(matches) > 1:
+        raise ValueError(f"Invalid name (multiple brackets): {name}")
+    else:
+        match = matches[0]
+        match = match[1:-1]  # remove brackets
+
+        result = _extract_parameters(match)
+        if isinstance(result, dict):
+            return basename, [], result
+        elif isinstance(result, list):
+            return basename, result, {}
+        else:
+            raise ValueError(
+                f"Impossible. Please report this bug.\n"
+                f"_extract_parameters returned '{result}'"
+            )
+
+
+def _extract_parameters(string):
+    """Extract parameters from a string.
+
+    If the string contains a "=", returns a dict, otherwise returns a list.
+
+    Examples
+    --------
+    >>> _extract_parameters("foo")  # ["foo"]
+    >>> _extract_parameters("foo, 42, True")  # ["foo", 42, True]
+    >>> _extract_parameters("foo=bar")  # {"foo": "bar"}
+    >>> _extract_parameters("foo=[bar, baz]")  # {"foo": ["bar", "baz"]}
+    >>> _extract_parameters("foo=1, baz=True")  # {"foo": 1, "baz": True}
+    >>> _extract_parameters("'foo, bar'=[(0, 1),(1, 0)]")
+    >>> # {"foo, bar": [(0, 1),(1, 0)]}
+    """
+    import ast
+    original = string
+
+    # First, replace some expressions with their hashes, to avoid modification:
+    # - quoted names
+    all_matches = re.findall(r"'[^'\"]*'", string)
+    all_matches += re.findall(r'"[^\'"]*"', string)
+    # - numbers of the form "1e-3" (but not names like "foo1e3")
+    all_matches += re.findall(
+        r"(?<![a-zA-Z0-9_])[+-]?[0-9]+[.]?[0-9]*[eE][-+]?[0-9]+", string)
+    for match in all_matches:
+        string = string.replace(match, str(hash(match)))
+
+    # Second, add quotes to all variable names (foo -> 'foo').
+    # Accepts dots and dashes within names.
+    string = re.sub(r"[a-zA-Z][a-zA-Z0-9._-]*", r"'\g<0>'", string)
+
+    # Third, change back the hashes to their original names.
+    for match in all_matches:
+        string = string.replace(str(hash(match)), match)
+
+    # Prepare the sequence for AST parsing.
+    # Sequences with "=" are made into a dict expression {'foo': 'bar'}.
+    # Sequences without "=" are made into a list expression ['foo', 'bar'].
+    if "=" in string:
+        string = "{" + string.replace("=", ":") + "}"
+    else:
+        string = "[" + string + "]"
+
+    # Remove quotes for python language tokens
+    for token in ["True", "False", "None"]:
+        string = string.replace(f'"{token}"', token)
+        string = string.replace(f"'{token}'", token)
+
+    # Evaluate the string.
+    try:
+        return ast.literal_eval(string)
+    except (ValueError, SyntaxError):
+        raise ValueError(f"Invalid name '{original}', evaluated as {string}.")
 
 
 def _validate_patterns(all_names, patterns, name_type='dataset'):
@@ -488,33 +650,81 @@ def _validate_patterns(all_names, patterns, name_type='dataset'):
         if not matched:
             invalid_patterns.append(p)
 
-    # If some patterns did not matched any dataset, raise an error
+    # If some patterns did not matched any class, raise an error
     if len(invalid_patterns) > 0:
-        all_names = '- ' + '\n- '.join(all_names)
+        all_names_ = '- ' + '\n- '.join(all_names)
         raise click.BadParameter(
             f"Patterns {invalid_patterns} did not match any {name_type}.\n"
-            f"Available {name_type}s are:\n{all_names}"
+            f"Available {name_type}s are:\n{all_names_}"
         )
 
 
 def _filter_classes(*classes, filters=None):
     """Filter a list of class based on its names."""
     for klass in classes:
-        is_installed = None
-        for parameters in product_param(klass.parameters):
-            obj = klass.get_instance(**parameters)
-            if is_matched(str(obj), filters):
-                if is_installed is None:
-                    is_installed = (
-                        not hasattr(klass, 'is_installed')
-                        or klass.is_installed(
-                            raise_on_not_installed=RAISE_INSTALL_ERROR
-                        )
-                    )
-                if not is_installed:
-                    yield klass.name, False
-                    break
-                yield obj, True
+        if not is_matched(klass.name, filters):
+            continue
+
+        if not klass.is_installed(raise_on_not_installed=RAISE_INSTALL_ERROR):
+            yield klass.name, False
+            continue
+
+        for parameters in _get_used_parameters(klass, filters):
+            yield klass.get_instance(**parameters), True
+
+
+def _get_used_parameters(klass, filters):
+    """Get the list of parameters to use in the class."""
+
+    # Use the default parameters if no filters are provided.
+    if filters is None or len(filters) == 0:
+        return product_param(klass.parameters)
+
+    # If filters are provided, get the list of parameters from the names.
+    update_parameters = []
+    for filt in filters:
+        if is_matched(klass.name, [filt]):
+            # Extract the parameters from the filter name.
+            _, args, kwargs = _extract_options(filt)
+
+            if len(args) > 0:
+                # positional args are allowed only for single-parameter classes
+                if len(klass.parameters) > 1:
+                    raise ValueError(
+                        f"Ambiguous positional parameter in {filt}.")
+                elif len(kwargs) > 0:
+                    raise ValueError(
+                        f"Both positional and keyword parameters in {filt}.")
+                else:
+                    key = list(klass.parameters.keys())[0]
+                    kwargs = {key: args}
+
+            # Use product_param to get all combinations of parameters.
+            kwargs = {
+                key: (val if isinstance(val, (list, tuple)) else [val])
+                for key, val in kwargs.items()
+            }
+            update_parameters.extend(product_param(kwargs))
+
+    # Then, update the default parameters (klass.parameters) with the
+    # parameters extracted from filter names.
+    used_parameters = []
+    for update in update_parameters:
+        for default in product_param(klass.parameters):
+            default = default.copy()  # avoid modifying the original
+
+            # check that all parameters are defined in klass.parameters
+            for key in update:
+                if key not in default:
+                    raise ValueError(
+                        f"Unknown parameter '{key}', parameter must be in "
+                        f"{list(default.keys())}")
+
+            default.update(update)
+            if default not in used_parameters:  # avoid duplicates
+                used_parameters.append(default)
+
+    return used_parameters
 
 
 def buffer_iterator(it):
@@ -527,3 +737,28 @@ def buffer_iterator(it):
             yield val
 
     return buffered_it(buffer), buffer
+
+
+def get_failed_import_object_name(module_file, cls_name):
+    # Parse the module file to find the name of the failing object
+
+    import ast
+    module_ast = ast.parse(Path(module_file).read_text())
+    classdef = [
+        c for c in module_ast.body
+        if isinstance(c, ast.ClassDef) and c.name == cls_name
+    ]
+    if len(classdef) == 0:
+        raise ValueError(f"Could not find {cls_name} in module {module_file}.")
+    c = classdef[-1]
+    name_assign = [
+        a for a in c.body
+        if (isinstance(a, ast.Assign) and any(list(
+            (isinstance(t, ast.Name) and t.id == "name") for t in a.targets
+        )))
+    ]
+    if len(name_assign) == 0:
+        raise ValueError(
+            f"Could not find {cls_name} name in module {module_file}"
+        )
+    return name_assign[-1].value.value

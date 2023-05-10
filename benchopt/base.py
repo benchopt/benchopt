@@ -4,9 +4,11 @@ import warnings
 
 from abc import ABC, abstractmethod
 
+from .callback import _Callback
+from .stopping_criterion import SingleRunCriterion
 from .stopping_criterion import SufficientProgressCriterion
 
-from .utils.safe_import import set_benchmark
+from .utils.safe_import import set_benchmark_module
 from .utils.dynamic_modules import get_file_hash
 from .utils.dynamic_modules import _reconstruct_class
 
@@ -20,8 +22,8 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
     Solvers that derive from this class should implement three methods:
 
     - ``set_objective(self, **objective_parameters)``: prepares the solver to
-      be called on a given problem. ``**objective_parameters`` are the output
-      of the method ``to_dict`` from the benchmark objective. In particular,
+      be called on a given problem. ``**objective_parameters`` is the output of
+      the method ``get_objective`` from the benchmark objective. In particular,
       this method should dumps the parameter to compute the objective function
       in a file for command line solvers to reduce the impact of dumping the
       data to the disk in the benchmark.
@@ -43,6 +45,9 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
       logarithmically to get more an more precise points.
     - ``'tolerance'``: call the run method with tolerance deacreasing
       logarithmically to get more and more precise points.
+    - ``'callback'``: a callable that should be called after each iteration or
+      epoch. This callable periodically calls the objective's `compute`
+      and returns False when the solver should stop.
 
     """
 
@@ -66,7 +71,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         else:
             return self.stopping_criterion.strategy
 
-    def _set_objective(self, objective):
+    def _set_objective(self, objective, output=None):
         """Store the objective for hashing/pickling and check its compatibility
 
         Parameters
@@ -83,15 +88,29 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
             If skip is False, the reason should be None.
         """
         self._objective = objective
-        objective_dict = objective.to_dict()
+        self._output = output
+        # XXX remove in version 1.4
+        objective_dict = objective.get_objective()
+        if objective_dict is None:
+            assert hasattr(objective, "to_dict"), (
+                "Objective needs to implement `get_objective` that returns "
+                "a dictionary to be passed to `set_objective`"
+            )
+            warnings.warn(
+                "The method ``Objective.to_dict`` has been deprecated in "
+                "favor of ``Objective.get_objective``. Using it will no "
+                "longer work in version 1.4", FutureWarning
+            )
+            objective_dict = objective.to_dict()
 
         # Check if the objective is compatible with the solver
         skip, reason = self.skip(**objective_dict)
         if skip:
-            return skip, reason
+            self._output.skip(reason)
+            return True
 
         self.set_objective(**objective_dict)
-        return False, None
+        return False
 
     @abstractmethod
     def set_objective(self, **objective_dict):
@@ -100,8 +119,26 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         Parameters
         ----------
         **objective_parameters : dict
-            Dictionary obtained as the output of the method ``to_dict`` from
-            the benchmark ``Objective``.
+            Dictionary obtained as the output of the method ``get_objective``
+            from the benchmark ``Objective``.
+        """
+        ...
+
+    def pre_run_hook(self, stop_val):
+        """Hook to run pre-run operations.
+
+        This is mostly necessary to cache stop_val dependent computations, for
+        instance in ``jax`` with different number of iterations in a for loop.
+
+        Parameters
+        ----------
+        stop_val : int | float | callable
+            Value for the stopping criterion of the solver for. It allows to
+            sample the time/accuracy curve in the benchmark.
+            If it is a callable, then it should act as a callback. This
+            callback should be called once for each iteration with argument
+            the current iterate `parameters`. The callback returns False when
+            the computations should stop.
         """
         ...
 
@@ -143,13 +180,13 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         ...
 
     def skip(self, **objective_dict):
-        """Used to decide if the ``Solver`` is compatible with the objective.
+        """Hook to decide if the ``Solver`` is compatible with the objective.
 
         Parameters
         ----------
         **objective_parameters : dict
-            Dictionary obtained as the output of the method ``to_dict`` from
-            the benchmark ``Objective``.
+            Dictionary obtained as the output of the method ``get_objective``
+            from the benchmark ``Objective``.
 
         Returns
         -------
@@ -168,24 +205,57 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
 
         return False, None
 
+    def run_once(self, stop_val=1):
+        """Run the solver once, to cache warmup times (e.g. pre-compilations).
+
+        This function is intended to be called in ``Solver.set_objective``
+        method to avoid taking into account a solver's warmup costs.
+
+        Parameters
+        ----------
+        stop_val : int or float, (default: 1)
+            If ``stopping_strategy`` is 'iteration', this should be an integer
+            corresponding to the number of iterations the solver is run for.
+            If it is 'callback', it is an integer corresponding to the number
+            of times the callback is called.
+            If it is 'tolerance', it is a float which can be passed to call
+            the solver on an easy to solve problem.
+        """
+
+        if hasattr(self, '_output'):
+            self._output.progress('caching warmup times.')
+
+        if self._solver_strategy == "callback":
+            run_once_cb = _Callback(
+                lambda x: {'objective_value': 1},
+                {},
+                SingleRunCriterion(stop_val=stop_val).get_runner_instance(
+                    solver=self
+                )
+            )
+            self.run(run_once_cb)
+        else:
+            self.run(stop_val)
+
     @staticmethod
-    def _reconstruct(module_filename, parameters, objective,
+    def _reconstruct(module_filename, parameters, objective, output,
                      pickled_module_hash=None, benchmark_dir=None):
-        set_benchmark(benchmark_dir)
+        set_benchmark_module(benchmark_dir)
         Solver = _reconstruct_class(
             module_filename, 'Solver', benchmark_dir, pickled_module_hash,
         )
         obj = Solver.get_instance(**parameters)
         if objective is not None:
-            obj._set_objective(objective)
+            obj._set_objective(objective, output=output)
         return obj
 
     def __reduce__(self):
         module_hash = get_file_hash(self._module_filename)
         objective = getattr(self, '_objective', None)
+        output = getattr(self, '_output', None)
         return self._reconstruct, (
-            self._module_filename, self._parameters, objective, module_hash,
-            str(self._import_ctx._benchmark_dir)
+            self._module_filename, self._parameters, objective, output,
+            module_hash, str(self._import_ctx._benchmark_dir)
         )
 
 
@@ -210,23 +280,19 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
 
     Datasets that derive from this class should implement one method:
 
-    - ``get_data()``: retrieves/simulates the data contains in this data set
-      and returns the ``dimension`` of the data as well as a dictionary
-      containing the data. This dictionary is passed as arguments of the
-      objective function method ``set_data``.
+    - ``get_data()``: retrieves/simulates the data contained in this data set
+      and returns a dictionary containing the data. This dictionary is passed
+      as arguments of the objective's method ``set_data``.
     """
 
     _base_class_name = 'Dataset'
 
     @abstractmethod
     def get_data(self):
-        """Return the problem's dimension as well as the objective parameters.
+        """Return the data to feed to the objective .
 
         Returns
         -------
-        dimension: int or tuple
-            Dimension of the optimized parameter. The solvers should return a
-            parameter of shape ``(dimension,)`` or ``*dimension``.
         data: dict
             Extra parameters of the objective. The objective will be
             instanciated by calling ``Objective.set_data(**data)``.
@@ -236,20 +302,35 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
     def _get_data(self):
         "Wrapper to make sure the returned results are correctly formated."
 
+        # Automatically cache the _data to avoid reloading it.s
         if not hasattr(self, '_data') or self._data is None:
-            self._dimension, self._data = self.get_data()
+            self._data = self.get_data()
 
-        # Make sure dimension is a tuple
-        if isinstance(self._dimension, numbers.Integral):
-            self._dimension = (self._dimension,)
+            # XXX - Remove in version 1.3
+            if type(self._data) != dict:
+                import warnings
+                warnings.warn(
+                    "`get_data` should return a dict containing the data. "
+                    "The dimension should not be returned anymore and "
+                    "Objective should have a method `get_one_solution` "
+                    "to provide one feasible point. This will cause an "
+                    "error starting from version 1.3.",
+                    FutureWarning
+                )
+                dimension, data = self._data
 
-        return self._dimension, self._data
+                # Make sure dimension is a tuple
+                if isinstance(dimension, numbers.Integral):
+                    dimension = (dimension,)
+                self._data = (dimension, data)
+
+        return self._data
 
     # Reduce the pickling and hashing burden by only pickling class parameters.
     @staticmethod
     def _reconstruct(module_filename, pickled_module_hash, parameters,
                      benchmark_dir):
-        set_benchmark(benchmark_dir)
+        set_benchmark_module(benchmark_dir)
         Dataset = _reconstruct_class(
             module_filename, 'Dataset', benchmark_dir, pickled_module_hash,
         )
@@ -272,7 +353,7 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
     - `set_data(**data)`: stores the info from a given dataset to be able to
       compute the objective value on these data.
 
-    - `to_dict()`: exports the data from the dataset as well as the parameters
+    - `get_objective()`: exports the data from the dataset and the parameters
       from the objective function as a dictionary that will be passed as
       parameters of the solver's `set_objective` method in order to specify the
       objective function of the benchmark.
@@ -301,8 +382,9 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
         """
         ...
 
-    @abstractmethod
-    def to_dict(self):
+    # to uncomment in version 1.4, once `to_dict` has been deprecated.
+    # @abstractmethod
+    def get_objective(self):
         """Return the objective parameters for the solver.
 
         Returns
@@ -360,13 +442,35 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
     # hashing the data directly.
     def set_dataset(self, dataset):
         self._dataset = dataset
-        self._dimension, data = dataset._get_data()
+        data = dataset._get_data()
+
+        # XXX - Remove in version 1.3
+        if type(data) != dict:
+            self._dimension, data = data
+
         # Check if the dataset is compatible with the objective
         skip, reason = self.skip(**data)
         if skip:
             return skip, reason
 
+        # Check if parameters are modified by set_data
+        parameters = {}
+        for key in self._parameters:
+            parameters[key] = getattr(self, key)
         self.set_data(**data)
+        for key in self._parameters:
+            has_changed = parameters[key] != getattr(self, key)
+            if hasattr(has_changed, '__iter__'):
+                has_changed = any(has_changed)
+
+            if has_changed:
+                raise ValueError(
+                    f"Parameter {key} has been changed from {parameters[key]} "
+                    f"to {getattr(self, key)}. "
+                    "Parameters of Objective should not be "
+                    "modified by 'set_data'."
+                )
+
         return False,  None
 
     def skip(self, **data):
@@ -389,8 +493,8 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
         """
         return False, None
 
-    def get_one_beta(self):
-        """Return one point in which the objective function can be evaluated.
+    def get_one_solution(self):
+        """Return one solution for which the objective can be evaluated.
 
         This method is mainly for testing purposes, to check that the return
         computation and the return type of `Objective.compute`. It should
@@ -401,11 +505,21 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
         point. When `Dataset.get_data` returns "object", this method must be
         overwritten.
         """
-        if self._dimension == 'object':
+        if not hasattr(self, '_dimension'):
             raise NotImplementedError(
-                "If solvers return objects, `Objective.get_one_beta` should "
-                "be overriden to return an object compatible with `compute`."
+                "If solvers return objects, `Objective.get_one_solution` "
+                "should be overriden to return an object compatible with "
+                "`compute`."
             )
+
+        # XXX - make this an abstract class in version 1.3
+        import warnings
+        warnings.warn(
+            "Objective should have a method `get_one_solution` "
+            "to provide one feasible point. This will cause an "
+            "error starting from version 1.3.",
+            FutureWarning
+        )
 
         import numpy as np
         return np.zeros(self._dimension)
@@ -414,7 +528,7 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
     @staticmethod
     def _reconstruct(module_filename, pickled_module_hash, parameters,
                      dataset, benchmark_dir):
-        set_benchmark(benchmark_dir)
+        set_benchmark_module(benchmark_dir)
         Objective = _reconstruct_class(
             module_filename, 'Objective', benchmark_dir, pickled_module_hash,
         )
