@@ -279,8 +279,8 @@ def render_index(benchmarks, len_fnames):
 
     Parameters
     ----------
-    benchmark_names : list of str
-        A list of all benchmark names that have been rendered.
+    benchmarks : list of paths
+        A list of all benchmark paths that have been rendered.
     len_fnames : list of int
         A list of the number of files in each benchmark.
 
@@ -508,15 +508,17 @@ def plot_benchmark_html_all(patterns=(), benchmark_paths=(), root=None,
             Benchmark(f, standalone=True) for f in root.iterdir()
             if f.is_dir() and (f / 'outputs').is_dir() and f.name != "html"
         ]
+        benchmark_paths = [b.benchmark_dir for b in benchmarks]
     else:
-        benchmarks = [
-            Benchmark(Path(b), standalone=True) for b in benchmarks_paths
+        benchmark_paths = [
+            Benchmark(Path(b).resolve(), standalone=True).benchmark_dir
+            for b in benchmark_paths
             if Path(b).name != 'html'
         ]
     if not patterns:
         patterns = ['*']
 
-    if not benchmark_paths:
+    if len(benchmark_paths) == 0:
         raise ValueError(
             "Could not find any benchmark to render. Check that the provided "
             "root folder contains at least one benchmark.")
@@ -530,7 +532,6 @@ def plot_benchmark_html_all(patterns=(), benchmark_paths=(), root=None,
     len_fnames = []
     for benchmark_path in benchmark_paths:
         print(f'Rendering benchmark: {benchmark_path}')
-
         fnames = []
         for p in patterns:
             fnames += list(
