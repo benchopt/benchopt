@@ -370,5 +370,4 @@ input:checked+.slider:before {
 .solver-description-body {
   max-height: 450px;
   overflow-y: auto;
-
 }
