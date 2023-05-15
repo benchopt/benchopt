@@ -570,6 +570,12 @@ const makeLegend = () => {
 
     let legendItem = createLegendItem(solver, color, symbolNumber);
 
+    // preserve compatibility with prev version
+    if(window.solvers_description === null || window.solvers_description === undefined) {
+      legend.appendChild(legendItem);
+      return;
+    }
+
     let payload = {
       title: solver,
       description: window.solvers_description[solver],
@@ -661,6 +667,10 @@ const createLegendItem = (solver, color, symbolNumber) => {
 
 
 function createSolverDescription(legendItem, {title, description}) {
+  // skip if no description was provided
+  if (description === null || description === undefined || description === "")
+    return legendItem;
+
   let descriptionContainer = document.createElement("div");
   descriptionContainer.setAttribute("class", "solver-description-container")
 
