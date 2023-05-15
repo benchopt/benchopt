@@ -249,7 +249,13 @@ class Benchmark:
             if filename == 'all':
                 result_filename = all_result_files
 
-        if result_filename.suffix == ".csv":
+        if isinstance(result_filename, list):
+            is_csv_file = any(fname.suffix == ".csv"
+                              for fname in result_filename)
+        else:
+            is_csv_file = result_filename.suffix == ".csv"
+
+        if is_csv_file:
             print(colorify(
                 "WARNING: CSV files are deprecated."
                 "Please use Parquet files instead.",

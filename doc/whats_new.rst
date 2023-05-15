@@ -11,14 +11,14 @@ Version 1.4 - in development
 ----------------------------
 
 CLI
----
+~~~
 
 - Add support for minute and hour unit suffix in timeout limit through the syntax
   ``--timeout 10m`` or ``--timeout 1h``.
   By `Mathurin Massias`_ (:gh:`535`).
 
 API
----
+~~~
 
 - Add :class:`~benchopt.stopping_criterion.SingleRunCriterion` to run a solver
   only once. This can be used for benchmarking methods where we are interested
@@ -30,8 +30,14 @@ API
 - Add :func:`~benchopt.BaseSolver.pre_run_hook` hook to ignore cost that cannot
   be cached globally for a solver. By `Thomas Moreau`_ (:gh:`525`)
 
+PLOT
+~~~~
+
+- Enable visualizing the objective as function of ``stopping_criterion``: time,
+  iteration, or tolerance. By `Badr Moufad`_ (:gh:`479`)
+
 FIX
----
+~~~
 
 - Do not fail and raise a warning when ``safe_import_context`` is not named
   ``import_ctx``. By `Mathurin Massias`_ (:gh:`524`)

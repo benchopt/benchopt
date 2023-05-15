@@ -180,11 +180,21 @@ def shape_solvers_for_html(df, objective_column):
         df_filtered = df_filtered.replace([np.inf, -np.inf], np.nan)
         df_filtered = df_filtered.dropna(subset=[objective_column])
 
-        q1, q9 = compute_quantiles(df_filtered)
-        groupby_stop_val_median = df_filtered.groupby('stop_val').median()
-        color, marker = get_solver_style(solver)
+        # compute median of 'time' and objective_column
+        fields = ["time", objective_column]
+        groupby_stop_val_median = df_filtered.groupby('stop_val')
+        groupby_stop_val_median = groupby_stop_val_median[fields]
+        groupby_stop_val_median = groupby_stop_val_median.median()
 
-        stopping_strategy = df_filtered['stopping_strategy'].unique()
+        q1, q9 = compute_quantiles(df_filtered)
+
+        color, marker = get_solver_style(solver)
+        # to preserve support of previous benchopt version
+        # where 'stopping_strategy' wasn't saved in solver meta
+        try:
+            stopping_strategy = df_filtered['stopping_strategy'].unique()
+        except KeyError:
+            stopping_strategy = ["Time"]
 
         if len(stopping_strategy) != 1:
             found_stopping_strategies = ', '.join(
