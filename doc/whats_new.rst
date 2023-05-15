@@ -33,6 +33,9 @@ API
 PLOT
 ~~~~
 
+- Show solver description when hovering over solvers. Description is provided as docstring of
+  the :class:`~benchopt.BaseSolver` class. By `Badr Moufad`_ (:gh:`543`)
+
 - Enable visualizing the objective as function of ``stopping_criterion``: time,
   iteration, or tolerance. By `Badr Moufad`_ (:gh:`479`)
 
