@@ -333,11 +333,11 @@ input:checked+.slider:before {
   padding: 0.5em;
   opacity: 90%;
 	
-  width: 200px;
+  width: 400px;
   
   /* position description with respect to container and put it top-center */
   position: absolute;
-  transform: translate(-50px, -100%) translate(100px, 0px);
+  transform: translate(0, -100%);
   z-index: 99999;
 }
 
@@ -351,9 +351,9 @@ input:checked+.slider:before {
   content: " ";
   position: absolute;
   top: 100%;
-  left: 50%;
+  left: 20px;
   margin-left: -5px;
-  border-width: 5px;
+  border-width: 7px;
   border-style: solid;
   border-color: rgb(55 65 81) transparent transparent transparent;
 }
