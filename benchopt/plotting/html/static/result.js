@@ -570,11 +570,9 @@ const makeLegend = () => {
 
     let legendItem = createLegendItem(solver, color, symbolNumber);
 
-    let description = `
-    I was hovered so I can provide additional information about
-    <b>${solver}</b>. Bla bla bla works using Ta ta ...
-    `;
+    let description = window.solvers_description[solver];
 
+    window.solvers_description[solver]
     legend.appendChild(
       createSolverDescription(legendItem, description)
     );
