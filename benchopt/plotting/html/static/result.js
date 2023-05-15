@@ -570,10 +570,13 @@ const makeLegend = () => {
 
     let legendItem = createLegendItem(solver, color, symbolNumber);
 
-    let description = window.solvers_description[solver];
+    let payload = {
+      title: solver,
+      description: window.solvers_description[solver],
+    }
 
     legend.appendChild(
-      createSolverDescription(legendItem, description)
+      createSolverDescription(legendItem, payload)
     );
   });
 }
@@ -657,19 +660,20 @@ const createLegendItem = (solver, color, symbolNumber) => {
 }
 
 
-function createSolverDescription(legendItem, descriptionText) {
-  let description = document.createElement("div");
-  description.setAttribute("class", "solver-description-container")
+function createSolverDescription(legendItem, {title, description}) {
+  let descriptionContainer = document.createElement("div");
+  descriptionContainer.setAttribute("class", "solver-description-container")
 
-  description.innerHTML = `
+  descriptionContainer.innerHTML = `
   <div class="solver-description-content">
-    <div>${descriptionText}</div>
+    <span class="solver-description-title">${title}</span>
+    <span class="solver-description-body">${description}</span>
   </div>
   `;
 
-  description.prepend(legendItem);
+  descriptionContainer.prepend(legendItem);
 
-  return description;
+  return descriptionContainer;
 }
 
 

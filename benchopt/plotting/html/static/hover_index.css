@@ -325,15 +325,18 @@ input:checked+.slider:before {
 }
 
 .solver-description-content {
+  display: flex;
+  flex-direction: column;
   visibility: hidden;
   background-color: rgb(55 65 81);
   color: #fff;
   border-radius: 6px;
   padding: 0.5em;
+  padding-right: 1rem;
   opacity: 90%;
 	
   width: 400px;
-  max-height: 700px;
+  max-height: 500px;
   white-space: pre-wrap;
   
   /* position description with respect to container and put it top-center */
@@ -357,4 +360,15 @@ input:checked+.slider:before {
   border-width: 7px;
   border-style: solid;
   border-color: rgb(55 65 81) transparent transparent transparent;
+}
+
+.solver-description-title {
+  margin-bottom: 1em;
+  font-weight: bolder;
+}
+
+.solver-description-body {
+  max-height: 450px;
+  overflow-y: auto;
+
 }
