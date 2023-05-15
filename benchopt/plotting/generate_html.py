@@ -109,17 +109,26 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
         # JSON
         result['json'] = json.dumps(shape_datasets_for_html(df))
 
-        # get solver description
-        solvers_description = df.groupby("solver_name")["solver_description"]
-        solvers_description = solvers_description.unique()
+        # get solver descriptions
+        # wrap in try-except block to preserve compatibility
+        # with older versions
+        try:
+            solvers_description = df.groupby(
+                by=["solver_name"]
+            )["solver_description"]
+            solvers_description = solvers_description.unique()
 
-        # convert description to str
-        solvers_description = solvers_description.apply(lambda desc: desc[0])
+            # convert description to str
+            solvers_description = solvers_description.apply(
+                lambda desc: desc[0]
+            )
 
-        # save in result
-        result["solvers_description"] = json.dumps(
-            solvers_description.to_dict()
-        )
+            # save in result
+            result["solvers_description"] = json.dumps(
+                solvers_description.to_dict()
+            )
+        except KeyError:
+            result["solvers_description"] = json.dumps({})
 
         results.append(result)
 
