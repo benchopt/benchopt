@@ -572,7 +572,6 @@ const makeLegend = () => {
 
     let description = window.solvers_description[solver];
 
-    window.solvers_description[solver]
     legend.appendChild(
       createSolverDescription(legendItem, description)
     );
@@ -663,7 +662,9 @@ function createSolverDescription(legendItem, descriptionText) {
   description.setAttribute("class", "solver-description-container")
 
   description.innerHTML = `
-    <span class="solver-description-content">${descriptionText}</span>
+  <div class="solver-description-content">
+    <div>${descriptionText}</div>
+  </div>
   `;
 
   description.prepend(legendItem);
