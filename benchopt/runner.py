@@ -197,7 +197,8 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
             data_name=str(dataset),
             idx_rep=rep,
             stopping_strategy=stopping_strategy.capitalize(),
-            solver_description=str(solver.__doc__) or ""
+            solver_description=(solver.__doc__
+                                if solver.__doc__ is not None else ""),
         )
 
         stopping_criterion = solver.stopping_criterion.get_runner_instance(
