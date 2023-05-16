@@ -3,15 +3,15 @@ const NON_CONVERGENT_COLOR = 'rgba(0.8627, 0.8627, 0.8627)'
 /*
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * STATE MANAGEMENT
- * 
+ *
  * The state represent the plot state. It's an object
  * that is stored into the window.state variable.
- * 
+ *
  * Do not manually update window.state,
  * instead, foreach state modification,
  * you shoud call the setState() function
  * to keep the plot in sync with its state.
- * 
+ *
  * The state contains the following keys :
  *   - dataset (string),
  *   - objective (string),
@@ -26,19 +26,26 @@ const NON_CONVERGENT_COLOR = 'rgba(0.8627, 0.8627, 0.8627)'
 /**
  * Update the state and create/update the plot
  * using the new state.
- * 
- * @param {Object} partialState 
+ *
+ * @param {Object} partialState
  */
 const setState = (partialState) => {
   window.state = {...state(), ...partialState};
   displayScatterElements(!isBarChart());
+
+  // TODO: `listIdXaxisSelection` to be removed after 
+  // implementing responsiveness through breakpoints 
+  // and removing content duplication between big screen and mobile
+  let listIdXaxisSelection = ["change_xaxis_type", "change_xaxis_type_mobile"];
+  listIdXaxisSelection.forEach(idXaxisSelection => updateXaxis(idXaxisSelection))
+
   makePlot();
   makeLegend();
 }
 
 /**
  * Retrieve the state object from window.state
- * 
+ *
  * @returns Object
  */
 const state = () => window.state;
@@ -46,7 +53,7 @@ const state = () => window.state;
 /*
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * PLOT MANAGEMENT
- * 
+ *
  * Retrieve formatted data for PlotlyJS using state
  * and create/update the plot.
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -65,7 +72,7 @@ const makePlot = () => {
 
 /**
  * Gives the data formatted for plotlyJS bar chart.
- * 
+ *
  * @returns {array}
  */
 const getBarData = () => {
@@ -113,7 +120,7 @@ const getBarData = () => {
 
 /**
  * Gives the data formatted for plotlyJS scatter chart.
- * 
+ *
  * @returns {array}
  */
 const getScatterCurves = () => {
@@ -121,7 +128,19 @@ const getScatterCurves = () => {
   const curves = [];
 
   // For each solver, add the median curve with proper style and visibility.
+  let xaxisType = state().xaxis_type;
+
   getSolvers().forEach(solver => {
+    solverStoppingStrategy = data(solver)['stopping_strategy'];
+
+    // plot only solvers that were stopped using xaxis type
+    // plot all solver if xaxis type is `time`
+    if(xaxisType !== "Time" && solverStoppingStrategy !== xaxisType) {
+      return
+    }
+
+    ScatterXaxisProperty = xaxisType === "Time" ? 'x' : 'stop_val';
+
     curves.push({
       type: 'scatter',
       name: solver,
@@ -136,12 +155,19 @@ const getScatterCurves = () => {
       legendgroup: solver,
       hovertemplate: solver + ' <br> (%{x:.1e},%{y:.1e}) <extra></extra>',
       visible: isVisible(solver) ? true : 'legendonly',
-      x: data(solver).scatter.x,
+      x: data(solver).scatter[ScatterXaxisProperty],
       y: useTransformer(data(solver).scatter.y, 'y', data().transformers),
     });
 
+    // skip plotting quantiles if xaxis is not time
+    // as stop_val are predefined and hence deterministic 
+    if(xaxisType !== "Time") {
+      return
+    }
+
     if (state().with_quantiles) {
       // Add shaded area for each solver, with proper style and visibility.
+  
       curves.push({
         type: 'scatter',
         mode: 'lines',
@@ -153,8 +179,8 @@ const getScatterCurves = () => {
         legendgroup: solver,
         hovertemplate: '(%{x:.1e},%{y:.1e}) <extra></extra>',
         visible: isVisible(solver) ? true : 'legendonly',
-        x: data(solver).scatter.q1,
-        y: data(solver).scatter.y,
+        x: data(solver).scatter['q1'],
+        y: useTransformer(data(solver).scatter.y, 'y', data().transformers),
       }, {
         type: 'scatter',
         mode: 'lines',
@@ -167,8 +193,8 @@ const getScatterCurves = () => {
         legendgroup: solver,
         hovertemplate: '(%{x:.1e},%{y:.1e}) <extra></extra>',
         visible: isVisible(solver) ? true : 'legendonly',
-        x: data(solver).scatter.q9,
-        y: data(solver).scatter.y,
+        x: data(solver).scatter['q9'],
+        y: useTransformer(data(solver).scatter.y, 'y', data().transformers),
       });
     }
   });
@@ -179,10 +205,10 @@ const getScatterCurves = () => {
 /*
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * DATA TRANSFORMERS
- * 
+ *
  * Transformers are used to modify data
  * on the fly.
- * 
+ *
  * WARNING : If you add a new transformer function,
  * don't forget to register it in the object : window.tranformers,
  * at the end of this section.
@@ -193,9 +219,9 @@ const getScatterCurves = () => {
  * Select the right transformer according to the state.
  * If the requested transformer does not exists,
  * it returns raw data.
- * 
- * @param {Object} data 
- * @param {String} solver 
+ *
+ * @param {Object} data
+ * @param {String} solver
  * @param {String} axis it could be x, y, q1, q9
  * @returns {array}
  */
@@ -210,24 +236,24 @@ const useTransformer = (data, axis, options) => {
 
 /**
  * Transform data on the y axis for subotimality curve.
- * 
- * @param {Object} data 
- * @param {String} solver 
+ *
+ * @param {Object} data
+ * @param {String} solver
  * @returns {array}
  */
 const transformer_y_suboptimality_curve = (y, options) => {
   // Retrieve c_star value
   const c_star = options.c_star;
-  
+
   // Compute suboptimality for each data
   return y.map(value => value - c_star);
 };
 
 /**
  * Transform data ont the y axis for relative suboptimality curve.
- * 
- * @param {Object} data 
- * @param {String} solver 
+ *
+ * @param {Object} data
+ * @param {String} solver
  * @returns {array}
  */
 const transformer_y_relative_suboptimality_curve = (y, options) => {
@@ -251,7 +277,7 @@ window.transformers = {
 /*
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * TOOLS
- * 
+ *
  * Various functions to simplify life.
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
@@ -275,7 +301,7 @@ const isSmallScreen = () => window.screen.availHeight < 900;
 /**
  * Check for each solver
  * if data is available
- * 
+ *
  * @returns {Boolean}
  */
 const isAvailable = () => {
@@ -343,6 +369,8 @@ const getScale = () => {
 }
 
 const getScatterChartLayout = () => {
+  let xaxisType = state().xaxis_type;
+
   const layout = {
     autosize: !isSmallScreen(),
     modebar: {
@@ -362,8 +390,8 @@ const getScatterChartLayout = () => {
     },
     xaxis: {
       type: getScale().xaxis,
-      title: 'Time [sec]',
-      tickformat: '.1e',
+      title: xaxisType === "Time" ? "Time [sec]": xaxisType,
+      tickformat:  ["Time", "Tolerance"].includes(xaxisType) ? '.1e': '',
       tickangle: -45,
       gridcolor: '#ffffff',
       zeroline : false,
@@ -467,7 +495,7 @@ const getYLabel = () => {
 /*
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * MANAGE HIDDEN SOLVERS
- * 
+ *
  * Functions to hide/display and memorize solvers which were clicked
  * by user on the legend of the plot.
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -494,7 +522,7 @@ const showSolver = solver => setState({hidden_solvers: state().hidden_solvers.fi
 
 /**
  * Add or remove solver name from the list of hidden solvers.
- * 
+ *
  * @param {String} solver
  * @returns {void}
  */
@@ -522,7 +550,7 @@ const handleSolverDoubleClick = solver => {
 /**
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * MANAGE PLOT LEGEND
- * 
+ *
  * We don't use the plotly legend to keep control
  * on the size of the plot.
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -606,7 +634,7 @@ getSolverInAggregate = (agg) => {
  * Creates a legend item which contains the solver name,
  * the solver marker as an SVG and an horizontal bar with
  * the solver color.
- * 
+ *
  * @param {String} solver
  * @param {String} color
  * @param {int} symbolNumber
@@ -647,7 +675,7 @@ const createLegendItem = (solver, color, symbolNumber) => {
       // Timeout will execute single click function after 500ms
       window.clickedTimeout = setTimeout(() => {
         window.clickedSolver = null;
-        
+
         handleSolverClick(solver);
       }, 500);
     } else if (window.clickedSolver === solver) {
@@ -680,12 +708,38 @@ const createLegendItem = (solver, color, symbolNumber) => {
   return item;
 }
 
+
+function updateXaxis(idXaxisTypeSelection) {
+  let selection = document.getElementById(idXaxisTypeSelection);
+  selection.innerHTML = "";
+
+  let xaxisType = state()["xaxis_type"];
+  let options = new Set(['Time']);
+
+  // get solvers run for selected (dataset, objective, objective colum)
+  // and select their unique stopping strategies
+  let solvers = data()['solvers'];
+  Object.values(solvers).forEach(solver => options.add(solver['stopping_strategy']));
+
+  // create xaxis type options
+  options.forEach(option => {
+    element = document.createElement('option');
+    element.setAttribute('value', option);
+    element.innerText = option;
+
+    selection.append(element);
+  });
+
+  // set selected value
+  selection.value = options.has(xaxisType) ? xaxisType : "Time";
+}
+
 /**
  * Create the same svg symbol as plotly.
  * Returns an <svg> HTML Element
- * 
- * @param {int} symbolNumber 
- * @param {String} color 
+ *
+ * @param {int} symbolNumber
+ * @param {String} color
  * @returns {HTMLElement}
  */
 const createSymbol = (symbolNumber, color) => {
@@ -704,7 +758,7 @@ const createSymbol = (symbolNumber, color) => {
 /**
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * EVENT REGISTRATIONS
- * 
+ *
  * Some events are also registered in result.html.
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */

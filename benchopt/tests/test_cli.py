@@ -1,6 +1,7 @@
 import re
 import time
 import tarfile
+import inspect
 import tempfile
 from pathlib import Path
 
@@ -12,6 +13,7 @@ from click.shell_completion import ShellComplete
 from benchopt.benchmark import Benchmark
 from benchopt.plotting import PLOT_KINDS
 from benchopt.utils.stream_redirection import SuppressStd
+from benchopt.utils.dynamic_modules import _load_class_from_module
 
 
 from benchopt.tests import SELECT_ONE_PGD
@@ -146,6 +148,25 @@ class TestRunCmd:
         # Make sure the results were saved in a result file
         assert len(out.result_files) == 1, out.output
 
+    @pytest.mark.parametrize('timeout', ['10', '1m', '0.03h', '100s'])
+    def test_benchopt_run_in_env_timeout(self, test_env_name, timeout):
+        with CaptureRunOutput() as out:
+            with pytest.raises(SystemExit, match='False'):
+                run([str(DUMMY_BENCHMARK_PATH), '--env-name', test_env_name,
+                     '-d', SELECT_ONE_SIMULATED, '-f', SELECT_ONE_PGD,
+                     '-n', '1', '-r', '1', '-o', SELECT_ONE_OBJECTIVE,
+                     '--no-plot', '--timeout', timeout], 'benchopt',
+                    standalone_mode=False)
+
+        out.check_output(f'conda activate {test_env_name}')
+        out.check_output('Simulated', repetition=1)
+        out.check_output('Dummy Sparse Regression', repetition=1)
+        out.check_output(r'Python-PGD\[step_size=1\]:', repetition=6)
+        out.check_output(r'Python-PGD\[step_size=1.5\]:', repetition=0)
+
+        # Make sure the results were saved in a result file
+        assert len(out.result_files) == 1, out.output
+
     def test_benchopt_run_custom_parameters(self):
         SELECT_DATASETS = r'simulated[n_features=[100, 200]]'
         SELECT_SOLVERS = r'python-pgd-with-cb[use_acceleration=[True, False]]'
@@ -165,9 +186,9 @@ class TestRunCmd:
         out.check_output(r'Dummy Sparse Regression\[reg=0.05\]', repetition=0)
         out.check_output(r'--Python-PGD\[', repetition=0)
         out.check_output(r'--Python-PGD-with-cb\[use_acceleration=False\]:',
-                         repetition=28)
+                         repetition=24)
         out.check_output(r'--Python-PGD-with-cb\[use_acceleration=True\]:',
-                         repetition=28)
+                         repetition=24)
 
     def test_benchopt_run_profile(self):
         with CaptureRunOutput() as out:
@@ -301,6 +322,31 @@ class TestRunCmd:
         _test_shell_completion(
             run, [str(DUMMY_BENCHMARK_PATH), '-d'], DATASET_COMPLETION_CASES
         )
+
+    def test_import_ctx_name(self):
+        solver = inspect.cleandoc("""
+            from benchopt import BaseSolver, safe_import_context
+            with safe_import_context() as import_ctx_wrong_name:
+                import numpy as np
+
+
+            class Solver(BaseSolver):
+                name = "test_import_ctx"
+
+            """)
+        with tempfile.NamedTemporaryFile(
+                dir=DUMMY_BENCHMARK_PATH / "solvers",
+                mode='w', suffix='.py') as f:
+            f.write(solver)
+            f.flush()
+
+            err_msg = ("Import contexts should preferably be named import_ctx,"
+                       " got import_ctx_wrong_name.")
+            with pytest.warns(UserWarning, match=err_msg):
+                _load_class_from_module(
+                    f.name, "Solver",
+                    benchmark_dir=DUMMY_BENCHMARK_PATH
+                )
 
 
 class TestInstallCmd:

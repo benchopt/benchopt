@@ -25,3 +25,9 @@
 - [ ] Argument in client to pass solvers to run in benchmark
 - [ ] Make CI run the benchmark and check install
 
+
+## Discussion Owkin
+
+- Checkpointing is important.
+- Merging files from multiple run?
+

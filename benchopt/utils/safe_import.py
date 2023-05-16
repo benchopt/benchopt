@@ -35,7 +35,7 @@ def set_benchmark_module(benchmark_dir):
         warnings.warn(
             "Folder `benchmark_utils` exists but is missing `__init__.py`. "
             "Make sure it is a proper module to allow importing from it.",
-            warnings.ImportWarning
+            ImportWarning
         )
 
 
@@ -105,7 +105,7 @@ class safe_import_context:
         warnings.warn(
             "import_from is deprecated. Please import reusable code for the "
             "benchmark from `benchmark_utils` module in the root dir of the "
-            "benchmark folder.", warnings.FutureWarning
+            "benchmark folder.", FutureWarning
         )
 
         module_path = BENCHMARK_DIR / 'utils' / module_name.replace('.', '/')

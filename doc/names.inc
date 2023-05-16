@@ -17,3 +17,7 @@
 .. _Benoît Malézieux: https://github.com/bmalezieux
 
 .. _Amélie Vernay: https://github.com/AmelieVernay
+
+.. _Melvine Nargeot: https://github.com/Melvin-klein
+
+.. _Badr Moufad: https://github.com/Badr-MOUFAD

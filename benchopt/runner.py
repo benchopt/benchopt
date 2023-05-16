@@ -44,6 +44,7 @@ def run_one_resolution(objective, solver, meta, stop_val):
             f"Failure during import in {solver.__module__}."
         )
 
+    solver.pre_run_hook(stop_val)
     t_start = time.perf_counter()
     solver.run(stop_val)
     delta_t = time.perf_counter() - t_start
@@ -92,21 +93,14 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
     with exception_handler(output, pdb=pdb) as ctx:
 
         if solver._solver_strategy == "callback":
-            output.progress('empty run for compilation')
-            run_once_cb = _Callback(
-                lambda x: {'objective_value': 1},
-                {},
-                stopping_criterion.get_runner_instance(
-                    solver=solver, max_runs=1
-                )
-            )
-            solver.run(run_once_cb)
 
             # If stopping strategy is 'callback', only call once to get the
             # results up to convergence.
             callback = _Callback(
                 objective, meta, stopping_criterion
             )
+            solver.pre_run_hook(callback)
+            callback.start()
             solver.run(callback)
             curve, ctx.status = callback.get_results()
         else:
@@ -180,13 +174,19 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
         output.skip(reason, objective=True)
         return []
 
-    skip, reason = solver._set_objective(objective)
+    skip = solver._set_objective(objective, output=output)
     if skip:
-        output.skip(reason)
         return []
 
     states = []
     run_statistics = []
+
+    # get stopping strategy
+    # for plotting purpose consider 'callback' as 'iteration'
+    stopping_strategy = solver._solver_strategy
+    if stopping_strategy == 'callback':
+        stopping_strategy = 'iteration'
+
     for rep in range(n_repetitions):
 
         output.set(rep=rep)
@@ -196,6 +196,7 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
             solver_name=str(solver),
             data_name=str(dataset),
             idx_rep=rep,
+            stopping_strategy=stopping_strategy.capitalize()
         )
 
         stopping_criterion = solver.stopping_criterion.get_runner_instance(
