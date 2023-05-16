@@ -1,7 +1,11 @@
 import traceback
 
+from ..config import RAISE_INSTALL_ERROR
+
 from .class_property import classproperty
 from .shell_cmd import _run_shell_in_conda_env
+from .conda_env_cmd import install_in_conda_env
+from .conda_env_cmd import shell_install_in_conda_env
 
 from .terminal_output import colorify, YELLOW
 
@@ -70,6 +74,56 @@ class DependenciesMixin:
                 f"{cls._module_filename} {cls._base_class_name}",
                 env_name=env_name, raise_on_error=raise_on_not_installed
             ) == 0
+
+    @classmethod
+    def install(cls, env_name=None, force=False):
+        """Install the class in the given conda env.
+
+        Parameters
+        ----------
+        env_name: str or None
+            Name of the conda env where the class should be installed. If
+            None, tries to install it in the current environment.
+        force : boolean (default: False)
+            If set to True, forces reinstallation when using conda.
+
+        Returns
+        -------
+        is_installed: bool
+            True if the class is correctly installed in the environment.
+        """
+        is_installed = cls.is_installed(env_name=env_name)
+
+        env_suffix = f" in '{env_name}'" if env_name else ''
+        if force or not is_installed:
+            print(f"- Installing '{cls.name}'{env_suffix}:...",
+                  end='', flush=True)
+            try:
+                cls._pre_install_hook(env_name=env_name)
+                if cls.install_cmd == 'conda':
+                    install_in_conda_env(*cls.requirements, env_name=env_name,
+                                         force=force)
+                elif cls.install_cmd == 'shell':
+                    install_file = (
+                        cls._module_filename.parents[1] / 'install_scripts' /
+                        cls.install_script
+                    )
+                    shell_install_in_conda_env(install_file, env_name=env_name)
+                cls._post_install_hook(env_name=env_name)
+
+            except Exception as exception:
+                if RAISE_INSTALL_ERROR:
+                    raise exception
+
+            is_installed = cls.is_installed(env_name=env_name)
+            if is_installed:
+                print(" done")
+            else:
+                print(" failed")
+        else:
+            print(f"- '{cls.name}' already available{env_suffix}")
+
+        return is_installed
 
     @classmethod
     def collect(cls, env_name=None, force=False):
