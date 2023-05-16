@@ -317,3 +317,25 @@ input:checked+.slider:before {
 .space-r-2 > * {
   margin-right: 0.5rem;
 }
+
+
+.objective-description-content {
+  display: flex;
+  visibility: hidden;
+  background-color: rgb(55 65 81);
+  color: #fff;
+  border-radius: 6px;
+  padding: 0.5em;
+  padding-right: 1rem;
+  opacity: 90%;
+  max-width: 300px;
+  max-height: 500px;
+  white-space: pre-wrap;
+  position: absolute;
+  transform: translate(0%, -150%);
+  z-index: 99999;
+}
+
+.objective-description-icon:hover .objective-description-content {
+  visibility: visible;
+}
