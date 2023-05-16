@@ -163,7 +163,7 @@ class DependenciesMixin:
             env_suffix = f" in '{env_name}'" if env_name else ''
             colored_cls_name = colorify(f'{cls.name}', YELLOW)
             print(
-                f"- {colored_cls_name} already available{env_suffix}.\n"
+                f"- {colored_cls_name} already available{env_suffix}\n"
                 "  All imports within `safe_import_context` are installed."
             )
 
