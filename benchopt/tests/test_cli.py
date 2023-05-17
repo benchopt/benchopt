@@ -385,7 +385,7 @@ class TestRunCmd:
             run_cmd = [str(DUMMY_BENCHMARK_PATH), '--config', tmp_config.name,
                        '--no-plot']
 
-            error_match = r"""Dataset: "buggy-dataset".*'wrong_param_name'"""
+            error_match = """Dataset: "buggy-dataset".*'wrong_param_name'"""
             with pytest.raises(TypeError, match=error_match):
                 run(run_cmd, 'benchopt', standalone_mode=False)
 
