@@ -561,17 +561,75 @@ const handleSolverDoubleClick = solver => {
  */
 const makeLegend = () => {
   const legend = document.getElementById('plot_legend');
-
   legend.innerHTML = '';
 
-  Object.keys(data().solvers).forEach(solver => {
+  let aggregateName = aggregateButton = aggregateDiv = masterAggregateDiv =  null;
+
+  for(let solver in data().solvers) {
+    const solverName = solver.split("[")[0];
     const color = data().solvers[solver].color;
     const symbolNumber = data().solvers[solver].marker;
 
-    legend.appendChild(createLegendItem(solver, color, symbolNumber));
-  });
+    // case aggregation of solvers already exist
+    if(solverName === aggregateName) {
+      aggregateDiv.appendChild(createLegendItem(solver, color, symbolNumber));
+      continue;
+    }
+
+    // create div to gather the solvers with other bench params
+    aggregateDiv = document.createElement("div");
+    displayAggregatedSolvers = state().disabled_solvers_accordions.includes(solverName) ? "invisible" : "";
+    aggregateDiv.className = `flex flex-wrap inline-block space-r-2 ${displayAggregatedSolvers}`;
+
+     // create button to toggle accordion
+     aggregateButton = document.createElement("button");
+     aggregateButton.innerText = solverName;
+     aggregateButton.className = `text-white bg-gray-700 py-1 px-4 shadow-sm mt-2 rounded cursor-pointer w-full`;
+     aggregateButton.style.opacity = state().disabled_solvers_accordions.includes(solverName) ? 0.5 : 1;
+
+    // create div gather button and aggregate div
+    masterAggregateDiv = document.createElement("div");
+    masterAggregateDiv.className = "flex-wrap block";
+    masterAggregateDiv.appendChild(aggregateButton);
+    masterAggregateDiv.appendChild(aggregateDiv);
+
+    // add event handler for accordion
+    aggregateButton.addEventListener('click', function () {
+      let currentAggregateDiv = this.nextElementSibling;
+      let solversInAggregate = getSolverInAggregate(currentAggregateDiv);
+
+      if (currentAggregateDiv.className.includes("invisible")) {
+        setState({
+          hidden_solvers: state().hidden_solvers.filter(hidden => !solversInAggregate.includes(hidden)),
+          disabled_solvers_accordions: state().disabled_solvers_accordions.filter(hidden => !(hidden === solverName))
+        });
+      } 
+      else {
+        setState({
+          hidden_solvers: state().hidden_solvers.concat(solversInAggregate),
+          disabled_solvers_accordions: state().disabled_solvers_accordions.concat(solverName)
+        });
+      }
+    });
+
+    legend.appendChild(masterAggregateDiv);
+    aggregateDiv.appendChild(createLegendItem(solver, color, symbolNumber));
+
+    aggregateName = solverName;
+  }
 }
 
+getSolverInAggregate = (agg) => {
+  let arr = [];
+
+  for (let ele of agg.children) {
+    arr.push(
+      ele.querySelector(".solver").firstChild.nodeValue
+    )
+  }
+
+  return arr
+}
 /**
  * Creates a legend item which contains the solver name,
  * the solver marker as an SVG and an horizontal bar with
