@@ -10,6 +10,7 @@ __pycache__
 /doc/generated
 /examples/benchmark_*
 .coverage
+/wandb/
 
 # Output files
 **/outputs

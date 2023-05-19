@@ -56,6 +56,7 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
         "plot",
         "html",
         "pdb",
+        "wandb",
         "profile",
         "env_name",
         "output",
@@ -140,6 +141,11 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               is_flag=True,
               help="Launch a debugger if there is an error. This will launch "
               "ipdb if it is installed and default to pdb otherwise.")
+@click.option('--wandb',
+              is_flag=True,
+              help="Log the results in WandB. This option requires having "
+              "installed wandb. See the wandb documentation: "
+              "https://wandb.ai/quickstart.")
 @click.option('--local', '-l', 'env_name',
               flag_value='False', default=True,
               help="Run the benchmark in the local conda environment.")
@@ -181,7 +187,7 @@ def run(config_file=None, **kwargs):
     (
         benchmark, solver_names, forced_solvers, dataset_names,
         objective_filters, max_runs, n_repetitions, timeout, n_jobs, slurm,
-        plot, html, pdb, do_profile, env_name, output,
+        plot, html, pdb, wandb, do_profile, env_name, output,
         deprecated_objective_filters, old_objective_filters
     ) = _get_run_args(kwargs, config)
 
@@ -255,7 +261,7 @@ def run(config_file=None, **kwargs):
             objective_filters=objective_filters,
             max_runs=max_runs, n_repetitions=n_repetitions,
             timeout=timeout, n_jobs=n_jobs, slurm=slurm,
-            plot_result=plot, html=html, pdb=pdb,
+            plot_result=plot, html=html, pdb=pdb, wandb=wandb,
             output=output
         )
 
@@ -332,6 +338,7 @@ def run(config_file=None, **kwargs):
         rf"{'--plot' if plot else '--no-plot'} "
         rf"{'--html' if html else '--no-html'} "
         rf"{'--pdb' if pdb else ''} "
+        rf"{'--wandb' if wandb else ''} "
         rf"--output {output}"
         .replace('\\', '\\\\')
     )

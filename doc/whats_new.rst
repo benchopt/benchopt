@@ -17,6 +17,9 @@ CLI
   ``--timeout 10m`` or ``--timeout 1h``.
   By `Mathurin Massias`_ (:gh:`535`).
 
+- Add support for wandb upload of the benchmark results.
+  By `Thomas Moreau`_ (:gh:`520`)
+
 API
 ~~~
 
