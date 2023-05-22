@@ -1,13 +1,10 @@
-.. raw:: html
+.. image:: https://raw.githubusercontent.com/benchopt/communication_materials/main/posters/images/logo_benchopt.png
+   :width: 350
+   :align: center
+   
+*—Making your optimization benchmarks simple and open—*
 
-    <embed>
-        <div class="container" align="center">
-         <img src="https://raw.githubusercontent.com/benchopt/communication_materials/main/posters/images/logo_benchopt.png" width="350em"/>
-        </div>
-        <em>—Making your optimization benchmarks simple and open—</em>
-        <h1></h1>
-    </embed>
-
+----
 
 |Test Status| |codecov| |Python 3.6+| |install-per-months| |discord| 
 

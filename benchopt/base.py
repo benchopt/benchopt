@@ -233,6 +233,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
                     solver=self
                 )
             )
+            run_once_cb.start()
             self.run(run_once_cb)
         else:
             self.run(stop_val)
