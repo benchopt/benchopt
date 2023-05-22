@@ -93,9 +93,9 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
             fname = fname_in_output
         fname = fname.absolute().relative_to(root_html.absolute())
 
-        # get obj description
-        # wrap in try-except block to preserve compatibility
-        # with older version
+        # get objective description and use `obj_` instead of `objective_`
+        # to avoid conflicts with objective metrics
+        # try-except block to preserve compatibility with benchopt <= v1.3.1
         try:
             obj_description = df["obj_description"].unique()[0]
         except KeyError:
