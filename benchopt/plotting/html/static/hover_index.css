@@ -320,19 +320,20 @@ input:checked+.slider:before {
 
 
 .objective-description-content {
-  display: flex;
   visibility: hidden;
   background-color: rgb(55 65 81);
   color: #fff;
   border-radius: 6px;
-  padding: 0.5em;
-  padding-right: 1rem;
+  padding-right: 0.5em;
+  padding-left: 0.5em;
+  padding-top: 1em;
+  padding-bottom: 1em;
   opacity: 90%;
-  max-width: 300px;
-  max-height: 500px;
+  max-width: 250px;
+  max-height: 200px;
+  overflow-y: auto;
   white-space: pre-wrap;
   position: absolute;
-  transform: translate(0%, -150%);
   z-index: 99999;
 }
 
