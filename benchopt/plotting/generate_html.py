@@ -93,6 +93,14 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
             fname = fname_in_output
         fname = fname.absolute().relative_to(root_html.absolute())
 
+        # get obj description
+        # wrap in try-except block to preserve compatibility
+        # with older version
+        try:
+            obj_description = df["obj_description"].unique()[0]
+        except KeyError:
+            obj_description = ""
+
         # Generate figures
         result = dict(
             fname=fname,
@@ -101,7 +109,7 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
             sysinfo=sysinfo,
             dataset_names=df['data_name'].unique(),
             objective_names=df['objective_name'].unique(),
-            obj_description=df["obj_description"].unique()[0],
+            obj_description=obj_description,
             obj_cols=[k for k in df.columns if k.startswith('objective_')
                       and k != 'objective_name'],
             kinds=list(kinds),
