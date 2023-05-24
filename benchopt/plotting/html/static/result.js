@@ -669,7 +669,7 @@ const createLegendItem = (solver, color, symbolNumber) => {
 function createSolverDescription(legendItem, {title, description}) {
   // skip if no description was provided
   if (description === null || description === undefined || description === "")
-    return legendItem;
+    description = "No description provided";
 
   let descriptionContainer = document.createElement("div");
   descriptionContainer.setAttribute("class", "solver-description-container")
