@@ -115,13 +115,7 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
         try:
             solvers_description = df.groupby(
                 by=["solver_name"]
-            )["solver_description"]
-            solvers_description = solvers_description.unique()
-
-            # convert description to str
-            solvers_description = solvers_description.apply(
-                lambda desc: desc[0]
-            )
+            )["solver_description"].first()
 
             # save in result
             result["solvers_description"] = json.dumps(
