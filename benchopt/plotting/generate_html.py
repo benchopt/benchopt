@@ -125,7 +125,10 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
 
 
 def get_metadata(df):
-    """Get the benchmark metadata such Objective and solver description.
+    """Get the benchmark metadata.
+
+    Metadata are already available among the columns of `df`.
+    It might be Objective and/or Solvers description.
 
     Returns
     -------
