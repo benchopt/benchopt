@@ -563,6 +563,7 @@ const makeLegend = () => {
   const legend = document.getElementById('plot_legend');
 
   legend.innerHTML = '';
+  const solversDescription = window.metadata["solvers_description"];
 
   Object.keys(data().solvers).forEach(solver => {
     const color = data().solvers[solver].color;
@@ -571,14 +572,14 @@ const makeLegend = () => {
     let legendItem = createLegendItem(solver, color, symbolNumber);
 
     // preserve compatibility with prev version
-    if(window.solvers_description === null || window.solvers_description === undefined) {
+    if(solversDescription === null || solversDescription === undefined) {
       legend.appendChild(legendItem);
       return;
     }
 
     let payload = {
       title: solver,
-      description: window.solvers_description[solver],
+      description: solversDescription[solver],
     }
 
     legend.appendChild(

@@ -1,5 +1,6 @@
 import json
 import shutil
+import warnings
 import webbrowser
 from pathlib import Path
 from datetime import datetime
@@ -104,25 +105,11 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
             obj_cols=[k for k in df.columns if k.startswith('objective_')
                       and k != 'objective_name'],
             kinds=list(kinds),
+            metadata=get_metadata(df),
         )
 
         # JSON
         result['json'] = json.dumps(shape_datasets_for_html(df))
-
-        # get solver descriptions
-        # wrap in try-except block to preserve compatibility
-        # with older versions
-        try:
-            solvers_description = df.groupby(
-                by=["solver_name"]
-            )["solver_description"].first()
-
-            # save in result
-            result["solvers_description"] = json.dumps(
-                solvers_description.to_dict()
-            )
-        except KeyError:
-            result["solvers_description"] = json.dumps({})
 
         results.append(result)
 
@@ -136,6 +123,31 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
         )
 
     return results
+
+
+def get_metadata(df):
+    """Get the benchmark metadata such Objective and solver description.
+
+    Returns
+    -------
+    metadata: dict
+        Dictionary containing the benchmark metadata.
+    """
+    metadata = {}
+
+    # get solver descriptions
+    # wrap in try-except block to preserve compatibility
+    # with older versions
+    try:
+        solvers_description = df.groupby(
+            by=["solver_name"]
+        )["solver_description"].first()
+
+        metadata["solvers_description"] = solvers_description.to_dict()
+    except KeyError:
+        metadata["solvers_description"] = {}
+
+    return metadata
 
 
 def shape_datasets_for_html(df):
