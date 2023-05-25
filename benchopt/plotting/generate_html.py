@@ -1,6 +1,5 @@
 import json
 import shutil
-import warnings
 import webbrowser
 from pathlib import Path
 from datetime import datetime
