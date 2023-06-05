@@ -104,6 +104,7 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
             obj_cols=[k for k in df.columns if k.startswith('objective_')
                       and k != 'objective_name'],
             kinds=list(kinds),
+            metadata=get_metadata(df),
         )
 
         # JSON
@@ -121,6 +122,34 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
         )
 
     return results
+
+
+def get_metadata(df):
+    """Get the benchmark metadata.
+
+    Metadata are already available among the columns of `df`.
+    It might be Objective and/or Solvers description.
+
+    Returns
+    -------
+    metadata: dict
+        Dictionary containing the benchmark metadata.
+    """
+    metadata = {}
+
+    # get solver descriptions
+    # wrap in try-except block to preserve compatibility
+    # with older versions
+    try:
+        solvers_description = df.groupby(
+            by=["solver_name"]
+        )["solver_description"].first()
+
+        metadata["solvers_description"] = solvers_description.to_dict()
+    except KeyError:
+        metadata["solvers_description"] = {}
+
+    return metadata
 
 
 def shape_datasets_for_html(df):
