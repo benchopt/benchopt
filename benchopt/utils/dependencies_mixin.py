@@ -99,8 +99,14 @@ class DependenciesMixin:
             try:
                 cls._pre_install_hook(env_name=env_name)
                 if cls.install_cmd == 'conda':
-                    install_in_conda_env(*cls.requirements, env_name=env_name,
-                                         force=force)
+                    try:
+                        install_in_conda_env(*cls.requirements,
+                                             env_name=env_name,
+                                             force=force)
+                    except AttributeError:
+                        print(
+                            "Missing 'requirements' variable in Solver class"
+                        )
                 elif cls.install_cmd == 'shell':
                     install_file = (
                         cls._module_filename.parents[1] / 'install_scripts' /
