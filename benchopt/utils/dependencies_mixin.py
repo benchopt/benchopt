@@ -105,7 +105,13 @@ class DependenciesMixin:
                                              force=force)
                     except AttributeError:
                         print(
-                            "Missing 'requirements' variable in Solver class"
+                            "Missing 'requirements' variable in Solver",
+                            "class.\nRequirements must be a list containing",
+                            "the name of the package that you are",
+                            "using for the solver (except scikit-learn).\n",
+                            "\rExamples :\n",
+                            "\rrequirements = ['package'] (conda package)\n",
+                            "\rrequirements = ['pip:package'] (Pypi package)"
                         )
                 elif cls.install_cmd == 'shell':
                     install_file = (
