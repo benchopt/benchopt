@@ -99,13 +99,14 @@ we get
 
 .. _sampling_strategy:
 
-Changing the strategy to grow the :code:`stop_val`
---------------------------------------------------
+Changing the strategy to grow the computational budget (:code:`stop_val`)
+------------------------------------------------------------------------
 
-By default, the number of iterations or the variation of the tolerance
-between  two evaluations of the objective is exponential. However, in
-some cases, this exponential growth might hide some effects, or might
-not be adapted to a given solver.
+Benchopt varies the computational budget by varying either the number
+of iterations or the tolerance given to the method. By default, these
+two quantities vary exponentially between wo evaluations of the objective.
+However, in some cases, this exponential growth might hide some effects,
+or might not be adapted to a given solver.
 
 The way this value is changed can be specified for each solver by
 implementing a static  ``get_next`` method in the ``Solver`` class.

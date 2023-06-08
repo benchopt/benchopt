@@ -1,10 +1,14 @@
-.. _convergence_curves:
+.. _performance_curves:
 
-How are the convergence curves sampled?
+How are the performance curves sampled?
 =======================================
 
-For each solver, there are two ways to create a convergence curve.
-They are chosen by the ``stopping_strategy`` attribute of the solver.
+The performance of each solver is evaluated for various computational budget.
+With "*performance curves*", we refer to the evolution of the performance as a
+function of the computational budget.
+With ``benchopt``, there are different ways to vary the computational budget
+to sample the performance curve.
+They are chosen by the ``stopping_strategy`` attribute of each solver.
 
 1. Using iterations or tolerance
 --------------------------------
@@ -45,8 +49,8 @@ Restarting the solver from scratch, though inevitable to handle black box solver
 
 When a solver exposes the intermediate values of the iterates, it is possible to create the curve in a single solver run, by using ``stopping_strategy = "callback"``.
 In that case, the argument passed to ``Solver.run`` will be a callable object, ``callback``.
-Like with ``stopping_strategy == "iteration"``, the loss is computed after a number of callback's calls that grows geometrically. If the loss was computed after :math:`n` calls, the loss and timing will be computed again when reaching :math:`\max(n+1, \rho * n)` calls to the callback.
-The callback makes sure we do not account for loss computation time and also check for convergence every time the loss is computed (as described in the next section).
+Like with ``stopping_strategy == "iteration"``, the objective is computed after a number of callback's calls that grows geometrically. If the objective was computed after :math:`n` calls, the objective and timing will be computed again when reaching :math:`\max(n+1, \rho * n)` calls to the callback.
+The callback makes sure we do not account for objective computation time and also check for convergence every time the objective is computed (as described in the next section).
 It returns ``False`` when the solver should be stopped. A classical usage pattern is:
 
 .. code:: python
