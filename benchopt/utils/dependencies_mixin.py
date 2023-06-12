@@ -99,19 +99,18 @@ class DependenciesMixin:
             try:
                 cls._pre_install_hook(env_name=env_name)
                 if cls.install_cmd == 'conda':
-                    try:
+                    if hasattr(cls, "requirements"):
                         install_in_conda_env(*cls.requirements,
                                              env_name=env_name,
                                              force=force)
-                    except AttributeError:
-                        print(
-                            "Missing 'requirements' variable in Solver",
-                            "class.\nRequirements must be a list containing",
-                            "the name of the package that you are",
-                            "using for the solver (except scikit-learn).\n",
-                            "\rExamples :\n",
-                            "\rrequirements = ['package'] (conda package)\n",
-                            "\rrequirements = ['pip:package'] (Pypi package)"
+                    else:
+                        raise AttributeError(
+                            """Missing 'requirements' variable in Solver class.
+                            \rRequirements must be a list containing the name of the package that
+                            \ryou are using for the solver (except scikit-learn).\n
+                            \rExamples :
+                            \rrequirements = ['package'] (conda package)
+                            \rrequirements = ['pip:package'] (Pypi package)"""
                         )
                 elif cls.install_cmd == 'shell':
                     install_file = (
