@@ -208,6 +208,8 @@ def shape_solvers_for_html(df, objective_column):
         # remove infinite values
         df_filtered = df_filtered.replace([np.inf, -np.inf], np.nan)
         df_filtered = df_filtered.dropna(subset=[objective_column])
+        if len(df_filtered) == 0:
+            continue
 
         # compute median of 'time' and objective_column
         fields = ["time", objective_column]
