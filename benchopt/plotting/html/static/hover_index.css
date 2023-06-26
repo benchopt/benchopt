@@ -362,7 +362,7 @@ input:checked+.slider:before {
   padding-top: 1em;
   padding-bottom: 1em;
   opacity: 90%;
-  max-width: 250px;
+  max-width: 80ch;
   max-height: 200px;
 
   overflow-y: auto;
