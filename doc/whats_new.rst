@@ -33,6 +33,9 @@ API
 PLOT
 ~~~~
 
+- Add a tooltip beside to show description of objective. Description is provided as docstring of
+  the :class:`~benchopt.BaseObjective` class. By `Badr Moufad`_ (:gh:`556`)
+
 - Show solver description when hovering over solvers. Description is provided as docstring of
   the :class:`~benchopt.BaseSolver` class. By `Badr Moufad`_ (:gh:`543`)
 
