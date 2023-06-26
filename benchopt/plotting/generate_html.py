@@ -93,14 +93,6 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
             fname = fname_in_output
         fname = fname.absolute().relative_to(root_html.absolute())
 
-        # get objective description and use `obj_` instead of `objective_`
-        # to avoid conflicts with objective metrics
-        # try-except block to preserve compatibility with benchopt <= v1.3.1
-        try:
-            obj_description = df["obj_description"].unique()[0]
-        except KeyError:
-            obj_description = ""
-
         # Generate figures
         result = dict(
             fname=fname,
@@ -109,7 +101,6 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
             sysinfo=sysinfo,
             dataset_names=df['data_name'].unique(),
             objective_names=df['objective_name'].unique(),
-            obj_description=obj_description,
             obj_cols=[k for k in df.columns if k.startswith('objective_')
                       and k != 'objective_name'],
             kinds=list(kinds),
@@ -157,6 +148,15 @@ def get_metadata(df):
         metadata["solvers_description"] = solvers_description.to_dict()
     except KeyError:
         metadata["solvers_description"] = {}
+
+    # to avoid conflicts with objective metrics
+    # get objective description and use `obj_` instead of `objective_`
+    # try-except block to preserve compatibility with benchopt <= v1.3.1
+    try:
+        obj_description = df["obj_description"].unique()[0]
+        metadata["obj_description"] = obj_description
+    except KeyError:
+        metadata["obj_description"] = ""
 
     return metadata
 
