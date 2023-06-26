@@ -563,12 +563,28 @@ const makeLegend = () => {
   const legend = document.getElementById('plot_legend');
 
   legend.innerHTML = '';
+  const solversDescription = window.metadata["solvers_description"];
 
   Object.keys(data().solvers).forEach(solver => {
     const color = data().solvers[solver].color;
     const symbolNumber = data().solvers[solver].marker;
 
-    legend.appendChild(createLegendItem(solver, color, symbolNumber));
+    let legendItem = createLegendItem(solver, color, symbolNumber);
+
+    // preserve compatibility with prev version
+    if(solversDescription === null || solversDescription === undefined) {
+      legend.appendChild(legendItem);
+      return;
+    }
+
+    let payload = {
+      title: solver,
+      description: solversDescription[solver],
+    }
+
+    legend.appendChild(
+      createSolverDescription(legendItem, payload)
+    );
   });
 }
 
@@ -648,6 +664,26 @@ const createLegendItem = (solver, color, symbolNumber) => {
   item.appendChild(textContainer);
 
   return item;
+}
+
+
+function createSolverDescription(legendItem, {title, description}) {
+  if (description === null || description === undefined || description === "")
+    description = "No description provided";
+
+  let descriptionContainer = document.createElement("div");
+  descriptionContainer.setAttribute("class", "solver-description-container")
+
+  descriptionContainer.innerHTML = `
+  <div class="solver-description-content">
+    <span class="solver-description-title">${title}</span>
+    <span class="solver-description-body">${description}</span>
+  </div>
+  `;
+
+  descriptionContainer.prepend(legendItem);
+
+  return descriptionContainer;
 }
 
 
