@@ -157,11 +157,11 @@ Write a benchmark
 Learn how to :ref:`how`, including creating an objective, a solver, and
 a dataset.
 
-Performance Curve construction
+Performance curve construction
 ------------------------------
 
-The goal of ``benchopt`` is to be able to evaluate the evolution of the performance of a method with respect to its computational budget.
-For evaluating this, ``benchopt`` allows to vary the computational budget for both black-boxed solvers and solvers that allow for callbacks. Learn :ref:`performance_curves`. Note that the budget varying strategy can also be tweaked on a per-solver basis, as described in: :ref:`sampling_strategy`.
+The goal of ``benchopt`` is to evaluate the evolution of a method's performance with respect to its computational budget.
+For evaluating this, ``benchopt`` allows to vary the computational budget for both black-box solvers and solvers that allow for callbacks. Learn :ref:`performance_curves`. Note that the budget varying strategy can also be configured on a per-solver basis, as described in: :ref:`sampling_strategy`.
 
 Re-using code in a benchmark
 ----------------------------
