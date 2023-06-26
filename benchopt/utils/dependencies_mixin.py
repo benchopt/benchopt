@@ -164,7 +164,7 @@ class DependenciesMixin:
             colored_cls_name = colorify(f'{cls.name}', YELLOW)
             print(
                 f"- {colored_cls_name} already available{env_suffix}\n"
-                "  All imports within `safe_import_context` are installed."
+                f"  No ImportError raised from {cls.module_filename}."
             )
 
         return conda_reqs, shell_install_scripts, post_install_hooks
