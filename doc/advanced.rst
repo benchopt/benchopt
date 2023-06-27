@@ -109,7 +109,7 @@ objective. However, in some cases, this exponential growth might hide some
 effects, or might not be adapted to a given solver.
 
 The way this value is changed can be specified for each solver by
-implementing a static ``get_next`` method in the ``Solver`` class.
+implementing a ``get_next`` method in the ``Solver`` class.
 This method takes as input the previous value where the objective
 function has been logged, and outputs the next one. For instance,
 if a solver needs to be evaluated every 10 iterations, we would have
@@ -118,8 +118,7 @@ if a solver needs to be evaluated every 10 iterations, we would have
 
     class Solver(BaseSolver):
         ...
-        @staticmethod
-        def get_next(stop_val):
+        def get_next(self, stop_val):
             return stop_val + 10
 
 

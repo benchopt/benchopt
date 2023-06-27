@@ -40,7 +40,7 @@ This stopping strategy creates curves by calling ``Solver.run(stop_val)`` severa
 In both cases, if the objective curve is flat (i.e., the variation of the objective between two points is numerically 0), the geometric rate :math:`\rho` is multiplied by 1.2.
 
 Note that the solver is restarted from scratch at each call to ``solver.run``.
-For more advanced configurations, the evolution of ``stop_val`` can be controlled on a per solver basis, by implementing a static  ``Solver.get_next`` method, which receives the current value for tolerance/number of iterations, and returns the next one.
+For more advanced configurations, the evolution of ``stop_val`` can be controlled on a per solver basis, by implementing a ``Solver.get_next`` method, which receives the current value for tolerance/number of iterations, and returns the next one.
 
 2. Using a callback
 -------------------

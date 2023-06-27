@@ -115,7 +115,7 @@ def test_solver_class(benchmark, solver_class):
     if hasattr(solver_class, 'get_next'):
         assert callable(solver_class.get_next), (
             "`get_next` for class Solver in "
-            f"'{solver_class.__module__}' should be a callable static method."
+            f"'{solver_class.__module__}' should be a callable."
         )
         # Make sure the signature is def get_next(int):
         solver_class.get_next(0)

@@ -133,7 +133,8 @@ class StoppingCriterion():
         if hasattr(solver, 'get_next'):
             if callable(solver.get_next):
                 raise TypeError(
-                    f"`get_next` in {solver.__module__} must be callable."
+                    f"`get_next` of Solver in {solver.__module__} "
+                    "must be callable."
                 )
 
             try:
@@ -141,8 +142,7 @@ class StoppingCriterion():
             except TypeError:
                 raise ValueError(
                     "get_next(1) throw a TypeError. Verify that `get_next` "
-                    "signature is get_next(stop_val) and that it is "
-                    "a staticmethod."
+                    "signature is get_next(self, stop_val)"
                 )
 
             stopping_criterion.get_next_stop_val = solver.get_next
