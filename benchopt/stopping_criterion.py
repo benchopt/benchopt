@@ -131,10 +131,8 @@ class StoppingCriterion():
 
         # Override get_next_stop_val if ``get_next`` is implemented for solver.
         if hasattr(solver, 'get_next'):
-            assert (
-                callable(solver.get_next)
-                # and type(solver.get_next) == staticmethod
-            ), "if defined, get_next should be a static method of the solver."
+            assert (callable(solver.get_next))
+
             try:
                 solver.get_next(1)
             except TypeError:
