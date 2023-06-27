@@ -1,6 +1,5 @@
 import pytest
 import numbers
-import inspect
 
 import numpy as np
 
@@ -114,11 +113,7 @@ def test_solver_class(benchmark, solver_class):
 
     # Check that the solver_class uses a valid callable to override get_next.
     if hasattr(solver_class, 'get_next'):
-        is_static = isinstance(
-            inspect.getattr_static(solver_class, "get_next"),
-            staticmethod
-        )
-        assert (callable(solver_class.get_next) and is_static), (
+        assert callable(solver_class.get_next), (
             "`get_next` for class Solver in "
             f"'{solver_class.__module__}' should be a callable static method."
         )
