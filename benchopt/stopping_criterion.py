@@ -131,7 +131,7 @@ class StoppingCriterion():
 
         # Override get_next_stop_val if ``get_next`` is implemented for solver.
         if hasattr(solver, 'get_next'):
-            if callable(solver.get_next):
+            if not callable(solver.get_next):
                 raise TypeError(
                     f"`get_next` of Solver in {solver.__module__} "
                     "must be callable."
