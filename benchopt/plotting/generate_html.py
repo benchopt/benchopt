@@ -149,6 +149,15 @@ def get_metadata(df):
     except KeyError:
         metadata["solvers_description"] = {}
 
+    # to avoid conflicts with objective metrics
+    # get objective description and use `obj_` instead of `objective_`
+    # try-except block to preserve compatibility with benchopt <= v1.3.1
+    try:
+        obj_description = df["obj_description"].unique()[0]
+        metadata["obj_description"] = obj_description
+    except KeyError:
+        metadata["obj_description"] = ""
+
     return metadata
 
 

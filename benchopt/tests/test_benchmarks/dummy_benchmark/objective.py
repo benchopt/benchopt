@@ -6,6 +6,14 @@ with safe_import_context() as import_ctx:
 
 
 class Objective(BaseObjective):
+    """Here one can provide a description of the Objetive.
+
+    Lorem ipsum dolor sit amet. Eos voluptatem natus ab vero voluptatum est
+    excepturi saepe non minima alias sed laboriosam optio qui dolores autem
+    sit quae sequi. Cum dolorem maxime est perferendis dolores aut veritatis
+    officia ad voluptas quisquam in consequuntur aperiam qui optio sint.
+    """
+
     name = "Dummy Sparse Regression"
 
     # Make sure we can run with the current version

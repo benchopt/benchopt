@@ -187,6 +187,11 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
     if stopping_strategy == 'callback':
         stopping_strategy = 'iteration'
 
+    # get objective description
+    # use `obj_` instead of `objective_` to avoid conflicts with
+    # the name of metrics in Objective.compute
+    obj_description = objective.__doc__ or ""
+
     for rep in range(n_repetitions):
 
         output.set(rep=rep)
@@ -197,9 +202,8 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
             data_name=str(dataset),
             idx_rep=rep,
             stopping_strategy=stopping_strategy.capitalize(),
-            solver_description=(
-                solver.__doc__ if solver.__doc__ is not None else ""
-            ),
+            obj_description=obj_description,
+            solver_description=solver.__doc__ or "",
         )
 
         stopping_criterion = solver.stopping_criterion.get_runner_instance(
