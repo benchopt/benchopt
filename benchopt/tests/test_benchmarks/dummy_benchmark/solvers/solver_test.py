@@ -54,6 +54,6 @@ class Solver(BaseSolver):
 
     def get_next(self, stop_val):
         # check that we access instance parameters
-        self.X.shape[0] == self.y.shape[0]
+        self.raise_error
 
         return stop_val + 1

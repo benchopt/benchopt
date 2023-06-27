@@ -117,8 +117,9 @@ def test_solver_class(benchmark, solver_class):
             "`get_next` for class Solver in "
             f"'{solver_class.__module__}' should be a callable."
         )
-        # Make sure the signature is def get_next(int):
-        solver_class.get_next(0)
+        # Make sure the signature is def get_next(self, int). Create instance
+        # of `solver_class` then call `get_next` since it is a class method
+        solver_class().get_next(0)
 
 
 def test_solver_install_api(benchmark, solver_class):
