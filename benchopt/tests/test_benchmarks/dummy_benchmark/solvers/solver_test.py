@@ -53,7 +53,4 @@ class Solver(BaseSolver):
         return self.w
 
     def get_next(self, stop_val):
-        # check that we access instance parameters
-        self.raise_error
-
         return stop_val + 1
