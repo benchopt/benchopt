@@ -20,6 +20,9 @@ CLI
 API
 ~~~
 
+- Enable accessing :class:`~benchopt.BaseSolver` attributes in ``get_next``.
+  By `Badr Moufad`_ (:gh:`566`)
+
 - Add :class:`~benchopt.stopping_criterion.SingleRunCriterion` to run a solver
   only once. This can be used for benchmarking methods where we are interested
   in objective value at convergence. By `Thomas Moreau`_ (:gh:`511`)
