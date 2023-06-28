@@ -20,7 +20,7 @@ CLI
 API
 ~~~
 
-- Enable accessing :class:`~benchopt.BaseSolver` attributes in ``get_next``.
+- The ``get_next`` method of :class:`~benchopt.BaseSolver` is no longer static.
   By `Badr Moufad`_ (:gh:`566`)
 
 - Add :class:`~benchopt.stopping_criterion.SingleRunCriterion` to run a solver
