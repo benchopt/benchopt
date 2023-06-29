@@ -104,13 +104,17 @@ class DependenciesMixin:
                                              env_name=env_name,
                                              force=force)
                     else:
+                        # get details of class
+                        cls_file_name = cls._module_filename
+                        cls_type = cls.__base__.__name__.replace("Base", "")
+
                         raise AttributeError(
-                            """Missing 'requirements' variable in Solver class.
-                            \rRequirements must be a list containing the name of the package that
-                            \ryou are using for the solver (except scikit-learn).\n
-                            \rExamples :
-                            \rrequirements = ['package'] (conda package)
-                            \rrequirements = ['pip:package'] (Pypi package)"""
+                            f"Missing `requirements` attribute for {cls_type}"
+                            f"in {cls_file_name}. Attribute `requirements` "
+                            "must be a list of the solver dependencies.\n"
+                            "Examples:\n"
+                            "   requirements = ['package'] (conda package)\n"
+                            "   requirements = ['pip:package'] (PyPi package)"
                         )
                 elif cls.install_cmd == 'shell':
                     install_file = (
