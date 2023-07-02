@@ -1,15 +1,12 @@
-.. raw:: html
+.. image:: https://raw.githubusercontent.com/benchopt/communication_materials/main/posters/images/logo_benchopt.png
+   :width: 350
+   :align: center
+   
+*—Making your optimization benchmarks simple and open—*
 
-    <embed>
-        <div class="container" align="center">
-         <img src="https://raw.githubusercontent.com/benchopt/communication_materials/main/posters/images/logo_benchopt.png" width="350em"/>
-        </div>
-        <em>—Making your optimization benchmarks simple and open—</em>
-        <h1></h1>
-    </embed>
+----
 
-
-|Test Status| |codecov| |Python 3.6+| |install-per-months| |discord| 
+|Test Status| |codecov| |Python 3.6+| |install-per-months| |discord| |SWH|
 
 ``Benchopt`` is a benchmarking suite for optimization algorithms.
 It is built for simplicity, transparency, and reproducibility.
@@ -212,11 +209,12 @@ Available benchmarks
    :target: https://www.python.org/downloads/release/python-360/
 .. |codecov| image:: https://codecov.io/gh/benchopt/benchopt/branch/master/graph/badge.svg
    :target: https://codecov.io/gh/benchopt/benchopt
+.. |SWH| image:: https://archive.softwareheritage.org/badge/origin/https://github.com/benchopt/benchopt/
+    :target: https://archive.softwareheritage.org/browse/origin/?origin_url=https://github.com/benchopt/benchopt
 .. |discord| image:: https://dcbadge.vercel.app/api/server/EA2HGQb7nv?style=flat
    :target: https://discord.gg/EA2HGQb7nv
 .. |install-per-months| image:: https://static.pepy.tech/badge/benchopt/month
    :target: https://pepy.tech/project/benchopt
-
 
 .. |Build Status OLS| image:: https://github.com/benchopt/benchmark_ols/workflows/Tests/badge.svg
    :target: https://github.com/benchopt/benchmark_ols/actions

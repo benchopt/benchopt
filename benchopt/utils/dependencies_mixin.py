@@ -7,6 +7,8 @@ from .shell_cmd import _run_shell_in_conda_env
 from .conda_env_cmd import install_in_conda_env
 from .conda_env_cmd import shell_install_in_conda_env
 
+from .terminal_output import colorify, YELLOW
+
 
 class DependenciesMixin:
     # Information on how to install the class. The value of install_cmd should
@@ -159,7 +161,11 @@ class DependenciesMixin:
             post_install_hooks = [cls._post_install_hook]
         else:
             env_suffix = f" in '{env_name}'" if env_name else ''
-            print(f"- '{cls.name}' already available{env_suffix}")
+            colored_cls_name = colorify(f'{cls.name}', YELLOW)
+            print(
+                f"- {colored_cls_name} already available{env_suffix}\n"
+                f"  No ImportError raised from {cls._module_filename}."
+            )
 
         return conda_reqs, shell_install_scripts, post_install_hooks
 

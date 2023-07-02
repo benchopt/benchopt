@@ -20,6 +20,9 @@ CLI
 API
 ~~~
 
+- The ``get_next`` method of :class:`~benchopt.BaseSolver` is no longer static.
+  By `Badr Moufad`_ (:gh:`566`)
+
 - Add :class:`~benchopt.stopping_criterion.SingleRunCriterion` to run a solver
   only once. This can be used for benchmarking methods where we are interested
   in objective value at convergence. By `Thomas Moreau`_ (:gh:`511`)
@@ -32,6 +35,12 @@ API
 
 PLOT
 ~~~~
+
+- Add a tooltip beside to show description of objective. Description is provided as docstring of
+  the :class:`~benchopt.BaseObjective` class. By `Badr Moufad`_ (:gh:`556`)
+
+- Show solver description when hovering over solvers. Description is provided as docstring of
+  the :class:`~benchopt.BaseSolver` class. By `Badr Moufad`_ (:gh:`543`)
 
 - Enable visualizing the objective as function of ``stopping_criterion``: time,
   iteration, or tolerance. By `Badr Moufad`_ (:gh:`479`)
