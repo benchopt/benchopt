@@ -169,7 +169,7 @@ class DependenciesMixin:
             cls._pre_install_hook(env_name=env_name)
             if cls.install_cmd == 'conda':
                 conda_reqs = getattr(cls, "requirements", [])
-                if not is_installed:
+                if not is_installed and len(conda_reqs) == 0:
                     # get details of class
                     cls_type = cls.__base__.__name__.replace("Base", "")
                     raise AttributeError(
