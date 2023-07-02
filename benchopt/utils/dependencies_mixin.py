@@ -105,16 +105,19 @@ class DependenciesMixin:
                                              force=force)
                     else:
                         # get details of class
-                        cls_file_name = cls._module_filename
                         cls_type = cls.__base__.__name__.replace("Base", "")
 
                         raise AttributeError(
-                            f"Missing `requirements` attribute for {cls_type}"
-                            f"in {cls_file_name}. Attribute `requirements` "
-                            "must be a list of the solver dependencies.\n"
+                            f"Could not find dependencies for {cls.name} "
+                            f"{cls_type} while it is not importable. This is "
+                            "probably due to missing dependency specification."
+                            " The dependencies should be specified in class "
+                            "attribute `requirements`.\n"
                             "Examples:\n"
-                            "   requirements = ['package'] (conda package)\n"
-                            "   requirements = ['pip:package'] (PyPi package)"
+                            "   requirements = ['pkg'] # conda package `pkg`\n"
+                            "   requirements = ['chan:pkg'] # package `pkg` in"
+                            "conda channel `chan`\n"
+                            "   requirements = ['pip:pkg'] # pip package `pkg`"
                         )
                 elif cls.install_cmd == 'shell':
                     install_file = (
@@ -166,6 +169,21 @@ class DependenciesMixin:
             cls._pre_install_hook(env_name=env_name)
             if cls.install_cmd == 'conda':
                 conda_reqs = getattr(cls, "requirements", [])
+                if not is_installed:
+                    # get details of class
+                    cls_type = cls.__base__.__name__.replace("Base", "")
+                    raise AttributeError(
+                        f"Could not find dependencies for {cls.name} "
+                        f"{cls_type} while it is not importable. This is "
+                        "probably due to missing dependency specification. "
+                        "The dependencies should be specified in class "
+                        "attribute `requirements`.\n"
+                        "Examples:\n"
+                        "   requirements = ['pkg'] # conda package `pkg`\n"
+                        "   requirements = ['chan:pkg'] # package `pkg` in"
+                        "conda channel `chan`\n"
+                        "   requirements = ['pip:pkg'] # PyPi package `pkg`"
+                    )
             elif cls.install_cmd == 'shell':
                 shell_install_scripts = [
                     cls._module_filename.parents[1] / 'install_scripts' /
