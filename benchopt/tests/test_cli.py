@@ -506,7 +506,7 @@ class TestInstallCmd:
                 f'-{cls_type[0]}', "buggy-cls"
             ]
 
-            error_match = f"Could not import the class {Cls} for buggy-cls"
+            error_match = f"Could not find dependencies for buggy-cls {Cls}"
             with pytest.raises(AttributeError, match=error_match):
                 install(install_args, 'benchopt', standalone_mode=False)
 
