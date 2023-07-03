@@ -135,7 +135,7 @@ const getScatterCurves = () => {
 
     // plot only solvers that were stopped using xaxis type
     // plot all solver if xaxis type is `time`
-    if(xaxisType !== "Time" && solverStoppingStrategy !== xaxisType) {
+    if(xaxisType !== "Time" && solverStoppingStrategy !== xaxisType && xaxisType !== "Energy Consumption") {
       return
     }
 
@@ -145,7 +145,8 @@ const getScatterCurves = () => {
         break;
 
       case "Energy Consumption":
-        ScatterXaxisProperty = 'energy_consumption';
+        ScatterXaxisProperty = 'energy';
+        break;
     
       default:
         ScatterXaxisProperty = 'stop_val';

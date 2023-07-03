@@ -221,7 +221,7 @@ def shape_solvers_for_html(df, objective_column):
             continue
 
         # compute median of 'time' and objective_column
-        fields = ["time", objective_column]
+        fields = ["time", "energy_consumption", objective_column]
         groupby_stop_val_median = df_filtered.groupby('stop_val')
         groupby_stop_val_median = groupby_stop_val_median[fields]
         groupby_stop_val_median = groupby_stop_val_median.median()
