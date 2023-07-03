@@ -1,5 +1,4 @@
 import os
-import inspect
 import warnings
 from pathlib import Path
 
@@ -38,7 +37,7 @@ def generate_temp_benchmark(tempdir, objective, datasets, solvers):
     os.mkdir(temp_path / "solvers")
     os.mkdir(temp_path / "datasets")
     with open(temp_path / "objective.py", "w") as f:
-         f.write(objective)
+        f.write(objective)
     for idx, dataset in enumerate(datasets):
         with open(temp_path / f"solvers/{idx}.py", "w") as f:
             f.write(dataset)
