@@ -469,7 +469,7 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
 
         This method is mainly for testing purposes, to check that the method
         `Objective.compute` can be called and that it returns a compatible type for
-        return an object that can be passed to Objective.compute.
+        benchopt. The returned object will be passed to ``Objective.compute``.
         """
         pass
 
