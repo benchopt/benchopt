@@ -7,8 +7,8 @@ What's new
 
 .. _changes_1_4:
 
-Version 1.4 - in development
-----------------------------
+Version 1.4 - 03/07/2023
+------------------------
 
 CLI
 ~~~
@@ -16,6 +16,9 @@ CLI
 - Add support for minute and hour unit suffix in timeout limit through the syntax
   ``--timeout 10m`` or ``--timeout 1h``.
   By `Mathurin Massias`_ (:gh:`535`).
+- Remove deprecated ``-o/--objective-filter`` option in ``benchopt run``.
+  By `Thomas Moreau`_ (:gh:`569`)
+
 
 API
 ~~~
@@ -32,6 +35,10 @@ API
 
 - Add :func:`~benchopt.BaseSolver.pre_run_hook` hook to ignore cost that cannot
   be cached globally for a solver. By `Thomas Moreau`_ (:gh:`525`)
+
+- Remove deprecated ``Objective.to_dict``, ``safe_import_context.import_from``.
+  Force implementation of :method:`benchopt.Objective.get_one_solution`.
+  By `Thomas Moreau`_ (:gh:`569`)
 
 PLOT
 ~~~~

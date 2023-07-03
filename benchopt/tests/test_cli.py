@@ -215,7 +215,7 @@ class TestRunCmd:
                 'benchopt', standalone_mode=False)
 
         config = f"""
-        objective-filter:
+        objective:
           - {SELECT_ONE_OBJECTIVE}
         dataset:
           - {SELECT_ONE_SIMULATED}
@@ -361,7 +361,7 @@ class TestRunCmd:
             "        return dict()\n"
         )
         config = f"""
-            objective-filter:
+            objective:
             - {SELECT_ONE_OBJECTIVE}
             dataset:
             - buggy-dataset

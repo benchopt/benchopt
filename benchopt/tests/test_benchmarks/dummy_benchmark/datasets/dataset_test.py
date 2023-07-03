@@ -23,7 +23,6 @@ class Dataset(BaseDataset):
         rho=0.6,
         random_state=27,
         skip=False,
-        deprecated_return=False
     ):
         # Store the parameters of the dataset
         self.n_samples = n_samples
@@ -31,7 +30,6 @@ class Dataset(BaseDataset):
         self.random_state = random_state
         self.rho = rho
         self.skip = skip
-        self.deprecated_return = deprecated_return
 
     def get_data(self):
         rng = np.random.RandomState(self.random_state)
@@ -44,8 +42,4 @@ class Dataset(BaseDataset):
 
         data = dict(X=X, y=y)
 
-        # XXX - Remove in version 1.3
-        if self.deprecated_return:
-            return self.n_features, data
-        else:
-            return data
+        return data

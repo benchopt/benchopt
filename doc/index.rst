@@ -117,7 +117,7 @@ An example of configuration file is:
 
 .. code-block:: yaml
 
-    objective-filter:
+    objective:
       - Lasso Regression[fit_intercept=False,reg=0.5]
     dataset:
       - simulated
