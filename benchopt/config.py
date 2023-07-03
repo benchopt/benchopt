@@ -41,24 +41,25 @@ DEFAULT_GLOBAL_CONFIG = {
   results in having the cache for benchmark `B1` stored in `${cache}/B1/`.
 """
 
-DEFAULT_BENCHMARK_CONFIG = {"plots": list(PLOT_KINDS), "datasets": None}
-plot_config = {
-    kind: {"xaxis": None, "yaxis": None, "scale": "linear"}
+PLOTS_CONFIG = {
+    kind: {"xlim": None, "ylim": None, "scale": "linear"}
     for kind in list(PLOT_KINDS)
 }
-plot_config["bar_chart"] = {"yaxis": None}
-DEFAULT_BENCHMARK_CONFIG = {**DEFAULT_BENCHMARK_CONFIG, **plot_config}
+PLOTS_CONFIG["bar_chart"] = {"ylim": None}
+DEFAULT_BENCHMARK_CONFIG = {
+    "plots": PLOTS_CONFIG, "datasets": None
+}
 
 """
 * ``plots``, *list*: Select the plots to display for the benchmark. Should be
   valid plot kinds. The list can simply be one item by line, with each item
   indented, as:
 
-  .. code-block:: ini
+  .. code-block:: yml
 
-    plots =
-        suboptimality_curve
-        bar_chart
+    plots:
+      - suboptimality_curve
+      - bar_chart
 """
 
 
@@ -90,6 +91,32 @@ def get_global_config_file():
         )
 
     return config_file
+
+
+def convert_ini_to_yml(config_file):
+    warnings.warn(
+        f"'.ini' config files are deprecated. Existing file {config_file} "
+        "will be converted to `.ymml` file."
+    )
+    config_ini = configparser.ConfigParser()
+    config_ini.read(config_file)
+    config = {}
+    for sec in config_ini.sections():
+        default = (
+            DEFAULT_GLOBAL_CONFIG if sec == "benchopt"
+            else DEFAULT_BENCHMARK_CONFIG
+        )
+        options = list(config_ini[sec].keys())
+        values = {
+            key: parse_value(default[key], config_ini.get(sec, key))
+            for key in options
+        }
+        if sec == "benchopt":
+            config.update(**values)
+        else:
+            config[sec] = values
+    with config_file.with_suffix('.yml').open('w') as f:
+        yaml.safe_dump(config, f)
 
 
 def set_setting(name, value, config_file=None, benchmark_name=None):
@@ -128,53 +155,33 @@ def set_setting(name, value, config_file=None, benchmark_name=None):
 
 
 def get_setting(name, config_file=None, benchmark_name=None):
+    """Get setting in order: 1. env var / 2. config file / 3. default value"""
+
     if config_file is None:
         config_file = get_global_config_file()
 
     # Get default value
     default_config = DEFAULT_BENCHMARK_CONFIG
     if benchmark_name is None:
-        benchmark_name = 'benchopt'
         default_config = DEFAULT_GLOBAL_CONFIG
     assert name in default_config, f"Unknown config key {name}"
     default_value = default_config[name]
 
-    # Get the name of the environment variable associated to this setting
-    env_var_name = f"BENCHOPT_{name.upper()}"
-
-    # Get config file
     if config_file.suffix == ".ini":
-        config = configparser.ConfigParser()
-        config.read(config_file)
-        # Get setting with order: 1. env var / 2. config file / 3. default value
-        if name.startswith("benchmark"):
-            value = config.get(benchmark_name, name, fallback=default_value)
-        else:
-            if name in config.sections():
-                options = list(config[name].keys())
-                value = {
-                    key: config.get(name, key, fallback=default_value[key])
-                    for key in options
-                    }
-            else:
-                value = default_value
+        convert_ini_to_yml(config_file)
+        config_file = config_file.with_suffix('.yml')
 
+    # Get value from config file or keep the default value.
+    with open(config_file, "r") as f:
+        config = yaml.safe_load(f)
+    if benchmark_name in config.keys():
+        value = config[benchmark_name].get(name, default_value[name])
     else:
-        with open(config_file, "r") as f:
-            config = yaml.safe_load(f)
-        if name.startswith("benchmark"):
-            value = config[benchmark_name].get(name, default_value)
-        else:
-            if name in config.keys():
-                options = list(config[name].keys())
-                value = {
-                    key: config[name].get(key, default_value[key])
-                    for key in options
-                    }
-            else:
-                value = default_value
+        value = config.get(name, default_value)
 
-
+    # Get the value for the environment variable or keep the value from config
+    # file or default.
+    env_var_name = f"BENCHOPT_{name.upper()}"
     value = os.environ.get(env_var_name, value)
 
     # Parse the value to the correct type
@@ -205,7 +212,7 @@ def parse_value(default_value, value):
             values = [v.strip() for value in values
                       for v in value.split(',') if v != '']
             value = values
-        assert isinstance(value, list)
+        assert isinstance(value, list), value
 
     return value
 

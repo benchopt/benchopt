@@ -39,22 +39,20 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
         The matplotlib figures for convergence curve and bar chart
         for each dataset.
     """
-    dict_config = {}
+    plot_config = {}
     params = ["plots", "datasets"]
-    params.extend([kind for kind in PLOT_KINDS])
     for param in params:
         options = benchmark.get_setting(param)
         if options is not None:
-            dict_config[param] = options
+            plot_config[param] = options
         else:
-            dict_config[param] = []
-    config_kinds = dict_config["plots"]
+            plot_config[param] = []
+    config_kinds = plot_config["plots"]
     if kinds is None or len(kinds) == 0:
         kinds = config_kinds
 
     if html:
-        plot_benchmark_html(fname, benchmark, dict_config["plots"], display,
-                            plot_config=dict_config)
+        plot_benchmark_html(fname, benchmark, plot_config, display)
 
     else:
         # Load the results.

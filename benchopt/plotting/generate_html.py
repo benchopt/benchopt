@@ -7,8 +7,8 @@ import numpy as np
 import pandas as pd
 from mako.template import Template
 
-from benchopt.benchmark import Benchmark
 from ..constants import PLOT_KINDS
+from benchopt.benchmark import Benchmark
 from .plot_bar_chart import computeBarChartData  # noqa: F401
 from .plot_objective_curve import compute_quantiles   # noqa: F401
 from .plot_objective_curve import get_solver_style
@@ -48,17 +48,15 @@ for asset in STATIC_DIR.glob("**/*"):
     STATIC[asset.relative_to(STATIC_DIR).name] = asset.read_text()
 
 
-def get_results(fnames, kinds, root_html, benchmark_name, copy=False,
-                plot_config=None):
+def get_results(fnames, plot_config, root_html, benchmark_name, copy=False):
     """Generate figures from a list of result files.
 
     Parameters
     ----------
     fnames : list of Path
         list of result files containing the benchmark results.
-    kinds : list of str
-        List of the kind of plots that will be generated. This needs to be a
-        sub-list of PLOT_KINDS.keys().
+    plot_config: dict (default: None)
+        If given, allows to specify the plot options.
     root_html : Path
         Directory where all the HTML files related to the benchmark are stored.
     benchmark_name : str
@@ -66,8 +64,6 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False,
     copy : bool (default: False)
         If set to True, copy each file in the root_html / OUTPUTS
         directory, to make sure it can be downloaded.
-    plot_config: dict (default: None)
-        If given, allows to specify the plot options.
 
     Returns
     -------
@@ -106,12 +102,12 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False,
             objective_names=df['objective_name'].unique(),
             obj_cols=[k for k in df.columns if k.startswith('objective_')
                       and k != 'objective_name'],
-            kinds=list(kinds),
-            metadata=get_metadata(df),
+            kinds=plot_config.get('plots', list(PLOT_KINDS)),
+            metadata=get_metadata(df, plot_config),
         )
 
         # JSON
-        result['json'] = json.dumps(shape_datasets_for_html(df, plot_config))
+        result['json'] = json.dumps(shape_datasets_for_html(df))
 
         results.append(result)
 
@@ -127,7 +123,7 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False,
     return results
 
 
-def get_metadata(df):
+def get_metadata(df, plot_config):
     """Get the benchmark metadata.
 
     Metadata are already available among the columns of `df`.
@@ -138,7 +134,7 @@ def get_metadata(df):
     metadata: dict
         Dictionary containing the benchmark metadata.
     """
-    metadata = {}
+    metadata = {'plot_config': plot_config}
 
     # get solver descriptions
     # wrap in try-except block to preserve compatibility
@@ -164,10 +160,9 @@ def get_metadata(df):
     return metadata
 
 
-def shape_datasets_for_html(df, plot_config=None):
+def shape_datasets_for_html(df):
     """Return a dictionary with plotting data for each dataset."""
     datasets_data = {}
-    datasets_data["plot_config"] = plot_config
 
     for dataset in df['data_name'].unique():
         datasets_data[dataset] = shape_objectives_for_html(df, dataset)
@@ -465,8 +460,7 @@ def _fetch_cached_run_list(new_results, benchmark_html):
     return list(results.values())
 
 
-def plot_benchmark_html(fnames, benchmark, kinds, display=True,                
-                        plot_config=None):
+def plot_benchmark_html(fnames, benchmark, plot_config, display=True):
     """Plot a given benchmark as an HTML report. This function can either plot
     a single run or multiple ones.
 
@@ -476,14 +470,11 @@ def plot_benchmark_html(fnames, benchmark, kinds, display=True,
         Name of the file in which the results are saved.
     benchmark : benchopt.Benchmark object
         Object to represent the benchmark.
-    kinds : list of str
-        List of the kind of plots that will be generated. This needs to be a
-        sub-list of PLOT_KINDS.keys().
+    plot_config: dict
+        Configuration for the different kind of plots.
     display : bool
         If set to True, display the curves by opening
         the default browser.
-    plot_config: dict
-        If given, allows to specify the plot options. Defaults to None.
 
     Returns
     -------
@@ -500,8 +491,7 @@ def plot_benchmark_html(fnames, benchmark, kinds, display=True,
     home = bench_index.relative_to(root_html)
 
     # Create the figures and render the page as a html.
-    results = get_results(fnames, kinds, root_html, benchmark.name,
-                          plot_config=plot_config)
+    results = get_results(fnames, plot_config, root_html, benchmark.name)
     htmls = render_all_results(results, benchmark.name, home=home)
 
     # Save the resulting page in the HTML folder
@@ -583,7 +573,7 @@ def plot_benchmark_html_all(patterns=(), benchmark_paths=(), root=None,
             ) + list((benchmark_path / 'outputs').glob(f"{p}.csv"))
         fnames = sorted(set(fnames))
         results = get_results(
-            fnames, PLOT_KINDS.keys(), root_html, benchmark_path.name,
+            fnames, plot_config, root_html, benchmark_path.name,
             copy=True
         )
         len_fnames.append(len(fnames))

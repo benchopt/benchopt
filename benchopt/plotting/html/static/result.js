@@ -33,8 +33,8 @@ const setState = (partialState) => {
   window.state = {...state(), ...partialState};
   displayScatterElements(!isBarChart());
 
-  // TODO: `listIdXaxisSelection` to be removed after 
-  // implementing responsiveness through breakpoints 
+  // TODO: `listIdXaxisSelection` to be removed after
+  // implementing responsiveness through breakpoints
   // and removing content duplication between big screen and mobile
   let listIdXaxisSelection = ["change_xaxis_type", "change_xaxis_type_mobile"];
   listIdXaxisSelection.forEach(idXaxisSelection => updateXaxis(idXaxisSelection))
@@ -51,11 +51,11 @@ const setState = (partialState) => {
 const state = () => window.state;
 
 /**
- * Retrieve the plot_config object from window.data.plot_config
+ * Retrieve the plot_config object from window.metadata.plot_config
  *
  * @returns Object
  */
-const plotconfig = () => window.data.plot_config;
+const plotconfig = () => window.metadata.plot_config['plots'];
 
 /*
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -167,14 +167,14 @@ const getScatterCurves = () => {
     });
 
     // skip plotting quantiles if xaxis is not time
-    // as stop_val are predefined and hence deterministic 
+    // as stop_val are predefined and hence deterministic
     if(xaxisType !== "Time") {
       return
     }
 
     if (state().with_quantiles) {
       // Add shaded area for each solver, with proper style and visibility.
-  
+
       curves.push({
         type: 'scatter',
         mode: 'lines',
@@ -349,7 +349,11 @@ const barDataToArrays = () => {
 }
 
 const getScale = () => {
-  switch (state().scale) {
+  return _getScale(state().scale)
+}
+
+const _getScale = (scale) => {
+  switch (scale) {
     case 'loglog':
       return {
         xaxis: 'log',
@@ -378,6 +382,8 @@ const getScale = () => {
 const getScatterChartLayout = () => {
   let xaxisType = state().xaxis_type;
 
+  config = plotconfig()[state().plot_kind]
+
   const layout = {
     autosize: !isSmallScreen(),
     modebar: {
@@ -402,7 +408,7 @@ const getScatterChartLayout = () => {
       tickangle: -45,
       gridcolor: '#ffffff',
       zeroline : false,
-      range: plotconfig()[state().plot_kind].xaxis == null ? null: [plotconfig()[state().plot_kind].xaxis[0], plotconfig()[state().plot_kind].xaxis[1]],
+      range: config.xlim == null || _getScale(config.scale).xaxis != getScale().xaxis ? null: [config.xlim[0], config.xlim[1]],
     },
     yaxis: {
       type: getScale().yaxis,
@@ -410,7 +416,7 @@ const getScatterChartLayout = () => {
       tickformat: '.1e',
       gridcolor: '#ffffff',
       zeroline : false,
-      range: plotconfig()[state().plot_kind].yaxis == null ? null: [plotconfig()[state().plot_kind].yaxis[0], plotconfig()[state().plot_kind].yaxis[1]],
+      range: config.ylim == null || _getScale(config.scale).yaxis != getScale().yaxis ? null: [config.ylim[0], config.ylim[1]],
     },
     title: `${state().objective}<br />Data: ${state().dataset}`,
     plot_bgcolor: '#e5ecf6',
@@ -442,6 +448,8 @@ const getScatterChartLayout = () => {
 
 const getBarChartLayout = () => {
 
+  config = plotconfig()[state().plot_kind]
+
   const layout = {
     autosize: !isSmallScreen(),
     modebar: {
@@ -452,7 +460,7 @@ const getBarChartLayout = () => {
       title: 'Time [sec]',
       tickformat: '.1e',
       gridcolor: '#ffffff',
-      range: plotconfig()[state().plot_kind].yaxis == null ? null: [plotconfig()[state().plot_kind].yaxis[0], plotconfig()[state().plot_kind].yaxis[1]],
+      range: config.ylim == null || _getScale(config.scale).yaxis != getScale().yaxis ? null: [config.ylim[0], config.ylim[1]],
     },
     xaxis: {
       tickangle: -60,

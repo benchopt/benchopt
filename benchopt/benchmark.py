@@ -320,8 +320,10 @@ class Benchmark:
 
         # Get the config file and read it
         config_file = self.get_config_file()
-        return get_setting(name=setting_name, config_file=config_file,
-                           benchmark_name=self.name)
+        return get_setting(
+            name=setting_name, config_file=config_file,
+            benchmark_name=self.name
+        )
 
     def get_test_config_file(self):
         """Get the location for the test config file for the benchmark.

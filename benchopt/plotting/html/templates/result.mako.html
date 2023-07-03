@@ -98,7 +98,7 @@
                             </div>
                         </div>
                         <div id="xaxis-type-form-group" class="mt-8 px-8">
-                            <label for="change_scaling" class="block text-sm font-medium text-white">X-axis</label>
+                            <label for="change_xaxis_type" class="block text-sm font-medium text-white">X-axis</label>
                             <div class="mt-1 rounded-md shadow-sm">
                                 <select id="change_xaxis_type" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({xaxis_type: this.value})">
                                    <!-- options will be added dynamically -->
@@ -238,7 +238,7 @@
                                 </div>
                             </div>
                             <div id="xaxis-type-form-group" class="mt-8 px-8">
-                                <label for="change_scaling" class="block text-sm font-medium text-white">X-axis</label>
+                                <label for="change_xaxis_type_mobile" class="block text-sm font-medium text-white">X-axis</label>
                                 <div class="mt-1 rounded-md shadow-sm">
                                     <select id="change_xaxis_type_mobile" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({xaxis_type: this.value})">
                                        <!-- options will be added dynamically -->
@@ -400,6 +400,9 @@
             window.metadata = ${result['metadata']};
 
             window.addEventListener("load", () => {
+                // Set initial scaling
+                document.getElementById('change_scaling').value = window.metadata['plot_config']['plots'][document.getElementById('plot_kind').value]['scale']
+
                 // Initialize plot state
                 setState({
                     'dataset': document.getElementById('dataset_selector').value,
