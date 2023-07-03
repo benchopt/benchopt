@@ -370,12 +370,14 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
         ...
 
     @abstractmethod
-    def compute(self, beta):
+    def compute(self, **solver_result):
         """Compute the value of the objective given the current estimate beta.
 
         Parameters
         ----------
-        beta : ndarray or tuple of ndarray
+        solver_result : dict
+            All values needed to compute the objective metrics. This dictionary
+            is retrieved by calling ``solver_result = Solver.get_result()``.
             The current estimate of the parameters being optimized.
 
         Returns
@@ -385,16 +387,25 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
             returned, it should at least contain a key `value` associated to a
             scalar value which will be used to detect convergence. With a
             dictionary, multiple metric values can be stored at once instead
-            of runnning each separately.
+            of running each separately.
         """
         ...
 
-    def __call__(self, beta):
+    def __call__(self, solver_result):
         """Used to call the computation of the objective.
 
         This allow to standardize the output to a dictionary.
         """
-        objective_dict = self.compute(beta)
+        try:
+            objective_dict = self.compute(**solver_result)
+        except TypeError:
+            warnings.warn(
+                "From benchopt 1.5, Solver.get_result() should return a dict "
+                "instead of a numpy ndarray.",
+                FutureWarning,
+            )
+            objective_dict = self.compute(solver_result)
+
 
         if not isinstance(objective_dict, dict):
             objective_dict = {'value': objective_dict}
