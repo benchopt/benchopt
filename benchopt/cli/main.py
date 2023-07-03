@@ -60,7 +60,6 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
         "env_name",
         "output",
         "objective_filter",
-        "old_objective_filter",
     ]
     return [cli_kwargs[name] for name in return_names]
 
@@ -73,17 +72,11 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
 )
 @click.argument('benchmark', default=Path.cwd(), type=click.Path(exists=True),
                 shell_complete=complete_benchmarks)
-@click.option('--objective-filter',
-              metavar='<objective_filter>', multiple=True, type=str,
-              help="Deprecated alias for `--objective`.")
 @click.option('--objective', '-o',
               metavar='<objective_filter>', multiple=True, type=str,
               help="Select the objective based on its parameters, with the "
               "syntax `objective[parameter=value]`. This can be used to only "
               "include one set of parameters. ")
-@click.option('--old-objective-filter', '-p',
-              multiple=True, type=str,
-              help="Deprecated alias for --objective_filter/-o.")
 @click.option('--solver', '-s',
               metavar="<solver_name>", multiple=True, type=str,
               help="Include <solver_name> in the benchmark. By default, all "
@@ -177,12 +170,10 @@ def run(config_file=None, **kwargs):
     else:
         config = {}
 
-    # XXX - Remove old and deprecated objective filters in version 1.3
     (
         benchmark, solver_names, forced_solvers, dataset_names,
         objective_filters, max_runs, n_repetitions, timeout, n_jobs, slurm,
-        plot, html, pdb, do_profile, env_name, output,
-        deprecated_objective_filters, old_objective_filters
+        plot, html, pdb, do_profile, env_name, output
     ) = _get_run_args(kwargs, config)
 
     try:
@@ -190,20 +181,6 @@ def run(config_file=None, **kwargs):
     except ValueError:  # already under string format
         import pandas as pd
         timeout = pd.to_timedelta(timeout).total_seconds()
-
-    if len(old_objective_filters):
-        warnings.warn(
-            'Using the -p option is deprecated, use -o instead',
-            FutureWarning,
-        )
-        objective_filters = old_objective_filters
-
-    if len(deprecated_objective_filters):
-        warnings.warn(
-            'Using the --objective-filters option is deprecated, '
-            'use --objective instead', FutureWarning
-        )
-        objective_filters = deprecated_objective_filters
 
     # Create the Benchmark object
     benchmark = Benchmark(benchmark)

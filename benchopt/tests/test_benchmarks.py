@@ -74,23 +74,6 @@ def test_dataset_get_data(benchmark, dataset_class):
     assert isinstance(data, (tuple, dict)), (
         "Output of get_data should be a 2-tuple or a dict."
     )
-    # XXX - Remove in version 1.3
-    if isinstance(data, tuple):
-        assert len(data) == 2, (
-            "Output of get_data should be a 2-tuple"
-        )
-
-        dimension, data = data
-
-        assert isinstance(dimension, tuple) or dimension == 'object', (
-            "First output of get_data should be an integer or a tuple of "
-            f"integers. Got {dimension}."
-        )
-        if dimension != 'object':
-            assert all(isinstance(d, numbers.Integral) for d in dimension), (
-                "First output of get_data should be an integer or a tuple of "
-                f"integers. Got {dimension}."
-            )
 
     assert isinstance(data, dict), (
         f"The returned data from get_data should be a dict. Got {data}."

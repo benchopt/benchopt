@@ -307,24 +307,6 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
         if not hasattr(self, '_data') or self._data is None:
             self._data = self.get_data()
 
-            # XXX - Remove in version 1.3
-            if type(self._data) != dict:
-                import warnings
-                warnings.warn(
-                    "`get_data` should return a dict containing the data. "
-                    "The dimension should not be returned anymore and "
-                    "Objective should have a method `get_one_solution` "
-                    "to provide one feasible point. This will cause an "
-                    "error starting from version 1.3.",
-                    FutureWarning
-                )
-                dimension, data = self._data
-
-                # Make sure dimension is a tuple
-                if isinstance(dimension, numbers.Integral):
-                    dimension = (dimension,)
-                self._data = (dimension, data)
-
         return self._data
 
     # Reduce the pickling and hashing burden by only pickling class parameters.
@@ -445,10 +427,6 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
         self._dataset = dataset
         data = dataset._get_data()
 
-        # XXX - Remove in version 1.3
-        if type(data) != dict:
-            self._dimension, data = data
-
         # Check if the dataset is compatible with the objective
         skip, reason = self.skip(**data)
         if skip:
@@ -494,36 +472,15 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
         """
         return False, None
 
+    @abstractmethod
     def get_one_solution(self):
         """Return one solution for which the objective can be evaluated.
 
         This method is mainly for testing purposes, to check that the return
         computation and the return type of `Objective.compute`. It should
-        return an object that can be passed to compute.
-
-        By default, if `Dataset.get_data` returns a shape, this function will
-        return an array full of 0. It can be overriden to provide a different
-        point. When `Dataset.get_data` returns "object", this method must be
-        overwritten.
+        return an object that can be passed to Objective.compute.
         """
-        if not hasattr(self, '_dimension'):
-            raise NotImplementedError(
-                "If solvers return objects, `Objective.get_one_solution` "
-                "should be overriden to return an object compatible with "
-                "`compute`."
-            )
-
-        # XXX - make this an abstract class in version 1.3
-        import warnings
-        warnings.warn(
-            "Objective should have a method `get_one_solution` "
-            "to provide one feasible point. This will cause an "
-            "error starting from version 1.3.",
-            FutureWarning
-        )
-
-        import numpy as np
-        return np.zeros(self._dimension)
+        pass
 
     # Reduce the pickling and hashing burden by only pickling class parameters.
     @staticmethod

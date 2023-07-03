@@ -7,8 +7,8 @@ What's new
 
 .. _changes_1_4:
 
-Version 1.4 - in development
-----------------------------
+Version 1.4 - 03/07/2023
+------------------------
 
 CLI
 ~~~
