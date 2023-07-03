@@ -406,7 +406,6 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
             )
             objective_dict = self.compute(solver_result)
 
-
         if not isinstance(objective_dict, dict):
             objective_dict = {'value': objective_dict}
 
