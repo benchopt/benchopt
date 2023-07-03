@@ -44,7 +44,7 @@ class _Callback:
         The time when exiting the callback call.
     """
 
-    def __init__(self, objective, meta, stopping_criterion):
+    def __init__(self, objective, meta, stopping_criterion, tracker):
         self.objective = objective
         self.meta = meta
         self.stopping_criterion = stopping_criterion
@@ -55,15 +55,21 @@ class _Callback:
         self.status = 'running'
         self.it = 0
         self.time_iter = 0.
+        self.energy_consumption = 0.
         self.next_stopval = self.stopping_criterion.init_stop_val()
+        self.tracker = tracker
 
     def start(self):
         self.time_callback = time.perf_counter()
+        self.tracker.flush()
+        self.tmp = self.tracker._total_energy.kWh
 
     def __call__(self, x):
         # Stop time and update computation time since the beginning
         t0 = time.perf_counter()
+        self.tracker.flush()
 
+        self.energy_consumption += self.tracker._total_energy.kWh - self.tmp - self.energy_consumption
         self.time_iter += t0 - self.time_callback
 
         # Evaluate the iteration if necessary.
@@ -73,6 +79,8 @@ class _Callback:
 
         # Update iteration number and restart time measurement.
         self.it += 1
+        self.tracker.flush()
+        self.tmp = self.tracker._total_energy.kWh - self.energy_consumption
         self.time_callback = time.perf_counter()
         return True
 
@@ -85,6 +93,7 @@ class _Callback:
         self.curve.append(dict(
             **self.meta, stop_val=self.it,
             time=self.time_iter,
+            energy_consumption=self.energy_consumption,
             **objective_dict, **self.info
         ))
 

@@ -18,7 +18,7 @@ from .utils.terminal_output import TerminalOutput
 ##################################
 
 
-def run_one_resolution(objective, solver, meta, stop_val):
+def run_one_resolution(objective, solver, meta, stop_val, tracker):
     """Run one resolution of the solver.
 
     Parameters
@@ -45,14 +45,14 @@ def run_one_resolution(objective, solver, meta, stop_val):
         raise ImportError(
             f"Failure during import in {solver.__module__}."
         )
-
-    tracker = EmissionsTracker(save_to_file=False, tracking_mode="process", log_level="error")
+    
     solver.pre_run_hook(stop_val)
     t_start = time.perf_counter()
-    tracker.start()
+    tracker.flush()
+    tmp = tracker._total_energy.kWh
     solver.run(stop_val)
     delta_t = time.perf_counter() - t_start
-    tracker.stop()
+    tracker.flush()
     beta_hat_i = solver.get_result()
     objective_dict = objective(beta_hat_i)
 
@@ -60,7 +60,7 @@ def run_one_resolution(objective, solver, meta, stop_val):
     info = get_sys_info()
 
     return dict(**meta, stop_val=stop_val, time=delta_t,
-                energy_consumption=tracker._total_energy.kWh,
+                energy_consumption=tracker._total_energy.kWh - tmp,
                 **objective_dict, **info)
 
 
@@ -97,13 +97,16 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
 
     curve = []
     with exception_handler(output, pdb=pdb) as ctx:
+        
+        tracker = EmissionsTracker(save_to_file=False, tracking_mode="process", log_level="error")
+        tracker.start()
 
         if solver._solver_strategy == "callback":
 
             # If stopping strategy is 'callback', only call once to get the
             # results up to convergence.
             callback = _Callback(
-                objective, meta, stopping_criterion
+                objective, meta, stopping_criterion, tracker
             )
             solver.pre_run_hook(callback)
             callback.start()
@@ -114,14 +117,15 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
             # Create a Memory object to cache the computations in the benchmark
             # folder and handle cases where we force the run.
             run_one_resolution_cached = benchmark.cache(
-                run_one_resolution, force
+                run_one_resolution, force, ignore=['tracker']
             )
 
             # compute initial value
-            call_args = dict(objective=objective, solver=solver, meta=meta)
+            call_args = dict(objective=objective, solver=solver, meta=meta, tracker=tracker)
 
             stop = False
             stop_val = stopping_criterion.init_stop_val()
+            
             while not stop:
 
                 cost = run_one_resolution_cached(stop_val=stop_val,
@@ -132,6 +136,8 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
                 stop, ctx.status, stop_val = stopping_criterion.should_stop(
                     stop_val, curve
                 )
+                
+        tracker.stop()
 
     return curve, ctx.status
 
