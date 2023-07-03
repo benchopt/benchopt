@@ -89,19 +89,12 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         """
         self._objective = objective
         self._output = output
-        # XXX remove in version 1.4
+
         objective_dict = objective.get_objective()
-        if objective_dict is None:
-            assert hasattr(objective, "to_dict"), (
-                "Objective needs to implement `get_objective` that returns "
-                "a dictionary to be passed to `set_objective`"
-            )
-            warnings.warn(
-                "The method ``Objective.to_dict`` has been deprecated in "
-                "favor of ``Objective.get_objective``. Using it will no "
-                "longer work in version 1.4", FutureWarning
-            )
-            objective_dict = objective.to_dict()
+        assert objective_dict is not None, (
+            "Objective needs to implement `get_objective` that returns "
+            "a dictionary to be passed to `set_objective`"
+        )
 
         # Check if the objective is compatible with the solver
         skip, reason = self.skip(**objective_dict)
@@ -365,8 +358,7 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
         """
         ...
 
-    # to uncomment in version 1.4, once `to_dict` has been deprecated.
-    # @abstractmethod
+    @abstractmethod
     def get_objective(self):
         """Return the objective parameters for the solver.
 
