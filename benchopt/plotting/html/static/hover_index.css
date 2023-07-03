@@ -401,7 +401,8 @@ input:checked+.slider:before {
   background-color: rgb(55 65 81);
   color: #fff;
   border-radius: 6px;
-  padding-top: 1em;
+  padding-top: 0.5em;
+  padding-bottom: 0.6em;
   padding-left: 0.5em;
   padding-right: 0.5rem;
   opacity: 90%;
