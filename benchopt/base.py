@@ -468,8 +468,9 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
         """Return one solution for which the objective can be evaluated.
 
         This method is mainly for testing purposes, to check that the method
-        `Objective.compute` can be called and that it returns a compatible type for
-        benchopt. The returned object will be passed to ``Objective.compute``.
+        `Objective.compute` can be called and that it returns a compatible
+        type for benchopt. The returned object will be passed to
+        ``Objective.compute``.
         """
         pass
 
