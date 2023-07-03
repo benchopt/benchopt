@@ -675,7 +675,7 @@ function createSolverDescription(legendItem, {title, description}) {
   descriptionContainer.setAttribute("class", "solver-description-container")
 
   descriptionContainer.innerHTML = `
-  <div class="solver-description-content">
+  <div class="solver-description-content text-sm">
     <span class="solver-description-title">${title}</span>
     <span class="solver-description-body">${description}</span>
   </div>
