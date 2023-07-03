@@ -139,7 +139,18 @@ const getScatterCurves = () => {
       return
     }
 
-    ScatterXaxisProperty = xaxisType === "Time" ? 'x' : 'stop_val';
+    switch (xaxisType) {
+      case "Time":
+        ScatterXaxisProperty = 'x';
+        break;
+
+      case "Energy Consumption":
+        ScatterXaxisProperty = 'energy_consumption';
+    
+      default:
+        ScatterXaxisProperty = 'stop_val';
+        break;
+    }
 
     curves.push({
       type: 'scatter',
@@ -692,7 +703,7 @@ function updateXaxis(idXaxisTypeSelection) {
   selection.innerHTML = "";
 
   let xaxisType = state()["xaxis_type"];
-  let options = new Set(['Time']);
+  let options = new Set(['Time', 'Energy Consumption']);
 
   // get solvers run for selected (dataset, objective, objective colum)
   // and select their unique stopping strategies

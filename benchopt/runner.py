@@ -46,10 +46,10 @@ def run_one_resolution(objective, solver, meta, stop_val):
             f"Failure during import in {solver.__module__}."
         )
 
-    tracker = EmissionsTracker(save_to_file=False, tracking_mode="process")
+    tracker = EmissionsTracker(save_to_file=False, tracking_mode="process", log_level="error")
     solver.pre_run_hook(stop_val)
     t_start = time.perf_counter()
-    tracker.start
+    tracker.start()
     solver.run(stop_val)
     delta_t = time.perf_counter() - t_start
     tracker.stop()
