@@ -59,7 +59,6 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
         "profile",
         "env_name",
         "output",
-        "objective_filter",
     ]
     return [cli_kwargs[name] for name in return_names]
 

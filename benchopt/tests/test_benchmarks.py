@@ -1,6 +1,4 @@
 import pytest
-import numbers
-
 import numpy as np
 
 from benchopt.runner import _Callback

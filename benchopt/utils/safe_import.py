@@ -50,11 +50,6 @@ class safe_import_context:
     costly imports should be protected with this import for benchopt to perform
     best.
 
-    This context is also used to import module dynamically from the ``utils``
-    folder of a benchmark, using the
-    :func:`~benchopt.safe_import_context.import_from` method.
-    See :ref:`benchmark_utils_import` for a detailed explanation of this part.
-
     Finally, this context also catches import warnings.
     """
 

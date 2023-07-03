@@ -1,5 +1,4 @@
 import tempfile
-import numbers
 import warnings
 
 from abc import ABC, abstractmethod
