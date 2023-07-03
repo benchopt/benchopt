@@ -47,8 +47,8 @@ def run_one_resolution(objective, solver, meta, stop_val, tracker):
         )
     
     solver.pre_run_hook(stop_val)
-    t_start = time.perf_counter()
     tracker.flush()
+    t_start = time.perf_counter()
     tmp = tracker._total_energy.kWh
     solver.run(stop_val)
     delta_t = time.perf_counter() - t_start
