@@ -1,5 +1,7 @@
 import time
 
+from codecarbon import EmissionsTracker
+
 from datetime import datetime
 
 from joblib import Parallel, delayed
@@ -44,10 +46,13 @@ def run_one_resolution(objective, solver, meta, stop_val):
             f"Failure during import in {solver.__module__}."
         )
 
+    tracker = EmissionsTracker(save_to_file=False, tracking_mode="process")
     solver.pre_run_hook(stop_val)
     t_start = time.perf_counter()
+    tracker.start
     solver.run(stop_val)
     delta_t = time.perf_counter() - t_start
+    tracker.stop()
     beta_hat_i = solver.get_result()
     objective_dict = objective(beta_hat_i)
 
@@ -55,6 +60,7 @@ def run_one_resolution(objective, solver, meta, stop_val):
     info = get_sys_info()
 
     return dict(**meta, stop_val=stop_val, time=delta_t,
+                energy_consumption=tracker._total_energy.kWh,
                 **objective_dict, **info)
 
 
