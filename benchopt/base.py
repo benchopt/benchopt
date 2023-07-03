@@ -396,6 +396,7 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
 
         This allow to standardize the output to a dictionary.
         """
+        # XXX remove in version 1.5
         try:
             objective_dict = self.compute(**solver_result)
         except TypeError:
