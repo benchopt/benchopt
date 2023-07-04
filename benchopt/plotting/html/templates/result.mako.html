@@ -100,7 +100,7 @@
                         <div class="mt-8 px-8">
                             <label for="tags_solvers" class="block text-sm font-medium text-white">Tags</label>
                             <div class="mt-1 rounded-md shadow-sm">
-                                <select multiple id="tags_solvers" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-16 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({selected_tags: Array.from(this).filter(el => el.selected).map(el => el.value)})">
+                                <select multiple id="tags_solvers" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-16 px-4 sm:text-sm border-gray-300 rounded-md" onchange="updateVisibilityBasedTags(this)">
                                     % for tag in result['metadata']['tags_solvers']:
                                     <option value="${tag}">${tag}</option>
                                     %endfor

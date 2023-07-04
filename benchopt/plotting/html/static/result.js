@@ -764,3 +764,33 @@ document.getElementById('btn-main-menu').addEventListener('click', () => {
 
   elmt.style.display = 'block';
 });
+
+
+
+function updateVisibilityBasedTags(tagsSelector) {
+  const tagsSolvers = window.metadata["tags_solvers"];
+
+  // clean already selected tags
+  const alreadySelectedTags = state()["selected_tags"];
+
+  let hiddenSolvers = state()["hidden_solvers"];
+  alreadySelectedTags.forEach(tag => {
+    hiddenSolver = hiddenSolvers.concat(alreadySelectedTags[tag]);
+  });
+
+  // apply selected tags
+  const currentSelectedTags = Array.from(tagsSelector).filter(el => el.selected).map(el => el.value);
+  
+  currentSelectedTags.forEach(tag => {
+    hiddenSolvers = hiddenSolvers.concat(tagsSolvers[tag]);
+  })
+
+  hiddenSolvers = hiddenSolvers.filter(
+    (value, index, array) => array.indexOf(value) === index
+  );
+
+  setState({
+    hidden_solvers: hiddenSolvers,
+    selected_tags: currentSelectedTags,
+  });
+}
