@@ -69,7 +69,8 @@ class _Callback:
         t0 = time.perf_counter()
         self.tracker.flush()
 
-        self.energy_consumption += self.tracker._total_energy.kWh - self.tmp - self.energy_consumption
+        self.energy_consumption += self.tracker._total_energy.kWh\
+            - self.tmp - self.energy_consumption
         self.time_iter += t0 - self.time_callback
 
         # Evaluate the iteration if necessary.

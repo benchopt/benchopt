@@ -383,6 +383,20 @@ const getScale = () => {
 const getScatterChartLayout = () => {
   let xaxisType = state().xaxis_type;
 
+  switch (xaxisType) {
+    case "Time":
+      title_x_axis = "Time [sec]";
+      break;
+
+    case "Energy Consumption":
+      title_x_axis = "Energy Consumption [kWh]";
+      break;
+  
+    default:
+      title_x_axis = xaxisType;
+      break;
+  }
+
   const layout = {
     autosize: !isSmallScreen(),
     modebar: {
@@ -402,7 +416,7 @@ const getScatterChartLayout = () => {
     },
     xaxis: {
       type: getScale().xaxis,
-      title: xaxisType === "Time" ? "Time [sec]": xaxisType,
+      title: title_x_axis,
       tickformat:  ["Time", "Tolerance"].includes(xaxisType) ? '.1e': '',
       tickangle: -45,
       gridcolor: '#ffffff',
