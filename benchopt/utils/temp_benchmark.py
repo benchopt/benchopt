@@ -15,6 +15,7 @@ dummy_datasets = ("""
 dummy_solver = ("""
 """,)
 
+
 @contextlib.contextmanager
 def temp_benchmark(
         objective=dummy_objective, datasets=dummy_datasets,
