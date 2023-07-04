@@ -104,6 +104,7 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
             obj_cols=[k for k in df.columns if k.startswith('objective_')
                       and k != 'objective_name'],
             kinds=list(kinds),
+            solver_tags=df['solver_tags'].explode().unique(),
             metadata=get_metadata(df),
         )
 
@@ -148,6 +149,19 @@ def get_metadata(df):
         metadata["solvers_description"] = solvers_description.to_dict()
     except KeyError:
         metadata["solvers_description"] = {}
+
+    # get solvers tags
+    # import ipdb; ipdb.set_trace()
+    try:
+        solvers_tags = df.groupby(
+            by=["solver_name"]
+        )["solver_tags"].first()
+
+        solvers_tags = solvers_tags.to_dict()
+        solvers_tags = {solver: tags.tolist() for solver, tags in solvers_tags.items()}
+        metadata["solvers_tags"] = solvers_tags
+    except KeyError:
+        metadata["solvers_tags"] = {}
 
     # to avoid conflicts with objective metrics
     # get objective description and use `obj_` instead of `objective_`
@@ -211,6 +225,7 @@ def shape_objectives_columns_for_html(df, dataset, objective):
 def shape_solvers_for_html(df, objective_column):
     """Return a dictionary with plotting data for each solver."""
     solver_data = {}
+    df = df.drop(columns=['solver_tags'])
     for solver in df['solver_name'].unique():
         df_filtered = df.query("solver_name == @solver")
 

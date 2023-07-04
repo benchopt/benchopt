@@ -7,6 +7,7 @@ with safe_import_context() as import_ctx:
 
 class Solver(BaseSolver):
     name = 'Python-PGD'  # proximal gradient, optionally accelerated
+    tags = ['proximal_gradient_descent', 'raw_python']
 
     # Any parameter defined here is accessible as an attribute of the solver.
     parameters = {'step_size': [1, 1.5]}

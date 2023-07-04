@@ -181,6 +181,12 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
     states = []
     run_statistics = []
 
+    # get tags
+    if hasattr(solver, 'tags'):
+        solver_tags = solver.tags
+    else:
+        solver_tags = []
+
     # get stopping strategy
     # for plotting purpose consider 'callback' as 'iteration'
     stopping_strategy = solver._solver_strategy
@@ -203,6 +209,7 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
             idx_rep=rep,
             stopping_strategy=stopping_strategy.capitalize(),
             obj_description=obj_description,
+            solver_tags=solver_tags,
             solver_description=solver.__doc__ or "",
         )
 

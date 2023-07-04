@@ -97,6 +97,16 @@
                                 </select>
                             </div>
                         </div>
+                        <div class="mt-8 px-8">
+                            <label for="solver_tags" class="block text-sm font-medium text-white">Tags</label>
+                            <div class="mt-1 rounded-md shadow-sm">
+                                <select multiple id="plot_kind" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-16 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({solver_tag: this.value})">
+                                    % for tag in result['solver_tags']:
+                                    <option value="${tag}">${tag}</option>
+                                    %endfor
+                                </select>
+                            </div>
+                        </div>
                         <div id="xaxis-type-form-group" class="mt-8 px-8">
                             <label for="change_scaling" class="block text-sm font-medium text-white">X-axis</label>
                             <div class="mt-1 rounded-md shadow-sm">

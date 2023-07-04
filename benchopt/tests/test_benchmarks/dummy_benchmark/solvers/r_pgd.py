@@ -23,6 +23,7 @@ with safe_import_context() as import_ctx:
 
 class Solver(BaseSolver):
     name = "R-PGD"
+    tags = ['proximal_gradient_descent', 'r']
 
     install_cmd = 'conda'
     requirements = ['r-base', 'rpy2']

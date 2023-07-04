@@ -10,6 +10,7 @@ with safe_import_context() as import_ctx:
 
 class Solver(BaseSolver):
     name = 'sklearn'
+    tags = ['external_libs']
 
     install_cmd = 'conda'
     requirements = ['scikit-learn']
