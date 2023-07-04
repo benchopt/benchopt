@@ -31,7 +31,7 @@ def run_one_resolution(objective, solver, meta, stop_val):
     stop_val : int | float
         Corresponds to stopping criterion, such as
         tol or max_iter for the solver. It depends
-        on the stopping_strategy for the solver.
+        on the sampling_strategy for the solver.
 
     Returns
     -------

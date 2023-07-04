@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 
 from benchopt.runner import _Callback
-from benchopt.stopping_criterion import STOPPING_STRATEGIES
+from benchopt.stopping_criterion import SAMPLING_STRATEGIES
 from benchopt.utils import product_param
 
 
@@ -89,8 +89,8 @@ def test_solver_class(benchmark, solver_class):
 
     # Check that the solver_class uses a valid stopping_strategy
     if hasattr(solver_class, 'stopping_strategy'):
-        msg = f"stopping_strategy should be in {STOPPING_STRATEGIES}."
-        assert solver_class.stopping_strategy in STOPPING_STRATEGIES, msg
+        msg = f"stopping_strategy should be in {SAMPLING_STRATEGIES}."
+        assert solver_class.stopping_strategy in SAMPLING_STRATEGIES, msg
 
     # Check that the solver_class uses a valid callable to override get_next.
     if hasattr(solver_class, 'get_next'):

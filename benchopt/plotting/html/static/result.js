@@ -30,11 +30,11 @@ const NON_CONVERGENT_COLOR = 'rgba(0.8627, 0.8627, 0.8627)'
  * @param {Object} partialState
  */
 const setState = (partialState) => {
-  window.state = {...state(), ...partialState};
+  window.state = { ...state(), ...partialState };
   displayScatterElements(!isBarChart());
 
-  // TODO: `listIdXaxisSelection` to be removed after 
-  // implementing responsiveness through breakpoints 
+  // TODO: `listIdXaxisSelection` to be removed after
+  // implementing responsiveness through breakpoints
   // and removing content duplication between big screen and mobile
   let listIdXaxisSelection = ["change_xaxis_type", "change_xaxis_type_mobile"];
   listIdXaxisSelection.forEach(idXaxisSelection => updateXaxis(idXaxisSelection))
@@ -76,9 +76,9 @@ const makePlot = () => {
  * @returns {array}
  */
 const getBarData = () => {
-  if (!isAvailable()) return [{type:'bar'}];
+  if (!isAvailable()) return [{ type: 'bar' }];
 
-  const {x, y, colors, texts} = barDataToArrays()
+  const { x, y, colors, texts } = barDataToArrays()
 
   // Add bars
   const barData = [{
@@ -132,10 +132,11 @@ const getScatterCurves = () => {
 
   getSolvers().forEach(solver => {
     solverStoppingStrategy = data(solver)['stopping_strategy'];
+    // TODO XXX
 
     // plot only solvers that were stopped using xaxis type
     // plot all solver if xaxis type is `time`
-    if(xaxisType !== "Time" && solverStoppingStrategy !== xaxisType) {
+    if (xaxisType !== "Time" && solverStoppingStrategy !== xaxisType) {
       return
     }
 
@@ -160,14 +161,14 @@ const getScatterCurves = () => {
     });
 
     // skip plotting quantiles if xaxis is not time
-    // as stop_val are predefined and hence deterministic 
-    if(xaxisType !== "Time") {
+    // as stop_val are predefined and hence deterministic
+    if (xaxisType !== "Time") {
       return
     }
 
     if (state().with_quantiles) {
       // Add shaded area for each solver, with proper style and visibility.
-  
+
       curves.push({
         type: 'scatter',
         mode: 'lines',
@@ -229,7 +230,7 @@ const useTransformer = (data, axis, options) => {
   try {
     let transformer = 'transformer_' + axis + '_' + state().plot_kind;
     return window.transformers[transformer](data, options);
-  } catch(error) {
+  } catch (error) {
     return data;
   }
 };
@@ -284,7 +285,7 @@ window.transformers = {
 
 const data = (solver = null) => {
   return solver ?
-    window.data[state().dataset][state().objective][state().objective_column].solvers[solver]:
+    window.data[state().dataset][state().objective][state().objective_column].solvers[solver] :
     window.data[state().dataset][state().objective][state().objective_column]
 }
 
@@ -338,7 +339,7 @@ const barDataToArrays = () => {
     texts.push(data(solver).bar.text);
   });
 
-  return {x, y, colors, texts}
+  return { x, y, colors, texts }
 }
 
 const getScale = () => {
@@ -390,18 +391,18 @@ const getScatterChartLayout = () => {
     },
     xaxis: {
       type: getScale().xaxis,
-      title: xaxisType === "Time" ? "Time [sec]": xaxisType,
-      tickformat:  ["Time", "Tolerance"].includes(xaxisType) ? '.1e': '',
+      title: xaxisType === "Time" ? "Time [sec]" : xaxisType,
+      tickformat: ["Time", "Tolerance"].includes(xaxisType) ? '.1e' : '',
       tickangle: -45,
       gridcolor: '#ffffff',
-      zeroline : false,
+      zeroline: false,
     },
     yaxis: {
       type: getScale().yaxis,
       title: getYLabel(),
       tickformat: '.1e',
       gridcolor: '#ffffff',
-      zeroline : false,
+      zeroline: false,
     },
     title: `${state().objective}<br />Data: ${state().dataset}`,
     plot_bgcolor: '#e5ecf6',
@@ -478,7 +479,7 @@ const getBarChartLayout = () => {
 };
 
 const getYLabel = () => {
-  switch(state().plot_kind) {
+  switch (state().plot_kind) {
     case 'objective_curve':
       return 'F(x)';
     case 'suboptimality_curve':
@@ -512,13 +513,13 @@ const getSolverFromEvent = event => {
   return null;
 };
 
-const purgeHiddenSolvers = () => setState({hidden_solvers: []});
+const purgeHiddenSolvers = () => setState({ hidden_solvers: [] });
 
-const hideAllSolversExcept = solver => {setState({hidden_solvers: getSolvers().filter(elmt => elmt !== solver)})};
+const hideAllSolversExcept = solver => { setState({ hidden_solvers: getSolvers().filter(elmt => elmt !== solver) }) };
 
-const hideSolver = solver => isVisible(solver) ? setState({hidden_solvers: [...state().hidden_solvers, solver]}) : null;
+const hideSolver = solver => isVisible(solver) ? setState({ hidden_solvers: [...state().hidden_solvers, solver] }) : null;
 
-const showSolver = solver => setState({hidden_solvers: state().hidden_solvers.filter(hidden => hidden !== solver)});
+const showSolver = solver => setState({ hidden_solvers: state().hidden_solvers.filter(hidden => hidden !== solver) });
 
 /**
  * Add or remove solver name from the list of hidden solvers.
@@ -572,7 +573,7 @@ const makeLegend = () => {
     let legendItem = createLegendItem(solver, color, symbolNumber);
 
     // preserve compatibility with prev version
-    if(solversDescription === null || solversDescription === undefined) {
+    if (solversDescription === null || solversDescription === undefined) {
       legend.appendChild(legendItem);
       return;
     }
@@ -667,7 +668,7 @@ const createLegendItem = (solver, color, symbolNumber) => {
 }
 
 
-function createSolverDescription(legendItem, {title, description}) {
+function createSolverDescription(legendItem, { title, description }) {
   if (description === null || description === undefined || description === "")
     description = "No description provided";
 
@@ -745,9 +746,9 @@ document.getElementById('btn-plot-config').addEventListener('click', () => {
   const elmt = document.getElementById('mobile-plot-form');
 
   if (elmt.style.display === 'block') {
-      elmt.style.display = 'none';
+    elmt.style.display = 'none';
 
-      return;
+    return;
   }
 
   elmt.style.display = 'block';
@@ -757,9 +758,9 @@ document.getElementById('btn-main-menu').addEventListener('click', () => {
   const elmt = document.getElementById('mobile-menu');
 
   if (elmt.style.display === 'block') {
-      elmt.style.display = 'none';
+    elmt.style.display = 'none';
 
-      return;
+    return;
   }
 
   elmt.style.display = 'block';
