@@ -240,14 +240,14 @@ def shape_solvers_for_html(df, objective_column):
                 sampling_strategy = ["Time"]
 
         if len(sampling_strategy) != 1:
-            found_SAMPLING_STRATEGIES = ', '.join(
+            found_sampling_strategies = ', '.join(
                 f"`{item}`" for item in sampling_strategy
             )
 
             raise Exception(
                 "Solver can be run using only one sampling strategy. "
                 f"Expected one sampling strategy "
-                f"but found {found_SAMPLING_STRATEGIES}"
+                f"but found {found_sampling_strategies}"
             )
 
         sampling_strategy = sampling_strategy[0]
