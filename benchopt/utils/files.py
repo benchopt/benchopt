@@ -1,6 +1,9 @@
 import os
+import tempfile
 import warnings
+import contextlib
 from pathlib import Path
+from benchopt.benchmark import Benchmark
 
 
 def rm_folder(folder):
@@ -32,16 +35,20 @@ def uniquify_results(file_path):
         return file_path
 
 
-def generate_temp_benchmark(tempdir, objective, datasets, solvers):
-    temp_path = Path(tempdir)
-    os.mkdir(temp_path / "solvers")
-    os.mkdir(temp_path / "datasets")
-    with open(temp_path / "objective.py", "w") as f:
-        f.write(objective)
-    for idx, dataset in enumerate(datasets):
-        with open(temp_path / f"solvers/{idx}.py", "w") as f:
-            f.write(dataset)
+@contextlib.contextmanager
+def temp_benchmark(objective, datasets, solvers):
+    with tempfile.TemporaryDirectory() as tempdir:
+        temp_path = Path(tempdir)
+        os.mkdir(temp_path / "solvers")
+        os.mkdir(temp_path / "datasets")
+        with open(temp_path / "objective.py", "w") as f:
+            f.write(objective)
+        for idx, dataset in enumerate(datasets):
+            with open(temp_path / f"solvers/{idx}.py", "w") as f:
+                f.write(dataset)
 
-    for idx, solver in enumerate(solvers):
-        with open(temp_path / f"datasets/{idx}.py", "w") as f:
-            f.write(solver)
+        for idx, solver in enumerate(solvers):
+            with open(temp_path / f"datasets/{idx}.py", "w") as f:
+                f.write(solver)
+
+        yield Benchmark(temp_path)
