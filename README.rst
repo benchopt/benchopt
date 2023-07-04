@@ -199,6 +199,9 @@ Available benchmarks
    * - `ResNet Classification <https://github.com/benchopt/benchmark_resnet_classif>`_
      - `Results <https://benchopt.github.io/results/benchmark_resnet_classif.html>`__
      - |Build Status ResNetClassif|
+   * - `Bilevel Optimization <https://github.com/benchopt/benchmark_bilevel>`_
+     - `Results <https://benchopt.github.io/results/benchmark_bilevel.html>`__
+     - |Build Status Bilevel|
 
 
 
@@ -248,3 +251,5 @@ Available benchmarks
    :target: https://github.com/benchopt/benchmark_tv_2d/actions
 .. |Build Status ResNetClassif| image:: https://github.com/benchopt/benchmark_resnet_classif/workflows/Tests/badge.svg
    :target: https://github.com/benchopt/benchmark_resnet_classif/actions
+.. |Build Status Bilevel| image:: https://github.com/benchopt/benchmark_bilevel/workflows/Tests/badge.svg
+   :target: https://github.com/benchopt/benchmark_bilevel/actions
