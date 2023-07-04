@@ -251,7 +251,7 @@ def shape_solvers_for_html(df, objective_column):
 
         solver_data[solver] = {
             'scatter': {
-                'energy': 
+                'energy':
                     groupby_stop_val_median['energy_consumption'].tolist(),
                 'x': groupby_stop_val_median['time'].tolist(),
                 'y': groupby_stop_val_median[objective_column].tolist(),

@@ -45,7 +45,7 @@ def run_one_resolution(objective, solver, meta, stop_val, tracker):
         raise ImportError(
             f"Failure during import in {solver.__module__}."
         )
-    
+
     solver.pre_run_hook(stop_val)
     tracker.flush()
     t_start = time.perf_counter()
