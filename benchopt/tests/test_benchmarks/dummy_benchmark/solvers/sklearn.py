@@ -23,7 +23,7 @@ class Solver(BaseSolver):
         warnings.filterwarnings('ignore', category=ConvergenceWarning)
 
     def run(self, n_iter):
-        self.clf.max_iter = n_iter
+        self.clf.max_iter = n_iter + 1
         self.clf.fit(self.X, self.y)
 
     def get_result(self):
