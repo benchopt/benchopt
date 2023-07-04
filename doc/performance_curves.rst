@@ -16,7 +16,7 @@ They are chosen by the ``sampling_strategy`` attribute of each solver.
 
 The first way is to use ``Solver.sampling_strategy = "iteration"`` or ``Solver.sampling_strategy = "tolerance"``.
 This is used for black box solvers, where one can only get the result of the solver for a given number of iterations or for a given numerical tolerance.
-This stopping strategy creates curves by calling ``Solver.run(stop_val)`` several times with different values for the ``stop_val`` parameter:
+This sampling strategy creates curves by calling ``Solver.run(stop_val)`` several times with different values for the ``stop_val`` parameter:
 
 - if the solver's ``sampling_strategy`` is ``"iteration"``, ``stop_val`` is the number of iterations passed to ``run``.
   It increases geometrically by at least 1, starting from 1 with a factor :math:`\rho=1.5`.
