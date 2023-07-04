@@ -173,7 +173,7 @@ const getScatterCurves = () => {
 
     // skip plotting quantiles if xaxis is not time
     // as stop_val are predefined and hence deterministic 
-    if(xaxisType !== "Time") {
+    if(xaxisType !== "Time" && xaxisType !== "Energy Consumption") {
       return
     }
 
