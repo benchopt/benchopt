@@ -147,7 +147,7 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
                     stop_val, curve
                 )
 
-        tracker.stop()
+            tracker.stop()
 
     return curve, ctx.status
 
