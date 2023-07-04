@@ -1,6 +1,7 @@
 import time
 
 from .utils.sys_info import get_sys_info
+from codecarbon import EmissionsTracker
 
 
 class _Callback:
@@ -44,7 +45,7 @@ class _Callback:
         The time when exiting the callback call.
     """
 
-    def __init__(self, objective, meta, stopping_criterion, tracker):
+    def __init__(self, objective, meta, stopping_criterion):
         self.objective = objective
         self.meta = meta
         self.stopping_criterion = stopping_criterion
@@ -57,7 +58,11 @@ class _Callback:
         self.time_iter = 0.
         self.energy_consumption = 0.
         self.next_stopval = self.stopping_criterion.init_stop_val()
-        self.tracker = tracker
+        self.tracker = EmissionsTracker(
+            save_to_file=False,
+            tracking_mode="process",
+            log_level="error"
+        )
 
     def start(self):
         self.time_callback = time.perf_counter()

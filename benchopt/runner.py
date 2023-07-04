@@ -99,25 +99,25 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
     curve = []
     with exception_handler(output, pdb=pdb) as ctx:
 
-        tracker = EmissionsTracker(
-            save_to_file=False,
-            tracking_mode="process",
-            log_level="error"
-        )
-        tracker.start()
-
         if solver._solver_strategy == "callback":
 
             # If stopping strategy is 'callback', only call once to get the
             # results up to convergence.
             callback = _Callback(
-                objective, meta, stopping_criterion, tracker
+                objective, meta, stopping_criterion
             )
             solver.pre_run_hook(callback)
             callback.start()
             solver.run(callback)
             curve, ctx.status = callback.get_results()
         else:
+
+            tracker = EmissionsTracker(
+                save_to_file=False,
+                tracking_mode="process",
+                log_level="error"
+            )
+            tracker.start()
 
             # Create a Memory object to cache the computations in the benchmark
             # folder and handle cases where we force the run.
