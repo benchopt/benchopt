@@ -1,4 +1,5 @@
 import time
+import textwrap
 
 from datetime import datetime
 
@@ -203,7 +204,7 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
             idx_rep=rep,
             stopping_strategy=stopping_strategy.capitalize(),
             obj_description=obj_description,
-            solver_description=(solver.__doc__ or "").replace("    ", ""),
+            solver_description=textwrap.dedent(solver.__doc__ or ""),
         )
 
         stopping_criterion = solver.stopping_criterion.get_runner_instance(
