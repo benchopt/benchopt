@@ -234,7 +234,10 @@ def shape_solvers_for_html(df, objective_column):
         try:
             sampling_strategy = df_filtered['sampling_strategy'].unique()
         except KeyError:
-            sampling_strategy = ["Time"]
+            try:
+                sampling_strategy = df_filtered['stopping_strategy'].unique()
+            except KeyError:
+                sampling_strategy = ["Time"]
 
         if len(sampling_strategy) != 1:
             found_SAMPLING_STRATEGIES = ', '.join(
@@ -242,8 +245,8 @@ def shape_solvers_for_html(df, objective_column):
             )
 
             raise Exception(
-                "Solver can be run using only one stopping strategy. "
-                f"Expected one stopping strategy "
+                "Solver can be run using only one sampling strategy. "
+                f"Expected one sampling strategy "
                 f"but found {found_SAMPLING_STRATEGIES}"
             )
 

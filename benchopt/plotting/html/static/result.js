@@ -579,7 +579,6 @@ const makeLegend = () => {
     }
 
     let payload = {
-      title: solver,
       description: solversDescription[solver],
     }
 
@@ -668,7 +667,7 @@ const createLegendItem = (solver, color, symbolNumber) => {
 }
 
 
-function createSolverDescription(legendItem, { title, description }) {
+function createSolverDescription(legendItem, { description }) {
   if (description === null || description === undefined || description === "")
     description = "No description provided";
 
@@ -676,8 +675,7 @@ function createSolverDescription(legendItem, { title, description }) {
   descriptionContainer.setAttribute("class", "solver-description-container")
 
   descriptionContainer.innerHTML = `
-  <div class="solver-description-content">
-    <span class="solver-description-title">${title}</span>
+  <div class="solver-description-content text-sm">
     <span class="solver-description-body">${description}</span>
   </div>
   `;
