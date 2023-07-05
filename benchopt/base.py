@@ -230,6 +230,15 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         else:
             self.run(stop_val)
 
+    def warm_up(self):
+        """User specified warm up step, called once before the runs"""
+        return
+    
+    def _warm_up(self):
+        if not getattr(self, 'warmup_done', True):
+            self.warm_up()
+            self.warmup_done = True
+
     @staticmethod
     def _reconstruct(module_filename, parameters, objective, output,
                      pickled_module_hash=None, benchmark_dir=None):
