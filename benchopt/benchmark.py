@@ -36,6 +36,9 @@ class Benchmark:
             Folder containing the benchmark. The folder should at least
             contain an `objective.py` file defining the `Objective`
             function for the benchmark.
+        standalone : boolean
+            If no `objective.py` file defines the benchmark, use
+            `standalone=True` in order to visualize available results.
 
         Attributes
         ----------
