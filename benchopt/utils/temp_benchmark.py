@@ -31,18 +31,18 @@ def temp_benchmark(
 
     Parameters
     ----------
-    objective: str or None (default=None)
+    objective: str | None (default=None)
         Content of the objective.py file. If None, defaults to objective of
-        ``benchopt.tests.DUMMY_BENCHMARK_PATH``.
-    datasets: str or list of str or None (default=None)
+        ``benchopt.tests.DUMMY_BENCHMARK``.
+    datasets: str | list of str | None (default=None)
         Content of the dataset.py file(s). If None, defaults to datasets of
-        ``benchopt.tests.DUMMY_BENCHMARK_PATH``.
-    solvers: str of list of str
+        ``benchopt.tests.DUMMY_BENCHMARK``.
+    solvers: str | list of str
         Content of the solver.py file(s). If None, defaults to solvers of
-        ``benchopt.tests.DUMMY_BENCHMARK_PATH``.
-    config: str or None (default=None)
-        Content of the Benchmark configuration file. If None, no config file
-        is created.
+        ``benchopt.tests.DUMMY_BENCHMARK``.
+    config: str | None (default=None)
+        Content of configuration file for running the Benchmark. If None,
+        no config file is created.
     """
     if objective is None:
         objective = dummy_objective
