@@ -1,9 +1,11 @@
 import pytest
 import numpy as np
 
+from benchopt.cli.main import run
 from benchopt.runner import _Callback
 from benchopt.stopping_criterion import SAMPLING_STRATEGIES
 from benchopt.utils import product_param
+from benchopt.utils.temp_benchmark import temp_benchmark
 
 
 def test_benchmark_objective(benchmark, dataset_simu):
@@ -215,3 +217,29 @@ def _test_solver_one_objective(solver, objective):
 
             diff = val_eps - val_star
             assert diff >= 0
+
+
+
+def test_deprecated_stopping_strategy():
+    solver1 = """from benchopt import BaseSolver
+    import numpy as np
+
+    class Solver(BaseSolver):
+        name = 'solver1'
+        stopping_strategy = 'iteration'
+
+        def run(self, n_iter): pass
+
+        def set_objective(self, X, y, lmbd):
+            self.n_features = X.shape[1]
+
+        def get_result(self, **data):
+            return np.zeros(self.n_features)
+    """
+    with temp_benchmark(solvers=[solver1, solver1]) as benchmark:
+        with pytest.raises(FutureWarning, match='deprecated'):
+            run([str(benchmark.benchmark_dir), *'-s solver1 -d test-dataset -n 1 -r 1'.split()])
+
+
+if __name__ == '__main__':
+    test_deprecated_stopping_strategy()
