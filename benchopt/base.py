@@ -232,7 +232,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
 
     def warm_up(self):
         """User specified warm up step, called once before the runs"""
-        return
+        ...
     
     def _warm_up(self):
         if not getattr(self, 'warmup_done', True):

@@ -240,6 +240,11 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
     # Make sure to flush so the parallel output is properly display
     print(end='', flush=True)
 
+    # refresh the solver warm up flag so that warm-up is done again
+    # in the future
+
+    solver.warmup_done = False
+
     if status == 'interrupted':
         raise SystemExit(1)
     return run_statistics
