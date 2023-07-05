@@ -63,6 +63,7 @@ class _Callback:
             tracking_mode="process",
             log_level="error"
         )
+        self.tracker.start()
 
     def start(self):
         self.time_callback = time.perf_counter()
