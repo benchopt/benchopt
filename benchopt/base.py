@@ -200,7 +200,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
     def run_once(self, stop_val=1):
         """Run the solver once, to cache warmup times (e.g. pre-compilations).
 
-        This function is intended to be called in ``Solver.set_objective``
+        This function is intended to be called in ``Solver.warm_up``
         method to avoid taking into account a solver's warmup costs.
 
         Parameters
@@ -231,7 +231,10 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
             self.run(stop_val)
 
     def warm_up(self):
-        """User specified warm up step, called once before the runs"""
+        """User specified warm up step, called once before the runs.
+        The time it takes to run this function is not taken into account.
+        The function `Solver.run_once` can be used here for solvers that 
+        require jit compilation."""
         ...
     
     def _warm_up(self):
