@@ -90,6 +90,9 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
         The status on which the solver was stopped.
     """
 
+    # The warm-up step is only done once
+    solver._warm_up()
+
     curve = []
     with exception_handler(output, pdb=pdb) as ctx:
 
