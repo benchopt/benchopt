@@ -6,7 +6,7 @@ with safe_import_context() as import_ctx:
 
 
 class Objective(BaseObjective):
-    """Here one can provide a description of the Objetive.
+    """Here one can provide a description of the Objective.
 
     Lorem ipsum dolor sit amet. Eos voluptatem natus ab vero voluptatum est
     excepturi saepe non minima alias sed laboriosam optio qui dolores autem
