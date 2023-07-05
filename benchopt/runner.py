@@ -243,7 +243,7 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
     # refresh the solver warm up flag so that warm-up is done again
     # in the future
 
-    solver.warmup_done = False
+    solver._warmup_done = False
 
     if status == 'interrupted':
         raise SystemExit(1)
