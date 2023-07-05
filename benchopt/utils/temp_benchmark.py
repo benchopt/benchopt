@@ -37,7 +37,7 @@ def temp_benchmark(
     datasets: str | list of str | None (default=None)
         Content of the dataset.py file(s). If None, defaults to datasets of
         ``benchopt.tests.DUMMY_BENCHMARK``.
-    solvers: str | list of str
+    solvers: str | list of str | None (default=None)
         Content of the solver.py file(s). If None, defaults to solvers of
         ``benchopt.tests.DUMMY_BENCHMARK``.
     config: str | None (default=None)
