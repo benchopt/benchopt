@@ -25,15 +25,36 @@ dummy_datasets = [
 
 @contextlib.contextmanager
 def temp_benchmark(
-        objective=None, datasets=None,
-        solvers=None, config=None
+        objective=None, datasets=None, solvers=None, config=None
 ):
+    """Create Benchmark in a temporary folder, for test purposes.
+
+    Parameters
+    ----------
+    objective: str or None (default=None)
+        Content of the objective.py file. If None, defaults to objective of
+        ``benchopt.tests.DUMMY_BENCHMARK_PATH``.
+    datasets: str or list of str or None (default=None)
+        Content of the dataset.py file(s). If None, defaults to datasets of
+        ``benchopt.tests.DUMMY_BENCHMARK_PATH``.
+    solvers: str of list of str
+        Content of the solver.py file(s). If None, defaults to solvers of
+        ``benchopt.tests.DUMMY_BENCHMARK_PATH``.
+    config: str or None (default=None)
+        Content of the Benchmark configuration file. If None, no config file
+        is created.
+    """
     if objective is None:
         objective = dummy_objective
     if solvers is None:
         solvers = dummy_solvers
     if datasets is None:
         datasets = dummy_datasets
+
+    if isinstance(datasets, str):
+        datasets = [datasets]
+    if isinstance(solvers, str):
+        solvers = [solvers]
 
     with tempfile.TemporaryDirectory() as tempdir:
         temp_path = Path(tempdir)
