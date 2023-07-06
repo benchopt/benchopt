@@ -237,6 +237,9 @@ def test_deprecated_stopping_strategy():
         def get_result(self, **data):
             return np.zeros(self.n_features)
     """
+
+    solver2 = solver1.replace("stopping_strategy", "sampling_strategy")
+
     with temp_benchmark(solvers=[solver1, solver1]) as benchmark:
         with pytest.warns(
                 FutureWarning,
@@ -244,3 +247,7 @@ def test_deprecated_stopping_strategy():
             run([str(benchmark.benchmark_dir),
                  *'-s solver1 -d test-dataset -n 1 -r 1'.split()],
                 standalone_mode=False)
+
+        run([str(benchmark.benchmark_dir),
+             *'-s solver1 -d test-dataset -n 1 -r 1'.split()],
+            standalone_mode=False)
