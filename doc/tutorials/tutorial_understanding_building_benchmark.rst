@@ -1,14 +1,12 @@
-.. _Benchopt: https://benchopt.github.io/#
+Understanding and building a simple benchmark
+=============================================
 
-Understanding and building a simple benchmark with Benchopt
-===========================================================
-
-Are you looking for a simple, step-by-step introduction to the `Benchopt`_ library?
+Are you looking for a simple, step-by-step introduction to the `Benchopt <https://benchopt.github.io/#>`_ library?
 Then look no further!
-In this tutorial, we are going to learn how to use the `Benchopt`_ library to compare various algorithms in order to minimize a given cost.
+In this tutorial, we are going to learn how to use the Benchopt library to compare various algorithms in order to minimize a given cost.
 This tutorial complements the `write a benchmark <https://benchopt.github.io/how.html>`_ webpage with a more practical, hands-on approach. 
 
-Let's say we want to minimize the cost function of the `ridge regression problem <https://en.wikipedia.org/wiki/Ridge_regression>`_, a variant of linear regression which is a common of supervised machine learning.
+Let's say you are interested in benchmarking solvers to minimize the cost function of the `ridge regression problem <https://en.wikipedia.org/wiki/Ridge_regression>`_, a variant of linear regression which is a common problem in supervised machine learning.
 
 .. math::
 
@@ -27,10 +25,10 @@ Given an estimate :math:`\beta`, GD iterates the following step:
 
 .. math:: 
 
-    \beta \leftarrow \beta - \eta \nabla_{f}(\beta)
+    \beta \leftarrow \beta - \eta \nabla f(\beta)
 
-where :math:`\eta` is the learning rate or stepsize, and controls how much the unknown is moved alongside the descent direction.
-Vector :math:`\nabla_{f}(\beta)` is the gradient of the cost function defined above, evaluated at \\(\\beta\\).
+where :math:`\eta` is the learning rate or stepsize, and controls how much the iterate is moved alongside the descent direction.
+The vector :math:`\nabla f(\beta)` is the gradient of the cost function defined above, evaluated at \\(\\beta\\).
 
 Even though GD is a simple algorithm, when applied to our ridge regression problem, we should be mindful of the two hyperparameters: the regularization parameter \\(\\lambda\\), and the gradient stepsize \\( \\eta\\).
 It is very common in machine learning that we are facing a situation where we want to vary these parameters, and compare the behavior of our algorithm in each scenario.
@@ -39,7 +37,7 @@ Benchopt we can create a benchmark for this problem, here is a screenshot of wha
 .. image:: screenshot_mytemplate_ridgeloss.png
     :width: 800
 
-We can now dive into the framework and see how leverage it to easily create a benchmark!
+We can now dive into the framework and see how to leverage it to easily create our benchmark!
 
 ..
     - It is also fairly common to have to compare several different optimization algorithms to minimize the same cost function. For anyone who has experience in this, performing fair comparisons between various algorithms, which are typically implemented by other people, is quite challenging to do properly. For instance, our implementation of GD may be incorrect. If we trust the algorithm to return a loss function which is computed inside the GD code, it may potentially be artificially small. For instance, when implementing GD, we might mistakingly return as the loss :math:`\frac{1}{2} {\|y - X\beta\|_2}^2 + \frac{1}{2}\lambda{\|\beta\|_2}^2` where the regularization has been wrongly halved. Then this implementation of GD would appear much better, but in fact it is being unfairly compared to competitors and the results reported would be inaccurate.
@@ -49,7 +47,7 @@ Installing Benchopt
 -------------------
 
 Let's start by installing the benchopt package.
-It is a python package, so we are assuming that you are starting this tutorial with a functioning python installation, preferably version >=3.10.
+It is a python package, so we are assuming that you are starting this tutorial with a functioning python installation.
 It is recommanded to run all this tutorial in a dedicated environment (such as a `virtual environment <https://docs.python.org/fr/3/library/venv.html>`_ or a conda environment)
 
 .. 
@@ -60,16 +58,16 @@ It is recommanded to run all this tutorial in a dedicated environment (such as a
         python -m venv benchopt_tutorial_1
         source benchopt_tutorial_1/bin/activate
 
-Benchopt is referenced in the PyPI index, which means it can be installed using ``pip`` by running in a terminal
+Benchopt can be installed simply using ``pip`` by running in a terminal
 
-.. code-block:: bash 
+.. prompt:: bash $
 
     pip install benchopt
 
 Benchopt and its dependencies are going to be installed, just wait until this is done.
 If you have any issue with the installation, if you are already in a clean virtual environment, you may have a look at the `installation page <https://benchopt.github.io/#install>`_.
 
-Installing and Running a first benchmark
+Installing and running a first benchmark
 ----------------------------------------
 
 Benchopt in itself is like a mother package: it supervises and runs smaller libraries, a.k.a. the benchmarks.
@@ -77,10 +75,10 @@ Therefore, benchmarks are repositories with a predefined structure and some requ
 The benchmark specifies information about the problem (typically the loss function to minimize), the dataset on which the algorithms are tested (values of \\(X \\) and \\( y\\)) and the solvers (like our GD algorithm).
 It is likely that if you are reading this tutorial, you are in fact mostly interested in writing and running a benchmark.
 
-To write a benchmark, it is recommended to start from the template benchmark shared in the Benchopt organisation.
+To write a benchmark, it is recommended to start from the `template benchmark <https://github.com/benchopt/template_benchmark>`_ shared in the Benchopt organisation.
 To get this template and rename it ``my_benchmark``, you can clone it from its Github repository
 
-.. code-block:: bash 
+.. prompt:: bash $
 
     git clone git@github.com:benchopt/template_benchmark my_benchmark
 
@@ -91,14 +89,14 @@ The cost which is implemented in the template benchmark is the Ordinary Least Sq
 
     g(\beta) = \frac{1}{2} \|y - X\beta \|^2
 
-and the solver implement is GD with \\(\\nabla_g(\\beta) = -X^Ty + X^TX\\beta \\) the gradient of \\(g\\) at \\(\\beta \\).
+and the solver implement is GD with \\(\\nabla g(\\beta) = -X^Ty + X^TX\\beta \\) the gradient of \\(g\\) at \\(\\beta \\).
 
 We will modify this template to adapt it to the ridge regression problem next, but before that let us run this benchmark.
-In other words, let us use benchopt to read the contents of the template benchmark and run GD on OLS with a predefined set of stepsizes, in our case \\( [1, 1.99] \\) (the stepsize is scaled with the Lipschitz constant, you can ignore this detail if you are not familiar with this concept).
+In other words, let us use benchopt to read the contents of the template benchmark and run GD on OLS with a predefined set of stepsizes, in our case \\( [1, 1.99] \\) (the stepsize is scaled by the inverse of the gradient's Lipschitz constant, you can ignore this detail if you are not familiar with this concept).
 
 To run the template benchmark, simply run the following command in the terminal:
 
-.. code-block:: bash
+.. prompt:: bash $
 
     benchopt run my_benchmark
 
@@ -113,7 +111,7 @@ You will see something similar to this in your terminal
     - *Ordinary Least Squares* tells us which loss is minimized, and the hyperparameters are written in bracket. 
     - *GD* is a line indicating the progress of algorithm GD for this problem (Simulated dataset, OLS loss). Again its hyperparameters are written in brackets (here the stepsize value).
 
-Once the benchmark has been run, a pop-up window should open in your default navigator.
+Once the benchmark has been run, a window should open in your default navigator.
 This provides a visualization of the results of the run, which is useful to immediately observe, comment and share the results.
 After running the template benchmark, we can observe the convergence plots of GD with the two different stepsize choices, for two different simulated dataset.
 The convergence plots can be made log-log for easier reading.
@@ -216,7 +214,7 @@ Finally, one may wonder where to define the hyperparameters of the problem.
 The general rule of thumb is that hyperparameters are defined as attributes of solvers, objectives or dataset depending on where it makes the most sense.
 For instance the stepsize is a solver-dependent parameter, it is defined as an attribute of the ``python-gd`` solver
 
-.. code-block:: python
+.. prompt:: python
 
     class Solver(BaseSolver):
         name="GD"
@@ -232,7 +230,7 @@ Formally, we are starting from OLS and GD implemented for the OLS problem.
 Therefore we need to implement the following modifications:
 
     - we should add the regularization term \\( +\\lambda \\|\\beta \\|^2 \\) to the loss in ``objective.py``, and values for the regularization parameter.
-    - we should modify the computed gradient, knowing that \\( \\nabla_{f}(\\beta) = \\nabla_{g}(\\beta) + 2\\lambda\\beta \\).
+    - we should modify the computed gradient, knowing that \\( \\nabla f(\\beta) = \\nabla g(\\beta) + 2\\lambda\\beta \\).
 
 We will not modify anything in the dataset since the inputs \\(X,y \\) of the regression and ridge regression are essentially the same.
 
@@ -287,7 +285,7 @@ We can now modify the solver.
 Instead of modifying directly ``python-gd.py``, let's create a new solver, ``python-gd-ridge.py``.
 Duplicate the ``python-gd.py`` file and rename it, e.g. using the following command in the ``solvers/`` directory
 
-.. code-block:: bash
+.. prompt:: bash $
 
     cp python-gd.py python-gd-ridge.py
 
@@ -330,7 +328,7 @@ And that's it, you now have your first benchmark setup! Congratulations :)
 All that's left is to run the benchmark and look at the results.
 We run the benchopt with the same command as earlier, in the parent directory of the template benchmark:
 
-.. code-block:: bash
+.. prompt:: bash $
 
     benchopt run my_benchmark
 
@@ -362,8 +360,8 @@ This is caused by the scaling of the stepsize (using the Lipschitz constant) not
 
 One of the interesting features of Benchopt is its ability to easily compute and show several metrics over the run.
 We have computed the OLS loss \\(g(\\beta) \\) alongside the iterations, and we can observe its values by changing the ``Objective_column`` field to ``ols``
- Observe that now GD appears more efficient than GD-ridge
- Again this is excepted since GD is designed to minimize the OLS loss.
+Observe that now GD appears more efficient than GD-ridge
+Again this is excepted since GD is designed to minimize the OLS loss.
 
 Concluding remarks
 ------------------
