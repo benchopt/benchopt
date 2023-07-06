@@ -2,7 +2,7 @@ import time
 import math
 
 # Possible stop strategies
-STOPPING_STRATEGIES = ['iteration', 'tolerance', 'callback']
+STOPPING_STRATEGIES = ['iteration', 'tolerance', 'callback', 'grid']
 
 EPS = 1e-10
 PATIENCE = 3
@@ -28,8 +28,12 @@ COMMON_ARGS_DOC = """
         - ``'callback'``: call the run method with a callback that will compute
         the objective function on a logarithmic scale. After each iteration,
         the callback should be called with the current iterate solution.
-    key_to_monitor : str (default: 'objective_value')
-        The objective to check for tracking progress.
+        - ``'grid'``: call the run method for each parameter specified in a 
+        grid.
+    key_to_monitor : str | None (default: 'objective_value')
+        The objective to check for tracking progress. With the ``'grid'`` 
+        strategy, `key_to_monitor` is not used since we want to call run over 
+        the whole grid of parameters.
 """
 
 
@@ -474,3 +478,59 @@ class NoCriterion(StoppingCriterion):
 
     def check_convergence(self, cost_curve):
         return False, 0
+
+
+class GridRunCriterion(StoppingCriterion):
+    """Stopping criterion for solvers that have to be run on all the parameters
+    that are stored within a given grid. The solver will be stopped when the 
+    end of the grid is met.
+
+    Parameters
+    ----------
+    grid : list
+        The grid of parameters on which the run has to be called.
+    """
+
+    def __init__(self, grid, *args, **kwargs):
+        super().__init__(strategy="grid", grid=grid)
+        if not isinstance(grid, list):
+            raise ValueError("The parameter `grid` must be a `list`.")
+        if len(grid) == 0:
+            raise ValueError("The parameter `grid` must be non-empty")
+        self.grid = grid
+        self.current_grid_index = 0
+    
+    def init_stop_val(self):
+        # The `stop_val` is initially the first element of the grid.
+        return self.grid[self.current_grid_index]
+    
+    def get_next_stop_val(self, stop_val):
+        # The next `stop_val` is the next element in the grid
+        self.current_grid_index += 1
+        return self.grid[self.current_grid_index]
+
+    def check_convergence(self, cost_curve):
+        """Check if run has been called on each of the entries of `self.grid`.
+
+        Parameters
+        ----------
+        cost_curve : list of dict
+            List of dict containing the values associated to the objective at
+            each evaluated points. This parameter is not used but we keep to 
+            stick to the `StoppingCriterion` class.
+
+        Returns
+        -------
+        stop : bool
+            Whether or not we should stop the algorithm.
+        progress : float
+            Measure of how far the solver is from convergence.
+            This should be in [0, 1], 0 meaning that the end of the grid is not
+            met yet and 1 mean that the solver has been run on all the 
+            parameters of `self.grid`.
+        """
+        if self.current_grid_index < len(self.grid):
+            return False, 0
+        else:
+            return True, 1
+
