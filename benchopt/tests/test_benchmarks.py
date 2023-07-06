@@ -238,7 +238,7 @@ def test_deprecated_stopping_strategy():
             return np.zeros(self.n_features)
     """
     with temp_benchmark(solvers=[solver1, solver1]) as benchmark:
-        with pytest.raises(
+        with pytest.warns(
                 FutureWarning,
                 match="'stopping_strategy' attribute is deprecated"):
             run([str(benchmark.benchmark_dir),
