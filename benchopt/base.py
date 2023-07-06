@@ -66,6 +66,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
                 FutureWarning
             )
             return self.stop_strategy
+        # XXX remove in 1.5
         if hasattr(self, 'stopping_strategy'):
             warnings.warn(
                 "'stopping_strategy' attribute is deprecated and will be "

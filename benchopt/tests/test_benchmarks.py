@@ -220,6 +220,8 @@ def _test_solver_one_objective(solver, objective):
 
 
 def test_deprecated_stopping_strategy():
+    # XXX remove in 1.5
+
     solver1 = """from benchopt import BaseSolver
     import numpy as np
 
@@ -236,6 +238,9 @@ def test_deprecated_stopping_strategy():
             return np.zeros(self.n_features)
     """
     with temp_benchmark(solvers=[solver1, solver1]) as benchmark:
-        with pytest.raises(FutureWarning, match='deprecated'):
+        with pytest.raises(
+                FutureWarning,
+                match="'stopping_strategy' attribute is deprecated"):
             run([str(benchmark.benchmark_dir),
-                 *'-s solver1 -d test-dataset -n 1 -r 1'.split()])
+                 *'-s solver1 -d test-dataset -n 1 -r 1'.split()],
+                standalone_mode=False)
