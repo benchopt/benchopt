@@ -219,7 +219,6 @@ def _test_solver_one_objective(solver, objective):
             assert diff >= 0
 
 
-
 def test_deprecated_stopping_strategy():
     solver1 = """from benchopt import BaseSolver
     import numpy as np
@@ -238,8 +237,5 @@ def test_deprecated_stopping_strategy():
     """
     with temp_benchmark(solvers=[solver1, solver1]) as benchmark:
         with pytest.raises(FutureWarning, match='deprecated'):
-            run([str(benchmark.benchmark_dir), *'-s solver1 -d test-dataset -n 1 -r 1'.split()])
-
-
-if __name__ == '__main__':
-    test_deprecated_stopping_strategy()
+            run([str(benchmark.benchmark_dir),
+                 *'-s solver1 -d test-dataset -n 1 -r 1'.split()])
