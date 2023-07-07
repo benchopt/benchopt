@@ -1,6 +1,7 @@
 import pytest
 import numpy as np
 
+import benchopt
 from benchopt.cli.main import run
 from benchopt.runner import _Callback
 from benchopt.stopping_criterion import SAMPLING_STRATEGIES
@@ -221,6 +222,7 @@ def _test_solver_one_objective(solver, objective):
 
 def test_deprecated_stopping_strategy():
     # XXX remove in 1.5
+    assert benchopt.__version__ < '1.5'
 
     solver1 = """from benchopt import BaseSolver
     import numpy as np
