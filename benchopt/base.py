@@ -232,9 +232,11 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
 
     def warm_up(self):
         """User specified warm up step, called once before the runs.
+
         The time it takes to run this function is not taken into account.
         The function `Solver.run_once` can be used here for solvers that
-        require jit compilation."""
+        require jit compilation.
+        """
         ...
 
     def _warm_up(self):
