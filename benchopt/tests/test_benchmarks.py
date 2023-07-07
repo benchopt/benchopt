@@ -239,15 +239,16 @@ def test_deprecated_stopping_strategy():
     """
 
     solver2 = solver1.replace("stopping_strategy", "sampling_strategy")
+    solver2 = solver2.replace("solver1", "solver2")
 
     with temp_benchmark(solvers=[solver1, solver2]) as benchmark:
         with pytest.warns(
                 FutureWarning,
                 match="'stopping_strategy' attribute is deprecated"):
             run([str(benchmark.benchmark_dir),
-                 *'-s solver1 -d test-dataset -n 1 -r 1'.split()],
+                 *'-s solver1 -d test-dataset -n 1 -r 1 --no-plot'.split()],
                 standalone_mode=False)
 
         run([str(benchmark.benchmark_dir),
-             *'-s solver1 -d test-dataset -n 1 -r 1'.split()],
+             *'-s solver2 -d test-dataset -n 1 -r 1 --no-plot'.split()],
             standalone_mode=False)
