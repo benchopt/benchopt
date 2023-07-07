@@ -11,7 +11,7 @@ class Solver(BaseSolver):
 
     # any parameter defined here is accessible as a class attribute
     parameters = {'use_acceleration': [False, True]}
-    stopping_strategy = "callback"
+    sampling_strategy = "callback"
 
     def set_objective(self, X, y, lmbd):
         self.X, self.y, self.lmbd = X, y, lmbd

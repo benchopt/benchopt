@@ -5,6 +5,17 @@ What's new
 
 .. currentmodule:: benchopt
 
+.. _changes_1_5:
+
+Version 1.5 (dev)
+-----------------
+
+API
+~~~
+
+- ``stopping_strategy`` attribute is replaced by ``sampling_strategy`` to clarify
+  the concept, by `Mathurin Massias`_ (:gh:`585`).
+
 .. _changes_1_4:
 
 Version 1.4 - 03/07/2023

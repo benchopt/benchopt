@@ -1,4 +1,5 @@
 import os
+import inspect
 import tempfile
 import contextlib
 
@@ -13,13 +14,13 @@ dummy_objective = (DUMMY_BENCHMARK_PATH / 'objective.py').read_text()
 dummy_solvers = [
     (DUMMY_BENCHMARK_PATH / "solvers" / p).read_text()
     for p in os.listdir(DUMMY_BENCHMARK_PATH / "solvers")
-    if p.endswith(".py")
+    if p.endswith(".py") and not p.startswith("template_")
 ]
 
 dummy_datasets = [
     (DUMMY_BENCHMARK_PATH / "datasets" / p).read_text()
     for p in os.listdir(DUMMY_BENCHMARK_PATH / "datasets")
-    if p.endswith(".py")
+    if p.endswith(".py") and not p.startswith("template_")
 ]
 
 
@@ -61,17 +62,17 @@ def temp_benchmark(
         (temp_path / "solvers").mkdir()
         (temp_path / "datasets").mkdir()
         with open(temp_path / "objective.py", "w") as f:
-            f.write(objective)
-        for idx, dataset in enumerate(datasets):
-            with open(temp_path / "solvers" / f"solver_{idx}.py", "w") as f:
-                f.write(dataset)
-
+            f.write(inspect.cleandoc(objective))
         for idx, solver in enumerate(solvers):
+            with open(temp_path / "solvers" / f"solver_{idx}.py", "w") as f:
+                f.write(inspect.cleandoc(solver))
+
+        for idx, dataset in enumerate(datasets):
             with open(temp_path / "datasets" / f"dataset_{idx}.py", "w") as f:
-                f.write(solver)
+                f.write(inspect.cleandoc(dataset))
 
         if config is not None:
             with open(temp_path / "config.yml", "w") as f:
-                f.write(solver)
+                f.write(config)
 
         yield Benchmark(temp_path)
