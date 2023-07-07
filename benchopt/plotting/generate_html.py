@@ -231,13 +231,12 @@ def shape_solvers_for_html(df, objective_column):
         color, marker = get_solver_style(solver)
         # to preserve support of previous benchopt version
         # where 'sampling_strategy' wasn't saved in solver meta
-        try:
+        if "sampling_strategy" in df_filtered:
             sampling_strategy = df_filtered['sampling_strategy'].unique()
-        except KeyError:
-            try:
-                sampling_strategy = df_filtered['stopping_strategy'].unique()
-            except KeyError:
-                sampling_strategy = ["Time"]
+        elif "stopping_strategy" in df_filtered:
+            sampling_strategy = df_filtered['stopping_strategy'].unique()
+        else:
+            sampling_strategy = ["Time"]
 
         if len(sampling_strategy) != 1:
             found_sampling_strategies = ', '.join(
