@@ -1,33 +1,38 @@
-from contextlib import contextmanager
-
 from benchopt.base import BaseSolver
 
 
 def assert_matlab_installed():
     import matlab
 
-@contextmanager
-def matlab_engine(paths):
-    """Context manager to start a matlab engine and close it properly.
+
+MATLAB_ENGINE = None # Global variable to store the matlab engine
+def get_matlab_engine(paths, background=False):
+    """
+    Return a matlab engine. If it does not exist, start it.
 
     Parameters
     ----------
-    paths : list of str or str
-        List of paths to add to the matlab path.
+    paths : str or list of str
+        Path to add to the matlab path.
+    async : bool
+        If True, start the engine in a separate process.
 
-    Yields
-    ------
-    eng : matlab.engine
+    Returns
+    -------
+    engine : matlab.engine
         The matlab engine.
     """
     import matlab.engine
-    eng = matlab.engine.start_matlab()
-    if not isinstance(paths, list):
+
+    global MATLAB_ENGINE
+    if MATLAB_ENGINE is None:
+        MATLAB_ENGINE = matlab.engine.start_matlab(background=background)
+    if isinstance(paths, str):
         paths = [paths]
     for path in paths:
-        eng.addpath(path)
-    yield eng
-    eng.quit()
+        MATLAB_ENGINE.addpath(path)
+
+    return MATLAB_ENGINE
 
 
 
