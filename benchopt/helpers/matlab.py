@@ -3,10 +3,10 @@ from contextlib import contextmanager
 from benchopt.base import BaseSolver
 
 
-def assert_julia_installed():
+def assert_matlab_installed():
     import matlab
 
-@contextmanager()
+@contextmanager
 def matlab_engine(paths):
     """Context manager to start a matlab engine and close it properly.
 
@@ -33,4 +33,4 @@ def matlab_engine(paths):
 
 class MatlabSolver(BaseSolver):
 
-    requirements = ['pip:matlabengine']
+    requirements = ['pip:matlabengine', 'numpy']
