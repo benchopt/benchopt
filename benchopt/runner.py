@@ -1,4 +1,5 @@
 import time
+import inspect
 
 from datetime import datetime
 
@@ -31,7 +32,7 @@ def run_one_resolution(objective, solver, meta, stop_val):
     stop_val : int | float
         Corresponds to stopping criterion, such as
         tol or max_iter for the solver. It depends
-        on the stopping_strategy for the solver.
+        on the sampling_strategy for the solver.
 
     Returns
     -------
@@ -94,7 +95,7 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
 
         if solver._solver_strategy == "callback":
 
-            # If stopping strategy is 'callback', only call once to get the
+            # If sampling_strategy is 'callback', only call once to get the
             # results up to convergence.
             callback = _Callback(
                 objective, meta, stopping_criterion
@@ -187,11 +188,11 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
     else:
         solver_tags = []
 
-    # get stopping strategy
+    # get sampling strategy
     # for plotting purpose consider 'callback' as 'iteration'
-    stopping_strategy = solver._solver_strategy
-    if stopping_strategy == 'callback':
-        stopping_strategy = 'iteration'
+    sampling_strategy = solver._solver_strategy
+    if sampling_strategy == 'callback':
+        sampling_strategy = 'iteration'
 
     # get objective description
     # use `obj_` instead of `objective_` to avoid conflicts with
@@ -207,10 +208,10 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
             solver_name=str(solver),
             data_name=str(dataset),
             idx_rep=rep,
-            stopping_strategy=stopping_strategy.capitalize(),
+            sampling_strategy=sampling_strategy.capitalize(),
             obj_description=obj_description,
             solver_tags=solver_tags,
-            solver_description=solver.__doc__ or "",
+            solver_description=inspect.cleandoc(solver.__doc__ or ""),
         )
 
         stopping_criterion = solver.stopping_criterion.get_runner_instance(
