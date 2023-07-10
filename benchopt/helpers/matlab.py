@@ -2,10 +2,13 @@ from benchopt.base import BaseSolver
 
 
 def assert_matlab_installed():
-    import matlab
+    import matlab  # noqa: F401
 
 
-MATLAB_ENGINE = None # Global variable to store the matlab engine
+# Global variable to store the matlab engine
+MATLAB_ENGINE = None
+
+
 def get_matlab_engine(paths, background=False):
     """
     Return a matlab engine. If it does not exist, start it.
@@ -33,7 +36,6 @@ def get_matlab_engine(paths, background=False):
         MATLAB_ENGINE.addpath(path)
 
     return MATLAB_ENGINE
-
 
 
 class MatlabSolver(BaseSolver):

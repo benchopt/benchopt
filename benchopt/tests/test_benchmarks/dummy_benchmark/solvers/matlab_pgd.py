@@ -12,6 +12,7 @@ with safe_import_context() as import_ctx:
 
 MATLAB_SOLVER_FILE = str(Path(__file__).parent)
 
+
 class Solver(MatlabSolver):
 
     # Config of the solver
@@ -24,8 +25,9 @@ class Solver(MatlabSolver):
         self.eng = get_matlab_engine(MATLAB_SOLVER_FILE)
 
     def run(self, n_iter):
-        self.beta = self.eng.matlab_pgd(self.X, self.y, self.lmbd, n_iter, nargout=1)
-
+        self.beta = self.eng.matlab_pgd(
+            self.X, self.y, self.lmbd, n_iter, nargout=1
+        )
 
     def get_result(self):
         return np.array(self.beta).ravel()
