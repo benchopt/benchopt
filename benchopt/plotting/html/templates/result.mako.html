@@ -105,6 +105,16 @@
                                 </select>
                             </div>
                         </div>
+                        <div class="mt-8 px-8">
+                            <label for="configs" class="block text-sm font-medium text-white">Plot config</label>
+                            <div class="mt-1 rounded-md shadow-sm">
+                                <select id="configs" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setConfig(this.value)">
+                                    % for conf in result['metadata']['plot_configs']:
+                                    <option value="${conf}">${conf}</option>
+                                    %endfor
+                                </select>
+                            </div>
+                        </div>
                         <div class="flex items-center justify-between mt-8 px-8">
                             <div class="block text-sm font-medium text-white">Quantiles</div>
                             <label class="block switch">
@@ -242,6 +252,17 @@
                                 <div class="mt-1 rounded-md shadow-sm">
                                     <select id="change_xaxis_type_mobile" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({xaxis_type: this.value})">
                                        <!-- options will be added dynamically -->
+                                    </select>
+                                </div>
+                            </div>
+                            <div id="xaxis-type-form-group" class="mt-8 px-8">
+                                <label for="conifgs_mobile" class="block text-sm font-medium text-white">Plot config</label>
+                                <div class="mt-1 rounded-md shadow-sm">
+
+                                    <select id="conifgs_mobile" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setConfig(this.value)">
+                                        % for conf in result['metadata']['plot_configs']:
+                                        <option value="${conf}">${conf}</option>
+                                        %endfor
                                     </select>
                                 </div>
                             </div>
@@ -400,9 +421,6 @@
             window.metadata = ${result['metadata']};
 
             window.addEventListener("load", () => {
-                // Set initial scaling
-                document.getElementById('change_scaling').value = window.metadata['plot_config']['plots'][document.getElementById('plot_kind').value]['scale']
-
                 // Initialize plot state
                 setState({
                     'dataset': document.getElementById('dataset_selector').value,
@@ -414,6 +432,9 @@
                     'xaxis_type':  document.getElementById('change_xaxis_type').value || "Time",
                     'hidden_solvers': []
                 });
+                if ('init' in window.metadata['plot_configs']){
+                    setConfig('init');
+                };
             });
         </script>
         <script type="text/javascript">

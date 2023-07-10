@@ -48,14 +48,14 @@ for asset in STATIC_DIR.glob("**/*"):
     STATIC[asset.relative_to(STATIC_DIR).name] = asset.read_text()
 
 
-def get_results(fnames, plot_config, root_html, benchmark_name, copy=False):
+def get_results(fnames, plot_configs, root_html, benchmark_name, copy=False):
     """Generate figures from a list of result files.
 
     Parameters
     ----------
     fnames : list of Path
         list of result files containing the benchmark results.
-    plot_config: dict (default: None)
+    plot_configs: dict (default: None)
         If given, allows to specify the plot options.
     root_html : Path
         Directory where all the HTML files related to the benchmark are stored.
@@ -102,8 +102,8 @@ def get_results(fnames, plot_config, root_html, benchmark_name, copy=False):
             objective_names=df['objective_name'].unique(),
             obj_cols=[k for k in df.columns if k.startswith('objective_')
                       and k != 'objective_name'],
-            kinds=plot_config.get('plots', list(PLOT_KINDS)),
-            metadata=get_metadata(df, plot_config),
+            kinds=plot_configs.get('plots', list(PLOT_KINDS)),
+            metadata=get_metadata(df, plot_configs),
         )
 
         # JSON
@@ -123,7 +123,7 @@ def get_results(fnames, plot_config, root_html, benchmark_name, copy=False):
     return results
 
 
-def get_metadata(df, plot_config):
+def get_metadata(df, plot_configs):
     """Get the benchmark metadata.
 
     Metadata are already available among the columns of `df`.
@@ -134,7 +134,7 @@ def get_metadata(df, plot_config):
     metadata: dict
         Dictionary containing the benchmark metadata.
     """
-    metadata = {'plot_config': plot_config}
+    metadata = {'plot_configs': plot_configs['plot_configs']}
 
     # get solver descriptions
     # wrap in try-except block to preserve compatibility
@@ -460,7 +460,7 @@ def _fetch_cached_run_list(new_results, benchmark_html):
     return list(results.values())
 
 
-def plot_benchmark_html(fnames, benchmark, plot_config, display=True):
+def plot_benchmark_html(fnames, benchmark, plot_configs, display=True):
     """Plot a given benchmark as an HTML report. This function can either plot
     a single run or multiple ones.
 
@@ -470,7 +470,7 @@ def plot_benchmark_html(fnames, benchmark, plot_config, display=True):
         Name of the file in which the results are saved.
     benchmark : benchopt.Benchmark object
         Object to represent the benchmark.
-    plot_config: dict
+    plot_configs: dict
         Configuration for the different kind of plots.
     display : bool
         If set to True, display the curves by opening
@@ -491,7 +491,7 @@ def plot_benchmark_html(fnames, benchmark, plot_config, display=True):
     home = bench_index.relative_to(root_html)
 
     # Create the figures and render the page as a html.
-    results = get_results(fnames, plot_config, root_html, benchmark.name)
+    results = get_results(fnames, plot_configs, root_html, benchmark.name)
     htmls = render_all_results(results, benchmark.name, home=home)
 
     # Save the resulting page in the HTML folder
@@ -573,7 +573,7 @@ def plot_benchmark_html_all(patterns=(), benchmark_paths=(), root=None,
             ) + list((benchmark_path / 'outputs').glob(f"{p}.csv"))
         fnames = sorted(set(fnames))
         results = get_results(
-            fnames, plot_config, root_html, benchmark_path.name,
+            fnames, plot_configs, root_html, benchmark_path.name,
             copy=True
         )
         len_fnames.append(len(fnames))

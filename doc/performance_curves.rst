@@ -8,7 +8,7 @@ With "*performance curves*", we refer to the evolution of the performance as a
 function of the computational budget.
 With ``benchopt``, there are different ways to vary the computational budget
 to sample the performance curve.
-They are chosen by the ``stopping_strategy`` attribute of each solver.
+They are chosen by the ``stopping_strategy`` attribute of each solver, or if specified, the ``strategy`` parameter of the ``stopping_criterion`` of the solver.
 
 1. Using iterations or tolerance
 --------------------------------
@@ -49,6 +49,7 @@ Restarting the solver from scratch, though inevitable to handle black box solver
 
 When a solver exposes the intermediate values of the iterates, it is possible to create the curve in a single solver run, by using ``stopping_strategy = "callback"``.
 In that case, the argument passed to ``Solver.run`` will be a callable object, ``callback``.
+This callback is created and manage by ``benchopt``, and it should be run
 Like with ``stopping_strategy == "iteration"``, the objective is computed after a number of callback's calls that grows geometrically. If the objective was computed after :math:`n` calls, the objective and timing will be computed again when reaching :math:`\max(n+1, \rho * n)` calls to the callback.
 The callback makes sure we do not account for objective computation time and also check for convergence every time the objective is computed (as described in the next section).
 It returns ``False`` when the solver should be stopped. A classical usage pattern is:

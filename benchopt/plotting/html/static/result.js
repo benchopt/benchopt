@@ -55,7 +55,7 @@ const state = () => window.state;
  *
  * @returns Object
  */
-const plotconfig = () => window.metadata.plot_config['plots'];
+const plot_config = () => window.metadata['plot_configs'][document.getElementById('configs').value];
 
 /*
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -207,6 +207,65 @@ const getScatterCurves = () => {
   });
 
   return curves;
+};
+
+
+
+/*
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * CONFIG MANAGEMENT
+ *
+ * Configs are used to save particular benchmark results' views.
+ *
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
+
+const setConfig = (config_name) =>{
+
+  // Get the updated state
+  let config = window.metadata.plot_configs[config_name];
+  let update = {};
+  const mapping = {
+    'dataset': 'dataset_selector',
+    'objective': 'objective_selector',
+    'objective_column': 'objective_column',
+    'kind': 'plot_kind',
+    'scale': 'change_scaling',
+    'with_quantiles': 'change_shades',
+    'xaxis_types':'xaxis_type',
+  };
+  const lims = ['xlim', 'ylim', 'hidden_solvers']
+  for(var key in config){
+    if (key in mapping){
+      value = config[key];
+      document.getElementById(mapping[key]).value = value;
+      if (key == "kind"){
+        key = "plot_kind";
+      }
+      update[key] = value;
+    }
+    else if (!lims.includes(key)){
+      alert('unknown config ' + key + ' has been ignored');
+    };
+  };
+
+  setState(update);
+
+  let layout = {};
+  for(const ax of ['x', 'y']){
+    let lim = ax + 'lim';
+    if (config.hasOwnProperty(lim) & (config[lim] != null)){
+      lim = config[lim];
+      if(_getScale(config.scale)[ax + 'axis'] == 'log'){
+        lim = [Math.log10(parseFloat(lim[0])), Math.log10(parseFloat(lim[1]))]
+      };
+      layout[ax +'axis.range'] = lim;
+    };
+  };
+
+  const div = document.getElementById('unique_plot');
+  Plotly.relayout(div, layout);
+
 };
 
 /*
@@ -382,7 +441,7 @@ const _getScale = (scale) => {
 const getScatterChartLayout = () => {
   let xaxisType = state().xaxis_type;
 
-  config = plotconfig()[state().plot_kind]
+  let config = plot_config();
 
   const layout = {
     autosize: !isSmallScreen(),
@@ -408,7 +467,6 @@ const getScatterChartLayout = () => {
       tickangle: -45,
       gridcolor: '#ffffff',
       zeroline : false,
-      range: config.xlim == null || _getScale(config.scale).xaxis != getScale().xaxis ? null: [config.xlim[0], config.xlim[1]],
     },
     yaxis: {
       type: getScale().yaxis,
@@ -416,7 +474,6 @@ const getScatterChartLayout = () => {
       tickformat: '.1e',
       gridcolor: '#ffffff',
       zeroline : false,
-      range: config.ylim == null || _getScale(config.scale).yaxis != getScale().yaxis ? null: [config.ylim[0], config.ylim[1]],
     },
     title: `${state().objective}<br />Data: ${state().dataset}`,
     plot_bgcolor: '#e5ecf6',
@@ -448,8 +505,6 @@ const getScatterChartLayout = () => {
 
 const getBarChartLayout = () => {
 
-  config = plotconfig()[state().plot_kind]
-
   const layout = {
     autosize: !isSmallScreen(),
     modebar: {
@@ -460,7 +515,6 @@ const getBarChartLayout = () => {
       title: 'Time [sec]',
       tickformat: '.1e',
       gridcolor: '#ffffff',
-      range: config.ylim == null || _getScale(config.scale).yaxis != getScale().yaxis ? null: [config.ylim[0], config.ylim[1]],
     },
     xaxis: {
       tickangle: -60,

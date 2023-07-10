@@ -47,7 +47,7 @@ PLOTS_CONFIG = {
 }
 PLOTS_CONFIG["bar_chart"] = {"ylim": None}
 DEFAULT_BENCHMARK_CONFIG = {
-    "plots": PLOTS_CONFIG, "datasets": None
+    "plots": PLOTS_CONFIG, "plot_configs": {}, "datasets": None
 }
 
 """
@@ -164,7 +164,9 @@ def get_setting(name, config_file=None, benchmark_name=None):
     default_config = DEFAULT_BENCHMARK_CONFIG
     if benchmark_name is None:
         default_config = DEFAULT_GLOBAL_CONFIG
-    assert name in default_config, f"Unknown config key {name}"
+    assert name in default_config, (
+        f"Unknown config key {name}. Valid key are {list(default_config)}"
+    )
     default_value = default_config[name]
 
     if config_file.suffix == ".ini":
