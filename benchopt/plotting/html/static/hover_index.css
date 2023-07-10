@@ -440,3 +440,18 @@ input:checked+.slider:before {
   max-height: 450px;
   overflow-y: auto;
 }
+
+.tag-item {
+  border-radius: 9999px;
+  padding-left: 1em;
+  padding-right: 1em;
+  background-color: white;
+  border-color: rgb(55 65 81);
+
+  cursor: pointer;
+
+  /* font styles*/
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 400;
+}
