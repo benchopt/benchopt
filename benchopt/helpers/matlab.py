@@ -22,6 +22,8 @@ def matlab_engine(paths):
     """
     import matlab.engine
     eng = matlab.engine.start_matlab()
+    if not isinstance(paths, list):
+        paths = [paths]
     for path in paths:
         eng.addpath(path)
     yield eng
