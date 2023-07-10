@@ -90,6 +90,9 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
         The status on which the solver was stopped.
     """
 
+    # The warm-up step called for each repetition bit only run once.
+    solver._warm_up()
+
     curve = []
     with exception_handler(output, pdb=pdb) as ctx:
 
@@ -236,6 +239,10 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
     output.show_status(status=status)
     # Make sure to flush so the parallel output is properly display
     print(end='', flush=True)
+
+    # refresh the solver warm up flag so that warm-up is done again
+    # when calling the solver with another problem/dataset pair.
+    solver._warmup_done = False
 
     if status == 'interrupted':
         raise SystemExit(1)
