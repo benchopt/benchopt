@@ -9,8 +9,6 @@ function w = matlab_pgd(X, y, lambda, n_iter)
         w = w - grad / L;
         w = st(w, lambda / L);
     end
-
-    return w;
 end
 
 function w = st(w, t)
