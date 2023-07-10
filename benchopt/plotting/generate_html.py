@@ -156,14 +156,16 @@ def get_metadata(df):
         )["solver_tags"].first()
 
         solvers_tags = solvers_tags.to_dict()
-        solvers_tags = {solver: tags.tolist() for solver, tags in solvers_tags.items()}
+        solvers_tags = {
+            solver: tags.tolist() for solver, tags in solvers_tags.items()
+        }
 
         tags_solvers = {}
         for solver, tags in solvers_tags.items():
             for tag in tags:
                 if tag not in tags_solvers:
                     tags_solvers[tag] = [solver]
-                elif solver not in tags_solvers[tag]: # TODO oops complexity
+                elif solver not in tags_solvers[tag]:  # TODO oops complexity
                     tags_solvers[tag].append(solver)
         metadata["tags_solvers"] = tags_solvers
     except KeyError:
