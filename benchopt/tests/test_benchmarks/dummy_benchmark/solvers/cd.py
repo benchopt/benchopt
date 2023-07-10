@@ -25,7 +25,6 @@ class Solver(BaseSolver):
 
     install_cmd = 'conda'
     requirements = ['numba']
-    tags = ['coordinate_descent', 'raw_python']
 
     def set_objective(self, X, y, lmbd):
         # use Fortran order to compute gradient on contiguous columns
