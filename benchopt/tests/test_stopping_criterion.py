@@ -1,12 +1,12 @@
 import pytest
 import numpy as np
 
-from benchopt.stopping_criterion import STOPPING_STRATEGIES
+from benchopt.stopping_criterion import SAMPLING_STRATEGIES
 from benchopt.stopping_criterion import SufficientDescentCriterion
 from benchopt.stopping_criterion import SufficientProgressCriterion
 
 
-@pytest.mark.parametrize('strategy', STOPPING_STRATEGIES)
+@pytest.mark.parametrize('strategy', SAMPLING_STRATEGIES)
 @pytest.mark.parametrize('criterion_class', [
     SufficientDescentCriterion, SufficientProgressCriterion
 ])
@@ -27,7 +27,7 @@ def test_max_iter(criterion_class, strategy):
     assert status == 'max_runs', "Should stop on max_runs"
 
 
-@pytest.mark.parametrize('strategy', STOPPING_STRATEGIES)
+@pytest.mark.parametrize('strategy', SAMPLING_STRATEGIES)
 @pytest.mark.parametrize('criterion_class', [
     SufficientDescentCriterion, SufficientProgressCriterion
 ])
@@ -43,7 +43,7 @@ def test_timeout(criterion_class, strategy):
     assert status == 'timeout', "Should stop on timeout"
 
 
-@pytest.mark.parametrize('strategy', STOPPING_STRATEGIES)
+@pytest.mark.parametrize('strategy', SAMPLING_STRATEGIES)
 @pytest.mark.parametrize('criterion_class', [
     SufficientDescentCriterion, SufficientProgressCriterion
 ])
@@ -71,7 +71,7 @@ def test_diverged(criterion_class, strategy):
     assert status == 'diverged', "Should stop on diverged"
 
 
-@pytest.mark.parametrize('strategy', STOPPING_STRATEGIES)
+@pytest.mark.parametrize('strategy', SAMPLING_STRATEGIES)
 @pytest.mark.parametrize('criterion_class', [
     SufficientDescentCriterion, SufficientProgressCriterion
 ])

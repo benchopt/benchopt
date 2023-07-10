@@ -3,7 +3,7 @@ from benchopt import BaseSolver
 
 class Solver(BaseSolver):
     name = 'Dummy solver'
-    stopping_strategy = "callback"
+    sampling_strategy = "callback"
 
     def set_objective(self, X):
         self.X = X

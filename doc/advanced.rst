@@ -172,9 +172,9 @@ effects. To avoid having such effect in the benchmark results, it is usually
 advised to call the solver once before running the benchmark. This should be
 implemented in the ``Solver.warm_up`` method, which is empty by default and
 called after the `set_objective` method. For solvers with
-``stopping_strategy`` in ``{'tolerance',  'iteration'}``, simply calling the
+``sampling_strategy`` in ``{'tolerance',  'iteration'}``, simply calling the
 ``Solver.run`` with a simple enough value is usually enough. For solvers with
-``stopping_strategy`` set to ``'callback'``, it is possible to call
+``sampling_strategy`` set to ``'callback'``, it is possible to call
 ``Solver.run_once``, which will call the ``run`` method with a simple callback
 that does not compute the objective value and stops after ``n_iter`` calls to
 callback (default to 1).
@@ -188,8 +188,8 @@ callback (default to 1).
         def warm_up(self):
             # Cache pre-compilation and other one-time setups that should
             # not be included in the benchmark timing.
-            self.run(1)  # For stopping_strategy == 'iteration' | 'tolerance'
-            self.run_once()  # For stopping_strategy == 'callback'
+            self.run(1)  # For sampling_strategy == 'iteration' | 'tolerance'
+            self.run_once()  # For sampling_strategy == 'callback'
 
 
 .. |update_params| replace:: ``update_parameters``

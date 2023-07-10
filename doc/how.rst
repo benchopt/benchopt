@@ -132,7 +132,7 @@ A solver must define three methods:
      or a tolerance parameter ``tol``. Alternatively, a ``callback`` function that will be
      called at each iteration can be passed. The callback should return ``False`` once the
      computation should stop.
-     The parameter ``stop_value`` is controlled by the ``stopping_strategy``,
+     The parameter ``stop_value`` is controlled by the ``sampling_strategy``,
      see below for details.
 
    - ``get_result()``: This method returns a variable that can be passed
@@ -141,8 +141,8 @@ A solver must define three methods:
 
 **Stop strategy:**
 
-A solver should also define a ``stopping_strategy`` as class attribute.
-This ``stopping_strategy`` can be:
+A solver should also define a ``sampling_strategy`` as class attribute.
+This ``sampling_strategy`` can be:
 
     - ``'iteration'``: in this case the ``run`` method of the solver
       is parametrized by the number of iterations computed. The parameter
@@ -178,7 +178,7 @@ with no other dependencies. Here is an example:
 .. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/solvers/python_pgd.py
 
 For solvers that allow access to each iterate of the solution, using ``"callback"``
-as a ``stopping_strategy`` implies a slight modification for ``run``. A ``callback``
+as a ``sampling_strategy`` implies a slight modification for ``run``. A ``callback``
 should be called at each iteration with parameter the current value of the iterate.
 Here is an example in the same situation as above:
 
