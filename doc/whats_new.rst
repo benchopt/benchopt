@@ -16,6 +16,10 @@ API
 - ``stopping_strategy`` attribute is replaced by ``sampling_strategy`` to clarify
   the concept, by `Mathurin Massias`_ (:gh:`585`).
 
+- Add ``Solver.warm_up`` function for explicit warmup instructions, such as
+  empty run for jitting. This function is called only once per solver.
+  By `Pierre Ablin`_ (:gh:`602`).
+
 .. _changes_1_4:
 
 Version 1.4 - 03/07/2023
