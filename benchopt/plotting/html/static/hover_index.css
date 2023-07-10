@@ -391,7 +391,6 @@ input:checked+.slider:before {
 .solver-description-container {
   position: relative;
   display: inline-flex;
-  width: 100%;
 }
 
 .solver-description-content {
@@ -407,6 +406,7 @@ input:checked+.slider:before {
   padding-right: 0.5rem;
   opacity: 90%;
 
+  width: max-content;
   max-width: 80ch;
   max-height: 500px;
   white-space: pre-wrap;
