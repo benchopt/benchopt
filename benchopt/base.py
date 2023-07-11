@@ -16,13 +16,13 @@ from .utils.parametrized_name_mixin import ParametrizedNameMixin
 
 
 class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
-    """A base class for solver wrappers in BenchOpt.
+    """A base class for solver wrappers in Benchopt.
 
     Solvers that derive from this class should implement three methods:
 
     - ``set_objective(self, **objective_parameters)``: prepares the solver to
       be called on a given problem. ``**objective_parameters`` is the output of
-      the method ``get_objective`` from the benchmark objective. In particular,
+      ``Objective.get_objective`` from the benchmark objective. In particular,
       this method should dumps the parameter to compute the objective function
       in a file for command line solvers to reduce the impact of dumping the
       data to the disk in the benchmark.
@@ -32,10 +32,8 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
       This method is the one timed in the benchmark and should not perform any
       operation unrelated to  the optimization procedure.
 
-    - ``get_result(self)``: returns the parameters computed by the previous
-      call to run. For command line solvers, this retrieves the result from the
-      disk. This utility is necessary to reduce the impact of loading the
-      result from the disk in the benchmark.
+    - ``get_result(self)``: returns all parameters of interest, as a dict.
+      The output is passed to ``Objective.evaluate_result``.
 
     Note that two ``stopping_strategy`` can be used to construct the benchmark
     curve:
