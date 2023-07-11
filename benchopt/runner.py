@@ -1,4 +1,5 @@
 import time
+import inspect
 
 from datetime import datetime
 
@@ -31,7 +32,7 @@ def run_one_resolution(objective, solver, meta, stop_val):
     stop_val : int | float
         Corresponds to stopping criterion, such as
         tol or max_iter for the solver. It depends
-        on the stopping_strategy for the solver.
+        on the sampling_strategy for the solver.
 
     Returns
     -------
@@ -89,12 +90,15 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
         The status on which the solver was stopped.
     """
 
+    # The warm-up step called for each repetition bit only run once.
+    solver._warm_up()
+
     curve = []
     with exception_handler(output, pdb=pdb) as ctx:
 
         if solver._solver_strategy == "callback":
 
-            # If stopping strategy is 'callback', only call once to get the
+            # If sampling_strategy is 'callback', only call once to get the
             # results up to convergence.
             callback = _Callback(
                 objective, meta, stopping_criterion
@@ -181,11 +185,11 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
     states = []
     run_statistics = []
 
-    # get stopping strategy
+    # get sampling strategy
     # for plotting purpose consider 'callback' as 'iteration'
-    stopping_strategy = solver._solver_strategy
-    if stopping_strategy == 'callback':
-        stopping_strategy = 'iteration'
+    sampling_strategy = solver._solver_strategy
+    if sampling_strategy == 'callback':
+        sampling_strategy = 'iteration'
 
     # get objective description
     # use `obj_` instead of `objective_` to avoid conflicts with
@@ -201,9 +205,9 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
             solver_name=str(solver),
             data_name=str(dataset),
             idx_rep=rep,
-            stopping_strategy=stopping_strategy.capitalize(),
+            sampling_strategy=sampling_strategy.capitalize(),
             obj_description=obj_description,
-            solver_description=solver.__doc__ or "",
+            solver_description=inspect.cleandoc(solver.__doc__ or ""),
         )
 
         stopping_criterion = solver.stopping_criterion.get_runner_instance(
@@ -235,6 +239,10 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
     output.show_status(status=status)
     # Make sure to flush so the parallel output is properly display
     print(end='', flush=True)
+
+    # refresh the solver warm up flag so that warm-up is done again
+    # when calling the solver with another problem/dataset pair.
+    solver._warmup_done = False
 
     if status == 'interrupted':
         raise SystemExit(1)

@@ -35,7 +35,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
     - ``get_result(self)``: returns all parameters of interest, as a dict.
       The output is passed to ``Objective.evaluate_result``.
 
-    Note that two ``stopping_strategy`` can be used to construct the benchmark
+    Note that two ``sampling_strategy`` can be used to construct the benchmark
     curve:
 
     - ``'iteration'``: call the run method with max_iter number increasing
@@ -55,16 +55,25 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
 
     @property
     def _solver_strategy(self):
-        """ Change stop_strategy to stopping_strategy """
+        """Change stop_strategy and stopping_strategy to sampling_strategy."""
+        # XXX remove in 1.5
         if hasattr(self, 'stop_strategy'):
             warnings.warn(
-                "'stop_strategy' attribute is deprecated, "
-                "use 'stopping_strategy' instead",
+                "'stop_strategy' attribute is deprecated and will be "
+                "removed in benchopt 1.5, use 'sampling_strategy' instead.",
                 FutureWarning
             )
             return self.stop_strategy
-        elif hasattr(self, 'stopping_strategy'):
+        # XXX remove in 1.5
+        if hasattr(self, 'stopping_strategy'):
+            warnings.warn(
+                "'stopping_strategy' attribute is deprecated and will be "
+                "removed in benchopt 1.5, use 'sampling_strategy' instead.",
+                FutureWarning
+            )
             return self.stopping_strategy
+        elif hasattr(self, 'sampling_strategy'):
+            return self.sampling_strategy
         else:
             return self.stopping_criterion.strategy
 
@@ -139,7 +148,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         This function should not return the parameters which will be
         retrieved by a subsequent call to get_result.
 
-        If `stopping_strategy` is set to `"callback"`, then `run` should call
+        If `sampling_strategy` is set to `"callback"`, then `run` should call
         the callback at each iteration. The callback will compute the time,
         the objective function and store relevant quantities for BenchOpt.
         Else, the `stop_val` parameter should be specified.
@@ -198,13 +207,13 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
     def run_once(self, stop_val=1):
         """Run the solver once, to cache warmup times (e.g. pre-compilations).
 
-        This function is intended to be called in ``Solver.set_objective``
+        This function is intended to be called in ``Solver.warm_up``
         method to avoid taking into account a solver's warmup costs.
 
         Parameters
         ----------
         stop_val : int or float, (default: 1)
-            If ``stopping_strategy`` is 'iteration', this should be an integer
+            If ``sampling_strategy`` is 'iteration', this should be an integer
             corresponding to the number of iterations the solver is run for.
             If it is 'callback', it is an integer corresponding to the number
             of times the callback is called.
@@ -227,6 +236,20 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
             self.run(run_once_cb)
         else:
             self.run(stop_val)
+
+    def warm_up(self):
+        """User specified warm up step, called once before the runs.
+
+        The time it takes to run this function is not taken into account.
+        The function `Solver.run_once` can be used here for solvers that
+        require jit compilation.
+        """
+        ...
+
+    def _warm_up(self):
+        if not getattr(self, '_warmup_done', True):
+            self.warm_up()
+            self._warmup_done = True
 
     @staticmethod
     def _reconstruct(module_filename, parameters, objective, output,
