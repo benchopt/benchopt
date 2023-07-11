@@ -390,7 +390,10 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
 
     @abstractmethod
     def evaluate_result(self, **solver_result):
-        """Compute the value of the objective given the solver's result.
+        """Compute the objective value given the output of a solver.
+
+        The arguments are the keys in the result dictionary returned
+        by ``Solver.get_result``.
 
         Parameters
         ----------
@@ -412,22 +415,24 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
     def __call__(self, solver_result):
         """Used to call the evaluation of the objective.
 
-        This allow to standardize the output to a dictionary.
+        This allows standardizing the output to a dictionary.
         """
         # XXX remove in version 1.5
         if hasattr(self, "compute"):
+            # XXX uncomment in version 1.5
+            # raise ValueError(
+            #   "Rename objective.compute to objective.evaluate_result")
             warnings.warn(
                 "objective.compute was renamed `objective.evaluate_result` in "
                 "v 1.4", FutureWarning,
             )
             self.evaluate_result = self.compute
         # XXX remove in version 1.5
-        try:
+        if isinstance(solver_result, dict):
             objective_dict = self.evaluate_result(**solver_result)
-        except TypeError:
+        else:
             warnings.warn(
-                "From benchopt 1.5, Solver.get_result() should return a dict "
-                "instead of a numpy ndarray.",
+                "From benchopt 1.5, Solver.get_result() should return a dict.",
                 FutureWarning,
             )
             objective_dict = self.evaluate_result(solver_result)
