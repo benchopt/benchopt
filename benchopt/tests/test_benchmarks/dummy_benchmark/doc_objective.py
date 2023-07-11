@@ -36,7 +36,7 @@ class Objective(BaseObjective):
         self.X, self.y = X, y
         self.lmbd = self.reg * self._get_lambda_max()
 
-    def compute(self, beta):
+    def evaluate_result(self, beta):
         "Compute the objective value given the output x of a solver."
         diff = self.y - self.X @ beta
         objective_value = .5 * diff @ diff + self.lmbd * abs(beta).sum()

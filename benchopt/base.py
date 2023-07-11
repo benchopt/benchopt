@@ -333,14 +333,12 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
       parameters of the solver's `set_objective` method in order to specify the
       objective function of the benchmark.
 
-    - `compute(beta)`: computes the value of the objective function for an
-      given estimate beta. Beta is given as np.array of size corresponding to
-      the `dimension` value returned by `Dataset.get_data`. The output should
-      be a float or a dictionary of floats.
+    - `evaluate_result(**result)`: evaluate the metrics on the results of a
+      solver. Is passed the output of `Solver.get_result`.
       If a dictionary is returned, it should at least contain a key
       `value` associated to a scalar value which will be used to
       detect convergence. With a dictionary, multiple metric values can be
-      stored at once instead of runnning each separately.
+      stored at once instead of running each separately.
     """
 
     _base_class_name = 'Objective'
@@ -370,15 +368,14 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
         ...
 
     @abstractmethod
-    def compute(self, **solver_result):
-        """Compute the value of the objective given the current estimate beta.
+    def evaluate_result(self, **solver_result):
+        """Compute the value of the objective given the solver's result.
 
         Parameters
         ----------
         solver_result : dict
             All values needed to compute the objective metrics. This dictionary
             is retrieved by calling ``solver_result = Solver.get_result()``.
-            The current estimate of the parameters being optimized.
 
         Returns
         -------
@@ -392,20 +389,27 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
         ...
 
     def __call__(self, solver_result):
-        """Used to call the computation of the objective.
+        """Used to call the evaluation of the objective.
 
         This allow to standardize the output to a dictionary.
         """
         # XXX remove in version 1.5
+        if hasattr(self, "compute"):
+            warnings.warn(
+                "objective.compute was renamed `objective.evaluate_result` in "
+                "v 1.4", FutureWarning,
+            )
+            self.evaluate_result = self.compute
+        # XXX remove in version 1.5
         try:
-            objective_dict = self.compute(**solver_result)
+            objective_dict = self.evaluate_result(**solver_result)
         except TypeError:
             warnings.warn(
                 "From benchopt 1.5, Solver.get_result() should return a dict "
                 "instead of a numpy ndarray.",
                 FutureWarning,
             )
-            objective_dict = self.compute(solver_result)
+            objective_dict = self.evaluate_result(solver_result)
 
         if not isinstance(objective_dict, dict):
             objective_dict = {'value': objective_dict}

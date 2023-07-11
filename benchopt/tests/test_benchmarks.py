@@ -202,16 +202,16 @@ def _test_solver_one_objective(solver, objective):
             stop_val = 1e-10 if is_convex else 1e-2
         solver.run(stop_val)
 
-    # Check that beta_hat is compatible to compute the objective function
-    beta_hat = solver.get_result()
-    objective(beta_hat)
+    # Check that returned results are compatible with objective
+    result = solver.get_result()
+    objective(result)
 
     # Only check optimality or convex problems, with simple enough return type
-    if is_convex and isinstance(beta_hat, np.ndarray):
-        val_star = objective(beta_hat)['objective_value']
+    if is_convex and isinstance(result, np.ndarray):
+        val_star = objective(result)['objective_value']
         for _ in range(100):
-            eps = 1e-5 * np.random.randn(*beta_hat.shape)
-            val_eps = objective(beta_hat + eps)['objective_value']
+            eps = 1e-5 * np.random.randn(*result.shape)
+            val_eps = objective(result + eps)['objective_value']
 
             diff = val_eps - val_star
             assert diff >= 0
