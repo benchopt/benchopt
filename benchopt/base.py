@@ -30,7 +30,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
     - ``run(self, n_iter/tolerance)``: performs the computation for the
       previously given objective function, after a call to ``set_objective``.
       This method is the one timed in the benchmark and should not perform any
-      operation unrelated to  the optimization procedure.
+      operation unrelated to the optimization procedure.
 
     - ``get_result(self)``: returns all parameters of interest, as a dict.
       The output is passed to ``Objective.evaluate_result``.
@@ -40,7 +40,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
 
     - ``'iteration'``: call the run method with max_iter number increasing
       logarithmically to get more an more precise points.
-    - ``'tolerance'``: call the run method with tolerance deacreasing
+    - ``'tolerance'``: call the run method with tolerance decreasing
       logarithmically to get more and more precise points.
     - ``'callback'``: a callable that should be called after each iteration or
       epoch. This callable periodically calls the objective's `compute`
@@ -169,12 +169,12 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
     def get_result(self):
         """Return the parameters computed by the previous run.
 
-        The parameters should be returned as a flattened array.
+        The parameters should be returned as a dictionary.
 
         Returns
         -------
-        parameters : ndarray, shape ``(dimension,)`` or ``*dimension``
-            The computed coefficients by the solver.
+        parameters : dictionary
+            All quantities of interest to evaluate the objective.
         """
         ...
 

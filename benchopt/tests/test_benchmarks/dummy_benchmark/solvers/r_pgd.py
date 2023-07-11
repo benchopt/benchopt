@@ -38,4 +38,4 @@ class Solver(BaseSolver):
         self.w = np.asarray(coefs)
 
     def get_result(self):
-        return self.w.flatten()
+        return {'beta': self.w.flatten()}

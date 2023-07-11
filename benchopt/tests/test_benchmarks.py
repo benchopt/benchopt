@@ -237,7 +237,7 @@ def test_deprecated_stopping_strategy():
             self.n_features = X.shape[1]
 
         def get_result(self, **data):
-            return np.zeros(self.n_features)
+            return {'beta': np.zeros(self.n_features)}
     """
 
     solver2 = solver1.replace("stopping_strategy", "sampling_strategy")
