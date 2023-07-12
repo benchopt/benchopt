@@ -205,6 +205,13 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
             If skip is False, the reason should be None.
         """
         # Check that the solver is compatible with the given dataset
+        # XXX remove in 1.5
+        from scipy import sparse
+
+        if not getattr(self, 'support_sparse', True):
+            if any(sparse.issparse(v) for v in objective_dict.values()):
+                return True, f"{self} does not support sparse data."
+
         return False, None
 
     def run_once(self, stop_val=1):
