@@ -46,6 +46,10 @@ previous ``stop_val`` return the next one. Refer to
 cannot be cached globally, such as precompilation with different number of
 iterations in for jitted ``jax`` functions.
 
+:func:`benchopt.BaseSolver.warm_up`: hook called once before the solver runs.
+It is typically used to cache jit compilation of solver while not accounting
+for the time needed in the timings.
+
 Benchopt utils
 ~~~~~~~~~~~~~~
 
