@@ -27,8 +27,11 @@ List of base classes:
 Benchopt run hooks
 ~~~~~~~~~~~~~~~~~~
 
-:func:`~benchopt.BaseSolver.skip`: hook to allow skipping some configurations.
-Also available for ``Dataset`` and ``Objective``.
+:func:`~benchopt.BaseSolver.skip`: hook to allow skipping configurations.
+It is available for ``Objective`` and ``Solver``. For ``Objective``, 
+it is executed after ``get_data`` to skip if current objective is not compatible with dataset.
+Similarly for ``Solver``, it is executed right after ``set_objective``, to skip if solver
+if not compatible with objective and/or dataset parameters.
 
 :func:`~benchopt.BaseSolver.get_next`: hook to change the sampling points for
 a given solver.
