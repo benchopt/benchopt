@@ -94,6 +94,10 @@ Explore
 .. toctree::
    :maxdepth: 1
 
+   get_started
    build_benchmark/index.rst
    user_guide/index.rst
    tutorials/index.rst
+
+   faq
+   contrib
