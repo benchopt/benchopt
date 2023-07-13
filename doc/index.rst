@@ -92,6 +92,8 @@ Explore
 -------
 
 .. toctree::
-    :maxdepth: 1
+   :maxdepth: 1
 
-    user_guide/index.rst
+   build_benchmark/index.rst
+   user_guide/index.rst
+   tutorials/index.rst
