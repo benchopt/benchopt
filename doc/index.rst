@@ -102,3 +102,4 @@ Explore
    available_benchmarks
    faq
    contrib
+   whats_new
