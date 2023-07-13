@@ -59,7 +59,8 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'benchopt'
-copyright = u'2020-2022, Benchopt contributors'
+from datetime import datetime  # noqa
+copyright = f'2020-{datetime.today().year}, Benchopt contributors'
 author = u'Benchopt contributors'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -104,28 +105,32 @@ html_theme = "sphinx_book_theme"
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
+html_favicon = "_static/logo_benchopt.png"
+
 html_theme_options = {
-    'navbar_sidebarrel': False,
-    'navbar_pagenav': False,
-    'source_link_position': "",
-    'navbar_links': [
-        # ("Models", "models"),
-        # ("Examples", "auto_examples/index"),
-        ("CLI", "cli"),
-        ("API", "api"),
-        # ("Write a benchmark", "how"),
-        ("Results", "https://benchopt.github.io/results", True),
-        ("What's new", "whats_new"),
-        ("GitHub", "https://github.com/benchopt/benchopt", True)
-    ],
-    # 'bootswatch_theme': "united",
-    # 'bootswatch_theme': "sandstone",
-    'bootswatch_theme': "flatly",
-    # 'bootswatch_theme': "simplex",
-    'bootstrap_version': "3",
+    "logo": {
+        "image_light": "_static/logo_benchopt.png",
+        "image_dark": "_static/logo_benchopt.png",
+        "alt_text": "benchopt logo",
+        "text": f"{version}",
+    },
+    "use_repository_button": True,
+    "repository_url": "https://github.com/benchopt/benchopt",
+    "home_page_in_toc": True,
 }
 
-html_sidebars = {'**': ['localtoc.html']}
+# html_sidebars = {
+#     "reference/blog/*": [
+#         "navbar-logo.html",
+#         "search-field.html",
+#         "postcard.html",
+#         "recentposts.html",
+#         "tagcloud.html",
+#         "categories.html",
+#         "archives.html",
+#         "sbt-sidebar-nav.html",
+#     ]
+# }
 
 # Add any paths that contain custom themes here, relative to this directory.
 html_theme_path = sphinx_bootstrap_theme.get_html_theme_path()
@@ -211,7 +216,3 @@ sphinx_gallery_conf = {
     'examples_dirs': '../examples',
     'gallery_dirs': 'auto_examples',
 }
-
-
-def setup(app):
-    app.add_css_file('style.css')
