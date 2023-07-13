@@ -14,7 +14,7 @@ It is implemented in Python but can run algorithms written in **many programming
     :gutter: 1
 
     .. grid-item-card::
-        :link: contrib_doc
+        :link: get_started
         :link-type: ref
 
         :octicon:`rocket` **Get started**
@@ -22,7 +22,7 @@ It is implemented in Python but can run algorithms written in **many programming
         Install ``benchopt`` and run your first benchmark
 
     .. grid-item-card::
-        :link: contrib_doc
+        :link: build_benchmark
         :link-type: ref
 
         :octicon:`tools` **Build a benchmark**
@@ -31,7 +31,7 @@ It is implemented in Python but can run algorithms written in **many programming
 
 
     .. grid-item-card::
-        :link: contrib_doc
+        :link: user_guide
         :link-type: ref
 
         :octicon:`book` **User Guide**
@@ -40,7 +40,7 @@ It is implemented in Python but can run algorithms written in **many programming
 
 
     .. grid-item-card::
-        :link: contrib_doc
+        :link: tutorials
         :link-type: ref
 
         :octicon:`mortar-board` **Tutorials**
@@ -95,9 +95,10 @@ Explore
    :maxdepth: 1
 
    get_started
-   build_benchmark/index.rst
-   user_guide/index.rst
-   tutorials/index.rst
+   build_benchmark/index
+   user_guide/index
+   tutorials/index
 
+   available_benchmarks
    faq
    contrib
