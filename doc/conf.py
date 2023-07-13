@@ -41,8 +41,10 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx_click_semantic_group',
     'sphinx_gallery.gen_gallery',
+    'sphinx.ext.autosectionlabel',
     'numpydoc',
     'gh_substitutions',  # custom ext, see ./sphinxext/gh_substitutions.py
+    "sphinx_design"
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -116,7 +118,6 @@ html_theme_options = {
     },
     "use_repository_button": True,
     "repository_url": "https://github.com/benchopt/benchopt",
-    "home_page_in_toc": True,
 }
 
 # html_sidebars = {
@@ -139,6 +140,7 @@ html_theme_path = sphinx_bootstrap_theme.get_html_theme_path()
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
+html_css_files = ["style.css"]
 
 
 # -- Options for HTMLHelp output ------------------------------------------
