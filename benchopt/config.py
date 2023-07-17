@@ -9,7 +9,7 @@ from benchopt.constants import PLOT_KINDS
 
 
 BOOLEAN_STATES = configparser.ConfigParser.BOOLEAN_STATES
-CONFIG_FILE_NAME = 'benchopt.ini'
+CONFIG_FILE_NAME = 'benchopt.yml'
 
 # Global config file should be only accessible to current user as it stores
 # sensitive information such as the Github token.
@@ -58,8 +58,21 @@ DEFAULT_BENCHMARK_CONFIG = {
   .. code-block:: yml
 
     plots:
-      - suboptimality_curve
-      - bar_chart
+    - objective_curve
+    - suboptimality_curve
+    - relative_suboptimality_curve
+    - bar_chart
+
+    plot_configs:
+      linear_objective:
+          kind: objective_curve
+          ylim: [0.0, 1.0]
+          scale: linear
+      view2:
+          objective_column: objective_score_train
+          kind: suboptimality_curve
+          ylim: [1e-10, 1.0]
+          scale: loglog
 """
 
 
@@ -74,9 +87,16 @@ def get_global_config_file():
             f"It can be created with `touch {config_file.resolve()}`."
         )
     else:
-        config_file = Path('.') / CONFIG_FILE_NAME
+
+        def check_ini(path):
+            # If a path does not exist but exist with suffix .ini, returns it.
+            if not path.exists() and path.with_suffix('.ini').exists():
+                return path.with_suffix('.ini')
+            return path
+
+        config_file = check_ini(Path('.') / CONFIG_FILE_NAME)
         if not config_file.exists():
-            config_file = Path.home() / '.config' / CONFIG_FILE_NAME
+            config_file = check_ini(Path.home() / '.config' / CONFIG_FILE_NAME)
 
     # check that the global config file is only accessible to current user as
     # it stores critical information such as the github token.
@@ -96,7 +116,7 @@ def get_global_config_file():
 def convert_ini_to_yml(config_file):
     warnings.warn(
         f"'.ini' config files are deprecated. Existing file {config_file} "
-        "will be converted to `.ymml` file."
+        "will be converted to `.yml` file. You can delete it."
     )
     config_ini = configparser.ConfigParser()
     config_ini.read(config_file)
@@ -115,7 +135,9 @@ def convert_ini_to_yml(config_file):
             config.update(**values)
         else:
             config[sec] = values
-    with config_file.with_suffix('.yml').open('w') as f:
+    config_file = config_file.with_suffix('.yml')
+    config_file.touch(mode=GLOBAL_CONFIG_FILE_MODE)
+    with config_file.open('w') as f:
         yaml.safe_dump(config, f)
 
 
