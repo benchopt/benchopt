@@ -442,6 +442,9 @@ input:checked+.slider:before {
 }
 
 /*Plot config styling as a bag of tags*/
+#plot_config_title {
+  font-weight: bold;
+}
 
 .config-item {
   border-radius: 9999px;

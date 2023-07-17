@@ -19,6 +19,7 @@ const NON_CONVERGENT_COLOR = 'rgba(0.8627, 0.8627, 0.8627)'
  *   - plot_kind (string),
  *   - scale (string)
  *   - with_quantiles (boolean)
+ *   - xaxis_type (string)
  *   - hidden_solvers (array)
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
@@ -234,7 +235,7 @@ const setConfig = (config_item) =>{
     'kind': 'plot_kind',
     'scale': 'change_scaling',
     'with_quantiles': 'change_shades',
-    'xaxis_types':'xaxis_type',
+    'xaxis_type':'change_xaxis_type',
   };
   const lims = ['xlim', 'ylim', 'hidden_solvers']
   for(var key in config){
@@ -785,6 +786,9 @@ function updateXaxis(idXaxisTypeSelection) {
   });
 
   // set selected value
+  if (!options.has(xaxisType)){
+    alert("Unknown xaxis type '"+ xaxisType + "'.");
+  }
   selection.value = options.has(xaxisType) ? xaxisType : "Time";
 }
 
