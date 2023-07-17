@@ -296,7 +296,7 @@
                 % if len(result['metadata']['plot_configs']) > 0:
                 <div id="config_container" class="py-10 bg-slate-200">
                     <div id="plot_config_buttons" class="px-10 mb-4">
-                        <span id="plot_config_title">Saved plot view</span>
+                        <span id="plot_config_title">Saved plot views</span>
                         % for conf in result['metadata']['plot_configs']:
                             <span class="config-item" onclick=setConfig(this)>${conf}</span>
                         %endfor
