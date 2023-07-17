@@ -41,22 +41,36 @@ class Benchmark:
     mem : joblib.Memory
         Caching mechanism for the benchmark.
     """
-    def __init__(self, benchmark_dir):
+    def __init__(self, benchmark_dir, allow_metadata=False):
         self.benchmark_dir = Path(benchmark_dir)
         self.name = self.benchmark_dir.resolve().name
 
         set_benchmark_module(self.benchmark_dir)
 
+        # Load the benchmark metadat defined in `objective.py` or
+        # in `benchmark_meta.json`.
         try:
             objective = self.get_benchmark_objective()
             self.pretty_name = objective.name
             self.min_version = getattr(objective, 'min_benchopt_version', None)
         except RuntimeError:
-            raise click.BadParameter(
-                f"The folder '{benchmark_dir}' does not contain "
-                "`objective.py`.\nMake sure you provide the path to a valid "
-                "benchmark."
-            )
+            if not allow_metadata:
+                raise click.BadParameter(
+                    f"The folder '{benchmark_dir}' does not contain "
+                    "`objective.py`.\nMake sure you provide the path to a "
+                    "valid benchmark."
+                )
+            meta_data = (self.benchmark_dir / "benchmark_meta.json")
+            if not meta_data.exists():
+                raise FileNotFoundError(
+                    "Can't find objective.py or benchmark_meta.json to get "
+                    "benchmark info for the html_generation."
+                )
+
+            with meta_data.open() as f:
+                import json
+                meta = json.load(f)
+                self.pretty_name = meta["pretty_name"]
 
     ####################################################################
     # Helpers to access and validate objective, solvers and datasets

@@ -366,19 +366,8 @@ def get_pretty_name(bench_path):
     pretty_name : str
         The name of the benchmark
     """
-    if (bench_path / "objective.py").exists():
-        benchmark = Benchmark(bench_path)
-        pretty_name = benchmark.pretty_name
-    elif (bench_path / "benchmark_meta.json").exists():
-        with open(bench_path / "benchmark_meta.json") as f:
-            meta = json.load(f)
-            pretty_name = meta["pretty_name"]
-    else:
-        raise FileNotFoundError(
-            "Can't find file called objective.py or benchmark_meta.json"
-        )
-
-    return pretty_name
+    benchmark = Benchmark(bench_path)
+    return benchmark.pretty_name
 
 
 def render_benchmark(results, benchmark_name, home='index.html'):
