@@ -178,10 +178,6 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
         output.skip(reason, objective=True)
         return []
 
-    skip = solver._set_objective(objective, output=output)
-    if skip:
-        return []
-
     states = []
     run_statistics = []
 
@@ -196,12 +192,13 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
     # the name of metrics in Objective.compute
     obj_description = objective.__doc__ or ""
 
-    if objective.evaluation_process == 'cross_validation':
-        n_repetitions = objective.n_splits
+    if hasattr(objective, "cv"):
+        n_repetitions = objective.cv.get_n_splits()
 
     for rep in range(n_repetitions):
-        obj = objective.get_objective()
-        solver.set_objective(**obj)
+        skip = solver._set_objective(objective, output=output)
+        if skip:
+            return []
 
         output.set(rep=rep)
 

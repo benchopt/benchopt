@@ -519,25 +519,38 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
             str(self._import_ctx._benchmark_dir)
         )
 
-    def split_arrays(self, *arrays):
+    def default_split(self, *arrays):
         i_train, i_test = next(self._cv)
-        print(" indices de train:", i_train[:10],
-              " indices de test:", i_test[:10])
         res = ()
         for x in arrays:
             res = (*res, x[i_train], x[i_test])
         return res
 
-    def get_split(self, *args):
-        if not hasattr(self, "_cv"):
-            # this might be too much dark magic....()
-            self._cv = itertools.cycle(self.cv.split(*args))
-        index = next(self._cv)
-        return self.split(*index)
+    def get_split(self, *arrays):
+        # return the split of the data according to the cv attribute
 
-    # this is a helper for a common use case.
-    def get_split_array(self, *arrays):
+        if not hasattr(self, "cv"):
+            raise ValueError(
+                "To use get_split, you need to define "
+                "a cv attribute in your objective class "
+                "It should be a sklearn.model_selection.BaseCrossValidator "
+                "object."
+            )
+
+        if not str(type(arrays[0])) == "<class 'numpy.ndarray'>":
+            if not hasattr(self, "split"):
+                raise ValueError(
+                    "The type of the data is not np.ndarray. "
+                    "You need to define a custom split function "
+                    "named split in your objective class. "
+                    "the type of the function should be "
+                    "(self: Self@BaseObjective, index_train "
+                    "index_test) -> splitted_data"
+                )
+            else:
+                return self.split(*arrays)
+
         if not hasattr(self, "_cv"):
             # this might be too much dark magic....()
             self._cv = itertools.cycle(self.cv.split(*arrays))
-        return self.split_arrays(*arrays)
+        return self.default_split(*arrays)
