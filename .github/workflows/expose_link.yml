@@ -23,4 +23,4 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           artifact-path: 0/dev/index.html
           circleci-jobs: build_doc
-          api-token: ${{ secrets.CIRCLE_CI_STATUS_TOKEN }}s
+          api-token: ${{ secrets.CIRCLE_CI_STATUS_TOKEN }}
