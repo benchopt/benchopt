@@ -6,7 +6,7 @@ with safe_import_context() as import_ctx:
 
 
 class Objective(BaseObjective):
-    """Here one can provide a description of the Objetive.
+    """Here one can provide a description of the Objective.
 
     Lorem ipsum dolor sit amet. Eos voluptatem natus ab vero voluptatum est
     excepturi saepe non minima alias sed laboriosam optio qui dolores autem
@@ -22,12 +22,9 @@ class Objective(BaseObjective):
         'reg': [0.05, .1, .5]
     }
 
-    def __init__(self, reg=.1, fit_intercept=False, deprecated_dataset=False):
+    def __init__(self, reg=.1, fit_intercept=False):
         self.reg = reg
         self.fit_intercept = fit_intercept
-
-        # XXX - Remove in version 1.3
-        self.deprecated_dataset = deprecated_dataset
 
     def set_data(self, X, y):
         self.X, self.y = X, y
@@ -39,10 +36,6 @@ class Objective(BaseObjective):
         return False, None
 
     def get_one_solution(self):
-        # XXX - Remove in version 1.3
-        if self.deprecated_dataset:
-            return super().get_one_solution()
-
         return np.zeros(self.X.shape[1])
 
     def compute(self, beta):

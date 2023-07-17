@@ -229,24 +229,26 @@ def shape_solvers_for_html(df, objective_column):
 
         color, marker = get_solver_style(solver)
         # to preserve support of previous benchopt version
-        # where 'stopping_strategy' wasn't saved in solver meta
-        try:
-            stopping_strategy = df_filtered['stopping_strategy'].unique()
-        except KeyError:
-            stopping_strategy = ["Time"]
+        # where 'sampling_strategy' wasn't saved in solver meta
+        if "sampling_strategy" in df_filtered:
+            sampling_strategy = df_filtered['sampling_strategy'].unique()
+        elif "stopping_strategy" in df_filtered:
+            sampling_strategy = df_filtered['stopping_strategy'].unique()
+        else:
+            sampling_strategy = ["Time"]
 
-        if len(stopping_strategy) != 1:
-            found_stopping_strategies = ', '.join(
-                f"`{item}`" for item in stopping_strategy
+        if len(sampling_strategy) != 1:
+            found_sampling_strategies = ', '.join(
+                f"`{item}`" for item in sampling_strategy
             )
 
             raise Exception(
-                "Solver can be run using only one stopping strategy. "
-                f"Expected one stopping strategy "
-                f"but found {found_stopping_strategies}"
+                "Solver can be run using only one sampling strategy. "
+                f"Expected one sampling strategy "
+                f"but found {found_sampling_strategies}"
             )
 
-        stopping_strategy = stopping_strategy[0]
+        sampling_strategy = sampling_strategy[0]
 
         solver_data[solver] = {
             'scatter': {
@@ -261,7 +263,7 @@ def shape_solvers_for_html(df, objective_column):
             },
             'color': color,
             'marker': marker,
-            'stopping_strategy': stopping_strategy
+            'sampling_strategy': sampling_strategy,
         }
 
     return solver_data

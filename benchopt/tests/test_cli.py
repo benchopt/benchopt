@@ -215,7 +215,7 @@ class TestRunCmd:
                 'benchopt', standalone_mode=False)
 
         config = f"""
-        objective-filter:
+        objective:
           - {SELECT_ONE_OBJECTIVE}
         dataset:
           - {SELECT_ONE_SIMULATED}
@@ -361,7 +361,7 @@ class TestRunCmd:
             "        return dict()\n"
         )
         config = f"""
-            objective-filter:
+            objective:
             - {SELECT_ONE_OBJECTIVE}
             dataset:
             - buggy-dataset
@@ -465,6 +465,50 @@ class TestInstallCmd:
                 run(run_cmd, 'benchopt', standalone_mode=False)
 
         out.check_output(r"done \(not enough run\)", repetition=1)
+
+    @pytest.mark.parametrize("cls_type", ['dataset', 'solver'])
+    def test_error_wih_missing_requirements(self, test_env_name, cls_type):
+        # if cls_type == "solver":
+        Cls = cls_type.capitalize()
+
+        # solver with missing dependency specified
+        src = (
+            f"from benchopt import Base{Cls}\n"
+            "from benchopt import safe_import_context\n"
+            "\n"
+            "with safe_import_context() as import_ctx:\n"
+            "    import sjdhfg\n"
+            f"class {Cls}(Base{Cls}):\n"
+            "    name = 'buggy-cls'\n"
+            "    def __init__(self):\n"
+            "        pass\n"
+            "    def set_objective(self):\n"
+            "        pass\n"
+            "    def get_data(self):\n"
+            "        {}\n"
+            "    def get_result(self):\n"
+            "        pass\n"
+            "    def run(self):\n"
+            "        pass\n"
+        )
+
+        TmpFileCtx = tempfile.NamedTemporaryFile
+        solver_dir = DUMMY_BENCHMARK_PATH / f"{cls_type}s"
+
+        with TmpFileCtx("w+", suffix='.py', dir=solver_dir) as tmp_solver:
+
+            tmp_solver.write(src)
+            tmp_solver.flush()
+
+            install_args = [
+                str(DUMMY_BENCHMARK_PATH),
+                '--env-name', test_env_name,
+                f'-{cls_type[0]}', "buggy-cls"
+            ]
+
+            error_match = f"Could not find dependencies for buggy-cls {Cls}"
+            with pytest.raises(AttributeError, match=error_match):
+                install(install_args, 'benchopt', standalone_mode=False)
 
     def test_shell_complete(self):
         # Completion for benchmark name

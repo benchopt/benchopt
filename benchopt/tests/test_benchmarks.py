@@ -1,11 +1,12 @@
 import pytest
-import numbers
-
 import numpy as np
 
+import benchopt
+from benchopt.cli.main import run
 from benchopt.runner import _Callback
-from benchopt.stopping_criterion import STOPPING_STRATEGIES
+from benchopt.stopping_criterion import SAMPLING_STRATEGIES
 from benchopt.utils import product_param
+from benchopt.utils.temp_benchmark import temp_benchmark
 
 
 def test_benchmark_objective(benchmark, dataset_simu):
@@ -74,23 +75,6 @@ def test_dataset_get_data(benchmark, dataset_class):
     assert isinstance(data, (tuple, dict)), (
         "Output of get_data should be a 2-tuple or a dict."
     )
-    # XXX - Remove in version 1.3
-    if isinstance(data, tuple):
-        assert len(data) == 2, (
-            "Output of get_data should be a 2-tuple"
-        )
-
-        dimension, data = data
-
-        assert isinstance(dimension, tuple) or dimension == 'object', (
-            "First output of get_data should be an integer or a tuple of "
-            f"integers. Got {dimension}."
-        )
-        if dimension != 'object':
-            assert all(isinstance(d, numbers.Integral) for d in dimension), (
-                "First output of get_data should be an integer or a tuple of "
-                f"integers. Got {dimension}."
-            )
 
     assert isinstance(data, dict), (
         f"The returned data from get_data should be a dict. Got {data}."
@@ -108,8 +92,8 @@ def test_solver_class(benchmark, solver_class):
 
     # Check that the solver_class uses a valid stopping_strategy
     if hasattr(solver_class, 'stopping_strategy'):
-        msg = f"stopping_strategy should be in {STOPPING_STRATEGIES}."
-        assert solver_class.stopping_strategy in STOPPING_STRATEGIES, msg
+        msg = f"stopping_strategy should be in {SAMPLING_STRATEGIES}."
+        assert solver_class.stopping_strategy in SAMPLING_STRATEGIES, msg
 
     # Check that the solver_class uses a valid callable to override get_next.
     if hasattr(solver_class, 'get_next'):
@@ -234,3 +218,39 @@ def _test_solver_one_objective(solver, objective):
 
             diff = val_eps - val_star
             assert diff >= 0
+
+
+def test_deprecated_stopping_strategy():
+    # XXX remove in 1.5
+    assert benchopt.__version__ < '1.5'
+
+    solver1 = """from benchopt import BaseSolver
+    import numpy as np
+
+    class Solver(BaseSolver):
+        name = 'solver1'
+        stopping_strategy = 'iteration'
+
+        def run(self, n_iter): pass
+
+        def set_objective(self, X, y, lmbd):
+            self.n_features = X.shape[1]
+
+        def get_result(self, **data):
+            return np.zeros(self.n_features)
+    """
+
+    solver2 = solver1.replace("stopping_strategy", "sampling_strategy")
+    solver2 = solver2.replace("solver1", "solver2")
+
+    with temp_benchmark(solvers=[solver1, solver2]) as benchmark:
+        with pytest.warns(
+                FutureWarning,
+                match="'stopping_strategy' attribute is deprecated"):
+            run([str(benchmark.benchmark_dir),
+                 *'-s solver1 -d test-dataset -n 1 -r 1 --no-plot'.split()],
+                standalone_mode=False)
+
+        run([str(benchmark.benchmark_dir),
+             *'-s solver2 -d test-dataset -n 1 -r 1 --no-plot'.split()],
+            standalone_mode=False)
