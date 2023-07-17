@@ -61,7 +61,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'benchopt'
-copyright = f'2020-{datetime.today().year}, Benchopt contributors'
+copyright = f'2020-{datetime.today().year}'
 author = u'Benchopt contributors'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -119,18 +119,13 @@ html_theme_options = {
     "repository_url": "https://github.com/benchopt/benchopt",
 }
 
-# html_sidebars = {
-#     "reference/blog/*": [
-#         "navbar-logo.html",
-#         "search-field.html",
-#         "postcard.html",
-#         "recentposts.html",
-#         "tagcloud.html",
-#         "categories.html",
-#         "archives.html",
-#         "sbt-sidebar-nav.html",
-#     ]
-# }
+html_sidebars = {
+    "**": [
+        "navbar-logo.html",
+        "search-field.html",
+        "sbt-sidebar-nav.html",
+    ]
+}
 
 # Add any paths that contain custom themes here, relative to this directory.
 # html_theme_path = sphinx_bootstrap_theme.get_html_theme_path()
