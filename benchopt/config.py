@@ -191,15 +191,22 @@ def get_setting(name, config_file=None, benchmark_name=None):
     )
     default_value = default_config[name]
 
+    # Handle deprecated .ini config file by automatically
+    # converting them to .yml.
     if config_file.suffix == ".ini":
         convert_ini_to_yml(config_file)
         config_file = config_file.with_suffix('.yml')
 
+    # Load the config from the yaml file if the file exists.
+    if config_file.exists():
+        with open(config_file, "r") as f:
+            config = yaml.safe_load(f)
+    else:
+        config = {}
+
     # Get value from config file or keep the default value.
-    with open(config_file, "r") as f:
-        config = yaml.safe_load(f)
     if benchmark_name in config.keys():
-        value = config[benchmark_name].get(name, default_value[name])
+        value = config[benchmark_name].get(name, default_value)
     else:
         value = config.get(name, default_value)
 

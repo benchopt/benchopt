@@ -574,6 +574,8 @@ def plot_benchmark_html_all(patterns=(), benchmark_paths=(), root=None,
                 (benchmark_path / 'outputs').glob(f"{p}.parquet")
             ) + list((benchmark_path / 'outputs').glob(f"{p}.csv"))
         fnames = sorted(set(fnames))
+        # XXX - what to do here?
+        plot_configs = {}
         results = get_results(
             fnames, plot_configs, root_html, benchmark_path.name,
             copy=True
