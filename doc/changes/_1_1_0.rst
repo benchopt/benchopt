@@ -1,0 +1,104 @@
+.. _changes_1_2:
+
+Version 1.1 - 22-04-2021
+------------------------
+
+Changelog
+~~~~~~~~~
+
+- New plotting functions with different optimality criteria,
+  by `Nidham Gazagnadou`_ (:gh:`96`).
+
+- Support Plotly for plotting functions, by `Thomas Moreau`_,
+  `Tanguy Lefort`_ and `Joseph Salmon`_ (:gh:`110`, :gh:`111`, :gh:`112`).
+
+- Change envrionment variable for config from ``BENCHO_*`` to ``BENCHOPT_*``,
+  by `Thomas Moreau`_ (:gh:`128`).
+
+- Add autocompletion support in the ``benchopt`` command,
+  by `Alexandre Gramfort`_, `Tanguy Lefort`_ and `Thomas Moreau`_
+  (:gh:`133`, :gh:`135`).
+
+- Move most CI to GitHub action, with auto-release on PyPi,
+  by `Thomas Moreau`_ (:gh:`150`, :gh:`154`).
+
+- Remove ``BENCHOPT_ALLOW_INSTALL`` and always install to requested env as
+  the user now must request explicitly the install,
+  by `Thomas Moreau`_ (:gh:`155`).
+
+API
+~~~
+
+- ``Objective.compute`` can now return a dictionary with multiple outputs to
+  monitor several metrics at once, by `Thomas Moreau`_ (:gh:`84`).
+
+- ``Solver.skip`` can now be used to skip objectives that are incompatible
+  for the Solver, by `Thomas Moreau`_ (:gh:`113`).
+
+- ``Solver`` can now use ``stop_strategy='callback'`` to allow for
+  single call curve construction, by `Tanguy Lefort`_ and `Thomas Moreau`_
+  (:gh:`137`).
+
+- Add ``StoppingCriterion`` to reliably and flexibly assess a solver convergence (cvg).
+  For now, only ``SufficientDescentCriterion`` is implemented but better
+  API to set criterion per benchmark should be implemented in a future release,
+  by `Thomas Moreau`_ (:gh:`151`)
+
+CLI
+~~~
+
+- Add ``--version`` option for ``benchopt``, by `Thomas Moreau`_ (:gh:`83`).
+
+- Add ``--pdb`` option for ``benchopt run`` to open debugger on error and help
+  benchmark debugging, by `Thomas Moreau`_ (:gh:`86`).
+
+- Change default run to local mode. Can call a run in a dedicated env with
+  option ``--env`` or ``--env-name ENV_NAME`` to specify the env,
+  by `Thomas Moreau`_ (:gh:`94`).
+
+- Add ``benchopt publish`` command to push benchmark results to GitHub,
+  by `Thomas Moreau`_ (:gh:`110`).
+
+- Add ``benchopt clean`` command to remove cached files and output files locally,
+  by `Thomas Moreau`_ (:gh:`128`).
+
+- Add ``benchopt config`` command to allow easy configuration of ``benchopt``
+  using the CLI, by `Thomas Moreau`_ (:gh:`128`).
+
+- Add ``benchopt install`` command to install benchmark requirements
+  (not done in ``benchopt run`` anymore) by `Ghislain Durif`_ (:gh:`135`).
+
+- Add ``benchopt info`` command to print information about a benchmark
+  (including solvers, datasets, dependencies, etc.)
+  by `Ghislain Durif`_ (:gh:`140`).
+
+
+BUG
+~~~
+
+- Throw a warning when benchopt version in conda env does not match the one of
+  calling ``benchopt``, by `Thomas Moreau`_ (:gh:`83`).
+
+- Fix Lapack issue with R code, by `Tanguy Lefort`_ (:gh:`97`).
+
+
+DOC
+~~~
+
+- Improve how-to narrative documentation, by `Alexandre Gramfort`_ (:gh:`93`).
+
+- Add what's new page, by `Alexandre Gramfort`_ (:gh:`114`).
+
+- Add documentation on how to publish results, by `Alexandre Gramfort`_ (:gh:`118`).
+
+The committer list for this release is the following:
+
+  * `Alexandre Gramfort`_
+  * `Benoît Malézieux`_
+  * `Ghislain Durif`_
+  * `Joseph Salmon`_
+  * `Mathurin Massias`_
+  * `Nidham Gazagnadou`_
+  * `Tanguy Lefort`_
+  * `Thomas Moreau`_
+  * `Tom Dupré la Tour`_

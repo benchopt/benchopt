@@ -1,7 +1,10 @@
-.. _whats_newddd:
+.. _whats_new:
 
 What's new
 ==========
+
+.. currentmodule:: benchopt
+
 
 .. include:: _1_5_0.rst
 
