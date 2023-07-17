@@ -526,6 +526,13 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
             res = (*res, x[i_train], x[i_test])
         return res
 
+    def custom_split(self, *arrays):
+        if not hasattr(self, "_cv"):
+            # define _cv only one time
+            self._cv = itertools.cycle(self.cv.split(*arrays))
+        i_train, i_test = next(self._cv)
+        return self.split(i_train, i_test)
+
     def get_split(self, *arrays):
         # return the split of the data according to the cv attribute
 
@@ -544,13 +551,12 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
                     "You need to define a custom split function "
                     "named split in your objective class. "
                     "the type of the function should be "
-                    "(self: Self@BaseObjective, index_train "
+                    "(self: Self@Objective, index_train "
                     "index_test) -> splitted_data"
                 )
             else:
-                return self.split(*arrays)
+                return self.custom_split(*arrays)
 
         if not hasattr(self, "_cv"):
-            # this might be too much dark magic....()
             self._cv = itertools.cycle(self.cv.split(*arrays))
         return self.default_split(*arrays)
