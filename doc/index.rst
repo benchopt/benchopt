@@ -1,12 +1,12 @@
-``Benchopt`` 
-===========
+Benchopt 
+========
 
 *—Making your optimization benchmarks simple and open—*
 
 
 |Python 3.6+| |PyPI version| |License|
 
-``Benchopt`` is a benchmarking suite for optimization algorithms.
+Benchopt is a benchmarking suite for optimization algorithms.
 It is built for simplicity, transparency, and reproducibility.
 It is implemented in Python but can run algorithms written in **many programming languages**.
 
@@ -19,7 +19,7 @@ It is implemented in Python but can run algorithms written in **many programming
 
         :octicon:`rocket` **Get started**
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-        Install ``benchopt`` and run your first benchmark
+        Install benchopt and run your first benchmark
 
     .. grid-item-card::
         :link: build_benchmark
@@ -36,7 +36,7 @@ It is implemented in Python but can run algorithms written in **many programming
 
         :octicon:`book` **User Guide**
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-        Full documentation of ``benchopt`` API and CLI
+        Full documentation of benchopt API and CLI
 
 
     .. grid-item-card::
@@ -45,22 +45,22 @@ It is implemented in Python but can run algorithms written in **many programming
 
         :octicon:`mortar-board` **Tutorials**
         ^^^
-        A gallery of use-cases crafted by ``benchopt`` community
+        A gallery of use-cases crafted by benchopt community
 
 
 Get in touch with the community
 -------------------------------
 
-Join ``benchopt`` `discord server <https://discord.gg/EA2HGQb7nv>`_ and get in touch with the community!
+Join benchopt `discord server <https://discord.gg/EA2HGQb7nv>`_ and get in touch with the community!
 Feel free to drop us a message to get help with running/constructing benchmarks 
-or (why not) discuss new features to be added and future development directions that ``benchopt`` should take.
+or (why not) discuss new features to be added and future development directions that benchopt should take.
 
 
 Citing Benchopt
 ---------------
 
-``Benchopt`` is a continuous effort to make reproducible and transparent optimization benchmarks.
-Join us in this endeavor! If you use ``benchopt`` in a scientific publication, please cite
+Benchopt is a continuous effort to make reproducible and transparent optimization benchmarks.
+Join us in this endeavor! If you use benchopt in a scientific publication, please cite
 
 .. code-block:: bibtex
 

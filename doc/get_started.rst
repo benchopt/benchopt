@@ -48,7 +48,7 @@ This section illustrates benchopt's command line interface on the `Lasso benchma
 All this section assumes that you are in the parent folder of the ``benchmark_lasso`` folder.
 The ``--env`` flag specifies that everything is run in the ``benchopt_benchmark_lasso`` ``conda`` environment.
 
-**Installing benchmark dependencies**: ``benchopt`` exposes a CLI to install solvers' dependencies automatically.
+**Installing benchmark dependencies**: benchopt exposes a CLI to install solvers' dependencies automatically.
 It only works inside a ``conda`` environment. To install all requirements of the benchmark, make sure a ``conda``
 environment is activated and run:
 
@@ -117,5 +117,5 @@ Creating a benchmark
 --------------------
 
 The section :ref:`write_benchmark` of the documentation provides a tutorial for creating a benchmark.
-The ``benchopt`` community also maintains a `template benchmark <https://github.com/benchopt/template_benchmark>`_
+The benchopt community also maintains a `template benchmark <https://github.com/benchopt/template_benchmark>`_
 to quickly and easily start a new benchmark.

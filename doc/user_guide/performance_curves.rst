@@ -6,7 +6,7 @@ How are the performance curves sampled?
 The performance of each solver is evaluated for various computational budget.
 With "*performance curves*", we refer to the evolution of the performance as a
 function of the computational budget.
-With ``benchopt``, there are different ways to vary the computational budget
+With benchopt, there are different ways to vary the computational budget
 to sample the performance curve.
 They are chosen by the ``sampling_strategy`` attribute of each solver.
 
@@ -74,7 +74,7 @@ For each of the sampling strategies above, the solvers continue running (i.e. th
 
 This method takes into account the maximal number of runs given as ``--max-runs``, the timeout given by ``--timeout`` and also tries to stop the solver if it has converged.
 The convergence of a solver is determined by  the ``StoppingCriterion.check_convergence()`` method, based on the objective curve so far.
-There are three ``StoppingCriterion`` implemented in ``benchopt``:
+There are three ``StoppingCriterion`` implemented in benchopt:
 
 - ``SufficientDescentCriterion(eps, patience)`` considers that the solver has converged when the relative decrease of the objective was less than a tolerance ``eps`` for more than ``patience`` calls to ``check_convergence``.
 - ``SufficientProgressCriterion(eps, patience)`` considers that the solver has converged when the objective has not decreased by more than a tolerance ``eps`` for more than ``patience`` calls to ``check_convergence``.

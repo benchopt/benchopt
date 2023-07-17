@@ -41,7 +41,7 @@ Obtaining a GitHub token
 
 Visit `https://github.com/settings/tokens <https://github.com/settings/tokens>`_
 and click on ``generate new token``.
-Then create a token named ``benchopt``, ticking the **repo** box as shown below:
+Then create a token named benchopt, ticking the **repo** box as shown below:
 
 .. figure:: ../_static/github_benchopt_token.png
    :target: https://github.com/settings/tokens

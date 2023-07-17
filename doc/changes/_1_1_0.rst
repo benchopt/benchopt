@@ -15,7 +15,7 @@ Changelog
 - Change envrionment variable for config from ``BENCHO_*`` to ``BENCHOPT_*``,
   by `Thomas Moreau`_ (:gh:`128`).
 
-- Add autocompletion support in the ``benchopt`` command,
+- Add autocompletion support in the benchopt command,
   by `Alexandre Gramfort`_, `Tanguy Lefort`_ and `Thomas Moreau`_
   (:gh:`133`, :gh:`135`).
 
@@ -47,7 +47,7 @@ API
 CLI
 ~~~
 
-- Add ``--version`` option for ``benchopt``, by `Thomas Moreau`_ (:gh:`83`).
+- Add ``--version`` option for benchopt, by `Thomas Moreau`_ (:gh:`83`).
 
 - Add ``--pdb`` option for ``benchopt run`` to open debugger on error and help
   benchmark debugging, by `Thomas Moreau`_ (:gh:`86`).
@@ -62,7 +62,7 @@ CLI
 - Add ``benchopt clean`` command to remove cached files and output files locally,
   by `Thomas Moreau`_ (:gh:`128`).
 
-- Add ``benchopt config`` command to allow easy configuration of ``benchopt``
+- Add ``benchopt config`` command to allow easy configuration of benchopt
   using the CLI, by `Thomas Moreau`_ (:gh:`128`).
 
 - Add ``benchopt install`` command to install benchmark requirements
@@ -77,7 +77,7 @@ BUG
 ~~~
 
 - Throw a warning when benchopt version in conda env does not match the one of
-  calling ``benchopt``, by `Thomas Moreau`_ (:gh:`83`).
+  calling benchopt, by `Thomas Moreau`_ (:gh:`83`).
 
 - Fix Lapack issue with R code, by `Tanguy Lefort`_ (:gh:`97`).
 

@@ -11,8 +11,8 @@ Frequently asked questions (FAQ)
 
 .. dropdown:: How performance curves are constructed?
 
-    The goal of ``benchopt`` is to evaluate the evolution of a method's performance with respect to its computational budget.
-    For evaluating this, ``benchopt`` allows to vary the computational budget for both black-box solvers and solvers that allow for callbacks.
+    The goal of benchopt is to evaluate the evolution of a method's performance with respect to its computational budget.
+    For evaluating this, benchopt allows to vary the computational budget for both black-box solvers and solvers that allow for callbacks.
     Learn :ref:`performance_curves`.
     Note that the budget varying strategy can also be configured on a per-solver basis, as described in: :ref:`sampling_strategy`.
 

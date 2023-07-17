@@ -11,7 +11,7 @@ to make it easier to use the benchmark.
 Running the benchmark on a SLURM cluster
 ----------------------------------------
 
-``benchopt`` also allows easily running the benchmark in parallel on a SLURM
+Benchopt also allows easily running the benchmark in parallel on a SLURM
 cluster. To install the necessary dependencies, please run:
 
 .. prompt:: bash $
@@ -52,7 +52,7 @@ unique parameters are launched as a separated job in a job-array on the SLURM
 cluster. Note that by default, no limitation is used on the number of
 simultaneous jobs that are run.
 
-If ``slurm_time`` is not set in the config file, ``benchopt`` uses by default
+If ``slurm_time`` is not set in the config file, benchopt uses by default
 the value of ``--timeout`` multiplied by ``1.5`` for each job.
 Note that the logs of each benchmark run can be found in ``./benchopt_run/``.
 
@@ -199,14 +199,14 @@ callback (default to 1).
 .. _SlurmExecutor: https://github.com/facebookincubator/submitit/blob/main/submitit/slurm/slurm.py#L214
 
 
-``Benchopt`` configuration
---------------------------
+Benchopt configuration
+----------------------
 
 Benchopt can be configured using setting files. These files can either be created directly or generated and modified using ``benchopt config``.
 
-There are two configuration levels. The first level is the global config for the ``benchopt`` client. It contains the system specific tweaks, the user info such as the *<GitHub token>* and the output levels. The second level is the configuration of the benchmarks. Each benchmark can have its own config for the kind of plots it displays by default and other display tweaks.
+There are two configuration levels. The first level is the global config for the benchopt client. It contains the system specific tweaks, the user info such as the *<GitHub token>* and the output levels. The second level is the configuration of the benchmarks. Each benchmark can have its own config for the kind of plots it displays by default and other display tweaks.
 
-To get the BenchOpt global config file used by the ``benchopt`` command, you can run ``benchopt config``. Using the option ``--benchmark,-b <benchmark>`` allows to display the config file for a specific benchmark. See :ref:`config_file` for more details on how the config file path is resolved.
+To get the BenchOpt global config file used by the benchopt command, you can run ``benchopt config``. Using the option ``--benchmark,-b <benchmark>`` allows to display the config file for a specific benchmark. See :ref:`config_file` for more details on how the config file path is resolved.
 
 The structure of the files follows the Microsoft Windows INI files structure and is described in :ref:`config_structure`. The available settings are listed in :ref:`config_settings`.
 
@@ -276,4 +276,4 @@ Using ``mamba`` to install packages
 
 When many packages need to be installed, ``conda`` can be slow or even fail to resolve the dependency graph. Using ``mamba`` can speed up this process and make it more reliable.
 
-To use ``mamba`` instead of ``conda`` when installing benchmark requirements, it is necessary to have ``mamba`` installed in the ``base`` conda environment, *e.g.* using ``conda install -n base mamba``. Then, ``benchopt`` can be configured to use this command instead of ``conda`` by either configuring the CLI using ``benchopt config set conda_cmd mamba`` or setting the environment variable ``BENCHOPT_CONDA_CMD=mamba``.
+To use ``mamba`` instead of ``conda`` when installing benchmark requirements, it is necessary to have ``mamba`` installed in the ``base`` conda environment, *e.g.* using ``conda install -n base mamba``. Then, benchopt can be configured to use this command instead of ``conda`` by either configuring the CLI using ``benchopt config set conda_cmd mamba`` or setting the environment variable ``BENCHOPT_CONDA_CMD=mamba``.

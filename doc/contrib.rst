@@ -131,7 +131,7 @@ HTML output by typing, in a shell:
 Testing a benchmark
 -------------------
 
-To ensure that the benchmark are reproducible and can be run by other, ``benchopt`` provides a set of tools to test that the benchmark is properly formatted, and that it can be installed and run easily.
+To ensure that the benchmark are reproducible and can be run by other, benchopt provides a set of tools to test that the benchmark is properly formatted, and that it can be installed and run easily.
 This page describes the various tweaks that can be made to the benchmark tests.
 
 
@@ -150,7 +150,7 @@ The test run by ``benchopt test`` will make sure that:
 Test for Solver run
 ~~~~~~~~~~~~~~~~~~~
 
-To ensure point 4, ``benchopt`` needs to load at least one small dataset that is compatible with each solver. This is why each benchmark needs to implement at least a ``Simulated`` dataset, that will be used for testing purposes. However, some solvers require different dataset and objective settings to be able to run. There is two way to ensure that a solver can find an appropriate configuration:
+To ensure point 4, benchopt needs to load at least one small dataset that is compatible with each solver. This is why each benchmark needs to implement at least a ``Simulated`` dataset, that will be used for testing purposes. However, some solvers require different dataset and objective settings to be able to run. There is two way to ensure that a solver can find an appropriate configuration:
 
 - In the simulated dataset, one can add class attribute ``test_parameters``, which stands for a list of parameters that will be tried to test the solver. For each solver, at least one of this configuration should be compatible (not skipped). See benchopt.github.io/how.html#example-of-parametrized-simulated-dataset
 
@@ -160,7 +160,7 @@ To ensure point 4, ``benchopt`` needs to load at least one small dataset that is
 Test configuration
 ~~~~~~~~~~~~~~~~~~
 
-In some cases, some tests should be ``skip``, or ``xfail`` for a given benchmark. You can configure this for ``benchopt`` using a ``test_config.py`` file at the root of the benchmark. Implementing a function named ``check_TESTNAME`` with the same argument as the original test, you can then call ``pytest.xfail`` or ``pytest.skip`` to mark the test appropriately. For instance, to skip install tests for solver ``XXX``, you can have the following:
+In some cases, some tests should be ``skip``, or ``xfail`` for a given benchmark. You can configure this for benchopt using a ``test_config.py`` file at the root of the benchmark. Implementing a function named ``check_TESTNAME`` with the same argument as the original test, you can then call ``pytest.xfail`` or ``pytest.skip`` to mark the test appropriately. For instance, to skip install tests for solver ``XXX``, you can have the following:
 
 .. code:: python
 
