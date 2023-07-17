@@ -245,17 +245,6 @@
                                     </select>
                                 </div>
                             </div>
-                            <div id="xaxis-type-form-group" class="mt-8 px-8">
-                                <label for="configs_mobile" class="block text-sm font-medium text-white">Plot config</label>
-                                <div class="mt-1 rounded-md shadow-sm">
-
-                                    <select id="configs_mobile" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setConfig(this.value)">
-                                        % for conf in result['metadata']['plot_configs']:
-                                        <option value="${conf}">${conf}</option>
-                                        %endfor
-                                    </select>
-                                </div>
-                            </div>
                             <div class="flex items-center justify-between mt-8 px-8">
                                 <div class="block text-sm font-medium text-white">Quantiles</div>
                                 <label class="block switch">
@@ -305,12 +294,14 @@
                 <!-- Plot -->
                 <div id="unique_plot"></div>
                 % if len(result['metadata']['plot_configs']) > 0:
+                <div id="config_container" class="py-10 bg-slate-200">
                     <div id="plot_config_buttons" class="px-10 mb-4">
                         <span id="plot_config_title">Saved plot view</span>
                         % for conf in result['metadata']['plot_configs']:
                             <span class="config-item" onclick=setConfig(this)>${conf}</span>
                         %endfor
                     </div>
+                </div>
                 %endif
                 <div id="legend_container" class="py-10 bg-slate-200">
                     <div id="legend_title" class="px-10 mb-4">

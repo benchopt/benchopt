@@ -138,11 +138,11 @@ const getScatterCurves = () => {
   let xaxisType = state().xaxis_type;
 
   getSolvers().forEach(solver => {
-    solverStoppingStrategy = data(solver)['stopping_strategy'];
+    solverSamplingStrategy = data(solver)['sampling_strategy'];
 
     // plot only solvers that were stopped using xaxis type
     // plot all solver if xaxis type is `time`
-    if(xaxisType !== "Time" && solverStoppingStrategy !== xaxisType) {
+    if(xaxisType !== "Time" && solverSamplingStrategy !== xaxisType) {
       return
     }
 
@@ -772,7 +772,7 @@ function updateXaxis(idXaxisTypeSelection) {
   // get solvers run for selected (dataset, objective, objective colum)
   // and select their unique stopping strategies
   let solvers = data()['solvers'];
-  Object.values(solvers).forEach(solver => options.add(solver['stopping_strategy']));
+  Object.values(solvers).forEach(solver => options.add(solver['sampling_strategy']));
 
   // create xaxis type options
   options.forEach(option => {
