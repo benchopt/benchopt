@@ -116,6 +116,6 @@ You can also read the :ref:`cli_documentation`.
 Creating a benchmark
 --------------------
 
-The section :ref:`write_benchmark`_ of the documentation provides a tutorial for creating a benchmark.
+The section :ref:`write_benchmark` of the documentation provides a tutorial for creating a benchmark.
 The ``benchopt`` community also maintains a `template benchmark <https://github.com/benchopt/template_benchmark>`_
 to quickly and easily start a new benchmark.
