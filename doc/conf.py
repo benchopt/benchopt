@@ -18,6 +18,7 @@
 
 import os
 import sys
+from datetime import datetime
 
 curdir = os.path.dirname(__file__)
 sys.path.append(os.path.abspath(os.path.join(curdir, 'sphinxext')))
@@ -60,7 +61,6 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'benchopt'
-from datetime import datetime  # noqa
 copyright = f'2020-{datetime.today().year}, Benchopt contributors'
 author = u'Benchopt contributors'
 

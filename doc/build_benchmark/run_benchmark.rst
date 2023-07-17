@@ -1,6 +1,6 @@
 .. _run_benchmark:
 
 
-Run benchmark
-=============
+Run a Benchmark
+===============
 

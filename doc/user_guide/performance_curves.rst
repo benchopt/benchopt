@@ -1,7 +1,7 @@
 .. _performance_curves:
 
-Performance curves
-==================
+How are the performance curves sampled?
+=======================================
 
 The performance of each solver is evaluated for various computational budget.
 With "*performance curves*", we refer to the evolution of the performance as a
