@@ -116,6 +116,8 @@ html_theme_options = {
         "text": f"{version}",
     },
     "use_repository_button": True,
+    "use_download_button": False,
+    "use_fullscreen_button": False,
     "repository_url": "https://github.com/benchopt/benchopt",
 }
 

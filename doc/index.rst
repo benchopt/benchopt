@@ -1,5 +1,6 @@
-Benchopt 
-========
+
+``Benchopt``
+=============
 
 *—Making your optimization benchmarks simple and open—*
 
@@ -8,7 +9,7 @@ Benchopt
 
 Benchopt is a benchmarking suite for optimization algorithms.
 It is built for simplicity, transparency, and reproducibility.
-It is implemented in Python but can run algorithms written in **many programming languages**.
+It is implemented in Python but can run algorithms written in many programming languages.
 
 .. grid:: 2
     :gutter: 1
@@ -48,10 +49,11 @@ It is implemented in Python but can run algorithms written in **many programming
         A gallery of use-cases crafted by benchopt community
 
 
-Get in touch with the community
--------------------------------
+Join the community
+------------------
 
 Join benchopt `discord server <https://discord.gg/EA2HGQb7nv>`_ and get in touch with the community!
+
 Feel free to drop us a message to get help with running/constructing benchmarks 
 or (why not) discuss new features to be added and future development directions that benchopt should take.
 
