@@ -60,7 +60,7 @@ As we rely on ``joblib.Memory`` for caching the results, the cache should work
 exactly as if you were running the computation sequentially, as long as you have
 a shared file-system between the nodes used for the computations.
 
-.. _skiping_solver:
+.. _skipping_solver:
 
 Skipping a solver for a given problem
 -------------------------------------

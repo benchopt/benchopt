@@ -29,17 +29,29 @@ List of base classes:
 Benchopt run hooks
 ~~~~~~~~~~~~~~~~~~
 
-:func:`~benchopt.BaseSolver.skip`: hook to allow skipping some configurations.
-Also available for ``Dataset`` and ``Objective``.
+:func:`benchopt.BaseObjective.skip`: hook to allow skipping configurations of
+objective. It is executed after ``get_data`` to skip if current objective is
+not compatible with dataset.
 
-:func:`~benchopt.BaseSolver.get_next`: hook to change the sampling points for
-a given solver.
+:func:`benchopt.BaseSolver.skip`: hook to allow skipping configurations of
+solver. It is executed right after ``set_objective`` to skip if solver
+if not compatible with objective and/or dataset parameters.
+Refer to :ref:`Advanced usage <skipping_solver>` for an example.
 
-:func:`~benchopt.BaseSolver.pre_run_hook`: hook called before each call to
+:func:`benchopt.BaseSolver.get_next`: hook called repeatedly after ``run``
+to change the sampling points for a given solver. It is called with the
+previous ``stop_val`` (i.e. tolerance or number of iterations), and returns
+the value for the next run. Refer to :ref:`Advanced usage <sampling_strategy>`
+for an example.
+
+:func:`benchopt.BaseSolver.pre_run_hook`: hook called before each call to
 ``run``, with the same argument. Allows to skip certain computation that
 cannot be cached globally, such as precompilation with different number of
 iterations in for jitted ``jax`` functions.
 
+:func:`benchopt.BaseSolver.warm_up`: hook called once before the solver runs.
+It is typically used to cache jit compilation of solver while not accounting
+for the time needed in the timings.
 
 Benchopt utils
 ~~~~~~~~~~~~~~
