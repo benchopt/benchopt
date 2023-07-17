@@ -1,8 +1,8 @@
-.. _build_benchmark:
+.. _create_benchmark:
 
 
-Build a Benchmark
-=================
+Create a benchmark
+==================
 
 (To edit later)
 
