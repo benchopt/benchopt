@@ -197,7 +197,7 @@ If you use ``Benchopt`` in a scientific publication, please cite the following p
 Other functionalities
 ---------------------
 
-- Some solvers are not compatible with certain datasets or objective configurations. This can be accommodated by :ref:`skiping_solver`.
+- Some solvers are not compatible with certain datasets or objective configurations. This can be accommodated by :ref:`skipping_solver`.
 - For some solvers, it is necessary to cache some pre-compilation for fair benchmarks. This can easily be done with benchopt, as described in :ref:`precompilation`.
 
 
