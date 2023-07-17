@@ -8,7 +8,7 @@ with safe_import_context() as import_ctx:
     import numpy as np
     assert_matlab_installed()
 
-# File containing the function to be called from julia
+# File containing the function to be called from matlab
 
 MATLAB_SOLVER_FILE = str(Path(__file__).parent)
 
