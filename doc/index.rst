@@ -4,7 +4,7 @@
 *—Making your optimization benchmarks simple and open—*
 
 
-|Test Status| |Python 3.6+| |codecov|
+|Python 3.6+| |PyPI version| |License|
 
 ``Benchopt`` is a benchmarking suite for optimization algorithms.
 It is built for simplicity, transparency, and reproducibility.
@@ -79,14 +79,12 @@ Join us in this endeavor! If you use ``benchopt`` in a scientific publication, p
    }
 
 
-.. |Test Status| image:: https://github.com/benchopt/benchopt/actions/workflows/test.yml/badge.svg
-   :target: https://github.com/benchopt/benchopt/actions/workflows/test.yml
 .. |Python 3.6+| image:: https://img.shields.io/badge/python-3.6%2B-blue
    :target: https://www.python.org/downloads/release/python-360/
-.. |codecov| image:: https://codecov.io/gh/benchopt/benchopt/branch/master/graph/badge.svg
-   :target: https://codecov.io/gh/benchopt/benchopt
-
-
+.. |License| image:: https://img.shields.io/badge/License-BSD_3--Clause-blue.svg
+   :target: https://github.com/benchopt/benchopt/blob/main/LICENSE
+.. |PyPI version| image:: https://badge.fury.io/py/benchopt.svg
+   :target: https://pypi.org/project/benchopt/
 
 Explore
 -------
