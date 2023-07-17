@@ -528,7 +528,7 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
 
     def custom_split(self, *arrays):
         if not hasattr(self, "_cv"):
-            # define _cv only one time
+            # this define _cv only once
             self._cv = itertools.cycle(self.cv.split(*arrays))
         i_train, i_test = next(self._cv)
         return self.split(i_train, i_test)
