@@ -4,7 +4,7 @@
 Build a Benchmark
 =================
 
-(Preliminary before announcing content)
+(To edit later)
 
 
 .. toctree::

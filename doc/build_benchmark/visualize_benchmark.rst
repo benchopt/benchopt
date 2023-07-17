@@ -1,5 +1,5 @@
 .. _visualize_benchmark:
 
 
-Visualize benchmark
-===================
+Visualize benchmark results
+===========================

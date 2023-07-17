@@ -4,7 +4,7 @@
 User guide
 ==========
 
-(Preliminary before announcing content)
+(To edit later)
 
 
 .. toctree::

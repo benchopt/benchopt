@@ -25,7 +25,7 @@ It is implemented in Python but can run algorithms written in **many programming
         :link: build_benchmark
         :link-type: ref
 
-        :octicon:`tools` **Build a benchmark**
+        :octicon:`tools` **Create a benchmark**
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         Write a benchmark from scratch, run it, visualize it, and publish it
 
@@ -34,7 +34,7 @@ It is implemented in Python but can run algorithms written in **many programming
         :link: user_guide
         :link-type: ref
 
-        :octicon:`book` **User Guide**
+        :octicon:`book` **User guide**
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         Full documentation of benchopt API and CLI
 

@@ -1,6 +1,6 @@
 .. _advanced_usage:
 
-Advanced Usage
+Advanced usage
 ==============
 
 This page intends to list some advanced functionality

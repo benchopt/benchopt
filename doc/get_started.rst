@@ -41,8 +41,8 @@ This benchmark can be retrieved locally with:
 
 
 
-Using an existing benchmark
----------------------------
+Run existing benchmark
+----------------------
 
 This section illustrates benchopt's command line interface on the `Lasso benchmark <https://github.com/benchopt/benchmark_lasso>`_; the syntax is applicable to any benchmark.
 All this section assumes that you are in the parent folder of the ``benchmark_lasso`` folder.
@@ -111,11 +111,3 @@ When options are passed both via file and CLI, the CLI takes precedence.
 
 to get more details about the different options.
 You can also read the :ref:`cli_documentation`.
-
-
-Creating a benchmark
---------------------
-
-The section :ref:`write_benchmark` of the documentation provides a tutorial for creating a benchmark.
-The benchopt community also maintains a `template benchmark <https://github.com/benchopt/template_benchmark>`_
-to quickly and easily start a new benchmark.
