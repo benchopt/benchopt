@@ -8,17 +8,17 @@ With "*performance curves*", we refer to the evolution of the performance as a
 function of the computational budget.
 With ``benchopt``, there are different ways to vary the computational budget
 to sample the performance curve.
-They are chosen by the ``stopping_strategy`` attribute of each solver.
+They are chosen by the ``sampling_strategy`` attribute of each solver.
 
 1. Using iterations or tolerance
 --------------------------------
 
 
-The first way is to use ``Solver.stopping_strategy = "iteration"`` or ``Solver.stopping_strategy = "tolerance"``.
+The first way is to use ``Solver.sampling_strategy = "iteration"`` or ``Solver.sampling_strategy = "tolerance"``.
 This is used for black box solvers, where one can only get the result of the solver for a given number of iterations or for a given numerical tolerance.
-This stopping strategy creates curves by calling ``Solver.run(stop_val)`` several times with different values for the ``stop_val`` parameter:
+This sampling strategy creates curves by calling ``Solver.run(stop_val)`` several times with different values for the ``stop_val`` parameter:
 
-- if the solver's ``stopping_strategy`` is ``"iteration"``, ``stop_val`` is the number of iterations passed to ``run``.
+- if the solver's ``sampling_strategy`` is ``"iteration"``, ``stop_val`` is the number of iterations passed to ``run``.
   It increases geometrically by at least 1, starting from 1 with a factor :math:`\rho=1.5`.
   Note that the first call uses a number of iterations of 0.
   The value from one call to the other follows:
@@ -27,7 +27,7 @@ This stopping strategy creates curves by calling ``Solver.run(stop_val)`` severa
 
     \text{stop_val} = \max(\text{stop_val} + 1, \text{int}(\rho * \text{stop_val}))
 
-- if the solver's ``stopping_strategy`` is ``"tolerance"``, the ``stop_val`` parameter corresponds to the numerical tolerance.
+- if the solver's ``sampling_strategy`` is ``"tolerance"``, the ``stop_val`` parameter corresponds to the numerical tolerance.
   It decreases geometrically by a factor :math:`\rho=1.5` between each call to ``run``, starting from 1 at the second call.
   Note that the first call uses a tolerance of 1e38.
   The value from one call to the other follows:
@@ -47,9 +47,9 @@ For more advanced configurations, the evolution of ``stop_val`` can be controlle
 
 Restarting the solver from scratch, though inevitable to handle black box solvers, can be costly.
 
-When a solver exposes the intermediate values of the iterates, it is possible to create the curve in a single solver run, by using ``stopping_strategy = "callback"``.
+When a solver exposes the intermediate values of the iterates, it is possible to create the curve in a single solver run, by using ``sampling_strategy = "callback"``.
 In that case, the argument passed to ``Solver.run`` will be a callable object, ``callback``.
-Like with ``stopping_strategy == "iteration"``, the objective is computed after a number of callback's calls that grows geometrically. If the objective was computed after :math:`n` calls, the objective and timing will be computed again when reaching :math:`\max(n+1, \rho * n)` calls to the callback.
+Like with ``sampling_strategy == "iteration"``, the objective is computed after a number of callback's calls that grows geometrically. If the objective was computed after :math:`n` calls, the objective and timing will be computed again when reaching :math:`\max(n+1, \rho * n)` calls to the callback.
 The callback makes sure we do not account for objective computation time and also check for convergence every time the objective is computed (as described in the next section).
 It returns ``False`` when the solver should be stopped. A classical usage pattern is:
 

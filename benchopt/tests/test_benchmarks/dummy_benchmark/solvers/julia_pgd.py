@@ -17,7 +17,7 @@ class Solver(JuliaSolver):
 
     # Config of the solver
     name = 'Julia-PGD'
-    stopping_strategy = 'iteration'
+    sampling_strategy = 'iteration'
 
     def set_objective(self, X, y, lmbd):
         self.X, self.y, self.lmbd = X, y, lmbd

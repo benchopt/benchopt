@@ -1,8 +1,8 @@
 import time
 import math
 
-# Possible stop strategies
-STOPPING_STRATEGIES = ['iteration', 'tolerance', 'callback']
+# Possible curve sampling strategies
+SAMPLING_STRATEGIES = ['iteration', 'tolerance', 'callback']
 
 EPS = 1e-10
 PATIENCE = 3
@@ -64,8 +64,8 @@ class StoppingCriterion():
     def __init__(self, strategy=None, key_to_monitor='objective_value',
                  **kwargs):
 
-        assert strategy in STOPPING_STRATEGIES, (
-            f"strategy should be in {STOPPING_STRATEGIES}. Got '{strategy}'."
+        assert strategy in SAMPLING_STRATEGIES, (
+            f"strategy should be in {SAMPLING_STRATEGIES}. Got '{strategy}'."
         )
 
         self.kwargs = kwargs
@@ -88,7 +88,7 @@ class StoppingCriterion():
             Object to format string to display the progress of the solver.
         solver : BaseSolver
             The solver for which this stopping criterion is called. Used to get
-            overridden ``stopping_strategy`` and ``get_next``.
+            overridden ``sampling_strategy`` and ``get_next``.
 
         Returns
         -------
@@ -111,8 +111,8 @@ class StoppingCriterion():
         strategy = self.strategy
         if solver is not None:
             strategy = solver._solver_strategy
-        assert strategy in STOPPING_STRATEGIES, (
-            f"stopping_strategy should be in {STOPPING_STRATEGIES}. "
+        assert strategy in SAMPLING_STRATEGIES, (
+            f"sampling_strategy should be in {SAMPLING_STRATEGIES}. "
             f"Got '{strategy}'."
         )
 
@@ -445,7 +445,7 @@ class SingleRunCriterion(StoppingCriterion):
     stop_val : int or float, (default: 1)
         Value of ``stop_val`` with which the objective function will be called.
         This value will be passed as ``n_iter`` or ``tol`` parameter for the
-        ``run`` method of solver with ``stopping_strategy`` respectively equals
+        ``run`` method of solver with ``sampling_strategy`` respectively equals
         to ``'iteration'`` or ``'tolerance'``, or the number of callback calls
         minus one for the ``'callback'`` strategy.
     """
