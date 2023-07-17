@@ -1,5 +1,5 @@
 import sys
-from shutils import which
+from shutil import which
 import pytest
 
 
