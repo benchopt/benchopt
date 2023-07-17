@@ -1,5 +1,6 @@
 import tempfile
 import warnings
+import itertools
 
 from abc import ABC, abstractmethod
 
@@ -494,3 +495,26 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
             self._module_filename, module_hash, self._parameters, dataset,
             str(self._import_ctx._benchmark_dir)
         )
+
+    def split_arrays(self, *arrays):
+        i_train, i_test = next(self._cv)
+        print(" indices de train:", i_train[:10],
+              " indices de test:", i_test[:10])
+        res = ()
+        for x in arrays:
+            res = (*res, x[i_train], x[i_test])
+        return res
+
+    def get_split(self, *args):
+        if not hasattr(self, "_cv"):
+            # this might be too much dark magic....()
+            self._cv = itertools.cycle(self.cv.split(*args))
+        index = next(self._cv)
+        return self.split(*index)
+
+    # this is a helper for a common use case.
+    def get_split_array(self, *arrays):
+        if not hasattr(self, "_cv"):
+            # this might be too much dark magic....()
+            self._cv = itertools.cycle(self.cv.split(*arrays))
+        return self.split_arrays(*arrays)
