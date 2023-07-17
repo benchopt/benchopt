@@ -1,5 +1,5 @@
-Benchopt 
-========
+``Benchopt`` 
+===========
 
 *—Making your optimization benchmarks simple and open—*
 
@@ -18,7 +18,7 @@ It is implemented in Python but can run algorithms written in **many programming
         :link-type: ref
 
         :octicon:`rocket` **Get started**
-        ^^^
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         Install ``benchopt`` and run your first benchmark
 
     .. grid-item-card::
@@ -26,8 +26,8 @@ It is implemented in Python but can run algorithms written in **many programming
         :link-type: ref
 
         :octicon:`tools` **Build a benchmark**
-        ^^^
-        Write a benchmark from scratch, run it and visualize it
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        Write a benchmark from scratch, run it, visualize it, and publish it
 
 
     .. grid-item-card::
@@ -35,7 +35,7 @@ It is implemented in Python but can run algorithms written in **many programming
         :link-type: ref
 
         :octicon:`book` **User Guide**
-        ^^^
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         Full documentation of ``benchopt`` API and CLI
 
 
