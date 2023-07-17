@@ -9,7 +9,7 @@ Frequently asked questions (FAQ)
     a dataset.
 
 
-.. dropdown:: Performance curve construction
+.. dropdown:: How performance curves are constructed?
 
     The goal of ``benchopt`` is to evaluate the evolution of a method's performance with respect to its computational budget.
     For evaluating this, ``benchopt`` allows to vary the computational budget for both black-box solvers and solvers that allow for callbacks.

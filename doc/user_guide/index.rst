@@ -4,10 +4,13 @@
 User guide
 ==========
 
+(Preliminary before announcing content)
+
 
 .. toctree::
     :maxdepth: 1
 
-    CLI_ref.rst
-    API_ref.rst
-    advanced.rst
+    API_ref
+    CLI_ref
+    advanced
+    performance_curves
