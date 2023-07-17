@@ -105,16 +105,6 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="mt-8 px-8">
-                            <label for="configs" class="block text-sm font-medium text-white">Plot config</label>
-                            <div class="mt-1 rounded-md shadow-sm">
-                                <select id="configs" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setConfig(this.value)">
-                                    % for conf in result['metadata']['plot_configs']:
-                                    <option value="${conf}">${conf}</option>
-                                    %endfor
-                                </select>
-                            </div>
-                        </div>
                         <div class="flex items-center justify-between mt-8 px-8">
                             <div class="block text-sm font-medium text-white">Quantiles</div>
                             <label class="block switch">
@@ -256,10 +246,10 @@
                                 </div>
                             </div>
                             <div id="xaxis-type-form-group" class="mt-8 px-8">
-                                <label for="conifgs_mobile" class="block text-sm font-medium text-white">Plot config</label>
+                                <label for="configs_mobile" class="block text-sm font-medium text-white">Plot config</label>
                                 <div class="mt-1 rounded-md shadow-sm">
 
-                                    <select id="conifgs_mobile" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setConfig(this.value)">
+                                    <select id="configs_mobile" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setConfig(this.value)">
                                         % for conf in result['metadata']['plot_configs']:
                                         <option value="${conf}">${conf}</option>
                                         %endfor
@@ -314,6 +304,14 @@
 
                 <!-- Plot -->
                 <div id="unique_plot"></div>
+                % if len(result['metadata']['plot_configs']) > 0:
+                    <div id="plot_config_buttons" class="px-10 mb-4">
+                        <span id="plot_config_title">Saved plot view</span>
+                        % for conf in result['metadata']['plot_configs']:
+                            <span class="config-item" onclick=setConfig(this)>${conf}</span>
+                        %endfor
+                    </div>
+                %endif
                 <div id="legend_container" class="py-10 bg-slate-200">
                     <div id="legend_title" class="px-10 mb-4">
                         Solvers <span id="legend_help">(Click on a solver to hide it or double click to hide all the others)</span>
@@ -432,9 +430,10 @@
                     'xaxis_type':  document.getElementById('change_xaxis_type').value || "Time",
                     'hidden_solvers': []
                 });
-                if ('init' in window.metadata['plot_configs']){
-                    setConfig('init');
-                };
+                const plot_configs = document.getElementsByClassName('config-item');
+                if (plot_configs.length > 0 ){
+                    setConfig(plot_configs[0]);
+                }
             });
         </script>
         <script type="text/javascript">

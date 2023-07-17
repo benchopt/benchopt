@@ -440,3 +440,22 @@ input:checked+.slider:before {
   max-height: 450px;
   overflow-y: auto;
 }
+
+/*Plot config styling as a bag of tags*/
+
+.config-item {
+  border-radius: 9999px;
+  padding-left: 1em;
+  padding-right: 1em;
+  color: white;
+  background-color: rgb(91, 78, 255);
+  border-color: rgb(55 65 81);
+  margin-left: 2ex;
+
+  cursor: pointer;
+
+  /* font styles*/
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 400;
+}

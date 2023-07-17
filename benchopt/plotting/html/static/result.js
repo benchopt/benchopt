@@ -33,6 +33,12 @@ const setState = (partialState) => {
   window.state = {...state(), ...partialState};
   displayScatterElements(!isBarChart());
 
+  // The elements in state have changed, reset the bold text in config.
+  var items = document.getElementsByClassName("config-item");
+  for(var i=0; i < items.length; i++){
+    items[i].style.fontWeight = "normal";
+  }
+
   // TODO: `listIdXaxisSelection` to be removed after
   // implementing responsiveness through breakpoints
   // and removing content duplication between big screen and mobile
@@ -49,13 +55,6 @@ const setState = (partialState) => {
  * @returns Object
  */
 const state = () => window.state;
-
-/**
- * Retrieve the plot_config object from window.metadata.plot_config
- *
- * @returns Object
- */
-const plot_config = () => window.metadata['plot_configs'][document.getElementById('configs').value];
 
 /*
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -220,7 +219,10 @@ const getScatterCurves = () => {
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 
-const setConfig = (config_name) =>{
+const setConfig = (config_item) =>{
+
+  // Retrieve the name of the config.
+  const config_name = config_item.textContent;
 
   // Get the updated state
   let config = window.metadata.plot_configs[config_name];
@@ -263,6 +265,10 @@ const setConfig = (config_name) =>{
     };
   };
 
+  // Set the text of the config element in bold
+  config_item.style.fontWeight = "bold";
+
+  // update the plot
   const div = document.getElementById('unique_plot');
   Plotly.relayout(div, layout);
 
@@ -440,8 +446,6 @@ const _getScale = (scale) => {
 
 const getScatterChartLayout = () => {
   let xaxisType = state().xaxis_type;
-
-  let config = plot_config();
 
   const layout = {
     autosize: !isSmallScreen(),
