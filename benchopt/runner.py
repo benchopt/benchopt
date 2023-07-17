@@ -183,10 +183,7 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
     run_statistics = []
 
     # get tags
-    if hasattr(solver, 'tags'):
-        solver_tags = solver.tags
-    else:
-        solver_tags = []
+    solver_tags = getattr(solver, 'tags', [])
 
     # get sampling strategy
     # for plotting purpose consider 'callback' as 'iteration'
