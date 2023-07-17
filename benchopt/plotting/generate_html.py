@@ -366,7 +366,7 @@ def get_pretty_name(bench_path):
     pretty_name : str
         The name of the benchmark
     """
-    benchmark = Benchmark(bench_path)
+    benchmark = Benchmark(bench_path, allow_meta_from_json=True)
     return benchmark.pretty_name
 
 

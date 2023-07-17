@@ -35,13 +35,18 @@ class Benchmark:
         Folder containing the benchmark. The folder should at least
         contain an `objective.py` file defining the `Objective`
         function for the benchmark.
+    allow_meta_from_json : bool
+        If set to True, allow the object to be instanciated even when
+        objective.py cannot be found. In this case, the metadata are retrieved
+        from the benchmark_meta.json file. This should only be used to generate
+        HTML pages with results.
 
     Attributes
     ----------
     mem : joblib.Memory
         Caching mechanism for the benchmark.
     """
-    def __init__(self, benchmark_dir, allow_metadata=False):
+    def __init__(self, benchmark_dir, allow_meta_from_json=False):
         self.benchmark_dir = Path(benchmark_dir)
         self.name = self.benchmark_dir.resolve().name
 
@@ -54,7 +59,7 @@ class Benchmark:
             self.pretty_name = objective.name
             self.min_version = getattr(objective, 'min_benchopt_version', None)
         except RuntimeError:
-            if not allow_metadata:
+            if not allow_meta_from_json:
                 raise click.BadParameter(
                     f"The folder '{benchmark_dir}' does not contain "
                     "`objective.py`.\nMake sure you provide the path to a "
