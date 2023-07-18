@@ -123,48 +123,48 @@ variant of the dataset.
 
 A solver must define three methods:
 
-   - ``set_objective(**objective_dict)``: This method will be called with the
-     dictionary ``objective_dict`` returned by the method ``get_objective``
-     from the objective. The goal of this method is to provide all necessary
-     information to the solver so it can optimize the objective function.
+- ``set_objective(**objective_dict)``: This method will be called with the
+  dictionary ``objective_dict`` returned by the method ``get_objective``
+  from the objective. The goal of this method is to provide all necessary
+  information to the solver so it can optimize the objective function.
 
-   - ``run(stop_value)``: This method takes only one parameter that controls the stopping
-     condition of the solver. Typically this is either a number of iterations ``n_iter``
-     or a tolerance parameter ``tol``. Alternatively, a ``callback`` function that will be
-     called at each iteration can be passed. The callback should return ``False`` once the
-     computation should stop.
-     The parameter ``stop_value`` is controlled by the ``sampling_strategy``,
-     see below for details.
+- ``run(stop_value)``: This method takes only one parameter that controls the stopping
+  condition of the solver. Typically this is either a number of iterations ``n_iter``
+  or a tolerance parameter ``tol``. Alternatively, a ``callback`` function that will be
+  called at each iteration can be passed. The callback should return ``False`` once the
+  computation should stop.
+  The parameter ``stop_value`` is controlled by the ``sampling_strategy``,
+  see below for details.
 
-   - ``get_result()``: This method returns a variable that can be passed
-     to the ``compute`` method from the objective. This is the output of
-     the solver.
+- ``get_result()``: This method returns a variable that can be passed
+  to the ``compute`` method from the objective. This is the output of
+  the solver.
 
 **Stop strategy:**
 
 A solver should also define a ``sampling_strategy`` as class attribute.
 This ``sampling_strategy`` can be:
 
-    - ``'iteration'``: in this case the ``run`` method of the solver
-      is parametrized by the number of iterations computed. The parameter
-      is called ``n_iter`` and should be an integer.
+- ``'iteration'``: in this case the ``run`` method of the solver
+  is parametrized by the number of iterations computed. The parameter
+  is called ``n_iter`` and should be an integer.
 
-    - ``'tolerance'``: in this case the ``run`` method of the solver
-      is parametrized by a tolerance that should decrease with
-      the running time. The parameter is called ``tol`` and should be
-      a positive float.
+- ``'tolerance'``: in this case the ``run`` method of the solver
+  is parametrized by a tolerance that should decrease with
+  the running time. The parameter is called ``tol`` and should be
+  a positive float.
 
-    - ``'callback'``: in this case, the ``run`` method of the solver
-      should call at each iteration the provided callback function. It will
-      compute and store the objective and return ``False`` once the computations
-      should stop.
+- ``'callback'``: in this case, the ``run`` method of the solver
+  should call at each iteration the provided callback function. It will
+  compute and store the objective and return ``False`` once the computations
+  should stop.
 
 Benchopt supports different types of solvers:
 
-   - :ref:`python_solvers`
-   - :ref:`r_solvers`
-   - :ref:`julia_solvers`
-   - :ref:`source_solvers`
+- :ref:`python_solvers`
+- :ref:`r_solvers`
+- :ref:`julia_solvers`
+- :ref:`source_solvers`
 
 .. _python_solvers:
 
