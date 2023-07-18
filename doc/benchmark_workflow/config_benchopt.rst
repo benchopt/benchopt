@@ -1,7 +1,7 @@
 .. _config_benchopt:
 
-Benchopt configuration
-======================
+Configure Benchopt
+==================
 
 
 Benchopt can be configured using setting files. These files can either be created directly or generated and modified using ``benchopt config``.

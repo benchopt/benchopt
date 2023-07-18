@@ -21,7 +21,8 @@ Reproducing a benchmark should be as easy as running
    :align: center
    :width: 70 %
 
-Learn that and more
+There are already many :ref:`available_benchmarks` that have been created using benchopt.
+Learn how to run them and how to construct your own with the following pages!
 
 .. grid:: 1
     :gutter: 1
@@ -50,6 +51,10 @@ Learn that and more
         :octicon:`book` **User guide**
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         Full documentation of benchopt API and CLI
+
+
+.. Frequently Asked Questions (FAQ) subsection 
+.. include:: faq.rst
 
 
 Join the community
@@ -82,11 +87,6 @@ Join this endeavor! If you use benchopt in a scientific publication, please cite
       booktitle = {NeurIPS},
       url       = {https://arxiv.org/abs/2206.13424}
    }
-
-
-.. Frequently Asked Questions (FAQ) subsection 
-
-.. include:: faq.rst
 
 
 .. |Python 3.6+| image:: https://img.shields.io/badge/python-3.6%2B-blue
