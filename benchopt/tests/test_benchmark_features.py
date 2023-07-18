@@ -152,4 +152,4 @@ def test_objective_cv():
                    '-n 1 -r 1 --no-plot').split()],
                 standalone_mode=False)
 
-        out.check_output("Python-PGD", repetition=3)]
+        out.check_output("Python-PGD", repetition=3)
