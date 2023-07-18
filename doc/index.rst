@@ -11,7 +11,7 @@ Benchopt is a benchmarking suite for optimization algorithms.
 It is built for simplicity, transparency, and reproducibility.
 It is implemented in Python but can run algorithms written in many programming languages.
 
-Reproducing a benchmark should be as easy as running
+Reproducing an existing benchmark should be as easy as running
 
 .. prompt:: bash $
    
