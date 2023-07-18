@@ -535,8 +535,6 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
                     "split(self: Self@Objective, input values of get_split, "
                     " output values of the cv generator) "
                     "-> splitted_data. "
-                    "train_index and test_index are the return "
-                    "values of the cv.split generator"
                     )
         return res
 
@@ -555,7 +553,6 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
             self._cv = itertools.cycle(self.cv.split(*arrays))
 
         if hasattr(self, "split"):
-
             split_index = next(self._cv)
             return self.split(*arrays, *split_index)
 
