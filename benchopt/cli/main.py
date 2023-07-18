@@ -112,7 +112,7 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               help='Maximal number of runs for each solver. This corresponds '
               'to the number of points in the time/accuracy curve.')
 @click.option('--n-repetitions', '-r',
-              metavar='<int>', default=1, show_default=True, type=int,
+              metavar='<int>', default=None, show_default=True, type=int,
               help='Number of repetitions that are averaged to estimate the '
               'runtime.')
 @click.option('--timeout',

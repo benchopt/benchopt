@@ -192,8 +192,12 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
     # the name of metrics in Objective.compute
     obj_description = objective.__doc__ or ""
 
-    if hasattr(objective, "cv"):
-        n_repetitions = objective.cv.get_n_splits()
+    if n_repetitions is None:
+        if hasattr(objective, "cv"):
+            n_repetitions = objective.cv.get_n_splits()
+        else:
+            # we set 1 by default so that the solver run at least once
+            n_repetitions = 1
 
     for rep in range(n_repetitions):
         skip = solver._set_objective(objective, output=output)
