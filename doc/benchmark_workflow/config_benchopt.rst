@@ -5,7 +5,7 @@ Benchopt configuration
 
 Benchopt can be configured using setting files. These files can either be created directly or generated and modified using ``benchopt config``.
 
-There are two configuration levels. The first level is the global config for the benchopt client. It contains the system specific tweaks, the user info such as the *<GitHub token>* and the output levels. The second level is the configuration of the benchmarks. Each benchmark can have its own config for the kind of plots it displays by default and other display tweaks.
+There are two configuration levels. The first level is the global config for the benchopt client. It contains the system-specific tweaks, the user info such as the *<GitHub token>*, and the output levels. The second level is the configuration of the benchmarks. Each benchmark can have its own config for the kind of plots it displays by default and other display tweaks.
 
 To get the BenchOpt global config file used by the benchopt command, you can run ``benchopt config``. Using the option ``--benchmark,-b <benchmark>`` allows to display the config file for a specific benchmark. See :ref:`config_file` for more details on how the config file path is resolved.
 
@@ -18,13 +18,13 @@ The value of each setting can be accessed with the CLI using ``benchopt config [
 Config File Location
 --------------------
 
-For global config file, the resolution order is the following:
+For the global configuration file, the resolution order is the following:
 
 1. The environment variable ``BENCHOPT_CONFIG`` is set to an existing file,
 2. A file ``benchopt.ini`` in the current directory,
 3. The default file is ``$HOME/.config/benchopt.ini``.
 
-For benchmark config files, they are usually located in the benchmark folder with name ``benchopt.ini``. If it does not exists, the default is to use the global config file.
+For benchmark configuration files, they are usually located in the benchmark folder, and named ``benchopt.ini``. If it does not exist, the default is to use the global config file.
 
 .. _config_structure:
 
@@ -77,5 +77,4 @@ Using ``mamba`` to install packages
 
 When many packages need to be installed, ``conda`` can be slow or even fail to resolve the dependency graph. Using ``mamba`` can speed up this process and make it more reliable.
 
-To use ``mamba`` instead of ``conda`` when installing benchmark requirements, it is necessary to have ``mamba`` installed in the ``base`` conda environment, *e.g.* using ``conda install -n base mamba``.
-Then, benchopt can be configured to use this command instead of ``conda`` by either configuring the CLI using ``benchopt config set conda_cmd mamba`` or setting the environment variable ``BENCHOPT_CONDA_CMD=mamba``.
+To use ``mamba`` instead of ``conda`` when installing benchmark requirements, it is necessary to have ``mamba`` installed in the ``base`` conda environment, *e.g.* using ``conda install -n base mamba``. Then, benchopt can be configured to use this command instead of ``conda`` by either configuring the CLI using ``benchopt config set conda_cmd mamba`` or setting the environment variable ``BENCHOPT_CONDA_CMD=mamba``.
