@@ -45,14 +45,14 @@ previous ``stop_val`` (i.e. tolerance or number of iterations), and returns
 the value for the next run. Refer to :ref:`Advanced usage <sampling_strategy>`
 for an example.
 
+:func:`benchopt.BaseSolver.warm_up`: hook called once before the solver runs.
+It is typically used to cache jit compilation of solver while not accounting
+for the time needed in the timings.
+
 :func:`benchopt.BaseSolver.pre_run_hook`: hook called before each call to
 ``run``, with the same argument. Allows to skip certain computation that
 cannot be cached globally, such as precompilation with different number of
 iterations in for jitted ``jax`` functions.
-
-:func:`benchopt.BaseSolver.warm_up`: hook called once before the solver runs.
-It is typically used to cache jit compilation of solver while not accounting
-for the time needed in the timings.
 
 Benchopt utils
 ~~~~~~~~~~~~~~
