@@ -3,5 +3,3 @@
 First Tutorial
 ==============
 
-
-(A proof of concept)

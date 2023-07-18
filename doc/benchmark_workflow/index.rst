@@ -1,10 +1,8 @@
 .. _benchmark_workflow:
 
 
-Create a benchmark
+Benchmark workflow
 ==================
-
-(To edit later)
 
 
 .. toctree::

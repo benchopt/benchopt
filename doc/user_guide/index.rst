@@ -4,8 +4,6 @@
 User guide
 ==========
 
-(To edit later)
-
 
 .. toctree::
     :maxdepth: 1
