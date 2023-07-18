@@ -26,7 +26,7 @@ It is implemented in Python but can run algorithms written in many programming l
         :link: build_benchmark
         :link-type: ref
 
-        :octicon:`tools` **Create a benchmark**
+        :octicon:`tools` **Benchmark workflow**
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         Write a benchmark from scratch, run it, visualize it, and publish it
 
@@ -95,7 +95,7 @@ Explore
    :maxdepth: 1
 
    get_started
-   build_benchmark/index
+   benchmark_workflow/index
    user_guide/index
    tutorials/index
 
