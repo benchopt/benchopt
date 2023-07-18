@@ -144,7 +144,7 @@ The test run by ``benchopt test`` will make sure that:
 2. The classes which have dependencies can be properly installed in a new environment and can then be imported.
 3. The datasets are compatible with the objective API.
 4. The solvers can all be run for a few number of iterations.
-5. For convex problem, the tests will also check that the solution is optimal for a small enough problem. This test can be deactivated through setting the ``Objective.is_convex`` flag to ``False``.
+5. For convex problems, the tests will also check that the solution is optimal for a small enough problem. This test can be deactivated by setting the ``Objective.is_convex`` flag to ``False``.
 
 
 Test for Solver run
