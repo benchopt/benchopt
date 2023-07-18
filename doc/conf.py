@@ -18,7 +18,7 @@
 
 import os
 import sys
-import sphinx_bootstrap_theme
+from datetime import datetime
 
 curdir = os.path.dirname(__file__)
 sys.path.append(os.path.abspath(os.path.join(curdir, 'sphinxext')))
@@ -41,8 +41,10 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx_click_semantic_group',
     'sphinx_gallery.gen_gallery',
+    'sphinx.ext.autosectionlabel',
     'numpydoc',
     'gh_substitutions',  # custom ext, see ./sphinxext/gh_substitutions.py
+    "sphinx_design"
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -59,7 +61,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'benchopt'
-copyright = u'2020-2022, Benchopt contributors'
+copyright = f'2020-{datetime.today().year}'
 author = u'Benchopt contributors'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -99,41 +101,43 @@ numpydoc_show_class_members = False
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'bootstrap'
+html_theme = "sphinx_book_theme"
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
+html_favicon = "_static/logo_benchopt.png"
+
 html_theme_options = {
-    'navbar_sidebarrel': False,
-    'navbar_pagenav': False,
-    'source_link_position': "",
-    'navbar_links': [
-        # ("Models", "models"),
-        # ("Examples", "auto_examples/index"),
-        ("CLI", "cli"),
-        ("API", "api"),
-        # ("Write a benchmark", "how"),
-        ("Results", "https://benchopt.github.io/results", True),
-        ("What's new", "whats_new"),
-        ("GitHub", "https://github.com/benchopt/benchopt", True)
-    ],
-    # 'bootswatch_theme': "united",
-    # 'bootswatch_theme': "sandstone",
-    'bootswatch_theme': "flatly",
-    # 'bootswatch_theme': "simplex",
-    'bootstrap_version': "3",
+    "logo": {
+        "image_light": "_static/logo_benchopt.png",
+        "image_dark": "_static/logo_benchopt.png",
+        "alt_text": "benchopt logo",
+        "text": f"{version}",
+    },
+    "use_repository_button": True,
+    "use_download_button": False,
+    "use_fullscreen_button": False,
+    "repository_url": "https://github.com/benchopt/benchopt",
+    "home_page_in_toc": True,
 }
 
-html_sidebars = {'**': ['localtoc.html']}
+html_sidebars = {
+    "**": [
+        "navbar-logo.html",
+        "search-field.html",
+        "sbt-sidebar-nav.html",
+    ]
+}
 
 # Add any paths that contain custom themes here, relative to this directory.
-html_theme_path = sphinx_bootstrap_theme.get_html_theme_path()
+# html_theme_path = sphinx_bootstrap_theme.get_html_theme_path()
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
+html_css_files = ["style.css"]
 
 
 # -- Options for HTMLHelp output ------------------------------------------
@@ -211,7 +215,3 @@ sphinx_gallery_conf = {
     'examples_dirs': '../examples',
     'gallery_dirs': 'auto_examples',
 }
-
-
-def setup(app):
-    app.add_css_file('style.css')
