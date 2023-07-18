@@ -12,6 +12,8 @@ from benchopt.tests.utils import patch_import
 from benchopt.tests.utils import patch_benchmark
 from benchopt.tests.utils import CaptureRunOutput
 
+from benchopt.utils.temp_benchmark import temp_benchmark
+
 
 def test_template_dataset():
     # Make sure that importing template_dataset raises an error.
@@ -99,3 +101,55 @@ def test_error_reporting(error, raise_install_error):
             )
     finally:
         os.environ['BENCHOPT_RAISE_INSTALL_ERROR'] = prev_value
+
+
+def test_objective_cv():
+
+    pytest.importorskip('sklearn')
+
+    objective = """from benchopt import BaseObjective, safe_import_context
+
+        with safe_import_context() as import_ctx:
+            import numpy as np
+            from sklearn.model_selection import KFold
+
+
+        class Objective(BaseObjective):
+
+            name = "failing"
+            min_benchopt_version = "0.0.0"
+
+            def set_data(self, X, y):
+                self.X, self.y = X, y
+                self.cv = KFold(3)
+
+            def get_one_solution(self):
+                return np.zeros(self.X.shape[1])
+
+            def compute(self, beta):
+                return dict(value=1)
+
+            def get_objective(self):
+                X_train, X_test, y_train, y_test = self.get_split(
+                    self.X, self.y
+                )
+                return dict(X=X_train, y=y_train, lmbd=1)
+    """
+
+    failing_objective = objective.replace("self.cv = KFold(3)", "")
+    with temp_benchmark(objective=failing_objective) as benchmark:
+        with pytest.raises(
+                ValueError, match="To use get_split, you need to define a cv"
+        ):
+            run([str(benchmark.benchmark_dir),
+                 *'-s python-pgd -d test-dataset -n 1 -r 1 --no-plot'.split()],
+                standalone_mode=False)
+
+    with temp_benchmark(objective=objective) as benchmark:
+        with CaptureRunOutput() as out:
+            run([str(benchmark.benchmark_dir),
+                 *('-s Python-PGD[step_size=1] -d test-dataset '
+                   '-n 1 -r 1 --no-plot').split()],
+                standalone_mode=False)
+
+        out.check_output("Python-PGD", repetition=3)]
