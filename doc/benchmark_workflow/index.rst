@@ -1,4 +1,4 @@
-.. _create_benchmark:
+.. _benchmark_workflow:
 
 
 Create a benchmark
@@ -14,3 +14,4 @@ Create a benchmark
     run_benchmark
     visualize_benchmark
     publish_benchmark
+    config_benchopt
