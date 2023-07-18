@@ -131,7 +131,7 @@ HTML output by typing, in a shell:
 Testing a benchmark
 -------------------
 
-To ensure that the benchmark are reproducible and can be run by other, benchopt provides a set of tools to test that the benchmark is properly formatted, and that it can be installed and run easily.
+To ensure that the benchmark is reproducible and can be run by others, benchopt provides a set of tools to test that the benchmark is properly formatted and that it can be installed and run easily.
 This page describes the various tweaks that can be made to the benchmark tests.
 
 
