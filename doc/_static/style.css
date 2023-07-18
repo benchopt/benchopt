@@ -1,85 +1,12 @@
-body {
-    font-size: 13pt;
-}
 
-h1 {
-    font-size: 160% !important;
-    color: #e87700;
-}
-
-h2 {
-    font-size: 140% !important;
-    color: #e87700;
+h2, h3, h4 {
     text-decoration: underline;
 }
 
-h3 {
-    font-size: 120% !important;
-    color: #e87700;
+.bd-main {
+    width: 100%;
 }
 
-h4 {
-    font-size: 120% !important;
-    color: #e87700;
+.pre {
+    color: #D05336;
 }
-
-blockquote p {
-    font-size: 95% !important;
-}
-
-blockquote {
-    margin: 0 0 4px !important;
-}
-
-code {
-    color: #49759c !important;
-    background-color: #f3f5f9 !important;
-}
-
-.alert-info {
-    background-color: #adb8cb !important;
-    border-color: #adb8cb !important;
-    color: #2c3e50 !important;
-}
-
-.method {
-    border-top: 3px solid #d0d0d0;
-    padding-top: 10px;
-}
-
-.function dt {
-    padding-top: 150px;
-    margin-top: -150px;
-    -webkit-background-clip: content-box;
-    background-clip: content-box;
-}
-
-#sidebar {
-    text-overflow: ellipsis;
-    max-height: 80%;
-    overflow-y: auto;
-}
-
-/* Make the sidebar table of content more compact and with larger indent */
-.bs-sidenav .nav .nav > li > a {
-    padding-left: 30px;
-    padding-top: 1px;
-    padding-bottom: 1px;
-}
-.bs-sidenav .nav .nav .nav > li > a {
-    padding-left: 50px;
-    padding-top: 1px;
-    padding-bottom: 1px;
-}
-.bs-sidenav .nav .nav .nav .nav > li > a {
-    padding-left: 70px;
-    padding-top: 1px;
-    padding-bottom: 1px;
-}
-
-/* Hide the search box for medium size screen */
-@media (min-width: 768px) and (max-width: 1000px) {
-    .navbar-form {
-        display: none;
-    }
- }

@@ -55,7 +55,7 @@ API
   be cached globally for a solver. By `Thomas Moreau`_ (:gh:`525`)
 
 - Remove deprecated ``Objective.to_dict``, ``safe_import_context.import_from``.
-  Force implementation of :method:`benchopt.Objective.get_one_solution`.
+  Force implementation of :meth:`~benchopt.Objective.get_one_solution`.
   By `Thomas Moreau`_ (:gh:`569`)
 
 PLOT
