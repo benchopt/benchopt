@@ -66,7 +66,7 @@ Join the community
 
 Join benchopt `discord server <https://discord.gg/EA2HGQb7nv>`_ and get in touch with the community!
 
-Feel free to drop us a message to get help with running/constructing benchmarks 
+Feel free to drop a message to get help with running/constructing benchmarks 
 or (why not) discuss new features to be added and future development directions that benchopt should take.
 
 
@@ -74,7 +74,7 @@ Citing Benchopt
 ---------------
 
 Benchopt is a continuous effort to make reproducible and transparent optimization benchmarks.
-Join us in this endeavor! If you use benchopt in a scientific publication, please cite
+Join this endeavor! If you use benchopt in a scientific publication, please cite
 
 .. code-block:: bibtex
 
