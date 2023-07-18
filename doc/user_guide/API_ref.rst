@@ -33,8 +33,9 @@ objective. It is executed after ``get_data`` to skip if current objective is
 not compatible with dataset.
 
 :func:`benchopt.BaseSolver.skip`: hook to allow skipping configurations of
-solver. It is executed right after ``set_objective`` to skip if solver
-if not compatible with objective and/or dataset parameters.
+solver. It is executed right before ``set_objective`` to skip a solver
+if it is not compatible with objective and/or dataset parameters. It
+takes in the same arguments that are passed to ``set_objective``.
 Refer to :ref:`Advanced usage <skipping_solver>` for an example.
 
 :func:`benchopt.BaseSolver.get_next`: hook called repeatedly after ``run``
