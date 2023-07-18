@@ -1,7 +1,7 @@
 .. _cli_ref:
 
-CLI references
-==============
+Command line interface (CLI) references
+=======================================
 
 The following commands are built using the
 `click <https://click.palletsprojects.com/en/8.0.x/>`_ package which provides tab
