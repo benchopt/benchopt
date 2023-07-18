@@ -23,7 +23,7 @@ Reproducing a benchmark should be as easy as running
 
 Learn that and more
 
-.. grid:: 2
+.. grid:: 1
     :gutter: 1
 
     .. grid-item-card::
@@ -50,15 +50,6 @@ Learn that and more
         :octicon:`book` **User guide**
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         Full documentation of benchopt API and CLI
-
-
-    .. grid-item-card::
-        :link: tutorials
-        :link-type: ref
-
-        :octicon:`mortar-board` **Tutorials**
-        ^^^
-        A gallery of use-cases crafted by benchopt community
 
 
 Join the community
@@ -117,7 +108,6 @@ Join this endeavor! If you use benchopt in a scientific publication, please cite
    get_started
    benchmark_workflow/index
    user_guide/index
-   tutorials/index
 
    available_benchmarks
    contrib
