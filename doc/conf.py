@@ -119,6 +119,7 @@ html_theme_options = {
     "use_download_button": False,
     "use_fullscreen_button": False,
     "repository_url": "https://github.com/benchopt/benchopt",
+    "home_page_in_toc": True,
 }
 
 html_sidebars = {

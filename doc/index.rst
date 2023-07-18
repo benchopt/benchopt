@@ -88,11 +88,14 @@ Join us in this endeavor! If you use benchopt in a scientific publication, pleas
 .. |PyPI version| image:: https://badge.fury.io/py/benchopt.svg
    :target: https://pypi.org/project/benchopt/
 
-Explore
--------
+
+.. it mandatory to keep the toctree here although it doesn't show up in the page
+.. when adding/modifying pages, don't forget to update the toctree
 
 .. toctree::
    :maxdepth: 1
+   :hidden:
+   :includehidden:
 
    get_started
    benchmark_workflow/index
