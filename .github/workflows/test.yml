@@ -52,10 +52,6 @@ jobs:
           # Use miniforge to only get conda-forge as default channel.
           miniforge-version: latest
 
-      - name: Set up MATLAB
-        uses: matlab-actions/setup-matlab@v1
-      - run: conda info
-
       - name: Install benchopt and its dependencies
         run: |
           conda info
