@@ -150,11 +150,11 @@ The test run by ``benchopt test`` will make sure that:
 Test for Solver run
 ~~~~~~~~~~~~~~~~~~~
 
-To ensure point 4, benchopt needs to load at least one small dataset that is compatible with each solver. This is why each benchmark needs to implement at least a ``Simulated`` dataset, that will be used for testing purposes. However, some solvers require different dataset and objective settings to be able to run. There is two way to ensure that a solver can find an appropriate configuration:
+To ensure point 4, benchopt needs to load at least one small dataset that is compatible with each solver. This is why each benchmark needs to implement at least a ``Simulated`` dataset, that will be used for testing purposes. However, some solvers require different datasets and objective settings to be able to run. There is two way to ensure that a solver can find an appropriate configuration:
 
-- In the simulated dataset, one can add class attribute ``test_parameters``, which stands for a list of parameters that will be tried to test the solver. For each solver, at least one of this configuration should be compatible (not skipped). See benchopt.github.io/how.html#example-of-parametrized-simulated-dataset
+- In the simulated dataset, one can add the class attribute ``test_parameters``, which stands for a list of parameters that will be tried to test the solver. For each solver, at least one of these configurations should be compatible (not skipped). See benchopt.github.io/how.html#example-of-parametrized-simulated-dataset
 
-- The solvers can also provide a ``test_config`` class attribute, which is a dictionary with optional keys ``dataset, objective``. The value of these key should be a dictionary of parameters for the classes ``Dataset`` and ``Objective``, that will be compatible with the given ``Solver``.
+- The solvers can also provide a ``test_config`` class attribute, which is a dictionary with optional keys ``dataset, objective``. The value of these keys should be a dictionary of parameters for the classes ``Dataset`` and ``Objective``, that will be compatible with the given ``Solver``.
 
 
 Test configuration
