@@ -104,6 +104,13 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
             "a dictionary to be passed to `set_objective`"
         )
 
+        # XXX remove in 1.5
+        if hasattr(self, "support_sparse"):
+            warnings.warn(
+                "Skipping sparse X via `support_sparse = False` is deprecated "
+                "and will be removed in v 1.5. Skip explicitly using "
+                "`Solver.skip`.", FutureWarning
+            )
         # Check if the objective is compatible with the solver
         skip, reason = self.skip(**objective_dict)
         if skip:
@@ -198,6 +205,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
             If skip is False, the reason should be None.
         """
         # Check that the solver is compatible with the given dataset
+        # XXX remove in 1.5
         from scipy import sparse
 
         if not getattr(self, 'support_sparse', True):

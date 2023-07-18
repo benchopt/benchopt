@@ -13,6 +13,9 @@ Version 1.5 (dev)
 API
 ~~~
 
+- ``Solver.support_sparse`` attribute is deprecated in favor of the use of
+``Solver.skip``, by `Mathurin Massias`_ (:gh:`614`).
+
 - ``stopping_strategy`` attribute is replaced by ``sampling_strategy`` to clarify
   the concept, by `Mathurin Massias`_ (:gh:`585`).
 
