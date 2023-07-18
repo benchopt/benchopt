@@ -109,4 +109,4 @@ When options are passed both via file and CLI, the CLI takes precedence.
     benchopt run -h
 
 to get more details about the different options.
-You can also read the :ref:`cli_documentation`.
+You can also read the :ref:`cli_ref`.

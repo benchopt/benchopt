@@ -21,7 +21,7 @@ Reproducing a benchmark should be as easy as running
    :align: center
    :width: 70 %
 
-Learn more
+Learn that and more
 
 .. grid:: 2
     :gutter: 1

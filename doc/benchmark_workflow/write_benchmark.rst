@@ -1,8 +1,8 @@
 .. _write_benchmark:
 
-
 Write a benchmark
 =================
+
 
 A benchmark is composed of three elements: an objective_ function,
 a list of datasets_, and a list of solvers_.
@@ -114,7 +114,6 @@ The construction of this attribute is similar to the one described above for
 ``parameters``. This allows you to test solvers that could not be used for a single
 variant of the dataset.
 
-.. literalinclude:: ../../benchopt/tests/test_benchmarks/many_simulated_datasets/datasets/simulated.py
 
 .. _solvers:
 
@@ -210,7 +209,7 @@ not `conda-forge <https://conda-forge.org/>`_. See example:
     Specifying the dependencies is necessary if you let benchopt
     manage the creation of a dedicated environment. If you want to
     use your local environment the list of dependencies is
-    not relevant. See :ref:`cli_documentation`.
+    not relevant. See :ref:`cli_ref`.
 
 .. _r_solvers:
 
