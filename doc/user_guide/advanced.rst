@@ -3,6 +3,7 @@
 Advanced usage
 ==============
 
+
 This page intends to list some advanced functionality
 to make it easier to use the benchmark.
 

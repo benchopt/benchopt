@@ -3,6 +3,7 @@
 Frequently asked questions (FAQ)
 ================================
 
+
 .. dropdown:: How can I write a benchmark?
 
     Learn how to :ref:`write_benchmark`, including creating an objective, a solver, and

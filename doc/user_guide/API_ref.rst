@@ -3,7 +3,6 @@
 API references
 ==============
 
-
 Here is a list of Python functions available to construct a new benchmark with
 :py:mod:`benchopt`:
 

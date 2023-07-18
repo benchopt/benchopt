@@ -3,6 +3,7 @@
 Benchopt configuration
 ======================
 
+
 Benchopt can be configured using setting files. These files can either be created directly or generated and modified using ``benchopt config``.
 
 There are two configuration levels. The first level is the global config for the benchopt client. It contains the system-specific tweaks, the user info such as the *<GitHub token>*, and the output levels. The second level is the configuration of the benchmarks. Each benchmark can have its own config for the kind of plots it displays by default and other display tweaks.

@@ -3,6 +3,7 @@
 Publish benchmark results
 =========================
 
+
 Benchopt allows you to publish your benchmark results to
 the `Benchopt Benchmarks website <https://benchopt.github.io/results/>`_
 with one command ``benchopt publish``.

@@ -3,6 +3,7 @@
 What's new
 ==========
 
+
 .. currentmodule:: benchopt
 
 
