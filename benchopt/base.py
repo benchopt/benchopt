@@ -555,6 +555,7 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
             self._cv = itertools.cycle(self.cv.split(*arrays))
 
         if hasattr(self, "split"):
+
             split_index = next(self._cv)
             return self.split(*arrays, *split_index)
 
