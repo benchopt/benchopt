@@ -23,7 +23,7 @@ It is implemented in Python but can run algorithms written in many programming l
         Install benchopt and run your first benchmark
 
     .. grid-item-card::
-        :link: build_benchmark
+        :link: benchmark_workflow
         :link-type: ref
 
         :octicon:`tools` **Benchmark workflow**
