@@ -93,6 +93,11 @@ Join this endeavor! If you use benchopt in a scientific publication, please cite
    }
 
 
+.. Frequently Asked Questions (FAQ) subsection 
+
+.. include:: faq.rst
+
+
 .. |Python 3.6+| image:: https://img.shields.io/badge/python-3.6%2B-blue
    :target: https://www.python.org/downloads/release/python-360/
 .. |License| image:: https://img.shields.io/badge/License-BSD_3--Clause-blue.svg
@@ -115,6 +120,5 @@ Join this endeavor! If you use benchopt in a scientific publication, please cite
    tutorials/index
 
    available_benchmarks
-   faq
    contrib
    changes/whats_new

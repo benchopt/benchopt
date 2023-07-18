@@ -1,8 +1,7 @@
 .. _faq:
 
 Frequently asked questions (FAQ)
-================================
-
+--------------------------------
 
 .. dropdown:: How can I write a benchmark?
 
