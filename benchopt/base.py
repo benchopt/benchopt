@@ -519,23 +519,29 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
             str(self._import_ctx._benchmark_dir)
         )
 
-    def default_split(self, *arrays):
-        i_train, i_test = next(self._cv)
+    def _default_split(self, *arrays):
+        train_index, test_index = next(self._cv)
         res = ()
         for x in arrays:
-            res = (*res, x[i_train], x[i_test])
+            try:
+                res = (*res, x[train_index], x[test_index])
+            except TypeError:
+                raise TypeError(
+                    "The type of your data is "
+                    "not compatible with the default split. "
+                    "You need to define a custom split function "
+                    "named split in your objective class. "
+                    "This function should have the following signature: "
+                    "split(self: Self@Objective, input values of get_split, "
+                    " output values of the cv generator) "
+                    "-> splitted_data. "
+                    "train_index and test_index are the return "
+                    "values of the cv.split generator"
+                    )
         return res
-
-    def custom_split(self, *arrays):
-        if not hasattr(self, "_cv"):
-            # this define _cv only once
-            self._cv = itertools.cycle(self.cv.split(*arrays))
-        i_train, i_test = next(self._cv)
-        return self.split(i_train, i_test)
 
     def get_split(self, *arrays):
         # return the split of the data according to the cv attribute
-
         if not hasattr(self, "cv"):
             raise ValueError(
                 "To use get_split, you need to define "
@@ -544,19 +550,12 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
                 "object."
             )
 
-        if not str(type(arrays[0])) == "<class 'numpy.ndarray'>":
-            if not hasattr(self, "split"):
-                raise ValueError(
-                    "The type of the data is not np.ndarray. "
-                    "You need to define a custom split function "
-                    "named split in your objective class. "
-                    "the type of the function should be "
-                    "(self: Self@Objective, index_train "
-                    "index_test) -> splitted_data"
-                )
-            else:
-                return self.custom_split(*arrays)
-
         if not hasattr(self, "_cv"):
+            # this will define _cv only once
             self._cv = itertools.cycle(self.cv.split(*arrays))
-        return self.default_split(*arrays)
+
+        if hasattr(self, "split"):
+            split_index = next(self._cv)
+            return self.split(*arrays, *split_index)
+
+        return self._default_split(*arrays)
