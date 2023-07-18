@@ -121,4 +121,4 @@ Join this endeavor! If you use benchopt in a scientific publication, please cite
 
    available_benchmarks
    contrib
-   changes/whats_new
+   whats_new
