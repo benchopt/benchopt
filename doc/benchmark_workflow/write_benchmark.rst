@@ -1,8 +1,8 @@
 .. _write_benchmark:
 
 
-Write benchmark
-===============
+Write a benchmark
+=================
 
 A benchmark is composed of three elements: an objective_ function,
 a list of datasets_, and a list of solvers_.
