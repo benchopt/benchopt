@@ -71,7 +71,7 @@ An objective class also needs to inherit from a base class,
 Example
 ~~~~~~~
 
-.. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/doc_objective.py
+.. literalinclude:: ../../benchopt/tests/test_benchmarks/dummy_benchmark/doc_objective.py
 
 .. _datasets:
 
@@ -90,7 +90,7 @@ A dataset class also needs to inherit from a base class called
 Example using a real dataset
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/datasets/leukemia.py
+.. literalinclude:: ../../benchopt/tests/test_benchmarks/dummy_benchmark/datasets/leukemia.py
 
 You can also define a parametrized simulated dataset, for example to test
 across multiple problem dimensions.
@@ -105,7 +105,7 @@ attribute called ``parameters``. This parameter must be a dictionary
 whose keys are passed to the ``__init__`` of the dataset class. Then Benchopt
 will automatically allow you to test all combinations of parameters.
 
-.. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/datasets/simulated.py
+.. literalinclude:: ../../benchopt/tests/test_benchmarks/dummy_benchmark/datasets/simulated.py
 
 However, all of these variants will not be tested during the call to ``benchopt test``.
 If you want to test different variants of the simulated dataset with ``benchopt test``,
@@ -114,7 +114,7 @@ The construction of this attribute is similar to the one described above for
 ``parameters``. This allows you to test solvers that could not be used for a single
 variant of the dataset.
 
-.. literalinclude:: ../benchopt/tests/test_benchmarks/many_simulated_datasets/datasets/simulated.py
+.. literalinclude:: ../../benchopt/tests/test_benchmarks/many_simulated_datasets/datasets/simulated.py
 
 .. _solvers:
 
@@ -176,14 +176,14 @@ The simplest solvers to use are solvers written in pure
 code. They are typically written in `Numpy <https://numpy.org/>`_
 with no other dependencies. Here is an example:
 
-.. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/solvers/python_pgd.py
+.. literalinclude:: ../../benchopt/tests/test_benchmarks/dummy_benchmark/solvers/python_pgd.py
 
 For solvers that allow access to each iterate of the solution, using ``"callback"``
 as a ``sampling_strategy`` implies a slight modification for ``run``. A ``callback``
 should be called at each iteration with parameter the current value of the iterate.
 Here is an example in the same situation as above:
 
-.. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/solvers/python_pgd_callback.py
+.. literalinclude:: ../../benchopt/tests/test_benchmarks/dummy_benchmark/solvers/python_pgd_callback.py
   :pyobject: Solver.run
 
 If your Python solver requires some packages such as `Numba <https://numba.pydata.org/>`_,
@@ -197,7 +197,7 @@ and the list of needed packages is specified in the variable
 starts with ``pip:`` then the package is installed from `pypi <https://pypi.org/>`_ and
 not `conda-forge <https://conda-forge.org/>`_. See example:
 
-.. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/solvers/sklearn.py
+.. literalinclude:: ../../benchopt/tests/test_benchmarks/dummy_benchmark/solvers/sklearn.py
 
 .. note::
 
@@ -222,11 +222,11 @@ A ``.R`` file that contains the solver and a ``.py`` file that knows how to call
 R solver using `Rpy2 <https://pypi.org/project/rpy2/>`_. Only the extensions
 should differ between the two files. Here is the Python file:
 
-.. literalinclude:: ../benchmarks/benchmark_lasso/solvers/r_pgd.py
+.. literalinclude:: ../../benchmarks/benchmark_lasso/solvers/r_pgd.py
 
 It uses the R code in:
 
-.. literalinclude:: ../benchmarks/benchmark_lasso/solvers/r_pgd.R
+.. literalinclude:: ../../benchmarks/benchmark_lasso/solvers/r_pgd.R
     :language: R
 
 .. note::
@@ -245,11 +245,11 @@ A ``.jl`` file that contains the solver and a ``.py`` file that knows how to cal
 Julia solver using `PyJulia <https://pypi.org/project/julia/>`_. Only the extensions
 should differ between the two files. Here is the Python file:
 
-.. literalinclude:: ../benchmarks/benchmark_lasso/solvers/julia_pgd.py
+.. literalinclude:: ../../benchmarks/benchmark_lasso/solvers/julia_pgd.py
 
 It uses the Julia code in:
 
-.. literalinclude:: ../benchmarks/benchmark_lasso/solvers/julia_pgd.jl
+.. literalinclude:: ../../benchmarks/benchmark_lasso/solvers/julia_pgd.jl
     :language: julia
 
 .. admonition:: Installing Julia dependencies
@@ -272,7 +272,7 @@ as binaries from the package managers from either Python, R or Julia.
 
 Here is example using pip from a Python package on GitHub:
 
-.. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/solvers/sklearn.py
+.. literalinclude:: ../../benchopt/tests/test_benchmarks/dummy_benchmark/solvers/sklearn.py
 
 .. note::
 
