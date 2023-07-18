@@ -217,13 +217,13 @@ The value of each setting can be accessed with the CLI using ``benchopt config [
 Config File Location
 ~~~~~~~~~~~~~~~~~~~~
 
-For global config file, the resolution order is the following:
+For the global configuration file, the resolution order is the following:
 
 1. The environment variable ``BENCHOPT_CONFIG`` is set to an existing file,
 2. A file ``benchopt.ini`` in the current directory,
 3. The default file is ``$HOME/.config/benchopt.ini``.
 
-For benchmark config files, they are usually located in the benchmark folder with name ``benchopt.ini``. If it does not exists, the default is to use the global config file.
+For benchmark configuration files, they are usually located in the benchmark folder, and named ``benchopt.ini``. If it does not exist, the default is to use the global config file.
 
 .. _config_structure:
 
