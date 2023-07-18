@@ -29,8 +29,9 @@ Benchopt run hooks
 ~~~~~~~~~~~~~~~~~~
 
 :func:`benchopt.BaseObjective.skip`: hook to allow skipping configurations of
-objective. It is executed after ``get_data`` to skip if current objective is
-not compatible with dataset.
+objective. It is executed before ``set_data`` to skip if the current
+objective is not compatible with the dataset. It takes in the same arguments
+that are passed to ``set_data``.
 
 :func:`benchopt.BaseSolver.skip`: hook to allow skipping configurations of
 solver. It is executed right before ``set_objective`` to skip a solver
