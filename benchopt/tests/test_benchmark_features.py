@@ -1,4 +1,5 @@
 import pytest
+import tempfile
 
 from benchopt.cli.main import run
 from benchopt.utils.dynamic_modules import _load_class_from_module
@@ -99,3 +100,25 @@ def test_error_reporting(error, raise_install_error):
             )
     finally:
         os.environ['BENCHOPT_RAISE_INSTALL_ERROR'] = prev_value
+
+
+def test_ignore_hidden_files():
+    with tempfile.NamedTemporaryFile(
+        dir=str(DUMMY_BENCHMARK_PATH / 'datasets'),
+        prefix='.hidden_dataset_',
+        suffix='.py',
+        delete=True
+    ), tempfile.NamedTemporaryFile(
+        dir=str(DUMMY_BENCHMARK_PATH / 'solvers'),
+        prefix='.hidden_solver_',
+        suffix='.py',
+        delete=True
+    ):
+        with CaptureRunOutput() as out:
+            run([
+                str(DUMMY_BENCHMARK_PATH), '-l', '-d',
+                SELECT_ONE_SIMULATED, '-f', SELECT_ONE_PGD, '-n', '1',
+                '-r', '1', '-o', SELECT_ONE_OBJECTIVE, '--no-plot'
+            ], 'benchopt', standalone_mode=False)
+
+        out.check_output('Simulated', repetition=1)
