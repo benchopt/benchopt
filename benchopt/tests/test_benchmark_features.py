@@ -103,22 +103,29 @@ def test_error_reporting(error, raise_install_error):
 
 
 def test_ignore_hidden_files():
+    # Non-regression test to make sure hidden files in datasets and solvers
+    # are ignored. If this is not the case, the call to run will fail if it
+    # is not ignored as there is no Dataset/Solver defined in the file.
     with tempfile.NamedTemporaryFile(
         dir=str(DUMMY_BENCHMARK_PATH / 'datasets'),
         prefix='.hidden_dataset_',
         suffix='.py',
         delete=True
-    ), tempfile.NamedTemporaryFile(
+    ), CaptureRunOutput():
+        run([
+            str(DUMMY_BENCHMARK_PATH), '-l', '-d',
+            SELECT_ONE_SIMULATED, '-f', SELECT_ONE_PGD, '-n', '1',
+            '-r', '1', '-o', SELECT_ONE_OBJECTIVE, '--no-plot'
+        ], 'benchopt', standalone_mode=False)
+
+    with tempfile.NamedTemporaryFile(
         dir=str(DUMMY_BENCHMARK_PATH / 'solvers'),
         prefix='.hidden_solver_',
         suffix='.py',
         delete=True
-    ):
-        with CaptureRunOutput() as out:
-            run([
-                str(DUMMY_BENCHMARK_PATH), '-l', '-d',
-                SELECT_ONE_SIMULATED, '-f', SELECT_ONE_PGD, '-n', '1',
-                '-r', '1', '-o', SELECT_ONE_OBJECTIVE, '--no-plot'
-            ], 'benchopt', standalone_mode=False)
-
-        out.check_output('Simulated', repetition=1)
+    ), CaptureRunOutput():
+        run([
+            str(DUMMY_BENCHMARK_PATH), '-l', '-d',
+            SELECT_ONE_SIMULATED, '-f', SELECT_ONE_PGD, '-n', '1',
+            '-r', '1', '-o', SELECT_ONE_OBJECTIVE, '--no-plot'
+        ], 'benchopt', standalone_mode=False)
