@@ -1,4 +1,5 @@
 import pytest
+import tempfile
 
 from benchopt.cli.main import run
 from benchopt.utils.dynamic_modules import _load_class_from_module
@@ -153,3 +154,32 @@ def test_objective_cv():
                 standalone_mode=False)
 
         out.check_output("Python-PGD", repetition=3)
+
+
+def test_ignore_hidden_files():
+    # Non-regression test to make sure hidden files in datasets and solvers
+    # are ignored. If this is not the case, the call to run will fail if it
+    # is not ignored as there is no Dataset/Solver defined in the file.
+    with tempfile.NamedTemporaryFile(
+        dir=str(DUMMY_BENCHMARK_PATH / 'datasets'),
+        prefix='.hidden_dataset_',
+        suffix='.py',
+        delete=True
+    ), CaptureRunOutput():
+        run([
+            str(DUMMY_BENCHMARK_PATH), '-l', '-d',
+            SELECT_ONE_SIMULATED, '-f', SELECT_ONE_PGD, '-n', '1',
+            '-r', '1', '-o', SELECT_ONE_OBJECTIVE, '--no-plot'
+        ], 'benchopt', standalone_mode=False)
+
+    with tempfile.NamedTemporaryFile(
+        dir=str(DUMMY_BENCHMARK_PATH / 'solvers'),
+        prefix='.hidden_solver_',
+        suffix='.py',
+        delete=True
+    ), CaptureRunOutput():
+        run([
+            str(DUMMY_BENCHMARK_PATH), '-l', '-d',
+            SELECT_ONE_SIMULATED, '-f', SELECT_ONE_PGD, '-n', '1',
+            '-r', '1', '-o', SELECT_ONE_OBJECTIVE, '--no-plot'
+        ], 'benchopt', standalone_mode=False)
