@@ -209,12 +209,15 @@ def _test_solver_one_objective(solver, objective):
     result = solver.get_result()
     objective(result)
 
-    # Only check optimality or convex problems, with simple enough return type
-    if is_convex and isinstance(result, np.ndarray):
+    # Only check optimality or convex problems, when solver only return
+    # one value, which is a np.array
+    if (is_convex and len(result) == 1
+            and isinstance(next(iter(result.values()))[0], np.ndarray)):
+        arr = next(iter(result.values()))[0]
         val_star = objective(result)['objective_value']
         for _ in range(100):
             eps = 1e-5 * np.random.randn(*result.shape)
-            val_eps = objective(result + eps)['objective_value']
+            val_eps = objective.evaluate_result(arr + eps)['objective_value']
 
             diff = val_eps - val_star
             assert diff >= 0
