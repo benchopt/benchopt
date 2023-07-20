@@ -254,3 +254,32 @@ def test_deprecated_stopping_strategy():
         run([str(benchmark.benchmark_dir),
              *'-s solver2 -d test-dataset -n 1 -r 1 --no-plot'.split()],
             standalone_mode=False)
+
+
+def test_deprecated_support_sparse():
+    # XXX remove in 1.5
+    assert benchopt.__version__ < '1.5'
+
+    solver1 = """from benchopt import BaseSolver
+    import numpy as np
+
+    class Solver(BaseSolver):
+        name = 'solver1'
+        support_sparse = True
+
+        def run(self, n_iter): pass
+
+        def set_objective(self, X, y, lmbd):
+            self.n_features = X.shape[1]
+
+        def get_result(self, **data):
+            return np.zeros(self.n_features)
+    """
+
+    with temp_benchmark(solvers=solver1) as benchmark:
+        with pytest.warns(
+                FutureWarning,
+                match="`support_sparse = False` is deprecated"):
+            run([str(benchmark.benchmark_dir),
+                 *'-s solver1 -d test-dataset -n 1 -r 1 --no-plot'.split()],
+                standalone_mode=False)

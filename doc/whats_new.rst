@@ -13,6 +13,9 @@ Version 1.5 (dev)
 API
 ~~~
 
+- ``Solver.support_sparse`` attribute is deprecated in favor of the use of
+``Solver.skip``, by `Mathurin Massias`_ (:gh:`614`).
+
 - ``stopping_strategy`` attribute is replaced by ``sampling_strategy`` to clarify
   the concept, by `Mathurin Massias`_ (:gh:`585`).
 
@@ -52,7 +55,7 @@ API
   be cached globally for a solver. By `Thomas Moreau`_ (:gh:`525`)
 
 - Remove deprecated ``Objective.to_dict``, ``safe_import_context.import_from``.
-  Force implementation of :method:`benchopt.Objective.get_one_solution`.
+  Force implementation of :meth:`~benchopt.Objective.get_one_solution`.
   By `Thomas Moreau`_ (:gh:`569`)
 
 PLOT
