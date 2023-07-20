@@ -205,7 +205,7 @@ def _test_solver_one_objective(solver, objective):
             stop_val = 1e-10 if is_convex else 1e-2
         solver.run(stop_val)
 
-    # Check that returned results are compatible with objective
+    # Check that returned results are compatible with the objective
     result = solver.get_result()
     objective(result)
 
