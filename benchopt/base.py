@@ -17,13 +17,13 @@ from .utils.parametrized_name_mixin import ParametrizedNameMixin
 
 
 class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
-    """A base class for solver wrappers in BenchOpt.
+    """A base class for solver wrappers in Benchopt.
 
     Solvers that derive from this class should implement three methods:
 
     - ``set_objective(self, **objective_parameters)``: prepares the solver to
       be called on a given problem. ``**objective_parameters`` is the output of
-      the method ``get_objective`` from the benchmark objective. In particular,
+      ``Objective.get_objective`` from the benchmark objective. In particular,
       this method should dumps the parameter to compute the objective function
       in a file for command line solvers to reduce the impact of dumping the
       data to the disk in the benchmark.
@@ -31,19 +31,17 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
     - ``run(self, n_iter/tolerance)``: performs the computation for the
       previously given objective function, after a call to ``set_objective``.
       This method is the one timed in the benchmark and should not perform any
-      operation unrelated to  the optimization procedure.
+      operation unrelated to the optimization procedure.
 
-    - ``get_result(self)``: returns the parameters computed by the previous
-      call to run. For command line solvers, this retrieves the result from the
-      disk. This utility is necessary to reduce the impact of loading the
-      result from the disk in the benchmark.
+    - ``get_result(self)``: returns all parameters of interest, as a dict.
+      The output is passed to ``Objective.evaluate_result``.
 
     Note that two ``sampling_strategy`` can be used to construct the benchmark
     curve:
 
     - ``'iteration'``: call the run method with max_iter number increasing
       logarithmically to get more an more precise points.
-    - ``'tolerance'``: call the run method with tolerance deacreasing
+    - ``'tolerance'``: call the run method with tolerance decreasing
       logarithmically to get more and more precise points.
     - ``'callback'``: a callable that should be called after each iteration or
       epoch. This callable periodically calls the objective's `compute`
@@ -179,12 +177,12 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
     def get_result(self):
         """Return the parameters computed by the previous run.
 
-        The parameters should be returned as a flattened array.
+        The parameters should be returned as a dictionary.
 
         Returns
         -------
-        parameters : ndarray, shape ``(dimension,)`` or ``*dimension``
-            The computed coefficients by the solver.
+        parameters : dictionary
+            All quantities of interest to evaluate the objective.
         """
         ...
 
@@ -365,14 +363,12 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
       parameters of the solver's `set_objective` method in order to specify the
       objective function of the benchmark.
 
-    - `compute(beta)`: computes the value of the objective function for an
-      given estimate beta. Beta is given as np.array of size corresponding to
-      the `dimension` value returned by `Dataset.get_data`. The output should
-      be a float or a dictionary of floats.
+    - `evaluate_result(**result)`: evaluate the metrics on the results of a
+      solver. Is passed the output of `Solver.get_result`.
       If a dictionary is returned, it should at least contain a key
       `value` associated to a scalar value which will be used to
       detect convergence. With a dictionary, multiple metric values can be
-      stored at once instead of runnning each separately.
+      stored at once instead of running each separately.
     """
 
     _base_class_name = 'Objective'
@@ -402,13 +398,17 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
         ...
 
     @abstractmethod
-    def compute(self, beta):
-        """Compute the value of the objective given the current estimate beta.
+    def evaluate_result(self, **solver_result):
+        """Compute the objective value given the output of a solver.
+
+        The arguments are the keys in the result dictionary returned
+        by ``Solver.get_result``.
 
         Parameters
         ----------
-        beta : ndarray or tuple of ndarray
-            The current estimate of the parameters being optimized.
+        solver_result : dict
+            All values needed to compute the objective metrics. This dictionary
+            is retrieved by calling ``solver_result = Solver.get_result()``.
 
         Returns
         -------
@@ -417,16 +417,34 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
             returned, it should at least contain a key `value` associated to a
             scalar value which will be used to detect convergence. With a
             dictionary, multiple metric values can be stored at once instead
-            of runnning each separately.
+            of running each separately.
         """
         ...
 
-    def __call__(self, beta):
-        """Used to call the computation of the objective.
+    def __call__(self, solver_result):
+        """Used to call the evaluation of the objective.
 
-        This allow to standardize the output to a dictionary.
+        This allows standardizing the output to a dictionary.
         """
-        objective_dict = self.compute(beta)
+        # XXX remove in version 1.5
+        if hasattr(self, "compute"):
+            # XXX uncomment in version 1.5
+            # raise ValueError(
+            #   "Rename objective.compute to objective.evaluate_result")
+            warnings.warn(
+                "objective.compute was renamed `objective.evaluate_result` in "
+                "v 1.5", FutureWarning,
+            )
+            self.evaluate_result = self.compute
+        # XXX remove in version 1.5
+        if isinstance(solver_result, dict):
+            objective_dict = self.evaluate_result(**solver_result)
+        else:
+            warnings.warn(
+                "From benchopt 1.5, Solver.get_result() should return a dict.",
+                FutureWarning,
+            )
+            objective_dict = self.evaluate_result(solver_result)
 
         if not isinstance(objective_dict, dict):
             objective_dict = {'value': objective_dict}

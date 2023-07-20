@@ -71,4 +71,4 @@ class Solver(BaseSolver):
         self.w = w
 
     def get_result(self):
-        return self.w
+        return {'beta': self.w}

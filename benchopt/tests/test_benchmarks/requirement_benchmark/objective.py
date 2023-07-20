@@ -17,7 +17,7 @@ class Objective(BaseObjective):
     def set_data(self, X):
         self.X = X
 
-    def compute(self, beta):
+    def evaluate_result(self, beta):
         dummy_package.__version__  # make sure this was imported
         return 1
 
