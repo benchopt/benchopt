@@ -40,8 +40,11 @@ With benchopt being installed, you get access to the :ref:`Command Line Interfac
 Run an existing benchmark
 -------------------------
 
-Let's get the first steps with benchopt by comparing solvers of Lasso problem.
-Benchopt community maintains :ref:`several optimization benchmarks <available_benchmarks>`.
+Let's get the first steps with benchopt by comparing solvers of
+`Lasso problem <https://en.wikipedia.org/wiki/Lasso_(statistics)>`_.
+
+Benchopt community maintains :ref:`several optimization benchmarks <available_benchmarks>`
+and thrives at making them accessible and up to date. So as for the Lasso problem.
 
 Start by cloning the Lasso benchmark repository
 
@@ -50,10 +53,26 @@ Start by cloning the Lasso benchmark repository
     # clone the repository
     git clone https://github.com/benchopt/benchmark_lasso.git
 
-    # access directory
+    # change directory
     cd benchmark_lasso
 
-Then install automatically the desired solvers
+Then install automatically the benchmark requirements,
+and finally run it
+
+.. code-block:: bash
+
+    # install all requirements
+    benchopt install .
+
+    # run benchmark
+    benchopt run .
+
+After completion, benchopt will automatically open a window in you default browser
+and render the results of the benchmark as dashboard.
+
+.. figure:: ./_static/results.png
+   :align: center
+   :alt: results of Lasso benchmark
 
 
 
