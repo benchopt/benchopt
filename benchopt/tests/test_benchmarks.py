@@ -212,8 +212,8 @@ def _test_solver_one_objective(solver, objective):
     # Only check optimality or convex problems, when solver only return
     # one value, which is a np.array
     if (is_convex and len(result) == 1
-            and isinstance(next(iter(result.values()))[0], np.ndarray)):
-        arr = next(iter(result.values()))[0]
+            and isinstance(list(result.values())[0], np.ndarray)):
+        arr = list(result.values())[0]
         val_star = objective(result)['objective_value']
         for _ in range(100):
             eps = 1e-5 * np.random.randn(*result.shape)
