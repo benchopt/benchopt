@@ -213,11 +213,12 @@ def _test_solver_one_objective(solver, objective):
     # one value, which is a np.array
     if (is_convex and len(result) == 1
             and isinstance(list(result.values())[0], np.ndarray)):
-        arr = list(result.values())[0]
+        key = list(result.keys())[0]
+        arr = result[key]
         val_star = objective(result)['objective_value']
         for _ in range(100):
             eps = 1e-5 * np.random.randn(*arr.shape)
-            val_eps = objective.evaluate_result(arr + eps)['objective_value']
+            val_eps = objective({key: arr + eps})['objective_value']
 
             diff = val_eps - val_star
             assert diff >= 0
