@@ -432,7 +432,7 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
             #   "Rename objective.compute to objective.evaluate_result")
             warnings.warn(
                 "objective.compute was renamed `objective.evaluate_result` in "
-                "v 1.4", FutureWarning,
+                "v 1.5", FutureWarning,
             )
             self.evaluate_result = self.compute
         # XXX remove in version 1.5

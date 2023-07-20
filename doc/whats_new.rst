@@ -13,6 +13,12 @@ Version 1.5 (dev)
 API
 ~~~
 
+- Deprecate ``Objective.compute`` in favor of ``Objective.evaluate_result``, for
+  consistency with ``Solver.get_result``. Like ``Dataset.get_data``,
+  ``Solver.get_result`` must now return a dictionary, which is unpacked as
+  arguments to ``Objective.evaluate_result``.
+  By `Mathurin Massias`_ (:gh:`576`)
+
 - ``Solver.support_sparse`` attribute is deprecated in favor of the use of
 ``Solver.skip``, by `Mathurin Massias`_ (:gh:`614`).
 
