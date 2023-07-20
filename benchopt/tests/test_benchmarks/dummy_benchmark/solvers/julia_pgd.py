@@ -29,4 +29,4 @@ class Solver(JuliaSolver):
         self.beta = self.solve_lasso(self.X, self.y, self.lmbd, n_iter)
 
     def get_result(self):
-        return self.beta.ravel()
+        return {'beta': self.beta.ravel()}

@@ -205,16 +205,20 @@ def _test_solver_one_objective(solver, objective):
             stop_val = 1e-10 if is_convex else 1e-2
         solver.run(stop_val)
 
-    # Check that beta_hat is compatible to compute the objective function
-    beta_hat = solver.get_result()
-    objective(beta_hat)
+    # Check that returned results are compatible with the objective
+    result = solver.get_result()
+    objective(result)
 
-    # Only check optimality or convex problems, with simple enough return type
-    if is_convex and isinstance(beta_hat, np.ndarray):
-        val_star = objective(beta_hat)['objective_value']
+    # Only check optimality or convex problems, when solver only return
+    # one value, which is a np.array
+    if (is_convex and len(result) == 1
+            and isinstance(list(result.values())[0], np.ndarray)):
+        key = list(result.keys())[0]
+        arr = result[key]
+        val_star = objective(result)['objective_value']
         for _ in range(100):
-            eps = 1e-5 * np.random.randn(*beta_hat.shape)
-            val_eps = objective(beta_hat + eps)['objective_value']
+            eps = 1e-5 * np.random.randn(*arr.shape)
+            val_eps = objective({key: arr + eps})['objective_value']
 
             diff = val_eps - val_star
             assert diff >= 0
@@ -237,7 +241,7 @@ def test_deprecated_stopping_strategy():
             self.n_features = X.shape[1]
 
         def get_result(self, **data):
-            return np.zeros(self.n_features)
+            return {'beta': np.zeros(self.n_features)}
     """
 
     solver2 = solver1.replace("stopping_strategy", "sampling_strategy")
