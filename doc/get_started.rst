@@ -40,6 +40,22 @@ With benchopt being installed, you get access to the :ref:`Command Line Interfac
 Run an existing benchmark
 -------------------------
 
+Let's get the first steps with benchopt by comparing solvers of Lasso problem.
+Benchopt community maintains :ref:`several optimization benchmarks <available_benchmarks>`.
+
+Start by cloning the Lasso benchmark repository
+
+.. code-block:: bash
+
+    # clone the repository
+    git clone https://github.com/benchopt/benchmark_lasso.git
+
+    # access directory
+    cd benchmark_lasso
+
+Then install automatically the desired solvers
+
+
 
 This package can be installed through `pip`.  In order to allow benchopt to automatically
 install solvers dependencies, the install needs to be done in a `conda` environment.
