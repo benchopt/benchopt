@@ -3,17 +3,47 @@
 Get started
 ===========
 
+Installation
+------------
 
-Install
--------
+The recommended way to use benchopt is within a conda environment to fully-benefit from all its features.
+Hence, start with creating a dedicated conda environment. 
+
+.. code-block:: bash
+
+    # create conda environment with name benchopt
+    conda create -n benchopt python
+
+    # activate the environment
+    conda activate benchopt
+
+Benchopt is available on PyPi. Run the following command to install the latest **stable version**
+
+.. code-block:: bash
+
+    pip install -U benchopt
+
+Eager to try out the **development version**? you can run instead
+
+.. code-block:: bash
+
+    pip install -U -i https://test.pypi.org/simple/benchopt
+
+.. attention::
+
+   The development version is a work in progress and hence might contain incomplete features.
+   A typical user is advised to use the **stable version** instead.
+
+With benchopt being installed, you get access to the :ref:`Command Line Interface (CLI) <cli_ref>`, which enables simple and easy manipulation of benchmarks from the terminal.
+
+
+Run an existing benchmark
+-------------------------
+
 
 This package can be installed through `pip`.  In order to allow benchopt to automatically
 install solvers dependencies, the install needs to be done in a `conda` environment.
 
-.. prompt:: bash $
-
-    conda create -n benchopt python
-    conda activate benchopt
 
 To get the **latest release**, use:
 
