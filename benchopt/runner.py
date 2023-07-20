@@ -168,6 +168,7 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
     run_statistics : list
         The benchmark results.
     """
+
     run_one_to_cvg_cached = benchmark.cache(
         run_one_to_cvg, ignore=['force', 'output', 'pdb']
     )
@@ -242,6 +243,10 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
             status = 'timeout'
         else:
             status = 'done'
+
+    # reset _cv
+    if hasattr(objective, "_cv"):
+        del objective._cv
 
     output.show_status(status=status)
     # Make sure to flush so the parallel output is properly display
