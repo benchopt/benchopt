@@ -474,9 +474,6 @@ class Benchmark:
         all_datasets = _filter_classes(
             *self.get_datasets(), filters=dataset_names
         )
-        all_objectives, objective_buffer = buffer_iterator(_filter_classes(
-            self.get_benchmark_objective(), filters=objective_filters
-        ))
         all_solvers, solvers_buffer = buffer_iterator(_filter_classes(
             *self.get_solvers(), filters=solver_names
         ))
@@ -486,6 +483,10 @@ class Benchmark:
                 output.show_status('not installed', dataset=True)
                 continue
             output.display_dataset()
+            all_objectives, objective_buffer = _filter_classes(
+                self.get_benchmark_objective(), filters=objective_filters
+                check_installed=False
+            )
             for objective, is_installed in all_objectives:
                 output.set(objective=objective)
                 if not is_installed:
@@ -665,13 +666,17 @@ def _validate_patterns(all_names, patterns, name_type='dataset'):
         )
 
 
-def _filter_classes(*classes, filters=None):
+def _filter_classes(*classes, filters=None, check_installed=True):
     """Filter a list of class based on its names."""
     for klass in classes:
         if not is_matched(klass.name, filters):
             continue
 
-        if not klass.is_installed(raise_on_not_installed=RAISE_INSTALL_ERROR):
+        if (check_installed and
+                not klass.is_installed(
+                    raise_on_not_installed=RAISE_INSTALL_ERROR
+                )
+        ):
             yield klass.name, False
             continue
 

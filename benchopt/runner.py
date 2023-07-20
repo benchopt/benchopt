@@ -244,10 +244,6 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
         else:
             status = 'done'
 
-    # reset _cv
-    if hasattr(objective, "_cv"):
-        del objective._cv
-
     output.show_status(status=status)
     # Make sure to flush so the parallel output is properly display
     print(end='', flush=True)
