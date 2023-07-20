@@ -216,7 +216,7 @@ def _test_solver_one_objective(solver, objective):
         arr = list(result.values())[0]
         val_star = objective(result)['objective_value']
         for _ in range(100):
-            eps = 1e-5 * np.random.randn(*result.shape)
+            eps = 1e-5 * np.random.randn(*arr.shape)
             val_eps = objective.evaluate_result(arr + eps)['objective_value']
 
             diff = val_eps - val_star
