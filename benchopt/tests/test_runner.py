@@ -53,7 +53,7 @@ def test_get_one_result():
 
     one_solution = objective.get_one_result()
     expected = np.zeros(objective.X.shape[1])
-    assert all(one_solution == expected)
+    assert all(one_solution['beta'] == expected)
 
 
 def _assert_parameters_equal(instance, parameters):
