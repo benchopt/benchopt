@@ -21,8 +21,8 @@ class Objective(BaseObjective):
         dummy_package.__version__  # make sure this was imported
         return 1
 
-    def get_one_solution(self):
-        pass
+    def get_one_result(self):
+        return dict(beta=None)
 
     def get_objective(self):
         return dict(X=self.X)

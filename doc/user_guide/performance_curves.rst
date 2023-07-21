@@ -59,11 +59,13 @@ It returns ``False`` when the solver should be stopped. A classical usage patter
 .. code:: python
 
     def run(self, callback):
-        x = ... # Initialize iterate
+        self.x = ... # Initialize iterate
 
-        while callback(x):
-            x = ...  # Update iterate
-        self.x = x
+        while callback():
+            self.x = ...  # Update iterate
+
+    def get_result(self):
+        return {'x': self.x}
 
 
 
