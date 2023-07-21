@@ -521,8 +521,6 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
 
     def _default_split(self, *arrays):
         train_index, test_index = next(self._cv)
-        print("train_index", train_index[:10])
-        print("test_index", test_index[:10])
         res = ()
         for x in arrays:
             try:
