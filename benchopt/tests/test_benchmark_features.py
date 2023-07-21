@@ -1,7 +1,9 @@
 import pytest
 import tempfile
 
+import benchopt
 from benchopt.cli.main import run
+from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.utils.dynamic_modules import _load_class_from_module
 
 from benchopt.tests import SELECT_ONE_PGD
@@ -129,3 +131,68 @@ def test_ignore_hidden_files():
             SELECT_ONE_SIMULATED, '-f', SELECT_ONE_PGD, '-n', '1',
             '-r', '1', '-o', SELECT_ONE_OBJECTIVE, '--no-plot'
         ], 'benchopt', standalone_mode=False)
+
+
+def test_deprecated_stopping_strategy():
+    # XXX remove in 1.5
+    assert benchopt.__version__ < '1.5'
+
+    solver1 = """from benchopt import BaseSolver
+    import numpy as np
+
+    class Solver(BaseSolver):
+        name = 'solver1'
+        stopping_strategy = 'iteration'
+
+        def run(self, n_iter): pass
+
+        def set_objective(self, X, y, lmbd):
+            self.n_features = X.shape[1]
+
+        def get_result(self, **data):
+            return {'beta': np.zeros(self.n_features)}
+    """
+
+    solver2 = solver1.replace("stopping_strategy", "sampling_strategy")
+    solver2 = solver2.replace("solver1", "solver2")
+
+    with temp_benchmark(solvers=[solver1, solver2]) as benchmark:
+        with pytest.warns(
+                FutureWarning,
+                match="'stopping_strategy' attribute is deprecated"):
+            run([str(benchmark.benchmark_dir),
+                 *'-s solver1 -d test-dataset -n 1 -r 1 --no-plot'.split()],
+                standalone_mode=False)
+
+        run([str(benchmark.benchmark_dir),
+             *'-s solver2 -d test-dataset -n 1 -r 1 --no-plot'.split()],
+            standalone_mode=False)
+
+
+def test_deprecated_support_sparse():
+    # XXX remove in 1.5
+    assert benchopt.__version__ < '1.5'
+
+    solver1 = """from benchopt import BaseSolver
+    import numpy as np
+
+    class Solver(BaseSolver):
+        name = 'solver1'
+        support_sparse = True
+
+        def run(self, n_iter): pass
+
+        def set_objective(self, X, y, lmbd):
+            self.n_features = X.shape[1]
+
+        def get_result(self, **data):
+            return dict(beta=np.zeros(self.n_features))
+    """
+
+    with temp_benchmark(solvers=solver1) as benchmark:
+        with pytest.warns(
+                FutureWarning,
+                match="`support_sparse = False` is deprecated"):
+            run([str(benchmark.benchmark_dir),
+                 *'-s solver1 -d test-dataset -n 1 -r 1 --no-plot'.split()],
+                standalone_mode=False)

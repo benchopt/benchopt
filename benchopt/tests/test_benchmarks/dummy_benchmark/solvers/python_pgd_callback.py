@@ -52,12 +52,12 @@ class Solver(BaseSolver):
     def run(self, callback):  # instead of the number of iteration or tolerance
         L = self.compute_lipschitz_cst()
         n_features = self.X.shape[1]
-        w = np.zeros(n_features)
+        self.w = w = np.zeros(n_features)
         if self.use_acceleration:
             z = np.zeros(n_features)
 
         t_new = 1
-        while callback(w):
+        while callback(self.get_result()):
             if self.use_acceleration:
                 t_old = t_new
                 t_new = (1 + np.sqrt(1 + 4 * t_old ** 2)) / 2

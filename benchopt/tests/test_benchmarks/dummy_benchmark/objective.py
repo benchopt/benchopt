@@ -36,7 +36,7 @@ class Objective(BaseObjective):
         return False, None
 
     def get_one_result(self):
-        return np.zeros(self.X.shape[1])
+        return dict(beta=np.zeros(self.X.shape[1]))
 
     def evaluate_result(self, beta):
         diff = self.y - self.X.dot(beta)
