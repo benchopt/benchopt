@@ -51,14 +51,14 @@ Using a configuration file
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 As benchmarks get bigger, it becomes impractical to run benchmarks using flags.
-It is here where the configurations files are handy. Using a ``YAML`` file, you
-can describe all details of the benchmark run and execute instead
+It is here where configurations files are handy. Using a ``YAML`` file, you
+can describe all details of the benchmark run and afterward execute
 
 .. code-block:: bash
 
     benchopt run . --config ./example_config.yml
 
-Here is the look ``example_config.yml`` if we were to run the two previous example into a single one.
+Here is the look the configuration file ``example_config.yml`` if we were to run the two previous example into a single one.
 
 .. code-block:: yml
 
@@ -76,7 +76,7 @@ With a Python script
 --------------------
 
 Another way to run a benchmark is via a Python script.
-A typical use-cases of that are
+Typical use-cases of that are
 
 - Automating the run of several benchmarks
 - Using ``vscode`` debugger where the python script serves as an entry point to benchopt internals

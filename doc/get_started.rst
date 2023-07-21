@@ -7,7 +7,7 @@ Installation
 ------------
 
 The recommended way to use benchopt is within a conda environment to fully-benefit from all its features.
-Hence, start with creating a dedicated conda environment. 
+Hence, start by creating a dedicated conda environment. 
 
 .. code-block:: bash
 
