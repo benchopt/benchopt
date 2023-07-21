@@ -1,5 +1,6 @@
 import pytest
 import tempfile
+import warnings
 
 import benchopt
 from benchopt.cli.main import run
@@ -223,6 +224,36 @@ def test_deprecated_compute():
     match = "`Objective.compute` was renamed `Objective.evaluate_result` "
     with temp_benchmark(objective=objective) as benchmark:
         with pytest.warns(FutureWarning, match=match):
+            run([str(benchmark.benchmark_dir),
+                 *'-s python-pgd -d test-dataset -n 1 -r 1 --no-plot'.split()],
+                standalone_mode=False)
+
+    solver1 = """from benchopt import BaseSolver
+    import numpy as np
+
+    class Solver(BaseSolver):
+        name = 'solver1'
+        support_sparse = True
+
+        def run(self, n_iter): pass
+
+        def set_objective(self, X, y, lmbd):
+            self.n_features = X.shape[1]
+
+        def get_result(self, **data):
+            return np.zeros(self.n_features)
+    """
+    match = r"Solver.get_result\(\) should return a dict"
+    with temp_benchmark(objective=objective, solvers=solver1) as benchmark:
+        with pytest.warns(FutureWarning, match=match):
+            run([str(benchmark.benchmark_dir),
+                 *'-s solver1 -d test-dataset -n 1 -r 1 --no-plot'.split()],
+                standalone_mode=False)
+
+    objective = objective.replace("compute", "evaluate_result")
+    with temp_benchmark(objective=objective) as benchmark:
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
             run([str(benchmark.benchmark_dir),
                  *'-s python-pgd -d test-dataset -n 1 -r 1 --no-plot'.split()],
                 standalone_mode=False)
