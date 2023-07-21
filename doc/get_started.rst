@@ -42,7 +42,8 @@ Run an existing benchmark
 -------------------------
 
 Let's get the first steps with benchopt by comparing some solvers of
-`Lasso problem <https://en.wikipedia.org/wiki/Lasso_(statistics)>`_ on a simulated dataset.
+`Lasso problem <https://en.wikipedia.org/wiki/Lasso_(statistics)>`_ on a
+`Leukemia dataset <https://www.science.org/doi/10.1126/science.286.5439.531>`_.
 
 Benchopt community maintains :ref:`several optimization benchmarks <available_benchmarks>`
 and thrives at making them accessible and up to date, so as for the Lasso problem.
@@ -57,22 +58,32 @@ Start by cloning the Lasso benchmark repository
     # change directory
     cd benchmark_lasso
 
-Then install automatically the benchmark requirements before running it
+Then install automatically the benchmark requirements.
+Here we compare `skglm <https://contrib.scikit-learn.org/skglm/>`_ and
+`scikit-learn <https://scikit-learn.org/stable/>`_ solvers
 
 .. code-block:: bash
 
-    # install all requirements
-    benchopt install .
+    # install solvers
+    benchopt install -s skglm -s sklearn
 
-    # run benchmark
-    benchopt run .
+    # install dataset
+    benchopt install -d leukemia
+
+Finally, run the benchmark
+
+.. code-block:: bash
+
+    benchopt run . -s skglm -s sklearn -d leukemia
 
 After completion, benchopt will automatically open a window in you default browser
 and render the results of the benchmark as dashboard.
 
-.. figure:: ./_static/results.png
+.. figure:: ./_static/results-get-started-lasso.png
    :align: center
-   :alt: results of Lasso benchmark
+   :alt: Dashboard of the Lasso benchmark results
+
+   Dashboard of the benchmark results
 
 
 
