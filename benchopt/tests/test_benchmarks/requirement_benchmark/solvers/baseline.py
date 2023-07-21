@@ -10,7 +10,7 @@ class Solver(BaseSolver):
 
     def run(self, callback):
         self.w = 0
-        while callback(self.get_result()):
+        while callback():
             pass
 
     def get_result(self):
