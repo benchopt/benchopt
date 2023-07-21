@@ -87,6 +87,13 @@ def pytest_generate_tests(metafunc):
         if set(params).issubset(metafunc.fixturenames):
             metafunc.parametrize(params, func(benchmarks), ids=class_ids)
 
+@pytest.fixture
+def no_debug_test(request):
+    """Deactivate the debug logs for a test."""
+    os.environ["BENCHOPT_DEBUG"] = "0"
+    yield
+    os.environ["BENCHOPT_DEBUG"] = "1"
+
 
 @pytest.fixture
 def check_test(request):

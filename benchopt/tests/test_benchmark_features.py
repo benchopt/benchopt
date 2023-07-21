@@ -104,7 +104,7 @@ def test_error_reporting(error, raise_install_error):
         os.environ['BENCHOPT_RAISE_INSTALL_ERROR'] = prev_value
 
 
-def test_objective_cv():
+def test_objective_cv(no_debug_test):
 
     pytest.importorskip('sklearn')
 
@@ -124,10 +124,10 @@ def test_objective_cv():
                 self.X, self.y = X, y
                 self.cv = KFold(3)
 
-            def get_one_solution(self):
+            def get_one_result(self):
                 return np.zeros(self.X.shape[1])
 
-            def compute(self, beta):
+            def evaluate_result(self, beta):
                 return dict(value=1)
 
             def get_objective(self):
@@ -146,14 +146,27 @@ def test_objective_cv():
                  *'-s python-pgd -d test-dataset -n 1 -r 1 --no-plot'.split()],
                 standalone_mode=False)
 
+    # When `-r` is not specified, run all folds
     with temp_benchmark(objective=objective) as benchmark:
         with CaptureRunOutput() as out:
             run([str(benchmark.benchmark_dir),
-                 *('-s Python-PGD[step_size=1] -d test-dataset '
-                   '-n 1 -r 1 --no-plot').split()],
+                *('-s Python-PGD[step_size=1] -d test-dataset '
+                '-n 0 --no-plot').split()],
                 standalone_mode=False)
 
-        out.check_output("Python-PGD", repetition=3)
+        # Python-PGD appears: 3 reps + final display
+        out.check_output("Python-PGD", repetition=4)
+
+    # Make sure that `-r` is enforced when specified
+    with temp_benchmark(objective=objective) as benchmark:
+        with CaptureRunOutput() as out:
+            run([str(benchmark.benchmark_dir),
+                *('-s Python-PGD[step_size=1] -d test-dataset '
+                '-n 0 -r 1 --no-plot').split()],
+                standalone_mode=False)
+
+        # Python-PGD appears: 1 rep + final display
+        out.check_output("Python-PGD", repetition=2)
 
 
 def test_ignore_hidden_files():
