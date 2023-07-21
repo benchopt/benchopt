@@ -36,4 +36,4 @@ class Solver(BaseSolver):
 
     # Return the solution estimate computed.
     def get_result(self):
-        return self.w
+        return {'beta': self.w}
