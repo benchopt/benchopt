@@ -484,7 +484,7 @@ class Benchmark:
                 continue
             output.display_dataset()
             all_objectives, objective_buffer = _filter_classes(
-                self.get_benchmark_objective(), filters=objective_filters
+                self.get_benchmark_objective(), filters=objective_filters,
                 check_installed=False
             )
             for objective, is_installed in all_objectives:
