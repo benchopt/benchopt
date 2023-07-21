@@ -98,4 +98,4 @@ What's next?
 ------------
 
 Now that you have a glimpse on benchopt, you can explore more advanced topics
-such writing your own benchmark, modifying exiting ones, and customizing its run. 
+such writing your own benchmark, modifying exiting ones, and customizing the benchmark's run. 
