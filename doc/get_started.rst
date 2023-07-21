@@ -17,7 +17,7 @@ Hence, start with creating a dedicated conda environment.
     # activate the environment
     conda activate benchopt
 
-Benchopt is available on PyPi. Run the following command to install the latest **stable version**
+Benchopt is available on PyPi. You can get the **stable version** via ``pip`` by running the following command
 
 .. code-block:: bash
 
@@ -34,17 +34,18 @@ Eager to try out the **development version**? you can run instead
    The development version is a work in progress and hence might contain incomplete features.
    A typical user is advised to use the **stable version** instead.
 
-With benchopt being installed, you get access to the :ref:`Command Line Interface (CLI) <cli_ref>`, which enables simple and easy manipulation of benchmarks from the terminal.
+With benchopt being installed, you get access to the :ref:`Command Line Interface (CLI) <cli_ref>`,
+which enables simple and easy manipulation of benchmarks just from the terminal.
 
 
 Run an existing benchmark
 -------------------------
 
-Let's get the first steps with benchopt by comparing solvers of
-`Lasso problem <https://en.wikipedia.org/wiki/Lasso_(statistics)>`_.
+Let's get the first steps with benchopt by comparing some solvers of
+`Lasso problem <https://en.wikipedia.org/wiki/Lasso_(statistics)>`_ on a simulated dataset.
 
 Benchopt community maintains :ref:`several optimization benchmarks <available_benchmarks>`
-and thrives at making them accessible and up to date. So as for the Lasso problem.
+and thrives at making them accessible and up to date, so as for the Lasso problem.
 
 Start by cloning the Lasso benchmark repository
 
@@ -56,8 +57,7 @@ Start by cloning the Lasso benchmark repository
     # change directory
     cd benchmark_lasso
 
-Then install automatically the benchmark requirements,
-and finally run it
+Then install automatically the benchmark requirements before running it
 
 .. code-block:: bash
 
@@ -73,35 +73,6 @@ and render the results of the benchmark as dashboard.
 .. figure:: ./_static/results.png
    :align: center
    :alt: results of Lasso benchmark
-
-
-
-This package can be installed through `pip`.  In order to allow benchopt to automatically
-install solvers dependencies, the install needs to be done in a `conda` environment.
-
-
-To get the **latest release**, use:
-
-.. prompt:: bash $
-
-    pip install benchopt
-
-And to get the **latest development version**, you can use:
-
-.. prompt:: bash $
-
-    pip install -U -i https://test.pypi.org/simple/ benchopt
-
-This will install the command line tool to run the benchmark. Then, existing
-benchmarks can be retrieved from GitHub or created locally. To discover which
-benchmarks are presently available look for
-`benchmark_* repositories on GitHub <https://github.com/benchopt/>`_,
-such as for `Lasso -- l1-regularized linear regression <https://github.com/benchopt/benchmark_lasso>`_.
-This benchmark can be retrieved locally with:
-
-.. prompt:: bash $
-
-    git clone https://github.com/benchopt/benchmark_lasso.git
 
 
 
