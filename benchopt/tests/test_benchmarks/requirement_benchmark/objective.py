@@ -21,7 +21,7 @@ class Objective(BaseObjective):
         dummy_package.__version__  # make sure this was imported
         return 1
 
-    def get_one_solution(self):
+    def get_one_result(self):
         pass
 
     def get_objective(self):

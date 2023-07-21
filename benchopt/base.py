@@ -349,7 +349,7 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
         )
 
 
-class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
+class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
     """Base class to define an objective function
 
     Objectives that derive from this class should implement three methods:
@@ -363,8 +363,10 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
       objective function of the benchmark.
 
     - `evaluate_result(**result)`: evaluate the metrics on the results of a
-      solver. Is passed the output of `Solver.get_result`.
-      If a dictionary is returned, it should at least contain a key
+      solver. Its arguments should correspond to the key of the dictionary
+      returned by `Solver.get_result` and it can return a scalar value or
+      a dictionary.
+      If it returns a dictionary, it should at least contain a key
       `value` associated to a scalar value which will be used to
       detect convergence. With a dictionary, multiple metric values can be
       stored at once instead of running each separately.
@@ -396,7 +398,6 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
         """
         ...
 
-    @abstractmethod
     def evaluate_result(self, **solver_result):
         """Compute the objective value given the output of a solver.
 
@@ -418,7 +419,20 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
             dictionary, multiple metric values can be stored at once instead
             of running each separately.
         """
-        ...
+        # XXX remove in version 1.5 and make this method abstract
+        if hasattr(self, "compute"):
+            warnings.warn(
+                "`Objective.compute` was renamed `Objective.evaluate_result`. "
+                "This will raise an error starting v1.5", FutureWarning,
+            )
+            if '_result' in solver_result:
+                solver_result = solver_result['_result']
+            return self.compute(solver_result)
+
+        raise NotImplementedError(
+            "The Objective class should implement `evaluate_result` which "
+            "evaluates the objective given the output of a solver."
+        )
 
     def __call__(self, solver_result):
         """Used to call the evaluation of the objective.
@@ -426,24 +440,13 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
         This allows standardizing the output to a dictionary.
         """
         # XXX remove in version 1.5
-        if hasattr(self, "compute"):
-            # XXX uncomment in version 1.5
-            # raise ValueError(
-            #   "Rename objective.compute to objective.evaluate_result")
-            warnings.warn(
-                "objective.compute was renamed `objective.evaluate_result` in "
-                "v 1.5", FutureWarning,
-            )
-            self.evaluate_result = self.compute
-        # XXX remove in version 1.5
-        if isinstance(solver_result, dict):
-            objective_dict = self.evaluate_result(**solver_result)
-        else:
+        if not isinstance(solver_result, dict):
             warnings.warn(
                 "From benchopt 1.5, Solver.get_result() should return a dict.",
                 FutureWarning,
             )
-            objective_dict = self.evaluate_result(solver_result)
+            solver_result = {'_result': solver_result}
+        objective_dict = self.evaluate_result(**solver_result)
 
         if not isinstance(objective_dict, dict):
             objective_dict = {'value': objective_dict}
@@ -512,16 +515,27 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
         """
         return False, None
 
-    @abstractmethod
-    def get_one_solution(self):
-        """Return one solution for which the objective can be evaluated.
+    def get_one_result(self):
+        """Return one result for which the objective can be evaluated.
 
         This method is mainly for testing purposes, to check that the method
         `Objective.compute` can be called and that it returns a compatible
         type for benchopt. The returned object will be passed to
         ``Objective.compute``.
         """
-        pass
+        # XXX: remove in 1.5 and make this method abstract
+        if hasattr(self, "get_one_solution"):
+            warnings.warn(
+                "`Objective.get_one_solution` is renamed "
+                "`Objective.get_one_result`. This will raise an error in "
+                "v1.5", FutureWarning,
+            )
+            return self.get_one_solution()
+
+        raise NotImplementedError(
+            "The Objective class should implement `get_one_result` which "
+            "returns one result for which the objective can be evaluated."
+        )
 
     # Reduce the pickling and hashing burden by only pickling class parameters.
     @staticmethod
