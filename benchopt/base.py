@@ -521,6 +521,8 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
 
     def _default_split(self, *arrays):
         train_index, test_index = next(self._cv)
+        print("train_index", train_index[:10])
+        print("test_index", test_index[:10])
         res = ()
         for x in arrays:
             try:
@@ -538,7 +540,7 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
                     )
         return res
 
-    def get_split(self, *arrays):
+    def get_split(self, *arrays, groups=None):
         # return the split of the data according to the cv attribute
         if not hasattr(self, "cv"):
             raise ValueError(
@@ -549,9 +551,9 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
             )
 
         if not hasattr(self, "_cv"):
-            # this will define _cv only once
-            self._cv = itertools.cycle(self.cv.split(*arrays))
-
+            # this will define _cv
+            self._cv = itertools.cycle(self.cv.split(*arrays,
+                                                     groups=groups))
         if hasattr(self, "split"):
             split_index = next(self._cv)
             return self.split(*arrays, *split_index)

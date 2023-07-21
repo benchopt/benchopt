@@ -483,7 +483,7 @@ class Benchmark:
                 output.show_status('not installed', dataset=True)
                 continue
             output.display_dataset()
-            all_objectives, objective_buffer = _filter_classes(
+            all_objectives = _filter_classes(
                 self.get_benchmark_objective(), filters=objective_filters,
                 check_installed=False
             )
@@ -508,7 +508,6 @@ class Benchmark:
                         force=force, output=output.clone()
                     )
                 all_solvers = solvers_buffer
-            all_objectives = objective_buffer
 
 
 def _check_name_lists(*name_lists):
@@ -675,8 +674,7 @@ def _filter_classes(*classes, filters=None, check_installed=True):
         if (check_installed and
                 not klass.is_installed(
                     raise_on_not_installed=RAISE_INSTALL_ERROR
-                )
-        ):
+                    )):
             yield klass.name, False
             continue
 

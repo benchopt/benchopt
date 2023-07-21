@@ -194,7 +194,9 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
     obj_description = objective.__doc__ or ""
 
     if n_repetitions is None:
-        if hasattr(objective, "cv"):
+        if hasattr(objective, "cv") and hasattr(objective, "groups"):
+            n_repetitions = objective.cv.get_n_splits(groups=objective.groups)
+        elif hasattr(objective, "cv"):
             n_repetitions = objective.cv.get_n_splits()
         else:
             # we set 1 by default so that the solver run at least once
@@ -249,6 +251,7 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
     print(end='', flush=True)
 
     # refresh the solver warm up flag so that warm-up is done again
+
     # when calling the solver with another problem/dataset pair.
     solver._warmup_done = False
 
