@@ -13,7 +13,7 @@ Version 1.5 (dev)
 API
 ~~~
 
-- Deprecate ``Objective.get_one_solution`` in favor of ``Obejctive.get_one_result``
+- Deprecate ``Objective.get_one_solution`` in favor of ``Objective.get_one_result``
   for consistency with ``Objective.evaluate_result``.
   By `Thomas Moreau`_ (:gh:`631`)
 
