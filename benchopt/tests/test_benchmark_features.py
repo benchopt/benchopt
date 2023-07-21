@@ -196,3 +196,33 @@ def test_deprecated_support_sparse():
             run([str(benchmark.benchmark_dir),
                  *'-s solver1 -d test-dataset -n 1 -r 1 --no-plot'.split()],
                 standalone_mode=False)
+
+
+def test_deprecated_compute():
+    # XXX remove in 1.5
+    assert benchopt.__version__ < '1.5'
+
+    objective = """from benchopt import BaseObjective
+
+    class Objective(BaseObjective):
+        name = 'dummy'
+
+        def set_data(self, X, y):
+            self.X, self.y = X, y
+
+        def compute(self, beta):
+            return 1
+
+        def get_one_result(self):
+            return dict(beta=0)
+
+        def get_objective(self):
+            return dict(X=self.X, y=self.y, lmbd=0)
+    """
+
+    match = "`Objective.compute` was renamed `Objective.evaluate_result` "
+    with temp_benchmark(objective=objective) as benchmark:
+        with pytest.warns(FutureWarning, match=match):
+            run([str(benchmark.benchmark_dir),
+                 *'-s python-pgd -d test-dataset -n 1 -r 1 --no-plot'.split()],
+                standalone_mode=False)
