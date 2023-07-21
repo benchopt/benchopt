@@ -4,6 +4,7 @@ import warnings
 
 import benchopt
 from benchopt.cli.main import run
+from benchopt.cli.main import test as _cmd_test
 from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.utils.dynamic_modules import _load_class_from_module
 
@@ -203,6 +204,8 @@ def test_deprecated_compute():
     # XXX remove in 1.5
     assert benchopt.__version__ < '1.5'
 
+    # Make sure that BaseObjective is compatible with compute, with both
+    # get_result returning a dict or a scalar.
     objective = """from benchopt import BaseObjective
 
     class Objective(BaseObjective):
@@ -250,6 +253,7 @@ def test_deprecated_compute():
                  *'-s solver1 -d test-dataset -n 1 -r 1 --no-plot'.split()],
                 standalone_mode=False)
 
+    # Make sure that no warning is raised if using evaluate_result.
     objective = objective.replace("compute", "evaluate_result")
     with temp_benchmark(objective=objective) as benchmark:
         with warnings.catch_warnings():
@@ -257,3 +261,46 @@ def test_deprecated_compute():
             run([str(benchmark.benchmark_dir),
                  *'-s python-pgd -d test-dataset -n 1 -r 1 --no-plot'.split()],
                 standalone_mode=False)
+
+
+def test_deprecated_get_one_solution():
+    # XXX remove in 1.5
+    assert benchopt.__version__ < '1.5'
+
+    # Make sure that BaseObjective is compatible with compute, with both
+    # get_result returning a dict or a scalar.
+    objective = """from benchopt import BaseObjective
+
+    class Objective(BaseObjective):
+        name = 'dummy'
+
+        def set_data(self, X, y):
+            self.X, self.y = X, y
+
+        def evaluate_result(self, beta):
+            return 1
+
+        def get_one_solution(self):
+            return dict(beta=0)
+
+        def get_objective(self):
+            return dict(X=self.X, y=self.y, lmbd=0)
+    """
+
+    match = "`Objective.get_one_solution` is renamed `Objective.get_one_result"
+    with temp_benchmark(objective=objective) as benchmark:
+        with CaptureRunOutput() as out:
+            with pytest.raises(SystemExit, match='False'):
+                _cmd_test([str(benchmark.benchmark_dir),
+                           *'-- -k test_benchmark_objective'.split()],
+                          standalone_mode=False)
+        out.check_output(match, repetition=1)
+
+    objective = objective.replace("get_one_solution", "get_one_result")
+    with temp_benchmark(objective=objective) as benchmark:
+        with CaptureRunOutput() as out:
+            with pytest.raises(SystemExit, match='False'):
+                _cmd_test([str(benchmark.benchmark_dir),
+                           *'-- -k test_benchmark_objective'.split()],
+                          standalone_mode=False)
+        out.check_output(match, repetition=0)
