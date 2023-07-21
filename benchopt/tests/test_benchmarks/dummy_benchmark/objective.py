@@ -38,7 +38,9 @@ class Objective(BaseObjective):
     def get_one_solution(self):
         return np.zeros(self.X.shape[1])
 
-    def evaluate_result(self, beta):
+    def evaluate_result(self, solver_result):
+        beta = solver_result["beta"]
+
         diff = self.y - self.X.dot(beta)
         objective_value = .5 * diff.dot(diff) + self.lmbd * abs(beta).sum()
 
