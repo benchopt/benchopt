@@ -45,6 +45,8 @@ on simulated data with number of samples ``n_samples`` equals ``100`` and number
     benchopt run . -s Python-PGD[use_acceleration=True] -d simulated[n_samples=100,n_features=20]
 
 
+.. _run_with_config_file:
+
 Using a configuration file
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -69,6 +71,43 @@ Here is the look ``example_config.yml`` if we were to run the two previous examp
         - leukemia
         - simulated[n_samples=100,n_features=20]
 
+
 With a Python script
 --------------------
 
+Another way to run a benchmark is via a Python script.
+A typical use-cases of that are
+
+- Automating the run of several benchmarks
+- Using ``vscode`` debugger where the python script serves as an entry point to benchopt internals
+
+The following script illustrate running the :ref:`previous example <run_with_config_file>`.
+It assume that the python script is located at the same level as the benchmark folder.
+
+.. code-block:: python
+
+    from benchopt import run_benchmark
+    from benchopt.benchmark import Benchmark
+
+    # load benchmark
+    BENCHMARK_PATH = "./"
+    benchmark = Benchmark(BENCHMARK_PATH)
+
+    # run benchmark
+    run_benchmark(
+        benchmark,
+        solver_names=[
+            "skglm",
+            "celer",
+            "python-pgd[use_acceleration=True]",
+        ],
+        dataset_names=[
+            "leukemia",
+            "simulated[n_samples=100,n_features=20]"
+        ],
+    )
+
+.. note::
+
+    Learn more about the different parameters supported by ``run_benchmark``
+    function on :ref:`API references <API_ref>`.
