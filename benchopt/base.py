@@ -432,12 +432,17 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
             #   "Rename objective.compute to objective.evaluate_result")
             warnings.warn(
                 "objective.compute was renamed `objective.evaluate_result` in "
-                "v 1.5", FutureWarning,
+                "v 1.5, and now takes as input the unpacked dict returned by"
+                "solver.get_result", FutureWarning,
             )
             self.evaluate_result = self.compute
         # XXX remove in version 1.5
         if isinstance(solver_result, dict):
-            objective_dict = self.evaluate_result(**solver_result)
+            # handle case where solver already returned a dict
+            if hasattr(self, "compute"):
+                objective_dict = self.compute(solver_result)
+            else:
+                objective_dict = self.evaluate_result(**solver_result)
         else:
             warnings.warn(
                 "From benchopt 1.5, Solver.get_result() should return a dict.",
