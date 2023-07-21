@@ -19,7 +19,7 @@ It is possible to specify the solvers as well as the datasets
 to include in the benchmark run by adding flags after ``benchopt run .``.
 
 For instance, the following command runs the benchmark with solvers
-skglm, and celer on leukemia and simulated datasets
+``skglm``, and ``celer`` on leukemia and simulated datasets
 
 .. code-block:: bash
 
@@ -68,8 +68,6 @@ Here is the look ``example_config.yml`` if we were to run the two previous examp
     dataset:
         - leukemia
         - simulated[n_samples=100,n_features=20]
-
-
 
 With a Python script
 --------------------
