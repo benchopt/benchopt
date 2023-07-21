@@ -422,7 +422,7 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
         # XXX remove in version 1.5 and make this method abstract
         if hasattr(self, "compute"):
             warnings.warn(
-                "`Objective.compute` was renamed `Objective.evaluate_result` " 
+                "`Objective.compute` was renamed `Objective.evaluate_result` "
                 "in v 1.5, and now takes as input the unpacked dict returned "
                 "by `Solver.get_result`", FutureWarning,
             )
