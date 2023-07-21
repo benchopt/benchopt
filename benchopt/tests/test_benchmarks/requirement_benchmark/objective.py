@@ -22,7 +22,7 @@ class Objective(BaseObjective):
         return 1
 
     def get_one_result(self):
-        dict(beta=None)
+        return dict(beta=None)
 
     def get_objective(self):
         return dict(X=self.X)
