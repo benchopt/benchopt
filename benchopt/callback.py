@@ -88,7 +88,7 @@ class _Callback:
             warnings.warn(
                 "Starting 1.5, the callback does not take any arguments. "
                 "The results are passed to `Objective.evaluate_result` "
-                "directly from `Solver.get_result`."
+                "directly from `Solver.get_result`.", FutureWarning
             )
             result = args[0]
         else:
