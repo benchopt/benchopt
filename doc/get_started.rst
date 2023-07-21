@@ -31,7 +31,7 @@ Eager to try out the **development version**? you can run instead
 
 .. attention::
 
-   The development version is a work in progress and hence might contain incomplete features.
+   The **development version** is a work in progress and hence might contain incomplete features.
    A typical user is advised to use the **stable version** instead.
 
 With benchopt being installed, you get access to the :ref:`Command Line Interface (CLI) <cli_ref>`,
