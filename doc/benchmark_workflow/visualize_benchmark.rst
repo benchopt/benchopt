@@ -39,15 +39,16 @@ Part 4: Sidebar
 ---------------
 
 The first two dropdown menus, **Data** and **Objective**, enables to select a benchmark setup.
-**Data** dropdown contains all the datasets included in the benchmarks as well as their parameters.
+The **Data** dropdown contains all the datasets included in the benchmarks as well as their parameters.
 The same as for **Objective**.
 
-**Objective_column** exposes all the tracked metrics along the benchmark run.
+The **Objective_column** exposes all the tracked metrics along the benchmark run. Hover over the question mark to show a tooltip with details about the objective. These are defined in the Objective class and correspond to the dictionary returned by ``evaluate_result``.
 
-**Chart_type** apply transformations on the metric to display for instance suboptimality ``metric - min(metric)``.
+On the other hand, **Chart_type** apply transformations on the metric to display for instance suboptimality ``metric - min(metric)`` and
+relative suboptimality ``metric - min(metric) / metric[0] - min(metric)``.
 
-**Scale** enables to decide on putting linear or log scale on the x and y axis of the figure.
+Use **Scale** to set ``x`` and ``y`` axis scale to linear or logarithmic.
 
-**X-axis** is change the quantity plotted in the x-axis. Hence plotting the metric as a function of time, iteration, or tolerance.
+Similarly, use **X-axis** to change the quantity plotted in the x-axis and therefore plotting the metric as a function of *Time*, *Iteration*, or *Tolerance*.
 
-**Quantiles** is a toggler to show/hide quantile in case of running the benchmark with several repetitions. 
+Finally, **Quantiles** is a toggler to show/hide ``95th - 5th`` quantiles in case of running the benchmark with several repetitions. 
