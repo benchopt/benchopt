@@ -219,6 +219,7 @@ sphinx_gallery_conf = {
 
 # -- Options for copybutton ---------------------------------------------
 # complete explanation of the regex expression can be found here
-# https://sphinx-copybutton.readthedocs.io/en/latest/use.html#using-regexp-prompt-identifiers
-copybutton_prompt_text = r">>> |\.\.\. |\$ |In \[\d*\]: | {2,5}\.\.\.: | {5,8}: "
+# https://sphinx-copybutton.readthedocs.io/en/latest/ \
+# use.html#using-regexp-prompt-identifiers
+copybutton_prompt_text = r">>> |\.\.\. |\$ |In \[\d*\]: | {2,5}\.\.\.: | {5,8}: "  # noqa
 copybutton_prompt_is_regexp = True
