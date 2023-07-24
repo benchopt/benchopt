@@ -17,7 +17,7 @@ to include in the benchmark run by using flags after ``benchopt run .``.
 For instance, the following command runs the benchmark with solvers
 ``skglm`` and ``celer``, on datasets "leukemia" and "simulated".
 
-.. code-block:: bash
+.. prompt:: bash $
 
     benchopt run . -s skglm -s celer -d leukemia -d simulated
 
@@ -33,7 +33,7 @@ In addition, it is possible to specify the parameters of solvers and datasets by
 
 Here is an example to run Proximal Gradient Descent (``Python-PGD``) with acceleration on simulated data with number of samples ``n_samples`` equal ``100`` and number of features ``n_features`` set to ``20``.
 
-.. code-block:: bash
+.. prompt:: bash $
 
     benchopt run . -s Python-PGD[use_acceleration=True] -d simulated[n_samples=100,n_features=20]
 
@@ -46,7 +46,7 @@ Using a configuration file
 It is more handy to launch a benchmark run with many parameters using a configuration file.
 Using a YAML file, it is possible to describe all details of the benchmark run and execute instead
 
-.. code-block:: bash
+.. prompt:: bash $
 
     benchopt run . --config ./example_config.yml
 

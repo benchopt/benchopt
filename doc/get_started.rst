@@ -7,25 +7,22 @@ Installation
 ------------
 
 The recommended way to use benchopt is within a conda environment to fully-benefit from all its features.
-Hence, start by creating a dedicated conda environment. 
+Hence, start by creating a dedicated conda environment and then activate it.
 
-.. code-block:: bash
+.. prompt:: bash $
 
-    # create conda environment with name benchopt
     conda create -n benchopt python
-
-    # activate the environment
     conda activate benchopt
 
 Benchopt is available on PyPi. You can get the **stable version** via ``pip`` by running the following command
 
-.. code-block:: bash
+.. prompt:: bash $
 
     pip install -U benchopt
 
 Eager to try out the **development version**? you can run instead
 
-.. code-block:: bash
+.. prompt:: bash $
 
     pip install -U -i https://test.pypi.org/simple/benchopt
 
@@ -48,31 +45,24 @@ Let's get the first steps with benchopt by comparing some solvers of
 Benchopt community maintains :ref:`several optimization benchmarks <available_benchmarks>`
 and thrives at making them accessible and up to date, so as for the Lasso problem.
 
-Start by cloning the Lasso benchmark repository
+Start by cloning the Lasso benchmark repository and then ``cd`` to it.
 
-.. code-block:: bash
+.. prompt:: bash $
 
-    # clone the repository
     git clone https://github.com/benchopt/benchmark_lasso.git
-
-    # change directory
     cd benchmark_lasso
 
-Then install automatically the benchmark requirements.
-Here we compare `skglm <https://contrib.scikit-learn.org/skglm/>`_ and
-`scikit-learn <https://scikit-learn.org/stable/>`_ solvers
+Then install automatically the benchmark requirements, namely, the solvers `skglm <https://contrib.scikit-learn.org/skglm/>`_ and
+`scikit-learn <https://scikit-learn.org/stable/>`_, and then the dataset Leukemia. 
 
-.. code-block:: bash
+.. prompt:: bash $
 
-    # install solvers
     benchopt install -s skglm -s sklearn
-
-    # install dataset
     benchopt install -d leukemia
 
 Finally, run the benchmark
 
-.. code-block:: bash
+.. prompt:: bash $
 
     benchopt run . -s skglm -s sklearn -d leukemia
 
