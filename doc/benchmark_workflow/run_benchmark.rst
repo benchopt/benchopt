@@ -35,7 +35,7 @@ Here is an example to run Proximal Gradient Descent (``Python-PGD``) with accele
 
 .. prompt:: bash $
 
-    benchopt run . -s Python-PGD[use_acceleration=True] -d simulated[n_samples=100,n_features=20]
+    benchopt run . -s Python-PGD["use_acceleration"=True] -d simulated["n_samples=100","n_features"=20]
 
 
 .. _run_with_config_file:
