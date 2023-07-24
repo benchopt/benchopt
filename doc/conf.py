@@ -44,7 +44,8 @@ extensions = [
     'sphinx.ext.autosectionlabel',
     'numpydoc',
     'gh_substitutions',  # custom ext, see ./sphinxext/gh_substitutions.py
-    "sphinx_design"
+    "sphinx_design",
+    "sphinx_copybutton",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -215,3 +216,9 @@ sphinx_gallery_conf = {
     'examples_dirs': '../examples',
     'gallery_dirs': 'auto_examples',
 }
+
+# -- Options for copybutton ---------------------------------------------
+# complete explanation of the regex expression can be found here
+# https://sphinx-copybutton.readthedocs.io/en/latest/use.html#using-regexp-prompt-identifiers
+copybutton_prompt_text = r">>> |\.\.\. |\$ |In \[\d*\]: | {2,5}\.\.\.: | {5,8}: "
+copybutton_prompt_is_regexp = True
