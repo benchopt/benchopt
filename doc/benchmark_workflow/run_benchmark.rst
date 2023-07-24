@@ -6,7 +6,7 @@ Run a benchmark
 Let's use the Lasso benchmark to illustrate ways of running a benchmark.
 Beforehand, make sure that benchopt is installed and the Lasso benchmark is set up by following the instructions in :ref:`get_started`.
 
-With the :ref:`cli_ref`, you have two options
+With the :ref:`cli_ref`, there are two options
 
 Directly in the terminal
 ------------------------
@@ -21,7 +21,8 @@ For instance, the following command runs the benchmark with solvers
 
     benchopt run . -s skglm -s celer -d leukemia -d simulated
 
-The ``-s`` flag is to specify a solver whereas ``-d`` specifies the dataset. To include multiple datasets, we use multiple ``-d`` flags.
+The ``-s`` flag is to specify a solver whereas ``-d`` specifies the dataset.
+To include multiple datasets/solvers, use multiple ``-d``/ ``-s`` flags.
 
 .. note::
 
@@ -42,9 +43,8 @@ Here is an example to run Proximal Gradient Descent (``Python-PGD``) with accele
 Using a configuration file
 --------------------------
 
-As benchmarks get bigger, it becomes impractical to run benchmarks using flags.
-It is here where configurations files are handy. Using a ``YAML`` file, you
-can describe all details of the benchmark run and afterward execute
+It is more handy to launch a benchmark run with many parameters using a configuration file.
+Using a YAML file, it is possible to describe all details of the benchmark run and execute instead
 
 .. code-block:: bash
 
