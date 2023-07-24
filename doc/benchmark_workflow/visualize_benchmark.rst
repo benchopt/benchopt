@@ -38,4 +38,16 @@ Also, hovering over a legend item shows a tooltip with details about the solver.
 Part 4: Sidebar
 ---------------
 
+The first two dropdown menus, **Data** and **Objective**, enables to select a benchmark setup.
+**Data** dropdown contains all the datasets included in the benchmarks as well as their parameters.
+The same as for **Objective**.
 
+**Objective_column** exposes all the tracked metrics along the benchmark run.
+
+**Chart_type** apply transformations on the metric to display for instance suboptimality ``metric - min(metric)``.
+
+**Scale** enables to decide on putting linear or log scale on the x and y axis of the figure.
+
+**X-axis** is change the quantity plotted in the x-axis. Hence plotting the metric as a function of time, iteration, or tolerance.
+
+**Quantiles** is a toggler to show/hide quantile in case of running the benchmark with several repetitions. 
