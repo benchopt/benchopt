@@ -10,5 +10,6 @@ Benchmark workflow
 
     write_benchmark
     run_benchmark
+    visualize_benchmark
     publish_benchmark
     config_benchopt
