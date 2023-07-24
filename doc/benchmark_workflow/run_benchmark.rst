@@ -4,9 +4,8 @@ Run a benchmark
 ===============
 
 Benchopt offers **two ways** to run a benchmark.
-Let's illustrate them on the Benchmark Lasso.
-Beforehand, make sure that benchopt is well installed
-and the Lasso benchmark is well set up by following the :ref:`get_started`.
+Let's illustrate them on the Lasso benchmark.
+Beforehand, make sure that benchopt is installed and the Lasso benchmark is set up by following the instructions in :ref:`get_started`.
 
 
 With the Command Line Interface (CLI)
@@ -16,29 +15,25 @@ Directly in the terminal
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 It is possible to specify the solvers as well as the datasets
-to include in the benchmark run by adding flags after ``benchopt run .``.
+to include in the benchmark run by using flags after ``benchopt run .``.
 
 For instance, the following command runs the benchmark with solvers
-``skglm``, and ``celer`` on leukemia and simulated datasets
+``skglm`` and ``celer``, on datasets "leukemia" and "simulated".
 
 .. code-block:: bash
 
     benchopt run . -s skglm -s celer -d leukemia -d simulated
 
-The flag ``-s`` is to specify a solver whereas ``-d`` is for dataset.
+The ``-s`` flag is to specify a solver whereas ``-d`` specifies the dataset. To include multiple datasets, we use multiple ``-d`` flags.
 
 .. note::
 
-    The ``run`` command accepts other flags such ``-j`` to run the benchmark in parallel
-    with a given number of processes. Explore that and more with ``benchopt run --help``
-    or :ref:`cli_ref`. 
+    The ``run`` command accepts other flags such ``-j`` to run the benchmark in parallel with a given number of processes.
+    The list of flags is available through ``benchopt run --help`` or in the :ref:`cli_ref` page .
 
-Also, it is possible to specify the parameters of solvers and datasets by wrapping them
-in square brackets in comma separate format.
+In addition, it is possible to specify the parameters of solvers and datasets by wrapping them in square brackets in comma separated format.
 
-Here is an example to run Proximal Gradient Descent ``Python-PDG`` with acceleration
-on simulated data with number of samples ``n_samples`` equals ``100`` and number of features
-``n_features`` set to ``20``.
+Here is an example to run Proximal Gradient Descent (``Python-PGD``) with acceleration on simulated data with number of samples ``n_samples`` equal ``100`` and number of features ``n_features`` set to ``20``.
 
 .. code-block:: bash
 
