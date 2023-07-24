@@ -66,4 +66,9 @@ Use **Scale** to set ``x`` and ``y`` axis scale to linear or logarithmic.
 
 Similarly, use **X-axis** to change the quantity plotted in the x-axis and therefore plotting the metric as a function of *Time*, *Iteration*, or *Tolerance*.
 
+.. note::
+    
+    The availability of *Time*, *Iteration*, and *Tolerance* in the dropdown menu 
+    depends on the :ref:`sampling strategy <sampling_strategy>` used for the solvers.
+
 Finally, **Quantiles** is a toggler to show/hide ``95th - 5th`` quantiles when the benchmark was run with several repetitions.

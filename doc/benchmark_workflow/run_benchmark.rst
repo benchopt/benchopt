@@ -62,3 +62,8 @@ Here is the look the configuration file ``example_config.yml`` if we were to run
     dataset:
         - leukemia
         - simulated[n_samples=100,n_features=20]
+
+.. note::
+
+    A third option to run benchmark is using a Python script.
+    Check this out on :ref:`advanced usage <run_benchmark_with_py_script>`.
