@@ -9,6 +9,11 @@ so that it can be easily shared.
 
 Let's explore the dashboard features on Benchmark Lasso.
 
+.. Hint::
+
+    Head to :ref:`get_started` to learn how to install benchopt
+    and setup the Benchmark Lasso accordingly.
+
 .. figure:: ../_static/annotated_benchmark_dashboard.png
    :align: center
    :alt: Dashboard of the Lasso benchmark results
@@ -28,21 +33,36 @@ Here is the main figure that plots the tracked metrics throughout the benchmark 
 Its title shows the objective and the dataset names and their corresponding parameters
 that produced the plot.
 
+Hover over the figure will make a modebar appears in the right side.
+This can be used to interact with the figure, e.g. zoom in and out on particular regions.
+
 Part 3: Legend
 --------------
 
-The legend maps every curve to a solver. Click a legend item to hide/show its corresponding solver
-Similarly, Double-click a legend item to hide/show all the rest of solvers.
-Also, hovering over a legend item shows a tooltip with details about the solver.
+The legend maps every curve to a solver.
+
+Click a legend item to hide/show its corresponding solver Similarly, Double-click a legend item
+to hide/show all the rest of solvers. Also, hovering over a legend item shows a tooltip with details about the solver.
+
+.. note::
+
+    Details about the solver can be included by adding docstring to the solver.
 
 Part 4: Sidebar
 ---------------
 
 The first two dropdown menus, **Data** and **Objective**, enables to select a benchmark setup.
 The **Data** dropdown contains all the datasets included in the benchmarks as well as their parameters.
-The same as for **Objective**.
+the same as for **Objective** dropdown.
 
-The **Objective_column** exposes all the tracked metrics along the benchmark run. Hover over the question mark to show a tooltip with details about the objective. These are defined in the Objective class and correspond to the dictionary returned by ``evaluate_result``.
+The **Objective_column** exposes all the tracked metrics along the benchmark run.
+Those metrics were defined in the ``Objective`` and corresponds to the quantities returned by ``evaluate_result``.
+
+Hover over the question mark to show a tooltip with details about the objective.
+
+.. note::
+
+    Details about the Objective can be included by adding docstring to the Objective.
 
 On the other hand, **Chart_type** apply transformations on the metric to display for instance suboptimality ``metric - min(metric)`` and
 relative suboptimality ``metric - min(metric) / metric[0] - min(metric)``.
