@@ -6,10 +6,10 @@ Run a benchmark
 Let's use the Lasso benchmark to illustrate ways of running a benchmark.
 Beforehand, make sure that benchopt is installed and the Lasso benchmark is set up by following the instructions in :ref:`get_started`.
 
-With the :ref:`cli_ref`, there are two options
+With the :ref:`cli_ref`, there are two options: passing options with flags in the CLI, or with a configuration file.
 
-Directly in the terminal
-------------------------
+Specifying options with CLI flags
+---------------------------------
 
 It is possible to specify the solvers as well as the datasets
 to include in the benchmark run by using flags after ``benchopt run .``.
@@ -21,13 +21,13 @@ For instance, the following command runs the benchmark with solvers
 
     benchopt run . -s skglm -s celer -d leukemia -d simulated
 
-The ``-s`` flag is to specify a solver whereas ``-d`` specifies the dataset.
-To include multiple datasets/solvers, use multiple ``-d``/ ``-s`` flags.
+The ``-s`` flag is to specify a solver whereas ``-d`` specifies a dataset.
+To include multiple datasets/solvers, use multiple ``-d``/``-s`` flags, as in the above snippet.
 
 .. note::
 
-    The ``run`` command accepts other flags such ``-j`` to run the benchmark in parallel with a given number of processes.
-    The list of flags is available through ``benchopt run --help`` or in the :ref:`cli_ref` page .
+    The ``run`` command accepts other flags such as ``-j`` to run the benchmark in parallel with a given number of processes.
+    The list of flags is available through ``benchopt run --help`` or in the :ref:`cli_ref` page.
 
 In addition, it is possible to specify the parameters of solvers and datasets by wrapping them in square brackets in comma separated format.
 
@@ -43,7 +43,7 @@ Here is an example to run Proximal Gradient Descent (``Python-PGD``) with accele
 Using a configuration file
 --------------------------
 
-It is more handy to launch a benchmark run with many parameters using a configuration file.
+When using a complex configuration, it is more handy to specify the benchmark configuration through a configuration file.
 Using a YAML file, it is possible to describe all details of the benchmark run and execute instead
 
 .. prompt:: bash $
