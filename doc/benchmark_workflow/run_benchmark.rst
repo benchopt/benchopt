@@ -34,9 +34,19 @@ In addition, it is possible to specify the parameters of solvers and datasets by
 The following snippet runs the ``Python-PGD`` solver with its ``acceleration`` parameter set to ``True``, on the ``simulated`` dataset.
 This dataset has parameters ``n_samples`` and ``n_features`` that we set to ``100`` and ``20`` respectively.
 
-.. prompt:: bash $
+.. tab-set::
 
-    benchopt run . -s Python-PGD["use_acceleration"=True] -d simulated["n_samples=100","n_features"=20]
+    .. tab-item:: shell
+
+        .. prompt:: bash $
+
+            benchopt run . -s Python-PGD[use_acceleration=True] -d simulated[n_samples=100,n_features=20]
+
+    .. tab-item:: zsh
+
+        .. prompt:: bash $
+
+            benchopt run . -s "Python-PGD[use_acceleration=True]" -d "simulated[n_samples=100,n_features=20]"
 
 .. note::
 
