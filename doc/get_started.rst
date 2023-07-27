@@ -6,7 +6,7 @@ Get started
 Installation
 ------------
 
-The recommended way to use benchopt is within a conda environment to fully-benefit from all its features.
+The recommended way to use benchopt is within a conda environment to fully benefit from all its features.
 Hence, start by creating a dedicated conda environment and then activate it.
 
 .. prompt:: bash $
@@ -20,7 +20,7 @@ Benchopt is available on PyPi. You can get the **stable version** via ``pip`` by
 
     pip install -U benchopt
 
-To install the **development version**, run
+Eager to try out the **development version**? You can run instead
 
 .. prompt:: bash $
 
@@ -32,18 +32,18 @@ To install the **development version**, run
    A typical user is advised to use the **stable version** instead.
 
 Once benchopt is installed, you get access to the :ref:`Command Line Interface (CLI) <cli_ref>`,
-which enables simple and easy manipulation of benchmarks just from the terminal.
+which enables a simple manipulation of benchmarks from the terminal.
 
 
 Run an existing benchmark
 -------------------------
 
-Let's get the first steps with benchopt by comparing some solvers of
+Let's get the first steps with benchopt by comparing some solvers of the
 `Lasso problem <https://en.wikipedia.org/wiki/Lasso_(statistics)>`_ on a
 `Leukemia dataset <https://www.science.org/doi/10.1126/science.286.5439.531>`_.
 
 Benchopt community maintains :ref:`several optimization benchmarks <available_benchmarks>`
-and thrives at making them accessible and up to date, so as for the Lasso problem.
+and thrives to make them accessible and up to date, so as for the Lasso problem.
 
 Start by cloning the Lasso benchmark repository and then ``cd`` to it.
 
@@ -57,8 +57,7 @@ Then use benchopt to install the requirements for the solvers `skglm <https://co
 
 .. prompt:: bash $
 
-    benchopt install -s skglm -s sklearn
-    benchopt install -d leukemia
+    benchopt install -s skglm -s sklearn -d leukemia
 
 Finally, run the benchmark
 

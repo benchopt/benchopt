@@ -3,7 +3,7 @@
 Visualize a benchmark
 =====================
 
-After running a benchmark, benchopt automatically displays the results in an HTML dashboard..
+After running a benchmark, benchopt automatically displays the results in an HTML dashboard.
 
 Let's explore the dashboard features on the Lasso benchmark.
 
@@ -53,13 +53,13 @@ The first two dropdown menus, **Data** and **Objective**, enable to select a ben
 The **Data** dropdown contains all the datasets included in the benchmark as well as their parameters.
 The same as for **Objective** dropdown.
 
-The **Objective_column** exposes all the tracked metrics along the benchmark run.
+The **Objective column** exposes all the tracked metrics along the benchmark run.
 These metrics are the ones defined in the ``Objective`` and correspond to the quantities returned by ``Objective.evaluate_result``.
 
 Hovering over the question mark shows a tooltip with details about the objective - as for solver info, this is the content of the Objective docstring.
 
 
-The **Chart_type** dropdown allows applying transformations to the plotted metric, such as suboptimality (``metric - min(metric)``) or
+The **Chart type** dropdown allows applying transformations to the plotted metric, such as suboptimality (``metric - min(metric)``) or
 relative suboptimality (``(metric - min(metric)) / (metric[0] - min(metric))``).
 
 .. note::
@@ -73,7 +73,8 @@ Similarly, use **X-axis** to change the quantity plotted in the x-axis and there
 
 .. note::
 
-    The availability of *Time*, *Iteration*, and *Tolerance* in the dropdown menu
+    The availability of *Iteration*, and *Tolerance* in the dropdown menu
     depends on the :ref:`sampling strategy <sampling_strategy>` used for the solvers.
+    Also, their interpretation is solver-dependent.
 
 Finally, **Quantiles** is a toggler to show/hide ``95th - 5th`` quantiles when the benchmark was run with several repetitions.
