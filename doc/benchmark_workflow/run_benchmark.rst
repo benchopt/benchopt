@@ -6,10 +6,10 @@ Run a benchmark
 Let's use the Lasso benchmark to illustrate ways of running a benchmark.
 Beforehand, make sure that benchopt is installed and the Lasso benchmark is set up by following the instructions in :ref:`get_started`.
 
-With the :ref:`cli_ref`, there are two options
+With the :ref:`cli_ref`, there are two options: passing options with flags in the CLI, or with a configuration file.
 
-Directly in the terminal
-------------------------
+Specifying options with CLI flags
+---------------------------------
 
 It is possible to specify the solvers as well as the datasets
 to include in the benchmark run by using flags after ``benchopt run .``.
@@ -21,36 +21,40 @@ For instance, the following command runs the benchmark with solvers
 
     benchopt run . -s skglm -s celer -d leukemia -d simulated
 
-The ``-s`` flag is to specify a solver whereas ``-d`` specifies the dataset.
-To include multiple datasets/solvers, use multiple ``-d``/ ``-s`` flags.
+The ``-s`` flag is to specify a solver whereas ``-d`` specifies a dataset.
+To include multiple datasets/solvers, use multiple ``-d``/``-s`` flags, as in the above snippet.
 
 .. note::
 
-    The ``run`` command accepts other flags such ``-j`` to run the benchmark in parallel with a given number of processes.
-    The list of flags is available through ``benchopt run --help`` or in the :ref:`cli_ref` page .
+    The ``run`` command accepts other flags such as ``-j`` to run the benchmark in parallel with a given number of processes.
+    The list of flags is available through ``benchopt run --help`` or in the :ref:`cli_ref` page.
 
 In addition, it is possible to specify the parameters of solvers and datasets by wrapping them in square brackets in comma separated format.
 
-Here is an example to run Proximal Gradient Descent (``Python-PGD``) with acceleration on simulated data with number of samples ``n_samples`` equal ``100`` and number of features ``n_features`` set to ``20``.
+The following snippet runs the ``Python-PGD`` solver with its ``acceleration`` parameter set to ``True``, on the ``simulated`` dataset.
+This dataset has parameters ``n_samples`` and ``n_features`` that we set to ``100`` and ``20`` respectively.
 
 .. prompt:: bash $
 
     benchopt run . -s Python-PGD["use_acceleration"=True] -d simulated["n_samples=100","n_features"=20]
 
+.. note::
+
+    If a parameter of a solver/dataset is not explicitly set via CLI, benchopt uses all its values specified in the code.
 
 .. _run_with_config_file:
 
 Using a configuration file
 --------------------------
 
-It is more handy to launch a benchmark run with many parameters using a configuration file.
-Using a YAML file, it is possible to describe all details of the benchmark run and execute instead
+When using a complex configuration, it is more handy to specify it through a configuration file.
+Using a YAML file and the ``--config`` flag, it is possible to describe all details of the benchmark run and execute instead:
 
 .. prompt:: bash $
 
     benchopt run . --config ./example_config.yml
 
-Here is the look the configuration file ``example_config.yml`` if we were to run the two previous example into a single one.
+Here is the content of configuration file ``example_config.yml`` if we were to run the two previous example into a single one.
 
 .. code-block:: yaml
 
@@ -65,5 +69,5 @@ Here is the look the configuration file ``example_config.yml`` if we were to run
 
 .. note::
 
-    A third option to run benchmark is using a Python script.
-    Check this out on :ref:`advanced usage <run_benchmark_with_py_script>`.
+    A third, less frequent, option to run a benchmark is using a Python script.
+    Check it out on :ref:`advanced usage <run_benchmark_with_py_script>`.
