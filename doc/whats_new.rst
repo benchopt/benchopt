@@ -34,7 +34,7 @@ DOC
 ~~~
 
 - Reformatting and enriching the documentation for easy onboarding.
-  By `Badr Moufad`_ (:gh:`619`, :gh:`629`)
+  By `Badr Moufad`_ and `Mathurin Massias`_ (:gh:`619`, :gh:`629`).
 
 
 .. _changes_1_4:
