@@ -31,26 +31,30 @@ To include multiple datasets/solvers, use multiple ``-d``/``-s`` flags, as in th
 
 In addition, it is possible to specify the parameters of solvers and datasets by wrapping them in square brackets in comma separated format.
 
-Here is an example to run Proximal Gradient Descent (``Python-PGD``) with acceleration on simulated data with number of samples ``n_samples`` equal ``100`` and number of features ``n_features`` set to ``20``.
+The following snippet runs the ``Python-PGD`` solver with its ``acceleration`` parameter set to ``True``, on the ``simulated`` dataset.
+This dataset has parameters ``n_samples`` and ``n_features`` that we set to ``100`` and ``20`` respectively.
 
 .. prompt:: bash $
 
     benchopt run . -s Python-PGD["use_acceleration"=True] -d simulated["n_samples=100","n_features"=20]
 
+.. note::
+
+    If a parameter of a solver/dataset is not explicitly set via CLI, benchopt uses all its values specified in the code.
 
 .. _run_with_config_file:
 
 Using a configuration file
 --------------------------
 
-When using a complex configuration, it is more handy to specify the benchmark configuration through a configuration file.
-Using a YAML file, it is possible to describe all details of the benchmark run and execute instead
+When using a complex configuration, it is more handy to specify it through a configuration file.
+Using a YAML file and the ``--config`` flag, it is possible to describe all details of the benchmark run and execute instead:
 
 .. prompt:: bash $
 
     benchopt run . --config ./example_config.yml
 
-Here is the look the configuration file ``example_config.yml`` if we were to run the two previous example into a single one.
+Here is the content of configuration file ``example_config.yml`` if we were to run the two previous example into a single one.
 
 .. code-block:: yml
 
@@ -65,5 +69,5 @@ Here is the look the configuration file ``example_config.yml`` if we were to run
 
 .. note::
 
-    A third option to run benchmark is using a Python script.
-    Check this out on :ref:`advanced usage <run_benchmark_with_py_script>`.
+    A third, less frequent, option to run a benchmark is using a Python script.
+    Check it out on :ref:`advanced usage <run_benchmark_with_py_script>`.
