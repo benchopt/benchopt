@@ -4,7 +4,6 @@ Visualize a benchmark
 =====================
 
 After running a benchmark, benchopt automatically displays the results in an HTML dashboard.
-
 Let's explore the dashboard features on the Lasso benchmark.
 
 .. Hint::
@@ -20,7 +19,7 @@ Let's explore the dashboard features on the Lasso benchmark.
 Part 1: Header
 --------------
 
-Here are the metadata of the benchmark - namely the benchmark title
+Here are the metadata of the benchmark, namely the benchmark title
 and the specifications of the machine used to run it.
 On the right hand side is a :kbd:`Download` button to download the results of the benchmark as ``.parquet`` file.
 
@@ -31,7 +30,7 @@ Here is the main figure that plots the tracked metrics throughout the benchmark 
 Its title shows the objective and the dataset names and their corresponding parameters that produced the plot.
 
 Hovering over the figure will make a modebar appear in the right side.
-This can be used to interact with the figure, e.g. zoom in and out on particular regions.
+This can be used to interact with the figure, e.g. zoom in and out on particular regions of the plot.
 
 Part 3: Legend
 --------------
@@ -44,7 +43,7 @@ Finally, hovering over a legend item shows a tooltip with details about the solv
 
 .. note::
 
-    Displayed details about the solver are the content of the solver's docstring, if present.
+    The displayed details about the solver are the content of the solver's docstring, if present.
 
 Part 4: Sidebar
 ---------------
@@ -56,11 +55,11 @@ The same as for **Objective** dropdown.
 The **Objective column** exposes all the tracked metrics along the benchmark run.
 These metrics are the ones defined in the ``Objective`` and correspond to the quantities returned by ``Objective.evaluate_result``.
 
-Hovering over the question mark shows a tooltip with details about the objective - as for solver info, this is the content of the Objective docstring.
+Hovering over the question mark shows a tooltip with details about the objective. Like solver, the details are the content of the ``Objective`` docstring.
 
 
-The **Chart type** dropdown allows applying transformations to the plotted metric, such as suboptimality (``metric - min(metric)``) or
-relative suboptimality (``(metric - min(metric)) / (metric[0] - min(metric))``).
+The **Chart type** dropdown allows applying transformations to the plotted metric, such as suboptimality ``metric - min(metric)`` or
+relative suboptimality ``(metric - min(metric)) / (metric[0] - min(metric))``.
 
 .. note::
 

@@ -14,7 +14,7 @@ Hence, start by creating a dedicated conda environment and then activate it.
     conda create -n benchopt python
     conda activate benchopt
 
-Benchopt is available on PyPi. You can get the **stable version** via ``pip`` by running the following command
+Benchopt is available on PyPi. Get the **stable version** via ``pip`` by running the following command
 
 .. prompt:: bash $
 
@@ -45,14 +45,14 @@ Let's get the first steps with benchopt by comparing some solvers of the
 Benchopt community maintains :ref:`several optimization benchmarks <available_benchmarks>`
 and thrives to make them accessible and up to date, so as for the Lasso problem.
 
-Start by cloning the Lasso benchmark repository and then ``cd`` to it.
+Start by cloning the Lasso benchmark repository and ``cd`` to it.
 
 .. prompt:: bash $
 
     git clone https://github.com/benchopt/benchmark_lasso.git
     cd benchmark_lasso
 
-Then use benchopt to install the requirements for the solvers `skglm <https://contrib.scikit-learn.org/skglm/>`_ and
+Then use benchopt to install the requirements for the solvers `skglm <https://contrib.scikit-learn.org/skglm/>`_,
 `scikit-learn <https://scikit-learn.org/stable/>`_, and the dataset Leukemia.
 
 .. prompt:: bash $
@@ -76,13 +76,10 @@ When the run is finished, benchopt automatically opens a window in you default b
    :align: center
    :alt: Dashboard of the Lasso benchmark results
 
-   Desults dashboard
-
 The dashboard displays benchmark-defined metrics tracked throughout the benchmark run such as the evolution of the objective value over time.
 
 
 What's next?
 ------------
 
-After this glimpse of benchopt, you can explore more advanced topics
-such as writing your own benchmark, modifying an existing one, and customizing the benchmark's run options.
+After this glimpse of benchopt, explore more advanced topics such as writing your own benchmark, modifying an existing one, and customizing the benchmark's run options.

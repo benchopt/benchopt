@@ -4,9 +4,13 @@ Run a benchmark
 ===============
 
 Let's use the Lasso benchmark to illustrate ways of running a benchmark.
-Beforehand, make sure that benchopt is installed and the Lasso benchmark is set up by following the instructions in :ref:`get_started`.
 
-With the :ref:`cli_ref`, there are two options: passing options with flags in the CLI, or with a configuration file.
+.. Hint::
+
+    Head to :ref:`get_started` to first install benchopt
+    and setup the Lasso benchmark.
+
+With the :ref:`cli_ref`, there are two ways: passing options with flags in the CLI, or with a configuration file.
 
 Specifying options with CLI flags
 ---------------------------------
@@ -15,7 +19,7 @@ It is possible to specify the solvers as well as the datasets
 to include in the benchmark run by using flags after ``benchopt run .``.
 
 For instance, the following command runs the benchmark with solvers
-``skglm`` and ``celer``, on datasets "leukemia" and "simulated".
+``skglm`` and ``celer``, on datasets ``leukemia`` and ``simulated``.
 
 .. prompt:: bash $
 
@@ -31,7 +35,7 @@ To include multiple datasets/solvers, use multiple ``-d``/``-s`` flags, as in th
 
 In addition, it is possible to specify the parameters of solvers and datasets by wrapping them in square brackets in comma separated format.
 
-The following snippet runs the ``Python-PGD`` solver with its ``acceleration`` parameter set to ``True``, on the ``simulated`` dataset.
+The following snippet runs the ``Python-PGD`` solver with its acceleration parameter set to ``True``, on the ``simulated`` dataset.
 This dataset has parameters ``n_samples`` and ``n_features`` that we set to ``100`` and ``20`` respectively.
 
 .. tab-set::
@@ -58,7 +62,7 @@ Using a configuration file
 --------------------------
 
 When using a complex configuration, it is more handy to specify it through a configuration file.
-Using a YAML file and the ``--config`` flag, it is possible to describe all details of the benchmark run and execute instead:
+Using a YAML file and the ``--config`` flag, it is possible to describe all details of the benchmark run and execute instead
 
 .. prompt:: bash $
 
