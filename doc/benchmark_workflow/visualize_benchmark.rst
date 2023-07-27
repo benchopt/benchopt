@@ -5,7 +5,7 @@ Visualize a benchmark
 
 After running a benchmark, benchopt automatically displays the results in an HTML dashboard..
 
-Let's explore the dashboard features on the Lasos benchmark.
+Let's explore the dashboard features on the Lasso benchmark.
 
 .. Hint::
 

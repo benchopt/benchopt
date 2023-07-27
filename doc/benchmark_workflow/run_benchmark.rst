@@ -34,9 +34,19 @@ In addition, it is possible to specify the parameters of solvers and datasets by
 The following snippet runs the ``Python-PGD`` solver with its ``acceleration`` parameter set to ``True``, on the ``simulated`` dataset.
 This dataset has parameters ``n_samples`` and ``n_features`` that we set to ``100`` and ``20`` respectively.
 
-.. prompt:: bash $
+.. tab-set::
 
-    benchopt run . -s Python-PGD["use_acceleration"=True] -d simulated["n_samples=100","n_features"=20]
+    .. tab-item:: shell
+
+        .. prompt:: bash $
+
+            benchopt run . -s Python-PGD[use_acceleration=True] -d simulated[n_samples=100,n_features=20]
+
+    .. tab-item:: zsh
+
+        .. prompt:: bash $
+
+            benchopt run . -s "Python-PGD[use_acceleration=True]" -d "simulated[n_samples=100,n_features=20]"
 
 .. note::
 
@@ -56,7 +66,7 @@ Using a YAML file and the ``--config`` flag, it is possible to describe all deta
 
 Here is the content of configuration file ``example_config.yml`` if we were to run the two previous example into a single one.
 
-.. code-block:: yml
+.. code-block:: yaml
 
     solver:
         - skglm
