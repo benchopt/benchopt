@@ -9,8 +9,8 @@ Let's explore the dashboard features on the Lasos benchmark.
 
 .. Hint::
 
-    Head to :ref:`get_started` to learn how to install benchopt
-    and setup the Lasso benchmark accordingly.
+    Head to :ref:`get_started` to first install benchopt
+    and setup the Lasso benchmark.
 
 .. figure:: ../_static/annotated_benchmark_dashboard.png
    :align: center
@@ -22,7 +22,7 @@ Part 1: Header
 
 Here are the metadata of the benchmark - namely the benchmark title
 and the specifications of the machine used to run it.
-On the right hand side is a :kbd:`Download` button to download the output of the benchmark as ``.parquet`` file.
+On the right hand side is a :kbd:`Download` button to download the results of the benchmark as ``.parquet`` file.
 
 Part 2: Figure
 --------------
@@ -30,7 +30,7 @@ Part 2: Figure
 Here is the main figure that plots the tracked metrics throughout the benchmark run.
 Its title shows the objective and the dataset names and their corresponding parameters that produced the plot.
 
-Hover over the figure will make a modebar appear in the right side.
+Hovering over the figure will make a modebar appear in the right side.
 This can be used to interact with the figure, e.g. zoom in and out on particular regions.
 
 Part 3: Legend
@@ -38,8 +38,8 @@ Part 3: Legend
 
 The legend maps every curve to a solver.
 
-Click a legend item to hide/show its corresponding solver.
-Similarly, double-click a legend item to hide/show all the other solvers.
+Clicking on a legend item hides/shows its corresponding curve.
+Similarly, double-clicking on a legend item hides/shows all other curves.
 Finally, hovering over a legend item shows a tooltip with details about the solver.
 
 .. note::
@@ -54,21 +54,26 @@ The **Data** dropdown contains all the datasets included in the benchmark as wel
 The same as for **Objective** dropdown.
 
 The **Objective_column** exposes all the tracked metrics along the benchmark run.
-These metrics are the ones defined in the ``Objective`` and correspond to the quantities returned by ``evaluate_result``.
+These metrics are the ones defined in the ``Objective`` and correspond to the quantities returned by ``Objective.evaluate_result``.
 
-Hover over the question mark to show a tooltip with details about the objective - as for solver info, this is the content of the Objective docstring.
+Hovering over the question mark shows a tooltip with details about the objective - as for solver info, this is the content of the Objective docstring.
 
 
-On the other hand, **Chart_type** apply transformations to the metric to display, for instance suboptimality ``metric - min(metric)`` and
-relative suboptimality ``(metric - min(metric)) / (metric[0] - min(metric))``.
+The **Chart_type** dropdown allows applying transformations to the plotted metric, such as suboptimality (``metric - min(metric)``) or
+relative suboptimality (``(metric - min(metric)) / (metric[0] - min(metric))``).
+
+.. note::
+
+    For suboptimality plots, ``min(metric)`` is evaluated across all solvers and iterations.
+    If no solver converged, it does not represent the minimal value reachable.
 
 Use **Scale** to set ``x`` and ``y`` axis scale to linear or logarithmic.
 
-Similarly, use **X-axis** to change the quantity plotted in the x-axis and therefore plotting the metric as a function of *Time*, *Iteration*, or *Tolerance*.
+Similarly, use **X-axis** to change the quantity plotted in the x-axis and therefore plotting the metric as a function of time, iteration or tolerance.
 
 .. note::
-    
-    The availability of *Time*, *Iteration*, and *Tolerance* in the dropdown menu 
+
+    The availability of *Time*, *Iteration*, and *Tolerance* in the dropdown menu
     depends on the :ref:`sampling strategy <sampling_strategy>` used for the solvers.
 
 Finally, **Quantiles** is a toggler to show/hide ``95th - 5th`` quantiles when the benchmark was run with several repetitions.
