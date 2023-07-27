@@ -52,7 +52,7 @@ Using a YAML file, it is possible to describe all details of the benchmark run a
 
 Here is the look the configuration file ``example_config.yml`` if we were to run the two previous example into a single one.
 
-.. code-block:: yml
+.. code-block:: yaml
 
     solver:
         - skglm
