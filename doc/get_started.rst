@@ -20,7 +20,7 @@ Benchopt is available on PyPi. You can get the **stable version** via ``pip`` by
 
     pip install -U benchopt
 
-Eager to try out the **development version**? you can run instead
+To install the **development version**, run
 
 .. prompt:: bash $
 
@@ -31,7 +31,7 @@ Eager to try out the **development version**? you can run instead
    The **development version** is a work in progress and hence might contain incomplete features.
    A typical user is advised to use the **stable version** instead.
 
-With benchopt being installed, you get access to the :ref:`Command Line Interface (CLI) <cli_ref>`,
+Once benchopt is installed, you get access to the :ref:`Command Line Interface (CLI) <cli_ref>`,
 which enables simple and easy manipulation of benchmarks just from the terminal.
 
 
@@ -52,8 +52,8 @@ Start by cloning the Lasso benchmark repository and then ``cd`` to it.
     git clone https://github.com/benchopt/benchmark_lasso.git
     cd benchmark_lasso
 
-Then install automatically the benchmark requirements, namely, the solvers `skglm <https://contrib.scikit-learn.org/skglm/>`_ and
-`scikit-learn <https://scikit-learn.org/stable/>`_, and then the dataset Leukemia. 
+Then use benchopt to install the requirements for the solvers `skglm <https://contrib.scikit-learn.org/skglm/>`_ and
+`scikit-learn <https://scikit-learn.org/stable/>`_, and the dataset Leukemia.
 
 .. prompt:: bash $
 
@@ -71,21 +71,19 @@ Finally, run the benchmark
     To explore all benchopt CLI features, refer to :ref:`cli_ref`
     or run ``benchopt --help`` or ``benchopt COMMAND_NAME --help``.
 
-After completion, benchopt will automatically open a window in you default browser
-and render the results of the benchmark as dashboard.
+When the run is finished, benchopt automatically opens a window in you default browser and renders the results as a dashboard.
 
 .. figure:: ./_static/results-get-started-lasso.png
    :align: center
    :alt: Dashboard of the Lasso benchmark results
 
-   Dashboard of the benchmark results
+   Desults dashboard
 
-The dashboard exhibits user-defined metrics tracked throughout the benchmark run
-such as the evolution of the objective over time.
+The dashboard displays benchmark-defined metrics tracked throughout the benchmark run such as the evolution of the objective value over time.
 
 
 What's next?
 ------------
 
-Now that you have a glimpse on benchopt, you can explore more advanced topics
-such writing your own benchmark, modifying exiting ones, and customizing the benchmark's run. 
+After this glimpse of benchopt, you can explore more advanced topics
+such as writing your own benchmark, modifying an existing one, and customizing the benchmark's run options.
