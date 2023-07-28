@@ -14,13 +14,14 @@ Hence, start by creating a dedicated conda environment and then activate it.
     conda create -n benchopt python
     conda activate benchopt
 
-Benchopt is available on PyPi. Get the **stable version** via ``pip`` by running the following command
+Benchopt is available on PyPi.
+Get the **stable version** via ``pip`` by running:
 
 .. prompt:: bash $
 
     pip install -U benchopt
 
-Eager to try out the **development version**? You can run instead
+If instead you want to install the **development version**, use
 
 .. prompt:: bash $
 
@@ -31,35 +32,29 @@ Eager to try out the **development version**? You can run instead
    The **development version** is a work in progress and hence might contain incomplete features.
    A typical user is advised to use the **stable version** instead.
 
-Once benchopt is installed, you get access to the :ref:`Command Line Interface (CLI) <cli_ref>`,
-which enables a simple manipulation of benchmarks from the terminal.
-
 
 Run an existing benchmark
 -------------------------
 
 Let's get the first steps with benchopt by comparing some solvers of the
-`Lasso problem <https://en.wikipedia.org/wiki/Lasso_(statistics)>`_ on a
+`Lasso problem <https://en.wikipedia.org/wiki/Lasso_(statistics)>`_ on the
 `Leukemia dataset <https://www.science.org/doi/10.1126/science.286.5439.531>`_.
 
-Benchopt community maintains :ref:`several optimization benchmarks <available_benchmarks>`
-and thrives to make them accessible and up to date, so as for the Lasso problem.
-
-Start by cloning the Lasso benchmark repository and ``cd`` to it.
+Start by cloning the Lasso benchmark repository and ``cd`` into it.
 
 .. prompt:: bash $
 
     git clone https://github.com/benchopt/benchmark_lasso.git
     cd benchmark_lasso
 
-Then use benchopt to install the requirements for the solvers `skglm <https://contrib.scikit-learn.org/skglm/>`_,
+Then, use benchopt to install the requirements for the solvers `skglm <https://contrib.scikit-learn.org/skglm/>`_,
 `scikit-learn <https://scikit-learn.org/stable/>`_, and the dataset Leukemia.
 
 .. prompt:: bash $
 
     benchopt install -s skglm -s sklearn -d leukemia
 
-Finally, run the benchmark
+Finally, run the benchmark:
 
 .. prompt:: bash $
 
