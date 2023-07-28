@@ -10,7 +10,7 @@ Let's use the Lasso benchmark to illustrate ways of running a benchmark.
     Head to :ref:`get_started` to first install benchopt
     and setup the Lasso benchmark.
 
-With the :ref:`cli_ref`, there are two ways: passing options with flags in the CLI, or with a configuration file.
+With the :ref:`cli_ref`, there are two ways to run a benchmark: passing options with flags in the CLI, or with a configuration file.
 
 Specifying options with CLI flags
 ---------------------------------

@@ -19,14 +19,13 @@ Let's explore the dashboard features on the Lasso benchmark.
 Part 1: Header
 --------------
 
-Here are the metadata of the benchmark, namely the benchmark title
-and the specifications of the machine used to run it.
+Part 1 contains the benchmark metadata: the benchmark title and the specifications of the machine used to run it.
 On the right hand side is a :kbd:`Download` button to download the results of the benchmark as ``.parquet`` file.
 
 Part 2: Figure
 --------------
 
-Here is the main figure that plots the tracked metrics throughout the benchmark run.
+Part 2 is the main figure that plots the tracked metrics throughout the benchmark run.
 Its title shows the objective and the dataset names and their corresponding parameters that produced the plot.
 
 Hovering over the figure will make a modebar appear in the right side.
