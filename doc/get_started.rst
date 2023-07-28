@@ -3,110 +3,80 @@
 Get started
 ===========
 
+Installation
+------------
 
-Install
--------
-
-This package can be installed through `pip`.  In order to allow benchopt to automatically
-install solvers dependencies, the install needs to be done in a `conda` environment.
+The recommended way to use benchopt is within a conda environment to fully benefit from all its features.
+Hence, start by creating a dedicated conda environment and then activate it.
 
 .. prompt:: bash $
 
     conda create -n benchopt python
     conda activate benchopt
 
-To get the **latest release**, use:
+Benchopt is available on PyPi.
+Get the **stable version** via ``pip`` by running:
 
 .. prompt:: bash $
 
-    pip install benchopt
+    pip install -U benchopt
 
-And to get the **latest development version**, you can use:
+This will install the command line tool to run and process the benchmark.
+
+If instead you want to install the **development version**, use
 
 .. prompt:: bash $
 
-    pip install -U -i https://test.pypi.org/simple/ benchopt
+    pip install -U -i https://test.pypi.org/simple/benchopt
 
-This will install the command line tool to run the benchmark. Then, existing
-benchmarks can be retrieved from GitHub or created locally. To discover which
-benchmarks are presently available look for
-`benchmark_* repositories on GitHub <https://github.com/benchopt/>`_,
-such as for `Lasso -- l1-regularized linear regression <https://github.com/benchopt/benchmark_lasso>`_.
-This benchmark can be retrieved locally with:
+.. attention::
+
+   The **development version** is a work in progress and hence might contain incomplete features.
+   A typical user is advised to use the **stable version** instead.
+
+
+Run an existing benchmark
+-------------------------
+
+Let's get the first steps with benchopt by comparing some solvers of the
+`Lasso problem <https://en.wikipedia.org/wiki/Lasso_(statistics)>`_ on the
+`Leukemia dataset <https://www.science.org/doi/10.1126/science.286.5439.531>`_.
+
+Start by cloning the Lasso benchmark repository and ``cd`` into it.
 
 .. prompt:: bash $
 
     git clone https://github.com/benchopt/benchmark_lasso.git
+    cd benchmark_lasso
 
-
-
-Run existing benchmark
-----------------------
-
-This section illustrates benchopt's command line interface on the `Lasso benchmark <https://github.com/benchopt/benchmark_lasso>`_; the syntax is applicable to any benchmark.
-All this section assumes that you are in the parent folder of the ``benchmark_lasso`` folder.
-The ``--env`` flag specifies that everything is run in the ``benchopt_benchmark_lasso`` ``conda`` environment.
-
-**Installing benchmark dependencies**: benchopt exposes a CLI to install solvers' dependencies automatically.
-It only works inside a ``conda`` environment. To install all requirements of the benchmark, make sure a ``conda``
-environment is activated and run:
+Then, use benchopt to install the requirements for the solvers `skglm <https://contrib.scikit-learn.org/skglm/>`_,
+`scikit-learn <https://scikit-learn.org/stable/>`_, and the dataset Leukemia.
 
 .. prompt:: bash $
 
-    benchopt install --env ./benchmark_lasso
+    benchopt install -s skglm -s sklearn -d leukemia
 
-**Run a benchmark**: to run benchmarks on all datasets and with all solvers, run:
-
-.. prompt:: bash $
-
-    benchopt run --env ./benchmark_lasso
-
-The command ``benchopt run`` can also be used outside of a ``conda`` environment without the flag ``-e/--env``.
-In that case, the benchmark will only run solvers that are currently installed.
-
-**Run only some solvers and datasets**: to run only the ``sklearn`` and ``celer`` solvers, on the ``simulated`` and ``finance`` datasets, run:
+Finally, run the benchmark:
 
 .. prompt:: bash $
 
-    benchopt run --env ./benchmark_lasso -s sklearn -s celer -d simulated -d finance
+    benchopt run . -s skglm -s sklearn -d leukemia
 
-**Run a solver or dataset with specific parameters**:  some solvers and datasets have parameters; by default all combinations are run.
-If you want to run a specific configuration, pass it explicitly, e.g., to run the ``python-pgd`` solver only with its parameter ``use_acceleration`` set to True, use:
+.. note::
 
-.. prompt:: bash $
+    To explore all benchopt CLI features, refer to :ref:`cli_ref`
+    or run ``benchopt --help`` or ``benchopt COMMAND_NAME --help``.
 
-    benchopt run --env ./benchmark_lasso -s python-pgd[use_acceleration=True]
+When the run is finished, benchopt automatically opens a window in you default browser and renders the results as a dashboard.
 
-**Set the number of repetitions**: the benchmark are repeated 5 times by default for greater precision. To run the benchmark 10 times, run:
+.. figure:: ./_static/results-get-started-lasso.png
+   :align: center
+   :alt: Dashboard of the Lasso benchmark results
 
-.. prompt:: bash $
+The dashboard displays benchmark-defined metrics tracked throughout the benchmark run such as the evolution of the objective value over time.
 
-    benchopt run --env ./benchmark_lasso -r 10
 
-**Passing option through configuration file**: all options of ``benchopt run`` can be passed through a YAML configuration file, together with ``--config <configuration_file_name.yml>``.
-The options are defined using the same name as the CLI options.
-An example of configuration file is:
+What's next?
+------------
 
-.. code-block:: yaml
-
-    objective:
-      - Lasso Regression[fit_intercept=False,reg=0.5]
-    dataset:
-      - simulated
-      - leukemia
-    solver:
-      - celer
-    force-solver:
-      - cd
-    n-repetitions: 1
-
-When options are passed both via file and CLI, the CLI takes precedence.
-
-**Getting help**: use
-
-.. prompt:: bash $
-
-    benchopt run -h
-
-to get more details about the different options.
-You can also read the :ref:`cli_ref`.
+After this glimpse of benchopt, explore more advanced topics such as writing your own benchmark, modifying an existing one, and customizing the benchmark's run options.

@@ -28,7 +28,7 @@ API
   By `Mathurin Massias`_ (:gh:`576`).
 
 - ``Solver.support_sparse`` attribute is deprecated in favor of the use of
-``Solver.skip``, by `Mathurin Massias`_ (:gh:`614`).
+  ``Solver.skip``, by `Mathurin Massias`_ (:gh:`614`).
 
 - ``stopping_strategy`` attribute is replaced by ``sampling_strategy`` to clarify
   the concept, by `Mathurin Massias`_ (:gh:`585`).
@@ -36,6 +36,14 @@ API
 - Add ``Solver.warm_up`` function for explicit warmup instructions, such as
   empty run for jitting. This function is called only once per solver.
   By `Pierre Ablin`_ (:gh:`602`).
+
+
+DOC
+~~~
+
+- Reformatting and enriching the documentation for easy onboarding.
+  By `Badr Moufad`_ and `Mathurin Massias`_ (:gh:`619`, :gh:`629`).
+
 
 .. _changes_1_4:
 

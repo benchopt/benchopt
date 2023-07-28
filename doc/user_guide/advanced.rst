@@ -193,6 +193,50 @@ callback (default to 1).
             self.run_once()  # For sampling_strategy == 'callback'
 
 
+.. _run_benchmark_with_py_script:
+
+Run a benchmark using a Python script
+-------------------------------------
+
+Another way to run a benchmark is via a Python script.
+Typical use-cases of that are
+
+- Automating the run of several benchmarks
+- Using ``vscode`` debugger where the python script serves as an entry point to benchopt internals
+
+The following script illustrate running the :ref:`benchmark Lasso <run_with_config_file>`.
+It assume that the python script is located at the same level as the benchmark folder.
+
+.. code-block:: python
+
+    from benchopt import run_benchmark
+    from benchopt.benchmark import Benchmark
+
+    # load benchmark
+    BENCHMARK_PATH = "./"
+    benchmark = Benchmark(BENCHMARK_PATH)
+
+    # run benchmark
+    run_benchmark(
+        benchmark,
+        solver_names=[
+            "skglm",
+            "celer",
+            "python-pgd[use_acceleration=True]",
+        ],
+        dataset_names=[
+            "leukemia",
+            "simulated[n_samples=100,n_features=20]"
+        ],
+    )
+
+.. note::
+
+    Learn more about the different parameters supported by ``run_benchmark``
+    function on :ref:`API references <API_ref>`.
+
+
+
 .. |update_params| replace:: ``update_parameters``
 .. _update_params: https://github.com/facebookincubator/submitit/blob/main/submitit/slurm/slurm.py#L386
 

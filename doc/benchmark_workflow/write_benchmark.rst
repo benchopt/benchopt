@@ -31,7 +31,7 @@ as for `Ordinary Least Square (OLS) <https://github.com/benchopt/benchmark_ols>`
 
     The simplest way to create a benchmark is to copy an existing folder and
     to adapt its content.
-    A benchmark template is provided as a `GitHub template repo here <https://github.com/benchopt/template_benchmark>`_
+    A benchmark template is provided as a `GitHub template repository here <https://github.com/benchopt/template_benchmark>`_.
 
 
 .. _objective:
@@ -39,15 +39,15 @@ as for `Ordinary Least Square (OLS) <https://github.com/benchopt/benchmark_ols>`
 1. Objective
 ------------
 
-The **objective function** is defined through a Python class.
-This class allows to monitor the quantities of interest along the iterations
-of the solvers. Typically it allows to evaluate the objective function to
-be minimized by the solvers. An objective class should define 3 methods:
+The **objective function** is defined through a Python class, ``Objective``, defined in ``objective.py``.
+This class allows to monitor the quantities of interest along the iterations of the solvers.
+Typically it allows to evaluate the objective function to be minimized by the solvers.
+An objective class should define 4 methods:
 
-- ``get_one_result()``: it returns one solution that can be returned by a solver.
+- ``get_one_result()``: returns one solution that can be returned by a solver.
   This defines the shape of the solution and will be used to test that the
   benchmark works properly.
-- ``set_data(**data)``: it allows to specify the data. See the data as a dictionary
+- ``set_data(**data)``: allows to specify the data. See the data as a dictionary
   of Python variables without any constraint.
 - ``compute(x)``: it allows to evaluate the objective for a given value
   of the iterate, here called ``x``. This method should take only one parameter,
@@ -57,16 +57,15 @@ be minimized by the solvers. An objective class should define 3 methods:
   is returned it should contain a key called ``value`` (the objective value) and all other keys
   should have ``float`` values allowing to track more than one value
   of interest (e.g. train and test errors).
-- ``get_objective()``: method that returns a dictionary to be passed
+- ``get_objective()``: returns a dictionary to be passed
   to the ``set_objective`` methods of solvers_.
 
-An objective class also needs to inherit from a base class,
+An objective class needs to inherit from a base class,
 :class:`benchopt.BaseObjective`.
 
 .. note::
-  Multiple values can be computed in one objective as long as they are
-  stored in a dictionary with a key being ``value``. This allows to compute
-  different metrics at once.
+  Multiple metrics can be returned by ``Objective.compute`` as long as they are
+  stored in a dictionary, with a key being ``value`` corresponding to the main metric to track.
 
 Example
 ~~~~~~~
@@ -81,7 +80,7 @@ Example
 A dataset defines what can be passed to an objective. More specifically,
 a dataset should implement one method:
 
-- ``get_data()``: A method which outputs a dictionary that can be passed as
+- ``get_data()``: A method which outputs a dictionary that is passed as
   keyword arguments ``**data`` to the ``set_data`` method of an objective_.
 
 A dataset class also needs to inherit from a base class called
@@ -139,7 +138,7 @@ A solver must define three methods:
   to the ``compute`` method from the objective. This is the output of
   the solver.
 
-**Stop strategy:**
+**Sampling strategy:**
 
 A solver should also define a ``sampling_strategy`` as class attribute.
 This ``sampling_strategy`` can be:
@@ -170,10 +169,8 @@ Benchopt supports different types of solvers:
 Python solver
 ~~~~~~~~~~~~~
 
-The simplest solvers to use are solvers written in pure
-`Python <https://www.python.org/>`_ without any compiled
-code. They are typically written in `Numpy <https://numpy.org/>`_
-with no other dependencies. Here is an example:
+The simplest solvers to use are solvers using `Python <https://www.python.org/>`_ code.
+Here is an example:
 
 .. literalinclude:: ../../benchopt/tests/test_benchmarks/dummy_benchmark/solvers/python_pgd.py
 
