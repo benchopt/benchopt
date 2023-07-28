@@ -101,7 +101,7 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
             # If sampling_strategy is 'callback', only call once to get the
             # results up to convergence.
             callback = _Callback(
-                objective, meta, stopping_criterion
+                objective, solver, meta, stopping_criterion
             )
             solver.pre_run_hook(callback)
             callback.start()

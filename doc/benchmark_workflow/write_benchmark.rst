@@ -44,7 +44,7 @@ This class allows to monitor the quantities of interest along the iterations of 
 Typically it allows to evaluate the objective function to be minimized by the solvers.
 An objective class should define 4 methods:
 
-- ``get_one_solution()``: returns one solution that can be returned by a solver.
+- ``get_one_result()``: returns one solution that can be returned by a solver.
   This defines the shape of the solution and will be used to test that the
   benchmark works properly.
 - ``set_data(**data)``: allows to specify the data. See the data as a dictionary
