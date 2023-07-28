@@ -80,7 +80,7 @@ Example
 A dataset defines what can be passed to an objective. More specifically,
 a dataset should implement one method:
 
-- ``get_data()``: A method which outputs a dictionary that can be passed as
+- ``get_data()``: A method which outputs a dictionary that is passed as
   keyword arguments ``**data`` to the ``set_data`` method of an objective_.
 
 A dataset class also needs to inherit from a base class called
@@ -138,7 +138,7 @@ A solver must define three methods:
   to the ``compute`` method from the objective. This is the output of
   the solver.
 
-**Stop strategy:**
+**Sampling strategy:**
 
 A solver should also define a ``sampling_strategy`` as class attribute.
 This ``sampling_strategy`` can be:
@@ -169,10 +169,8 @@ Benchopt supports different types of solvers:
 Python solver
 ~~~~~~~~~~~~~
 
-The simplest solvers to use are solvers written in pure
-`Python <https://www.python.org/>`_ without any compiled
-code. They are typically written in `Numpy <https://numpy.org/>`_
-with no other dependencies. Here is an example:
+The simplest solvers to use are solvers using `Python <https://www.python.org/>`_ code.
+Here is an example:
 
 .. literalinclude:: ../../benchopt/tests/test_benchmarks/dummy_benchmark/solvers/python_pgd.py
 
