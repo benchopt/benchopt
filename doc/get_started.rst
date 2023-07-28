@@ -21,6 +21,8 @@ Get the **stable version** via ``pip`` by running:
 
     pip install -U benchopt
 
+This will install the command line tool to run and process the benchmark.
+
 If instead you want to install the **development version**, use
 
 .. prompt:: bash $
