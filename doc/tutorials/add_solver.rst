@@ -129,8 +129,33 @@ we are not doing any post processing on the solution.
 
 Metadata
 --------
-- install requirements
-- docstring for details about the solver
+
+The metadata of the solver includes the required packages to run the solver.
+you can specify them by adding a class attribute ``requirements`` and listing 
+all the dependencies there
+
+In our case, the solver only requires ``skglm`` to function properly.
+
+.. code-block:: python
+
+    class Solver(BaseSolver):
+        ...
+        requirements = ['pip:skglm']
+        ...
+
+The metadata also includes the description of the solver. It can be specified
+by adding a docstring to the solver.
+
+Here we use the docstring to add a bibliographic reference to the package
+
+.. code-block:: python
+
+    class Solver(BaseSolver):
+        """Q. Bertrand and Q. Klopfenstein and P.-A. Bannier and G. Gidel and
+        M. Massias, "Beyond L1: Faster and Better Sparse Models with skglm",
+        NeurIPS 2022.
+        """
+        ...
 
 Refinement
 ----------
