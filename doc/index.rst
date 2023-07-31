@@ -24,7 +24,7 @@ Reproducing an existing benchmark should be as easy as running
 There are already many :ref:`available_benchmarks` that have been created using benchopt.
 Learn how to run them and how to construct your own with the following pages!
 
-.. grid:: 1
+.. grid:: 2
     :gutter: 1
 
     .. grid-item-card::
@@ -43,6 +43,13 @@ Learn how to run them and how to construct your own with the following pages!
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         Write a benchmark from scratch, run it, visualize it, and publish it
 
+    .. grid-item-card::
+        :link: tutorials
+        :link-type: ref
+
+        :octicon:`mortar-board` **Tutorials**
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        Gallery of use-cases crafted by benchopt community
 
     .. grid-item-card::
         :link: user_guide
