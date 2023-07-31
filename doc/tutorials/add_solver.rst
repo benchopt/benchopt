@@ -17,7 +17,7 @@ Before the implementation
 -------------------------
 
 A solver is a Python class that lives in a standalone Python file.
-It has a unique name that distinguish it from other solvers in the benchmark.
+It has a unique name that distinguishes it from other solvers in the benchmark.
 
 Start by adding a new file ``skglm.py`` to the ``solvers/`` directory.
 Notice that we named the python file ``skglm`` as well as the solver,
@@ -43,13 +43,14 @@ imports in the context manager ``safe_import_context``, except benchopt imports.
     skip uninstalled solvers, ... For more details refer to
     :class:`~benchopt.safe_import_context` documentation.
 
+
 Implementation
 --------------
 
 - **Specifying the solver parameters**
 
 Define a class attribute ``parameters`` to add parameters describing the internal
-functioning of the solver. This attribute is dictionary whose keys are the parameters
+functioning of the solver. This attribute is a dictionary whose keys are the parameters
 of the solver.
 
 For ``skglm``, the Lasso estimator has arguments to specify
@@ -74,7 +75,7 @@ the working set strategy and its initial size.
 - **Initializing the setup**
 
 Use the method ``set_objective`` to pass in the dataset and the objective parameters to
-the solver. Besides, it the ideal method to define unchanging object across the solver run.
+the solver. Besides, it is the ideal method to define unchanging objects across the solver run.
 
 Here we use it to store references to the dataset ``X, y``.
 Also, we store the Lasso estimator as it will not change during the runs. 
@@ -95,11 +96,11 @@ Also, we store the Lasso estimator as it will not change during the runs.
 
 - **Describing the run procedure**
 
-The ``run`` method combined with ``sampling_strategy`` describe how the
+The ``run`` method combined with ``sampling_strategy`` describes how the
 performance curves are constructed. In particular, the ``sampling_strategy`` dictates
 the input signature of ``run`` and how it will be called by benchopt.
 
-Here we use *iteration* as sampling strategy. Following this choice, the ``run``
+Here we use *iteration* as a sampling strategy. Following this choice, the ``run``
 will be called repetitively with an increasing number of iterations.
 
 .. code-block:: python
@@ -131,8 +132,8 @@ will be called repetitively with an increasing number of iterations.
 We define a ``get_result`` method to pass the result of the ``run`` back
 to the objective.
 
-Here we simply define a method that returns the solution as dictionary since
-we are not post processing on the solution.
+Here we simply define a method that returns the solution as a dictionary since
+we are not post-processing on the solution.
 
 .. code-block:: python
 
@@ -188,13 +189,13 @@ Refinement
 ----------
 
 ``skglm`` relies on Numba JIT-compilation for fast numerical computation
-which comes at the expense of a initial overhead in the first run.
+which comes at the expense of an initial overhead in the first run.
 Ideally, we would like to disregard that in the benchmark results.
 
 To address this need, benchopt features a ``warm_up`` hook that is called
 once before the actual solver run.
 
-in our case, we define it as follows
+In our case, we define it as follows
 
 .. code-block:: python
 
@@ -206,4 +207,5 @@ in our case, we define it as follows
 
 .. hint::
 
-    Learn about the other hooks of benchopt in the :ref:`API references <benchopt_hooks>` page.
+    Learn about the other hooks of benchopt in the
+    :ref:`API references <benchopt_hooks>` page.
