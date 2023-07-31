@@ -5,7 +5,7 @@ Add a solver
 
 This tutorial walks you through the cornerstones of adding a new solver
 to a benchmark. To this end, we will focus on adding ``skglm`` solver to
-the L2 logistic regression benchmark.
+the benchmark Lasso.
 
 .. Hint::
 
@@ -14,8 +14,27 @@ the L2 logistic regression benchmark.
 
 Preliminary
 -----------
-- solver lives in standalone python file
-- solver is class with a name
+
+A solver is a Python class that lives in a standalone Python file.
+It has a unique name that distinguish it from other solvers in the benchmark.
+
+Start by adding a new file ``skglm.py`` to the ``solvers/`` directory.
+Notice that we named the python file ``skglm`` as well as the solver,
+but we could have chosen anything else.
+
+.. code-block:: python
+
+    from benchopt import BaseSolver, safe_import_context
+
+    with safe_import_context() as import_ctx:
+        from skglm import Lasso
+
+    class Solver(BaseSolver):
+        name = 'skglm'
+
+To help benchopt with the solver requirements, we enclosed the ``skglm`` module
+import in the context manager ``safe_import_context``.
+
 
 Implementation
 --------------
