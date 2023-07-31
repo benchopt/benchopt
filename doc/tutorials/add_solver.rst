@@ -6,7 +6,7 @@ Add a solver to a benchmark
 This tutorial walks you through the cornerstones of adding a new solver
 to a benchmark. To this end, we will focus on adding
 `skglm <https://contrib.scikit-learn.org/skglm/>`_ solver to the
-`benchmark Lasso <https://github.com/benchopt/benchmark_lasso>`_.
+`Lasso benchmark <https://github.com/benchopt/benchmark_lasso>`_.
 
 .. Hint::
 
@@ -20,7 +20,7 @@ A solver is a Python class that lives in a standalone Python file.
 It has a unique name that distinguishes it from other solvers in the benchmark.
 
 Start by adding a new file ``skglm.py`` to the ``solvers/`` directory.
-Notice that we named the python file ``skglm`` as well as the solver,
+Notice that we named both the python file and the solver ``skglm``,
 but we could have chosen anything else.
 
 .. code-block:: python
@@ -34,12 +34,12 @@ but we could have chosen anything else.
     class Solver(BaseSolver):
         name = 'skglm'
 
-To help benchopt with managing solver requirements, we enclosed the module
-imports in the context manager ``safe_import_context``, except benchopt imports.
+Besides, to help benchopt with managing solver requirements, we enclosed the module
+imports in the context manager ``safe_import_context``, except for benchopt imports.
 
 .. note::
     
-    Benchopt uses the context ``safe_import_context`` to identify missing imports,
+    Benchopt uses the context manager ``safe_import_context`` to identify missing imports,
     skip uninstalled solvers, ... For more details refer to
     :class:`~benchopt.safe_import_context` documentation.
 
@@ -47,11 +47,14 @@ imports in the context manager ``safe_import_context``, except benchopt imports.
 Implementation
 --------------
 
+Once the Python file created, we can start implementing the solver by adding
+methods and attributes to the solver class.
+
 - **Specifying the solver parameters**
 
-Define a class attribute ``parameters`` to add parameters describing the internal
-functioning of the solver. This attribute is a dictionary whose keys are the parameters
-of the solver.
+You can specify the parameters describing the internal functioning of the solver by adding
+an attribute ``parameters``. This attribute is a dictionary whose keys are the parameters
+of the solver. 
 
 For ``skglm``, the Lasso estimator has arguments to specify
 the working set strategy and its initial size.
@@ -69,16 +72,17 @@ the working set strategy and its initial size.
 .. note::
 
     Another way to specify the solver parameters is by defining
-    a class constructor ``__init__`` that takes as arguments the
+    the constructor ``__init__``. It should take as arguments the
     solver parameters and stores them as class attributes.
 
 - **Initializing the setup**
 
 Use the method ``set_objective`` to pass in the dataset and the objective parameters to
-the solver. Besides, it is the ideal method to define unchanging objects across the solver run.
+the solver. Also, a commune use case of this method it is to define unchanging objects
+to be used across the solver run.
 
 Here we use it to store references to the dataset ``X, y``.
-Also, we store the Lasso estimator as it will not change during the runs. 
+Also, we store the Lasso estimator as it will not change during the solver run. 
 
 .. code-block:: python
 
@@ -111,11 +115,10 @@ will be called repetitively with an increasing number of iterations.
         ...
 
         def run(self, n_iter):
-            # set/fit estimator
             self.lasso.max_iter = n_iter
             self.lasso.fit(self.X, self.y)
 
-            # store a reference to solution
+            # store a reference to the solution
             coef = self.lasso.coef_.flatten()
             if self.fit_intercept:
                 coef = np.r_[coef, self.lasso.intercept_]
@@ -124,16 +127,16 @@ will be called repetitively with an increasing number of iterations.
 
 .. hint::
 
-    The :ref:`Performance curves pages <performance_curves>` provides a complete guide
-    on the performance curves and the different sampling strategies.
+    The :ref:`Performance curves page <performance_curves>` provides a complete guide
+    on performance curves and the different sampling strategies.
 
 - **Getting the final results**
 
-We define a ``get_result`` method to pass the result of the ``run`` back
+We define a ``get_result`` method to pass the ``run`` result back
 to the objective.
 
 Here we simply define a method that returns the solution as a dictionary since
-we are not post-processing on the solution.
+we are not post-processing the solution, e.g. saving the solution.
 
 .. code-block:: python
 
@@ -161,15 +164,16 @@ In our case, the solver only requires ``skglm`` to function properly.
 .. note::
 
     The ``conda-forge`` is the default channel in benchopt.
-    Use ``CHANNEL_NAME::PACKAGE_NAME`` to use another channel.
-    similarly, use ``pip:PACKAGE_NAME`` to indicate that the package
+    Write instead ``CHANNEL_NAME::PACKAGE_NAME`` to use another channel.
+    Similarly, use ``pip:PACKAGE_NAME`` to indicate that the package
     should be installed via ``pip``.
 
 
 Also, the metadata includes the description of the solver. It can be specified
-by adding docstring to the solver.
+by adding docstring to the class.
 
-Here we use the docstring to add a bibliographic reference to the package
+Here we use the docstring to add a bibliographic reference to the
+`skglm <https://contrib.scikit-learn.org/skglm/>`_.
 
 .. code-block:: python
 
@@ -183,7 +187,7 @@ Here we use the docstring to add a bibliographic reference to the package
 .. note::
 
     The solver description will be available in the dashboard of results
-    and displayed by hovering over the solver legend item.
+    and displayed by :ref:`hovering over the solver legend item <visualize_benchmark>`.
 
 Refinement
 ----------
@@ -192,8 +196,8 @@ Refinement
 which comes at the expense of an initial overhead in the first run.
 Ideally, we would like to disregard that in the benchmark results.
 
-To address this need, benchopt features a ``warm_up`` hook that is called
-once before the actual solver run.
+To address this need, benchopt features a ``warm_up`` hook called once
+before the actual solver run to cache JIT-compilations.
 
 In our case, we define it as follows
 
@@ -207,5 +211,5 @@ In our case, we define it as follows
 
 .. hint::
 
-    Learn about the other hooks of benchopt in the
-    :ref:`API references <benchopt_hooks>` page.
+    Head to :ref:`API references <benchopt_hooks>` page to learn about
+    the other hooks of benchopt.
