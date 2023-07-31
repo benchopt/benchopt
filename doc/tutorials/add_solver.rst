@@ -3,25 +3,32 @@
 Add a solver
 ============
 
+This tutorial walks you through the cornerstones of adding a new solver
+to a benchmark. To this end, we will focus on adding ``skglm`` solver to
+the L2 logistic regression benchmark.
 
-- walk you through the cornerstones of adding a new solver
-- objective: add a ``skglm`` to benchmark L2 logistic regression
+.. Hint::
+
+    Head to :ref:`get_started` for your first steps with benchopt.
 
 
-- preliminary
-    - solver lives in standalone python file
-    - solver is class with a name
+Preliminary
+-----------
+- solver lives in standalone python file
+- solver is class with a name
 
-- implementation
-    - constructor for getting parameters
-    - set_objective specify the setup (combination of dataset and objective parameters)
-    - get_results
-        called by objective to evaluate metrics
+Implementation
+--------------
+- constructor for getting parameters
+- set_objective specify the setup (combination of dataset and objective parameters)
+- get_results called by objective to evaluate metrics
 
-- metadata
-    - install requirements
-    - docstring for details about the solver
+Metadata
+--------
+- install requirements
+- docstring for details about the solver
 
-- refinement
-    - warm_up
-    - skip
+Refinement
+----------
+- warm_up
+- skip
