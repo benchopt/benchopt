@@ -38,9 +38,26 @@ import in the context manager ``safe_import_context``.
 
 Implementation
 --------------
-- constructor for getting parameters
-- set_objective specify the setup (combination of dataset and objective parameters)
-- get_results called by objective to evaluate metrics
+
+Specifying the solver parameters
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+constructor ``__init__``
+for getting parameters
+
+Setting up the solver
+~~~~~~~~~~~~~~~~~~~~~
+set_objective method, specify the setup
+combination of dataset and objective parameters
+
+Describing the run procedure
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+run method to run the solver.
+Its execution and input signature is dictated by the sampling strategy
+
+Getting the final results
+~~~~~~~~~~~~~~~~~~~~~~~~~
+get_results to get the results of the solver
+
 
 Metadata
 --------
