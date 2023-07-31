@@ -157,7 +157,24 @@ Here we use the docstring to add a bibliographic reference to the package
         """
         ...
 
+
 Refinement
 ----------
-- warm_up
-- skip
+
+``skglm`` relies on Numba JIT-compilation for fast numerical computation.
+which comes at the expense of a initial overhead in the fist run.
+Ideally, we would like to not account for that in the benchmark results.
+
+To address this need, benchopt features a ``warm_up`` hook that is called
+once before the actual solver run.
+
+in our case, we define it as follows
+
+
+.. code-block:: python
+
+    class Solver(BaseSolver):
+        ...
+        def warm_up(self):
+            self.run(1)
+        ...
