@@ -170,7 +170,7 @@ In our case, the solver only requires ``skglm`` to function properly.
 
 .. note::
 
-    The ``conda-forge`` is the default channel in benchopt.
+    Benchopt uses ``conda`` environement with ``conda-forge`` as the default channel.
     Write instead ``CHANNEL_NAME::PACKAGE_NAME`` to use another channel.
     Similarly, use ``pip:PACKAGE_NAME`` to indicate that the package
     should be installed via ``pip``.

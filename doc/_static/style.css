@@ -10,3 +10,8 @@ h2, h3, h4 {
 .pre {
     color: #D05336;
 }
+
+.code-block-caption {
+    background: #D3D3D3;
+    color: #D05336;
+}
