@@ -60,7 +60,11 @@ If our solver were to have two hyperparameters ``stepsize`` and ``momentum``, we
     When running the solver, benchopt will use all possible combinations of hyperparameter values.
     Hence, unless specified otherwise, our solver will be run 2 x 2 = 4 times.
 
-TODO XXX here include image of workflow.
+
+.. figure:: ../_static/benchopt_schema_dependency.svg
+   :align: center
+   :width: 70 %
+
 
 Initializing the setup
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -270,7 +274,6 @@ In our case, we define it as follows
         def warm_up(self):
             # execute the solver for one iteration
         ...
-
 
 - **Skipping a setup**
 
