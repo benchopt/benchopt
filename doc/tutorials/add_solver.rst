@@ -20,8 +20,8 @@ A solver is a Python class, inheriting from ``benchopt.BaseSolver``, declared in
 The first step is to create this file and declare the class: start by adding a new file ``mysolver.py`` to the ``solvers/`` directory, with the following content.
 
 .. code-block:: python
+    :caption: solvers/mysolver.py
 
-    # file solvers/mysolver.py
     from benchopt import BaseSolver
 
     class Solver(BaseSolver):
@@ -47,6 +47,7 @@ We'll assume that the solver we're implementing has two hyperparameters, ``steps
 For now, we'll define two default values for each of them.
 
 .. code-block:: python
+    :caption: solvers/mysolver.py
 
     class Solver(BaseSolver):
         name = "mysolver"
@@ -79,6 +80,7 @@ In the Lasso case, ``get_objective`` returns a dictionary with 4 keys: ``X``, ``
 The signature of ``set_objective`` should thus be ``set_objective(self, X, y, lmbd, fit_intercept)``
 
 .. code-block:: python
+    :caption: solvers/mysolver.py
 
     class Solver(BaseSolver):
         ...
@@ -112,6 +114,7 @@ This sampling strategy is for black box solvers for which one can only control t
 The signature of ``run`` in that case is ``run(self, n_iter)``
 
 .. code-block:: python
+    :caption: solvers/mysolver.py
 
     class Solver(BaseSolver):
         ...
@@ -128,6 +131,7 @@ Here we use *iteration* as a sampling strategy. Following this choice, the ``run
 will be called repetitively with an increasing number of iterations.
 
 .. code-block:: python
+    :caption: solvers/mysolver.py
 
     class Solver(BaseSolver):
         ...
@@ -156,6 +160,7 @@ In our case the input of ``Objective.evaluate_result`` is TODO XXX, hence we ret
 Here we define a method that post-process the solution based on the ``fit_intercept`` value.
 
 .. code-block:: python
+    :caption: solvers/mysolver.py
 
     class Solver(BaseSolver):
         ...
@@ -175,7 +180,8 @@ Managing imports
 Note that, to help benchopt with managing solver requirements, the non-benchopt imports should be enclosed in the context manager ``safe_import_context``, as follows:
 
 .. code-block:: python
-
+    :caption: solvers/mysolver.py
+   
     from benchopt import BaseSolver, safe_import_context
 
     with safe_import_context() as import_ctx:
@@ -198,6 +204,7 @@ You can list all the solver dependencies in the class attribute ``requirements``
 In our case, the solver only requires ``skglm`` to function properly.
 
 .. code-block:: python
+    :caption: solvers/mysolver.py    
 
     class Solver(BaseSolver):
         ...
@@ -219,6 +226,7 @@ Here we use the docstring to add a bibliographic reference to the
 `skglm <https://contrib.scikit-learn.org/skglm/>`_.
 
 .. code-block:: python
+    :caption: solvers/mysolver.py
 
     class Solver(BaseSolver):
         """Q. Bertrand and Q. Klopfenstein and P.-A. Bannier and G. Gidel and
@@ -248,6 +256,7 @@ hook called once before the actual solver run to cache JIT-compilations.
 In our case, we define it as follows
 
 .. code-block:: python
+    :caption: solvers/mysolver.py
 
     class Solver(BaseSolver):
         ...
@@ -268,6 +277,7 @@ Benchopt exposes a :class:`~benchopt.BaseSolver.skip` hook called with result of
 For ``skglm``, we skip the setup ``lambda=0`` with a reason *"skglm does not support OLS"*.
 
 .. code-block:: python
+    :caption: solvers/mysolver.py
 
     class Solver(BaseSolver):
         ...
