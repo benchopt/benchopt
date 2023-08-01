@@ -9,7 +9,7 @@ To this end, we will focus on adding a new solver to the
 
 .. Hint::
 
-    Head to :ref:`get_started` to install benchopt and clone the Lasso benchmark repository.
+    If you have not already done it, head to :ref:`get_started` to install benchopt and clone the Lasso benchmark repository.
 
 
 Before the implementation
@@ -21,74 +21,108 @@ The first step is to create this file and declare the class: start by adding a n
 
 .. code-block:: python
 
-    from benchopt import BaseSolver, safe_import_context
+    # file solvers/mysolver.py
+    from benchopt import BaseSolver
 
     class Solver(BaseSolver):
         name = 'mysolver'
+
+The ``name`` variable does not have to match the name of the file, but it makes it easier to locate the solver.
 
 
 Implementation
 --------------
 
-Once the Python file created, we can start implementing the solver by adding
+Once the Python file is created, we can start implementing the solver by adding
 methods and attributes to the solver class.
+We will go over them one by one.
 
-- **Specifying the solver parameters**
+Specifying the solver parameters
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-You can specify the parameters describing the internal functioning of the solver by adding
-an attribute ``parameters``. This attribute is a dictionary whose keys are the parameters
-of the solver.
+You can specify the parameters describing the internal functioning of the solver by adding an attribute ``parameters``.
+This attribute is a dictionary whose keys are the parameters of the solver.
 
-For ``skglm``, the Lasso estimator has arguments to specify
-the working set strategy and its initial size.
+We'll assume that the solver we're implementing has two hyperparameters, ``stepsize`` and ``momentum``.
+For now, we'll define two default values for each of them.
 
 .. code-block:: python
 
     class Solver(BaseSolver):
-        ...
+        name = "mysolver"
+
         parameters = {
-            'ws_strategy': ['subdiff'],
-            'p0': [10]
+            'stepsize': [0.1, 0.5],
+            'momentum': [0.9, 0.95],
         }
         ...
 
 .. note::
+    When running the solver, benchopt will use all possible combinations of hyperparameter values.
+    Hence, unless specified otherwise, our solver will be run 2 x 2 = 4 times.
+..     Another way to specify the solver parameters is by defining
+..     the constructor ``__init__``. It should take as arguments the
+..     solver parameters and stores them as class attributes.
 
-    Another way to specify the solver parameters is by defining
-    the constructor ``__init__``. It should take as arguments the
-    solver parameters and stores them as class attributes.
+TODO XXX here include image of workflow.
 
-- **Initializing the setup**
+Initializing the setup
+~~~~~~~~~~~~~~~~~~~~~~
 
-Use the method ``set_objective`` to pass in the dataset and
-the objective parameters to the solver. In practice, benchopt will pass in
-the result of ``Objective.get_objective``.
+The first method we need to implement is ``set_objective``.
+It receives all the information about the dataset and objective parameters.
+For each benchmark, this is standardized.
+Check the ``get_objective`` method of the ``Objective`` class, defined in the ``objective.py`` file of the benchmark.
 
-Also, a commune use case of this method it is to define unchanging objects
-to be used across the solver run.
+In the Lasso case, ``get_objective`` returns a dictionary with 4 keys: ``X``, ``y``, ``fit_intercept`` and ``lmbd``.
 
-Here we use it to store references to the dataset ``X, y``.
-Also, we store the Lasso estimator as it will not change during the solver run.
+The signature of ``set_objective`` should thus be ``set_objective(self, X, y, lmbd, fit_intercept)``
 
 .. code-block:: python
 
     class Solver(BaseSolver):
         ...
         def set_objective(self, X, y, lmbd, fit_intercept):
+            # store any info needed to run the solver as class attribute.
             self.X, self.y = X, y
-            alpha = lmbd / X.shape[0]
-
-            self.lasso = Lasso(
-                alpha, tol=1e-12, fit_intercept=self.fit_intercept,
-                ws_strategy=self.ws_strategy, p0=self.p0
-            )
+            self.alpha = lmbd / X.shape[0]
+            # declare anything that will be used to run your solver
         ...
 
-- **Describing the run procedure**
+Describing the solver run procedure
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The ``run`` method combined with ``sampling_strategy`` describes how the
-performance curves are constructed. In particular, the ``sampling_strategy`` dictates
-the input signature of ``run`` and how it will be called by benchopt.
+Next, we implement the ``run`` method.
+It describes how the solver is executed on the data.
+There are three possible implementations, depending on which sampling strategy is used to construct the performance curve.
+
+
+The ``run`` method combined with ``sampling_strategy`` describes how the  performance curves are constructed.
+
+.. hint::
+
+    The :ref:`Performance curves page <performance_curves>` provides a complete guide
+    on performance curves and the different sampling strategies.
+
+There are 3 possible choices: "iteration", "tolerance", and "callback".
+We show how to implement ``run`` in these three cases.
+
+- "iteration"
+This sampling strategy is for black box solvers for which one can only control the number of iterations performed.
+The signature of ``run`` in that case is ``run(self, n_iter)``
+
+.. code-block:: python
+
+    class Solver(BaseSolver):
+        ...
+        sampling_strategy = 'iteration'
+        ...
+
+        def run(self, n_iter):
+            w = my_black_box(self.X, self.y, self.alpha, n_iter=n_iter)
+        ...
+
+- TODO XXX do the same for tolerance and callback.
 
 Here we use *iteration* as a sampling strategy. Following this choice, the ``run``
 will be called repetitively with an increasing number of iterations.
@@ -109,16 +143,15 @@ will be called repetitively with an increasing number of iterations.
             self.intercept = self.lasso.intercept_
         ...
 
-.. hint::
+- "callback"
 
-    The :ref:`Performance curves page <performance_curves>` provides a complete guide
-    on performance curves and the different sampling strategies.
+Getting the solver's results
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- **Getting the final results**
+Finally, we define a ``get_result`` method that is used to pass the solver's result back to the objective.
+More specifically, ``get_result`` must return a dictionary whose keys are the input arguments of ``Objective.evaluate_result``.
 
-We define a ``get_result`` method to pass the ``run`` result back
-to the objective. More specifically, ``get_result`` must return a dictionary
-whose keys are the input arguments of ``Objective.evaluate_result``.
+In our case the input of ``Objective.evaluate_result`` is TODO XXX, hence we return a dict with an only key, ``"beta"``
 
 Here we define a method that post-process the solution based on the ``fit_intercept`` value.
 
