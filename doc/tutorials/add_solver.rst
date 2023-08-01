@@ -96,7 +96,7 @@ Also, we store the Lasso estimator as it will not change during the solver run.
             alpha = lmbd / X.shape[0]
 
             self.lasso = Lasso(
-                alpha, tol=1e-12, fit_intercept=fit_intercept,
+                alpha, tol=1e-12, fit_intercept=self.fit_intercept,
                 ws_strategy=self.ws_strategy, p0=self.p0
             )
         ...
@@ -123,6 +123,7 @@ will be called repetitively with an increasing number of iterations.
 
             # store a reference to the solution
             self.coef = self.lasso.coef_
+            self.intercept = self.lasso.intercept_
         ...
 
 .. hint::
@@ -136,15 +137,20 @@ We define a ``get_result`` method to pass the ``run`` result back
 to the objective. More specifically, ``get_result`` must return a dictionary
 whose keys are the input arguments of ``Objective.evaluate_result``.
 
-Here we simply define a method that returns the solution as a dictionary since
-we are not post-processing the solution, e.g. saving the solution.
+Here we define a method that post-process the solution based on the ``fit_intercept`` value.
 
 .. code-block:: python
 
     class Solver(BaseSolver):
         ...
         def get_result(self):
-            return {'beta': self.coef}
+            if self.fit_intercept:
+                beta = np.concatenate((self.coef, self.intercept))
+            else:
+                beta = self.coef
+
+            return {'beta': beta}
+        ...
 
 
 Specifying metadata
@@ -190,8 +196,11 @@ Here we use the docstring to add a bibliographic reference to the
     The solver description will be available in the dashboard of results
     and displayed by :ref:`hovering over the solver legend item <visualize_benchmark>`.
 
+
 Refinement
 ----------
+
+- **Caching JIT-compilation:**
 
 ``skglm`` relies on Numba JIT-compilation for fast numerical computation
 which comes at the expense of an initial overhead in the first run.
@@ -214,3 +223,8 @@ In our case, we define it as follows
 
     Head to :ref:`API references <benchopt_hooks>` page to learn about
     the other hooks of benchopt.
+
+- **Skipping a setup**
+
+case of skipping a zero regularization
+
