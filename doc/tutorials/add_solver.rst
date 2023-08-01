@@ -206,8 +206,8 @@ Refinement
 which comes at the expense of an initial overhead in the first run.
 Ideally, we would like to disregard that in the benchmark results.
 
-To address this need, benchopt features a ``warm_up`` hook called once
-before the actual solver run to cache JIT-compilations.
+To address this need, benchopt features a :class:`~benchopt.BaseSolver.warm_up`
+hook called once before the actual solver run to cache JIT-compilations.
 
 In our case, we define it as follows
 
@@ -219,12 +219,30 @@ In our case, we define it as follows
             self.run(1)
         ...
 
-.. hint::
-
-    Head to :ref:`API references <benchopt_hooks>` page to learn about
-    the other hooks of benchopt.
 
 - **Skipping a setup**
 
-case of skipping a zero regularization
+Since ``skglm`` has a scikit-learn-like API, its Lasso estimator doesn't support
+zero regularization, namely the case of ``lambda=0``. Therefore, we would like to skip
+this setup as other solvers might support it.
 
+Benchopt exposes a :class:`~benchopt.BaseSolver.skip` hook called with result of
+``Objective.get_objective`` to decide on whether the solver is compatible with the setup.
+
+For ``skglm``, we skip the setup ``lambda=0`` with a reason *"skglm does not support OLS"*.
+
+.. code-block:: python
+
+    class Solver(BaseSolver):
+        ...
+        def skip(self, X, y, lmbd, fit_intercept):
+            if lmbd == 0:
+                return False, "skglm does not support OLS"
+            
+            return True, ""
+        ...
+
+.. hint:: 
+
+    Head to :ref:`API references <benchopt_hooks>` page to learn about
+    the other hooks of benchopt.
