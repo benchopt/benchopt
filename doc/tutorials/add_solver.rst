@@ -17,7 +17,7 @@ Before the implementation
 
 A solver is a Python class, inheriting from ``benchopt.BaseSolver``, declared in a standalone Python file in the ``solvers/`` folder.
 
-The first step is to create this file and declare the class: start by adding a new file ``mysolver.py`` to the ``solvers/`` directory, with the following content.
+Let's start by creating a new file ``mysolver.py`` in the ``solvers/`` directory and put inside it the content
 
 .. code-block:: python
     :caption: solvers/mysolver.py
@@ -33,9 +33,8 @@ The ``name`` variable does not have to match the name of the file, but it makes 
 Implementation
 --------------
 
-Once the Python file is created, we can start implementing the solver by adding
-methods and attributes to the solver class.
-We will go over them one by one.
+Once the Python file is created, we can start implementing the solver by adding methods and attributes to the solver class.
+Let's go over them one by one.
 
 Specifying the solver parameters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -43,8 +42,7 @@ Specifying the solver parameters
 You can specify the parameters describing the internal functioning of the solver by adding an attribute ``parameters``.
 This attribute is a dictionary whose keys are the parameters of the solver.
 
-We'll assume that the solver we're implementing has two hyperparameters, ``stepsize`` and ``momentum``.
-For now, we'll define two default values for each of them.
+If our solver were to have two hyperparameters ``stepsize`` and ``momentum``, we would have defined their default values as follows
 
 .. code-block:: python
     :caption: solvers/mysolver.py
@@ -61,9 +59,6 @@ For now, we'll define two default values for each of them.
 .. note::
     When running the solver, benchopt will use all possible combinations of hyperparameter values.
     Hence, unless specified otherwise, our solver will be run 2 x 2 = 4 times.
-..     Another way to specify the solver parameters is by defining
-..     the constructor ``__init__``. It should take as arguments the
-..     solver parameters and stores them as class attributes.
 
 TODO XXX here include image of workflow.
 
@@ -72,12 +67,10 @@ Initializing the setup
 
 The first method we need to implement is ``set_objective``.
 It receives all the information about the dataset and objective parameters.
-For each benchmark, this is standardized.
-Check the ``get_objective`` method of the ``Objective`` class, defined in the ``objective.py`` file of the benchmark.
+This is standardized for all solvers in the ``get_objective`` method of the ``Objective`` class, defined in the ``objective.py`` file of the benchmark.
 
-In the Lasso case, ``get_objective`` returns a dictionary with 4 keys: ``X``, ``y``, ``fit_intercept`` and ``lmbd``.
-
-The signature of ``set_objective`` should thus be ``set_objective(self, X, y, lmbd, fit_intercept)``
+In the Lasso case, ``get_objective`` returns a dictionary with four keys: ``X``, ``y``, ``lmbd``, and ``fit_intercept``.
+Therefore, ``set_objective`` must take as input theses arguments.  
 
 .. code-block:: python
     :caption: solvers/mysolver.py
@@ -88,6 +81,7 @@ The signature of ``set_objective`` should thus be ``set_objective(self, X, y, lm
             # store any info needed to run the solver as class attribute.
             self.X, self.y = X, y
             self.alpha = lmbd / X.shape[0]
+
             # declare anything that will be used to run your solver
         ...
 
@@ -95,21 +89,18 @@ Describing the solver run procedure
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Next, we implement the ``run`` method.
-It describes how the solver is executed on the data.
-There are three possible implementations, depending on which sampling strategy is used to construct the performance curve.
-
-
-The ``run`` method combined with ``sampling_strategy`` describes how the  performance curves are constructed.
+The ``run`` method combined with ``sampling_strategy`` describes how the performance curves of solver will be constructed.
 
 .. hint::
 
     The :ref:`Performance curves page <performance_curves>` provides a complete guide
     on performance curves and the different sampling strategies.
 
-There are 3 possible choices: "iteration", "tolerance", and "callback".
-We show how to implement ``run`` in these three cases.
+There are three possible choices for ``sampling_strategy``: *iteration*, *tolerance*, and *callback*.
+We show how to implement the ``run`` method for each one of them.
 
-- "iteration"
+- **Iteration**
+
 This sampling strategy is for black box solvers for which one can only control the number of iterations performed.
 The signature of ``run`` in that case is ``run(self, n_iter)``
 
@@ -208,7 +199,7 @@ In our case, the solver only requires ``skglm`` to function properly.
 
     class Solver(BaseSolver):
         ...
-        requirements = ['pip:skglm']
+        requirements = ['numpy']
         ...
 
 .. note::
@@ -222,16 +213,12 @@ In our case, the solver only requires ``skglm`` to function properly.
 Also, the metadata includes the description of the solver. It can be specified
 by adding docstring to the class.
 
-Here we use the docstring to add a bibliographic reference to the
-`skglm <https://contrib.scikit-learn.org/skglm/>`_.
-
 .. code-block:: python
     :caption: solvers/mysolver.py
 
     class Solver(BaseSolver):
-        """Q. Bertrand and Q. Klopfenstein and P.-A. Bannier and G. Gidel and
-        M. Massias, "Beyond L1: Faster and Better Sparse Models with skglm",
-        NeurIPS 2022.
+        """A description of mysolver.
+        (Why not) a bibliographic reference to it.
         """
         ...
 
