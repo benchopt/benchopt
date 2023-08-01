@@ -172,9 +172,7 @@ Getting the solver's results
 Finally, we define a ``get_result`` method that is used to pass the solver's result back to the objective.
 More specifically, ``get_result`` must return a dictionary whose keys are the input arguments of ``Objective.evaluate_result``.
 
-In our case the input of ``Objective.evaluate_result`` is TODO XXX, hence we return a dict with an only key, ``"beta"``
-
-Here we define a method that post-process the solution based on the ``fit_intercept`` value.
+In our case the input of ``Objective.evaluate_result`` is ``beta``, hence we return a dictionary with a single key ``"beta"``.
 
 .. code-block:: python
     :caption: solvers/mysolver.py
@@ -182,19 +180,14 @@ Here we define a method that post-process the solution based on the ``fit_interc
     class Solver(BaseSolver):
         ...
         def get_result(self):
-            if self.fit_intercept:
-                beta = np.concatenate((self.coef, self.intercept))
-            else:
-                beta = self.coef
-
-            return {'beta': beta}
+            return {'beta': self.w}
         ...
 
 
 Managing imports
 ----------------
 
-Note that, to help benchopt with managing solver requirements, the non-benchopt imports should be enclosed in the context manager ``safe_import_context``, as follows:
+Note that, to help benchopt with managing solver requirements, the non-benchopt imports should be enclosed in the context manager ``safe_import_context``.
 
 .. code-block:: python
     :caption: solvers/mysolver.py
@@ -212,13 +205,14 @@ Note that, to help benchopt with managing solver requirements, the non-benchopt 
 This ``safe_import_context`` context manager is used by benchopt to identify missing imports, skip uninstalled solvers, etc.
 For more details, refer to :class:`~benchopt.safe_import_context` documentation.
 
+
 Specifying metadata
 -------------------
 
 The metadata of the solver includes the required packages to run the solver.
 You can list all the solver dependencies in the class attribute ``requirements``.
 
-In our case, the solver only requires ``skglm`` to function properly.
+In our case, the solver only requires ``numpy`` to function properly.
 
 .. code-block:: python
     :caption: solvers/mysolver.py    
@@ -244,14 +238,14 @@ by adding docstring to the class.
 
     class Solver(BaseSolver):
         """A description of mysolver.
-        (Why not) a bibliographic reference to it.
+
+        A bibliographic reference to it.
         """
         ...
 
 .. note::
 
-    The solver description will be available in the dashboard of results
-    and displayed by :ref:`hovering over the solver legend item <visualize_benchmark>`.
+    The solver description will be available in the dashboard of results and displayed by :ref:`hovering over the solver legend item <visualize_benchmark>`.
 
 
 Refinement
@@ -259,9 +253,9 @@ Refinement
 
 - **Caching JIT-compilation:**
 
-``skglm`` relies on Numba JIT-compilation for fast numerical computation
-which comes at the expense of an initial overhead in the first run.
-Ideally, we would like to disregard that in the benchmark results.
+One might rely on JIT-compilation for fast numerical computation, for instance by using ``Numba`` or ``Jax``.
+The latter comes with the drawback of an initial overhead in the first run.
+Idealy, one would like to disregard that in the benchmark results.
 
 To address this need, benchopt features a :class:`~benchopt.BaseSolver.warm_up`
 hook called once before the actual solver run to cache JIT-compilations.
@@ -274,20 +268,19 @@ In our case, we define it as follows
     class Solver(BaseSolver):
         ...
         def warm_up(self):
-            self.run(1)
+            # execute the solver for one iteration
         ...
 
 
 - **Skipping a setup**
 
-Since ``skglm`` has a scikit-learn-like API, its Lasso estimator doesn't support
-zero regularization, namely the case of ``lambda=0``. Therefore, we would like to skip
-this setup as other solvers might support it.
+It happens that a solver does not support all setups, for instance our solver might not support fitting an intercept.
+Therefore, we would like to skip this setup and not impact other solvers that support it.
 
 Benchopt exposes a :class:`~benchopt.BaseSolver.skip` hook called with result of
 ``Objective.get_objective`` to decide on whether the solver is compatible with the setup.
 
-For ``skglm``, we skip the setup ``lambda=0`` with a reason *"skglm does not support OLS"*.
+Assume we would like to skip fitting an intercept, we check whether ``fit_intercept == True`` and return ``True`` accompanied with a reason *"mysolver does not support fitting an intercept."*.
 
 .. code-block:: python
     :caption: solvers/mysolver.py
@@ -295,10 +288,10 @@ For ``skglm``, we skip the setup ``lambda=0`` with a reason *"skglm does not sup
     class Solver(BaseSolver):
         ...
         def skip(self, X, y, lmbd, fit_intercept):
-            if lmbd == 0:
-                return False, "skglm does not support OLS"
+            if fit_intercept == True:
+                return True, "mysolver does not support fitting an intercept."
 
-            return True, ""
+            return False, ""
         ...
 
 .. hint::
