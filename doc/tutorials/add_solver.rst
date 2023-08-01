@@ -54,7 +54,7 @@ methods and attributes to the solver class.
 
 You can specify the parameters describing the internal functioning of the solver by adding
 an attribute ``parameters``. This attribute is a dictionary whose keys are the parameters
-of the solver. 
+of the solver.
 
 For ``skglm``, the Lasso estimator has arguments to specify
 the working set strategy and its initial size.
@@ -77,8 +77,11 @@ the working set strategy and its initial size.
 
 - **Initializing the setup**
 
-Use the method ``set_objective`` to pass in the dataset and the objective parameters to
-the solver. Also, a commune use case of this method it is to define unchanging objects
+Use the method ``set_objective`` to pass in the dataset and
+the objective parameters to the solver. In practice, benchopt will pass in
+the result of ``Objective.get_objective``.
+
+Also, a commune use case of this method it is to define unchanging objects
 to be used across the solver run.
 
 Here we use it to store references to the dataset ``X, y``.
@@ -119,10 +122,7 @@ will be called repetitively with an increasing number of iterations.
             self.lasso.fit(self.X, self.y)
 
             # store a reference to the solution
-            coef = self.lasso.coef_.flatten()
-            if self.fit_intercept:
-                coef = np.r_[coef, self.lasso.intercept_]
-            self.coef = coef
+            self.coef = self.lasso.coef_
         ...
 
 .. hint::
@@ -133,7 +133,8 @@ will be called repetitively with an increasing number of iterations.
 - **Getting the final results**
 
 We define a ``get_result`` method to pass the ``run`` result back
-to the objective.
+to the objective. More specifically, ``get_result`` must return a dictionary
+whose keys are the input arguments of ``Objective.evaluate_result``.
 
 Here we simply define a method that returns the solution as a dictionary since
 we are not post-processing the solution, e.g. saving the solution.
