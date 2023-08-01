@@ -80,7 +80,7 @@ Therefore, ``set_objective`` must take as input theses arguments.
         def set_objective(self, X, y, lmbd, fit_intercept):
             # store any info needed to run the solver as class attribute.
             self.X, self.y = X, y
-            self.alpha = lmbd / X.shape[0]
+            self.lmbd = lmbd
 
             # declare anything that will be used to run your solver
         ...
@@ -96,30 +96,15 @@ The ``run`` method combined with ``sampling_strategy`` describes how the perform
     The :ref:`Performance curves page <performance_curves>` provides a complete guide
     on performance curves and the different sampling strategies.
 
-There are three possible choices for ``sampling_strategy``: *iteration*, *tolerance*, and *callback*.
+There are three possible choices for ``sampling_strategy``: **iteration**, **tolerance**, and **callback**.
 We show how to implement the ``run`` method for each one of them.
 
-- **Iteration**
+- **iteration**
 
-This sampling strategy is for black box solvers for which one can only control the number of iterations performed.
-The signature of ``run`` in that case is ``run(self, n_iter)``
+This sampling strategy is for solver that can be controlled using the number of iterations performed.
+In this case, benchopt treats the solver as a black box and observes its behavior for different number of iterations.
 
-.. code-block:: python
-    :caption: solvers/mysolver.py
-
-    class Solver(BaseSolver):
-        ...
-        sampling_strategy = 'iteration'
-        ...
-
-        def run(self, n_iter):
-            w = my_black_box(self.X, self.y, self.alpha, n_iter=n_iter)
-        ...
-
-- TODO XXX do the same for tolerance and callback.
-
-Here we use *iteration* as a sampling strategy. Following this choice, the ``run``
-will be called repetitively with an increasing number of iterations.
+Therefore, the signature of the ``run`` method is ``run(self, n_iter)`` and its implementation resembles the snippet below.
 
 .. code-block:: python
     :caption: solvers/mysolver.py
@@ -130,15 +115,56 @@ will be called repetitively with an increasing number of iterations.
         ...
 
         def run(self, n_iter):
-            self.lasso.max_iter = n_iter
-            self.lasso.fit(self.X, self.y)
+            w = mysolver.solve(self.X, self.y, self.lmbd, n_iter=n_iter)
 
-            # store a reference to the solution
-            self.coef = self.lasso.coef_
-            self.intercept = self.lasso.intercept_
+            # store reference to the solution
+            self.w = w
         ...
 
-- "callback"
+- **tolerance**
+
+Similar to **iteration**, The tolerance sampling strategy is used for solver controlled by the tolerance on the solution.
+Hence in this case, the signature of the ``run`` method is ``run(self, tol)`` and would be implemented as follows.
+
+.. code-block:: python
+    :caption: solvers/mysolver.py
+
+    class Solver(BaseSolver):
+        ...
+        sampling_strategy = 'tolerance'
+        ...
+
+        def run(self, n_iter):
+            w = mysolver.solve(self.X, self.y, self.lmbd, tol=tol)
+
+            # store reference to the solution
+            self.w = w
+        ...
+
+- **callback**
+
+This strategy can be used when the solver exposes its internals, namely the intermediate values the iterates.
+A typical use case of **callback** sampling strategy is when the solver cannot be treated as black box and/or when it is costly to run it constantly from scratch.
+
+Here is a as snippet that illustrate how it could be implemented.
+
+.. code-block:: python
+    :caption: solvers/mysolver.py
+
+    class Solver(BaseSolver):
+        ...
+        sampling_strategy = 'callback'
+        ...
+
+        def run(self, callback):
+
+            while callback():
+                w = mysolver.one_iteration(self.X, self.y, self.lmbd)
+
+            # store reference to the solution
+            self.w = w
+        ...
+
 
 Getting the solver's results
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
