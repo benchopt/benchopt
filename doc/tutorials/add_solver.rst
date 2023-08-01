@@ -1,47 +1,30 @@
 .. _add_solver:
 
-Add a solver to a benchmark 
+Add a solver to a benchmark
 ===========================
 
-This tutorial walks you through the cornerstones of adding a new solver
-to a benchmark. To this end, we will focus on adding
-`skglm <https://contrib.scikit-learn.org/skglm/>`_ solver to the
+This tutorial walks you through the cornerstones of adding a new solver to a benchmark.
+To this end, we will focus on adding a new solver to the
 `Lasso benchmark <https://github.com/benchopt/benchmark_lasso>`_.
 
 .. Hint::
 
-    Head to :ref:`get_started` for your first steps with benchopt.
+    Head to :ref:`get_started` to install benchopt and clone the Lasso benchmark repository.
 
 
 Before the implementation
 -------------------------
 
-A solver is a Python class that lives in a standalone Python file.
-It has a unique name that distinguishes it from other solvers in the benchmark.
+A solver is a Python class, inheriting from ``benchopt.BaseSolver``, declared in a standalone Python file in the ``solvers/`` folder.
 
-Start by adding a new file ``skglm.py`` to the ``solvers/`` directory.
-Notice that we named both the python file and the solver ``skglm``,
-but we could have chosen anything else.
+The first step is to create this file and declare the class: start by adding a new file ``mysolver.py`` to the ``solvers/`` directory, with the following content.
 
 .. code-block:: python
 
     from benchopt import BaseSolver, safe_import_context
 
-    with safe_import_context() as import_ctx:
-        import numpy as np
-        from skglm import Lasso
-
     class Solver(BaseSolver):
-        name = 'skglm'
-
-Besides, to help benchopt with managing solver requirements, we enclosed the module
-imports in the context manager ``safe_import_context``, except for benchopt imports.
-
-.. note::
-    
-    Benchopt uses the context manager ``safe_import_context`` to identify missing imports,
-    skip uninstalled solvers, ... For more details refer to
-    :class:`~benchopt.safe_import_context` documentation.
+        name = 'mysolver'
 
 
 Implementation
@@ -85,7 +68,7 @@ Also, a commune use case of this method it is to define unchanging objects
 to be used across the solver run.
 
 Here we use it to store references to the dataset ``X, y``.
-Also, we store the Lasso estimator as it will not change during the solver run. 
+Also, we store the Lasso estimator as it will not change during the solver run.
 
 .. code-block:: python
 
@@ -152,6 +135,26 @@ Here we define a method that post-process the solution based on the ``fit_interc
             return {'beta': beta}
         ...
 
+
+Managing imports
+----------------
+
+Note that, to help benchopt with managing solver requirements, the non-benchopt imports should be enclosed in the context manager ``safe_import_context``, as follows:
+
+.. code-block:: python
+
+    from benchopt import BaseSolver, safe_import_context
+
+    with safe_import_context() as import_ctx:
+        import numpy as np
+        # all your other import should go here
+
+    class Solver(BaseSolver):
+        name = 'mysolver'
+        ...
+
+This ``safe_import_context`` context manager is used by benchopt to identify missing imports, skip uninstalled solvers, etc.
+For more details, refer to :class:`~benchopt.safe_import_context` documentation.
 
 Specifying metadata
 -------------------
@@ -238,11 +241,11 @@ For ``skglm``, we skip the setup ``lambda=0`` with a reason *"skglm does not sup
         def skip(self, X, y, lmbd, fit_intercept):
             if lmbd == 0:
                 return False, "skglm does not support OLS"
-            
+
             return True, ""
         ...
 
-.. hint:: 
+.. hint::
 
     Head to :ref:`API references <benchopt_hooks>` page to learn about
     the other hooks of benchopt.

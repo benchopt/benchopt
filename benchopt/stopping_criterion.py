@@ -189,7 +189,7 @@ class StoppingCriterion():
             Reason why the algorithm was stopped if stop is True.
         next_stop_val : int | float
             Next value for the stopping criterion. This value depends on the
-            stop strategy for the solver.
+            sampling strategy for the solver.
         """
         # Modify the criterion state:
         # - compute the number of run with the curve. We need to remove 1 as
