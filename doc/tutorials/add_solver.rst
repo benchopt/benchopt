@@ -21,7 +21,7 @@ A solver is a Python class, inheriting from ``benchopt.BaseSolver``, declared in
 .. note::
     Recall that, a benchmark structure is as follows:
 
-    .. code-block::
+    .. code-block:: bash
 
         benchmark_lasso/
         ├── objective.py  # contains the definition of the objective
@@ -57,7 +57,7 @@ Specifying the solver parameters
 You can specify the solver's hyperparameters by adding an attribute ``parameters``.
 This attribute is a dictionary whose keys are the solver's hyperparameters.
 
-In our case, let's declare that our solver has two hyperparameters, ``stepsize`` and ``momentum``.
+In our case, let's assume that our solver has two hyperparameters, ``stepsize`` and ``momentum``.
 We implement them as follows:
 
 .. code-block:: python
@@ -76,9 +76,9 @@ We implement them as follows:
     When running the solver, benchopt will use all possible combinations of hyperparameter values.
     Hence, unless specified otherwise, our solver will be run 2 x 2 = 4 times.
 
-Next, we move to the implementation of the 3 key methods a solver must define.
+Next, we move to the implementation of the three key methods a solver must define.
 As a reminder, the workflow of benchopt is depicted in the figure below.
-We'll implement the methods in the order in which they get called when running the benchmark: first ``set_objective``, then ``run`` and finally ``get_result``.
+We'll implement the methods in the order in which they get called when running the benchmark: firstly ``set_objective``, then ``run`` and finally ``get_result``.
 
 .. figure:: ../_static/benchopt_schema_dependency.svg
    :align: center
@@ -112,7 +112,7 @@ Describing the solver run procedure
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Next, we implement the ``run`` method.
-The ``run`` method combined with ``sampling_strategy`` describes how the performance curves of solver will be constructed.
+The ``run`` method combined with ``sampling_strategy`` describes how the performance curves of the solver will be constructed.
 
 .. hint::
 
@@ -185,10 +185,10 @@ Here is a as snippet that illustrate how it could be implemented.
 
             while callback():
                 # do one iteration of the solver here:
-                w = ...
+                beta = ...
 
             # at the end of while loop, store reference to the solution
-            self.w = w
+            self.beta = beta
         ...
 
 
@@ -210,7 +210,7 @@ In our case the input of ``Objective.evaluate_result`` is ``beta``, hence we ret
         ...
 
 
-Your solver is now ready to be run!
+With these methods being implemented, your solver is now ready to be run!
 
 
 Additional features
@@ -244,7 +244,7 @@ Specifying the solver's requirements
 The metadata of the solver includes the required packages to run the solver.
 You can list all the solver dependencies in the class attribute ``requirements``.
 
-For example, if your solver requires ``scikit-learn``, use:
+For example, if your solver requires ``scikit-learn``, write:
 
 .. code-block:: python
     :caption: solvers/mysolver.py
@@ -256,10 +256,9 @@ For example, if your solver requires ``scikit-learn``, use:
 
 .. note::
 
-    Benchopt install requirements with ``¢onda``, using ``conda-forge`` as the default channel.
+    Benchopt install requirements with ``conda``, using ``conda-forge`` as the default channel.
     Write instead ``CHANNEL_NAME:PACKAGE_NAME`` to use another channel.
-    Similarly, use ``pip:PACKAGE_NAME`` to indicate that the package
-    should be installed via ``pip``.
+    Similarly, use ``pip:PACKAGE_NAME`` to indicate that the package should be installed via ``pip``.
 
 
 Adding a solver description
@@ -288,8 +287,7 @@ Skipping a setup
 It may happen that a solver does not support all setups, for instance our solver might not support fitting an intercept.
 Therefore, we would like to skip this setup and not impact other solvers that support it.
 
-Benchopt exposes a :class:`~benchopt.BaseSolver.skip` hook called with result of
-``Objective.get_objective`` to decide on whether the solver is compatible with the setup.
+Benchopt exposes a :class:`~benchopt.BaseSolver.skip` hook called with the result of ``Objective.get_objective`` to decide on whether the solver is compatible with the setup.
 
 Assume we would like to skip fitting an intercept, we check whether ``fit_intercept == True`` and return ``True``, with a reason *"mysolver does not support fitting an intercept."*.
 
@@ -316,7 +314,7 @@ Idealy, one would like to disregard that in the benchmark results.
 To address this need, benchopt features a :class:`~benchopt.BaseSolver.warm_up`
 hook called once before the actual solver run to cache JIT-compilations.
 
-In our case, we define it as follows
+Here is how it should be implemented
 
 .. code-block:: python
     :caption: solvers/mysolver.py
@@ -326,8 +324,6 @@ In our case, we define it as follows
         def warm_up(self):
             # execute the solver for one iteration
         ...
-
-
 
 .. hint::
 
