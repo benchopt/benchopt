@@ -45,7 +45,7 @@ DOC
   By `Badr Moufad`_ and `Mathurin Massias`_ (:gh:`619`, :gh:`629`).
 
 - Tutorial on adding a new solver to a benchmark.
-  By `Badr MOUFAD`_ (:gh:`635`).
+  By `Badr MOUFAD`_ and `Mathurin Massias`_ (:gh:`635`).
 
 
 .. _changes_1_4:

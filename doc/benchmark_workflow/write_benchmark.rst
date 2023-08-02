@@ -15,8 +15,8 @@ structure. For example
     my_benchmark/
     ├── objective.py  # contains the definition of the objective
     ├── datasets/
-    │   ├── simulated.py  # some dataset
-    │   └── real.py  # some dataset
+    │   ├── dataset1.py  # some dataset
+    │   └── dataset2.py  # some dataset
     └── solvers/
         ├── solver1.py  # some solver
         └── solver2.py  # some solver
