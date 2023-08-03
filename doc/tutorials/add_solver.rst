@@ -1,15 +1,23 @@
 .. _add_solver:
 
-Add a solver to a benchmark
-===========================
+Add a solver to an existing benchmark
+=====================================
 
 This tutorial walks you through the cornerstones of adding a new solver to a benchmark.
 To this end, we will focus on adding a new solver to the
-`Lasso benchmark <https://github.com/benchopt/benchmark_lasso>`_.
+`Ridge regression benchmark <https://github.com/benchopt/benchmark_ridge>`_.
 
 .. Hint::
 
-    If you have not already done it, head to :ref:`get_started` to install benchopt and clone the Lasso benchmark repository.
+    If you have not already done it, install benchopt with ``pip install benchopt`` (see :ref:`get_started` for more detailed instructions).
+    If you want to follow the tutorial literally, you can download the Ridge benchmark with:
+
+    .. code-block:: bash
+
+        git clone https://github.com/benchopt/benchmark_ridge
+        cd benchmark_ridge
+
+    Otherwise, you can follow the tutorial by replacing the Ridge benchmark with the benchmark you're interested in, adapting the relevant parts.
 
 
 Before the implementation
@@ -23,14 +31,14 @@ A solver is a Python class, inheriting from ``benchopt.BaseSolver``, declared in
 
     .. code-block:: bash
 
-        benchmark_lasso/
-        ├── objective.py  # contains the definition of the objective
+        benchmark_ridge/
+        ├── objective.py  # contains the implementation of the Objective
         ├── datasets/
         │   ├── dataset1.py  # some dataset
-        │   └── dataset2.py  # some dataset
+        │   └── dataset2.py  # other dataset
         └── solvers/
             ├── solver1.py  # some solver
-            └── solver2.py  # some solver
+            └── solver2.py  # other solver
 
 First, create a new file ``mysolver.py`` in the ``solvers/`` directory and put inside it the following content
 
@@ -51,36 +59,12 @@ Implementation
 Once the Python file is created, we can start implementing the solver by adding methods and attributes to the solver class.
 Let's go over them one by one.
 
-Specifying the solver parameters
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-You can specify the solver's hyperparameters by adding an attribute ``parameters``.
-This attribute is a dictionary whose keys are the solver's hyperparameters.
-
-In our case, let's assume that our solver has two hyperparameters, ``stepsize`` and ``momentum``.
-We implement them as follows:
-
-.. code-block:: python
-    :caption: solvers/mysolver.py
-
-    class Solver(BaseSolver):
-        name = "mysolver"
-
-        parameters = {
-            'stepsize': [0.1, 0.5],
-            'momentum': [0.9, 0.95],
-        }
-        ...
-
-.. note::
-    When running the solver, benchopt will use all possible combinations of hyperparameter values.
-    Hence, unless specified otherwise, our solver will be run 2 x 2 = 4 times.
-
-Next, we move to the implementation of the three key methods a solver must define.
+First, we implement the three key methods a solver must define.
+We do so in the order in which the methods are called when running the benchmark: first ``set_objective``, then ``run`` and finally ``get_result``.
 As a reminder, the workflow of benchopt is depicted in the figure below.
-We'll implement the methods in the order in which they get called when running the benchmark: firstly ``set_objective``, then ``run`` and finally ``get_result``.
 
-.. figure:: ../_static/benchopt_schema_dependency.svg
+.. figure:: https://raw.githubusercontent.com/benchopt/communication_materials/dfed592c90027dacd29c980cdb4868a77fa148b3/sharedimages/benchopt_schema_dependency.svg
    :align: center
    :width: 90 %
 
@@ -92,8 +76,31 @@ The first method we need to implement is ``set_objective``.
 It receives all the information about the dataset and objective parameters.
 This is standardized for all solvers in the ``get_objective`` method of the ``Objective`` class, defined in the ``objective.py`` file of the benchmark.
 
-In the Lasso case, ``get_objective`` returns a dictionary with four keys: ``X``, ``y``, ``lmbd``, and ``fit_intercept``.
+In the Ridge case we see that the content of ``obective.py`` is:
+
+.. code-block:: python
+    :caption: objective.py
+    from benchopt import BaseObjective
+
+
+    class Objective(BaseObjective):
+        name = "Ridge Regression"
+        ...
+        def get_objective(self):
+            return dict(
+                X=self.X,
+                y=self.y,
+                lmbd=self.lmbd,
+                fit_intercept=self.fit_intercept,
+            )
+        ...
+
+So ``get_objective`` returns a dictionary with four keys: ``X``, ``y``, ``lmbd``, and ``fit_intercept``.
 Therefore, ``set_objective`` must take as input these arguments.
+
+.. note::
+
+    If you are working with another benchmark, check the definition of ``get_objective`` in ``objective.py`` to see what are the arguments in your case.
 
 .. code-block:: python
     :caption: solvers/mysolver.py
@@ -104,8 +111,11 @@ Therefore, ``set_objective`` must take as input these arguments.
             # store any info needed to run the solver as class attribute.
             self.X, self.y = X, y
             self.lmbd = lmbd
+            self.fit_intercept = fit_intercept
 
             # declare anything that will be used to run your solver
+            self.solver = sklearn.linear_model.Ridge(
+                alpha=lmbd, fit_intercept=fit_intercept)
         ...
 
 Describing the solver run procedure
@@ -137,12 +147,12 @@ Therefore, the signature of the ``run`` method is ``run(self, n_iter)`` and its 
         ...
 
         def run(self, n_iter):
-            # mysolver.solve is the black box solver; the names of its arguments
-            # may of course differ: you should adapt to your case!
-            beta = mysolver.solve(self.X, self.y, self.lmbd, n_iter=n_iter)
+            self.solver.max_iter = n_iter # configure solver to run for n_iter
+            self.solver.tol = 0  # make sure solver goes until n_iter
+            self.solver.fit(self.X, self.y)
 
             # store reference to the solution
-            self.beta = beta
+            self.beta = self.solver.coef_
         ...
 
 - **tolerance**
@@ -169,9 +179,10 @@ In this case, the signature of the ``run`` method is ``run(self, tol)`` and woul
 
 - **callback**
 
-This strategy can be used when the solver is not a black box, but instead exposes the intermediate values the iterates.
+One may want to code the solver themselves rather than using a black-box.
+In that case, all intermediate iterates are available, and one should use the "callback" sampling strategy.
 
-Here is a as snippet that illustrate how it could be implemented.
+The following snippet shows an implementation of Gradient Descent on the Ridge objective with a callback strategy.
 
 .. code-block:: python
     :caption: solvers/mysolver.py
@@ -185,6 +196,7 @@ Here is a as snippet that illustrate how it could be implemented.
 
             while callback():
                 # do one iteration of the solver here:
+                TODO XXX code GD here
                 beta = ...
 
             # at the end of while loop, store reference to the solution
@@ -198,7 +210,7 @@ Getting the solver's results
 Finally, we define a ``get_result`` method that is used to pass the solver's result back to the objective.
 It must return a dictionary whose keys are the input arguments of ``Objective.evaluate_result``.
 
-In our case the input of ``Objective.evaluate_result`` is ``beta``, hence we return a dictionary with a single key ``"beta"``.
+In the Ridge case the input of ``Objective.evaluate_result`` is ``beta``, hence we return a dictionary with a single key ``"beta"``.
 
 .. code-block:: python
     :caption: solvers/mysolver.py
@@ -211,6 +223,34 @@ In our case the input of ``Objective.evaluate_result`` is ``beta``, hence we ret
 
 
 With these methods being implemented, your solver is now ready to be run!
+
+
+Specifying the solver parameters
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If your solver has hyperparameters, you can specify them by adding an attribute ``parameters``.
+This attribute is a dictionary whose keys are the solver's hyperparameters.
+
+For example, if our solver has two hyperparameters, ``stepsize`` and ``momentum``, we implement them as follows:
+
+.. code-block:: python
+    :caption: solvers/mysolver.py
+
+    class Solver(BaseSolver):
+        name = "mysolver"
+
+        parameters = {
+            'stepsize': [0.1, 0.5],
+            'momentum': [0.9, 0.95],
+        }
+        ...
+
+They are then available in the class methods as ``self.stepsize`` and ``self.momentum``.
+
+.. note::
+    When running the solver, benchopt will use all possible combinations of hyperparameter values.
+    Hence, unless specified otherwise, our solver will be run 2 x 2 = 4 times.
+
 
 
 Additional features
