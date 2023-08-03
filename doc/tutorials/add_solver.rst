@@ -4,7 +4,7 @@ Add a solver to an existing benchmark
 =====================================
 
 This tutorial walks you through the cornerstones of adding a new solver to a benchmark.
-To this end, we will focus on adding a new solver to the
+To this end, we will focus on adding a new solver, to the
 `Ridge regression benchmark <https://github.com/benchopt/benchmark_ridge>`_.
 
 .. Hint::
@@ -27,7 +27,7 @@ A solver is a Python class, inheriting from ``benchopt.BaseSolver``, declared in
 
 
 .. note::
-    Recall that, a benchmark structure is as follows:
+    Recall that a benchmark structure is as follows:
 
     .. code-block:: bash
 
@@ -76,12 +76,12 @@ The first method we need to implement is ``set_objective``.
 It receives all the information about the dataset and objective parameters.
 This is standardized for all solvers in the ``get_objective`` method of the ``Objective`` class, defined in the ``objective.py`` file of the benchmark.
 
-In the Ridge case we see that the content of ``obective.py`` is:
+In the Ridge case we see that the content of ``objective.py`` is:
 
 .. code-block:: python
     :caption: objective.py
-    from benchopt import BaseObjective
 
+    from benchopt import BaseObjective
 
     class Objective(BaseObjective):
         name = "Ridge Regression"
@@ -102,6 +102,11 @@ Therefore, ``set_objective`` must take as input these arguments.
 
     If you are working with another benchmark, check the definition of ``get_objective`` in ``objective.py`` to see what are the arguments in your case.
 
+``set_objective`` is used for all steps that are not computation. TODO XXX find better formulation
+Let's say the solver we implement uses scikit-learn to solve ridge regression.
+Then, we would do:
+
+
 .. code-block:: python
     :caption: solvers/mysolver.py
 
@@ -114,7 +119,7 @@ Therefore, ``set_objective`` must take as input these arguments.
             self.fit_intercept = fit_intercept
 
             # declare anything that will be used to run your solver
-            self.solver = sklearn.linear_model.Ridge(
+            self.model = sklearn.linear_model.Ridge(
                 alpha=lmbd, fit_intercept=fit_intercept)
         ...
 
@@ -147,18 +152,18 @@ Therefore, the signature of the ``run`` method is ``run(self, n_iter)`` and its 
         ...
 
         def run(self, n_iter):
-            self.solver.max_iter = n_iter # configure solver to run for n_iter
-            self.solver.tol = 0  # make sure solver goes until n_iter
-            self.solver.fit(self.X, self.y)
+            self.model.max_iter = n_iter # configure sklearn to run for n_iter
+            self.model.tol = 0  # make sure sklearn goes until n_iter
+            self.model.fit(self.X, self.y)
 
             # store reference to the solution
-            self.beta = self.solver.coef_
+            self.beta = self.model.coef_
         ...
 
 - **tolerance**
 
 Similar to **iteration**, this sampling strategy is used for solver controlled by the tolerance on the optimization process.
-In this case, the signature of the ``run`` method is ``run(self, tol)`` and would be implemented as follows.
+In this case, the signature of the ``run`` method is ``run(self, tolerance)`` and would be implemented as follows.
 
 .. code-block:: python
     :caption: solvers/mysolver.py
@@ -168,10 +173,10 @@ In this case, the signature of the ``run`` method is ``run(self, tol)`` and woul
         sampling_strategy = 'tolerance'
         ...
 
-        def run(self, n_iter):
-            # mysolver.solve is the black box solver; the names of its arguments
-            # may of course differ: you should adapt to your case!
-            beta = mysolver.solve(self.X, self.y, self.lmbd, tol=tol)
+        def run(self, tolerance):
+            self.model.tol = tolerance
+            self.model.max_iter = int(1e12) # configure sklearn to run until tol is reached
+            self.model.fit(self.X, self.y)
 
             # store reference to the solution
             self.beta = beta
@@ -179,10 +184,11 @@ In this case, the signature of the ``run`` method is ``run(self, tol)`` and woul
 
 - **callback**
 
-One may want to code the solver themselves rather than using a black-box.
+One may want to code the solver themselves rather than using a black-box one.
 In that case, all intermediate iterates are available, and one should use the "callback" sampling strategy.
 
-The following snippet shows an implementation of Gradient Descent on the Ridge objective with a callback strategy.
+Let's say that we no longer implement the scikit-learn solver, but instead our own implementation of  Gradient Descent.
+The following snippet shows how to use the callback strategy with a user-coded solver.
 
 .. code-block:: python
     :caption: solvers/mysolver.py
