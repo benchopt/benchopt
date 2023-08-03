@@ -64,7 +64,7 @@ First, we implement the three key methods a solver must define.
 We do so in the order in which the methods are called when running the benchmark: first ``set_objective``, then ``run`` and finally ``get_result``.
 As a reminder, the workflow of benchopt is depicted in the figure below.
 
-.. figure:: https://raw.githubusercontent.com/benchopt/communication_materials/dfed592c90027dacd29c980cdb4868a77fa148b3/sharedimages/benchopt_schema_dependency.svg
+.. figure:: https://raw.githubusercontent.com/benchopt/communication_materials/master/sharedimages/benchopt_schema_dependency.svg
    :align: center
    :width: 90 %
 
