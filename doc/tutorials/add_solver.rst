@@ -76,9 +76,9 @@ Initializing the setup
 
 The first method we need to implement is ``set_objective``.
 It receives all the information about the dataset and objective parameters.
-This is standardized for all solvers in the ``get_objective`` method of the ``Objective`` class, defined in the ``objective.py`` file of the benchmark.
+This is standardized in the ``objective.py`` file of the benchmark through the ``get_objective`` method.
 
-In the Ridge case we see that the content of ``objective.py`` is:
+In our case, ``get_objective`` returns a dictionary with four keys: ``X``, ``y``, ``lmbd``, and ``fit_intercept`` and therefore ``set_objective`` must take them as input arguments.
 
 .. code-block:: python
     :caption: objective.py
@@ -90,40 +90,56 @@ In the Ridge case we see that the content of ``objective.py`` is:
         ...
         def get_objective(self):
             return dict(
-                X=self.X,
-                y=self.y,
+                X=self.X, y=self.y,
                 lmbd=self.lmbd,
-                fit_intercept=self.fit_intercept,
+                fit_intercept=self.fit_intercept
             )
         ...
 
-So ``get_objective`` returns a dictionary with four keys: ``X``, ``y``, ``lmbd``, and ``fit_intercept``.
-Therefore, ``set_objective`` must take as input these arguments.
+``set_objective`` is to store references of dataset and objective parameters.
+Similarly, you can use it to initialize unchanging variables across the solver run.
 
+In our case, we use to store ``X``, ``y``, ``lmbd``, and ``fit_intercept`` for both solvers.
+Besides, we use it to store ridge estimator for the scikit-learn solver.
+
+.. tab-set::
+
+    .. tab-item:: custom solver
+        
+        .. code-block:: python
+            :caption: solvers/mysolver.py
+
+            class Solver(BaseSolver):
+                ...
+                def set_objective(self, X, y, lmbd, fit_intercept):
+                    # store any info needed to run the solver as class attribute.
+                    self.X, self.y = X, y
+                    self.lmbd = lmbd
+                    self.fit_intercept = fit_intercept
+
+                    # declare anything that will be used to run your solver
+                ...
+
+    .. tab-item:: scikit-learn
+        
+        .. code-block:: python
+            :caption: solvers/sklearn.py
+
+            class Solver(BaseSolver):
+                ...
+                def set_objective(self, X, y, lmbd, fit_intercept):
+                    # store any info needed to run the solver as class attribute.
+                    self.X, self.y = X, y
+                    self.lmbd = lmbd
+                    self.fit_intercept = fit_intercept
+
+                    # declare anything that will be used to run your solver
+                    self.model = sklearn.linear_model.Ridge(
+                        alpha=lmbd, fit_intercept=fit_intercept)
+                ...
+        
 .. note::
-
-    If you are working with another benchmark, check the definition of ``get_objective`` in ``objective.py`` to see what are the arguments in your case.
-
-``set_objective`` is used for all steps that are not computation. TODO XXX find better formulation
-Let's say the solver we implement uses scikit-learn to solve ridge regression.
-Then, we would do:
-
-
-.. code-block:: python
-    :caption: solvers/mysolver.py
-
-    class Solver(BaseSolver):
-        ...
-        def set_objective(self, X, y, lmbd, fit_intercept):
-            # store any info needed to run the solver as class attribute.
-            self.X, self.y = X, y
-            self.lmbd = lmbd
-            self.fit_intercept = fit_intercept
-
-            # declare anything that will be used to run your solver
-            self.model = sklearn.linear_model.Ridge(
-                alpha=lmbd, fit_intercept=fit_intercept)
-        ...
+    For other benchmark, make sure to check the definition of ``get_objective`` in ``objective.py`` to see what are the arguments to pass in to ``set_objective``.
 
 Describing the solver run procedure
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
