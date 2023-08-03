@@ -4,53 +4,59 @@ Add a solver to an existing benchmark
 =====================================
 
 This tutorial walks you through the process of adding a new solver to a benchmark.
-To this end, we will focus on adding a new solver, to the
-`Ridge regression benchmark <https://github.com/benchopt/benchmark_ridge>`_.
+To this end, we shall illustrate that on `Ridge regression benchmark <https://github.com/benchopt/benchmark_ridge>`_.
+
+To cover all use cases, we will focus on adding two solvers: a custom solver and ``scikit-learn`` Ridge estimator.
 
 .. Hint::
-
-    If you have not already done it, install benchopt with ``pip install benchopt`` (see :ref:`get_started` for more detailed instructions).
-    If you want to follow the tutorial literally, you can download the Ridge benchmark with:
-
-    .. code-block:: bash
-
-        git clone https://github.com/benchopt/benchmark_ridge
-        cd benchmark_ridge
-
-    Otherwise, you can follow the tutorial by replacing the Ridge benchmark with the benchmark you're interested in, adapting the relevant parts.
+    If not yet done, you can review the :ref:`get started <get_started>` page to learn how to install benchopt and setup a benchmark.
 
 
 Before the implementation
 -------------------------
 
-A solver is a Python class, inheriting from ``benchopt.BaseSolver``, declared in a standalone Python file in the benchmark's ``solvers/`` folder.
-
-
-.. note::
-    Recall that a benchmark structure is as follows:
-
-    .. code-block:: bash
-
-        benchmark_ridge/
-        ├── objective.py  # contains the implementation of the Objective
-        ├── datasets/
-        │   ├── dataset1.py  # some dataset
-        │   └── dataset2.py  # other dataset
-        └── solvers/
-            ├── solver1.py  # some solver
-            └── solver2.py  # other solver
+A solver is a Python class that inherits from ``benchopt.BaseSolver`` and declared in a standalone Python file in the benchmark's ``solvers/`` folder.
 
 First, create a new file ``mysolver.py`` in the ``solvers/`` directory and put inside it the following content
 
-.. code-block:: python
-    :caption: solvers/mysolver.py
+.. tab-set::
 
-    from benchopt import BaseSolver
+    .. tab-item:: custom solver
+        
+        .. code-block:: python
+            :caption: solvers/mysolver.py
 
-    class Solver(BaseSolver):
-        name = 'mysolver'
+            from benchopt import BaseSolver
+
+            class Solver(BaseSolver):
+                name = 'mysolver'
+
+    
+    .. tab-item:: scikit-learn
+        
+        .. code-block:: python
+            :caption: solvers/sklearn.py
+
+            from benchopt import BaseSolver
+
+            class Solver(BaseSolver):
+                name = 'sklearn'
 
 The ``name`` attribute does not have to match the name of the file, but it makes it easier to locate the solver.
+
+Doing the latter steps, our benchmark folder will resemble
+
+.. code-block:: bash
+
+    benchmark_ridge/
+    ├── objective.py     # contains the implementation of the Objective
+    ├── datasets/
+    │   ├── dataset1.py  # some dataset
+    │   ├                # other datasets
+    └── solvers/
+        ├── mysolver.py
+        ├── sklearn.py
+        ├                # other solvers
 
 
 Implementation
