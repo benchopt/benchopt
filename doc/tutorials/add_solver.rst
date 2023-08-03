@@ -62,18 +62,14 @@ Doing the latter steps, our benchmark folder will resemble
 Implementation
 --------------
 
-Once the Python file is created, we can start implementing the solver by adding methods and attributes to the solver class.
-Let's go over them one by one.
-
-
-First, we implement the three key methods a solver must define.
-We do so in the order in which the methods are called when running the benchmark: first ``set_objective``, then ``run`` and finally ``get_result``.
-As a reminder, the workflow of benchopt is depicted in the figure below.
+Once the Python files created, we can start the implementation by adding methods and attributes to the classes.
+To do so, we follow the order that benchopt uses to call the methods during the benchmark's run: first ``set_objective``, then ``run`` and finally ``get_result``.
 
 .. figure:: https://raw.githubusercontent.com/benchopt/communication_materials/master/sharedimages/benchopt_schema_dependency.svg
    :align: center
    :width: 90 %
 
+Let's go over them one by one.
 
 Initializing the setup
 ~~~~~~~~~~~~~~~~~~~~~~
