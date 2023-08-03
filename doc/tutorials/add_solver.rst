@@ -3,7 +3,7 @@
 Add a solver to an existing benchmark
 =====================================
 
-This tutorial walks you through the cornerstones of adding a new solver to a benchmark.
+This tutorial walks you through the process of adding a new solver to a benchmark.
 To this end, we will focus on adding a new solver, to the
 `Ridge regression benchmark <https://github.com/benchopt/benchmark_ridge>`_.
 
