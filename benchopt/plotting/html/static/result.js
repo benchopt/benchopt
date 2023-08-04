@@ -57,6 +57,20 @@ const setState = (partialState) => {
  */
 const state = () => window.state;
 
+
+/**
+ * Mapping between selectors and configuration
+*/
+const config_mapping = {
+  'dataset': 'dataset_selector',
+  'objective': 'objective_selector',
+  'objective_column': 'objective_column',
+  'kind': 'plot_kind',
+  'scale': 'change_scaling',
+  'with_quantiles': 'change_shades',
+  'xaxis_type':'change_xaxis_type',
+};
+
 /*
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * PLOT MANAGEMENT
@@ -228,20 +242,11 @@ const setConfig = (config_item) =>{
   // Get the updated state
   let config = window.metadata.plot_configs[config_name];
   let update = {};
-  const mapping = {
-    'dataset': 'dataset_selector',
-    'objective': 'objective_selector',
-    'objective_column': 'objective_column',
-    'kind': 'plot_kind',
-    'scale': 'change_scaling',
-    'with_quantiles': 'change_shades',
-    'xaxis_type':'change_xaxis_type',
-  };
   const lims = ['xlim', 'ylim', 'hidden_solvers']
   for(var key in config){
-    if (key in mapping){
+    if (key in config_mapping){
       value = config[key];
-      document.getElementById(mapping[key]).value = value;
+      document.getElementById(config_mapping[key]).value = value;
       if (key == "kind"){
         key = "plot_kind";
       }
@@ -272,6 +277,40 @@ const setConfig = (config_item) =>{
   // update the plot
   const div = document.getElementById('unique_plot');
   Plotly.relayout(div, layout);
+
+};
+
+
+const exportConfig = () =>{
+
+  // Retrieve the drop down menue selected values
+  config = {};
+  for(var key in config_mapping){
+    value = config[key];
+    config[key] = document.getElementById(config_mapping[key]).value;
+  };
+
+  // Retrieve the range of the plots.
+  const fig = document.getElementById('unique_plot');
+  config['xlim'] = "[" + fig.layout.xaxis.range[0] + ", ";
+  config['xlim'] += fig.layout.xaxis.range[1] + "]";
+  config['ylim'] = "[" + fig.layout.yaxis.range[0] + ", ";
+  config['ylim'] += fig.layout.yaxis.range[1] + "]";
+
+  // Construct the yaml export of the config.
+  config_yaml = "  new_config:\n"
+  for(var key in config){
+    config_yaml += "    " + key + ": " + config[key] + "\n";
+  }
+
+  // Copy to clipboard the resulting yaml file.
+  var export_area = document.getElementById("config_export");
+  export_area.innerHTML = config_yaml;
+  export_area.select();
+   navigator.clipboard.writeText(export_area.value);
+
+  // Alert the copied text
+   alert("Config copied to clipboard!");
 
 };
 
@@ -391,11 +430,11 @@ const isAvailable = () => {
 
 const displayScatterElements = shouldBeVisible => {
   if (shouldBeVisible) {
-    document.getElementById('change_scaling').style.display = 'inline-block';
+    document.getElementById('scale-form-group').style.display = 'inline-block';
     document.getElementById('legend_container').style.display = 'block';
     document.getElementById('plot_legend').style.display = 'flex';
   } else {
-    document.getElementById('change_scaling').style.display = 'none';
+    document.getElementById('scale-form-group').style.display = 'none';
     document.getElementById('legend_container').style.display = 'none';
     document.getElementById('plot_legend').style.display = 'none';
   }
