@@ -36,7 +36,7 @@ Doing the latter steps, our benchmark folder will resemble
     │   ├── ...          # existing datasets
     └── solvers/
         ├── mysolver.py  # our newly added solver
-        ├── ...            # other solvers
+        ├── ...          # other solvers
 
 
 Implementation
@@ -105,22 +105,22 @@ We also use it to instantiate a Ridge estimator that will be used to perform com
         ...
 
 
-Describing the solver run procedure
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Defining the solver run procedure
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Next, we implement the ``run`` method.
-The ``run`` method combined with the ``sampling_strategy`` attribute of the solver describes how the performance curves of the solver will be constructed.
+Next, we implement the ``run`` method, and declare the ``sampling_strategy`` attribute of the solver.
+Together, they define how the performance curves of the solver will be constructed.
 
 .. hint::
 
     The :ref:`Performance curves page <performance_curves>` provides a complete guide on the way benchopt constructs performance curves, and on the different sampling strategies.
 
-There are three possible choices for ``sampling_strategy``: **iteration**, **tolerance**, and **callback**.
+There are three possible choices for the ``sampling_strategy`` attribute: **iteration**, **tolerance**, and **callback**.
 We show how to implement the ``run`` method for each one of them.
 
 - **iteration**
 
-This sampling strategy is for solvers that can be controlled using the maximum number of iterations performed.
+This sampling strategy is for solvers that are controlled by the maximum number of iterations they perform.
 In this case, benchopt treats the solver as a black box and observes its behavior for different number of iterations.
 
 Therefore, the signature of the ``run`` method is ``run(self, n_iter)`` and its implementation resembles the snippet below.
@@ -148,7 +148,7 @@ Therefore, the signature of the ``run`` method is ``run(self, n_iter)`` and its 
 - **tolerance**
 
 Similar to **iteration**, this sampling strategy is used for solver controlled by the tolerance on the optimization process.
-In this case, the signature of the ``run`` method is ``run(self, tolerance)`` and would be implemented as follows.
+In this case, the signature of the ``run`` method is ``run(self, tolerance)``; it would be implemented as follows.
 
 .. code-block:: python
     :caption: benchmark_ridge/solvers/mysolver.py
@@ -179,7 +179,7 @@ Let's say that we no longer implement the scikit-learn solver, but instead our o
 The following snippet shows how to use the callback strategy with a user-coded solver.
 
 .. code-block:: python
-    :caption: solvers/mysolver.py
+    :caption: benchmark_ridge/solvers/mysolver.py
 
     class Solver(BaseSolver):
         ...
@@ -203,7 +203,7 @@ Getting the solver's results
 Finally, we define a ``get_result`` method that is used to pass the solver's result back to the objective.
 It must return a dictionary whose keys are the input arguments of ``Objective.evaluate_result``.
 
-In the Ridge case the input of ``Objective.evaluate_result`` is ``beta``, hence we return a dictionary with a single key ``"beta"``.
+In the Ridge case the input of ``Objective.evaluate_result`` is ``beta``, hence we return a dictionary with a single key, ``"beta"``.
 
 .. code-block:: python
     :caption: benchmark_ridge/solvers/mysolver.py
@@ -232,8 +232,7 @@ For example, if our solver has two hyperparameters, ``stepsize`` and ``momentum`
     :caption: benchmark_ridge/solvers/mysolver.py
 
     class Solver(BaseSolver):
-        name = "mysolver"
-
+        ...
         parameters = {
             'stepsize': [0.1, 0.5],
             'momentum': [0.9, 0.95],
