@@ -112,10 +112,6 @@ Defining the solver run procedure
 Next, we implement the ``run`` method, and declare the ``sampling_strategy`` attribute of the solver.
 Together, they define how the performance curves of the solver will be constructed.
 
-.. hint::
-
-    The :ref:`Performance curves page <performance_curves>` provides a complete guide on the way benchopt constructs performance curves, and on the different sampling strategies.
-
 There are three possible choices for the ``sampling_strategy`` attribute: **iteration**, **tolerance**, and **callback**.
 We show how to implement the ``run`` method for each one of them.
 
@@ -204,6 +200,8 @@ The following snippet shows how to use the callback strategy with a user-coded s
             self.beta = beta
         ...
 
+.. note::
+    The :ref:`Performance curves page <performance_curves>` provides a complete guide on the way benchopt constructs performance curves, and on the different sampling strategies.
 
 Getting the solver's results
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
