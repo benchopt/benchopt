@@ -4,9 +4,7 @@ Add a solver to an existing benchmark
 =====================================
 
 This tutorial shows how to add a new solver to a benchmark.
-We illustrate the process on the `Ridge regression benchmark <https://github.com/benchopt/benchmark_ridge>`_.
-
-The solver we implement will be using the ``scikit-learn`` Ridge estimator.
+We illustrate the process on the `Ridge regression benchmark <https://github.com/benchopt/benchmark_ridge>`_ by implementing ``scikit-learn`` Ridge estimator.
 
 .. Hint::
     If not yet done, you can review the :ref:`get started page <get_started>` to learn how to install benchopt and download an existing benchmark.
@@ -33,7 +31,7 @@ Doing the latter steps, our benchmark folder will resemble
 .. code-block:: bash
 
     benchmark_ridge/
-    ├── objective.py     # existing the implementation of the Objective
+    ├── objective.py     # existing implementation of the Objective
     ├── datasets/
     │   ├── ...          # existing datasets
     └── solvers/
@@ -98,12 +96,12 @@ We also use it to instantiate a Ridge estimator that will be used to perform com
         def set_objective(self, X, y, lmbd, fit_intercept):
             # store any info needed to run the solver as class attribute
             self.X, self.y = X, y
-            self.lmbd = lmbd
-            self.fit_intercept = fit_intercept
 
             # declare anything that will be used to run your solver
             self.model = sklearn.linear_model.Ridge(
-                alpha=lmbd, fit_intercept=fit_intercept)
+                alpha=lmbd,
+                fit_intercept=fit_intercept
+            )
         ...
 
 
@@ -136,8 +134,11 @@ Therefore, the signature of the ``run`` method is ``run(self, n_iter)`` and its 
         ...
 
         def run(self, n_iter):
-            self.model.max_iter = n_iter # configure sklearn to run for n_iter
-            self.model.tol = 0  # make sure sklearn goes until n_iter
+            # configure sklearn to run for n_iter
+            self.model.max_iter = n_iter
+            # make sure sklearn goes until n_iter
+            self.model.tol = 0
+
             self.model.fit(self.X, self.y)
 
             # store reference to the solution
@@ -158,8 +159,11 @@ In this case, the signature of the ``run`` method is ``run(self, tolerance)`` an
         ...
 
         def run(self, tolerance):
+            # configure sklearn to run for tolerance
             self.model.tol = tolerance
-            self.model.max_iter = int(1e12) # configure sklearn to run until tol is reached
+            # configure sklearn to run until tolerance is reached
+            self.model.max_iter = int(1e12)
+
             self.model.fit(self.X, self.y)
 
             # store reference to the solution
