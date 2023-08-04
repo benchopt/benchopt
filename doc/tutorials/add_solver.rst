@@ -13,10 +13,10 @@ We illustrate the process on the `Ridge regression benchmark <https://github.com
 Before the implementation
 -------------------------
 
-First, create a ``sklearn.py`` file in the ``solvers/`` directory and put inside it the following content
+First, create a ``mysolver.py`` file in the ``solvers/`` directory and put inside it the following content
 
 .. code-block:: python
-    :caption: benchmark_ridge/solvers/sklearn.py
+    :caption: benchmark_ridge/solvers/mysolver.py
 
     from benchopt import BaseSolver
 
@@ -35,7 +35,7 @@ Doing the latter steps, our benchmark folder will resemble
     ├── datasets/
     │   ├── ...          # existing datasets
     └── solvers/
-        ├── sklearn.py   # our newly added solver
+        ├── mysolver.py   # our newly added solver
         ├── ...          # other solvers
 
 
@@ -89,7 +89,7 @@ We also use it to instantiate a Ridge estimator that will be used to perform com
 
 
 .. code-block:: python
-    :caption: benchmark_ridge/solvers/sklearn.py
+    :caption: benchmark_ridge/solvers/mysolver.py
 
     class Solver(BaseSolver):
         ...
@@ -127,7 +127,7 @@ In this case, benchopt treats the solver as a black box and observes its behavio
 Therefore, the signature of the ``run`` method is ``run(self, n_iter)`` and its implementation resembles the snippet below.
 
 .. code-block:: python
-    :caption: benchmark_ridge/solvers/sklearn.py
+    :caption: benchmark_ridge/solvers/mysolver.py
 
     class Solver(BaseSolver):
         ...
@@ -152,7 +152,7 @@ Similar to **iteration**, this sampling strategy is used for solver controlled b
 In this case, the signature of the ``run`` method is ``run(self, tolerance)``; it would be implemented as follows.
 
 .. code-block:: python
-    :caption: benchmark_ridge/solvers/sklearn.py
+    :caption: benchmark_ridge/solvers/mysolver.py
 
     class Solver(BaseSolver):
         ...
@@ -214,7 +214,7 @@ It must return a dictionary whose keys are the input arguments of ``Objective.ev
 In the Ridge case the input of ``Objective.evaluate_result`` is ``beta``, hence we return a dictionary with a single key, ``"beta"``.
 
 .. code-block:: python
-    :caption: benchmark_ridge/solvers/sklearn.py
+    :caption: benchmark_ridge/solvers/mysolver.py
 
     class Solver(BaseSolver):
         ...
