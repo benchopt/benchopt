@@ -1,7 +1,8 @@
-.. _advanced:
+.. _advanced_usage:
 
-Advanced functionalities in a benchmark
-=======================================
+Advanced usage
+==============
+
 
 This page intends to list some advanced functionality
 to make it easier to use the benchmark.
@@ -11,7 +12,7 @@ to make it easier to use the benchmark.
 Running the benchmark on a SLURM cluster
 ----------------------------------------
 
-``benchopt`` also allows easily running the benchmark in parallel on a SLURM
+Benchopt also allows easily running the benchmark in parallel on a SLURM
 cluster. To install the necessary dependencies, please run:
 
 .. prompt:: bash $
@@ -52,7 +53,7 @@ unique parameters are launched as a separated job in a job-array on the SLURM
 cluster. Note that by default, no limitation is used on the number of
 simultaneous jobs that are run.
 
-If ``slurm_time`` is not set in the config file, ``benchopt`` uses by default
+If ``slurm_time`` is not set in the config file, benchopt uses by default
 the value of ``--timeout`` multiplied by ``1.5`` for each job.
 Note that the logs of each benchmark run can be found in ``./benchopt_run/``.
 
@@ -60,7 +61,7 @@ As we rely on ``joblib.Memory`` for caching the results, the cache should work
 exactly as if you were running the computation sequentially, as long as you have
 a shared file-system between the nodes used for the computations.
 
-.. _skiping_solver:
+.. _skipping_solver:
 
 Skipping a solver for a given problem
 -------------------------------------
@@ -190,6 +191,50 @@ callback (default to 1).
             # not be included in the benchmark timing.
             self.run(1)  # For sampling_strategy == 'iteration' | 'tolerance'
             self.run_once()  # For sampling_strategy == 'callback'
+
+
+.. _run_benchmark_with_py_script:
+
+Run a benchmark using a Python script
+-------------------------------------
+
+Another way to run a benchmark is via a Python script.
+Typical use-cases of that are
+
+- Automating the run of several benchmarks
+- Using ``vscode`` debugger where the python script serves as an entry point to benchopt internals
+
+The following script illustrate running the :ref:`benchmark Lasso <run_with_config_file>`.
+It assume that the python script is located at the same level as the benchmark folder.
+
+.. code-block:: python
+
+    from benchopt import run_benchmark
+    from benchopt.benchmark import Benchmark
+
+    # load benchmark
+    BENCHMARK_PATH = "./"
+    benchmark = Benchmark(BENCHMARK_PATH)
+
+    # run benchmark
+    run_benchmark(
+        benchmark,
+        solver_names=[
+            "skglm",
+            "celer",
+            "python-pgd[use_acceleration=True]",
+        ],
+        dataset_names=[
+            "leukemia",
+            "simulated[n_samples=100,n_features=20]"
+        ],
+    )
+
+.. note::
+
+    Learn more about the different parameters supported by ``run_benchmark``
+    function on :ref:`API references <API_ref>`.
+
 
 
 .. |update_params| replace:: ``update_parameters``

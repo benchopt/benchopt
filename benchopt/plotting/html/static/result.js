@@ -809,7 +809,7 @@ function updateXaxis(idXaxisTypeSelection) {
   let options = new Set(['Time']);
 
   // get solvers run for selected (dataset, objective, objective colum)
-  // and select their unique stopping strategies
+  // and select their unique sampling strategies
   let solvers = data()['solvers'];
   Object.values(solvers).forEach(solver => options.add(solver['sampling_strategy']));
 

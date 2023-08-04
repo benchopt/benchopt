@@ -1,18 +1,21 @@
 .. _performance_curves:
 
-How are the performance curves sampled?
-=======================================
+Performance curves
+==================
 
 The performance of each solver is evaluated for various computational budget.
 With "*performance curves*", we refer to the evolution of the performance as a
 function of the computational budget.
-With ``benchopt``, there are different ways to vary the computational budget
+With benchopt, there are different ways to vary the computational budget
 to sample the performance curve.
 They are chosen by the ``sampling_strategy`` attribute of each solver, or if specified, the ``strategy`` parameter of the ``stopping_criterion`` of the solver.
 
-1. Using iterations or tolerance
---------------------------------
 
+Sampling strategies
+-------------------
+
+1. Using iterations or tolerance
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The first way is to use ``Solver.sampling_strategy = "iteration"`` or ``Solver.sampling_strategy = "tolerance"``.
 This is used for black box solvers, where one can only get the result of the solver for a given number of iterations or for a given numerical tolerance.
@@ -43,7 +46,7 @@ Note that the solver is restarted from scratch at each call to ``solver.run``.
 For more advanced configurations, the evolution of ``stop_val`` can be controlled on a per solver basis, by implementing a ``Solver.get_next`` method, which receives the current value for tolerance/number of iterations, and returns the next one.
 
 2. Using a callback
--------------------
+~~~~~~~~~~~~~~~~~~~
 
 Restarting the solver from scratch, though inevitable to handle black box solvers, can be costly.
 
@@ -57,25 +60,25 @@ It returns ``False`` when the solver should be stopped. A classical usage patter
 .. code:: python
 
     def run(self, callback):
-        x = ... # Initialize iterate
+        self.x = ... # Initialize iterate
 
-        while callback(x):
-            x = ...  # Update iterate
-        self.x = x
+        while callback():
+            self.x = ...  # Update iterate
+
+    def get_result(self):
+        return {'x': self.x}
+
 
 
 When are the solvers stopped?
-=============================
+-----------------------------
 
 For each of the sampling strategies above, the solvers continue running (i.e. the callback returns ``True``, the number of iterations passed to ``Solver.run`` increases or the tolerance passed to ``Solver.run`` decreases) until it the ``StoppingCriterion.should_stop()`` associated to the solver ``Solver.stopping_criterion`` returns ``True``.
 
 This method takes into account the maximal number of runs given as ``--max-runs``, the timeout given by ``--timeout`` and also tries to stop the solver if it has converged.
 The convergence of a solver is determined by  the ``StoppingCriterion.check_convergence()`` method, based on the objective curve so far.
-There are three ``StoppingCriterion`` implemented in ``benchopt``:
+There are three ``StoppingCriterion`` implemented in benchopt:
 
 - ``SufficientDescentCriterion(eps, patience)`` considers that the solver has converged when the relative decrease of the objective was less than a tolerance ``eps`` for more than ``patience`` calls to ``check_convergence``.
 - ``SufficientProgressCriterion(eps, patience)`` considers that the solver has converged when the objective has not decreased by more than a tolerance ``eps`` for more than ``patience`` calls to ``check_convergence``.
 - ``SingleRunCriterion(stop_val)`` only call the solver once with the given stop_val. This criterion designed for methods that converge to a given value, when one aim to benchmark final performance of multiple solvers.
-
-
-

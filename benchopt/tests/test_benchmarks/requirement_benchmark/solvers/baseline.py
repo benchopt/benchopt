@@ -9,11 +9,9 @@ class Solver(BaseSolver):
         self.X = X
 
     def run(self, callback):
-
-        while callback(0):
+        self.w = 0
+        while callback():
             pass
 
-        self.w = 0
-
     def get_result(self):
-        return self.w
+        return {'beta': self.w}

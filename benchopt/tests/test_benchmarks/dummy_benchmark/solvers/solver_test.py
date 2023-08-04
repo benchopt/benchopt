@@ -50,7 +50,7 @@ class Solver(BaseSolver):
         return w
 
     def get_result(self):
-        return self.w
+        return {'beta': self.w}
 
     def get_next(self, stop_val):
         return stop_val + 1

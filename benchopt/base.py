@@ -16,13 +16,13 @@ from .utils.parametrized_name_mixin import ParametrizedNameMixin
 
 
 class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
-    """A base class for solver wrappers in BenchOpt.
+    """A base class for solver wrappers in Benchopt.
 
     Solvers that derive from this class should implement three methods:
 
     - ``set_objective(self, **objective_parameters)``: prepares the solver to
       be called on a given problem. ``**objective_parameters`` is the output of
-      the method ``get_objective`` from the benchmark objective. In particular,
+      ``Objective.get_objective`` from the benchmark objective. In particular,
       this method should dumps the parameter to compute the objective function
       in a file for command line solvers to reduce the impact of dumping the
       data to the disk in the benchmark.
@@ -30,19 +30,17 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
     - ``run(self, n_iter/tolerance)``: performs the computation for the
       previously given objective function, after a call to ``set_objective``.
       This method is the one timed in the benchmark and should not perform any
-      operation unrelated to  the optimization procedure.
+      operation unrelated to the optimization procedure.
 
-    - ``get_result(self)``: returns the parameters computed by the previous
-      call to run. For command line solvers, this retrieves the result from the
-      disk. This utility is necessary to reduce the impact of loading the
-      result from the disk in the benchmark.
+    - ``get_result(self)``: returns all parameters of interest, as a dict.
+      The output is passed to ``Objective.evaluate_result``.
 
     Note that two ``sampling_strategy`` can be used to construct the benchmark
     curve:
 
     - ``'iteration'``: call the run method with max_iter number increasing
       logarithmically to get more an more precise points.
-    - ``'tolerance'``: call the run method with tolerance deacreasing
+    - ``'tolerance'``: call the run method with tolerance decreasing
       logarithmically to get more and more precise points.
     - ``'callback'``: a callable that should be called after each iteration or
       epoch. This callable periodically calls the objective's `compute`
@@ -104,6 +102,13 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
             "a dictionary to be passed to `set_objective`"
         )
 
+        # XXX remove in 1.5
+        if hasattr(self, "support_sparse"):
+            warnings.warn(
+                "Skipping sparse X via `support_sparse = False` is deprecated "
+                "and will be removed in v 1.5. Skip explicitly using "
+                "`Solver.skip`.", FutureWarning
+            )
         # Check if the objective is compatible with the solver
         skip, reason = self.skip(**objective_dict)
         if skip:
@@ -171,12 +176,12 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
     def get_result(self):
         """Return the parameters computed by the previous run.
 
-        The parameters should be returned as a flattened array.
+        The parameters should be returned as a dictionary.
 
         Returns
         -------
-        parameters : ndarray, shape ``(dimension,)`` or ``*dimension``
-            The computed coefficients by the solver.
+        parameters : dictionary
+            All quantities of interest to evaluate the objective.
         """
         ...
 
@@ -198,6 +203,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
             If skip is False, the reason should be None.
         """
         # Check that the solver is compatible with the given dataset
+        # XXX remove in 1.5
         from scipy import sparse
 
         if not getattr(self, 'support_sparse', True):
@@ -343,7 +349,7 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
         )
 
 
-class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
+class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
     """Base class to define an objective function
 
     Objectives that derive from this class should implement three methods:
@@ -356,14 +362,14 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
       parameters of the solver's `set_objective` method in order to specify the
       objective function of the benchmark.
 
-    - `compute(beta)`: computes the value of the objective function for an
-      given estimate beta. Beta is given as np.array of size corresponding to
-      the `dimension` value returned by `Dataset.get_data`. The output should
-      be a float or a dictionary of floats.
-      If a dictionary is returned, it should at least contain a key
+    - `evaluate_result(**result)`: evaluate the metrics on the results of a
+      solver. Its arguments should correspond to the key of the dictionary
+      returned by `Solver.get_result` and it can return a scalar value or
+      a dictionary.
+      If it returns a dictionary, it should at least contain a key
       `value` associated to a scalar value which will be used to
       detect convergence. With a dictionary, multiple metric values can be
-      stored at once instead of runnning each separately.
+      stored at once instead of running each separately.
     """
 
     _base_class_name = 'Objective'
@@ -392,14 +398,17 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
         """
         ...
 
-    @abstractmethod
-    def compute(self, beta):
-        """Compute the value of the objective given the current estimate beta.
+    def evaluate_result(self, **solver_result):
+        """Compute the objective value given the output of a solver.
+
+        The arguments are the keys in the result dictionary returned
+        by ``Solver.get_result``.
 
         Parameters
         ----------
-        beta : ndarray or tuple of ndarray
-            The current estimate of the parameters being optimized.
+        solver_result : dict
+            All values needed to compute the objective metrics. This dictionary
+            is retrieved by calling ``solver_result = Solver.get_result()``.
 
         Returns
         -------
@@ -408,16 +417,37 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
             returned, it should at least contain a key `value` associated to a
             scalar value which will be used to detect convergence. With a
             dictionary, multiple metric values can be stored at once instead
-            of runnning each separately.
+            of running each separately.
         """
-        ...
+        # XXX remove in version 1.5 and make this method abstract
+        if hasattr(self, "compute"):
+            warnings.warn(
+                "`Objective.compute` was renamed `Objective.evaluate_result` "
+                "in v 1.5, and now takes as input the unpacked dict returned "
+                "by `Solver.get_result`", FutureWarning,
+            )
+            if '_result' in solver_result:
+                solver_result = solver_result['_result']
+            return self.compute(solver_result)
 
-    def __call__(self, beta):
-        """Used to call the computation of the objective.
+        raise NotImplementedError(
+            "The Objective class should implement `evaluate_result` which "
+            "evaluates the objective given the output of a solver."
+        )
 
-        This allow to standardize the output to a dictionary.
+    def __call__(self, solver_result):
+        """Used to call the evaluation of the objective.
+
+        This allows standardizing the output to a dictionary.
         """
-        objective_dict = self.compute(beta)
+        # XXX remove in version 1.5
+        if not isinstance(solver_result, dict):
+            warnings.warn(
+                "From benchopt 1.5, Solver.get_result() should return a dict.",
+                FutureWarning,
+            )
+            solver_result = {'_result': solver_result}
+        objective_dict = self.evaluate_result(**solver_result)
 
         if not isinstance(objective_dict, dict):
             objective_dict = {'value': objective_dict}
@@ -486,16 +516,27 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin):
         """
         return False, None
 
-    @abstractmethod
-    def get_one_solution(self):
-        """Return one solution for which the objective can be evaluated.
+    def get_one_result(self):
+        """Return one result for which the objective can be evaluated.
 
         This method is mainly for testing purposes, to check that the method
         `Objective.compute` can be called and that it returns a compatible
         type for benchopt. The returned object will be passed to
         ``Objective.compute``.
         """
-        pass
+        # XXX: remove in 1.5 and make this method abstract
+        if hasattr(self, "get_one_solution"):
+            warnings.warn(
+                "`Objective.get_one_solution` is renamed "
+                "`Objective.get_one_result`. This will raise an error in "
+                "v1.5", FutureWarning,
+            )
+            return self.get_one_solution()
+
+        raise NotImplementedError(
+            "The Objective class should implement `get_one_result` which "
+            "returns one result for which the objective can be evaluated."
+        )
 
     # Reduce the pickling and hashing burden by only pickling class parameters.
     @staticmethod

@@ -1,5 +1,7 @@
-Some available benchmarks
-=========================
+.. _available_benchmarks:
+
+Available benchmarks
+====================
 
 .. note::
     Some benchmarks are briefly described in the list below. For a complete

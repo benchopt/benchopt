@@ -7,7 +7,7 @@ __pycache__
 /data
 /doc/_build
 /doc/auto_examples
-/doc/generated
+/doc/**/generated
 /examples/benchmark_*
 .coverage
 

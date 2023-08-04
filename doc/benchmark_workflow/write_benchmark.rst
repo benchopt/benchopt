@@ -1,7 +1,8 @@
-.. _how:
+.. _write_benchmark:
 
 Write a benchmark
 =================
+
 
 A benchmark is composed of three elements: an objective_ function,
 a list of datasets_, and a list of solvers_.
@@ -30,7 +31,7 @@ as for `Ordinary Least Square (OLS) <https://github.com/benchopt/benchmark_ols>`
 
     The simplest way to create a benchmark is to copy an existing folder and
     to adapt its content.
-    A benchmark template is provided as a `GitHub template repo here <https://github.com/benchopt/template_benchmark>`_
+    A benchmark template is provided as a `GitHub template repository here <https://github.com/benchopt/template_benchmark>`_.
 
 
 .. _objective:
@@ -38,15 +39,15 @@ as for `Ordinary Least Square (OLS) <https://github.com/benchopt/benchmark_ols>`
 1. Objective
 ------------
 
-The **objective function** is defined through a Python class.
-This class allows to monitor the quantities of interest along the iterations
-of the solvers. Typically it allows to evaluate the objective function to
-be minimized by the solvers. An objective class should define 3 methods:
+The **objective function** is defined through a Python class, ``Objective``, defined in ``objective.py``.
+This class allows to monitor the quantities of interest along the iterations of the solvers.
+Typically it allows to evaluate the objective function to be minimized by the solvers.
+An objective class should define 4 methods:
 
-- ``get_one_solution()``: it returns one solution that can be returned by a solver.
+- ``get_one_result()``: returns one solution that can be returned by a solver.
   This defines the shape of the solution and will be used to test that the
   benchmark works properly.
-- ``set_data(**data)``: it allows to specify the data. See the data as a dictionary
+- ``set_data(**data)``: allows to specify the data. See the data as a dictionary
   of Python variables without any constraint.
 - ``compute(x)``: it allows to evaluate the objective for a given value
   of the iterate, here called ``x``. This method should take only one parameter,
@@ -56,21 +57,20 @@ be minimized by the solvers. An objective class should define 3 methods:
   is returned it should contain a key called ``value`` (the objective value) and all other keys
   should have ``float`` values allowing to track more than one value
   of interest (e.g. train and test errors).
-- ``get_objective()``: method that returns a dictionary to be passed
+- ``get_objective()``: returns a dictionary to be passed
   to the ``set_objective`` methods of solvers_.
 
-An objective class also needs to inherit from a base class,
+An objective class needs to inherit from a base class,
 :class:`benchopt.BaseObjective`.
 
 .. note::
-  Multiple values can be computed in one objective as long as they are
-  stored in a dictionary with a key being ``value``. This allows to compute
-  different metrics at once.
+  Multiple metrics can be returned by ``Objective.compute`` as long as they are
+  stored in a dictionary, with a key being ``value`` corresponding to the main metric to track.
 
 Example
 ~~~~~~~
 
-.. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/doc_objective.py
+.. literalinclude:: ../../benchopt/tests/test_benchmarks/dummy_benchmark/doc_objective.py
 
 .. _datasets:
 
@@ -80,7 +80,7 @@ Example
 A dataset defines what can be passed to an objective. More specifically,
 a dataset should implement one method:
 
-- ``get_data()``: A method which outputs a dictionary that can be passed as
+- ``get_data()``: A method which outputs a dictionary that is passed as
   keyword arguments ``**data`` to the ``set_data`` method of an objective_.
 
 A dataset class also needs to inherit from a base class called
@@ -89,7 +89,7 @@ A dataset class also needs to inherit from a base class called
 Example using a real dataset
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/datasets/leukemia.py
+.. literalinclude:: ../../benchopt/tests/test_benchmarks/dummy_benchmark/datasets/leukemia.py
 
 You can also define a parametrized simulated dataset, for example to test
 across multiple problem dimensions.
@@ -104,7 +104,7 @@ attribute called ``parameters``. This parameter must be a dictionary
 whose keys are passed to the ``__init__`` of the dataset class. Then Benchopt
 will automatically allow you to test all combinations of parameters.
 
-.. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/datasets/simulated.py
+.. literalinclude:: ../../benchopt/tests/test_benchmarks/dummy_benchmark/datasets/simulated.py
 
 However, all of these variants will not be tested during the call to ``benchopt test``.
 If you want to test different variants of the simulated dataset with ``benchopt test``,
@@ -113,7 +113,6 @@ The construction of this attribute is similar to the one described above for
 ``parameters``. This allows you to test solvers that could not be used for a single
 variant of the dataset.
 
-.. literalinclude:: ../benchopt/tests/test_benchmarks/many_simulated_datasets/datasets/simulated.py
 
 .. _solvers:
 
@@ -122,67 +121,65 @@ variant of the dataset.
 
 A solver must define three methods:
 
-   - ``set_objective(**objective_dict)``: This method will be called with the
-     dictionary ``objective_dict`` returned by the method ``get_objective``
-     from the objective. The goal of this method is to provide all necessary
-     information to the solver so it can optimize the objective function.
+- ``set_objective(**objective_dict)``: This method will be called with the
+  dictionary ``objective_dict`` returned by the method ``get_objective``
+  from the objective. The goal of this method is to provide all necessary
+  information to the solver so it can optimize the objective function.
 
-   - ``run(stop_value)``: This method takes only one parameter that controls the stopping
-     condition of the solver. Typically this is either a number of iterations ``n_iter``
-     or a tolerance parameter ``tol``. Alternatively, a ``callback`` function that will be
-     called at each iteration can be passed. The callback should return ``False`` once the
-     computation should stop.
-     The parameter ``stop_value`` is controlled by the ``sampling_strategy``,
-     see below for details.
+- ``run(stop_value)``: This method takes only one parameter that controls the stopping
+  condition of the solver. Typically this is either a number of iterations ``n_iter``
+  or a tolerance parameter ``tol``. Alternatively, a ``callback`` function that will be
+  called at each iteration can be passed. The callback should return ``False`` once the
+  computation should stop.
+  The parameter ``stop_value`` is controlled by the ``sampling_strategy``,
+  see below for details.
 
-   - ``get_result()``: This method returns a variable that can be passed
-     to the ``compute`` method from the objective. This is the output of
-     the solver.
+- ``get_result()``: This method returns a variable that can be passed
+  to the ``compute`` method from the objective. This is the output of
+  the solver.
 
-**Stop strategy:**
+**Sampling strategy:**
 
 A solver should also define a ``sampling_strategy`` as class attribute.
 This ``sampling_strategy`` can be:
 
-    - ``'iteration'``: in this case the ``run`` method of the solver
-      is parametrized by the number of iterations computed. The parameter
-      is called ``n_iter`` and should be an integer.
+- ``'iteration'``: in this case the ``run`` method of the solver
+  is parametrized by the number of iterations computed. The parameter
+  is called ``n_iter`` and should be an integer.
 
-    - ``'tolerance'``: in this case the ``run`` method of the solver
-      is parametrized by a tolerance that should decrease with
-      the running time. The parameter is called ``tol`` and should be
-      a positive float.
+- ``'tolerance'``: in this case the ``run`` method of the solver
+  is parametrized by a tolerance that should decrease with
+  the running time. The parameter is called ``tol`` and should be
+  a positive float.
 
-    - ``'callback'``: in this case, the ``run`` method of the solver
-      should call at each iteration the provided callback function. It will
-      compute and store the objective and return ``False`` once the computations
-      should stop.
+- ``'callback'``: in this case, the ``run`` method of the solver
+  should call at each iteration the provided callback function. It will
+  compute and store the objective and return ``False`` once the computations
+  should stop.
 
 Benchopt supports different types of solvers:
 
-   - :ref:`python_solvers`
-   - :ref:`r_solvers`
-   - :ref:`julia_solvers`
-   - :ref:`source_solvers`
+- :ref:`python_solvers`
+- :ref:`r_solvers`
+- :ref:`julia_solvers`
+- :ref:`source_solvers`
 
 .. _python_solvers:
 
 Python solver
 ~~~~~~~~~~~~~
 
-The simplest solvers to use are solvers written in pure
-`Python <https://www.python.org/>`_ without any compiled
-code. They are typically written in `Numpy <https://numpy.org/>`_
-with no other dependencies. Here is an example:
+The simplest solvers to use are solvers using `Python <https://www.python.org/>`_ code.
+Here is an example:
 
-.. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/solvers/python_pgd.py
+.. literalinclude:: ../../benchopt/tests/test_benchmarks/dummy_benchmark/solvers/python_pgd.py
 
 For solvers that allow access to each iterate of the solution, using ``"callback"``
 as a ``sampling_strategy`` implies a slight modification for ``run``. A ``callback``
 should be called at each iteration with parameter the current value of the iterate.
 Here is an example in the same situation as above:
 
-.. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/solvers/python_pgd_callback.py
+.. literalinclude:: ../../benchopt/tests/test_benchmarks/dummy_benchmark/solvers/python_pgd_callback.py
   :pyobject: Solver.run
 
 If your Python solver requires some packages such as `Numba <https://numba.pydata.org/>`_,
@@ -196,7 +193,7 @@ and the list of needed packages is specified in the variable
 starts with ``pip:`` then the package is installed from `pypi <https://pypi.org/>`_ and
 not `conda-forge <https://conda-forge.org/>`_. See example:
 
-.. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/solvers/sklearn.py
+.. literalinclude:: ../../benchopt/tests/test_benchmarks/dummy_benchmark/solvers/sklearn.py
 
 .. note::
 
@@ -209,7 +206,7 @@ not `conda-forge <https://conda-forge.org/>`_. See example:
     Specifying the dependencies is necessary if you let benchopt
     manage the creation of a dedicated environment. If you want to
     use your local environment the list of dependencies is
-    not relevant. See :ref:`cli_documentation`.
+    not relevant. See :ref:`cli_ref`.
 
 .. _r_solvers:
 
@@ -221,11 +218,11 @@ A ``.R`` file that contains the solver and a ``.py`` file that knows how to call
 R solver using `Rpy2 <https://pypi.org/project/rpy2/>`_. Only the extensions
 should differ between the two files. Here is the Python file:
 
-.. literalinclude:: ../benchmarks/benchmark_lasso/solvers/r_pgd.py
+.. literalinclude:: ../../benchmarks/benchmark_lasso/solvers/r_pgd.py
 
 It uses the R code in:
 
-.. literalinclude:: ../benchmarks/benchmark_lasso/solvers/r_pgd.R
+.. literalinclude:: ../../benchmarks/benchmark_lasso/solvers/r_pgd.R
     :language: R
 
 .. note::
@@ -244,11 +241,11 @@ A ``.jl`` file that contains the solver and a ``.py`` file that knows how to cal
 Julia solver using `PyJulia <https://pypi.org/project/julia/>`_. Only the extensions
 should differ between the two files. Here is the Python file:
 
-.. literalinclude:: ../benchmarks/benchmark_lasso/solvers/julia_pgd.py
+.. literalinclude:: ../../benchmarks/benchmark_lasso/solvers/julia_pgd.py
 
 It uses the Julia code in:
 
-.. literalinclude:: ../benchmarks/benchmark_lasso/solvers/julia_pgd.jl
+.. literalinclude:: ../../benchmarks/benchmark_lasso/solvers/julia_pgd.jl
     :language: julia
 
 .. admonition:: Installing Julia dependencies
@@ -271,7 +268,7 @@ as binaries from the package managers from either Python, R or Julia.
 
 Here is example using pip from a Python package on GitHub:
 
-.. literalinclude:: ../benchopt/tests/test_benchmarks/dummy_benchmark/solvers/sklearn.py
+.. literalinclude:: ../../benchopt/tests/test_benchmarks/dummy_benchmark/solvers/sklearn.py
 
 .. note::
 
