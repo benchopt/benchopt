@@ -3,26 +3,26 @@
 Add a solver to an existing benchmark
 =====================================
 
-This tutorial walks you through the process of adding a new solver to a benchmark.
-To this end, we shall illustrate that on `Ridge regression benchmark <https://github.com/benchopt/benchmark_ridge>`_.
+This tutorial shows how to add a new solver to a benchmark.
+We illustrate the process on the `Ridge regression benchmark <https://github.com/benchopt/benchmark_ridge>`_.
 
-To cover all use cases, we will focus on adding two solvers: a custom solver and ``scikit-learn`` Ridge estimator.
+The solver we implement will be using the ``scikit-learn`` Ridge estimator.
 
 .. Hint::
-    If not yet done, you can review the :ref:`get started <get_started>` page to learn how to install benchopt and setup a benchmark.
+    If not yet done, you can review the :ref:`get started <get_started>` page to learn how to install benchopt and download an existing benchmark.
 
 
 Before the implementation
 -------------------------
 
-A solver is a Python class that inherits from ``benchopt.BaseSolver`` and declared in a standalone Python file in the benchmark's ``solvers/`` folder.
+A solver is a Python class, ``Solver`` that inherits from ``benchopt.BaseSolver`` and is declared in a standalone Python file in the benchmark's ``solvers/`` folder.
 
 First, create a new file ``mysolver.py`` in the ``solvers/`` directory and put inside it the following content
 
 .. tab-set::
 
     .. tab-item:: custom solver
-        
+
         .. code-block:: python
             :caption: solvers/mysolver.py
 
@@ -31,16 +31,6 @@ First, create a new file ``mysolver.py`` in the ``solvers/`` directory and put i
             class Solver(BaseSolver):
                 name = 'mysolver'
 
-    
-    .. tab-item:: scikit-learn
-        
-        .. code-block:: python
-            :caption: solvers/sklearn.py
-
-            from benchopt import BaseSolver
-
-            class Solver(BaseSolver):
-                name = 'sklearn'
 
 The ``name`` attribute does not have to match the name of the file, but it makes it easier to locate the solver.
 
@@ -52,17 +42,16 @@ Doing the latter steps, our benchmark folder will resemble
     ├── objective.py     # contains the implementation of the Objective
     ├── datasets/
     │   ├── dataset1.py  # some dataset
-    │   ├                # other datasets
+    │   ├ ...            # other datasets
     └── solvers/
         ├── mysolver.py
-        ├── sklearn.py
-        ├                # other solvers
+        ├ ...            # other solvers
 
 
 Implementation
 --------------
 
-Once the Python files created, we can start the implementation by adding methods and attributes to the classes.
+Once the Python file is created, we can start the implementation by adding methods and attributes to the ``Solver`` class.
 To do so, we follow the order that benchopt uses to call the methods during the benchmark's run: first ``set_objective``, then ``run`` and finally ``get_result``.
 
 .. figure:: https://raw.githubusercontent.com/benchopt/communication_materials/master/sharedimages/benchopt_schema_dependency.svg
@@ -105,7 +94,7 @@ Besides, we use it to store ridge estimator for the scikit-learn solver.
 .. tab-set::
 
     .. tab-item:: custom solver
-        
+
         .. code-block:: python
             :caption: solvers/mysolver.py
 
@@ -121,7 +110,7 @@ Besides, we use it to store ridge estimator for the scikit-learn solver.
                 ...
 
     .. tab-item:: scikit-learn
-        
+
         .. code-block:: python
             :caption: solvers/sklearn.py
 
@@ -137,7 +126,7 @@ Besides, we use it to store ridge estimator for the scikit-learn solver.
                     self.model = sklearn.linear_model.Ridge(
                         alpha=lmbd, fit_intercept=fit_intercept)
                 ...
-        
+
 .. note::
     For other benchmark, make sure to check the definition of ``get_objective`` in ``objective.py`` to see what are the arguments to pass in to ``set_objective``.
 
