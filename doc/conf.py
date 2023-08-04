@@ -87,8 +87,6 @@ language = None
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 # The name of the Pygments (syntax highlighting) style to use.
-# for the theme "sphinx_book_theme", `pygments_style` has no effect
-# on the syntax highlight theme. Instead, modify it with `html_theme_options`
 # pygments_style = 'sphinx'
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
