@@ -17,7 +17,7 @@ Before the implementation
 
 A solver is a Python class, ``Solver`` that inherits from ``benchopt.BaseSolver`` and is declared in a standalone Python file in the benchmark's ``solvers/`` folder.
 
-First, create a new file ``mysolver.py`` in the ``solvers/`` directory and put inside it the following content
+First, create the files in the ``solvers/`` directory and put inside it the following content
 
 .. tab-set::
 
@@ -32,7 +32,7 @@ First, create a new file ``mysolver.py`` in the ``solvers/`` directory and put i
                 name = 'mysolver'
 
 
-The ``name`` attribute does not have to match the name of the file, but it makes it easier to locate the solver.
+The attribute ``name`` does not have to match the file name, but it makes it easier to locate the solver.
 
 Doing the latter steps, our benchmark folder will resemble
 
@@ -85,11 +85,12 @@ In our case, ``get_objective`` returns a dictionary with four keys: ``X``, ``y``
             )
         ...
 
-``set_objective`` is to store references of dataset and objective parameters.
-Similarly, you can use it to initialize unchanging variables across the solver run.
+The ``set_objective`` method is meant to store references of dataset and objective parameters.
+It is also used to initialize unchanging variables across the solver run.
 
-In our case, we use to store ``X``, ``y``, ``lmbd``, and ``fit_intercept`` for both solvers.
-Besides, we use it to store ridge estimator for the scikit-learn solver.
+In our case, we store ``X``, ``y``, ``lmbd``, and ``fit_intercept`` for both solvers.
+Besides, we use it to store ridge estimator for the scikit-learn solver as it will not change throughout.
+
 
 .. tab-set::
 
@@ -128,7 +129,7 @@ Besides, we use it to store ridge estimator for the scikit-learn solver.
                 ...
 
 .. note::
-    For other benchmark, make sure to check the definition of ``get_objective`` in ``objective.py`` to see what are the arguments to pass in to ``set_objective``.
+    For other benchmark, make sure to check the definition of ``get_objective`` in ``objective.py`` to see the arguments to pass in to ``set_objective``.
 
 Describing the solver run procedure
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
