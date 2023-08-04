@@ -9,27 +9,24 @@ We illustrate the process on the `Ridge regression benchmark <https://github.com
 The solver we implement will be using the ``scikit-learn`` Ridge estimator.
 
 .. Hint::
-    If not yet done, you can review the :ref:`get started <get_started>` page to learn how to install benchopt and download an existing benchmark.
+    If not yet done, you can review the :ref:`get started page <get_started>` to learn how to install benchopt and download an existing benchmark.
 
 
 Before the implementation
 -------------------------
 
-A solver is a Python class, ``Solver`` that inherits from ``benchopt.BaseSolver`` and is declared in a standalone Python file in the benchmark's ``solvers/`` folder.
+A solver is a Python class, ``Solver``, that inherits from ``benchopt.BaseSolver`` and is declared in a standalone Python file in the benchmark's ``solvers/`` folder.
 
-First, create the files in the ``solvers/`` directory and put inside it the following content
+First, create the file in the ``solvers/`` directory and put inside it the following content
 
-.. tab-set::
 
-    .. tab-item:: custom solver
+.. code-block:: python
+    :caption: benchmark_ridge/solvers/mysolver.py
 
-        .. code-block:: python
-            :caption: solvers/mysolver.py
+    from benchopt import BaseSolver
 
-            from benchopt import BaseSolver
-
-            class Solver(BaseSolver):
-                name = 'mysolver'
+    class Solver(BaseSolver):
+        name = 'mysolver'
 
 
 The attribute ``name`` does not have to match the file name, but it makes it easier to locate the solver.
@@ -39,12 +36,12 @@ Doing the latter steps, our benchmark folder will resemble
 .. code-block:: bash
 
     benchmark_ridge/
-    ├── objective.py     # contains the implementation of the Objective
+    ├── objective.py     # econtains the implementation of th Objective
     ├── datasets/
-    │   ├── dataset1.py  # some dataset
+    │   ├── dataset1.py  # existing dataset
     │   ├ ...            # other datasets
     └── solvers/
-        ├── mysolver.py
+        ├── mysolver.py  # our newly added solver
         ├ ...            # other solvers
 
 
@@ -67,10 +64,10 @@ The first method we need to implement is ``set_objective``.
 It receives all the information about the dataset and objective parameters.
 This is standardized in the ``objective.py`` file of the benchmark through the ``get_objective`` method.
 
-In our case, ``get_objective`` returns a dictionary with four keys: ``X``, ``y``, ``lmbd``, and ``fit_intercept`` and therefore ``set_objective`` must take them as input arguments.
+In the Ridge benchmark, ``get_objective`` returns a dictionary with four keys: ``X``, ``y``, ``lmbd``, and ``fit_intercept`` and therefore our ``set_objective`` must take them as input arguments.
 
 .. code-block:: python
-    :caption: objective.py
+    :caption: benchmark_ridge/objective.py
 
     from benchopt import BaseObjective
 
@@ -85,51 +82,32 @@ In our case, ``get_objective`` returns a dictionary with four keys: ``X``, ``y``
             )
         ...
 
+.. note::
+    If you are working with another benchmark, check the definition of ``Objective.get_objective`` in the ``objective.py`` to see which arguments are passed to ``Solver.set_objective``.
+
 The ``set_objective`` method is meant to store references of dataset and objective parameters.
 It is also used to initialize unchanging variables across the solver run.
 
-In our case, we store ``X``, ``y``, ``lmbd``, and ``fit_intercept`` for both solvers.
-Besides, we use it to store ridge estimator for the scikit-learn solver as it will not change throughout.
+In our case, we store ``X``, ``y``, ``lmbd``, and ``fit_intercept`` for future use when actually running the solver.
+We also use it to instantiate a Ridge estimator that will be used to perform computation of the solution.
 
 
-.. tab-set::
+.. code-block:: python
+    :caption: solvers/sklearn.py
 
-    .. tab-item:: custom solver
+    class Solver(BaseSolver):
+        ...
+        def set_objective(self, X, y, lmbd, fit_intercept):
+            # store any info needed to run the solver as class attribute
+            self.X, self.y = X, y
+            self.lmbd = lmbd
+            self.fit_intercept = fit_intercept
 
-        .. code-block:: python
-            :caption: solvers/mysolver.py
+            # declare anything that will be used to run your solver
+            self.model = sklearn.linear_model.Ridge(
+                alpha=lmbd, fit_intercept=fit_intercept)
+        ...
 
-            class Solver(BaseSolver):
-                ...
-                def set_objective(self, X, y, lmbd, fit_intercept):
-                    # store any info needed to run the solver as class attribute.
-                    self.X, self.y = X, y
-                    self.lmbd = lmbd
-                    self.fit_intercept = fit_intercept
-
-                    # declare anything that will be used to run your solver
-                ...
-
-    .. tab-item:: scikit-learn
-
-        .. code-block:: python
-            :caption: solvers/sklearn.py
-
-            class Solver(BaseSolver):
-                ...
-                def set_objective(self, X, y, lmbd, fit_intercept):
-                    # store any info needed to run the solver as class attribute.
-                    self.X, self.y = X, y
-                    self.lmbd = lmbd
-                    self.fit_intercept = fit_intercept
-
-                    # declare anything that will be used to run your solver
-                    self.model = sklearn.linear_model.Ridge(
-                        alpha=lmbd, fit_intercept=fit_intercept)
-                ...
-
-.. note::
-    For other benchmark, make sure to check the definition of ``get_objective`` in ``objective.py`` to see the arguments to pass in to ``set_objective``.
 
 Describing the solver run procedure
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
