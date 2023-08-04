@@ -125,7 +125,7 @@ html_theme_options = {
     "home_page_in_toc": True,
     # for a complete list of themes refer to https://pygments.org/styles/
     "pygment_light_style": "colorful",
-    "pygment_dark_style": "one-dark",
+    "pygment_dark_style": "gruvbox-dark",
 }
 
 html_sidebars = {
