@@ -33,7 +33,7 @@ def test_parquet_metadata():
 
         # Make sure the data did not change
         df_new = pd.read_parquet(path)
-        assert (df_new == df).all().all()
+        assert df.equals(df_new)
 
         # Check that the metadata has been changed correctly
         assert json.dumps(get_metadata(path)) == json.dumps(metadata)

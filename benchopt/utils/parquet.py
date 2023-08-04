@@ -1,4 +1,3 @@
-
 import json
 import pyarrow as pa
 import pyarrow.parquet as pq
@@ -7,7 +6,7 @@ JSON_KEY = b"_meta_json"
 
 
 def to_parquet(df, path, metadata=None):
-    """Write a pandas.DataFrame in a parquet file, with optional metadata.
+    """Write a ``pandas.DataFrame`` in a parquet file, with optional metadata.
 
     Parameters
     ----------
@@ -51,7 +50,7 @@ def update_metadata(path, metadata):
 
 
 def get_metadata(path):
-    """Retrieves metadata embeded using `to_parquet` function.
+    """Retrieve metadata embedded using the ``to_parquet`` function.
 
     Parameters
     ----------
