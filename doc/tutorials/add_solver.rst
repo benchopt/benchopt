@@ -35,7 +35,7 @@ Doing the latter steps, our benchmark folder will resemble
     ├── datasets/
     │   ├── ...          # existing datasets
     └── solvers/
-        ├── mysolver.py  # our newly added solver
+        ├── mysolver.py   # our newly added solver
         ├── ...          # other solvers
 
 

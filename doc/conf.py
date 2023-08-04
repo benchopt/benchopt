@@ -87,9 +87,7 @@ language = None
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 # The name of the Pygments (syntax highlighting) style to use.
-# for the theme "sphinx_book_theme", `pygments_style` has no effect
-# on the syntax highlight theme. Instead, modify it with `html_theme_options`
-# pygments_style = 'sphinx'
+pygments_style = 'sphinx'
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = False
@@ -123,9 +121,6 @@ html_theme_options = {
     "use_fullscreen_button": False,
     "repository_url": "https://github.com/benchopt/benchopt",
     "home_page_in_toc": True,
-    # for a complete list of themes refer to https://pygments.org/styles/
-    "pygment_light_style": "colorful",
-    "pygment_dark_style": "one-dark",
 }
 
 html_sidebars = {
