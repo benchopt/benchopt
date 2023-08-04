@@ -97,6 +97,7 @@ We also use it to instantiate a Ridge estimator that will be used to perform com
         def set_objective(self, X, y, lmbd, fit_intercept):
             # store any info needed to run the solver as class attribute
             self.X, self.y = X, y
+            self.lmbd = lmbd
 
             # declare anything that will be used to run your solver
             self.model = sklearn.linear_model.Ridge(
@@ -174,9 +175,9 @@ In this case, the signature of the ``run`` method is ``run(self, tolerance)`` an
 - **callback**
 
 One may want to code the solver themselves rather than using a black-box one.
-In that case, all intermediate iterates are available, and one should use the "callback" sampling strategy.
+In that case, all intermediate iterates are available, and one should use the **callback** sampling strategy.
 
-Let's say that we no longer implement the scikit-learn solver, but instead our own implementation of  Gradient Descent.
+Let's say that we no longer implement the scikit-learn solver, but instead our own implementation of Gradient Descent.
 The following snippet shows how to use the callback strategy with a user-coded solver.
 
 .. code-block:: python
@@ -188,11 +189,17 @@ The following snippet shows how to use the callback strategy with a user-coded s
         ...
 
         def run(self, callback):
+            X, y = self.X, self.y
+            n_features = self.X.shape[1]
+            
+            # init vars
+            beta = np.zeros(n_features)
+            step = 1 / np.linalg.norm(self.X, ord=2) ** 2
 
             while callback():
                 # do one iteration of the solver here:
-                TODO XXX code GD here
-                beta = ...
+                grad = self.X.T @ (self.X @ beta - y) + self.lmbd * beta
+                beta = beta - step * grad
 
             # at the end of while loop, store reference to the solution
             self.beta = beta
