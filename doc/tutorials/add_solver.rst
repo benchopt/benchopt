@@ -234,21 +234,24 @@ Specifying the solver parameters
 If your solver has hyperparameters, you can specify them by adding an attribute ``parameters``.
 This attribute is a dictionary whose keys are the solver's hyperparameters.
 
-For our ridge estimator, we can set the two hyperparameters ``positive`` and ``solver`` as follows
+For example, if our solver has two hyperparameters, ``stepsize`` and ``momentum``, we implement them as follows:
 
 .. code-block:: python
-    :caption: benchmark_ridge/solvers/sklearn.py
+    :caption: benchmark_ridge/solvers/mysolver.py
 
     class Solver(BaseSolver):
         ...
         parameters = {
-            'positive': [False, True],
-            'solver': ['cholesky', 'lsqr', 'sparse_cg']
+            'stepsize': [0.1, 0.5],
+            'momentum': [0.9, 0.95],
         }
         ...
 
-They are then available in the class methods as ``self.positive`` and ``self.solver``.
+They are then available in the class methods as ``self.stepsize`` and ``self.momentum``.
 
 .. note::
-    When running the solver, benchopt will use all possible combinations of parameters values.
+    When running the solver, benchopt will use all possible combinations of hyperparameter values.
     Hence, unless specified otherwise, our solver will be run 2 x 2 = 4 times.
+
+
+
