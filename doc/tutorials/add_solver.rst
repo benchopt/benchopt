@@ -4,7 +4,7 @@ Add a solver to an existing benchmark
 =====================================
 
 This tutorial shows how to add a new solver to a benchmark.
-We illustrate the process on the `Ridge regression benchmark <https://github.com/benchopt/benchmark_ridge>`_ by implementing ``scikit-learn`` Ridge estimator.
+We illustrate the process on the `Ridge regression benchmark <https://github.com/benchopt/benchmark_ridge>`_ by implementing a solver based on the ``scikit-learn`` Ridge estimator.
 
 .. Hint::
     If not yet done, you can review the :ref:`get started page <get_started>` to learn how to install benchopt and download an existing benchmark.
@@ -13,7 +13,7 @@ We illustrate the process on the `Ridge regression benchmark <https://github.com
 Before the implementation
 -------------------------
 
-First, create a ``mysolver.py`` file in the ``solvers/`` directory and put inside it the following content
+First, create a ``mysolver.py`` file in the ``solvers/`` directory and put inside it the following content:
 
 .. code-block:: python
     :caption: benchmark_ridge/solvers/mysolver.py
@@ -21,7 +21,7 @@ First, create a ``mysolver.py`` file in the ``solvers/`` directory and put insid
     from benchopt import BaseSolver
 
     class Solver(BaseSolver):
-        name = 'sklearn'
+        name = 'mysolver'
 
 As you can see, a solver is a Python class, ``Solver``, that inherits from ``benchopt.BaseSolver`` and is declared in a standalone Python file in the benchmark's ``solvers/`` folder.
 The attribute ``name`` does not have to match the file name, but it makes it easier to locate the solver.
@@ -84,8 +84,8 @@ Therefore our ``set_objective`` must take them as input arguments.
 The ``set_objective`` method is meant to store references of dataset and objective parameters.
 It is also used to initialize unchanging variables across the solver run.
 
-In our case, we store ``X``, ``y``, ``lmbd``, and ``fit_intercept`` for future use when actually running the solver.
-We also use it to instantiate a Ridge estimator that will be used to perform computation of the solution.
+In our case, we store ``X``, ``y``, ``lmbd``, and ``fit_intercept`` to use them when we will actually run the solver.
+We also use the method to instantiate a Ridge estimator that will be used to perform computation of the solution.
 
 
 .. code-block:: python
@@ -115,9 +115,9 @@ Together, they define how the performance curves of the solver will be construct
 There are three possible choices for the ``sampling_strategy`` attribute: **iteration**, **tolerance**, and **callback**.
 We show how to implement the ``run`` method for each one of them.
 
-- **iteration**
+- ``sampling_strategy = "iteration"``
 
-This sampling strategy is for solvers that are controlled by the maximum number of iterations they perform.
+This sampling strategy is for **solvers that are controlled by the maximum number of iterations they perform**.
 In this case, benchopt treats the solver as a black box and observes its behavior for different number of iterations.
 
 Therefore, the signature of the ``run`` method is ``run(self, n_iter)`` and its implementation resembles the snippet below.
@@ -127,7 +127,7 @@ Therefore, the signature of the ``run`` method is ``run(self, n_iter)`` and its 
 
     class Solver(BaseSolver):
         ...
-        sampling_strategy = 'iteration'
+        sampling_strategy = "iteration"
         ...
 
         def run(self, n_iter):
@@ -142,9 +142,9 @@ Therefore, the signature of the ``run`` method is ``run(self, n_iter)`` and its 
             self.beta = self.model.coef_
         ...
 
-- **tolerance**
+- ``sampling_strategy = "tolerance"``
 
-Similar to **iteration**, this sampling strategy is used for solver controlled by the tolerance on the optimization process.
+Similar to **iteration**, this sampling strategy is used for **solvers controlled by the tolerance on the optimization process**.
 In this case, the signature of the ``run`` method is ``run(self, tolerance)``; it would be implemented as follows.
 
 .. code-block:: python
@@ -152,7 +152,7 @@ In this case, the signature of the ``run`` method is ``run(self, tolerance)``; i
 
     class Solver(BaseSolver):
         ...
-        sampling_strategy = 'tolerance'
+        sampling_strategy = "tolerance"
         ...
 
         def run(self, tolerance):
@@ -167,7 +167,7 @@ In this case, the signature of the ``run`` method is ``run(self, tolerance)``; i
             self.beta = beta
         ...
 
-- **callback**
+- ``sampling_strategy = "callback"``
 
 One may want to code the solver themselves rather than using a black-box one.
 In that case, all intermediate iterates are available, and one should use the **callback** sampling strategy.
@@ -180,13 +180,13 @@ The following snippet shows how to use the callback strategy with a user-coded s
 
     class Solver(BaseSolver):
         ...
-        sampling_strategy = 'callback'
+        sampling_strategy = "callback"
         ...
 
         def run(self, callback):
             X, y = self.X, self.y
             n_features = self.X.shape[1]
-            
+
             # init vars
             beta = np.zeros(n_features)
             step = 1 / (np.linalg.norm(self.X, ord=2) ** 2 + self.lmbd)
