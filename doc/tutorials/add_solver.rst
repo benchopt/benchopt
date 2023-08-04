@@ -35,7 +35,7 @@ Doing the latter steps, our benchmark folder will resemble
     ├── datasets/
     │   ├── ...          # existing datasets
     └── solvers/
-        ├── mysolver.py   # our newly added solver
+        ├── mysolver.py  # our newly added solver
         ├── ...          # other solvers
 
 
@@ -227,7 +227,7 @@ With these methods being implemented, your solver is now ready to be run!
 
 
 Specifying the solver parameters
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+--------------------------------
 
 If your solver has hyperparameters, you can specify them by adding an attribute ``parameters``.
 This attribute is a dictionary whose keys are the solver's hyperparameters.
@@ -250,6 +250,3 @@ They are then available in the class methods as ``self.stepsize`` and ``self.mom
 .. note::
     When running the solver, benchopt will use all possible combinations of hyperparameter values.
     Hence, unless specified otherwise, our solver will be run 2 x 2 = 4 times.
-
-
-
