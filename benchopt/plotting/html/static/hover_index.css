@@ -449,13 +449,11 @@ input:checked+.slider:before {
   font-weight: bold;
 }
 
-.config-item {
+.config-item, .config-ctrl {
   border-radius: 9999px;
   padding-left: 1em;
   padding-right: 1em;
   color: white;
-  background-color: rgb(91, 78, 255);
-  border-color: rgb(55 65 81);
   margin-left: 2ex;
 
   cursor: pointer;
@@ -464,4 +462,15 @@ input:checked+.slider:before {
   font-size: 0.875rem;
   line-height: 1.25rem;
   font-weight: 400;
+}
+
+.config-item {
+  background-color: rgb(91, 78, 255);
+  border-color: rgb(55 65 81);
+}
+.config-ctrl {
+  font-size: medium;
+  font-weight: bold;
+  background-color: rgb(34, 30, 94);
+  border-color: rgb(23, 37, 59);
 }

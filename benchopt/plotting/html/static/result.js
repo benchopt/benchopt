@@ -234,6 +234,20 @@ const getScatterCurves = () => {
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 
+const get_lim_plotly = (lim, ax) =>{
+  if(getScale()[ax + 'axis'] == 'log'){
+    lim = [Math.log10(parseFloat(lim[0])), Math.log10(parseFloat(lim[1]))]
+  };
+  return lim;
+};
+const get_lim_config = (lim, ax) =>{
+  if(getScale()[ax + 'axis'] == 'log'){
+    lim = [Math.pow(10, lim[0]), Math.pow(10, lim[1])]
+  };
+  return lim;
+};
+
+
 const setConfig = (config_item) =>{
 
   // Retrieve the name of the config.
@@ -263,11 +277,7 @@ const setConfig = (config_item) =>{
   for(const ax of ['x', 'y']){
     let lim = ax + 'lim';
     if (config.hasOwnProperty(lim) & (config[lim] != null)){
-      lim = config[lim];
-      if(_getScale(config.scale)[ax + 'axis'] == 'log'){
-        lim = [Math.log10(parseFloat(lim[0])), Math.log10(parseFloat(lim[1]))]
-      };
-      layout[ax +'axis.range'] = lim;
+      layout[ax +'axis.range'] = get_lim_plotly(config[lim], ax);
     };
   };
 
@@ -281,7 +291,14 @@ const setConfig = (config_item) =>{
 };
 
 
-const exportConfig = () =>{
+const saveView = () =>{
+
+  let n_configs = Object.keys(window.metadata.plot_configs).length;
+
+  let config_name = prompt("Config Name", "Config " + n_configs);
+  if(config_name === null || config_name === ""){
+    return;
+  }
 
   // Retrieve the drop down menue selected values
   config = {};
@@ -292,25 +309,60 @@ const exportConfig = () =>{
 
   // Retrieve the range of the plots.
   const fig = document.getElementById('unique_plot');
-  config['xlim'] = "[" + fig.layout.xaxis.range[0] + ", ";
-  config['xlim'] += fig.layout.xaxis.range[1] + "]";
-  config['ylim'] = "[" + fig.layout.yaxis.range[0] + ", ";
-  config['ylim'] += fig.layout.yaxis.range[1] + "]";
+  config['xlim'] = get_lim_config(fig.layout.xaxis.range, 'x');
+  config['ylim'] = get_lim_config(fig.layout.yaxis.range, 'y');
 
+
+  // Only add a button if the config does not exists yet:
+  if (!(config_name in window.metadata.plot_configs)){
+    var plot_config_buttons = document.getElementById("plot_config_buttons");
+    var node = document.createElement("span");
+    node.innerHTML = config_name;
+    node.className = "config-item";
+    node.onclick = function() {setConfig (node)};
+    plot_config_buttons.appendChild(node);
+  }
+
+  // Add the config in the configs mapping.
+  window.metadata.plot_configs[config_name] = config;
+
+
+};
+
+const exportConfigs = () => {
   // Construct the yaml export of the config.
-  config_yaml = "  new_config:\n"
-  for(var key in config){
-    config_yaml += "    " + key + ": " + config[key] + "\n";
+  var config_yaml = "plot_configs:\n"
+
+  for(var config_name in window.metadata.plot_configs){
+    var config = window.metadata.plot_configs[config_name];
+    config_yaml += "  " + config_name + ":\n";
+    for(var key in config){
+      var value = config[key];
+      if (key === 'xlim' || key === 'ylim')
+        value = "[" + value + "]";
+      config_yaml += "    " + key + ": " + value + "\n";
+    }
   }
 
   // Copy to clipboard the resulting yaml file.
   var export_area = document.getElementById("config_export");
   export_area.innerHTML = config_yaml;
   export_area.select();
-   navigator.clipboard.writeText(export_area.value);
+  navigator.clipboard.writeText(export_area.value);
 
-  // Alert the copied text
-   alert("Config copied to clipboard!");
+  alert(
+    `Config file exported to clipboard.
+    Paste it in the <code>config.yml</code> file of the benchmark.`)
+};
+
+const exportHTML = () => {
+  //
+  var tempLink = document.createElement("a");
+  var taBlob = new Blob([document.documentElement.innerHTML], {type: 'text/html'});
+  tempLink.setAttribute('href', URL.createObjectURL(taBlob));
+  tempLink.setAttribute('download', location.pathname.split("/").pop());
+  tempLink.click();
+  URL.revokeObjectURL(tempLink.href);
 
 };
 
