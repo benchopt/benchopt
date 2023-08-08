@@ -135,6 +135,72 @@ def test_ignore_hidden_files():
         ], 'benchopt', standalone_mode=False)
 
 
+@pytest.mark.parametrize("n_iter", [1, 2, 5])
+def test_run_once_iteration(n_iter):
+
+    solver1 = f"""from benchopt import BaseSolver
+    import numpy as np
+
+    class Solver(BaseSolver):
+        name = 'solver1'
+        stopping_strategy = 'iteration'
+
+        def set_objective(self, X, y, lmbd):
+            self.n_features = X.shape[1]
+            self.run_once({n_iter})
+
+        def run(self, n_iter): print(f"RUNONCE({{n_iter}})")
+
+        def get_result(self, **data):
+            return {{'beta': np.zeros(self.n_features)}}
+    """
+
+    with temp_benchmark(solvers=[solver1]) as benchmark:
+        with CaptureRunOutput() as out:
+            run([
+                str(benchmark.benchmark_dir),
+                *'-s solver1 -d test-dataset -n 0 -r 1 --no-plot'.split(),
+                *'-o dummy*[reg=0.5]'.split()
+            ], standalone_mode=False)
+        out.check_output(rf"RUNONCE\({n_iter}\)", repetition=1)
+
+
+
+@pytest.mark.parametrize("n_iter", [1, 2, 5])
+def test_run_once_callback(n_iter):
+
+    solver1 = f"""from benchopt import BaseSolver
+    import numpy as np
+
+    class Solver(BaseSolver):
+        name = 'solver1'
+        stopping_strategy = 'callback'
+
+        def set_objective(self, X, y, lmbd):
+            self.n_features = X.shape[1]
+            self.run_once({n_iter})
+
+        def run(self, cb):
+            i = 0
+            while cb():
+                i += 1
+            print(f"RUNONCE({{i}})")
+
+        def get_result(self, **data):
+            return {{'beta': np.zeros(self.n_features)}}
+    """
+
+    with temp_benchmark(solvers=[solver1]) as benchmark:
+        with CaptureRunOutput() as out:
+            run([
+                str(benchmark.benchmark_dir),
+                *'-s solver1 -d test-dataset -n 1 -r 1 --no-plot'.split(),
+                *'-o dummy*[reg=0.5]'.split()
+            ], standalone_mode=False)
+        repetition = 1 if n_iter != 1 else 2
+        out.check_output(rf"RUNONCE\({n_iter}\)", repetition=repetition)
+
+
 ##############################################################################
 # Test for deprecated features in 1.5
 ##############################################################################
