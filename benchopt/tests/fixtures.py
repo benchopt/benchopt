@@ -78,9 +78,16 @@ def pytest_generate_tests(metafunc):
     if benchmarks is None or len(benchmarks) == 0:
         benchmarks = TEST_BENCHMARK_DIR.glob('*/')
     benchmarks = [Benchmark(b) for b in benchmarks]
-    benchmarks = [b for b in benchmarks
-                  if b.get_benchmark_objective().is_installed(quiet=True)]
-    benchmarks.sort(key=lambda x: x.name)
+    installed_benchmarks = [
+        b for b in benchmarks
+        if b.get_benchmark_objective().is_installed(quiet=True)
+    ]
+    installed_benchmarks.sort(key=lambda x: x.name)
+
+    if len(installed_benchmarks) == 0:
+        benchmarks[0].get_benchmark_objective().is_installed(
+            raise_on_not_installed=True
+        )
 
     # Parametrize the tests
     for params, func in PARAMETRIZATION.items():
