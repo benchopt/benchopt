@@ -165,7 +165,6 @@ def test_run_once_iteration(n_iter):
         out.check_output(rf"RUNONCE\({n_iter}\)", repetition=1)
 
 
-
 @pytest.mark.parametrize("n_iter", [1, 2, 5])
 def test_run_once_callback(n_iter):
 
