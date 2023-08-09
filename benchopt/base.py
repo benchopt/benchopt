@@ -233,12 +233,15 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
             self._output.progress('caching warmup times.')
 
         if self._solver_strategy == "callback":
+            stopping_criterion = (
+                SingleRunCriterion(stop_val=stop_val)
+                .get_runner_instance(solver=self)
+            )
             run_once_cb = _Callback(
                 lambda x: {'objective_value': 1},
-                {},
-                SingleRunCriterion(stop_val=stop_val).get_runner_instance(
-                    solver=self
-                )
+                solver=self,
+                meta={},
+                stopping_criterion=stopping_criterion
             )
             run_once_cb.start()
             self.run(run_once_cb)
