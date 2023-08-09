@@ -143,7 +143,7 @@ def test_run_once_iteration(n_iter):
 
     class Solver(BaseSolver):
         name = 'solver1'
-        stopping_strategy = 'iteration'
+        sampling_strategy = 'iteration'
 
         def set_objective(self, X, y, lmbd):
             self.n_features = X.shape[1]
@@ -173,7 +173,7 @@ def test_run_once_callback(n_iter):
 
     class Solver(BaseSolver):
         name = 'solver1'
-        stopping_strategy = 'callback'
+        sampling_strategy = 'callback'
 
         def set_objective(self, X, y, lmbd):
             self.n_features = X.shape[1]
@@ -193,11 +193,11 @@ def test_run_once_callback(n_iter):
         with CaptureRunOutput() as out:
             run([
                 str(benchmark.benchmark_dir),
-                *'-s solver1 -d test-dataset -n 1 -r 1 --no-plot'.split(),
+                *'-s solver1 -d test-dataset -n 0 -r 1 --no-plot'.split(),
                 *'-o dummy*[reg=0.5]'.split()
             ], standalone_mode=False)
-        repetition = 1 if n_iter != 1 else 2
-        out.check_output(rf"RUNONCE\({n_iter}\)", repetition=repetition)
+
+        out.check_output(rf"RUNONCE\({n_iter}\)", repetition=1)
 
 
 ##############################################################################
