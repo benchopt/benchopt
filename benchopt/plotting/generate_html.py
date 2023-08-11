@@ -312,58 +312,30 @@ def get_sysinfo(df):
     return sysinfo
 
 
-def render_index(benchmarks, number_of_runs):
+def render_index(benchmarks):
     """Render a result index home page for all rendered benchmarks.
 
     Parameters
     ----------
-    benchmark_names : list of str
-        A list of all benchmark names that have been rendered.
-    number_of_runs : list of int
-        A list of the number of files in each benchmark.
+    benchmark : list of benchopt.Benchmark
+        A list of all benchmarks that have been rendered.
 
     Returns
     -------
     rendered : str
         A str with the HTML code for the index page.
     """
-    pretty_names = [get_pretty_name(b) for b in benchmarks]
 
-    benchmark_names = [b.name for b in benchmarks]
-
-    pretty_names, number_of_runs, benchmark_names = map(
-        list, zip(*sorted(zip(pretty_names, number_of_runs, benchmark_names),
-                          reverse=False))
-    )
+    benchmarks.sort(key=lambda x: x.pretty_name)
 
     return Template(
         filename=str(TEMPLATE_INDEX), input_encoding="utf-8"
     ).render(
-        benchmarks=benchmark_names,
-        nb_total_benchs=len(benchmark_names),
+        benchmarks=benchmarks,
+        nb_total_benchs=len(benchmarks),
         max_rows=15, static=STATIC,
         last_updated=datetime.now(),
-        pretty_names=pretty_names,
-        number_of_runs=number_of_runs
     )
-
-
-def get_pretty_name(bench_path):
-    """Return the benchmark name defined in
-       objective.py or benchmark_meta.json
-
-    Parameters
-    ----------
-    bench_path : Path
-        Path to the benchmark folder.
-
-    Returns
-    -------
-    pretty_name : str
-        The name of the benchmark
-    """
-    benchmark = Benchmark(bench_path, allow_meta_from_json=True)
-    return benchmark.pretty_name
 
 
 def render_benchmark(results, benchmark, home='index.html'):
@@ -390,7 +362,7 @@ def render_benchmark(results, benchmark, home='index.html'):
         results=results,
         benchmark=benchmark.name,
         url=benchmark.url,
-        max_rows=15, nb_total_benchs=len(results),
+        max_rows=15,
         last_updated=datetime.now(),
         static=STATIC, home=home
     )
@@ -546,26 +518,31 @@ def plot_benchmark_html_all(patterns=(), benchmark_paths=(), root=None,
             "root folder contains at least one benchmark."
         )
 
+    benchmarks = [
+        Benchmark(p, allow_meta_from_json=True)
+        for p in benchmark_paths
+    ]
+
     # make sure the `html` folder exists
     root_html = DEFAULT_HTML_DIR
     (root_html / OUTPUTS).mkdir(exist_ok=True, parents=True)
 
     # Loop over all benchmark paths to create the associated result pages
-    number_of_runs = []
-    for benchmark_path in benchmark_paths:
-        print(f'Rendering benchmark: {benchmark_path}')
-
-        benchmark = Benchmark(benchmark_path)
-        result_files = filter(
+    for benchmark in benchmarks:
+        print(f'Rendering benchmark: {benchmark}')
+        result_files = list(filter(
             lambda path: any(path.match(p) for p in patterns),
             benchmark.get_result_file('all')
-        )
+        ))
 
         results = get_results(
-            result_files, PLOT_KINDS.keys(), root_html, benchmark.name,
+            result_files, PLOT_KINDS.keys(), root_html, benchmark,
             copy=True
         )
-        number_of_runs.append(len(result_files))
+        # Store the number of rendered results so we can easily generate the
+        # index page with the number of available result files.
+        benchmark.n_runs = len(result_files)
+
         if len(results) > 0:
             rendered = render_benchmark(results, benchmark)
 
@@ -587,7 +564,7 @@ def plot_benchmark_html_all(patterns=(), benchmark_paths=(), root=None,
                 f.write(html)
 
     # Create an index that lists all benchmarks.
-    rendered = render_index(benchmark_paths, number_of_runs)
+    rendered = render_index(benchmarks)
     index_filename = DEFAULT_HTML_DIR / 'index.html'
     print(f"Writing index to {index_filename}")
     with open(index_filename, "w", encoding="utf-8") as f:

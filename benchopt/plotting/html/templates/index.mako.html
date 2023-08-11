@@ -27,7 +27,7 @@
 
 <p><em>Last updated: ${last_updated.isoformat(sep=' ', timespec='minutes') | h}</em></p>
 <p>
-    <strong>${nb_total_benchs}</strong> benchmarks in total.
+    <strong>${len(benchmarks)}</strong> benchmarks in total.
 </p>
 
 <h2>Available Benchmarks</h2>
@@ -37,9 +37,9 @@
     <figure class="effect-ruby">
       <img src="https://via.placeholder.com/250x150/1E90FF" alt="backgrd"/>
       <figcaption>
-        <h2>${pretty_names[loop.index]}</h2>
-        <p>${number_of_runs[loop.index]} files available</p>
-        <a href="${benchmark}.html">View more</a>
+        <h2>${benchmark.pretty_name}</h2>
+        <p>${benchmark.n_runs} files available</p>
+        <a href="${benchmark.name}.html">View more</a>
       </figcaption>
     </figure>
     %endfor

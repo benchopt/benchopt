@@ -384,6 +384,8 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
     - `name`: a name for the benchmark, that will be used to display results.
     - `url`: the url of the original benchmark repository.
     - `requirements`: the minimal requirements to be able to run the benchmark.
+    - `min_benchopt_version`: the minimal version of benchopt required to run
+      this benchmark.
     """
 
     _base_class_name = 'Objective'
