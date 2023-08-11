@@ -43,8 +43,12 @@
 <h1>
   <a href="${home}"><button class="btn"><i class="fa fa-home"></i></button></a>
   Benchopt results: ${benchmark_name}
-  <a href="https://github.com/benchopt/${benchmark}">
-    <i class="fab fa-github-square"></i>
+  <a href="${url}">
+    % if "github" in url:
+      <i class="fab fa-github-square"></i>
+    % else:
+      <i class="fa-solid fa-globe"></i>
+    % endif
   </a>
 </h1>
 
@@ -86,7 +90,7 @@
     <td class="fname">
       <a href="${result['page']}">
         <%
-        fname = "".join(result["fname_short"].split("_")[-2:])
+        fname = " ".join(result["fname_short"].split("_")[-2:])
         fname = benchmark_name + " " + fname.split(".")[0]
         disp_sub = any([val != '' for val in result['sysinfo']['sub'].values()])
         %>

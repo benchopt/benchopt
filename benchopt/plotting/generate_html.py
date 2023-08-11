@@ -16,7 +16,6 @@ from .plot_objective_curve import get_solver_style
 ROOT = Path(__file__).parent / "html"
 DEFAULT_HTML_DIR = Path("html")
 OUTPUTS = "outputs"
-FIGURES = "figures"
 
 TEMPLATE_INDEX = ROOT / "templates" / "index.mako.html"
 TEMPLATE_BENCHMARK = ROOT / "templates" / "benchmark.mako.html"
@@ -48,7 +47,7 @@ for asset in STATIC_DIR.glob("**/*"):
     STATIC[asset.relative_to(STATIC_DIR).name] = asset.read_text()
 
 
-def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
+def get_results(fnames, kinds, root_html, benchmark, copy=False):
     """Generate figures from a list of result files.
 
     Parameters
@@ -60,8 +59,8 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
         sub-list of PLOT_KINDS.keys().
     root_html : Path
         Directory where all the HTML files related to the benchmark are stored.
-    benchmark_name : str
-        Name of the benchmark, to prefix all files.
+    benchmark : benchopt.Benchmark object
+        Object to represent the benchmark.
     copy : bool (default: False)
         If set to True, copy each file in the root_html / OUTPUTS
         directory, to make sure it can be downloaded.
@@ -88,7 +87,7 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
         # Copy result file if necessary
         # and give a relative path for HTML page access
         if copy:
-            fname_in_output = out_dir / f"{benchmark_name}_{fname.name}"
+            fname_in_output = out_dir / f"{benchmark.name}_{fname.name}"
             shutil.copy(fname, fname_in_output)
             fname = fname_in_output
         fname = fname.absolute().relative_to(root_html.absolute())
@@ -116,10 +115,7 @@ def get_results(fnames, kinds, root_html, benchmark_name, copy=False):
         html_file_name = f"{result['fname_short'].replace('.csv', '.html')}"
         html_file_name = f"{html_file_name.replace('.parquet', '.html')}"
 
-        result['page'] = (
-            f"{benchmark_name}_"
-            f"{html_file_name}"
-        )
+        result['page'] = f"{benchmark.name}_{html_file_name}"
 
     return results
 
@@ -316,14 +312,14 @@ def get_sysinfo(df):
     return sysinfo
 
 
-def render_index(benchmarks, len_fnames):
+def render_index(benchmarks, number_of_runs):
     """Render a result index home page for all rendered benchmarks.
 
     Parameters
     ----------
     benchmark_names : list of str
         A list of all benchmark names that have been rendered.
-    len_fnames : list of int
+    number_of_runs : list of int
         A list of the number of files in each benchmark.
 
     Returns
@@ -335,8 +331,8 @@ def render_index(benchmarks, len_fnames):
 
     benchmark_names = [b.name for b in benchmarks]
 
-    pretty_names, len_fnames, benchmark_names = map(
-        list, zip(*sorted(zip(pretty_names, len_fnames, benchmark_names),
+    pretty_names, number_of_runs, benchmark_names = map(
+        list, zip(*sorted(zip(pretty_names, number_of_runs, benchmark_names),
                           reverse=False))
     )
 
@@ -348,7 +344,7 @@ def render_index(benchmarks, len_fnames):
         max_rows=15, static=STATIC,
         last_updated=datetime.now(),
         pretty_names=pretty_names,
-        len_fnames=len_fnames
+        number_of_runs=number_of_runs
     )
 
 
@@ -370,7 +366,7 @@ def get_pretty_name(bench_path):
     return benchmark.pretty_name
 
 
-def render_benchmark(results, benchmark_name, home='index.html'):
+def render_benchmark(results, benchmark, home='index.html'):
     """Render a page indexing all runs for one benchmark.
 
     Parameters
@@ -392,7 +388,8 @@ def render_benchmark(results, benchmark_name, home='index.html'):
         filename=str(TEMPLATE_BENCHMARK), input_encoding="utf-8"
     ).render(
         results=results,
-        benchmark=benchmark_name,
+        benchmark=benchmark.name,
+        url=benchmark.url,
         max_rows=15, nb_total_benchs=len(results),
         last_updated=datetime.now(),
         static=STATIC, home=home
@@ -479,12 +476,11 @@ def plot_benchmark_html(fnames, benchmark, kinds, display=True):
     # Get HTML folder for the benchmark and make sure it contains
     # figures directory and static files.
     root_html = benchmark.get_output_folder()
-    (root_html / FIGURES).mkdir(exist_ok=True)
     bench_index = (root_html / benchmark.name).with_suffix('.html')
     home = bench_index.relative_to(root_html)
 
     # Create the figures and render the page as a html.
-    results = get_results(fnames, kinds, root_html, benchmark.name)
+    results = get_results(fnames, kinds, root_html, benchmark)
     htmls = render_all_results(results, benchmark.name, home=home)
 
     # Save the resulting page in the HTML folder
@@ -496,7 +492,7 @@ def plot_benchmark_html(fnames, benchmark, kinds, display=True):
 
     # Fetch run list from the benchmark and update the benchmark front page.
     run_list = _fetch_cached_run_list(results, root_html)
-    rendered = render_benchmark(run_list, benchmark.name, home=home)
+    rendered = render_benchmark(run_list, benchmark, home=home)
     print(f"Writing {benchmark.name} results to {bench_index}")
     with open(bench_index, "w", encoding="utf-8") as f:
         f.write(rendered)
@@ -547,43 +543,43 @@ def plot_benchmark_html_all(patterns=(), benchmark_paths=(), root=None,
     if not benchmark_paths:
         raise ValueError(
             "Could not find any benchmark to render. Check that the provided "
-            "root folder contains at least one benchmark.")
+            "root folder contains at least one benchmark."
+        )
 
-    # make sure the `html` folder exists and copy static files.
+    # make sure the `html` folder exists
     root_html = DEFAULT_HTML_DIR
-    (root_html / FIGURES).mkdir(exist_ok=True, parents=True)
     (root_html / OUTPUTS).mkdir(exist_ok=True, parents=True)
 
     # Loop over all benchmark paths to create the associated result pages
-    len_fnames = []
+    number_of_runs = []
     for benchmark_path in benchmark_paths:
         print(f'Rendering benchmark: {benchmark_path}')
 
-        fnames = []
-        for p in patterns:
-            fnames += list(
-                (benchmark_path / 'outputs').glob(f"{p}.parquet")
-            ) + list((benchmark_path / 'outputs').glob(f"{p}.csv"))
-        fnames = sorted(set(fnames))
+        benchmark = Benchmark(benchmark_path)
+        result_files = filter(
+            lambda path: any(path.match(p) for p in patterns),
+            benchmark.get_result_file('all')
+        )
+
         results = get_results(
-            fnames, PLOT_KINDS.keys(), root_html, benchmark_path.name,
+            result_files, PLOT_KINDS.keys(), root_html, benchmark.name,
             copy=True
         )
-        len_fnames.append(len(fnames))
+        number_of_runs.append(len(result_files))
         if len(results) > 0:
-            rendered = render_benchmark(results, benchmark_path.name)
+            rendered = render_benchmark(results, benchmark)
 
             benchmark_filename = (
-                root_html / benchmark_path.name
+                root_html / benchmark.name
             ).with_suffix('.html')
             print(
-                f"Writing {benchmark_path.name} "
+                f"Writing {benchmark.name} "
                 f"results to {benchmark_filename}"
             )
             with open(benchmark_filename, "w") as f:
                 f.write(rendered)
 
-        htmls = render_all_results(results, benchmark_path.name)
+        htmls = render_all_results(results, benchmark.name)
         for result, html in zip(results, htmls):
             result_filename = root_html / result['page']
             print(f"Writing results to {result_filename}")
@@ -591,7 +587,7 @@ def plot_benchmark_html_all(patterns=(), benchmark_paths=(), root=None,
                 f.write(html)
 
     # Create an index that lists all benchmarks.
-    rendered = render_index(benchmark_paths, len_fnames)
+    rendered = render_index(benchmark_paths, number_of_runs)
     index_filename = DEFAULT_HTML_DIR / 'index.html'
     print(f"Writing index to {index_filename}")
     with open(index_filename, "w", encoding="utf-8") as f:

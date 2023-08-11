@@ -48,7 +48,6 @@ class Benchmark:
     """
     def __init__(self, benchmark_dir, allow_meta_from_json=False):
         self.benchmark_dir = Path(benchmark_dir)
-        self.name = self.benchmark_dir.resolve().name
 
         set_benchmark_module(self.benchmark_dir)
 
@@ -57,6 +56,7 @@ class Benchmark:
         try:
             objective = self.get_benchmark_objective()
             self.pretty_name = objective.name
+            self.url = getattr(objective, "url", None)
             self.min_version = getattr(objective, 'min_benchopt_version', None)
         except RuntimeError:
             if not allow_meta_from_json:
@@ -76,6 +76,13 @@ class Benchmark:
                 import json
                 meta = json.load(f)
                 self.pretty_name = meta["pretty_name"]
+                self.url = meta.get("url", None)
+
+        if self.url is None:
+            self.name = self.benchmark_dir.resolve().name
+            self.url = f"https://github.com/benchopt/{self.name}"
+        else:
+            self.name = Path(self.url).name
 
     ####################################################################
     # Helpers to access and validate objective, solvers and datasets
