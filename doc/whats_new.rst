@@ -44,6 +44,13 @@ DOC
 - Reformatting and enriching the documentation for easy onboarding.
   By `Badr Moufad`_ and `Mathurin Massias`_ (:gh:`619`, :gh:`629`).
 
+Internals
+~~~~~~~~~
+
+- Add helper to store and retrieve metadata in parquet files. This will
+  allow storing per-run plotting information.
+  By `Thomas Moreau`_ (:gh`637`).
+
 
 .. _changes_1_4:
 
