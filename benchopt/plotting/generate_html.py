@@ -47,7 +47,7 @@ for asset in STATIC_DIR.glob("**/*"):
     STATIC[asset.relative_to(STATIC_DIR).name] = asset.read_text()
 
 
-def get_results(fnames, kinds, root_html, benchmark, copy=False):
+def get_results(fnames, kinds, html_root, benchmark, copy=False):
     """Generate figures from a list of result files.
 
     Parameters
@@ -57,12 +57,12 @@ def get_results(fnames, kinds, root_html, benchmark, copy=False):
     kinds : list of str
         List of the kind of plots that will be generated. This needs to be a
         sub-list of PLOT_KINDS.keys().
-    root_html : Path
+    html_root : Path
         Directory where all the HTML files related to the benchmark are stored.
     benchmark : benchopt.Benchmark object
         Object to represent the benchmark.
     copy : bool (default: False)
-        If set to True, copy each file in the root_html / OUTPUTS
+        If set to True, copy each file in the html_root / OUTPUTS
         directory, to make sure it can be downloaded.
 
     Returns
@@ -72,7 +72,7 @@ def get_results(fnames, kinds, root_html, benchmark, copy=False):
         generated figures.
     """
     results = []
-    out_dir = root_html / OUTPUTS
+    out_dir = html_root / OUTPUTS
 
     for fname in fnames:
         print(f"Processing {fname}")
@@ -90,7 +90,7 @@ def get_results(fnames, kinds, root_html, benchmark, copy=False):
             fname_in_output = out_dir / f"{benchmark.name}_{fname.name}"
             shutil.copy(fname, fname_in_output)
             fname = fname_in_output
-        fname = fname.absolute().relative_to(root_html.absolute())
+        fname = fname.absolute().relative_to(html_root.absolute())
 
         # Generate figures
         result = dict(
@@ -420,7 +420,9 @@ def _fetch_cached_run_list(new_results, benchmark_html):
     return list(results.values())
 
 
-def plot_benchmark_html(fnames, benchmark, kinds, display=True):
+def plot_benchmark_html(
+        fnames, benchmark, kinds, display=True, html_home=None
+):
     """Plot a given benchmark as an HTML report. This function can either plot
     a single run or multiple ones.
 
@@ -436,34 +438,47 @@ def plot_benchmark_html(fnames, benchmark, kinds, display=True):
     display : bool
         If set to True, display the curves by opening
         the default browser.
-
-    Returns
-    -------
-    None
+    html_home : str
+        Index of the HTML website. This default to the benchmark index. This
+        argument can be used to pass the index file when generating the full
+        result website.
     """
     if isinstance(fnames, Path):
         fnames = [fnames]
 
-    # Get HTML folder for the benchmark and make sure it contains
-    # figures directory and static files.
-    root_html = benchmark.get_output_folder()
-    bench_index = (root_html / benchmark.name).with_suffix('.html')
-    home = bench_index.relative_to(root_html)
+    # Get HTML root folder for the benchmark and setup the different path.
+    if html_home is None:
+        html_root = benchmark.get_output_folder()
+        bench_index = (html_root / benchmark.name).with_suffix('.html')
+        html_home = bench_index
+        copy = False
+    else:
+        html_root = html_home.parent
+        bench_index = (html_root / benchmark.name).with_suffix('.html')
+        copy = True
+
+    # Make the link relative
+    html_home = html_home.relative_to(html_root)
 
     # Create the figures and render the page as a html.
-    results = get_results(fnames, kinds, root_html, benchmark)
-    htmls = render_all_results(results, benchmark.name, home=home)
+    results = get_results(fnames, kinds, html_root, benchmark, copy=copy)
+    htmls = render_all_results(results, benchmark.name, home=html_home)
 
     # Save the resulting page in the HTML folder
     for result, html in zip(results, htmls):
-        result_filename = root_html / result['page']
+        result_filename = html_root / result['page']
+        result_filename.parent.mkdir(exist_ok=True)
         print(f"Writing results to {result_filename}")
         with open(result_filename, "w", encoding="utf-8") as f:
             f.write(html)
 
+    if copy:
+        run_list = results
+    else:
+        run_list = _fetch_cached_run_list(results, html_root)
+
     # Fetch run list from the benchmark and update the benchmark front page.
-    run_list = _fetch_cached_run_list(results, root_html)
-    rendered = render_benchmark(run_list, benchmark, home=home)
+    rendered = render_benchmark(run_list, benchmark, home=html_home)
     print(f"Writing {benchmark.name} results to {bench_index}")
     with open(bench_index, "w", encoding="utf-8") as f:
         f.write(rendered)
@@ -471,7 +486,7 @@ def plot_benchmark_html(fnames, benchmark, kinds, display=True):
     print("Rendering benchmark results...")
     # Display the file in the default browser
     if display:
-        result_filename = (root_html / results[-1]['page']).absolute()
+        result_filename = (html_root / results[-1]['page']).absolute()
         webbrowser.open_new_tab('file://' + str(result_filename))
 
 
@@ -523,8 +538,9 @@ def plot_benchmark_html_all(patterns=(), benchmark_paths=(), root=None,
     ]
 
     # make sure the `html` folder exists
-    root_html = DEFAULT_HTML_DIR
-    (root_html / OUTPUTS).mkdir(exist_ok=True, parents=True)
+    html_root = DEFAULT_HTML_DIR
+    index_filename = html_root / 'index.html'
+    (html_root / OUTPUTS).mkdir(exist_ok=True, parents=True)
 
     # Loop over all benchmark paths to create the associated result pages
     for benchmark in benchmarks:
@@ -534,37 +550,18 @@ def plot_benchmark_html_all(patterns=(), benchmark_paths=(), root=None,
             benchmark.get_result_file('all')
         ))
 
-        results = get_results(
-            result_files, PLOT_KINDS.keys(), root_html, benchmark,
-            copy=True
-        )
         # Store the number of rendered results so we can easily generate the
         # index page with the number of available result files.
         benchmark.n_runs = len(result_files)
 
-        if len(results) > 0:
-            rendered = render_benchmark(results, benchmark)
-
-            benchmark_filename = (
-                root_html / benchmark.name
-            ).with_suffix('.html')
-            print(
-                f"Writing {benchmark.name} "
-                f"results to {benchmark_filename}"
+        if len(result_files) > 0:
+            plot_benchmark_html(
+                result_files, benchmark, PLOT_KINDS.keys(), display=False,
+                html_home=index_filename
             )
-            with open(benchmark_filename, "w") as f:
-                f.write(rendered)
-
-        htmls = render_all_results(results, benchmark.name)
-        for result, html in zip(results, htmls):
-            result_filename = root_html / result['page']
-            print(f"Writing results to {result_filename}")
-            with open(result_filename, "w", encoding="utf-8") as f:
-                f.write(html)
 
     # Create an index that lists all benchmarks.
     rendered = render_index(benchmarks)
-    index_filename = DEFAULT_HTML_DIR / 'index.html'
     print(f"Writing index to {index_filename}")
     with open(index_filename, "w", encoding="utf-8") as f:
         f.write(rendered)
