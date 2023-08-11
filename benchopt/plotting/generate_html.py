@@ -360,8 +360,7 @@ def render_benchmark(results, benchmark, home='index.html'):
         filename=str(TEMPLATE_BENCHMARK), input_encoding="utf-8"
     ).render(
         results=results,
-        benchmark=benchmark.name,
-        url=benchmark.url,
+        benchmark=benchmark,
         max_rows=15,
         last_updated=datetime.now(),
         static=STATIC, home=home
