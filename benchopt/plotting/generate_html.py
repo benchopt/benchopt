@@ -47,7 +47,7 @@ for asset in STATIC_DIR.glob("**/*"):
     STATIC[asset.relative_to(STATIC_DIR).name] = asset.read_text()
 
 
-def get_results(fnames, config, html_root, benchmark_name, copy=False):
+def get_results(fnames, config, html_root, benchmark, copy=False):
     """Generate figures from a list of result files.
 
     Parameters
@@ -344,7 +344,7 @@ def render_benchmark(results, benchmark, home='index.html'):
     ----------
     results : list of Path
         List of all the run available for this benchmark.
-    benchmark_name : str
+    benchmark : str
         Named of the rendered benchmark.
     home : str
         URL of the home page.
@@ -366,15 +366,15 @@ def render_benchmark(results, benchmark, home='index.html'):
     )
 
 
-def render_all_results(results, benchmark_name, home='index.html'):
+def render_all_results(results, benchmark, home='index.html'):
     """Create an html file containing the plots from a benchmark run.
 
     Parameters
     ----------
     results : list of dict
         List of all the run that have been rendered for this benchmark.
-    benchmark_name : str
-        Named of the rendered benchmark.
+    benchmark : benchopt.Benchmark object
+        Object to represent the benchmark.
     home : str
         URL of the home page.
 
@@ -391,7 +391,7 @@ def render_all_results(results, benchmark_name, home='index.html'):
             input_encoding="utf-8"
         ).render(
             result=result,
-            benchmark=benchmark_name,
+            benchmark=benchmark,
             static=STATIC, home=home
         )
         htmls.append(html)
