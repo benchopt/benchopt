@@ -1,6 +1,11 @@
 import pytest
+import tempfile
+import warnings
 
+import benchopt
 from benchopt.cli.main import run
+from benchopt.cli.main import test as _cmd_test
+from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.utils.dynamic_modules import _load_class_from_module
 
 from benchopt.tests import SELECT_ONE_PGD
@@ -99,3 +104,353 @@ def test_error_reporting(error, raise_install_error):
             )
     finally:
         os.environ['BENCHOPT_RAISE_INSTALL_ERROR'] = prev_value
+
+
+def test_ignore_hidden_files():
+    # Non-regression test to make sure hidden files in datasets and solvers
+    # are ignored. If this is not the case, the call to run will fail if it
+    # is not ignored as there is no Dataset/Solver defined in the file.
+    with tempfile.NamedTemporaryFile(
+        dir=str(DUMMY_BENCHMARK_PATH / 'datasets'),
+        prefix='.hidden_dataset_',
+        suffix='.py',
+        delete=True
+    ), CaptureRunOutput():
+        run([
+            str(DUMMY_BENCHMARK_PATH), '-l', '-d',
+            SELECT_ONE_SIMULATED, '-f', SELECT_ONE_PGD, '-n', '1',
+            '-r', '1', '-o', SELECT_ONE_OBJECTIVE, '--no-plot'
+        ], 'benchopt', standalone_mode=False)
+
+    with tempfile.NamedTemporaryFile(
+        dir=str(DUMMY_BENCHMARK_PATH / 'solvers'),
+        prefix='.hidden_solver_',
+        suffix='.py',
+        delete=True
+    ), CaptureRunOutput():
+        run([
+            str(DUMMY_BENCHMARK_PATH), '-l', '-d',
+            SELECT_ONE_SIMULATED, '-f', SELECT_ONE_PGD, '-n', '1',
+            '-r', '1', '-o', SELECT_ONE_OBJECTIVE, '--no-plot'
+        ], 'benchopt', standalone_mode=False)
+
+
+@pytest.mark.parametrize("n_iter", [1, 2, 5])
+def test_run_once_iteration(n_iter):
+
+    solver1 = f"""from benchopt import BaseSolver
+    import numpy as np
+
+    class Solver(BaseSolver):
+        name = 'solver1'
+        sampling_strategy = 'iteration'
+
+        def set_objective(self, X, y, lmbd):
+            self.n_features = X.shape[1]
+            self.run_once({n_iter})
+
+        def run(self, n_iter): print(f"RUNONCE({{n_iter}})")
+
+        def get_result(self, **data):
+            return {{'beta': np.zeros(self.n_features)}}
+    """
+
+    with temp_benchmark(solvers=[solver1]) as benchmark:
+        with CaptureRunOutput() as out:
+            run([
+                str(benchmark.benchmark_dir),
+                *'-s solver1 -d test-dataset -n 0 -r 1 --no-plot'.split(),
+                *'-o dummy*[reg=0.5]'.split()
+            ], standalone_mode=False)
+        out.check_output(rf"RUNONCE\({n_iter}\)", repetition=1)
+
+
+@pytest.mark.parametrize("n_iter", [1, 2, 5])
+def test_run_once_callback(n_iter):
+
+    solver1 = f"""from benchopt import BaseSolver
+    import numpy as np
+
+    class Solver(BaseSolver):
+        name = 'solver1'
+        sampling_strategy = 'callback'
+
+        def set_objective(self, X, y, lmbd):
+            self.n_features = X.shape[1]
+            self.run_once({n_iter})
+
+        def run(self, cb):
+            i = 0
+            while cb():
+                i += 1
+            print(f"RUNONCE({{i}})")
+
+        def get_result(self, **data):
+            return {{'beta': np.zeros(self.n_features)}}
+    """
+
+    with temp_benchmark(solvers=[solver1]) as benchmark:
+        with CaptureRunOutput() as out:
+            run([
+                str(benchmark.benchmark_dir),
+                *'-s solver1 -d test-dataset -n 0 -r 1 --no-plot'.split(),
+                *'-o dummy*[reg=0.5]'.split()
+            ], standalone_mode=False)
+
+        out.check_output(rf"RUNONCE\({n_iter}\)", repetition=1)
+
+
+##############################################################################
+# Test for deprecated features in 1.5
+##############################################################################
+
+
+def test_deprecated_stopping_strategy():
+    # XXX remove in 1.5
+    assert benchopt.__version__ < '1.5'
+
+    solver1 = """from benchopt import BaseSolver
+    import numpy as np
+
+    class Solver(BaseSolver):
+        name = 'solver1'
+        stopping_strategy = 'iteration'
+
+        def run(self, n_iter): pass
+
+        def set_objective(self, X, y, lmbd):
+            self.n_features = X.shape[1]
+
+        def get_result(self, **data):
+            return {'beta': np.zeros(self.n_features)}
+    """
+
+    solver2 = solver1.replace("stopping_strategy", "sampling_strategy")
+    solver2 = solver2.replace("solver1", "solver2")
+
+    with temp_benchmark(solvers=[solver1, solver2]) as benchmark:
+        with pytest.warns(
+                FutureWarning,
+                match="'stopping_strategy' attribute is deprecated"):
+            run([str(benchmark.benchmark_dir),
+                 *'-s solver1 -d test-dataset -n 1 -r 1 --no-plot'.split()],
+                standalone_mode=False)
+
+        run([str(benchmark.benchmark_dir),
+             *'-s solver2 -d test-dataset -n 1 -r 1 --no-plot'.split()],
+            standalone_mode=False)
+
+
+def test_deprecated_support_sparse():
+    # XXX remove in 1.5
+    assert benchopt.__version__ < '1.5'
+
+    solver1 = """from benchopt import BaseSolver
+    import numpy as np
+
+    class Solver(BaseSolver):
+        name = 'solver1'
+        support_sparse = True
+
+        def run(self, n_iter): pass
+
+        def set_objective(self, X, y, lmbd):
+            self.n_features = X.shape[1]
+
+        def get_result(self, **data):
+            return dict(beta=np.zeros(self.n_features))
+    """
+
+    with temp_benchmark(solvers=solver1) as benchmark:
+        with pytest.warns(
+                FutureWarning,
+                match="`support_sparse = False` is deprecated"):
+            run([str(benchmark.benchmark_dir),
+                 *'-s solver1 -d test-dataset -n 1 -r 1 --no-plot'.split()],
+                standalone_mode=False)
+
+
+def test_deprecated_compute():
+    # XXX remove in 1.5
+    assert benchopt.__version__ < '1.5'
+
+    # Make sure that BaseObjective is compatible with compute, with both
+    # get_result returning a dict or a scalar.
+    objective = """from benchopt import BaseObjective
+
+    class Objective(BaseObjective):
+        name = 'dummy'
+
+        def set_data(self, X, y):
+            self.X, self.y = X, y
+
+        def compute(self, beta):
+            return 1
+
+        def get_one_result(self):
+            return dict(beta=0)
+
+        def get_objective(self):
+            return dict(X=self.X, y=self.y, lmbd=0)
+    """
+
+    match = "`Objective.compute` was renamed `Objective.evaluate_result` "
+    with temp_benchmark(objective=objective) as benchmark:
+        with pytest.warns(FutureWarning, match=match):
+            run([str(benchmark.benchmark_dir),
+                 *'-s python-pgd -d test-dataset -n 1 -r 1 --no-plot'.split()],
+                standalone_mode=False)
+
+    solver1 = """from benchopt import BaseSolver
+    import numpy as np
+
+    class Solver(BaseSolver):
+        name = 'solver1'
+
+        def run(self, n_iter): pass
+
+        def set_objective(self, X, y, lmbd):
+            self.n_features = X.shape[1]
+
+        def get_result(self, **data):
+            return np.zeros(self.n_features)
+    """
+    match = r"Solver.get_result\(\) should return a dict"
+    with temp_benchmark(objective=objective, solvers=solver1) as benchmark:
+        with pytest.warns(FutureWarning, match=match):
+            run([str(benchmark.benchmark_dir),
+                 *'-s solver1 -d test-dataset -n 1 -r 1 --no-plot'.split()],
+                standalone_mode=False)
+
+    # Make sure that no warning is raised if using evaluate_result.
+    objective = objective.replace("compute", "evaluate_result")
+    with temp_benchmark(objective=objective) as benchmark:
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            run([str(benchmark.benchmark_dir),
+                 *'-s python-pgd -d test-dataset -n 1 -r 1 --no-plot'.split()],
+                standalone_mode=False)
+
+
+def test_deprecated_callback():
+    # XXX remove in 1.5
+    assert benchopt.__version__ < '1.5'
+
+    # Make sure that BaseObjective is compatible with compute, with both
+    # get_result returning a dict or a scalar.
+    objective = """from benchopt import BaseObjective
+
+    class Objective(BaseObjective):
+        name = 'dummy'
+
+        def set_data(self, X, y):
+            self.X, self.y = X, y
+
+        def compute(self, beta):
+            return 1
+
+        def get_one_result(self):
+            return dict(beta=0)
+
+        def get_objective(self):
+            return dict(X=self.X, y=self.y, lmbd=0)
+    """
+
+    solver = """from benchopt import BaseSolver
+    import numpy as np
+
+    class Solver(BaseSolver):
+        name = 'solver1'
+        sampling_strategy = "callback"
+
+        def run(self, cb):
+            self.beta = 0
+            while cb(self.beta):
+                pass
+
+        def set_objective(self, X, y, lmbd):
+            self.p = X.shape[1]
+
+        def get_result(self, **data):
+            return 0
+    """
+    match = r"the callback does not take any arguments."
+    with temp_benchmark(objective=objective, solvers=solver) as benchmark:
+        with pytest.warns(FutureWarning, match=match):
+            run([str(benchmark.benchmark_dir),
+                 *'-s solver1 -d test-dataset -n 1 -r 1 --no-plot'.split()],
+                standalone_mode=False)
+
+    solver1 = solver.replace("cb(self.beta)", "cb(dict(beta=self.beta))")
+    with temp_benchmark(objective=objective, solvers=solver1) as benchmark:
+        with pytest.warns(FutureWarning, match=match):
+            run([str(benchmark.benchmark_dir),
+                 *'-s solver1 -d test-dataset -n 1 -r 1 --no-plot'.split()],
+                standalone_mode=False)
+
+    solver = solver.replace("cb(self.beta)", "cb()")
+    match = r"Solver.get_result\(\) should return a dict"
+    with temp_benchmark(objective=objective, solvers=solver) as benchmark:
+        with pytest.warns(FutureWarning, match=match):
+            run([str(benchmark.benchmark_dir),
+                 *'-s solver1 -d test-dataset -n 1 -r 1 --no-plot'.split()],
+                standalone_mode=False)
+
+    solver = solver.replace("return 0", "return dict(beta=0)")
+    match = "`Objective.compute` was renamed `Objective.evaluate_result` "
+    with temp_benchmark(objective=objective, solvers=solver) as benchmark:
+        with pytest.warns(FutureWarning, match=match):
+            run([str(benchmark.benchmark_dir),
+                 *'-s solver1 -d test-dataset -n 1 -r 1 --no-plot'.split()],
+                standalone_mode=False)
+
+    objective = objective.replace("compute", "evaluate_result")
+    with temp_benchmark(objective=objective, solvers=solver) as benchmark:
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            run([str(benchmark.benchmark_dir),
+                 *'-s solver1 -d test-dataset -n 1 -r 1 --no-plot'.split()],
+                standalone_mode=False)
+
+
+def test_deprecated_get_one_solution():
+    # XXX remove in 1.5
+    assert benchopt.__version__ < '1.5'
+
+    # Make sure that BaseObjective is compatible with compute, with both
+    # get_result returning a dict or a scalar.
+    objective = """from benchopt import BaseObjective
+
+    class Objective(BaseObjective):
+        name = 'dummy'
+
+        def set_data(self, X, y):
+            self.X, self.y = X, y
+
+        def evaluate_result(self, beta):
+            return 1
+
+        def get_one_solution(self):
+            return dict(beta=0)
+
+        def get_objective(self):
+            return dict(X=self.X, y=self.y, lmbd=0)
+    """
+
+    match = "`Objective.get_one_solution` is renamed `Objective.get_one_result"
+    with temp_benchmark(objective=objective) as benchmark:
+        with CaptureRunOutput() as out:
+            with pytest.raises(SystemExit, match='False'):
+                _cmd_test([str(benchmark.benchmark_dir),
+                           *'-- -k test_benchmark_objective'.split()],
+                          standalone_mode=False)
+        out.check_output(match, repetition=1)
+
+    objective = objective.replace("get_one_solution", "get_one_result")
+    with temp_benchmark(objective=objective) as benchmark:
+        with CaptureRunOutput() as out:
+            with pytest.raises(SystemExit, match='False'):
+                _cmd_test([str(benchmark.benchmark_dir),
+                           *'-- -k test_benchmark_objective'.split()],
+                          standalone_mode=False)
+        out.check_output(match, repetition=0)

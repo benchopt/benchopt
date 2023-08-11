@@ -1,7 +1,8 @@
-.. _publish_doc:
+.. _publish_benchmark:
 
 Publish benchmark results
 =========================
+
 
 Benchopt allows you to publish your benchmark results to
 the `Benchopt Benchmarks website <https://benchopt.github.io/results/>`_
@@ -41,9 +42,9 @@ Obtaining a GitHub token
 
 Visit `https://github.com/settings/tokens <https://github.com/settings/tokens>`_
 and click on ``generate new token``.
-Then create a token named ``benchopt``, ticking the **repo** box as shown below:
+Then create a token named benchopt, ticking the **repo** box as shown below:
 
-.. figure:: _static/github_benchopt_token.png
+.. figure:: ../_static/github_benchopt_token.png
    :target: https://github.com/settings/tokens
    :align: center
 

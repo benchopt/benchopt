@@ -13,12 +13,44 @@ Version 1.5 (dev)
 API
 ~~~
 
+- The callback now does not take any argument anymore. The results from the
+  ``Solver`` are always collected using ``get_result``.
+  By `Thomas Moreau`_ (:gh:`631`).
+
+- Deprecate ``Objective.get_one_solution`` in favor of ``Objective.get_one_result``
+  for consistency with ``Objective.evaluate_result``.
+  By `Thomas Moreau`_ (:gh:`631`).
+
+- Deprecate ``Objective.compute`` in favor of ``Objective.evaluate_result``, for
+  consistency with ``Solver.get_result``. Like ``Dataset.get_data``,
+  ``Solver.get_result`` must now return a dictionary, which is unpacked as
+  arguments to ``Objective.evaluate_result``.
+  By `Mathurin Massias`_ (:gh:`576`).
+
+- ``Solver.support_sparse`` attribute is deprecated in favor of the use of
+  ``Solver.skip``, by `Mathurin Massias`_ (:gh:`614`).
+
 - ``stopping_strategy`` attribute is replaced by ``sampling_strategy`` to clarify
   the concept, by `Mathurin Massias`_ (:gh:`585`).
 
 - Add ``Solver.warm_up`` function for explicit warmup instructions, such as
   empty run for jitting. This function is called only once per solver.
   By `Pierre Ablin`_ (:gh:`602`).
+
+
+DOC
+~~~
+
+- Reformatting and enriching the documentation for easy onboarding.
+  By `Badr Moufad`_ and `Mathurin Massias`_ (:gh:`619`, :gh:`629`).
+
+Internals
+~~~~~~~~~
+
+- Add helper to store and retrieve metadata in parquet files. This will
+  allow storing per-run plotting information.
+  By `Thomas Moreau`_ (:gh`637`).
+
 
 .. _changes_1_4:
 
@@ -52,7 +84,7 @@ API
   be cached globally for a solver. By `Thomas Moreau`_ (:gh:`525`)
 
 - Remove deprecated ``Objective.to_dict``, ``safe_import_context.import_from``.
-  Force implementation of :method:`benchopt.Objective.get_one_solution`.
+  Force implementation of :meth:`~benchopt.Objective.get_one_solution`.
   By `Thomas Moreau`_ (:gh:`569`)
 
 PLOT

@@ -170,7 +170,7 @@ class Benchmark:
         # List all available module in benchmark.subpkg
         class_name = base_class.__name__.replace('Base', '')
         package = self.benchmark_dir / f'{class_name.lower()}s'
-        submodule_files = package.glob('*.py')
+        submodule_files = package.glob('[!.]*.py')
         for module_filename in submodule_files:
             if module_filename.name.startswith("template_"):
                 # skip template solvers and datasets

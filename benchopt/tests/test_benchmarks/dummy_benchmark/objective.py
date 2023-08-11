@@ -35,10 +35,10 @@ class Objective(BaseObjective):
             return True, 'X is all zeros'
         return False, None
 
-    def get_one_solution(self):
-        return np.zeros(self.X.shape[1])
+    def get_one_result(self):
+        return dict(beta=np.zeros(self.X.shape[1]))
 
-    def compute(self, beta):
+    def evaluate_result(self, beta):
         diff = self.y - self.X.dot(beta)
         objective_value = .5 * diff.dot(diff) + self.lmbd * abs(beta).sum()
 
