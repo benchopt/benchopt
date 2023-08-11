@@ -13,6 +13,9 @@ Version 1.5 (dev)
 API
 ~~~
 
+- Add a ``Objective.url`` attribute to specify the orignal repo of the
+  benchmark. By `Thomas Moreau`_ (:gh:`621`).
+
 - The callback now does not take any argument anymore. The results from the
   ``Solver`` are always collected using ``get_result``.
   By `Thomas Moreau`_ (:gh:`631`).
