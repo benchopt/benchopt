@@ -2,7 +2,9 @@ import itertools
 from abc import abstractmethod
 
 
+from .dynamic_modules import get_file_hash
 from .dynamic_modules import _reconstruct_class
+from .safe_import import set_benchmark_module
 
 
 class ParametrizedNameMixin():
@@ -84,6 +86,29 @@ class ParametrizedNameMixin():
     @staticmethod
     def get_pickle_hooks():
         return lambda obj: None, None
+
+    # Reduce the pickling and hashing burden by only pickling class parameters.
+    @staticmethod
+    def _reconstruct(module_filename, pickled_module_hash, parameters,
+                     hook_args, benchmark_dir):
+        set_benchmark_module(benchmark_dir)
+        Objective = _reconstruct_class(
+            module_filename, 'Objective', benchmark_dir, pickled_module_hash,
+        )
+        obj = Objective.get_instance(**parameters)
+        if hook_args is not None:
+            _, reconstruc_hook = obj.get_pickle_hooks()
+            reconstruc_hook(obj, hook_args)
+        return obj
+
+    def __reduce__(self):
+        module_hash = get_file_hash(self._module_filename)
+        reduce_hook, _ = self.get_pickle_hooks()
+        hook_args = reduce_hook(self)
+        return self._reconstruct, (
+            self._module_filename, module_hash, self._parameters, hook_args,
+            str(self._import_ctx._benchmark_dir)
+        )
 
 
 def expand(keys, values):
