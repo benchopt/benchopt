@@ -81,6 +81,10 @@ class ParametrizedNameMixin():
             pickled_module_hash=pickled_module_hash
         )
 
+    @staticmethod
+    def get_pickle_hooks():
+        return lambda obj: None, None
+
 
 def expand(keys, values):
     """Expand the multiple parameters for itertools product"""

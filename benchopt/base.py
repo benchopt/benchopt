@@ -283,6 +283,16 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
             module_hash, str(self._import_ctx._benchmark_dir)
         )
 
+    @staticmethod
+    def get_pickle_hooks():
+        return (
+            lambda obj: (
+                getattr(obj, '_objective', None), getattr(obj, '_output', None)
+            ),
+            lambda obj, args: obj._set_objective(*args) if args[0] else None
+         )
+
+
 
 class CommandLineSolver(BaseSolver, ABC):
     """A base class for solvers that are called through command lines
@@ -573,4 +583,11 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
         return self._reconstruct, (
             self._module_filename, module_hash, self._parameters, dataset,
             str(self._import_ctx._benchmark_dir)
+        )
+
+    @staticmethod
+    def get_pickle_hooks():
+        return (
+            lambda obj: getattr(obj, '_dataset', None),
+            lambda obj, dataset: obj.set_dataset(dataset)
         )
