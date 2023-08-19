@@ -4,6 +4,7 @@ import warnings
 from pathlib import Path
 
 from benchopt.benchmark import Benchmark
+from benchopt.mini import get_mini_benchmark
 from benchopt.cli.completion import complete_solvers
 from benchopt.cli.completion import complete_datasets
 from benchopt.cli.completion import complete_benchmarks
@@ -44,6 +45,7 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
 
     return_names = [
         "benchmark",
+        "mini",
         "solver",
         "force_solver",
         "dataset",
@@ -71,6 +73,9 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
 )
 @click.argument('benchmark', default=Path.cwd(), type=click.Path(exists=True),
                 shell_complete=complete_benchmarks)
+@click.option('--mini',
+              metavar="<file>", type=click.Path(exists=True),
+              help="")
 @click.option('--objective', '-o',
               metavar='<objective_filter>', multiple=True, type=str,
               help="Select the objective based on its parameters, with the "
@@ -170,7 +175,7 @@ def run(config_file=None, **kwargs):
         config = {}
 
     (
-        benchmark, solver_names, forced_solvers, dataset_names,
+        benchmark, mini_file, solver_names, forced_solvers, dataset_names,
         objective_filters, max_runs, n_repetitions, timeout, n_jobs, slurm,
         plot, html, pdb, do_profile, env_name, output
     ) = _get_run_args(kwargs, config)
@@ -182,7 +187,10 @@ def run(config_file=None, **kwargs):
         timeout = pd.to_timedelta(timeout).total_seconds()
 
     # Create the Benchmark object
-    benchmark = Benchmark(benchmark)
+    if mini_file is not None:
+        benchmark = get_mini_benchmark(mini_file)
+    else:
+        benchmark = Benchmark(benchmark)
 
     if benchmark.min_version is not None:
         from packaging.version import parse
