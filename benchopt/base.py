@@ -112,7 +112,8 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         # Check if the objective is compatible with the solver
         skip, reason = self.skip(**objective_dict)
         if skip:
-            self._output.skip(reason)
+            if self._output:
+                self._output.skip(reason)
             return True
 
         self.set_objective(**objective_dict)
@@ -229,7 +230,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
             the solver on an easy to solve problem.
         """
 
-        if hasattr(self, '_output'):
+        if hasattr(self, '_output') and self._output is not None:
             self._output.progress('caching warmup times.')
 
         if self._solver_strategy == "callback":
