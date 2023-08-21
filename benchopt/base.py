@@ -266,8 +266,6 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         
         self.warm_up()
         self._warmup_done = True
-            self.warm_up()
-            self._warmup_done = True
 
     @staticmethod
     def _reconstruct(module_filename, parameters, objective, output,
