@@ -126,10 +126,12 @@ def test_solver_install(test_env_name, benchmark, solver_class, check_test):
     )
 
 
-def test_solver(benchmark, solver_class):
-
+def test_solver(benchmark, solver_class, check_test):
     # Check that a solver run with at least one configuration of a simulated
     # dataset.
+
+    if check_test is not None:
+        check_test(solver_class)
 
     if not solver_class.is_installed():
         pytest.skip("Solver is not installed")
