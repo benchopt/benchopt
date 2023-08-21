@@ -96,7 +96,6 @@ We also use the method to instantiate a Ridge estimator that will be used to per
         def set_objective(self, X, y, lmbd, fit_intercept):
             # store any info needed to run the solver as class attribute
             self.X, self.y = X, y
-            self.lmbd = lmbd
 
             # declare anything that will be used to run your solver
             self.model = sklearn.linear_model.Ridge(
@@ -188,16 +187,13 @@ The following snippet shows how to use the callback strategy with a user-coded s
             n_features = self.X.shape[1]
 
             # init vars
-            beta = np.zeros(n_features)
+            self.beta = np.zeros(n_features)
             step = 1 / (np.linalg.norm(self.X, ord=2) ** 2 + self.lmbd)
 
             while callback():
                 # do one iteration of the solver here:
                 grad = self.X.T @ (self.X @ beta - y) + self.lmbd * beta
-                beta -= step * grad
-
-            # at the end of while loop, store reference to the solution
-            self.beta = beta
+                self.beta -= step * grad
         ...
 
 .. note::
