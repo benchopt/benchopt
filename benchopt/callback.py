@@ -11,6 +11,9 @@ class _Callback:
     ----------
     objective : instance of BaseObjective
         The objective to minimize.
+    solver : instance of BaseSolver
+        The solver that is currently run. This allows to retrieve the results
+        with :method:`benchopt.base.Solver.get_result` in the callback.
     meta : dict
         Metadata passed to store in Cost results.
         Contains objective and data names, problem dimension, etc.

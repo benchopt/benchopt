@@ -112,7 +112,8 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         # Check if the objective is compatible with the solver
         skip, reason = self.skip(**objective_dict)
         if skip:
-            self._output.skip(reason)
+            if self._output:
+                self._output.skip(reason)
             return True
 
         self.set_objective(**objective_dict)
@@ -229,16 +230,19 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
             the solver on an easy to solve problem.
         """
 
-        if hasattr(self, '_output'):
+        if hasattr(self, '_output') and self._output is not None:
             self._output.progress('caching warmup times.')
 
         if self._solver_strategy == "callback":
+            stopping_criterion = (
+                SingleRunCriterion(stop_val=stop_val)
+                .get_runner_instance(solver=self)
+            )
             run_once_cb = _Callback(
                 lambda x: {'objective_value': 1},
-                {},
-                SingleRunCriterion(stop_val=stop_val).get_runner_instance(
-                    solver=self
-                )
+                solver=self,
+                meta={},
+                stopping_criterion=stopping_criterion
             )
             run_once_cb.start()
             self.run(run_once_cb)
@@ -352,7 +356,7 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
 class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
     """Base class to define an objective function
 
-    Objectives that derive from this class should implement three methods:
+    Objectives that derive from this class needs to implement four methods:
 
     - `set_data(**data)`: stores the info from a given dataset to be able to
       compute the objective value on these data.
@@ -370,6 +374,19 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
       `value` associated to a scalar value which will be used to
       detect convergence. With a dictionary, multiple metric values can be
       stored at once instead of running each separately.
+
+    - `get_one_result()`: return one result for which the objective can be
+      evaluated. This should be a dictionary where the keys correspond to the
+      keyword arguments of `evaluate_result`.
+
+    This class is also used to specify information about the benchmark.
+    In particular, it should have the following class attributes:
+
+    - `name`: a name for the benchmark, that will be used to display results.
+    - `url`: the url of the original benchmark repository.
+    - `requirements`: the minimal requirements to be able to run the benchmark.
+    - `min_benchopt_version`: the minimal version of benchopt required to run
+      this benchmark.
     """
 
     _base_class_name = 'Objective'
