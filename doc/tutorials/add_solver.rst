@@ -163,7 +163,7 @@ In this case, the signature of the ``run`` method is ``run(self, tolerance)``; i
             self.model.fit(self.X, self.y)
 
             # store reference to the solution
-            self.beta = beta
+            self.beta = self.model.coef_
         ...
 
 - ``sampling_strategy = "callback"``
