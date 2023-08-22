@@ -192,7 +192,7 @@ The following snippet shows how to use the callback strategy with a user-coded s
 
             while callback():
                 # do one iteration of the solver here:
-                grad = self.X.T @ (self.X @ beta - y) + self.lmbd * beta
+                grad = self.X.T @ (self.X @ self.beta - y) + self.lmbd * self.beta
                 self.beta -= step * grad
         ...
 
