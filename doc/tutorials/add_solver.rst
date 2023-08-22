@@ -96,6 +96,7 @@ We also use the method to instantiate a Ridge estimator that will be used to per
         def set_objective(self, X, y, lmbd, fit_intercept):
             # store any info needed to run the solver as class attribute
             self.X, self.y = X, y
+            self.lmbd = lmbd
 
             # declare anything that will be used to run your solver
             self.model = sklearn.linear_model.Ridge(
