@@ -96,6 +96,7 @@ We also use the method to instantiate a Ridge estimator that will be used to per
         def set_objective(self, X, y, lmbd, fit_intercept):
             # store any info needed to run the solver as class attribute
             self.X, self.y = X, y
+            self.lmbd = lmbd
 
             # declare anything that will be used to run your solver
             self.model = sklearn.linear_model.Ridge(
@@ -163,7 +164,7 @@ In this case, the signature of the ``run`` method is ``run(self, tolerance)``; i
             self.model.fit(self.X, self.y)
 
             # store reference to the solution
-            self.beta = beta
+            self.beta = self.model.coef_
         ...
 
 - ``sampling_strategy = "callback"``
@@ -192,7 +193,7 @@ The following snippet shows how to use the callback strategy with a user-coded s
 
             while callback():
                 # do one iteration of the solver here:
-                grad = self.X.T @ (self.X @ beta - y) + self.lmbd * beta
+                grad = self.X.T @ (self.X @ self.beta - y) + self.lmbd * self.beta
                 self.beta -= step * grad
         ...
 
