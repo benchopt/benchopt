@@ -259,9 +259,11 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         ...
 
     def _warm_up(self):
-        if not getattr(self, '_warmup_done', True):
-            self.warm_up()
-            self._warmup_done = True
+        if getattr(self, '_warmup_done', None):
+            # already warmed up
+            return
+        self.warm_up()
+        self._warmup_done = True
 
     @staticmethod
     def _reconstruct(module_filename, parameters, objective, output,
