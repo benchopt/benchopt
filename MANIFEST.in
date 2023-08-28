@@ -33,6 +33,7 @@ recursive-include examples *.txt
 
 # Include dummy benchmark for test
 recursive-include benchopt/tests/test_benchmarks *.R
+recursive-include benchopt/tests/test_benchmarks *.m
 recursive-include benchopt/tests/test_benchmarks *.jl
 recursive-include benchopt/tests/test_benchmarks *.py
 recursive-include benchopt/tests/test_benchmarks *.md

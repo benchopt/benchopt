@@ -1,5 +1,5 @@
 import sys
-
+from shutil import which
 import pytest
 
 
@@ -16,3 +16,6 @@ def check_test_solver_install(solver_class):
 
     if solver_class.name.lower() in ["solver-test"]:
         pytest.skip('Test solver that cannot be installed, skipping.')
+
+    if 'matlab' in solver_class.name.lower() and which('matlab') is None:
+        pytest.skip('Matlab not testable in CI, skipping.')

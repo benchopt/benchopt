@@ -52,8 +52,6 @@ jobs:
           # Use miniforge to only get conda-forge as default channel.
           miniforge-version: latest
 
-      - run: conda info
-
       - name: Install benchopt and its dependencies
         run: |
           conda info

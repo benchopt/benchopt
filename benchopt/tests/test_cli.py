@@ -46,7 +46,9 @@ BENCHMARK_COMPLETION_CASES = [
 SOLVER_COMPLETION_CASES = [
     ('', [n.lower() for n in DUMMY_BENCHMARK.get_solver_names()]),
     ('sk', ['sklearn']),
-    ('pgd', ['julia-pgd', 'python-pgd', 'python-pgd-with-cb', 'r-pgd'])
+    ('pgd', [
+        'julia-pgd', 'matlab-pgd', 'python-pgd', 'python-pgd-with-cb', 'r-pgd'
+    ])
 ]
 DATASET_COMPLETION_CASES = [
     ('', [n.lower() for n in DUMMY_BENCHMARK.get_dataset_names()]),
