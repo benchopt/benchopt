@@ -97,6 +97,14 @@
                                 </select>
                             </div>
                         </div>
+                        <div class="mt-8 px-8">
+                            <label for="tags_solvers" class="block text-sm font-medium text-white">Tags</label>
+                            <div id="tags">
+                                % for tag in result['metadata']['tags_solvers']:
+                                <span onclick="updateVisibilityBasedTags(this)" class="tag-item">${tag}</span>
+                                %endfor
+                            </div>
+                        </div>
                         <div id="xaxis-type-form-group" class="mt-8 px-8">
                             <label for="change_scaling" class="block text-sm font-medium text-white">X-axis</label>
                             <div class="mt-1 rounded-md shadow-sm">
@@ -409,7 +417,8 @@
                     'scale': document.getElementById('change_scaling').value,
                     'with_quantiles': document.getElementById('change_shades').checked,
                     'xaxis_type':  document.getElementById('change_xaxis_type').value || "Time",
-                    'hidden_solvers': []
+                    'hidden_solvers': [],
+                    'selected_tags': [],
                 });
             });
         </script>
