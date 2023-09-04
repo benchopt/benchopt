@@ -36,6 +36,10 @@ code {
     background-color: #f3f5f9 !important;
 }
 
+section {
+    text-align: justify;
+}
+
 .alert-info {
     background-color: #adb8cb !important;
     border-color: #adb8cb !important;

@@ -48,7 +48,7 @@ Installing Benchopt
 
 Let's start by installing the benchopt package.
 It is a python package, so we are assuming that you are starting this tutorial with a functioning python installation.
-It is recommanded to run all this tutorial in a dedicated environment (such as a `virtual environment <https://docs.python.org/fr/3/library/venv.html>`_ or a conda environment)
+It is recommended to run all this tutorial in a dedicated environment (such as a `virtual environment <https://docs.python.org/fr/3/library/venv.html>`_ or a conda environment)
 
 .. 
     , which you can create in an empty repository with the following commands in a linux terminal:
@@ -65,18 +65,18 @@ Benchopt can be installed simply using ``pip`` by running in a terminal
     pip install benchopt
 
 Benchopt and its dependencies are going to be installed, just wait until this is done.
-If you have any issue with the installation, if you are already in a clean virtual environment, you may have a look at the `installation page <https://benchopt.github.io/#install>`_.
+If you have any issue with the installation, you may have a look at the `installation page <https://benchopt.github.io/#install>`_.
 
 Installing and running a first benchmark
 ----------------------------------------
 
 Benchopt in itself is like a mother package: it supervises and runs smaller libraries, a.k.a. the benchmarks.
-Therefore, benchmarks are repositories with a predefined structure and some required files (we will go over each of them in the next section) that are processed by benchopt.
+Therefore, **benchmarks are repositories** with a predefined structure and some required files (we will go over each of them in the next section) that are processed by benchopt.
 The benchmark specifies information about the problem (typically the loss function to minimize), the dataset on which the algorithms are tested (values of \\(X \\) and \\( y\\)) and the solvers (like our GD algorithm).
 It is likely that if you are reading this tutorial, you are in fact mostly interested in writing and running a benchmark.
 
 To write a benchmark, it is recommended to start from the `template benchmark <https://github.com/benchopt/template_benchmark>`_ shared in the Benchopt organisation.
-To get this template and rename it ``my_benchmark``, you can clone it from its Github repository
+To get this template and rename it ``my_benchmark``, you can clone it from its Github repository:
 
 .. prompt:: bash $
 
@@ -89,7 +89,7 @@ The cost which is implemented in the template benchmark is the Ordinary Least Sq
 
     g(\beta) = \frac{1}{2} \|y - X\beta \|^2
 
-and the solver implement is GD with \\(\\nabla g(\\beta) = -X^Ty + X^TX\\beta \\) the gradient of \\(g\\) at \\(\\beta \\).
+and the only implemented solver is GD with \\(\\nabla g(\\beta) = -X^Ty + X^TX\\beta \\) the gradient of \\(g\\) at \\(\\beta \\).
 
 We will modify this template to adapt it to the ridge regression problem next, but before that let us run this benchmark.
 In other words, let us use benchopt to read the contents of the template benchmark and run GD on OLS with a predefined set of stepsizes, in our case \\( [1, 1.99] \\) (the stepsize is scaled by the inverse of the gradient's Lipschitz constant, you can ignore this detail if you are not familiar with this concept).
@@ -113,19 +113,19 @@ You will see something similar to this in your terminal
 
 Once the benchmark has been run, a window should open in your default navigator.
 This provides a visualization of the results of the run, which is useful to immediately observe, comment and share the results.
-After running the template benchmark, we can observe the convergence plots of GD with the two different stepsize choices, for two different simulated dataset.
-The convergence plots can be made log-log for easier reading.
-Also, depending on your computer, the runtime is so low that the convergence plot with respect to time is not reliable.
-We advise to look at the results in terms of iteration (scrolling menu on the bottom left of the webpage).
+After running the template benchmark, we can observe the convergence plots of GD with the two different stepsize choices, for two different simulated datasets.
+The convergence plot scales can be changed for easier reading.
+In this specific toy example, the runtime is so low that the convergence plot with respect to time may not be reliable: you can also look at the results in terms of iterations, by scrolling the menu on the bottom left of the webpage.
 Feel free to play around with the plotting options here!
-Note that the dataset comes with two values for an option whiten, let us ignore this detail in the tutorial.
+Note that the objective comes with two possible values for a  `whiten` parameter. 
+Let us ignore this detail in the tutorial.
 
 Exploring the benchmark structure
 ---------------------------------
 
 The template benchmark we are using at the moment is not exactly encoding the information we need for the ridge regression problem.
 To properly modify the benchmark, first we need to dive deeper into how benchmarks work.
-To follow through this section, it is advised to open an editor (like vscode) in the root of the template benchmark to easily navigate between the files and folders.
+To follow through this section, it is advised to open an editor (like vscode) at the root of the template benchmark to easily navigate between the files and folders.
 
 Here is the architecture of our template benchmark:
 
@@ -149,8 +149,8 @@ Here is the architecture of our template benchmark:
 The three most important files are
 
     - ``objective.py``: it contains the information about the cost function we want to minimize. In other words, it defines the formal problem we are interested in.
-    - ``python-gd.py``: it contains the information and code for the gradient descent solver, dedicated to the problem at hand.
-    - ``simulated.py``: it contains the information about the dataset, i.e. the values of \\(y \\) and \\(X \\) used to test the algorithms. All benchmark in fact must have a ``simulated.py`` file which is used for testing by Benchopt.
+    - ``solvers/python-gd.py``: it contains the information and code for the gradient descent solver, dedicated to the problem at hand.
+    - ``datasets/simulated.py``: it contains the information about the dataset, i.e. the values of \\(y \\) and \\(X \\) used to test the algorithms. All benchmark in fact must have a ``simulated.py`` file which is used for testing by Benchopt.
 
 Any benchmark must implement these three components; in Benchopt indeed we consider that objectives, solvers and dataset are the building blocks of any optimization problem.
 There can be several solvers in the ``solvers/`` directory, and similarly there can be several datasets in the ``datasets/`` directory.
@@ -199,7 +199,7 @@ First, code that defines core elements of the problem:
             rng = np.random.RandomState(self.random_state)
             X = rng.randn(self.n_samples, self.n_features)
             y = rng.randn(self.n_samples)
-            return dict(X=X, y=y),
+            return dict(X=X, y=y)
 
 The second type of methods found in these three python files are the **communication** tools.
 Indeed, solvers, dataset and objectives need to exchange information.
@@ -232,7 +232,7 @@ Therefore we need to implement the following modifications:
     - we should add the regularization term \\( +\\lambda \\|\\beta \\|^2 \\) to the loss in ``objective.py``, and values for the regularization parameter.
     - we should modify the computed gradient, knowing that \\( \\nabla f(\\beta) = \\nabla g(\\beta) + 2\\lambda\\beta \\).
 
-We will not modify anything in the dataset since the inputs \\(X,y \\) of the regression and ridge regression are essentially the same.
+We will not modify anything in the dataset since the inputs \\(X,y \\) of the regression and ridge regression are the same.
 
 Let's start with the ``objective.py`` file.
 The regularization parameter values are part of the formal definition of the problem, so we can define them as attributes of the ``Objective`` class.
@@ -247,7 +247,7 @@ The ``whiten_y`` parameter is already implemented, so we can simply add a ``reg`
             'reg': [1e1, 1e2]
         }
 
-This piece of code says that \\( \\lambda\\) should take two values \\( 10\\) or \\( 100\\) across the benchmark.
+This piece of code says that \\( \\lambda\\) should take two values, \\( 10\\) or \\( 100\\), in the benchmark.
 
 Then we update the ``compute`` method as follows:
 
@@ -259,13 +259,13 @@ Then we update the ``compute`` method as follows:
             return dict(
                 value=.5 * diff.dot(diff) + l2reg,
                 ols=.5 * diff.dot(diff),
-                penalty=l2reg
+                penalty=l2reg,
             )
 
 We have done several modifications here:
 
     - The ``l2reg`` variable computes the regularization term. It is added to the OLS term in the ``value`` field of the output dictionary. This ``value`` field is the main loss of the benchmark, used by all algorithms to track convergence.
-    - Additional metrics are computes, namely ``ols`` and ``penalty``. Benchmark will compute these metrics alongside the loss function, and we will be able to look at them in the resulting plots.
+    - Additional metrics are computed, namely ``ols`` and ``penalty``. Benchmark will compute these metrics alongside the loss function, and we will be able to look at them in the resulting plots.
 
 One additional modification handles the fact that the solvers will require the knowledge of \\(\\lambda\\).
 The way to communicate from objectives to solvers, according to the figure above, is by using the ``get_objective`` method.
