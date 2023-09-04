@@ -321,6 +321,15 @@ As a final step, we can change the name of our new algorithm to ``"GD-ridge"`` i
 
     class Solver(BaseSolver):
         name = 'GD_ridge'
+    
+Similarly, we should change the name of the objective from ``Ordinary Least Squares`` to ``Ridge Regression`` in the attributes of the ``Objective`` class in ``objective.py``
+
+.. code-block:: python
+
+    class Objective(BaseObjective):
+        name = 'Ridge Regression'
+
+.. todo: update the figures screenshot with the update names for objective and the benchmark
 
 
 And that's it, you now have your first benchmark setup! Congratulations :)
