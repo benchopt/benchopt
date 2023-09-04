@@ -12,6 +12,7 @@ from ..constants import PLOT_KINDS
 from .plot_bar_chart import computeBarChartData  # noqa: F401
 from .plot_objective_curve import compute_quantiles   # noqa: F401
 from .plot_objective_curve import get_solver_style
+from benchopt.plotting.plot_objective_curve import reset_solver_styles_idx
 
 ROOT = Path(__file__).parent / "html"
 DEFAULT_HTML_DIR = Path("html")
@@ -207,6 +208,7 @@ def shape_objectives_columns_for_html(df, dataset, objective):
 def shape_solvers_for_html(df, objective_column):
     """Return a dictionary with plotting data for each solver."""
     solver_data = {}
+    reset_solver_styles_idx()
     for solver in df['solver_name'].unique():
         df_filtered = df.query("solver_name == @solver")
 
