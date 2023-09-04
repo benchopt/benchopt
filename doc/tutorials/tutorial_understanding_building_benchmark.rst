@@ -48,7 +48,7 @@ Installing Benchopt
 
 Let's start by installing the benchopt package.
 It is a python package, so we are assuming that you are starting this tutorial with a functioning python installation.
-It is recommanded to run all this tutorial in a dedicated environment (such as a `virtual environment <https://docs.python.org/fr/3/library/venv.html>`_ or a conda environment)
+It is recommended to run all this tutorial in a dedicated environment (such as a `virtual environment <https://docs.python.org/fr/3/library/venv.html>`_ or a conda environment)
 
 .. 
     , which you can create in an empty repository with the following commands in a linux terminal:
