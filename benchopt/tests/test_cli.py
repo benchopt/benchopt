@@ -12,6 +12,7 @@ from click.shell_completion import ShellComplete
 
 from benchopt.benchmark import Benchmark
 from benchopt.plotting import PLOT_KINDS
+from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.utils.stream_redirection import SuppressStd
 from benchopt.utils.dynamic_modules import _load_class_from_module
 
@@ -101,16 +102,24 @@ class TestRunCmd:
 
     def test_objective_not_installed(self):
 
-        def import_error():
-            raise ModuleNotFoundError("no module named 'dummy_package'")
+        # Make sure that when the Objective is not installed, due to a missing
+        # dependency, an error is raised.
+        objective = """from benchopt import BaseObjective
+        from benchopt import safe_import_context
 
-        with patch_import(dummy_package=import_error):
+        with safe_import_context() as import_ctx:
+            import fake_module
+
+        class Objective(BaseObjective):
+            name = 'dummy'
+        """
+        with temp_benchmark(objective=objective) as benchmark:
             with pytest.raises(
                     ModuleNotFoundError,
-                    match="no module named 'dummy_package'"
+                    match="No module named 'fake_module'"
             ):
                 run(
-                    [str(REQUIREMENT_BENCHMARK_PATH), '-n', '1'],
+                    [str(benchmark.benchmark_dir), '-n', '1'],
                     'benchopt', standalone_mode=False
                 )
 
