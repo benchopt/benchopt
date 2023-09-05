@@ -75,7 +75,7 @@ def pytest_generate_tests(metafunc):
             (benchmark, dataset) for dataset in benchmark.get_datasets()
             if dataset.name.lower() == 'simulated'
         ],
-        'dataset': [
+        'dataset_class': [
             (benchmark, dataset) for dataset in benchmark.get_datasets()
         ],
         'solver_class': [
