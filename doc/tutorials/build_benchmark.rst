@@ -1,6 +1,5 @@
 .. _build_benchmark:
 
-
 Understanding and building a simple benchmark
 =============================================
 
