@@ -460,7 +460,7 @@ class TestInstallCmd:
 
 
         class Objective(BaseObjective):
-            name = "Test objective requirements"
+            name = "dummy requirements"
 
             install_cmd = 'conda'
             requirements = [
@@ -474,7 +474,11 @@ class TestInstallCmd:
             def get_objective(self): return dict(X=self.X, y=self.y, lmbd=0)
         """
 
-        with temp_benchmark(objective=objective) as benchmark:
+        # Some solvers are not installable, only keep a simple one.
+        solver = (DUMMY_BENCHMARK_PATH / "solvers" / "python_pgd.py")
+        solvers = [solver.read_text()]
+
+        with temp_benchmark(objective=objective, solvers=solvers) as benchmark:
             objective = benchmark.get_benchmark_objective()
             out = 'already installed but failed to import.'
             if not objective.is_installed(env_name=test_env_name):
