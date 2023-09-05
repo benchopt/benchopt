@@ -35,28 +35,54 @@ class Benchmark:
         Folder containing the benchmark. The folder should at least
         contain an `objective.py` file defining the `Objective`
         function for the benchmark.
+    allow_meta_from_json : bool
+        If set to True, allow the object to be instanciated even when
+        objective.py cannot be found. In this case, the metadata are retrieved
+        from the benchmark_meta.json file. This should only be used to generate
+        HTML pages with results.
 
     Attributes
     ----------
     mem : joblib.Memory
         Caching mechanism for the benchmark.
     """
-    def __init__(self, benchmark_dir):
+    def __init__(self, benchmark_dir, allow_meta_from_json=False):
         self.benchmark_dir = Path(benchmark_dir)
-        self.name = self.benchmark_dir.resolve().name
 
         set_benchmark_module(self.benchmark_dir)
 
+        # Load the benchmark metadat defined in `objective.py` or
+        # in `benchmark_meta.json`.
         try:
             objective = self.get_benchmark_objective()
             self.pretty_name = objective.name
+            self.url = getattr(objective, "url", None)
             self.min_version = getattr(objective, 'min_benchopt_version', None)
         except RuntimeError:
-            raise click.BadParameter(
-                f"The folder '{benchmark_dir}' does not contain "
-                "`objective.py`.\nMake sure you provide the path to a valid "
-                "benchmark."
-            )
+            if not allow_meta_from_json:
+                raise click.BadParameter(
+                    f"The folder '{benchmark_dir}' does not contain "
+                    "`objective.py`.\nMake sure you provide the path to a "
+                    "valid benchmark."
+                )
+            meta_data = (self.benchmark_dir / "benchmark_meta.json")
+            if not meta_data.exists():
+                raise FileNotFoundError(
+                    "Can't find objective.py or benchmark_meta.json to get "
+                    "benchmark info for the html_generation."
+                )
+
+            with meta_data.open() as f:
+                import json
+                meta = json.load(f)
+                self.pretty_name = meta["pretty_name"]
+                self.url = meta.get("url", None)
+
+        if self.url is None:
+            self.name = self.benchmark_dir.resolve().name
+            self.url = f"https://github.com/benchopt/{self.name}"
+        else:
+            self.name = Path(self.url).name
 
     ####################################################################
     # Helpers to access and validate objective, solvers and datasets
@@ -144,7 +170,7 @@ class Benchmark:
         # List all available module in benchmark.subpkg
         class_name = base_class.__name__.replace('Base', '')
         package = self.benchmark_dir / f'{class_name.lower()}s'
-        submodule_files = package.glob('*.py')
+        submodule_files = package.glob('[!.]*.py')
         for module_filename in submodule_files:
             if module_filename.name.startswith("template_"):
                 # skip template solvers and datasets

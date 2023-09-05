@@ -6,7 +6,7 @@ with safe_import_context() as import_ctx:
 
 
 class Objective(BaseObjective):
-    """Here one can provide a description of the Objetive.
+    """Here one can provide a description of the Objective.
 
     Lorem ipsum dolor sit amet. Eos voluptatem natus ab vero voluptatum est
     excepturi saepe non minima alias sed laboriosam optio qui dolores autem
@@ -35,10 +35,10 @@ class Objective(BaseObjective):
             return True, 'X is all zeros'
         return False, None
 
-    def get_one_solution(self):
-        return np.zeros(self.X.shape[1])
+    def get_one_result(self):
+        return dict(beta=np.zeros(self.X.shape[1]))
 
-    def compute(self, beta):
+    def evaluate_result(self, beta):
         diff = self.y - self.X.dot(beta)
         objective_value = .5 * diff.dot(diff) + self.lmbd * abs(beta).sum()
 

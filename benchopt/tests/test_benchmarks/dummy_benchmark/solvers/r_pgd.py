@@ -6,6 +6,7 @@ from benchopt import safe_import_context
 
 with safe_import_context() as import_ctx:
     import numpy as np
+    from scipy.sparse import issparse
 
     # Import helpers from rpy2 and benchopt.helpers.r_lang
     from rpy2 import robjects
@@ -26,8 +27,12 @@ class Solver(BaseSolver):
 
     install_cmd = 'conda'
     requirements = ['r-base', 'rpy2']
-    stopping_strategy = 'iteration'
-    support_sparse = False
+    sampling_strategy = 'iteration'
+
+    def skip(self, X, y, lmbd):
+        if issparse(X):
+            return True, "does not support sparse X"
+        return False, None
 
     def set_objective(self, X, y, lmbd):
         self.X, self.y, self.lmbd = X, y, lmbd
@@ -38,4 +43,4 @@ class Solver(BaseSolver):
         self.w = np.asarray(coefs)
 
     def get_result(self):
-        return self.w.flatten()
+        return {'beta': self.w.flatten()}

@@ -19,7 +19,7 @@ class Objective(BaseObjective):
         'reg': [0.05, .1, .5]
     }
 
-    def get_one_solution(self):
+    def get_one_result(self):
         "Return one solution for which the objective can be evaluated."
         return np.zeros(self.X.shape[1])
 
@@ -36,8 +36,12 @@ class Objective(BaseObjective):
         self.X, self.y = X, y
         self.lmbd = self.reg * self._get_lambda_max()
 
-    def compute(self, beta):
-        "Compute the objective value given the output x of a solver."
+    def evaluate_result(self, beta):
+        """Compute the objective value given the output of a solver.
+
+        The arguments are the keys in the result dictionary returned
+        by ``Solver.get_result``.
+        """
         diff = self.y - self.X @ beta
         objective_value = .5 * diff @ diff + self.lmbd * abs(beta).sum()
         return objective_value  # or return dict(value=objective_value)

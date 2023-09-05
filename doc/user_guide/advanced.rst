@@ -1,7 +1,8 @@
-.. _advanced:
+.. _advanced_usage:
 
-Advanced functionalities in a benchmark
-=======================================
+Advanced usage
+==============
+
 
 This page intends to list some advanced functionality
 to make it easier to use the benchmark.
@@ -11,7 +12,7 @@ to make it easier to use the benchmark.
 Running the benchmark on a SLURM cluster
 ----------------------------------------
 
-``benchopt`` also allows easily running the benchmark in parallel on a SLURM
+Benchopt also allows easily running the benchmark in parallel on a SLURM
 cluster. To install the necessary dependencies, please run:
 
 .. prompt:: bash $
@@ -52,7 +53,7 @@ unique parameters are launched as a separated job in a job-array on the SLURM
 cluster. Note that by default, no limitation is used on the number of
 simultaneous jobs that are run.
 
-If ``slurm_time`` is not set in the config file, ``benchopt`` uses by default
+If ``slurm_time`` is not set in the config file, benchopt uses by default
 the value of ``--timeout`` multiplied by ``1.5`` for each job.
 Note that the logs of each benchmark run can be found in ``./benchopt_run/``.
 
@@ -60,7 +61,7 @@ As we rely on ``joblib.Memory`` for caching the results, the cache should work
 exactly as if you were running the computation sequentially, as long as you have
 a shared file-system between the nodes used for the computations.
 
-.. _skiping_solver:
+.. _skipping_solver:
 
 Skipping a solver for a given problem
 -------------------------------------
@@ -169,13 +170,15 @@ Caching pre-compilation and warmup effects
 For some solvers, such as solver relying on just-in-time compilation with
 ``numba`` or ``jax``, the first iteration might be longer due to "warmup"
 effects. To avoid having such effect in the benchmark results, it is usually
-advised to call the solver once before running the benchmark, in the
-``Solver.set_objective`` method. For solvers with ``stopping_strategy`` in
-``{'tolerance',  'iteration'}``, simply calling the ``Solver.run`` with a
-simple enough value is usually enough. For solvers with ``stopping_strategy``
-set to ``'callback'``, it is possible to call ``Solver.run_once``, which will
-call the ``run`` method with a simple callback that does not compute the
-objective value and stops after ``n_iter`` calls to callback (default to 1).
+advised to call the solver once before running the benchmark. This should be
+implemented in the ``Solver.warm_up`` method, which is empty by default and
+called after the `set_objective` method. For solvers with
+``sampling_strategy`` in ``{'tolerance',  'iteration'}``, simply calling the
+``Solver.run`` with a simple enough value is usually enough. For solvers with
+``sampling_strategy`` set to ``'callback'``, it is possible to call
+``Solver.run_once``, which will call the ``run`` method with a simple callback
+that does not compute the objective value and stops after ``n_iter`` calls to
+callback (default to 1).
 
 
 .. code-block:: python
@@ -183,12 +186,55 @@ objective value and stops after ``n_iter`` calls to callback (default to 1).
     class Solver(BaseSolver):
         ...
 
-        def set_objective(self, **objective):
-            ...
+        def warm_up(self):
             # Cache pre-compilation and other one-time setups that should
             # not be included in the benchmark timing.
-            self.run(1)  # For stopping_strategy == 'iteration' | 'tolerance'
-            self.run_once()  # For stopping_strategy == 'callback'
+            self.run(1)  # For sampling_strategy == 'iteration' | 'tolerance'
+            self.run_once()  # For sampling_strategy == 'callback'
+
+
+.. _run_benchmark_with_py_script:
+
+Run a benchmark using a Python script
+-------------------------------------
+
+Another way to run a benchmark is via a Python script.
+Typical use-cases of that are
+
+- Automating the run of several benchmarks
+- Using ``vscode`` debugger where the python script serves as an entry point to benchopt internals
+
+The following script illustrate running the :ref:`benchmark Lasso <run_with_config_file>`.
+It assume that the python script is located at the same level as the benchmark folder.
+
+.. code-block:: python
+
+    from benchopt import run_benchmark
+    from benchopt.benchmark import Benchmark
+
+    # load benchmark
+    BENCHMARK_PATH = "./"
+    benchmark = Benchmark(BENCHMARK_PATH)
+
+    # run benchmark
+    run_benchmark(
+        benchmark,
+        solver_names=[
+            "skglm",
+            "celer",
+            "python-pgd[use_acceleration=True]",
+        ],
+        dataset_names=[
+            "leukemia",
+            "simulated[n_samples=100,n_features=20]"
+        ],
+    )
+
+.. note::
+
+    Learn more about the different parameters supported by ``run_benchmark``
+    function on :ref:`API references <API_ref>`.
+
 
 
 .. |update_params| replace:: ``update_parameters``

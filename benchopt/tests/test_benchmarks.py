@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 
 from benchopt.runner import _Callback
-from benchopt.stopping_criterion import STOPPING_STRATEGIES
+from benchopt.stopping_criterion import SAMPLING_STRATEGIES
 from benchopt.utils import product_param
 
 
@@ -17,7 +17,7 @@ def test_benchmark_objective(benchmark, dataset_simu):
     # check that the reported dimension is correct and that the result of
     # the objective function is a dictionary containing a scalar value for
     # `objective_value`.
-    beta_hat = objective.get_one_solution()
+    beta_hat = objective.get_one_result()
     objective_dict = objective(beta_hat)
 
     assert 'objective_value' in objective_dict, (
@@ -89,8 +89,8 @@ def test_solver_class(benchmark, solver_class):
 
     # Check that the solver_class uses a valid stopping_strategy
     if hasattr(solver_class, 'stopping_strategy'):
-        msg = f"stopping_strategy should be in {STOPPING_STRATEGIES}."
-        assert solver_class.stopping_strategy in STOPPING_STRATEGIES, msg
+        msg = f"stopping_strategy should be in {SAMPLING_STRATEGIES}."
+        assert solver_class.stopping_strategy in SAMPLING_STRATEGIES, msg
 
     # Check that the solver_class uses a valid callable to override get_next.
     if hasattr(solver_class, 'get_next'):
@@ -126,10 +126,12 @@ def test_solver_install(test_env_name, benchmark, solver_class, check_test):
     )
 
 
-def test_solver(benchmark, solver_class):
-
+def test_solver(benchmark, solver_class, check_test):
     # Check that a solver run with at least one configuration of a simulated
     # dataset.
+
+    if check_test is not None:
+        check_test(solver_class)
 
     if not solver_class.is_installed():
         pytest.skip("Solver is not installed")
@@ -191,7 +193,7 @@ def _test_solver_one_objective(solver, objective):
             # Set large tolerance for the stopping criterion to stop fast
             sc.eps = 5e-1
         cb = _Callback(
-            objective, meta={}, stopping_criterion=sc
+            objective, solver, meta={}, stopping_criterion=sc
         )
         cb.start()
         solver.run(cb)
@@ -202,16 +204,20 @@ def _test_solver_one_objective(solver, objective):
             stop_val = 1e-10 if is_convex else 1e-2
         solver.run(stop_val)
 
-    # Check that beta_hat is compatible to compute the objective function
-    beta_hat = solver.get_result()
-    objective(beta_hat)
+    # Check that returned results are compatible with the objective
+    result = solver.get_result()
+    objective(result)
 
-    # Only check optimality or convex problems, with simple enough return type
-    if is_convex and isinstance(beta_hat, np.ndarray):
-        val_star = objective(beta_hat)['objective_value']
+    # Only check optimality or convex problems, when solver only return
+    # one value, which is a np.array
+    if (is_convex and len(result) == 1
+            and isinstance(list(result.values())[0], np.ndarray)):
+        key = list(result.keys())[0]
+        arr = result[key]
+        val_star = objective(result)['objective_value']
         for _ in range(100):
-            eps = 1e-5 * np.random.randn(*beta_hat.shape)
-            val_eps = objective(beta_hat + eps)['objective_value']
+            eps = 1e-5 * np.random.randn(*arr.shape)
+            val_eps = objective({key: arr + eps})['objective_value']
 
             diff = val_eps - val_star
             assert diff >= 0

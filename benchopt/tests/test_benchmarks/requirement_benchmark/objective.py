@@ -17,12 +17,12 @@ class Objective(BaseObjective):
     def set_data(self, X):
         self.X = X
 
-    def compute(self, beta):
+    def evaluate_result(self, beta):
         dummy_package.__version__  # make sure this was imported
         return 1
 
-    def get_one_solution(self):
-        pass
+    def get_one_result(self):
+        return dict(beta=None)
 
     def get_objective(self):
         return dict(X=self.X)
