@@ -1,10 +1,13 @@
+.. _build_benchmark:
+
+
 Understanding and building a simple benchmark
 =============================================
 
 Are you looking for a simple, step-by-step introduction to the `Benchopt <https://benchopt.github.io/index.html>`_ library?
 Then look no further!
 In this tutorial, we are going to learn how to use the Benchopt library to compare various algorithms in order to minimize a given cost.
-This tutorial complements the `write a benchmark <https://benchopt.github.io/benchmark_workflow/write_benchmark.html>`_ webpage with a more practical, hands-on approach. 
+This tutorial complements the `write a benchmark <https://benchopt.github.io/benchmark_workflow/write_benchmark.html>`_ webpage with a more practical, hands-on approach.
 
 Let's say you are interested in benchmarking solvers to minimize the cost function of the `ridge regression problem <https://en.wikipedia.org/wiki/Ridge_regression>`_, a variant of linear regression which is a common problem in supervised machine learning. This cost function writes as follows:
 
@@ -18,13 +21,13 @@ where
     - \\(X\\) is a matrix with \\(m \\times n\\) elements, typically the regressors
     - :math:`\beta` is a vector with \\(n\\) elements that we obtain by regressing \\(y\\) on \\(X\\).
     - \\(\\|\\cdot\\|\\) is the Euclidean norm.
-     
+
 
 Let us also suppose that we are working with a specific optimization algorithm that aims at solving the ridge regression problem: `the gradient descent (GD) algorithm <https://en.wikipedia.org/wiki/Gradient_descent>`_.
 GD is a simple algorithm that moves iteratively along the steepest descent direction.
 Given an estimate :math:`\beta`, GD iterates the following step:
 
-.. math:: 
+.. math::
 
     \beta \leftarrow \beta - \eta \nabla f(\beta)
 
@@ -36,7 +39,7 @@ we should be mindful of the two hyperparameters: the regularization parameter \\
 It is very common in machine learning that we are facing a situation where we want to vary these parameters, and compare the behavior of our algorithm in each scenario.
 Benchopt we can create a benchmark for this problem, here is a screenshot of what we will get at the end of this tutorial.
 
-.. figure:: screenshot_mytemplate_ridgeloss.png
+.. figure:: images/screenshot_mytemplate_ridgeloss.png
     :width: 800
 
 We can now dive into the framework and see how to leverage it to easily create our benchmark!
@@ -64,10 +67,10 @@ Benchopt in itself is like a mother package: it supervises and runs smaller libr
 Therefore, **benchmarks are repositories** with a predefined structure and some required files (we will go over each of them in the next section) that are processed by benchopt.
 The benchmark specifies information about:
 
-    - the problem (typically the loss function to minimize), 
-    - the dataset on which the algorithms are tested (values of \\(X \\) and \\( y\\)) 
+    - the problem (typically the loss function to minimize),
+    - the dataset on which the algorithms are tested (values of \\(X \\) and \\( y\\))
     - the solvers (like our GD algorithm).
-     
+
 It is likely that if you are reading this tutorial, you are in fact interested in writing and running a benchmark.
 
 To write a benchmark, it is recommended to start from the `template benchmark <https://github.com/benchopt/template_benchmark>`_ shared in the Benchopt organisation.
@@ -82,7 +85,7 @@ To get this template and rename it ``my_benchmark``, you can clone it from its G
 The template benchmark is not designed to model our ridge regression problem, but luckily it is pretty close!
 The cost which is implemented in the template benchmark is the Ordinary Least Squares (OLS)
 
-.. math:: 
+.. math::
 
     g(\beta) = \frac{1}{2} \|y - X\beta \|^2
 
@@ -98,15 +101,15 @@ To run the template benchmark, simply run the following command in the terminal:
     benchopt run my_benchmark
 
 
-.. figure:: console_template.png
+.. figure:: images/console_template.png
     :width: 600
-    
+
     A screenshot of the console during the benchopt run command
 
 You will see something similar to the screenshot above in your terminal
 
     - *Simulated* tells us that the dataset run by benchopt is the simulation set up in the benchmark.
-    - *Ordinary Least Squares* tells us which loss is minimized, and the hyperparameters are written in bracket. 
+    - *Ordinary Least Squares* tells us which loss is minimized, and the hyperparameters are written in bracket.
     - *GD* is a line indicating the progress of algorithm GD for this problem (Simulated dataset, OLS loss). Again its hyperparameters are written in brackets (here the stepsize value).
 
 Once the benchmark has been run, a window should open in your default navigator.
@@ -116,7 +119,7 @@ After running the template benchmark, we can observe the convergence plots of GD
 The convergence plot scales can be changed for easier reading.
 In this specific toy example, the runtime is so low that the convergence plot with respect to time may not be reliable: you can also look at the results in terms of iterations, by scrolling the menu on the bottom left of the webpage.
 Feel free to play around with the plotting options here!
-Note that the objective comes with two possible values for a  `whiten` parameter. 
+Note that the objective comes with two possible values for a  `whiten` parameter.
 Let us ignore this detail in the tutorial.
 
 Exploring the benchmark structure
@@ -131,13 +134,13 @@ Here is the architecture of our template benchmark (files which are not mandator
 ::
 
     template_benchmark
-    ├── datasets          
+    ├── datasets
     │   └── simulated.py
-    ├── solvers          
+    ├── solvers
     │   └── python-gd.py
-    ├── benchmark_utils          
+    ├── benchmark_utils
     │   └── __init__.py
-    ├── outputs          
+    ├── outputs
     │   └── ...
     ├── objective.py
     ├── README.rst
@@ -147,7 +150,7 @@ The three most important files are
     - ``objective.py``: it contains the information about the cost function we want to minimize. In other words, it defines the formal problem we are interested in.
     - ``solvers/python-gd.py``: it contains the information and code for the gradient descent solver, dedicated to the problem at hand.
     - ``datasets/simulated.py``: it contains the information about the dataset, i.e. the values of \\(y \\) and \\(X \\) used to test the algorithms. All benchmark in fact must have a ``simulated.py`` file which is used for testing by Benchopt.
-     
+
 Any benchmark must implement these three components; **in Benchopt indeed we consider that objectives, solvers and dataset are the building blocks of any optimization problem**.
 
 There can be several solvers in the ``solvers/`` directory, and similarly there can be several datasets in the ``datasets/`` directory.
@@ -158,14 +161,14 @@ The content of ``objective.py``, ``solvers`` and ``dataset`` is predetermined.
 In particular these three files each define a class inherited from Benchopt.
 The following figure details the methods that must be implemented in each file, and the order in which Benchopt will call these methods:
 
-.. figure:: benchopt_schema_dependency.svg
+.. figure:: https://raw.githubusercontent.com/benchopt/communication_materials/main/sharedimages/benchopt_schema_dependency.svg
     :width: 800
 
 There are two kind of contents.
 First, code that defines core elements of the problem:
 
     - the ``compute`` method in ``objective.py``. It implements the loss function. For the template benchmark, this is exactly \\(g(\\beta) \\) when \\( \\beta \\) is provided as input:
-  
+
     .. code-block:: python
 
         def compute(self, beta):
@@ -175,7 +178,7 @@ First, code that defines core elements of the problem:
             )
 
     - the ``run`` method in each solver, here ``python-gd``. It defines the steps taken by the algorithm. Benchopt dictates the maximal number of iterations to the solver, and therefore ``run`` takes the number of iterations as input while other parameters like the stepsize are class attributes. The estimate value of \\(\\beta \\) is updated in the class attributes, the ``run`` method does not require returns. For GD, the ``run`` function looks like
-  
+
     .. code-block:: python
 
         def run(self, n_iter):
@@ -230,7 +233,7 @@ Therefore we need to implement the following modifications:
 We will not modify anything in the dataset since the inputs \\(X,y \\) of the regression and ridge regression are the same.
 
 Let's start with the ``objective.py`` file.
-The regularization parameter values are part of the formal definition of the problem, so we can define them as attributes of the ``Objective`` class. In other words, we can simply add a ``reg`` parameter in the ``parameters`` dictionary to tell benchopt to grid over this parameter in the runs. The ``whiten_y`` parameter is not useful for us here, and we will remove the True option. 
+The regularization parameter values are part of the formal definition of the problem, so we can define them as attributes of the ``Objective`` class. In other words, we can simply add a ``reg`` parameter in the ``parameters`` dictionary to tell benchopt to grid over this parameter in the runs. The ``whiten_y`` parameter is not useful for us here, and we will remove the True option.
 
 .. code-block:: python
 
@@ -281,7 +284,7 @@ Moreover we should also change the name of the objective from ``Ordinary Least S
     class Objective(BaseObjective):
         name = 'Ridge Regression'
 
-That's it for the ``objective.py`` file! We can now modify the solver. For simplicity we may directly edit ``python-gd.py``, but adding a new solver to the benchmark is a simple as adding another file in the solvers folder (more information in the `add a solver tutorial <https://benchopt.github.io/tutorials/add_solver.html>`_). 
+That's it for the ``objective.py`` file! We can now modify the solver. For simplicity we may directly edit ``python-gd.py``, but adding a new solver to the benchmark is a simple as adding another file in the solvers folder (more information in the `add a solver tutorial <https://benchopt.github.io/tutorials/add_solver.html>`_).
 
 Modifying the solver means updating the ``run`` method, more specifically the gradient formula.
 Inside the ``python-gd.py`` file, the new ``run`` method looks like this
@@ -328,7 +331,7 @@ We run the benchopt with the same command as earlier, in the parent directory of
 
 Notice how the prompt in the terminal now contains logging for the GD algorithm with each stepsize 0.1, 0.5, 1 and 1.99.
 
-.. figure:: console_ridge.png
+.. figure:: images/console_ridge.png
     :width: 600
 
     Screenshot of the console after running the updated benchmark.
@@ -346,7 +349,7 @@ For instance, select the following plotting options:
 
 You should see the following plot (click image to zoom).
 
-.. figure:: screenshot_mytemplate_ridgeloss.png
+.. figure:: images/screenshot_mytemplate_ridgeloss.png
     :width: 800
 
     Screenshot of the results computed by benchopt, shown in the default navigator. Plotting options can be manually changed in the left part of the window.
