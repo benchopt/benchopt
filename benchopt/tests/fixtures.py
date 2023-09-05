@@ -92,7 +92,9 @@ def pytest_generate_tests(metafunc):
     # Parametrize the tests
     for params, func in PARAMETRIZATION.items():
         if set(params).issubset(metafunc.fixturenames):
-            metafunc.parametrize(params, func(benchmarks), ids=class_ids)
+            metafunc.parametrize(
+                params, func(installed_benchmarks), ids=class_ids
+            )
 
 
 @pytest.fixture
