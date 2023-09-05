@@ -463,7 +463,9 @@ class TestInstallCmd:
             name = "Test objective requirements"
 
             install_cmd = 'conda'
-            requirements = ['pip:git+https://github.com/tommoral/dummy_package']
+            requirements = [
+                'pip:git+https://github.com/tommoral/dummy_package'
+            ]
 
             def set_data(self, X, y):
                 self.X, self.y = X, y
