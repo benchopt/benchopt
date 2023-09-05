@@ -32,14 +32,13 @@ recursive-include examples *.py
 recursive-include examples *.txt
 
 # Include dummy benchmark for test
-recursive-include benchopt/tests/test_benchmarks *.R
-recursive-include benchopt/tests/test_benchmarks *.jl
-recursive-include benchopt/tests/test_benchmarks *.py
-recursive-include benchopt/tests/test_benchmarks *.md
+recursive-include benchopt/tests/dummy_benchmark *.R
+recursive-include benchopt/tests/dummy_benchmark *.jl
+recursive-include benchopt/tests/dummy_benchmark *.py
+recursive-include benchopt/tests/dummy_benchmark *.md
 include benchopt/datasets/tests/test_dataset_simulated.py
 
 # Exclude joblib folders in dummy_benchmark
-prune benchopt/tests/test_benchmarks/*/joblib
-prune benchopt/tests/test_benchmarks/*/__cache__
+prune benchopt/tests/dummy_benchmark/__cache__
 
 exclude .mailmap
