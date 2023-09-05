@@ -8,6 +8,7 @@ Tutorials
 =========
 
 .. toctree::
+    :maxdepth: 1
 
     tutorials/tutorial_understanding_building_benchmark.rst
 
