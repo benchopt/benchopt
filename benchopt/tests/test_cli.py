@@ -10,7 +10,6 @@ import pytest
 from joblib.memory import _FUNCTION_HASHES
 from click.shell_completion import ShellComplete
 
-from benchopt.benchmark import Benchmark
 from benchopt.plotting import PLOT_KINDS
 from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.utils.stream_redirection import SuppressStd
@@ -20,11 +19,8 @@ from benchopt.utils.dynamic_modules import _load_class_from_module
 from benchopt.tests import SELECT_ONE_PGD
 from benchopt.tests import SELECT_ONE_SIMULATED
 from benchopt.tests import SELECT_ONE_OBJECTIVE
-from benchopt.tests import TEST_BENCHMARK_DIR
 from benchopt.tests import DUMMY_BENCHMARK
 from benchopt.tests import DUMMY_BENCHMARK_PATH
-from benchopt.tests import REQUIREMENT_BENCHMARK_PATH
-from benchopt.tests.utils import patch_import
 from benchopt.tests.utils import CaptureRunOutput
 
 
@@ -37,12 +33,12 @@ from benchopt.cli.process_results import plot
 from benchopt.cli.process_results import generate_results
 
 
-ALL_BENCHMARKS = [str(p) for p in TEST_BENCHMARK_DIR.glob("*")]
+ALL_BENCHMARKS = [str(DUMMY_BENCHMARK_PATH)]
 
 BENCHMARK_COMPLETION_CASES = [
     (str(DUMMY_BENCHMARK_PATH.parent), ALL_BENCHMARKS),
     (str(DUMMY_BENCHMARK_PATH.parent)[:-2], ALL_BENCHMARKS),
-    (str(DUMMY_BENCHMARK_PATH)[:-2], [str(DUMMY_BENCHMARK_PATH)])
+    (str(DUMMY_BENCHMARK_PATH)[:-2], ALL_BENCHMARKS)
 ]
 SOLVER_COMPLETION_CASES = [
     ('', [n.lower() for n in DUMMY_BENCHMARK.get_solver_names()]),
@@ -453,27 +449,50 @@ class TestInstallCmd:
         )
 
     def test_benchopt_install_in_env_with_requirements(self, test_env_name):
-        objective = Benchmark(
-            REQUIREMENT_BENCHMARK_PATH
-        ).get_benchmark_objective()
-        out = 'already installed but failed to import.'
-        if not objective.is_installed(env_name=test_env_name):
+
+        objective = """from benchopt.base import BaseObjective
+        from benchopt import safe_import_context
+
+        with safe_import_context() as import_ctx:
+            import dummy_package
+
+
+        class Objective(BaseObjective):
+            name = "Test objective requirements"
+
+            install_cmd = 'conda'
+            requirements = ['pip:git+https://github.com/tommoral/dummy_package']
+
+            def set_data(self, X, y):
+                self.X, self.y = X, y
+            def evaluate_result(self, beta): return dict(value=1)
+            def get_one_result(self): return dict(beta=0)
+            def get_objective(self): return dict(X=self.X, y=self.y, lmbd=0)
+        """
+
+        with temp_benchmark(objective=objective) as benchmark:
+            objective = benchmark.get_benchmark_objective()
+            out = 'already installed but failed to import.'
+            if not objective.is_installed(env_name=test_env_name):
+                with CaptureRunOutput() as out:
+                    install(
+                        [str(benchmark.benchmark_dir), '--env-name',
+                         test_env_name],
+                        'benchopt', standalone_mode=False
+                    )
+            assert objective.is_installed(env_name=test_env_name), out
+            # XXX: run the bench
+
             with CaptureRunOutput() as out:
-                install(
-                    [str(REQUIREMENT_BENCHMARK_PATH), '--env-name',
-                     test_env_name],
-                    'benchopt', standalone_mode=False
-                )
-        assert objective.is_installed(env_name=test_env_name), out
-        # XXX: run the bench
+                with pytest.raises(SystemExit, match='False'):
+                    run_cmd = [
+                        str(benchmark.benchmark_dir), '--env-name',
+                        test_env_name, '-n', '2', '-r', '1', '--no-plot',
+                        '-d', SELECT_ONE_SIMULATED, '-s', SELECT_ONE_PGD,
+                    ]
+                    run(run_cmd, 'benchopt', standalone_mode=False)
 
-        with CaptureRunOutput() as out:
-            with pytest.raises(SystemExit, match='False'):
-                run_cmd = [str(REQUIREMENT_BENCHMARK_PATH), '--env-name',
-                           test_env_name, '-n', '2', '-r', '1', '--no-plot']
-                run(run_cmd, 'benchopt', standalone_mode=False)
-
-        out.check_output(r"done \(not enough run\)", repetition=1)
+            out.check_output(r"done \(not enough run\)", repetition=1)
 
     @pytest.mark.parametrize("cls_type", ['dataset', 'solver'])
     def test_error_wih_missing_requirements(self, test_env_name, cls_type):
@@ -629,8 +648,6 @@ class TestGenerateResultCmd:
         "Make sure at least one result file is available"
         with SuppressStd() as out:
             clean([str(DUMMY_BENCHMARK_PATH)],
-                  'benchopt', standalone_mode=False)
-            clean([str(REQUIREMENT_BENCHMARK_PATH)],
                   'benchopt', standalone_mode=False)
             run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,
                  '-s', SELECT_ONE_PGD, '-n', '2', '-r', '1', '-o',
