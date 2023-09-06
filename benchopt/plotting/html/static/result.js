@@ -249,45 +249,58 @@ const get_lim_config = (lim, ax) =>{
 
 
 const setConfig = (config_item) =>{
-
   // Retrieve the name of the config.
-  const config_name = config_item.textContent;
+  let config_name = config_item.textContent;
+  // Select on mobile version
+  if (config_item.tagName === "SELECT") {
+    config_name = config_item.value;
+  }
 
-  // Get the updated state
-  let config = window.metadata.plot_configs[config_name];
-  let update = {};
-  const lims = ['xlim', 'ylim', 'hidden_solvers']
-  for(var key in config){
-    if (key in config_mapping){
-      value = config[key];
-      document.getElementById(config_mapping[key]).value = value;
-      if (key == "kind"){
-        key = "plot_kind";
+  console.log('SET CONFIG');
+
+  // Clear all selected views and select the good one.
+  setAllViewsToNonActive();
+  config_item.classList.add('active');
+  console.log(config_item);
+  console.log('set active');
+  // Select on mobile version
+  if (config_item.tagName === "SELECT") {
+    config_item.value = config_name;
+  }
+
+  if (config_name !== "no_selected_view") {
+    // Get the updated state
+    let config = window.metadata.plot_configs[config_name];
+    let update = {};
+    const lims = ['xlim', 'ylim', 'hidden_solvers']
+    for(var key in config){
+      if (key in config_mapping){
+        value = config[key];
+        document.getElementById(config_mapping[key]).value = value;
+        if (key == "kind"){
+          key = "plot_kind";
+        }
+        update[key] = value;
       }
-      update[key] = value;
-    }
-    else if (!lims.includes(key)){
-      alert('unknown config ' + key + ' has been ignored');
+      else if (!lims.includes(key)){
+        alert('unknown config ' + key + ' has been ignored');
+      };
     };
-  };
 
-  setState(update);
+    setState(update);
 
-  let layout = {};
-  for(const ax of ['x', 'y']){
-    let lim = ax + 'lim';
-    if (config.hasOwnProperty(lim) & (config[lim] != null)){
-      layout[ax +'axis.range'] = get_lim_plotly(config[lim], ax);
+    let layout = {};
+    for(const ax of ['x', 'y']){
+      let lim = ax + 'lim';
+      if (config.hasOwnProperty(lim) & (config[lim] != null)){
+        layout[ax +'axis.range'] = get_lim_plotly(config[lim], ax);
+      };
     };
-  };
 
-  // Set the text of the config element in bold
-  config_item.style.fontWeight = "bold";
-
-  // update the plot
-  const div = document.getElementById('unique_plot');
-  Plotly.relayout(div, layout);
-
+    // update the plot
+    const div = document.getElementById('unique_plot');
+    Plotly.relayout(div, layout);
+  }
 };
 
 
@@ -301,33 +314,48 @@ const saveView = () =>{
   }
 
   // Retrieve the drop down menue selected values
-  config = {};
-  for(var key in config_mapping){
+  let config = {};
+  for(let key in config_mapping) {
     value = config[key];
     config[key] = document.getElementById(config_mapping[key]).value;
-  };
+  }
 
   // Retrieve the range of the plots.
   const fig = document.getElementById('unique_plot');
   config['xlim'] = get_lim_config(fig.layout.xaxis.range, 'x');
   config['ylim'] = get_lim_config(fig.layout.yaxis.range, 'y');
 
+  setAllViewsToNonActive();
 
-  // Only add a button if the config does not exists yet:
+  // Only add a button if the config does not exist yet:
   if (!(config_name in window.metadata.plot_configs)){
-    var plot_config_buttons = document.getElementById("plot_config_buttons");
-    var node = document.createElement("span");
+    let viewTabs = document.getElementById("view-tabs");
+    let node = document.createElement("span");
     node.innerHTML = config_name;
-    node.className = "config-item";
-    node.onclick = function() {setConfig (node)};
-    plot_config_buttons.appendChild(node);
+    node.className = "view border-transparent whitespace-nowrap border-b-2 py-4 px-1 text-sm text-gray-400 hover:text-gray-500 hover:border-gray-300 cursor-pointer active";
+    node.onclick = function() {setConfig(node)};
+    viewTabs.appendChild(node);
+
+    let option = document.createElement("option");
+    option.setAttribute("value", config_name);
+    option.innerHTML = config_name;
+    let tabs = document.getElementById("tabs");
+    tabs.appendChild(option);
+    tabs.value = config_name;
   }
 
   // Add the config in the configs mapping.
   window.metadata.plot_configs[config_name] = config;
-
-
 };
+
+const setAllViewsToNonActive = () => {
+  let view_items = document.getElementsByClassName('view');
+  for (let i = 0; i < view_items.length; i++) {
+     view_items.item(i).classList.remove('active');
+  }
+
+  document.getElementById('tabs').value = "no_selected_view";
+}
 
 const exportConfigs = () => {
   // Construct the yaml export of the config.
