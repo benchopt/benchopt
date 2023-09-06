@@ -79,8 +79,6 @@ To get this template and rename it ``my_benchmark``, you can clone it from its G
 
     git clone git@github.com:benchopt/template_benchmark my_benchmark
 
-**bugged right now, use commit 9f367b4d2803ec3130efbef80c1e18977d1c3dd0**
-
 The template benchmark is not designed to model our ridge regression problem, but luckily it is pretty close!
 The cost which is implemented in the template benchmark is the Ordinary Least Squares (OLS)
 
