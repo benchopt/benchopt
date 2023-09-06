@@ -258,7 +258,7 @@ Then we update the ``evaluate_result`` method as follows:
 
 We have done several modifications here:
 
-    - The ``l2reg`` variable computes the regularization term. It is added to the OLS term in the ``value`` field of the output dictionary. This ``value`` field is the main loss of the benchmark, used by all algorithms to track convergence. In fact the naming convention here matters, by default the main loss must be named ``value''.
+    - The ``l2reg`` variable computes the regularization term. It is added to the OLS term in the ``value`` field of the output dictionary. This ``value`` field is the main loss of the benchmark, used by all algorithms to track convergence. In fact the naming convention here matters, by default the main loss must be named ``value``.
     - Additional metrics are computed, namely ``ols`` and ``penalty``. Benchmark will compute these metrics alongside the loss function, and we will be able to look at them in the resulting plots.
 
 One additional modification handles the fact that the solvers will require the knowledge of \\(\\lambda\\).
