@@ -166,11 +166,11 @@ The following figure details the methods that must be implemented in each file, 
 There are two kind of contents.
 First, code that defines core elements of the problem:
 
-    - the ``compute`` method in ``objective.py``. It implements the loss function. For the template benchmark, this is exactly \\(g(\\beta) \\) when \\( \\beta \\) is provided as input:
+    - the ``evaluate_result`` method in ``objective.py``. It implements the loss function. For the template benchmark, this is exactly \\(g(\\beta) \\) when \\( \\beta \\) is provided as input:
 
     .. code-block:: python
 
-        def compute(self, beta):
+        def evaluate_result(self, beta):
             diff = self.y - self.X @ beta
             return dict(
                 value=.5 * diff.dot(diff)
@@ -245,11 +245,11 @@ The regularization parameter values are part of the formal definition of the pro
 
 This piece of code says that \\( \\lambda\\) should take two values, \\( 10\\) or \\( 100\\), in the benchmark.
 
-Then we update the ``compute`` method as follows:
+Then we update the ``evaluate_result`` method as follows:
 
 .. code-block:: python
 
-        def compute(self, beta):
+        def evaluate_result(self, beta):
             diff = self.y - self.X.dot(beta)
             l2reg = self.reg*np.linalg.norm(beta)**2
             return dict(
