@@ -1,5 +1,5 @@
 
-h2, h3, h4 {
+h2, h4 {
     text-decoration: underline;
 }
 
@@ -7,6 +7,15 @@ h2, h3, h4 {
     width: 100%;
 }
 
+.bd-article {
+    height: 100%;
+}
+
 .pre {
+    color: #D05336;
+}
+
+.code-block-caption {
+    background: #E1E1E1;
     color: #D05336;
 }
