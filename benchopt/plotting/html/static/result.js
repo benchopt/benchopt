@@ -57,7 +57,6 @@ const setState = (partialState) => {
  */
 const state = () => window.state;
 
-
 /**
  * Mapping between selectors and configuration
 */
@@ -256,13 +255,9 @@ const setConfig = (config_item) =>{
     config_name = config_item.value;
   }
 
-  console.log('SET CONFIG');
-
   // Clear all selected views and select the good one.
   setAllViewsToNonActive();
   config_item.classList.add('active');
-  console.log(config_item);
-  console.log('set active');
   // Select on mobile version
   if (config_item.tagName === "SELECT") {
     config_item.value = config_name;
