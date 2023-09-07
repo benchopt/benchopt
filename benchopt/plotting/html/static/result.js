@@ -268,8 +268,8 @@ const setConfig = (config_item) =>{
     let config = window.metadata.plot_configs[config_name];
     let update = {};
     const lims = ['xlim', 'ylim', 'hidden_solvers']
-    for(var key in config){
-      if (key in config_mapping){
+    for(let key in config_mapping){
+      if (key in config){
         value = config[key];
         document.getElementById(config_mapping[key]).value = value;
         if (key == "kind"){
@@ -277,10 +277,11 @@ const setConfig = (config_item) =>{
         }
         update[key] = value;
       }
-      else if (!lims.includes(key)){
-        alert('unknown config ' + key + ' has been ignored');
-      };
-    };
+      else if (!lims.includes(key)) {
+        document.getElementById(config_mapping[key]).selectedIndex = 0;
+        update[key] = document.getElementById(config_mapping[key]).value;
+      }
+    }
 
     setState(update);
 
