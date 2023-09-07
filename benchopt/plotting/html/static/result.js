@@ -33,8 +33,8 @@ const setState = (partialState) => {
   window.state = {...state(), ...partialState};
   displayScatterElements(!isBarChart());
 
-  // TODO: `listIdXaxisSelection` to be removed after 
-  // implementing responsiveness through breakpoints 
+  // TODO: `listIdXaxisSelection` to be removed after
+  // implementing responsiveness through breakpoints
   // and removing content duplication between big screen and mobile
   let listIdXaxisSelection = ["change_xaxis_type", "change_xaxis_type_mobile"];
   listIdXaxisSelection.forEach(idXaxisSelection => updateXaxis(idXaxisSelection))
@@ -131,11 +131,11 @@ const getScatterCurves = () => {
   let xaxisType = state().xaxis_type;
 
   getSolvers().forEach(solver => {
-    solverStoppingStrategy = data(solver)['stopping_strategy'];
+    solverSamplingStrategy = data(solver)['sampling_strategy'];
 
     // plot only solvers that were stopped using xaxis type
     // plot all solver if xaxis type is `time`
-    if(xaxisType !== "Time" && solverStoppingStrategy !== xaxisType) {
+    if(xaxisType !== "Time" && solverSamplingStrategy !== xaxisType) {
       return
     }
 
@@ -160,14 +160,14 @@ const getScatterCurves = () => {
     });
 
     // skip plotting quantiles if xaxis is not time
-    // as stop_val are predefined and hence deterministic 
+    // as stop_val are predefined and hence deterministic
     if(xaxisType !== "Time") {
       return
     }
 
     if (state().with_quantiles) {
       // Add shaded area for each solver, with proper style and visibility.
-  
+
       curves.push({
         type: 'scatter',
         mode: 'lines',
@@ -563,12 +563,27 @@ const makeLegend = () => {
   const legend = document.getElementById('plot_legend');
 
   legend.innerHTML = '';
+  const solversDescription = window.metadata["solvers_description"];
 
   Object.keys(data().solvers).forEach(solver => {
     const color = data().solvers[solver].color;
     const symbolNumber = data().solvers[solver].marker;
 
-    legend.appendChild(createLegendItem(solver, color, symbolNumber));
+    let legendItem = createLegendItem(solver, color, symbolNumber);
+
+    // preserve compatibility with prev version
+    if(solversDescription === null || solversDescription === undefined) {
+      legend.appendChild(legendItem);
+      return;
+    }
+
+    let payload = {
+      description: solversDescription[solver],
+    }
+
+    legend.appendChild(
+      createSolverDescription(legendItem, payload)
+    );
   });
 }
 
@@ -651,6 +666,25 @@ const createLegendItem = (solver, color, symbolNumber) => {
 }
 
 
+function createSolverDescription(legendItem, { description }) {
+  if (description === null || description === undefined || description === "")
+    description = "No description provided";
+
+  let descriptionContainer = document.createElement("div");
+  descriptionContainer.setAttribute("class", "solver-description-container")
+
+  descriptionContainer.innerHTML = `
+  <div class="solver-description-content text-sm">
+    <span class="solver-description-body">${description}</span>
+  </div>
+  `;
+
+  descriptionContainer.prepend(legendItem);
+
+  return descriptionContainer;
+}
+
+
 function updateXaxis(idXaxisTypeSelection) {
   let selection = document.getElementById(idXaxisTypeSelection);
   selection.innerHTML = "";
@@ -659,9 +693,9 @@ function updateXaxis(idXaxisTypeSelection) {
   let options = new Set(['Time']);
 
   // get solvers run for selected (dataset, objective, objective colum)
-  // and select their unique stopping strategies
+  // and select their unique sampling strategies
   let solvers = data()['solvers'];
-  Object.values(solvers).forEach(solver => options.add(solver['stopping_strategy']));
+  Object.values(solvers).forEach(solver => options.add(solver['sampling_strategy']));
 
   // create xaxis type options
   options.forEach(option => {

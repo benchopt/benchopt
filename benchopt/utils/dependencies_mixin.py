@@ -7,6 +7,8 @@ from .shell_cmd import _run_shell_in_conda_env
 from .conda_env_cmd import install_in_conda_env
 from .conda_env_cmd import shell_install_in_conda_env
 
+from .terminal_output import colorify, YELLOW
+
 
 class DependenciesMixin:
     # Information on how to install the class. The value of install_cmd should
@@ -99,8 +101,26 @@ class DependenciesMixin:
             try:
                 cls._pre_install_hook(env_name=env_name)
                 if cls.install_cmd == 'conda':
-                    install_in_conda_env(*cls.requirements, env_name=env_name,
-                                         force=force)
+                    if hasattr(cls, "requirements"):
+                        install_in_conda_env(*cls.requirements,
+                                             env_name=env_name,
+                                             force=force)
+                    else:
+                        # get details of class
+                        cls_type = cls.__base__.__name__.replace("Base", "")
+
+                        raise AttributeError(
+                            f"Could not find dependencies for {cls.name} "
+                            f"{cls_type} while it is not importable. This is "
+                            "probably due to missing dependency specification."
+                            " The dependencies should be specified in class "
+                            "attribute `requirements`.\n"
+                            "Examples:\n"
+                            "   requirements = ['pkg'] # conda package `pkg`\n"
+                            "   requirements = ['chan:pkg'] # package `pkg` in"
+                            "conda channel `chan`\n"
+                            "   requirements = ['pip:pkg'] # pip package `pkg`"
+                        )
                 elif cls.install_cmd == 'shell':
                     install_file = (
                         cls._module_filename.parents[1] / 'install_scripts' /
@@ -151,6 +171,21 @@ class DependenciesMixin:
             cls._pre_install_hook(env_name=env_name)
             if cls.install_cmd == 'conda':
                 conda_reqs = getattr(cls, "requirements", [])
+                if not is_installed and len(conda_reqs) == 0:
+                    # get details of class
+                    cls_type = cls.__base__.__name__.replace("Base", "")
+                    raise AttributeError(
+                        f"Could not find dependencies for {cls.name} "
+                        f"{cls_type} while it is not importable. This is "
+                        "probably due to missing dependency specification. "
+                        "The dependencies should be specified in class "
+                        "attribute `requirements`.\n"
+                        "Examples:\n"
+                        "   requirements = ['pkg'] # conda package `pkg`\n"
+                        "   requirements = ['chan:pkg'] # package `pkg` in"
+                        "conda channel `chan`\n"
+                        "   requirements = ['pip:pkg'] # PyPi package `pkg`"
+                    )
             elif cls.install_cmd == 'shell':
                 shell_install_scripts = [
                     cls._module_filename.parents[1] / 'install_scripts' /
@@ -159,7 +194,11 @@ class DependenciesMixin:
             post_install_hooks = [cls._post_install_hook]
         else:
             env_suffix = f" in '{env_name}'" if env_name else ''
-            print(f"- '{cls.name}' already available{env_suffix}")
+            colored_cls_name = colorify(f'{cls.name}', YELLOW)
+            print(
+                f"- {colored_cls_name} already available{env_suffix}\n"
+                f"  No ImportError raised from {cls._module_filename}."
+            )
 
         return conda_reqs, shell_install_scripts, post_install_hooks
 

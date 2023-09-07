@@ -4,27 +4,36 @@
 
 /* Place rectangles in a grid */
 .grid {
-  position: relative; /* each rectangle is dependant of others */
+  position: relative;
+  /* each rectangle is dependant of others */
   margin: 0 auto;
-  padding: 1em 0 4em; /* padding top horizontal bottom */
-  display: grid; /* type of boxes generated */
+  padding: 1em 0 4em;
+  /* padding top horizontal bottom */
+  display: grid;
+  /* type of boxes generated */
   max-width: 1000px;
-  list-style: none; /* no item */
+  list-style: none;
+  /* no item */
   text-align: center;
-  column-gap: 2em; /* space between columns */
+  column-gap: 2em;
+  /* space between columns */
 }
 
 /* Figure inside grid */
 .grid figure {
   position: relative;
   float: left;
-  overflow: hidden; /* overflow not taken into account */
+  overflow: hidden;
+  /* overflow not taken into account */
   margin: 10px 1%;
-  width: 100%; /* 100% of the column */
+  width: 100%;
+  /* 100% of the column */
   background: #3085a3;
   text-align: center;
-  cursor: pointer; /* change shape cursor */
-  border-radius: 30px; /* rounded corners */
+  cursor: pointer;
+  /* change shape cursor */
+  border-radius: 30px;
+  /* rounded corners */
 }
 
 /* Each figure contains an img */
@@ -33,14 +42,18 @@
   display: block;
   max-height: 100%;
   max-width: 100%;
-  opacity: 1; /* over a dummy image */
+  opacity: 1;
+  /* over a dummy image */
 }
 
 /* Style caption (title of benchmarks) */
 .grid figure figcaption {
-  padding: 0.1em; /* add space */
-  color: #fff; /* writing color */
-  text-transform: uppercase; /* title in uppercase */
+  padding: 0.1em;
+  /* add space */
+  color: #fff;
+  /* writing color */
+  text-transform: uppercase;
+  /* title in uppercase */
   font-size: 1.25em;
 }
 
@@ -48,32 +61,39 @@
 @media (min-width: 600px) {
   .grid {
     grid-template-columns: repeat(2, 1fr);
-  } /* split in 2 columns */
+  }
+
+  /* split in 2 columns */
 }
 
 /* Larger sized screens */
 @media (min-width: 900px) {
   .grid {
     grid-template-columns: repeat(3, 1fr);
-  } /* split in 3 columns */
+  }
+
+  /* split in 3 columns */
 }
 
 /* Position and style of <a> elements (the View more) */
 .grid figure figcaption,
-.grid figure figcaption > a {
+.grid figure figcaption>a {
   position: absolute;
-  top: 0em; /* no space offset top */
+  top: 0em;
+  /* no space offset top */
   left: 0;
   width: 100%;
   height: 100%;
 }
 
 /* only to figcaption <a> tag */
-.grid figure figcaption > a {
-  z-index: 1000; /* top level */
+.grid figure figcaption>a {
+  z-index: 1000;
+  /* top level */
   text-indent: 0%;
   white-space: nowrap;
-  font-size: 0; /* do not display the View more */
+  font-size: 0;
+  /* do not display the View more */
   opacity: 1;
 }
 
@@ -111,43 +131,53 @@ figure.effect-ruby:hover {
 /* Define transformation */
 figure.effect-ruby img {
   opacity: 0;
-  transition: opacity 0.35s, transform 0.35s; /* transition time */
-  transform: scale(1.15); /* size transformation -> bigger */
+  transition: opacity 0.35s, transform 0.35s;
+  /* transition time */
+  transform: scale(1.15);
+  /* size transformation -> bigger */
 }
 
 /* transformation with hovering */
 figure.effect-ruby:hover img {
   opacity: 0;
-  transform: scale(1); /* size -> smaller */
+  transform: scale(1);
+  /* size -> smaller */
 }
 
 /* Apply effect to problem name */
 figure.effect-ruby h2 {
   margin-top: 0;
-  transition: transform 0.35s; /* transition time */
+  transition: transform 0.35s;
+  /* transition time */
   transform: translate3d(0, calc((150px - 100%)/2), 0);
-  font-size: 1.25em; /* default font */
+  font-size: 1.25em;
+  /* default font */
 }
 
 figure.effect-ruby p {
   margin: 2em -1em 2em -1em;
   padding: 1em 0em 1em 0em;
-  border: 1px solid #fff; /* create sort of white frame */
+  border: 1px solid #fff;
+  /* create sort of white frame */
   opacity: 0;
   transition: opacity 0.35s, transform 0.35s;
-  transform: translate3d(0, 20px, 0) scale(1.1); /* size transform */
+  transform: translate3d(0, 20px, 0) scale(1.1);
+  /* size transform */
 }
 
 /* Transform title on hover */
 figure.effect-ruby:hover h2 {
   -webkit-transform: translate3d(0, 0, 0);
-  transform: translate3d(0px, 10px, 0) scale(0.8); /* smaller */
-  margin-top: 0em; /* move up */
+  transform: translate3d(0px, 10px, 0) scale(0.8);
+  /* smaller */
+  margin-top: 0em;
+  /* move up */
 }
 
 figure.effect-ruby:hover p {
   opacity: 1;
-  transform: translate3d(0, 0, 0) scale(1.2); /* placement in box */
+  transform: translate3d(0, 0, 0) scale(1.2);
+  /* placement in box */
 }
 
 /* Button for inside the table with system informations */
@@ -165,7 +195,8 @@ figure.effect-ruby:hover p {
   background-color: transparent;
   outline: none;
   text-align: center;
-  margin-left: 1px; /* add margin */
+  margin-left: 1px;
+  /* add margin */
 }
 
 
@@ -262,8 +293,8 @@ input:checked+.slider:before {
   transform-origin: 0 50%;
 }
 
-.ml11 .line1 { 
-  top: 0; 
+.ml11 .line1 {
+  top: 0;
   left: 0;
 }
 
@@ -314,6 +345,101 @@ input:checked+.slider:before {
   color: #475569;
 }
 
-.space-r-2 > * {
+.space-r-2>* {
   margin-right: 0.5rem;
+}
+
+
+.objective-description-content {
+  visibility: hidden;
+
+  background-color: rgb(55 65 81);
+  color: #fff;
+  border-radius: 6px;
+  margin-top: 1.5em;
+  padding-right: 0.5em;
+  padding-left: 0.5em;
+  padding-top: 1em;
+  padding-bottom: 1em;
+  opacity: 90%;
+  max-width: 80ch;
+  max-height: 200px;
+
+  overflow-y: auto;
+  white-space: pre-wrap;
+  position: absolute;
+  z-index: 99999;
+}
+
+.objective-description-trigger {
+  display: flex;
+  flex-direction: row;
+}
+
+.objective-description-icon {
+  width: 1.25rem;
+  align-self: center;
+
+  border-radius: 50%;
+}
+
+.objective-description-trigger:hover .objective-description-content {
+  visibility: visible;
+}
+
+/* Description solver when hovered */
+.solver-description-container {
+  position: relative;
+  display: inline-flex;
+}
+
+.solver-description-content {
+  display: flex;
+  flex-direction: column;
+  visibility: hidden;
+  background-color: rgb(55 65 81);
+  color: #fff;
+  border-radius: 6px;
+  padding-top: 0.5em;
+  padding-bottom: 0.6em;
+  padding-left: 0.5em;
+  padding-right: 0.5rem;
+  opacity: 90%;
+
+  width: max-content;
+  max-width: 80ch;
+  max-height: 500px;
+  white-space: pre-wrap;
+
+  /* position description with respect to container and put it top-center */
+  position: absolute;
+  transform: translate(0, -100%);
+  z-index: 99999;
+}
+
+/* Show description when hovered */
+.solver-description-container:hover .solver-description-content {
+  visibility: visible;
+}
+
+/*Arrow at the bottom of the description*/
+.solver-description-container .solver-description-content::after {
+  content: " ";
+  position: absolute;
+  top: 100%;
+  left: 20px;
+  margin-left: -5px;
+  border-width: 7px;
+  border-style: solid;
+  border-color: rgb(55 65 81) transparent transparent transparent;
+}
+
+.solver-description-title {
+  margin-bottom: 1em;
+  font-weight: bolder;
+}
+
+.solver-description-body {
+  max-height: 450px;
+  overflow-y: auto;
 }
