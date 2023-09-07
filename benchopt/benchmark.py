@@ -41,8 +41,8 @@ class Benchmark:
         from the benchmark_meta.json file. This should only be used to generate
         HTML pages with results.
         standalone : boolean
-            `standalone=True` in order to visualize available results.
             If no `objective.py` file defines the benchmark, use
+            `standalone=True` in order to visualize available results.
 
     Attributes
     ----------
