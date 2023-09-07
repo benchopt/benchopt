@@ -27,8 +27,7 @@ CACHE_DIR = '__cache__'
 
 
 class Benchmark:
-    def __init__(self, benchmark_dir, standalone=False):
-        """Benchmark exposes all constituents of the benchmark folder.
+    """Benchmark exposes all constituents of the benchmark folder.
 
     Parameters
     ----------
@@ -50,7 +49,9 @@ class Benchmark:
     mem : joblib.Memory
         Caching mechanism for the benchmark.
     """
-    def __init__(self, benchmark_dir, allow_meta_from_json=False, standalone=False):
+    def __init__(
+        self, benchmark_dir, allow_meta_from_json=False, standalone=False
+    ):
         self.benchmark_dir = Path(benchmark_dir)
 
         set_benchmark_module(self.benchmark_dir)
