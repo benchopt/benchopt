@@ -300,8 +300,7 @@ const setConfig = (config_item) =>{
 };
 
 
-const saveView = () =>{
-
+const saveView = () => {
   let n_configs = Object.keys(window.metadata.plot_configs).length;
 
   let config_name = prompt("Config Name", "Config " + n_configs);
@@ -342,6 +341,8 @@ const saveView = () =>{
 
   // Add the config in the configs mapping.
   window.metadata.plot_configs[config_name] = config;
+
+  return false;
 };
 
 const setAllViewsToNonActive = () => {
@@ -376,11 +377,13 @@ const exportConfigs = () => {
 
   alert(
     `Config file exported to clipboard.
-    Paste it in the <code>config.yml</code> file of the benchmark.`)
+    Paste it in the <code>config.yml</code> file of the benchmark.`);
+
+  // To prevent the screen from going up when the user clicks on the button
+  return false;
 };
 
 const exportHTML = () => {
-  //
   var tempLink = document.createElement("a");
   var taBlob = new Blob([document.documentElement.innerHTML], {type: 'text/html'});
   tempLink.setAttribute('href', URL.createObjectURL(taBlob));
@@ -388,6 +391,8 @@ const exportHTML = () => {
   tempLink.click();
   URL.revokeObjectURL(tempLink.href);
 
+  // To prevent the screen from going up when the user clicks on the button
+  return false;
 };
 
 /*
