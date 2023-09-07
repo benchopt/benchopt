@@ -304,11 +304,11 @@
                     <div class="hidden lg:flex mt-5 lg:mt-0 lg:ml-4 space-x-4 items-center">
                         <span class="font-bold">Download :</span>
                         <span>
-                            <a href="#" class="inline-flex items-center px-4 py-2 space-x-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" onclick="exportHTML()">
+                            <a href="#" class="inline-flex items-center px-4 py-2 space-x-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" onclick="exportConfigs()">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                                 </svg>
-                                <span class="hidden lg:inline">Config</span>
+                                <span class="hidden lg:inline">Configs</span>
                             </a>
                         </span>
 
@@ -435,7 +435,7 @@
         </div>
 
         <!-- Text area to copy config from export -->
-        <textarea id="config_export" style="display: none;"></textarea>
+        <textarea id="config_export" class="hidden"></textarea>
 
         <script src="https://cdn.plot.ly/plotly-2.12.1.min.js"></script>
         <!-- Used for the brand animation -->
@@ -496,9 +496,9 @@
                     'xaxis_type':  document.getElementById('change_xaxis_type').value || "Time",
                     'hidden_solvers': []
                 });
-                const plot_configs = document.getElementsByClassName('config-item');
+                const plot_configs = document.getElementsByClassName('view');
                 if (plot_configs.length > 0 ){
-                    setConfig(plot_configs[0]);
+                    setConfig(plot_configs[1]); // [0] is the span with text : "Available plot views :"
                 }
             });
         </script>
