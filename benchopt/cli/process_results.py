@@ -125,7 +125,6 @@ def publish(benchmark, token=None, filename=None):
 @click.option('--display/--no-display', default=True,
               help="Whether or not to display the plot on the screen.")
 def generate_results(patterns=(), benchmark_paths=(), root=None, display=True):
-
     from benchopt.plotting.generate_html import plot_benchmark_html_all
     plot_benchmark_html_all(
         patterns=patterns, benchmark_paths=benchmark_paths,

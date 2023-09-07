@@ -519,16 +519,21 @@ def plot_benchmark_html_all(patterns=(), benchmark_paths=(), root=None,
     # Parse the arguments adn get the list of benchmarks and patterns.
     if not benchmark_paths:
         root = Path(root)
-        benchmark_paths = [
-            f for f in root.iterdir()
+        benchmarks = [
+            Benchmark(f, standalone=True) for f in root.iterdir()
             if f.is_dir() and (f / 'outputs').is_dir() and f.name != "html"
         ]
+        benchmark_paths = [b.benchmark_dir for b in benchmarks]
     else:
-        benchmark_paths = [Path(b) for b in benchmark_paths]
+        benchmark_paths = [
+            Benchmark(Path(b).resolve(), standalone=True).benchmark_dir
+            for b in benchmark_paths
+            if Path(b).name != 'html'
+        ]
     if not patterns:
         patterns = ['*']
 
-    if not benchmark_paths:
+    if len(benchmark_paths) == 0:
         raise ValueError(
             "Could not find any benchmark to render. Check that the provided "
             "root folder contains at least one benchmark."
@@ -545,17 +550,15 @@ def plot_benchmark_html_all(patterns=(), benchmark_paths=(), root=None,
     (html_root / OUTPUTS).mkdir(exist_ok=True, parents=True)
 
     # Loop over all benchmark paths to create the associated result pages
-    for benchmark in benchmarks:
+    for benchmark_path, benchmark in zip(benchmark_paths, benchmarks):
         print(f'Rendering benchmark: {benchmark}')
         result_files = list(filter(
             lambda path: any(path.match(p) for p in patterns),
             benchmark.get_result_file('all')
         ))
-
         # Store the number of rendered results so we can easily generate the
         # index page with the number of available result files.
         benchmark.n_runs = len(result_files)
-
         if len(result_files) > 0:
             plot_benchmark_html(
                 result_files, benchmark, PLOT_KINDS.keys(), display=False,
