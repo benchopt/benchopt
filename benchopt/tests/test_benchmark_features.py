@@ -473,12 +473,14 @@ def test_deprecated_get_one_solution():
 
     match = "`Objective.get_one_solution` is renamed `Objective.get_one_result"
     with temp_benchmark(objective=objective) as benchmark:
-        with CaptureRunOutput() as out:
+        # with CaptureRunOutput() as out:
             with pytest.raises(SystemExit, match='False'):
+                print(f'{benchmark.benchmark_dir} -- -k test_benchmark_objective')
+                import ipdb; ipdb.set_trace()
                 _cmd_test([str(benchmark.benchmark_dir),
                            *'-- -k test_benchmark_objective'.split()],
                           standalone_mode=False)
-        out.check_output(match, repetition=1)
+            out.check_output(match, repetition=1)
 
     objective = objective.replace("get_one_solution", "get_one_result")
     with temp_benchmark(objective=objective) as benchmark:
