@@ -34,12 +34,6 @@ const setState = (partialState) => {
   window.state = {...state(), ...partialState};
   displayScatterElements(!isBarChart());
 
-  // The elements in state have changed, reset the bold text in config.
-  var items = document.getElementsByClassName("config-item");
-  for(var i=0; i < items.length; i++){
-    items[i].style.fontWeight = "normal";
-  }
-
   // TODO: `listIdXaxisSelection` to be removed after
   // implementing responsiveness through breakpoints
   // and removing content duplication between big screen and mobile
@@ -320,6 +314,11 @@ const saveView = () => {
   config['xlim'] = get_lim_config(fig.layout.xaxis.range, 'x');
   config['ylim'] = get_lim_config(fig.layout.yaxis.range, 'y');
 
+  let noViewAvailableElement = document.getElementById('no_view_available');
+
+  if (noViewAvailableElement) {
+    noViewAvailableElement.classList.add('hidden');
+  }
   setAllViewsToNonActive();
 
   // Only add a button if the config does not exist yet:

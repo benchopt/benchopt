@@ -334,7 +334,6 @@
                 </div>
 
                 <!-- Plot configuration -->
-                % if len(result['metadata']['plot_configs']) > 0:
                 <div id="config_container" class="mt-8">
                     <div>
                         <div class="sm:hidden px-4">
@@ -348,8 +347,11 @@
                         </div>
                         <div class="hidden sm:block">
                             <div class="border-t border-b">
-                                <nav id="view-tabs" class="flex space-x-3 px-4 overflow-x-auto" aria-label="Tabs">
+                                <nav id="view-tabs" class="flex space-x-3 px-4 overflow-x-auto items-center" aria-label="Tabs">
                                     <p class="view mr-6 py-4 px-1 text-sm font-medium border-b-2 border-transparent text-gray-700 whitespace-nowrap">Available plot views : </p>
+                                    % if len(result['metadata']['plot_configs']) == 0:
+                                        <p id="no_view_available" class="text-sm text-gray-400 whitespace-nowrap border-b-2 border-transparent">No plot view available</p>
+                                    %endif
                                     % for conf in result['metadata']['plot_configs']:
                                         <span onclick="setConfig(this)" class="view border-transparent whitespace-nowrap border-b-2 py-4 px-1 text-sm text-gray-400 hover:text-gray-500 hover:border-gray-300 cursor-pointer">${conf}</span>
                                     %endfor
@@ -358,7 +360,6 @@
                         </div>
                     </div>
                 </div>
-                %endif
 
                 <!-- Plot -->
                 <div id="unique_plot"></div>
