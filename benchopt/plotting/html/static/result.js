@@ -353,6 +353,18 @@ const setAllViewsToNonActive = () => {
   document.getElementById('tabs').value = "no_selected_view";
 }
 
+const downloadBlob = (blob, name) => {
+  var tempLink = document.createElement("a");
+  tempLink.setAttribute('href', URL.createObjectURL(blob));
+  tempLink.setAttribute('download', name);
+  tempLink.click();
+  URL.revokeObjectURL(tempLink.href);
+
+  // To prevent the screen from going up when the user clicks on the button
+  return false;
+
+};
+
 const exportConfigs = () => {
   // Construct the yaml export of the config.
   var config_yaml = "plot_configs:\n"
@@ -368,30 +380,17 @@ const exportConfigs = () => {
     }
   }
 
-  // Copy to clipboard the resulting yaml file.
-  var export_area = document.getElementById("config_export");
-  export_area.innerHTML = config_yaml;
-  export_area.select();
-  navigator.clipboard.writeText(export_area.value);
-
-  alert(
-    `Config file exported to clipboard.
-    Paste it in the <code>config.yml</code> file of the benchmark.`);
-
-  // To prevent the screen from going up when the user clicks on the button
-  return false;
+  // Download the resulting yaml file.
+  var blob = new Blob([config_yaml], {type: 'text/yaml'});
+  return downloadBlob(blob, 'config.yml');
 };
 
 const exportHTML = () => {
-  var tempLink = document.createElement("a");
-  var taBlob = new Blob([document.documentElement.innerHTML], {type: 'text/html'});
-  tempLink.setAttribute('href', URL.createObjectURL(taBlob));
-  tempLink.setAttribute('download', location.pathname.split("/").pop());
-  tempLink.click();
-  URL.revokeObjectURL(tempLink.href);
-
-  // To prevent the screen from going up when the user clicks on the button
-  return false;
+  var blob = new Blob(
+    [document.documentElement.innerHTML],
+    {type: 'text/html'}
+  );
+  return downloadBlob(blob, location.pathname.split("/").pop());
 };
 
 /*
