@@ -520,13 +520,15 @@ def plot_benchmark_html_all(patterns=(), benchmark_paths=(), root=None,
     if not benchmark_paths:
         root = Path(root)
         benchmarks = [
-            Benchmark(f, standalone=True) for f in root.iterdir()
+            Benchmark(f, allow_meta_from_json=True) for f in root.iterdir()
             if f.is_dir() and (f / 'outputs').is_dir() and f.name != "html"
         ]
         benchmark_paths = [b.benchmark_dir for b in benchmarks]
     else:
         benchmark_paths = [
-            Benchmark(Path(b).resolve(), standalone=True).benchmark_dir
+            Benchmark(
+                Path(b).resolve(), allow_meta_from_json=True
+                ).benchmark_dir
             for b in benchmark_paths
             if Path(b).name != 'html'
         ]

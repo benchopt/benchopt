@@ -40,9 +40,6 @@ class Benchmark:
         objective.py cannot be found. In this case, the metadata are retrieved
         from the benchmark_meta.json file. This should only be used to generate
         HTML pages with results.
-        standalone : boolean
-            If no `objective.py` file defines the benchmark, use
-            `standalone=True` in order to visualize available results.
 
     Attributes
     ----------
@@ -50,23 +47,11 @@ class Benchmark:
         Caching mechanism for the benchmark.
     """
     def __init__(
-        self, benchmark_dir, allow_meta_from_json=False, standalone=False
+        self, benchmark_dir, allow_meta_from_json=False,
     ):
         self.benchmark_dir = Path(benchmark_dir)
 
         set_benchmark_module(self.benchmark_dir)
-        if not standalone:
-            try:
-                objective = self.get_benchmark_objective()
-                self.pretty_name = objective.name
-                self.min_version = getattr(
-                    objective, 'min_benchopt_version', None)
-            except RuntimeError:
-                raise click.BadParameter(
-                    f"The folder '{benchmark_dir}' does not contain "
-                    "`objective.py`.\nMake sure you provide the path"
-                    "to a valid benchmark."
-                )
 
         # Load the benchmark metadat defined in `objective.py` or
         # in `benchmark_meta.json`.
