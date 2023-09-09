@@ -30,7 +30,7 @@ def test_parquet_metadata():
 
     with tempfile.NamedTemporaryFile("rb+", suffix=".pq") as f:
 
-        path = f.name
+        path = Path(f.name)
         metadata = {'test': 'info', 'plot_configs': [{}, {}, {}]}
         to_parquet(df, path, metadata)
 
