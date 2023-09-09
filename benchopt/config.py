@@ -128,7 +128,7 @@ def convert_ini_to_yml(config_file):
         )
         options = list(config_ini[sec].keys())
         values = {
-            key: parse_value(default[key], config_ini.get(sec, key))
+            key: parse_value(config_ini.get(sec, key), default[key])
             for key in options
         }
         if sec == "benchopt":
@@ -176,20 +176,39 @@ def set_setting(name, value, config_file=None, benchmark_name=None):
         config.write(f)
 
 
-def get_setting(name, config_file=None, benchmark_name=None):
-    """Get setting in order: 1. env var / 2. config file / 3. default value"""
+def get_setting(name, config_file=None, benchmark_name=None,
+                default_config=None):
+    """Get setting in order:
+        1. env var
+        2. config file
+        3. default value
+
+    Parameters
+    ----------
+    name : str
+        Name of the config parameter to retrieve.
+    config_file : str | Path
+        Path to a config file from which the setting can be retreives. When
+        it is not provided, default to the global benchopt config file.
+    benchmark_name : str
+        Name of the benchmark for which the setting are retrieved.
+    default_config : dict
+        Extra default values, typically used to pass configs saved in the
+        results parquet files.
+    """
 
     if config_file is None:
         config_file = get_global_config_file()
 
     # Get default value
-    default_config = DEFAULT_BENCHMARK_CONFIG
+    default_config_ = DEFAULT_BENCHMARK_CONFIG
     if benchmark_name is None:
-        default_config = DEFAULT_GLOBAL_CONFIG
-    assert name in default_config, (
-        f"Unknown config key {name}. Valid key are {list(default_config)}"
+        default_config_ = DEFAULT_GLOBAL_CONFIG
+    assert name in default_config_, (
+        f"Unknown config key {name}. Valid key are {list(default_config_)}"
     )
-    default_value = default_config[name]
+    default_config = {} if default_config is None else default_config
+    default_value = default_config.get(name, default_config_[name])
 
     # Handle deprecated .ini config file by automatically
     # converting them to .yml.
@@ -216,12 +235,12 @@ def get_setting(name, config_file=None, benchmark_name=None):
     value = os.environ.get(env_var_name, value)
 
     # Parse the value to the correct type
-    value = parse_value(default_value, value)
+    value = parse_value(value, default_value)
 
     return value
 
 
-def parse_value(default_value, value):
+def parse_value(value, default_value):
     if isinstance(default_value, bool):
         # convert string 0/1/true/false/yes/no/on/off to boolean
         if isinstance(value, str):

@@ -342,14 +342,14 @@ class Benchmark:
             return ini_path
         return yml_path
 
-    def get_setting(self, setting_name):
+    def get_setting(self, setting_name, default_config=None):
         "Retrieve the setting value from benchmark config."
 
         # Get the config file and read it
         config_file = self.get_config_file()
         return get_setting(
             name=setting_name, config_file=config_file,
-            benchmark_name=self.name
+            benchmark_name=self.name, default_config=default_config
         )
 
     def get_test_config_file(self):
