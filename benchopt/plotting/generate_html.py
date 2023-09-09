@@ -59,7 +59,7 @@ def get_results(fnames, config, html_root, benchmark, copy=False):
         If given, allows to specify the plot options.
     html_root : Path
         Directory where all the HTML files related to the benchmark are stored.
-    benchmark : benchopt.Benchmark object
+    benchmark : benchopt.Benchmark
         Object to represent the benchmark.
     copy : bool (default: False)
         If set to True, copy each file in the html_root / OUTPUTS
@@ -346,8 +346,8 @@ def render_benchmark(results, benchmark, home='index.html'):
     ----------
     results : list of Path
         List of all the run available for this benchmark.
-    benchmark : str
-        Named of the rendered benchmark.
+    benchmark : benchopt.Benchmark
+        Object to represent the benchmark.
     home : str
         URL of the home page.
 
@@ -375,7 +375,7 @@ def render_all_results(results, benchmark, home='index.html'):
     ----------
     results : list of dict
         List of all the run that have been rendered for this benchmark.
-    benchmark : benchopt.Benchmark object
+    benchmark : benchopt.Benchmark
         Object to represent the benchmark.
     home : str
         URL of the home page.
@@ -431,7 +431,7 @@ def plot_benchmark_html(
     ----------
     fnames : list of Path or Path
         Name of the file in which the results are saved.
-    benchmark : benchopt.Benchmark object
+    benchmark : benchopt.Benchmark
         Object to represent the benchmark.
     config: dict
         Configuration for the different kind of plots.
