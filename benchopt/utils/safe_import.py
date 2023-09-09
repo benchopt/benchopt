@@ -79,6 +79,7 @@ class safe_import_context:
 
         if SKIP_IMPORT:
             self.failed_import = True
+            self.import_error = "skip import"
             return True
 
         silence_error = False
