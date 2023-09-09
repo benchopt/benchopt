@@ -125,12 +125,14 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               shell_complete=complete_config_files,
               help="YAML configuration file containing benchmark options.")
 @click.option('--plot/--no-plot', default=True,
-              help="Whether or not to plot the results. Default is True.")
+              help="Whether or not to create plots from the results. "
+              "Default is True.")
 @click.option('--display/--no-display', default=True,
-              help="Whether or not to display the plot on the screen.")
+              help="Whether or not to display the plot on the screen. "
+              "Default is True.")
 @click.option('--html/--no-html', default=True,
-              help="Whether to display the plot as HTML report or matplotlib"
-              "figures, default is True.")
+              help="If set to True (default), render the results as an HTML "
+              "page, otherwise create matplotlib figures, saved as PNG.")
 @click.option('--pdb',
               is_flag=True,
               help="Launch a debugger if there is an error. This will launch "
