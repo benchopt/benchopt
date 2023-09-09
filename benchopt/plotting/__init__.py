@@ -48,8 +48,8 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
         else:
             config[param] = []
 
-    if kinds is None or len(kinds) == 0:
-        kinds = config["plots"]
+    if kinds is not None and len(kinds) >= 0:
+        config["plots"] = kinds
 
     if html:
         plot_benchmark_html(fname, benchmark, config, display)
@@ -76,7 +76,9 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
 
                 plot_id = get_plot_id(benchmark.name, df_obj)
 
-                for kind, obj_col in itertools.product(kinds, obj_cols):
+                for kind, obj_col in itertools.product(
+                        config["plots"], obj_cols
+                ):
                     if kind not in PLOT_KINDS:
                         raise ValueError(
                             f"Requesting invalid plot '{kind}'."
