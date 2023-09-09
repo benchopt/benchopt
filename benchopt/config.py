@@ -41,13 +41,8 @@ DEFAULT_GLOBAL_CONFIG = {
   results in having the cache for benchmark `B1` stored in `${cache}/B1/`.
 """
 
-PLOTS_CONFIG = {
-    kind: {"xlim": None, "ylim": None, "scale": "linear"}
-    for kind in list(PLOT_KINDS)
-}
-PLOTS_CONFIG["bar_chart"] = {"ylim": None}
 DEFAULT_BENCHMARK_CONFIG = {
-    "plots": PLOTS_CONFIG, "plot_configs": {}, "datasets": None
+    "plots": list(PLOT_KINDS), "plot_configs": {}
 }
 
 """

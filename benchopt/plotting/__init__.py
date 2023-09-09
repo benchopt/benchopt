@@ -44,7 +44,7 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
         for each dataset.
     """
     config = get_metadata(fname)
-    params = ["plots", "plot_configs", "datasets"]
+    params = ["plots", "plot_configs"]
     for param in params:
         options = benchmark.get_setting(param, default_config=config)
         if options is not None:

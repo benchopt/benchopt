@@ -252,8 +252,8 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
 def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                   dataset_names=None, objective_filters=None, max_runs=10,
                   n_repetitions=1, timeout=100, n_jobs=1, slurm=None,
-                  plot_result=True, html=True, show_progress=True, pdb=False,
-                  output="None"):
+                  plot_result=True, display=True, html=True,
+                  show_progress=True, pdb=False, output="None"):
     """Run full benchmark.
 
     Parameters
@@ -285,8 +285,11 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
         If not None, launch the job on a slurm cluster using the file to get
         the cluster config parameters.
     plot_result : bool
-        If set to True (default), display the result plot and save them in
+        If set to True (default), generate the result plot and save them in
         the benchmark directory.
+    display : bool
+        If set to True (default), open the result plots at the end of the run,
+        otherwise, simply save them.
     html : bool
         If set to True (default), display the result plot in HTML, otherwise
         in matplotlib figures, default is True.
@@ -355,5 +358,5 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
 
     if plot_result:
         from benchopt.plotting import plot_benchmark
-        plot_benchmark(save_file, benchmark, html=html)
+        plot_benchmark(save_file, benchmark, html=html, display=display)
     return save_file
