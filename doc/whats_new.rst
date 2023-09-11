@@ -41,6 +41,14 @@ API
   By `Pierre Ablin`_ (:gh:`602`).
 
 
+PLOT
+~~~~
+
+- Add the possibility to save views of the plot in the HTML. These views can be
+  created in the HTML interface and saved in config files, linked to output
+  parquet files, by `Amelie Vernay`_, `Tanguy Lefort`_, `Melvine Nargeot`_
+  and `Thomas Moreau`_ (:gh:`552`).
+
 DOC
 ~~~
 

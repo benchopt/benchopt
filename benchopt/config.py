@@ -50,13 +50,25 @@ DEFAULT_BENCHMARK_CONFIG = {
   valid plot kinds. The list can simply be one item by line, with each item
   indented, as:
 
-  .. code-block:: yml
+  .. code-block:: yaml
 
     plots:
     - objective_curve
     - suboptimality_curve
     - relative_suboptimality_curve
     - bar_chart
+
+* ``plot_configs``, *list*: list of saved views that can be easily display for
+  the plot. Each view corresponds to a name, with specified values to select
+  either:
+
+    ``dataset``,  ``objective``, ``objective_column``, ``kind``, ``scale``,
+    ``with_quantiles``, ``xaxis_type``, ``xlim``, ``ylim``
+
+  Values that are not specified by the view are left as is when setting the
+  view in the interface. An example of views is:
+
+  .. code-block:: yaml
 
     plot_configs:
       linear_objective:
@@ -68,6 +80,11 @@ DEFAULT_BENCHMARK_CONFIG = {
           kind: suboptimality_curve
           ylim: [1e-10, 1.0]
           scale: loglog
+
+  These views can be easily created from the interactive HTML page, by hitting
+  the ``Save as view`` button in the plot controls and downloading eiher the
+  new HTML file to save them or the config file in th erepo of the benchmark,
+  so that these saved views are embeded in the next plot results automatically.
 """
 
 
