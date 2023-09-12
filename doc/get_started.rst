@@ -27,7 +27,7 @@ If instead you want to install the **development version**, use
 
 .. prompt:: bash $
 
-    pip install -U -i https://test.pypi.org/simple/benchopt
+    pip install --pre benchopt -U -i https://test.pypi.org/simple
 
 .. attention::
 
