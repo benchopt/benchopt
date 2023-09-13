@@ -1,22 +1,38 @@
 import sys
 import warnings
 import importlib
+
+from importlib.abc import Loader, MetaPathFinder
 from pathlib import Path
+from unittest.mock import Mock
 
 from ..config import RAISE_INSTALL_ERROR
 
-SKIP_IMPORT = False
+
+MOCK_IMPORT = False
 BENCHMARK_DIR = None
 PACKAGE_NAME = "benchmark_utils"
 
 
-class SkipWithBlock(Exception):
-    pass
+class MockLoader(Loader):
+    def __init__(self, name):
+        self.name = name
+
+    def create_module(self, spec):
+        return Mock(name=self.name)
+
+    def exec_module(self, module):
+        module.__path__ = []
 
 
-def skip_import():
-    global SKIP_IMPORT
-    SKIP_IMPORT = True
+class MockFinder(MetaPathFinder):
+    def find_spec(self, fullname, path, target=None):
+        return importlib.util.spec_from_loader(fullname, MockLoader(fullname))
+
+
+def mock_import():
+    global MOCK_IMPORT
+    MOCK_IMPORT = True
 
 
 def set_benchmark_module(benchmark_dir):
@@ -45,7 +61,7 @@ class safe_import_context:
     This context allows to avoid errors on ImportError, to be able to report
     that a solver/dataset is not installed.
 
-    Moreover, this context also allows to skip the import when simply listing
+    Moreover, this context also allows to mock the import when simply listing
     all solvers, for benchmark's installation or auto completion. Note that all
     costly imports should be protected with this import for benchopt to perform
     best.
@@ -59,40 +75,29 @@ class safe_import_context:
         self._benchmark_dir = BENCHMARK_DIR
 
     def __enter__(self):
-        # Skip context if necessary to speed up import
-        if SKIP_IMPORT:
-            # See https://stackoverflow.com/questions/12594148/skipping-execution-of-with-block  # noqa
-            sys.settrace(lambda *args, **keys: None)
-            frame = sys._getframe(1)
-            frame.f_trace = self.trace
-            return self
+        # Mock import to speed up import
+        if MOCK_IMPORT:
+            sys.meta_path.insert(0, MockFinder())
 
         # Catch the import warning except if install errors are raised.
         if not RAISE_INSTALL_ERROR:
             self.record.__enter__()
+
         return self
 
-    def trace(self, frame, event, arg):
-        raise SkipWithBlock()
-
     def __exit__(self, exc_type, exc_value, tb):
+        if MOCK_IMPORT:
+            sys.meta_path.pop(0)
 
-        if SKIP_IMPORT:
             self.failed_import = True
-            return True
 
-        silence_error = False
-
-        # prevent import error from propagating and tag
+        # Prevent import error from propagating and tag
         if exc_type is not None and issubclass(exc_type, ImportError):
             self.failed_import = True
             self.import_error = exc_type, exc_value, tb
 
-            # Prevent the error propagation
-            silence_error = True
-
         if not RAISE_INSTALL_ERROR:
             self.record.__exit__(exc_type, exc_value, tb)
 
-        # Returning True in __exit__ prevent error propagation.
-        return silence_error
+        # Returning True in __exit__ prevent error propagation
+        return self.failed_import
