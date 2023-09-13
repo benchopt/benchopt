@@ -93,7 +93,7 @@ def create_conda_env(
     benchopt_requirement, benchopt_editable = get_benchopt_requirement()
     if with_pytest:
         # Add pytest as a dependency of the env
-        benchopt_requirement = f"{benchopt_requirement}[test]"
+        benchopt_requirement = f"{benchopt_requirement}#egg=benchopt[test]"
 
     benchopt_env = BENCHOPT_ENV.format(
         benchopt_requirement=benchopt_requirement
