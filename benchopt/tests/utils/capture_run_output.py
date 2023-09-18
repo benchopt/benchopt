@@ -9,10 +9,12 @@ from benchopt.utils.stream_redirection import SuppressStd
 class CaptureRunOutput(object):
     "Context to capture run cmd output and files."
 
-    def __init__(self):
+    def __init__(self, delete_result_files=True):
         self.out = SuppressStd()
         self.output = None
         self.result_files = []
+
+        self.delete_result_files = delete_result_files
 
     def __enter__(self):
         self.output = None
@@ -36,7 +38,7 @@ class CaptureRunOutput(object):
         self.result_files = re.findall(
             r'Saving result in: (.*\.parquet)', self.output
         )
-        if len(self.result_files) >= 1:
+        if len(self.result_files) >= 1 and self.delete_result_files:
             for result_file in self.result_files:
                 result_path = Path(result_file)
                 result_path.unlink()  # remove result file

@@ -38,6 +38,9 @@ def update_metadata(path, metadata):
         Metadata to store in the parquet file. This metadata should be
         serializable with json.
     """
+    if path.suffix not in ['.pq', '.parquet']:
+        return
+
     table = pq.read_table(path)
     new_metadata = {
         **table.schema.metadata
@@ -57,5 +60,13 @@ def get_metadata(path):
     path: str | Path
         Path of the parquet file to read from.
     """
+    # Metadata are only saved in parquet files, skipping.
+    if path.suffix not in ['.pq', '.parquet']:
+        return {}
+
     meta = pq.read_metadata(path)
+    if JSON_KEY not in meta.metadata:
+        # No metadata was saved in the file, skipping.
+        return {}
+
     return json.loads(meta.metadata[JSON_KEY].decode("utf-8"))

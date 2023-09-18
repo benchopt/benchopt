@@ -98,7 +98,7 @@ jobs:
           name: make result
           command: |
             pip install -U numba
-            benchopt run benchopt/tests/dummy_benchmark -d Simulated[n_features=100,n_samples=100,rho=0]  -o "*[reg=0.1]" -s python-pgd -s cd -s Solver-Test -r 5 -n 15 --output benchmark-result
+            benchopt run benchopt/tests/dummy_benchmark -d Simulated[n_features=100,n_samples=100,rho=0]  -o "*[reg=0.05]" -s python-pgd -s cd -s Solver-Test -r 5 -n 15 --output benchmark-result
 
       # Save the results
       - store_artifacts:

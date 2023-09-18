@@ -182,7 +182,7 @@ def test_solver(benchmark, solver_class, check_test):
 def _test_solver_one_objective(solver, objective):
     # Test a solver runs with a given objective and give proper result.
 
-    is_convex = getattr(objective, "is_convex", True)
+    is_convex = getattr(objective, "is_convex", False)
 
     # Either call run_with_cb or run
     if solver._solver_strategy == 'callback':
