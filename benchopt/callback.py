@@ -1,5 +1,4 @@
 import time
-import warnings
 
 from .utils.sys_info import get_sys_info
 
