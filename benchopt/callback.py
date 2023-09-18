@@ -65,7 +65,7 @@ class _Callback:
     def start(self):
         self.time_callback = time.perf_counter()
 
-    def __call__(self, *args):
+    def __call__(self):
         # Stop time and update computation time since the beginning
         t0 = time.perf_counter()
 
@@ -73,7 +73,7 @@ class _Callback:
 
         # Evaluate the iteration if necessary.
         if self.it == self.next_stopval:
-            if self.log_value(*args):
+            if self.log_value():
                 return False
 
         # Update iteration number and restart time measurement.
@@ -81,21 +81,12 @@ class _Callback:
         self.time_callback = time.perf_counter()
         return True
 
-    def log_value(self, *args):
+    def log_value(self):
         """Store the objective value with running time and stop if needed.
 
         Return True if the solver should be stopped.
         """
-        # XXX: remove in 1.5
-        if len(args) > 0:
-            warnings.warn(
-                "Starting 1.5, the callback does not take any arguments. "
-                "The results are passed to `Objective.evaluate_result` "
-                "directly from `Solver.get_result`.", FutureWarning
-            )
-            result = args[0]
-        else:
-            result = self.solver.get_result()
+        result = self.solver.get_result()
 
         objective_dict = self.objective(result)
         self.curve.append(dict(
