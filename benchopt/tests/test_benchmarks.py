@@ -1,9 +1,8 @@
 import pytest
 import numpy as np
 
-from benchopt.runner import _Callback
-from benchopt.stopping_criterion import SAMPLING_STRATEGIES
 from benchopt.utils import product_param
+from benchopt.stopping_criterion import SAMPLING_STRATEGIES
 
 
 def test_benchmark_objective(benchmark, dataset_simu):
