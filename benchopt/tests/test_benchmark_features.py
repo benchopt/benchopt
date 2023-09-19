@@ -2,6 +2,7 @@ import pytest
 import tempfile
 
 from benchopt.cli.main import run
+from benchopt.cli.main import test as _cmd_test
 from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.utils.dynamic_modules import _load_class_from_module
 
