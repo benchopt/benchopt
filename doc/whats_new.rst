@@ -41,6 +41,14 @@ API
   By `Pierre Ablin`_ (:gh:`602`).
 
 
+PLOT
+~~~~
+
+- Add the possibility to save views of the plot in the HTML. These views can be
+  created in the HTML interface and saved in config files, linked to output
+  parquet files, by `Amelie Vernay`_, `Tanguy Lefort`_, `Melvine Nargeot`_
+  and `Thomas Moreau`_ (:gh:`552`).
+
 DOC
 ~~~
 
@@ -72,21 +80,20 @@ CLI
   By `Mathurin Massias`_ (:gh:`535`).
 - Remove deprecated ``-o/--objective-filter`` option in ``benchopt run``.
   By `Thomas Moreau`_ (:gh:`569`)
-
+- Deprecate ``.ini`` config file and use ``.yml`` files instead. A conversion
+  should be performed automatically.
+  By `Tanguy Lefort`_, `Amelie Vernay`_ and `Thomas Moreau`_ (:gh:`552`).
 
 API
 ~~~
 
 - The ``get_next`` method of :class:`~benchopt.BaseSolver` is no longer static.
   By `Badr Moufad`_ (:gh:`566`)
-
 - Add :class:`~benchopt.stopping_criterion.SingleRunCriterion` to run a solver
   only once. This can be used for benchmarking methods where we are interested
   in objective value at convergence. By `Thomas Moreau`_ (:gh:`511`)
-
 - Add :func:`~benchopt.BaseSolver.run_once` helper to easily warmup solvers
   with callback. By `Thomas Moreau`_ (:gh:`511`)
-
 - Add :func:`~benchopt.BaseSolver.pre_run_hook` hook to ignore cost that cannot
   be cached globally for a solver. By `Thomas Moreau`_ (:gh:`525`)
 
@@ -99,12 +106,14 @@ PLOT
 
 - Add a tooltip beside to show description of objective. Description is provided as docstring of
   the :class:`~benchopt.BaseObjective` class. By `Badr Moufad`_ (:gh:`556`)
-
 - Show solver description when hovering over solvers. Description is provided as docstring of
   the :class:`~benchopt.BaseSolver` class. By `Badr Moufad`_ (:gh:`543`)
-
 - Enable visualizing the objective as function of ``stopping_criterion``: time,
   iteration, or tolerance. By `Badr Moufad`_ (:gh:`479`)
+- Add button to share and set specific views on the plot. For now, the view need
+  to be defined manually in the benchmark config file but an export button will
+  be added in follow up PRs.
+  By `Tanguy Lefort`_, `Amelie Vernay`_ and `Thomas Moreau`_ (:gh:`552`).
 
 FIX
 ~~~

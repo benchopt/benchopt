@@ -215,9 +215,11 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
                 meta={},
                 stopping_criterion=stopping_criterion
             )
+            self.pre_run_hook(run_once_cb)
             run_once_cb.start()
             self.run(run_once_cb)
         else:
+            self.pre_run_hook(stop_val)
             self.run(stop_val)
 
     def warm_up(self):

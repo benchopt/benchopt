@@ -2,6 +2,10 @@ import itertools
 import pandas as pd
 import matplotlib.pyplot as plt
 
+# helpers to manage metadata in the parquet files
+from ..utils.parquet import get_metadata
+from ..utils.parquet import update_metadata
+
 from ..constants import PLOT_KINDS
 from .helpers import get_plot_id
 from .plot_bar_chart import plot_bar_chart  # noqa: F401
@@ -39,13 +43,20 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
         The matplotlib figures for convergence curve and bar chart
         for each dataset.
     """
-    config_kinds = benchmark.get_setting('plots')
-    if kinds is None or len(kinds) == 0:
-        kinds = config_kinds
+    config = get_metadata(fname)
+    params = ["plots", "plot_configs"]
+    for param in params:
+        options = benchmark.get_setting(param, default_config=config)
+        if options is not None:
+            config[param] = options
+
+    update_metadata(fname, config)
+
+    if kinds is not None and len(kinds) > 0:
+        config["plots"] = kinds
 
     if html:
-        plot_benchmark_html(fname, benchmark, kinds, display)
-        return None
+        plot_benchmark_html(fname, benchmark, config, display)
 
     else:
         # Load the results.
@@ -69,7 +80,9 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
 
                 plot_id = get_plot_id(benchmark.name, df_obj)
 
-                for kind, obj_col in itertools.product(kinds, obj_cols):
+                for kind, obj_col in itertools.product(
+                        config["plots"], obj_cols
+                ):
                     if kind not in PLOT_KINDS:
                         raise ValueError(
                             f"Requesting invalid plot '{kind}'."

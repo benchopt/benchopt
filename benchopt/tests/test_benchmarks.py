@@ -1,9 +1,8 @@
 import pytest
 import numpy as np
 
-from benchopt.runner import _Callback
-from benchopt.stopping_criterion import SAMPLING_STRATEGIES
 from benchopt.utils import product_param
+from benchopt.stopping_criterion import SAMPLING_STRATEGIES
 
 
 def test_benchmark_objective(benchmark, dataset_simu):
@@ -182,27 +181,13 @@ def test_solver(benchmark, solver_class, check_test):
 def _test_solver_one_objective(solver, objective):
     # Test a solver runs with a given objective and give proper result.
 
-    is_convex = getattr(objective, "is_convex", True)
+    is_convex = getattr(objective, "is_convex", False)
 
-    # Either call run_with_cb or run
-    if solver._solver_strategy == 'callback':
-        sc = solver.stopping_criterion.get_runner_instance(
-            max_runs=25 if is_convex else 2, timeout=None, solver=solver
-        )
-        if not is_convex:
-            # Set large tolerance for the stopping criterion to stop fast
-            sc.eps = 5e-1
-        cb = _Callback(
-            objective, solver, meta={}, stopping_criterion=sc
-        )
-        cb.start()
-        solver.run(cb)
+    if solver._solver_strategy in ['iteration', 'callback']:
+        stop_val = 5000 if is_convex else 2
     else:
-        if solver._solver_strategy == 'iteration':
-            stop_val = 5000 if is_convex else 2
-        else:
-            stop_val = 1e-10 if is_convex else 1e-2
-        solver.run(stop_val)
+        stop_val = 1e-10 if is_convex else 1e-2
+    solver.run_once(stop_val)
 
     # Check that returned results are compatible with the objective
     result = solver.get_result()

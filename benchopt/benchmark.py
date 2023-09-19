@@ -338,15 +338,21 @@ class Benchmark:
 
     def get_config_file(self):
         "Get the location for the config file of the benchmark."
-        return self.benchmark_dir / 'config.ini'
+        yml_path = self.benchmark_dir / "config.yml"
+        ini_path = yml_path.with_suffix('.ini')
+        if not yml_path.exists() and ini_path.exists():
+            return ini_path
+        return yml_path
 
-    def get_setting(self, setting_name):
+    def get_setting(self, setting_name, default_config=None):
         "Retrieve the setting value from benchmark config."
 
         # Get the config file and read it
         config_file = self.get_config_file()
-        return get_setting(name=setting_name, config_file=config_file,
-                           benchmark_name=self.name)
+        return get_setting(
+            name=setting_name, config_file=config_file,
+            benchmark_name=self.name, default_config=default_config
+        )
 
     def get_test_config_file(self):
         """Get the location for the test config file for the benchmark.

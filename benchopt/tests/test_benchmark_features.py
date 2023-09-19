@@ -229,3 +229,44 @@ def test_warm_up():
 
         # Make sure warmup is called exactly once
         out.check_output("WARMUP", repetition=1)
+
+
+def test_pre_run_hook():
+
+    solver1 = """from benchopt import BaseSolver
+    import numpy as np
+
+    class Solver(BaseSolver):
+        name = 'solver1'
+        sampling_strategy = 'iteration'
+
+        def set_objective(self, X, y, lmbd):
+            self.n_features = X.shape[1]
+
+        def pre_run_hook(self, n_iter):
+            self._pre_run_hook_n_iter = n_iter
+
+        def run(self, n_iter):
+            assert self._pre_run_hook_n_iter == n_iter
+
+        def get_result(self, **data):
+            return {'beta': np.zeros(self.n_features)}
+    """
+
+    with temp_benchmark(solvers=[solver1]) as benchmark:
+        with CaptureRunOutput() as out:
+            run([
+                str(benchmark.benchmark_dir),
+                *'-s solver1 -d test-dataset -n 0 -r 5 --no-plot '
+                '-o dummy*[reg=0.5]'.split()
+            ], standalone_mode=False)
+
+        with CaptureRunOutput() as out:
+            with pytest.raises(SystemExit, match="False"):
+                _cmd_test([
+                    str(benchmark.benchmark_dir), '-k', 'solver1',
+                    '--skip-install', '-v'
+                ], standalone_mode=False)
+
+        # Make sure warmup is called exactly once
+        out.check_output("3 passed, 1 skipped, 7 deselected", repetition=1)
