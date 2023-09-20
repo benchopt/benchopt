@@ -7,17 +7,17 @@ What's new
 
 .. _changes_1_5:
 
-Version 1.5 (dev)
------------------
+Version 1.5 - 18/09/2023
+------------------------
 
 API
 ~~~
 
-- Add a ``Objective.url`` attribute to specify the orignal repo of the
+- Add a ``Objective.url`` attribute to specify the original repo of the
   benchmark. By `Thomas Moreau`_ (:gh:`621`).
 
-- The callback now does not take any argument anymore. The results from the
-  ``Solver`` are always collected using ``get_result``.
+- Deprecate passing in arguments to callback of when ``sampling_strategy='callback'``.
+  Now on, the results from the ``Solver`` are collected using ``get_result``.
   By `Thomas Moreau`_ (:gh:`631`).
 
 - Deprecate ``Objective.get_one_solution`` in favor of ``Objective.get_one_result``
@@ -64,7 +64,7 @@ Internals
 
 - Add helper to store and retrieve metadata in parquet files. This will
   allow storing per-run plotting information.
-  By `Thomas Moreau`_ (:gh`637`).
+  By `Thomas Moreau`_ (:gh:`637`).
 
 
 .. _changes_1_4:

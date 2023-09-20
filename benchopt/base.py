@@ -1,5 +1,4 @@
 import tempfile
-import warnings
 
 from abc import ABC, abstractmethod
 
@@ -56,23 +55,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
     @property
     def _solver_strategy(self):
         """Change stop_strategy and stopping_strategy to sampling_strategy."""
-        # XXX remove in 1.5
-        if hasattr(self, 'stop_strategy'):
-            warnings.warn(
-                "'stop_strategy' attribute is deprecated and will be "
-                "removed in benchopt 1.5, use 'sampling_strategy' instead.",
-                FutureWarning
-            )
-            return self.stop_strategy
-        # XXX remove in 1.5
-        if hasattr(self, 'stopping_strategy'):
-            warnings.warn(
-                "'stopping_strategy' attribute is deprecated and will be "
-                "removed in benchopt 1.5, use 'sampling_strategy' instead.",
-                FutureWarning
-            )
-            return self.stopping_strategy
-        elif hasattr(self, 'sampling_strategy'):
+        if hasattr(self, 'sampling_strategy'):
             return self.sampling_strategy
         else:
             return self.stopping_criterion.strategy
@@ -102,13 +85,6 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
             "a dictionary to be passed to `set_objective`"
         )
 
-        # XXX remove in 1.5
-        if hasattr(self, "support_sparse"):
-            warnings.warn(
-                "Skipping sparse X via `support_sparse = False` is deprecated "
-                "and will be removed in v 1.5. Skip explicitly using "
-                "`Solver.skip`.", FutureWarning
-            )
         # Check if the objective is compatible with the solver
         skip, reason = self.skip(**objective_dict)
         if skip:
@@ -204,12 +180,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
             If skip is False, the reason should be None.
         """
         # Check that the solver is compatible with the given dataset
-        # XXX remove in 1.5
-        from scipy import sparse
-
-        if not getattr(self, 'support_sparse', True):
-            if any(sparse.issparse(v) for v in objective_dict.values()):
-                return True, f"{self} does not support sparse data."
+        # By default, a solver is compatible with all datasets.
 
         return False, None
 
@@ -419,6 +390,7 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
         """
         ...
 
+    @abstractmethod
     def evaluate_result(self, **solver_result):
         """Compute the objective value given the output of a solver.
 
@@ -440,34 +412,13 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
             dictionary, multiple metric values can be stored at once instead
             of running each separately.
         """
-        # XXX remove in version 1.5 and make this method abstract
-        if hasattr(self, "compute"):
-            warnings.warn(
-                "`Objective.compute` was renamed `Objective.evaluate_result` "
-                "in v 1.5, and now takes as input the unpacked dict returned "
-                "by `Solver.get_result`", FutureWarning,
-            )
-            if '_result' in solver_result:
-                solver_result = solver_result['_result']
-            return self.compute(solver_result)
-
-        raise NotImplementedError(
-            "The Objective class should implement `evaluate_result` which "
-            "evaluates the objective given the output of a solver."
-        )
+        pass
 
     def __call__(self, solver_result):
         """Used to call the evaluation of the objective.
 
         This allows standardizing the output to a dictionary.
         """
-        # XXX remove in version 1.5
-        if not isinstance(solver_result, dict):
-            warnings.warn(
-                "From benchopt 1.5, Solver.get_result() should return a dict.",
-                FutureWarning,
-            )
-            solver_result = {'_result': solver_result}
         objective_dict = self.evaluate_result(**solver_result)
 
         if not isinstance(objective_dict, dict):
@@ -537,6 +488,7 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
         """
         return False, None
 
+    @abstractmethod
     def get_one_result(self):
         """Return one result for which the objective can be evaluated.
 
@@ -545,19 +497,6 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
         type for benchopt. The returned object will be passed to
         ``Objective.compute``.
         """
-        # XXX: remove in 1.5 and make this method abstract
-        if hasattr(self, "get_one_solution"):
-            warnings.warn(
-                "`Objective.get_one_solution` is renamed "
-                "`Objective.get_one_result`. This will raise an error in "
-                "v1.5", FutureWarning,
-            )
-            return self.get_one_solution()
-
-        raise NotImplementedError(
-            "The Objective class should implement `get_one_result` which "
-            "returns one result for which the objective can be evaluated."
-        )
 
     # Reduce the pickling and hashing burden by only pickling class parameters.
     @staticmethod
