@@ -93,7 +93,14 @@ def create_conda_env(
     benchopt_requirement, benchopt_editable = get_benchopt_requirement()
     if with_pytest:
         # Add pytest as a dependency of the env
-        benchopt_requirement = f"{benchopt_requirement}#egg=benchopt[test]"
+        if "/" in benchopt_requirement:
+            # If it is a local path or an URL, we need to add the egg
+            benchopt_requirement = f"{benchopt_requirement}#egg=benchopt[test]"
+        else:
+            # else simply add the test extra
+            benchopt_requirement = benchopt_requirement.replace(
+                "benchopt", "benchopt[test]"
+            )
 
     benchopt_env = BENCHOPT_ENV.format(
         benchopt_requirement=benchopt_requirement
