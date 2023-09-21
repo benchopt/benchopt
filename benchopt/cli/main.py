@@ -487,7 +487,7 @@ def test(benchmark, env_name, pytest_args):
 
     env_option = ''
     if env_name is not None:
-        create_conda_env(env_name, with_pytest=True)
+        create_conda_env(env_name, pytest=True)
         if _run_shell_in_conda_env("pytest --version", env_name=env_name) != 0:
             raise ModuleNotFoundError(
                 f"pytest is not installed in conda env {env_name}.\n"

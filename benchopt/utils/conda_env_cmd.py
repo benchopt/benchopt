@@ -39,7 +39,7 @@ channels:
 
 
 def create_conda_env(
-        env_name, recreate=False, with_pytest=False, empty=False, quiet=False):
+        env_name, recreate=False, pytest=False, empty=False, quiet=False):
     """Create a conda env with name env_name and install basic utilities.
 
 
@@ -50,7 +50,7 @@ def create_conda_env(
     recreate : bool (default: False)
         It the conda env exists and recreate is set to True, it will be
         overwritten with the new env. If it is False, the env will be untouched
-    with_pytest : bool (default: False)
+    pytest : bool (default: False)
         If set to True, also install pytest in the newly created env.
     empty : bool (default: False)
         If set to True, simply create an empty env. This is mainly for testing
@@ -90,10 +90,7 @@ def create_conda_env(
 
     force = "--force" if recreate else ""
 
-    benchopt_requirement, benchopt_editable = get_benchopt_requirement()
-    if with_pytest:
-        # Add pytest as a dependency of the env
-        benchopt_requirement = f"{benchopt_requirement}#egg=benchopt[test]"
+    benchopt_requirement, benchopt_editable = get_benchopt_requirement(pytest)
 
     benchopt_env = BENCHOPT_ENV.format(
         benchopt_requirement=benchopt_requirement
