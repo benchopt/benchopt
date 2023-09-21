@@ -206,3 +206,54 @@ def _test_solver_one_objective(solver, objective):
 
             diff = val_eps - val_star
             assert diff >= 0
+
+def test_solver_tolerance(benchmark, solver_class):
+    # Check that solvers based on tolerance do not support n_iter=0 or INFINITY.
+
+    if not solver_class.is_installed():
+        pytest.skip("Solver is not installed")
+
+    if solver_class._solver_strategy not in ['tolerance', 'auto']:
+        pytest.skip("Solver is not based on tolerance")
+
+    test_config = getattr(solver_class, "test_config", {})
+    objective_config = test_config.get('objective', {})
+    dataset_config = test_config.get('dataset', {})
+
+    objective_class = benchmark.get_benchmark_objective()
+    objective = objective_class.get_instance(**objective_config)
+
+    simulated_dataset = [
+        d for d in benchmark.get_datasets() if d.name.lower() == 'simulated'
+    ]
+
+    assert len(simulated_dataset) == 1, (
+        "All benchmark need to implement a simulated dataset for "
+        "testing purpose. The dataset should have `name='simulated'."
+    )
+
+    dataset_class = simulated_dataset[0]
+    dataset_test_parameters = product_param(getattr(
+        dataset_class, 'test_parameters', {}
+    ))
+    if not dataset_test_parameters:
+        dataset_test_parameters = [{}]
+    for params in dataset_test_parameters:
+        params.update(dataset_config)
+        dataset = dataset_class.get_instance(**params)
+
+        objective.set_dataset(dataset)
+        solver = solver_class.get_instance()
+        skip = solver._set_objective(objective)
+        if skip:
+            continue
+
+        # Test for n_iter=0
+        with pytest.raises(ValueError) as excinfo:
+            solver.run_once(0)
+        assert "n_iter must be a positive integer" in str(excinfo.value)
+
+        # Test for n_iter=np.inf
+        with pytest.raises(ValueError) as excinfo:
+            solver.run_once(np.inf)
+        assert "n_iter must be a positive integer" in str(excinfo.value)
