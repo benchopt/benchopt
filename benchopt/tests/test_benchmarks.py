@@ -124,7 +124,7 @@ def test_solver_install(test_env_name, benchmark, solver_class, check_test):
         env_name=test_env_name, raise_on_not_installed=True
     )
 
-
+#HELPER FUNCTION TO REFACTOR test_solver_tolerance and test_solver
 def _test_solver_with_parameters(benchmark, solver_class, objective_config, dataset_config):
     if not solver_class.is_installed():
         pytest.skip("Solver is not installed")
