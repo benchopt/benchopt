@@ -5,6 +5,20 @@ What's new
 
 .. currentmodule:: benchopt
 
+.. _changes_1_5_1:
+
+Version 1.5.1 - 22/09/2023
+--------------------------
+
+Bugfix release.
+
+FIX
+~~~
+
+- Fix benchopt dependency specification to install benchopt in child env
+  with extra ``[test]``. By `Thomas Moreau`_ (:gh:`662`).
+
+
 .. _changes_1_5:
 
 Version 1.5 - 18/09/2023
