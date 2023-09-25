@@ -20,6 +20,7 @@ from benchopt.config import get_global_config_file
 from benchopt.config import GLOBAL_CONFIG_FILE_MODE
 from benchopt.utils.dynamic_modules import _load_class_from_module
 from benchopt.utils.shell_cmd import _run_shell_in_conda_env
+from benchopt.utils.slurm_executor import get_slurm_folder
 from benchopt.utils.terminal_output import colorify
 from benchopt.utils.terminal_output import RED, GREEN, TICK, CROSS
 
@@ -72,6 +73,11 @@ def clean(benchmark, token=None, filename='all'):
                 json_file.pop(f"{filename}.{ext}", None)
                 with open(json_path, "w") as cache_run:
                     json.dump(json_file, cache_run)
+    # Delete slurm files
+    slurm_folder = get_slurm_folder(benchmark)
+    if slurm_folder.exists():
+        print(f"rm -rf {slurm_folder}")
+        rm_folder(slurm_folder)
     # Delete cache files
     print("Clear joblib cache")
     benchmark.mem.clear(warn=False)
