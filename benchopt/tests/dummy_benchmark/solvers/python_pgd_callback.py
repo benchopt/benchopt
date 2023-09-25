@@ -68,7 +68,7 @@ class Solver(BaseSolver):
             else:
                 w -= self.X.T @ (self.X @ w - self.y) / L
                 w = self.st(w, self.lmbd / L)
-        self.w = w
+            self.w = w
 
     def get_result(self):
         return {'beta': self.w}
