@@ -1,4 +1,5 @@
 import yaml
+from pathlib import Path
 
 try:
     import submitit
@@ -20,6 +21,13 @@ def set_slurm_launch():
 
 def get_slurm_launch():
     return _LAUNCHING_SLURM
+
+
+def get_slurm_folder(benchmark, job_name="benchopt_run"):
+    """Get the folder to store the output of the slurm executor."""
+    benchmark_dir = benchmark.benchmark_dir
+    output_dir = benchmark_dir / job_name
+    return output_dir
 
 
 def get_slurm_executor(slurm_config, timeout=100, job_name="benchopt_run"):
