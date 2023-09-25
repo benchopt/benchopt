@@ -49,7 +49,7 @@ An objective class should define 4 methods:
   benchmark works properly.
 - ``set_data(**data)``: allows to specify the data. See the data as a dictionary
   of Python variables without any constraint.
-- ``compute(x)``: it allows to evaluate the objective for a given value
+- ``evaluate_result(x)``: it allows to evaluate the objective for a given value
   of the iterate, here called ``x``. This method should take only one parameter,
   the output returned by the solver. All other parameters should be stored
   in the class with the ``set_data`` method. The ``compute`` function should return
