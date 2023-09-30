@@ -7,6 +7,7 @@ try:
     from rich import progress
 
     _SLURM_INSTALLED = True
+    SLURM_JOB_NAME = "benchopt_run"
 except ImportError:
     _SLURM_INSTALLED = False
 
@@ -23,14 +24,14 @@ def get_slurm_launch():
     return _LAUNCHING_SLURM
 
 
-def get_slurm_folder(benchmark, job_name="benchopt_run"):
+def get_slurm_folder(benchmark):
     """Get the folder to store the output of the slurm executor."""
     benchmark_dir = benchmark.benchmark_dir
-    output_dir = benchmark_dir / job_name
+    output_dir = benchmark_dir / SLURM_JOB_NAME
     return output_dir
 
 
-def get_slurm_executor(slurm_config, timeout=100, job_name="benchopt_run"):
+def get_slurm_executor(slurm_config, timeout=100):
 
     with open(slurm_config, "r") as f:
         config = yaml.safe_load(f)
@@ -43,7 +44,7 @@ def get_slurm_executor(slurm_config, timeout=100, job_name="benchopt_run"):
         # Timeout is in second in benchopt
         config['slurm_time'] = f"00:{int(1.5*timeout)}"
 
-    executor = submitit.AutoExecutor(job_name)
+    executor = submitit.AutoExecutor(SLURM_JOB_NAME)
     executor.update_parameters(**config)
     return executor
 
