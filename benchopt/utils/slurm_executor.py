@@ -57,9 +57,7 @@ def run_on_slurm(
         )
 
     executor = get_slurm_executor(
-        benchmark,
-        slurm_config,
-        common_kwargs["timeout"]
+        benchmark, slurm_config, common_kwargs["timeout"]
     )
     with executor.batch():
         tasks = [
