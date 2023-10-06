@@ -328,8 +328,10 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
 
     if slurm is not None:
         from .utils.slurm_executor import run_on_slurm
-        results = run_on_slurm(benchmark, slurm, run_one_solver,
-                               common_kwargs, all_runs)
+        results = run_on_slurm(
+            benchmark, slurm, run_one_solver, common_kwargs,
+            all_runs
+        )
     else:
         results = Parallel(n_jobs=n_jobs)(
             delayed(run_one_solver)(**common_kwargs, **kwargs)
