@@ -24,6 +24,7 @@ from .config import RAISE_INSTALL_ERROR
 
 
 CACHE_DIR = '__cache__'
+SLURM_JOB_NAME = 'benchopt_run'
 
 
 class Benchmark:
@@ -230,6 +231,11 @@ class Benchmark:
         output_dir = self.benchmark_dir / "outputs"
         output_dir.mkdir(exist_ok=True)
         return output_dir
+
+    def get_slurm_folder(self):
+        """Get the folder to store the output of the slurm executor."""
+        slurm_dir = self.benchmark_dir / SLURM_JOB_NAME
+        return slurm_dir
 
     def get_result_file(self, filename=None):
         """Get a result file from the benchmark.

@@ -22,7 +22,7 @@ def get_slurm_launch():
     return _LAUNCHING_SLURM
 
 
-def get_slurm_executor(slurm_config, timeout=100, job_name="benchopt_run"):
+def get_slurm_executor(benchmark, slurm_config, timeout=100):
 
     with open(slurm_config, "r") as f:
         config = yaml.safe_load(f)
@@ -35,12 +35,19 @@ def get_slurm_executor(slurm_config, timeout=100, job_name="benchopt_run"):
         # Timeout is in second in benchopt
         config['slurm_time'] = f"00:{int(1.5*timeout)}"
 
-    executor = submitit.AutoExecutor(job_name)
+    slurm_folder = benchmark.get_slurm_folder()
+    executor = submitit.AutoExecutor(slurm_folder)
     executor.update_parameters(**config)
     return executor
 
 
-def run_on_slurm(slurm_config, run_one_solver, common_kwargs, all_runs):
+def run_on_slurm(
+    benchmark,
+    slurm_config,
+    run_one_solver,
+    common_kwargs,
+    all_runs
+):
 
     if not _SLURM_INSTALLED:
         raise ImportError(
@@ -49,7 +56,9 @@ def run_on_slurm(slurm_config, run_one_solver, common_kwargs, all_runs):
             "the --slurm option."
         )
 
-    executor = get_slurm_executor(slurm_config, common_kwargs["timeout"])
+    executor = get_slurm_executor(
+        benchmark, slurm_config, common_kwargs["timeout"]
+    )
     with executor.batch():
         tasks = [
             executor.submit(run_one_solver, **common_kwargs, **kwargs)
