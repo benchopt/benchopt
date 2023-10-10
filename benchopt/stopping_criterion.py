@@ -477,8 +477,8 @@ class NoCriterion(StoppingCriterion):
 
 
 class RunOnGridCriterion(StoppingCriterion):
-    """Run the solvers over a fixed grid of values. Thus grid can represent 
-    anything for the solvers: an iteration number, a target accuracy, an 
+    """Run the solvers over a fixed grid of values. Thus grid can represent
+    anything for the solvers: an iteration number, a target accuracy, an
     hyperparameter value, etc.
 
     Parameters
@@ -497,9 +497,9 @@ class RunOnGridCriterion(StoppingCriterion):
         super().__init__(
             strategy=strategy, key_to_monitor=key_to_monitor, **kwargs
         )
-        
-        # In addition of the parameters of `StoppingCriterion`, a 
-        # `RunOnGridCriterion` its grid as parameter. A `grid_idx` is also 
+
+        # In addition of the parameters of `StoppingCriterion`, a
+        # `RunOnGridCriterion` its grid as parameter. A `grid_idx` is also
         # specified and represents the index corresponding to the value in the
         # grid that currently passed to the solvers via the `run` method.
         self.grid = grid
@@ -511,7 +511,7 @@ class RunOnGridCriterion(StoppingCriterion):
         # The `get_runner_instance` has to be overloaded. Otherwise, it will be
         # cached by benchopt and the default `grid` values will always be used.
         # The trick here is to add the `grid` and `grid_idx` parameters to the
-        # kwargs so as to re-use the default `get_runner_instance` of 
+        # kwargs so as to re-use the default `get_runner_instance` of
         # `StoppingCriterion`.
         self.kwargs["grid"] = self.grid
         self.kwargs["grid_idx"] = self.grid_idx
