@@ -202,7 +202,7 @@ Available benchmarks
    :target: https://github.com/benchopt/benchopt/actions/workflows/test.yml
 .. |Python 3.6+| image:: https://img.shields.io/badge/python-3.6%2B-blue
    :target: https://www.python.org/downloads/release/python-360/
-.. |Documentation| image:: https://img.shields.io/badge/Documentation
+.. |Documentation| image:: https://img.shields.io/badge/documentation-latest-blue
    :target: https://benchopt.github.io
 .. |codecov| image:: https://codecov.io/gh/benchopt/benchopt/branch/master/graph/badge.svg
    :target: https://codecov.io/gh/benchopt/benchopt
