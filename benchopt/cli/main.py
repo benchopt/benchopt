@@ -51,15 +51,16 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
         "max_runs",
         "n_repetitions",
         "timeout",
-        "n_jobs",
-        "slurm",
+        "output",
         "plot",
         "display",
         "html",
+        "n_jobs",
+        "parallel_backend",
+        "slurm",
         "pdb",
         "profile",
         "env_name",
-        "output",
     ]
     return [cli_kwargs[name] for name in return_names]
 
@@ -99,16 +100,7 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               " with the syntax `dataset[parameter=value]`. "
               "To include multiple datasets, use multiple `-d` options.",
               shell_complete=complete_datasets)
-@click.option('--n-jobs', '-j',
-              metavar="<int>", default=None, show_default=True, type=int,
-              help='Maximal number of workers to run the benchmark in '
-              'parallel.')
-@click.option('--slurm',
-              metavar="<slurm_config.yml>", default=None,
-              help='Run the computation using submitit on a SLURM cluster. '
-              'The YAML file provided to this argument is used to setup the '
-              'SLURM job. See :ref:`slurm_run` for a detailed description.')
-@click.option('--max-runs', '-n',
+@click.option("--max-runs", "-n",
               metavar="<int>", default=100, show_default=True, type=int,
               help='Maximal number of runs for each solver. This corresponds '
               'to the number of points in the time/accuracy curve.')
@@ -133,7 +125,22 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
 @click.option('--html/--no-html', default=True,
               help="If set to True (default), render the results as an HTML "
               "page, otherwise create matplotlib figures, saved as PNG.")
-@click.option('--pdb',
+@click.option("--n-jobs", "-j",
+              metavar="<int>", default=None, show_default=True, type=int,
+              help="Maximal number of workers to run the benchmark in "
+              "parallel.")
+@click.option("--slurm",
+              metavar="<slurm_config.yml>", default=None,
+              help="Run the computation using submitit on a SLURM cluster. "
+              "The YAML file provided to this argument is used to setup the "
+              "SLURM job. See :ref:`slurm_run` for a detailed description.")
+@click.option("--parallel-backend",
+              metavar="<parallel_config.yml>", default=None,
+              help="Run in parallel with the specified backend configuration. "
+              "The YAML file provided to this argument is used to setup the"
+              "parallel run. See :ref:`parallel_run` for a detailed "
+              "description.")
+@click.option("--pdb",
               is_flag=True,
               help="Launch a debugger if there is an error. This will launch "
               "ipdb if it is installed and default to pdb otherwise.")
@@ -176,8 +183,9 @@ def run(config_file=None, **kwargs):
 
     (
         benchmark, solver_names, forced_solvers, dataset_names,
-        objective_filters, max_runs, n_repetitions, timeout, n_jobs, slurm,
-        plot, display, html, pdb, do_profile, env_name, output
+        objective_filters, max_runs, n_repetitions, timeout, output, plot,
+        display, html, n_jobs, parallel_backend, slurm, pdb, do_profile,
+        env_name,
     ) = _get_run_args(kwargs, config)
 
     try:
@@ -232,12 +240,11 @@ def run(config_file=None, **kwargs):
 
         run_benchmark(
             benchmark, solver_names, forced_solvers,
-            dataset_names=dataset_names,
-            objective_filters=objective_filters,
-            max_runs=max_runs, n_repetitions=n_repetitions,
-            timeout=timeout, n_jobs=n_jobs, slurm=slurm,
-            plot_result=plot, display=display, html=html,
-            pdb=pdb, output=output
+            dataset_names=dataset_names, objective_filters=objective_filters,
+            max_runs=max_runs, n_repetitions=n_repetitions, timeout=timeout,
+            output=output, plot_result=plot, display=display, html=html,
+            n_jobs=n_jobs, slurm=slurm, parallel_backend=parallel_backend,
+            pdb=pdb
         )
 
         print_stats()  # print profiling stats (does nothing if not profiling)
@@ -299,23 +306,30 @@ def run(config_file=None, **kwargs):
             f"and version in env {env_name} ({benchopt_version}) differ")
 
     # run the command in the conda env
-    solvers_option = ' '.join([f"-s '{s}'" for s in solver_names])
-    forced_solvers_option = ' '.join([f"-f '{s}'" for s in forced_solvers])
-    datasets_option = ' '.join([f"-d '{d}'" for d in dataset_names])
-    objective_option = ' '.join([f"-o '{o}'" for o in objective_filters])
+    solvers_option = " ".join([f"-s '{s}'" for s in solver_names])
+    forced_solvers_option = " ".join([f"-f '{s}'" for s in forced_solvers])
+    datasets_option = " ".join([f"-d '{d}'" for d in dataset_names])
+    objective_option = " ".join([f"-o '{o}'" for o in objective_filters])
+    parallel_args = ""
+    if n_jobs:
+        parallel_args += f"--n-jobs {n_jobs} "
+    if slurm:
+        parallel_args += rf"--slurm {slurm} "
+    if parallel_backend:
+        parallel_args += rf"--parallel-backend {parallel_backend} "
     cmd = (
-        rf"benchopt run --local {benchmark.benchmark_dir} "
-        rf"--n-repetitions {n_repetitions} "
-        rf"--max-runs {max_runs} --timeout {timeout} "
-        rf"--n-jobs {n_jobs} {'--slurm' if slurm else ''} "
-        rf"{solvers_option} {forced_solvers_option} "
-        rf"{datasets_option} {objective_option} "
-        rf"{'--plot' if plot else '--no-plot'} "
-        rf"{'--display' if display else '--no-display'} "
-        rf"{'--html' if html else '--no-html'} "
-        rf"{'--pdb' if pdb else ''} "
+        f"benchopt run --local {benchmark.benchmark_dir} "
+        f"{solvers_option} {forced_solvers_option} "
+        f"{datasets_option} {objective_option} "
+        f"--n-repetitions {n_repetitions} "
+        f"--max-runs {max_runs} --timeout {timeout} "
         rf"--output {output}"
-        .replace('\\', '\\\\')
+        f"{'--plot' if plot else '--no-plot'} "
+        f"{'--display' if display else '--no-display'} "
+        f"{'--html' if html else '--no-html'} "
+        rf"{parallel_args}"
+        f"{'--pdb ' if pdb else ''}{'--profile' if do_profile else ''}"
+        .replace("\\", "\\\\")
     )
     raise SystemExit(_run_shell_in_conda_env(
         cmd, env_name=env_name, capture_stdout=False
