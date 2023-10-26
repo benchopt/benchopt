@@ -22,6 +22,14 @@ def parallel_run(benchmark, run, kwargs, all_runs, config):
         from .slurm_executor import run_on_slurm
         results = run_on_slurm(benchmark, config, run, kwargs, all_runs)
     else:
+        if backend == 'dask':
+            # Setup the client with `dask_*` parameters
+            client_config = {
+                k[5:]: config.pop(k)
+                for k, v in list(config.items()) if k.startswith('dask_')
+            }
+            from distributed import Client
+            config['client'] = Client(**client_config)
         with parallel_config(backend, **config):
             results = Parallel()(
                 delayed(run)(**kwargs, **run_kwargs)
@@ -71,5 +79,10 @@ def check_parallel_config(parallel_config_file, slurm_config_file, n_jobs):
         "Could not find `backend` specification in parallel_config file. "
         "Please specify it. See :ref:`parallel_run` for detailed description."
     )
+
+    backend = parallel_config['backend']
+    if backend in ('dask', 'submitit'):
+        print(f"Distributed run with backend: {backend}")
+        set_distributed_frontal()
 
     return parallel_config

@@ -77,6 +77,6 @@ def temp_benchmark(
             if not isinstance(config, dict):
                 raise ValueError("config should either be a string or a dict.")
             for fname, content in config.items():
-                (temp_path / fname).write_text(content)
+                (temp_path / fname).write_text(inspect.cleandoc(content))
 
         yield Benchmark(temp_path)

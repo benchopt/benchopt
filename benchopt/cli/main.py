@@ -15,9 +15,7 @@ from benchopt.utils.conda_env_cmd import create_conda_env
 from benchopt.utils.shell_cmd import _run_shell_in_conda_env
 from benchopt.utils.conda_env_cmd import get_benchopt_version_in_env
 from benchopt.utils.profiling import print_stats
-
 from benchopt.utils.parallel_backends import check_parallel_config
-from benchopt.utils.parallel_backends import set_distributed_frontal
 
 
 main = click.Group(
@@ -217,18 +215,14 @@ def run(config_file=None, **kwargs):
     # If env_name is False, the flag `--local` has been used (default) so
     # run in the current environment.
     if env_name == 'False':
-
-        parallel_config = check_parallel_config(parallel_config, slurm, n_jobs)
-
-        if parallel_config.get('backend', '') in ('dask', 'submitit'):
-            print("Distributed run")
-            set_distributed_frontal()
-
         from benchopt.runner import run_benchmark
 
         if do_profile:
             from benchopt.utils.profiling import use_profile
             use_profile()  # needs to be called before validate_solver_patterns
+
+        # Get the config for parallel runs
+        parallel_config = check_parallel_config(parallel_config, slurm, n_jobs)
 
         print("Loading objective, datasets and solvers...", end='', flush=True)
         # Check that the objective is installed or raise an error
