@@ -3,21 +3,9 @@ try:
     from submitit.helpers import as_completed
     from rich import progress
 
-    _SLURM_INSTALLED = True
+    _submitit_INSTALLED = True
 except ImportError:
-    _SLURM_INSTALLED = False
-
-
-_LAUNCHING_SLURM = False
-
-
-def set_slurm_launch():
-    global _LAUNCHING_SLURM
-    _LAUNCHING_SLURM = True
-
-
-def get_slurm_launch():
-    return _LAUNCHING_SLURM
+    _submitit_INSTALLED = False
 
 
 def get_slurm_executor(benchmark, config, timeout=100):
@@ -44,11 +32,11 @@ def run_on_slurm(
     all_runs
 ):
 
-    if not _SLURM_INSTALLED:
+    if not _submitit_INSTALLED:
         raise ImportError(
             "Benchopt needs submitit and rich to launch computation on a "
             "SLURM cluster. Please use `pip install submitit rich` to use "
-            "the --slurm option."
+            "the `submitit` backend."
         )
 
     executor = get_slurm_executor(

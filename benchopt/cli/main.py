@@ -15,7 +15,9 @@ from benchopt.utils.conda_env_cmd import create_conda_env
 from benchopt.utils.shell_cmd import _run_shell_in_conda_env
 from benchopt.utils.conda_env_cmd import get_benchopt_version_in_env
 from benchopt.utils.profiling import print_stats
-from benchopt.utils.slurm_executor import set_slurm_launch
+
+from benchopt.utils.parallel_backends import check_parallel_config
+from benchopt.utils.parallel_backends import set_distributed_frontal
 
 
 main = click.Group(
@@ -42,29 +44,6 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
                 ctx.get_parameter_source(var_name).name == 'DEFAULT'):
             cli_kwargs[var_name] = v
 
-    # XXX: remove in benchopt 1.7
-    if cli_kwargs['slurm'] is not None:
-        warnings.warn(
-            "`--slurm` is deprecated, use `--parallel-backend` instead. "
-            "The config file is similar but should include an extra argument "
-            "`backend : submitit` to select the submitit backend. "
-            "This will cause an error starting benchopt 1.7.",
-            DeprecationWarning
-        )
-        assert cli_kwargs['parallel_config'] is None, (
-            "Cannot use both `--slurm` and `--parallel-backend`. Only use the "
-            "latter as the former is deprecated."
-        )
-        cli_kwargs['parallel_config'] = cli_kwargs['slurm']
-
-    # Load parallel_config early to be able to inspect the backend
-    if cli_kwargs['parallel_config']:
-        with open(cli_kwargs['parallel_config'], "r") as f:
-            cli_kwargs['parallel_config'] = yaml.safe_load(f)
-        # XXX: remove in benchopt 1.7
-        if cli_kwargs['slurm'] is not None:
-            cli_kwargs['parallel_config']['backend'] = "submitit"
-
     return_names = [
         "benchmark",
         "solver",
@@ -80,6 +59,7 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
         "html",
         "n_jobs",
         "parallel_config",
+        "slurm",  # XXX: remove in benchopt 1.7
         "pdb",
         "profile",
         "env_name",
@@ -197,6 +177,7 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               "<BENCHMARK>/outputs/benchopt_run_<timestamp>.parquet."
               )
 def run(config_file=None, **kwargs):
+    print("Benchopt is running!")
     if config_file is not None:
         with open(config_file, "r") as f:
             config = yaml.safe_load(f)
@@ -206,7 +187,8 @@ def run(config_file=None, **kwargs):
     (
         benchmark, solver_names, forced_solvers, dataset_names,
         objective_filters, max_runs, n_repetitions, timeout, output, plot,
-        display, html, n_jobs, parallel_config, pdb, do_profile, env_name,
+        display, html, n_jobs, parallel_config, slurm, pdb, do_profile,
+        env_name,
     ) = _get_run_args(kwargs, config)
 
     try:
@@ -236,10 +218,11 @@ def run(config_file=None, **kwargs):
     # run in the current environment.
     if env_name == 'False':
 
-        print("Benchopt is running")
-        if parallel_config is not None:
-            print("Running on SLURM")
-            set_slurm_launch()
+        parallel_config = check_parallel_config(parallel_config, slurm, n_jobs)
+
+        if parallel_config.get('backend', '') in ('dask', 'submitit'):
+            print("Distributed run")
+            set_distributed_frontal()
 
         from benchopt.runner import run_benchmark
 
@@ -247,6 +230,7 @@ def run(config_file=None, **kwargs):
             from benchopt.utils.profiling import use_profile
             use_profile()  # needs to be called before validate_solver_patterns
 
+        print("Loading objective, datasets and solvers...", end='', flush=True)
         # Check that the objective is installed or raise an error
         objective = benchmark.get_benchmark_objective()
         objective.is_installed(raise_on_not_installed=True)
@@ -258,14 +242,14 @@ def run(config_file=None, **kwargs):
         benchmark.validate_solver_patterns(
             list(solver_names) + list(forced_solvers)
         )
+        print("ok")
 
         run_benchmark(
             benchmark, solver_names, forced_solvers,
             dataset_names=dataset_names, objective_filters=objective_filters,
             max_runs=max_runs, n_repetitions=n_repetitions, timeout=timeout,
             output=output, plot_result=plot, display=display, html=html,
-            n_jobs=n_jobs, parallel_config=parallel_config,
-            pdb=pdb
+            parallel_config=parallel_config, pdb=pdb
         )
 
         print_stats()  # print profiling stats (does nothing if not profiling)

@@ -252,8 +252,7 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                   dataset_names=None, objective_filters=None,
                   max_runs=10, n_repetitions=1, timeout=100,
                   plot_result=True, display=True, html=True, output="None",
-                  n_jobs=1, parallel_config=None,
-                  show_progress=True, pdb=False):
+                  parallel_config=None, show_progress=True, pdb=False):
     """Run full benchmark.
 
     Parameters
@@ -279,11 +278,9 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
         The number of repetitions to run. Defaults to 1.
     timeout : float
         The maximum duration in seconds of the solver run.
-    n_jobs : int
-        Maximal number of workers to use to run the benchmark in parallel.
-    parallel_config : Path | None
-        If not None, launch the job in parallel. The provided file serves to
-        configure the parallelism using ``joblib.parallel_backend``.
+    parallel_config : dict | None
+        If not None, launch the job in parallel. The provided config serves to
+        set up parallelism using ``joblib.parallel_backend`` or ``submitit``.
         See :ref:`parallel_run` for detailed description.
     plot_result : bool
         If set to True (default), generate the result plot and save them in
@@ -328,13 +325,8 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
     )
 
     results = parallel_run(
-<<<<<<< HEAD
         benchmark, run_one_solver, common_kwargs, all_runs,
-        config_file=slurm, n_jobs=n_jobs
-=======
-        run_one_solver, common_kwargs, all_runs,
-        config_file=parallel_config, n_jobs=n_jobs
->>>>>>> 189b7de (CLN simplify config handeling)
+        config_file=parallel_config
     )
 
     run_statistics = []
