@@ -1,5 +1,3 @@
-import yaml
-
 try:
     import submitit
     from submitit.helpers import as_completed
@@ -22,10 +20,7 @@ def get_slurm_launch():
     return _LAUNCHING_SLURM
 
 
-def get_slurm_executor(benchmark, slurm_config, timeout=100):
-
-    with open(slurm_config, "r") as f:
-        config = yaml.safe_load(f)
+def get_slurm_executor(benchmark, config, timeout=100):
 
     # If the job timeout is not specified in the config file, use 1.5x the
     # benchopt timeout. This value is a trade-off between helping the
@@ -43,7 +38,7 @@ def get_slurm_executor(benchmark, slurm_config, timeout=100):
 
 def run_on_slurm(
     benchmark,
-    slurm_config,
+    config,
     run_one_solver,
     common_kwargs,
     all_runs
@@ -57,7 +52,7 @@ def run_on_slurm(
         )
 
     executor = get_slurm_executor(
-        benchmark, slurm_config, common_kwargs["timeout"]
+        benchmark, config, common_kwargs["timeout"]
     )
     with executor.batch():
         tasks = [

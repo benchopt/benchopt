@@ -3,14 +3,13 @@ import inspect
 
 from datetime import datetime
 
-from joblib import Parallel, delayed
-
 from .callback import _Callback
 from .benchmark import _check_name_lists
 from .utils.sys_info import get_sys_info
 from .utils.files import uniquify_results
 from .utils.pdb_helpers import exception_handler
 from .utils.terminal_output import TerminalOutput
+from .utils.parallel_backends import parallel_run
 
 ##################################
 # Time one run of a solver
@@ -326,17 +325,10 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
         timeout=timeout, pdb=pdb
     )
 
-    if slurm is not None:
-        from .utils.slurm_executor import run_on_slurm
-        results = run_on_slurm(
-            benchmark, slurm, run_one_solver, common_kwargs,
-            all_runs
-        )
-    else:
-        results = Parallel(n_jobs=n_jobs)(
-            delayed(run_one_solver)(**common_kwargs, **kwargs)
-            for kwargs in all_runs
-        )
+    results = parallel_run(
+        benchmark, run_one_solver, common_kwargs, all_runs,
+        config_file=slurm, n_jobs=n_jobs
+    )
 
     run_statistics = []
     for curve in results:

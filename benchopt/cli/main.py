@@ -100,7 +100,7 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               "To include multiple datasets, use multiple `-d` options.",
               shell_complete=complete_datasets)
 @click.option('--n-jobs', '-j',
-              metavar="<int>", default=1, show_default=True, type=int,
+              metavar="<int>", default=None, show_default=True, type=int,
               help='Maximal number of workers to run the benchmark in '
               'parallel.')
 @click.option('--slurm',
