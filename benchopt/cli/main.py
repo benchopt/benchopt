@@ -42,6 +42,29 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
                 ctx.get_parameter_source(var_name).name == 'DEFAULT'):
             cli_kwargs[var_name] = v
 
+    # XXX: remove in benchopt 1.7
+    if cli_kwargs['slurm'] is not None:
+        warnings.warn(
+            "`--slurm` is deprecated, use `--parallel-backend` instead. "
+            "The config file is similar but should include an extra argument "
+            "`backend : submitit` to select the submitit backend. "
+            "This will cause an error starting benchopt 1.7.",
+            DeprecationWarning
+        )
+        assert cli_kwargs['parallel_config'] is None, (
+            "Cannot use both `--slurm` and `--parallel-backend`. Only use the "
+            "latter as the former is deprecated."
+        )
+        cli_kwargs['parallel_config'] = cli_kwargs['slurm']
+
+    # Load parallel_config early to be able to inspect the backend
+    if cli_kwargs['parallel_config']:
+        with open(cli_kwargs['parallel_config'], "r") as f:
+            cli_kwargs['parallel_config'] = yaml.safe_load(f)
+        # XXX: remove in benchopt 1.7
+        if cli_kwargs['slurm'] is not None:
+            cli_kwargs['parallel_config']['backend'] = "submitit"
+
     return_names = [
         "benchmark",
         "solver",
@@ -56,8 +79,7 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
         "display",
         "html",
         "n_jobs",
-        "parallel_backend",
-        "slurm",
+        "parallel_config",
         "pdb",
         "profile",
         "env_name",
@@ -134,7 +156,7 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               help="Run the computation using submitit on a SLURM cluster. "
               "The YAML file provided to this argument is used to setup the "
               "SLURM job. See :ref:`slurm_run` for a detailed description.")
-@click.option("--parallel-backend",
+@click.option("--parallel-config",
               metavar="<parallel_config.yml>", default=None,
               help="Run in parallel with the specified backend configuration. "
               "The YAML file provided to this argument is used to setup the"
@@ -184,8 +206,7 @@ def run(config_file=None, **kwargs):
     (
         benchmark, solver_names, forced_solvers, dataset_names,
         objective_filters, max_runs, n_repetitions, timeout, output, plot,
-        display, html, n_jobs, parallel_backend, slurm, pdb, do_profile,
-        env_name,
+        display, html, n_jobs, parallel_config, pdb, do_profile, env_name,
     ) = _get_run_args(kwargs, config)
 
     try:
@@ -216,7 +237,7 @@ def run(config_file=None, **kwargs):
     if env_name == 'False':
 
         print("Benchopt is running")
-        if slurm is not None:
+        if parallel_config is not None:
             print("Running on SLURM")
             set_slurm_launch()
 
@@ -243,7 +264,7 @@ def run(config_file=None, **kwargs):
             dataset_names=dataset_names, objective_filters=objective_filters,
             max_runs=max_runs, n_repetitions=n_repetitions, timeout=timeout,
             output=output, plot_result=plot, display=display, html=html,
-            n_jobs=n_jobs, slurm=slurm, parallel_backend=parallel_backend,
+            n_jobs=n_jobs, parallel_config=parallel_config,
             pdb=pdb
         )
 
@@ -313,10 +334,8 @@ def run(config_file=None, **kwargs):
     parallel_args = ""
     if n_jobs:
         parallel_args += f"--n-jobs {n_jobs} "
-    if slurm:
-        parallel_args += rf"--slurm {slurm} "
-    if parallel_backend:
-        parallel_args += rf"--parallel-backend {parallel_backend} "
+    if parallel_config:
+        parallel_args += rf"--parallel-backend {parallel_config} "
     cmd = (
         f"benchopt run --local {benchmark.benchmark_dir} "
         f"{solvers_option} {forced_solvers_option} "
