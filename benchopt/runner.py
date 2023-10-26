@@ -326,7 +326,7 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
 
     results = parallel_run(
         benchmark, run_one_solver, common_kwargs, all_runs,
-        config_file=parallel_config
+        config=parallel_config
     )
 
     run_statistics = []
