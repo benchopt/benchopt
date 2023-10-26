@@ -7,6 +7,7 @@ Advanced usage
 This page intends to list some advanced functionality
 to make it easier to use the benchmark.
 
+.. _parallel_run:
 .. _slurm_run:
 
 Running the benchmark on a SLURM cluster
@@ -101,7 +102,7 @@ we get
 .. _sampling_strategy:
 
 Changing the strategy to grow the computational budget (:code:`stop_val`)
-------------------------------------------------------------------------
+-------------------------------------------------------------------------
 
 Benchopt varies the computational budget by varying either the number
 of iterations or the tolerance given to the method. The default policy is

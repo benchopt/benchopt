@@ -16,8 +16,8 @@ def is_distributed_frontal():
 
 
 def parallel_run(benchmark, run, kwargs, all_runs, config):
-    backend = config.pop('backend')
-
+    config = config or {}
+    backend = config.pop('backend', 'loky')
     if backend == 'submitit':
         from .slurm_executor import run_on_slurm
         results = run_on_slurm(benchmark, config, run, kwargs, all_runs)
