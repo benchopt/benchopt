@@ -8,7 +8,7 @@ except ImportError:
     _submitit_INSTALLED = False
 
 
-def get_slurm_executor(benchmark, config, timeout=100):
+def get_slurm_executor(benchmark, config, timeout):
 
     # If the job timeout is not specified in the config file, use 1.5x the
     # benchopt timeout. This value is a trade-off between helping the
@@ -24,13 +24,7 @@ def get_slurm_executor(benchmark, config, timeout=100):
     return executor
 
 
-def run_on_slurm(
-    benchmark,
-    config,
-    run_one_solver,
-    common_kwargs,
-    all_runs
-):
+def run_on_slurm(benchmark, config, run_one_solver, common_kwargs, all_runs):
 
     if not _submitit_INSTALLED:
         raise ImportError(
@@ -40,7 +34,7 @@ def run_on_slurm(
         )
 
     executor = get_slurm_executor(
-        benchmark, config, common_kwargs["timeout"]
+        benchmark, config, timeout=common_kwargs["timeout"]
     )
     with executor.batch():
         tasks = [

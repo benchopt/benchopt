@@ -19,7 +19,7 @@ def parallel_run(benchmark, run, kwargs, all_runs, config):
     backend = config.pop('backend')
 
     if backend == 'submitit':
-        from .utils.parallel_backends.slurm_executor import run_on_slurm
+        from .slurm_executor import run_on_slurm
         results = run_on_slurm(benchmark, config, run, kwargs, all_runs)
     else:
         with parallel_config(backend, **config):
@@ -41,16 +41,16 @@ def check_parallel_config(parallel_config_file, slurm_config_file, n_jobs):
     """
     # XXX: remove in benchopt 1.7
     if slurm_config_file is not None:
+        assert parallel_config_file is None, (
+            "Cannot use both `--slurm` and `--parallel-backend`. Only use the "
+            "latter as the former is deprecated."
+        )
         warnings.warn(
             "`--slurm` is deprecated, use `--parallel-backend` instead. "
             "The config files are similar but the new one should include the "
             "extra argument `backend : submitit` to select the submitit "
             "backend. This will cause an error starting benchopt 1.7.",
             DeprecationWarning
-        )
-        assert parallel_config_file is None, (
-            "Cannot use both `--slurm` and `--parallel-backend`. Only use the "
-            "latter as the former is deprecated."
         )
         parallel_config_file = slurm_config_file
 

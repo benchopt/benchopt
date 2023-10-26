@@ -1,6 +1,7 @@
 import pytest
 import tempfile
 
+import benchopt
 from benchopt.cli.main import run
 from benchopt.cli.main import test as _cmd_test
 from benchopt.utils.temp_benchmark import temp_benchmark
@@ -250,7 +251,7 @@ def test_pre_run_hook():
         def run(self, n_iter):
             assert self._pre_run_hook_n_iter == n_iter
 
-        def get_result(self, **data):
+        def get_result(self):
             return {'beta': np.zeros(self.n_features)}
     """
 
@@ -271,3 +272,48 @@ def test_pre_run_hook():
 
         # Make sure warmup is called exactly once
         out.check_output("3 passed, 1 skipped, 7 deselected", repetition=1)
+
+
+# XXX: remove in benchopt 1.7
+def test_slurm_deprecation():
+    assert benchopt.__version__ < "1.7"
+    pytest.importorskip("submitit")
+
+    slurm_config = """
+    timeout_min: 1
+    """
+    solver1 = """from benchopt import BaseSolver
+    import numpy as np
+
+    class Solver(BaseSolver):
+        name = 'solver1'
+        sampling_strategy = 'iteration'
+        def set_objective(self, X, y, lmbd): self.n_features = X.shape[1]
+        def run(self, n_iter): pass
+        def get_result(self):
+            return {'beta': np.zeros(self.n_features)}
+    """
+
+    with temp_benchmark(
+            solvers=[solver1],
+            config={'slurm.yml': slurm_config}
+    ) as benchmark:
+        slurm_config_file = benchmark.benchmark_dir / "slurm.yml"
+        with CaptureRunOutput():
+            msg = "Cannot use both `--slurm` and `--parallel-backend`."
+            with pytest.raises(AssertionError, match=msg):
+                run([
+                    str(benchmark.benchmark_dir),
+                    *'-s solver1 -d test-dataset -n 0 -r 5 --no-plot '
+                    f'-o dummy*[reg=0.5] --slurm {slurm_config_file} '
+                    f'--parallel-config {slurm_config_file}'.split()
+                ], standalone_mode=False)
+
+        with CaptureRunOutput():
+            msg = "`--slurm` is deprecated, use `--parallel-backend` instead."
+            with pytest.warns(DeprecationWarning, match=msg):
+                run([
+                    str(benchmark.benchmark_dir),
+                    *'-s solver1 -d test-dataset -n 0 -r 5 --no-plot '
+                    f'-o dummy*[reg=0.5] --slurm {slurm_config_file}'.split()
+                ], standalone_mode=False)
