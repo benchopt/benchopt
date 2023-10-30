@@ -466,11 +466,3 @@ class SingleRunCriterion(StoppingCriterion):
 
     def check_convergence(self, cost_curve):
         return True, 1
-
-
-class NoCriterion(StoppingCriterion):
-    """Run the solvers for a number of time fixed by max_iter and timeout.
-    """
-
-    def check_convergence(self, cost_curve):
-        return False, 0
