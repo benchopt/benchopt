@@ -7,7 +7,6 @@ Advanced usage
 This page intends to list some advanced functionality
 to make it easier to use the benchmark.
 
-.. _parallel_run:
 .. _slurm_run:
 
 Running the benchmark on a SLURM cluster

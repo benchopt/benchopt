@@ -5,6 +5,8 @@ from joblib import Parallel, delayed
 
 _DISTRIBUTED_FRONTAL = False
 
+DISTRIBUTED_BACKENDS = ('loky', 'dask', 'submitit')
+
 
 def set_distributed_frontal():
     global _DISTRIBUTED_FRONTAL
@@ -18,18 +20,16 @@ def is_distributed_frontal():
 def parallel_run(benchmark, run, kwargs, all_runs, config):
     config = config or {}
     backend = config.pop('backend', 'loky')
+    assert backend in DISTRIBUTED_BACKENDS, (
+        f"Unknown backend {backend}. Valid backends: {DISTRIBUTED_BACKENDS}."
+    )
     if backend == 'submitit':
         from .slurm_executor import run_on_slurm
         results = run_on_slurm(benchmark, config, run, kwargs, all_runs)
     else:
         if backend == 'dask':
-            # Setup the client with `dask_*` parameters
-            client_config = {
-                k[5:]: config.pop(k)
-                for k, v in list(config.items()) if k.startswith('dask_')
-            }
-            from distributed import Client
-            config['client'] = Client(**client_config)
+            from .dask_backend import check_dask_config
+            config = check_dask_config(config, backend)
         with parallel_config(backend, **config):
             results = Parallel()(
                 delayed(run)(**kwargs, **run_kwargs)
