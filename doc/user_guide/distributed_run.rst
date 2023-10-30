@@ -8,6 +8,7 @@ Benchopt allows to run benchmark computation in parallel with various backends.
 This page describes how to use the different backends.
 
 .. _joblib_backend:
+
 Running the benchmark in parallel with ``joblib``
 -------------------------------------------------
 
@@ -44,6 +45,7 @@ exactly as if you were running the computation sequentially, as long as you have
 a shared file-system between the nodes used for the computations.
 
 .. _slurm_backend:
+
 Running on SLURM with the submitit backend
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -76,6 +78,7 @@ Note that the logs of each benchmark run can be found in ``./benchopt_run/``.
 
 
 .. _dask_backend:
+
 Running computations on a remote Cluster using ``dask``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
