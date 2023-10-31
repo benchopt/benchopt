@@ -30,7 +30,7 @@ To install the necessary dependencies, please run the following command for the 
 .. prompt:: bash $
 
     pip install benchopt[dask]
-    pip install benchopt[distributed]
+    pip install benchopt[submitit]
 
 Using the ``--parallel-config`` option for ``benchopt run``, one can pass a config file used to setup the distributed jobs.
 This file is a YAML file that can contain a ``backend`` key to select the used distributed backend and any key to be passed to setup specific information.
