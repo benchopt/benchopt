@@ -5,6 +5,18 @@ What's new
 
 .. currentmodule:: benchopt
 
+.. _changes_1.6:
+
+Version 1.6 - In development
+----------------------------
+
+ENH
+~~~
+
+- Add a parallel backend system for ``benchopt run`` to setup distributed
+  run with ``dask`` and ``submitit``. See :ref:`parallel_run` for details.
+  By `Thomas Moreau`_ (:gh:`673`).
+
 .. _changes_1_5_1:
 
 Version 1.5.1 - 22/09/2023
