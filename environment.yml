@@ -8,4 +8,4 @@ dependencies:
   - compilers
   - pip
   - pip:
-    - -e .[coiled]
+    - benchopt
