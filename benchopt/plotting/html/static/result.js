@@ -239,15 +239,19 @@ const get_lim_plotly = (lim, ax) =>{
   };
   return lim;
 };
-const get_lim_config = (lim, ax) =>{
+
+const get_lim_config = (lim, ax) => {
   if(getScale()[ax + 'axis'] == 'log'){
     lim = [Math.pow(10, lim[0]), Math.pow(10, lim[1])]
   };
   return lim;
 };
 
+const setConfig = (config_item) => {
+  if (!config_item) {
+    return;
+  }
 
-const setConfig = (config_item) =>{
   // Retrieve the name of the config.
   let config_name = config_item.textContent;
   // Select on mobile version
