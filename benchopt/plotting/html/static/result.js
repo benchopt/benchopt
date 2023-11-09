@@ -151,7 +151,7 @@ const getScatterCurves = () => {
   let xaxisType = state().xaxis_type;
 
   getSolvers().forEach(solver => {
-    solverSamplingStrategy = data(solver)['sampling_strategy'];
+    const solverSamplingStrategy = data(solver)['sampling_strategy'];
 
     // plot only solvers that were stopped using xaxis type
     // plot all solver if xaxis type is `time`
@@ -159,7 +159,7 @@ const getScatterCurves = () => {
       return
     }
 
-    ScatterXaxisProperty = xaxisType === "Time" ? 'x' : 'stop_val';
+    const ScatterXaxisProperty = xaxisType === "Time" ? 'x' : 'stop_val';
 
     curves.push({
       type: 'scatter',
