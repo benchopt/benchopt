@@ -490,7 +490,13 @@ const data = (solver = null) => {
 
 const getSolvers = () => Object.keys(data().solvers);
 
-const isBarChart = () => state().plot_kind === 'bar_chart';
+const isChart = chart => {
+  if (typeof chart === 'string' || chart instanceof String) {
+    chart = [chart]
+  }
+
+  return chart.includes(state().plot_kind);
+}
 
 const isVisible = solver => !state().hidden_solvers.includes(solver);
 
