@@ -20,6 +20,7 @@ const NON_CONVERGENT_COLOR = 'rgba(0.8627, 0.8627, 0.8627)'
  *   - scale (string)
  *   - with_quantiles (boolean)
  *   - xaxis_type (string)
+ *   - yaxis_type (string)
  *   - hidden_solvers (array)
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
@@ -165,6 +166,57 @@ const getBarData = () => {
 
   return barData;
 };
+
+const getBoxplotData = () => {
+  return state('xaxis_type') === 'Solver' ? getSolverBoxplotData() : getIterationBoxplotData();
+}
+
+const getSolverBoxplotData = () => {
+  const boxplotData = [];
+
+  getSolvers().forEach(solver => {
+    boxplotData.push({
+      y: state("yaxis_type") === 'time' ? data(solver).boxplot.by_solver.final_times : data(solver).boxplot.by_solver.final_objective_value,
+      type: 'box',
+      name: solver,
+    });
+  });
+
+  return boxplotData
+}
+
+const getIterationBoxplotData = () => {
+  const boxplotData = [];
+
+  getSolvers().forEach(solver => {
+
+    // Build x
+    let x = [];
+    const iterations = data().solvers[solver].boxplot.by_iteration.times;
+
+    for (let iteration = 0; iteration < iterations.length; iteration++) {
+      for (let repetition = 0; repetition < iterations[iteration].length; repetition++) {
+        x.push(iteration)
+      }
+    }
+
+    let y = [];
+    let values = state("yaxis_type") === 'time' ? data(solver).boxplot.by_iteration.times : data(solver).boxplot.by_iteration.objective;
+    for (let iteration = 0; iteration < iterations.length; iteration++) {
+      for (let repetition = 0; repetition < iterations[iteration].length; repetition++) {
+        y.push(values[iteration][repetition])
+      }
+    }
+
+    boxplotData.push({
+      y: y,
+      x: x,
+      type: 'box',
+    });
+  });
+
+  return boxplotData
+}
 
 /**
  * Gives the data formatted for plotlyJS scatter chart.
@@ -329,7 +381,6 @@ const setConfig = (config_item) => {
     renderPlot();
   }
 };
-
 
 const saveView = () => {
   let n_configs = Object.keys(window.metadata.plot_configs).length;
@@ -516,6 +567,7 @@ const renderSidebar = () => {
   renderObjectiveColumnSelector();
   renderScaleSelector();
   renderXAxisTypeSelector();
+  renderYAxisTypeSelector();
   renderWithQuantilesToggle();
   mapSelectorsToState();
 }
@@ -585,6 +637,17 @@ const renderXAxisTypeSelector = () => {
     setState({xaxis_type: 'Solver'});
   } else if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve']) && state().xaxis_type === 'Solver') {
     setState({xaxis_type: 'Time'});
+  }
+};
+
+/**
+ * Render yaxis type selector
+ */
+const renderYAxisTypeSelector = () => {
+  if (isChart('boxplot_chart')) {
+    show(document.querySelectorAll("#yaxis-type-form-group"), 'block');
+  } else {
+    hide(document.querySelectorAll("#yaxis-type-form-group"));
   }
 };
 
@@ -809,7 +872,32 @@ const getBarChartLayout = () => {
 
   return layout;
 };
+
+const getBoxplotChartLayout = () => {
+  const layout = {
+    autosize: !isSmallScreen(),
+    modebar: {
+      orientation: 'v',
+    },
+    yaxis: {
+      type: 'log',
+      title: getYLabel(),
+      tickformat: '.1e',
+      gridcolor: '#ffffff',
+    },
+    xaxis: {
+      tickangle: -60,
+    },
+    showlegend: false,
+    title: `${state().objective}<br />Data: ${state().dataset}`,
+    plot_bgcolor: '#e5ecf6',
   };
+
+  if (isSmallScreen()) {
+    layout.width = 900;
+    layout.height = window.screen.availHeight - 200;
+    layout.dragmode = false;
+  }
 
   return layout;
 };
@@ -824,6 +912,10 @@ const getYLabel = () => {
       return 'F(x) - F(x*) / F(x0) - F(x*)'
     case 'bar_chart':
       return 'Time [sec]';
+    case 'boxplot_chart':
+      return state('yaxis_type') === 'time' ?
+          'Time [sec]'
+          : (state('xaxis_type') === "Solver" ? "Final " : "") + state('objective_column');
     default:
       return 'unknown';
   }

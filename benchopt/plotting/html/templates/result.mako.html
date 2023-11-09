@@ -108,7 +108,16 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="flex items-center justify-between mt-8 px-8">
+                        <div id="yaxis-type-form-group" class="mt-8 px-8">
+                            <label for="change_yaxis_type" class="block text-sm font-medium text-white">Y-axis</label>
+                            <div class="mt-1 rounded-md shadow-sm">
+                                <select id="change_yaxis_type" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({yaxis_type: this.value})">
+                                    <option value="objective_column">Objective metric</option>
+                                    <option value="time">Time</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="change-shades-form-group" class="flex items-center justify-between mt-8 px-8">
                             <div class="block text-sm font-medium text-white">Quantiles</div>
                             <label class="block switch">
                                 <input id="change_shades" type="checkbox" checked onchange="setState({with_quantiles: this.checked})">
@@ -260,7 +269,16 @@
                                     </select>
                                 </div>
                             </div>
-                            <div class="flex items-center justify-between mt-8 px-8">
+                            <div id="yaxis-type-form-group" class="mt-8 px-8">
+                                <label for="change_yaxis_type_mobile" class="block text-sm font-medium text-white">Y-axis</label>
+                                <div class="mt-1 rounded-md shadow-sm">
+                                    <select id="change_yaxis_type_mobile" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({yaxis_type: this.value})">
+                                        <option value="objective_column">Objective metric</option>
+                                        <option value="time">Time</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div id="change-shades-form-group" class="flex items-center justify-between mt-8 px-8">
                                 <div class="block text-sm font-medium text-white">Quantiles</div>
                                 <label class="block switch">
                                     <input id="change_shades" type="checkbox" checked onchange="setState({with_quantiles: this.checked})">
@@ -486,6 +504,7 @@
                     'scale': document.getElementById('change_scaling').value,
                     'with_quantiles': document.getElementById('change_shades').checked,
                     'xaxis_type':  document.getElementById('change_xaxis_type').value || "Time",
+                    'yaxis_type':  document.getElementById('change_xaxis_type').value || "Time",
                     'hidden_solvers': []
                 });
                 const plot_configs = document.getElementsByClassName('view');
