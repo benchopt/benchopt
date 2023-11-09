@@ -6,8 +6,8 @@ from ..utils.checkers import check_random_state
 
 
 def make_correlated_data(
-        n_samples=100, n_features=50, n_tasks=1, rho=0.6, snr=3,
-        w_true=None, density=0.2, X_density=1, random_state=None):
+        n_samples=100, n_features=50, n_tasks=1, rho=0.6, snr=3.0,
+        w_true=None, density=0.2, X_density=1.0, random_state=None):
     r"""Generate a linear regression with decaying correlation for the design
     matrix :math:`\rho^{|i-j|}`.
 

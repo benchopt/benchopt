@@ -4,7 +4,7 @@ parallel = True
 source =
     benchopt
 omit =
-    benchopt/tests/*
+    */tests/*
     setup.py
 
 [report]

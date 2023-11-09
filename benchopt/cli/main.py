@@ -54,13 +54,12 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
         "n_jobs",
         "slurm",
         "plot",
+        "display",
         "html",
         "pdb",
         "profile",
         "env_name",
         "output",
-        "objective_filter",
-        "old_objective_filter",
     ]
     return [cli_kwargs[name] for name in return_names]
 
@@ -73,17 +72,11 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
 )
 @click.argument('benchmark', default=Path.cwd(), type=click.Path(exists=True),
                 shell_complete=complete_benchmarks)
-@click.option('--objective-filter',
-              metavar='<objective_filter>', multiple=True, type=str,
-              help="Deprecated alias for `--objective`.")
 @click.option('--objective', '-o',
               metavar='<objective_filter>', multiple=True, type=str,
               help="Select the objective based on its parameters, with the "
               "syntax `objective[parameter=value]`. This can be used to only "
               "include one set of parameters. ")
-@click.option('--old-objective-filter', '-p',
-              multiple=True, type=str,
-              help="Deprecated alias for --objective_filter/-o.")
 @click.option('--solver', '-s',
               metavar="<solver_name>", multiple=True, type=str,
               help="Include <solver_name> in the benchmark. By default, all "
@@ -120,20 +113,26 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               help='Maximal number of runs for each solver. This corresponds '
               'to the number of points in the time/accuracy curve.')
 @click.option('--n-repetitions', '-r',
-              metavar='<int>', default=5, show_default=True, type=int,
+              metavar='<int>', default=1, show_default=True, type=int,
               help='Number of repetitions that are averaged to estimate the '
               'runtime.')
 @click.option('--timeout',
-              metavar="<int>", default=100, show_default=True, type=int,
-              help='Timeout a solver when run for more than <timeout> seconds')
+              default=100, show_default=True, type=str,
+              help='Stop a solver when run for more than <timeout> seconds.'
+              ' The syntax 10h or 10m can be used to denote 10 hours or '
+              'minutes respectively.')
 @click.option('--config', 'config_file', default=None,
               shell_complete=complete_config_files,
               help="YAML configuration file containing benchmark options.")
 @click.option('--plot/--no-plot', default=True,
-              help="Whether or not to plot the results. Default is True.")
+              help="Whether or not to create plots from the results. "
+              "Default is True.")
+@click.option('--display/--no-display', default=True,
+              help="Whether or not to display the plot on the screen. "
+              "Default is True.")
 @click.option('--html/--no-html', default=True,
-              help="Whether to display the plot as HTML report or matplotlib"
-              "figures, default is True.")
+              help="If set to True (default), render the results as an HTML "
+              "page, otherwise create matplotlib figures, saved as PNG.")
 @click.option('--pdb',
               is_flag=True,
               help="Launch a debugger if there is an error. This will launch "
@@ -175,30 +174,34 @@ def run(config_file=None, **kwargs):
     else:
         config = {}
 
-    # XXX - Remove old and deprecated objective filters in version 1.3
     (
         benchmark, solver_names, forced_solvers, dataset_names,
         objective_filters, max_runs, n_repetitions, timeout, n_jobs, slurm,
-        plot, html, pdb, do_profile, env_name, output,
-        deprecated_objective_filters, old_objective_filters
+        plot, display, html, pdb, do_profile, env_name, output
     ) = _get_run_args(kwargs, config)
 
-    if len(old_objective_filters):
-        warnings.warn(
-            'Using the -p option is deprecated, use -o instead',
-            FutureWarning,
-        )
-        objective_filters = old_objective_filters
-
-    if len(deprecated_objective_filters):
-        warnings.warn(
-            'Using the --objective-filters option is deprecated, '
-            'use --objective instead', FutureWarning
-        )
-        objective_filters = deprecated_objective_filters
+    try:
+        timeout = int(float(timeout))
+    except ValueError:  # already under string format
+        import pandas as pd
+        timeout = pd.to_timedelta(timeout).total_seconds()
 
     # Create the Benchmark object
     benchmark = Benchmark(benchmark)
+
+    if benchmark.min_version is not None:
+        from packaging.version import parse
+        from benchopt import __version__
+
+        # Avoid dev versions
+        normalized_version = parse(parse(__version__).base_version)
+        if normalized_version < parse(benchmark.min_version):
+            raise RuntimeError(
+                f"benchopt version {__version__} is too old to run this  "
+                f"benchmark, version {benchmark.min_version} is required. "
+                "Please update benchopt with `pip install -U benchopt` "
+                "for this benchmark."
+            )
 
     # If env_name is False, the flag `--local` has been used (default) so
     # run in the current environment.
@@ -215,6 +218,10 @@ def run(config_file=None, **kwargs):
             from benchopt.utils.profiling import use_profile
             use_profile()  # needs to be called before validate_solver_patterns
 
+        # Check that the objective is installed or raise an error
+        objective = benchmark.get_benchmark_objective()
+        objective.is_installed(raise_on_not_installed=True)
+
         # Check that the dataset/solver patterns match actual dataset
         benchmark.validate_dataset_patterns(dataset_names)
         benchmark.validate_objective_filters(objective_filters)
@@ -229,8 +236,8 @@ def run(config_file=None, **kwargs):
             objective_filters=objective_filters,
             max_runs=max_runs, n_repetitions=n_repetitions,
             timeout=timeout, n_jobs=n_jobs, slurm=slurm,
-            plot_result=plot, html=html, pdb=pdb,
-            output=output
+            plot_result=plot, display=display, html=html,
+            pdb=pdb, output=output
         )
 
         print_stats()  # print profiling stats (does nothing if not profiling)
@@ -304,6 +311,7 @@ def run(config_file=None, **kwargs):
         rf"{solvers_option} {forced_solvers_option} "
         rf"{datasets_option} {objective_option} "
         rf"{'--plot' if plot else '--no-plot'} "
+        rf"{'--display' if display else '--no-display'} "
         rf"{'--html' if html else '--no-html'} "
         rf"{'--pdb' if pdb else ''} "
         rf"--output {output}"
@@ -391,7 +399,6 @@ def install(
 
     # Check that the dataset/solver patterns match actual dataset
     benchmark = Benchmark(benchmark)
-    print(f"Installing '{benchmark.name}' requirements")
     benchmark.validate_dataset_patterns(dataset_names)
     benchmark.validate_solver_patterns(solver_names)
 
@@ -406,6 +413,7 @@ def install(
             "'benchopt install'."
         )
 
+    print(f"Installing '{benchmark.name}' requirements")
     # If env_name is False (default), installation in the current environment.
     if env_name == 'False':
         env_name = None
@@ -453,8 +461,7 @@ def install(
 @main.command(
     help="Test a benchmark for benchopt. The benchmark must feature a "
     "simulated dataset to test for all solvers. For more info about the "
-    "simulated dataset configurations, see"
-    "benchopt.github.io/how.html#example-of-parametrized-simulated-dataset",
+    "benchmark tests configuration and requirements, see :ref:`test_config`.",
     context_settings=dict(ignore_unknown_options=True)
 )
 @click.argument('benchmark', default=Path.cwd(), type=click.Path(exists=True),
@@ -480,7 +487,7 @@ def test(benchmark, env_name, pytest_args):
 
     env_option = ''
     if env_name is not None:
-        create_conda_env(env_name, with_pytest=True)
+        create_conda_env(env_name, pytest=True)
         if _run_shell_in_conda_env("pytest --version", env_name=env_name) != 0:
             raise ModuleNotFoundError(
                 f"pytest is not installed in conda env {env_name}.\n"

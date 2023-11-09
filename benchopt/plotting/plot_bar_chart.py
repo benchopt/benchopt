@@ -1,7 +1,7 @@
 import numpy as np
 
-from .helpers import _color_palette
 from .helpers_compat import get_figure, _make_bars
+from .plot_objective_curve import get_solver_style
 
 PLOTLY_GRAY = (.8627, .8627, .8627)
 
@@ -30,7 +30,7 @@ def plot_bar_chart(df, obj_col='objective_value', plotly=False):
 
     eps = 1e-6
     width = 1 / (n_solvers + 2)
-    colors = _color_palette(n_solvers)
+    colors = []
 
     height_list = []
     ticks_list = []
@@ -38,6 +38,8 @@ def plot_bar_chart(df, obj_col='objective_value', plotly=False):
     fig = get_figure(plotly)
     c_star = df[obj_col].min() + eps
     for i, solver_name in enumerate(solver_names):
+        col, _ = get_solver_style(solver_name, plotly=False)
+        colors.append(col)
         xi = (i + 1.5) * width
         ticks_list.append((xi, solver_name))
         df_ = df[df['solver_name'] == solver_name]

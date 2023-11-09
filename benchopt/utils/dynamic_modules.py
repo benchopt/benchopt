@@ -2,6 +2,7 @@
 """
 import sys
 import hashlib
+import warnings
 import importlib
 from pathlib import Path
 
@@ -29,8 +30,8 @@ def _get_module_from_file(module_filename, benchmark_dir=None):
             package_name, module_filename
         )
         module = importlib.util.module_from_spec(spec)
-        sys.modules[package_name] = module
         spec.loader.exec_module(module)
+        sys.modules[package_name] = module
     return module
 
 
@@ -62,9 +63,21 @@ def _load_class_from_module(module_filename, class_name, benchmark_dir):
 
     # Store the info to easily reload the class
     klass._module_filename = module_filename.resolve()
-    klass._import_ctx = getattr(
-            module, 'import_ctx', safe_import_context()
-    )
+
+    klass._import_ctx = getattr(module, 'import_ctx', None)
+    if klass._import_ctx is None:
+        for var_name in dir(module):
+            var = getattr(module, var_name)
+            if isinstance(var, safe_import_context):
+                klass._import_ctx = var
+                warnings.warn(
+                    "Import contexts should preferably be named import_ctx, "
+                    f"got {var_name}.",  UserWarning
+                )
+                break
+        else:
+            klass._import_ctx = safe_import_context()
+
     klass._benchmark_dir = benchmark_dir.resolve()
     return klass
 

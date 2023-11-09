@@ -1,8 +1,8 @@
 import time
 import math
 
-# Possible stop strategies
-STOPPING_STRATEGIES = {'iteration', 'tolerance', 'callback'}
+# Possible curve sampling strategies
+SAMPLING_STRATEGIES = ['iteration', 'tolerance', 'callback']
 
 EPS = 1e-10
 PATIENCE = 3
@@ -18,14 +18,29 @@ RHO = 1.5
 RHO_INC = 1.2  # multiplicative update if rho is too small
 
 
+COMMON_ARGS_DOC = """
+    strategy : str in {'iteration', 'tolerance', 'callback'}
+        How the different precision solvers are called. Can be one of:
+        - ``'iteration'``: call the run method with max_iter number increasing
+        logarithmically to get more an more precise points.
+        - ``'tolerance'``: call the run method with tolerance decreasing
+        logarithmically to get more and more precise points.
+        - ``'callback'``: call the run method with a callback that will compute
+        the objective function on a logarithmic scale. After each iteration,
+        the callback should be called with the current iterate solution.
+    key_to_monitor : str (default: 'objective_value')
+        The objective to check for tracking progress.
+"""
+
+
 class StoppingCriterion():
-    """Class to check if we need to stop an algorithm.
+    f"""Class to check if we need to stop an algorithm.
 
     This base class will check for the timeout and the max_run.
     It should be sub-classed to check for the convergence of the algorithm.
 
     This class also handles the detection of diverging solvers and prints the
-    progress if given a ``prgress_str``.
+    progress if given a ``progress_str``.
 
     Instances of this class should only be created with class method
     `cls.get_runner_instance`, to make sure the class holds the proper
@@ -40,29 +55,22 @@ class StoppingCriterion():
     Parameters
     ----------
     **kwargs : dict
-        All parameters passed when instanciating the StoppingCriterion. This
+        All parameters passed when instantiating the StoppingCriterion. This
         will be used to re-create the criterion with extra arguments in the
-        runner.
-    strategy : str in {'iteration', 'tolerance', 'callback'}
-        How the different precision solvers are called. Can be one of:
-        - ``'iteration'``: call the run method with max_iter number increasing
-        logarithmically to get more an more precise points.
-        - ``'tolerance'``: call the run method with tolerance deacreasing
-        logarithmically to get more and more precise points.
-        - ``'callback'``: call the run method with a callback that will compute
-        the objective function on a logarithmic scale. After each iteration,
-        the callback should be called with the current iterate solution.
+        runner.{COMMON_ARGS_DOC}
     """
     kwargs = None
 
-    def __init__(self, strategy=None, **kwargs):
+    def __init__(self, strategy=None, key_to_monitor='objective_value',
+                 **kwargs):
 
-        assert strategy in STOPPING_STRATEGIES, (
-            f"strategy should be in {STOPPING_STRATEGIES}. Got '{strategy}'."
+        assert strategy in SAMPLING_STRATEGIES, (
+            f"strategy should be in {SAMPLING_STRATEGIES}. Got '{strategy}'."
         )
 
         self.kwargs = kwargs
         self.strategy = strategy
+        self.key_to_monitor = key_to_monitor
 
     def get_runner_instance(self, max_runs=1, timeout=None, output=None,
                             solver=None):
@@ -80,7 +88,7 @@ class StoppingCriterion():
             Object to format string to display the progress of the solver.
         solver : BaseSolver
             The solver for which this stopping criterion is called. Used to get
-            overridden ``stopping_strategy`` and ``get_next``.
+            overridden ``sampling_strategy`` and ``get_next``.
 
         Returns
         -------
@@ -100,15 +108,18 @@ class StoppingCriterion():
             )
 
         # Get strategy from solver
-        strategy = solver._solver_strategy
-        assert strategy in STOPPING_STRATEGIES, (
-            f"stopping_strategy should be in {STOPPING_STRATEGIES}. "
+        strategy = self.strategy
+        if solver is not None:
+            strategy = solver._solver_strategy
+        assert strategy in SAMPLING_STRATEGIES, (
+            f"sampling_strategy should be in {SAMPLING_STRATEGIES}. "
             f"Got '{strategy}'."
         )
 
         # Create a new instance of the class
         stopping_criterion = self.__class__(
-            **self.kwargs, strategy=strategy
+            strategy=strategy, key_to_monitor=self.key_to_monitor,
+            **self.kwargs,
         )
 
         # Set stopping criterion parameters depending on run parameters
@@ -120,17 +131,18 @@ class StoppingCriterion():
 
         # Override get_next_stop_val if ``get_next`` is implemented for solver.
         if hasattr(solver, 'get_next'):
-            assert (
-                callable(solver.get_next)
-                # and type(solver.get_next) == staticmethod
-            ), "if defined, get_next should be a static method of the solver."
+            if not callable(solver.get_next):
+                raise TypeError(
+                    f"`get_next` of Solver in {solver.__module__} "
+                    "must be callable."
+                )
+
             try:
-                solver.get_next(0)
+                solver.get_next(1)
             except TypeError:
                 raise ValueError(
-                    "get_next(0) throw a TypeError. Verify that `get_next` "
-                    "signature is get_next(stop_val) and that it is "
-                    "a staticmethod."
+                    "get_next(1) throw a TypeError. Verify that `get_next` "
+                    "signature is get_next(self, stop_val)"
                 )
 
             stopping_criterion.get_next_stop_val = solver.get_next
@@ -140,7 +152,7 @@ class StoppingCriterion():
             stopping_criterion._deadline = time.time() + timeout
         else:
             stopping_criterion._deadline = None
-        stopping_criterion._prev_objective_value = 1e100
+        stopping_criterion._prev_objective = 1e100
 
         return stopping_criterion
 
@@ -153,7 +165,7 @@ class StoppingCriterion():
         self.progress('initialization')
         return stop_val
 
-    def should_stop(self, stop_val, cost_curve):
+    def should_stop(self, stop_val, objective_list):
         """Base call to check if we should stop running a solver.
 
         This base call checks for the timeout and the max number of runs.
@@ -165,7 +177,7 @@ class StoppingCriterion():
         stop_val : int | float
             Corresponds to stopping criterion of the underlying algorithm, such
             as ``tol`` or ``max_iter``.
-        cost_curve : list of dict
+        objective_list : list of dict
             List of dict containing the values associated to the objective at
             each evaluated points.
 
@@ -177,24 +189,24 @@ class StoppingCriterion():
             Reason why the algorithm was stopped if stop is True.
         next_stop_val : int | float
             Next value for the stopping criterion. This value depends on the
-            stop strategy for the solver.
+            sampling strategy for the solver.
         """
         # Modify the criterion state:
         # - compute the number of run with the curve. We need to remove 1 as
         #   it contains the initial evaluation.
         # - compute the delta_objective for debugging and stalled progress.
-        n_eval = len(cost_curve) - 1
-        objective_value = cost_curve[-1]['objective_value']
-        delta_objective = self._prev_objective_value - objective_value
-        delta_objective /= abs(cost_curve[0]['objective_value'])
-        self._prev_objective_value = objective_value
+        n_eval = len(objective_list) - 1
+        objective = objective_list[-1][self.key_to_monitor]
+        delta_objective = self._prev_objective - objective
+        delta_objective /= abs(objective_list[0][self.key_to_monitor])
+        self._prev_objective = objective
 
         # default value for is_flat
         is_flat = False
 
         # check the different conditions:
         #     diverging / timeout / max_runs / stopping_criterion
-        if math.isnan(objective_value) or delta_objective < -1e5:
+        if math.isnan(objective) or delta_objective < -1e5:
             stop = True
             status = 'diverged'
         elif self._deadline is not None and time.time() > self._deadline:
@@ -207,7 +219,7 @@ class StoppingCriterion():
         else:
             # Call the sub-class hook, used to check stopping criterion
             # on the curve.
-            stop, progress = self.check_convergence(cost_curve)
+            stop, progress = self.check_convergence(objective_list)
 
             # Display the progress if necessary
             progress = max(n_eval / self.max_runs, progress)
@@ -226,20 +238,19 @@ class StoppingCriterion():
             self.rho *= RHO_INC
             self.debug(f"curve is flat -> increasing rho: {self.rho}")
 
-        stop_val = self.get_next_stop_val(stop_val)
-
         if status == 'running':
+            stop_val = self.get_next_stop_val(stop_val)
             self.debug(f"Calling with stop val: {stop_val}")
             self.progress(progress=progress)
 
         return stop, status, stop_val
 
-    def check_convergence(self, cost_curve):
+    def check_convergence(self, objective_list):
         """Check if the solver should be stopped based on the objective curve.
 
         Parameters
         ----------
-        cost_curve : list of dict
+        objective_list : list of dict
             List of dict containing the values associated to the objective at
             each evaluated points.
 
@@ -287,11 +298,11 @@ class StoppingCriterion():
 
 
 class SufficientDescentCriterion(StoppingCriterion):
-    """Stopping criterion based on sufficient descent.
+    f"""Stopping criterion based on sufficient descent.
 
     The solver will be stopped once successive evaluations do not make enough
     progress. The number of successive evaluation and the definition of
-    sufficient progress is controled by ``eps`` and ``patience``.
+    sufficient progress is controlled by ``eps`` and ``patience``.
 
     Parameters
     ----------
@@ -300,35 +311,28 @@ class SufficientDescentCriterion(StoppingCriterion):
         in the interval ``[-eps, eps]``.
     patience :  float (default: benchopt.stopping_criterion.PATIENCE)
         The solver is stopped after ``patience`` successive insufficient
-        updates.
-    strategy : str in {'iteration', 'tolerance', 'callback'}
-        How the different precision solvers are called. Can be one of:
-        - ``'iteration'``: call the run method with max_iter number increasing
-        logarithmically to get more an more precise points.
-        - ``'tolerance'``: call the run method with tolerance deacreasing
-        logarithmically to get more and more precise points.
-        - ``'callback'``: call the run method with a callback that will compute
-        the objective function on a logarithmic scale. After each iteration,
-        the callback should be called with the current iterate solution.
+        updates.{COMMON_ARGS_DOC}
     """
 
-    def __init__(self, eps=EPS, patience=PATIENCE, strategy='iteration'):
+    def __init__(self, eps=EPS, patience=PATIENCE, strategy='iteration',
+                 key_to_monitor='objective_value'):
         self.eps = eps
         self.patience = patience
 
         self._delta_objectives = []
-        self._objective_value = 1e100
+        self._objective = 1e100
 
         super().__init__(
-            eps=eps, patience=patience, strategy=strategy
+            eps=eps, patience=patience, strategy=strategy,
+            key_to_monitor=key_to_monitor
         )
 
-    def check_convergence(self, cost_curve):
+    def check_convergence(self, objective_list):
         """Check if the solver should be stopped based on the objective curve.
 
         Parameters
         ----------
-        cost_curve : list of dict
+        objective_list : list of dict
             List of dict containing the values associated to the objective at
             each evaluated points.
 
@@ -342,10 +346,10 @@ class SufficientDescentCriterion(StoppingCriterion):
             that the solver has converged.
         """
         # Compute the current objective
-        objective_value = cost_curve[-1]['objective_value']
-        delta_objective = self._objective_value - objective_value
-        delta_objective /= abs(cost_curve[0]['objective_value'])
-        self._objective_value = objective_value
+        objective = objective_list[-1][self.key_to_monitor]
+        delta_objective = self._objective - objective
+        delta_objective /= abs(objective_list[0][self.key_to_monitor])
+        self._objective = objective
 
         # Store only the last ``patience`` values for progress
         self._delta_objectives.append(delta_objective)
@@ -362,11 +366,11 @@ class SufficientDescentCriterion(StoppingCriterion):
 
 
 class SufficientProgressCriterion(StoppingCriterion):
-    """Stopping criterion based on sufficient progress.
+    f"""Stopping criterion based on sufficient progress.
 
     The solver will be stopped once successive evaluations do not make enough
     progress. The number of successive evaluation and the definition of
-    sufficient progress is controled by ``eps`` and ``patience``.
+    sufficient progress is controlled by ``eps`` and ``patience``.
 
     Parameters
     ----------
@@ -375,35 +379,28 @@ class SufficientProgressCriterion(StoppingCriterion):
         smaller than ``eps``.
     patience :  float (default: benchopt.stopping_criterion.PATIENCE)
         The solver is stopped after ``patience`` successive insufficient
-        updates.
-    strategy : str in {'iteration', 'tolerance', 'callback'}
-        How the different precision solvers are called. Can be one of:
-        - ``'iteration'``: call the run method with max_iter number increasing
-        logarithmically to get more an more precise points.
-        - ``'tolerance'``: call the run method with tolerance deacreasing
-        logarithmically to get more and more precise points.
-        - ``'callback'``: call the run method with a callback that will compute
-        the objective function on a logarithmic scale. After each iteration,
-        the callback should be called with the current iterate solution.
+        updates.{COMMON_ARGS_DOC}
     """
 
-    def __init__(self, eps=EPS, patience=PATIENCE, strategy='iteration'):
+    def __init__(self, eps=EPS, patience=PATIENCE, strategy='iteration',
+                 key_to_monitor='objective_value'):
         self.eps = eps
         self.patience = patience
 
         self._progress = []
-        self._best_objective_value = 1e100
+        self._best_objective = 1e100
 
         super().__init__(
-            eps=eps, patience=patience, strategy=strategy
+            eps=eps, patience=patience, strategy=strategy,
+            key_to_monitor=key_to_monitor
         )
 
-    def check_convergence(self, cost_curve):
+    def check_convergence(self, objective_list):
         """Check if the solver should be stopped based on the objective curve.
 
         Parameters
         ----------
-        cost_curve : list of dict
+        objective_list : list of dict
             List of dict containing the values associated to the objective at
             each evaluated points.
 
@@ -417,11 +414,11 @@ class SufficientProgressCriterion(StoppingCriterion):
             that the solver has converged.
         """
         # Compute the current objective and update best value
-        objective_value = cost_curve[-1]['objective_value']
-        delta_objective = self._best_objective_value - objective_value
-        delta_objective /= abs(cost_curve[0]['objective_value'])
-        self._best_objective_value = min(
-            objective_value, self._best_objective_value
+        objective = objective_list[-1][self.key_to_monitor]
+        delta_objective = self._best_objective - objective
+        delta_objective /= abs(objective_list[0][self.key_to_monitor])
+        self._best_objective = min(
+            objective, self._best_objective
         )
 
         # Store only the last ``patience`` values for progress
@@ -430,9 +427,50 @@ class SufficientProgressCriterion(StoppingCriterion):
             self._progress.pop(0)
 
         delta = max(self._progress)
-        if delta <= self.eps * self._best_objective_value:
+        if delta <= self.eps * self._best_objective:
             self.debug(f"Exit with delta = {delta:.2e}.")
             return True, 1
 
         progress = math.log(max(abs(delta), self.eps)) / math.log(self.eps)
         return False, progress
+
+
+class SingleRunCriterion(StoppingCriterion):
+    """Stopping criterion for single run solvers.
+
+    The solver will be stopped after one call to the objective.
+
+    Parameters
+    ----------
+    stop_val : int or float, (default: 1)
+        Value of ``stop_val`` with which the objective function will be called.
+        This value will be passed as ``n_iter`` or ``tol`` parameter for the
+        ``run`` method of solver with ``sampling_strategy`` respectively equals
+        to ``'iteration'`` or ``'tolerance'``, or the number of callback calls
+        minus one for the ``'callback'`` strategy.
+    """
+
+    def __init__(self, stop_val=1, *args, **kwargs):
+        # Necessary as the criterion is given a strategy argument when
+        # instanciated for an instance.
+        super().__init__(strategy="iteration", stop_val=stop_val)
+        self.stop_val = stop_val
+
+    def init_stop_val(self):
+        return self.stop_val
+
+    def get_runner_instance(self, max_runs=1, timeout=None, output=None,
+                            solver=None):
+
+        return super().get_runner_instance(1, timeout, output, solver)
+
+    def check_convergence(self, cost_curve):
+        return True, 1
+
+
+class NoCriterion(StoppingCriterion):
+    """Run the solvers for a number of time fixed by max_iter and timeout.
+    """
+
+    def check_convergence(self, cost_curve):
+        return False, 0

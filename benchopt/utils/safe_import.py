@@ -1,11 +1,13 @@
 import sys
 import warnings
+import importlib
 from pathlib import Path
 
 from ..config import RAISE_INSTALL_ERROR
 
 SKIP_IMPORT = False
 BENCHMARK_DIR = None
+PACKAGE_NAME = "benchmark_utils"
 
 
 class SkipWithBlock(Exception):
@@ -13,13 +15,35 @@ class SkipWithBlock(Exception):
 
 
 def skip_import():
+    """Once called, all the safe_import_context is skipped."""
     global SKIP_IMPORT
     SKIP_IMPORT = True
 
 
-def set_benchmark(benchmark_dir):
+def _unskip_import():
+    """Helper to reenable imports in tests."""
+    global SKIP_IMPORT
+    SKIP_IMPORT = False
+
+
+def set_benchmark_module(benchmark_dir):
     global BENCHMARK_DIR
     BENCHMARK_DIR = Path(benchmark_dir)
+    # add PACKAGE_NAME as a module if it exists:
+    module_file = Path(benchmark_dir) / PACKAGE_NAME / '__init__.py'
+    if module_file.exists():
+        spec = importlib.util.spec_from_file_location(
+            PACKAGE_NAME, module_file
+        )
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[PACKAGE_NAME] = module
+        spec.loader.exec_module(module)
+    elif module_file.parent.exists():
+        warnings.warn(
+            "Folder `benchmark_utils` exists but is missing `__init__.py`. "
+            "Make sure it is a proper module to allow importing from it.",
+            ImportWarning
+        )
 
 
 class safe_import_context:
@@ -32,11 +56,6 @@ class safe_import_context:
     all solvers, for benchmark's installation or auto completion. Note that all
     costly imports should be protected with this import for benchopt to perform
     best.
-
-    This context is also used to import module dynamically from the ``utils``
-    folder of a benchmark, using the
-    :func:`~benchopt.safe_import_context.import_from` method.
-    See :ref:`benchmark_utils_import` for a detailed explanation of this part.
 
     Finally, this context also catches import warnings.
     """
@@ -63,49 +82,13 @@ class safe_import_context:
     def trace(self, frame, event, arg):
         raise SkipWithBlock()
 
-    def import_from(self, module_name, obj=None):
-        """Dynamically import a module from BENCHMARK_DIR/utils.
-
-        Parameters
-        ----------
-        module_name: str
-            Name of the module to import. It can be a module with a simple
-            ``*.py`` file, or a more complex package with a ``__init__.py``
-            file. The naming convention for import is the same, with submodules
-            separated with ``.``. The module is imported directly from the
-            BENCHMARK_DIR/utils/ folder.
-        obj: str or None
-            If ``obj`` is provided, the module is imported and only the
-            attribute named ``obj`` from this module is returned.
-
-        Returns
-        -------
-        module or obj: object
-            Module or object imported dynamically.
-        """
-        module_path = BENCHMARK_DIR / 'utils' / module_name.replace('.', '/')
-        if not module_path.exists():
-            module_path = module_path.with_suffix('.py')
-        elif module_path.is_dir():
-            module_path = module_path / '__init__.py'
-        if not module_path.exists():
-            raise ValueError(
-                f"Failed to import {module_name}. Check that file "
-                f" {module_path} exists in the benchmark."
-            )
-
-        # import locally to avoid circular import
-        from .dynamic_modules import _get_module_from_file
-        module = _get_module_from_file(module_path, BENCHMARK_DIR)
-        if obj is None:
-            return module
-        else:
-            return getattr(module, obj)
-
     def __exit__(self, exc_type, exc_value, tb):
 
         if SKIP_IMPORT:
             self.failed_import = True
+            self.import_error = (
+                RuntimeError, "Should not check install with skip import", None
+            )
             return True
 
         silence_error = False

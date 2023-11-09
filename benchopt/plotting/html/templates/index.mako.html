@@ -2,8 +2,11 @@
 <head>
 <meta charset="utf-8"/>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📈</text></svg>">
-<link href="${static_dir}/main.css" rel="stylesheet" />
-<link href="${static_dir}/hover_index.css", rel="stylesheet" />
+<style>
+    ${static['main.css']}
+
+    ${static['hover_index.css']}
+</style>
 
 <script defer src="https://use.fontawesome.com/releases/v5.0.10/js/all.js" integrity="sha384-slN8GvtUJGnv6ca26v8EzVaR9DC58QEwsIk9q1QXdCU8Yu8ck/tL/5szYlBbqmS+" crossorigin="anonymous"></script>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.css" rel="stylesheet" />
@@ -24,7 +27,7 @@
 
 <p><em>Last updated: ${last_updated.isoformat(sep=' ', timespec='minutes') | h}</em></p>
 <p>
-    <strong>${nb_total_benchs}</strong> benchmarks in total.
+    <strong>${len(benchmarks)}</strong> benchmarks in total.
 </p>
 
 <h2>Available Benchmarks</h2>
@@ -34,9 +37,9 @@
     <figure class="effect-ruby">
       <img src="https://via.placeholder.com/250x150/1E90FF" alt="backgrd"/>
       <figcaption>
-        <h2>${pretty_names[loop.index]}</h2>
-        <p>${len_fnames[loop.index]} files available</p>
-        <a href="${benchmark}.html">View more</a>
+        <h2>${benchmark.pretty_name}</h2>
+        <p>${benchmark.n_runs} files available</p>
+        <a href="${benchmark.name}.html">View more</a>
       </figcaption>
     </figure>
     %endfor

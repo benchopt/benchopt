@@ -6,13 +6,15 @@ from pathlib import Path
 from .config import get_setting
 from .base import BaseSolver, BaseDataset
 
-from .utils.safe_import import set_benchmark
+from .utils.safe_import import set_benchmark_module
 from .utils.dynamic_modules import _load_class_from_module
+from .utils.dependencies_mixin import DependenciesMixin
 from .utils.parametrized_name_mixin import product_param
+from .utils.parametrized_name_mixin import ParametrizedNameMixin
 from .utils.parametrized_name_mixin import _list_all_parametrized_names
 
-from .utils.terminal_output import YELLOW
 from .utils.terminal_output import colorify
+from .utils.terminal_output import YELLOW
 
 from .utils.conda_env_cmd import install_in_conda_env
 from .utils.conda_env_cmd import shell_install_in_conda_env
@@ -22,6 +24,7 @@ from .config import RAISE_INSTALL_ERROR
 
 
 CACHE_DIR = '__cache__'
+SLURM_JOB_NAME = 'benchopt_run'
 
 
 class Benchmark:
@@ -33,27 +36,56 @@ class Benchmark:
         Folder containing the benchmark. The folder should at least
         contain an `objective.py` file defining the `Objective`
         function for the benchmark.
+    allow_meta_from_json : bool
+        If set to True, allow the object to be instanciated even when
+        objective.py cannot be found. In this case, the metadata are retrieved
+        from the benchmark_meta.json file. This should only be used to generate
+        HTML pages with results.
 
     Attributes
     ----------
     mem : joblib.Memory
         Caching mechanism for the benchmark.
     """
-    def __init__(self, benchmark_dir):
+    def __init__(
+        self, benchmark_dir, allow_meta_from_json=False,
+    ):
         self.benchmark_dir = Path(benchmark_dir)
-        self.name = self.benchmark_dir.resolve().name
 
-        set_benchmark(self.benchmark_dir)
+        set_benchmark_module(self.benchmark_dir)
 
+        # Load the benchmark metadat defined in `objective.py` or
+        # in `benchmark_meta.json`.
         try:
             objective = self.get_benchmark_objective()
             self.pretty_name = objective.name
+            self.url = getattr(objective, "url", None)
+            self.min_version = getattr(objective, 'min_benchopt_version', None)
         except RuntimeError:
-            raise click.BadParameter(
-                f"The folder '{benchmark_dir}' does not contain "
-                "`objective.py`.\nMake sure you provide the path to a valid "
-                "benchmark."
-            )
+            if not allow_meta_from_json:
+                raise click.BadParameter(
+                    f"The folder '{benchmark_dir}' does not contain "
+                    "`objective.py`.\nMake sure you provide the path to a "
+                    "valid benchmark."
+                )
+            meta_data = (self.benchmark_dir / "benchmark_meta.json")
+            if not meta_data.exists():
+                raise FileNotFoundError(
+                    "Can't find objective.py or benchmark_meta.json to get "
+                    "benchmark info for the html_generation."
+                )
+
+            with meta_data.open() as f:
+                import json
+                meta = json.load(f)
+                self.pretty_name = meta["pretty_name"]
+                self.url = meta.get("url", None)
+
+        if self.url is None:
+            self.name = self.benchmark_dir.resolve().name
+            self.url = f"https://github.com/benchopt/{self.name}"
+        else:
+            self.name = Path(self.url).name
 
     ####################################################################
     # Helpers to access and validate objective, solvers and datasets
@@ -141,19 +173,48 @@ class Benchmark:
         # List all available module in benchmark.subpkg
         class_name = base_class.__name__.replace('Base', '')
         package = self.benchmark_dir / f'{class_name.lower()}s'
-        submodule_files = package.glob('*.py')
+        submodule_files = package.glob('[!.]*.py')
         for module_filename in submodule_files:
+            if module_filename.name.startswith("template_"):
+                # skip template solvers and datasets
+                continue
             # Get the class
-            cls = _load_class_from_module(
-                module_filename, class_name, benchmark_dir=self.benchmark_dir
-            )
-            if issubclass(cls, base_class):
-                classes.append(cls)
-            else:
-                print(colorify(
-                    f"WARNING: class {cls} in {module_filename} does not "
-                    f"derive from base class {base_class}", YELLOW
-                ))
+            try:
+                cls = _load_class_from_module(
+                    module_filename, class_name,
+                    benchmark_dir=self.benchmark_dir
+                )
+                if not issubclass(cls, base_class):
+                    warnings.warn(colorify(
+                        f"class {cls.__name__} in {module_filename} is not a "
+                        f"subclass from base class benchopt."
+                        f"{base_class.__name__}", YELLOW
+                    ))
+
+            except Exception:
+
+                import traceback
+                tb_to_print = traceback.format_exc(chain=False)
+
+                class FailedImport(ParametrizedNameMixin, DependenciesMixin):
+                    "Object for the class list that raises error if used."
+
+                    name = get_failed_import_object_name(
+                        module_filename, class_name
+                    )
+
+                    @classmethod
+                    def is_installed(cls, **kwargs):
+                        print(
+                            f"Failed to import {class_name} from "
+                            f"{module_filename}. Please fix the following "
+                            "error to use this file with benchopt:\n"
+                            f"{tb_to_print}"
+                        )
+                        return False
+
+                cls = FailedImport
+            classes.append(cls)
 
         classes.sort(key=lambda c: c.name.lower())
         return classes
@@ -170,6 +231,11 @@ class Benchmark:
         output_dir = self.benchmark_dir / "outputs"
         output_dir.mkdir(exist_ok=True)
         return output_dir
+
+    def get_slurm_folder(self):
+        """Get the folder to store the output of the slurm executor."""
+        slurm_dir = self.benchmark_dir / SLURM_JOB_NAME
+        return slurm_dir
 
     def get_result_file(self, filename=None):
         """Get a result file from the benchmark.
@@ -217,7 +283,13 @@ class Benchmark:
             if filename == 'all':
                 result_filename = all_result_files
 
-        if result_filename.suffix == ".csv":
+        if isinstance(result_filename, list):
+            is_csv_file = any(fname.suffix == ".csv"
+                              for fname in result_filename)
+        else:
+            is_csv_file = result_filename.suffix == ".csv"
+
+        if is_csv_file:
             print(colorify(
                 "WARNING: CSV files are deprecated."
                 "Please use Parquet files instead.",
@@ -272,15 +344,21 @@ class Benchmark:
 
     def get_config_file(self):
         "Get the location for the config file of the benchmark."
-        return self.benchmark_dir / 'config.ini'
+        yml_path = self.benchmark_dir / "config.yml"
+        ini_path = yml_path.with_suffix('.ini')
+        if not yml_path.exists() and ini_path.exists():
+            return ini_path
+        return yml_path
 
-    def get_setting(self, setting_name):
+    def get_setting(self, setting_name, default_config=None):
         "Retrieve the setting value from benchmark config."
 
         # Get the config file and read it
         config_file = self.get_config_file()
-        return get_setting(name=setting_name, config_file=config_file,
-                           benchmark_name=self.name)
+        return get_setting(
+            name=setting_name, config_file=config_file,
+            benchmark_name=self.name, default_config=default_config
+        )
 
     def get_test_config_file(self):
         """Get the location for the test config file for the benchmark.
@@ -433,8 +511,9 @@ class Benchmark:
         solver : BaseSolver instance
         force : bool
         """
-        all_datasets = _filter_classes(*self.get_datasets(),
-                                       filters=dataset_names)
+        all_datasets = _filter_classes(
+            *self.get_datasets(), filters=dataset_names
+        )
         all_objectives, objective_buffer = buffer_iterator(_filter_classes(
             self.get_benchmark_objective(), filters=objective_filters
         ))
@@ -704,3 +783,28 @@ def buffer_iterator(it):
             yield val
 
     return buffered_it(buffer), buffer
+
+
+def get_failed_import_object_name(module_file, cls_name):
+    # Parse the module file to find the name of the failing object
+
+    import ast
+    module_ast = ast.parse(Path(module_file).read_text())
+    classdef = [
+        c for c in module_ast.body
+        if isinstance(c, ast.ClassDef) and c.name == cls_name
+    ]
+    if len(classdef) == 0:
+        raise ValueError(f"Could not find {cls_name} in module {module_file}.")
+    c = classdef[-1]
+    name_assign = [
+        a for a in c.body
+        if (isinstance(a, ast.Assign) and any(list(
+            (isinstance(t, ast.Name) and t.id == "name") for t in a.targets
+        )))
+    ]
+    if len(name_assign) == 0:
+        raise ValueError(
+            f"Could not find {cls_name} name in module {module_file}"
+        )
+    return name_assign[-1].value.value

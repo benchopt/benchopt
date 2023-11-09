@@ -2,8 +2,11 @@
 <head>
 <meta charset="utf-8"/>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📈</text></svg>">
-<link href="${static_dir}/hover_index.css" rel="stylesheet" />
-<link href="${static_dir}/main.css" rel="stylesheet" />
+<style>
+  ${static['main.css']}
+
+  ${static['hover_index.css']}
+</style>
 
 <script defer src="https://use.fontawesome.com/releases/v5.0.10/js/all.js" integrity="sha384-slN8GvtUJGnv6ca26v8EzVaR9DC58QEwsIk9q1QXdCU8Yu8ck/tL/5szYlBbqmS+" crossorigin="anonymous"></script>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.css" rel="stylesheet" />
@@ -17,7 +20,6 @@
   <script src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js"></script>
 <link href="https://cdn.datatables.net/1.10.22/css/jquery.dataTables.min.css" rel="stylesheet" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<script type="text/javascript" src="${static_dir}/benchmark.js" async></script>
 </head>
 
 <body>
@@ -29,7 +31,7 @@
   for key, val in ll_main.items():
     all_items = list(set([r['sysinfo']['main'][key] for r in results]))
     items_unique[key] = sorted(all_items)
-  benchmark_name = benchmark.replace('benchmark_', '').replace('_', " ")
+  benchmark_name = benchmark.name.replace('benchmark_', '').replace('_', " ")
 %>
 
 % if need_filter:
@@ -41,13 +43,17 @@
 <h1>
   <a href="${home}"><button class="btn"><i class="fa fa-home"></i></button></a>
   Benchopt results: ${benchmark_name}
-  <a href="https://github.com/benchopt/${benchmark}">
-    <i class="fab fa-github-square"></i>
+  <a href="${benchmark.url}">
+    % if "github" in benchmark.url:
+      <i class="fab fa-github-square"></i>
+    % else:
+      <i class="fa-solid fa-globe"></i>
+    % endif
   </a>
 </h1>
 
 <p><em>Last updated: ${last_updated.isoformat(sep=' ', timespec='minutes') | h}</em>
-  with <strong>${nb_total_benchs}</strong> benchmark results in total. <br>
+  with <strong>${len(results)}</strong> result files in total. <br>
 </p>
 
 <div class="menu" style="padding-left: 0px;">
@@ -84,7 +90,7 @@
     <td class="fname">
       <a href="${result['page']}">
         <%
-        fname = "".join(result["fname_short"].split("_")[-2:])
+        fname = " ".join(result["fname_short"].split("_")[-2:])
         fname = benchmark_name + " " + fname.split(".")[0]
         disp_sub = any([val != '' for val in result['sysinfo']['sub'].values()])
         %>
@@ -174,5 +180,8 @@
 <a class="backtotop" title="Back to top" href="#top" style="z-index: 50;"><i class="fas fa-level-up-alt"></i></a>
 
 </div>
+<script type="text/javascript">
+    ${static['benchmark.js']}
+</script>
 </body>
 </html>

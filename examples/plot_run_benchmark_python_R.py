@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 from benchopt import run_benchmark
 from benchopt.benchmark import Benchmark
 from benchopt.plotting import plot_benchmark, PLOT_KINDS
+from benchopt.plotting.plot_objective_curve import reset_solver_styles_idx
 
 
 BENCHMARK_PATH = Path().resolve().parent / 'benchmarks' / 'benchmark_lasso'
@@ -33,6 +34,7 @@ save_file = run_benchmark(
 
 
 kinds = list(PLOT_KINDS.keys())
+reset_solver_styles_idx()
 figs = plot_benchmark(save_file, benchmark=Benchmark(BENCHMARK_PATH),
                       kinds=kinds, html=False)
 plt.show()

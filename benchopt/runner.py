@@ -1,4 +1,5 @@
 import time
+import inspect
 
 from datetime import datetime
 
@@ -31,7 +32,7 @@ def run_one_resolution(objective, solver, meta, stop_val):
     stop_val : int | float
         Corresponds to stopping criterion, such as
         tol or max_iter for the solver. It depends
-        on the stopping_strategy for the solver.
+        on the sampling_strategy for the solver.
 
     Returns
     -------
@@ -44,11 +45,12 @@ def run_one_resolution(objective, solver, meta, stop_val):
             f"Failure during import in {solver.__module__}."
         )
 
+    solver.pre_run_hook(stop_val)
     t_start = time.perf_counter()
     solver.run(stop_val)
     delta_t = time.perf_counter() - t_start
-    beta_hat_i = solver.get_result()
-    objective_dict = objective(beta_hat_i)
+    solver_result = solver.get_result()
+    objective_dict = objective(solver_result)
 
     # Add system info in results
     info = get_sys_info()
@@ -88,25 +90,21 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
         The status on which the solver was stopped.
     """
 
+    # The warm-up step called for each repetition bit only run once.
+    solver._warm_up()
+
     curve = []
     with exception_handler(output, pdb=pdb) as ctx:
 
         if solver._solver_strategy == "callback":
-            output.progress('empty run for compilation')
-            run_once_cb = _Callback(
-                lambda x: {'objective_value': 1},
-                {},
-                stopping_criterion.get_runner_instance(
-                    solver=solver, max_runs=1
-                )
-            )
-            solver.run(run_once_cb)
 
-            # If stopping strategy is 'callback', only call once to get the
+            # If sampling_strategy is 'callback', only call once to get the
             # results up to convergence.
             callback = _Callback(
-                objective, meta, stopping_criterion
+                objective, solver, meta, stopping_criterion
             )
+            solver.pre_run_hook(callback)
+            callback.start()
             solver.run(callback)
             curve, ctx.status = callback.get_results()
         else:
@@ -180,13 +178,24 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
         output.skip(reason, objective=True)
         return []
 
-    skip, reason = solver._set_objective(objective)
+    skip = solver._set_objective(objective, output=output)
     if skip:
-        output.skip(reason)
         return []
 
     states = []
     run_statistics = []
+
+    # get sampling strategy
+    # for plotting purpose consider 'callback' as 'iteration'
+    sampling_strategy = solver._solver_strategy
+    if sampling_strategy == 'callback':
+        sampling_strategy = 'iteration'
+
+    # get objective description
+    # use `obj_` instead of `objective_` to avoid conflicts with
+    # the name of metrics in Objective.compute
+    obj_description = objective.__doc__ or ""
+
     for rep in range(n_repetitions):
 
         output.set(rep=rep)
@@ -196,6 +205,9 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
             solver_name=str(solver),
             data_name=str(dataset),
             idx_rep=rep,
+            sampling_strategy=sampling_strategy.capitalize(),
+            obj_description=obj_description,
+            solver_description=inspect.cleandoc(solver.__doc__ or ""),
         )
 
         stopping_criterion = solver.stopping_criterion.get_runner_instance(
@@ -228,6 +240,10 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
     # Make sure to flush so the parallel output is properly display
     print(end='', flush=True)
 
+    # refresh the solver warm up flag so that warm-up is done again
+    # when calling the solver with another problem/dataset pair.
+    solver._warmup_done = False
+
     if status == 'interrupted':
         raise SystemExit(1)
     return run_statistics
@@ -236,8 +252,8 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
 def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                   dataset_names=None, objective_filters=None, max_runs=10,
                   n_repetitions=1, timeout=100, n_jobs=1, slurm=None,
-                  plot_result=True, html=True, show_progress=True, pdb=False,
-                  output="None"):
+                  plot_result=True, display=True, html=True,
+                  show_progress=True, pdb=False, output="None"):
     """Run full benchmark.
 
     Parameters
@@ -269,8 +285,11 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
         If not None, launch the job on a slurm cluster using the file to get
         the cluster config parameters.
     plot_result : bool
-        If set to True (default), display the result plot and save them in
+        If set to True (default), generate the result plot and save them in
         the benchmark directory.
+    display : bool
+        If set to True (default), open the result plots at the end of the run,
+        otherwise, simply save them.
     html : bool
         If set to True (default), display the result plot in HTML, otherwise
         in matplotlib figures, default is True.
@@ -309,7 +328,10 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
 
     if slurm is not None:
         from .utils.slurm_executor import run_on_slurm
-        results = run_on_slurm(slurm, run_one_solver, common_kwargs, all_runs)
+        results = run_on_slurm(
+            benchmark, slurm, run_one_solver, common_kwargs,
+            all_runs
+        )
     else:
         results = Parallel(n_jobs=n_jobs)(
             delayed(run_one_solver)(**common_kwargs, **kwargs)
@@ -339,5 +361,5 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
 
     if plot_result:
         from benchopt.plotting import plot_benchmark
-        plot_benchmark(save_file, benchmark, html=html)
+        plot_benchmark(save_file, benchmark, html=html, display=display)
     return save_file

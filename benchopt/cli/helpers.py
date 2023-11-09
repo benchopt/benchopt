@@ -17,9 +17,9 @@ from benchopt.cli.completion import complete_datasets
 from benchopt.cli.completion import complete_solvers
 from benchopt.utils.conda_env_cmd import list_conda_envs
 from benchopt.config import get_global_config_file
+from benchopt.config import GLOBAL_CONFIG_FILE_MODE
 from benchopt.utils.dynamic_modules import _load_class_from_module
 from benchopt.utils.shell_cmd import _run_shell_in_conda_env
-
 from benchopt.utils.terminal_output import colorify
 from benchopt.utils.terminal_output import RED, GREEN, TICK, CROSS
 
@@ -72,6 +72,11 @@ def clean(benchmark, token=None, filename='all'):
                 json_file.pop(f"{filename}.{ext}", None)
                 with open(json_path, "w") as cache_run:
                     json.dump(json_file, cache_run)
+    # Delete slurm files
+    slurm_folder = benchmark.get_slurm_folder()
+    if slurm_folder.exists():
+        print(f"rm -rf {slurm_folder}")
+        rm_folder(slurm_folder)
     # Delete cache files
     print("Clear joblib cache")
     benchmark.mem.clear(warn=False)
@@ -145,7 +150,7 @@ def check_conda_env(env_name, benchmark_name=None):
         default_conda_env, conda_envs = list_conda_envs()
 
         # If env_name is False (default), check availability
-        # in the current environement.
+        # in the current environment.
         if env_name == 'False':
             # check if any current conda environment
             if default_conda_env is not None:
@@ -217,7 +222,7 @@ def print_info(cls_name_list, cls_list, env_name=None, verbose=False):
                     disp_name = f"env: {env_name}"
                 if cls.is_installed(env_name):
                     print(colorify(TICK, GREEN), end='', flush=True)
-                    print(colorify(f" available in '{disp_name}'", GREEN))
+                    print(colorify(f" available in {disp_name}", GREEN))
                 else:
                     print(colorify(CROSS, RED), end='', flush=True)
                     print(colorify(f" not available in '{disp_name}'", RED))
@@ -399,7 +404,7 @@ def set(ctx, name, values, append=False):
     benchmark_name = ctx.obj['benchmark_name']
     if not config.exists():
         config.parent.mkdir(exist_ok=True, parents=True)
-        config.touch()
+        config.touch(mode=GLOBAL_CONFIG_FILE_MODE)
 
     if append:
         current_value = get_setting(

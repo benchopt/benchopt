@@ -10,6 +10,9 @@ class _Callback:
     ----------
     objective : instance of BaseObjective
         The objective to minimize.
+    solver : instance of BaseSolver
+        The solver that is currently run. This allows to retrieve the results
+        with :method:`benchopt.base.Solver.get_result` in the callback.
     meta : dict
         Metadata passed to store in Cost results.
         Contains objective and data names, problem dimension, etc.
@@ -44,8 +47,9 @@ class _Callback:
         The time when exiting the callback call.
     """
 
-    def __init__(self, objective, meta, stopping_criterion):
+    def __init__(self, objective, solver, meta, stopping_criterion):
         self.objective = objective
+        self.solver = solver
         self.meta = meta
         self.stopping_criterion = stopping_criterion
 
@@ -56,9 +60,11 @@ class _Callback:
         self.it = 0
         self.time_iter = 0.
         self.next_stopval = self.stopping_criterion.init_stop_val()
+
+    def start(self):
         self.time_callback = time.perf_counter()
 
-    def __call__(self, x):
+    def __call__(self):
         # Stop time and update computation time since the beginning
         t0 = time.perf_counter()
 
@@ -66,20 +72,22 @@ class _Callback:
 
         # Evaluate the iteration if necessary.
         if self.it == self.next_stopval:
-            if self.log_value(x):
+            if self.log_value():
                 return False
 
-        # Update iteration number and restart time measurment.
+        # Update iteration number and restart time measurement.
         self.it += 1
         self.time_callback = time.perf_counter()
         return True
 
-    def log_value(self, x):
+    def log_value(self):
         """Store the objective value with running time and stop if needed.
 
         Return True if the solver should be stopped.
         """
-        objective_dict = self.objective(x)
+        result = self.solver.get_result()
+
+        objective_dict = self.objective(result)
         self.curve.append(dict(
             **self.meta, stop_val=self.it,
             time=self.time_iter,

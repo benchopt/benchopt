@@ -39,7 +39,7 @@ channels:
 
 
 def create_conda_env(
-        env_name, recreate=False, with_pytest=False, empty=False, quiet=False):
+        env_name, recreate=False, pytest=False, empty=False, quiet=False):
     """Create a conda env with name env_name and install basic utilities.
 
 
@@ -50,7 +50,7 @@ def create_conda_env(
     recreate : bool (default: False)
         It the conda env exists and recreate is set to True, it will be
         overwritten with the new env. If it is False, the env will be untouched
-    with_pytest : bool (default: False)
+    pytest : bool (default: False)
         If set to True, also install pytest in the newly created env.
     empty : bool (default: False)
         If set to True, simply create an empty env. This is mainly for testing
@@ -90,16 +90,11 @@ def create_conda_env(
 
     force = "--force" if recreate else ""
 
-    benchopt_requirement, benchopt_editable = get_benchopt_requirement()
+    benchopt_requirement, benchopt_editable = get_benchopt_requirement(pytest)
+
     benchopt_env = BENCHOPT_ENV.format(
         benchopt_requirement=benchopt_requirement
     )
-
-    if with_pytest:
-        # Add pytest as a dependency of the env
-        benchopt_env = benchopt_env.replace(
-            '- pip:', '- pytest\n  - pip:\n'
-        )
 
     if empty:
         benchopt_env = EMPTY_ENV
@@ -172,30 +167,44 @@ def delete_conda_env(env_name):
                capture_stdout=True)
 
 
+def get_cmd_from_requirements(packages):
+    """Process the packages from requirements and create the install cmd.
+
+    This detects the packages that need to be installed with pip and also
+    the additional channels for conda packages.
+    """
+    pip_packages = [pkg[4:] for pkg in packages if pkg.startswith('pip:')]
+    conda_packages = [pkg for pkg in packages if not pkg.startswith('pip:')]
+
+    cmd = []
+    if conda_packages:
+        channels = ' '.join(set(
+            f"-c {pkg.split(':')[0]}" for pkg in conda_packages if ':' in pkg
+        ))
+        packages = ' '.join(pkg.split(':')[-1] for pkg in conda_packages)
+        cmd.append(
+            f"{CONDA_CMD} install --update-all -y {channels} {packages}"
+        )
+
+    if pip_packages:
+        packages = ' '.join(pip_packages)
+        cmd.append(f"pip install {packages}")
+    return cmd
+
+
 def install_in_conda_env(*packages, env_name=None, force=False, quiet=False):
     """Install the packages with conda in the given environment"""
     if len(packages) == 0:
         return
 
-    pip_packages = [pkg[4:] for pkg in packages if pkg.startswith('pip:')]
-    conda_packages = [pkg for pkg in packages if not pkg.startswith('pip:')]
-
-    error_msg = ("Failed to conda install packages "
-                 f"{packages if len(packages) > 1 else packages[0]}\n"
-                 "Error:{output}")
-    cmd = []
-    if conda_packages:
-        packages = ' '.join(conda_packages)
-        cmd.append(f"{CONDA_CMD} install --update-all -y {packages}")
-
-    if pip_packages:
-        packages = ' '.join(pip_packages)
-        cmd.append(f"pip install {packages}")
-
+    cmd = get_cmd_from_requirements(packages)
     if force:
         cmd = [c + ' --force-reinstall' for c in cmd]
     cmd = '\n'.join(cmd)
 
+    error_msg = ("Failed to conda install packages "
+                 f"{packages if len(packages) > 1 else packages[0]}\n"
+                 "Error:{output}")
     _run_shell_in_conda_env(
         cmd, env_name=env_name, raise_on_error=error_msg,
         capture_stdout=quiet

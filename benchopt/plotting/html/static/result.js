@@ -3,15 +3,15 @@ const NON_CONVERGENT_COLOR = 'rgba(0.8627, 0.8627, 0.8627)'
 /*
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * STATE MANAGEMENT
- * 
+ *
  * The state represent the plot state. It's an object
  * that is stored into the window.state variable.
- * 
+ *
  * Do not manually update window.state,
  * instead, foreach state modification,
  * you shoud call the setState() function
  * to keep the plot in sync with its state.
- * 
+ *
  * The state contains the following keys :
  *   - dataset (string),
  *   - objective (string),
@@ -19,6 +19,7 @@ const NON_CONVERGENT_COLOR = 'rgba(0.8627, 0.8627, 0.8627)'
  *   - plot_kind (string),
  *   - scale (string)
  *   - with_quantiles (boolean)
+ *   - xaxis_type (string)
  *   - hidden_solvers (array)
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
@@ -26,27 +27,47 @@ const NON_CONVERGENT_COLOR = 'rgba(0.8627, 0.8627, 0.8627)'
 /**
  * Update the state and create/update the plot
  * using the new state.
- * 
- * @param {Object} partialState 
+ *
+ * @param {Object} partialState
  */
 const setState = (partialState) => {
   window.state = {...state(), ...partialState};
   displayScatterElements(!isBarChart());
+
+  // TODO: `listIdXaxisSelection` to be removed after
+  // implementing responsiveness through breakpoints
+  // and removing content duplication between big screen and mobile
+  let listIdXaxisSelection = ["change_xaxis_type", "change_xaxis_type_mobile"];
+  listIdXaxisSelection.forEach(idXaxisSelection => updateXaxis(idXaxisSelection))
+
   makePlot();
   makeLegend();
 }
 
 /**
  * Retrieve the state object from window.state
- * 
+ *
  * @returns Object
  */
 const state = () => window.state;
 
+/**
+ * Mapping between selectors and configuration
+*/
+const config_mapping = {
+  'dataset': 'dataset_selector',
+  'objective': 'objective_selector',
+  'objective_column': 'objective_column',
+  'kind': 'plot_kind',
+  'scale': 'change_scaling',
+  'with_quantiles': 'change_shades',
+  'xaxis_type':'change_xaxis_type',
+};
+
 /*
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * PLOT MANAGEMENT
- * 
+ *
  * Retrieve formatted data for PlotlyJS using state
  * and create/update the plot.
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -65,7 +86,7 @@ const makePlot = () => {
 
 /**
  * Gives the data formatted for plotlyJS bar chart.
- * 
+ *
  * @returns {array}
  */
 const getBarData = () => {
@@ -113,7 +134,7 @@ const getBarData = () => {
 
 /**
  * Gives the data formatted for plotlyJS scatter chart.
- * 
+ *
  * @returns {array}
  */
 const getScatterCurves = () => {
@@ -121,7 +142,19 @@ const getScatterCurves = () => {
   const curves = [];
 
   // For each solver, add the median curve with proper style and visibility.
+  let xaxisType = state().xaxis_type;
+
   getSolvers().forEach(solver => {
+    solverSamplingStrategy = data(solver)['sampling_strategy'];
+
+    // plot only solvers that were stopped using xaxis type
+    // plot all solver if xaxis type is `time`
+    if(xaxisType !== "Time" && solverSamplingStrategy !== xaxisType) {
+      return
+    }
+
+    ScatterXaxisProperty = xaxisType === "Time" ? 'x' : 'stop_val';
+
     curves.push({
       type: 'scatter',
       name: solver,
@@ -136,12 +169,19 @@ const getScatterCurves = () => {
       legendgroup: solver,
       hovertemplate: solver + ' <br> (%{x:.1e},%{y:.1e}) <extra></extra>',
       visible: isVisible(solver) ? true : 'legendonly',
-      x: data(solver).scatter.x,
+      x: data(solver).scatter[ScatterXaxisProperty],
       y: useTransformer(data(solver).scatter.y, 'y', data().transformers),
     });
 
+    // skip plotting quantiles if xaxis is not time
+    // as stop_val are predefined and hence deterministic
+    if(xaxisType !== "Time") {
+      return
+    }
+
     if (state().with_quantiles) {
       // Add shaded area for each solver, with proper style and visibility.
+
       curves.push({
         type: 'scatter',
         mode: 'lines',
@@ -153,8 +193,8 @@ const getScatterCurves = () => {
         legendgroup: solver,
         hovertemplate: '(%{x:.1e},%{y:.1e}) <extra></extra>',
         visible: isVisible(solver) ? true : 'legendonly',
-        x: data(solver).scatter.q1,
-        y: data(solver).scatter.y,
+        x: data(solver).scatter['q1'],
+        y: useTransformer(data(solver).scatter.y, 'y', data().transformers),
       }, {
         type: 'scatter',
         mode: 'lines',
@@ -167,8 +207,8 @@ const getScatterCurves = () => {
         legendgroup: solver,
         hovertemplate: '(%{x:.1e},%{y:.1e}) <extra></extra>',
         visible: isVisible(solver) ? true : 'legendonly',
-        x: data(solver).scatter.q9,
-        y: data(solver).scatter.y,
+        x: data(solver).scatter['q9'],
+        y: useTransformer(data(solver).scatter.y, 'y', data().transformers),
       });
     }
   });
@@ -176,13 +216,190 @@ const getScatterCurves = () => {
   return curves;
 };
 
+
+
+/*
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * CONFIG MANAGEMENT
+ *
+ * Configs are used to save particular benchmark results' views.
+ *
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
+
+const get_lim_plotly = (lim, ax) =>{
+  if(getScale()[ax + 'axis'] == 'log'){
+    lim = [Math.log10(parseFloat(lim[0])), Math.log10(parseFloat(lim[1]))]
+  };
+  return lim;
+};
+const get_lim_config = (lim, ax) =>{
+  if(getScale()[ax + 'axis'] == 'log'){
+    lim = [Math.pow(10, lim[0]), Math.pow(10, lim[1])]
+  };
+  return lim;
+};
+
+
+const setConfig = (config_item) =>{
+  // Retrieve the name of the config.
+  let config_name = config_item.textContent;
+  // Select on mobile version
+  if (config_item.tagName === "SELECT") {
+    config_name = config_item.value;
+  }
+
+  // Clear all selected views and select the good one.
+  setAllViewsToNonActive();
+  config_item.classList.add('active');
+  // Select on mobile version
+  if (config_item.tagName === "SELECT") {
+    config_item.value = config_name;
+  }
+
+  if (config_name !== "no_selected_view") {
+    // Get the updated state
+    let config = window.metadata.plot_configs[config_name];
+    let update = {};
+    const lims = ['xlim', 'ylim', 'hidden_solvers']
+    for(let key in config_mapping){
+      if (key in config){
+        value = config[key];
+        document.getElementById(config_mapping[key]).value = value;
+        if (key == "kind"){
+          key = "plot_kind";
+        }
+        update[key] = value;
+      }
+      else if (!lims.includes(key)) {
+        document.getElementById(config_mapping[key]).selectedIndex = 0;
+        update[key] = document.getElementById(config_mapping[key]).value;
+      }
+    }
+
+    setState(update);
+
+    let layout = {};
+    for(const ax of ['x', 'y']){
+      let lim = ax + 'lim';
+      if (config.hasOwnProperty(lim) & (config[lim] != null)){
+        layout[ax +'axis.range'] = get_lim_plotly(config[lim], ax);
+      };
+    };
+
+    // update the plot
+    const div = document.getElementById('unique_plot');
+    Plotly.relayout(div, layout);
+  }
+};
+
+
+const saveView = () => {
+  let n_configs = Object.keys(window.metadata.plot_configs).length;
+
+  let config_name = prompt("Config Name", "Config " + n_configs);
+  if(config_name === null || config_name === ""){
+    return;
+  }
+
+  // Retrieve the drop down menue selected values
+  let config = {};
+  for(let key in config_mapping) {
+    value = config[key];
+    config[key] = document.getElementById(config_mapping[key]).value;
+  }
+
+  // Retrieve the range of the plots.
+  const fig = document.getElementById('unique_plot');
+  config['xlim'] = get_lim_config(fig.layout.xaxis.range, 'x');
+  config['ylim'] = get_lim_config(fig.layout.yaxis.range, 'y');
+
+  let noViewAvailableElement = document.getElementById('no_view_available');
+
+  if (noViewAvailableElement) {
+    noViewAvailableElement.classList.add('hidden');
+  }
+  setAllViewsToNonActive();
+
+  // Only add a button if the config does not exist yet:
+  if (!(config_name in window.metadata.plot_configs)){
+    let viewTabs = document.getElementById("view-tabs");
+    let node = document.createElement("span");
+    node.innerHTML = config_name;
+    node.className = "view border-transparent whitespace-nowrap border-b-2 py-4 px-1 text-sm text-gray-400 hover:text-gray-500 hover:border-gray-300 cursor-pointer active";
+    node.onclick = function() {setConfig(node)};
+    viewTabs.appendChild(node);
+
+    let option = document.createElement("option");
+    option.setAttribute("value", config_name);
+    option.innerHTML = config_name;
+    let tabs = document.getElementById("tabs");
+    tabs.appendChild(option);
+    tabs.value = config_name;
+  }
+
+  // Add the config in the configs mapping.
+  window.metadata.plot_configs[config_name] = config;
+
+  return false;
+};
+
+const setAllViewsToNonActive = () => {
+  let view_items = document.getElementsByClassName('view');
+  for (let i = 0; i < view_items.length; i++) {
+     view_items.item(i).classList.remove('active');
+  }
+
+  document.getElementById('tabs').value = "no_selected_view";
+}
+
+const downloadBlob = (blob, name) => {
+  var tempLink = document.createElement("a");
+  tempLink.setAttribute('href', URL.createObjectURL(blob));
+  tempLink.setAttribute('download', name);
+  tempLink.click();
+  URL.revokeObjectURL(tempLink.href);
+
+  // To prevent the screen from going up when the user clicks on the button
+  return false;
+
+};
+
+const exportConfigs = () => {
+  // Construct the yaml export of the config.
+  var config_yaml = "plot_configs:\n"
+
+  for(var config_name in window.metadata.plot_configs){
+    var config = window.metadata.plot_configs[config_name];
+    config_yaml += "  " + config_name + ":\n";
+    for(var key in config){
+      var value = config[key];
+      if (key === 'xlim' || key === 'ylim')
+        value = "[" + value + "]";
+      config_yaml += "    " + key + ": " + value + "\n";
+    }
+  }
+
+  // Download the resulting yaml file.
+  var blob = new Blob([config_yaml], {type: 'text/yaml'});
+  return downloadBlob(blob, 'config.yml');
+};
+
+const exportHTML = () => {
+  var blob = new Blob(
+    [document.documentElement.innerHTML],
+    {type: 'text/html'}
+  );
+  return downloadBlob(blob, location.pathname.split("/").pop());
+};
+
 /*
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * DATA TRANSFORMERS
- * 
+ *
  * Transformers are used to modify data
  * on the fly.
- * 
+ *
  * WARNING : If you add a new transformer function,
  * don't forget to register it in the object : window.tranformers,
  * at the end of this section.
@@ -193,9 +410,9 @@ const getScatterCurves = () => {
  * Select the right transformer according to the state.
  * If the requested transformer does not exists,
  * it returns raw data.
- * 
- * @param {Object} data 
- * @param {String} solver 
+ *
+ * @param {Object} data
+ * @param {String} solver
  * @param {String} axis it could be x, y, q1, q9
  * @returns {array}
  */
@@ -210,24 +427,24 @@ const useTransformer = (data, axis, options) => {
 
 /**
  * Transform data on the y axis for subotimality curve.
- * 
- * @param {Object} data 
- * @param {String} solver 
+ *
+ * @param {Object} data
+ * @param {String} solver
  * @returns {array}
  */
 const transformer_y_suboptimality_curve = (y, options) => {
   // Retrieve c_star value
   const c_star = options.c_star;
-  
+
   // Compute suboptimality for each data
   return y.map(value => value - c_star);
 };
 
 /**
  * Transform data ont the y axis for relative suboptimality curve.
- * 
- * @param {Object} data 
- * @param {String} solver 
+ *
+ * @param {Object} data
+ * @param {String} solver
  * @returns {array}
  */
 const transformer_y_relative_suboptimality_curve = (y, options) => {
@@ -251,7 +468,7 @@ window.transformers = {
 /*
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * TOOLS
- * 
+ *
  * Various functions to simplify life.
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
@@ -275,7 +492,7 @@ const isSmallScreen = () => window.screen.availHeight < 900;
 /**
  * Check for each solver
  * if data is available
- * 
+ *
  * @returns {Boolean}
  */
 const isAvailable = () => {
@@ -292,11 +509,11 @@ const isAvailable = () => {
 
 const displayScatterElements = shouldBeVisible => {
   if (shouldBeVisible) {
-    document.getElementById('change_scaling').style.display = 'inline-block';
+    document.getElementById('scale-form-group').style.display = 'inline-block';
     document.getElementById('legend_container').style.display = 'block';
     document.getElementById('plot_legend').style.display = 'flex';
   } else {
-    document.getElementById('change_scaling').style.display = 'none';
+    document.getElementById('scale-form-group').style.display = 'none';
     document.getElementById('legend_container').style.display = 'none';
     document.getElementById('plot_legend').style.display = 'none';
   }
@@ -316,7 +533,11 @@ const barDataToArrays = () => {
 }
 
 const getScale = () => {
-  switch (state().scale) {
+  return _getScale(state().scale)
+}
+
+const _getScale = (scale) => {
+  switch (scale) {
     case 'loglog':
       return {
         xaxis: 'log',
@@ -343,6 +564,8 @@ const getScale = () => {
 }
 
 const getScatterChartLayout = () => {
+  let xaxisType = state().xaxis_type;
+
   const layout = {
     autosize: !isSmallScreen(),
     modebar: {
@@ -362,8 +585,8 @@ const getScatterChartLayout = () => {
     },
     xaxis: {
       type: getScale().xaxis,
-      title: 'Time [sec]',
-      tickformat: '.1e',
+      title: xaxisType === "Time" ? "Time [sec]": xaxisType,
+      tickformat:  ["Time", "Tolerance"].includes(xaxisType) ? '.1e': '',
       tickangle: -45,
       gridcolor: '#ffffff',
       zeroline : false,
@@ -467,7 +690,7 @@ const getYLabel = () => {
 /*
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * MANAGE HIDDEN SOLVERS
- * 
+ *
  * Functions to hide/display and memorize solvers which were clicked
  * by user on the legend of the plot.
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -494,7 +717,7 @@ const showSolver = solver => setState({hidden_solvers: state().hidden_solvers.fi
 
 /**
  * Add or remove solver name from the list of hidden solvers.
- * 
+ *
  * @param {String} solver
  * @returns {void}
  */
@@ -522,7 +745,7 @@ const handleSolverDoubleClick = solver => {
 /**
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * MANAGE PLOT LEGEND
- * 
+ *
  * We don't use the plotly legend to keep control
  * on the size of the plot.
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -535,12 +758,27 @@ const makeLegend = () => {
   const legend = document.getElementById('plot_legend');
 
   legend.innerHTML = '';
+  const solversDescription = window.metadata["solvers_description"];
 
   Object.keys(data().solvers).forEach(solver => {
     const color = data().solvers[solver].color;
     const symbolNumber = data().solvers[solver].marker;
 
-    legend.appendChild(createLegendItem(solver, color, symbolNumber));
+    let legendItem = createLegendItem(solver, color, symbolNumber);
+
+    // preserve compatibility with prev version
+    if(solversDescription === null || solversDescription === undefined) {
+      legend.appendChild(legendItem);
+      return;
+    }
+
+    let payload = {
+      description: solversDescription[solver],
+    }
+
+    legend.appendChild(
+      createSolverDescription(legendItem, payload)
+    );
   });
 }
 
@@ -548,7 +786,7 @@ const makeLegend = () => {
  * Creates a legend item which contains the solver name,
  * the solver marker as an SVG and an horizontal bar with
  * the solver color.
- * 
+ *
  * @param {String} solver
  * @param {String} color
  * @param {int} symbolNumber
@@ -589,7 +827,7 @@ const createLegendItem = (solver, color, symbolNumber) => {
       // Timeout will execute single click function after 500ms
       window.clickedTimeout = setTimeout(() => {
         window.clickedSolver = null;
-        
+
         handleSolverClick(solver);
       }, 500);
     } else if (window.clickedSolver === solver) {
@@ -622,12 +860,60 @@ const createLegendItem = (solver, color, symbolNumber) => {
   return item;
 }
 
+
+function createSolverDescription(legendItem, { description }) {
+  if (description === null || description === undefined || description === "")
+    description = "No description provided";
+
+  let descriptionContainer = document.createElement("div");
+  descriptionContainer.setAttribute("class", "solver-description-container")
+
+  descriptionContainer.innerHTML = `
+  <div class="solver-description-content text-sm">
+    <span class="solver-description-body">${description}</span>
+  </div>
+  `;
+
+  descriptionContainer.prepend(legendItem);
+
+  return descriptionContainer;
+}
+
+
+function updateXaxis(idXaxisTypeSelection) {
+  let selection = document.getElementById(idXaxisTypeSelection);
+  selection.innerHTML = "";
+
+  let xaxisType = state()["xaxis_type"];
+  let options = new Set(['Time']);
+
+  // get solvers run for selected (dataset, objective, objective colum)
+  // and select their unique sampling strategies
+  let solvers = data()['solvers'];
+  Object.values(solvers).forEach(solver => options.add(solver['sampling_strategy']));
+
+  // create xaxis type options
+  options.forEach(option => {
+    element = document.createElement('option');
+    element.setAttribute('value', option);
+    element.innerText = option;
+
+    selection.append(element);
+  });
+
+  // set selected value
+  if (!options.has(xaxisType)){
+    alert("Unknown xaxis type '"+ xaxisType + "'.");
+  }
+  selection.value = options.has(xaxisType) ? xaxisType : "Time";
+}
+
 /**
  * Create the same svg symbol as plotly.
  * Returns an <svg> HTML Element
- * 
- * @param {int} symbolNumber 
- * @param {String} color 
+ *
+ * @param {int} symbolNumber
+ * @param {String} color
  * @returns {HTMLElement}
  */
 const createSymbol = (symbolNumber, color) => {
@@ -646,7 +932,7 @@ const createSymbol = (symbolNumber, color) => {
 /**
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * EVENT REGISTRATIONS
- * 
+ *
  * Some events are also registered in result.html.
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
