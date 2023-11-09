@@ -31,17 +31,11 @@ const NON_CONVERGENT_COLOR = 'rgba(0.8627, 0.8627, 0.8627)'
  * @param {Object} partialState
  */
 const setState = (partialState) => {
-  displayScatterElements(!isBarChart());
   window._state = {...state(), ...partialState};
 
-  // TODO: `listIdXaxisSelection` to be removed after
-  // implementing responsiveness through breakpoints
-  // and removing content duplication between big screen and mobile
-  let listIdXaxisSelection = ["change_xaxis_type", "change_xaxis_type_mobile"];
-  listIdXaxisSelection.forEach(idXaxisSelection => updateXaxis(idXaxisSelection))
-
-  makePlot();
-  makeLegend();
+  renderSidebar();
+  renderPlot();
+  renderLegend();
 }
 
 /**
@@ -82,13 +76,47 @@ const config_mapping = {
 /**
  * Create/Update the plot.
  */
-const makePlot = () => {
+const renderPlot = () => {
   const div = document.getElementById('unique_plot');
-  const data = isBarChart() ? getBarData() : getScatterCurves();
-  const layout = isBarChart() ? getBarChartLayout() : getScatterChartLayout();
+  const data = getChartData();
+  const layout = getLayout();
 
   Plotly.react(div, data, layout);
 };
+
+/**
+ * Returns data formatted for Plotly.
+ *
+ * @returns {Array|*[]}
+ */
+const getChartData = () => {
+  if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve'])) {
+    return getScatterCurves();
+  } else if (isChart('bar_chart')) {
+    return getBarData();
+  } else if (isChart('boxplot_chart')) {
+    return getBoxplotData();
+  }
+
+  throw new Error('Unknown plot kind.');
+}
+
+/**
+ * Returns layout object according to the plot kind.
+ *
+ * @returns Object
+ */
+const getLayout = () => {
+  if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve'])) {
+    return getScatterChartLayout();
+  } else if (isChart('bar_chart')) {
+    return getBarChartLayout();
+  } else if (isChart('boxplot_chart')) {
+    return getBoxplotChartLayout();
+  }
+
+  throw new Error('Unknown plot kind.');
+}
 
 /**
  * Gives the data formatted for plotlyJS bar chart.
@@ -298,8 +326,7 @@ const setConfig = (config_item) => {
     }
 
     // update the plot
-    const div = document.getElementById('unique_plot');
-    Plotly.relayout(div, layout);
+    renderPlot();
   }
 };
 
@@ -476,6 +503,115 @@ window.transformers = {
 
 /*
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * LEFT SIDEBAR MANAGEMENT
+ *
+ * Functions that control the left sidebar.
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
+
+/**
+ * Render sidebar
+ */
+const renderSidebar = () => {
+  renderObjectiveColumnSelector();
+  renderScaleSelector();
+  renderXAxisTypeSelector();
+  renderWithQuantilesToggle();
+  mapSelectorsToState();
+}
+
+/**
+ * Render Objective Column selector
+ */
+const renderObjectiveColumnSelector = () => {
+  if (isChart('boxplot_chart') && state('yaxis_type') === 'time') {
+    hide(document.querySelectorAll("#objective-column-form-group"));
+  } else {
+    show(document.querySelectorAll("#objective-column-form-group"), 'block');
+  }
+};
+
+/**
+ * Render Scale selector
+ */
+const renderScaleSelector = () => {
+  if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve'])) {
+    show(document.querySelectorAll("#scale-form-group"), 'block');
+  } else {
+    hide(document.querySelectorAll("#scale-form-group"));
+  }
+};
+
+/**
+ * Render WithQuantile toggle
+ */
+const renderWithQuantilesToggle = () => {
+  if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve'])) {
+    show(document.querySelectorAll("#change-shades-form-group"), 'flex');
+  } else {
+    hide(document.querySelectorAll("#change-shades-form-group"));
+  }
+};
+
+/**
+ * Render xaxis type selector
+ */
+const renderXAxisTypeSelector = () => {
+  if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve', 'boxplot_chart'])) {
+    show(document.querySelectorAll("#xaxis-type-form-group"), 'block');
+  } else {
+    hide(document.querySelectorAll("#xaxis-type-form-group"));
+    return;
+  }
+
+  // One for desktop and one for mobile
+  xAxisTypeSelectors().forEach(selector => {
+    const optionToHide = isChart('boxplot_chart') ? "Time" : "Solver";
+    hide(xAxisTypeOption(optionToHide));
+
+    const optionToShow = isChart('boxplot_chart') ? "Solver" : "Time";
+    show(xAxisTypeOption(optionToShow));
+
+    if (isChart('boxplot_chart') || isIterationSamplingStrategy()) {
+      show(xAxisTypeOption('Iteration'));
+    }
+  });
+
+  // X axis type 'Time' does not exist for boxplot,
+  // it only can be one of : 'Solver', 'Iteration',
+  // so we have to change its value with an allowed value.
+  // It's the same thing if we change to curve plot.
+  if (isChart('boxplot_chart') && state().xaxis_type === 'Time') {
+    setState({xaxis_type: 'Solver'});
+  } else if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve']) && state().xaxis_type === 'Solver') {
+    setState({xaxis_type: 'Time'});
+  }
+};
+
+const xAxisTypeSelectors = () => {
+  return document.querySelectorAll("#change_xaxis_type, #change_xaxis_type_mobile");
+};
+
+const xAxisTypeOption = (type) => {
+  return document.querySelectorAll(
+      `#change_xaxis_type [value="${type}"], #change_xaxis_type_mobile [value="${type}"]`
+  );
+};
+
+const mapSelectorsToState = () => {
+  const currentState = state();
+
+  document.getElementById('dataset_selector').value = currentState.dataset;
+  document.getElementById('objective_selector').value = currentState.objective;
+  document.getElementById('objective_column').value = currentState.objective_column;
+  document.getElementById('plot_kind').value = currentState.plot_kind;
+  document.getElementById('change_scaling').value = currentState.scale;
+  document.getElementById('change_xaxis_type').value = currentState.xaxis_type;
+  document.getElementById('change_shades').checked = currentState.with_quantiles;
+};
+
+/*
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * TOOLS
  *
  * Various functions to simplify life.
@@ -521,18 +657,6 @@ const isAvailable = () => {
 
   return !isNotAvailable;
 }
-
-const displayScatterElements = shouldBeVisible => {
-  if (shouldBeVisible) {
-    document.getElementById('scale-form-group').style.display = 'inline-block';
-    document.getElementById('legend_container').style.display = 'block';
-    document.getElementById('plot_legend').style.display = 'flex';
-  } else {
-    document.getElementById('scale-form-group').style.display = 'none';
-    document.getElementById('legend_container').style.display = 'none';
-    document.getElementById('plot_legend').style.display = 'none';
-  }
-};
 
 const barDataToArrays = () => {
   const colors = [], texts = [], x = [], y = [];
@@ -681,13 +805,17 @@ const getBarChartLayout = () => {
         size: 32,
       }
     }];
+  }
+
+  return layout;
+};
   };
 
   return layout;
 };
 
 const getYLabel = () => {
-  switch(state().plot_kind) {
+  switch(state('plot_kind')) {
     case 'objective_curve':
       return 'F(x)';
     case 'suboptimality_curve':
@@ -698,7 +826,48 @@ const getYLabel = () => {
       return 'Time [sec]';
     default:
       return 'unknown';
-  };
+  }
+};
+
+/**
+ * Returns true if sampling strategy 'Iteration' value is in data
+ *
+ * @returns {boolean}
+ */
+const isIterationSamplingStrategy = () => {
+  let options = new Set(['Time']);
+  // get solvers run for selected (dataset, objective, objective colum)
+  // and select their unique sampling strategies
+  getSolvers().forEach(solver => options.add(data().solvers[solver].sampling_strategy));
+
+  return options.has('Iteration')
+};
+
+/**
+ * Hide an HTML element by applying a none value to its display style property.
+ *
+ * @param HTMLElements
+ */
+const hide = HTMLElements => {
+  if (HTMLElements instanceof Element) {
+    HTMLElements = [HTMLElements]
+  }
+
+  HTMLElements.forEach(h => h.style.display = 'none');
+};
+
+/**
+ * Show an HTML element by applying an initial value to its display style property.
+ *
+ * @param HTMLElements
+ * @param style
+ */
+const show = (HTMLElements, style = 'initial') => {
+  if (HTMLElements instanceof Element) {
+    HTMLElements = [HTMLElements]
+  }
+
+  HTMLElements.forEach(h => h.style.display = style);
 };
 
 /*
@@ -768,7 +937,16 @@ const handleSolverDoubleClick = solver => {
 /**
  * Creates the legend at the bottom of the plot.
  */
-const makeLegend = () => {
+const renderLegend = () => {
+  const legendContainer = document.getElementById('legend_container')
+
+  if (!isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve'])) {
+    hide(legendContainer);
+    return;
+  } else {
+    show(legendContainer);
+  }
+
   const legend = document.getElementById('plot_legend');
 
   legend.innerHTML = '';
@@ -891,35 +1069,6 @@ function createSolverDescription(legendItem, { description }) {
   descriptionContainer.prepend(legendItem);
 
   return descriptionContainer;
-}
-
-
-function updateXaxis(idXaxisTypeSelection) {
-  let selection = document.getElementById(idXaxisTypeSelection);
-  selection.innerHTML = "";
-
-  let xaxisType = state()["xaxis_type"];
-  let options = new Set(['Time']);
-
-  // get solvers run for selected (dataset, objective, objective colum)
-  // and select their unique sampling strategies
-  let solvers = data()['solvers'];
-  Object.values(solvers).forEach(solver => options.add(solver['sampling_strategy']));
-
-  // create xaxis type options
-  options.forEach(option => {
-    element = document.createElement('option');
-    element.setAttribute('value', option);
-    element.innerText = option;
-
-    selection.append(element);
-  });
-
-  // set selected value
-  if (!options.has(xaxisType)){
-    alert("Unknown xaxis type '"+ xaxisType + "'.");
-  }
-  selection.value = options.has(xaxisType) ? xaxisType : "Time";
 }
 
 /**
