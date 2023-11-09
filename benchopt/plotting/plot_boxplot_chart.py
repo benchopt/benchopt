@@ -18,6 +18,7 @@ def plot_boxplot_chart(df, obj_col='objective_value', plotly=False):
 
     return []
 
+
 def compute_boxplot_data(df, obj_col):
     """Compute and shape data to display in boxplot"""
 
