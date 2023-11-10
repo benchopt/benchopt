@@ -151,7 +151,7 @@ const getScatterCurves = () => {
   let xaxisType = state().xaxis_type;
 
   getSolvers().forEach(solver => {
-    solverSamplingStrategy = data(solver)['sampling_strategy'];
+    const solverSamplingStrategy = data(solver)['sampling_strategy'];
 
     // plot only solvers that were stopped using xaxis type
     // plot all solver if xaxis type is `time`
@@ -159,7 +159,7 @@ const getScatterCurves = () => {
       return
     }
 
-    ScatterXaxisProperty = xaxisType === "Time" ? 'x' : 'stop_val';
+    const ScatterXaxisProperty = xaxisType === "Time" ? 'x' : 'stop_val';
 
     curves.push({
       type: 'scatter',
@@ -239,7 +239,8 @@ const get_lim_plotly = (lim, ax) =>{
   };
   return lim;
 };
-const get_lim_config = (lim, ax) =>{
+
+const get_lim_config = (lim, ax) => {
   if(getScale()[ax + 'axis'] == 'log'){
     lim = [Math.pow(10, lim[0]), Math.pow(10, lim[1])]
   };
@@ -270,9 +271,9 @@ const setConfig = (config_item) =>{
     const lims = ['xlim', 'ylim', 'hidden_solvers']
     for(let key in config_mapping){
       if (key in config){
-        value = config[key];
+        const value = config[key];
         document.getElementById(config_mapping[key]).value = value;
-        if (key == "kind"){
+        if (key === "kind"){
           key = "plot_kind";
         }
         update[key] = value;
@@ -288,17 +289,16 @@ const setConfig = (config_item) =>{
     let layout = {};
     for(const ax of ['x', 'y']){
       let lim = ax + 'lim';
-      if (config.hasOwnProperty(lim) & (config[lim] != null)){
+      if (config.hasOwnProperty(lim) & (config[lim] != null)) {
         layout[ax +'axis.range'] = get_lim_plotly(config[lim], ax);
-      };
-    };
+      }
+    }
 
     // update the plot
     const div = document.getElementById('unique_plot');
     Plotly.relayout(div, layout);
   }
 };
-
 
 const saveView = () => {
   let n_configs = Object.keys(window.metadata.plot_configs).length;
@@ -308,10 +308,9 @@ const saveView = () => {
     return;
   }
 
-  // Retrieve the drop down menue selected values
+  // Retrieve the dropdown menu selected values
   let config = {};
   for(let key in config_mapping) {
-    value = config[key];
     config[key] = document.getElementById(config_mapping[key]).value;
   }
 
@@ -407,7 +406,7 @@ const exportHTML = () => {
  * on the fly.
  *
  * WARNING : If you add a new transformer function,
- * don't forget to register it in the object : window.tranformers,
+ * don't forget to register it in the object : window.transformers,
  * at the end of this section.
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
@@ -633,7 +632,6 @@ const getScatterChartLayout = () => {
 };
 
 const getBarChartLayout = () => {
-
   const layout = {
     autosize: !isSmallScreen(),
     modebar: {
@@ -705,7 +703,7 @@ const getSolverFromEvent = event => {
   const target = event.currentTarget;
 
   for (let i = 0; i < target.children.length; i++) {
-    if (target.children[i].className == 'solver') {
+    if (target.children[i].className === 'solver') {
       return target.children[i].firstChild.nodeValue;
     }
   }
@@ -748,7 +746,7 @@ const handleSolverDoubleClick = solver => {
   hideAllSolversExcept(solver);
 };
 
-/**
+/*
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * MANAGE PLOT LEGEND
  *
@@ -766,7 +764,7 @@ const makeLegend = () => {
   legend.innerHTML = '';
   const solversDescription = window.metadata["solvers_description"];
 
-  Object.keys(data().solvers).forEach(solver => {
+  getSolvers().forEach(solver => {
     const color = data().solvers[solver].color;
     const symbolNumber = data().solvers[solver].marker;
 
