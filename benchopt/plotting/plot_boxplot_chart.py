@@ -1,5 +1,57 @@
-def compute_boxplot_data(df, obj_col):
-    """Compute and shape data to display in boxplot"""
+import matplotlib.pyplot as plt
+
+from benchopt.plotting.plot_objective_curve import get_solver_style
+
+
+def plot_boxplot_chart(df, obj_col='objective_value', plotly=False):
+    solvers, data, colors = compute_solvers_boxplot_data(df, obj_col)
+    dataset_name = df['data_name'].unique()[0]
+    objective_name = df['objective_name'].unique()[0]
+
+    fig, ax = plt.subplots()
+
+    boxplot = plt.boxplot(data, labels=solvers, patch_artist=True)
+
+    for box, color in zip(boxplot['boxes'], colors):
+        box.set(color=color, linewidth=1, alpha=0.7)
+        box.set_facecolor(color)
+
+    for median, color in zip(boxplot['medians'], colors):
+        median.set(color=color, linewidth=1)
+
+    for whisker, color in zip(boxplot['whiskers'], colors):
+        whisker.set(color=color, linewidth=1)
+
+    for flier, color in zip(boxplot['fliers'], colors):
+        flier.set(color=color)
+
+    plt.title(f"{objective_name}\nData: {dataset_name}")
+    plt.xticks(rotation=45)
+    plt.ylabel(obj_col)
+
+    return fig
+
+
+def compute_solvers_boxplot_data(df, obj_col):
+    """Compute and shape data for MANY solvers to display in boxplot"""
+    data, colors = list(), list()
+    solver_names = df['solver_name'].unique()
+
+    for solver_name in solver_names:
+        col, _ = get_solver_style(solver_name, plotly=False)
+        colors.append(col)
+        df_filtered = df.query('solver_name == @solver_name')
+        data.append(
+            compute_solver_boxplot_data(
+                df_filtered, obj_col
+            )["by_solver"]["final_objective_value"]
+        )
+
+    return solver_names, data, colors
+
+
+def compute_solver_boxplot_data(df, obj_col):
+    """Compute and shape data for ONE solver to display in boxplot"""
 
     """By SOLVERS : Compute final time and final objective_value data"""
     boxplot_by_solver = dict(
