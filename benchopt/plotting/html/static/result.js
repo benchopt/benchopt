@@ -272,8 +272,11 @@ const get_lim_config = (lim, ax) => {
   return lim;
 };
 
+const setConfig = (config_item) => {
+  if (!config_item) {
+    return;
+  }
 
-const setConfig = (config_item) =>{
   // Retrieve the name of the config.
   let config_name = config_item.textContent;
   // Select on mobile version
