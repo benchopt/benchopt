@@ -480,8 +480,8 @@ window.transformers = {
 
 const data = (solver = null) => {
   return solver ?
-    window.data[state().dataset][state().objective][state().objective_column].solvers[solver]:
-    window.data[state().dataset][state().objective][state().objective_column]
+    window._data[state().dataset][state().objective][state().objective_column].solvers[solver]:
+    window._data[state().dataset][state().objective][state().objective_column]
 }
 
 const getSolvers = () => Object.keys(data().solvers);

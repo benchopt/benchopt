@@ -469,7 +469,7 @@
         </script>
         <!-- Manage plot -->
         <script>
-            window.data = ${result['json']};
+            window._data = ${result['json']};
             window.metadata = ${json.dumps(result['metadata'])};
 
             window.addEventListener("load", () => {
