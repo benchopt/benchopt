@@ -20,6 +20,7 @@ const NON_CONVERGENT_COLOR = 'rgba(0.8627, 0.8627, 0.8627)'
  *   - scale (string)
  *   - with_quantiles (boolean)
  *   - xaxis_type (string)
+ *   - yaxis_type (string)
  *   - hidden_solvers (array)
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
@@ -508,6 +509,7 @@ const renderSidebar = () => {
   renderObjectiveColumnSelector();
   renderScaleSelector();
   renderXAxisTypeSelector();
+  renderYAxisTypeSelector();
   renderWithQuantilesToggle();
   mapSelectorsToState();
 }
@@ -577,6 +579,17 @@ const renderXAxisTypeSelector = () => {
     setState({xaxis_type: 'Solver'});
   } else if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve']) && state().xaxis_type === 'Solver') {
     setState({xaxis_type: 'Time'});
+  }
+};
+
+/**
+ * Render yaxis type selector
+ */
+const renderYAxisTypeSelector = () => {
+  if (isChart('boxplot_chart')) {
+    show(document.querySelectorAll("#yaxis-type-form-group"), 'block');
+  } else {
+    hide(document.querySelectorAll("#yaxis-type-form-group"));
   }
 };
 
