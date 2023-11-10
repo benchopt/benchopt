@@ -63,6 +63,7 @@ const config_mapping = {
   'scale': 'change_scaling',
   'with_quantiles': 'change_shades',
   'xaxis_type':'change_xaxis_type',
+  'yaxis_type':'change_yaxis_type',
 };
 
 /*
