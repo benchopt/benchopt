@@ -3,9 +3,16 @@ def compute_boxplot_data(df, obj_col):
 
     """By SOLVERS : Compute final time and final objective_value data"""
     boxplot_by_solver = dict(
-        final_times=(df[['idx_rep', 'time']].groupby('idx_rep')['time'].max()).tolist(),
+        final_times=(
+            df[['idx_rep', 'time']]
+            .groupby('idx_rep')['time']
+            .max()
+        ).tolist(),
         final_objective_value=(
-            df[['idx_rep', obj_col]].groupby('idx_rep')[obj_col].min()).tolist()
+            df[['idx_rep', obj_col]]
+            .groupby('idx_rep')[obj_col]
+            .min()
+        ).tolist()
     )
 
     """By ITERATIONS : Compute time and objective_value"""
@@ -16,7 +23,9 @@ def compute_boxplot_data(df, obj_col):
     # For each repetition
     for i in range(df['idx_rep'].max() + 1):
         tmp_time = df.query('idx_rep == @i')['time'].tolist()
-        tmp_objective_metric_value = df.query('idx_rep == @i')[obj_col].tolist()
+        tmp_objective_metric_value = (
+            df.query('idx_rep == @i')[obj_col].tolist()
+        )
         # For each iteration
         for j in range(len(tmp_time)):
             times[j].append(tmp_time[j])
@@ -27,4 +36,7 @@ def compute_boxplot_data(df, obj_col):
         objective=objective_metric_values,
     )
 
-    return {'by_solver': boxplot_by_solver, 'by_iteration': boxplot_by_iteration}
+    return {
+        'by_solver': boxplot_by_solver,
+        'by_iteration': boxplot_by_iteration
+    }
