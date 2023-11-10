@@ -5,9 +5,9 @@ const NON_CONVERGENT_COLOR = 'rgba(0.8627, 0.8627, 0.8627)'
  * STATE MANAGEMENT
  *
  * The state represent the plot state. It's an object
- * that is stored into the window.state variable.
+ * that is stored into the window._state variable.
  *
- * Do not manually update window.state,
+ * Do not manually update window._state,
  * instead, foreach state modification,
  * you shoud call the setState() function
  * to keep the plot in sync with its state.
@@ -31,8 +31,8 @@ const NON_CONVERGENT_COLOR = 'rgba(0.8627, 0.8627, 0.8627)'
  * @param {Object} partialState
  */
 const setState = (partialState) => {
-  window.state = {...state(), ...partialState};
   displayScatterElements(!isBarChart());
+  window._state = {...state(), ...partialState};
 
   // TODO: `listIdXaxisSelection` to be removed after
   // implementing responsiveness through breakpoints
@@ -45,11 +45,17 @@ const setState = (partialState) => {
 }
 
 /**
- * Retrieve the state object from window.state
+ * Retrieve the state object from window._state
  *
  * @returns Object
  */
-const state = () => window.state;
+const state = (key = undefined) => {
+  if (key) {
+    return window._state[key];
+  }
+
+  return window._state;
+}
 
 /**
  * Mapping between selectors and configuration
