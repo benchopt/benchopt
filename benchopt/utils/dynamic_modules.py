@@ -6,6 +6,9 @@ import warnings
 import importlib
 from pathlib import Path
 
+from cloudpickle import dumps
+from cloudpickle import register_pickle_by_value
+
 from .safe_import import safe_import_context
 
 
@@ -13,7 +16,7 @@ def _get_module_from_file(module_filename, benchmark_dir=None):
     """Load a module from the name of the file"""
     module_filename = Path(module_filename)
     if benchmark_dir is not None:
-        # Use a package starting from the benchmark root folder.
+        # Use a package name derived from the benchmark root folder.
         module_filename = module_filename.resolve()
         benchmark_dir = Path(benchmark_dir).resolve().parent
         package_name = module_filename.relative_to(benchmark_dir)
@@ -32,7 +35,35 @@ def _get_module_from_file(module_filename, benchmark_dir=None):
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         sys.modules[package_name] = module
+
+        # Make functions define in the dynamic module pickleable
+        register_pickle_by_value(module)
     return module
+
+
+def _get_import_context(module):
+    """Helper to get the import context from a module.
+
+    In particular, if `import_ctx` is not defined, check that no local objects
+    is an instance of safe_import_context.
+    """
+    import_ctx = getattr(module, 'import_ctx', None)
+    if import_ctx is not None:
+        return import_ctx
+
+    for var_name in dir(module):
+        var = getattr(module, var_name)
+        if isinstance(var, safe_import_context):
+            import_ctx = var
+            warnings.warn(
+                "Import contexts should preferably be named import_ctx, "
+                f"got {var_name}.",  UserWarning
+            )
+            break
+    else:
+        import_ctx = safe_import_context()
+
+    return import_ctx
 
 
 def _load_class_from_module(module_filename, class_name, benchmark_dir):
@@ -56,29 +87,14 @@ def _load_class_from_module(module_filename, class_name, benchmark_dir):
     klass : class
         The klass requested from the given module.
     """
-    benchmark_dir = Path(benchmark_dir)
-    module_filename = Path(module_filename)
     module = _get_module_from_file(module_filename, benchmark_dir)
     klass = getattr(module, class_name)
 
-    # Store the info to easily reload the class
-    klass._module_filename = module_filename.resolve()
+    # Store the info to easily reload the class and check it is installed
+    # klass._benchmark_dir = benchmark_dir.resolve()
+    # klass._module_filename = module_filename.resolve()
+    klass._import_ctx = _get_import_context(module)
 
-    klass._import_ctx = getattr(module, 'import_ctx', None)
-    if klass._import_ctx is None:
-        for var_name in dir(module):
-            var = getattr(module, var_name)
-            if isinstance(var, safe_import_context):
-                klass._import_ctx = var
-                warnings.warn(
-                    "Import contexts should preferably be named import_ctx, "
-                    f"got {var_name}.",  UserWarning
-                )
-                break
-        else:
-            klass._import_ctx = safe_import_context()
-
-    klass._benchmark_dir = benchmark_dir.resolve()
     return klass
 
 

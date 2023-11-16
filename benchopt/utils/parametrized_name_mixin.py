@@ -1,7 +1,9 @@
 import itertools
 from abc import abstractmethod
 
+import cloudpickle
 
+from .dynamic_modules import get_file_hash
 from .dynamic_modules import _reconstruct_class
 
 
@@ -72,14 +74,22 @@ class ParametrizedNameMixin():
         """Compute the parametrized name for a given set of parameters."""
         return str(cls.get_instance(**parameters))
 
-    @classmethod
-    def _reload_class(cls, pickled_module_hash=None):
+    @staticmethod
+    def _load_instance(class_value, parameters):
+        klass = cloudpickle.loads(class_value)
+        obj = klass.get_instance(**parameters)
+        return obj
 
-        return _reconstruct_class(
-            cls._module_filename, cls._base_class_name,
-            cls._import_ctx.benchmark_dir,
-            pickled_module_hash=pickled_module_hash
-        )
+    def _get_reduce_args(self):
+        """Get the arguments necessary to reconstruct the instance."""
+        class_value = cloudpickle.dumps(self.__class__)
+        class_value = cloudpickle.dumps(cloudpickle.loads(class_value))
+        if self.name == "Simulated":
+            print(self.__class__.__dict__)
+        return class_value, self._parameters
+
+    def __reduce__(self):
+        return self._load_instance, self._get_reduce_args()
 
 
 def expand(keys, values):

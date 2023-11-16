@@ -7,7 +7,6 @@ from benchopt.datasets import make_correlated_data
 class Dataset(BaseDataset):
 
     name = "Simulated"
-    __name__ = 'test'
 
     # List of parameters to generate the datasets. The benchmark will consider
     # the cross product for each key in the dictionary.
