@@ -6,8 +6,7 @@ import warnings
 import importlib
 from pathlib import Path
 
-from cloudpickle import dumps
-from cloudpickle import register_pickle_by_value
+from joblib.externals import cloudpickle
 
 from .safe_import import safe_import_context
 
@@ -37,7 +36,7 @@ def _get_module_from_file(module_filename, benchmark_dir=None):
         sys.modules[package_name] = module
 
         # Make functions define in the dynamic module pickleable
-        register_pickle_by_value(module)
+        cloudpickle.register_pickle_by_value(module)
     return module
 
 

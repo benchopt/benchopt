@@ -3,7 +3,7 @@ import warnings
 import importlib
 from pathlib import Path
 
-from cloudpickle import register_pickle_by_value
+from joblib.externals.cloudpickle import register_pickle_by_value
 
 from ..config import RAISE_INSTALL_ERROR
 

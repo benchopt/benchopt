@@ -715,6 +715,8 @@ def _filter_classes(*classes, filters=None):
             yield klass.name, False
             continue
 
+        klass = klass.get_deterministic_dynamic_class()
+
         for parameters in _get_used_parameters(klass, filters):
             yield klass.get_instance(**parameters), True
 

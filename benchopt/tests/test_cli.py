@@ -258,12 +258,9 @@ class TestRunCmd:
         out.check_output(
             r'Python-PGD\[step_size=1.5\]:', repetition=0)
 
-    @pytest.mark.parametrize('n_rep', [2, 3, 5])
+    @pytest.mark.parametrize('n_rep', [1, 2, 3])
     def test_benchopt_caching(self, n_rep):
         clean([str(DUMMY_BENCHMARK_PATH)], 'benchopt', standalone_mode=False)
-
-        # XXX - remove once this is fixed upstream with joblib/joblib#1289
-        _FUNCTION_HASHES.clear()
 
         # Check that the computation caching is working properly.
         run_cmd = [str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,

@@ -1,10 +1,8 @@
 import itertools
+import hashlib
 from abc import abstractmethod
 
-import cloudpickle
-
-from .dynamic_modules import get_file_hash
-from .dynamic_modules import _reconstruct_class
+from joblib.externals import cloudpickle
 
 
 class ParametrizedNameMixin():
@@ -29,6 +27,32 @@ class ParametrizedNameMixin():
         for k, v in _parameters.items():
             if not hasattr(self, k):
                 setattr(self, k, v)
+
+    @classmethod
+    def get_deterministic_dynamic_class(cls):
+        # Make the cloudpickle payload of this dynamic class deterministic
+        # XXX - remove when cloudpickle dynamic class payload are deterministic
+        # by default.
+        class_tracker = cloudpickle.cloudpickle._DYNAMIC_CLASS_TRACKER_BY_CLASS
+        id_tracker = cloudpickle.cloudpickle._DYNAMIC_CLASS_TRACKER_BY_ID
+
+        class_value = cloudpickle.dumps(cls)
+        with cloudpickle.cloudpickle._DYNAMIC_CLASS_TRACKER_LOCK:
+            id_tracker.pop(class_tracker[cls])
+            class_tracker.pop(cls)
+        cls = cloudpickle.loads(class_value)
+
+        class_value = cloudpickle.dumps(cls)
+        class_value = class_value.replace(
+            class_tracker[cls].encode(), b'BENCHOPT_DYN_CLASS_TRACKER_ID'
+        )
+        hash_id = hashlib.md5(class_value).hexdigest()
+        with cloudpickle.cloudpickle._DYNAMIC_CLASS_TRACKER_LOCK:
+            id_tracker.pop(class_tracker[cls])
+            id_tracker[hash_id] = cls
+            class_tracker[cls] = hash_id
+
+        return cls
 
     @classmethod
     def get_instance(cls, **parameters):
@@ -83,9 +107,6 @@ class ParametrizedNameMixin():
     def _get_reduce_args(self):
         """Get the arguments necessary to reconstruct the instance."""
         class_value = cloudpickle.dumps(self.__class__)
-        class_value = cloudpickle.dumps(cloudpickle.loads(class_value))
-        if self.name == "Simulated":
-            print(self.__class__.__dict__)
         return class_value, self._parameters
 
     def __reduce__(self):
