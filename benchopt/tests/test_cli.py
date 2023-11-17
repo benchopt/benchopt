@@ -7,7 +7,6 @@ from pathlib import Path
 
 import click
 import pytest
-from joblib.memory import _FUNCTION_HASHES
 from click.shell_completion import ShellComplete
 
 from benchopt.plotting import PLOT_KINDS
