@@ -38,8 +38,8 @@ class ParametrizedNameMixin():
 
         class_value = cloudpickle.dumps(cls)
         with cloudpickle.cloudpickle._DYNAMIC_CLASS_TRACKER_LOCK:
-            id_tracker.pop(class_tracker[cls])
-            class_tracker.pop(cls)
+            idx = class_tracker.pop(cls)
+            id_tracker.pop(idx)
         cls = cloudpickle.loads(class_value)
 
         class_value = cloudpickle.dumps(cls)

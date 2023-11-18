@@ -90,8 +90,8 @@ def _load_class_from_module(module_filename, class_name, benchmark_dir):
     klass = getattr(module, class_name)
 
     # Store the info to easily reload the class and check it is installed
-    # klass._benchmark_dir = benchmark_dir.resolve()
     # klass._module_filename = module_filename.resolve()
+    # klass._benchmark_dir = benchmark_dir.resolve()
     klass._import_ctx = _get_import_context(module)
 
     return klass
