@@ -5,6 +5,10 @@ from abc import abstractmethod
 from joblib.externals import cloudpickle
 
 
+# Cache for the cloudpickle payload of dynamic classes.
+_DYNAMIC_CLASS_PAYLOAD = {}
+
+
 class ParametrizedNameMixin():
     """Mixing for parametric classes representation and naming.
     """
@@ -36,12 +40,17 @@ class ParametrizedNameMixin():
         class_tracker = cloudpickle.cloudpickle._DYNAMIC_CLASS_TRACKER_BY_CLASS
         id_tracker = cloudpickle.cloudpickle._DYNAMIC_CLASS_TRACKER_BY_ID
 
+        # reload class from cloudpickle payload to avoid issues with string and
+        # tuples interning. To avoid falling back to the original class, we
+        # need to remove the class from the class_tracker and id_tracker.
         class_value = cloudpickle.dumps(cls)
         with cloudpickle.cloudpickle._DYNAMIC_CLASS_TRACKER_LOCK:
             idx = class_tracker.pop(cls)
             id_tracker.pop(idx)
         cls = cloudpickle.loads(class_value)
 
+        # Make the tracker_id argument of the pickle payload deterministic,
+        # based on the hash of the payload.
         class_value = cloudpickle.dumps(cls)
         class_value = class_value.replace(
             class_tracker[cls].encode(), b'BENCHOPT_DYN_CLASS_TRACKER_ID'
@@ -106,7 +115,11 @@ class ParametrizedNameMixin():
 
     def _get_reduce_args(self):
         """Get the arguments necessary to reconstruct the instance."""
-        class_value = cloudpickle.dumps(self.__class__)
+
+        cls = self.__class__
+        if cls not in _DYNAMIC_CLASS_PAYLOAD:
+            _DYNAMIC_CLASS_PAYLOAD[cls] = cloudpickle.dumps(cls)
+        class_value = _DYNAMIC_CLASS_PAYLOAD[cls]
         return class_value, self._parameters
 
     def __reduce__(self):
