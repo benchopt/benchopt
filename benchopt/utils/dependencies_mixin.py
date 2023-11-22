@@ -3,6 +3,7 @@ import traceback
 from ..config import RAISE_INSTALL_ERROR
 
 from .class_property import classproperty
+from .safe_import import get_benchmark_dir
 from .shell_cmd import _run_shell_in_conda_env
 from .conda_env_cmd import install_in_conda_env
 from .conda_env_cmd import shell_install_in_conda_env
@@ -70,7 +71,7 @@ class DependenciesMixin:
                 return True
         else:
             return _run_shell_in_conda_env(
-                f"benchopt check-install {cls._benchmark_dir} "
+                f"benchopt check-install {get_benchmark_dir()} "
                 f"{cls._module_filename} {cls._base_class_name}",
                 env_name=env_name, raise_on_error=raise_on_not_installed
             ) == 0

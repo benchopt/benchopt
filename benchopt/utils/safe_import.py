@@ -49,6 +49,11 @@ def set_benchmark_module(benchmark_dir):
         )
 
 
+def get_benchmark_dir():
+    """Returns the current benchmark directory."""
+    return BENCHMARK_DIR
+
+
 class safe_import_context:
     """Context used to manage import in benchmarks.
 
@@ -66,7 +71,6 @@ class safe_import_context:
     def __init__(self):
         self.failed_import = False
         self.record = warnings.catch_warnings(record=True)
-        self._benchmark_dir = BENCHMARK_DIR
 
     def __enter__(self):
         # Skip context if necessary to speed up import
