@@ -251,7 +251,6 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
     print(end='', flush=True)
 
     # refresh the solver warm up flag so that warm-up is done again
-
     # when calling the solver with another problem/dataset pair.
     solver._warmup_done = False
 
