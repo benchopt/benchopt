@@ -250,7 +250,7 @@ def test_pre_run_hook():
         def run(self, n_iter):
             assert self._pre_run_hook_n_iter == n_iter
 
-        def get_result(self, **data):
+        def get_result(self):
             return {'beta': np.zeros(self.n_features)}
     """
 

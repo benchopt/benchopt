@@ -1,5 +1,6 @@
 import sys
 from pathlib import Path
+from joblib.externals.cloudpickle import register_pickle_by_value
 
 from benchopt.benchmark import Benchmark
 
@@ -32,3 +33,7 @@ except Exception:
     TEST_OBJECTIVE = None
     TEST_SOLVER = None
     TEST_DATASET = None
+
+# Make sure the test cases in test_runner are pickleable as dynamic classes
+from benchopt.tests import test_runner  # noqa: E402
+register_pickle_by_value(test_runner)

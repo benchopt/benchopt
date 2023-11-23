@@ -17,10 +17,10 @@ cluster. To install the necessary dependencies, please run:
 
 .. prompt:: bash $
 
-    pip install benchopt[slurm]
+    pip install benchopt[submitit]
 
     # Or for dev install
-    pip install -e .[slurm]
+    pip install -e .[submitit]
 
 Note that for some clusters with shared python installation, it is necessary
 to call ``pip install --user`` to install the packages in the user space and
@@ -101,7 +101,7 @@ we get
 .. _sampling_strategy:
 
 Changing the strategy to grow the computational budget (:code:`stop_val`)
-------------------------------------------------------------------------
+-------------------------------------------------------------------------
 
 Benchopt varies the computational budget by varying either the number
 of iterations or the tolerance given to the method. The default policy is

@@ -367,7 +367,7 @@ def sys_info():
 
 @helpers.group(
     help="Configuration helper for benchopt. The configuration of benchopt "
-    "is detailed in :ref:`config_doc`.",
+    "is detailed in :ref:`config_benchopt`.",
     invoke_without_command=True
 )
 @click.option('--benchmark', '-b', metavar='<benchmark>',

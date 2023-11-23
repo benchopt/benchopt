@@ -3,14 +3,13 @@ import inspect
 
 from datetime import datetime
 
-from joblib import Parallel, delayed
-
 from .callback import _Callback
 from .benchmark import _check_name_lists
 from .utils.sys_info import get_sys_info
 from .utils.files import uniquify_results
 from .utils.pdb_helpers import exception_handler
 from .utils.terminal_output import TerminalOutput
+from .utils.parallel_backends import parallel_run
 
 ##################################
 # Time one run of a solver
@@ -250,10 +249,10 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
 
 
 def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
-                  dataset_names=None, objective_filters=None, max_runs=10,
-                  n_repetitions=1, timeout=100, n_jobs=1, slurm=None,
-                  plot_result=True, display=True, html=True,
-                  show_progress=True, pdb=False, output="None"):
+                  dataset_names=None, objective_filters=None,
+                  max_runs=10, n_repetitions=1, timeout=100,
+                  plot_result=True, display=True, html=True, output="None",
+                  parallel_config=None, show_progress=True, pdb=False):
     """Run full benchmark.
 
     Parameters
@@ -279,11 +278,10 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
         The number of repetitions to run. Defaults to 1.
     timeout : float
         The maximum duration in seconds of the solver run.
-    n_jobs : int
-        Maximal number of workers to use to run the benchmark in parallel.
-    slurm : Path | None
-        If not None, launch the job on a slurm cluster using the file to get
-        the cluster config parameters.
+    parallel_config : dict | None
+        If not None, launch the job in parallel. The provided config serves to
+        set up parallelism using ``joblib.parallel_backend`` or ``submitit``.
+        See :ref:`parallel_run` for detailed description.
     plot_result : bool
         If set to True (default), generate the result plot and save them in
         the benchmark directory.
@@ -326,17 +324,10 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
         timeout=timeout, pdb=pdb
     )
 
-    if slurm is not None:
-        from .utils.slurm_executor import run_on_slurm
-        results = run_on_slurm(
-            benchmark, slurm, run_one_solver, common_kwargs,
-            all_runs
-        )
-    else:
-        results = Parallel(n_jobs=n_jobs)(
-            delayed(run_one_solver)(**common_kwargs, **kwargs)
-            for kwargs in all_runs
-        )
+    results = parallel_run(
+        benchmark, run_one_solver, common_kwargs, all_runs,
+        config=parallel_config
+    )
 
     run_statistics = []
     for curve in results:

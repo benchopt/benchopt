@@ -12,3 +12,4 @@ User guide
     CLI_ref
     advanced
     performance_curves
+    distributed_run

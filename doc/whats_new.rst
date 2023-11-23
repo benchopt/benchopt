@@ -5,6 +5,18 @@ What's new
 
 .. currentmodule:: benchopt
 
+.. _changes_1.6:
+
+Version 1.6 - In development
+----------------------------
+
+ENH
+~~~
+
+- Add a parallel backend system for ``benchopt run`` to setup distributed
+  run with ``dask`` and ``submitit``. See :ref:`parallel_run` for details.
+  By `Thomas Moreau`_ (:gh:`673`).
+
 .. _changes_1_5_1:
 
 Version 1.5.1 - 22/09/2023
@@ -60,7 +72,7 @@ PLOT
 
 - Add the possibility to save views of the plot in the HTML. These views can be
   created in the HTML interface and saved in config files, linked to output
-  parquet files, by `Amelie Vernay`_, `Tanguy Lefort`_, `Melvine Nargeot`_
+  parquet files, by `Amélie Vernay`_, `Tanguy Lefort`_, `Melvine Nargeot`_
   and `Thomas Moreau`_ (:gh:`552`).
 
 DOC
@@ -96,7 +108,7 @@ CLI
   By `Thomas Moreau`_ (:gh:`569`)
 - Deprecate ``.ini`` config file and use ``.yml`` files instead. A conversion
   should be performed automatically.
-  By `Tanguy Lefort`_, `Amelie Vernay`_ and `Thomas Moreau`_ (:gh:`552`).
+  By `Tanguy Lefort`_, `Amélie Vernay`_ and `Thomas Moreau`_ (:gh:`552`).
 
 API
 ~~~
@@ -127,7 +139,7 @@ PLOT
 - Add button to share and set specific views on the plot. For now, the view need
   to be defined manually in the benchmark config file but an export button will
   be added in follow up PRs.
-  By `Tanguy Lefort`_, `Amelie Vernay`_ and `Thomas Moreau`_ (:gh:`552`).
+  By `Tanguy Lefort`_, `Amélie Vernay`_ and `Thomas Moreau`_ (:gh:`552`).
 
 FIX
 ~~~
@@ -168,7 +180,7 @@ CLI
   syntax. By `Tom Dupré la Tour`_ (:gh:`362`).
 
 - Add ``--slurm`` option in ``benchopt run`` to allow running the benchmark on
-  a SLURM cluster. See the :ref:`slurm_run` for more details on the config.
+  a SLURM cluster. See the :ref:`slurm_backend` for more details on the config.
   By `Thomas Moreau`_ (:gh:`407`)
 
 - Add ``benchopt archive`` to create a ``tar.gz`` archive with the benchmark's

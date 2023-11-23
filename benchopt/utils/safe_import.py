@@ -3,6 +3,8 @@ import warnings
 import importlib
 from pathlib import Path
 
+from joblib.externals.cloudpickle import register_pickle_by_value
+
 from ..config import RAISE_INSTALL_ERROR
 
 SKIP_IMPORT = False
@@ -37,6 +39,7 @@ def set_benchmark_module(benchmark_dir):
         )
         module = importlib.util.module_from_spec(spec)
         sys.modules[PACKAGE_NAME] = module
+        register_pickle_by_value(module)
         spec.loader.exec_module(module)
     elif module_file.parent.exists():
         warnings.warn(
@@ -44,6 +47,11 @@ def set_benchmark_module(benchmark_dir):
             "Make sure it is a proper module to allow importing from it.",
             ImportWarning
         )
+
+
+def get_benchmark_dir():
+    """Returns the current benchmark directory."""
+    return BENCHMARK_DIR
 
 
 class safe_import_context:
@@ -63,7 +71,6 @@ class safe_import_context:
     def __init__(self):
         self.failed_import = False
         self.record = warnings.catch_warnings(record=True)
-        self._benchmark_dir = BENCHMARK_DIR
 
     def __enter__(self):
         # Skip context if necessary to speed up import

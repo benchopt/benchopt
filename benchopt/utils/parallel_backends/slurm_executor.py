@@ -1,31 +1,14 @@
-import yaml
-
 try:
     import submitit
     from submitit.helpers import as_completed
     from rich import progress
 
-    _SLURM_INSTALLED = True
+    _submitit_INSTALLED = True
 except ImportError:
-    _SLURM_INSTALLED = False
+    _submitit_INSTALLED = False
 
 
-_LAUNCHING_SLURM = False
-
-
-def set_slurm_launch():
-    global _LAUNCHING_SLURM
-    _LAUNCHING_SLURM = True
-
-
-def get_slurm_launch():
-    return _LAUNCHING_SLURM
-
-
-def get_slurm_executor(benchmark, slurm_config, timeout=100):
-
-    with open(slurm_config, "r") as f:
-        config = yaml.safe_load(f)
+def get_slurm_executor(benchmark, config, timeout):
 
     # If the job timeout is not specified in the config file, use 1.5x the
     # benchopt timeout. This value is a trade-off between helping the
@@ -41,23 +24,17 @@ def get_slurm_executor(benchmark, slurm_config, timeout=100):
     return executor
 
 
-def run_on_slurm(
-    benchmark,
-    slurm_config,
-    run_one_solver,
-    common_kwargs,
-    all_runs
-):
+def run_on_slurm(benchmark, config, run_one_solver, common_kwargs, all_runs):
 
-    if not _SLURM_INSTALLED:
+    if not _submitit_INSTALLED:
         raise ImportError(
             "Benchopt needs submitit and rich to launch computation on a "
             "SLURM cluster. Please use `pip install submitit rich` to use "
-            "the --slurm option."
+            "the `submitit` backend."
         )
 
     executor = get_slurm_executor(
-        benchmark, slurm_config, common_kwargs["timeout"]
+        benchmark, config, timeout=common_kwargs["timeout"]
     )
     with executor.batch():
         tasks = [
