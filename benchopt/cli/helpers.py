@@ -72,6 +72,11 @@ def clean(benchmark, token=None, filename='all'):
                 json_file.pop(f"{filename}.{ext}", None)
                 with open(json_path, "w") as cache_run:
                     json.dump(json_file, cache_run)
+    # Delete slurm files
+    slurm_folder = benchmark.get_slurm_folder()
+    if slurm_folder.exists():
+        print(f"rm -rf {slurm_folder}")
+        rm_folder(slurm_folder)
     # Delete cache files
     print("Clear joblib cache")
     benchmark.mem.clear(warn=False)

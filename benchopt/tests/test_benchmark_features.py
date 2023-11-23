@@ -2,6 +2,8 @@ import pytest
 import tempfile
 
 from benchopt.cli.main import run
+from benchopt.cli.main import test as _cmd_test
+from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.utils.dynamic_modules import _load_class_from_module
 
 from benchopt.tests import SELECT_ONE_PGD
@@ -196,3 +198,143 @@ def test_ignore_hidden_files():
             SELECT_ONE_SIMULATED, '-f', SELECT_ONE_PGD, '-n', '1',
             '-r', '1', '-o', SELECT_ONE_OBJECTIVE, '--no-plot'
         ], 'benchopt', standalone_mode=False)
+
+
+@pytest.mark.parametrize("n_iter", [1, 2, 5])
+def test_run_once_iteration(n_iter):
+
+    solver1 = f"""from benchopt import BaseSolver
+    import numpy as np
+
+    class Solver(BaseSolver):
+        name = 'solver1'
+        sampling_strategy = 'iteration'
+
+        def set_objective(self, X, y, lmbd):
+            self.n_features = X.shape[1]
+            self.run_once({n_iter})
+
+        def run(self, n_iter): print(f"RUNONCE({{n_iter}})")
+
+        def get_result(self, **data):
+            return {{'beta': np.zeros(self.n_features)}}
+    """
+
+    with temp_benchmark(solvers=[solver1]) as benchmark:
+        with CaptureRunOutput() as out:
+            run([
+                str(benchmark.benchmark_dir),
+                *'-s solver1 -d test-dataset -n 0 -r 1 --no-plot'.split(),
+                *'-o dummy*[reg=0.5]'.split()
+            ], standalone_mode=False)
+        out.check_output(rf"RUNONCE\({n_iter}\)", repetition=1)
+
+
+@pytest.mark.parametrize("n_iter", [1, 2, 5])
+def test_run_once_callback(n_iter):
+
+    solver1 = f"""from benchopt import BaseSolver
+    import numpy as np
+
+    class Solver(BaseSolver):
+        name = 'solver1'
+        sampling_strategy = 'callback'
+
+        def set_objective(self, X, y, lmbd):
+            self.n_features = X.shape[1]
+            self.run_once({n_iter})
+
+        def run(self, cb):
+            i = 0
+            while cb():
+                i += 1
+            print(f"RUNONCE({{i}})")
+
+        def get_result(self, **data):
+            return {{'beta': np.zeros(self.n_features)}}
+    """
+
+    with temp_benchmark(solvers=[solver1]) as benchmark:
+        with CaptureRunOutput() as out:
+            run([
+                str(benchmark.benchmark_dir),
+                *'-s solver1 -d test-dataset -n 0 -r 1 --no-plot'.split(),
+                *'-o dummy*[reg=0.5]'.split()
+            ], standalone_mode=False)
+
+        out.check_output(rf"RUNONCE\({n_iter}\)", repetition=1)
+
+
+def test_warm_up():
+
+    solver1 = """from benchopt import BaseSolver
+    import numpy as np
+
+    class Solver(BaseSolver):
+        name = 'solver1'
+        sampling_strategy = 'iteration'
+
+        def set_objective(self, X, y, lmbd):
+            self.n_features = X.shape[1]
+
+        def warm_up(self):
+            print("WARMUP")
+            self.run_once(1)
+
+        def run(self, n_iter): pass
+
+        def get_result(self, **data):
+            return {'beta': np.zeros(self.n_features)}
+    """
+
+    with temp_benchmark(solvers=[solver1]) as benchmark:
+        with CaptureRunOutput() as out:
+            run([
+                str(benchmark.benchmark_dir),
+                *'-s solver1 -d test-dataset -n 0 -r 5 --no-plot'.split(),
+                *'-o dummy*[reg=0.5]'.split()
+            ], standalone_mode=False)
+
+        # Make sure warmup is called exactly once
+        out.check_output("WARMUP", repetition=1)
+
+
+def test_pre_run_hook():
+
+    solver1 = """from benchopt import BaseSolver
+    import numpy as np
+
+    class Solver(BaseSolver):
+        name = 'solver1'
+        sampling_strategy = 'iteration'
+
+        def set_objective(self, X, y, lmbd):
+            self.n_features = X.shape[1]
+
+        def pre_run_hook(self, n_iter):
+            self._pre_run_hook_n_iter = n_iter
+
+        def run(self, n_iter):
+            assert self._pre_run_hook_n_iter == n_iter
+
+        def get_result(self, **data):
+            return {'beta': np.zeros(self.n_features)}
+    """
+
+    with temp_benchmark(solvers=[solver1]) as benchmark:
+        with CaptureRunOutput() as out:
+            run([
+                str(benchmark.benchmark_dir),
+                *'-s solver1 -d test-dataset -n 0 -r 5 --no-plot '
+                '-o dummy*[reg=0.5]'.split()
+            ], standalone_mode=False)
+
+        with CaptureRunOutput() as out:
+            with pytest.raises(SystemExit, match="False"):
+                _cmd_test([
+                    str(benchmark.benchmark_dir), '-k', 'solver1',
+                    '--skip-install', '-v'
+                ], standalone_mode=False)
+
+        # Make sure warmup is called exactly once
+        out.check_output("3 passed, 1 skipped, 7 deselected", repetition=1)

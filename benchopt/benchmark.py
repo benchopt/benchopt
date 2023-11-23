@@ -24,6 +24,7 @@ from .config import RAISE_INSTALL_ERROR
 
 
 CACHE_DIR = '__cache__'
+SLURM_JOB_NAME = 'benchopt_run'
 
 
 class Benchmark:
@@ -35,28 +36,56 @@ class Benchmark:
         Folder containing the benchmark. The folder should at least
         contain an `objective.py` file defining the `Objective`
         function for the benchmark.
+    allow_meta_from_json : bool
+        If set to True, allow the object to be instanciated even when
+        objective.py cannot be found. In this case, the metadata are retrieved
+        from the benchmark_meta.json file. This should only be used to generate
+        HTML pages with results.
 
     Attributes
     ----------
     mem : joblib.Memory
         Caching mechanism for the benchmark.
     """
-    def __init__(self, benchmark_dir):
+    def __init__(
+        self, benchmark_dir, allow_meta_from_json=False,
+    ):
         self.benchmark_dir = Path(benchmark_dir)
-        self.name = self.benchmark_dir.resolve().name
 
         set_benchmark_module(self.benchmark_dir)
 
+        # Load the benchmark metadat defined in `objective.py` or
+        # in `benchmark_meta.json`.
         try:
             objective = self.get_benchmark_objective()
             self.pretty_name = objective.name
+            self.url = getattr(objective, "url", None)
             self.min_version = getattr(objective, 'min_benchopt_version', None)
         except RuntimeError:
-            raise click.BadParameter(
-                f"The folder '{benchmark_dir}' does not contain "
-                "`objective.py`.\nMake sure you provide the path to a valid "
-                "benchmark."
-            )
+            if not allow_meta_from_json:
+                raise click.BadParameter(
+                    f"The folder '{benchmark_dir}' does not contain "
+                    "`objective.py`.\nMake sure you provide the path to a "
+                    "valid benchmark."
+                )
+            meta_data = (self.benchmark_dir / "benchmark_meta.json")
+            if not meta_data.exists():
+                raise FileNotFoundError(
+                    "Can't find objective.py or benchmark_meta.json to get "
+                    "benchmark info for the html_generation."
+                )
+
+            with meta_data.open() as f:
+                import json
+                meta = json.load(f)
+                self.pretty_name = meta["pretty_name"]
+                self.url = meta.get("url", None)
+
+        if self.url is None:
+            self.name = self.benchmark_dir.resolve().name
+            self.url = f"https://github.com/benchopt/{self.name}"
+        else:
+            self.name = Path(self.url).name
 
     ####################################################################
     # Helpers to access and validate objective, solvers and datasets
@@ -203,6 +232,11 @@ class Benchmark:
         output_dir.mkdir(exist_ok=True)
         return output_dir
 
+    def get_slurm_folder(self):
+        """Get the folder to store the output of the slurm executor."""
+        slurm_dir = self.benchmark_dir / SLURM_JOB_NAME
+        return slurm_dir
+
     def get_result_file(self, filename=None):
         """Get a result file from the benchmark.
 
@@ -310,15 +344,21 @@ class Benchmark:
 
     def get_config_file(self):
         "Get the location for the config file of the benchmark."
-        return self.benchmark_dir / 'config.ini'
+        yml_path = self.benchmark_dir / "config.yml"
+        ini_path = yml_path.with_suffix('.ini')
+        if not yml_path.exists() and ini_path.exists():
+            return ini_path
+        return yml_path
 
-    def get_setting(self, setting_name):
+    def get_setting(self, setting_name, default_config=None):
         "Retrieve the setting value from benchmark config."
 
         # Get the config file and read it
         config_file = self.get_config_file()
-        return get_setting(name=setting_name, config_file=config_file,
-                           benchmark_name=self.name)
+        return get_setting(
+            name=setting_name, config_file=config_file,
+            benchmark_name=self.name, default_config=default_config
+        )
 
     def get_test_config_file(self):
         """Get the location for the test config file for the benchmark.

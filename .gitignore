@@ -24,7 +24,7 @@ benchopt_front_page_convergence.pdf
 /benchmarks/
 /results/
 /ci_template.github/
-
+/communication_materials/
 
 # IDE specific folders
 .vscode

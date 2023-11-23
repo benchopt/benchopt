@@ -7,7 +7,7 @@ from benchopt.utils.conda_env_cmd import create_conda_env
 from benchopt.utils.conda_env_cmd import delete_conda_env
 from benchopt.utils.dynamic_modules import _get_module_from_file
 
-from benchopt.tests import TEST_BENCHMARK_DIR
+from benchopt.tests import DUMMY_BENCHMARK_PATH
 
 os.environ['BENCHOPT_DEBUG'] = '1'
 os.environ['BENCHOPT_RAISE_INSTALL_ERROR'] = '1'
@@ -33,7 +33,7 @@ def pytest_addoption(parser):
                      help="Use a given env to test the solvers' install.")
     parser.addoption("--recreate", action="store_true",
                      help="Recreate the environment if it already exists.")
-    parser.addoption("--benchmark", type=str, default=None, nargs='*',
+    parser.addoption("--benchmark", type=str, default=None,
                      help="Specify a benchmark to test.")
 
 
@@ -57,35 +57,38 @@ def pytest_collection_modifyitems(config, items):
 def pytest_generate_tests(metafunc):
     """Generate the test on the fly to take --benchmark into account.
     """
-    PARAMETRIZATION = {
-        ('benchmark', 'dataset_simu'): lambda benchmarks: [
-            (benchmark, dataset_class) for benchmark in benchmarks
-            for dataset_class in benchmark.get_datasets()
-            if dataset_class.name.lower() == 'simulated'
+
+    # Get all benchmarks
+    benchmark = metafunc.config.getoption("benchmark")
+    if benchmark is None:
+        benchmark = DUMMY_BENCHMARK_PATH
+    benchmark = Benchmark(benchmark)
+
+    # Make sure the tested benchmark is installed (we can import the Objective)
+    benchmark.get_benchmark_objective().is_installed(
+        raise_on_not_installed=True
+    )
+
+    # Extract the value for the parametrizations
+    parametrization = {
+        'dataset_simu': [
+            (benchmark, dataset) for dataset in benchmark.get_datasets()
+            if dataset.name.lower() == 'simulated'
         ],
-        ('benchmark', 'dataset_class'): lambda benchmarks: [
-            (benchmark, dataset_class) for benchmark in benchmarks
-            for dataset_class in benchmark.get_datasets()
+        'dataset_class': [
+            (benchmark, dataset) for dataset in benchmark.get_datasets()
         ],
-        ('benchmark', 'solver_class'): lambda benchmarks: [
-            (benchmark, solver) for benchmark in benchmarks
-            for solver in benchmark.get_solvers()
+        'solver_class': [
+            (benchmark, solver) for solver in benchmark.get_solvers()
         ]
     }
 
-    # Get all benchmarks
-    benchmarks = metafunc.config.getoption("benchmark")
-    if benchmarks is None or len(benchmarks) == 0:
-        benchmarks = TEST_BENCHMARK_DIR.glob('*/')
-    benchmarks = [Benchmark(b) for b in benchmarks]
-    benchmarks = [b for b in benchmarks
-                  if b.get_benchmark_objective().is_installed(quiet=True)]
-    benchmarks.sort(key=lambda x: x.name)
-
     # Parametrize the tests
-    for params, func in PARAMETRIZATION.items():
-        if set(params).issubset(metafunc.fixturenames):
-            metafunc.parametrize(params, func(benchmarks), ids=class_ids)
+    for param, values in parametrization.items():
+        if param in metafunc.fixturenames:
+            metafunc.parametrize(
+                ('benchmark', param), values, ids=class_ids
+            )
 
 @pytest.fixture
 def no_debug_test(request):

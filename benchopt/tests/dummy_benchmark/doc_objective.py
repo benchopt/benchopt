@@ -1,4 +1,4 @@
-from benchopt.base import BaseObjective, safe_import_context
+from benchopt import BaseObjective, safe_import_context
 
 # All packages other than benchopt should be imported in this context.
 # - This allows to list solvers even when a package is not installed,
@@ -19,7 +19,7 @@ class Objective(BaseObjective):
         'reg': [0.05, .1, .5]
     }
 
-    def get_one_solution(self):
+    def get_one_result(self):
         "Return one solution for which the objective can be evaluated."
         return np.zeros(self.X.shape[1])
 

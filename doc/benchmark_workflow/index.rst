@@ -9,5 +9,7 @@ Benchmark workflow
     :maxdepth: 1
 
     write_benchmark
+    run_benchmark
+    visualize_benchmark
     publish_benchmark
     config_benchopt

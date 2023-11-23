@@ -5,22 +5,47 @@ What's new
 
 .. currentmodule:: benchopt
 
+.. _changes_1_5_1:
+
+Version 1.5.1 - 22/09/2023
+--------------------------
+
+Bugfix release.
+
+FIX
+~~~
+
+- Fix benchopt dependency specification to install benchopt in child env
+  with extra ``[test]``. By `Thomas Moreau`_ (:gh:`662`).
+
+
 .. _changes_1_5:
 
-Version 1.5 (dev)
------------------
+Version 1.5 - 18/09/2023
+------------------------
 
 API
 ~~~
+
+- Add a ``Objective.url`` attribute to specify the original repo of the
+  benchmark. By `Thomas Moreau`_ (:gh:`621`).
+
+- Deprecate passing in arguments to callback of when ``sampling_strategy='callback'``.
+  Now on, the results from the ``Solver`` are collected using ``get_result``.
+  By `Thomas Moreau`_ (:gh:`631`).
+
+- Deprecate ``Objective.get_one_solution`` in favor of ``Objective.get_one_result``
+  for consistency with ``Objective.evaluate_result``.
+  By `Thomas Moreau`_ (:gh:`631`).
 
 - Deprecate ``Objective.compute`` in favor of ``Objective.evaluate_result``, for
   consistency with ``Solver.get_result``. Like ``Dataset.get_data``,
   ``Solver.get_result`` must now return a dictionary, which is unpacked as
   arguments to ``Objective.evaluate_result``.
-  By `Mathurin Massias`_ (:gh:`576`)
+  By `Mathurin Massias`_ (:gh:`576`).
 
 - ``Solver.support_sparse`` attribute is deprecated in favor of the use of
-``Solver.skip``, by `Mathurin Massias`_ (:gh:`614`).
+  ``Solver.skip``, by `Mathurin Massias`_ (:gh:`614`).
 
 - ``stopping_strategy`` attribute is replaced by ``sampling_strategy`` to clarify
   the concept, by `Mathurin Massias`_ (:gh:`585`).
@@ -28,6 +53,33 @@ API
 - Add ``Solver.warm_up`` function for explicit warmup instructions, such as
   empty run for jitting. This function is called only once per solver.
   By `Pierre Ablin`_ (:gh:`602`).
+
+
+PLOT
+~~~~
+
+- Add the possibility to save views of the plot in the HTML. These views can be
+  created in the HTML interface and saved in config files, linked to output
+  parquet files, by `Amelie Vernay`_, `Tanguy Lefort`_, `Melvine Nargeot`_
+  and `Thomas Moreau`_ (:gh:`552`).
+
+DOC
+~~~
+
+- Reformatting and enriching the documentation for easy onboarding.
+  By `Badr Moufad`_ and `Mathurin Massias`_ (:gh:`619`, :gh:`629`).
+
+- Tutorial on adding a new solver to a benchmark.
+  By `Badr MOUFAD`_ and `Mathurin Massias`_ (:gh:`635`).
+
+
+Internals
+~~~~~~~~~
+
+- Add helper to store and retrieve metadata in parquet files. This will
+  allow storing per-run plotting information.
+  By `Thomas Moreau`_ (:gh:`637`).
+
 
 .. _changes_1_4:
 
@@ -42,21 +94,20 @@ CLI
   By `Mathurin Massias`_ (:gh:`535`).
 - Remove deprecated ``-o/--objective-filter`` option in ``benchopt run``.
   By `Thomas Moreau`_ (:gh:`569`)
-
+- Deprecate ``.ini`` config file and use ``.yml`` files instead. A conversion
+  should be performed automatically.
+  By `Tanguy Lefort`_, `Amelie Vernay`_ and `Thomas Moreau`_ (:gh:`552`).
 
 API
 ~~~
 
 - The ``get_next`` method of :class:`~benchopt.BaseSolver` is no longer static.
   By `Badr Moufad`_ (:gh:`566`)
-
 - Add :class:`~benchopt.stopping_criterion.SingleRunCriterion` to run a solver
   only once. This can be used for benchmarking methods where we are interested
   in objective value at convergence. By `Thomas Moreau`_ (:gh:`511`)
-
 - Add :func:`~benchopt.BaseSolver.run_once` helper to easily warmup solvers
   with callback. By `Thomas Moreau`_ (:gh:`511`)
-
 - Add :func:`~benchopt.BaseSolver.pre_run_hook` hook to ignore cost that cannot
   be cached globally for a solver. By `Thomas Moreau`_ (:gh:`525`)
 
@@ -69,12 +120,14 @@ PLOT
 
 - Add a tooltip beside to show description of objective. Description is provided as docstring of
   the :class:`~benchopt.BaseObjective` class. By `Badr Moufad`_ (:gh:`556`)
-
 - Show solver description when hovering over solvers. Description is provided as docstring of
   the :class:`~benchopt.BaseSolver` class. By `Badr Moufad`_ (:gh:`543`)
-
 - Enable visualizing the objective as function of ``stopping_criterion``: time,
   iteration, or tolerance. By `Badr Moufad`_ (:gh:`479`)
+- Add button to share and set specific views on the plot. For now, the view need
+  to be defined manually in the benchmark config file but an export button will
+  be added in follow up PRs.
+  By `Tanguy Lefort`_, `Amelie Vernay`_ and `Thomas Moreau`_ (:gh:`552`).
 
 FIX
 ~~~

@@ -1,12 +1,8 @@
 import pytest
 import numpy as np
 
-import benchopt
-from benchopt.cli.main import run
-from benchopt.runner import _Callback
-from benchopt.stopping_criterion import SAMPLING_STRATEGIES
 from benchopt.utils import product_param
-from benchopt.utils.temp_benchmark import temp_benchmark
+from benchopt.stopping_criterion import SAMPLING_STRATEGIES
 
 
 def test_benchmark_objective(benchmark, dataset_simu):
@@ -20,7 +16,7 @@ def test_benchmark_objective(benchmark, dataset_simu):
     # check that the reported dimension is correct and that the result of
     # the objective function is a dictionary containing a scalar value for
     # `objective_value`.
-    beta_hat = objective.get_one_solution()
+    beta_hat = objective.get_one_result()
     objective_dict = objective(beta_hat)
 
     assert 'objective_value' in objective_dict, (
@@ -129,10 +125,12 @@ def test_solver_install(test_env_name, benchmark, solver_class, check_test):
     )
 
 
-def test_solver(benchmark, solver_class):
-
+def test_solver(benchmark, solver_class, check_test):
     # Check that a solver run with at least one configuration of a simulated
     # dataset.
+
+    if check_test is not None:
+        check_test(solver_class)
 
     if not solver_class.is_installed():
         pytest.skip("Solver is not installed")
@@ -183,27 +181,13 @@ def test_solver(benchmark, solver_class):
 def _test_solver_one_objective(solver, objective):
     # Test a solver runs with a given objective and give proper result.
 
-    is_convex = getattr(objective, "is_convex", True)
+    is_convex = getattr(objective, "is_convex", False)
 
-    # Either call run_with_cb or run
-    if solver._solver_strategy == 'callback':
-        sc = solver.stopping_criterion.get_runner_instance(
-            max_runs=25 if is_convex else 2, timeout=None, solver=solver
-        )
-        if not is_convex:
-            # Set large tolerance for the stopping criterion to stop fast
-            sc.eps = 5e-1
-        cb = _Callback(
-            objective, meta={}, stopping_criterion=sc
-        )
-        cb.start()
-        solver.run(cb)
+    if solver._solver_strategy in ['iteration', 'callback']:
+        stop_val = 5000 if is_convex else 2
     else:
-        if solver._solver_strategy == 'iteration':
-            stop_val = 5000 if is_convex else 2
-        else:
-            stop_val = 1e-10 if is_convex else 1e-2
-        solver.run(stop_val)
+        stop_val = 1e-10 if is_convex else 1e-2
+    solver.run_once(stop_val)
 
     # Check that returned results are compatible with the objective
     result = solver.get_result()
@@ -222,68 +206,3 @@ def _test_solver_one_objective(solver, objective):
 
             diff = val_eps - val_star
             assert diff >= 0
-
-
-def test_deprecated_stopping_strategy():
-    # XXX remove in 1.5
-    assert benchopt.__version__ < '1.5'
-
-    solver1 = """from benchopt import BaseSolver
-    import numpy as np
-
-    class Solver(BaseSolver):
-        name = 'solver1'
-        stopping_strategy = 'iteration'
-
-        def run(self, n_iter): pass
-
-        def set_objective(self, X, y, lmbd):
-            self.n_features = X.shape[1]
-
-        def get_result(self, **data):
-            return {'beta': np.zeros(self.n_features)}
-    """
-
-    solver2 = solver1.replace("stopping_strategy", "sampling_strategy")
-    solver2 = solver2.replace("solver1", "solver2")
-
-    with temp_benchmark(solvers=[solver1, solver2]) as benchmark:
-        with pytest.warns(
-                FutureWarning,
-                match="'stopping_strategy' attribute is deprecated"):
-            run([str(benchmark.benchmark_dir),
-                 *'-s solver1 -d test-dataset -n 1 -r 1 --no-plot'.split()],
-                standalone_mode=False)
-
-        run([str(benchmark.benchmark_dir),
-             *'-s solver2 -d test-dataset -n 1 -r 1 --no-plot'.split()],
-            standalone_mode=False)
-
-
-def test_deprecated_support_sparse():
-    # XXX remove in 1.5
-    assert benchopt.__version__ < '1.5'
-
-    solver1 = """from benchopt import BaseSolver
-    import numpy as np
-
-    class Solver(BaseSolver):
-        name = 'solver1'
-        support_sparse = True
-
-        def run(self, n_iter): pass
-
-        def set_objective(self, X, y, lmbd):
-            self.n_features = X.shape[1]
-
-        def get_result(self, **data):
-            return np.zeros(self.n_features)
-    """
-
-    with temp_benchmark(solvers=solver1) as benchmark:
-        with pytest.warns(
-                FutureWarning,
-                match="`support_sparse = False` is deprecated"):
-            run([str(benchmark.benchmark_dir),
-                 *'-s solver1 -d test-dataset -n 1 -r 1 --no-plot'.split()],
-                standalone_mode=False)

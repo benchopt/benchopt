@@ -54,6 +54,7 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
         "n_jobs",
         "slurm",
         "plot",
+        "display",
         "html",
         "pdb",
         "profile",
@@ -124,10 +125,14 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               shell_complete=complete_config_files,
               help="YAML configuration file containing benchmark options.")
 @click.option('--plot/--no-plot', default=True,
-              help="Whether or not to plot the results. Default is True.")
+              help="Whether or not to create plots from the results. "
+              "Default is True.")
+@click.option('--display/--no-display', default=True,
+              help="Whether or not to display the plot on the screen. "
+              "Default is True.")
 @click.option('--html/--no-html', default=True,
-              help="Whether to display the plot as HTML report or matplotlib"
-              "figures, default is True.")
+              help="If set to True (default), render the results as an HTML "
+              "page, otherwise create matplotlib figures, saved as PNG.")
 @click.option('--pdb',
               is_flag=True,
               help="Launch a debugger if there is an error. This will launch "
@@ -172,7 +177,7 @@ def run(config_file=None, **kwargs):
     (
         benchmark, solver_names, forced_solvers, dataset_names,
         objective_filters, max_runs, n_repetitions, timeout, n_jobs, slurm,
-        plot, html, pdb, do_profile, env_name, output
+        plot, display, html, pdb, do_profile, env_name, output
     ) = _get_run_args(kwargs, config)
 
     try:
@@ -231,8 +236,8 @@ def run(config_file=None, **kwargs):
             objective_filters=objective_filters,
             max_runs=max_runs, n_repetitions=n_repetitions,
             timeout=timeout, n_jobs=n_jobs, slurm=slurm,
-            plot_result=plot, html=html, pdb=pdb,
-            output=output
+            plot_result=plot, display=display, html=html,
+            pdb=pdb, output=output
         )
 
         print_stats()  # print profiling stats (does nothing if not profiling)
@@ -306,6 +311,7 @@ def run(config_file=None, **kwargs):
         rf"{solvers_option} {forced_solvers_option} "
         rf"{datasets_option} {objective_option} "
         rf"{'--plot' if plot else '--no-plot'} "
+        rf"{'--display' if display else '--no-display'} "
         rf"{'--html' if html else '--no-html'} "
         rf"{'--pdb' if pdb else ''} "
         rf"--output {output}"
@@ -481,7 +487,7 @@ def test(benchmark, env_name, pytest_args):
 
     env_option = ''
     if env_name is not None:
-        create_conda_env(env_name, with_pytest=True)
+        create_conda_env(env_name, pytest=True)
         if _run_shell_in_conda_env("pytest --version", env_name=env_name) != 0:
             raise ModuleNotFoundError(
                 f"pytest is not installed in conda env {env_name}.\n"

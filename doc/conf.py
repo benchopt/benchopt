@@ -44,7 +44,8 @@ extensions = [
     'sphinx.ext.autosectionlabel',
     'numpydoc',
     'gh_substitutions',  # custom ext, see ./sphinxext/gh_substitutions.py
-    "sphinx_design"
+    "sphinx_design",
+    "sphinx_copybutton",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -86,7 +87,7 @@ language = None
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = 'sphinx'
+# pygments_style = 'sphinx'
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = False
@@ -120,6 +121,9 @@ html_theme_options = {
     "use_fullscreen_button": False,
     "repository_url": "https://github.com/benchopt/benchopt",
     "home_page_in_toc": True,
+    # for a complete list of themes refer to https://pygments.org/styles/
+    "pygment_light_style": "colorful",
+    "pygment_dark_style": "gruvbox-dark",
 }
 
 html_sidebars = {
@@ -215,3 +219,10 @@ sphinx_gallery_conf = {
     'examples_dirs': '../examples',
     'gallery_dirs': 'auto_examples',
 }
+
+# -- Options for copybutton ---------------------------------------------
+# complete explanation of the regex expression can be found here
+# https://sphinx-copybutton.readthedocs.io/en/latest/ \
+# use.html#using-regexp-prompt-identifiers
+copybutton_prompt_text = r">>> |\.\.\. |\$ |In \[\d*\]: | {2,5}\.\.\.: | {5,8}: "  # noqa
+copybutton_prompt_is_regexp = True

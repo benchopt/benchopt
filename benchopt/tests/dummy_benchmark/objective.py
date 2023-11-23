@@ -35,12 +35,14 @@ class Objective(BaseObjective):
             return True, 'X is all zeros'
         return False, None
 
-    def get_one_solution(self):
-        return np.zeros(self.X.shape[1])
+    def get_one_result(self):
+        return dict(beta=np.zeros(self.X.shape[1]))
 
     def evaluate_result(self, beta):
         diff = self.y - self.X.dot(beta)
-        objective_value = .5 * diff.dot(diff) + self.lmbd * abs(beta).sum()
+        mse = .5 * diff.dot(diff)
+        regularization = abs(beta).sum()
+        objective_value = mse + self.lmbd * regularization
 
         # To test for multiple type of return value, makes this depend on the
         # parameter:
@@ -50,7 +52,11 @@ class Objective(BaseObjective):
         if self.reg == .1:
             return objective_value
         elif self.reg < .1:
-            return dict(value=objective_value)
+            return dict(
+                regularization=regularization,
+                mse=mse,
+                value=objective_value,
+            )
         else:
             return dict(value=objective_value, val=objective_value * 4)
 

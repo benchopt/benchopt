@@ -31,7 +31,7 @@
   for key, val in ll_main.items():
     all_items = list(set([r['sysinfo']['main'][key] for r in results]))
     items_unique[key] = sorted(all_items)
-  benchmark_name = benchmark.replace('benchmark_', '').replace('_', " ")
+  benchmark_name = benchmark.name.replace('benchmark_', '').replace('_', " ")
 %>
 
 % if need_filter:
@@ -43,13 +43,17 @@
 <h1>
   <a href="${home}"><button class="btn"><i class="fa fa-home"></i></button></a>
   Benchopt results: ${benchmark_name}
-  <a href="https://github.com/benchopt/${benchmark}">
-    <i class="fab fa-github-square"></i>
+  <a href="${benchmark.url}">
+    % if "github" in benchmark.url:
+      <i class="fab fa-github-square"></i>
+    % else:
+      <i class="fa-solid fa-globe"></i>
+    % endif
   </a>
 </h1>
 
 <p><em>Last updated: ${last_updated.isoformat(sep=' ', timespec='minutes') | h}</em>
-  with <strong>${nb_total_benchs}</strong> benchmark results in total. <br>
+  with <strong>${len(results)}</strong> result files in total. <br>
 </p>
 
 <div class="menu" style="padding-left: 0px;">
@@ -86,7 +90,7 @@
     <td class="fname">
       <a href="${result['page']}">
         <%
-        fname = "".join(result["fname_short"].split("_")[-2:])
+        fname = " ".join(result["fname_short"].split("_")[-2:])
         fname = benchmark_name + " " + fname.split(".")[0]
         disp_sub = any([val != '' for val in result['sysinfo']['sub'].values()])
         %>

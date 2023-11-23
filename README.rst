@@ -6,7 +6,7 @@
 
 ----
 
-|Test Status| |codecov| |Python 3.6+| |install-per-months| |discord| |SWH|
+|Test Status| |codecov| |Documentation| |Python 3.6+| |install-per-months| |discord| |SWH|
 
 ``Benchopt`` is a benchmarking suite for optimization algorithms.
 It is built for simplicity, transparency, and reproducibility.
@@ -44,7 +44,7 @@ It is also possible to use the **latest development version**. To do so, run ins
 
 .. code-block:: bash
 
-    pip install -U -i https://test.pypi.org/simple/benchopt
+    pip install --pre benchopt -U -i https://test.pypi.org/simple
 
 
 Getting started 
@@ -202,6 +202,8 @@ Available benchmarks
    :target: https://github.com/benchopt/benchopt/actions/workflows/test.yml
 .. |Python 3.6+| image:: https://img.shields.io/badge/python-3.6%2B-blue
    :target: https://www.python.org/downloads/release/python-360/
+.. |Documentation| image:: https://img.shields.io/badge/documentation-latest-blue
+   :target: https://benchopt.github.io
 .. |codecov| image:: https://codecov.io/gh/benchopt/benchopt/branch/master/graph/badge.svg
    :target: https://codecov.io/gh/benchopt/benchopt
 .. |SWH| image:: https://archive.softwareheritage.org/badge/origin/https://github.com/benchopt/benchopt/
