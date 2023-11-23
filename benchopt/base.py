@@ -520,23 +520,21 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
             str(self._import_ctx._benchmark_dir)
         )
 
-    def _default_split(self, *arrays):
-        train_index, test_index = next(self._cv)
+    def _default_split(self, *arrays, split_indexes=None):
+        train_index, test_index = split_indexes
         res = ()
         for x in arrays:
             try:
                 res = (*res, x[train_index], x[test_index])
-            except TypeError:
+            except TypeError as e:
                 raise TypeError(
-                    "The type of your data is "
-                    "not compatible with the default split. "
-                    "You need to define a custom split function "
-                    "named split in your objective class. "
-                    "This function should have the following signature: "
-                    "split(self: Self@Objective, input values of get_split, "
-                    " output values of the cv generator) "
-                    "-> splitted_data. "
-                    )
+                    "The type of your data is not compatible with the default "
+                    "split. You need to define a custom split function named "
+                    "`split` in the Objective class. This function should "
+                    "have the following signature: "
+                    "``split(self, *arrays, split_indexes)-> *split_arrays``, "
+                    "where `split_indexes` is the output of `self.cv.split`."
+                ) from e
         return res
 
     def get_split(self, *arrays, groups=None):
@@ -549,12 +547,16 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
                 "object."
             )
 
+        # In order to cope with n_repetition larger than the number of folds,
+        # cycle through the folds.
         if not hasattr(self, "_cv"):
-            # this will define _cv
             self._cv = itertools.cycle(self.cv.split(*arrays,
                                                      groups=groups))
-        if hasattr(self, "split"):
-            split_index = next(self._cv)
-            return self.split(*arrays, *split_index)
+
+        # Perform the split with default split function if it is not defined by
+        # the user.
+        split_indexes = next(self._cv)
+        split_ = getattr(self, "split", self._default_split)
+        return split_(*arrays, split_indexes=split_indexes)
 
         return self._default_split(*arrays)
