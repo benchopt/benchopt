@@ -15,8 +15,6 @@ from benchopt.tests.utils import patch_import
 from benchopt.tests.utils import patch_benchmark
 from benchopt.tests.utils import CaptureRunOutput
 
-from benchopt.utils.temp_benchmark import temp_benchmark
-
 
 def test_template_dataset():
     # Make sure that importing template_dataset raises an error.

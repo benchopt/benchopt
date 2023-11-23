@@ -90,6 +90,7 @@ def pytest_generate_tests(metafunc):
                 ('benchmark', param), values, ids=class_ids
             )
 
+
 @pytest.fixture
 def no_debug_test(request):
     """Deactivate the debug logs for a test."""
