@@ -17,7 +17,7 @@ It relies on ``joblib`` and it can be used by simply specifying the number of pa
 This will run all computations on the local machine where the command is invoked.
 
 Note that ``joblib`` tries to mitigate oversubscription by reducing the number of threads that are used in C-level parallelism -- such as in BLAS calls.
-This means that runs with in parallel with ``joblib`` might be slower than sequential, and are not comparable to sequential runs on the same machine.
+This means that these parallel runs might be slower than their sequential counterpart on the same machine, and shouldn't be compared to each other.
 
 .. _distributed_run:
 
@@ -25,15 +25,25 @@ Distributed computations with ``dask`` or ``submitit``
 ------------------------------------------------------
 
 Benchopt also allows distributed runs for the benchmark on various cluster infrastructure, using ``dask`` or ``submitit`` backends.
-To install the necessary dependencies, please run the following command for the backend you want to use:
+Run the following command to install the dependencies of the backend you want to use
 
-.. prompt:: bash $
+.. tab-set::
 
-    pip install benchopt[dask]
-    pip install benchopt[submitit]
+    .. tab-item:: Dask
 
-Using the ``--parallel-config`` option for ``benchopt run``, one can pass a config file used to setup the distributed jobs.
-This file is a YAML file that can contain a ``backend`` key to select the used distributed backend and any key to be passed to setup specific information.
+        .. prompt:: bash $
+
+            pip install benchopt[dask]
+
+    .. tab-item:: Submitit
+
+        .. prompt:: bash $
+
+            pip install benchopt[submitit]
+
+
+Using the ``--parallel-config`` option for ``benchopt run``, one can pass a configuration file used to setup the distributed jobs.
+This file is a YAML with that contains a ``backend`` key to select the used distributed backend and optionally other keys to setup this backend.
 Bellow are example of configuration files for each backend.
 
 Using such option, each configuration of ``(dataset, objective, solver)`` with
@@ -54,6 +64,7 @@ In the config file passed to ``--parallel-config``, you can specify the
 Hereafter is an example of such config file:
 
 .. code-block:: yaml
+    :caption: ./config_parallel.yml
 
     backend: submitit
     slurm_time: 01:00:00        # max runtime 1 hour
@@ -87,6 +98,7 @@ In the config file passed to ``--parallel-config``, you can specify the
 Hereafter is an example of such config file:
 
 .. code-block:: yaml
+    :caption: ./config_parallel.yml
 
     backend: dask
     dask_address: 127.0.0.1:8786
@@ -99,6 +111,7 @@ To setup the cluster, you can simply add ``coiled_*`` keys in the config file.
 These keys will be passed to create an instance of |Cluster|_, that will be used to perform computations with ``dask``:
 
 .. code-block:: yaml
+    :caption: ./config_parallel.yml
 
     backend: dask
     coiled_name: my-benchopt-run
