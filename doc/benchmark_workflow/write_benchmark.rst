@@ -186,27 +186,7 @@ If your Python solver requires some packages such as `Numba <https://numba.pydat
 Benchopt allows you to list some requirements. The necessary packages should be available
 via `conda <https://docs.conda.io/en/latest/>`_ or
 `pip <https://packaging.python.org/guides/tool-recommendations/>`_.
-
-In this case the ``install_cmd`` class variable needs to be set to ``'conda'``
-and the list of needed packages is specified in the variable
-``requirements`` that needs to be a Python list. If a requirement
-starts with ``pip:`` then the package is installed from `pypi <https://pypi.org/>`_ and
-not `conda-forge <https://conda-forge.org/>`_. See example:
-
-.. literalinclude:: ../../benchopt/tests/dummy_benchmark/solvers/sklearn.py
-
-.. note::
-
-    The ``install_cmd`` can either be ``'conda'`` or ``'shell'``. If ``'shell'``
-    a shell script is necessary to explain how to setup the required
-    dependencies. See :ref:`source_solvers`.
-
-.. note::
-
-    Specifying the dependencies is necessary if you let benchopt
-    manage the creation of a dedicated environment. If you want to
-    use your local environment the list of dependencies is
-    not relevant. See :ref:`cli_ref`.
+See `specifying_requirements`_ for more details on how to specify the requirements for benchopt classes.
 
 .. _r_solvers:
 
@@ -265,10 +245,6 @@ as binaries from the package managers from either Python, R or Julia.
 .. note::
     A package available from source may require a C++
     or Fortran compiler.
-
-Here is example using pip from a Python package on GitHub:
-
-.. literalinclude:: ../../benchopt/tests/dummy_benchmark/solvers/sklearn.py
 
 .. note::
 
