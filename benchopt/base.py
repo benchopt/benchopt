@@ -541,17 +541,15 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
         # return the split of the data according to the cv attribute
         if not hasattr(self, "cv"):
             raise ValueError(
-                "To use get_split, you need to define "
-                "a cv attribute in your objective class "
-                "It should be a sklearn.model_selection.BaseCrossValidator "
-                "object."
+                "To use `Objective.get_split`, you need to define a cv "
+                "attribute in your objective class. It should follow the "
+                "`sklearn.model_selection.BaseCrossValidator` API."
             )
 
         # In order to cope with n_repetition larger than the number of folds,
         # cycle through the folds.
         if not hasattr(self, "_cv"):
-            self._cv = itertools.cycle(self.cv.split(*arrays,
-                                                     groups=groups))
+            self._cv = itertools.cycle(self.cv.split(*arrays, groups=groups))
 
         # Perform the split with default split function if it is not defined by
         # the user.
