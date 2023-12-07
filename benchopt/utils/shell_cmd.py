@@ -58,7 +58,7 @@ def _run_shell(script, raise_on_error=None, capture_stdout=True,
         raise_on_error = "{output}"
 
     if capture_stdout:
-        exit_code, output = subprocess.getstatusoutput([f"{SHELL} {tmp.name}"])
+        exit_code, output = subprocess.getstatusoutput(f"{SHELL} {tmp.name}")
     else:
         exit_code = os.system(f"{SHELL} {tmp.name}")
         output = ""
