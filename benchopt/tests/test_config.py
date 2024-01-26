@@ -11,7 +11,7 @@ from benchopt.config import set_setting, get_setting
 
 
 @contextmanager
-def set_config_file(permission='600'):
+def temp_config_file(permission='600'):
     permission = int(f"100{permission}", base=8)
     config_file = Path() / 'test_config_file.yml'
     config_file.touch(mode=permission, exist_ok=False)
@@ -47,7 +47,7 @@ def test_parse_value():
 
 @pytest.mark.parametrize("permission", ["644", "655", "240"])
 def test_config_file_permission_warn(permission):
-    with set_config_file(permission) as config_file:
+    with temp_config_file(permission) as config_file:
         msg = f"{config_file} is with mode {permission}"
         with pytest.warns(UserWarning, match=msg):
             global_config_file = get_global_config_file()
@@ -55,7 +55,7 @@ def test_config_file_permission_warn(permission):
 
 
 def test_config_file_permission_no_warning():
-    with set_config_file() as config_file:
+    with temp_config_file() as config_file:
         with warnings.catch_warnings() as record:
             warnings.simplefilter("error")
             global_config_file = get_global_config_file()
@@ -64,7 +64,7 @@ def test_config_file_permission_no_warning():
 
 @pytest.mark.parametrize("setting_key", DEFAULT_GLOBAL_CONFIG)
 def test_config_file_set(setting_key):
-    with set_config_file() as config_file:
+    with temp_config_file() as config_file:
         default_value = DEFAULT_GLOBAL_CONFIG[setting_key]
         default_value = parse_value(os.environ.get(
             f"BENCHOPT_{setting_key.upper()}", default_value
@@ -73,10 +73,24 @@ def test_config_file_set(setting_key):
 
         set_value = parse_value('True', default_value)
         set_setting(setting_key, set_value)
-        assert get_setting(setting_key) == set_value
+
+        # Make sure the value is correctly set and retrieved
+        try:
+            # If the env var is not set, we should get the set value
+            old_value = os.environ.pop(f"BENCHOPT_{setting_key.upper()}", None)
+            assert get_setting(setting_key) == set_value
+
+            # Otherwise, we get the env value
+            env_value = parse_value('False', default_value)
+            os.environ[f"BENCHOPT_{setting_key.upper()}"] = str(env_value)
+            assert get_setting(setting_key) == env_value
+            del os.environ[f"BENCHOPT_{setting_key.upper()}"]
+        finally:
+            if old_value is not None:
+                os.environ[f"BENCHOPT_{setting_key.upper()}"] = old_value
 
 
 def test_config_file_set_error():
-    with set_config_file() as config_file:
+    with temp_config_file() as config_file:
         with pytest.raises(SystemExit):
             set_setting('invalid_key', None)
