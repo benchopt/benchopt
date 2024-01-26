@@ -42,7 +42,8 @@ DEFAULT_GLOBAL_CONFIG = {
 """
 
 DEFAULT_BENCHMARK_CONFIG = {
-    "plots": list(PLOT_KINDS), "plot_configs": {}
+    "plots": list(PLOT_KINDS),
+    "plot_configs": {}
 }
 
 """
@@ -177,11 +178,10 @@ def set_setting(name, value, config_file=None, benchmark_name=None):
     default_value = default_config[name]
 
     # Load the config from the yaml file if the file exists.
+    config = {}
     if config_file.exists():
         with open(config_file, "r") as f:
-            config = yaml.safe_load(f)
-    else:
-        config = {}
+            config = yaml.safe_load(f) or {}
 
     if benchmark_name is not None:
         if benchmark_name not in config:
@@ -239,11 +239,11 @@ def get_setting(name, config_file=None, benchmark_name=None,
     default_value = default_config.get(name, default_config_[name])
 
     # Load the config from the yaml file if the file exists.
+    config = {}
     if config_file.exists():
         with open(config_file, "r") as f:
-            config = yaml.safe_load(f)
-    else:
-        config = {}
+            config = yaml.safe_load(f) or {}
+
 
     # Get value from config file or keep the default value.
     if benchmark_name in config:
