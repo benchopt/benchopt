@@ -157,10 +157,15 @@ def set_setting(name, value, config_file=None, benchmark_name=None):
     if config_file is None:
         config_file = get_global_config_file()
 
+    # Handle deprecated .ini config file by automatically
+    # converting them to .yml.
+    if config_file.suffix == ".ini":
+        convert_ini_to_yml(config_file)
+        config_file = config_file.with_suffix('.yml')
+
     # Get default value
     default_config = DEFAULT_BENCHMARK_CONFIG
     if benchmark_name is None:
-        benchmark_name = 'benchopt'
         default_config = DEFAULT_GLOBAL_CONFIG
 
     if name not in default_config:
@@ -171,21 +176,26 @@ def set_setting(name, value, config_file=None, benchmark_name=None):
         raise SystemExit(1)
     default_value = default_config[name]
 
-    # Get global config file
-    config = configparser.ConfigParser()
-    config.read(config_file)
+    # Load the config from the yaml file if the file exists.
+    if config_file.exists():
+        with open(config_file, "r") as f:
+            config = yaml.safe_load(f)
+    else:
+        config = {}
 
-    if benchmark_name not in config:
-        config[benchmark_name] = {}
-
-    config[benchmark_name][name] = reverse_parse(default_value, value)
+    if benchmark_name is not None:
+        if benchmark_name not in config:
+            config[benchmark_name] = {}
+        config[benchmark_name][name] = reverse_parse(default_value, value)
+    else:
+        config[name] = reverse_parse(default_value, value)
 
     # Create config file with the correct permission.
     if not config_file.exists():
         config_file.touch(mode=GLOBAL_CONFIG_FILE_MODE)
 
     with config_file.open('w') as f:
-        config.write(f)
+        yaml.safe_dump(config, f)
 
 
 def get_setting(name, config_file=None, benchmark_name=None,
@@ -212,6 +222,12 @@ def get_setting(name, config_file=None, benchmark_name=None,
     if config_file is None:
         config_file = get_global_config_file()
 
+    # Handle deprecated .ini config file by automatically
+    # converting them to .yml.
+    if config_file.suffix == ".ini":
+        convert_ini_to_yml(config_file)
+        config_file = config_file.with_suffix('.yml')
+
     # Get default value
     default_config_ = DEFAULT_BENCHMARK_CONFIG
     if benchmark_name is None:
@@ -222,12 +238,6 @@ def get_setting(name, config_file=None, benchmark_name=None,
     default_config = {} if default_config is None else default_config
     default_value = default_config.get(name, default_config_[name])
 
-    # Handle deprecated .ini config file by automatically
-    # converting them to .yml.
-    if config_file.suffix == ".ini":
-        convert_ini_to_yml(config_file)
-        config_file = config_file.with_suffix('.yml')
-
     # Load the config from the yaml file if the file exists.
     if config_file.exists():
         with open(config_file, "r") as f:
@@ -236,7 +246,7 @@ def get_setting(name, config_file=None, benchmark_name=None,
         config = {}
 
     # Get value from config file or keep the default value.
-    if benchmark_name in config.keys():
+    if benchmark_name in config:
         value = config[benchmark_name].get(name, default_value)
     else:
         value = config.get(name, default_value)
