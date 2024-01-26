@@ -244,7 +244,6 @@ def get_setting(name, config_file=None, benchmark_name=None,
         with open(config_file, "r") as f:
             config = yaml.safe_load(f) or {}
 
-
     # Get value from config file or keep the default value.
     if benchmark_name in config:
         value = config[benchmark_name].get(name, default_value)
