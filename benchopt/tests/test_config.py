@@ -56,7 +56,7 @@ def test_config_file_permission_warn(permission):
 
 def test_config_file_permission_no_warning():
     with temp_config_file() as config_file:
-        with warnings.catch_warnings() as record:
+        with warnings.catch_warnings():
             warnings.simplefilter("error")
             global_config_file = get_global_config_file()
         assert str(global_config_file) == str(config_file)
@@ -64,7 +64,7 @@ def test_config_file_permission_no_warning():
 
 @pytest.mark.parametrize("setting_key", DEFAULT_GLOBAL_CONFIG)
 def test_config_file_set(setting_key):
-    with temp_config_file() as config_file:
+    with temp_config_file():
         default_value = DEFAULT_GLOBAL_CONFIG[setting_key]
         default_value = parse_value(os.environ.get(
             f"BENCHOPT_{setting_key.upper()}", default_value
@@ -91,6 +91,6 @@ def test_config_file_set(setting_key):
 
 
 def test_config_file_set_error():
-    with temp_config_file() as config_file:
+    with temp_config_file():
         with pytest.raises(SystemExit):
             set_setting('invalid_key', None)
