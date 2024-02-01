@@ -9,15 +9,18 @@ explains the specificities of setting up a benchmark in this context.
 Cross-validation
 ----------------
 
-In order to evaluate the generalization performance of an estimator, a common
-practice is to use cross-validation. In this context, the data is split into
-several folds, and the estimator is trained on a subset of the folds, and
-evaluated on the remaining fold. This process is repeated several times, and
+In order to evaluate the generalization performance of a method, a common
+practice is to use cross-validation. In this context, the data is split
+several times, and the model is trained on a subset of the data and evaluated
+on another independant subset. This process is repeated several times, and
 the average performance is reported.
 
 In benchopt, the cross-validation is handled as repeated run of the ``Solver``,
-where the data is splitted into folds in ``Objective.get_objective``.
-A typically workflow is the following:
+where the data is splitted into folds in ``Objective.get_objective``, by calling
+``Objective.get_split``. This method takes in the data to split (typically
+``numpy`` arrays or ``pandas`` dataframes) and returns the splitted data.
+The way the split are defined depend on the ``cv`` attribute, which needs to be
+defined by the user. A typically workflow is the following:
 
 .. code::python
 
@@ -31,11 +34,10 @@ A typically workflow is the following:
             self.cv = KFold(n_splits=5, shuffle=True, random_state=self.seed)
 
         def get_objective(self):
-            # Call ``self.get_split`` with the arrays to split. This will be
-            # called
-            self.X_train, self.X_test, self.y_train, self.y_test = (
-                self.get_split(self.X, self.y)
-            )
+            # Call ``self.get_split`` with the arrays to split.
+            # This will result into the various splits associated to self.cv.
+            self.X_train, self.X_test, self.y_train, self.y_test = \
+                    self.get_split(self.X, self.y)
             return dict(X=self.X_train, y=self.y_train)
 
 Note that this workflow can fail for complex splitting strategies. In order to
