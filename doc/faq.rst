@@ -14,12 +14,15 @@ Frequently asked questions (FAQ)
     Learn how to :ref:`write_benchmark`, including creating an objective, a solver, and a dataset.
 
 
-.. dropdown:: How are performance curves constructed?
+.. dropdown:: How are performance curves constructed and the solvers stopped?
 
-    The goal of benchopt is to evaluate the evolution of a method's performance with respect to its computational budget.
-    For evaluating this, benchopt allows to vary the computational budget for both black-box solvers and solvers that allow for callbacks.
+    One of benchopt's goals is to evaluate the method's performance with
+    respect to its computational budget.
+    Benchopt allows several strategies to vary the computational budget, that
+    can be set on a per solver basis.
+    It is also possible to set various stopping criterions to decide when to
+    stop growing the computational budget, to avoid wasting resources.
     Visit the :ref:`performance_curves` page for more detail.
-    Note that the budget varying strategy can be configured on a per-solver basis, as described in: :ref:`sampling_strategy`.
 
 
 .. dropdown:: How can I reuse code in a benchmark?
