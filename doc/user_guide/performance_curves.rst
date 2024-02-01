@@ -46,7 +46,7 @@ Note that the solver is restarted from scratch at each call to ``solver.run``.
 For more advanced configurations, the evolution of ``stop_val`` can be controlled on a per solver basis, by implementing a ``Solver.get_next`` method, which receives the current value for tolerance/number of iterations, and returns the next one.
 
 
-Note that the formulat to compute the next ``stop_val`` can be configured on a per-solver basis, as described in: :ref:`sampling_strategy`.
+Note that the formula to compute the next ``stop_val`` can be configured on a per-solver basis, as described in: :ref:`sampling_strategy`.
 
 2. Using a callback
 ~~~~~~~~~~~~~~~~~~~
@@ -77,7 +77,7 @@ It returns ``False`` when the solver should be stopped. A classical usage patter
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The way benchopt varies the computational budget :code:`stop_val` can be
-tweaked on a per-solver basis. This is done by implementing a ``get_next``
+configured on a per-solver basis. This is done by implementing a ``get_next``
 method in the ``Solver`` class. This method takes as input the previous value
 where the objective function has been logged, and outputs the next one. For
 instance, if a solver needs to be evaluated every 10 iterations, we would have
