@@ -36,7 +36,7 @@ must be defined by the user. A typical workflow is the following:
             # If the cross-validation requires some metadata, it can be
             # provided in the ``cv_metadata`` attribute. This will be passed
             # to the splitter when needed.
-            self.cv_metadata = {groups: self.X[:, 0]}
+            self.cv_metadata = {"groups": self.X[:, 0]}
 
         def get_objective(self):
             # Call ``self.get_split`` with the arrays to split.
@@ -45,7 +45,7 @@ must be defined by the user. A typical workflow is the following:
                     self.get_split(self.X, self.y)
             return dict(X=self.X_train, y=self.y_train)
 
-Note that by default, when ``Objective`` has a ``cv`` atribute, the number of
+Note that by default, when ``Objective`` has a ``cv`` attribute, the number of
 repetitions is set to ``cv.get_n_splits()`` instead of ``1``.
 When fewer repetitions are requested, only the first splits are evaluated.
 On the contrary, requesting more repetitions than splits will loop over

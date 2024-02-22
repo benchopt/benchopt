@@ -553,7 +553,7 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
         """
         if not hasattr(self, "cv"):
             raise ValueError(
-                "To use `Objective.get_split`, you need to define a cv "
+                "To use `Objective.get_split`, Objective must define a cv "
                 "attribute in `Objective.set_dataset`. It should follow the "
                 "`sklearn.model_selection.BaseCrossValidator` API."
             )
