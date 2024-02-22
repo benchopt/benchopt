@@ -196,7 +196,7 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
     if n_repetitions is None:
         if hasattr(objective, "cv"):
             n_repetitions = objective.cv.get_n_splits(
-                groups=getattr(objective, "groups", None)
+                **getattr(objective, "cv_metadata", {})
             )
         else:
             # we set 1 by default so that the solver run at least once
