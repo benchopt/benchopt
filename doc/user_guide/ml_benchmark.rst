@@ -12,17 +12,17 @@ Cross-validation
 In order to evaluate the generalization performance of a method, a common
 practice is to use cross-validation. In this context, the data is split
 several times, and the model is trained on a subset of the data and evaluated
-on another independant subset. This process is repeated several times, and
+on another independent subset. This process is repeated several times, and
 the average performance is reported.
 
-In benchopt, the cross-validation is handled as separate runs of the ``Solver``,
-where the data is splitted into folds in ``Objective.get_objective``, by calling
+In benchopt, cross-validation is handled as separate runs of the ``Solver``,
+where the data is split into folds in ``Objective.get_objective``, by calling
 ``Objective.get_split``. This method takes in the data to split (typically
-``numpy`` arrays or ``pandas`` dataframes) and returns the splitted data.
-The way the split are defined depend on the ``cv`` attribute, which needs to be
-defined by the user. A typical workflow is the following:
+``numpy`` arrays or ``pandas`` dataframes) and returns the split data.
+The way the splits are defined depend on the ``Objective.cv`` attribute, which
+must be defined by the user. A typical workflow is the following:
 
-.. code::python
+.. code-block:: python
 
     class Objective(BaseObjective):
         ...
@@ -46,17 +46,20 @@ defined by the user. A typical workflow is the following:
             return dict(X=self.X_train, y=self.y_train)
 
 Note that by default, when ``Objective`` has a ``cv`` atribute, the number of
-repetitions is set to ``cv.get_n_splits()`` instead of ``1``. When fewer number of repetitions is requested, only the first split are evaluted, while requesting more repetitions will loop over the splits, repeating them to get
-the rigth number of runs. Note that depending on the number of repetitions,
-some folds might be over represented in the final results.
+repetitions is set to ``cv.get_n_splits()`` instead of ``1``.
+When fewer repetitions are requested, only the first splits are evaluated.
+On the contrary, requesting more repetitions than splits will loop over
+the splits, repeating them to get the right number of runs.
+Note that depending on the number of repetitions requested, some folds may be
+overrepresented in the final results.
 
 The default workflow works for arrays that can be split based on indexing.
-When the objects to split are more complex -- typically with deeplearning
+When the objects to split are more complex -- typically with deep learning
 datasets-- it is also possible to implement a custom ``split(cv_fold, *obj)``
-method in ``Objective`` to specify how to construct the splitted data:
+method in ``Objective`` to specify how to construct the split data:
 
 
-.. code::python
+.. code-block:: python
 
     class Objective(BaseObjective):
         ...
@@ -68,4 +71,4 @@ method in ``Objective`` to specify how to construct the splitted data:
             return train_dataset, test_dataset, y[train_index], y[test_index]
 
 The ``cv_fold`` argument correspond to the current iterate from ``cv.split``,
-while ``dataset, y`` coresponds to objects passed in ``Objective.get_split``.
+while ``dataset, y`` corresponds to objects passed in ``Objective.get_split``.
