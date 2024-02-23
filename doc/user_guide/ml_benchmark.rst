@@ -35,12 +35,14 @@ must be defined by the user. A typical workflow is the following:
 
             # If the cross-validation requires some metadata, it can be
             # provided in the ``cv_metadata`` attribute. This will be passed
-            # to the splitter when needed.
+            # to ``self.cv.split`` and ``self.cv.get_n_splits``.
             self.cv_metadata = {"groups": self.X[:, 0]}
 
         def get_objective(self):
             # Call ``self.get_split`` with the arrays to split.
-            # This will result into the various splits associated to self.cv.
+            # ``self.get_split`` is already implemented and behaves like sklearn's
+            # train_test_split, performing splits of the arrays it is passed,
+            # based on the folds returned by ``self.cv``.
             self.X_train, self.X_test, self.y_train, self.y_test = \
                     self.get_split(self.X, self.y)
             return dict(X=self.X_train, y=self.y_train)
