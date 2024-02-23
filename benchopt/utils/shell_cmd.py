@@ -42,8 +42,13 @@ def _run_shell(script, raise_on_error=None, capture_stdout=True,
             'return_output=True can only be used with capture_stdout=True'
         )
 
+    is_fish = 'fish' in f"{SHELL}"
+
     # Make sure the script fail at first failure
-    fast_failure_script = f"set -e\n{script}"
+    if is_fish:
+        fast_failure_script = f"begin; {script}; or exit 1; end"
+    else:
+        fast_failure_script = f"set -e\n{script}"
 
     # Use a TemporaryFile to make sure this file is cleaned up at
     # the end of this function.
@@ -58,7 +63,7 @@ def _run_shell(script, raise_on_error=None, capture_stdout=True,
         raise_on_error = "{output}"
 
     if capture_stdout:
-        exit_code, output = subprocess.getstatusoutput([f"{SHELL} {tmp.name}"])
+        exit_code, output = subprocess.getstatusoutput(f"{SHELL} {tmp.name}")
     else:
         exit_code = os.system(f"{SHELL} {tmp.name}")
         output = ""
