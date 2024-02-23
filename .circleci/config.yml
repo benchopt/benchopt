@@ -58,7 +58,7 @@ jobs:
           command: |
             # remove the cache index
             mamba clean -i -y
-            mamba install python=3.10 julia<=1.10.0  r-base rpy2 \
+            mamba install python=3.10 julia r-base rpy2 \
                           numpy cython -yq
             pip install --upgrade "setuptools<58.5"
             pip install --upgrade --progress-bar off git+https://github.com/scikit-learn-contrib/lightning.git
