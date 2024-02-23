@@ -1,5 +1,4 @@
 import tempfile
-import itertools
 
 from abc import ABC, abstractmethod
 

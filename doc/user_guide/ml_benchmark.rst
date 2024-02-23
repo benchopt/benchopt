@@ -28,21 +28,21 @@ must be defined by the user. A typical workflow is the following:
         ...
         def set_data(self, X, y):
             self.X, self.y = X, y
-            # Specify a cross-validation splitter as the ``cv`` attribute.
-            # This will be automatically used in ``self.get_split`` to split
+            # Specify a cross-validation splitter as the `cv` attribute.
+            # This will be automatically used in `self.get_split` to split
             # the arrays provided.
             self.cv = GroupKFold(n_splits=5, random_state=self.seed)
 
             # If the cross-validation requires some metadata, it can be
-            # provided in the ``cv_metadata`` attribute. This will be passed
-            # to ``self.cv.split`` and ``self.cv.get_n_splits``.
+            # provided in the `cv_metadata` attribute. This will be passed
+            # to `self.cv.split` and `self.cv.get_n_splits`.
             self.cv_metadata = {"groups": self.X[:, 0]}
 
         def get_objective(self):
-            # Call ``self.get_split`` with the arrays to split.
-            # ``self.get_split`` is already implemented and behaves like sklearn's
-            # train_test_split, performing splits of the arrays it is passed,
-            # based on the folds returned by ``self.cv``.
+            # Call `self.get_split` with the arrays to split.
+            # This method default behavior behave like sklearn's
+            # `train_test_split`, splitting the input arrays using
+            # the indexes returned by `self.cv.split`.
             self.X_train, self.X_test, self.y_train, self.y_test = \
                     self.get_split(self.X, self.y)
             return dict(X=self.X_train, y=self.y_train)
