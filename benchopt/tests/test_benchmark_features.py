@@ -121,7 +121,7 @@ def test_objective_no_cv(no_debug_test):
                 return dict(X=X_train, y=y_train, lmbd=1)
     """
 
-    msg = "To use `Objective.get_split`, you need to define a cv"
+    msg = "To use `Objective.get_split`, Objective must define a cv"
     with temp_benchmark(objective=no_cv) as benchmark:
         with pytest.raises(ValueError, match=msg):
             run([str(benchmark.benchmark_dir),
