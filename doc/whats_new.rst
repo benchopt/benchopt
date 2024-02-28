@@ -5,6 +5,18 @@ What's new
 
 .. currentmodule:: benchopt
 
+.. _changes_1_6:
+
+Version 1.6 - In development
+----------------------------
+
+API
+~~~
+
+- Add native way to do cross-validation in a benchmark with
+  ``Objective.cv`` attribute that change split for each repetition.
+  By `Christopher Marouani`_ and `Thomas Moreau`_ (:gh:`623`).
+
 .. _changes_1_5_1:
 
 Version 1.5.1 - 22/09/2023
