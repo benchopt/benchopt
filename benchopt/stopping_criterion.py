@@ -2,7 +2,7 @@ import time
 import math
 
 # Possible curve sampling strategies
-SAMPLING_STRATEGIES = ['iteration', 'tolerance', 'callback']
+SAMPLING_STRATEGIES = ['iteration', 'tolerance', 'callback', 'run_once']
 
 EPS = 1e-10
 PATIENCE = 3
@@ -107,18 +107,9 @@ class StoppingCriterion():
                 "to implement a new StoppingCriterion."
             )
 
-        # Get strategy from solver
-        strategy = self.strategy
-        if solver is not None:
-            strategy = solver._solver_strategy
-        assert strategy in SAMPLING_STRATEGIES, (
-            f"sampling_strategy should be in {SAMPLING_STRATEGIES}. "
-            f"Got '{strategy}'."
-        )
-
         # Create a new instance of the class
         stopping_criterion = self.__class__(
-            strategy=strategy, key_to_monitor=self.key_to_monitor,
+            strategy=self.strategy, key_to_monitor=self.key_to_monitor,
             **self.kwargs,
         )
 

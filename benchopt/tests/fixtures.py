@@ -92,6 +92,14 @@ def pytest_generate_tests(metafunc):
 
 
 @pytest.fixture
+def no_debug_test(request):
+    """Deactivate the debug logs for a test."""
+    os.environ["BENCHOPT_DEBUG"] = "0"
+    yield
+    os.environ["BENCHOPT_DEBUG"] = "1"
+
+
+@pytest.fixture
 def check_test(request):
 
     if 'benchmark' not in request.fixturenames:

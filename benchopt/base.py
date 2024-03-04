@@ -48,9 +48,13 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
     """
 
     _base_class_name = 'Solver'
-    stopping_criterion = SufficientProgressCriterion(
-        strategy='iteration'
-    )
+    sampling_strategy = 'iteration'
+
+    @property
+    def stopping_criterion(self):
+        if self.sampling_strategy == 'run_once':
+            return SingleRunCriterion()
+        return SufficientProgressCriterion(strategy=self.sampling_strategy)
 
     @property
     def _solver_strategy(self):
@@ -518,3 +522,55 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
             self._module_filename, module_hash, self._parameters, dataset,
             str(self._import_ctx._benchmark_dir)
         )
+
+    def _default_split(self, cv_fold, *arrays):
+        train_index, test_index = cv_fold
+        res = ()
+        for x in arrays:
+            try:
+                res = (*res, x[train_index], x[test_index])
+            except TypeError as e:
+                raise TypeError(
+                    "The type of your data is not compatible with the default "
+                    "split.\nYou need to define a custom split function named "
+                    "`split` in the Objective class. This function should "
+                    "have the following signature:\n"
+                    "\t`split(self, cv_fold, *arrays)-> *split_arrays`,\n"
+                    "where `cv_fold` is the current fold obtained from "
+                    "`self.cv.split`."
+                ) from e
+        return res
+
+    def get_split(self, *arrays):
+        """Return the split of the data according to the cv attribute.
+
+        Parameters
+        ----------
+        arrays: list of array-like
+            The data to split. It should be indexable with the output of the
+            ``cv.split`` iterator, or compatible with ``Objective.split``.
+        """
+        if not hasattr(self, "cv"):
+            raise ValueError(
+                "To use `Objective.get_split`, Objective must define a cv "
+                "attribute in `Objective.set_dataset`. It should follow the "
+                "`sklearn.model_selection.BaseCrossValidator` API."
+            )
+
+        # In order to cope with n_repetition larger than the number of folds,
+        # cycle through the folds. We don't use itertools.repeat to avoid
+        # having to store the whole generator in memory.
+        if not hasattr(self, "_cv"):
+            metadata = getattr(self, "cv_metadata", {})
+
+            def repeat():
+                while True:
+                    for split_indexes in self.cv.split(*arrays, **metadata):
+                        yield split_indexes
+            self._cv = repeat()
+
+        # Perform the split with default split function if it is not defined by
+        # the user.
+        cv_fold = next(self._cv)
+        split_ = getattr(self, "split", self._default_split)
+        return split_(cv_fold, *arrays)

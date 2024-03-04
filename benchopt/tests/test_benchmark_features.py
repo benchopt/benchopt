@@ -104,6 +104,137 @@ def test_error_reporting(error, raise_install_error):
         os.environ['BENCHOPT_RAISE_INSTALL_ERROR'] = prev_value
 
 
+def test_objective_no_cv(no_debug_test):
+
+    no_cv = """from benchopt import BaseObjective
+
+        class Objective(BaseObjective):
+            name = "cross_val"
+            min_benchopt_version = "0.0.0"
+
+            def set_data(self, X, y): self.X, self.y = X, y
+            def get_one_result(self): return 0
+            def evaluate_result(self, beta): return dict(value=1)
+
+            def get_objective(self):
+                x = self.get_split(self.X, self.y)
+                return dict(X=X_train, y=y_train, lmbd=1)
+    """
+
+    msg = "To use `Objective.get_split`, Objective must define a cv"
+    with temp_benchmark(objective=no_cv) as benchmark:
+        with pytest.raises(ValueError, match=msg):
+            run([str(benchmark.benchmark_dir),
+                 *'-s python-pgd -d test-dataset -n 1 -r 1 --no-plot'.split()],
+                standalone_mode=False)
+
+
+def test_objective_cv_splitter(no_debug_test):
+
+    objective = """from benchopt import BaseObjective, safe_import_context
+        with safe_import_context() as import_ctx:
+            import numpy as np
+
+        class Splitter():
+            def split(self, X, y, groups=None):
+                for i in range(len(np.unique(groups))):
+                    print(f"RUN#{i}")
+                    mask = groups == i
+                    yield mask, ~mask
+
+            def get_n_splits(self, groups): return len(np.unique(groups))
+
+        class Objective(BaseObjective):
+            name = "cross_val"
+            min_benchopt_version = "0.0.0"
+
+            def set_data(self, X, y):
+                self.X, self.y = X, y
+                self.cv_metadata = dict(groups=np.r_[
+                    np.zeros(33), np.ones(33), 2 * np.ones(34)
+                ])
+                self.cv = Splitter()
+
+            def get_objective(self):
+                X_train, X_test, y_train, y_test = self.get_split(
+                    self.X, self.y
+                )
+                return dict(X_train=X_train, y_train=y_train)
+
+            def get_one_result(self): return dict(beta=0)
+            def evaluate_result(self, beta): return dict(value=1)
+    """
+
+    solver = """from benchopt import BaseSolver
+
+    class Solver(BaseSolver):
+        name = "test-solver"
+        sampling_strategy = 'run_once'
+        def set_objective(self, X_train, y_train): pass
+        def run(self, n_iter): print("OK")
+        def get_result(self): return dict(beta=1)
+    """
+
+    with temp_benchmark(objective=objective, solvers=[solver]) as benchmark:
+        with CaptureRunOutput() as out:
+            run([str(benchmark.benchmark_dir),
+                *('-s test-solver -d test-dataset --no-plot').split()],
+                standalone_mode=False)
+
+    # test-solver appears one time as it is only run once.
+    out.check_output("test-solver", repetition=1)
+    out.check_output("RUN#0", repetition=1)
+    out.check_output("RUN#1", repetition=1)
+    out.check_output("RUN#2", repetition=1)
+    out.check_output("RUN#3", repetition=0)
+    out.check_output("OK", repetition=3)
+
+    # Make sure that `-r` is enforced when specified
+    with temp_benchmark(objective=objective, solvers=[solver]) as benchmark:
+        with CaptureRunOutput() as out:
+            run([str(benchmark.benchmark_dir),
+                *('-s test-solver -d test-dataset -r 2 --no-plot').split()],
+                standalone_mode=False)
+
+    # test-solver appears one time as it is only run once.
+    out.check_output("test-solver", repetition=1)
+    out.check_output("RUN#0", repetition=1)
+    out.check_output("RUN#1", repetition=1)
+    out.check_output("RUN#2", repetition=0)
+    out.check_output("RUN#3", repetition=0)
+    out.check_output("OK", repetition=2)
+
+    with temp_benchmark(objective=objective, solvers=[solver]) as benchmark:
+        with CaptureRunOutput() as out:
+            run([str(benchmark.benchmark_dir),
+                *('-s test-solver -d test-dataset -r 5 --no-plot').split()],
+                standalone_mode=False)
+
+    # test-solver appears one time as it is only run once.
+    out.check_output("test-solver", repetition=1)
+    out.check_output("RUN#0", repetition=2)
+    out.check_output("RUN#1", repetition=2)
+    out.check_output("RUN#2", repetition=1)
+    out.check_output("RUN#3", repetition=0)
+    out.check_output("OK", repetition=5)
+
+    # Make sure running in parallel does not mess up the splits
+    with temp_benchmark(objective=objective, solvers=[solver]) as benchmark:
+        with CaptureRunOutput() as out:
+            run([
+                str(benchmark.benchmark_dir),
+                *('-s test-solver -d test-dataset -j 3 -r 4 --no-plot').split()
+            ], standalone_mode=False)
+
+    # test-solver appears one time as it is only run once.
+    out.check_output("test-solver", repetition=1)
+    out.check_output("RUN#0", repetition=2)
+    out.check_output("RUN#1", repetition=1)
+    out.check_output("RUN#2", repetition=1)
+    out.check_output("RUN#3", repetition=0)
+    out.check_output("OK", repetition=4)
+
+
 def test_ignore_hidden_files():
     # Non-regression test to make sure hidden files in datasets and solvers
     # are ignored. If this is not the case, the call to run will fail if it

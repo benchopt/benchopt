@@ -168,6 +168,7 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
     run_statistics : list
         The benchmark results.
     """
+
     run_one_to_cvg_cached = benchmark.cache(
         run_one_to_cvg, ignore=['force', 'output', 'pdb']
     )
@@ -176,10 +177,6 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
     skip, reason = objective.set_dataset(dataset)
     if skip:
         output.skip(reason, objective=True)
-        return []
-
-    skip = solver._set_objective(objective, output=output)
-    if skip:
         return []
 
     states = []
@@ -196,9 +193,22 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
     # the name of metrics in Objective.compute
     obj_description = objective.__doc__ or ""
 
+    if n_repetitions is None:
+        if hasattr(objective, "cv"):
+            n_repetitions = objective.cv.get_n_splits(
+                **getattr(objective, "cv_metadata", {})
+            )
+        else:
+            # we set 1 by default so that the solver run at least once
+            n_repetitions = 1
+
     for rep in range(n_repetitions):
+        skip = solver._set_objective(objective, output=output)
+        if skip:
+            return []
 
         output.set(rep=rep)
+
         # Get meta
         meta = dict(
             objective_name=str(objective),
