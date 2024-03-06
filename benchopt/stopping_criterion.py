@@ -465,3 +465,57 @@ class NoCriterion(StoppingCriterion):
 
     def check_convergence(self, cost_curve):
         return False, 0
+
+
+class RunOnGridCriterion(StoppingCriterion):
+    """Run the solvers over a fixed grid of values. Thus grid can represent
+    anything for the solvers: an iteration number, a target accuracy, an
+    hyperparameter value, etc.
+
+    Parameters
+    ----------
+    grid :  list (default: list(range(10)))
+        The grid over which the solvers are run.
+    """
+
+    def __init__(
+        self,
+        grid=list(range(10)),
+        strategy="iteration",
+        key_to_monitor="objective_value",
+        **kwargs,
+    ):
+        super().__init__(
+            strategy=strategy, key_to_monitor=key_to_monitor, **kwargs
+        )
+
+        # In addition of the parameters of `StoppingCriterion`, a
+        # `RunOnGridCriterion` its grid as parameter. A `grid_idx` is also
+        # specified and represents the index corresponding to the value in the
+        # grid that currently passed to the solvers via the `run` method.
+        self.grid = grid
+        self.grid_idx = 0
+
+    def get_runner_instance(
+        self, max_runs=1, timeout=None, output=None, solver=None
+    ):
+        # The `get_runner_instance` has to be overloaded. Otherwise, it will be
+        # cached by benchopt and the default `grid` values will always be used.
+        # The trick here is to add the `grid` and `grid_idx` parameters to the
+        # kwargs so as to re-use the default `get_runner_instance` of
+        # `StoppingCriterion`.
+        self.kwargs["grid"] = self.grid
+        self.kwargs["grid_idx"] = self.grid_idx
+        return super().get_runner_instance(max_runs, timeout, output, solver)
+
+    def init_stop_val(self):
+        return self.grid[self.grid_idx]
+
+    def check_convergence(self, _):
+        stop = self.grid_idx >= len(self.grid) - 1
+        progress = (self.grid_idx + 1) / len(self.grid)
+        return stop, progress
+
+    def get_next_stop_val(self, _):
+        self.grid_idx += 1
+        return self.grid[self.grid_idx]
