@@ -111,7 +111,7 @@ class StoppingCriterion():
 
         if self.strategy is None:
             self.strategy = solver.sampling_strategy or 'iteration'
-        elif solver.sampling_strategy is not None:
+        elif solver is not None and solver.sampling_strategy is not None:
             assert solver.sampling_strategy == self.strategy, (
                 'The strategy is set both in Solver.sampling_strategy and in '
                 'its criterion, and it does not match. Only set it once.'
@@ -451,10 +451,10 @@ class SingleRunCriterion(StoppingCriterion):
         minus one for the ``'callback'`` strategy.
     """
 
-    def __init__(self, stop_val=1, *args, **kwargs):
+    def __init__(self, stop_val=1, strategy=None, *args, **kwargs):
         # Necessary as the criterion is given a strategy argument when
         # instanciated for an instance.
-        super().__init__(strategy="run_once", stop_val=stop_val)
+        super().__init__(strategy=strategy, stop_val=stop_val)
         self.stop_val = stop_val
 
     def init_stop_val(self):
