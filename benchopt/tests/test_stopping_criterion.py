@@ -139,7 +139,7 @@ def test_solver_strategy(no_debug_test, strategy):
             objective=MINIMAL_OBJECTIVE,
             solvers=[solver]
     ) as benchmark:
-        with CaptureRunOutput() as out:
+        with CaptureRunOutput():
             run([str(benchmark.benchmark_dir),
                 *('-s test-solver -d test-dataset --no-plot -n 0').split()],
                 standalone_mode=False)
@@ -153,7 +153,6 @@ def test_stopping_criterion_strategy(no_debug_test, criterion_class, strategy):
 
     if strategy == "run_once":
         criterion_class = SingleRunCriterion
-
 
     solver = f"""from benchopt import BaseSolver
     from benchopt.stopping_criterion import *
@@ -181,7 +180,7 @@ def test_stopping_criterion_strategy(no_debug_test, criterion_class, strategy):
             objective=MINIMAL_OBJECTIVE,
             solvers=[solver]
     ) as benchmark:
-        with CaptureRunOutput() as out:
+        with CaptureRunOutput():
             run([str(benchmark.benchmark_dir),
                 *('-s test-solver -d test-dataset --no-plot -n 0').split()],
                 standalone_mode=False)
@@ -195,7 +194,6 @@ def test_solver_override_strategy(no_debug_test, criterion_class, strategy):
 
     if strategy == "run_once":
         criterion_class = SingleRunCriterion
-
 
     solver = f"""from benchopt import BaseSolver
     from benchopt.stopping_criterion import *
@@ -224,7 +222,7 @@ def test_solver_override_strategy(no_debug_test, criterion_class, strategy):
             objective=MINIMAL_OBJECTIVE,
             solvers=[solver]
     ) as benchmark:
-        with CaptureRunOutput() as out:
+        with CaptureRunOutput():
             run([str(benchmark.benchmark_dir),
                 *('-s test-solver -d test-dataset --no-plot -n 0').split()],
                 standalone_mode=False)
@@ -232,8 +230,7 @@ def test_solver_override_strategy(no_debug_test, criterion_class, strategy):
 
 def test_dual_strategy(no_debug_test):
 
-
-    solver = f"""from benchopt import BaseSolver
+    solver = """from benchopt import BaseSolver
     from benchopt.stopping_criterion import SufficientDescentCriterion
 
     class Solver(BaseSolver):
@@ -250,7 +247,7 @@ def test_dual_strategy(no_debug_test):
             solvers=[solver]
     ) as benchmark:
         with pytest.raises(AssertionError, match="Only set it once."):
-            with CaptureRunOutput() as out:
+            with CaptureRunOutput():
                 run([str(benchmark.benchmark_dir),
                     *('-s test-solver -d test-dataset --no-plot').split()],
                     standalone_mode=False)
