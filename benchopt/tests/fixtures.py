@@ -29,6 +29,8 @@ def pytest_report_header(config):
 def pytest_addoption(parser):
     parser.addoption("--skip-install", action="store_true",
                      help="skip install of solvers that can slow down CI.")
+    parser.addoption("--skip-env", action="store_true",
+                     help="skip tests which requires creating a conda env.")
     parser.addoption("--test-env", type=str, default=None,
                      help="Use a given env to test the solvers' install.")
     parser.addoption("--recreate", action="store_true",
@@ -122,6 +124,8 @@ def test_env_name(request):
     global _TEST_ENV_NAME
 
     if _TEST_ENV_NAME is None:
+        if request.config.getoption("--skip-env"):
+            pytest.skip("Skip creating a test env")
         env_name = request.config.getoption("--test-env")
         recreate = request.config.getoption("--recreate")
         if env_name is None:
