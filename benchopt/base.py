@@ -48,10 +48,12 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
     """
 
     _base_class_name = 'Solver'
-    sampling_strategy = 'iteration'
+    sampling_strategy = None
 
     @property
-    def stopping_criterion(self):
+    def _stopping_criterion(self):
+        if hasattr(self, 'stopping_criterion'):
+            return self.stopping_criterion
         if self.sampling_strategy == 'run_once':
             return SingleRunCriterion()
         return SufficientProgressCriterion(strategy=self.sampling_strategy)
@@ -59,10 +61,10 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
     @property
     def _solver_strategy(self):
         """Change stop_strategy and stopping_strategy to sampling_strategy."""
-        if hasattr(self, 'sampling_strategy'):
-            return self.sampling_strategy
-        else:
-            return self.stopping_criterion.strategy
+        return (
+            self._stopping_criterion.strategy or self.sampling_strategy
+            or 'iteration'
+        )
 
     def _set_objective(self, objective, output=None):
         """Store the objective for hashing/pickling and check its compatibility

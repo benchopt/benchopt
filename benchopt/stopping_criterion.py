@@ -64,9 +64,11 @@ class StoppingCriterion():
     def __init__(self, strategy=None, key_to_monitor='objective_value',
                  **kwargs):
 
-        assert strategy in SAMPLING_STRATEGIES, (
-            f"strategy should be in {SAMPLING_STRATEGIES}. Got '{strategy}'."
-        )
+        if strategy is not None:
+            assert strategy in SAMPLING_STRATEGIES, (
+                f"strategy should be in {SAMPLING_STRATEGIES}. "
+                f"Got '{strategy}'."
+            )
 
         self.kwargs = kwargs
         self.strategy = strategy
@@ -105,6 +107,14 @@ class StoppingCriterion():
                 " but did not called super().__init__(**kwargs) with all its "
                 "parameters in its constructor. See XXX for details on how "
                 "to implement a new StoppingCriterion."
+            )
+
+        if self.strategy is None:
+            self.strategy = solver.sampling_strategy or 'iteration'
+        elif solver.sampling_strategy is not None:
+            assert solver.sampling_strategy == self.strategy, (
+                'The strategy is set both in Solver.sampling_strategy and in '
+                'its criterion, and it does not match. Only set it once.'
             )
 
         # Create a new instance of the class
@@ -305,7 +315,7 @@ class SufficientDescentCriterion(StoppingCriterion):
         updates.{COMMON_ARGS_DOC}
     """
 
-    def __init__(self, eps=EPS, patience=PATIENCE, strategy='iteration',
+    def __init__(self, eps=EPS, patience=PATIENCE, strategy=None,
                  key_to_monitor='objective_value'):
         self.eps = eps
         self.patience = patience
@@ -373,7 +383,7 @@ class SufficientProgressCriterion(StoppingCriterion):
         updates.{COMMON_ARGS_DOC}
     """
 
-    def __init__(self, eps=EPS, patience=PATIENCE, strategy='iteration',
+    def __init__(self, eps=EPS, patience=PATIENCE, strategy=None,
                  key_to_monitor='objective_value'):
         self.eps = eps
         self.patience = patience
@@ -444,7 +454,7 @@ class SingleRunCriterion(StoppingCriterion):
     def __init__(self, stop_val=1, *args, **kwargs):
         # Necessary as the criterion is given a strategy argument when
         # instanciated for an instance.
-        super().__init__(strategy="iteration", stop_val=stop_val)
+        super().__init__(strategy="run_once", stop_val=stop_val)
         self.stop_val = stop_val
 
     def init_stop_val(self):
