@@ -1,9 +1,26 @@
 import pytest
 import numpy as np
 
+from benchopt.cli.main import run
+from benchopt.tests.utils import CaptureRunOutput
+from benchopt.utils.temp_benchmark import temp_benchmark
+
 from benchopt.stopping_criterion import SAMPLING_STRATEGIES
+from benchopt.stopping_criterion import SingleRunCriterion
 from benchopt.stopping_criterion import SufficientDescentCriterion
 from benchopt.stopping_criterion import SufficientProgressCriterion
+
+MINIMAL_OBJECTIVE = """from benchopt import BaseObjective
+
+    class Objective(BaseObjective):
+        name = "stopping_criterion"
+        min_benchopt_version = "0.0.0"
+
+        def set_data(self, X, y): self.X, self.y = X, y
+        def get_objective(self): return {}
+        def get_one_result(self): return dict(beta=0)
+        def evaluate_result(self, beta): return dict(value=1)
+"""
 
 
 @pytest.mark.parametrize('strategy', SAMPLING_STRATEGIES)
@@ -92,3 +109,145 @@ def test_key_to_monitor(criterion_class, strategy):
     stop, status, stop_val = criterion.should_stop(stop_val, objective_list)
     assert stop, "Should have stopped"
     assert status == 'diverged', "Should stop on diverged"
+
+
+@pytest.mark.parametrize('strategy', SAMPLING_STRATEGIES)
+def test_solver_strategy(no_debug_test, strategy):
+
+    solver = f"""from benchopt import BaseSolver
+
+    class Solver(BaseSolver):
+        name = "test-solver"
+        sampling_strategy = "{strategy}"
+        def set_objective(self): pass
+        def run(self, n_iter):
+            assert self._solver_strategy == "{strategy}", self._solver_strategy
+            if self._solver_strategy in "iteration":
+                assert n_iter == 0, n_iter
+            elif self._solver_strategy in "tolerance":
+                assert n_iter == 3e38, n_iter
+            elif self._solver_strategy in "run_once":
+                assert n_iter == 1, n_iter
+            elif self._solver_strategy in "callback":
+                assert callable(n_iter)
+                while n_iter(): pass
+
+        def get_result(self): return dict(beta=1)
+    """
+
+    with temp_benchmark(
+            objective=MINIMAL_OBJECTIVE,
+            solvers=[solver]
+    ) as benchmark:
+        with CaptureRunOutput():
+            run([str(benchmark.benchmark_dir),
+                *('-s test-solver -d test-dataset --no-plot -n 0').split()],
+                standalone_mode=False)
+
+
+@pytest.mark.parametrize('strategy', SAMPLING_STRATEGIES)
+@pytest.mark.parametrize('criterion_class', [
+    SufficientDescentCriterion, SufficientProgressCriterion
+])
+def test_stopping_criterion_strategy(no_debug_test, criterion_class, strategy):
+
+    if strategy == "run_once":
+        criterion_class = SingleRunCriterion
+
+    solver = f"""from benchopt import BaseSolver
+    from benchopt.stopping_criterion import *
+
+    class Solver(BaseSolver):
+        name = "test-solver"
+        stopping_criterion = {criterion_class.__name__}(strategy="{strategy}")
+        def set_objective(self): pass
+        def run(self, n_iter):
+            assert self._solver_strategy == "{strategy}", self._solver_strategy
+            if self._solver_strategy in "iteration":
+                assert n_iter == 0, n_iter
+            elif self._solver_strategy in "tolerance":
+                assert n_iter == 3e38, n_iter
+            elif self._solver_strategy in "run_once":
+                assert n_iter == 1, n_iter
+            elif self._solver_strategy in "callback":
+                assert callable(n_iter)
+                while n_iter(): pass
+
+        def get_result(self): return dict(beta=1)
+    """
+
+    with temp_benchmark(
+            objective=MINIMAL_OBJECTIVE,
+            solvers=[solver]
+    ) as benchmark:
+        with CaptureRunOutput():
+            run([str(benchmark.benchmark_dir),
+                *('-s test-solver -d test-dataset --no-plot -n 0').split()],
+                standalone_mode=False)
+
+
+@pytest.mark.parametrize('strategy', SAMPLING_STRATEGIES)
+@pytest.mark.parametrize('criterion_class', [
+    SufficientDescentCriterion, SufficientProgressCriterion
+])
+def test_solver_override_strategy(no_debug_test, criterion_class, strategy):
+
+    if strategy == "run_once":
+        criterion_class = SingleRunCriterion
+
+    solver = f"""from benchopt import BaseSolver
+    from benchopt.stopping_criterion import *
+
+    class Solver(BaseSolver):
+        name = "test-solver"
+        sampling_strategy = "{strategy}"
+        stopping_criterion = {criterion_class.__name__}()
+        def set_objective(self): pass
+        def run(self, n_iter):
+            assert self._solver_strategy == "{strategy}", self._solver_strategy
+            if self._solver_strategy in "iteration":
+                assert n_iter == 0, n_iter
+            elif self._solver_strategy in "tolerance":
+                assert n_iter == 3e38, n_iter
+            elif self._solver_strategy in "run_once":
+                assert n_iter == 1, n_iter
+            elif self._solver_strategy in "callback":
+                assert callable(n_iter)
+                while n_iter(): pass
+
+        def get_result(self): return dict(beta=1)
+    """
+
+    with temp_benchmark(
+            objective=MINIMAL_OBJECTIVE,
+            solvers=[solver]
+    ) as benchmark:
+        with CaptureRunOutput():
+            run([str(benchmark.benchmark_dir),
+                *('-s test-solver -d test-dataset --no-plot -n 0').split()],
+                standalone_mode=False)
+
+
+def test_dual_strategy(no_debug_test):
+
+    solver = """from benchopt import BaseSolver
+    from benchopt.stopping_criterion import SufficientDescentCriterion
+
+    class Solver(BaseSolver):
+        name = "test-solver"
+        sampling_strategy = "iteration"
+        stopping_criterion = SufficientDescentCriterion(strategy='tolerance')
+        def set_objective(self): pass
+        def run(self, n_iter): pass
+        def get_result(self): return dict(beta=1)
+    """
+
+    with temp_benchmark(
+            objective=MINIMAL_OBJECTIVE,
+            solvers=[solver]
+    ) as benchmark:
+        with pytest.raises(AssertionError, match="Only set it once."):
+            with CaptureRunOutput():
+                run([str(benchmark.benchmark_dir),
+                    *('-s test-solver -d test-dataset --no-plot').split()],
+                    standalone_mode=False)
