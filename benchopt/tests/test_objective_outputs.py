@@ -5,6 +5,17 @@ from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.tests.utils import CaptureRunOutput
 
 
+MINIMAL_SOLVER = """from benchopt import BaseSolver
+
+    class Solver(BaseSolver):
+        name = "test-solver"
+        sampling_strategy = 'run_once'
+        def set_objective(self, X, y): pass
+        def run(self, n_iter): pass
+        def get_result(self): return dict(beta=1)
+    """
+
+
 def test_objective_bad_name(no_debug_test):
     # Check that non-numerical value in objective do not raise error
     # in generating the plots.
@@ -21,17 +32,10 @@ def test_objective_bad_name(no_debug_test):
             def get_objective(self): return dict(X=0, y=0)
     """
 
-    solver = """from benchopt import BaseSolver
-
-    class Solver(BaseSolver):
-        name = "test-solver"
-        sampling_strategy = 'run_once'
-        def set_objective(self, X, y): pass
-        def run(self, n_iter): pass
-        def get_result(self): return dict(beta=1)
-    """
-
-    with temp_benchmark(objective=objective, solvers=[solver]) as benchmark:
+    with temp_benchmark(
+            objective=objective,
+            solvers=[MINIMAL_SOLVER]
+    ) as benchmark:
         with pytest.raises(SystemExit, match='1'):
             with CaptureRunOutput() as out:
                 run([str(benchmark.benchmark_dir),
@@ -57,17 +61,10 @@ def test_objective_and_stopping_criterion(no_debug_test):
             def get_objective(self): return dict(X=0, y=0)
     """
 
-    solver = """from benchopt import BaseSolver
-
-    class Solver(BaseSolver):
-        name = "test-solver"
-        sampling_strategy = 'run_once'
-        def set_objective(self, X, y): pass
-        def run(self, n_iter): pass
-        def get_result(self): return dict(beta=1)
-    """
-
-    with temp_benchmark(objective=objective, solvers=[solver]) as benchmark:
+    with temp_benchmark(
+            objective=objective,
+            solvers=[MINIMAL_SOLVER]
+    ) as benchmark:
         with pytest.raises(SystemExit, match='1'):
             with CaptureRunOutput() as out:
                 run([str(benchmark.benchmark_dir),
@@ -96,17 +93,10 @@ def test_objective_nonnumeric_values(no_debug_test):
                 return dict(X=0, y=0)
     """
 
-    solver = """from benchopt import BaseSolver
-
-    class Solver(BaseSolver):
-        name = "test-solver"
-        sampling_strategy = 'run_once'
-        def set_objective(self, X, y): pass
-        def run(self, n_iter): pass
-        def get_result(self): return dict(beta=1)
-    """
-
-    with temp_benchmark(objective=objective, solvers=[solver]) as benchmark:
+    with temp_benchmark(
+            objective=objective,
+            solvers=[MINIMAL_SOLVER]
+    ) as benchmark:
         with CaptureRunOutput() as out:
             run([str(benchmark.benchmark_dir),
                  *'-s test-solver -d test-dataset -n 1 -r 1 --no-display'
@@ -117,7 +107,10 @@ def test_objective_nonnumeric_values(no_debug_test):
     objective = objective.replace(
         "test_obj={}", "test_obj={'a':0, 'b': 1.0, 'c': '', 'd': {}}"
     )
-    with temp_benchmark(objective=objective, solvers=[solver]) as benchmark:
+    with temp_benchmark(
+            objective=objective,
+            solvers=[MINIMAL_SOLVER]
+    ) as benchmark:
         with CaptureRunOutput() as out:
             run([str(benchmark.benchmark_dir),
                  *'-s test-solver -d test-dataset -n 1 -r 1 --no-display'

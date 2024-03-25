@@ -98,17 +98,60 @@ def test_key_to_monitor(criterion_class, strategy):
     criterion = criterion_class(strategy=strategy, key_to_monitor=key)
 
     criterion = criterion.get_runner_instance(max_runs=10)
-    assert criterion.key_to_monitor == key
+    assert criterion.key_to_monitor == f"objective_{key}"
     stop_val = criterion.init_stop_val()
-    objective_list = [{'objective_value': np.nan, key: 1}]
+    objective_list = [{'objective_value': np.nan, f"objective_{key}": 1}]
     stop, status, stop_val = criterion.should_stop(stop_val, objective_list)
     assert not stop, "Should not have stopped"
     assert status == 'running', "Should stop on diverged"
 
-    objective_list.append({key: 1e5+2})
+    objective_list.append({f"objective_{key}": 1e5+2})
     stop, status, stop_val = criterion.should_stop(stop_val, objective_list)
     assert stop, "Should have stopped"
     assert status == 'diverged', "Should stop on diverged"
+
+
+@pytest.mark.parametrize('strategy', SAMPLING_STRATEGIES)
+@pytest.mark.parametrize('criterion_class', [
+    SufficientDescentCriterion, SufficientProgressCriterion
+])
+def test_key_to_monitor_objective(no_debug_test, criterion_class, strategy):
+    "Check that the criterion tracks the right objective key."
+    key = 'test_key'
+
+    objective = f"""from benchopt import BaseObjective
+
+        class Objective(BaseObjective):
+            name = "test_obj"
+            min_benchopt_version = "0.0.0"
+
+            def set_data(self, X, y): pass
+            def get_one_result(self): pass
+            def evaluate_result(self, beta): return dict({key}=1)
+            def get_objective(self): return dict(X=0, y=0)
+    """
+
+    solver = f"""from benchopt import BaseSolver
+    from benchopt.stopping_criterion import *
+
+    class Solver(BaseSolver):
+        name = "test-solver"
+        stopping_criterion = {criterion_class.__name__}(
+            key_to_monitor='{key}'
+        )
+        def set_objective(self, X, y): pass
+        def run(self, n_iter): pass
+        def get_result(self): return dict(beta=1)
+    """
+
+    with temp_benchmark(objective=objective, solvers=[solver]) as benchmark:
+        with CaptureRunOutput() as out:
+            run([str(benchmark.benchmark_dir),
+                *'-s test-solver -d test-dataset -n 10 -r 1 --no-display'
+                .split()], standalone_mode=False)
+
+    out.check_output('test-solver', 5)
+    out.check_output('done', 1)
 
 
 @pytest.mark.parametrize('strategy', SAMPLING_STRATEGIES)
