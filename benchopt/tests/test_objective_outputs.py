@@ -17,8 +17,8 @@ MINIMAL_SOLVER = """from benchopt import BaseSolver
 
 
 def test_objective_bad_name(no_debug_test):
-    # Check that non-numerical value in objective do not raise error
-    # in generating the plots.
+    # Check that if Obejctive.evaluate_result return a `name` field, a sensible
+    # error is raised.
 
     objective = """from benchopt import BaseObjective
 
@@ -39,15 +39,15 @@ def test_objective_bad_name(no_debug_test):
         with pytest.raises(SystemExit, match='1'):
             with CaptureRunOutput() as out:
                 run([str(benchmark.benchmark_dir),
-                    *'-s test-solver -d test-dataset -n 1 -r 1 --no-display'
+                    *'-s test-solver -d test-dataset -n 1 -r 1 --no-plot'
                     .split()], standalone_mode=False)
 
     out.check_output("ValueError: objective output cannot be called 'name'")
 
 
-def test_objective_and_stopping_criterion(no_debug_test):
-    # Check that non-numerical value in objective do not raise error
-    # in generating the plots.
+def test_objective_no_value(no_debug_test):
+    # Check that if Obejctive.evaluate_result does not return a `value` field,
+    # a sensible error is raised.
 
     objective = """from benchopt import BaseObjective
 
@@ -68,15 +68,17 @@ def test_objective_and_stopping_criterion(no_debug_test):
         with pytest.raises(SystemExit, match='1'):
             with CaptureRunOutput() as out:
                 run([str(benchmark.benchmark_dir),
-                    *'-s test-solver -d test-dataset -n 1 -r 1 --no-display'
+                    *'-s test-solver -d test-dataset -n 1 -r 1 --no-plot'
                     .split()], standalone_mode=False)
 
-    out.check_output("Objective.evaluate_result() should contain a key named 'value'")
+    out.check_output(
+        "Objective.evaluate_result\(\) should contain a key named 'value'"
+    )
 
 
 def test_objective_nonnumeric_values(no_debug_test):
-    # Check that non-numerical value in objective do not raise error
-    # in generating the plots.
+    # Check that non-numerical values in objective do not raise error
+    # in saving and generating the plots.
 
     objective = """from benchopt import BaseObjective
 

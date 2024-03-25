@@ -199,9 +199,9 @@ class StoppingCriterion():
         if self.key_to_monitor not in objective_list[0]:
             key = self.key_to_monitor.replace("objective_", "")
             raise ValueError(
-                f"Objective.evaluate_result() should contain a key named '{key}' "
-                "to be used with this stopping_criterion. The name of the key "
-                "can be changed via the 'key_to_monitor' parameter."
+                "Objective.evaluate_result() should contain a key named "
+                f"'{key}' to be used with this stopping_criterion. The name of"
+                " this key can be changed via the 'key_to_monitor' parameter."
             )
 
         # Modify the criterion state:
