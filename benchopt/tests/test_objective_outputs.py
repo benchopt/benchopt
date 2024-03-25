@@ -71,7 +71,7 @@ def test_objective_and_stopping_criterion(no_debug_test):
                     *'-s test-solver -d test-dataset -n 1 -r 1 --no-display'
                     .split()], standalone_mode=False)
 
-    out.check_output("Objective output should have a value for 'value'")
+    out.check_output("Objective.evaluate_result() should contain a key named 'value'")
 
 
 def test_objective_nonnumeric_values(no_debug_test):
