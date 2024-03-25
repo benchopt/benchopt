@@ -200,8 +200,8 @@ class StoppingCriterion():
             key = self.key_to_monitor.replace("objective_", "")
             raise ValueError(
                 f"Objective.evaluate_result() should contain a key named '{key}' "
-                "to be used with this stopping_criterion. The name of the key
-                " to use can be changed via the 'key_to_monitor' parameter."
+                "to be used with this stopping_criterion. The name of the key "
+                "can be changed via the 'key_to_monitor' parameter."
             )
 
         # Modify the criterion state:
