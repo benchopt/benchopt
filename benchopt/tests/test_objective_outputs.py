@@ -72,7 +72,7 @@ def test_objective_no_value(no_debug_test):
                     .split()], standalone_mode=False)
 
     out.check_output(
-        "Objective.evaluate_result\(\) should contain a key named 'value'"
+        r"Objective.evaluate_result\(\) should contain a key named 'value'"
     )
 
 
