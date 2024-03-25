@@ -72,7 +72,10 @@ class StoppingCriterion():
 
         self.kwargs = kwargs
         self.strategy = strategy
-        self.key_to_monitor = key_to_monitor
+        self.key_to_monitor = (
+            key_to_monitor if key_to_monitor.startswith('objective_')
+            else f'objective_{key_to_monitor}'
+        )
 
     def get_runner_instance(self, max_runs=1, timeout=None, output=None,
                             solver=None):
@@ -192,6 +195,15 @@ class StoppingCriterion():
             Next value for the stopping criterion. This value depends on the
             sampling strategy for the solver.
         """
+        # Check that the objective is compatible with the stopping_criterion
+        if self.key_to_monitor not in objective_list[0]:
+            key = self.key_to_monitor.replace("objective_", "")
+            raise ValueError(
+                f"Objective output should have a value for '{key}' to be used "
+                "with this stopping_criterion. The name of the key can be "
+                "changed with parameter 'key_to_monitor'."
+            )
+
         # Modify the criterion state:
         # - compute the number of run with the curve. We need to remove 1 as
         #   it contains the initial evaluation.

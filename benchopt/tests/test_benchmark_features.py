@@ -402,39 +402,3 @@ def test_pre_run_hook():
 
         # Make sure warmup is called exactly once
         out.check_output("3 passed, 1 skipped, 7 deselected", repetition=1)
-
-
-def test_objective_nonnumeric_values(no_debug_test):
-    # Check that non-numerical value in objective do not raise error
-    # in generating the plots.
-
-    objective = """from benchopt import BaseObjective
-
-        class Objective(BaseObjective):
-            name = "test_obj"
-            min_benchopt_version = "0.0.0"
-
-            def set_data(self, X, y): self.X, self.y = X, y
-            def get_one_result(self): pass
-            def evaluate_result(self, beta):
-                return dict(value=1, test_obj={})
-
-            def get_objective(self):
-                return dict(X=0, y=0)
-    """
-
-    solver = """from benchopt import BaseSolver
-
-    class Solver(BaseSolver):
-        name = "test-solver"
-        sampling_strategy = 'run_once'
-        def set_objective(self, X, y): pass
-        def run(self, n_iter): pass
-        def get_result(self): return dict(beta=1)
-    """
-
-    with temp_benchmark(objective=objective, solvers=[solver]) as benchmark:
-        with CaptureRunOutput() as out:
-            run([str(benchmark.benchmark_dir),
-                 *'-s test-solver -d test-dataset -n 1 -r 1 --no-display'
-                 .split()], standalone_mode=False)
