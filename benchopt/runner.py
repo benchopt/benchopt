@@ -366,7 +366,14 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
     else:
         save_file = output_dir / f"{output_name}.parquet"
         save_file = uniquify_results(save_file)
-    df.to_parquet(save_file)
+    try:
+        df.to_parquet(save_file)
+    except Exception:
+        # Failed to save the results as a parquet file, falling back
+        # to csv. This can be due to mixed types columns or missing
+        # dependencies.
+        save_file = save_file.with_suffix(".csv")
+        df.to_csv(save_file)
     output.savefile_status(save_file=save_file)
 
     if plot_result:
