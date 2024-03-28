@@ -505,49 +505,43 @@ class TestInstallCmd:
 
             out.check_output(r"done \(not enough run\)", repetition=1)
 
-    @pytest.mark.parametrize("cls_type", ['dataset', 'solver'])
-    def test_error_wih_missing_requirements(self, test_env_name, cls_type):
-        # if cls_type == "solver":
-        Cls = cls_type.capitalize()
+    def test_error_wih_missing_requirements(self, test_env_name):
 
         # solver with missing dependency specified
-        src = (
-            f"from benchopt import Base{Cls}\n"
-            "from benchopt import safe_import_context\n"
-            "\n"
-            "with safe_import_context() as import_ctx:\n"
-            "    import sjdhfg\n"
-            f"class {Cls}(Base{Cls}):\n"
-            "    name = 'buggy-cls'\n"
-            "    def __init__(self):\n"
-            "        pass\n"
-            "    def set_objective(self):\n"
-            "        pass\n"
-            "    def get_data(self):\n"
-            "        {}\n"
-            "    def get_result(self):\n"
-            "        pass\n"
-            "    def run(self):\n"
-            "        pass\n"
-        )
+        missing_deps_cls = """from benchopt import Base{Cls}
+            from benchopt import safe_import_context
 
-        TmpFileCtx = tempfile.NamedTemporaryFile
-        solver_dir = DUMMY_BENCHMARK_PATH / f"{cls_type}s"
+            with safe_import_context() as import_ctx:
+                import invalid_module
 
-        with TmpFileCtx("w+", suffix='.py', dir=solver_dir) as tmp_solver:
+            class {Cls}(Base{Cls}):
+                name = 'buggy-class'
+                install_cmd = 'conda'
+                def get_data(self): pass
+                def set_objective(self): pass
+                def run(self): pass
+                def get_result(self): pass
+        """
 
-            tmp_solver.write(src)
-            tmp_solver.flush()
+        dataset = missing_deps_cls.format(Cls='Dataset')
+        with temp_benchmark(datasets=[dataset]) as benchmark:
+            match = "not importable:\nDataset\n- buggy-class"
+            with pytest.raises(AttributeError, match=match):
+                with CaptureRunOutput():
+                    install([
+                        *f'{benchmark.benchmark_dir} -d buggy-class -y '
+                        f'--env-name {test_env_name}'.split()
+                    ], 'benchopt', standalone_mode=False)
 
-            install_args = [
-                str(DUMMY_BENCHMARK_PATH),
-                '--env-name', test_env_name,
-                f'-{cls_type[0]}', "buggy-cls"
-            ]
-
-            error_match = f"Could not find dependencies for buggy-cls {Cls}"
-            with pytest.raises(AttributeError, match=error_match):
-                install(install_args, 'benchopt', standalone_mode=False)
+        solver = missing_deps_cls.format(Cls='Solver')
+        with temp_benchmark(solvers=[solver]) as benchmark:
+            match = "not importable:\nSolver\n- buggy-class"
+            with pytest.raises(AttributeError, match=match):
+                with CaptureRunOutput():
+                    install([
+                        *f'{benchmark.benchmark_dir} -s buggy-class -y '
+                        f'--env-name {test_env_name}'.split()
+                    ], 'benchopt', standalone_mode=False)
 
     def test_shell_complete(self):
         # Completion for benchmark name
