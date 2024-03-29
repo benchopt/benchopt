@@ -61,6 +61,6 @@ class CaptureRunOutput(object):
             )
         else:
             assert len(matches) == repetition, (
-                f"Found {len(matches)} repetitions instead of {repetition} of"
+                f"Found {len(matches)} repetitions instead of {repetition} of "
                 f"'{pattern}' in output:\n{output}"
             )
