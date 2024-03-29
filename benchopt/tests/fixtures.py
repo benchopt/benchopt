@@ -5,6 +5,7 @@ import pytest
 from benchopt.benchmark import Benchmark
 from benchopt.utils.conda_env_cmd import create_conda_env
 from benchopt.utils.conda_env_cmd import delete_conda_env
+from benchopt.utils.shell_cmd import _run_shell_in_conda_env
 from benchopt.utils.dynamic_modules import _get_module_from_file
 
 from benchopt.tests import DUMMY_BENCHMARK_PATH
@@ -137,6 +138,17 @@ def test_env_name(request):
         create_conda_env(_TEST_ENV_NAME, recreate=recreate)
 
     return _TEST_ENV_NAME
+
+
+@pytest.fixture(scope='function')
+def uninstall_dummy_package(test_env_name):
+    _run_shell_in_conda_env(
+        "pip uninstall -qqy dummy_package", env_name=test_env_name
+    )
+    yield
+    _run_shell_in_conda_env(
+        "pip uninstall -qqy dummy_package", env_name=test_env_name
+    )
 
 
 @pytest.fixture(scope='session')

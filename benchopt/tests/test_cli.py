@@ -453,28 +453,26 @@ class TestInstallCmd:
             f"already available in '{test_env_name}'\n", repetition=3
         )
 
-    def test_benchopt_install_in_env_with_requirements(self, test_env_name):
+    def test_benchopt_install_in_env_with_requirements(
+        self, test_env_name, uninstall_dummy_package
+    ):
 
-        objective = """from benchopt.base import BaseObjective
-        from benchopt import safe_import_context
+        objective = """
+            from benchopt import safe_import_context, BaseObjective
 
-        with safe_import_context() as import_ctx:
-            import dummy_package
+            with safe_import_context() as import_ctx:
+                import dummy_package
 
-
-        class Objective(BaseObjective):
-            name = "dummy requirements"
-
-            install_cmd = 'conda'
-            requirements = [
-                'pip:git+https://github.com/tommoral/dummy_package'
-            ]
-
-            def set_data(self, X, y):
-                self.X, self.y = X, y
-            def evaluate_result(self, beta): return dict(value=1)
-            def get_one_result(self): return dict(beta=0)
-            def get_objective(self): return dict(X=self.X, y=self.y, lmbd=0)
+            class Objective(BaseObjective):
+                name = "requires_dummy"
+                install_cmd = 'conda'
+                requirements = [
+                    'pip:git+https://github.com/tommoral/dummy_package'
+                ]
+                def set_data(self): pass
+                def evaluate_result(self, beta): pass
+                def get_one_result(self): pass
+                def get_objective(self): pass
         """
 
         # Some solvers are not installable, only keep a simple one.
@@ -492,62 +490,90 @@ class TestInstallCmd:
                         'benchopt', standalone_mode=False
                     )
             assert objective.is_installed(env_name=test_env_name), out
-            # XXX: run the bench
 
-            with CaptureRunOutput() as out:
-                with pytest.raises(SystemExit, match='False'):
-                    run_cmd = [
-                        str(benchmark.benchmark_dir), '--env-name',
-                        test_env_name, '-n', '2', '-r', '1', '--no-plot',
-                        '-d', SELECT_ONE_SIMULATED, '-s', SELECT_ONE_PGD,
-                    ]
-                    run(run_cmd, 'benchopt', standalone_mode=False)
-
-            out.check_output(r"done \(not enough run\)", repetition=1)
-
-    @pytest.mark.parametrize("cls_type", ['dataset', 'solver'])
-    def test_error_wih_missing_requirements(self, test_env_name, cls_type):
-        # if cls_type == "solver":
-        Cls = cls_type.capitalize()
+    def test_error_wih_missing_requirements(self, test_env_name):
 
         # solver with missing dependency specified
-        src = (
-            f"from benchopt import Base{Cls}\n"
-            "from benchopt import safe_import_context\n"
-            "\n"
-            "with safe_import_context() as import_ctx:\n"
-            "    import sjdhfg\n"
-            f"class {Cls}(Base{Cls}):\n"
-            "    name = 'buggy-cls'\n"
-            "    def __init__(self):\n"
-            "        pass\n"
-            "    def set_objective(self):\n"
-            "        pass\n"
-            "    def get_data(self):\n"
-            "        {}\n"
-            "    def get_result(self):\n"
-            "        pass\n"
-            "    def run(self):\n"
-            "        pass\n"
+        missing_deps_cls = """from benchopt import Base{Cls}
+            from benchopt import safe_import_context
+
+            with safe_import_context() as import_ctx:
+                import invalid_module
+
+            class {Cls}(Base{Cls}):
+                name = 'buggy-class'
+                install_cmd = 'conda'
+                def get_data(self): pass
+                def set_objective(self): pass
+                def run(self): pass
+                def get_result(self): pass
+        """
+
+        dataset = missing_deps_cls.format(Cls='Dataset')
+        with temp_benchmark(datasets=[dataset]) as benchmark:
+            match = "not importable:\nDataset\n- buggy-class"
+            with pytest.raises(AttributeError, match=match):
+                with CaptureRunOutput():
+                    install([
+                        *f'{benchmark.benchmark_dir} -d buggy-class -y '
+                        f'--env-name {test_env_name}'.split()
+                    ], 'benchopt', standalone_mode=False)
+
+        solver = missing_deps_cls.format(Cls='Solver')
+        with temp_benchmark(solvers=[solver]) as benchmark:
+            match = "not importable:\nSolver\n- buggy-class"
+            with pytest.raises(AttributeError, match=match):
+                with CaptureRunOutput():
+                    install([
+                        *f'{benchmark.benchmark_dir} -s buggy-class -y '
+                        f'--env-name {test_env_name}'.split()
+                    ], 'benchopt', standalone_mode=False)
+
+    def test_no_error_minimal_requirements(self, test_env_name):
+
+        objective = """
+            from benchopt import safe_import_context, BaseObjective
+
+            with safe_import_context() as import_ctx:
+                import dummy_package
+
+            class Objective(BaseObjective):
+                name = "requires_dummy"
+                install_cmd = 'conda'
+                requirements = [
+                    'pip:git+https://github.com/tommoral/dummy_package'
+                ]
+                def set_data(self): pass
+                def evaluate_result(self, beta): pass
+                def get_one_result(self): pass
+                def get_objective(self): pass
+        """
+
+        # solver with missing dependency specified
+        missing_deps_dataset = """from benchopt import BaseDataset
+            from benchopt import safe_import_context
+
+            with safe_import_context() as import_ctx:
+                import dummy_package
+
+            class Dataset(BaseDataset):
+                name = 'buggy-class'
+                install_cmd = 'conda'
+                def get_data(self): pass
+        """
+
+        with temp_benchmark(
+                objective=objective,
+                datasets=[missing_deps_dataset]
+        ) as benchmark:
+            with CaptureRunOutput() as out:
+                install([
+                    *f'{benchmark.benchmark_dir} -d buggy-class -y '
+                    f'--env-name {test_env_name}'.split()
+                ], 'benchopt', standalone_mode=False)
+        out.check_output(
+            "Successfully installed dummy_package-0.0.0", repetition=1
         )
-
-        TmpFileCtx = tempfile.NamedTemporaryFile
-        solver_dir = DUMMY_BENCHMARK_PATH / f"{cls_type}s"
-
-        with TmpFileCtx("w+", suffix='.py', dir=solver_dir) as tmp_solver:
-
-            tmp_solver.write(src)
-            tmp_solver.flush()
-
-            install_args = [
-                str(DUMMY_BENCHMARK_PATH),
-                '--env-name', test_env_name,
-                f'-{cls_type[0]}', "buggy-cls"
-            ]
-
-            error_match = f"Could not find dependencies for buggy-cls {Cls}"
-            with pytest.raises(AttributeError, match=error_match):
-                install(install_args, 'benchopt', standalone_mode=False)
 
     def test_shell_complete(self):
         # Completion for benchmark name
