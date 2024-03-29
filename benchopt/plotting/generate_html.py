@@ -7,11 +7,14 @@ import numpy as np
 import pandas as pd
 from mako.template import Template
 
-from benchopt.benchmark import Benchmark
 from ..constants import PLOT_KINDS
+from ..utils.parquet import get_metadata as get_parquet_metadata
+
+from benchopt.benchmark import Benchmark
 from .plot_bar_chart import computeBarChartData  # noqa: F401
 from .plot_objective_curve import compute_quantiles   # noqa: F401
 from .plot_objective_curve import get_solver_style
+from .plot_objective_curve import reset_solver_styles_idx
 
 ROOT = Path(__file__).parent / "html"
 DEFAULT_HTML_DIR = Path("html")
@@ -47,20 +50,20 @@ for asset in STATIC_DIR.glob("**/*"):
     STATIC[asset.relative_to(STATIC_DIR).name] = asset.read_text()
 
 
-def get_results(fnames, kinds, html_root, benchmark, copy=False):
+def get_results(fnames, html_root, benchmark, config=None, copy=False):
     """Generate figures from a list of result files.
 
     Parameters
     ----------
     fnames : list of Path
         list of result files containing the benchmark results.
-    kinds : list of str
-        List of the kind of plots that will be generated. This needs to be a
-        sub-list of PLOT_KINDS.keys().
     html_root : Path
         Directory where all the HTML files related to the benchmark are stored.
-    benchmark : benchopt.Benchmark object
+    benchmark : benchopt.Benchmark
         Object to represent the benchmark.
+    config: dict (default: None)
+        If given, allows to specify the plot options. If not given, it is
+        retrieved from the metadata in the result files.
     copy : bool (default: False)
         If set to True, copy each file in the html_root / OUTPUTS
         directory, to make sure it can be downloaded.
@@ -82,6 +85,8 @@ def get_results(fnames, kinds, html_root, benchmark, copy=False):
         else:
             df = pd.read_csv(fname)
 
+        config_ = get_parquet_metadata(fname) if config is None else config
+
         datasets = list(df['data_name'].unique())
         sysinfo = get_sysinfo(df)
         # Copy result file if necessary
@@ -102,8 +107,8 @@ def get_results(fnames, kinds, html_root, benchmark, copy=False):
             objective_names=df['objective_name'].unique(),
             obj_cols=[k for k in df.columns if k.startswith('objective_')
                       and k != 'objective_name'],
-            kinds=list(kinds),
-            metadata=get_metadata(df),
+            kinds=config_.get('plots', list(PLOT_KINDS)),
+            metadata=get_metadata(df, config_.get('plot_configs', {})),
         )
 
         # JSON
@@ -120,7 +125,7 @@ def get_results(fnames, kinds, html_root, benchmark, copy=False):
     return results
 
 
-def get_metadata(df):
+def get_metadata(df, plot_configs):
     """Get the benchmark metadata.
 
     Metadata are already available among the columns of `df`.
@@ -131,7 +136,7 @@ def get_metadata(df):
     metadata: dict
         Dictionary containing the benchmark metadata.
     """
-    metadata = {}
+    metadata = {'plot_configs': plot_configs}
 
     # get solver descriptions
     # wrap in try-except block to preserve compatibility
@@ -190,8 +195,12 @@ def shape_objectives_columns_for_html(df, dataset, objective):
         df_filtered = df.query(
             "data_name == @dataset & objective_name == @objective"
         )
+        columns_data = shape_solvers_for_html(df_filtered, column)
+        if columns_data is None:
+            # Non-numeric column, skipping it
+            continue
         objective_columns_data[column] = {
-            'solvers': shape_solvers_for_html(df_filtered, column),
+            'solvers': columns_data,
             # Values used in javascript to do computation
             'transformers': {
                 'c_star': float(df_filtered[column].min() - 1e-10),
@@ -207,6 +216,7 @@ def shape_objectives_columns_for_html(df, dataset, objective):
 def shape_solvers_for_html(df, objective_column):
     """Return a dictionary with plotting data for each solver."""
     solver_data = {}
+    reset_solver_styles_idx()
     for solver in df['solver_name'].unique():
         df_filtered = df.query("solver_name == @solver")
 
@@ -218,9 +228,13 @@ def shape_solvers_for_html(df, objective_column):
 
         # compute median of 'time' and objective_column
         fields = ["time", objective_column]
-        groupby_stop_val_median = df_filtered.groupby('stop_val')
-        groupby_stop_val_median = groupby_stop_val_median[fields]
-        groupby_stop_val_median = groupby_stop_val_median.median()
+        groupby_stop_val_median = (
+            df_filtered.groupby('stop_val')[fields]
+            .median(numeric_only=True)
+        )
+        if objective_column not in groupby_stop_val_median:
+            # Non-numeric values, skipping this column
+            return None
 
         q1, q9 = compute_quantiles(df_filtered)
 
@@ -345,8 +359,8 @@ def render_benchmark(results, benchmark, home='index.html'):
     ----------
     results : list of Path
         List of all the run available for this benchmark.
-    benchmark_name : str
-        Named of the rendered benchmark.
+    benchmark : benchopt.Benchmark
+        Object to represent the benchmark.
     home : str
         URL of the home page.
 
@@ -367,15 +381,15 @@ def render_benchmark(results, benchmark, home='index.html'):
     )
 
 
-def render_all_results(results, benchmark_name, home='index.html'):
+def render_all_results(results, benchmark, home='index.html'):
     """Create an html file containing the plots from a benchmark run.
 
     Parameters
     ----------
     results : list of dict
         List of all the run that have been rendered for this benchmark.
-    benchmark_name : str
-        Named of the rendered benchmark.
+    benchmark : benchopt.Benchmark
+        Object to represent the benchmark.
     home : str
         URL of the home page.
 
@@ -392,7 +406,7 @@ def render_all_results(results, benchmark_name, home='index.html'):
             input_encoding="utf-8"
         ).render(
             result=result,
-            benchmark=benchmark_name,
+            benchmark=benchmark,
             static=STATIC, home=home
         )
         htmls.append(html)
@@ -421,7 +435,7 @@ def _fetch_cached_run_list(new_results, benchmark_html):
 
 
 def plot_benchmark_html(
-        fnames, benchmark, kinds, display=True, html_home=None
+        fnames, benchmark, config=None, display=True, html_home=None
 ):
     """Plot a given benchmark as an HTML report. This function can either plot
     a single run or multiple ones.
@@ -430,11 +444,10 @@ def plot_benchmark_html(
     ----------
     fnames : list of Path or Path
         Name of the file in which the results are saved.
-    benchmark : benchopt.Benchmark object
+    benchmark : benchopt.Benchmark
         Object to represent the benchmark.
-    kinds : list of str
-        List of the kind of plots that will be generated. This needs to be a
-        sub-list of PLOT_KINDS.keys().
+    config: dict (default: None)
+        Configuration for the different kind of plots.
     display : bool
         If set to True, display the curves by opening
         the default browser.
@@ -461,7 +474,7 @@ def plot_benchmark_html(
     html_home = html_home.relative_to(html_root)
 
     # Create the figures and render the page as a html.
-    results = get_results(fnames, kinds, html_root, benchmark, copy=copy)
+    results = get_results(fnames, html_root, benchmark, config, copy=copy)
     htmls = render_all_results(results, benchmark.name, home=html_home)
 
     # Save the resulting page in the HTML folder
@@ -517,16 +530,23 @@ def plot_benchmark_html_all(patterns=(), benchmark_paths=(), root=None,
     # Parse the arguments adn get the list of benchmarks and patterns.
     if not benchmark_paths:
         root = Path(root)
-        benchmark_paths = [
-            f for f in root.iterdir()
+        benchmarks = [
+            Benchmark(f, allow_meta_from_json=True) for f in root.iterdir()
             if f.is_dir() and (f / 'outputs').is_dir() and f.name != "html"
         ]
+        benchmark_paths = [b.benchmark_dir for b in benchmarks]
     else:
-        benchmark_paths = [Path(b) for b in benchmark_paths]
+        benchmark_paths = [
+            Benchmark(
+                Path(b).resolve(), allow_meta_from_json=True
+                ).benchmark_dir
+            for b in benchmark_paths
+            if Path(b).name != 'html'
+        ]
     if not patterns:
         patterns = ['*']
 
-    if not benchmark_paths:
+    if len(benchmark_paths) == 0:
         raise ValueError(
             "Could not find any benchmark to render. Check that the provided "
             "root folder contains at least one benchmark."
@@ -543,20 +563,18 @@ def plot_benchmark_html_all(patterns=(), benchmark_paths=(), root=None,
     (html_root / OUTPUTS).mkdir(exist_ok=True, parents=True)
 
     # Loop over all benchmark paths to create the associated result pages
-    for benchmark in benchmarks:
+    for benchmark_path, benchmark in zip(benchmark_paths, benchmarks):
         print(f'Rendering benchmark: {benchmark}')
         result_files = list(filter(
             lambda path: any(path.match(p) for p in patterns),
             benchmark.get_result_file('all')
         ))
-
         # Store the number of rendered results so we can easily generate the
         # index page with the number of available result files.
         benchmark.n_runs = len(result_files)
-
         if len(result_files) > 0:
             plot_benchmark_html(
-                result_files, benchmark, PLOT_KINDS.keys(), display=False,
+                result_files, benchmark, config=None, display=False,
                 html_home=index_filename
             )
 

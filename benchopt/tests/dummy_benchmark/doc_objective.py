@@ -1,4 +1,4 @@
-from benchopt.base import BaseObjective, safe_import_context
+from benchopt import BaseObjective, safe_import_context
 
 # All packages other than benchopt should be imported in this context.
 # - This allows to list solvers even when a package is not installed,

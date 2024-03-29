@@ -24,6 +24,7 @@ List of base classes:
    BaseDataset
    BaseSolver
 
+.. _benchopt_hooks:
 
 Benchopt run hooks
 ~~~~~~~~~~~~~~~~~~

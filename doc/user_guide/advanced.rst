@@ -97,33 +97,6 @@ we get
             return False, None
 
 
-
-.. _sampling_strategy:
-
-Changing the strategy to grow the computational budget (:code:`stop_val`)
-------------------------------------------------------------------------
-
-Benchopt varies the computational budget by varying either the number
-of iterations or the tolerance given to the method. The default policy is
-to vary these two quantities exponentially between two evaluations of the
-objective. However, in some cases, this exponential growth might hide some
-effects, or might not be adapted to a given solver.
-
-The way this value is changed can be specified for each solver by
-implementing a ``get_next`` method in the ``Solver`` class.
-This method takes as input the previous value where the objective
-function has been logged, and outputs the next one. For instance,
-if a solver needs to be evaluated every 10 iterations, we would have
-
-.. code-block::
-
-    class Solver(BaseSolver):
-        ...
-        def get_next(self, stop_val):
-            return stop_val + 10
-
-
-
 .. _benchmark_utils_import:
 
 Reusing some code in a benchmark

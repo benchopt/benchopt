@@ -1,12 +1,12 @@
 .. image:: https://raw.githubusercontent.com/benchopt/communication_materials/main/posters/images/logo_benchopt.png
    :width: 350
    :align: center
-   
+
 *—Making your optimization benchmarks simple and open—*
 
 ----
 
-|Test Status| |codecov| |Python 3.6+| |install-per-months| |discord| |SWH|
+|Test Status| |codecov| |Documentation| |Python 3.6+| |install-per-months| |discord| |SWH|
 
 ``Benchopt`` is a benchmarking suite for optimization algorithms.
 It is built for simplicity, transparency, and reproducibility.
@@ -24,7 +24,7 @@ Install
 -------
 
 It is recommended to use ``benchopt`` within a ``conda`` environment to fully-benefit
-from ``benchopt`` Command Line Interface (CLI).  
+from ``benchopt`` Command Line Interface (CLI).
 
 
 To install ``benchopt``, start by creating a new ``conda`` environment and then activate it
@@ -44,10 +44,10 @@ It is also possible to use the **latest development version**. To do so, run ins
 
 .. code-block:: bash
 
-    pip install -U -i https://test.pypi.org/simple/benchopt
+    pip install --pre benchopt -U -i https://test.pypi.org/simple
 
 
-Getting started 
+Getting started
 ---------------
 
 After installing ``benchopt``, you can
@@ -98,15 +98,15 @@ Creating a benchmark
 ^^^^^^^^^^^^^^^^^^^^
 
 The section `Write a benchmark <https://benchopt.github.io/benchmark_workflow/write_benchmark.html>`_ of the documentation provides a tutorial
-for creating a benchmark. The ``benchopt`` community also maintains 
+for creating a benchmark. The ``benchopt`` community also maintains
 a `template benchmark <https://github.com/benchopt/template_benchmark>`_ to quickly and easily start a new benchmark.
 
 
-Finding helps
--------------
+Finding help
+------------
 
 Join ``benchopt`` `discord server <https://discord.gg/EA2HGQb7nv>`_ and get in touch with the community!
-Feel free to drop us a message to get help with running/constructing benchmarks 
+Feel free to drop us a message to get help with running/constructing benchmarks
 or (why not) discuss new features to be added and future development directions that ``benchopt`` should take.
 
 
@@ -119,12 +119,12 @@ Join us in this endeavor! If you use ``benchopt`` in a scientific publication, p
 .. code-block:: bibtex
 
    @inproceedings{benchopt,
-      author    = {Moreau, Thomas and Massias, Mathurin and Gramfort, Alexandre 
-                   and Ablin, Pierre and Bannier, Pierre-Antoine 
+      author    = {Moreau, Thomas and Massias, Mathurin and Gramfort, Alexandre
+                   and Ablin, Pierre and Bannier, Pierre-Antoine
                    and Charlier, Benjamin and Dagréou, Mathieu and Dupré la Tour, Tom
                    and Durif, Ghislain and F. Dantas, Cassio and Klopfenstein, Quentin
-                   and Larsson, Johan and Lai, En and Lefort, Tanguy 
-                   and Malézieux, Benoit and Moufad, Badr and T. Nguyen, Binh and Rakotomamonjy, 
+                   and Larsson, Johan and Lai, En and Lefort, Tanguy
+                   and Malézieux, Benoit and Moufad, Badr and T. Nguyen, Binh and Rakotomamonjy,
                    Alain and Ramzi, Zaccharie and Salmon, Joseph and Vaiter, Samuel},
       title     = {Benchopt: Reproducible, efficient and collaborative optimization benchmarks},
       year      = {2022},
@@ -202,6 +202,8 @@ Available benchmarks
    :target: https://github.com/benchopt/benchopt/actions/workflows/test.yml
 .. |Python 3.6+| image:: https://img.shields.io/badge/python-3.6%2B-blue
    :target: https://www.python.org/downloads/release/python-360/
+.. |Documentation| image:: https://img.shields.io/badge/documentation-latest-blue
+   :target: https://benchopt.github.io
 .. |codecov| image:: https://codecov.io/gh/benchopt/benchopt/branch/master/graph/badge.svg
    :target: https://codecov.io/gh/benchopt/benchopt
 .. |SWH| image:: https://archive.softwareheritage.org/badge/origin/https://github.com/benchopt/benchopt/
@@ -211,37 +213,37 @@ Available benchmarks
 .. |install-per-months| image:: https://static.pepy.tech/badge/benchopt/month
    :target: https://pepy.tech/project/benchopt
 
-.. |Build Status OLS| image:: https://github.com/benchopt/benchmark_ols/workflows/Tests/badge.svg
+.. |Build Status OLS| image:: https://github.com/benchopt/benchmark_ols/actions/workflows/main.yml/badge.svg
    :target: https://github.com/benchopt/benchmark_ols/actions
-.. |Build Status NNLS| image:: https://github.com/benchopt/benchmark_nnls/workflows/Tests/badge.svg
+.. |Build Status NNLS| image:: https://github.com/benchopt/benchmark_nnls/actions/workflows/main.yml/badge.svg
    :target: https://github.com/benchopt/benchmark_nnls/actions
-.. |Build Status Lasso| image:: https://github.com/benchopt/benchmark_lasso/workflows/Tests/badge.svg
+.. |Build Status Lasso| image:: https://github.com/benchopt/benchmark_lasso/actions/workflows/main.yml/badge.svg
    :target: https://github.com/benchopt/benchmark_lasso/actions
-.. |Build Status Lasso Path| image:: https://github.com/jolars/benchmark_lasso_path/workflows/Tests/badge.svg
+.. |Build Status Lasso Path| image:: https://github.com/jolars/benchmark_lasso_path/actions/workflows/main.yml/badge.svg
    :target: https://github.com/benchopt/benchmark_lasso_path/actions
-.. |Build Status ElasticNet| image:: https://github.com/benchopt/benchmark_elastic_net/workflows/Tests/badge.svg
+.. |Build Status ElasticNet| image:: https://github.com/benchopt/benchmark_elastic_net/actions/workflows/main.yml/badge.svg
    :target: https://github.com/benchopt/benchmark_elastic_net/actions
-.. |Build Status MCP| image:: https://github.com/benchopt/benchmark_mcp/workflows/Tests/badge.svg
+.. |Build Status MCP| image:: https://github.com/benchopt/benchmark_mcp/actions/workflows/main.yml/badge.svg
    :target: https://github.com/benchopt/benchmark_mcp/actions
-.. |Build Status LogRegL2| image:: https://github.com/benchopt/benchmark_logreg_l2/workflows/Tests/badge.svg
+.. |Build Status LogRegL2| image:: https://github.com/benchopt/benchmark_logreg_l2/actions/workflows/main.yml/badge.svg
    :target: https://github.com/benchopt/benchmark_logreg_l2/actions
-.. |Build Status LogRegL1| image:: https://github.com/benchopt/benchmark_logreg_l1/workflows/Tests/badge.svg
+.. |Build Status LogRegL1| image:: https://github.com/benchopt/benchmark_logreg_l1/actions/workflows/main.yml/badge.svg
    :target: https://github.com/benchopt/benchmark_logreg_l1/actions
-.. |Build Status HuberL2| image:: https://github.com/benchopt/benchmark_huber_l2/workflows/Tests/badge.svg
+.. |Build Status HuberL2| image:: https://github.com/benchopt/benchmark_huber_l2/actions/workflows/main.yml/badge.svg
    :target: https://github.com/benchopt/benchmark_huber_l2/actions
-.. |Build Status QuantileRegL1| image:: https://github.com/benchopt/benchmark_quantile_regression/workflows/Tests/badge.svg
+.. |Build Status QuantileRegL1| image:: https://github.com/benchopt/benchmark_quantile_regression/actions/workflows/main.yml/badge.svg
    :target: https://github.com/benchopt/benchmark_quantile_regression/actions
-.. |Build Status LinearSVM| image:: https://github.com/benchopt/benchmark_linear_svm_binary_classif_no_intercept/workflows/Tests/badge.svg
+.. |Build Status LinearSVM| image:: https://github.com/benchopt/benchmark_linear_svm_binary_classif_no_intercept/actions/workflows/main.yml/badge.svg
    :target: https://github.com/benchopt/benchmark_linear_svm_binary_classif_no_intercept/actions
-.. |Build Status LinearICA| image:: https://github.com/benchopt/benchmark_linear_ica/workflows/Tests/badge.svg
+.. |Build Status LinearICA| image:: https://github.com/benchopt/benchmark_linear_ica/actions/workflows/main.yml/badge.svg
    :target: https://github.com/benchopt/benchmark_linear_ica/actions
-.. |Build Status JointDiag| image:: https://github.com/benchopt/benchmark_jointdiag/workflows/Tests/badge.svg
+.. |Build Status JointDiag| image:: https://github.com/benchopt/benchmark_jointdiag/actions/workflows/main.yml/badge.svg
    :target: https://github.com/benchopt/benchmark_jointdiag/actions
-.. |Build Status TV1D| image:: https://github.com/benchopt/benchmark_tv_1d/workflows/Tests/badge.svg
+.. |Build Status TV1D| image:: https://github.com/benchopt/benchmark_tv_1d/actions/workflows/main.yml/badge.svg
    :target: https://github.com/benchopt/benchmark_tv_1d/actions
-.. |Build Status TV2D| image:: https://github.com/benchopt/benchmark_tv_2d/workflows/Tests/badge.svg
+.. |Build Status TV2D| image:: https://github.com/benchopt/benchmark_tv_2d/actions/workflows/main.yml/badge.svg
    :target: https://github.com/benchopt/benchmark_tv_2d/actions
-.. |Build Status ResNetClassif| image:: https://github.com/benchopt/benchmark_resnet_classif/workflows/Tests/badge.svg
+.. |Build Status ResNetClassif| image:: https://github.com/benchopt/benchmark_resnet_classif/actions/workflows/main.yml/badge.svg
    :target: https://github.com/benchopt/benchmark_resnet_classif/actions
-.. |Build Status Bilevel| image:: https://github.com/benchopt/benchmark_bilevel/workflows/Tests/badge.svg
+.. |Build Status Bilevel| image:: https://github.com/benchopt/benchmark_bilevel/actions/workflows/main.yml/badge.svg
    :target: https://github.com/benchopt/benchmark_bilevel/actions

@@ -102,23 +102,23 @@ matrix :math:`B` can be enforced to be orthogonal.
 See `benchmark_* repositories on GitHub <https://github.com/benchopt/>`_ for more.
 
 
-.. |Build Status OLS| image:: https://github.com/benchopt/benchmark_ols/workflows/Tests/badge.svg
+.. |Build Status OLS| image:: https://github.com/benchopt/benchmark_ols/actions/workflows/main.yml/badge.svg
    :target: https://github.com/benchopt/benchmark_ols/actions
-.. |Build Status NNLS| image:: https://github.com/benchopt/benchmark_nnls/workflows/Tests/badge.svg
+.. |Build Status NNLS| image:: https://github.com/benchopt/benchmark_nnls/actions/workflows/main.yml/badge.svg
    :target: https://github.com/benchopt/benchmark_nnls/actions
-.. |Build Status Lasso| image:: https://github.com/benchopt/benchmark_lasso/workflows/Tests/badge.svg
+.. |Build Status Lasso| image:: https://github.com/benchopt/benchmark_lasso/actions/workflows/main.yml/badge.svg
    :target: https://github.com/benchopt/benchmark_lasso/actions
-.. |Build Status LogRegL2| image:: https://github.com/benchopt/benchmark_logreg_l2/workflows/Tests/badge.svg
+.. |Build Status LogRegL2| image:: https://github.com/benchopt/benchmark_logreg_l2/actions/workflows/main.yml/badge.svg
    :target: https://github.com/benchopt/benchmark_logreg_l2/actions
-.. |Build Status LogRegL1| image:: https://github.com/benchopt/benchmark_logreg_l1/workflows/Tests/badge.svg
+.. |Build Status LogRegL1| image:: https://github.com/benchopt/benchmark_logreg_l1/actions/workflows/main.yml/badge.svg
    :target: https://github.com/benchopt/benchmark_logreg_l1/actions
-.. |Build Status HuberL2| image:: https://github.com/benchopt/benchmark_huber_l2/workflows/Tests/badge.svg
+.. |Build Status HuberL2| image:: https://github.com/benchopt/benchmark_huber_l2/actions/workflows/main.yml/badge.svg
    :target: https://github.com/benchopt/benchmark_huber_l2/actions
-.. |Build Status QuantileRegL1| image:: https://github.com/benchopt/benchmark_quantile_regression/workflows/Tests/badge.svg
+.. |Build Status QuantileRegL1| image:: https://github.com/benchopt/benchmark_quantile_regression/actions/workflows/main.yml/badge.svg
    :target: https://github.com/benchopt/benchmark_quantile_regression/actions
-.. |Build Status LinearSVM| image:: https://github.com/benchopt/benchmark_linear_svm_binary_classif_no_intercept/workflows/Tests/badge.svg
+.. |Build Status LinearSVM| image:: https://github.com/benchopt/benchmark_linear_svm_binary_classif_no_intercept/actions/workflows/main.yml/badge.svg
    :target: https://github.com/benchopt/benchmark_linear_svm_binary_classif_no_intercept/actions
-.. |Build Status LinearICA| image:: https://github.com/benchopt/benchmark_linear_ica/workflows/Tests/badge.svg
+.. |Build Status LinearICA| image:: https://github.com/benchopt/benchmark_linear_ica/actions/workflows/main.yml/badge.svg
    :target: https://github.com/benchopt/benchmark_linear_ica/actions
-.. |Build Status JointDiag| image:: https://github.com/benchopt/benchmark_jointdiag/workflows/Tests/badge.svg
+.. |Build Status JointDiag| image:: https://github.com/benchopt/benchmark_jointdiag/actions/workflows/main.yml/badge.svg
    :target: https://github.com/benchopt/benchmark_jointdiag/actions

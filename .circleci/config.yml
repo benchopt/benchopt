@@ -58,10 +58,9 @@ jobs:
           command: |
             # remove the cache index
             mamba clean -i -y
-            mamba install python=3.9 julia r-base rpy2 \
+            mamba install python=3.10 r-base rpy2 \
                           numpy cython -yq
             pip install --upgrade "setuptools<58.5"
-            pip install --upgrade --progress-bar off julia
             pip install --upgrade --progress-bar off git+https://github.com/scikit-learn-contrib/lightning.git
             pip install --upgrade --progress-bar off -e .[doc]
 
@@ -98,11 +97,11 @@ jobs:
           name: make result
           command: |
             pip install -U numba
-            benchopt run benchopt/tests/test_benchmarks/dummy_benchmark -d Simulated[n_features=100,n_samples=100,rho=0]  -o "*[reg=0.1]" -s python-pgd -s cd -s Solver-Test -r 5 -n 15 --output benchmark-result
+            benchopt run benchopt/tests/dummy_benchmark -d Simulated[n_features=100,n_samples=100,rho=0]  -o "*[reg=0.05]" -s python-pgd -s cd -s Solver-Test -r 5 -n 15 --output benchmark-result
 
       # Save the results
       - store_artifacts:
-          path: benchopt/tests/test_benchmarks/dummy_benchmark/outputs/dummy_benchmark_benchmark-result.html
+          path: benchopt/tests/dummy_benchmark/outputs/dummy_benchmark_benchmark-result.html
           destination: result.html
 
   deploy:

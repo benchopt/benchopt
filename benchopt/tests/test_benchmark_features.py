@@ -1,8 +1,6 @@
 import pytest
 import tempfile
-import warnings
 
-import benchopt
 from benchopt.cli.main import run
 from benchopt.cli.main import test as _cmd_test
 from benchopt.utils.temp_benchmark import temp_benchmark
@@ -106,6 +104,137 @@ def test_error_reporting(error, raise_install_error):
         os.environ['BENCHOPT_RAISE_INSTALL_ERROR'] = prev_value
 
 
+def test_objective_no_cv(no_debug_test):
+
+    no_cv = """from benchopt import BaseObjective
+
+        class Objective(BaseObjective):
+            name = "cross_val"
+            min_benchopt_version = "0.0.0"
+
+            def set_data(self, X, y): self.X, self.y = X, y
+            def get_one_result(self): return 0
+            def evaluate_result(self, beta): return dict(value=1)
+
+            def get_objective(self):
+                x = self.get_split(self.X, self.y)
+                return dict(X=X_train, y=y_train, lmbd=1)
+    """
+
+    msg = "To use `Objective.get_split`, Objective must define a cv"
+    with temp_benchmark(objective=no_cv) as benchmark:
+        with pytest.raises(ValueError, match=msg):
+            run([str(benchmark.benchmark_dir),
+                 *'-s python-pgd -d test-dataset -n 1 -r 1 --no-plot'.split()],
+                standalone_mode=False)
+
+
+def test_objective_cv_splitter(no_debug_test):
+
+    objective = """from benchopt import BaseObjective, safe_import_context
+        with safe_import_context() as import_ctx:
+            import numpy as np
+
+        class Splitter():
+            def split(self, X, y, groups=None):
+                for i in range(len(np.unique(groups))):
+                    print(f"RUN#{i}")
+                    mask = groups == i
+                    yield mask, ~mask
+
+            def get_n_splits(self, groups): return len(np.unique(groups))
+
+        class Objective(BaseObjective):
+            name = "cross_val"
+            min_benchopt_version = "0.0.0"
+
+            def set_data(self, X, y):
+                self.X, self.y = X, y
+                self.cv_metadata = dict(groups=np.r_[
+                    np.zeros(33), np.ones(33), 2 * np.ones(34)
+                ])
+                self.cv = Splitter()
+
+            def get_objective(self):
+                X_train, X_test, y_train, y_test = self.get_split(
+                    self.X, self.y
+                )
+                return dict(X_train=X_train, y_train=y_train)
+
+            def get_one_result(self): return dict(beta=0)
+            def evaluate_result(self, beta): return dict(value=1)
+    """
+
+    solver = """from benchopt import BaseSolver
+
+    class Solver(BaseSolver):
+        name = "test-solver"
+        sampling_strategy = 'run_once'
+        def set_objective(self, X_train, y_train): pass
+        def run(self, n_iter): print("OK")
+        def get_result(self): return dict(beta=1)
+    """
+
+    with temp_benchmark(objective=objective, solvers=[solver]) as benchmark:
+        with CaptureRunOutput() as out:
+            run([str(benchmark.benchmark_dir),
+                *('-s test-solver -d test-dataset --no-plot').split()],
+                standalone_mode=False)
+
+    # test-solver appears one time as it is only run once.
+    out.check_output("test-solver", repetition=1)
+    out.check_output("RUN#0", repetition=1)
+    out.check_output("RUN#1", repetition=1)
+    out.check_output("RUN#2", repetition=1)
+    out.check_output("RUN#3", repetition=0)
+    out.check_output("OK", repetition=3)
+
+    # Make sure that `-r` is enforced when specified
+    with temp_benchmark(objective=objective, solvers=[solver]) as benchmark:
+        with CaptureRunOutput() as out:
+            run([str(benchmark.benchmark_dir),
+                *('-s test-solver -d test-dataset -r 2 --no-plot').split()],
+                standalone_mode=False)
+
+    # test-solver appears one time as it is only run once.
+    out.check_output("test-solver", repetition=1)
+    out.check_output("RUN#0", repetition=1)
+    out.check_output("RUN#1", repetition=1)
+    out.check_output("RUN#2", repetition=0)
+    out.check_output("RUN#3", repetition=0)
+    out.check_output("OK", repetition=2)
+
+    with temp_benchmark(objective=objective, solvers=[solver]) as benchmark:
+        with CaptureRunOutput() as out:
+            run([str(benchmark.benchmark_dir),
+                *('-s test-solver -d test-dataset -r 5 --no-plot').split()],
+                standalone_mode=False)
+
+    # test-solver appears one time as it is only run once.
+    out.check_output("test-solver", repetition=1)
+    out.check_output("RUN#0", repetition=2)
+    out.check_output("RUN#1", repetition=2)
+    out.check_output("RUN#2", repetition=1)
+    out.check_output("RUN#3", repetition=0)
+    out.check_output("OK", repetition=5)
+
+    # Make sure running in parallel does not mess up the splits
+    with temp_benchmark(objective=objective, solvers=[solver]) as benchmark:
+        with CaptureRunOutput() as out:
+            run([
+                str(benchmark.benchmark_dir),
+                *('-s test-solver -d test-dataset -j 3 -r 4 --no-plot').split()
+            ], standalone_mode=False)
+
+    # test-solver appears one time as it is only run once.
+    out.check_output("test-solver", repetition=1)
+    out.check_output("RUN#0", repetition=2)
+    out.check_output("RUN#1", repetition=1)
+    out.check_output("RUN#2", repetition=1)
+    out.check_output("RUN#3", repetition=0)
+    out.check_output("OK", repetition=4)
+
+
 def test_ignore_hidden_files():
     # Non-regression test to make sure hidden files in datasets and solvers
     # are ignored. If this is not the case, the call to run will fail if it
@@ -200,257 +329,76 @@ def test_run_once_callback(n_iter):
         out.check_output(rf"RUNONCE\({n_iter}\)", repetition=1)
 
 
-##############################################################################
-# Test for deprecated features in 1.5
-##############################################################################
-
-
-def test_deprecated_stopping_strategy():
-    # XXX remove in 1.5
-    assert benchopt.__version__ < '1.5'
+def test_warm_up():
 
     solver1 = """from benchopt import BaseSolver
     import numpy as np
 
     class Solver(BaseSolver):
         name = 'solver1'
-        stopping_strategy = 'iteration'
-
-        def run(self, n_iter): pass
+        sampling_strategy = 'iteration'
 
         def set_objective(self, X, y, lmbd):
             self.n_features = X.shape[1]
+
+        def warm_up(self):
+            print("WARMUP")
+            self.run_once(1)
+
+        def run(self, n_iter): pass
 
         def get_result(self, **data):
             return {'beta': np.zeros(self.n_features)}
     """
 
-    solver2 = solver1.replace("stopping_strategy", "sampling_strategy")
-    solver2 = solver2.replace("solver1", "solver2")
+    with temp_benchmark(solvers=[solver1]) as benchmark:
+        with CaptureRunOutput() as out:
+            run([
+                str(benchmark.benchmark_dir),
+                *'-s solver1 -d test-dataset -n 0 -r 5 --no-plot'.split(),
+                *'-o dummy*[reg=0.5]'.split()
+            ], standalone_mode=False)
 
-    with temp_benchmark(solvers=[solver1, solver2]) as benchmark:
-        with pytest.warns(
-                FutureWarning,
-                match="'stopping_strategy' attribute is deprecated"):
-            run([str(benchmark.benchmark_dir),
-                 *'-s solver1 -d test-dataset -n 1 -r 1 --no-plot'.split()],
-                standalone_mode=False)
-
-        run([str(benchmark.benchmark_dir),
-             *'-s solver2 -d test-dataset -n 1 -r 1 --no-plot'.split()],
-            standalone_mode=False)
+        # Make sure warmup is called exactly once
+        out.check_output("WARMUP", repetition=1)
 
 
-def test_deprecated_support_sparse():
-    # XXX remove in 1.5
-    assert benchopt.__version__ < '1.5'
+def test_pre_run_hook():
 
     solver1 = """from benchopt import BaseSolver
     import numpy as np
 
     class Solver(BaseSolver):
         name = 'solver1'
-        support_sparse = True
-
-        def run(self, n_iter): pass
+        sampling_strategy = 'iteration'
 
         def set_objective(self, X, y, lmbd):
             self.n_features = X.shape[1]
 
-        def get_result(self, **data):
-            return dict(beta=np.zeros(self.n_features))
-    """
+        def pre_run_hook(self, n_iter):
+            self._pre_run_hook_n_iter = n_iter
 
-    with temp_benchmark(solvers=solver1) as benchmark:
-        with pytest.warns(
-                FutureWarning,
-                match="`support_sparse = False` is deprecated"):
-            run([str(benchmark.benchmark_dir),
-                 *'-s solver1 -d test-dataset -n 1 -r 1 --no-plot'.split()],
-                standalone_mode=False)
-
-
-def test_deprecated_compute():
-    # XXX remove in 1.5
-    assert benchopt.__version__ < '1.5'
-
-    # Make sure that BaseObjective is compatible with compute, with both
-    # get_result returning a dict or a scalar.
-    objective = """from benchopt import BaseObjective
-
-    class Objective(BaseObjective):
-        name = 'dummy'
-
-        def set_data(self, X, y):
-            self.X, self.y = X, y
-
-        def compute(self, beta):
-            return 1
-
-        def get_one_result(self):
-            return dict(beta=0)
-
-        def get_objective(self):
-            return dict(X=self.X, y=self.y, lmbd=0)
-    """
-
-    match = "`Objective.compute` was renamed `Objective.evaluate_result` "
-    with temp_benchmark(objective=objective) as benchmark:
-        with pytest.warns(FutureWarning, match=match):
-            run([str(benchmark.benchmark_dir),
-                 *'-s python-pgd -d test-dataset -n 1 -r 1 --no-plot'.split()],
-                standalone_mode=False)
-
-    solver1 = """from benchopt import BaseSolver
-    import numpy as np
-
-    class Solver(BaseSolver):
-        name = 'solver1'
-
-        def run(self, n_iter): pass
-
-        def set_objective(self, X, y, lmbd):
-            self.n_features = X.shape[1]
+        def run(self, n_iter):
+            assert self._pre_run_hook_n_iter == n_iter
 
         def get_result(self, **data):
-            return np.zeros(self.n_features)
-    """
-    match = r"Solver.get_result\(\) should return a dict"
-    with temp_benchmark(objective=objective, solvers=solver1) as benchmark:
-        with pytest.warns(FutureWarning, match=match):
-            run([str(benchmark.benchmark_dir),
-                 *'-s solver1 -d test-dataset -n 1 -r 1 --no-plot'.split()],
-                standalone_mode=False)
-
-    # Make sure that no warning is raised if using evaluate_result.
-    objective = objective.replace("compute", "evaluate_result")
-    with temp_benchmark(objective=objective) as benchmark:
-        with warnings.catch_warnings():
-            warnings.simplefilter("error")
-            run([str(benchmark.benchmark_dir),
-                 *'-s python-pgd -d test-dataset -n 1 -r 1 --no-plot'.split()],
-                standalone_mode=False)
-
-
-def test_deprecated_callback():
-    # XXX remove in 1.5
-    assert benchopt.__version__ < '1.5'
-
-    # Make sure that BaseObjective is compatible with compute, with both
-    # get_result returning a dict or a scalar.
-    objective = """from benchopt import BaseObjective
-
-    class Objective(BaseObjective):
-        name = 'dummy'
-
-        def set_data(self, X, y):
-            self.X, self.y = X, y
-
-        def compute(self, beta):
-            return 1
-
-        def get_one_result(self):
-            return dict(beta=0)
-
-        def get_objective(self):
-            return dict(X=self.X, y=self.y, lmbd=0)
+            return {'beta': np.zeros(self.n_features)}
     """
 
-    solver = """from benchopt import BaseSolver
-    import numpy as np
-
-    class Solver(BaseSolver):
-        name = 'solver1'
-        sampling_strategy = "callback"
-
-        def run(self, cb):
-            self.beta = 0
-            while cb(self.beta):
-                pass
-
-        def set_objective(self, X, y, lmbd):
-            self.p = X.shape[1]
-
-        def get_result(self, **data):
-            return 0
-    """
-    match = r"the callback does not take any arguments."
-    with temp_benchmark(objective=objective, solvers=solver) as benchmark:
-        with pytest.warns(FutureWarning, match=match):
-            run([str(benchmark.benchmark_dir),
-                 *'-s solver1 -d test-dataset -n 1 -r 1 --no-plot'.split()],
-                standalone_mode=False)
-
-    solver1 = solver.replace("cb(self.beta)", "cb(dict(beta=self.beta))")
-    with temp_benchmark(objective=objective, solvers=solver1) as benchmark:
-        with pytest.warns(FutureWarning, match=match):
-            run([str(benchmark.benchmark_dir),
-                 *'-s solver1 -d test-dataset -n 1 -r 1 --no-plot'.split()],
-                standalone_mode=False)
-
-    solver = solver.replace("cb(self.beta)", "cb()")
-    match = r"Solver.get_result\(\) should return a dict"
-    with temp_benchmark(objective=objective, solvers=solver) as benchmark:
-        with pytest.warns(FutureWarning, match=match):
-            run([str(benchmark.benchmark_dir),
-                 *'-s solver1 -d test-dataset -n 1 -r 1 --no-plot'.split()],
-                standalone_mode=False)
-
-    solver = solver.replace("return 0", "return dict(beta=0)")
-    match = "`Objective.compute` was renamed `Objective.evaluate_result` "
-    with temp_benchmark(objective=objective, solvers=solver) as benchmark:
-        with pytest.warns(FutureWarning, match=match):
-            run([str(benchmark.benchmark_dir),
-                 *'-s solver1 -d test-dataset -n 1 -r 1 --no-plot'.split()],
-                standalone_mode=False)
-
-    objective = objective.replace("compute", "evaluate_result")
-    with temp_benchmark(objective=objective, solvers=solver) as benchmark:
-        with warnings.catch_warnings():
-            warnings.simplefilter("error")
-            run([str(benchmark.benchmark_dir),
-                 *'-s solver1 -d test-dataset -n 1 -r 1 --no-plot'.split()],
-                standalone_mode=False)
-
-
-def test_deprecated_get_one_solution():
-    # XXX remove in 1.5
-    assert benchopt.__version__ < '1.5'
-
-    # Make sure that BaseObjective is compatible with compute, with both
-    # get_result returning a dict or a scalar.
-    objective = """from benchopt import BaseObjective
-
-    class Objective(BaseObjective):
-        name = 'dummy'
-
-        def set_data(self, X, y):
-            self.X, self.y = X, y
-
-        def evaluate_result(self, beta):
-            return 1
-
-        def get_one_solution(self):
-            return dict(beta=0)
-
-        def get_objective(self):
-            return dict(X=self.X, y=self.y, lmbd=0)
-    """
-
-    match = "`Objective.get_one_solution` is renamed `Objective.get_one_result"
-    with temp_benchmark(objective=objective) as benchmark:
+    with temp_benchmark(solvers=[solver1]) as benchmark:
         with CaptureRunOutput() as out:
-            with pytest.raises(SystemExit, match='False'):
-                _cmd_test([str(benchmark.benchmark_dir),
-                           *'-- -k test_benchmark_objective'.split()],
-                          standalone_mode=False)
-        out.check_output(match, repetition=1)
+            run([
+                str(benchmark.benchmark_dir),
+                *'-s solver1 -d test-dataset -n 0 -r 5 --no-plot '
+                '-o dummy*[reg=0.5]'.split()
+            ], standalone_mode=False)
 
-    objective = objective.replace("get_one_solution", "get_one_result")
-    with temp_benchmark(objective=objective) as benchmark:
         with CaptureRunOutput() as out:
-            with pytest.raises(SystemExit, match='False'):
-                _cmd_test([str(benchmark.benchmark_dir),
-                           *'-- -k test_benchmark_objective'.split()],
-                          standalone_mode=False)
-        out.check_output(match, repetition=0)
+            with pytest.raises(SystemExit, match="False"):
+                _cmd_test([
+                    str(benchmark.benchmark_dir), '-k', 'solver1',
+                    '--skip-install', '-v'
+                ], standalone_mode=False)
+
+        # Make sure warmup is called exactly once
+        out.check_output("3 passed, 1 skipped, 7 deselected", repetition=1)

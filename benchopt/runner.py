@@ -168,6 +168,7 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
     run_statistics : list
         The benchmark results.
     """
+
     run_one_to_cvg_cached = benchmark.cache(
         run_one_to_cvg, ignore=['force', 'output', 'pdb']
     )
@@ -176,10 +177,6 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
     skip, reason = objective.set_dataset(dataset)
     if skip:
         output.skip(reason, objective=True)
-        return []
-
-    skip = solver._set_objective(objective, output=output)
-    if skip:
         return []
 
     states = []
@@ -196,9 +193,22 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
     # the name of metrics in Objective.compute
     obj_description = objective.__doc__ or ""
 
+    if n_repetitions is None:
+        if hasattr(objective, "cv"):
+            n_repetitions = objective.cv.get_n_splits(
+                **getattr(objective, "cv_metadata", {})
+            )
+        else:
+            # we set 1 by default so that the solver run at least once
+            n_repetitions = 1
+
     for rep in range(n_repetitions):
+        skip = solver._set_objective(objective, output=output)
+        if skip:
+            return []
 
         output.set(rep=rep)
+
         # Get meta
         meta = dict(
             objective_name=str(objective),
@@ -210,7 +220,7 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
             solver_description=inspect.cleandoc(solver.__doc__ or ""),
         )
 
-        stopping_criterion = solver.stopping_criterion.get_runner_instance(
+        stopping_criterion = solver._stopping_criterion.get_runner_instance(
             solver=solver,
             max_runs=max_runs,
             timeout=timeout / n_repetitions,
@@ -252,8 +262,8 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
 def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
                   dataset_names=None, objective_filters=None, max_runs=10,
                   n_repetitions=1, timeout=100, n_jobs=1, slurm=None,
-                  plot_result=True, html=True, show_progress=True, pdb=False,
-                  output="None"):
+                  plot_result=True, display=True, html=True,
+                  show_progress=True, pdb=False, output="None"):
     """Run full benchmark.
 
     Parameters
@@ -285,8 +295,11 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
         If not None, launch the job on a slurm cluster using the file to get
         the cluster config parameters.
     plot_result : bool
-        If set to True (default), display the result plot and save them in
+        If set to True (default), generate the result plot and save them in
         the benchmark directory.
+    display : bool
+        If set to True (default), open the result plots at the end of the run,
+        otherwise, simply save them.
     html : bool
         If set to True (default), display the result plot in HTML, otherwise
         in matplotlib figures, default is True.
@@ -294,7 +307,7 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
         If show_progress is set to True, display the progress of the benchmark.
     pdb : bool
         It pdb is set to True, open a debugger on error.
-    output_name : str
+    output : str
         Filename for the parquet output. If given, the results will
         be stored at <BENCHMARK>/outputs/<filename>.parquet.
 
@@ -325,7 +338,10 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
 
     if slurm is not None:
         from .utils.slurm_executor import run_on_slurm
-        results = run_on_slurm(slurm, run_one_solver, common_kwargs, all_runs)
+        results = run_on_slurm(
+            benchmark, slurm, run_one_solver, common_kwargs,
+            all_runs
+        )
     else:
         results = Parallel(n_jobs=n_jobs)(
             delayed(run_one_solver)(**common_kwargs, **kwargs)
@@ -350,10 +366,17 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
     else:
         save_file = output_dir / f"{output_name}.parquet"
         save_file = uniquify_results(save_file)
-    df.to_parquet(save_file)
+    try:
+        df.to_parquet(save_file)
+    except Exception:
+        # Failed to save the results as a parquet file, falling back
+        # to csv. This can be due to mixed types columns or missing
+        # dependencies.
+        save_file = save_file.with_suffix(".csv")
+        df.to_csv(save_file)
     output.savefile_status(save_file=save_file)
 
     if plot_result:
         from benchopt.plotting import plot_benchmark
-        plot_benchmark(save_file, benchmark, html=html)
+        plot_benchmark(save_file, benchmark, html=html, display=display)
     return save_file

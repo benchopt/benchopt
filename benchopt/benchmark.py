@@ -24,6 +24,7 @@ from .config import RAISE_INSTALL_ERROR
 
 
 CACHE_DIR = '__cache__'
+SLURM_JOB_NAME = 'benchopt_run'
 
 
 class Benchmark:
@@ -46,7 +47,9 @@ class Benchmark:
     mem : joblib.Memory
         Caching mechanism for the benchmark.
     """
-    def __init__(self, benchmark_dir, allow_meta_from_json=False):
+    def __init__(
+        self, benchmark_dir, allow_meta_from_json=False,
+    ):
         self.benchmark_dir = Path(benchmark_dir)
 
         set_benchmark_module(self.benchmark_dir)
@@ -229,6 +232,11 @@ class Benchmark:
         output_dir.mkdir(exist_ok=True)
         return output_dir
 
+    def get_slurm_folder(self):
+        """Get the folder to store the output of the slurm executor."""
+        slurm_dir = self.benchmark_dir / SLURM_JOB_NAME
+        return slurm_dir
+
     def get_result_file(self, filename=None):
         """Get a result file from the benchmark.
 
@@ -336,15 +344,21 @@ class Benchmark:
 
     def get_config_file(self):
         "Get the location for the config file of the benchmark."
-        return self.benchmark_dir / 'config.ini'
+        yml_path = self.benchmark_dir / "config.yml"
+        ini_path = yml_path.with_suffix('.ini')
+        if not yml_path.exists() and ini_path.exists():
+            return ini_path
+        return yml_path
 
-    def get_setting(self, setting_name):
+    def get_setting(self, setting_name, default_config=None):
         "Retrieve the setting value from benchmark config."
 
         # Get the config file and read it
         config_file = self.get_config_file()
-        return get_setting(name=setting_name, config_file=config_file,
-                           benchmark_name=self.name)
+        return get_setting(
+            name=setting_name, config_file=config_file,
+            benchmark_name=self.name, default_config=default_config
+        )
 
     def get_test_config_file(self):
         """Get the location for the test config file for the benchmark.
@@ -500,9 +514,6 @@ class Benchmark:
         all_datasets = _filter_classes(
             *self.get_datasets(), filters=dataset_names
         )
-        all_objectives, objective_buffer = buffer_iterator(_filter_classes(
-            self.get_benchmark_objective(), filters=objective_filters
-        ))
         all_solvers, solvers_buffer = buffer_iterator(_filter_classes(
             *self.get_solvers(), filters=solver_names
         ))
@@ -512,6 +523,10 @@ class Benchmark:
                 output.show_status('not installed', dataset=True)
                 continue
             output.display_dataset()
+            all_objectives = _filter_classes(
+                self.get_benchmark_objective(), filters=objective_filters,
+                check_installed=False
+            )
             for objective, is_installed in all_objectives:
                 output.set(objective=objective)
                 if not is_installed:
@@ -533,7 +548,6 @@ class Benchmark:
                         force=force, output=output.clone()
                     )
                 all_solvers = solvers_buffer
-            all_objectives = objective_buffer
 
 
 def _check_name_lists(*name_lists):
@@ -691,13 +705,16 @@ def _validate_patterns(all_names, patterns, name_type='dataset'):
         )
 
 
-def _filter_classes(*classes, filters=None):
+def _filter_classes(*classes, filters=None, check_installed=True):
     """Filter a list of class based on its names."""
     for klass in classes:
         if not is_matched(klass.name, filters):
             continue
 
-        if not klass.is_installed(raise_on_not_installed=RAISE_INSTALL_ERROR):
+        if (check_installed and
+                not klass.is_installed(
+                    raise_on_not_installed=RAISE_INSTALL_ERROR
+                    )):
             yield klass.name, False
             continue
 

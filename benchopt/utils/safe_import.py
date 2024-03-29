@@ -15,8 +15,15 @@ class SkipWithBlock(Exception):
 
 
 def skip_import():
+    """Once called, all the safe_import_context is skipped."""
     global SKIP_IMPORT
     SKIP_IMPORT = True
+
+
+def _unskip_import():
+    """Helper to reenable imports in tests."""
+    global SKIP_IMPORT
+    SKIP_IMPORT = False
 
 
 def set_benchmark_module(benchmark_dir):
@@ -79,6 +86,9 @@ class safe_import_context:
 
         if SKIP_IMPORT:
             self.failed_import = True
+            self.import_error = (
+                RuntimeError, "Should not check install with skip import", None
+            )
             return True
 
         silence_error = False

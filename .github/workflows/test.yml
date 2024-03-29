@@ -58,6 +58,7 @@ jobs:
         run: |
           conda info
           conda install -yq pip
+          conda install -yq "julia<=1.10.0"
           pip install -e .[test]
           # Install mamba in base environment to make it accessible test env
           test $BENCHOPT_CONDA_CMD == "mamba" && conda install -n base mamba || echo "using conda"
@@ -103,7 +104,7 @@ jobs:
         run: pip install -e .
 
       - name: Run benchopt without conda
-        run: benchopt run benchopt/tests/test_benchmarks/dummy_benchmark -d Simulated[n_features=100,n_samples=100,rho=0]  -o "*[reg=0.1]" -s python-pgd -r 1 -n 10 --no-plot
+        run: benchopt run benchopt/tests/dummy_benchmark -d Simulated[n_features=100,n_samples=100,rho=0]  -o "*[reg=0.1]" -s python-pgd -r 1 -n 10 --no-plot
 
   test_benchopt_reqs:
     name: Test benchopt requirements detection

@@ -36,10 +36,11 @@ def get_plot_kinds(ctx, args, incomplete):
                              for name, func in PLOT_KINDS.items()]),
               shell_complete=get_plot_kinds)
 @click.option('--display/--no-display', default=True,
-              help="Whether or not to display the plot on the screen.")
+              help="Whether or not to display the plot on the screen. "
+              "Default is True.")
 @click.option('--html/--no-html', default=True,
-              help="Whether or not to get plots as an html page "
-                   "(otherwise use .png).")
+              help="If set to True (default), render the results as an HTML "
+              "page, otherwise create matplotlib figures, saved as PNG.")
 @click.option('--plotly', is_flag=True,
               help="If this flag is set, generate figure as HTML with plotly. "
               "This option does not work with all plot kinds and requires "
@@ -125,7 +126,6 @@ def publish(benchmark, token=None, filename=None):
 @click.option('--display/--no-display', default=True,
               help="Whether or not to display the plot on the screen.")
 def generate_results(patterns=(), benchmark_paths=(), root=None, display=True):
-
     from benchopt.plotting.generate_html import plot_benchmark_html_all
     plot_benchmark_html_all(
         patterns=patterns, benchmark_paths=benchmark_paths,
