@@ -339,11 +339,11 @@ class Benchmark:
         func_cached = self.mem.cache(func, ignore=ignore)
         if force:
             def _func_cached(**kwargs):
-                return func_cached.call(**kwargs)[0]
+                return func_cached.call(**kwargs)
         else:
             def _func_cached(**kwargs):
                 if kwargs.get('force', False):
-                    return func_cached.call(**kwargs)[0]
+                    return func_cached.call(**kwargs)
                 return func_cached(**kwargs)
 
         return _func_cached
