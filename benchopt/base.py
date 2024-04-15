@@ -428,7 +428,7 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
         result = solver.get_result()
         if not isinstance(result, dict):
             raise TypeError(
-                "The result returned by `Solver.get_result` should be a dict"
+                "The result returned by `Solver.get_result` should be a dict "
                 "whose keys are the arguments of `Objective.evaluate_result`. "
                 f"Got {result}."
 
