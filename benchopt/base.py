@@ -420,12 +420,11 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
         """
         pass
 
-    def __call__(self, solver):
+    def __call__(self, result):
         """Used to call the evaluation of the objective.
 
         This allows standardizing the output to a dictionary.
         """
-        result = solver.get_result()
         if not isinstance(result, dict):
             raise TypeError(
                 "The result returned by `Solver.get_result` should be a dict "

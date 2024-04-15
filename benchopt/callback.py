@@ -85,8 +85,8 @@ class _Callback:
 
         Return True if the solver should be stopped.
         """
-
-        objective_dict = self.objective(self.solver)
+        result = self.solver.get_result()
+        objective_dict = self.objective(result)
         self.curve.append(dict(
             **self.meta, stop_val=self.it,
             time=self.time_iter,
