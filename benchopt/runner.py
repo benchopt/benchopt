@@ -49,8 +49,7 @@ def run_one_resolution(objective, solver, meta, stop_val):
     t_start = time.perf_counter()
     solver.run(stop_val)
     delta_t = time.perf_counter() - t_start
-    solver_result = solver.get_result()
-    objective_dict = objective(solver_result)
+    objective_dict = objective(solver)
 
     # Add system info in results
     info = get_sys_info()
