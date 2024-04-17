@@ -180,10 +180,10 @@ The following snippet shows how to use the callback strategy with a user-coded s
 
     class Solver(BaseSolver):
         ...
-        sampling_strategy = "callback"
+        sampling_strategy = "run_once"
         ...
 
-        def run(self, callback):
+        def run(self, n_iter):
             X, y = self.X, self.y
             n_features = self.X.shape[1]
 
@@ -196,6 +196,28 @@ The following snippet shows how to use the callback strategy with a user-coded s
                 grad = self.X.T @ (self.X @ self.beta - y) + self.lmbd * self.beta
                 self.beta -= step * grad
         ...
+
+- ``sampling_strategy = "run_once"``
+
+In some cases, we are not interested in convergence curves over time but only in the final solution.
+In this case, we can use the ``run_once`` sampling strategy.
+
+.. code-block:: python
+    :caption: benchmark_ridge/solvers/mysolver.py
+
+    class Solver(BaseSolver):
+        ...
+        sampling_strategy = "run_once"
+        ...
+
+        def run(self, None):
+
+            self.model.fit(self.X, self.y)
+
+            # store reference to the solution
+            self.beta = self.model.coef_
+        ...
+
 
 .. note::
     The :ref:`Performance curves page <performance_curves>` provides a complete guide on the way benchopt constructs performance curves, and on the different sampling strategies.
