@@ -43,7 +43,8 @@ DEFAULT_GLOBAL_CONFIG = {
 
 DEFAULT_BENCHMARK_CONFIG = {
     "plots": list(PLOT_KINDS),
-    "plot_configs": {}
+    "plot_configs": {},
+    "paths": {}
 }
 
 """
