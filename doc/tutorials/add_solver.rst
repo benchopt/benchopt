@@ -180,10 +180,10 @@ The following snippet shows how to use the callback strategy with a user-coded s
 
     class Solver(BaseSolver):
         ...
-        sampling_strategy = "run_once"
+        sampling_strategy = "callback"
         ...
 
-        def run(self, n_iter):
+        def run(self, callback):
             X, y = self.X, self.y
             n_features = self.X.shape[1]
 
