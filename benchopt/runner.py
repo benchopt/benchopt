@@ -49,8 +49,8 @@ def run_one_resolution(objective, solver, meta, stop_val):
     t_start = time.perf_counter()
     solver.run(stop_val)
     delta_t = time.perf_counter() - t_start
-    solver_result = solver.get_result()
-    objective_dict = objective(solver_result)
+    result = solver.get_result()
+    objective_dict = objective(result)
 
     # Add system info in results
     info = get_sys_info()
@@ -168,6 +168,7 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
     run_statistics : list
         The benchmark results.
     """
+
     run_one_to_cvg_cached = benchmark.cache(
         run_one_to_cvg, ignore=['force', 'output', 'pdb']
     )
@@ -176,10 +177,6 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
     skip, reason = objective.set_dataset(dataset)
     if skip:
         output.skip(reason, objective=True)
-        return []
-
-    skip = solver._set_objective(objective, output=output)
-    if skip:
         return []
 
     states = []
@@ -196,9 +193,22 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
     # the name of metrics in Objective.compute
     obj_description = objective.__doc__ or ""
 
+    if n_repetitions is None:
+        if hasattr(objective, "cv"):
+            n_repetitions = objective.cv.get_n_splits(
+                **getattr(objective, "cv_metadata", {})
+            )
+        else:
+            # we set 1 by default so that the solver run at least once
+            n_repetitions = 1
+
     for rep in range(n_repetitions):
+        skip = solver._set_objective(objective, output=output)
+        if skip:
+            return []
 
         output.set(rep=rep)
+
         # Get meta
         meta = dict(
             objective_name=str(objective),
@@ -210,7 +220,7 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
             solver_description=inspect.cleandoc(solver.__doc__ or ""),
         )
 
-        stopping_criterion = solver.stopping_criterion.get_runner_instance(
+        stopping_criterion = solver._stopping_criterion.get_runner_instance(
             solver=solver,
             max_runs=max_runs,
             timeout=timeout / n_repetitions,
@@ -297,7 +307,7 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
         If show_progress is set to True, display the progress of the benchmark.
     pdb : bool
         It pdb is set to True, open a debugger on error.
-    output_name : str
+    output : str
         Filename for the parquet output. If given, the results will
         be stored at <BENCHMARK>/outputs/<filename>.parquet.
 
@@ -356,7 +366,14 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
     else:
         save_file = output_dir / f"{output_name}.parquet"
         save_file = uniquify_results(save_file)
-    df.to_parquet(save_file)
+    try:
+        df.to_parquet(save_file)
+    except Exception:
+        # Failed to save the results as a parquet file, falling back
+        # to csv. This can be due to mixed types columns or missing
+        # dependencies.
+        save_file = save_file.with_suffix(".csv")
+        df.to_csv(save_file)
     output.savefile_status(save_file=save_file)
 
     if plot_result:

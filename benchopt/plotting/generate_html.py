@@ -196,8 +196,12 @@ def shape_objectives_columns_for_html(df, dataset, objective):
         df_filtered = df.query(
             "data_name == @dataset & objective_name == @objective"
         )
+        columns_data = shape_solvers_for_html(df_filtered, column)
+        if columns_data is None:
+            # Non-numeric column, skipping it
+            continue
         objective_columns_data[column] = {
-            'solvers': shape_solvers_for_html(df_filtered, column),
+            'solvers': columns_data,
             # Values used in javascript to do computation
             'transformers': {
                 'c_star': float(df_filtered[column].min() - 1e-10),
@@ -225,9 +229,13 @@ def shape_solvers_for_html(df, objective_column):
 
         # compute median of 'time' and objective_column
         fields = ["time", objective_column]
-        groupby_stop_val_median = df_filtered.groupby('stop_val')
-        groupby_stop_val_median = groupby_stop_val_median[fields]
-        groupby_stop_val_median = groupby_stop_val_median.median()
+        groupby_stop_val_median = (
+            df_filtered.groupby('stop_val')[fields]
+            .median(numeric_only=True)
+        )
+        if objective_column not in groupby_stop_val_median:
+            # Non-numeric values, skipping this column
+            return None
 
         q1, q9 = compute_quantiles(df_filtered)
 

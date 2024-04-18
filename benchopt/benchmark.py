@@ -27,6 +27,16 @@ CACHE_DIR = '__cache__'
 SLURM_JOB_NAME = 'benchopt_run'
 
 
+MISSING_DEPS_MSG = (
+    "This is probably due to missing dependency specification. The "
+    "dependencies should be specified in the `requirements` class attribute.\n"
+    "Examples:\n"
+    "   requirements = ['pkg'] # conda package `pkg`\n"
+    "   requirements = ['chan:pkg'] # package `pkg` in conda channel `chan`\n"
+    "   requirements = ['pip:pkg'] # PyPi package `pkg`"
+)
+
+
 class Benchmark:
     """Benchmark exposes all constituents of the benchmark folder.
 
@@ -329,11 +339,11 @@ class Benchmark:
         func_cached = self.mem.cache(func, ignore=ignore)
         if force:
             def _func_cached(**kwargs):
-                return func_cached.call(**kwargs)[0]
+                return func_cached.call(**kwargs)
         else:
             def _func_cached(**kwargs):
                 if kwargs.get('force', False):
-                    return func_cached.call(**kwargs)[0]
+                    return func_cached.call(**kwargs)
                 return func_cached(**kwargs)
 
         return _func_cached
@@ -418,11 +428,17 @@ class Benchmark:
         if 'all' in include_datasets:
             include_datasets = []
 
-        check_installs = []
+        check_installs, missings = [], []
         objective = self.get_benchmark_objective()
-        conda_reqs, shell_install_scripts, post_install_hooks = (
+        conda_reqs, shell_install_scripts, post_install_hooks, missing_deps = (
             objective.collect(env_name=env_name, force=force)
         )
+        if missing_deps:
+            raise AttributeError(
+                "Could not find dependencies in objective.py while it is not "
+                f"importable. {MISSING_DEPS_MSG}"
+            )
+
         if len(shell_install_scripts) > 0 or len(conda_reqs) > 0:
             check_installs += [objective]
         for list_classes, include_patterns, to_install in [
@@ -434,9 +450,16 @@ class Benchmark:
                 for klass_parameters in product_param(klass.parameters):
                     name = klass._get_parametrized_name(**klass_parameters)
                     if is_matched(name, include_patterns) and to_install:
-                        reqs, scripts, hooks = (
+                        reqs, scripts, hooks, missing = (
                             klass.collect(env_name=env_name, force=force)
                         )
+                        # If a class is not importable but has no requirements,
+                        # it might be because the requirements are specified
+                        # as global ones in the Objective. Otherwise, raise a
+                        # comprehensible error.
+                        if missing is not None:
+                            missings.append(missing)
+
                         conda_reqs += reqs
                         shell_install_scripts += scripts
                         post_install_hooks += hooks
@@ -450,6 +473,7 @@ class Benchmark:
             f"- {klass.name}" for klass in check_installs
         ])
         if len(list_install) == 0:
+            self.check_missing(missings)
             print("All required solvers are already installed.")
             return
         print(f"Installing required packages for:\n{list_install}\n...",
@@ -469,8 +493,15 @@ class Benchmark:
         # Check install for all classes that needed extra requirements
         print('- Checking installed packages...', end='', flush=True)
         success = True
-        for klass in check_installs:
-            success |= klass.is_installed(env_name=env_name)
+        for klass in set(check_installs + missings):
+            cls_success = klass.is_installed(env_name=env_name)
+            if cls_success and klass in missings:
+                # This class only depends on global requirements
+                missings.remove(klass)
+
+            success |= cls_success
+
+        self.check_missing(missings)
 
         # If one failed, raise a warning to explain how to see the install
         # errors.
@@ -482,6 +513,27 @@ class Benchmark:
                 UserWarning
             )
         print(' done')
+
+    def check_missing(self, missings):
+        # Check that classes not importable, with no requirements, only depends
+        # on global requirements specified in Objective.requirements.
+        # Otherwise, we raise a comprehensible error.
+        if len(missings) > 0:
+            # Format the list of classes missing requirements.
+            cls_types = {'Solver': [], 'Dataset': []}
+            for klass in missings:
+                cls_type = klass.__base__.__name__.replace("Base", "")
+                cls_types[cls_type].append(klass.name)
+            cls_types = {
+                k: f'{cls_type}\n' + '\n'.join([f'- {c}' for c in v])
+                for k, v in cls_types.items() if len(v) > 0
+            }
+            missing_cls = '\n'.join(cls_types.values())
+
+            raise AttributeError(
+                f"Could not find dependencies for the following classes while "
+                f"they are not importable:\n{missing_cls}\n{MISSING_DEPS_MSG}"
+            )
 
     def get_all_runs(self, solver_names=None, forced_solvers=None,
                      dataset_names=None, objective_filters=None, output=None):
@@ -514,9 +566,6 @@ class Benchmark:
         all_datasets = _filter_classes(
             *self.get_datasets(), filters=dataset_names
         )
-        all_objectives, objective_buffer = buffer_iterator(_filter_classes(
-            self.get_benchmark_objective(), filters=objective_filters
-        ))
         all_solvers, solvers_buffer = buffer_iterator(_filter_classes(
             *self.get_solvers(), filters=solver_names
         ))
@@ -526,6 +575,10 @@ class Benchmark:
                 output.show_status('not installed', dataset=True)
                 continue
             output.display_dataset()
+            all_objectives = _filter_classes(
+                self.get_benchmark_objective(), filters=objective_filters,
+                check_installed=False
+            )
             for objective, is_installed in all_objectives:
                 output.set(objective=objective)
                 if not is_installed:
@@ -547,7 +600,6 @@ class Benchmark:
                         force=force, output=output.clone()
                     )
                 all_solvers = solvers_buffer
-            all_objectives = objective_buffer
 
 
 def _check_name_lists(*name_lists):
@@ -705,13 +757,16 @@ def _validate_patterns(all_names, patterns, name_type='dataset'):
         )
 
 
-def _filter_classes(*classes, filters=None):
+def _filter_classes(*classes, filters=None, check_installed=True):
     """Filter a list of class based on its names."""
     for klass in classes:
         if not is_matched(klass.name, filters):
             continue
 
-        if not klass.is_installed(raise_on_not_installed=RAISE_INSTALL_ERROR):
+        if (check_installed and
+                not klass.is_installed(
+                    raise_on_not_installed=RAISE_INSTALL_ERROR
+                    )):
             yield klass.name, False
             continue
 
