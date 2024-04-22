@@ -17,3 +17,6 @@ plot_configs:
     ylim: [5e1, 3.8e2]
     scale: semilog-x
     xaxis_type: Iteration
+
+paths:
+  data: /path/to/data
