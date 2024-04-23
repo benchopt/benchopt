@@ -210,7 +210,7 @@ In this case, we can use the ``run_once`` sampling strategy.
         sampling_strategy = "run_once"
         ...
 
-        def run(self, None):
+        def run(self, _):
 
             self.model.fit(self.X, self.y)
 
