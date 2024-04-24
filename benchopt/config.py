@@ -88,12 +88,14 @@ DEFAULT_BENCHMARK_CONFIG = {
   new HTML file to save them or the config file in th erepo of the benchmark,
   so that these saved views are embeded in the next plot results automatically.
 
-* ``paths``, *list*: Allows users to store some files in custom locations. If you are writing your own benchmark,
-you can use this options to allow users to use custom location for some benchmark files like data files for instance.
- Otherwise, please refer to the benchmark's documentation you use to know if you can use this option and which paths
- you must define.
- 
-  For example, if the benchmark asks you to define a "data" path, you can proceed as follows
+* ``paths``, *list*: Allows users to store some files in custom locations. If
+  you are writing your own benchmark, you can use this options to allow users
+  to use custom location for some benchmark files like data files for instance.
+  Otherwise, please refer to the benchmark's documentation you use to know if
+  you can use this option and which paths you must define.
+
+  For example, if the benchmark asks you to define a "data" path, you can
+  proceed as follows
 
   .. code-block:: yaml
 
