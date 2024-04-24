@@ -212,15 +212,16 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
         # Get meta
         meta = dict(
             objective_name=str(objective),
+            **objective._parameters,
             solver_name=str(solver),
+            **solver._parameters,
             data_name=str(dataset),
+            **dataset._parameters,
             idx_rep=rep,
             sampling_strategy=sampling_strategy.capitalize(),
             obj_description=obj_description,
             solver_description=inspect.cleandoc(solver.__doc__ or ""),
         )
-
-        meta = meta | objective._parameters
 
         stopping_criterion = solver._stopping_criterion.get_runner_instance(
             solver=solver,
