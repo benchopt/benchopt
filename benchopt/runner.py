@@ -230,7 +230,9 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
                     | ds_parameters.keys())
         common_keys = [key for key in all_keys
                        if sum(key in d for d in
-                              (meta, obj_parameters, slv_parameters, ds_parameters)) >= 2]
+                              (meta, obj_parameters,
+                               slv_parameters,
+                               ds_parameters)) >= 2]
 
         for key in common_keys:
             if key in obj_parameters:
