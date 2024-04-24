@@ -71,7 +71,11 @@ def test_metadata_saving():
             run(run_cmd, 'benchopt', standalone_mode=False)
 
         config = get_metadata(Path(out.result_files[0]))
-        assert config == DEFAULT_BENCHMARK_CONFIG
+        expected_config = {
+            k: v for k, v in DEFAULT_BENCHMARK_CONFIG.items()
+            if k in ['plots', 'plot_configs']
+        }
+        assert config == expected_config
 
         config_file = benchmark.get_config_file()
         with config_file.open('w') as f:
