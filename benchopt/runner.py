@@ -224,6 +224,9 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
         slv_parameters = solver._parameters
         ds_parameters = dataset._parameters
 
+        # Add a prefix to common keys between "meta", "obj_parameters",
+        # "slv_parameters", "ds_parameters" dictionaries to avoid
+        # erasing keys
         all_keys = (meta.keys()
                     | obj_parameters.keys()
                     | slv_parameters.keys()
