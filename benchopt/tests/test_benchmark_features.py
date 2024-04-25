@@ -341,7 +341,7 @@ def test_paths_config_key():
                         "temp_benchmark"
                     )
                     print(paths['data'])
-                    
+
                     return dict(X=np.random.rand(3, 2), y=np.ones((3,)))
         """
 
@@ -353,4 +353,4 @@ def test_paths_config_key():
                     *'-o dummy*[reg=0.5]'.split()
                 ], standalone_mode=False)
 
-            out.check_output(rf"/path/to/data", repetition=1)
+            out.check_output(r"/path/to/data", repetition=1)
