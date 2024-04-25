@@ -13,6 +13,7 @@ from benchopt.tests import DUMMY_BENCHMARK_PATH
 from benchopt.tests.utils import patch_import
 from benchopt.tests.utils import patch_benchmark
 from benchopt.tests.utils import CaptureRunOutput
+from benchopt.tests.test_config import temp_config_file
 
 
 def test_template_dataset():
@@ -311,3 +312,45 @@ def test_run_once_callback(n_iter):
             ], standalone_mode=False)
 
         out.check_output(rf"RUNONCE\({n_iter}\)", repetition=1)
+
+
+def test_paths_config_key():
+    with temp_config_file() as config_file:
+        with open(config_file, 'r+') as f:
+            f.write("""
+        paths:
+            data: /path/to/data
+        """)
+
+        dataset = f"""
+            from benchopt import BaseDataset, safe_import_context
+            from benchopt import config
+
+            with safe_import_context() as import_ctx:
+                import numpy as np
+                from pathlib import Path
+
+            class Dataset(BaseDataset):
+                name = "Simulated"
+                requirements = []
+
+                def get_data(self):
+                    paths = config.get_setting(
+                        "paths",
+                        Path("{config_file}"),
+                        "temp_benchmark"
+                    )
+                    print(paths['data'])
+                    
+                    return dict(X=np.random.rand(3, 2), y=np.ones((3,)))
+        """
+
+        with temp_benchmark(datasets=[dataset]) as benchmark:
+            with CaptureRunOutput() as out:
+                run([
+                    str(benchmark.benchmark_dir),
+                    *'-n 0 -r 1 --no-plot'.split(),
+                    *'-o dummy*[reg=0.5]'.split()
+                ], standalone_mode=False)
+
+            out.check_output(rf"/path/to/data", repetition=1)
