@@ -554,9 +554,9 @@ class Benchmark:
         solver : BaseSolver instance
         force : bool
         """
-        all_datasets = _list_parametrizes_classes(*datasets)
+        all_datasets = _list_parametrized_classes(*datasets)
         all_solvers, solvers_buffer = buffer_iterator(
-            _list_parametrizes_classes(*solvers)
+            _list_parametrized_classes(*solvers)
         )
         for dataset, is_installed in all_datasets:
             output.set(dataset=dataset)
@@ -564,7 +564,7 @@ class Benchmark:
                 output.show_status('not installed', dataset=True)
                 continue
             output.display_dataset()
-            all_objectives = _list_parametrizes_classes(
+            all_objectives = _list_parametrized_classes(
                 *objectives, check_installed=False
             )
             for objective, is_installed in all_objectives:
@@ -779,10 +779,10 @@ def _check_patterns(all_classes, patterns, name_type='dataset'):
 
     # If some patterns did not matched any class, raise an error
     if len(invalid_patterns) > 0:
-        all_names_ = '- ' + '\n- '.join(cls.name for cls, _ in all_classes)
+        all_names = '- ' + '\n- '.join(cls.name for cls in all_classes)
         raise click.BadParameter(
             f"Patterns {invalid_patterns} did not match any {name_type}.\n"
-            f"Available {name_type}s are:\n{all_names_}"
+            f"Available {name_type}s are:\n{all_names}"
         )
 
     # Check that the parameters are well formated:
@@ -790,7 +790,7 @@ def _check_patterns(all_classes, patterns, name_type='dataset'):
     # - parameters correspond to existing one for a given class.
     all_valid_patterns = []
     for cls, (args, kwargs) in matched:
-        params = [p for k in cls.parameters for p in k.split(',')]
+        param_names = [p for k in cls.parameters for p in k.split(',')]
         if len(args) != 0:
             if len(cls.parameters) > 1:
                 raise ValueError(
@@ -802,22 +802,28 @@ def _check_patterns(all_classes, patterns, name_type='dataset'):
                 )
             kwargs = {list(cls.parameters.keys())[0]: args}
         else:
-            bad_params = [k for k in kwargs if k not in params]
+            bad_params = [
+                p.strip() for k in kwargs for p in k.split(',')
+                if p.strip() not in param_names
+            ]
             if len(bad_params) > 0:
-                msg = "Possible parameters are:\n- " + "\n- ".join(params)
-                if len(params) == 0:
+                msg = "Possible parameters are:\n- " + "\n- ".join(param_names)
+                if len(param_names) == 0:
                     msg = f"This {name_type} has no parameters."
+                bad_params = ', '.join(f"'{p}'" for p in bad_params)
                 raise ValueError(
-                    f"Parameters {bad_params} are not valid for {name_type} "
+                    f"Unknown parameter {bad_params} for {name_type} "
                     f"{cls.name}.\n{msg}"
                 )
-        all_valid_patterns.append((cls, kwargs))
+        params = cls.parameters.copy()
+        params.update(kwargs)
+        all_valid_patterns.append((cls, params))
 
     return all_valid_patterns
 
 
-def _list_parametrizes_classes(*classes, check_installed=True):
-    """Filter a list of class based on its names."""
+def _list_parametrized_classes(*classes, check_installed=True):
+    """Generator with class instances for all selected parameters."""
     for klass, params in classes:
         if (check_installed and not klass.is_installed(
                 raise_on_not_installed=RAISE_INSTALL_ERROR
