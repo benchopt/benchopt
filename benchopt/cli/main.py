@@ -223,17 +223,16 @@ def run(config_file=None, **kwargs):
         objective.is_installed(raise_on_not_installed=True)
 
         # Check that the dataset/solver patterns match actual dataset
-        benchmark.validate_dataset_patterns(dataset_names)
-        benchmark.validate_objective_filters(objective_filters)
+        datasets = benchmark.check_dataset_patterns(dataset_names)
+        objectives = benchmark.check_objective_filters(objective_filters)
         # pyyaml returns tuples: make sure everything is a list
-        benchmark.validate_solver_patterns(
+        solvers = benchmark.check_solver_patterns(
             list(solver_names) + list(forced_solvers)
         )
 
         run_benchmark(
-            benchmark, solver_names, forced_solvers,
-            dataset_names=dataset_names,
-            objective_filters=objective_filters,
+            benchmark, solvers, forced_solvers,
+            datasets=datasets, objectives=objectives,
             max_runs=max_runs, n_repetitions=n_repetitions,
             timeout=timeout, n_jobs=n_jobs, slurm=slurm,
             plot_result=plot, display=display, html=html,

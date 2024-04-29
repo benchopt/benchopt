@@ -6,7 +6,6 @@ from datetime import datetime
 from joblib import Parallel, delayed
 
 from .callback import _Callback
-from .benchmark import _check_name_lists
 from .utils.sys_info import get_sys_info
 from .utils.files import uniquify_results
 from .utils.pdb_helpers import exception_handler
@@ -259,8 +258,8 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
     return run_statistics
 
 
-def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
-                  dataset_names=None, objective_filters=None, max_runs=10,
+def run_benchmark(benchmark, solvers=None, forced_solvers=None,
+                  datasets=None, objectives=None, max_runs=10,
                   n_repetitions=1, timeout=100, n_jobs=1, slurm=None,
                   plot_result=True, display=True, html=True,
                   show_progress=True, pdb=False, output="None"):
@@ -270,16 +269,16 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
     ----------
     benchmark : benchopt.Benchmark object
         Object to represent the benchmark.
-    solver_names : list | None
+    solvers : list | None
         List of solvers to include in the benchmark. If None
         all solvers available are run.
     forced_solvers : list | None
         List of solvers to include in the benchmark and for
         which one forces recomputation.
-    dataset_names : list | None
+    datasets : list | None
         List of datasets to include. If None all available
         datasets are used.
-    objective_filters : list | None
+    objectives : list | None
         Filters to select specific objective parameters. If None,
         all objective parameters are tested
     max_runs : int
@@ -320,15 +319,13 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
         is set to `NaN`.
     """
     output_name = output
+    output = TerminalOutput(n_repetitions, show_progress)
+    output.set(verbose=True)
 
     # List all datasets, objective and solvers to run based on the filters
     # provided. Merge the solver_names and forced to run all necessary solvers.
-    solver_names = _check_name_lists(solver_names, forced_solvers)
-    output = TerminalOutput(n_repetitions, show_progress)
-
-    output.set(verbose=True)
     all_runs = benchmark.get_all_runs(
-        solver_names, forced_solvers, dataset_names, objective_filters,
+        solvers, forced_solvers, datasets, objectives,
         output=output
     )
     common_kwargs = dict(
