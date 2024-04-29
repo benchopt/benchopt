@@ -17,6 +17,10 @@ API
   ``Objective.cv`` attribute that change split for each repetition.
   By `Christopher Marouani`_ and `Thomas Moreau`_ (:gh:`623`).
 
+- Run config files now support having parameters as nested dict, with
+  potentially non-trivial structures (like dictionaries).
+  By `Thomas Moreau`_ (:gh:`706`).
+
 .. _changes_1_5_1:
 
 Version 1.5.1 - 22/09/2023
