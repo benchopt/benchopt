@@ -398,8 +398,8 @@ def install(
 
     # Check that the dataset/solver patterns match actual dataset
     benchmark = Benchmark(benchmark)
-    benchmark.validate_dataset_patterns(dataset_names)
-    benchmark.validate_solver_patterns(solver_names)
+    benchmark.check_dataset_patterns(dataset_names)
+    benchmark.check_solver_patterns(solver_names)
 
     # Get a list of all conda envs
     default_conda_env, conda_envs = list_conda_envs()

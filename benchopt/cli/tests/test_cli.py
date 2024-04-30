@@ -420,14 +420,6 @@ class TestInstallCmd:
             install([str(DUMMY_BENCHMARK_PATH), '-s', 'invalid_solver'],
                     'benchopt', standalone_mode=False)
 
-    def test_existing_empty_env(self, empty_env_name):
-        msg = (
-            f"`benchopt` is not installed in existing env '{empty_env_name}'"
-        )
-        with pytest.raises(RuntimeError, match=msg):
-            install([str(DUMMY_BENCHMARK_PATH), '--env-name', empty_env_name],
-                    'benchopt', standalone_mode=False)
-
     def test_benchopt_install(self):
         with CaptureRunOutput() as out:
             install(
@@ -437,6 +429,14 @@ class TestInstallCmd:
 
         out.check_output(f"Installing '{DUMMY_BENCHMARK.name}' requirements")
         out.check_output("already available\n", repetition=3)
+
+    def test_existing_empty_env(self, empty_env_name):
+        msg = (
+            f"`benchopt` is not installed in existing env '{empty_env_name}'"
+        )
+        with pytest.raises(RuntimeError, match=msg):
+            install([str(DUMMY_BENCHMARK_PATH), '--env-name', empty_env_name],
+                    'benchopt', standalone_mode=False)
 
     def test_benchopt_install_in_env(self, test_env_name):
         with CaptureRunOutput() as out:
