@@ -750,7 +750,8 @@ def _check_patterns(all_classes, patterns, name_type='dataset'):
         with selected parameters for this class.
     """
     # If no patterns is provided or all is provided, return all the classes.
-    if patterns is None or any(p == 'all' for p, *_ in patterns):
+    if (patterns is None or len(patterns) == 0
+            or any(p == 'all' for p, *_ in patterns)):
         return [(cls, cls.parameters) for cls in all_classes]
 
     # Patterns can be either str or dict. Convert everything to 3-tuple with
