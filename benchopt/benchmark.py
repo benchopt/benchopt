@@ -790,7 +790,7 @@ def _check_patterns(all_classes, patterns, name_type='dataset'):
     # - parameters correspond to existing one for a given class.
     all_valid_patterns = []
     for cls, (args, kwargs) in matched:
-        param_names = [p for k in cls.parameters for p in k.split(',')]
+        param_names = [p.strip() for k in cls.parameters for p in k.split(',')]
         if len(args) != 0:
             if len(cls.parameters) > 1:
                 raise ValueError(
