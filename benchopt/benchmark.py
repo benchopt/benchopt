@@ -121,7 +121,7 @@ class Benchmark:
         )
 
     def check_objective_filters(self, objective_filters):
-        "Check that all objective filters match at least one objective setup."
+        "Check that the patterns are valid and return selected configurations."
         return _check_patterns(
             [self.get_benchmark_objective()], objective_filters,
             name_type="objective"
@@ -136,7 +136,7 @@ class Benchmark:
         return [s.name for s in self.get_solvers()]
 
     def check_solver_patterns(self, solver_patterns):
-        "Check that all provided patterns match at least one solver"
+        "Check that the patterns are valid and return selected configurations."
         return _check_patterns(
             self.get_solvers(), solver_patterns, name_type='solver'
         )
@@ -150,7 +150,7 @@ class Benchmark:
         return [d.name for d in self.get_datasets()]
 
     def check_dataset_patterns(self, dataset_patterns):
-        "Check that all provided patterns match at least one dataset"
+        "Check that the patterns are valid and return selected configurations."
         return _check_patterns(
             self.get_datasets(), dataset_patterns, name_type='dataset'
         )
