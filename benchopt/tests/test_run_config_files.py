@@ -102,7 +102,26 @@ def test_config_solver_with_params_error(no_debug_test):
                 ], standalone_mode=False)
 
 
-def test_config_solver_with_params_param_str(no_debug_test):
+def test_config_solver_with_params_list_error(no_debug_test):
+    config = CONFIG.replace(" #PARAMS", "[0, 1]")
+
+    params = dict(param1=[None], param2=[None])
+    with temp_benchmark(solvers=[
+        TEST_SOLVER.replace("# PARAMETERS", f"parameters = {params}")
+    ]) as benchmark:
+        config_file = benchmark.benchmark_dir / "run_config.yml"
+        config_file.write_text(config)
+
+        error = "Ambiguous positional parameter for solver1."
+        with CaptureRunOutput():
+            with pytest.raises(ValueError, match=error):
+                run([
+                    str(benchmark.benchmark_dir),
+                    *f'--config {config_file}'.split()
+                ], standalone_mode=False)
+
+
+def test_config_solver_with_params_str_list(no_debug_test):
     config = CONFIG.replace(" #PARAMS", "[param1=[0, 1]]")
 
     params = dict(param1=[None], param2=[None])
@@ -122,7 +141,27 @@ def test_config_solver_with_params_param_str(no_debug_test):
         out.check_output(r"param1=1,param2=None", repetition=2)
 
 
-def test_config_solver_with_params_param_list(no_debug_test):
+def test_config_solver_with_params_str_value(no_debug_test):
+    config = CONFIG.replace(" #PARAMS", "[param1=0, param2=1]")
+
+    params = dict(param1=[None], param2=[None])
+    with temp_benchmark(solvers=[
+        TEST_SOLVER.replace("# PARAMETERS", f"parameters = {params}")
+    ]) as benchmark:
+        config_file = benchmark.benchmark_dir / "run_config.yml"
+        config_file.write_text(config)
+        with CaptureRunOutput() as out:
+            run([
+                str(benchmark.benchmark_dir),
+                *f'--config {config_file}'.split()
+            ], standalone_mode=False)
+        out.check_output(r"RUN\(0\)", repetition=1)
+        out.check_output(r"param1=None", repetition=0)
+        out.check_output(r"param2=None", repetition=0)
+        out.check_output(r"param1=0,param2=1", repetition=2)
+
+
+def test_config_solver_with_params_yaml_list(no_debug_test):
     config = CONFIG.replace(" #PARAMS", ":\n            param1: [0, 1]")
 
     params = dict(param1=[None], param2=[None])
@@ -142,7 +181,7 @@ def test_config_solver_with_params_param_list(no_debug_test):
         out.check_output(r"param1=1,param2=None", repetition=2)
 
 
-def test_config_solver_with_params_yaml_list(no_debug_test):
+def test_config_solver_with_params_yaml_items(no_debug_test):
     config = CONFIG.replace(" #PARAMS", """:
               param1:
                 - 0
@@ -163,6 +202,28 @@ def test_config_solver_with_params_yaml_list(no_debug_test):
         out.check_output(r"param1=None", repetition=0)
         out.check_output(r"param1=0", repetition=2)
         out.check_output(r"param1=1", repetition=2)
+
+
+def test_config_solver_with_params_yaml_value(no_debug_test):
+    config = CONFIG.replace(" #PARAMS", """:
+              param1: 0
+              param2: 1
+    """)
+    params = dict(param1=[None], param2=[None])
+    with temp_benchmark(solvers=[
+        TEST_SOLVER.replace("# PARAMETERS", f"parameters = {params}")
+    ]) as benchmark:
+        config_file = benchmark.benchmark_dir / "run_config.yml"
+        config_file.write_text(config)
+        with CaptureRunOutput() as out:
+            run([
+                str(benchmark.benchmark_dir),
+                *f'--config {config_file}'.split()
+            ], standalone_mode=False)
+        out.check_output(r"RUN\(0\)", repetition=1)
+        out.check_output(r"param1=None", repetition=0)
+        out.check_output(r"param2=None", repetition=0)
+        out.check_output(r"param1=0,param2=1", repetition=2)
 
 
 def test_config_solver_with_params_complex_param(no_debug_test):
@@ -189,3 +250,45 @@ def test_config_solver_with_params_complex_param(no_debug_test):
             "{'param1': {'test': 0, 'test2': 1}, 'param2': None}",
             repetition=1
         )
+
+
+def test_config_solver_with_one_params_list(no_debug_test):
+    config = CONFIG.replace(" #PARAMS", "[0, 1]")
+
+    params = dict(param1=[None])
+    with temp_benchmark(solvers=[
+        TEST_SOLVER.replace("# PARAMETERS", f"parameters = {params}")
+    ]) as benchmark:
+        config_file = benchmark.benchmark_dir / "run_config.yml"
+        config_file.write_text(config)
+
+        with CaptureRunOutput() as out:
+            run([
+                str(benchmark.benchmark_dir),
+                *f'--config {config_file}'.split()
+            ], standalone_mode=False)
+        out.check_output(r"RUN\(0\)", repetition=2)
+        out.check_output(r"param1=None", repetition=0)
+        out.check_output(r"param1=0", repetition=2)
+        out.check_output(r"param1=1", repetition=2)
+
+
+def test_config_solver_with_one_params_yaml_list(no_debug_test):
+    config = CONFIG.replace(" #PARAMS", ":\n          - 0\n          - 1")
+
+    params = dict(param1=[None])
+    with temp_benchmark(solvers=[
+        TEST_SOLVER.replace("# PARAMETERS", f"parameters = {params}")
+    ]) as benchmark:
+        config_file = benchmark.benchmark_dir / "run_config.yml"
+        config_file.write_text(config)
+
+        with CaptureRunOutput() as out:
+            run([
+                str(benchmark.benchmark_dir),
+                *f'--config {config_file}'.split()
+            ], standalone_mode=False)
+        out.check_output(r"RUN\(0\)", repetition=2)
+        out.check_output(r"param1=None", repetition=0)
+        out.check_output(r"param1=0", repetition=2)
+        out.check_output(r"param1=1", repetition=2)

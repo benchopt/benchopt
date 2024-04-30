@@ -79,7 +79,9 @@ Here is the content of configuration file ``example_config.yml`` if we were to r
 
     dataset:
         - leukemia
-        - simulated[n_samples=100,n_features=20]
+        - simulated:
+            n_samples: 100
+            n_features: [20, 30]
 
 .. note::
 

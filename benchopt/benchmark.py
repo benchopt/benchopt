@@ -762,7 +762,10 @@ def _check_patterns(all_classes, patterns, name_type='dataset'):
         if isinstance(pattern, str):
             return [_extract_options(pattern)]
         if isinstance(pattern, dict):
-            return [(name, [], options) for name, options in pattern.items()]
+            return [
+                (name, options, {}) if isinstance(options, list)
+                else (name, [], options)
+                for name, options in pattern.items()]
         raise TypeError()
     patterns = [p for q in patterns for p in preprocess_patterns(q)]
 
