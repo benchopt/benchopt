@@ -292,3 +292,46 @@ def test_config_solver_with_one_params_yaml_list(no_debug_test):
         out.check_output(r"param1=None", repetition=0)
         out.check_output(r"param1=0", repetition=2)
         out.check_output(r"param1=1", repetition=2)
+
+
+def test_config_solver_double_param_yaml_list(no_debug_test):
+    config = CONFIG.replace(
+        " #PARAMS", ":\n            param1, param2: [[0, 1]]"
+    )
+
+    params = dict(param1=[None], param2=[None])
+    with temp_benchmark(solvers=[
+        TEST_SOLVER.replace("# PARAMETERS", f"parameters = {params}")
+    ]) as benchmark:
+        config_file = benchmark.benchmark_dir / "run_config.yml"
+        config_file.write_text(config)
+
+        with CaptureRunOutput() as out:
+            run([
+                str(benchmark.benchmark_dir),
+                *f'--config {config_file}'.split()
+            ], standalone_mode=False)
+        out.check_output(r"RUN\(0\)", repetition=1)
+        out.check_output(r"param1=None", repetition=0)
+        out.check_output(r"param2=None", repetition=0)
+        out.check_output(r"param1=0,param2=1", repetition=2)
+
+
+def test_config_solver_double_param_solver_yaml(no_debug_test):
+    config = CONFIG.replace(" #PARAMS", "[param1=0]")
+
+    params = {'param1, param2': [(None, None)]}
+    with temp_benchmark(solvers=[
+        TEST_SOLVER.replace("# PARAMETERS", f"parameters = {params}")
+    ]) as benchmark:
+        config_file = benchmark.benchmark_dir / "run_config.yml"
+        config_file.write_text(config)
+
+        with CaptureRunOutput() as out:
+            run([
+                str(benchmark.benchmark_dir),
+                *f'--config {config_file}'.split()
+            ], standalone_mode=False)
+        out.check_output(r"RUN\(0\)", repetition=1)
+        out.check_output(r"param1=None", repetition=0)
+        out.check_output(r"param1=0,param2=None", repetition=2)
