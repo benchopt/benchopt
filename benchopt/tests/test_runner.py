@@ -86,78 +86,55 @@ def test_filter_classes_two_parameters():
     # select one parameter (n_samples)
     results = filt_(["Test-Dataset[n_samples=42]"])
     assert len(results) == 2
-    _assert_parameters_equal(
-        results[0][0], dict(n_samples=42, n_features=20)
-    )
-    _assert_parameters_equal(
-        results[1][0], dict(n_samples=42, n_features=21)
-    )
+    _assert_parameters_equal(results[0][0], dict(n_samples=42, n_features=20))
+    _assert_parameters_equal(results[1][0], dict(n_samples=42, n_features=21))
 
     # select one parameter (n_features)
     results = filt_(["Test-Dataset[n_features=42]"])
     assert len(results) == 2
-    _assert_parameters_equal(
-        results[0][0], dict(n_samples=10, n_features=42)
-    )
-    _assert_parameters_equal(
-        results[1][0], dict(n_samples=11, n_features=42)
-    )
+    _assert_parameters_equal(results[0][0], dict(n_samples=10, n_features=42))
+    _assert_parameters_equal(results[1][0], dict(n_samples=11, n_features=42))
 
     # select two parameters (n_samples, n_features)
     results = filt_(["Test-Dataset[n_samples=41, n_features=42]"])
     assert len(results) == 1
-    _assert_parameters_equal(
-        results[0][0], dict(n_samples=41, n_features=42)
-    )
+    _assert_parameters_equal(results[0][0], dict(n_samples=41, n_features=42))
 
     # get grid over one parameter (n_samples)
     results = filt_(["Test-Dataset[n_samples=[41,42], n_features=19]"])
     assert len(results) == 2
-    _assert_parameters_equal(
-        results[0][0], dict(n_samples=41, n_features=19)
-    )
-    _assert_parameters_equal(
-        results[1][0], dict(n_samples=42, n_features=19)
-    )
+    _assert_parameters_equal(results[0][0], dict(n_samples=41, n_features=19))
+    _assert_parameters_equal(results[1][0], dict(n_samples=42, n_features=19))
 
     # get grid over two parameter (n_samples, n_features)
     results = filt_(["Test-Dataset[n_samples=[41,42], n_features=[19, 20]]"])
     assert len(results) == 4
-    _assert_parameters_equal(
-        results[0][0], dict(n_samples=41, n_features=19)
-    )
-    _assert_parameters_equal(
-        results[1][0], dict(n_samples=41, n_features=20)
-    )
-    _assert_parameters_equal(
-        results[2][0], dict(n_samples=42, n_features=19)
-    )
-    _assert_parameters_equal(
-        results[3][0], dict(n_samples=42, n_features=20)
-    )
+    _assert_parameters_equal(results[0][0], dict(n_samples=41, n_features=19))
+    _assert_parameters_equal(results[1][0], dict(n_samples=41, n_features=20))
+    _assert_parameters_equal(results[2][0], dict(n_samples=42, n_features=19))
+    _assert_parameters_equal(results[3][0], dict(n_samples=42, n_features=20))
 
     results = filt_(
         ["Test-Dataset[n_samples=[foo,bar], n_features=[True, False]]"])
     assert len(results) == 4
     _assert_parameters_equal(
-        results[0][0], dict(n_samples="foo", n_features=True))
+        results[0][0], dict(n_samples="foo", n_features=True)
+    )
     _assert_parameters_equal(
-        results[1][0], dict(n_samples="foo", n_features=False))
+        results[1][0], dict(n_samples="foo", n_features=False)
+    )
     _assert_parameters_equal(
-        results[2][0], dict(n_samples="bar", n_features=True))
+        results[2][0], dict(n_samples="bar", n_features=True)
+    )
     _assert_parameters_equal(
-        results[3][0], dict(n_samples="bar", n_features=False))
-
+        results[3][0], dict(n_samples="bar", n_features=False)
+    )
     # get list of tuples
     results = filt_(
         ["Test-Dataset['n_samples, n_features'=[(41, 19), (42, 20)]]"])
     assert len(results) == 2
-    _assert_parameters_equal(
-        results[0][0], dict(n_samples=41, n_features=19)
-    )
-    _assert_parameters_equal(
-        results[1][0], dict(n_samples=42, n_features=20)
-    )
+    _assert_parameters_equal(results[0][0], dict(n_samples=41, n_features=19))
+    _assert_parameters_equal(results[1][0], dict(n_samples=42, n_features=20))
 
     # invalid use of positional parameters
     with pytest.raises(ValueError, match="Ambiguous positional parameter"):
@@ -184,41 +161,25 @@ def test_filter_classes_one_param():
     # test positional parameter
     results = filt_(["Test-Dataset[42]"])
     assert len(results) == 1
-    _assert_parameters_equal(
-        results[0][0], dict(n_samples=42)
-    )
+    _assert_parameters_equal(results[0][0], dict(n_samples=42))
 
     # test grid of positional parameter
     results = filt_(["Test-Dataset[41,42]"])
     assert len(results) == 2
-    _assert_parameters_equal(
-        results[0][0], dict(n_samples=41)
-    )
-    _assert_parameters_equal(
-        results[1][0], dict(n_samples=42)
-    )
+    _assert_parameters_equal(results[0][0], dict(n_samples=41))
+    _assert_parameters_equal(results[1][0], dict(n_samples=42))
 
     results = filt_(["Test-Dataset[foo, 'bar', None]"])
     assert len(results) == 3
-    _assert_parameters_equal(
-        results[0][0], dict(n_samples="foo")
-    )
-    _assert_parameters_equal(
-        results[1][0], dict(n_samples="bar")
-    )
-    _assert_parameters_equal(
-        results[2][0], dict(n_samples=None)
-    )
+    _assert_parameters_equal(results[0][0], dict(n_samples="foo"))
+    _assert_parameters_equal(results[1][0], dict(n_samples="bar"))
+    _assert_parameters_equal(results[2][0], dict(n_samples=None))
 
     # test grid of keyword parameter
     results = filt_(["Test-Dataset[n_samples=[foo,True]]"])
     assert len(results) == 2
-    _assert_parameters_equal(
-        results[0][0], dict(n_samples="foo")
-    )
-    _assert_parameters_equal(
-        results[1][0], dict(n_samples=True)
-    )
+    _assert_parameters_equal(results[0][0], dict(n_samples="foo"))
+    _assert_parameters_equal(results[1][0], dict(n_samples=True))
 
     # invalid use of both positional and keyword parameter
     with pytest.raises(ValueError, match="Invalid name"):
