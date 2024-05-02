@@ -78,18 +78,10 @@ def test_filter_classes_two_parameters():
     # no selection (default grid)
     results = filt_(["Test-Dataset"])
     assert len(results) == 4
-    _assert_parameters_equal(
-        results[0][0], dict(n_samples=10, n_features=20)
-    )
-    _assert_parameters_equal(
-        results[1][0], dict(n_samples=10, n_features=21)
-    )
-    _assert_parameters_equal(
-        results[2][0], dict(n_samples=11, n_features=20)
-    )
-    _assert_parameters_equal(
-        results[3][0], dict(n_samples=11, n_features=21)
-    )
+    _assert_parameters_equal(results[0][0], dict(n_samples=10, n_features=20))
+    _assert_parameters_equal(results[1][0], dict(n_samples=10, n_features=21))
+    _assert_parameters_equal(results[2][0], dict(n_samples=11, n_features=20))
+    _assert_parameters_equal(results[3][0], dict(n_samples=11, n_features=21))
 
     # select one parameter (n_samples)
     results = filt_(["Test-Dataset[n_samples=42]"])
