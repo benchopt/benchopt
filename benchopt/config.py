@@ -88,13 +88,13 @@ DEFAULT_BENCHMARK_CONFIG = {
   the ``Save as view`` button in the plot controls and downloading eiher the
   new HTML file to save them or the config file in th erepo of the benchmark,
   so that these saved views are embeded in the next plot results automatically.
-  
+
 * ``data_home``, *str*: Allows users to define a home path where the function
   ``get_data_path()`` search data files defined in ``data_paths``.
 
-* ``data_paths``, *dict*: Allows users to store some data files in custom locations.
-  If you are writing your own benchmark, you can use this options to allow
-  users to use custom location for data files.
+* ``data_paths``, *dict*: Allows users to store some data files in custom
+  locations. If you are writing your own benchmark, you can use this
+  options to allow users to use custom location for data files.
   Otherwise, please refer to the benchmark's documentation you
   use to know if you can use this option and which paths you must define.
 
@@ -107,13 +107,14 @@ DEFAULT_BENCHMARK_CONFIG = {
     data_paths:
         my_data_file: path/to/my/file.npz
 
-  In your benchmark's datasets, you can use the ``get_data_path()`` to retrieve the paths:
+  In your benchmark's datasets, you can use the ``get_data_path()``
+  to retrieve the paths:
 
   .. code-block:: python
     from benchopt.config import get_data_path
-    
+
     path = get_data_path('my_data_file')
-    
+
     # The "path" variable now contains "path/to/data/home/path/to/my/file.npz"
 
   If no paths are provided, the default path used is ``your_benchmark/data``
@@ -294,10 +295,12 @@ def get_setting(name, config_file=None, benchmark_name=None,
 
 def get_data_path(key: str = None, config_file=None, benchmark_name=None,
                   default_config=None):
-    data_home = get_setting("data_home", config_file, benchmark_name, default_config)
+    data_home = get_setting("data_home", config_file, benchmark_name,
+                            default_config)
 
     if data_home == "":
-        data_home = "/Users/melvinenargeot/Dev/benchmarks/map_benchmark/data"  # TODO: change this for a correct solution
+        data_home = "/Users/melvinenargeot/Dev/benchmarks/map_benchmark/data"
+        # TODO: change this for a correct solution
 
     path = Path(data_home)
 
