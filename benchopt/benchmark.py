@@ -23,6 +23,10 @@ from .utils.conda_env_cmd import shell_install_in_conda_env
 from .config import RAISE_INSTALL_ERROR
 
 
+# Global variable to access the benchmark currently running globally
+_RUNNING_BENCHMARK = None
+
+# Constant to name cache directory and folder of slurm outputs
 CACHE_DIR = '__cache__'
 SLURM_JOB_NAME = 'benchopt_run'
 
@@ -35,6 +39,11 @@ MISSING_DEPS_MSG = (
     "   requirements = ['chan:pkg'] # package `pkg` in conda channel `chan`\n"
     "   requirements = ['pip:pkg'] # PyPi package `pkg`"
 )
+
+
+def get_running_benchmark():
+    """Return the benchmark currently running."""
+    return _RUNNING_BENCHMARK
 
 
 class Benchmark:
@@ -62,6 +71,8 @@ class Benchmark:
     ):
         self.benchmark_dir = Path(benchmark_dir)
 
+        global _RUNNING_BENCHMARK
+        _RUNNING_BENCHMARK = self
         set_benchmark_module(self.benchmark_dir)
 
         # Load the benchmark metadat defined in `objective.py` or
