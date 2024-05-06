@@ -155,7 +155,11 @@ def get_benchopt_version_in_env(env_name):
         if DEBUG:
             print(output)
         return None, None
-    benchopt_version, is_editable = output.split()
+    output = [
+        line for line in output.splitlines()
+        if line.startswith('BENCHOPT_VERSION:')
+    ][0]
+    _, benchopt_version, is_editable = output.split(":")
 
     return benchopt_version, is_editable == 'True'
 
