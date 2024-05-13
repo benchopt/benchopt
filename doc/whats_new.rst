@@ -17,6 +17,14 @@ API
   ``Objective.cv`` attribute that change split for each repetition.
   By `Christopher Marouani`_ and `Thomas Moreau`_ (:gh:`623`).
 
+
+CLI
+~~~
+
+- Add ``--collect`` option to allow gathering results which are already
+  in cache in a single parquet file. By `Thomas Moreau`_ (:gh:`710`)
+
+
 .. _changes_1_5_1:
 
 Version 1.5.1 - 22/09/2023
