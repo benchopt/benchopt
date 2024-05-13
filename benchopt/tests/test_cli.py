@@ -380,6 +380,7 @@ class TestRunCmd:
             - python-pgd[step_size=2]
             """
 
+        # TODO: use temp_benchmark for this test.
         TmpFileCtx = tempfile.NamedTemporaryFile
         dataset_dir = DUMMY_BENCHMARK_PATH / "datasets"
 
@@ -398,6 +399,45 @@ class TestRunCmd:
             error_match = """Dataset: "buggy-dataset".*'wrong_param_name'"""
             with pytest.raises(TypeError, match=error_match):
                 run(run_cmd, 'benchopt', standalone_mode=False)
+
+    def test_result_collection(self, no_debug_test):
+        solver = """
+            from benchopt import BaseSolver
+            import numpy as np
+
+            class Solver(BaseSolver):
+                name = 'test_solver'
+                parameters = {'param': [0]}
+                def set_objective(self, X, y, lmbd): self.n_feats = X.shape[1]
+                def run(self, n_iter): print(f'#RUN{self.param}')
+                def get_result(self): return dict(beta=np.ones(self.n_feats))
+            """
+
+        with temp_benchmark(solvers=[solver]) as benchmark:
+            with CaptureRunOutput() as out:
+                run([str(benchmark.benchmark_dir),
+                    *'-d test-dataset -n 1 -r 1 --no-plot'.split(),
+                    *'-o dummy*[reg=0.5] -s test_solver'.split()],
+                    'benchopt', standalone_mode=False)
+
+            out.check_output('#RUN0', repetition=2)
+            out.check_output('#RUN1', repetition=0)
+
+            with CaptureRunOutput() as out:
+                run([
+                    str(benchmark.benchmark_dir),
+                    *'-d test-dataset -n 1 -r 1 --no-plot --collect'.split(),
+                    *'-o dummy*[reg=0.5] -s test_solver[param=[0,1]]'.split()
+                ], 'benchopt', standalone_mode=False)
+
+            # check that no solver where run
+            out.check_output('#RUN0', repetition=0)
+            out.check_output('#RUN1', repetition=0)
+
+            # check that the results where collected for the correct solvers
+            assert len(out.result_files) == 1
+            out.check_output(r'done \(not enough run\)', repetition=1)
+            out.check_output('not ready', repetition=1)
 
 
 class TestInstallCmd:
