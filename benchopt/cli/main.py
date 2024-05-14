@@ -53,6 +53,7 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
         "timeout",
         "n_jobs",
         "slurm",
+        "collect",
         "plot",
         "display",
         "html",
@@ -121,6 +122,11 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               help='Stop a solver when run for more than <timeout> seconds.'
               ' The syntax 10h or 10m can be used to denote 10 hours or '
               'minutes respectively.')
+@click.option('--collect',
+              is_flag=True,
+              help='If set, this run will only collect results which are '
+              'already available in the cache. This flag allows to collect '
+              'results while all the solvers are not finished yet.')
 @click.option('--config', 'config_file', default=None,
               shell_complete=complete_config_files,
               help="YAML configuration file containing benchmark options.")
@@ -177,7 +183,7 @@ def run(config_file=None, **kwargs):
     (
         benchmark, solver_names, forced_solvers, dataset_names,
         objective_filters, max_runs, n_repetitions, timeout, n_jobs, slurm,
-        plot, display, html, pdb, do_profile, env_name, output
+        collect, plot, display, html, pdb, do_profile, env_name, output
     ) = _get_run_args(kwargs, config)
 
     try:
@@ -236,7 +242,7 @@ def run(config_file=None, **kwargs):
             max_runs=max_runs, n_repetitions=n_repetitions,
             timeout=timeout, n_jobs=n_jobs, slurm=slurm,
             plot_result=plot, display=display, html=html,
-            pdb=pdb, output=output
+            collect=collect, pdb=pdb, output=output
         )
 
         print_stats()  # print profiling stats (does nothing if not profiling)

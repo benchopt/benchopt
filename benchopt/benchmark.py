@@ -318,23 +318,37 @@ class Benchmark:
 
         return Path(benchopt_cache_dir) / self.name
 
-    def cache(self, func, force=False, ignore=None):
+    def cache(self, func, force=False, ignore=None, collect=False):
         """Create a cached function for the given function.
 
         A special behavior is enforced for the 'force' kwargs. If it is present
         and True, the function will always be recomputed.
+
+        If the collect flag is set to True, the function will return the result
+        if it exists, or None if it does not. This is useful to gather results
+        that are already in cache.
         """
 
         # Create a cached function the computations in the benchmark folder
         # and handle cases where we force the run.
         func_cached = self.mem.cache(func, ignore=ignore)
         if force:
+            assert not collect, "Cannot collect and force computation."
+
             def _func_cached(**kwargs):
-                return func_cached.call(**kwargs)
+                return func_cached.call(**kwargs)[0]
+        elif collect:
+            def _func_cached(**kwargs):
+                assert not kwargs.get('force', False), (
+                    "Cannot collect and force computation."
+                )
+                if func_cached.check_call_in_cache(**kwargs):
+                    return func_cached(**kwargs)
+                return None
         else:
             def _func_cached(**kwargs):
                 if kwargs.get('force', False):
-                    return func_cached.call(**kwargs)
+                    return func_cached.call(**kwargs)[0]
                 return func_cached(**kwargs)
 
         return _func_cached

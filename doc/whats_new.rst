@@ -17,9 +17,16 @@ API
   ``Objective.cv`` attribute that change split for each repetition.
   By `Christopher Marouani`_ and `Thomas Moreau`_ (:gh:`623`).
 
-- Run config files now support having parameters as nested dict, with
+- Run-config files now support having parameters as nested dict, with
   potentially non-trivial structures (like dictionaries).
   By `Thomas Moreau`_ (:gh:`706`).
+
+CLI
+~~~
+
+- Add ``--collect`` option to allow gathering results which are already
+  in cache in a single parquet file. By `Thomas Moreau`_ (:gh:`710`)
+
 
 .. _changes_1_5_1:
 
@@ -76,7 +83,7 @@ PLOT
 
 - Add the possibility to save views of the plot in the HTML. These views can be
   created in the HTML interface and saved in config files, linked to output
-  parquet files, by `Amelie Vernay`_, `Tanguy Lefort`_, `Melvine Nargeot`_
+  parquet files, by `Amélie Vernay`_, `Tanguy Lefort`_, `Melvine Nargeot`_
   and `Thomas Moreau`_ (:gh:`552`).
 
 DOC
@@ -112,7 +119,7 @@ CLI
   By `Thomas Moreau`_ (:gh:`569`)
 - Deprecate ``.ini`` config file and use ``.yml`` files instead. A conversion
   should be performed automatically.
-  By `Tanguy Lefort`_, `Amelie Vernay`_ and `Thomas Moreau`_ (:gh:`552`).
+  By `Tanguy Lefort`_, `Amélie Vernay`_ and `Thomas Moreau`_ (:gh:`552`).
 
 API
 ~~~
@@ -143,7 +150,7 @@ PLOT
 - Add button to share and set specific views on the plot. For now, the view need
   to be defined manually in the benchmark config file but an export button will
   be added in follow up PRs.
-  By `Tanguy Lefort`_, `Amelie Vernay`_ and `Thomas Moreau`_ (:gh:`552`).
+  By `Tanguy Lefort`_, `Amélie Vernay`_ and `Thomas Moreau`_ (:gh:`552`).
 
 FIX
 ~~~
