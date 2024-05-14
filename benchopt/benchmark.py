@@ -11,7 +11,6 @@ from .utils.dynamic_modules import _load_class_from_module
 from .utils.dependencies_mixin import DependenciesMixin
 from .utils.parametrized_name_mixin import product_param
 from .utils.parametrized_name_mixin import ParametrizedNameMixin
-from .utils.parametrized_name_mixin import _list_all_parametrized_names
 
 from .utils.terminal_output import colorify
 from .utils.terminal_output import YELLOW
@@ -35,6 +34,8 @@ MISSING_DEPS_MSG = (
     "   requirements = ['chan:pkg'] # package `pkg` in conda channel `chan`\n"
     "   requirements = ['pip:pkg'] # PyPi package `pkg`"
 )
+
+SUBSTITUTIONS = {"*": ".*"}
 
 
 class Benchmark:
@@ -119,16 +120,12 @@ class Benchmark:
             module_filename, "Objective", benchmark_dir=self.benchmark_dir
         )
 
-    def validate_objective_filters(self, objective_filters):
-        "Check that all objective filters match at least one objective setup."
-
-        # List all choices of objective parameters
-        all_objectives = _list_all_parametrized_names(
-            self.get_benchmark_objective()
+    def check_objective_filters(self, objective_filters):
+        "Check that the patterns are valid and return selected configurations."
+        return _check_patterns(
+            [self.get_benchmark_objective()], objective_filters,
+            name_type="objective"
         )
-
-        _validate_patterns(all_objectives, objective_filters,
-                           name_type="objective")
 
     def get_solvers(self):
         "List all available solver classes for the benchmark."
@@ -138,14 +135,11 @@ class Benchmark:
         "List all available solver names for the benchmark."
         return [s.name for s in self.get_solvers()]
 
-    def validate_solver_patterns(self, solver_patterns):
-        "Check that all provided patterns match at least one solver"
-
-        # List all solver strings.
-        all_solvers = _list_all_parametrized_names(*self.get_solvers())
-        all_solvers += ["all"]
-
-        _validate_patterns(all_solvers, solver_patterns, name_type='solver')
+    def check_solver_patterns(self, solver_patterns):
+        "Check that the patterns are valid and return selected configurations."
+        return _check_patterns(
+            self.get_solvers(), solver_patterns, name_type='solver'
+        )
 
     def get_datasets(self):
         "List all available dataset classes for the benchmark."
@@ -155,14 +149,11 @@ class Benchmark:
         "List all available dataset names for the benchmark."
         return [d.name for d in self.get_datasets()]
 
-    def validate_dataset_patterns(self, dataset_patterns):
-        "Check that all provided patterns match at least one dataset"
-
-        # List all dataset strings.
-        all_datasets = _list_all_parametrized_names(*self.get_datasets())
-        all_datasets += ["all"]
-
-        _validate_patterns(all_datasets, dataset_patterns, name_type='dataset')
+    def check_dataset_patterns(self, dataset_patterns):
+        "Check that the patterns are valid and return selected configurations."
+        return _check_patterns(
+            self.get_datasets(), dataset_patterns, name_type='dataset'
+        )
 
     def _list_benchmark_classes(self, base_class):
         """Load all classes with the same name from a benchmark's subpackage.
@@ -549,22 +540,22 @@ class Benchmark:
                 f"they are not importable:\n{missing_cls}\n{MISSING_DEPS_MSG}"
             )
 
-    def get_all_runs(self, solver_names=None, forced_solvers=None,
-                     dataset_names=None, objective_filters=None, output=None):
+    def get_all_runs(self, solvers=None, forced_solvers=None,
+                     datasets=None, objectives=None, output=None):
         """Generator with all combinations to run for the benchmark.
 
         Parameters
         ----------
-        solver_names : list | None
+        solvers : list | None
             List of solvers to include in the benchmark. If None
             all solvers available are run.
         forced_solvers : list | None
             List of solvers to include in the benchmark and for
             which one forces recomputation.
-        dataset_names : list | None
+        datasets : list | None
             List of datasets to include. If None all available
             datasets are used.
-        objective_filters : list | None
+        objectives : list | None
             Filters to select specific objective parameters. If None,
             all objective parameters are tested
         output : TerminalOutput or None
@@ -577,21 +568,18 @@ class Benchmark:
         solver : BaseSolver instance
         force : bool
         """
-        all_datasets = _filter_classes(
-            *self.get_datasets(), filters=dataset_names
+        all_datasets = _list_parametrized_classes(*datasets)
+        all_solvers, solvers_buffer = buffer_iterator(
+            _list_parametrized_classes(*solvers)
         )
-        all_solvers, solvers_buffer = buffer_iterator(_filter_classes(
-            *self.get_solvers(), filters=solver_names
-        ))
         for dataset, is_installed in all_datasets:
             output.set(dataset=dataset)
             if not is_installed:
                 output.show_status('not installed', dataset=True)
                 continue
             output.display_dataset()
-            all_objectives = _filter_classes(
-                self.get_benchmark_objective(), filters=objective_filters,
-                check_installed=False
+            all_objectives = _list_parametrized_classes(
+                *objectives, check_installed=False
             )
             for objective, is_installed in all_objectives:
                 output.set(objective=objective)
@@ -635,10 +623,9 @@ def is_matched(name, include_patterns=None, default=True):
         return default
     name = str(name)
     name = _extract_options(name)[0]
-    substitutions = {"*": ".*"}
     for p in include_patterns:
         p = _extract_options(p)[0]
-        for old, new in substitutions.items():
+        for old, new in SUBSTITUTIONS.items():
             p = p.replace(old, new)
         if re.match(f"^{p}$", name, flags=re.IGNORECASE) is not None:
             return True
@@ -750,81 +737,135 @@ def _extract_parameters(string):
         raise ValueError(f"Invalid name '{original}', evaluated as {string}.")
 
 
-def _validate_patterns(all_names, patterns, name_type='dataset'):
-    "Check that all provided patterns match at least one name."
-    if patterns is None:
-        return
+def _check_patterns(all_classes, patterns, name_type='dataset'):
+    """Check the patterns and return a list of selected classes and params.
 
-    # Check that the provided patterns match at least one dataset.
-    invalid_patterns = []
-    for p in patterns:
-        matched = any([is_matched(name, [p]) for name in all_names])
-        if not matched:
+    Raise an error if a pattern does not match any dataset name,
+    or if a parameter does not appear as a class parameter.
+
+    Parameters
+    ----------
+    all_classes: list of ParametrizedNameMixin
+        The possible classes to select from.
+    patterns: list of str | dict
+        List of patterns to select the classes. These patterns can be either:
+            - str with the class name and parameters values:
+                "cls_name[params1=[...],params2=...]"
+            - dict with keys as cls_name and a dictionary of parameter values.
+                {'cls_name': dict(params1=[...], params2=[])}
+    name_type: str
+        Used to raise sensible error depending on the type of classes which
+        are selected.
+
+    Returns
+    -------
+    selected_classes: list of (ParametrizedNameMixin, parameters dict)
+        A list with 2-tuple containing the selected class and a dictionary
+        with selected parameters for this class.
+    """
+    # If no patterns is provided or all is provided, return all the classes.
+    if (patterns is None or len(patterns) == 0
+            or any(p == 'all' for p, *_ in patterns)):
+        return [(cls, cls.parameters) for cls in all_classes]
+
+    # Patterns can be either str or dict. Convert everything to 3-tuple with
+    # (cls_name, args, kwargs). cls_name and kwargs correspond to class and
+    # parameters selector. args is used to allow passing directly a list when
+    # the class have only one parameter.
+    def preprocess_patterns(pattern):
+        if isinstance(pattern, str):
+            return [_extract_options(pattern)]
+        if isinstance(pattern, dict):
+            return [
+                (name, options, {}) if isinstance(options, list)
+                else (name, [], options)
+                for name, options in pattern.items()]
+        raise TypeError()
+    patterns = [p for q in patterns for p in preprocess_patterns(q)]
+
+    # Check that the provided patterns match at least one dataset and pair the
+    # matching clas with the selector.
+    matched, invalid_patterns = [], []
+    for p, args, kwargs in patterns:
+        matched += [
+            (cls, (args, kwargs))
+            for cls in all_classes
+            if is_matched(cls.name, [p])
+        ]
+        if len(matched) == 0:
             invalid_patterns.append(p)
 
     # If some patterns did not matched any class, raise an error
     if len(invalid_patterns) > 0:
-        all_names_ = '- ' + '\n- '.join(all_names)
+        all_names = '- ' + '\n- '.join(cls.name for cls in all_classes)
         raise click.BadParameter(
             f"Patterns {invalid_patterns} did not match any {name_type}.\n"
-            f"Available {name_type}s are:\n{all_names_}"
+            f"Available {name_type}s are:\n{all_names}"
         )
 
+    # Check that the parameters are well formated:
+    # - not ambiguous nor duplicated
+    # - parameters correspond to existing one for a given class.
+    all_valid_patterns = []
+    for cls, (args, kwargs) in matched:
+        param_names = [p.strip() for k in cls.parameters for p in k.split(',')]
+        if len(args) != 0:
+            if len(cls.parameters) > 1:
+                raise ValueError(
+                    f"Ambiguous positional parameter for {cls.name}."
+                )
+            elif len(kwargs) > 0:
+                raise ValueError(
+                    f"Both positional and keyword parameters for {cls.name}."
+                )
+            kwargs = {list(cls.parameters.keys())[0]: args}
+        else:
+            bad_params = [
+                p.strip() for k in kwargs for p in k.split(',')
+                if p.strip() not in param_names
+            ]
+            if len(bad_params) > 0:
+                msg = "Possible parameters are:\n- " + "\n- ".join(param_names)
+                if len(param_names) == 0:
+                    msg = f"This {name_type} has no parameters."
+                bad_params = ', '.join(f"'{p}'" for p in bad_params)
+                raise ValueError(
+                    f"Unknown parameter {bad_params} for {name_type} "
+                    f"{cls.name}.\n{msg}"
+                )
+        params = cls.parameters.copy()
+        params.update(kwargs)
+        all_valid_patterns.append((cls, params))
 
-def _filter_classes(*classes, filters=None, check_installed=True):
-    """Filter a list of class based on its names."""
-    for klass in classes:
-        if not is_matched(klass.name, filters):
-            continue
+    return all_valid_patterns
 
-        if (check_installed and
-                not klass.is_installed(
-                    raise_on_not_installed=RAISE_INSTALL_ERROR
-                    )):
+
+def _list_parametrized_classes(*classes, check_installed=True):
+    """Generator with class instances for all selected parameters."""
+    for klass, params in classes:
+        if (check_installed and not klass.is_installed(
+                raise_on_not_installed=RAISE_INSTALL_ERROR
+        )):
             yield klass.name, False
             continue
 
-        for parameters in _get_used_parameters(klass, filters):
+        for parameters in _get_used_parameters(klass, params):
             yield klass.get_instance(**parameters), True
 
 
-def _get_used_parameters(klass, filters):
+def _get_used_parameters(klass, params):
     """Get the list of parameters to use in the class."""
+    # Make sure that all parameters are passed as iterables.
+    params = {
+        key: (val if isinstance(val, (list, tuple)) else [val])
+        for key, val in params.items()
+    }
 
-    # Use the default parameters if no filters are provided.
-    if filters is None or len(filters) == 0:
-        return product_param(klass.parameters)
-
-    # If filters are provided, get the list of parameters from the names.
-    update_parameters = []
-    for filt in filters:
-        if is_matched(klass.name, [filt]):
-            # Extract the parameters from the filter name.
-            _, args, kwargs = _extract_options(filt)
-
-            if len(args) > 0:
-                # positional args are allowed only for single-parameter classes
-                if len(klass.parameters) > 1:
-                    raise ValueError(
-                        f"Ambiguous positional parameter in {filt}.")
-                elif len(kwargs) > 0:
-                    raise ValueError(
-                        f"Both positional and keyword parameters in {filt}.")
-                else:
-                    key = list(klass.parameters.keys())[0]
-                    kwargs = {key: args}
-
-            # Use product_param to get all combinations of parameters.
-            kwargs = {
-                key: (val if isinstance(val, (list, tuple)) else [val])
-                for key, val in kwargs.items()
-            }
-            update_parameters.extend(product_param(kwargs))
-
+    # Use product_param to get all combinations of parameters.
     # Then, update the default parameters (klass.parameters) with the
     # parameters extracted from filter names.
     used_parameters = []
-    for update in update_parameters:
+    for update in product_param(params):
         for default in product_param(klass.parameters):
             default = default.copy()  # avoid modifying the original
 

@@ -116,14 +116,3 @@ def product_param(parameters):
     parameter_names = parameters.keys()
     return map(expand, itertools.repeat(parameter_names),
                itertools.product(*parameters.values()))
-
-
-def _list_all_parametrized_names(*parametrized_classes):
-    """List all names for parametrized classes."""
-    all_names = []
-    for cls in parametrized_classes:
-        for dataset_parameters in product_param(cls.parameters):
-            all_names.append(
-                cls._get_parametrized_name(**dataset_parameters)
-            )
-    return all_names

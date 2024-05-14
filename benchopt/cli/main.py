@@ -183,7 +183,7 @@ def run(config_file=None, **kwargs):
     (
         benchmark, solver_names, forced_solvers, dataset_names,
         objective_filters, max_runs, n_repetitions, timeout, n_jobs, slurm,
-        collect, plot, display, html, pdb, do_profile, env_name, output
+        collect, plot, display, html, pdb, do_profile, env_name, output_name
     ) = _get_run_args(kwargs, config)
 
     try:
@@ -229,21 +229,20 @@ def run(config_file=None, **kwargs):
         objective.is_installed(raise_on_not_installed=True)
 
         # Check that the dataset/solver patterns match actual dataset
-        benchmark.validate_dataset_patterns(dataset_names)
-        benchmark.validate_objective_filters(objective_filters)
+        datasets = benchmark.check_dataset_patterns(dataset_names)
+        objectives = benchmark.check_objective_filters(objective_filters)
         # pyyaml returns tuples: make sure everything is a list
-        benchmark.validate_solver_patterns(
+        solvers = benchmark.check_solver_patterns(
             list(solver_names) + list(forced_solvers)
         )
 
         run_benchmark(
-            benchmark, solver_names, forced_solvers,
-            dataset_names=dataset_names,
-            objective_filters=objective_filters,
+            benchmark, solvers, forced_solvers,
+            datasets=datasets, objectives=objectives,
             max_runs=max_runs, n_repetitions=n_repetitions,
             timeout=timeout, n_jobs=n_jobs, slurm=slurm,
             plot_result=plot, display=display, html=html,
-            collect=collect, pdb=pdb, output=output
+            collect=collect, pdb=pdb, output_name=output_name
         )
 
         print_stats()  # print profiling stats (does nothing if not profiling)
@@ -320,7 +319,7 @@ def run(config_file=None, **kwargs):
         rf"{'--display' if display else '--no-display'} "
         rf"{'--html' if html else '--no-html'} "
         rf"{'--pdb' if pdb else ''} "
-        rf"--output {output}"
+        rf"--output {output_name}"
         .replace('\\', '\\\\')
     )
     raise SystemExit(_run_shell_in_conda_env(
@@ -405,8 +404,8 @@ def install(
 
     # Check that the dataset/solver patterns match actual dataset
     benchmark = Benchmark(benchmark)
-    benchmark.validate_dataset_patterns(dataset_names)
-    benchmark.validate_solver_patterns(solver_names)
+    benchmark.check_dataset_patterns(dataset_names)
+    benchmark.check_solver_patterns(solver_names)
 
     # Get a list of all conda envs
     default_conda_env, conda_envs = list_conda_envs()
