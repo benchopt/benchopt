@@ -24,21 +24,20 @@ class DependenciesMixin:
     #           env directory as an argument. The command should then be
     #           installed in the `bin` folder of the env and can be imported
     #           with import_shell_cmd in the safe_import_context.
-    install_cmd = 'conda'
+    install_cmd = "conda"
 
     _error_displayed = False
 
     @classproperty
     def benchmark(cls):
-        return cls.__module__.split('.')[1]
+        return cls.__module__.split(".")[1]
 
     @classproperty
     def name(cls):
-        return cls.__module__.split('.')[-1]
+        return cls.__module__.split(".")[-1]
 
     @classmethod
-    def is_installed(cls, env_name=None, raise_on_not_installed=None,
-                     quiet=False):
+    def is_installed(cls, env_name=None, raise_on_not_installed=None, quiet=False):
         """Check if the module caught a failed import to assert install.
 
         Parameters
@@ -69,11 +68,15 @@ class DependenciesMixin:
             else:
                 return True
         else:
-            return _run_shell_in_conda_env(
-                f"benchopt check-install {cls._benchmark_dir} "
-                f"{cls._module_filename} {cls._base_class_name}",
-                env_name=env_name, raise_on_error=raise_on_not_installed
-            ) == 0
+            return (
+                _run_shell_in_conda_env(
+                    f"benchopt check-install {cls._benchmark_dir} "
+                    f"{cls._module_filename} {cls._base_class_name}",
+                    env_name=env_name,
+                    raise_on_error=raise_on_not_installed,
+                )
+                == 0
+            )
 
     @classmethod
     def install(cls, env_name=None, force=False):
@@ -93,22 +96,27 @@ class DependenciesMixin:
             True if the class is correctly installed in the environment.
         """
         is_installed = cls.is_installed(env_name=env_name)
-        
-        # Making conda the default install command
+
+        # Making conda the default command
         if not hasattr(cls, "install_cmd"):
             cls.install_cmd = DependenciesMixin.install_cmd
+        else:
+            if cls.install_cmd not in ["conda", "shell"]:
+                raise ValueError(
+                    f"{cls.install_cmd} is not a valid install command. "
+                    "Please use 'conda' or 'shell' as install command."
+                )
 
-        env_suffix = f" in '{env_name}'" if env_name else ''
+        env_suffix = f" in '{env_name}'" if env_name else ""
         if force or not is_installed:
-            print(f"- Installing '{cls.name}'{env_suffix}:...",
-                  end='', flush=True)
+            print(f"- Installing '{cls.name}'{env_suffix}:...", end="", flush=True)
             try:
                 cls._pre_install_hook(env_name=env_name)
-                if cls.install_cmd == 'conda':
+                if cls.install_cmd == "conda":
                     if hasattr(cls, "requirements"):
-                        install_in_conda_env(*cls.requirements,
-                                             env_name=env_name,
-                                             force=force)
+                        install_in_conda_env(
+                            *cls.requirements, env_name=env_name, force=force
+                        )
                     else:
                         # get details of class
                         cls_type = cls.__base__.__name__.replace("Base", "")
@@ -125,19 +133,14 @@ class DependenciesMixin:
                             "conda channel `chan`\n"
                             "   requirements = ['pip:pkg'] # pip package `pkg`"
                         )
-                elif cls.install_cmd == 'shell':
+                elif cls.install_cmd == "shell":
                     install_file = (
-                        cls._module_filename.parents[1] / 'install_scripts' /
-                        cls.install_script
+                        cls._module_filename.parents[1]
+                        / "install_scripts"
+                        / cls.install_script
                     )
                     shell_install_in_conda_env(install_file, env_name=env_name)
                 cls._post_install_hook(env_name=env_name)
-                
-                else:
-                    raise ValueError(
-                        f"{cls.install_cmd} is not a valid install command. "
-                        "Please use 'conda' or 'shell' as install command."
-                    )
 
             except Exception as exception:
                 if RAISE_INSTALL_ERROR:
@@ -180,10 +183,11 @@ class DependenciesMixin:
         conda_reqs, shell_install_scripts, post_install_hooks = [], [], []
         if force or not is_installed:
             cls._pre_install_hook(env_name=env_name)
-            if cls.install_cmd == 'shell':
+            if cls.install_cmd == "shell":
                 shell_install_scripts = [
-                    cls._module_filename.parents[1] / 'install_scripts' /
-                    cls.install_script
+                    cls._module_filename.parents[1]
+                    / "install_scripts"
+                    / cls.install_script
                 ]
             else:
                 conda_reqs = getattr(cls, "requirements", [])
@@ -191,16 +195,14 @@ class DependenciesMixin:
                     missing_deps = cls
             post_install_hooks = [cls._post_install_hook]
         else:
-            env_suffix = f" in '{env_name}'" if env_name else ''
-            colored_cls_name = colorify(f'{cls.name}', YELLOW)
+            env_suffix = f" in '{env_name}'" if env_name else ""
+            colored_cls_name = colorify(f"{cls.name}", YELLOW)
             print(
                 f"- {colored_cls_name} already available{env_suffix}\n"
                 f"  No ImportError raised from {cls._module_filename}."
             )
 
-        return (
-            conda_reqs, shell_install_scripts, post_install_hooks, missing_deps
-        )
+        return (conda_reqs, shell_install_scripts, post_install_hooks, missing_deps)
 
     @classmethod
     def _pre_install_hook(cls, env_name=None):
