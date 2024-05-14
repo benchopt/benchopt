@@ -272,7 +272,7 @@ def run_benchmark(benchmark, solvers=None, forced_solvers=None,
                   datasets=None, objectives=None, max_runs=10,
                   n_repetitions=1, timeout=100, n_jobs=1, slurm=None,
                   plot_result=True, display=True, html=True,  collect=False,
-                  show_progress=True, pdb=False, output="None"):
+                  show_progress=True, pdb=False, output_name="None"):
     """Run full benchmark.
 
     Parameters
@@ -319,7 +319,7 @@ def run_benchmark(benchmark, solvers=None, forced_solvers=None,
         If show_progress is set to True, display the progress of the benchmark.
     pdb : bool
         It pdb is set to True, open a debugger on error.
-    output : str
+    output_name : str
         Filename for the parquet output. If given, the results will
         be stored at <BENCHMARK>/outputs/<filename>.parquet.
 
@@ -331,7 +331,6 @@ def run_benchmark(benchmark, solvers=None, forced_solvers=None,
         by the objective is not the same for all parameters, the missing data
         is set to `NaN`.
     """
-    output_name = output
     output = TerminalOutput(n_repetitions, show_progress)
     output.set(verbose=True)
 

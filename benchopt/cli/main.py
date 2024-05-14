@@ -183,7 +183,7 @@ def run(config_file=None, **kwargs):
     (
         benchmark, solver_names, forced_solvers, dataset_names,
         objective_filters, max_runs, n_repetitions, timeout, n_jobs, slurm,
-        collect, plot, display, html, pdb, do_profile, env_name, output
+        collect, plot, display, html, pdb, do_profile, env_name, output_name
     ) = _get_run_args(kwargs, config)
 
     try:
@@ -242,7 +242,7 @@ def run(config_file=None, **kwargs):
             max_runs=max_runs, n_repetitions=n_repetitions,
             timeout=timeout, n_jobs=n_jobs, slurm=slurm,
             plot_result=plot, display=display, html=html,
-            collect=collect, pdb=pdb, output=output
+            collect=collect, pdb=pdb, output_name=output_name
         )
 
         print_stats()  # print profiling stats (does nothing if not profiling)
@@ -319,7 +319,7 @@ def run(config_file=None, **kwargs):
         rf"{'--display' if display else '--no-display'} "
         rf"{'--html' if html else '--no-html'} "
         rf"{'--pdb' if pdb else ''} "
-        rf"--output {output}"
+        rf"--output {output_name}"
         .replace('\\', '\\\\')
     )
     raise SystemExit(_run_shell_in_conda_env(
