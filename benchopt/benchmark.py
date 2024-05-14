@@ -849,18 +849,19 @@ def _list_parametrized_classes(*classes, check_installed=True):
             yield klass.name, False
             continue
 
-        for parameters in _get_used_parameters(klass,  params):
+        for parameters in _get_used_parameters(klass, params):
             yield klass.get_instance(**parameters), True
 
 
 def _get_used_parameters(klass, params):
     """Get the list of parameters to use in the class."""
-    # Use product_param to get all combinations of parameters.
+    # Make sure that all parameters are passed as iterables.
     params = {
         key: (val if isinstance(val, (list, tuple)) else [val])
         for key, val in params.items()
     }
 
+    # Use product_param to get all combinations of parameters.
     # Then, update the default parameters (klass.parameters) with the
     # parameters extracted from filter names.
     used_parameters = []
