@@ -94,6 +94,16 @@ class DependenciesMixin:
         """
         is_installed = cls.is_installed(env_name=env_name)
 
+        # Making conda the default command
+        if not hasattr(cls, "install_cmd"):
+            cls.install_cmd = DependenciesMixin.install_cmd
+        else:
+            if cls.install_cmd not in ["conda", "shell"]:
+                raise ValueError(
+                    f"{cls.install_cmd} is not a valid install command. "
+                    "Please use 'conda' or 'shell' as install command."
+                )
+
         env_suffix = f" in '{env_name}'" if env_name else ''
         if force or not is_installed:
             print(f"- Installing '{cls.name}'{env_suffix}:...",
