@@ -4,7 +4,12 @@ from benchopt.tests.utils import CaptureRunOutput
 from benchopt.utils.temp_benchmark import temp_benchmark
 
 
-def test_pickling_benchmark_utils():
+def test_pickling_dynamic_module():
+    # Make sure the dynamic modules can be pickled by joblib. In particular,
+    # this is necessary for nested parallelism in distributed context.
+    #
+    # This test check that the module containing a solver can be pickled, and
+    # that the dynamic benchmark_utils module can be retrieved in the process.
 
     solver = """
     from benchopt import BaseSolver

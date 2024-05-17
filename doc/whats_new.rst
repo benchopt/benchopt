@@ -27,6 +27,11 @@ CLI
 - Add ``--collect`` option to allow gathering results which are already
   in cache in a single parquet file. By `Thomas Moreau`_ (:gh:`710`)
 
+FIX
+~~~
+
+- Fix pickling of dynamic modules to allow for nested parallelism in
+  distributed runs. By `Thomas Moreau`_ (:gh:`713`)
 
 .. _changes_1_5_1:
 
