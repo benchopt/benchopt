@@ -46,7 +46,7 @@ exclude_lines = [
     "raise NotImplementedError",
     "if __name__ == .__main__.:",
     "except Exception",
-    "\.\.\."
+    "\\.\\.\\."
 ]
-ignore_errors = True
+ignore_errors = true
 show_missing = true
