@@ -36,9 +36,7 @@ omit = [
   "*/tests/*",
   "setup.py"
 ]
-relative_files = true
 parallel = true
-dynamic_context = "test_function"
 
 [tool.coverage.report]
 exclude_lines = [
