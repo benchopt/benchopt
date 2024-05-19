@@ -123,7 +123,7 @@ class TestRunCmd:
                 )
 
     @pytest.mark.parametrize('n_jobs', [1, 2])
-    def test_benchopt_run(self, n_jobs):
+    def test_valid_call(self, n_jobs):
 
         with CaptureRunOutput() as out:
             run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,
@@ -139,7 +139,7 @@ class TestRunCmd:
         # Make sure the results were saved in a result file
         assert len(out.result_files) == 1, out.output
 
-    def test_benchopt_run_in_env(self, test_env_name):
+    def test_valid_call_in_env(self, test_env_name):
         with CaptureRunOutput() as out:
             with pytest.raises(SystemExit, match='False'):
                 run([str(DUMMY_BENCHMARK_PATH), '--env-name', test_env_name,
@@ -157,7 +157,7 @@ class TestRunCmd:
         assert len(out.result_files) == 1, out.output
 
     @pytest.mark.parametrize('timeout', ['10', '1m', '0.03h', '100s'])
-    def test_benchopt_run_in_env_timeout(self, test_env_name, timeout):
+    def test_timeout_in_env(self, test_env_name, timeout):
         with CaptureRunOutput() as out:
             with pytest.raises(SystemExit, match='False'):
                 run([str(DUMMY_BENCHMARK_PATH), '--env-name', test_env_name,
@@ -175,7 +175,7 @@ class TestRunCmd:
         # Make sure the results were saved in a result file
         assert len(out.result_files) == 1, out.output
 
-    def test_benchopt_run_custom_parameters(self):
+    def test_custom_parameters(self):
         SELECT_DATASETS = r'simulated[n_features=[100, 200]]'
         SELECT_SOLVERS = r'python-pgd-with-cb[use_acceleration=[True, False]]'
         SELECT_OBJECTIVES = r'dummy*[0.1, 0.2]'
@@ -198,13 +198,16 @@ class TestRunCmd:
         out.check_output(r'--Python-PGD-with-cb\[use_acceleration=True\]:',
                          repetition=24)
 
-    def test_benchopt_run_profile(self):
+    def test_profiling(self, test_env_name):
+        # Need to call this in a separate process to avoid this breaking the
+        # coverage collection.
         with CaptureRunOutput() as out:
-            run_cmd = [str(DUMMY_BENCHMARK_PATH),
-                       '-d', SELECT_ONE_SIMULATED, '-f', SELECT_ONE_PGD,
-                       '-n', '1', '-r', '1', '-o', SELECT_ONE_OBJECTIVE,
-                       '--profile', '--no-plot']
-            run(run_cmd, 'benchopt', standalone_mode=False)
+            with pytest.raises(SystemExit, match='False'):
+                run([str(DUMMY_BENCHMARK_PATH), '--env-name', test_env_name,
+                     '-d', SELECT_ONE_SIMULATED, '-f', SELECT_ONE_PGD,
+                     '-n', '1', '-r', '1', '-o', SELECT_ONE_OBJECTIVE,
+                     '--profile', '--no-plot'],
+                    'benchopt', standalone_mode=False)
 
         out.check_output('using profiling', repetition=1)
         out.check_output(
@@ -216,7 +219,7 @@ class TestRunCmd:
         ]), repetition=1)
         out.check_output(r"def run\(self, n_iter\):", repetition=1)
 
-    def test_benchopt_run_config_file(self):
+    def test_invalid_config_file(self):
         tmp = tempfile.NamedTemporaryFile(mode="w+")
         tmp.write("some_unknown_option: 0")
         tmp.flush()
@@ -224,6 +227,7 @@ class TestRunCmd:
             run(f'{str(DUMMY_BENCHMARK_PATH)} --config {tmp.name}'.split(),
                 'benchopt', standalone_mode=False)
 
+    def test_config_file(self):
         config = f"""
         objective:
           - {SELECT_ONE_OBJECTIVE}
@@ -259,7 +263,7 @@ class TestRunCmd:
             r'Python-PGD\[step_size=1.5\]:', repetition=0)
 
     @pytest.mark.parametrize('n_rep', [2, 3, 5])
-    def test_benchopt_caching(self, n_rep):
+    def test_caching(self, n_rep):
         clean([str(DUMMY_BENCHMARK_PATH)], 'benchopt', standalone_mode=False)
 
         # XXX - remove once this is fixed upstream with joblib/joblib#1289

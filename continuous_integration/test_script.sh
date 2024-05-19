@@ -13,7 +13,7 @@ TEST_CMD="$TEST_CMD --test-env $CONDA_ENV"
 
 if [[ "$COVERAGE" == "true" ]]; then
     export COVERAGE_PROCESS_START=".coveragerc"
-    TEST_CMD="$TEST_CMD --cov=benchopt --cov-config=.coveragerc"
+    TEST_CMD="$TEST_CMD --cov=benchopt --cov-apend"
     python continuous_integration/install_coverage_subprocess_pth.py
 fi
 
