@@ -199,8 +199,8 @@ class TestRunCmd:
                          repetition=24)
 
     def test_profiling(self, test_env_name):
-        # Need to call this in a separate process to avoid this breaking the
-        # coverage collection.
+        # Need to call the profiler in a separate process, otherwise this
+        # breaks the coverage collection.
         with CaptureRunOutput() as out:
             with pytest.raises(SystemExit, match='False'):
                 run([str(DUMMY_BENCHMARK_PATH), '--env-name', test_env_name,
