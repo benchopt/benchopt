@@ -75,6 +75,8 @@ jobs:
       - name: Upload coverage
         if: ${{ matrix.coverage == 'true' }}
         uses: codecov/codecov-action@v4
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
           flags: test_benchopt
           fail_ci_if_error: true
