@@ -24,7 +24,7 @@ def test_invalid_install_cmd():
     """
 
     with temp_benchmark(solvers=[invalid_solver]) as benchmark:
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="invalid_command is not a valid"):
             run(
                 [
                     str(benchmark.benchmark_dir),
