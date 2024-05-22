@@ -136,9 +136,9 @@ def test_config_solver_with_params_str_list(no_debug_test):
                 *f'--config {config_file}'.split()
             ], standalone_mode=False)
         out.check_output(r"RUN\(0\)", repetition=2)
-        out.check_output(r"param1=None", repetition=0)
-        out.check_output(r"param1=0,param2=None", repetition=2)
-        out.check_output(r"param1=1,param2=None", repetition=2)
+        out.check_output("param1=None", repetition=0)
+        out.check_output("param1=0,param2=None", repetition=2)
+        out.check_output("param1=1,param2=None", repetition=2)
 
 
 def test_config_solver_with_params_str_value(no_debug_test):
@@ -156,9 +156,9 @@ def test_config_solver_with_params_str_value(no_debug_test):
                 *f'--config {config_file}'.split()
             ], standalone_mode=False)
         out.check_output(r"RUN\(0\)", repetition=1)
-        out.check_output(r"param1=None", repetition=0)
-        out.check_output(r"param2=None", repetition=0)
-        out.check_output(r"param1=0,param2=1", repetition=2)
+        out.check_output("param1=None", repetition=0)
+        out.check_output("param2=None", repetition=0)
+        out.check_output("param1=0,param2=1", repetition=2)
 
 
 def test_config_solver_with_params_yaml_list(no_debug_test):
@@ -176,9 +176,9 @@ def test_config_solver_with_params_yaml_list(no_debug_test):
                 *f'--config {config_file}'.split()
             ], standalone_mode=False)
         out.check_output(r"RUN\(0\)", repetition=2)
-        out.check_output(r"param1=None", repetition=0)
-        out.check_output(r"param1=0,param2=None", repetition=2)
-        out.check_output(r"param1=1,param2=None", repetition=2)
+        out.check_output("param1=None", repetition=0)
+        out.check_output("param1=0,param2=None", repetition=2)
+        out.check_output("param1=1,param2=None", repetition=2)
 
 
 def test_config_solver_with_params_yaml_items(no_debug_test):
@@ -199,9 +199,9 @@ def test_config_solver_with_params_yaml_items(no_debug_test):
                 *f'--config {config_file}'.split()
             ], standalone_mode=False)
         out.check_output(r"RUN\(0\)", repetition=2)
-        out.check_output(r"param1=None", repetition=0)
-        out.check_output(r"param1=0", repetition=2)
-        out.check_output(r"param1=1", repetition=2)
+        out.check_output("param1=None", repetition=0)
+        out.check_output("param1=0", repetition=2)
+        out.check_output("param1=1", repetition=2)
 
 
 def test_config_solver_with_params_yaml_value(no_debug_test):
@@ -221,9 +221,9 @@ def test_config_solver_with_params_yaml_value(no_debug_test):
                 *f'--config {config_file}'.split()
             ], standalone_mode=False)
         out.check_output(r"RUN\(0\)", repetition=1)
-        out.check_output(r"param1=None", repetition=0)
-        out.check_output(r"param2=None", repetition=0)
-        out.check_output(r"param1=0,param2=1", repetition=2)
+        out.check_output("param1=None", repetition=0)
+        out.check_output("param2=None", repetition=0)
+        out.check_output("param1=0,param2=1", repetition=2)
 
 
 def test_config_solver_with_params_complex_param(no_debug_test):
@@ -235,7 +235,6 @@ def test_config_solver_with_params_complex_param(no_debug_test):
     params = dict(param1=[None], param2=[None])
     with temp_benchmark(solvers=[
         TEST_SOLVER.replace("# PARAMETERS", f"parameters = {params}")
-        .replace("solver1'", "solver1'\n        parameter_template = ''")
         .replace("RUN({n_iter})", "{self._parameters}")
     ]) as benchmark:
         config_file = benchmark.benchmark_dir / "run_config.yml"
@@ -245,7 +244,7 @@ def test_config_solver_with_params_complex_param(no_debug_test):
                 str(benchmark.benchmark_dir),
                 *f'--config {config_file}'.split()
             ], standalone_mode=False)
-        out.check_output(r"param1=None", repetition=0)
+        out.check_output("param1=None", repetition=0)
         out.check_output(
             "{'param1': {'test': 0, 'test2': 1}, 'param2': None}",
             repetition=1
@@ -268,9 +267,9 @@ def test_config_solver_with_one_params_list(no_debug_test):
                 *f'--config {config_file}'.split()
             ], standalone_mode=False)
         out.check_output(r"RUN\(0\)", repetition=2)
-        out.check_output(r"param1=None", repetition=0)
-        out.check_output(r"param1=0", repetition=2)
-        out.check_output(r"param1=1", repetition=2)
+        out.check_output("param1=None", repetition=0)
+        out.check_output("param1=0", repetition=2)
+        out.check_output("param1=1", repetition=2)
 
 
 def test_config_solver_with_one_params_yaml_list(no_debug_test):
@@ -289,9 +288,9 @@ def test_config_solver_with_one_params_yaml_list(no_debug_test):
                 *f'--config {config_file}'.split()
             ], standalone_mode=False)
         out.check_output(r"RUN\(0\)", repetition=2)
-        out.check_output(r"param1=None", repetition=0)
-        out.check_output(r"param1=0", repetition=2)
-        out.check_output(r"param1=1", repetition=2)
+        out.check_output("param1=None", repetition=0)
+        out.check_output("param1=0", repetition=2)
+        out.check_output("param1=1", repetition=2)
 
 
 def test_config_solver_double_param_yaml_list(no_debug_test):
@@ -312,9 +311,9 @@ def test_config_solver_double_param_yaml_list(no_debug_test):
                 *f'--config {config_file}'.split()
             ], standalone_mode=False)
         out.check_output(r"RUN\(0\)", repetition=1)
-        out.check_output(r"param1=None", repetition=0)
-        out.check_output(r"param2=None", repetition=0)
-        out.check_output(r"param1=0,param2=1", repetition=2)
+        out.check_output("param1=None", repetition=0)
+        out.check_output("param2=None", repetition=0)
+        out.check_output("param1=0,param2=1", repetition=2)
 
 
 def test_config_solver_double_param_solver_yaml(no_debug_test):
@@ -333,5 +332,5 @@ def test_config_solver_double_param_solver_yaml(no_debug_test):
                 *f'--config {config_file}'.split()
             ], standalone_mode=False)
         out.check_output(r"RUN\(0\)", repetition=1)
-        out.check_output(r"param1=None", repetition=0)
-        out.check_output(r"param1=0,param2=None", repetition=2)
+        out.check_output("param1=None", repetition=0)
+        out.check_output("param1=0,param2=None", repetition=2)
