@@ -232,8 +232,12 @@ def run(config_file=None, **kwargs):
         datasets = benchmark.check_dataset_patterns(dataset_names)
         objectives = benchmark.check_objective_filters(objective_filters)
         # pyyaml returns tuples: make sure everything is a list
+        if isinstance(solver_names, dict):
+            solver_names = [solver_names]
+        elif isinstance(solver_names, tuple):
+            solver_names = list(solver_names)
         solvers = benchmark.check_solver_patterns(
-            list(solver_names) + list(forced_solvers)
+            solver_names + list(forced_solvers)
         )
 
         run_benchmark(
@@ -318,7 +322,8 @@ def run(config_file=None, **kwargs):
         rf"{'--plot' if plot else '--no-plot'} "
         rf"{'--display' if display else '--no-display'} "
         rf"{'--html' if html else '--no-html'} "
-        rf"{'--pdb' if pdb else ''} "
+        rf"{'--pdb ' if pdb else ''}"
+        rf"{'--profile ' if do_profile else ''}"
         rf"--output {output_name}"
         .replace('\\', '\\\\')
     )

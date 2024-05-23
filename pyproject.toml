@@ -21,10 +21,31 @@ testpaths = [
 [tool.check-manifest]
 ignore = [
   "*.yml",
-  ".coveragerc",
   ".circleci/*",
   "continuous_integration/*",
   "Makefile",
   "roadmap.md",
   "benchopt/version.py"
 ]
+
+[tool.coverage.run]
+source = [
+    "benchopt"
+]
+omit = [
+  "*/tests/*",
+  "setup.py"
+]
+parallel = true
+
+[tool.coverage.report]
+exclude_lines = [
+    "if self.debug:",
+    "pragma: no cover",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "except Exception",
+    "\\.\\.\\."
+]
+ignore_errors = true
+show_missing = true

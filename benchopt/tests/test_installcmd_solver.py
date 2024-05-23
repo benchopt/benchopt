@@ -1,12 +1,7 @@
 import pytest
 
-from benchopt.cli.main import run
-from benchopt.tests import SELECT_ONE_SIMULATED
+from benchopt.cli.main import install
 from benchopt.utils.temp_benchmark import temp_benchmark
-
-import tempfile
-import importlib.util
-from pathlib import Path
 
 
 def test_invalid_install_cmd():
@@ -24,17 +19,10 @@ def test_invalid_install_cmd():
     """
 
     with temp_benchmark(solvers=[invalid_solver]) as benchmark:
-        with pytest.raises(ValueError, match="invalid_command is not a valid"):
-            run(
-                [
-                    str(benchmark.benchmark_dir),
-                    "-s",
-                    "invalid-solver",
-                    "-d",
-                    SELECT_ONE_SIMULATED,
-                    "--no-plot",
-                ],
-                standalone_mode=False,
+        with pytest.raises(ValueError, match="is not a valid"):
+            install(
+                [str(benchmark.benchmark_dir), '-y', '-s', 'invalid-solver'],
+                standalone_mode=False
             )
 
 
@@ -52,25 +40,8 @@ def test_conda_default_install_cmd():
         def get_result(self): return dict(beta=1)
     """
 
-    with tempfile.TemporaryDirectory() as tmpdir:
-        tmpdir_path = Path(tmpdir)
-        solver_path = tmpdir_path / "solver_no_install_cmd.py"
-
-        # Write the solver code to a temporary file
-        with open(solver_path, "w") as f:
-            f.write(solver_noinstall)
-
-        # Load the solver module from the temporary file
-        spec = importlib.util.spec_from_file_location(
-            "solver_no_install_cmd", solver_path
-        )
-        solver_module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(solver_module)
-
-        # Get the Solver class from the module
-        SolverClass = solver_module.Solver
-
-        # Instantiate the solver
+    with temp_benchmark(solvers=[solver_noinstall]) as benchmark:
+        SolverClass, _ = benchmark.check_solver_patterns(["solver-no-install-cmd"])[0]
         solver_instance = SolverClass()
 
         # Check that the default 'install_cmd' is 'conda'
