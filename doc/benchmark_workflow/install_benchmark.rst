@@ -1,14 +1,13 @@
-.. _manage_dependencies:
+.. _install_benchmark:
 
-Manage dependencies
+Install a benchmark
 ======================
 
 In order to make it easy to run a new benchmark, benchopt provides an interface
-to easily specify and install requirements for the various component of the
-benchmarks.
+to specify and install requirements for the various component of the benchmarks.
 
 - The minimal requirements that are necessary to run the benchmark are
-  specified in ``objective.py``. They can be install using the command
+  specified in ``objective.py``. They can be installed using the command
   ``benchopt install --minimal``.
 
 - The requirements that are specific to each ``Dataset/Solver`` can be
@@ -31,11 +30,8 @@ This attribute accepts two possible values:
   When using this value, you need to set the ``install_script`` class attribute to the path of your shell script.
   Benchopt will execute this script in the shell and pass the Conda environment directory as an argument.
 
-Additionally, to define the dependencies required by your benchmark, you can use the ``requirements`` class attribute. 
-This attribute should list all necessary dependencies to ensure smooth execution and reproducibility of your benchmarks.
-
 By properly setting these attributes, you ensure that all dependencies are installed 
-correctly. This will help users to run your benchmarks without any issues.\n
+correctly. This will help users to run your benchmarks without any issues.
 
 Examples:
 
