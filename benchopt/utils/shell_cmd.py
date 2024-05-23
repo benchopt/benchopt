@@ -15,7 +15,8 @@ def get_setting(setting_name):
 SHELL = get_setting('shell')
 
 
-def _run_shell(script, raise_on_error=None, capture_stdout=True, return_output=False):
+def _run_shell(script, raise_on_error=None, capture_stdout=True,
+               return_output=False):
     """Run a shell script and return its exit code.
 
     Parameters
@@ -43,20 +44,26 @@ def _run_shell(script, raise_on_error=None, capture_stdout=True, return_output=F
         If return_output=True, return the output of the command as a str.
     """
     if return_output and not capture_stdout:
-        raise ValueError('return_output=True can only be used with capture_stdout=True')
+        raise ValueError(
+            'return_output=True can only be used with capture_stdout=True'
+        )
 
-    # Make sure the script fails at first failure
-    if SHELL == 'bash':
-        fast_failure_script = f"set -e\n{script}"
-    else:
+    is_fish = 'fish' in f"{SHELL}"
+
+    # Make sure the script fail at first failure
+    if os.name == 'nt':
         fast_failure_script = f"@echo off\n{script}"
+    if is_fish:
+        fast_failure_script = f"begin; {script}; or exit 1; end"
+    else:
+        fast_failure_script = f"set -e\n{script}"
 
-    # Use a TemporaryFile to make sure this file is cleaned up at the end of this function.
+    # Use a TemporaryFile to make sure this file is cleaned up at
+    # the end of this function.
     tmp = tempfile.NamedTemporaryFile(
-        mode="w+", delete=False, suffix=".sh" if SHELL == 'bash' else ".bat")
+        mode="w+", delete=False, suffix=".sh" if os.name != 'nt' else ".bat")
     tmp.write(fast_failure_script)
     tmp.flush()
-    tmp.close()
 
     if DEBUG:
         print("-" * 60 + f'\n{fast_failure_script}\n' + "-" * 60)
@@ -125,6 +132,8 @@ def _run_shell_in_conda_env(script, env_name=None, raise_on_error=None,
         If return_output=True, return the output of the command as a str.
     """
     if env_name not in [None, "False"]:
+        # first line to use conda activate in bash script
+        # Add necessary calls to make the script run in conda env.
         if os.name == 'nt':
             # Windows specific handling
             script = (
@@ -138,7 +147,6 @@ def _run_shell_in_conda_env(script, env_name=None, raise_on_error=None,
                 f'{script}'
             )
         else:
-            # Unix specific handling
             script = (
                 # Make sure R_HOME is never passed down to subprocesses in
                 # different conda env as it might lead to trying to load packages
