@@ -48,15 +48,11 @@ def _run_shell(script, raise_on_error=None, capture_stdout=True,
             'return_output=True can only be used with capture_stdout=True'
         )
 
-    is_fish = 'fish' in f"{SHELL}"
-
-    # Make sure the script fail at first failure
-    if os.name == 'nt':
-        fast_failure_script = f"@echo off\n{script}"
-    if is_fish:
-        fast_failure_script = f"begin; {script}; or exit 1; end"
-    else:
+    # Make sure the script fails at first failure
+    if SHELL == 'bash':
         fast_failure_script = f"set -e\n{script}"
+    else:
+        fast_failure_script = f"@echo off\n{script}"
 
     # Use a TemporaryFile to make sure this file is cleaned up at
     # the end of this function.
@@ -64,6 +60,7 @@ def _run_shell(script, raise_on_error=None, capture_stdout=True,
         mode="w+", delete=False, suffix=".sh" if os.name != 'nt' else ".bat")
     tmp.write(fast_failure_script)
     tmp.flush()
+    tmp.close()
 
     if DEBUG:
         print("-" * 60 + f'\n{fast_failure_script}\n' + "-" * 60)
