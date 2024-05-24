@@ -3,13 +3,7 @@ import tempfile
 import subprocess
 
 from ..config import DEBUG
-
-
-def get_setting(setting_name):
-    settings = {
-        'shell': 'bash' if os.name != 'nt' else 'cmd'  # Default to cmd on Windows
-    }
-    return settings.get(setting_name, 'bash')
+from ..config import get_setting
 
 
 SHELL = get_setting('shell')
@@ -48,19 +42,23 @@ def _run_shell(script, raise_on_error=None, capture_stdout=True,
             'return_output=True can only be used with capture_stdout=True'
         )
 
-    # Make sure the script fails at first failure
-    if SHELL == 'bash':
+    is_fish = 'fish' in f"{SHELL}"
+    is_bash = 'bash' in f"{SHELL}"
+
+    # Make sure the script fail at first failure
+    if is_fish:
+        fast_failure_script = f"begin; {script}; or exit 1; end"
+    elif is_bash:
         fast_failure_script = f"set -e\n{script}"
     else:
         fast_failure_script = f"@echo off\n{script}"
 
     # Use a TemporaryFile to make sure this file is cleaned up at
     # the end of this function.
-    tmp = tempfile.NamedTemporaryFile(
-        mode="w+", delete=False, suffix=".sh" if os.name != 'nt' else ".bat")
+    tmp = tempfile.NamedTemporaryFile(mode="w+", delete=False,
+                                       suffix=".sh" if os.name != 'nt' else ".bat")
     tmp.write(fast_failure_script)
     tmp.flush()
-    tmp.close()
 
     if DEBUG:
         print("-" * 60 + f'\n{fast_failure_script}\n' + "-" * 60)
@@ -68,18 +66,16 @@ def _run_shell(script, raise_on_error=None, capture_stdout=True,
     if raise_on_error is True:
         raise_on_error = "{output}"
 
-    if SHELL == 'bash':
+    if is_fish or is_bash:
         command = f"{SHELL} {tmp.name}"
     else:
         command = f"cmd /c {tmp.name}"
 
     if capture_stdout:
-        result = subprocess.run(command, shell=True, capture_output=True, text=True)
-        exit_code, output = result.returncode, result.stdout
+        exit_code, output = subprocess.getstatusoutput(command)
     else:
         exit_code = os.system(command)
         output = ""
-
     if raise_on_error is not None and exit_code != 0:
         if isinstance(raise_on_error, str):
             raise RuntimeError(raise_on_error.format(output=output))
@@ -92,9 +88,6 @@ def _run_shell(script, raise_on_error=None, capture_stdout=True,
                 "Bad value for `raise_on_error`. Should be a str, a callable, "
                 f"a bool or None. Got {raise_on_error}."
             )
-
-    os.unlink(tmp.name)  # Clean up the temporary file
-
     if return_output:
         return exit_code, output
     return exit_code

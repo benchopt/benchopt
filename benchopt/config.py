@@ -21,7 +21,7 @@ DEFAULT_GLOBAL_CONFIG = {
     'github_token': None,
     'data_dir': './data/',
     'conda_cmd': 'conda',
-    'shell': os.environ.get('SHELL', 'bash'),
+    'shell': os.environ.get('SHELL', 'bash' if os.name != 'nt' else 'cmd.exe'),
     'cache': None,
 }
 """
