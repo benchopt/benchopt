@@ -27,6 +27,9 @@ CLI
 - Add ``--collect`` option to allow gathering results which are already
   in cache in a single parquet file. By `Thomas Moreau`_ (:gh:`710`)
 
+- Add ``--download`` option in ``benchopt install`` to allow downloading
+  the data when installing the benchmark. By `Thomas Moreau`_ (:gh:`718`)
+
 FIX
 ~~~
 
