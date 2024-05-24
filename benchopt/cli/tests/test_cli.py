@@ -457,14 +457,14 @@ class TestInstallCmd:
     def test_invalid_dataset(self):
         with pytest.raises(click.BadParameter, match=r"invalid_dataset"):
             install([str(DUMMY_BENCHMARK_PATH), '-d', 'invalid_dataset',
-                     '-s', 'pgd'], 'benchopt', standalone_mode=False)
+                     '-y'], 'benchopt', standalone_mode=False)
 
     def test_invalid_solver(self):
         with pytest.raises(click.BadParameter, match=r"invalid_solver"):
-            install([str(DUMMY_BENCHMARK_PATH), '-s', 'invalid_solver'],
-                    'benchopt', standalone_mode=False)
+            install([str(DUMMY_BENCHMARK_PATH), '-s', 'invalid_solver',
+                     '-y'], 'benchopt', standalone_mode=False)
 
-    def test_benchopt_install(self):
+    def test_valid_call(self):
         with CaptureRunOutput() as out:
             install(
                 [str(DUMMY_BENCHMARK_PATH), '-d', SELECT_ONE_SIMULATED, '-s',
