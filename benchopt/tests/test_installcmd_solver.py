@@ -8,10 +8,10 @@ def test_invalid_install_cmd():
     # Solver with an invalid install command
     invalid_solver = """
     from benchopt import BaseSolver, safe_import_context
-    
+
     with safe_import_context() as import_ctx:
         raise ImportError()
-    
+
 
     class Solver(BaseSolver):
         name = "invalid-solver"
@@ -45,7 +45,9 @@ def test_conda_default_install_cmd():
     """
 
     with temp_benchmark(solvers=[solver_noinstall]) as benchmark:
-        SolverClass, _ = benchmark.check_solver_patterns(["solver-no-install-cmd"])[0]
+        SolverClass, _ = benchmark.check_solver_patterns(
+            ["solver-no-install-cmd"]
+            )[0]
         solver_instance = SolverClass()
 
         # Check that the default 'install_cmd' is 'conda'
