@@ -47,7 +47,7 @@ def test_conda_default_install_cmd():
     with temp_benchmark(solvers=[solver_noinstall]) as benchmark:
         SolverClass, _ = benchmark.check_solver_patterns(
             ["solver-no-install-cmd"]
-            )[0]
+        )[0]
         solver_instance = SolverClass()
 
         # Check that the default 'install_cmd' is 'conda'
