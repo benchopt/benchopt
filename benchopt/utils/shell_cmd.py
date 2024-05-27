@@ -43,20 +43,21 @@ def _run_shell(script, raise_on_error=None, capture_stdout=True,
         )
 
     is_fish = 'fish' in f"{SHELL}"
-    is_bash = 'bash' in f"{SHELL}"
+    is_cmd = 'cmd.exe' in f"{SHELL}"
 
     # Make sure the script fail at first failure
     if is_fish:
         fast_failure_script = f"begin; {script}; or exit 1; end"
-    elif is_bash:
-        fast_failure_script = f"set -e\n{script}"
-    else:
+    elif is_cmd:
         fast_failure_script = f"@echo off\n{script}"
+    else:
+        fast_failure_script = f"set -e\n{script}"
 
     # Use a TemporaryFile to make sure this file is cleaned up at
     # the end of this function.
-    tmp = tempfile.NamedTemporaryFile(mode="w+", delete=False,
-                                       suffix=".sh" if os.name != 'nt' else ".bat")
+    tmp = tempfile.NamedTemporaryFile(
+        mode="w+", delete=False, suffix=".sh" if not is_cmd else ".bat"
+    )
     tmp.write(fast_failure_script)
     tmp.flush()
 
@@ -66,10 +67,10 @@ def _run_shell(script, raise_on_error=None, capture_stdout=True,
     if raise_on_error is True:
         raise_on_error = "{output}"
 
-    if is_fish or is_bash:
-        command = f"{SHELL} {tmp.name}"
-    else:
+    if is_cmd:
         command = f"cmd /c {tmp.name}"
+    else:
+        command = f"{SHELL} {tmp.name}"
 
     if capture_stdout:
         exit_code, output = subprocess.getstatusoutput(command)
@@ -124,7 +125,7 @@ def _run_shell_in_conda_env(script, env_name=None, raise_on_error=None,
     if env_name not in [None, "False"]:
         # first line to use conda activate in bash script
         # Add necessary calls to make the script run in conda env.
-        if os.name == 'nt':
+        if is_cmd:
             # Windows specific handling
             script = (
                 # Make sure R_HOME is unset in Windows to avoid conflicts

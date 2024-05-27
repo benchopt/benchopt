@@ -1,4 +1,5 @@
 import os
+import sys
 import stat
 import warnings
 import configparser
@@ -15,13 +16,18 @@ CONFIG_FILE_NAME = 'benchopt.yml'
 # sensitive information such as the Github token.
 GLOBAL_CONFIG_FILE_MODE = stat.S_IFREG | stat.S_IRUSR | stat.S_IWUSR
 
+if sys.platform != 'win32':
+    DEFAULT_SHELL = 'bash'
+else:
+    DEFAULT_SHELL = 'cmd.exe'
+
 DEFAULT_GLOBAL_CONFIG = {
     'debug': False,
     'raise_install_error': False,
     'github_token': None,
     'data_dir': './data/',
     'conda_cmd': 'conda',
-    'shell': os.environ.get('SHELL', 'bash' if os.name != 'nt' else 'cmd.exe'),
+    'shell': os.environ.get('SHELL', DEFAULT_SHELL),
     'cache': None,
 }
 """
