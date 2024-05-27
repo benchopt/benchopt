@@ -6,8 +6,11 @@ Install a benchmark
 In order to make it easy to run a new benchmark, benchopt provides an interface
 to specify and install requirements for the various component of the benchmarks.
 
-- The minimal requirements that are necessary to run the benchmark are
-  specified in ``objective.py``. They can be installed using the command
+- By default, calling ``benchopt install .`` will install the requirements for the
+   benchmark, including all solvers and datasets.
+
+- The minimum requirements to run the benchmark are specified in
+  ``objective.py``. They can be installed using the command
   ``benchopt install --minimal``.
 
 - The requirements that are specific to each ``Dataset/Solver`` can be
@@ -17,14 +20,15 @@ to specify and install requirements for the various component of the benchmarks.
 
 .. _specify_requirements:
 
-Specify requirements
+Specifying requirements
 -----------------------
 
 To specify how dependencies should be installed, you can use the ``install_cmd`` class attribute.
 This attribute accepts two possible values:
 
 1. ``conda`` (default): Dependencies will be installed using Conda. In this case, you should 
-  specify the required dependencies in the ``requirements`` class attribute.
+  specify the required dependencies in the ``requirements`` class attribute. Note that
+  dependencies to install with ``pip`` are also specified with this option.
 
 2. ``shell``: This option allows you to provide a custom shell script for installing dependencies. 
   When using this value, you need to set the ``install_script`` class attribute to the path of your shell script.

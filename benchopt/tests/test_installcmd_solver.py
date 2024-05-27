@@ -7,7 +7,11 @@ from benchopt.utils.temp_benchmark import temp_benchmark
 def test_invalid_install_cmd():
     # Solver with an invalid install command
     invalid_solver = """
-    from benchopt import BaseSolver
+    from benchopt import BaseSolver, safe_import_context
+    
+    with safe_import_context() as import_ctx:
+        raise ImportError()
+    
 
     class Solver(BaseSolver):
         name = "invalid-solver"
