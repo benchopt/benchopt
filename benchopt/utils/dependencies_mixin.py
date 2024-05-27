@@ -37,7 +37,8 @@ class DependenciesMixin:
         return cls.__module__.split(".")[-1]
 
     @classmethod
-    def is_installed(cls, env_name=None, raise_on_not_installed=None, quiet=False):
+    def is_installed(cls, env_name=None, raise_on_not_installed=None,
+                     quiet=False):
         """Check if the module caught a failed import to assert install.
 
         Parameters
@@ -74,8 +75,7 @@ class DependenciesMixin:
                     f"{cls._module_filename} {cls._base_class_name}",
                     env_name=env_name,
                     raise_on_error=raise_on_not_installed,
-                )
-                == 0
+                ) == 0
             )
 
     @classmethod
@@ -105,14 +105,15 @@ class DependenciesMixin:
 
         env_suffix = f" in '{env_name}'" if env_name else ""
         if force or not is_installed:
-            print(f"- Installing '{cls.name}'{env_suffix}:...", end="", flush=True)
+            print(f"- Installing '{cls.name}'{env_suffix}:...",
+                  end="", flush=True)
             try:
                 cls._pre_install_hook(env_name=env_name)
                 if cls.install_cmd == "conda":
                     if hasattr(cls, "requirements"):
-                        install_in_conda_env(
-                            *cls.requirements, env_name=env_name, force=force
-                        )
+                        install_in_conda_env(*cls.requirements,
+                                             env_name=env_name,
+                                             force=force)
                     else:
                         # get details of class
                         cls_type = cls.__base__.__name__.replace("Base", "")
@@ -131,8 +132,7 @@ class DependenciesMixin:
                         )
                 elif cls.install_cmd == "shell":
                     install_file = (
-                        cls._module_filename.parents[1]
-                        / "install_scripts"
+                        cls._module_filename.parents[1] / "install_scripts"
                         / cls.install_script
                     )
                     shell_install_in_conda_env(install_file, env_name=env_name)
@@ -181,8 +181,7 @@ class DependenciesMixin:
             cls._pre_install_hook(env_name=env_name)
             if cls.install_cmd == "shell":
                 shell_install_scripts = [
-                    cls._module_filename.parents[1]
-                    / "install_scripts"
+                    cls._module_filename.parents[1] / "install_scripts"
                     / cls.install_script
                 ]
             else:
@@ -198,7 +197,9 @@ class DependenciesMixin:
                 f"  No ImportError raised from {cls._module_filename}."
             )
 
-        return conda_reqs, shell_install_scripts, post_install_hooks, missing_deps
+        return (
+            conda_reqs, shell_install_scripts, post_install_hooks, missing_deps
+            )
 
     @classmethod
     def _pre_install_hook(cls, env_name=None):
