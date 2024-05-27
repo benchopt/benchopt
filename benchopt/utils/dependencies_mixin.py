@@ -199,7 +199,7 @@ class DependenciesMixin:
 
         return (
             conda_reqs, shell_install_scripts, post_install_hooks, missing_deps
-            )
+        )
 
     @classmethod
     def _pre_install_hook(cls, env_name=None):
