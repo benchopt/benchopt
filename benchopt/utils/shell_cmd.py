@@ -8,6 +8,9 @@ from ..config import get_setting
 
 SHELL = get_setting('shell')
 
+is_fish = 'fish' in f"{SHELL}"
+is_cmd = 'cmd.exe' in f"{SHELL}"
+
 
 def _run_shell(script, raise_on_error=None, capture_stdout=True,
                return_output=False):
@@ -41,9 +44,6 @@ def _run_shell(script, raise_on_error=None, capture_stdout=True,
         raise ValueError(
             'return_output=True can only be used with capture_stdout=True'
         )
-
-    is_fish = 'fish' in f"{SHELL}"
-    is_cmd = 'cmd.exe' in f"{SHELL}"
 
     # Make sure the script fail at first failure
     if is_fish:
@@ -131,7 +131,8 @@ def _run_shell_in_conda_env(script, env_name=None, raise_on_error=None,
                 # Make sure R_HOME is unset in Windows to avoid conflicts
                 'SET "R_HOME="\n'
 
-                # Activate the conda environment using `CALL` to make sure it affects the current session
+                # Activate the conda environment using `CALL`
+                # to make sure it affects the current session
                 f'CALL conda activate {env_name}\n\n'
 
                 # Run the actual script
@@ -140,7 +141,8 @@ def _run_shell_in_conda_env(script, env_name=None, raise_on_error=None,
         else:
             script = (
                 # Make sure R_HOME is never passed down to subprocesses in
-                # different conda env as it might lead to trying to load packages
+                # different conda env as it might lead
+                # to trying to load packages
                 # from the wrong R-environment.
                 '# Setup conda\nunset R_HOME\n'
 
