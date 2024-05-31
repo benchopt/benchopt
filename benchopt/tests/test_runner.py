@@ -5,9 +5,10 @@ import pytest
 from benchopt.tests import TEST_SOLVER
 from benchopt.tests import TEST_DATASET
 from benchopt.tests import TEST_OBJECTIVE
-from benchopt.benchmark import _filter_classes
+from benchopt.benchmark import _check_patterns
 from benchopt.benchmark import _extract_options
 from benchopt.benchmark import _extract_parameters
+from benchopt.benchmark import _list_parametrized_classes
 
 
 class MockOutput:
@@ -46,14 +47,14 @@ def test_skip_api():
     assert reason == 'X is all zeros'
 
 
-def test_get_one_solution():
+def test_get_one_result():
     dataset = TEST_DATASET.get_instance()
     objective = TEST_OBJECTIVE.get_instance()
     objective.set_dataset(dataset)
 
-    one_solution = objective.get_one_solution()
+    one_solution = objective.get_one_result()
     expected = np.zeros(objective.X.shape[1])
-    assert all(one_solution == expected)
+    assert all(one_solution['beta'] == expected)
 
 
 def _assert_parameters_equal(instance, parameters):
@@ -70,7 +71,9 @@ def test_filter_classes_two_parameters():
     # Test the selection of dataset with optional parameters.
 
     def filt_(filters):
-        return list(_filter_classes(TEST_DATASET_TWO_PARAMS, filters=filters))
+        return list(_list_parametrized_classes(*_check_patterns(
+            [TEST_DATASET_TWO_PARAMS], filters
+        )))
 
     # no selection (default grid)
     results = filt_(["Test-Dataset"])
@@ -114,15 +117,18 @@ def test_filter_classes_two_parameters():
     results = filt_(
         ["Test-Dataset[n_samples=[foo,bar], n_features=[True, False]]"])
     assert len(results) == 4
-    _assert_parameters_equal(results[0][0],
-                             dict(n_samples="foo", n_features=True))
-    _assert_parameters_equal(results[1][0],
-                             dict(n_samples="foo", n_features=False))
-    _assert_parameters_equal(results[2][0],
-                             dict(n_samples="bar", n_features=True))
-    _assert_parameters_equal(results[3][0],
-                             dict(n_samples="bar", n_features=False))
-
+    _assert_parameters_equal(
+        results[0][0], dict(n_samples="foo", n_features=True)
+    )
+    _assert_parameters_equal(
+        results[1][0], dict(n_samples="foo", n_features=False)
+    )
+    _assert_parameters_equal(
+        results[2][0], dict(n_samples="bar", n_features=True)
+    )
+    _assert_parameters_equal(
+        results[3][0], dict(n_samples="bar", n_features=False)
+    )
     # get list of tuples
     results = filt_(
         ["Test-Dataset['n_samples, n_features'=[(41, 19), (42, 20)]]"])
@@ -148,7 +154,9 @@ def test_filter_classes_one_param():
     # Test the selection of dataset with only one parameter.
 
     def filt_(filters):
-        return list(_filter_classes(TEST_DATASET_ONE_PARAM, filters=filters))
+        return list(_list_parametrized_classes(*_check_patterns(
+            [TEST_DATASET_ONE_PARAM], filters
+        )))
 
     # test positional parameter
     results = filt_(["Test-Dataset[42]"])

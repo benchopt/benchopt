@@ -166,31 +166,19 @@ class DependenciesMixin:
         """
         is_installed = cls.is_installed(env_name=env_name)
 
+        missing_deps = None
         conda_reqs, shell_install_scripts, post_install_hooks = [], [], []
         if force or not is_installed:
             cls._pre_install_hook(env_name=env_name)
-            if cls.install_cmd == 'conda':
-                conda_reqs = getattr(cls, "requirements", [])
-                if not is_installed and len(conda_reqs) == 0:
-                    # get details of class
-                    cls_type = cls.__base__.__name__.replace("Base", "")
-                    raise AttributeError(
-                        f"Could not find dependencies for {cls.name} "
-                        f"{cls_type} while it is not importable. This is "
-                        "probably due to missing dependency specification. "
-                        "The dependencies should be specified in class "
-                        "attribute `requirements`.\n"
-                        "Examples:\n"
-                        "   requirements = ['pkg'] # conda package `pkg`\n"
-                        "   requirements = ['chan:pkg'] # package `pkg` in"
-                        "conda channel `chan`\n"
-                        "   requirements = ['pip:pkg'] # PyPi package `pkg`"
-                    )
-            elif cls.install_cmd == 'shell':
+            if cls.install_cmd == 'shell':
                 shell_install_scripts = [
                     cls._module_filename.parents[1] / 'install_scripts' /
                     cls.install_script
                 ]
+            else:
+                conda_reqs = getattr(cls, "requirements", [])
+                if not is_installed and len(conda_reqs) == 0:
+                    missing_deps = cls
             post_install_hooks = [cls._post_install_hook]
         else:
             env_suffix = f" in '{env_name}'" if env_name else ''
@@ -200,7 +188,9 @@ class DependenciesMixin:
                 f"  No ImportError raised from {cls._module_filename}."
             )
 
-        return conda_reqs, shell_install_scripts, post_install_hooks
+        return (
+            conda_reqs, shell_install_scripts, post_install_hooks, missing_deps
+        )
 
     @classmethod
     def _pre_install_hook(cls, env_name=None):

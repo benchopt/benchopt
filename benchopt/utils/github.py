@@ -18,8 +18,6 @@ def get_file_content(repo, branch, git_path):
 def publish_result_file(benchmark, file_path, token):
     "Upload a result file to github for a given benchmark."
 
-    benchmark_name = benchmark.name
-
     # Get file to upload and content
     file_to_upload = Path(file_path)
     if not file_to_upload.exists():
@@ -32,8 +30,8 @@ def publish_result_file(benchmark, file_path, token):
     with file_to_upload.open(file_mode) as f:
         file_content = f.read()
 
-    git_path = f"benchmarks/{benchmark_name}/outputs/{file_to_upload.name}"
-    file_name = f'{benchmark_name}/{file_to_upload.name}'
+    git_path = f"benchmarks/{benchmark.name}/outputs/{file_to_upload.name}"
+    file_name = f'{benchmark.name}/{file_to_upload.name}'
 
     # Get github API and origin repo
     g = Github(login_or_token=token)
@@ -42,7 +40,7 @@ def publish_result_file(benchmark, file_path, token):
 
     # Get a fork of the repo and a branch with the file name
     repo = origin.create_fork()
-    branch = f"{username}/{benchmark_name}"
+    branch = f"{username}/{benchmark.name}"
     try:
         repo.get_branch(branch)
     except GithubException:
@@ -66,21 +64,22 @@ def publish_result_file(benchmark, file_path, token):
 
     # Check if benchmark_meta.json file exists
     meta_content = {
-        "pretty_name": benchmark.pretty_name
+        "pretty_name": benchmark.pretty_name,
+        "url": benchmark.url,
     }
     meta_prev_content, meta_prev_content_sha = get_file_content(
-        repo, branch, f"benchmarks/{benchmark_name}/benchmark_meta.json"
+        repo, branch, f"benchmarks/{benchmark.name}/benchmark_meta.json"
     )
     meta_content = json.dumps(meta_content)
     if meta_prev_content == meta_content:
         print("INFO: benchmark_meta.json already exists.")
 
     if meta_prev_content is None:
-        repo.create_file(f"benchmarks/{benchmark_name}/benchmark_meta.json",
+        repo.create_file(f"benchmarks/{benchmark.name}/benchmark_meta.json",
                          "Create benchmark_meta.json",
                          meta_content, branch=branch)
     else:
-        repo.update_file(f"benchmarks/{benchmark_name}/benchmark_meta.json",
+        repo.update_file(f"benchmarks/{benchmark.name}/benchmark_meta.json",
                          "Update benchmark_meta.json",
                          meta_content, sha=meta_prev_content_sha,
                          branch=branch)
@@ -93,7 +92,7 @@ def publish_result_file(benchmark, file_path, token):
     else:
         pr = origin.create_pull(
             title=f"RESULTS upload {file_name}",
-            body=f"Loading result file for benchmark {benchmark_name}.",
+            body=f"Loading result file for benchmark {benchmark.name}.",
             base=origin.default_branch, head=head
         )
         print(f"Created PR on benchopt results repo: {pr.html_url}")

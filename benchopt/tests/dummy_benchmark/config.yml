@@ -1,0 +1,19 @@
+plots:
+- objective_curve
+- suboptimality_curve
+- relative_suboptimality_curve
+- bar_chart
+
+plot_configs:
+  Init:
+    objective_column: objective_value
+    kind: suboptimality_curve
+    ylim: [5e-11, 100]
+    scale: loglog
+  View 2:
+    objective_column: objective_mse
+    kind: objective_curve
+    xlim: [1, 120]
+    ylim: [5e1, 3.8e2]
+    scale: semilog-x
+    xaxis_type: Iteration
