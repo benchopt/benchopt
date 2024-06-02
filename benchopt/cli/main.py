@@ -369,6 +369,9 @@ def run(config_file=None, **kwargs):
               shell_complete=complete_config_files,
               help="YAML configuration file containing benchmark options, "
               "whose solvers and datasets will be installed.")
+@click.option('--download', is_flag=True,
+              help="If this flag is set, call `Dataset.get_data` for all "
+              "datasets, to make sure the data are present on the system.")
 @click.option('--env', '-e', 'env_name',
               flag_value='True', type=str, default='False',
               help="Install all requirements in a dedicated "
@@ -395,7 +398,7 @@ def run(config_file=None, **kwargs):
 def install(
         benchmark, minimal, solver_names, dataset_names, config_file=None,
         force=False, recreate=False, env_name='False', confirm=False,
-        quiet=False):
+        quiet=False, download=False):
 
     if config_file is not None:
         with open(config_file, "r") as f:
@@ -407,10 +410,8 @@ def install(
             forced_solvers = config.get("force-solver", tuple())
             solver_names = list(set(solver_names).union(set(forced_solvers)))
 
-    # Check that the dataset/solver patterns match actual dataset
+    # Instanciate the benchmark
     benchmark = Benchmark(benchmark)
-    benchmark.check_dataset_patterns(dataset_names)
-    benchmark.check_solver_patterns(solver_names)
 
     # Get a list of all conda envs
     default_conda_env, conda_envs = list_conda_envs()
@@ -460,11 +461,26 @@ def install(
         # create environment if necessary
         create_conda_env(env_name, recreate=recreate, quiet=quiet)
 
+    # List solver and datasets classes to install
+    if len(dataset_names) == 0 and len(solver_names) > 0:
+        datasets = []
+    else:
+        datasets = benchmark.check_dataset_patterns(
+            dataset_names, class_only=True
+        )
+    if len(solver_names) == 0 and len(dataset_names) > 0:
+        solvers = []
+    else:
+        solvers = benchmark.check_solver_patterns(
+            solver_names, class_only=True
+        )
+
     # install requirements
     print("# Install", flush=True)
     benchmark.install_all_requirements(
-        include_solvers=solver_names, include_datasets=dataset_names,
+        include_solvers=solvers, include_datasets=datasets,
         minimal=minimal, env_name=env_name, force=force, quiet=quiet,
+        download=download
     )
 
 
