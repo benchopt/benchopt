@@ -139,7 +139,7 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
             if to_save is not None:
                 final_results = benchmark.get_output_folder() / 'final_results'
                 final_results /= f"{hash(meta)}.pkl"
-                final_results.parent.mkdir(exist=True, parents=True)
+                final_results.parent.mkdir(exist_ok=True, parents=True)
                 with open(final_results, 'wb') as f:
                     pickle.dump(to_save, f)
                 meta['final_results'] = final_results
