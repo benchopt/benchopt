@@ -194,7 +194,7 @@ def run(config_file=None, **kwargs):
 
     # If --no-timeout is set and --timeout is not, skip this block and keep timeout=None
     if timeout != None and no_timeout:
-        raise Exception('You cannot both specify the --timeout and --no-timeout options.')
+        raise Exception('You cannot specify both --timeout and --no-timeout options.')
     elif timeout == None and no_timeout == False:
         timeout = get_setting('default_timeout')
     elif no_timeout == False:
@@ -329,7 +329,6 @@ def run(config_file=None, **kwargs):
         rf"--n-repetitions {n_repetitions} "
         rf"--max-runs {max_runs} --timeout {timeout} "
         rf"--n-jobs {n_jobs} {'--slurm' if slurm else ''} "
-        rf"--no-timeout {no_timeout} "
         rf"{solvers_option} {forced_solvers_option} "
         rf"{datasets_option} {objective_option} "
         rf"{'--plot' if plot else '--no-plot'} "
