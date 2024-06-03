@@ -314,13 +314,23 @@ def test_run_once_callback(n_iter):
         out.check_output(rf"RUNONCE\({n_iter}\)", repetition=1)
 
 
-def test_paths_config_key():
+@pytest.mark.parametrize("test_case", ["without_data_home", "with_data_home"])
+def test_paths_config_key(test_case):
     with temp_config_file() as config_file:
         with open(config_file, 'r+') as f:
-            f.write("""
-        paths:
-            data: /path/to/data
-        """)
+            if test_case == "without_data_home":
+                f.write("""
+                    paths:
+                        data: /path/to/data
+                """)
+            elif test_case == "with_data_home":
+                f.write("""
+                    data_home: /path/to/home_data
+                    paths:
+                        data: path/to/data
+                """)
+            else:
+                raise Exception("Invalid test case value")
 
         dataset = f"""
             from benchopt import BaseDataset, safe_import_context
@@ -335,12 +345,8 @@ def test_paths_config_key():
                 requirements = []
 
                 def get_data(self):
-                    paths = config.get_setting(
-                        "paths",
-                        Path("{config_file}"),
-                        "temp_benchmark"
-                    )
-                    print(paths['data'])
+                    path = config.get_data_path(key="data")
+                    print(path)
 
                     return dict(X=np.random.rand(3, 2), y=np.ones((3,)))
         """
@@ -353,4 +359,9 @@ def test_paths_config_key():
                     *'-o dummy*[reg=0.5]'.split()
                 ], standalone_mode=False)
 
-            out.check_output(r"/path/to/data", repetition=1)
+            if test_case == "without_data_home":
+                out.check_output(r"path/to/data", repetition=1)
+            elif test_case == "with_data_home":
+                out.check_output(r"/path/to/home_data/path/to/data", repetition=1)
+            else:
+                raise Exception("Invalid test case value")

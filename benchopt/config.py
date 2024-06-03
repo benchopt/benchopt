@@ -7,7 +7,6 @@ from pathlib import Path
 from collections.abc import Iterable
 from benchopt.constants import PLOT_KINDS
 
-
 BOOLEAN_STATES = configparser.ConfigParser.BOOLEAN_STATES
 CONFIG_FILE_NAME = 'benchopt.yml'
 
@@ -293,27 +292,26 @@ def get_setting(name, config_file=None, benchmark_name=None,
     return value
 
 
-def get_data_path(key: str = None, config_file=None, benchmark_name=None,
-                  default_config=None):
-    data_home = get_setting("data_home", config_file, benchmark_name,
-                            default_config)
+def get_data_path(key: str = None):
+    from .benchmark import get_running_benchmark
+    benchmark = get_running_benchmark()
+
+    data_home = benchmark.get_setting("data_home")
 
     if data_home == "":
-        data_home = "/Users/melvinenargeot/Dev/benchmarks/map_benchmark/data"
-        # TODO: change this for a correct solution
+        data_home = benchmark.benchmark_dir
 
     path = Path(data_home)
 
     if key is not None:
-        data_paths = get_setting(
-            "data_paths", config_file, benchmark_name, default_config)
+        data_paths = benchmark.get_setting("data_paths")
 
         if key in data_paths and data_paths[key] is not None:
             path = Path(data_paths[key])
         else:
             path = path / key
 
-    return path
+    return data_home / path
 
 
 def parse_value(value, default_value):
