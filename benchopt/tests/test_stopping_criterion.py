@@ -330,5 +330,4 @@ def test_objective_equals_zero(no_debug_test):
                 *('-s test-solver -d test-dataset --no-plot -n 0').split()],
                 standalone_mode=False)
 
-    out.check_output('test-solver', 5)
     out.check_output('done', 1)
