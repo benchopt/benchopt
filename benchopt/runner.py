@@ -131,7 +131,8 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
                     stop_val, curve
                 )
         # Only run if save_final_results is defined in the objective.
-        if objective.save_final_results is not super(objective).save_final_results:
+        base = super(objective)
+        if objective.save_final_results is not base.save_final_results:
             to_save = objective.save_final_results(**solver.get_result())
             if to_save is not None:
                 final_results = benchmark.get_output_folder() / 'final_results'
