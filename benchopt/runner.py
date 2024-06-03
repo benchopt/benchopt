@@ -132,7 +132,7 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
                 )
         # Only run if save_final_results is defined in the objective.
         klass = type(objective)
-        base_klass = super(klass)
+        base_klass = super(klass, objective)
         if klass.save_final_results is not base_klass.save_final_results:
             to_save = objective.save_final_results(**solver.get_result())
             if to_save is not None:
