@@ -1,12 +1,9 @@
 import pytest
 import tempfile
 
-from pathlib import Path
-
 from benchopt.cli.main import run
 from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.utils.dynamic_modules import _load_class_from_module
-from benchopt.utils.parquet import get_metadata
 
 from benchopt.tests import SELECT_ONE_PGD
 from benchopt.tests import SELECT_ONE_SIMULATED
@@ -143,13 +140,14 @@ def test_objective_save_final_results(no_debug_test):
     with temp_benchmark(objective=save_final) as benchmark:
         with CaptureRunOutput(delete_result_files=False) as out:
             run([
-                str(benchmark.benchmark_dir), *('-s python-pgd -d test-dataset -n 1 '
-                '-r 1 --no-plot').split()
+                str(benchmark.benchmark_dir),
+                *('-s python-pgd -d test-dataset -n 1 -r 1 --no-plot').split()
             ],  standalone_mode=False)
         data = pd.read_parquet(out.result_files[0])
-        with open(data.loc[0,"final_results"], "rb") as final_result_file:
+        with open(data.loc[0, "final_results"], "rb") as final_result_file:
             final_results = pickle.load(final_result_file)
     assert final_results == "test_value"
+
 
 def test_objective_cv_splitter(no_debug_test):
 
