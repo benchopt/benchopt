@@ -1,1 +1,4 @@
+conda info
+pip freeze
+
 
