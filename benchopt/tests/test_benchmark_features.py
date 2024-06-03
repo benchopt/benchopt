@@ -13,7 +13,6 @@ from benchopt.tests import DUMMY_BENCHMARK_PATH
 from benchopt.tests.utils import patch_import
 from benchopt.tests.utils import patch_benchmark
 from benchopt.tests.utils import CaptureRunOutput
-from benchopt.tests.test_config import temp_config_file
 
 
 def test_template_dataset():
@@ -316,55 +315,49 @@ def test_run_once_callback(n_iter):
 
 @pytest.mark.parametrize("test_case", ["without_data_home", "with_data_home"])
 def test_paths_config_key(test_case):
-    with temp_config_file() as config_file:
-        with open(config_file, 'r+') as f:
-            if test_case == "without_data_home":
-                f.write("""
-                    paths:
-                        data: /path/to/data
-                """)
-            elif test_case == "with_data_home":
-                f.write("""
-                    data_home: /path/to/home_data
-                    paths:
-                        data: path/to/data
-                """)
-            else:
-                raise Exception("Invalid test case value")
-
-        dataset = """
-            from benchopt import BaseDataset, safe_import_context
-            from benchopt import config
-
-            with safe_import_context() as import_ctx:
-                import numpy as np
-                from pathlib import Path
-
-            class Dataset(BaseDataset):
-                name = "Simulated"
-                requirements = []
-
-                def get_data(self):
-                    path = config.get_data_path(key="data")
-                    print(path)
-
-                    return dict(X=np.random.rand(3, 2), y=np.ones((3,)))
+    if test_case == "without_data_home":
+        config = """
+            data_paths:
+                data: /path/to/data
         """
+    elif test_case == "with_data_home":
+        config = """
+            data_home: /path/to/home_data
+            data_paths:
+                data: path/to/data
+        """
+    else:
+        raise Exception("Invalid test case value")
 
-        with temp_benchmark(datasets=[dataset]) as benchmark:
-            with CaptureRunOutput() as out:
-                run([
-                    str(benchmark.benchmark_dir),
-                    *'-n 0 -r 1 --no-plot'.split(),
-                    *'-o dummy*[reg=0.5]'.split()
-                ], standalone_mode=False)
+    custom_dataset = """
+        from benchopt import BaseDataset
+        from benchopt import config
+        import numpy as np
 
-            if test_case == "without_data_home":
-                out.check_output(r"path/to/data", repetition=1)
-            elif test_case == "with_data_home":
-                out.check_output(
-                    r"/path/to/home_data/path/to/data",
-                    repetition=1
-                )
-            else:
-                raise Exception("Invalid test case value")
+        class Dataset(BaseDataset):
+            name = "custom_dataset"
+            def get_data(self):
+                path = config.get_data_path(key="data")
+                print(f"PATH${path}")
+
+                return dict(X=np.random.rand(3, 2), y=np.ones((3,)))
+    """
+
+    with temp_benchmark(datasets=[custom_dataset], config=config) as benchmark:
+        with CaptureRunOutput() as out:
+            run([
+                str(benchmark.benchmark_dir),
+                *'-s solver-test -d custom_dataset'
+                 ' -n 0 -r 1 --no-plot'.split(),
+                *'-o dummy*[reg=0.5]'.split()
+            ], standalone_mode=False)
+
+        if test_case == "without_data_home":
+            out.check_output(r"path/to/data", repetition=1)
+        elif test_case == "with_data_home":
+            out.check_output(
+                r"/path/to/home_data/path/to/data",
+                repetition=1
+            )
+        else:
+            raise Exception("Invalid test case value")

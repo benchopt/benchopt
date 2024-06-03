@@ -293,6 +293,16 @@ def get_setting(name, config_file=None, benchmark_name=None,
 
 
 def get_data_path(key: str = None):
+    """
+    Parameters
+    ----------
+    key (str): The key to look for in the configuration file.
+
+    Returns
+    -------
+    If the key exists in config, it returns the path associated to the key.
+    If the key does not exist, it returns the path ended by the key name.
+    """
     from .benchmark import get_running_benchmark
     benchmark = get_running_benchmark()
 
@@ -307,11 +317,11 @@ def get_data_path(key: str = None):
         data_paths = benchmark.get_setting("data_paths")
 
         if key in data_paths and data_paths[key] is not None:
-            path = Path(data_paths[key])
+            path = path / Path(data_paths[key])
         else:
             path = path / key
 
-    return data_home / path
+    return path
 
 
 def parse_value(value, default_value):
