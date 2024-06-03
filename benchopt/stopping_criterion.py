@@ -213,7 +213,7 @@ class StoppingCriterion():
         objective = objective_list[-1][self.key_to_monitor]
         delta_objective = self._prev_objective - objective
         first_objective = objective_list[0][self.key_to_monitor]
-        if first_objective == 0:
+        if first_objective != 0:
             delta_objective /= abs(first_objective)
         self._prev_objective = objective
 
