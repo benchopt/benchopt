@@ -424,7 +424,6 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
         """
         pass
 
-    @abstractmethod
     def save_final_results(self, **solver_result):
         """Save the final results of the solver.
 
