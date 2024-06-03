@@ -332,7 +332,7 @@ def test_paths_config_key(test_case):
             else:
                 raise Exception("Invalid test case value")
 
-        dataset = f"""
+        dataset = """
             from benchopt import BaseDataset, safe_import_context
             from benchopt import config
 
@@ -362,6 +362,9 @@ def test_paths_config_key(test_case):
             if test_case == "without_data_home":
                 out.check_output(r"path/to/data", repetition=1)
             elif test_case == "with_data_home":
-                out.check_output(r"/path/to/home_data/path/to/data", repetition=1)
+                out.check_output(
+                    r"/path/to/home_data/path/to/data",
+                    repetition=1
+                )
             else:
                 raise Exception("Invalid test case value")
