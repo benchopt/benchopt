@@ -212,8 +212,6 @@ class StoppingCriterion():
         objective = objective_list[-1][self.key_to_monitor]
         delta_objective = self._prev_objective - objective
         next_objective = objective_list[0][self.key_to_monitor]
-        if next_objective == 0:
-            delta_objective = delta_objective
         if next_objective != 0:
             delta_objective /= abs(next_objective)
         self._prev_objective = objective
@@ -434,8 +432,6 @@ class SufficientProgressCriterion(StoppingCriterion):
         objective = objective_list[-1][self.key_to_monitor]
         delta_objective = self._prev_objective - objective
         next_objective = objective_list[0][self.key_to_monitor]
-        if next_objective == 0:
-            delta_objective = delta_objective
         if next_objective != 0:
             delta_objective /= abs(next_objective)
         self._best_objective = min(
