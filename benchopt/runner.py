@@ -1,5 +1,6 @@
 import time
 import inspect
+import pickle
 
 from datetime import datetime
 
@@ -133,13 +134,12 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
         if hasattr(objective, "save_final_results"):
             to_save = objective.save_final_results(**solver.get_result())
             if to_save is not None:
-
-                final_results = benchmark.get_output_folder() / 'final_results' / f"{hash(meta)}.pkl"
-                final_result.parent.mkdir(exist=True, parents=True)
+                final_results = benchmark.get_output_folder() / 'final_results'
+                final_results /= f"{hash(meta)}.pkl"
+                final_results.parent.mkdir(exist=True, parents=True)
+                with open(final_results, 'wb') as f:
+                    pickle.dump(to_save, f)
                 meta['final_results'] = path
-                # hash meta  -> str.pkl
-                # save to folder benchmark.get_output_folder() / 'final_results' / hash(meta).pkl
-                # add the path to meta data
 
     return curve, ctx.status
 
