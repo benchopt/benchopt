@@ -139,7 +139,7 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
                 final_results.parent.mkdir(exist=True, parents=True)
                 with open(final_results, 'wb') as f:
                     pickle.dump(to_save, f)
-                meta['final_results'] = path
+                meta['final_results'] = final_results
 
     return curve, ctx.status
 
