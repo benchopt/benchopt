@@ -6,6 +6,7 @@ import tempfile
 from pathlib import Path
 
 import click
+import os
 import pytest
 from joblib.memory import _FUNCTION_HASHES
 from click.shell_completion import ShellComplete
@@ -31,6 +32,8 @@ from benchopt.cli.helpers import clean
 from benchopt.cli.helpers import archive
 from benchopt.cli.process_results import plot
 from benchopt.cli.process_results import generate_results
+
+from benchopt.config import get_setting
 
 
 ALL_BENCHMARKS = [str(DUMMY_BENCHMARK_PATH)]
@@ -173,6 +176,20 @@ class TestRunCmd:
 
         # Make sure the results were saved in a result file
         assert len(out.result_files) == 1, out.output
+
+    def test_no_timeout(self):
+        old_value = str(get_setting('default_timeout'))
+        os.environ['BENCHOPT_DEFAULT_TIMEOUT'] = "0"
+        with CaptureRunOutput() as out:
+            try:
+                run([str(DUMMY_BENCHMARK_PATH), '-d', SELECT_ONE_SIMULATED, '-f', 
+                    SELECT_ONE_PGD, '-o',SELECT_ONE_OBJECTIVE, '--no-plot', '--no-timeout'], 
+                    'benchopt', standalone_mode=False)
+            finally:
+                os.environ['BENCHOPT_DEFAULT_TIMEOUT'] = old_value
+
+        out.check_output('timeout', repetition=0)
+
 
     def test_custom_parameters(self):
         SELECT_DATASETS = r'simulated[n_features=[100, 200]]'

@@ -23,6 +23,7 @@ DEFAULT_GLOBAL_CONFIG = {
     'conda_cmd': 'conda',
     'shell': os.environ.get('SHELL', 'bash'),
     'cache': None,
+    'default_timeout': 100
 }
 """
 * ``debug``: If set to true, enable debug logs.
