@@ -294,7 +294,8 @@ def test_dual_strategy(no_debug_test):
                 run([str(benchmark.benchmark_dir),
                     *('-s test-solver -d test-dataset --no-plot').split()],
                     standalone_mode=False)
-                
+
+
 def test_objective_equals_zero(no_debug_test):
 
     objective = """from benchopt import BaseObjective
@@ -328,6 +329,6 @@ def test_objective_equals_zero(no_debug_test):
             run([str(benchmark.benchmark_dir),
                 *('-s test-solver -d test-dataset --no-plot -n 0').split()],
                 standalone_mode=False)
-            
+
     out.check_output('test-solver', 5)
     out.check_output('done', 1)
