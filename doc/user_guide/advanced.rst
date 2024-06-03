@@ -124,6 +124,7 @@ First, all code that need to be imported should be placed under
             └── submodule1.py  # some more helpers
 
 Then, these modules and packages can be imported as a regular package, i.e.,
+
 .. code-block::
 
     from benchopt import safe_import_context

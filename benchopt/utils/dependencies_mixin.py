@@ -198,7 +198,7 @@ class DependenciesMixin:
             post_install_hooks = [cls._post_install_hook]
         else:
             env_suffix = f" in '{env_name}'" if env_name else ""
-            colored_cls_name = colorify(f"{cls.name}", YELLOW)
+            colored_cls_name = colorify(cls.name, YELLOW)
             print(
                 f"- {colored_cls_name} already available{env_suffix}\n"
                 f"  No ImportError raised from {cls._module_filename}."
