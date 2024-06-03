@@ -3,7 +3,7 @@ import inspect
 
 from datetime import datetime
 
-from joblib import Parallel, delayed
+from joblib import Parallel, delayed, hash
 
 from .callback import _Callback
 from .utils.sys_info import get_sys_info
@@ -129,6 +129,16 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
                 stop, ctx.status, stop_val = stopping_criterion.should_stop(
                     stop_val, curve
                 )
+        # Save the final results if possible
+        if hasattr(objective, "save_final_results"):
+            to_save = objective.save_final_results(**solver.get_result())
+            if to_save is not None:
+
+                final_results = benchmark.get_output_folder() / 'final_results' / f"{hash(meta)}.pkl"                final_result.parent.mkdir(exist=True, parents=True)
+                meta['final_results'] = path
+                # hash meta  -> str.pkl
+                # save to folder benchmark.get_output_folder() / 'final_results' / hash(meta).pkl
+                # add the path to meta data
 
     return curve, ctx.status
 

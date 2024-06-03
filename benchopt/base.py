@@ -360,6 +360,10 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
       evaluated. This should be a dictionary where the keys correspond to the
       keyword arguments of `evaluate_result`.
 
+    - `save_final_results(**result)`: Return the data to be save from the results
+       of the solver. It will be save as a `.pkl` file in the `output/results`
+       folder, and link to the benchmark results.
+
     This class is also used to specify information about the benchmark.
     In particular, it should have the following class attributes:
 
@@ -417,6 +421,21 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
             scalar value which will be used to detect convergence. With a
             dictionary, multiple metric values can be stored at once instead
             of running each separately.
+        """
+        pass
+
+    @abstractmethod
+    def save_final_results(self, **solver_result):
+        """Save the final results of the solver.
+
+        Parameters
+        ----------
+        solver_result : dict
+            All values needed to compute the objective metrics. This dictionary
+            is retrieved by calling ``solver_result = Solver.get_result()``.
+        Returns
+        -------
+        dict of values to save
         """
         pass
 
