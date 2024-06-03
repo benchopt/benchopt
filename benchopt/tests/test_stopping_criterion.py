@@ -294,3 +294,40 @@ def test_dual_strategy(no_debug_test):
                 run([str(benchmark.benchmark_dir),
                     *('-s test-solver -d test-dataset --no-plot').split()],
                     standalone_mode=False)
+                
+def test_objective_equals_zero(no_debug_test):
+
+    objective = """from benchopt import BaseObjective
+
+        class Objective(BaseObjective):
+            name = "test_obj"
+            min_benchopt_version = "0.0.0"
+
+            def set_data(self, X, y): pass
+            def get_one_result(self): pass
+            def evaluate_result(self, beta): return dict(value=0)
+            def get_objective(self): return dict(X=0, y=0)
+    """
+
+    solver = """from benchopt import BaseSolver
+    from benchopt.stopping_criterion import SufficientDescentCriterion
+
+    class Solver(BaseSolver):
+        name = "test-solver"
+        stopping_criterion = SufficientDescentCriterion()
+        def set_objective(self, X, y): pass
+        def run(self, n_iter): pass
+        def get_result(self): return dict(beta=1)
+    """
+
+    with temp_benchmark(
+            objective=objective,
+            solvers=[solver]
+    ) as benchmark:
+        with CaptureRunOutput() as out:
+            run([str(benchmark.benchmark_dir),
+                *('-s test-solver -d test-dataset --no-plot -n 0').split()],
+                standalone_mode=False)
+            
+    out.check_output('test-solver', 5)
+    out.check_output('done', 1)
