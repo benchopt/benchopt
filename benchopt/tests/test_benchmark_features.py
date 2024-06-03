@@ -1,5 +1,6 @@
 import pytest
 import tempfile
+
 from pathlib import Path
 
 from benchopt.cli.main import run
@@ -129,24 +130,26 @@ def test_objective_save_final_results(no_debug_test):
         def evaluate_result(self, beta): return dict(value=1)
 
         def save_final_results(self, beta):
-            print("save final called")
             return "test_value"
 
         def get_objective(self):
             return dict(X=self.X, y=self.y, lmbd=1)
 
     """
+
+    import pandas as pd
+    import pickle
+
     with temp_benchmark(objective=save_final) as benchmark:
         with CaptureRunOutput(delete_result_files=False) as out:
             run([
                 str(benchmark.benchmark_dir), *('-s python-pgd -d test-dataset -n 1 '
                 '-r 1 --no-plot').split()
             ],  standalone_mode=False)
-        print(out.result_files)
-
-        config = get_metadata(Path(out.result_files[0]))
-        print(config)
-    assert False
+        data = pd.read_parquet(out.result_files[0])
+        with open(data.loc[0,"final_results"], "rb") as final_result_file:
+            final_results = pickle.load(final_result_file)
+    assert final_results == "test_value"
 
 def test_objective_cv_splitter(no_debug_test):
 
