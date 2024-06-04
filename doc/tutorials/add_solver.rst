@@ -199,7 +199,7 @@ The following snippet shows how to use the callback strategy with a user-coded s
 
 - ``sampling_strategy = "run_once"``
 
-In some cases, we are not interested in convergence curves over time but only in the final solution.
+In some cases, we are not interested in convergence curves over time but only in the final result.
 In this case, we can use the ``run_once`` sampling strategy.
 
 .. code-block:: python
