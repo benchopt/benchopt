@@ -1,8 +1,10 @@
 name: linting
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.number }}-${{ github.event.ref }}
-  cancel-in-progress: true
 on:
+  # Cancel in-progress workflows when pushing
+  # a new commit on the same branch
+  concurrency:
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
   push:
     branches:
       - main
