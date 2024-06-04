@@ -105,7 +105,7 @@ Join this endeavor! If you use benchopt in a scientific publication, please cite
 
 
 .. it mandatory to keep the toctree here although it doesn't show up in the page
-.. when adding/modifying pages, don't forget to update the toc-tree
+.. when adding/modifying pages, don't forget to update the toctree
 
 .. toctree::
    :maxdepth: 1
