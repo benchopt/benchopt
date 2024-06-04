@@ -113,6 +113,42 @@ def test_objective_no_cv(no_debug_test):
                 standalone_mode=False)
 
 
+def test_objective_save_final_results(no_debug_test):
+    save_final = """
+    from benchopt import BaseObjective
+
+    class Objective(BaseObjective):
+        name = "cross_val"
+
+        min_benchopt_version = "0.0.0"
+
+        def set_data(self, X, y): self.X, self.y = X, y
+        def get_one_result(self): return 0
+        def evaluate_result(self, beta): return dict(value=1)
+
+        def save_final_results(self, beta):
+            return "test_value"
+
+        def get_objective(self):
+            return dict(X=self.X, y=self.y, lmbd=1)
+
+    """
+
+    import pandas as pd
+    import pickle
+
+    with temp_benchmark(objective=save_final) as benchmark:
+        with CaptureRunOutput(delete_result_files=False) as out:
+            run([
+                str(benchmark.benchmark_dir),
+                *('-s python-pgd -d test-dataset -n 1 -r 1 --no-plot').split()
+            ],  standalone_mode=False)
+        data = pd.read_parquet(out.result_files[0])
+        with open(data.loc[0, "final_results"], "rb") as final_result_file:
+            final_results = pickle.load(final_result_file)
+    assert final_results == "test_value"
+
+
 def test_objective_cv_splitter(no_debug_test):
 
     objective = """from benchopt import BaseObjective, safe_import_context
