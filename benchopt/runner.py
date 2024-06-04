@@ -245,7 +245,8 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
         )
         if status in ['diverged', 'error', 'interrupted', 'not ready']:
             benchmark.clear_cache(
-                run_one_to_cvg, **args_run_one_to_cvg
+                run_one_to_cvg, **args_run_one_to_cvg,
+                ignore=['force', 'output', 'pdb']
             )
             run_statistics = []
             break
