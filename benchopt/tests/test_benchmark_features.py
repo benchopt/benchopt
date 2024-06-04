@@ -347,3 +347,53 @@ def test_run_once_callback(n_iter):
             ], standalone_mode=False)
 
         out.check_output(rf"RUNONCE\({n_iter}\)", repetition=1)
+
+
+@pytest.mark.parametrize("test_case", ["without_data_home", "with_data_home"])
+def test_paths_config_key(test_case):
+    if test_case == "without_data_home":
+        config = """
+            data_paths:
+                data: /path/to/data
+        """
+    elif test_case == "with_data_home":
+        config = """
+            data_home: /path/to/home_data
+            data_paths:
+                data: path/to/data
+        """
+    else:
+        raise Exception("Invalid test case value")
+
+    custom_dataset = """
+        from benchopt import BaseDataset
+        from benchopt import config
+        import numpy as np
+
+        class Dataset(BaseDataset):
+            name = "custom_dataset"
+            def get_data(self):
+                path = config.get_data_path(key="data")
+                print(f"PATH${path}")
+
+                return dict(X=np.random.rand(3, 2), y=np.ones((3,)))
+    """
+
+    with temp_benchmark(datasets=[custom_dataset], config=config) as benchmark:
+        with CaptureRunOutput() as out:
+            run([
+                str(benchmark.benchmark_dir),
+                *'-s solver-test -d custom_dataset'
+                 ' -n 0 -r 1 --no-plot '
+                '-o dummy*[reg=0.5]'.split()
+            ], standalone_mode=False)
+
+        if test_case == "without_data_home":
+            out.check_output(r"path/to/data", repetition=1)
+        elif test_case == "with_data_home":
+            out.check_output(
+                r"/path/to/home_data/path/to/data",
+                repetition=1
+            )
+        else:
+            raise Exception("Invalid test case value")
