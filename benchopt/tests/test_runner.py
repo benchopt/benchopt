@@ -1,3 +1,4 @@
+import time
 import numpy as np
 
 import pytest
@@ -9,6 +10,9 @@ from benchopt.benchmark import _check_patterns
 from benchopt.benchmark import _extract_options
 from benchopt.benchmark import _extract_parameters
 from benchopt.benchmark import _list_parametrized_classes
+from benchopt.utils.temp_benchmark import temp_benchmark
+from benchopt.tests.utils import CaptureRunOutput
+from benchopt.cli.main import run
 
 
 class MockOutput:
@@ -252,3 +256,61 @@ def test_extract_parameters():
         assert _extract_parameters(f"{token}") == [token]
         assert _extract_parameters(f"'{token}'") == [token]
         assert _extract_parameters(f"\"{token}\"") == [token]
+
+
+def test_error_caching(no_debug_test):
+
+    objective = """from benchopt import BaseObjective
+
+        class Objective(BaseObjective):
+            name = "test_obj"
+            min_benchopt_version = "0.0.0"
+
+            def set_data(self, X, y): pass
+            def get_one_result(self): pass
+            def evaluate_result(self, beta): return dict(value=1)
+            def get_objective(self): return dict(X=0, y=0)
+    """
+
+    solver1 = """from benchopt import BaseSolver
+
+    class Solver(BaseSolver):
+        name = "failing-solver"
+        sampling_strategy = 'iteration'
+        def set_objective(self, X, y): pass
+        def run(self, n_iter): raise ValueError('Failing solver.')
+        def get_result(self): return dict(beta=1)
+    """
+
+    solver2 = """from benchopt import BaseSolver
+
+    class Solver(BaseSolver):
+        name = "normal-solver"
+        sampling_strategy = 'iteration'
+        def set_objective(self, X, y): pass
+        def run(self, n_iter): pass
+        def get_result(self): return dict(beta=1)
+    """
+
+    dataset = """from benchopt import BaseDataset
+
+    class Dataset(BaseDataset):
+        name = "dataset"
+        def get_data(self):
+            return dict(X=0, y=1)
+    """
+
+    with temp_benchmark(objective=objective,
+                        solvers=[solver1, solver2],
+                        datasets=[dataset]) as benchmark:
+        with CaptureRunOutput() as out:
+            for it in range(4):
+                run([str(benchmark.benchmark_dir),
+                    *(' -d dataset --no-display -r 1 -n 1').split()],
+                    standalone_mode=False)
+                # benchmark is too quick to run, without sleep output files
+                # have the same name and the unlinking fails:
+                time.sleep(1.1)
+
+    # # error message should be displayed twice
+    out.check_output("ValueError: Failing solver.", repetition=2)
