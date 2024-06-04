@@ -178,7 +178,7 @@ class TestRunCmd:
         assert len(out.result_files) == 1, out.output
 
     def test_no_timeout(self):
-        old_value = str(get_setting('default_timeout'))
+        old_value = os.environ.get('BENCHOPT_DEFAULT_TIMEOUT')
         os.environ['BENCHOPT_DEFAULT_TIMEOUT'] = "0"
         with CaptureRunOutput() as out:
             try:
@@ -186,7 +186,8 @@ class TestRunCmd:
                     SELECT_ONE_PGD, '-o',SELECT_ONE_OBJECTIVE, '--no-plot', '--no-timeout'], 
                     'benchopt', standalone_mode=False)
             finally:
-                os.environ['BENCHOPT_DEFAULT_TIMEOUT'] = old_value
+                if old_value is not None:
+                    os.environ['BENCHOPT_DEFAULT_TIMEOUT'] = old_value
 
         out.check_output('timeout', repetition=0)
 

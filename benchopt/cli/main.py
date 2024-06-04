@@ -193,11 +193,11 @@ def run(config_file=None, **kwargs):
     ) = _get_run_args(kwargs, config)
 
     # If --no-timeout is set and --timeout is not, skip this block and keep timeout=None
-    if timeout != None and no_timeout:
+    if timeout is not None and no_timeout:
         raise Exception('You cannot specify both --timeout and --no-timeout options.')
-    elif timeout == None and no_timeout == False:
+    elif timeout is None and not no_timeout:
         timeout = get_setting('default_timeout')
-    elif no_timeout == False:
+    elif not no_timeout:
         try:
             timeout = int(float(timeout))
         except ValueError:  # already under string format
