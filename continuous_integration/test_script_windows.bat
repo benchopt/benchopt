@@ -2,7 +2,7 @@
 
 setlocal enabledelayedexpansion
 
-conda info
+call conda info
 if %errorlevel% neq 0 exit /b %errorlevel%
 
 pip freeze
