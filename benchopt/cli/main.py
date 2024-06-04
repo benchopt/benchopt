@@ -192,7 +192,7 @@ def run(config_file=None, **kwargs):
         collect, plot, display, html, pdb, do_profile, env_name, output_name
     ) = _get_run_args(kwargs, config)
 
-    # If --no-timeout is set and --timeout is not, skip this block and keep timeout=None
+    # If --no-timeout is set and --timeout is not, skip this block and keep timeout = None
     if timeout is not None and no_timeout:
         raise Exception('You cannot specify both --timeout and --no-timeout options.')
     elif timeout is None and not no_timeout:
