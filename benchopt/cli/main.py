@@ -194,20 +194,22 @@ def run(config_file=None, **kwargs):
         env_name, output_name
     ) = _get_run_args(kwargs, config)
 
-    # If --no-timeout is set and --timeout is not, skip this block
+    # If --no-timeout is set and --timeout is not, skip these blocks
     # and keep timeout = None
-    if timeout is not None and no_timeout:
+    if no_timeout and timeout is not None:
         raise click.BadParameter(
             'You cannot specify both --timeout and --no-timeout options.'
         )
-    elif timeout is None and not no_timeout:
-        timeout = get_setting('default_timeout')
-    elif not no_timeout:
-        try:
-            timeout = int(float(timeout))
-        except ValueError:  # already under string format
-            import pandas as pd
-            timeout = pd.to_timedelta(timeout).total_seconds()
+
+    if not no_timeout:
+        if timeout is None:
+            timeout = get_setting('default_timeout')
+        else:
+            try:
+                timeout = int(float(timeout))
+            except ValueError:  # already under string format
+                import pandas as pd
+                timeout = pd.to_timedelta(timeout).total_seconds()
 
     # Create the Benchmark object
     benchmark = Benchmark(benchmark)
