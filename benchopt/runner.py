@@ -250,7 +250,7 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
             solver_description=inspect.cleandoc(solver.__doc__ or ""),
         )
 
-        if timeout==None:
+        if timeout is None:
             stopping_criterion = solver._stopping_criterion.get_runner_instance(
                 solver=solver,
                 max_runs=max_runs,
