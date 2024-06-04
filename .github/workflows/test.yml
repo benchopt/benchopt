@@ -1,6 +1,10 @@
 name: test
-
 on:
+  # Cancel in-progress workflows when pushing
+  # a new commit on the same branch
+  concurrency:
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
   push:
     branches:
       - main
@@ -74,7 +78,9 @@ jobs:
 
       - name: Upload coverage
         if: ${{ matrix.coverage == 'true' }}
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v4
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
           flags: test_benchopt
           fail_ci_if_error: true

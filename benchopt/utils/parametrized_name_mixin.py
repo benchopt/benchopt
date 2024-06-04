@@ -19,11 +19,6 @@ class ParametrizedNameMixin():
         _parameters = next(product_param(self.parameters))
         _parameters.update(parameters)
         self._parameters = _parameters
-        if not hasattr(self, 'parameter_template'):
-            # sort parameters to make sure the representation is deterministic
-            self.parameter_template = ",".join([
-                f"{k}={_parameters[k]}" for k in sorted(_parameters)
-            ])
         for k, v in _parameters.items():
             if not hasattr(self, k):
                 setattr(self, k, v)
@@ -64,7 +59,16 @@ class ParametrizedNameMixin():
         """Compute the parametrized name of the instance."""
         out = f"{self.name}"
         if len(self._parameters) > 0:
-            out += f"[{self.parameter_template}]".format(**self._parameters)
+            if not hasattr(self, 'parameter_template'):
+                # sort parameters to make sure the representation
+                # is deterministic
+                param_fmt = ",".join([
+                    f"{k}={self._parameters[k]}"
+                    for k in sorted(self._parameters)
+                ])
+            else:
+                param_fmt = self.parameter_template.format(**self._parameters)
+            out += f"[{param_fmt}]"
         return out
 
     @classmethod
@@ -116,14 +120,3 @@ def product_param(parameters):
     parameter_names = parameters.keys()
     return map(expand, itertools.repeat(parameter_names),
                itertools.product(*parameters.values()))
-
-
-def _list_all_parametrized_names(*parametrized_classes):
-    """List all names for parametrized classes."""
-    all_names = []
-    for cls in parametrized_classes:
-        for dataset_parameters in product_param(cls.parameters):
-            all_names.append(
-                cls._get_parametrized_name(**dataset_parameters)
-            )
-    return all_names

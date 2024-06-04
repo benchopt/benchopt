@@ -3,6 +3,8 @@ import warnings
 import importlib
 from pathlib import Path
 
+from joblib.externals import cloudpickle
+
 from ..config import RAISE_INSTALL_ERROR
 
 SKIP_IMPORT = False
@@ -38,6 +40,7 @@ def set_benchmark_module(benchmark_dir):
         module = importlib.util.module_from_spec(spec)
         sys.modules[PACKAGE_NAME] = module
         spec.loader.exec_module(module)
+        cloudpickle.register_pickle_by_value(module)
     elif module_file.parent.exists():
         warnings.warn(
             "Folder `benchmark_utils` exists but is missing `__init__.py`. "

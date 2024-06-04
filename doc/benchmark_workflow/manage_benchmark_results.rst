@@ -1,7 +1,38 @@
+.. _manage_results:
+
+Manage benchmark results
+========================
+
+.. _collect_results:
+
+Collect benchmark results
+-------------------------
+
+Once the benchmark is run, the results are stored in a directory
+``./results`` in the benchmark directory, with a ``.parquet`` file.
+By default, the name of the file include the date and time of the run,
+but a custom name can be given using the :option:`--output` option of
+``benchopt run``.
+
+This result file is produce only once the full benchmark has been run.
+When the benchmark is run in parallel, the results that have already been
+computed can be collected using the :option:`--collect` option with
+``benchopt run``. Adding this option with the same command line will
+produce a parquet file with all the results that have been computed so far.
+
+
+Clean benchmark results
+-----------------------
+
+The results and cache of previously run benchmark can be cleaned using then
+``benchopt clean`` command. This command will remove the ``./results`` and
+``./__cache__`` directories in the benchmark directory.
+
+
 .. _publish_benchmark:
 
 Publish benchmark results
-=========================
+-------------------------
 
 
 Benchopt allows you to publish your benchmark results to
@@ -38,7 +69,7 @@ line will read something like:
 Let's now look how to create your personal GitHub token.
 
 Obtaining a GitHub token
-------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 Visit `https://github.com/settings/tokens <https://github.com/settings/tokens>`_
 and click on ``generate new token``.

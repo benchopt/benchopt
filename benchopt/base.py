@@ -511,6 +511,13 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
         type for benchopt. The returned object will be passed to
         ``Objective.compute``.
         """
+        ...
+
+    def _get_one_result(self):
+        # Make sure the splits with CV are created before calling
+        # get_one_result
+        self.get_objective()
+        return self.get_one_result()
 
     # Reduce the pickling and hashing burden by only pickling class parameters.
     @staticmethod

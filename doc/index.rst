@@ -108,7 +108,7 @@ Join this endeavor! If you use benchopt in a scientific publication, please cite
 .. when adding/modifying pages, don't forget to update the toctree
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :hidden:
    :includehidden:
 
