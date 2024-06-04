@@ -1,9 +1,10 @@
 import time
 import inspect
+import pickle
 
 from datetime import datetime
 
-from joblib import Parallel, delayed
+from joblib import Parallel, delayed, hash
 
 from .callback import _Callback
 from .utils.sys_info import get_sys_info
@@ -93,6 +94,20 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
     solver._warm_up()
 
     curve = []
+
+    # Augment the metadata with final_results if necessary.
+    base_method = getattr(
+        super(type(objective), objective),
+        'save_final_results', None
+    )
+
+    has_save_final_results = objective.save_final_results is not base_method
+    if has_save_final_results:
+        final_results = benchmark.get_output_folder() / 'final_results'
+        final_results /= f"{hash(meta)}.pkl"
+        final_results.parent.mkdir(exist_ok=True, parents=True)
+        meta["final_results"] = str(final_results)
+
     with exception_handler(output, pdb=pdb) as ctx:
 
         if solver._solver_strategy == "callback":
@@ -129,6 +144,12 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
                 stop, ctx.status, stop_val = stopping_criterion.should_stop(
                     stop_val, curve
                 )
+        # Only run if save_final_results is defined in the objective.
+        if has_save_final_results:
+            to_save = objective.save_final_results(**solver.get_result())
+            if to_save is not None:
+                with open(meta["final_results"], 'wb') as f:
+                    pickle.dump(to_save, f)
 
     return curve, ctx.status
 

@@ -25,3 +25,5 @@
 .. _Pierre Ablin: https://github.com/pierreablin
 
 .. _Christopher Marouani: https://github.com/chris-mrn
+
+.. _Pierre-Antoine Comby: https://github.com/paquiteau
