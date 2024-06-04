@@ -250,20 +250,12 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
             solver_description=inspect.cleandoc(solver.__doc__ or ""),
         )
 
-        if timeout is None:
-            stopping_criterion = solver._stopping_criterion.get_runner_instance(
-                solver=solver,
-                max_runs=max_runs,
-                timeout=None,
-                output=output,
-            )
-        else:
-            stopping_criterion = solver._stopping_criterion.get_runner_instance(
-                solver=solver,
-                max_runs=max_runs,
-                timeout=timeout / n_repetitions if timeout is not None else None,
-                output=output,
-            )
+        stopping_criterion = solver._stopping_criterion.get_runner_instance(
+            solver=solver,
+            max_runs=max_runs,
+            timeout=timeout / n_repetitions if timeout is not None else None,
+            output=output,
+        )
 
         curve, status = run_one_to_cvg_cached(
             benchmark=benchmark, objective=objective,

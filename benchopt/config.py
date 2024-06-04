@@ -348,6 +348,10 @@ def parse_value(value, default_value):
                       for v in value.split(',') if v != '']
             value = values
         assert isinstance(value, list), value
+    elif isinstance(default_value, int):
+        value = int(value)
+    elif isinstance(default_value, float):
+        value = float(value)
 
     return value
 

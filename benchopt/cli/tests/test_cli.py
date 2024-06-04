@@ -178,32 +178,42 @@ class TestRunCmd:
     def test_no_timeout(self):
         # First test: --timeout==0
         with CaptureRunOutput() as out_timeout:
-            run([str(DUMMY_BENCHMARK_PATH), '-d', SELECT_ONE_SIMULATED, '-f', 
-                SELECT_ONE_PGD, '-o',SELECT_ONE_OBJECTIVE, '--no-plot', '--timeout=0'], 
-                'benchopt', standalone_mode=False)
-            
+            run([str(DUMMY_BENCHMARK_PATH), '-d', SELECT_ONE_SIMULATED, '-f',
+                SELECT_ONE_PGD, '-o', SELECT_ONE_OBJECTIVE, '--no-plot',
+                '--timeout=0'], 'benchopt', standalone_mode=False)
+        out_timeout.check_output('timeout', repetition=1)
+
         try:
             old_value = os.environ.get('BENCHOPT_DEFAULT_TIMEOUT')
             os.environ['BENCHOPT_DEFAULT_TIMEOUT'] = "0"
-            # Second test: no option about timout
+            # Second test: no option about timeout
             with CaptureRunOutput() as out_timeout_default:
-                run([str(DUMMY_BENCHMARK_PATH), '-d', SELECT_ONE_SIMULATED, '-f', 
-                    SELECT_ONE_PGD, '-o',SELECT_ONE_OBJECTIVE, '--no-plot'], 
-                    'benchopt', standalone_mode=False)
+                run([str(DUMMY_BENCHMARK_PATH), '-d', SELECT_ONE_SIMULATED,
+                     '-f', SELECT_ONE_PGD, '-o', SELECT_ONE_OBJECTIVE,
+                     '--no-plot'], 'benchopt', standalone_mode=False)
+            out_timeout_default.check_output('timeout', repetition=1)
+
             # Third test: --no-timeout
             with CaptureRunOutput() as out_no_timeout:
-                run([str(DUMMY_BENCHMARK_PATH), '-d', SELECT_ONE_SIMULATED, '-f', 
-                    SELECT_ONE_PGD, '-o',SELECT_ONE_OBJECTIVE, '--no-plot', '--no-timeout'], 
+                run([str(DUMMY_BENCHMARK_PATH), '-d',
+                     SELECT_ONE_SIMULATED, '-f', SELECT_ONE_PGD,
+                     '-o', SELECT_ONE_OBJECTIVE, '--no-plot', '--no-timeout'],
                     'benchopt', standalone_mode=False)
-            
+            out_no_timeout.check_output('timeout', repetition=0)
+
         finally:
             if old_value is not None:
                 os.environ['BENCHOPT_DEFAULT_TIMEOUT'] = old_value
+            else:
+                del os.environ['BENCHOPT_DEFAULT_TIMEOUT']
 
-        out_timeout.check_output('timeout', repetition=1)
-        out_timeout_default.check_output('timeout', repetition=1)
-        out_no_timeout.check_output('timeout', repetition=0)
-
+        # Fourth test: --timeout and --no-timeout both specified
+        match = 'You cannot specify both --timeout and --no-timeout options.'
+        with pytest.raises(click.BadParameter, match=match):
+            run([str(DUMMY_BENCHMARK_PATH), '-d', SELECT_ONE_SIMULATED,
+                 '-f', SELECT_ONE_PGD, '-o', SELECT_ONE_OBJECTIVE,
+                 '--no-plot', '--timeout=0', '--no-timeout'],
+                'benchopt', standalone_mode=False)
 
     def test_custom_parameters(self):
         SELECT_DATASETS = r'simulated[n_features=[100, 200]]'

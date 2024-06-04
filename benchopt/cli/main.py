@@ -121,9 +121,10 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               'runtime.')
 @click.option('--timeout',
               default=None, show_default=True, type=str,
-              help='Stop a solver when run for more than <timeout> seconds.'
-              ' The syntax 10h or 10m can be used to denote 10 hours or '
-              'minutes respectively. Not compatible with the --no-timeout option.')
+              help='Stop a solver when run for more than <timeout> seconds. '
+              'The syntax 10h or 10m can be used to denote 10 hours or '
+              'minutes respectively. Not compatible with the --no-timeout '
+              'option.')
 @click.option('--no-timeout',
               is_flag=True,
               help='If set, prevent solvers from stopping after running for '
@@ -188,13 +189,17 @@ def run(config_file=None, **kwargs):
 
     (
         benchmark, solver_names, forced_solvers, dataset_names,
-        objective_filters, max_runs, n_repetitions, timeout, no_timeout, n_jobs, slurm,
-        collect, plot, display, html, pdb, do_profile, env_name, output_name
+        objective_filters, max_runs, n_repetitions, timeout, no_timeout,
+        n_jobs, slurm, collect, plot, display, html, pdb, do_profile,
+        env_name, output_name
     ) = _get_run_args(kwargs, config)
 
-    # If --no-timeout is set and --timeout is not, skip this block and keep timeout = None
+    # If --no-timeout is set and --timeout is not, skip this block
+    # and keep timeout = None
     if timeout is not None and no_timeout:
-        raise Exception('You cannot specify both --timeout and --no-timeout options.')
+        raise click.BadParameter(
+            'You cannot specify both --timeout and --no-timeout options.'
+        )
     elif timeout is None and not no_timeout:
         timeout = get_setting('default_timeout')
     elif not no_timeout:
@@ -328,8 +333,9 @@ def run(config_file=None, **kwargs):
         rf"benchopt run --local {benchmark.benchmark_dir} "
         rf"--n-repetitions {n_repetitions} "
         rf"--max-runs {max_runs}"
-        rf"{rf'--timeout {timeout}' if timeout is not None else '--no-timeout'} "
-        rf"--n-jobs {n_jobs} {'--slurm' if slurm else ''} "
+        rf"{f'--timeout {timeout} ' if timeout is not None else ''}"
+        rf"{'--no-timeout ' if no_timeout else ''} "
+        rf"--n-jobs {n_jobs} {'--slurm' if slurm else ''}"
         rf"{solvers_option} {forced_solvers_option} "
         rf"{datasets_option} {objective_option} "
         rf"{'--plot' if plot else '--no-plot'} "
