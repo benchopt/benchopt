@@ -13,6 +13,9 @@ Version 1.6 - In development
 API
 ~~~
 
+- Add a `save_final_results` method to Objective. If implemented it is run after the last solver iteration, to get desired outputs to be saved to file system.
+  By `Pierre-Antoine Comby`_ (:gh:`722`)
+
 - Add native way to do cross-validation in a benchmark with
   ``Objective.cv`` attribute that change split for each repetition.
   By `Christopher Marouani`_ and `Thomas Moreau`_ (:gh:`623`).

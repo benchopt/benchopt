@@ -1,6 +1,6 @@
 name: test
-
 on:
+
   push:
     branches:
       - main
@@ -13,6 +13,12 @@ on:
   schedule:
     # Run every day at 8:42am UTC.
     - cron:  '42 8 * * *'
+
+# Cancel in-progress workflows when pushing
+# a new commit on the same branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test_benchopt:
