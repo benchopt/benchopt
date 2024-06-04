@@ -211,17 +211,9 @@ class StoppingCriterion():
         n_eval = len(objective_list) - 1
         objective = objective_list[-1][self.key_to_monitor]
         delta_objective = self._prev_objective - objective
-<<<<<<< HEAD
-        next_objective = objective_list[0][self.key_to_monitor]
-        if next_objective == 0:
-            delta_objective = abs(delta_objective)
-        if next_objective != 0:
-            delta_objective /= abs(next_objective)
-=======
         first_objective = objective_list[0][self.key_to_monitor]
         if first_objective != 0:
             delta_objective /= abs(first_objective)
->>>>>>> 9afa0a445803be7bce1d3a4ed7f6fd9d352e7203
         self._prev_objective = objective
 
         # default value for is_flat
@@ -438,19 +430,10 @@ class SufficientProgressCriterion(StoppingCriterion):
         """
         # Compute the current objective and update best value
         objective = objective_list[-1][self.key_to_monitor]
-<<<<<<< HEAD
-        delta_objective = self._prev_objective - objective
-        next_objective = objective_list[0][self.key_to_monitor]
-        if next_objective == 0:
-            delta_objective = abs(delta_objective)
-        if next_objective != 0:
-            delta_objective /= abs(next_objective)
-=======
         delta_objective = self._best_objective - objective
         first_objective = objective_list[0][self.key_to_monitor]
         if first_objective != 0:
             delta_objective /= abs(first_objective)
->>>>>>> 9afa0a445803be7bce1d3a4ed7f6fd9d352e7203
         self._best_objective = min(
             objective, self._best_objective
         )
