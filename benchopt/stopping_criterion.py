@@ -431,7 +431,7 @@ class SufficientProgressCriterion(StoppingCriterion):
         """
         # Compute the current objective and update best value
         objective = objective_list[-1][self.key_to_monitor]
-        delta_objective = self._prev_objective - objective
+        delta_objective = self._best_objective - objective
         first_objective = objective_list[0][self.key_to_monitor]
         if first_objective != 0:
             delta_objective /= abs(first_objective)
