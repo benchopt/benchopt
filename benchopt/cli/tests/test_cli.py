@@ -33,8 +33,6 @@ from benchopt.cli.helpers import archive
 from benchopt.cli.process_results import plot
 from benchopt.cli.process_results import generate_results
 
-from benchopt.config import get_setting
-
 
 ALL_BENCHMARKS = [str(DUMMY_BENCHMARK_PATH)]
 
@@ -178,10 +176,17 @@ class TestRunCmd:
         assert len(out.result_files) == 1, out.output
 
     def test_no_timeout(self):
-        old_value = os.environ.get('BENCHOPT_DEFAULT_TIMEOUT')
-        os.environ['BENCHOPT_DEFAULT_TIMEOUT'] = "0"
-        with CaptureRunOutput() as out:
+        # First test: timeout
+        with CaptureRunOutput() as out_timeout:
+            run([str(DUMMY_BENCHMARK_PATH), '-d', SELECT_ONE_SIMULATED, '-f', 
+                SELECT_ONE_PGD, '-o',SELECT_ONE_OBJECTIVE, '--no-plot', '--timeout=0'], 
+                'benchopt', standalone_mode=False)
+
+        # Second test: no-timeout
+        with CaptureRunOutput() as out_no_timeout:
             try:
+                old_value = os.environ.get('BENCHOPT_DEFAULT_TIMEOUT')
+                os.environ['BENCHOPT_DEFAULT_TIMEOUT'] = "0"
                 run([str(DUMMY_BENCHMARK_PATH), '-d', SELECT_ONE_SIMULATED, '-f', 
                     SELECT_ONE_PGD, '-o',SELECT_ONE_OBJECTIVE, '--no-plot', '--no-timeout'], 
                     'benchopt', standalone_mode=False)
@@ -189,7 +194,8 @@ class TestRunCmd:
                 if old_value is not None:
                     os.environ['BENCHOPT_DEFAULT_TIMEOUT'] = old_value
 
-        out.check_output('timeout', repetition=0)
+        out_timeout.check_output('timeout', repetition=1)
+        out_no_timeout.check_output('timeout', repetition=0)
 
 
     def test_custom_parameters(self):
