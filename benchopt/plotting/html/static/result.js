@@ -588,10 +588,18 @@ const renderObjectiveColumnSelector = () => {
  * Render Scale selector
  */
 const renderScaleSelector = () => {
-  if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve'])) {
+  if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve', 'boxplot_chart'])) {
     show(document.querySelectorAll("#scale-form-group"), 'block');
   } else {
     hide(document.querySelectorAll("#scale-form-group"));
+  }
+
+  if (isChart('boxplot_chart')) {
+    hide(document.querySelectorAll(".other_plot_option"));
+    show(document.querySelectorAll(".boxplot_option"));
+  } else {
+    hide(document.querySelectorAll(".boxplot_option"));
+    show(document.querySelectorAll(".other_plot_option"));
   }
 };
 
@@ -746,6 +754,11 @@ const _getScale = (scale) => {
         xaxis: 'log',
         yaxis: 'log',
       };
+    case 'log': // used for boxplot
+      return {
+        xaxis: 'log',
+        yaxis: 'log',
+      };
     case "semilog-y":
       return {
         xaxis: 'linear',
@@ -881,7 +894,7 @@ const getBoxplotChartLayout = () => {
       orientation: 'v',
     },
     yaxis: {
-      type: 'log',
+      type: getScale().yaxis,
       title: getYLabel(),
       tickformat: '.1e',
       gridcolor: '#ffffff',
