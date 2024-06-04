@@ -98,7 +98,8 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
     # Augment the metadata with final_results if necessary.
     base_method = getattr(
         super(type(objective), objective),
-        'save_final_results', None)
+        'save_final_results', None
+    )
 
     has_save_final_results = objective.save_final_results is not base_method
     if has_save_final_results:

@@ -360,9 +360,15 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
       evaluated. This should be a dictionary where the keys correspond to the
       keyword arguments of `evaluate_result`.
 
-    - `save_final_results(**result)`: Return the data to be save from the
-       results of the solver. It will be save as a `.pkl` file in the
+    Optionally, the `Solver` can implement the following methods to change its
+    behavior:
+
+    - `save_final_results(**result)`: Return the data to be saved from the
+       results of the solver. It will be saved as a `.pkl` file in the
        `output/results` folder, and link to the benchmark results.
+
+    - `get_next(stop_val)`: Return the next iteration where the result will be
+      evaluated.
 
     This class is also used to specify information about the benchmark.
     In particular, it should have the following class attributes:
