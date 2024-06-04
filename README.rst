@@ -44,7 +44,8 @@ It is also possible to use the **latest development version**. To do so, run ins
 
 .. code-block:: bash
 
-    pip install --pre benchopt -U -i https://test.pypi.org/simple
+    git clone https://github.com/benchopt/benchopt.git 
+    pip install -e . 
 
 
 Getting started

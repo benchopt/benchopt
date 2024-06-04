@@ -235,13 +235,18 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
             timeout=timeout / n_repetitions,
             output=output,
         )
+        args_run_one_to_cvg = dict(
+            benchmark=benchmark, objective=objective, solver=solver, meta=meta,
+            stopping_criterion=stopping_criterion, force=force, output=output,
+            pdb=pdb
+        )
         curve, status = run_one_to_cvg_cached(
-            benchmark=benchmark, objective=objective,
-            solver=solver, meta=meta,
-            stopping_criterion=stopping_criterion,
-            force=force, output=output, pdb=pdb
+            **args_run_one_to_cvg
         )
         if status in ['diverged', 'error', 'interrupted', 'not ready']:
+            benchmark.clear_cache(
+                run_one_to_cvg, **args_run_one_to_cvg
+            )
             run_statistics = []
             break
         run_statistics.extend(curve)

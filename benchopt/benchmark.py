@@ -356,6 +356,15 @@ class Benchmark:
                 return func_cached(**kwargs)
 
         return _func_cached
+    
+    def clear_cache(self, func, **kwargs):
+        """Clear the cache for the given function."""
+
+        # Create a cached function the computations in the benchmark folder
+        # and handle cases where we force the run.
+        func_cached = self.mem.cache(func)
+        result = func_cached.call_and_shelve(**kwargs)
+        result.clear()
 
     #####################################################
     # Configuration and settings for the benchmark
