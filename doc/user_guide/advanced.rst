@@ -164,7 +164,7 @@ callback (default to 1).
             # Cache pre-compilation and other one-time setups that should
             # not be included in the benchmark timing.
             self.run(1)  # For sampling_strategy == 'iteration' | 'tolerance'
-            self.run_once()  # For sampling_strategy == 'callback' | 'run_once'
+            self.run_once()  # For sampling_strategy == 'callback'
 
 
 .. _run_benchmark_with_py_script:
