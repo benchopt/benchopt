@@ -150,7 +150,8 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
             if to_save is not None:
                 with open(meta["final_results"], 'wb') as f:
                     pickle.dump(to_save, f)
-
+    if ctx.status in ['diverged', 'error', 'interrupted']:
+        raise RuntimeError(ctx.status)
     return curve, ctx.status
 
 
@@ -257,12 +258,17 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
             output=output,
         )
 
-        curve, status = run_one_to_cvg_cached(
-            benchmark=benchmark, objective=objective,
-            solver=solver, meta=meta,
-            stopping_criterion=stopping_criterion,
-            force=force, output=output, pdb=pdb
+        args_run_one_to_cvg = dict(
+            benchmark=benchmark, objective=objective, solver=solver, meta=meta,
+            stopping_criterion=stopping_criterion, force=force, output=output,
+            pdb=pdb
         )
+        try:
+            curve, status = run_one_to_cvg_cached(
+                **args_run_one_to_cvg
+            )
+        except RuntimeError as e:
+            status = e.args[0]
         if status in ['diverged', 'error', 'interrupted', 'not ready']:
             run_statistics = []
             break
