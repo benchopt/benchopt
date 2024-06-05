@@ -362,6 +362,7 @@ class Benchmark:
 
         func_cached = self.mem.cache(func, ignore=ignore)
         if func_cached.check_call_in_cache(**kwargs):
+            print("Clearing the cache")
             result = func_cached.call_and_shelve(**kwargs)
             result.clear()
 

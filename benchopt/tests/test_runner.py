@@ -307,12 +307,12 @@ def test_error_caching(no_debug_test):
         with CaptureRunOutput() as out:
             for it in range(2):
                 run([str(benchmark.benchmark_dir),
-                    *(' -d dataset --no-display -r 1 -n 1').split()],
+                    *' -d dataset --no-plot -r 1 -n 1'.split()],
                     standalone_mode=False)
                 # benchmark is too quick to run, without sleep output files
                 # have the same name and the unlinking fails:
                 if it == 0:
                     time.sleep(1.1)
 
-    # # error message should be displayed twice
+    # error message should be displayed twice
     out.check_output("ValueError: Failing solver.", repetition=2)
