@@ -47,6 +47,12 @@ FIX
 - Fix pickling of dynamic modules to allow for nested parallelism in
   distributed runs. By `Thomas Moreau`_ (:gh:`713`)
 
+DOC
+~~~
+
+- Add documentation for the `run_once` sampling strategy.
+  By `Mathieu Dagréou`_ (:gh:`700`).
+
 .. _changes_1_5_1:
 
 Version 1.5.1 - 22/09/2023

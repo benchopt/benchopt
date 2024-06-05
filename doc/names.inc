@@ -35,3 +35,5 @@
 .. _Julie Alberge: https://www.linkedin.com/in/julie-alberge
 
 .. _Jad Yehya: https://github.com/Jad-yehya
+
+.. _Mathieu Dagréou: https://matdag.github.io
