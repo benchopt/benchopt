@@ -333,8 +333,8 @@ class Benchmark:
         that are already in cache.
         """
 
-        # Create a cached function the computations in the benchmark folder
-        # and handle cases where we force the run.
+        # Create a cached version of `func` and handle cases where we force
+        # the run.
         func_cached = self.mem.cache(func, ignore=ignore)
         if force:
             assert not collect, "Cannot collect and force computation."
@@ -360,8 +360,6 @@ class Benchmark:
     def clear_cache(self, func, ignore=None, **kwargs):
         """Clear the cache for the given function."""
 
-        # Create a cached function the computations in the benchmark folder
-        # and handle cases where we force the run.
         func_cached = self.mem.cache(func, ignore=ignore)
         if func_cached.check_call_in_cache(**kwargs):
             result = func_cached.call_and_shelve(**kwargs)

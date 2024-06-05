@@ -244,6 +244,7 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
             **args_run_one_to_cvg
         )
         if status in ['diverged', 'error', 'interrupted', 'not ready']:
+            # do not cache failed runs
             benchmark.clear_cache(
                 run_one_to_cvg, **args_run_one_to_cvg,
                 ignore=['force', 'output', 'pdb']
