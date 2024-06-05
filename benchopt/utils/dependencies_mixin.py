@@ -36,6 +36,15 @@ class DependenciesMixin:
     def name(cls):
         return cls.__module__.split(".")[-1]
 
+    @classproperty
+    def install_cmd_(cls):
+        if cls.install_cmd not in ["conda", "shell"]:
+            raise ValueError(
+                f"{cls.install_cmd} is not a valid install command. "
+                "Please use 'conda' or 'shell' as install command."
+            )
+        return cls.install_cmd
+
     @classmethod
     def is_installed(cls, env_name=None, raise_on_not_installed=None, quiet=False):
         """Check if the module caught a failed import to assert install.
@@ -74,8 +83,7 @@ class DependenciesMixin:
                     f"{cls._module_filename} {cls._base_class_name}",
                     env_name=env_name,
                     raise_on_error=raise_on_not_installed,
-                )
-                == 0
+                ) == 0
             )
 
     @classmethod
@@ -95,24 +103,17 @@ class DependenciesMixin:
         is_installed: bool
             True if the class is correctly installed in the environment.
         """
+        # Check that install_cmd is valid and if the cls is installed
+        install_cmd_ = cls.install_cmd_
         is_installed = cls.is_installed(env_name=env_name)
-
-        # Making conda the default command
-        if not hasattr(cls, "install_cmd"):
-            cls.install_cmd = DependenciesMixin.install_cmd
-        else:
-            if cls.install_cmd not in ["conda", "shell"]:
-                raise ValueError(
-                    f"{cls.install_cmd} is not a valid install command. "
-                    "Please use 'conda' or 'shell' as install command."
-                )
 
         env_suffix = f" in '{env_name}'" if env_name else ""
         if force or not is_installed:
-            print(f"- Installing '{cls.name}'{env_suffix}:...", end="", flush=True)
+            print(f"- Installing '{cls.name}'{env_suffix}:...",
+                  end="", flush=True)
             try:
                 cls._pre_install_hook(env_name=env_name)
-                if cls.install_cmd == "conda":
+                if install_cmd_ == "conda":
                     if hasattr(cls, "requirements"):
                         install_in_conda_env(
                             *cls.requirements, env_name=env_name, force=force
@@ -133,10 +134,9 @@ class DependenciesMixin:
                             "conda channel `chan`\n"
                             "   requirements = ['pip:pkg'] # pip package `pkg`"
                         )
-                elif cls.install_cmd == "shell":
+                elif install_cmd_ == "shell":
                     install_file = (
-                        cls._module_filename.parents[1]
-                        / "install_scripts"
+                        cls._module_filename.parents[1] / "install_scripts"
                         / cls.install_script
                     )
                     shell_install_in_conda_env(install_file, env_name=env_name)
@@ -177,16 +177,17 @@ class DependenciesMixin:
         post_install_hooks: list of callable
             Post install hooks if one need to be run.
         """
+        # Check that install_cmd is valid and if the cls is installed
+        install_cmd_ = cls.install_cmd_
         is_installed = cls.is_installed(env_name=env_name)
 
         missing_deps = None
         conda_reqs, shell_install_scripts, post_install_hooks = [], [], []
         if force or not is_installed:
             cls._pre_install_hook(env_name=env_name)
-            if cls.install_cmd == "shell":
+            if install_cmd_ == "shell":
                 shell_install_scripts = [
-                    cls._module_filename.parents[1]
-                    / "install_scripts"
+                    cls._module_filename.parents[1] / "install_scripts"
                     / cls.install_script
                 ]
             else:
@@ -196,7 +197,7 @@ class DependenciesMixin:
             post_install_hooks = [cls._post_install_hook]
         else:
             env_suffix = f" in '{env_name}'" if env_name else ""
-            colored_cls_name = colorify(f"{cls.name}", YELLOW)
+            colored_cls_name = colorify(cls.name, YELLOW)
             print(
                 f"- {colored_cls_name} already available{env_suffix}\n"
                 f"  No ImportError raised from {cls._module_filename}."

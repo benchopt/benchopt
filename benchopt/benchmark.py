@@ -1,6 +1,7 @@
 import re
 import click
 import warnings
+import itertools
 from pathlib import Path
 
 from .config import get_setting
@@ -17,11 +18,16 @@ from .utils.terminal_output import YELLOW
 
 from .utils.conda_env_cmd import install_in_conda_env
 from .utils.conda_env_cmd import shell_install_in_conda_env
+from .utils.shell_cmd import _run_shell_in_conda_env
 
 # Get config values
 from .config import RAISE_INSTALL_ERROR
 
 
+# Global variable to access the benchmark currently running globally
+_RUNNING_BENCHMARK = None
+
+# Constant to name cache directory and folder of slurm outputs
 CACHE_DIR = '__cache__'
 SLURM_JOB_NAME = 'benchopt_run'
 
@@ -36,6 +42,11 @@ MISSING_DEPS_MSG = (
 )
 
 SUBSTITUTIONS = {"*": ".*"}
+
+
+def get_running_benchmark():
+    """Return the benchmark currently running."""
+    return _RUNNING_BENCHMARK
 
 
 class Benchmark:
@@ -63,6 +74,8 @@ class Benchmark:
     ):
         self.benchmark_dir = Path(benchmark_dir)
 
+        global _RUNNING_BENCHMARK
+        _RUNNING_BENCHMARK = self
         set_benchmark_module(self.benchmark_dir)
 
         # Load the benchmark metadat defined in `objective.py` or
@@ -97,6 +110,8 @@ class Benchmark:
             self.url = f"https://github.com/benchopt/{self.name}"
         else:
             self.name = Path(self.url).name
+        # replace dots to avoid issues with `with_suffix``
+        self.name = self.name.replace('.', '-')
 
     ####################################################################
     # Helpers to access and validate objective, solvers and datasets
@@ -135,10 +150,11 @@ class Benchmark:
         "List all available solver names for the benchmark."
         return [s.name for s in self.get_solvers()]
 
-    def check_solver_patterns(self, solver_patterns):
+    def check_solver_patterns(self, solver_patterns, class_only=False):
         "Check that the patterns are valid and return selected configurations."
         return _check_patterns(
-            self.get_solvers(), solver_patterns, name_type='solver'
+            self.get_solvers(), solver_patterns, name_type='solver',
+            class_only=class_only
         )
 
     def get_datasets(self):
@@ -149,10 +165,11 @@ class Benchmark:
         "List all available dataset names for the benchmark."
         return [d.name for d in self.get_datasets()]
 
-    def check_dataset_patterns(self, dataset_patterns):
+    def check_dataset_patterns(self, dataset_patterns, class_only=False):
         "Check that the patterns are valid and return selected configurations."
         return _check_patterns(
-            self.get_datasets(), dataset_patterns, name_type='dataset'
+            self.get_datasets(), dataset_patterns, name_type='dataset',
+            class_only=class_only
         )
 
     def _list_benchmark_classes(self, base_class):
@@ -329,8 +346,8 @@ class Benchmark:
         that are already in cache.
         """
 
-        # Create a cached function the computations in the benchmark folder
-        # and handle cases where we force the run.
+        # Create a cached version of `func` and handle cases where we force
+        # the run.
         func_cached = self.mem.cache(func, ignore=ignore)
         if force:
             assert not collect, "Cannot collect and force computation."
@@ -393,14 +410,14 @@ class Benchmark:
 
     def install_all_requirements(self, include_solvers, include_datasets,
                                  minimal=False, env_name=None,
-                                 force=False, quiet=False):
+                                 force=False, quiet=False, download=False):
         """Install all classes that are required for the run.
 
         Parameters
         ----------
-        include_solvers : list of str
+        include_solvers : list of BaseSolver
             patterns to select solvers to install.
-        include_datasets : list of str
+        include_datasets : list of BaseDataset
             patterns to select datasets to install.
         minimal : bool (default: False)
             only install requirements for the objective function.
@@ -411,27 +428,11 @@ class Benchmark:
             If set to True, forces reinstallation when using conda.
         quiet : bool (default: False)
             If True, silences the output of install commands.
+        download : bool (default: False)
+            If True, make sure the data are downloaded on the computer.
         """
         # Collect all classes matching one of the patterns
         print("Collecting packages:")
-
-        install_solvers = not minimal
-        install_datasets = not minimal
-
-        # If -d is used but not -s, then does not install any solver
-        if len(include_solvers) == 0 and len(include_datasets) > 0:
-            install_solvers = False
-
-        # If -s is used but not -d, then does not install any dataset
-        if len(include_datasets) == 0 and len(include_solvers) > 0:
-            install_datasets = False
-
-        # If -d or -s are followed by 'all' then all
-        # solvers or datasets are included
-        if 'all' in include_solvers:
-            include_solvers = []
-        if 'all' in include_datasets:
-            include_datasets = []
 
         check_installs, missings = [], []
         objective = self.get_benchmark_objective()
@@ -446,31 +447,23 @@ class Benchmark:
 
         if len(shell_install_scripts) > 0 or len(conda_reqs) > 0:
             check_installs += [objective]
-        for list_classes, include_patterns, to_install in [
-                (self.get_solvers(), include_solvers, install_solvers),
-                (self.get_datasets(), include_datasets, install_datasets)
-        ]:
-            include_patterns = _check_name_lists(include_patterns)
-            for klass in list_classes:
-                for klass_parameters in product_param(klass.parameters):
-                    name = klass._get_parametrized_name(**klass_parameters)
-                    if is_matched(name, include_patterns) and to_install:
-                        reqs, scripts, hooks, missing = (
-                            klass.collect(env_name=env_name, force=force)
-                        )
-                        # If a class is not importable but has no requirements,
-                        # it might be because the requirements are specified
-                        # as global ones in the Objective. Otherwise, raise a
-                        # comprehensible error.
-                        if missing is not None:
-                            missings.append(missing)
+        to_install = itertools.chain(include_datasets, include_solvers)
+        for klass in to_install:
+            reqs, scripts, hooks, missing = (
+                klass.collect(env_name=env_name, force=force)
+            )
+            # If a class is not importable but has no requirements,
+            # it might be because the requirements are specified
+            # as global ones in the Objective. Otherwise, raise a
+            # comprehensible error.
+            if missing is not None:
+                missings.append(missing)
 
-                        conda_reqs += reqs
-                        shell_install_scripts += scripts
-                        post_install_hooks += hooks
-                        if len(scripts) > 0 or len(reqs) > 0:
-                            check_installs += [klass]
-                        break
+            conda_reqs += reqs
+            shell_install_scripts += scripts
+            post_install_hooks += hooks
+            if len(scripts) > 0 or len(reqs) > 0:
+                check_installs += [klass]
         print('... done')
 
         # Install the collected requirements
@@ -480,7 +473,10 @@ class Benchmark:
         if len(list_install) == 0:
             self.check_missing(missings)
             print("All required solvers are already installed.")
+            if download:
+                self.download_all_data(include_datasets, env_name, quiet)
             return
+
         print(f"Installing required packages for:\n{list_install}\n...",
               end='', flush=True)
         install_in_conda_env(
@@ -518,6 +514,18 @@ class Benchmark:
                 UserWarning
             )
         print(' done')
+
+        if download:
+            self.download_all_data(include_datasets, env_name, quiet)
+
+    def download_all_data(self, datasets, env_name, quiet):
+        if len(datasets) == 0:
+            return
+        cmd = f"benchopt check-data {self.benchmark_dir} -d "
+        cmd += "-d ".join(d.name for d in datasets)
+        _run_shell_in_conda_env(
+            cmd, env_name=env_name, raise_on_error=True, capture_stdout=False
+        )
 
     def check_missing(self, missings):
         # Check that classes not importable, with no requirements, only depends
@@ -737,7 +745,8 @@ def _extract_parameters(string):
         raise ValueError(f"Invalid name '{original}', evaluated as {string}.")
 
 
-def _check_patterns(all_classes, patterns, name_type='dataset'):
+def _check_patterns(all_classes, patterns, name_type='dataset',
+                    class_only=False):
     """Check the patterns and return a list of selected classes and params.
 
     Raise an error if a pattern does not match any dataset name,
@@ -756,6 +765,8 @@ def _check_patterns(all_classes, patterns, name_type='dataset'):
     name_type: str
         Used to raise sensible error depending on the type of classes which
         are selected.
+    class_only: bool
+        Only return the classes that are matched, without a list of parameters.
 
     Returns
     -------
@@ -766,7 +777,10 @@ def _check_patterns(all_classes, patterns, name_type='dataset'):
     # If no patterns is provided or all is provided, return all the classes.
     if (patterns is None or len(patterns) == 0
             or any(p == 'all' for p, *_ in patterns)):
-        return [(cls, cls.parameters) for cls in all_classes]
+        all_valid_patterns = [(cls, cls.parameters) for cls in all_classes]
+        if not class_only:
+            return all_valid_patterns
+        return set(cls for cls, _ in all_valid_patterns)
 
     # Patterns can be either str or dict. Convert everything to 3-tuple with
     # (cls_name, args, kwargs). cls_name and kwargs correspond to class and
@@ -837,7 +851,10 @@ def _check_patterns(all_classes, patterns, name_type='dataset'):
         params.update(kwargs)
         all_valid_patterns.append((cls, params))
 
-    return all_valid_patterns
+    if not class_only:
+        return all_valid_patterns
+
+    return set(cls for cls, _ in all_valid_patterns)
 
 
 def _list_parametrized_classes(*classes, check_installed=True):

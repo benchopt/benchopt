@@ -26,4 +26,10 @@
 
 .. _Christopher Marouani: https://github.com/chris-mrn
 
+.. _Pierre-Antoine Comby: https://github.com/paquiteau
+
+.. _Virginie Loison: https://www.linkedin.com/in/virginie-loison/
+
+.. _Julie Alberge: https://www.linkedin.com/in/julie-alberge
+
 .. _Jad Yehya: https://github.com/Jad-yehya

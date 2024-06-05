@@ -13,6 +13,9 @@ Version 1.6 - In development
 API
 ~~~
 
+- Add a `save_final_results` method to Objective. If implemented it is run after the last solver iteration, to get desired outputs to be saved to file system.
+  By `Pierre-Antoine Comby`_ (:gh:`722`)
+
 - Add native way to do cross-validation in a benchmark with
   ``Objective.cv`` attribute that change split for each repetition.
   By `Christopher Marouani`_ and `Thomas Moreau`_ (:gh:`623`).
@@ -29,8 +32,14 @@ CLI
 - Add ``--collect`` option to allow gathering results which are already
   in cache in a single parquet file. By `Thomas Moreau`_ (:gh:`710`)
 
+- Add ``--download`` option in ``benchopt install`` to allow downloading
+  the data when installing the benchmark. By `Thomas Moreau`_ (:gh:`718`)
+
 FIX
 ~~~
+
+- Disable caching of diverged/errored runs. By `Julie Alberge`_ and 
+  `Virginie Loison`_ (:gh:`735`)
 
 - Fix pickling of dynamic modules to allow for nested parallelism in
   distributed runs. By `Thomas Moreau`_ (:gh:`713`)

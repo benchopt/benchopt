@@ -1,10 +1,11 @@
+import json
 import click
 import pprint
 import tarfile
+import warnings
+import traceback
 from pathlib import Path
 from collections.abc import Iterable
-import warnings
-import json
 
 from benchopt.config import set_setting
 from benchopt.config import get_setting
@@ -21,7 +22,7 @@ from benchopt.config import GLOBAL_CONFIG_FILE_MODE
 from benchopt.utils.dynamic_modules import _load_class_from_module
 from benchopt.utils.shell_cmd import _run_shell_in_conda_env
 from benchopt.utils.terminal_output import colorify
-from benchopt.utils.terminal_output import RED, GREEN, TICK, CROSS
+from benchopt.utils.terminal_output import BLUE, RED, GREEN, TICK, CROSS
 
 
 ARCHIVE_ELEMENTS = [
@@ -465,3 +466,33 @@ def check_install(benchmark, module_filename, base_class_name):
         module_filename, base_class_name, benchmark.benchmark_dir
     )
     klass.is_installed(raise_on_not_installed=True)
+
+
+@helpers.command(
+    help="Ensure that the data of a list of Datasets are available\n\n"
+    "The names of the datasets to check/download are specified as a list.",
+    hidden=True
+)
+@click.argument('benchmark', default=Path.cwd(), type=click.Path(exists=True),
+                shell_complete=complete_benchmarks)
+@click.option('--dataset', '-d', 'dataset_names',
+              metavar="<dataset_name>", multiple=True, type=str,
+              help="Check data from the dataset <dataset_name>.",
+              shell_complete=complete_datasets)
+def check_data(benchmark, dataset_names):
+    warnings.simplefilter("ignore")
+
+    # benchmark
+    benchmark = Benchmark(benchmark)
+    datasets = benchmark.check_dataset_patterns(dataset_names, class_only=True)
+
+    # Get class to check
+    print("Loading data:")
+    for cls in datasets:
+        print(f"- {colorify(cls.name, BLUE)} ...", end='', flush=True)
+        try:
+            cls.get_instance().get_data()
+            print(colorify(f" {TICK}", GREEN))
+        except Exception:
+            print(colorify(f" {CROSS}", RED))
+            traceback.print_exc()
