@@ -140,8 +140,6 @@ def create_conda_env(
     else:
         if quiet:
             print("done")
-    env_yaml.close()
-    os.unlink(env_yaml.name)
 
 
 def get_benchopt_version_in_env(env_name):

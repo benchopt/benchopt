@@ -283,10 +283,6 @@ def test_ignore_hidden_files():
             SELECT_ONE_SIMULATED, '-f', SELECT_ONE_PGD, '-n', '1',
             '-r', '1', '-o', SELECT_ONE_OBJECTIVE, '--no-plot'
         ], 'benchopt', standalone_mode=False)
-    f.close()
-    os.unlink(f.name)
-    f2.close()
-    os.unlink(f2.name)
 
 
 

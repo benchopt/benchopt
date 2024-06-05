@@ -226,8 +226,7 @@ class TestRunCmd:
         with pytest.raises(ValueError, match="Invalid config file option"):
             run(f'{str(DUMMY_BENCHMARK_PATH)} --config {tmp.name}'.split(),
                 'benchopt', standalone_mode=False)
-        tmp.close()
-        os.unlink(tmp.name)
+
 
     def test_config_file(self):
         config = f"""
@@ -263,8 +262,6 @@ class TestRunCmd:
         out.check_output(r'Solver-Test\[raise_error=False\]:', repetition=11)
         out.check_output(
             r'Python-PGD\[step_size=1.5\]:', repetition=0)
-        tmp.close()
-        os.unlink(tmp.name)
 
 
     @pytest.mark.parametrize('n_rep', [2, 3, 5])
@@ -366,8 +363,6 @@ class TestRunCmd:
                     f.name, "Solver",
                     benchmark_dir=DUMMY_BENCHMARK_PATH
                 )
-        f.close()
-        os.unlink(f.name)
 
     def test_handle_class_init_error(self):
         # dataset with a wrong param name
@@ -410,10 +405,6 @@ class TestRunCmd:
             error_match = """Dataset: "buggy-dataset".*'wrong_param_name'"""
             with pytest.raises(TypeError, match=error_match):
                 run(run_cmd, 'benchopt', standalone_mode=False)
-            tmp_dataset.close()
-            os.unlink(tmp_dataset.name)
-            tmp_config.close()
-            os.unlink(tmp_config.name)
 
     def test_result_collection(self, no_debug_test):
         solver = """

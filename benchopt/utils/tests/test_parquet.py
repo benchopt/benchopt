@@ -51,8 +51,6 @@ def test_parquet_metadata():
 
         # Check that the metadata has been changed correctly
         assert json.dumps(get_metadata(path)) == json.dumps(metadata)
-        f.close()
-        os.unlink(f.name)
 
 
 def test_metadata_saving():

@@ -88,8 +88,6 @@ def _run_shell(script, raise_on_error=None, capture_stdout=True,
                 "Bad value for `raise_on_error`. Should be a str, a callable, "
                 f"a bool or None. Got {raise_on_error}."
             )
-    tmp.close()
-    os.unlink(tmp.name)
     if return_output:
         return exit_code, output
     return exit_code

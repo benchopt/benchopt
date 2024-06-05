@@ -281,10 +281,6 @@ class CommandLineSolver(BaseSolver, ABC):
         self.data_filename = self._data_file.name
         self.model_filename = self._model_file.name
         super().__init__(**parameters)
-        self._data_file.close()
-        os.unlink(self._data_file.name)
-        self._model_file.close()
-        os.unlink(self._model_file.name)
 
 
 
