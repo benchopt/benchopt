@@ -359,6 +359,7 @@ class Benchmark:
 
     def clear_cache(self, func, ignore=None, **kwargs):
         """Clear the cache for the given function."""
+        print("call clear cache")
 
         func_cached = self.mem.cache(func, ignore=ignore)
         if func_cached.check_call_in_cache(**kwargs):
