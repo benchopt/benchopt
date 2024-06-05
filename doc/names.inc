@@ -23,3 +23,5 @@
 .. _Badr Moufad: https://github.com/Badr-MOUFAD
 
 .. _Pierre Ablin: https://github.com/pierreablin
+
+.. _Christopher Marouani: https://github.com/chris-mrn

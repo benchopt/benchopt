@@ -53,6 +53,7 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
         "timeout",
         "n_jobs",
         "slurm",
+        "collect",
         "plot",
         "display",
         "html",
@@ -121,6 +122,11 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               help='Stop a solver when run for more than <timeout> seconds.'
               ' The syntax 10h or 10m can be used to denote 10 hours or '
               'minutes respectively.')
+@click.option('--collect',
+              is_flag=True,
+              help='If set, this run will only collect results which are '
+              'already available in the cache. This flag allows to collect '
+              'results while all the solvers are not finished yet.')
 @click.option('--config', 'config_file', default=None,
               shell_complete=complete_config_files,
               help="YAML configuration file containing benchmark options.")
@@ -177,7 +183,7 @@ def run(config_file=None, **kwargs):
     (
         benchmark, solver_names, forced_solvers, dataset_names,
         objective_filters, max_runs, n_repetitions, timeout, n_jobs, slurm,
-        plot, display, html, pdb, do_profile, env_name, output
+        collect, plot, display, html, pdb, do_profile, env_name, output_name
     ) = _get_run_args(kwargs, config)
 
     try:
@@ -223,21 +229,24 @@ def run(config_file=None, **kwargs):
         objective.is_installed(raise_on_not_installed=True)
 
         # Check that the dataset/solver patterns match actual dataset
-        benchmark.validate_dataset_patterns(dataset_names)
-        benchmark.validate_objective_filters(objective_filters)
+        datasets = benchmark.check_dataset_patterns(dataset_names)
+        objectives = benchmark.check_objective_filters(objective_filters)
         # pyyaml returns tuples: make sure everything is a list
-        benchmark.validate_solver_patterns(
-            list(solver_names) + list(forced_solvers)
+        if isinstance(solver_names, dict):
+            solver_names = [solver_names]
+        elif isinstance(solver_names, tuple):
+            solver_names = list(solver_names)
+        solvers = benchmark.check_solver_patterns(
+            solver_names + list(forced_solvers)
         )
 
         run_benchmark(
-            benchmark, solver_names, forced_solvers,
-            dataset_names=dataset_names,
-            objective_filters=objective_filters,
+            benchmark, solvers, forced_solvers,
+            datasets=datasets, objectives=objectives,
             max_runs=max_runs, n_repetitions=n_repetitions,
             timeout=timeout, n_jobs=n_jobs, slurm=slurm,
             plot_result=plot, display=display, html=html,
-            pdb=pdb, output=output
+            collect=collect, pdb=pdb, output_name=output_name
         )
 
         print_stats()  # print profiling stats (does nothing if not profiling)
@@ -313,8 +322,9 @@ def run(config_file=None, **kwargs):
         rf"{'--plot' if plot else '--no-plot'} "
         rf"{'--display' if display else '--no-display'} "
         rf"{'--html' if html else '--no-html'} "
-        rf"{'--pdb' if pdb else ''} "
-        rf"--output {output}"
+        rf"{'--pdb ' if pdb else ''}"
+        rf"{'--profile ' if do_profile else ''}"
+        rf"--output {output_name}"
         .replace('\\', '\\\\')
     )
     raise SystemExit(_run_shell_in_conda_env(
@@ -399,8 +409,8 @@ def install(
 
     # Check that the dataset/solver patterns match actual dataset
     benchmark = Benchmark(benchmark)
-    benchmark.validate_dataset_patterns(dataset_names)
-    benchmark.validate_solver_patterns(solver_names)
+    benchmark.check_dataset_patterns(dataset_names)
+    benchmark.check_solver_patterns(solver_names)
 
     # Get a list of all conda envs
     default_conda_env, conda_envs = list_conda_envs()

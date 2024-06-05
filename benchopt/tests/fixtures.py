@@ -156,6 +156,8 @@ def empty_env_name(request):
     global _EMPTY_ENV_NAME
 
     if _EMPTY_ENV_NAME is None:
+        if request.config.getoption("--skip-env"):
+            pytest.skip("Skip creating a test env")
         env_name = f"_benchopt_test_env_{uuid.uuid4()}"
         request.addfinalizer(delete_empty_env)
 
