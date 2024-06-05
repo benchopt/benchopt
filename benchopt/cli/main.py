@@ -334,7 +334,7 @@ def run(config_file=None, **kwargs):
     cmd = (
         rf"benchopt run --local {benchmark.benchmark_dir} "
         rf"--n-repetitions {n_repetitions} "
-        rf"--max-runs {max_runs}"
+        rf"--max-runs {max_runs} "
         rf"{f'--timeout {timeout} ' if timeout is not None else ''}"
         rf"{'--no-timeout ' if no_timeout else ''} "
         rf"--n-jobs {n_jobs} {'--slurm' if slurm else ''} "
