@@ -242,7 +242,7 @@ def get_setting(name, config_file=None, benchmark_name=None,
     name : str
         Name of the config parameter to retrieve.
     config_file : str | Path
-        Path to a config file from which the setting can be retreives. When
+        Path to a config file from which the setting can be retrieved. When
         it is not provided, default to the global benchopt config file.
     benchmark_name : str
         Name of the benchmark for which the setting are retrieved.
