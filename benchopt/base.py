@@ -1,4 +1,5 @@
 import tempfile
+import os
 
 from abc import ABC, abstractmethod
 
@@ -275,11 +276,17 @@ class CommandLineSolver(BaseSolver, ABC):
     """
 
     def __init__(self, **parameters):
-        self._data_file = tempfile.NamedTemporaryFile()
-        self._model_file = tempfile.NamedTemporaryFile()
+        self._data_file = tempfile.NamedTemporaryFile(delete=False)
+        self._model_file = tempfile.NamedTemporaryFile(delete=False)
         self.data_filename = self._data_file.name
         self.model_filename = self._model_file.name
         super().__init__(**parameters)
+        self._data_file.close()
+        os.unlink(self._data_file.name)
+        self._model_file.close()
+        os.unlink(self._model_file.name)
+
+
 
 
 class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):

@@ -4,6 +4,7 @@ import tarfile
 import inspect
 import tempfile
 from pathlib import Path
+import os
 
 import click
 import pytest
@@ -219,12 +220,14 @@ class TestRunCmd:
         out.check_output(r"def run\(self, n_iter\):", repetition=1)
 
     def test_invalid_config_file(self):
-        tmp = tempfile.NamedTemporaryFile(mode="w+")
+        tmp = tempfile.NamedTemporaryFile(mode="w+", delete=False)
         tmp.write("some_unknown_option: 0")
         tmp.flush()
         with pytest.raises(ValueError, match="Invalid config file option"):
             run(f'{str(DUMMY_BENCHMARK_PATH)} --config {tmp.name}'.split(),
                 'benchopt', standalone_mode=False)
+        tmp.close()
+        os.unlink(tmp.name)
 
     def test_config_file(self):
         config = f"""
@@ -238,7 +241,7 @@ class TestRunCmd:
           - python-pgd[step_size=[2, 3]]
           - Solver-Test[raise_error=False]
         """
-        tmp = tempfile.NamedTemporaryFile(mode="w+")
+        tmp = tempfile.NamedTemporaryFile(mode="w+", delete=False)
         tmp.write(config)
         tmp.flush()
 
@@ -260,6 +263,9 @@ class TestRunCmd:
         out.check_output(r'Solver-Test\[raise_error=False\]:', repetition=11)
         out.check_output(
             r'Python-PGD\[step_size=1.5\]:', repetition=0)
+        tmp.close()
+        os.unlink(tmp.name)
+
 
     @pytest.mark.parametrize('n_rep', [2, 3, 5])
     def test_caching(self, n_rep):
@@ -349,7 +355,7 @@ class TestRunCmd:
             """)
         with tempfile.NamedTemporaryFile(
                 dir=DUMMY_BENCHMARK_PATH / "solvers",
-                mode='w', suffix='.py') as f:
+                mode='w', suffix='.py', delete=False) as f:
             f.write(solver)
             f.flush()
 
@@ -360,6 +366,8 @@ class TestRunCmd:
                     f.name, "Solver",
                     benchmark_dir=DUMMY_BENCHMARK_PATH
                 )
+        f.close()
+        os.unlink(f.name)
 
     def test_handle_class_init_error(self):
         # dataset with a wrong param name
@@ -387,8 +395,8 @@ class TestRunCmd:
         TmpFileCtx = tempfile.NamedTemporaryFile
         dataset_dir = DUMMY_BENCHMARK_PATH / "datasets"
 
-        with TmpFileCtx("w+", suffix='.py', dir=dataset_dir) as tmp_dataset, \
-             TmpFileCtx("w+") as tmp_config:
+        with TmpFileCtx("w+", suffix='.py', dir=dataset_dir, delete=False) as tmp_dataset, \
+             TmpFileCtx("w+", delete=False) as tmp_config:
 
             tmp_dataset.write(dataset_src)
             tmp_dataset.flush()
@@ -402,6 +410,10 @@ class TestRunCmd:
             error_match = """Dataset: "buggy-dataset".*'wrong_param_name'"""
             with pytest.raises(TypeError, match=error_match):
                 run(run_cmd, 'benchopt', standalone_mode=False)
+            tmp_dataset.close()
+            os.unlink(tmp_dataset.name)
+            tmp_config.close()
+            os.unlink(tmp_config.name)
 
     def test_result_collection(self, no_debug_test):
         solver = """

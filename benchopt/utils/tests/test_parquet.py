@@ -3,6 +3,7 @@ import json
 import tempfile
 import pandas as pd
 from pathlib import Path
+import os
 
 from benchopt.utils.parquet import to_parquet
 from benchopt.utils.parquet import get_metadata
@@ -27,7 +28,7 @@ def test_parquet_metadata():
         'c': [.1, .2, .3, .4],
     })
 
-    with tempfile.NamedTemporaryFile("rb+", suffix=".pq") as f:
+    with tempfile.NamedTemporaryFile("rb+", suffix=".pq", delete=False) as f:
 
         path = Path(f.name)
         metadata = {'test': 'info', 'plot_configs': [{}, {}, {}]}
@@ -50,6 +51,8 @@ def test_parquet_metadata():
 
         # Check that the metadata has been changed correctly
         assert json.dumps(get_metadata(path)) == json.dumps(metadata)
+        f.close()
+        os.unlink(f.name)
 
 
 def test_metadata_saving():

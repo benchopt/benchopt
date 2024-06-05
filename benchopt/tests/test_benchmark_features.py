@@ -1,5 +1,6 @@
 import pytest
 import tempfile
+import os
 
 from benchopt.cli.main import run
 from benchopt.utils.temp_benchmark import temp_benchmark
@@ -263,8 +264,8 @@ def test_ignore_hidden_files():
         dir=str(DUMMY_BENCHMARK_PATH / 'datasets'),
         prefix='.hidden_dataset_',
         suffix='.py',
-        delete=True
-    ), CaptureRunOutput():
+        delete=False
+    ) as f, CaptureRunOutput():
         run([
             str(DUMMY_BENCHMARK_PATH), '-l', '-d',
             SELECT_ONE_SIMULATED, '-f', SELECT_ONE_PGD, '-n', '1',
@@ -275,13 +276,18 @@ def test_ignore_hidden_files():
         dir=str(DUMMY_BENCHMARK_PATH / 'solvers'),
         prefix='.hidden_solver_',
         suffix='.py',
-        delete=True
-    ), CaptureRunOutput():
+        delete=False
+    ) as f2, CaptureRunOutput():
         run([
             str(DUMMY_BENCHMARK_PATH), '-l', '-d',
             SELECT_ONE_SIMULATED, '-f', SELECT_ONE_PGD, '-n', '1',
             '-r', '1', '-o', SELECT_ONE_OBJECTIVE, '--no-plot'
         ], 'benchopt', standalone_mode=False)
+    f.close()
+    os.unlink(f.name)
+    f2.close()
+    os.unlink(f2.name)
+
 
 
 @pytest.mark.parametrize("n_iter", [1, 2, 5])

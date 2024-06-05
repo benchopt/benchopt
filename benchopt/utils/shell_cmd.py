@@ -57,7 +57,7 @@ def _run_shell(script, raise_on_error=None, capture_stdout=True,
     # the end of this function.
     tmp = tempfile.NamedTemporaryFile(
         mode="w+", delete=False, suffix=".sh" if not is_cmd else ".bat"
-    )
+    , delete=False)
     tmp.write(fast_failure_script)
     tmp.flush()
 
@@ -89,6 +89,8 @@ def _run_shell(script, raise_on_error=None, capture_stdout=True,
                 "Bad value for `raise_on_error`. Should be a str, a callable, "
                 f"a bool or None. Got {raise_on_error}."
             )
+    tmp.close()
+    os.unlink(tmp.name)
     if return_output:
         return exit_code, output
     return exit_code

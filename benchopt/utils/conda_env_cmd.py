@@ -104,7 +104,7 @@ def create_conda_env(
         print(f"\nconda env config:\n{'-' * 40}{benchopt_env}{'-' * 40}")
     env_yaml = tempfile.NamedTemporaryFile(
         mode="w+", prefix='conda_env_', suffix='.yml'
-    )
+    , delete=False)
     env_yaml.write(f"name: {env_name}{benchopt_env}")
     env_yaml.flush()
 
@@ -140,6 +140,8 @@ def create_conda_env(
     else:
         if quiet:
             print("done")
+    env_yaml.close()
+    os.unlink(env_yaml.name)
 
 
 def get_benchopt_version_in_env(env_name):
