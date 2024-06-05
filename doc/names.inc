@@ -33,3 +33,5 @@
 .. _Virginie Loison: https://www.linkedin.com/in/virginie-loison/
 
 .. _Julie Alberge: https://www.linkedin.com/in/julie-alberge
+
+.. _Jad Yehya: https://github.com/Jad-yehya

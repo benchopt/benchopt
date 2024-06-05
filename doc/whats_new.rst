@@ -24,6 +24,8 @@ API
   potentially non-trivial structures (like dictionaries).
   By `Thomas Moreau`_ (:gh:`706`).
 
+- Raise error when an invalid install_cmd is provided. By `Jad Yehya` (:gh:`714`).
+
 CLI
 ~~~
 
