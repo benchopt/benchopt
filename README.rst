@@ -44,7 +44,7 @@ It is also possible to use the **latest development version**. To do so, run ins
 
 .. code-block:: bash
 
-    pip install --pre benchopt -U -i https://test.pypi.org/simple
+    pip install git+https://github.com/benchopt/benchopt.git
 
 
 Getting started
@@ -204,7 +204,7 @@ Available benchmarks
    :target: https://www.python.org/downloads/release/python-360/
 .. |Documentation| image:: https://img.shields.io/badge/documentation-latest-blue
    :target: https://benchopt.github.io
-.. |codecov| image:: https://codecov.io/gh/benchopt/benchopt/branch/master/graph/badge.svg
+.. |codecov| image:: https://codecov.io/gh/benchopt/benchopt/branch/main/graph/badge.svg
    :target: https://codecov.io/gh/benchopt/benchopt
 .. |SWH| image:: https://archive.softwareheritage.org/badge/origin/https://github.com/benchopt/benchopt/
     :target: https://archive.softwareheritage.org/browse/origin/?origin_url=https://github.com/benchopt/benchopt

@@ -361,6 +361,16 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
       evaluated. This should be a dictionary where the keys correspond to the
       keyword arguments of `evaluate_result`.
 
+    Optionally, the `Solver` can implement the following methods to change its
+    behavior:
+
+    - `save_final_results(**result)`: Return the data to be saved from the
+       results of the solver. It will be saved as a `.pkl` file in the
+       `output/results` folder, and link to the benchmark results.
+
+    - `get_next(stop_val)`: Return the next iteration where the result will be
+      evaluated.
+
     This class is also used to specify information about the benchmark.
     In particular, it should have the following class attributes:
 
@@ -418,6 +428,20 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
             scalar value which will be used to detect convergence. With a
             dictionary, multiple metric values can be stored at once instead
             of running each separately.
+        """
+        pass
+
+    def save_final_results(self, **solver_result):
+        """Save the final results of the solver.
+
+        Parameters
+        ----------
+        solver_result : dict
+            All values needed to compute the objective metrics. This dictionary
+            is retrieved by calling ``solver_result = Solver.get_result()``.
+        Returns
+        -------
+        dict of values to save
         """
         pass
 
@@ -512,6 +536,13 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
         type for benchopt. The returned object will be passed to
         ``Objective.compute``.
         """
+        ...
+
+    def _get_one_result(self):
+        # Make sure the splits with CV are created before calling
+        # get_one_result
+        self.get_objective()
+        return self.get_one_result()
 
     # Reduce the pickling and hashing burden by only pickling class parameters.
     @staticmethod

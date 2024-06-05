@@ -1,12 +1,12 @@
 import time
 import inspect
+import pickle
 
 from datetime import datetime
 
-from joblib import Parallel, delayed
+from joblib import Parallel, delayed, hash
 
 from .callback import _Callback
-from .benchmark import _check_name_lists
 from .utils.sys_info import get_sys_info
 from .utils.files import uniquify_results
 from .utils.pdb_helpers import exception_handler
@@ -94,6 +94,20 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
     solver._warm_up()
 
     curve = []
+
+    # Augment the metadata with final_results if necessary.
+    base_method = getattr(
+        super(type(objective), objective),
+        'save_final_results', None
+    )
+
+    has_save_final_results = objective.save_final_results is not base_method
+    if has_save_final_results:
+        final_results = benchmark.get_output_folder() / 'final_results'
+        final_results /= f"{hash(meta)}.pkl"
+        final_results.parent.mkdir(exist_ok=True, parents=True)
+        meta["final_results"] = str(final_results)
+
     with exception_handler(output, pdb=pdb) as ctx:
 
         if solver._solver_strategy == "callback":
@@ -130,12 +144,20 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
                 stop, ctx.status, stop_val = stopping_criterion.should_stop(
                     stop_val, curve
                 )
-
+        # Only run if save_final_results is defined in the objective.
+        if has_save_final_results:
+            to_save = objective.save_final_results(**solver.get_result())
+            if to_save is not None:
+                with open(meta["final_results"], 'wb') as f:
+                    pickle.dump(to_save, f)
+    if ctx.status in ['diverged', 'error', 'interrupted']:
+        raise RuntimeError(ctx.status)
     return curve, ctx.status
 
 
 def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
-                   max_runs, timeout, force=False, output=None, pdb=False):
+                   max_runs, timeout=None, force=False, collect=False,
+                   output=None, pdb=False):
     """Run a benchmark for a given dataset, objective and solver.
 
     Parameters
@@ -158,6 +180,9 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
     force : bool
         If force is set to True, ignore the cache and run the computations
         for the solver anyway. Else, use the cache if available.
+    collect : bool
+        If set to True, only collect the results that have been put in cache,
+        and ignore the results that are not computed yet, default is False.
     output : TerminalOutput or None
         Object to format string to display the progress of the solver.
     pdb : bool
@@ -170,8 +195,14 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
     """
 
     run_one_to_cvg_cached = benchmark.cache(
-        run_one_to_cvg, ignore=['force', 'output', 'pdb']
+        run_one_to_cvg, ignore=['force', 'output', 'pdb'], collect=collect
     )
+    if collect:
+        _run_one_to_cvg_cached = run_one_to_cvg_cached
+
+        def run_one_to_cvg_cached(**kwargs):
+            res = _run_one_to_cvg_cached(**kwargs)
+            return res if res is not None else ([], 'not ready')
 
     # Set objective an skip if necessary.
     skip, reason = objective.set_dataset(dataset)
@@ -223,16 +254,22 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
         stopping_criterion = solver._stopping_criterion.get_runner_instance(
             solver=solver,
             max_runs=max_runs,
-            timeout=timeout / n_repetitions,
+            timeout=timeout / n_repetitions if timeout is not None else None,
             output=output,
         )
-        curve, status = run_one_to_cvg_cached(
-            benchmark=benchmark, objective=objective,
-            solver=solver, meta=meta,
-            stopping_criterion=stopping_criterion,
-            force=force, output=output, pdb=pdb
+
+        args_run_one_to_cvg = dict(
+            benchmark=benchmark, objective=objective, solver=solver, meta=meta,
+            stopping_criterion=stopping_criterion, force=force, output=output,
+            pdb=pdb
         )
-        if status in ['diverged', 'error', 'interrupted']:
+        try:
+            curve, status = run_one_to_cvg_cached(
+                **args_run_one_to_cvg
+            )
+        except RuntimeError as e:
+            status = e.args[0]
+        if status in ['diverged', 'error', 'interrupted', 'not ready']:
             run_statistics = []
             break
         run_statistics.extend(curve)
@@ -259,27 +296,27 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
     return run_statistics
 
 
-def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
-                  dataset_names=None, objective_filters=None, max_runs=10,
-                  n_repetitions=1, timeout=100, n_jobs=1, slurm=None,
-                  plot_result=True, display=True, html=True,
-                  show_progress=True, pdb=False, output="None"):
+def run_benchmark(benchmark, solvers=None, forced_solvers=None,
+                  datasets=None, objectives=None, max_runs=10,
+                  n_repetitions=1, timeout=None, n_jobs=1, slurm=None,
+                  plot_result=True, display=True, html=True,  collect=False,
+                  show_progress=True, pdb=False, output_name="None"):
     """Run full benchmark.
 
     Parameters
     ----------
     benchmark : benchopt.Benchmark object
         Object to represent the benchmark.
-    solver_names : list | None
+    solvers : list | None
         List of solvers to include in the benchmark. If None
         all solvers available are run.
     forced_solvers : list | None
         List of solvers to include in the benchmark and for
         which one forces recomputation.
-    dataset_names : list | None
+    datasets : list | None
         List of datasets to include. If None all available
         datasets are used.
-    objective_filters : list | None
+    objectives : list | None
         Filters to select specific objective parameters. If None,
         all objective parameters are tested
     max_runs : int
@@ -303,11 +340,14 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
     html : bool
         If set to True (default), display the result plot in HTML, otherwise
         in matplotlib figures, default is True.
+    collect : bool
+        If set to True, only collect the results that have been put in cache,
+        and ignore the results that are not computed yet, default is False.
     show_progress : bool
         If show_progress is set to True, display the progress of the benchmark.
     pdb : bool
-        It pdb is set to True, open a debugger on error.
-    output : str
+        If pdb is set to True, open a debugger on error.
+    output_name : str
         Filename for the parquet output. If given, the results will
         be stored at <BENCHMARK>/outputs/<filename>.parquet.
 
@@ -319,24 +359,21 @@ def run_benchmark(benchmark, solver_names=None, forced_solvers=None,
         by the objective is not the same for all parameters, the missing data
         is set to `NaN`.
     """
-    output_name = output
+    output = TerminalOutput(n_repetitions, show_progress)
+    output.set(verbose=True)
 
     # List all datasets, objective and solvers to run based on the filters
     # provided. Merge the solver_names and forced to run all necessary solvers.
-    solver_names = _check_name_lists(solver_names, forced_solvers)
-    output = TerminalOutput(n_repetitions, show_progress)
-
-    output.set(verbose=True)
     all_runs = benchmark.get_all_runs(
-        solver_names, forced_solvers, dataset_names, objective_filters,
+        solvers, forced_solvers, datasets, objectives,
         output=output
     )
     common_kwargs = dict(
         benchmark=benchmark, n_repetitions=n_repetitions, max_runs=max_runs,
-        timeout=timeout, pdb=pdb
+        timeout=timeout, pdb=pdb, collect=collect
     )
 
-    if slurm is not None:
+    if slurm is not None and not collect:
         from .utils.slurm_executor import run_on_slurm
         results = run_on_slurm(
             benchmark, slurm, run_one_solver, common_kwargs,

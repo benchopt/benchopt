@@ -17,7 +17,8 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
                context_settings=CONTEXT_SETTINGS, invoke_without_command=True)
 @click.option('--version', '-v', is_flag=True, help='Print version')
 @click.option('--check-editable', is_flag=True,
-              help='Print a flag if benchopt is installed in development mode')
+              help='Output more info for version checking, and format as: '
+              'BENCHOPT_VERSION:<version>:<is_editable>.')
 @click.pass_context
 def benchopt(ctx, version=False, check_editable=False):
     """Command line interface to benchopt"""
@@ -25,7 +26,7 @@ def benchopt(ctx, version=False, check_editable=False):
         output = __version__
         if check_editable:
             _, is_editable = get_benchopt_requirement()
-            output = f"{output} {is_editable}"
+            output = f"BENCHOPT_VERSION:{output}:{is_editable}"
         print(output)
         raise SystemExit(0)
     if ctx.invoked_subcommand is None:

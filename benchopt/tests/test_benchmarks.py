@@ -16,8 +16,8 @@ def test_benchmark_objective(benchmark, dataset_simu):
     # check that the reported dimension is correct and that the result of
     # the objective function is a dictionary containing a scalar value for
     # `objective_value`.
-    beta_hat = objective.get_one_result()
-    objective_dict = objective(beta_hat)
+    result = objective._get_one_result()
+    objective_dict = objective(result)
 
     assert 'objective_value' in objective_dict, (
         "When the output of objective is a dict, it should at least "
