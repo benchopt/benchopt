@@ -110,6 +110,8 @@ class Benchmark:
             self.url = f"https://github.com/benchopt/{self.name}"
         else:
             self.name = Path(self.url).name
+        # replace dots to avoid issues with `with_suffix``
+        self.name = self.name.replace('.', '-')
 
     ####################################################################
     # Helpers to access and validate objective, solvers and datasets
