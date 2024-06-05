@@ -46,7 +46,8 @@ class DependenciesMixin:
         return cls.install_cmd
 
     @classmethod
-    def is_installed(cls, env_name=None, raise_on_not_installed=None, quiet=False):
+    def is_installed(cls, env_name=None, raise_on_not_installed=None,
+                     quiet=False):
         """Check if the module caught a failed import to assert install.
 
         Parameters
@@ -115,9 +116,9 @@ class DependenciesMixin:
                 cls._pre_install_hook(env_name=env_name)
                 if install_cmd_ == "conda":
                     if hasattr(cls, "requirements"):
-                        install_in_conda_env(
-                            *cls.requirements, env_name=env_name, force=force
-                        )
+                        install_in_conda_env(*cls.requirements,
+                                             env_name=env_name,
+                                             force=force)
                     else:
                         # get details of class
                         cls_type = cls.__base__.__name__.replace("Base", "")
@@ -203,7 +204,9 @@ class DependenciesMixin:
                 f"  No ImportError raised from {cls._module_filename}."
             )
 
-        return (conda_reqs, shell_install_scripts, post_install_hooks, missing_deps)
+        return (
+            conda_reqs, shell_install_scripts, post_install_hooks, missing_deps
+        )
 
     @classmethod
     def _pre_install_hook(cls, env_name=None):
