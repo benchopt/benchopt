@@ -33,6 +33,9 @@ CLI
 - Add ``--download`` option in ``benchopt install`` to allow downloading
   the data when installing the benchmark. By `Thomas Moreau`_ (:gh:`718`)
 
+- Add ``--no-timeout`` option in ``benchopt run`` to allow solvers to bypass 
+  timeout. By `Célestin Eve`_ (:gh:`725`)
+
 FIX
 ~~~
 

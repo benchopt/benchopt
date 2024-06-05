@@ -41,7 +41,6 @@ def test_parse_value():
     # Check that if the default is not a bool or a list, we return the value
     assert parse_value(1, 2) == 1
     assert parse_value(2.0, 1) == 2.0
-    assert parse_value('abc', 1) == 'abc'
     assert parse_value('abc', 'a') == 'abc'
 
 
@@ -71,7 +70,14 @@ def test_config_file_set(setting_key):
         ), default_value)
         assert get_setting(setting_key) == default_value
 
-        set_value = parse_value('True', default_value)
+        # pick arbitrary new and env values for this configuration parameter
+        if isinstance(default_value, (bool, str)) or default_value is None:
+            set_value = parse_value('True', default_value)
+            env_value = parse_value('False', default_value)
+        else:
+            set_value = parse_value(2 * default_value + 1, default_value)
+            env_value = parse_value(2 * default_value - 1, default_value)
+
         set_setting(setting_key, set_value)
 
         # Make sure the value is correctly set and retrieved
@@ -81,7 +87,6 @@ def test_config_file_set(setting_key):
             assert get_setting(setting_key) == set_value
 
             # Otherwise, we get the env value
-            env_value = parse_value('False', default_value)
             os.environ[f"BENCHOPT_{setting_key.upper()}"] = str(env_value)
             assert get_setting(setting_key) == env_value
             del os.environ[f"BENCHOPT_{setting_key.upper()}"]

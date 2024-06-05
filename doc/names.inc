@@ -26,6 +26,8 @@
 
 .. _Christopher Marouani: https://github.com/chris-mrn
 
+.. _Célestin Eve: https://github.com/ceelestin
+
 .. _Pierre-Antoine Comby: https://github.com/paquiteau
 
 .. _Virginie Loison: https://www.linkedin.com/in/virginie-loison/
