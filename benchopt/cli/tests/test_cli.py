@@ -440,7 +440,7 @@ class TestRunCmd:
             # check that the results where collected for the correct solvers
             assert len(out.result_files) == 1
             out.check_output(r'done \(not enough run\)', repetition=1)
-            out.check_output('not ready', repetition=1)
+            out.check_output('not run', repetition=1)
 
 
 class TestInstallCmd:
