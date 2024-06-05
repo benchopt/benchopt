@@ -44,8 +44,7 @@ It is also possible to use the **latest development version**. To do so, run ins
 
 .. code-block:: bash
 
-    git clone https://github.com/benchopt/benchopt.git 
-    pip install -e . 
+    pip install git+https://github.com/benchopt/benchopt.git
 
 
 Getting started
