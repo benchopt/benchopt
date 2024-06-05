@@ -13,3 +13,4 @@ User guide
     advanced
     ml_benchmark
     performance_curves
+    tweak_datasets
