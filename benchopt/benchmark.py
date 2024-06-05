@@ -344,8 +344,8 @@ class Benchmark:
         that are already in cache.
         """
 
-        # Create a cached function the computations in the benchmark folder
-        # and handle cases where we force the run.
+        # Create a cached version of `func` and handle cases where we force
+        # the run.
         func_cached = self.mem.cache(func, ignore=ignore)
         if force:
             assert not collect, "Cannot collect and force computation."
