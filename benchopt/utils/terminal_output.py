@@ -18,7 +18,7 @@ STATUS = {
     'diverged': ("diverged", RED),
     'not installed': ('not installed', RED),
     'interrupted': ("interrupted", YELLOW),
-    'not ready': ('not ready', YELLOW),
+    'not run yet': ('not run yet', YELLOW),
     'skip': ('skip', YELLOW),
     'timeout': ("done (timeout)", YELLOW),
     'max_runs': ("done (not enough run)", YELLOW),
