@@ -36,6 +36,9 @@ CLI
 FIX
 ~~~
 
+- Disable caching of diverged/errored runs. By `Julie Alberge`_ and 
+  `Virginie Loison`_ (:gh:`735`)
+
 - Fix pickling of dynamic modules to allow for nested parallelism in
   distributed runs. By `Thomas Moreau`_ (:gh:`713`)
 
