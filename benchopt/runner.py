@@ -129,7 +129,8 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
                 stop, ctx.status, stop_val = stopping_criterion.should_stop(
                     stop_val, curve
                 )
-
+    if ctx.status in ['diverged', 'error', 'interrupted', 'not ready']:
+        raise RuntimeError(ctx.status)
     return curve, ctx.status
 
 
@@ -240,15 +241,12 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
             stopping_criterion=stopping_criterion, force=force, output=output,
             pdb=pdb
         )
-        curve, status = run_one_to_cvg_cached(
-            **args_run_one_to_cvg
-        )
-        if status in ['diverged', 'error', 'interrupted', 'not ready']:
-            # do not cache failed runs
-            benchmark.clear_cache(
-                run_one_to_cvg, **args_run_one_to_cvg,
-                ignore=['force', 'output', 'pdb']
+        try:
+            curve, status = run_one_to_cvg_cached(
+                **args_run_one_to_cvg
             )
+        except RuntimeError as e:
+            status = e.args[0]
             run_statistics = []
             break
         run_statistics.extend(curve)
