@@ -1,6 +1,5 @@
 import os
 import subprocess
-import re
 
 from ..config import DEBUG
 from ..config import get_setting
@@ -69,7 +68,7 @@ def _run_shell(script, raise_on_error=None, capture_stdout=True,
         raise_on_error = "{output}"
 
     if is_cmd:
-        command = f"cmd /c {tmp.name}"
+        command = f'cmd /c "{tmp.name}"'
     else:
         command = f"{SHELL} {tmp.name}"
 
@@ -137,7 +136,7 @@ def _run_shell_in_conda_env(script, env_name=None, raise_on_error=None,
 
                 # Activate the conda environment using `CALL`
                 # to make sure it affects the current session
-                f'CALL conda activate {env_name}\n\n'
+                f'CALL conda activate "{env_name}"\n\n'
 
                 # Run the actual script
                 f'{script}'
