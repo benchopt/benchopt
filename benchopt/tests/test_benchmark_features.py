@@ -1,5 +1,4 @@
 import pytest
-import tempfile
 import os
 
 from benchopt.cli.main import run

@@ -1,5 +1,4 @@
 import os
-import tempfile
 import subprocess
 
 from ..config import DEBUG

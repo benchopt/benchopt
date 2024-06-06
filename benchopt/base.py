@@ -1,5 +1,3 @@
-import tempfile
-
 from abc import ABC, abstractmethod
 
 from .callback import _Callback

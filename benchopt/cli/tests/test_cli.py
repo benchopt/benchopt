@@ -2,7 +2,6 @@ import re
 import time
 import tarfile
 import inspect
-import tempfile
 from pathlib import Path
 
 import click
