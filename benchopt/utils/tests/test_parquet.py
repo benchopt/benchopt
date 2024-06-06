@@ -3,7 +3,6 @@ import json
 import tempfile
 import pandas as pd
 from pathlib import Path
-import os
 
 from benchopt.utils.parquet import to_parquet
 from benchopt.utils.parquet import get_metadata
@@ -12,6 +11,7 @@ from benchopt.utils.parquet import update_metadata
 from benchopt.cli.main import run
 from benchopt.cli.process_results import plot
 from benchopt.utils.temp_benchmark import temp_benchmark
+from benchopt.utils.misc import OS_Specific_NamedTempFile
 
 from benchopt.config import DEFAULT_BENCHMARK_CONFIG
 
@@ -28,7 +28,7 @@ def test_parquet_metadata():
         'c': [.1, .2, .3, .4],
     })
 
-    with tempfile.NamedTemporaryFile("rb+", suffix=".pq", delete=False) as f:
+    with OS_Specific_NamedTempFile("rb+", suffix=".pq") as f:
 
         path = Path(f.name)
         metadata = {'test': 'info', 'plot_configs': [{}, {}, {}]}

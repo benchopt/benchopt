@@ -4,7 +4,6 @@ import tarfile
 import inspect
 import tempfile
 from pathlib import Path
-import os
 
 import click
 import pytest
@@ -16,6 +15,7 @@ from benchopt.utils.safe_import import _unskip_import
 from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.utils.stream_redirection import SuppressStd
 from benchopt.utils.dynamic_modules import _load_class_from_module
+from benchopt.utils.misc import OS_Specific_NamedTempFile
 
 
 from benchopt.tests import SELECT_ONE_PGD
@@ -220,13 +220,12 @@ class TestRunCmd:
         out.check_output(r"def run\(self, n_iter\):", repetition=1)
 
     def test_invalid_config_file(self):
-        tmp = tempfile.NamedTemporaryFile(mode="w+", delete=False)
+        tmp = OS_Specific_NamedTempFile(mode="w+")
         tmp.write("some_unknown_option: 0")
         tmp.flush()
         with pytest.raises(ValueError, match="Invalid config file option"):
             run(f'{str(DUMMY_BENCHMARK_PATH)} --config {tmp.name}'.split(),
                 'benchopt', standalone_mode=False)
-
 
     def test_config_file(self):
         config = f"""
@@ -240,7 +239,7 @@ class TestRunCmd:
           - python-pgd[step_size=[2, 3]]
           - Solver-Test[raise_error=False]
         """
-        tmp = tempfile.NamedTemporaryFile(mode="w+", delete=False)
+        tmp = OS_Specific_NamedTempFile(mode="w+")
         tmp.write(config)
         tmp.flush()
 
@@ -262,7 +261,6 @@ class TestRunCmd:
         out.check_output(r'Solver-Test\[raise_error=False\]:', repetition=11)
         out.check_output(
             r'Python-PGD\[step_size=1.5\]:', repetition=0)
-
 
     @pytest.mark.parametrize('n_rep', [2, 3, 5])
     def test_caching(self, n_rep):
@@ -350,7 +348,7 @@ class TestRunCmd:
                 name = "test_import_ctx"
 
             """)
-        with tempfile.NamedTemporaryFile(
+        with OS_Specific_NamedTempFile(
                 dir=DUMMY_BENCHMARK_PATH / "solvers",
                 mode='w', suffix='.py') as f:
             f.write(solver)
@@ -387,11 +385,12 @@ class TestRunCmd:
             """
 
         # TODO: use temp_benchmark for this test.
-        TmpFileCtx = tempfile.NamedTemporaryFile
+        TmpFileCtx = OS_Specific_NamedTempFile
         dataset_dir = DUMMY_BENCHMARK_PATH / "datasets"
 
-        with TmpFileCtx("w+", suffix='.py', dir=dataset_dir, delete=False) as tmp_dataset, \
-             TmpFileCtx("w+", delete=False) as tmp_config:
+        with TmpFileCtx("w+", suffix='.py', dir=dataset_dir,
+                        ) as tmp_dataset, \
+             TmpFileCtx("w+") as tmp_config:
 
             tmp_dataset.write(dataset_src)
             tmp_dataset.flush()

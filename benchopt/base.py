@@ -1,5 +1,4 @@
 import tempfile
-import os
 
 from abc import ABC, abstractmethod
 
@@ -10,7 +9,7 @@ from .stopping_criterion import SufficientProgressCriterion
 from .utils.safe_import import set_benchmark_module
 from .utils.dynamic_modules import get_file_hash
 from .utils.dynamic_modules import _reconstruct_class
-
+from .utils.misc import OS_Specific_NamedTempFile
 from .utils.dependencies_mixin import DependenciesMixin
 from .utils.parametrized_name_mixin import ParametrizedNameMixin
 
@@ -276,13 +275,11 @@ class CommandLineSolver(BaseSolver, ABC):
     """
 
     def __init__(self, **parameters):
-        self._data_file = tempfile.NamedTemporaryFile(delete=False)
-        self._model_file = tempfile.NamedTemporaryFile(delete=False)
+        self._data_file = OS_Specific_NamedTempFile()
+        self._model_file = OS_Specific_NamedTempFile()
         self.data_filename = self._data_file.name
         self.model_filename = self._model_file.name
         super().__init__(**parameters)
-
-
 
 
 class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):

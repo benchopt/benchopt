@@ -1,5 +1,6 @@
 import sys
 from pathlib import Path
+import tempfile
 
 # Drop when dropping support for 3.8
 if sys.version_info < (3, 9):
@@ -84,3 +85,24 @@ def get_benchopt_requirement(pytest=False):
             )
 
     return req, False
+
+
+def check_python_version():
+    required_version = (3, 12)
+    current_version = sys.version_info
+
+    if current_version < required_version:
+        raise EnvironmentError("Your current Python version is "
+                               f"{current_version.major}."
+                               f"{current_version.minor}. "
+                               "Please upgrade to Python 3.12 or higher "
+                               "for program to work correctly.")
+
+
+def OS_Specific_NamedTempFile(dir=None, mode='w+b', prefix=None, suffix=None):
+    if sys.platform == 'win32':
+        check_python_version()
+        return tempfile.NamedTemporaryFile(dir, mode, prefix, suffix,
+                                           delete=True, delete_on_close=False)
+    else:
+        return tempfile.NamedTemporaryFile(dir, mode, prefix, suffix)

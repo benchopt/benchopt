@@ -5,6 +5,7 @@ import os
 from benchopt.cli.main import run
 from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.utils.dynamic_modules import _load_class_from_module
+from benchopt.utils.misc import OS_Specific_NamedTempFile
 
 from benchopt.tests import SELECT_ONE_PGD
 from benchopt.tests import SELECT_ONE_SIMULATED
@@ -66,7 +67,6 @@ def test_error_reporting(error, raise_install_error):
         else SystemExit
     )
 
-    import os
     prev_value = os.environ.get('BENCHOPT_RAISE_INSTALL_ERROR', '0')
 
     def raise_error():
@@ -260,30 +260,27 @@ def test_ignore_hidden_files():
     # Non-regression test to make sure hidden files in datasets and solvers
     # are ignored. If this is not the case, the call to run will fail if it
     # is not ignored as there is no Dataset/Solver defined in the file.
-    with tempfile.NamedTemporaryFile(
+    with OS_Specific_NamedTempFile(
         dir=str(DUMMY_BENCHMARK_PATH / 'datasets'),
         prefix='.hidden_dataset_',
         suffix='.py',
-        delete=False
-    ) as f, CaptureRunOutput():
+    ), CaptureRunOutput():
         run([
             str(DUMMY_BENCHMARK_PATH), '-l', '-d',
             SELECT_ONE_SIMULATED, '-f', SELECT_ONE_PGD, '-n', '1',
             '-r', '1', '-o', SELECT_ONE_OBJECTIVE, '--no-plot'
         ], 'benchopt', standalone_mode=False)
 
-    with tempfile.NamedTemporaryFile(
+    with OS_Specific_NamedTempFile(
         dir=str(DUMMY_BENCHMARK_PATH / 'solvers'),
         prefix='.hidden_solver_',
-        suffix='.py',
-        delete=False
-    ) as f2, CaptureRunOutput():
+        suffix='.py'
+    ), CaptureRunOutput():
         run([
             str(DUMMY_BENCHMARK_PATH), '-l', '-d',
             SELECT_ONE_SIMULATED, '-f', SELECT_ONE_PGD, '-n', '1',
             '-r', '1', '-o', SELECT_ONE_OBJECTIVE, '--no-plot'
         ], 'benchopt', standalone_mode=False)
-
 
 
 @pytest.mark.parametrize("n_iter", [1, 2, 5])

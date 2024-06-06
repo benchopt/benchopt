@@ -5,6 +5,8 @@ import subprocess
 from ..config import DEBUG
 from ..config import get_setting
 
+from benchopt.utils.misc import OS_Specific_NamedTempFile
+
 
 SHELL = get_setting('shell')
 
@@ -55,8 +57,8 @@ def _run_shell(script, raise_on_error=None, capture_stdout=True,
 
     # Use a TemporaryFile to make sure this file is cleaned up at
     # the end of this function.
-    tmp = tempfile.NamedTemporaryFile(
-        mode="w+", suffix=".sh" if not is_cmd else ".bat", delete=False)
+    tmp = OS_Specific_NamedTempFile(
+        mode="w+", suffix=".sh" if not is_cmd else ".bat")
     tmp.write(fast_failure_script)
     tmp.flush()
 
