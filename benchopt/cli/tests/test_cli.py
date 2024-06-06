@@ -147,7 +147,7 @@ class TestRunCmd:
                      '-n', '1', '-r', '1', '-o', SELECT_ONE_OBJECTIVE,
                      '--no-plot'], 'benchopt', standalone_mode=False)
 
-        out.check_output(f'conda activate {test_env_name}')
+        out.check_output(f'conda activate "{test_env_name}"')
         out.check_output('Simulated', repetition=1)
         out.check_output('Dummy Sparse Regression', repetition=1)
         out.check_output(r'Python-PGD\[step_size=1\]:', repetition=6)
@@ -166,7 +166,7 @@ class TestRunCmd:
                      '--no-plot', '--timeout', timeout], 'benchopt',
                     standalone_mode=False)
 
-        out.check_output(f'conda activate {test_env_name}')
+        out.check_output(f'conda activate "{test_env_name}"')
         out.check_output('Simulated', repetition=1)
         out.check_output('Dummy Sparse Regression', repetition=1)
         out.check_output(r'Python-PGD\[step_size=1\]:', repetition=6)
