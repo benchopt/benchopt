@@ -6,6 +6,7 @@ from pathlib import Path
 
 import click
 import os
+import sys
 import pytest
 from joblib.memory import _FUNCTION_HASHES
 from click.shell_completion import ShellComplete
@@ -146,8 +147,10 @@ class TestRunCmd:
                      '-d', SELECT_ONE_SIMULATED, '-f', SELECT_ONE_PGD,
                      '-n', '1', '-r', '1', '-o', SELECT_ONE_OBJECTIVE,
                      '--no-plot'], 'benchopt', standalone_mode=False)
-
-        out.check_output(f'conda activate "{test_env_name}"')
+        if sys.platform == 'win32':
+            out.check_output(f'conda activate "{test_env_name}"')
+        else:
+            out.check_output(f'conda activate {test_env_name}')
         out.check_output('Simulated', repetition=1)
         out.check_output('Dummy Sparse Regression', repetition=1)
         out.check_output(r'Python-PGD\[step_size=1\]:', repetition=6)
@@ -166,7 +169,10 @@ class TestRunCmd:
                      '--no-plot', '--timeout', timeout], 'benchopt',
                     standalone_mode=False)
 
-        out.check_output(f'conda activate "{test_env_name}"')
+        if sys.platform == 'win32':
+            out.check_output(f'conda activate "{test_env_name}"')
+        else:
+            out.check_output(f'conda activate {test_env_name}')
         out.check_output('Simulated', repetition=1)
         out.check_output('Dummy Sparse Regression', repetition=1)
         out.check_output(r'Python-PGD\[step_size=1\]:', repetition=6)
