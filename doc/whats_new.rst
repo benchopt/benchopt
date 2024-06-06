@@ -24,6 +24,8 @@ API
   potentially non-trivial structures (like dictionaries).
   By `Thomas Moreau`_ (:gh:`706`).
 
+- Raise error when an invalid install_cmd is provided. By `Jad Yehya` (:gh:`714`).
+
 CLI
 ~~~
 
@@ -33,11 +35,23 @@ CLI
 - Add ``--download`` option in ``benchopt install`` to allow downloading
   the data when installing the benchmark. By `Thomas Moreau`_ (:gh:`718`)
 
+- Add ``--no-timeout`` option in ``benchopt run`` to allow solvers to bypass 
+  timeout. By `Célestin Eve`_ (:gh:`725`)
+
 FIX
 ~~~
 
+- Disable caching of diverged/errored runs. By `Julie Alberge`_ and 
+  `Virginie Loison`_ (:gh:`735`)
+
 - Fix pickling of dynamic modules to allow for nested parallelism in
   distributed runs. By `Thomas Moreau`_ (:gh:`713`)
+
+DOC
+~~~
+
+- Add documentation for the `run_once` sampling strategy.
+  By `Mathieu Dagréou`_ (:gh:`700`).
 
 .. _changes_1_5_1:
 
