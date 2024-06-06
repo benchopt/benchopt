@@ -429,9 +429,9 @@ class TestRunCmd:
         TmpFileCtx = OS_Specific_NamedTempFile
         dataset_dir = DUMMY_BENCHMARK_PATH / "datasets"
 
-        with TmpFileCtx("w+", suffix='.py', dir=dataset_dir,
+        with TmpFileCtx(mode="w+", suffix='.py', dir=dataset_dir,
                         ) as tmp_dataset, \
-             TmpFileCtx("w+") as tmp_config:
+             TmpFileCtx(mode="w+") as tmp_config:
 
             tmp_dataset.write(dataset_src)
             tmp_dataset.flush()

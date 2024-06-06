@@ -28,7 +28,7 @@ def test_parquet_metadata():
         'c': [.1, .2, .3, .4],
     })
 
-    with OS_Specific_NamedTempFile("rb+", suffix=".pq") as f:
+    with OS_Specific_NamedTempFile(mode="rb+", suffix=".pq") as f:
 
         path = Path(f.name)
         metadata = {'test': 'info', 'plot_configs': [{}, {}, {}]}

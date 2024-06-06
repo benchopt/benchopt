@@ -263,7 +263,7 @@ def test_ignore_hidden_files():
     with OS_Specific_NamedTempFile(
         dir=str(DUMMY_BENCHMARK_PATH / 'datasets'),
         prefix='.hidden_dataset_',
-        suffix='.py',
+        suffix='.py'
     ), CaptureRunOutput():
         run([
             str(DUMMY_BENCHMARK_PATH), '-l', '-d',
