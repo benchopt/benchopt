@@ -288,5 +288,8 @@ def get_conda_context():
     if exit_code != 0 or active_prefix is None:
         return None
     info = json.loads(payload)
-    info['active_prefix'] = active_prefix
+    info['active_prefix'] = os.path.normpath(active_prefix)
+    info['root_prefix'] = os.path.normpath(info['root_prefix'])
+    info['envs_dirs'] = [os.path.normpath(env_dir) for env_dir
+                         in info['envs_dirs']]
     return Context(**info)

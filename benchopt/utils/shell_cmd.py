@@ -1,5 +1,6 @@
 import os
 import subprocess
+import re
 
 from ..config import DEBUG
 from ..config import get_setting
@@ -126,6 +127,7 @@ def _run_shell_in_conda_env(script, env_name=None, raise_on_error=None,
         # first line to use conda activate in bash script
         # Add necessary calls to make the script run in conda env.
         if is_cmd:
+            env_name_win = re.escape(env_name)
             # Windows specific handling
             script = (
                 # Make sure R_HOME is unset in Windows to avoid conflicts
@@ -133,7 +135,7 @@ def _run_shell_in_conda_env(script, env_name=None, raise_on_error=None,
 
                 # Activate the conda environment using `CALL`
                 # to make sure it affects the current session
-                f'CALL conda activate {env_name}\n\n'
+                f'CALL conda activate {env_name_win}\n\n'
 
                 # Run the actual script
                 f'{script}'
