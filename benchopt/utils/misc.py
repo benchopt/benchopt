@@ -102,7 +102,9 @@ def check_python_version():
 def OS_Specific_NamedTempFile(dir=None, mode='w+b', prefix=None, suffix=None):
     if sys.platform == 'win32':
         check_python_version()
-        return tempfile.NamedTemporaryFile(dir, mode, prefix, suffix,
-                                           delete=True, delete_on_close=False)
+        return tempfile.NamedTemporaryFile(dir=dir, mode=mode, prefix=prefix,
+                                           suffix=suffix, delete=True,
+                                           delete_on_close=False)
     else:
-        return tempfile.NamedTemporaryFile(dir, mode, prefix, suffix)
+        return tempfile.NamedTemporaryFile(dir=dir, mode=mode, prefix=prefix,
+                                           suffix=suffix)
