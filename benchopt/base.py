@@ -34,7 +34,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
     - ``get_result(self)``: returns all parameters of interest, as a dict.
       The output is passed to ``Objective.evaluate_result``.
 
-    Note that two ``sampling_strategy`` can be used to construct the benchmark
+    Note that four ``sampling_strategy`` can be used to construct the benchmark
     curve:
 
     - ``'iteration'``: call the run method with max_iter number increasing
@@ -44,7 +44,8 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
     - ``'callback'``: a callable that should be called after each iteration or
       epoch. This callable periodically calls the objective's `compute`
       and returns False when the solver should stop.
-
+    - ``'run_once'``: call the run method once to get a single point. This is
+      typically used for ML benchmarks.
     """
 
     _base_class_name = 'Solver'
