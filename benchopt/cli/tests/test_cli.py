@@ -352,7 +352,7 @@ class TestRunCmd:
             """)
         with tempfile.NamedTemporaryFile(
                 dir=DUMMY_BENCHMARK_PATH / "solvers",
-                mode='w', suffix='.py', delete=False) as f:
+                mode='w', suffix='.py') as f:
             f.write(solver)
             f.flush()
 
