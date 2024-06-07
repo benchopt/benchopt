@@ -8,11 +8,11 @@ if %errorlevel% neq 0 exit /b %errorlevel%
 pip freeze
 if %errorlevel% neq 0 exit /b %errorlevel%
 
-call conda activate CONDA_ENV
+call conda activate base
 if %errorlevel% neq 0 exit /b %errorlevel%
 
-set TEST_CMD=python -m pytest -vs --durations=20 --junitxml=JUNIT_XML
-set TEST_CMD=python -m pytest -vs --durations=20 --junitxml=JUNIT_XML --test-env CONDA_ENV
+set TEST_CMD=python -m pytest -vs --durations=20 --junitxml="%JUNIT_XML%"
+set TEST_CMD=python -m pytest -vs --durations=20 --junitxml="%JUNIT_XML%" --test-env "%CONDA_ENV%"
 
 REM Un-comment when debugging the CI
 REM set TEST_CMD=%TEST_CMD% --skip-install
