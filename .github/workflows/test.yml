@@ -87,7 +87,7 @@ jobs:
 
       - name: 'Run the tests on Windows'
         if: matrix.os == 'windows-latest'
-        run: continuous_integration/test_script_windows.bat
+        run: continuous_integration\test_script_windows.bat
 
       - name: Publish Test Report
         uses: mikepenz/action-junit-report@v2
