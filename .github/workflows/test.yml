@@ -78,6 +78,7 @@ jobs:
           conda info
           conda install -yq pip
           pip install -e .[test]
+          pip install pytest
           # Install mamba in base environment to make it accessible test env
           test $BENCHOPT_CONDA_CMD == "mamba" && conda install -n base mamba || echo "using conda"
 
