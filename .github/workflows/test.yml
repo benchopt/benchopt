@@ -48,7 +48,7 @@ jobs:
       run:
         # Need to use this shell to get cond working properly.
         # See https://github.com/marketplace/actions/setup-miniconda#important
-        shell: bash -l {0}
+        shell: ${{ matrix.os == 'windows-latest' && 'cmd' || 'bash -l {0}' }}
 
     steps:
       - uses: actions/checkout@v3
