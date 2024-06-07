@@ -2,6 +2,8 @@ import sys
 from pathlib import Path
 import tempfile
 
+from benchopt.cli.main import run
+
 # Drop when dropping support for 3.8
 if sys.version_info < (3, 9):
     def is_relative_to(p1, p2):
@@ -108,3 +110,10 @@ def OS_Specific_NamedTempFile(dir=None, mode='w+b', prefix=None, suffix=None):
     else:
         return tempfile.NamedTemporaryFile(dir=dir, mode=mode, prefix=prefix,
                                            suffix=suffix)
+    
+def OS_Specific_run(command_args, str='benchopt',standalone_mode=False):
+    if sys.platform == 'win32':
+        command = ' '.join(command_args)
+    else:
+        command = ' '.join([f'"{arg}"' for arg in command_args])
+    run(command, str, standalone_mode)

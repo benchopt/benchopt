@@ -4,6 +4,7 @@ from benchopt.cli.main import run
 from benchopt.utils.temp_benchmark import temp_benchmark
 
 from benchopt.tests.utils import CaptureRunOutput
+from benchopt.utils.misc import OS_Specific_run
 
 TEST_SOLVER = """from benchopt import BaseSolver
     import numpy as np
@@ -22,7 +23,7 @@ TEST_SOLVER = """from benchopt import BaseSolver
 
 CONFIG = """
     objective:
-        - dummy*[reg=0.5]
+        - dummy^*[reg=0.5]
     dataset:
         - test-dataset
     solver:
@@ -38,7 +39,7 @@ def test_config_solver_no_params(no_debug_test):
         config_file = benchmark.benchmark_dir / "run_config.yml"
         config_file.write_text(CONFIG)
         with CaptureRunOutput() as out:
-            run([
+            OS_specific_run([
                 str(benchmark.benchmark_dir),
                 *f'--config {config_file}'.split()
             ], standalone_mode=False)
@@ -57,7 +58,7 @@ def test_config_solver_no_params_error(no_debug_test):
 
         with CaptureRunOutput():
             with pytest.raises(ValueError, match=error):
-                run([
+                OS_specific_run([
                     str(benchmark.benchmark_dir),
                     *f'--config {config_file}'.split()
                 ], standalone_mode=False)
@@ -71,7 +72,7 @@ def test_config_solver_with_params(no_debug_test):
         config_file = benchmark.benchmark_dir / "run_config.yml"
         config_file.write_text(CONFIG)
         with CaptureRunOutput() as out:
-            run([
+            OS_specific_run([
                 str(benchmark.benchmark_dir),
                 *f'--config {config_file}'.split()
             ], standalone_mode=False)
@@ -96,7 +97,7 @@ def test_config_solver_with_params_error(no_debug_test):
 
         with CaptureRunOutput():
             with pytest.raises(ValueError, match=error):
-                run([
+                OS_specific_run([
                     str(benchmark.benchmark_dir),
                     *f'--config {config_file}'.split()
                 ], standalone_mode=False)
@@ -115,7 +116,7 @@ def test_config_solver_with_params_list_error(no_debug_test):
         error = "Ambiguous positional parameter for solver1."
         with CaptureRunOutput():
             with pytest.raises(ValueError, match=error):
-                run([
+                OS_specific_run([
                     str(benchmark.benchmark_dir),
                     *f'--config {config_file}'.split()
                 ], standalone_mode=False)
@@ -131,7 +132,7 @@ def test_config_solver_with_params_str_list(no_debug_test):
         config_file = benchmark.benchmark_dir / "run_config.yml"
         config_file.write_text(config)
         with CaptureRunOutput() as out:
-            run([
+            OS_specific_run([
                 str(benchmark.benchmark_dir),
                 *f'--config {config_file}'.split()
             ], standalone_mode=False)
@@ -151,7 +152,7 @@ def test_config_solver_with_params_str_value(no_debug_test):
         config_file = benchmark.benchmark_dir / "run_config.yml"
         config_file.write_text(config)
         with CaptureRunOutput() as out:
-            run([
+            OS_specific_run([
                 str(benchmark.benchmark_dir),
                 *f'--config {config_file}'.split()
             ], standalone_mode=False)
@@ -171,7 +172,7 @@ def test_config_solver_with_params_yaml_list(no_debug_test):
         config_file = benchmark.benchmark_dir / "run_config.yml"
         config_file.write_text(config)
         with CaptureRunOutput() as out:
-            run([
+            OS_specific_run([
                 str(benchmark.benchmark_dir),
                 *f'--config {config_file}'.split()
             ], standalone_mode=False)
@@ -194,7 +195,7 @@ def test_config_solver_with_params_yaml_items(no_debug_test):
         config_file = benchmark.benchmark_dir / "run_config.yml"
         config_file.write_text(config)
         with CaptureRunOutput() as out:
-            run([
+            OS_specific_run([
                 str(benchmark.benchmark_dir),
                 *f'--config {config_file}'.split()
             ], standalone_mode=False)
@@ -216,7 +217,7 @@ def test_config_solver_with_params_yaml_value(no_debug_test):
         config_file = benchmark.benchmark_dir / "run_config.yml"
         config_file.write_text(config)
         with CaptureRunOutput() as out:
-            run([
+            OS_specific_run([
                 str(benchmark.benchmark_dir),
                 *f'--config {config_file}'.split()
             ], standalone_mode=False)
@@ -240,7 +241,7 @@ def test_config_solver_with_params_complex_param(no_debug_test):
         config_file = benchmark.benchmark_dir / "run_config.yml"
         config_file.write_text(config)
         with CaptureRunOutput() as out:
-            run([
+            OS_specific_run([
                 str(benchmark.benchmark_dir),
                 *f'--config {config_file}'.split()
             ], standalone_mode=False)
@@ -262,7 +263,7 @@ def test_config_solver_with_one_params_list(no_debug_test):
         config_file.write_text(config)
 
         with CaptureRunOutput() as out:
-            run([
+            OS_specific_run([
                 str(benchmark.benchmark_dir),
                 *f'--config {config_file}'.split()
             ], standalone_mode=False)
@@ -283,7 +284,7 @@ def test_config_solver_with_one_params_yaml_list(no_debug_test):
         config_file.write_text(config)
 
         with CaptureRunOutput() as out:
-            run([
+            OS_specific_run([
                 str(benchmark.benchmark_dir),
                 *f'--config {config_file}'.split()
             ], standalone_mode=False)
@@ -306,7 +307,7 @@ def test_config_solver_double_param_yaml_list(no_debug_test):
         config_file.write_text(config)
 
         with CaptureRunOutput() as out:
-            run([
+            OS_specific_run([
                 str(benchmark.benchmark_dir),
                 *f'--config {config_file}'.split()
             ], standalone_mode=False)
@@ -327,7 +328,7 @@ def test_config_solver_double_param_solver_yaml(no_debug_test):
         config_file.write_text(config)
 
         with CaptureRunOutput() as out:
-            run([
+            OS_specific_run([
                 str(benchmark.benchmark_dir),
                 *f'--config {config_file}'.split()
             ], standalone_mode=False)

@@ -10,7 +10,7 @@ from benchopt.utils.parquet import update_metadata
 from benchopt.cli.main import run
 from benchopt.cli.process_results import plot
 from benchopt.utils.temp_benchmark import temp_benchmark
-from benchopt.utils.misc import OS_Specific_NamedTempFile
+from benchopt.utils.misc import OS_Specific_NamedTempFile, OS_Specific_run
 
 from benchopt.config import DEFAULT_BENCHMARK_CONFIG
 
@@ -87,7 +87,7 @@ def test_metadata_saving():
         ]
 
         with CaptureRunOutput(delete_result_files=False) as out:
-            run(run_cmd, 'benchopt', standalone_mode=False)
+            OS_specific_run(run_cmd, 'benchopt', standalone_mode=False)
 
         config = get_metadata(Path(out.result_files[0]))
         expected_config = {
@@ -111,6 +111,6 @@ def test_metadata_saving():
 
         # Make sure that run store the metadata when creating a file.
         with CaptureRunOutput(delete_result_files=False) as out:
-            run(run_cmd, 'benchopt', standalone_mode=False)
+            OS_specific_run(run_cmd, 'benchopt', standalone_mode=False)
 
         assert get_metadata(Path(out.result_files[0])) == dummy_config
