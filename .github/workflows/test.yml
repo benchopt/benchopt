@@ -73,7 +73,7 @@ jobs:
         run:
           conda install -yq julia[version">=1.10.0"]
 
-        - name: Conda info
+      - name: Conda info
         run:
           conda info
 
