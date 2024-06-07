@@ -5,7 +5,7 @@ setlocal enabledelayedexpansion
 call conda info
 if %errorlevel% neq 0 exit /b %errorlevel%
 
-pip freeze
+call pip freeze
 if %errorlevel% neq 0 exit /b %errorlevel%
 
 call conda activate "%CONDA_ENV%"

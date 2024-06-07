@@ -48,7 +48,7 @@ jobs:
       run:
         # Need to use this shell to get cond working properly.
         # See https://github.com/marketplace/actions/setup-miniconda#important
-        shell: ${{ matrix.os == 'windows-latest' && 'cmd' || 'bash -l {0}' }}
+        shell: ${{ matrix.os == 'windows-latest' && 'cmd /C CALL {0}' || 'bash -l {0}' }}
 
     steps:
       - uses: actions/checkout@v3
@@ -79,11 +79,12 @@ jobs:
           call conda info
           call conda install -yq pip
           call pip install -e .[test]
-          echo using conda
+          call echo using conda
 
       - name: Install benchopt and its dependencies
         if: matrix.os != 'windows-latest'
         run: |
+          conda info
           conda install -yq pip
           pip install -e .[test]
           # Install mamba in base environment to make it accessible test env
