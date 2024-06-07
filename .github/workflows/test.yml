@@ -79,7 +79,7 @@ jobs:
           call conda info
           call conda install -yq pip
           call pip install -e .[test]
-           echo using conda
+          echo using conda
 
       - name: Install benchopt and its dependencies
         if: matrix.os != 'windows-latest'
