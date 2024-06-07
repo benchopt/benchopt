@@ -75,7 +75,7 @@ jobs:
 
       - name: Install benchopt and its dependencies Windows
         if: matrix.os == 'windows-latest'
-        run:
+        run: |
           call conda info
           call conda install -yq pip
           call pip install -e .[test]
