@@ -73,9 +73,12 @@ jobs:
         run:
           conda install -yq julia[version">=1.10.0"]
 
+        - name: Conda info
+        run:
+          conda info
+
       - name: Install benchopt and its dependencies
         run: |
-          call conda info
           conda install -yq pip
           pip install -e .[test]
           # Install mamba in base environment to make it accessible test env
