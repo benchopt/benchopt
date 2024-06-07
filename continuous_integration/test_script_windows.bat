@@ -5,6 +5,9 @@ setlocal enabledelayedexpansion
 call conda info
 if %errorlevel% neq 0 exit /b %errorlevel%
 
+call conda install -y pytest
+if %errorlevel% neq 0 exit /b %errorlevel%
+
 pip freeze
 if %errorlevel% neq 0 exit /b %errorlevel%
 
