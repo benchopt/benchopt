@@ -84,7 +84,7 @@ class TestRunCmd:
         ("", rf"The folder '{CURRENT_DIR}' does not contain `objective.py`")],
         ids=['invalid_path', 'no_objective', "no_objective in default"])
     def test_invalid_benchmark(self, invalid_benchmark, match):
-        with pytest.raises(click.BadParameter, match=match):
+        with pytest.raises(click.BadParameter, match=re.escape(match)):
             if len(invalid_benchmark) > 0:
                 run([invalid_benchmark], 'benchopt', standalone_mode=False)
             else:
@@ -215,7 +215,7 @@ class TestRunCmd:
 
         # Fourth test: --timeout and --no-timeout both specified
         match = 'You cannot specify both --timeout and --no-timeout options.'
-        with pytest.raises(click.BadParameter, match=match):
+        with pytest.raises(click.BadParameter, match=re.escape(match)):
             run([str(DUMMY_BENCHMARK_PATH), '-d', SELECT_ONE_SIMULATED,
                  '-f', SELECT_ONE_PGD, '-o', SELECT_ONE_OBJECTIVE,
                  '--no-plot', '--timeout=0', '--no-timeout'],
@@ -224,7 +224,7 @@ class TestRunCmd:
     def test_custom_parameters(self):
         SELECT_DATASETS = r'simulated[n_features=[100, 200]]'
         SELECT_SOLVERS = r'python-pgd-with-cb[use_acceleration=[True, False]]'
-        SELECT_OBJECTIVES = r'dummy*[0.1, 0.2]'
+        SELECT_OBJECTIVES = r'dummy^*[0.1, 0.2]'
 
         with CaptureRunOutput() as out:
             run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_DATASETS,
@@ -468,7 +468,7 @@ class TestRunCmd:
             with CaptureRunOutput() as out:
                 run([str(benchmark.benchmark_dir),
                     *'-d test-dataset -n 1 -r 1 --no-plot'.split(),
-                    *'-o dummy*[reg=0.5] -s test_solver'.split()],
+                    *'-o dummy^*[reg=0.5] -s test_solver'.split()],
                     'benchopt', standalone_mode=False)
 
             out.check_output('#RUN0', repetition=2)
@@ -478,7 +478,7 @@ class TestRunCmd:
                 run([
                     str(benchmark.benchmark_dir),
                     *'-d test-dataset -n 1 -r 1 --no-plot --collect'.split(),
-                    *'-o dummy*[reg=0.5] -s test_solver[param=[0,1]]'.split()
+                    *'-o dummy^*[reg=0.5] -s test_solver[param=[0,1]]'.split()
                 ], 'benchopt', standalone_mode=False)
 
             # check that no solver where run
@@ -498,7 +498,7 @@ class TestInstallCmd:
         ('.', "The folder '.' does not contain `objective.py`")],
         ids=['invalid_path', 'no_objective'])
     def test_invalid_benchmark(self, invalid_benchmark, match):
-        with pytest.raises(click.BadParameter, match=match):
+        with pytest.raises(click.BadParameter, match=re.escape(match)):
             install([invalid_benchmark], 'benchopt', standalone_mode=False)
 
     def test_invalid_dataset(self):
@@ -622,7 +622,7 @@ class TestInstallCmd:
         dataset = missing_deps_cls.format(Cls='Dataset')
         with temp_benchmark(datasets=[dataset]) as benchmark:
             match = "not importable:\nDataset\n- buggy-class"
-            with pytest.raises(AttributeError, match=match):
+            with pytest.raises(AttributeError, match=re.escape(match)):
                 with CaptureRunOutput():
                     install([
                         *f'{benchmark.benchmark_dir} -d buggy-class -y '
@@ -632,7 +632,7 @@ class TestInstallCmd:
         solver = missing_deps_cls.format(Cls='Solver')
         with temp_benchmark(solvers=[solver]) as benchmark:
             match = "not importable:\nSolver\n- buggy-class"
-            with pytest.raises(AttributeError, match=match):
+            with pytest.raises(AttributeError, match=re.escape(match)):
                 with CaptureRunOutput():
                     install([
                         *f'{benchmark.benchmark_dir} -s buggy-class -y '
@@ -870,7 +870,7 @@ class TestArchiveCmd:
         ("", rf"The folder '{CURRENT_DIR}' does not contain `objective.py`")],
         ids=['invalid_path', 'no_objective', "no_objective in default"])
     def test_invalid_benchmark(self, invalid_benchmark, match):
-        with pytest.raises(click.BadParameter, match=match):
+        with pytest.raises(click.BadParameter, match=re.escape(match)):
             if len(invalid_benchmark) > 0:
                 run([invalid_benchmark], 'benchopt', standalone_mode=False)
             else:

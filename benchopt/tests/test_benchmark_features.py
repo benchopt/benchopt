@@ -307,7 +307,7 @@ def test_run_once_iteration(n_iter):
             run([
                 str(benchmark.benchmark_dir),
                 *'-s solver1 -d test-dataset -n 0 -r 1 --no-plot'.split(),
-                *'-o dummy*[reg=0.5]'.split()
+                *'-o dummy^*[reg=0.5]'.split()
             ], standalone_mode=False)
         out.check_output(rf"RUNONCE\({n_iter}\)", repetition=1)
 
@@ -341,7 +341,7 @@ def test_run_once_callback(n_iter):
             run([
                 str(benchmark.benchmark_dir),
                 *'-s solver1 -d test-dataset -n 0 -r 1 --no-plot'.split(),
-                *'-o dummy*[reg=0.5]'.split()
+                *'-o dummy^*[reg=0.5]'.split()
             ], standalone_mode=False)
 
         out.check_output(rf"RUNONCE\({n_iter}\)", repetition=1)
@@ -383,7 +383,7 @@ def test_paths_config_key(test_case):
                 str(benchmark.benchmark_dir),
                 *'-s solver-test -d custom_dataset'
                  ' -n 0 -r 1 --no-plot '
-                '-o dummy*[reg=0.5]'.split()
+                '-o dummy^*[reg=0.5]'.split()
             ], standalone_mode=False)
 
         if test_case == "without_data_home":

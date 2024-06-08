@@ -53,7 +53,7 @@ def test_warm_up():
             run([
                 str(benchmark.benchmark_dir),
                 *'-s solver1 -d test-dataset -n 0 -r 5 --no-plot'.split(),
-                *'-o dummy*[reg=0.5]'.split()
+                *'-o dummy^*[reg=0.5]'.split()
             ], standalone_mode=False)
 
         # Make sure warmup is called exactly once
@@ -87,7 +87,7 @@ def test_pre_run_hook():
             run([
                 str(benchmark.benchmark_dir),
                 *'-s solver1 -d test-dataset -n 0 -r 5 --no-plot '
-                '-o dummy*[reg=0.5]'.split()
+                '-o dummy^*[reg=0.5]'.split()
             ], standalone_mode=False)
 
         with CaptureRunOutput() as out:
@@ -124,5 +124,5 @@ def test_invalid_get_result(strategy):
                 run([
                     str(benchmark.benchmark_dir),
                     *'-s solver1 -d test-dataset -n 0 -r 5 --no-plot'.split(),
-                    *'-o dummy*[reg=0.5]'.split()
+                    *'-o dummy^*[reg=0.5]'.split()
                 ], standalone_mode=False)
