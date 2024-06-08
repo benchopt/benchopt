@@ -9,7 +9,6 @@ from benchopt.utils.dynamic_modules import _load_class_from_module
 from benchopt.tests import DUMMY_BENCHMARK
 from benchopt.tests import DUMMY_BENCHMARK_PATH
 from benchopt.tests.utils import CaptureRunOutput
-from benchopt.utils.misc import OS_Specific_run
 
 
 def test_template_solver():
@@ -51,10 +50,10 @@ def test_warm_up():
 
     with temp_benchmark(solvers=[solver1]) as benchmark:
         with CaptureRunOutput() as out:
-            OS_specific_run([
+            run([
                 str(benchmark.benchmark_dir),
                 *'-s solver1 -d test-dataset -n 0 -r 5 --no-plot'.split(),
-                *'-o dummy^*[reg=0.5]'.split()
+                *'-o dummy*[reg=0.5]'.split()
             ], standalone_mode=False)
 
         # Make sure warmup is called exactly once
@@ -85,10 +84,10 @@ def test_pre_run_hook():
 
     with temp_benchmark(solvers=[solver1]) as benchmark:
         with CaptureRunOutput() as out:
-            OS_specific_run([
+            run([
                 str(benchmark.benchmark_dir),
                 *'-s solver1 -d test-dataset -n 0 -r 5 --no-plot '
-                '-o dummy^*[reg=0.5]'.split()
+                '-o dummy*[reg=0.5]'.split()
             ], standalone_mode=False)
 
         with CaptureRunOutput() as out:
@@ -122,8 +121,8 @@ def test_invalid_get_result(strategy):
     with temp_benchmark(solvers=[solver1]) as benchmark:
         with pytest.raises(TypeError, match='get_result` should be a dict '):
             with CaptureRunOutput():
-                OS_specific_run([
+                run([
                     str(benchmark.benchmark_dir),
                     *'-s solver1 -d test-dataset -n 0 -r 5 --no-plot'.split(),
-                    *'-o dummy^*[reg=0.5]'.split()
+                    *'-o dummy*[reg=0.5]'.split()
                 ], standalone_mode=False)

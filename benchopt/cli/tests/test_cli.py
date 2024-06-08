@@ -16,7 +16,7 @@ from benchopt.utils.safe_import import _unskip_import
 from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.utils.stream_redirection import SuppressStd
 from benchopt.utils.dynamic_modules import _load_class_from_module
-from benchopt.utils.misc import OS_Specific_NamedTempFile, OS_Specific_run
+from benchopt.utils.misc import OS_Specific_NamedTempFile
 
 
 from benchopt.tests import SELECT_ONE_PGD
@@ -86,18 +86,18 @@ class TestRunCmd:
     def test_invalid_benchmark(self, invalid_benchmark, match):
         with pytest.raises(click.BadParameter, match=match):
             if len(invalid_benchmark) > 0:
-                OS_specific_run([invalid_benchmark], 'benchopt', standalone_mode=False)
+                run([invalid_benchmark], 'benchopt', standalone_mode=False)
             else:
-                OS_specific_run([], 'benchopt', standalone_mode=False)
+                run([], 'benchopt', standalone_mode=False)
 
     def test_invalid_dataset(self):
         with pytest.raises(click.BadParameter, match="invalid_dataset"):
-            OS_specific_run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', 'invalid_dataset',
+            run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', 'invalid_dataset',
                  '-s', 'pgd'], 'benchopt', standalone_mode=False)
-    
+
     def test_invalid_solver(self):
         with pytest.raises(click.BadParameter, match="invalid_solver"):
-            OS_specific_run([str(DUMMY_BENCHMARK_PATH), '-l', '-s', 'invalid_solver'],
+            run([str(DUMMY_BENCHMARK_PATH), '-l', '-s', 'invalid_solver'],
                 'benchopt', standalone_mode=False)
 
     def test_objective_not_installed(self):
@@ -118,7 +118,7 @@ class TestRunCmd:
                     ModuleNotFoundError,
                     match="No module named 'fake_module'"
             ):
-                OS_specific_run(
+                run(
                     [str(benchmark.benchmark_dir), '-n', '1'],
                     'benchopt', standalone_mode=False
                 )
@@ -127,7 +127,7 @@ class TestRunCmd:
     def test_valid_call(self, n_jobs):
 
         with CaptureRunOutput() as out:
-            OS_specific_run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,
+            run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,
                  '-f', SELECT_ONE_PGD, '-n', '1', '-r', '1', '-o',
                  SELECT_ONE_OBJECTIVE, '-j', n_jobs, '--no-plot'],
                 'benchopt', standalone_mode=False)
@@ -143,7 +143,7 @@ class TestRunCmd:
     def test_valid_call_in_env(self, test_env_name):
         with CaptureRunOutput() as out:
             with pytest.raises(SystemExit, match='False'):
-                OS_specific_run([str(DUMMY_BENCHMARK_PATH), '--env-name', test_env_name,
+                run([str(DUMMY_BENCHMARK_PATH), '--env-name', test_env_name,
                      '-d', SELECT_ONE_SIMULATED, '-f', SELECT_ONE_PGD,
                      '-n', '1', '-r', '1', '-o', SELECT_ONE_OBJECTIVE,
                      '--no-plot'], 'benchopt', standalone_mode=False)
@@ -156,7 +156,6 @@ class TestRunCmd:
         out.check_output(r'Python-PGD\[step_size=1\]:', repetition=6)
         out.check_output(r'Python-PGD\[step_size=1.5\]:', repetition=0)
 
-
         # Make sure the results were saved in a result file
         assert len(out.result_files) == 1, out.output
 
@@ -164,7 +163,7 @@ class TestRunCmd:
     def test_timeout_in_env(self, test_env_name, timeout):
         with CaptureRunOutput() as out:
             with pytest.raises(SystemExit, match='False'):
-                OS_specific_run([str(DUMMY_BENCHMARK_PATH), '--env-name', test_env_name,
+                run([str(DUMMY_BENCHMARK_PATH), '--env-name', test_env_name,
                      '-d', SELECT_ONE_SIMULATED, '-f', SELECT_ONE_PGD,
                      '-n', '1', '-r', '1', '-o', SELECT_ONE_OBJECTIVE,
                      '--no-plot', '--timeout', timeout], 'benchopt',
@@ -185,7 +184,7 @@ class TestRunCmd:
     def test_no_timeout(self):
         # First test: --timeout==0
         with CaptureRunOutput() as out_timeout:
-            OS_specific_run([str(DUMMY_BENCHMARK_PATH), '-d', SELECT_ONE_SIMULATED, '-f',
+            run([str(DUMMY_BENCHMARK_PATH), '-d', SELECT_ONE_SIMULATED, '-f',
                 SELECT_ONE_PGD, '-o', SELECT_ONE_OBJECTIVE, '--no-plot',
                 '--timeout=0'], 'benchopt', standalone_mode=False)
         out_timeout.check_output('timeout', repetition=1)
@@ -195,14 +194,14 @@ class TestRunCmd:
             os.environ['BENCHOPT_DEFAULT_TIMEOUT'] = "0"
             # Second test: no option about timeout
             with CaptureRunOutput() as out_timeout_default:
-                OS_specific_run([str(DUMMY_BENCHMARK_PATH), '-d', SELECT_ONE_SIMULATED,
+                run([str(DUMMY_BENCHMARK_PATH), '-d', SELECT_ONE_SIMULATED,
                      '-f', SELECT_ONE_PGD, '-o', SELECT_ONE_OBJECTIVE,
                      '--no-plot'], 'benchopt', standalone_mode=False)
             out_timeout_default.check_output('timeout', repetition=1)
 
             # Third test: --no-timeout
             with CaptureRunOutput() as out_no_timeout:
-                OS_specific_run([str(DUMMY_BENCHMARK_PATH), '-d',
+                run([str(DUMMY_BENCHMARK_PATH), '-d',
                      SELECT_ONE_SIMULATED, '-f', SELECT_ONE_PGD,
                      '-o', SELECT_ONE_OBJECTIVE, '--no-plot', '--no-timeout'],
                     'benchopt', standalone_mode=False)
@@ -217,7 +216,7 @@ class TestRunCmd:
         # Fourth test: --timeout and --no-timeout both specified
         match = 'You cannot specify both --timeout and --no-timeout options.'
         with pytest.raises(click.BadParameter, match=match):
-            OS_specific_run([str(DUMMY_BENCHMARK_PATH), '-d', SELECT_ONE_SIMULATED,
+            run([str(DUMMY_BENCHMARK_PATH), '-d', SELECT_ONE_SIMULATED,
                  '-f', SELECT_ONE_PGD, '-o', SELECT_ONE_OBJECTIVE,
                  '--no-plot', '--timeout=0', '--no-timeout'],
                 'benchopt', standalone_mode=False)
@@ -225,10 +224,10 @@ class TestRunCmd:
     def test_custom_parameters(self):
         SELECT_DATASETS = r'simulated[n_features=[100, 200]]'
         SELECT_SOLVERS = r'python-pgd-with-cb[use_acceleration=[True, False]]'
-        SELECT_OBJECTIVES = r'dummy^*[0.1, 0.2]'
+        SELECT_OBJECTIVES = r'dummy*[0.1, 0.2]'
 
         with CaptureRunOutput() as out:
-            OS_specific_run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_DATASETS,
+            run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_DATASETS,
                  '-f', SELECT_SOLVERS, '-n', '1', '-r', '1', '-o',
                  SELECT_OBJECTIVES, '--no-plot'],
                 'benchopt', standalone_mode=False)
@@ -250,7 +249,7 @@ class TestRunCmd:
         # breaks the coverage collection.
         with CaptureRunOutput() as out:
             with pytest.raises(SystemExit, match='False'):
-                OS_specific_run([str(DUMMY_BENCHMARK_PATH), '--env-name', test_env_name,
+                run([str(DUMMY_BENCHMARK_PATH), '--env-name', test_env_name,
                      '-d', SELECT_ONE_SIMULATED, '-f', SELECT_ONE_PGD,
                      '-n', '1', '-r', '1', '-o', SELECT_ONE_OBJECTIVE,
                      '--profile', '--no-plot'],
@@ -271,7 +270,7 @@ class TestRunCmd:
         tmp.write("some_unknown_option: 0")
         tmp.flush()
         with pytest.raises(ValueError, match="Invalid config file option"):
-            OS_specific_run(f'{str(DUMMY_BENCHMARK_PATH)} --config {tmp.name}'.split(),
+            run(f'{str(DUMMY_BENCHMARK_PATH)} --config {tmp.name}'.split(),
                 'benchopt', standalone_mode=False)
 
     def test_config_file(self):
@@ -294,7 +293,7 @@ class TestRunCmd:
                    '--no-plot']
 
         with CaptureRunOutput() as out:
-            OS_specific_run(run_cmd, 'benchopt', standalone_mode=False)
+            run(run_cmd, 'benchopt', standalone_mode=False)
 
         out.check_output(r'Solver-Test\[raise_error=False\]:', repetition=11)
         out.check_output(r'Python-PGD\[step_size=2\]:', repetition=11)
@@ -302,7 +301,7 @@ class TestRunCmd:
 
         # test that CLI options take precedence
         with CaptureRunOutput() as out:
-            OS_specific_run(run_cmd + ['-f', 'Solver-Test'],
+            run(run_cmd + ['-f', 'Solver-Test'],
                 'benchopt', standalone_mode=False)
 
         out.check_output(r'Solver-Test\[raise_error=False\]:', repetition=11)
@@ -323,7 +322,7 @@ class TestRunCmd:
 
         # Make a first run that should be put in cache
         with CaptureRunOutput() as out:
-            OS_specific_run(run_cmd, 'benchopt', standalone_mode=False)
+            run(run_cmd, 'benchopt', standalone_mode=False)
 
         # Check that this run was properly done. If only one is detected, this
         # could indicate that the clean command does not work properly.
@@ -333,14 +332,14 @@ class TestRunCmd:
         # Now check that the cache is hit when running the benchmark a
         # second time without force
         with CaptureRunOutput() as out:
-            OS_specific_run(run_cmd, 'benchopt', standalone_mode=False)
+            run(run_cmd, 'benchopt', standalone_mode=False)
 
         out.check_output(r'Python-PGD\[step_size=1\]:',
                          repetition=1)
 
         # Check that the cache is also hit when running in parallel
         with CaptureRunOutput() as out:
-            OS_specific_run(run_cmd + ['-j', 2], 'benchopt', standalone_mode=False)
+            run(run_cmd + ['-j', 2], 'benchopt', standalone_mode=False)
 
         out.check_output(r'Python-PGD\[step_size=1\]:',
                          repetition=1)
@@ -348,7 +347,7 @@ class TestRunCmd:
         # Make sure that -f option forces the re-run for the solver
         run_cmd[4] = '-f'
         with CaptureRunOutput() as out:
-            OS_specific_run(run_cmd, 'benchopt', standalone_mode=False)
+            run(run_cmd, 'benchopt', standalone_mode=False)
 
         out.check_output(r'Python-PGD\[step_size=1\]:',
                          repetition=5*n_rep+1)
@@ -361,8 +360,8 @@ class TestRunCmd:
             '--no-plot'
         ]
         with CaptureRunOutput() as out:
-            OS_specific_run(command, 'benchopt', standalone_mode=False)
-            OS_specific_run(command, 'benchopt', standalone_mode=False)
+            run(command, 'benchopt', standalone_mode=False)
+            run(command, 'benchopt', standalone_mode=False)
 
         result_files = re.findall(
             r'Saving result in: (.*\.parquet)', out.output
@@ -450,7 +449,7 @@ class TestRunCmd:
 
             error_match = """Dataset: "buggy-dataset".*'wrong_param_name'"""
             with pytest.raises(TypeError, match=error_match):
-                OS_specific_run(run_cmd, 'benchopt', standalone_mode=False)
+                run(run_cmd, 'benchopt', standalone_mode=False)
 
     def test_result_collection(self, no_debug_test):
         solver = """
@@ -467,19 +466,19 @@ class TestRunCmd:
 
         with temp_benchmark(solvers=[solver]) as benchmark:
             with CaptureRunOutput() as out:
-                OS_specific_run([str(benchmark.benchmark_dir),
+                run([str(benchmark.benchmark_dir),
                     *'-d test-dataset -n 1 -r 1 --no-plot'.split(),
-                    *'-o dummy^*[reg=0.5] -s test_solver'.split()],
+                    *'-o dummy*[reg=0.5] -s test_solver'.split()],
                     'benchopt', standalone_mode=False)
 
             out.check_output('#RUN0', repetition=2)
             out.check_output('#RUN1', repetition=0)
 
             with CaptureRunOutput() as out:
-                OS_specific_run([
+                run([
                     str(benchmark.benchmark_dir),
                     *'-d test-dataset -n 1 -r 1 --no-plot --collect'.split(),
-                    *'-o dummy^*[reg=0.5] -s test_solver[param=[0,1]]'.split()
+                    *'-o dummy*[reg=0.5] -s test_solver[param=[0,1]]'.split()
                 ], 'benchopt', standalone_mode=False)
 
             # check that no solver where run
@@ -707,7 +706,7 @@ class TestPlotCmd:
     def setup_class(cls):
         "Make sure at least one result file is available"
         with SuppressStd() as out:
-            OS_specific_run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,
+            run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,
                  '-s', SELECT_ONE_PGD, '-n', '2', '-r', '1', '-o',
                  SELECT_ONE_OBJECTIVE, '--no-plot'], 'benchopt',
                 standalone_mode=False)
@@ -797,12 +796,12 @@ class TestGenerateResultCmd:
         with SuppressStd() as out:
             clean([str(DUMMY_BENCHMARK_PATH)],
                   'benchopt', standalone_mode=False)
-            OS_specific_run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,
+            run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,
                  '-s', SELECT_ONE_PGD, '-n', '2', '-r', '1', '-o',
                  SELECT_ONE_OBJECTIVE, '--no-plot'], 'benchopt',
                 standalone_mode=False)
             time.sleep(1)  # Make sure there is 2 separate files
-            OS_specific_run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,
+            run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,
                  '-s', SELECT_ONE_PGD, '-n', '2', '-r', '1', '-o',
                  SELECT_ONE_OBJECTIVE, '--no-plot'], 'benchopt',
                 standalone_mode=False)
@@ -850,7 +849,7 @@ class TestArchiveCmd:
     def setup_class(cls):
         "Make sure at least one result file is available"
         with SuppressStd() as out:
-            OS_specific_run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,
+            run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,
                  '-s', SELECT_ONE_PGD, '-n', '2', '-r', '1', '-o',
                  SELECT_ONE_OBJECTIVE, '--no-plot'], 'benchopt',
                 standalone_mode=False)
@@ -873,9 +872,9 @@ class TestArchiveCmd:
     def test_invalid_benchmark(self, invalid_benchmark, match):
         with pytest.raises(click.BadParameter, match=match):
             if len(invalid_benchmark) > 0:
-                OS_specific_run([invalid_benchmark], 'benchopt', standalone_mode=False)
+                run([invalid_benchmark], 'benchopt', standalone_mode=False)
             else:
-                OS_specific_run([], 'benchopt', standalone_mode=False)
+                run([], 'benchopt', standalone_mode=False)
 
     def test_call(self):
 

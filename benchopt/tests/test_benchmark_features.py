@@ -4,7 +4,7 @@ import os
 from benchopt.cli.main import run
 from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.utils.dynamic_modules import _load_class_from_module
-from benchopt.utils.misc import OS_Specific_NamedTempFile, OS_Specific_run
+from benchopt.utils.misc import OS_Specific_NamedTempFile
 
 from benchopt.tests import SELECT_ONE_PGD
 from benchopt.tests import SELECT_ONE_SIMULATED
@@ -33,7 +33,7 @@ def test_template_dataset():
 
 def test_benchmark_submodule():
     with pytest.raises(ValueError, match="raises an error"):
-        OS_specific_run([
+        run([
             str(DUMMY_BENCHMARK_PATH), '-s', 'solver-test[raise_error=True]',
             '-d', SELECT_ONE_SIMULATED
         ], 'benchopt', standalone_mode=False)
@@ -43,12 +43,12 @@ def test_benchopt_min_version():
     with patch_benchmark(DUMMY_BENCHMARK, component="objective",
                          min_benchopt_version="99.0"):
         with pytest.raises(RuntimeError, match="pip install -U"):
-            OS_specific_run([str(DUMMY_BENCHMARK_PATH)], 'benchopt',
+            run([str(DUMMY_BENCHMARK_PATH)], 'benchopt',
                 standalone_mode=False)
 
     with CaptureRunOutput() as out:
         # check than benchmark with low requirement runs
-        OS_specific_run([
+        run([
             str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,
             '-f', SELECT_ONE_PGD, '-n', '1', '-r', '1', '-o',
             SELECT_ONE_OBJECTIVE, '--no-plot'
@@ -75,7 +75,7 @@ def test_error_reporting(error, raise_install_error):
         os.environ['BENCHOPT_RAISE_INSTALL_ERROR'] = str(raise_install_error)
         with patch_import(dummy_solver_import=raise_error):
             with CaptureRunOutput() as out, pytest.raises(expected_exc):
-                OS_specific_run([
+                run([
                     str(DUMMY_BENCHMARK_PATH), '-s', "solver-test",
                     '-d', SELECT_ONE_SIMULATED, '-n', '1', '--no-plot'
                 ], 'benchopt', standalone_mode=False)
@@ -108,7 +108,7 @@ def test_objective_no_cv(no_debug_test):
     msg = "To use `Objective.get_split`, Objective must define a cv"
     with temp_benchmark(objective=no_cv) as benchmark:
         with pytest.raises(ValueError, match=msg):
-            OS_specific_run([str(benchmark.benchmark_dir),
+            run([str(benchmark.benchmark_dir),
                  *'-s python-pgd -d test-dataset -n 1 -r 1 --no-plot'.split()],
                 standalone_mode=False)
 
@@ -139,7 +139,7 @@ def test_objective_save_final_results(no_debug_test):
 
     with temp_benchmark(objective=save_final) as benchmark:
         with CaptureRunOutput(delete_result_files=False) as out:
-            OS_specific_run([
+            run([
                 str(benchmark.benchmark_dir),
                 *('-s python-pgd -d test-dataset -n 1 -r 1 --no-plot').split()
             ],  standalone_mode=False)
@@ -197,7 +197,7 @@ def test_objective_cv_splitter(no_debug_test):
 
     with temp_benchmark(objective=objective, solvers=[solver]) as benchmark:
         with CaptureRunOutput() as out:
-            OS_specific_run([str(benchmark.benchmark_dir),
+            run([str(benchmark.benchmark_dir),
                 *('-s test-solver -d test-dataset --no-plot').split()],
                 standalone_mode=False)
 
@@ -212,7 +212,7 @@ def test_objective_cv_splitter(no_debug_test):
     # Make sure that `-r` is enforced when specified
     with temp_benchmark(objective=objective, solvers=[solver]) as benchmark:
         with CaptureRunOutput() as out:
-            OS_specific_run([str(benchmark.benchmark_dir),
+            run([str(benchmark.benchmark_dir),
                 *('-s test-solver -d test-dataset -r 2 --no-plot').split()],
                 standalone_mode=False)
 
@@ -226,7 +226,7 @@ def test_objective_cv_splitter(no_debug_test):
 
     with temp_benchmark(objective=objective, solvers=[solver]) as benchmark:
         with CaptureRunOutput() as out:
-            OS_specific_run([str(benchmark.benchmark_dir),
+            run([str(benchmark.benchmark_dir),
                 *('-s test-solver -d test-dataset -r 5 --no-plot').split()],
                 standalone_mode=False)
 
@@ -241,7 +241,7 @@ def test_objective_cv_splitter(no_debug_test):
     # Make sure running in parallel does not mess up the splits
     with temp_benchmark(objective=objective, solvers=[solver]) as benchmark:
         with CaptureRunOutput() as out:
-            OS_specific_run([
+            run([
                 str(benchmark.benchmark_dir),
                 *('-s test-solver -d test-dataset -j 3 -r 4 --no-plot').split()
             ], standalone_mode=False)
@@ -264,7 +264,7 @@ def test_ignore_hidden_files():
         prefix='.hidden_dataset_',
         suffix='.py'
     ), CaptureRunOutput():
-        OS_specific_run([
+        run([
             str(DUMMY_BENCHMARK_PATH), '-l', '-d',
             SELECT_ONE_SIMULATED, '-f', SELECT_ONE_PGD, '-n', '1',
             '-r', '1', '-o', SELECT_ONE_OBJECTIVE, '--no-plot'
@@ -275,7 +275,7 @@ def test_ignore_hidden_files():
         prefix='.hidden_solver_',
         suffix='.py'
     ), CaptureRunOutput():
-        OS_specific_run([
+        run([
             str(DUMMY_BENCHMARK_PATH), '-l', '-d',
             SELECT_ONE_SIMULATED, '-f', SELECT_ONE_PGD, '-n', '1',
             '-r', '1', '-o', SELECT_ONE_OBJECTIVE, '--no-plot'
@@ -304,10 +304,10 @@ def test_run_once_iteration(n_iter):
 
     with temp_benchmark(solvers=[solver1]) as benchmark:
         with CaptureRunOutput() as out:
-            OS_specific_run([
+            run([
                 str(benchmark.benchmark_dir),
                 *'-s solver1 -d test-dataset -n 0 -r 1 --no-plot'.split(),
-                *'-o dummy^*[reg=0.5]'.split()
+                *'-o dummy*[reg=0.5]'.split()
             ], standalone_mode=False)
         out.check_output(rf"RUNONCE\({n_iter}\)", repetition=1)
 
@@ -338,10 +338,10 @@ def test_run_once_callback(n_iter):
 
     with temp_benchmark(solvers=[solver1]) as benchmark:
         with CaptureRunOutput() as out:
-            OS_specific_run([
+            run([
                 str(benchmark.benchmark_dir),
                 *'-s solver1 -d test-dataset -n 0 -r 1 --no-plot'.split(),
-                *'-o dummy^*[reg=0.5]'.split()
+                *'-o dummy*[reg=0.5]'.split()
             ], standalone_mode=False)
 
         out.check_output(rf"RUNONCE\({n_iter}\)", repetition=1)
@@ -379,11 +379,11 @@ def test_paths_config_key(test_case):
 
     with temp_benchmark(datasets=[custom_dataset], config=config) as benchmark:
         with CaptureRunOutput() as out:
-            OS_specific_run([
+            run([
                 str(benchmark.benchmark_dir),
                 *'-s solver-test -d custom_dataset'
                  ' -n 0 -r 1 --no-plot '
-                '-o dummy^*[reg=0.5]'.split()
+                '-o dummy*[reg=0.5]'.split()
             ], standalone_mode=False)
 
         if test_case == "without_data_home":

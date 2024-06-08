@@ -3,7 +3,6 @@ import pytest
 from benchopt.cli.main import run
 from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.tests.utils import CaptureRunOutput
-from benchopt.utils.misc import OS_Specific_run
 
 
 MINIMAL_SOLVER = """from benchopt import BaseSolver
@@ -39,7 +38,7 @@ def test_objective_bad_name(no_debug_test):
     ) as benchmark:
         with pytest.raises(SystemExit, match='1'):
             with CaptureRunOutput() as out:
-                OS_specific_run([str(benchmark.benchmark_dir),
+                run([str(benchmark.benchmark_dir),
                     *'-s test-solver -d test-dataset -n 1 -r 1 --no-plot'
                     .split()], standalone_mode=False)
 
@@ -68,7 +67,7 @@ def test_objective_no_value(no_debug_test):
     ) as benchmark:
         with pytest.raises(SystemExit, match='1'):
             with CaptureRunOutput() as out:
-                OS_specific_run([str(benchmark.benchmark_dir),
+                run([str(benchmark.benchmark_dir),
                     *'-s test-solver -d test-dataset -n 1 -r 1 --no-plot'
                     .split()], standalone_mode=False)
 
@@ -101,7 +100,7 @@ def test_objective_nonnumeric_values(no_debug_test):
             solvers=[MINIMAL_SOLVER]
     ) as benchmark:
         with CaptureRunOutput() as out:
-            OS_specific_run([str(benchmark.benchmark_dir),
+            run([str(benchmark.benchmark_dir),
                  *'-s test-solver -d test-dataset -n 1 -r 1 --no-display'
                  .split()], standalone_mode=False)
 
@@ -115,7 +114,7 @@ def test_objective_nonnumeric_values(no_debug_test):
             solvers=[MINIMAL_SOLVER]
     ) as benchmark:
         with CaptureRunOutput() as out:
-            OS_specific_run([str(benchmark.benchmark_dir),
+            run([str(benchmark.benchmark_dir),
                  *'-s test-solver -d test-dataset -n 1 -r 1 --no-display'
                  .split()], standalone_mode=False)
 

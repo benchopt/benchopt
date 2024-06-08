@@ -14,8 +14,6 @@ from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.tests.utils import CaptureRunOutput
 from benchopt.cli.main import run
 
-from benchopt.utils.misc import OS_Specific_run
-
 
 class MockOutput:
     def __init__(self):
@@ -308,7 +306,7 @@ def test_error_caching(no_debug_test):
                         datasets=[dataset]) as benchmark:
         with CaptureRunOutput() as out:
             for it in range(2):
-                OS_specific_run([str(benchmark.benchmark_dir),
+                run([str(benchmark.benchmark_dir),
                     *' -d dataset --no-plot -r 1 -n 1'.split()],
                     standalone_mode=False)
                 # benchmark is too quick to run, without sleep output files

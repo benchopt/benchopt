@@ -10,8 +10,6 @@ from benchopt.stopping_criterion import SingleRunCriterion
 from benchopt.stopping_criterion import SufficientDescentCriterion
 from benchopt.stopping_criterion import SufficientProgressCriterion
 
-from benchopt.utils.misc import OS_Specific_run
-
 MINIMAL_OBJECTIVE = """from benchopt import BaseObjective
 
     class Objective(BaseObjective):
@@ -148,7 +146,7 @@ def test_key_to_monitor_objective(no_debug_test, criterion_class, strategy):
 
     with temp_benchmark(objective=objective, solvers=[solver]) as benchmark:
         with CaptureRunOutput() as out:
-            OS_specific_run([str(benchmark.benchmark_dir),
+            run([str(benchmark.benchmark_dir),
                 *'-s test-solver -d test-dataset -n 10 -r 1 --no-display'
                 .split()], standalone_mode=False)
 
@@ -185,7 +183,7 @@ def test_solver_strategy(no_debug_test, strategy):
             solvers=[solver]
     ) as benchmark:
         with CaptureRunOutput():
-            OS_specific_run([str(benchmark.benchmark_dir),
+            run([str(benchmark.benchmark_dir),
                 *('-s test-solver -d test-dataset --no-plot -n 0').split()],
                 standalone_mode=False)
 
@@ -226,7 +224,7 @@ def test_stopping_criterion_strategy(no_debug_test, criterion_class, strategy):
             solvers=[solver]
     ) as benchmark:
         with CaptureRunOutput():
-            OS_specific_run([str(benchmark.benchmark_dir),
+            run([str(benchmark.benchmark_dir),
                 *('-s test-solver -d test-dataset --no-plot -n 0').split()],
                 standalone_mode=False)
 
@@ -268,7 +266,7 @@ def test_solver_override_strategy(no_debug_test, criterion_class, strategy):
             solvers=[solver]
     ) as benchmark:
         with CaptureRunOutput():
-            OS_specific_run([str(benchmark.benchmark_dir),
+            run([str(benchmark.benchmark_dir),
                 *('-s test-solver -d test-dataset --no-plot -n 0').split()],
                 standalone_mode=False)
 
@@ -293,7 +291,7 @@ def test_dual_strategy(no_debug_test):
     ) as benchmark:
         with pytest.raises(AssertionError, match="Only set it once."):
             with CaptureRunOutput():
-                OS_specific_run([str(benchmark.benchmark_dir),
+                run([str(benchmark.benchmark_dir),
                     *('-s test-solver -d test-dataset --no-plot').split()],
                     standalone_mode=False)
 
@@ -328,7 +326,7 @@ def test_objective_equals_zero(no_debug_test):
             solvers=[solver]
     ) as benchmark:
         with CaptureRunOutput() as out:
-            OS_specific_run([str(benchmark.benchmark_dir),
+            run([str(benchmark.benchmark_dir),
                 *('-s test-solver -d test-dataset --no-plot -n 0').split()],
                 standalone_mode=False)
 
