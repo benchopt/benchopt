@@ -224,7 +224,7 @@ class TestRunCmd:
     def test_custom_parameters(self):
         SELECT_DATASETS = r'simulated[n_features=[100, 200]]'
         SELECT_SOLVERS = r'python-pgd-with-cb[use_acceleration=[True, False]]'
-        SELECT_OBJECTIVES = r'dummy^*[0.1, 0.2]'
+        SELECT_OBJECTIVES = r'dummy*[0.1, 0.2]'
 
         with CaptureRunOutput() as out:
             run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_DATASETS,
@@ -468,7 +468,7 @@ class TestRunCmd:
             with CaptureRunOutput() as out:
                 run([str(benchmark.benchmark_dir),
                     *'-d test-dataset -n 1 -r 1 --no-plot'.split(),
-                    *'-o dummy^*[reg=0.5] -s test_solver'.split()],
+                    *'-o dummy*[reg=0.5] -s test_solver'.split()],
                     'benchopt', standalone_mode=False)
 
             out.check_output('#RUN0', repetition=2)
@@ -478,7 +478,7 @@ class TestRunCmd:
                 run([
                     str(benchmark.benchmark_dir),
                     *'-d test-dataset -n 1 -r 1 --no-plot --collect'.split(),
-                    *'-o dummy^*[reg=0.5] -s test_solver[param=[0,1]]'.split()
+                    *'-o dummy*[reg=0.5] -s test_solver[param=[0,1]]'.split()
                 ], 'benchopt', standalone_mode=False)
 
             # check that no solver where run

@@ -22,7 +22,7 @@ TEST_SOLVER = """from benchopt import BaseSolver
 
 CONFIG = """
     objective:
-        - dummy^*[reg=0.5]
+        - dummy*[reg=0.5]
     dataset:
         - test-dataset
     solver:
