@@ -2,7 +2,6 @@
 import shutil
 import ctypes
 import platform
-import re
 
 from ..config import DEBUG
 
@@ -10,8 +9,8 @@ from ..config import DEBUG
 MIN_LINE_LENGTH = 20
 BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE = range(30, 38)
 
-CROSS = re.escape(u'\u2717')
-TICK = re.escape(u'\u2713')
+CROSS = '\u2717'
+TICK = '\u2713'
 
 
 STATUS = {

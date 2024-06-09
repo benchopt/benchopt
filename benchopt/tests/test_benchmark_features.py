@@ -387,10 +387,10 @@ def test_paths_config_key(test_case):
             ], standalone_mode=False)
 
         if test_case == "without_data_home":
-            out.check_output(os.path.join("path", "to", "data"), repetition=1)
+            out.check_output(r"path/to/data", repetition=1)
         elif test_case == "with_data_home":
             out.check_output(
-                os.path.join("path", "to", "home_data", "path", "to", "data"),
+                r"/path/to/home_data/path/to/data",
                 repetition=1
             )
         else:
