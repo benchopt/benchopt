@@ -4,9 +4,14 @@ import io
 import os
 import sys
 import tempfile
+from contextlib import contextmanager
+
+if sys.platform == 'win32':
+    from colorama import init
+    init()
 
 
-class SuppressStd(object):
+class SuppressStd_class(object):
     """Context to capture stderr and stdout at C-level.
     """
 
@@ -26,24 +31,20 @@ class SuppressStd(object):
         # Store the stdout object and replace it by the temp file.
         self.stdout_obj = sys.stdout
         self.stderr_obj = sys.stderr
-        sys.stdout = sys.__stdout__
-        sys.stderr = sys.__stderr__
+        sys.stdout = open(self.tfile.fileno(), 'w')
+        sys.stderr = open(self.tfile.fileno(), 'w')
 
         return self
 
     def __exit__(self, exc_class, value, traceback):
 
         # Make sure to flush stdout and stderr
-        print(flush=True)
-        print(flush=True, file=sys.stderr)
+        sys.stdout.flush()
+        sys.stderr.flush()
 
         # Restore the stdout/stderr object.
         sys.stdout = self.stdout_obj
         sys.stderr = self.stderr_obj
-
-        # Close capture file handle
-        os.close(self.orig_stdout_fileno)
-        os.close(self.orig_stderr_fileno)
 
         # Restore original stderr and stdout
         os.dup2(self.orig_stdout_dup, self.orig_stdout_fileno)
@@ -58,3 +59,13 @@ class SuppressStd(object):
         self.tfile.seek(0, io.SEEK_SET)
         self.output = self.tfile.read().decode()
         self.tfile.close()
+
+
+@contextmanager
+def SuppressStd():
+    suppress = SuppressStd_class()
+    try:
+        suppress.__enter__()
+        yield suppress
+    finally:
+        suppress.__exit__(None, None, None)
