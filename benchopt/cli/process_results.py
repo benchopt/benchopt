@@ -95,7 +95,7 @@ def publish(benchmark, token=None, filename=None):
             "Could not find the token value to connect to GitHub.\n\n"
             "Please go to https://github.com/settings/tokens to generate a "
             "personal token $TOKEN.\nThen, either provide it with option `-t` "
-            "or put it in a config file ./benchopt.ini\nunder section "
+            "or put it in a config file ./benchopt.yml\nunder section "
             "[benchopt] as `github_token = $TOKEN`."
         )
 
