@@ -12,7 +12,7 @@ from joblib.memory import _FUNCTION_HASHES
 from click.shell_completion import ShellComplete
 
 from benchopt.plotting import PLOT_KINDS
-from benchopt.utils.safe_import import _unskip_import
+from benchopt.utils.safe_import import _unmock_import
 from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.utils.stream_redirection import SuppressStd
 from benchopt.utils.dynamic_modules import _load_class_from_module
@@ -72,7 +72,7 @@ def _test_shell_completion(cmd, args, test_cases):
         elif expected is not None:
             assert set(proposals) == set(expected), proposals
 
-    _unskip_import()
+    _unmock_import()
 
 
 class TestRunCmd:
