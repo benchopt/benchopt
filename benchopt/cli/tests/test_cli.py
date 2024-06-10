@@ -258,13 +258,13 @@ class TestRunCmd:
                                        'python_pgd.py')
         out.check_output('using profiling', repetition=1)
         out.check_output(
-            f"File: .*{python_pgd_path}",
+            re.escape(rf"File: .*{python_pgd_path}"),
             repetition=1
         )
         out.check_output(r'\s+'.join([
             "Line #", "Hits", "Time", "Per Hit", "% Time", "Line Contents"
         ]), repetition=1)
-        out.check_output(r"def run\(self, n_iter\):", repetition=1)
+        out.check_output(re.escape(r"def run\(self, n_iter\):"), repetition=1)
 
     def test_invalid_config_file(self):
         tmp = OS_Specific_NamedTempFile(mode="w+")
@@ -519,7 +519,8 @@ class TestInstallCmd:
                  SELECT_ONE_PGD, '-y'], 'benchopt', standalone_mode=False
             )
 
-        out.check_output(f"Installing '{DUMMY_BENCHMARK.name}' requirements")
+        out.check_output(re.escape(rf"Installing '{DUMMY_BENCHMARK.name}'"
+                                   r"requirements"))
         out.check_output("already available\n", repetition=3)
 
     def test_download_data(self):
@@ -534,9 +535,10 @@ class TestInstallCmd:
         with temp_benchmark(datasets=[dataset]) as benchmark:
             with CaptureRunOutput() as out:
                 install([
-                    *f'{benchmark.benchmark_dir} -d test_dataset '
-                    '-y --download'.split()
-                ], 'benchopt', standalone_mode=False)
+                         re.escape(*f'{benchmark.benchmark_dir} -d'
+                                    'test_dataset -y --download'.split()
+                                   )
+                        ], 'benchopt', standalone_mode=False)
 
         out.check_output("LOAD DATA", repetition=1)
         out.check_output("Loading data:", repetition=1)
@@ -558,11 +560,12 @@ class TestInstallCmd:
             )
 
         out.check_output(
-            f"Installing '{DUMMY_BENCHMARK.name}' requirements"
-        )
+            re.escape(rf"Installing '{DUMMY_BENCHMARK.name}' requirements"
+                      ))
         out.check_output(
-            f"already available in '{test_env_name}'\n", repetition=3
-        )
+            re.escape(rf"already available in '{test_env_name}'\n",
+                      repetition=3
+                      ))
 
     def test_benchopt_install_in_env_with_requirements(
         self, test_env_name, uninstall_dummy_package
