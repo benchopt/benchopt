@@ -189,7 +189,7 @@ If your Python solver requires some packages such as `Numba <https://numba.pydat
 Benchopt allows you to list some requirements. The necessary packages should be available
 via `conda <https://docs.conda.io/en/latest/>`_ or
 `pip <https://packaging.python.org/guides/tool-recommendations/>`_.
-See `specifying_requirements`_ for more details on how to specify the requirements for benchopt classes.
+See :ref:`specify_requirements`_ for more details on how to specify the requirements for benchopt classes.
 
 .. _r_solvers:
 
