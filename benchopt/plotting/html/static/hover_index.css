@@ -391,7 +391,6 @@ input:checked+.slider:before {
 .solver-description-container {
   position: relative;
   display: inline-flex;
-  width: 100%;
 }
 
 .solver-description-content {
@@ -407,6 +406,7 @@ input:checked+.slider:before {
   padding-right: 0.5rem;
   opacity: 90%;
 
+  width: max-content;
   max-width: 80ch;
   max-height: 500px;
   white-space: pre-wrap;
@@ -442,4 +442,72 @@ input:checked+.slider:before {
 .solver-description-body {
   max-height: 450px;
   overflow-y: auto;
+}
+
+/*Plot config styling as a bag of tags*/
+#plot_config_title {
+  font-weight: bold;
+}
+
+.config-item, .config-ctrl {
+  border-radius: 9999px;
+  padding-left: 1em;
+  padding-right: 1em;
+  color: white;
+  margin-left: 2ex;
+
+  cursor: pointer;
+
+  /* font styles*/
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 400;
+}
+
+.config-item {
+  background-color: rgb(91, 78, 255);
+  border-color: rgb(55 65 81);
+}
+.config-ctrl {
+  font-size: medium;
+  font-weight: bold;
+  background-color: rgb(34, 30, 94);
+  border-color: rgb(23, 37, 59);
+}
+
+.view_selector_label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.view_selector_select {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 0.5rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+  padding-right: 2.5rem;
+  -webkit-print-color-adjust: exact;
+  color-adjust: exact;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-color: #fff;
+  border-width: 1px;
+  font-size: 1rem;
+  line-height: 1.5rem;
+  --tw-shadow: 0 0 #0000;
+  --tw-border-opacity: 1;
+  border-color: rgb(209 213 219 / var(--tw-border-opacity));
+}
+
+.view.active {
+  border-color: rgb(37 99 235);!important;
+  color: rgb(37 99 235);!important;
 }

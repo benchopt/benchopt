@@ -6,6 +6,8 @@ from importlib.abc import Loader, MetaPathFinder
 from pathlib import Path
 from unittest.mock import Mock
 
+from joblib.externals import cloudpickle
+
 from ..config import RAISE_INSTALL_ERROR
 
 
@@ -35,6 +37,12 @@ def mock_import():
     MOCK_IMPORT = True
 
 
+def _unmock_import():
+    """Helper to reenable imports in tests."""
+    global MOCK_IMPORT
+    MOCK_IMPORT = False
+
+
 def set_benchmark_module(benchmark_dir):
     global BENCHMARK_DIR
     BENCHMARK_DIR = Path(benchmark_dir)
@@ -47,6 +55,7 @@ def set_benchmark_module(benchmark_dir):
         module = importlib.util.module_from_spec(spec)
         sys.modules[PACKAGE_NAME] = module
         spec.loader.exec_module(module)
+        cloudpickle.register_pickle_by_value(module)
     elif module_file.parent.exists():
         warnings.warn(
             "Folder `benchmark_utils` exists but is missing `__init__.py`. "
