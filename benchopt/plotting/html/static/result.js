@@ -960,3 +960,51 @@ document.getElementById('btn-main-menu').addEventListener('click', () => {
 
   elmt.style.display = 'block';
 });
+
+
+function updateVisibilityBasedTags(tagElement) {
+  const clickedTag = tagElement.textContent;
+  let selectedTags = state()["selected_tags"];
+  let hiddenSolvers = state()["hidden_solvers"];
+
+  // "tag-name": [solver_1, solver_2, ...]
+  const allSolversByTags = window.metadata["tags_solvers"];
+
+
+  if (selectedTags.includes(clickedTag)) {
+    // remove tag from selected tags
+    selectedTags = selectedTags.filter(tag => tag != clickedTag);
+
+    // update opacity and attribute
+    tagElement.style.opacity = 1;
+
+    // update hidden solvers
+    hiddenSolvers = hiddenSolvers.filter(solver => {
+      for(tag of selectedTags) {
+        if(allSolversByTags[tag].includes(solver))
+          return true;
+
+        return false;
+      }
+    });
+
+  } else {
+    selectedTags.push(clickedTag);
+    
+    // update opacity
+    tagElement.style.opacity = 0.5;
+
+    // update hidden solver by adding solvers matching tag
+    // keep unique as there might be duplicate
+    hiddenSolvers.push(...allSolversByTags[clickedTag]);
+    hiddenSolvers = hiddenSolvers.filter(
+      (value, index, array) => array.indexOf(value) === index
+    );
+  }
+
+  // update state
+  setState({
+    'hidden_solvers': hiddenSolvers,
+    'selected_tags': selectedTags,
+  });
+}

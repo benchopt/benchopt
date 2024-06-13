@@ -213,6 +213,9 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
     states = []
     run_statistics = []
 
+    # get tags
+    solver_tags = getattr(solver, 'tags', [])
+
     # get sampling strategy
     # for plotting purpose consider 'callback' as 'iteration'
     sampling_strategy = solver._solver_strategy
@@ -248,6 +251,7 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
             idx_rep=rep,
             sampling_strategy=sampling_strategy.capitalize(),
             obj_description=obj_description,
+            solver_tags=solver_tags,
             solver_description=inspect.cleandoc(solver.__doc__ or ""),
         )
 

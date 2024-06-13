@@ -449,11 +449,10 @@ input:checked+.slider:before {
   font-weight: bold;
 }
 
-.config-item, .config-ctrl {
+.config-item, .config-ctrl, .tag-item {
   border-radius: 9999px;
   padding-left: 1em;
   padding-right: 1em;
-  color: white;
   margin-left: 2ex;
 
   cursor: pointer;
@@ -465,14 +464,21 @@ input:checked+.slider:before {
 }
 
 .config-item {
+  color: white;
   background-color: rgb(91, 78, 255);
   border-color: rgb(55 65 81);
 }
 .config-ctrl {
   font-size: medium;
   font-weight: bold;
+  color: white;
   background-color: rgb(34, 30, 94);
   border-color: rgb(23, 37, 59);
+}
+
+.tag-item {
+  background-color: white;
+  border-color: rgb(55 65 81);
 }
 
 .view_selector_label {
