@@ -450,7 +450,6 @@ const downloadBlob = (blob, name) => {
 
   // To prevent the screen from going up when the user clicks on the button
   return false;
-
 };
 
 const exportConfigs = () => {
