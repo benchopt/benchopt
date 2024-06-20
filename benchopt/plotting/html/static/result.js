@@ -81,7 +81,7 @@ const makePlot = () => {
   const data = isBarChart() ? getBarData() : getScatterCurves();
   const layout = isBarChart() ? getBarChartLayout() : getScatterChartLayout();
 
-  Plotly.react(div, data, layout);
+  Plotly.react(div, data, layout, {editable: true});
 };
 
 /**
