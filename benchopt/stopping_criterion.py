@@ -158,7 +158,6 @@ class StoppingCriterion():
                 stopping_criterion._deadline = time.monotonic() + timeout
             else:
                 stopping_criterion._deadline = time.time() + timeout
-            
         else:
             stopping_criterion._deadline = None
         stopping_criterion._prev_objective = 1e100
