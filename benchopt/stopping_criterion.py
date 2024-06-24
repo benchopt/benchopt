@@ -235,7 +235,7 @@ class StoppingCriterion():
             stop = True
             status = 'diverged'
 
-        elif self._deadline is not None and current_time > self._deadline:
+        elif self._deadline is not None and current_time >= self._deadline:
             stop = True
             status = 'timeout'
 
