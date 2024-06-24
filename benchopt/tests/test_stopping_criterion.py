@@ -97,7 +97,8 @@ def test_diverged(criterion_class, strategy):
 def test_key_to_monitor(criterion_class, strategy):
     "Check that the criterion tracks the right objective key."
     key = 'test'
-    criterion = criterion_class(strategy=re.escape(strategy), key_to_monitor=key)
+    criterion = criterion_class(strategy=re.escape(strategy),
+                                key_to_monitor=key)
 
     criterion = criterion.get_runner_instance(max_runs=10)
     assert criterion.key_to_monitor == f"objective_{key}"
