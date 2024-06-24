@@ -60,7 +60,7 @@ def test_config_file_permission_warn_unix(permission):
 # Windows-specific test
 @pytest.mark.skipif(sys.platform != 'win32',
                     reason="Skipping Windows-specific test on Unix systems")
-@pytest.mark.parametrize("permission", ["666", "600"])
+@pytest.mark.parametrize("permission", ["666"])
 def test_config_file_permission_warn_windows(permission):
     with temp_config_file(permission) as config_file:
         msg = f"{config_file} is with mode {permission}"

@@ -1,5 +1,6 @@
 import time
 import math
+import sys
 
 # Possible curve sampling strategies
 SAMPLING_STRATEGIES = ['iteration', 'tolerance', 'callback', 'run_once']
@@ -153,7 +154,11 @@ class StoppingCriterion():
 
         # Store running arguments
         if timeout is not None:
-            stopping_criterion._deadline = time.time() + timeout
+            if sys.platform == 'win32':
+                stopping_criterion._deadline = time.monotonic() + timeout
+            else:
+                stopping_criterion._deadline = time.time() + timeout
+            
         else:
             stopping_criterion._deadline = None
         stopping_criterion._prev_objective = 1e100
@@ -222,10 +227,16 @@ class StoppingCriterion():
 
         # check the different conditions:
         #     diverging / timeout / max_runs / stopping_criterion
+        if sys.platform == 'win32':
+            current_time = time.monotonic()
+        else:
+            current_time = time.time()
+
         if math.isnan(objective) or delta_objective < -1e5:
             stop = True
             status = 'diverged'
-        elif self._deadline is not None and time.time() > self._deadline:
+
+        elif self._deadline is not None and current_time > self._deadline:
             stop = True
             status = 'timeout'
 
