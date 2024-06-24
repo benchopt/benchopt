@@ -1,4 +1,5 @@
 import os
+import sys
 import pytest
 import warnings
 from pathlib import Path
@@ -44,8 +45,20 @@ def test_parse_value():
     assert parse_value('abc', 'a') == 'abc'
 
 
+# Skip this test on Windows
+@pytest.mark.skipif(sys.platform == 'win32', reason="Skipping Unix-specific test on Windows")
 @pytest.mark.parametrize("permission", ["644", "655", "240"])
-def test_config_file_permission_warn(permission):
+def test_config_file_permission_warn_unix(permission):
+    with temp_config_file(permission) as config_file:
+        msg = f"{config_file} is with mode {permission}"
+        with pytest.warns(UserWarning, match=msg):
+            global_config_file = get_global_config_file()
+        assert str(global_config_file) == str(config_file)
+
+# Windows-specific test
+@pytest.mark.skipif(sys.platform != 'win32', reason="Skipping Windows-specific test on Unix systems")
+@pytest.mark.parametrize("permission", ["666", "600"])  # Adjust permissions as needed for Windows
+def test_config_file_permission_warn_windows(permission):
     with temp_config_file(permission) as config_file:
         msg = f"{config_file} is with mode {permission}"
         with pytest.warns(UserWarning, match=msg):
