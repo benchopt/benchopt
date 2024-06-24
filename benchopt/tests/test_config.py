@@ -46,7 +46,7 @@ def test_parse_value():
 
 
 # Skip this test on Windows
-@pytest.mark.skipif(sys.platform == 'win32', 
+@pytest.mark.skipif(sys.platform == 'win32',
                     reason="Skipping Unix-specific test on Windows")
 @pytest.mark.parametrize("permission", ["644", "655", "240"])
 def test_config_file_permission_warn_unix(permission):
