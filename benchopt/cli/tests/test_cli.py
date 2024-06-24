@@ -556,13 +556,20 @@ class TestInstallCmd:
                  SELECT_ONE_PGD, '--env-name', test_env_name],
                 'benchopt', standalone_mode=False
             )
-
-        out.check_output(
-            f"Installing '{DUMMY_BENCHMARK.name}' requirements"
-        )
-        out.check_output(
-            f"already available in '{test_env_name}'\n", repetition=3
-        )
+        if sys.platform != 'win32':
+            out.check_output(
+                f"Installing '{DUMMY_BENCHMARK.name}' requirements"
+            )
+            out.check_output(
+                f"already available in '{test_env_name}'\n", repetition=3
+            )
+        else:
+            out.check_output(
+                f"Installing {DUMMY_BENCHMARK.name} requirements"
+            )
+            out.check_output(
+                f"already available in {test_env_name}\n", repetition=3
+            )
 
     def test_benchopt_install_in_env_with_requirements(
         self, test_env_name, uninstall_dummy_package
