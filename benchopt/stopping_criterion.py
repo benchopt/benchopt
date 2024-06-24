@@ -1,6 +1,6 @@
 import time
 import math
-import re
+
 # Possible curve sampling strategies
 SAMPLING_STRATEGIES = ['iteration', 'tolerance', 'callback', 'run_once']
 
@@ -339,7 +339,7 @@ class SufficientDescentCriterion(StoppingCriterion):
         self._objective = 1e100
 
         super().__init__(
-            eps=eps, patience=patience, strategy=re.escape(strategy),
+            eps=eps, patience=patience, strategy=strategy,
             key_to_monitor=key_to_monitor
         )
 
@@ -407,7 +407,7 @@ class SufficientProgressCriterion(StoppingCriterion):
         self._best_objective = 1e100
 
         super().__init__(
-            eps=eps, patience=patience, strategy=re.escape(strategy),
+            eps=eps, patience=patience, strategy=strategy,
             key_to_monitor=key_to_monitor
         )
 
@@ -471,7 +471,7 @@ class SingleRunCriterion(StoppingCriterion):
     def __init__(self, stop_val=1, strategy=None, *args, **kwargs):
         # Necessary as the criterion is given a strategy argument when
         # instanciated for an instance.
-        super().__init__(strategy=re.escape(strategy), stop_val=stop_val)
+        super().__init__(strategy=strategy, stop_val=stop_val)
         self.stop_val = stop_val
 
     def init_stop_val(self):
