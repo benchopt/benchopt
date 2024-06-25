@@ -258,7 +258,7 @@ class TestRunCmd:
                                        'python_pgd.py')
         out.check_output('using profiling', repetition=1)
         out.check_output(
-            f"File: .^*{python_pgd_path}",
+            f"File: .*{python_pgd_path}",
             repetition=1
         )
         out.check_output(r'\s+'.join([
