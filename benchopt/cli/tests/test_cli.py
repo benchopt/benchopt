@@ -587,7 +587,7 @@ class TestInstallCmd:
         """
 
         # Some solvers are not installable, only keep a simple one.
-        solver = (DUMMY_BENCHMARK_PATH / "solvers" / "python_pgd.py")
+        solver = Path(DUMMY_BENCHMARK_PATH / "solvers" / "python_pgd.py")
         solvers = [solver.read_text()]
 
         with temp_benchmark(objective=objective, solvers=solvers) as benchmark:
