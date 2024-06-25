@@ -74,7 +74,7 @@ def test_config_file_permission_warn_windows(permission):
 
 
 def test_config_file_permission_no_warning():
-    with () as config_file:
+    with temp_config_file() as config_file:
         with warnings.catch_warnings():
             warnings.simplefilter("error")
             global_config_file = get_global_config_file()
