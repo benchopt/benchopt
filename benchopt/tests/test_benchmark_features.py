@@ -1,5 +1,6 @@
 import pytest
 import os
+import sys
 
 from benchopt.cli.main import run
 from benchopt.utils.temp_benchmark import temp_benchmark
@@ -387,11 +388,12 @@ def test_paths_config_key(test_case):
             ], standalone_mode=False)
 
         if test_case == "without_data_home":
-            out.check_output(r"path/to/data", repetition=1)
+            expected_path = r"path/to/data"
         elif test_case == "with_data_home":
-            out.check_output(
-                r"/path/to/home_data/path/to/data",
-                repetition=1
-            )
+            expected_path = r"/path/to/home_data/path/to/data"
         else:
             raise Exception("Invalid test case value")
+
+        if sys.platform == 'win32':
+            expected_path = expected_path.replace("/", os.path.sep)
+        out.check_output(expected_path, repetition=1)
