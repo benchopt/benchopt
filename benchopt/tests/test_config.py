@@ -18,9 +18,12 @@ def temp_config_file(permission='600'):
     config_file = Path(Path() / 'test_config_file.yml')
     if sys.platform != 'win32':
         config_file.touch(mode=permission, exist_ok=False)
+    elif permission == '600':
+        config_file.touch(exist_ok=False)
+        os.chmod(config_file, 0o600)
     else:
         config_file.touch(exist_ok=False)
-        os.chmod(config_file, stat.S_IWRITE)
+        os.chmod(config_file, 0o666)
     old_config_file = os.environ.get('BENCHOPT_CONFIG', None)
     os.environ['BENCHOPT_CONFIG'] = str(config_file)
     try:
@@ -65,7 +68,7 @@ def test_config_file_permission_warn_unix(permission):
 # Windows-specific test
 @pytest.mark.skipif(sys.platform != 'win32',
                     reason="Skipping Windows-specific test on Unix systems")
-@pytest.mark.parametrize("permission", ["600"])
+@pytest.mark.parametrize("permission", ["666"])
 def test_config_file_permission_warn_windows(permission):
     with temp_config_file(permission) as config_file:
         msg = f"{config_file} is with mode {permission}"
