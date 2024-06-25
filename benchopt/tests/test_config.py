@@ -1,5 +1,6 @@
 import os
 import sys
+import stat
 import pytest
 import warnings
 from pathlib import Path
@@ -14,8 +15,11 @@ from benchopt.config import set_setting, get_setting
 @contextmanager
 def temp_config_file(permission='600'):
     permission = int(f"100{permission}", base=8)
-    config_file = Path() / 'test_config_file.yml'
-    config_file.touch(mode=permission, exist_ok=False)
+    config_file = Path(Path() / 'test_config_file.yml')
+    if sys.platform != 'win32':
+        config_file.touch(mode=permission, exist_ok=False)
+    else:
+        os.chmod(config_file, stat.S_IWRITE)
     old_config_file = os.environ.get('BENCHOPT_CONFIG', None)
     os.environ['BENCHOPT_CONFIG'] = str(config_file)
     try:
@@ -60,7 +64,7 @@ def test_config_file_permission_warn_unix(permission):
 # Windows-specific test
 @pytest.mark.skipif(sys.platform != 'win32',
                     reason="Skipping Windows-specific test on Unix systems")
-@pytest.mark.parametrize("permission", ["666"])
+@pytest.mark.parametrize("permission", ["600"])
 def test_config_file_permission_warn_windows(permission):
     with temp_config_file(permission) as config_file:
         msg = f"{config_file} is with mode {permission}"
@@ -70,7 +74,7 @@ def test_config_file_permission_warn_windows(permission):
 
 
 def test_config_file_permission_no_warning():
-    with temp_config_file() as config_file:
+    with () as config_file:
         with warnings.catch_warnings():
             warnings.simplefilter("error")
             global_config_file = get_global_config_file()

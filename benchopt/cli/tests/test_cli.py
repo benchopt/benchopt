@@ -602,7 +602,7 @@ class TestInstallCmd:
                     )
             assert objective.is_installed(env_name=test_env_name), out
 
-    def test_error_wih_missing_requirements(self, test_env_name):
+    def test_error_with_missing_requirements(self, test_env_name):
 
         # solver with missing dependency specified
         missing_deps_cls = """from benchopt import Base{Cls}
