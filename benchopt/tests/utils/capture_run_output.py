@@ -53,7 +53,7 @@ class CaptureRunOutput(object):
             print(self.output)
 
     def check_output(self, pattern, repetition=None):
-        output = self.output
+        output = self.output.replace('\r\n', '\n').replace('\r', '\n')
         matches = re.findall(pattern, output)
         if repetition is None:
             assert len(matches) > 0, (
