@@ -19,6 +19,7 @@ def temp_config_file(permission='600'):
     if sys.platform != 'win32':
         config_file.touch(mode=permission, exist_ok=False)
     else:
+        config_file.touch(exist_ok=False)
         os.chmod(config_file, stat.S_IWRITE)
     old_config_file = os.environ.get('BENCHOPT_CONFIG', None)
     os.environ['BENCHOPT_CONFIG'] = str(config_file)
