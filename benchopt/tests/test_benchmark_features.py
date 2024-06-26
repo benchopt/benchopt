@@ -1,6 +1,6 @@
 import pytest
 import os
-import sys
+import re
 
 from benchopt.cli.main import run
 from benchopt.utils.temp_benchmark import temp_benchmark
@@ -350,16 +350,20 @@ def test_run_once_callback(n_iter):
 
 @pytest.mark.parametrize("test_case", ["without_data_home", "with_data_home"])
 def test_paths_config_key(test_case):
+    data_path = os.path.normpath("/path/to/data")
+    home_data_path = os.path.normpath("/path/to/home_data")
+    relative_data_path = os.path.normpath("path/to/data")
+
     if test_case == "without_data_home":
-        config = """
+        config = f"""
             data_paths:
-                data: /path/to/data
+                data: {data_path}
         """
     elif test_case == "with_data_home":
-        config = """
-            data_home: /path/to/home_data
+        config = f"""
+            data_home: {home_data_path}
             data_paths:
-                data: path/to/data
+                data: {relative_data_path}
         """
     else:
         raise Exception("Invalid test case value")
@@ -388,12 +392,10 @@ def test_paths_config_key(test_case):
             ], standalone_mode=False)
 
         if test_case == "without_data_home":
-            expected_path = r"path/to/data"
+            expected_path = re.escape(data_path)
+            out.check_output(expected_path, repetition=1)
         elif test_case == "with_data_home":
-            expected_path = r"/path/to/home_data/path/to/data"
+            expected_path = os.path.normpath("/path/to/home_data/path/to/data")
+            out.check_output(re.escape(expected_path), repetition=1)
         else:
             raise Exception("Invalid test case value")
-
-        if sys.platform == 'win32':
-            expected_path = expected_path.replace("/", os.path.sep)
-        out.check_output(expected_path, repetition=1)
