@@ -1,5 +1,6 @@
 import pytest
 import numpy as np
+import sys
 
 from benchopt.utils import product_param
 from benchopt.stopping_criterion import SAMPLING_STRATEGIES
@@ -112,6 +113,8 @@ def test_solver_install_api(benchmark, solver_class):
         assert hasattr(solver_class, 'install_script')
 
 
+@pytest.mark.skipif(sys.platform == 'win32',
+                    reason="Skipping test on Windows because of R-PGD")
 @pytest.mark.requires_install
 def test_solver_install(test_env_name, benchmark, solver_class, check_test):
 

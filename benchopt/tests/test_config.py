@@ -76,6 +76,8 @@ def test_config_file_permission_warn_windows(permission):
         assert str(global_config_file) == str(config_file)
 
 
+@pytest.mark.skipif(sys.platform == 'win32',
+                    reason="Skipping Unix-specific test on Windows")
 def test_config_file_permission_no_warning():
     with temp_config_file() as config_file:
         with warnings.catch_warnings():
