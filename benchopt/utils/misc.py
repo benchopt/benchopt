@@ -87,24 +87,21 @@ def get_benchopt_requirement(pytest=False):
     return req, False
 
 
-def check_python_version():
-    required_version = (3, 12)
-    current_version = sys.version_info
+def OSSpecificNamedTempFile(dir=None, mode='w+b', prefix=None, suffix=None):
+    if sys.platform != 'win32':
+        return tempfile.NamedTemporaryFile(dir=dir, mode=mode, prefix=prefix,
+                                           suffix=suffix)
 
-    if current_version < required_version:
-        raise EnvironmentError("Your current Python version is "
-                               f"{current_version.major}."
-                               f"{current_version.minor}. "
-                               "Please upgrade to Python 3.12 or higher "
-                               "for program to work correctly.")
+    else:
+        required_version = (3, 12)
+        current_version = sys.version_info
 
-
-def OS_Specific_NamedTempFile(dir=None, mode='w+b', prefix=None, suffix=None):
-    if sys.platform == 'win32':
-        check_python_version()
+        if current_version < required_version:
+            raise EnvironmentError("Your current Python version is "
+                                   f"{current_version.major}."
+                                   f"{current_version.minor}. "
+                                   "Please upgrade to Python 3.12 or higher "
+                                   "for program to work correctly.")
         return tempfile.NamedTemporaryFile(dir=dir, mode=mode, prefix=prefix,
                                            suffix=suffix, delete=True,
                                            delete_on_close=False)
-    else:
-        return tempfile.NamedTemporaryFile(dir=dir, mode=mode, prefix=prefix,
-                                           suffix=suffix)

@@ -5,7 +5,7 @@ import re
 from benchopt.cli.main import run
 from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.utils.dynamic_modules import _load_class_from_module
-from benchopt.utils.misc import OS_Specific_NamedTempFile
+from benchopt.utils.misc import OSSpecificNamedTempFile
 
 from benchopt.tests import SELECT_ONE_PGD
 from benchopt.tests import SELECT_ONE_SIMULATED
@@ -260,7 +260,7 @@ def test_ignore_hidden_files():
     # Non-regression test to make sure hidden files in datasets and solvers
     # are ignored. If this is not the case, the call to run will fail if it
     # is not ignored as there is no Dataset/Solver defined in the file.
-    with OS_Specific_NamedTempFile(
+    with OSSpecificNamedTempFile(
         dir=str(DUMMY_BENCHMARK_PATH / 'datasets'),
         prefix='.hidden_dataset_',
         suffix='.py'
@@ -271,7 +271,7 @@ def test_ignore_hidden_files():
             '-r', '1', '-o', SELECT_ONE_OBJECTIVE, '--no-plot'
         ], 'benchopt', standalone_mode=False)
 
-    with OS_Specific_NamedTempFile(
+    with OSSpecificNamedTempFile(
         dir=str(DUMMY_BENCHMARK_PATH / 'solvers'),
         prefix='.hidden_solver_',
         suffix='.py'
