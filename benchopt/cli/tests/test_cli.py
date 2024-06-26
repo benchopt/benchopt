@@ -549,8 +549,6 @@ class TestInstallCmd:
             install([str(DUMMY_BENCHMARK_PATH), '--env-name', empty_env_name],
                     'benchopt', standalone_mode=False)
 
-    @pytest.mark.skipif(sys.platform == 'win32',
-                        reason="Skipping test on Windows")
     def test_benchopt_install_in_env(self, test_env_name):
         with CaptureRunOutput() as out:
             install(
@@ -566,6 +564,8 @@ class TestInstallCmd:
             f"already available in '{test_env_name}'\n", repetition=3
         )
 
+    @pytest.mark.skipif(sys.platform == 'win32',
+                        reason="Skipping test on Windows")
     def test_benchopt_install_in_env_with_requirements(
         self, test_env_name, uninstall_dummy_package
     ):
