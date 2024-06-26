@@ -1,5 +1,4 @@
 import pytest
-import re
 
 from benchopt.tests import DUMMY_BENCHMARK_PATH
 from benchopt.tests.utils import CaptureRunOutput
@@ -62,7 +61,7 @@ class TestCheckDataCmd:
                 )
 
             out.check_output("LOADING DATA", repetition=1)
-            out.check_output(re.escape(TICK), repetition=1)
+            out.check_output(TICK, repetition=1)
 
     def test_fail_download_data(self):
 
@@ -83,5 +82,5 @@ class TestCheckDataCmd:
                     'benchopt', standalone_mode=False
                 )
 
-            out.check_output(re.escape(CROSS), repetition=1)
+            out.check_output(CROSS, repetition=1)
             out.check_output("ValueError: Failed to load data", repetition=1)
