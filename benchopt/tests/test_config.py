@@ -17,12 +17,12 @@ def temp_config_file(permission='600'):
     config_file = Path(Path() / 'test_config_file.yml')
     if sys.platform != 'win32':
         config_file.touch(mode=permission, exist_ok=False)
-    elif permission == '600':
-        config_file.touch(exist_ok=False)
-        os.chmod(config_file, 0o600)
     else:
         config_file.touch(exist_ok=False)
-        os.chmod(config_file, 0o666)
+        if permission == 0o600:
+            os.chmod(config_file, 0o600)
+        else:
+            os.chmod(config_file, 0o666)
     old_config_file = os.environ.get('BENCHOPT_CONFIG', None)
     os.environ['BENCHOPT_CONFIG'] = str(config_file)
     try:
