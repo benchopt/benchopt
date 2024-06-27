@@ -11,7 +11,7 @@ sys.modules['dummy_dataset_import'] = FakeModule
 
 
 # Default benchmark
-DUMMY_BENCHMARK_PATH = Path(Path(__file__).parent / 'dummy_benchmark')
+DUMMY_BENCHMARK_PATH = Path(__file__).parent / 'dummy_benchmark'
 
 # Pattern to select specific datasets or solvers.
 SELECT_ONE_SIMULATED = r'simulated[n_features=200,rho=0]'

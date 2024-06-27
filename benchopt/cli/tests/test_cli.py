@@ -16,7 +16,7 @@ from benchopt.utils.safe_import import _unskip_import
 from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.utils.stream_redirection import SuppressStd
 from benchopt.utils.dynamic_modules import _load_class_from_module
-from benchopt.utils.misc import OSSpecificNamedTempFile
+from benchopt.utils.misc import OSSpecificNamedTemporaryFile
 
 
 from benchopt.tests import SELECT_ONE_PGD
@@ -267,7 +267,7 @@ class TestRunCmd:
         out.check_output(r"def run\(self, n_iter\):", repetition=1)
 
     def test_invalid_config_file(self):
-        tmp = OSSpecificNamedTempFile(mode="w+")
+        tmp = OSSpecificNamedTemporaryFile(mode="w+")
         tmp.write("some_unknown_option: 0")
         tmp.flush()
         with pytest.raises(ValueError, match="Invalid config file option"):
@@ -286,7 +286,7 @@ class TestRunCmd:
           - python-pgd[step_size=[2, 3]]
           - Solver-Test[raise_error=False]
         """
-        tmp = OSSpecificNamedTempFile(mode="w+")
+        tmp = OSSpecificNamedTemporaryFile(mode="w+")
         tmp.write(config)
         tmp.flush()
 
@@ -395,7 +395,7 @@ class TestRunCmd:
                 name = "test_import_ctx"
 
             """)
-        with OSSpecificNamedTempFile(
+        with OSSpecificNamedTemporaryFile(
                 dir=DUMMY_BENCHMARK_PATH / "solvers",
                 mode='w', suffix='.py') as f:
             f.write(solver)
@@ -432,12 +432,12 @@ class TestRunCmd:
             """
 
         # TODO: use temp_benchmark for this test.
-        TmpFileCtx = OSSpecificNamedTempFile
+        TmpFileCtx = OSSpecificNamedTemporaryFile
         dataset_dir = DUMMY_BENCHMARK_PATH / "datasets"
 
         with TmpFileCtx(mode="w+", suffix='.py', dir=dataset_dir,
                         ) as tmp_dataset, \
-             TmpFileCtx(mode="w+") as tmp_config:
+                TmpFileCtx(mode="w+") as tmp_config:
 
             tmp_dataset.write(dataset_src)
             tmp_dataset.flush()

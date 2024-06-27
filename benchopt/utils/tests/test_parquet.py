@@ -10,7 +10,7 @@ from benchopt.utils.parquet import update_metadata
 from benchopt.cli.main import run
 from benchopt.cli.process_results import plot
 from benchopt.utils.temp_benchmark import temp_benchmark
-from benchopt.utils.misc import OSSpecificNamedTempFile
+from benchopt.utils.misc import OSSpecificNamedTemporaryFile
 
 from benchopt.config import DEFAULT_BENCHMARK_CONFIG
 
@@ -27,7 +27,7 @@ def test_parquet_metadata():
         'c': [.1, .2, .3, .4],
     })
 
-    with OSSpecificNamedTempFile(mode="rb+", suffix=".pq") as f:
+    with OSSpecificNamedTemporaryFile(mode="rb+", suffix=".pq") as f:
 
         path = Path(f.name)
         metadata = {'test': 'info', 'plot_configs': [{}, {}, {}]}

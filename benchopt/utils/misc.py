@@ -87,7 +87,7 @@ def get_benchopt_requirement(pytest=False):
     return req, False
 
 
-def OSSpecificNamedTempFile(dir=None, mode='w+b', prefix=None, suffix=None):
+def OSSpecificNamedTemporaryFile(dir=None, mode='w+b', prefix=None, suffix=None):
     if sys.platform != 'win32':
         return tempfile.NamedTemporaryFile(dir=dir, mode=mode, prefix=prefix,
                                            suffix=suffix)
