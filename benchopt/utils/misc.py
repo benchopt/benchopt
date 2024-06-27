@@ -87,7 +87,25 @@ def get_benchopt_requirement(pytest=False):
     return req, False
 
 
-def OSSpecificNamedTemporaryFile(dir=None, mode='w+b', prefix=None, suffix=None):
+def OSSpecificNamedTemporaryFile(dir=None, mode='w+b', prefix=None,
+                                 suffix=None):
+    """
+    Returns a NamedTemporaryFile object, ensuring compatibility across Unix
+    and Windows systems.
+
+    On Unix systems, this function returns a standard NamedTemporaryFile,
+    which is deleted upon closing.
+
+    On Windows systems, it returns a NamedTemporaryFile with
+    delete_on_close=False to handle the differences in how Windows treats
+    temporary files. This compatibility on Windows requires python>=3.12.
+
+    For more information, refer to the official Python documentation:
+    https://docs.python.org/3/library/tempfile.html#tempfile.NamedTemporaryFile
+
+    Returns:
+        tempfile.NamedTemporaryFile: A named temporary file object.
+    """
     if sys.platform != 'win32':
         return tempfile.NamedTemporaryFile(dir=dir, mode=mode, prefix=prefix,
                                            suffix=suffix)
@@ -97,11 +115,11 @@ def OSSpecificNamedTemporaryFile(dir=None, mode='w+b', prefix=None, suffix=None)
         current_version = sys.version_info
 
         if current_version < required_version:
-            raise EnvironmentError("Your current Python version is "
-                                   f"{current_version.major}."
-                                   f"{current_version.minor}. "
-                                   "Please upgrade to Python 3.12 or higher "
-                                   "for program to work correctly.")
+            raise EnvironmentError(
+                f"Your current Python version is {current_version.major}."
+                f"{current_version.minor}. Please upgrade to Python 3.12 or"
+                "higher for program to work correctly."
+            )
         return tempfile.NamedTemporaryFile(dir=dir, mode=mode, prefix=prefix,
                                            suffix=suffix, delete=True,
                                            delete_on_close=False)
