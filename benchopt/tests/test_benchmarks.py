@@ -1,5 +1,6 @@
 import pytest
 import numpy as np
+import sys
 
 from benchopt.utils import product_param
 from benchopt.stopping_criterion import SAMPLING_STRATEGIES
@@ -114,6 +115,19 @@ def test_solver_install_api(benchmark, solver_class):
 
 @pytest.mark.requires_install
 def test_solver_install(test_env_name, benchmark, solver_class, check_test):
+    # Skipping the specific R-PGD solver for Windows
+    if sys.platform == 'win32':
+        if hasattr(benchmark, 'name'):
+            benchmark_name = benchmark.name
+        else:
+            benchmark_name = str(benchmark)
+        solver_class_name = solver_class.__module__ + "."
+        solver_class_name += solver_class.__name__
+        if (
+            benchmark_name == "dummy_benchmark" and solver_class_name ==
+            "benchopt_benchmarks.dummy_benchmark.solvers.r_pgd.Solver"
+        ):
+            pytest.skip("Skipping the specific R-PGD solver for Windows")
 
     if check_test is not None:
         check_test(solver_class)

@@ -63,18 +63,20 @@ def temp_benchmark(
         temp_path = Path(tempdir)
         (temp_path / "solvers").mkdir()
         (temp_path / "datasets").mkdir()
-        with open(temp_path / "objective.py", "w") as f:
+        with open(temp_path / "objective.py", "w", encoding='utf-8') as f:
             f.write(inspect.cleandoc(objective))
         for idx, solver in enumerate(solvers):
-            with open(temp_path / "solvers" / f"solver_{idx}.py", "w") as f:
+            with open(temp_path / "solvers" / f"solver_{idx}.py", "w",
+                      encoding='utf-8') as f:
                 f.write(inspect.cleandoc(solver))
 
         for idx, dataset in enumerate(datasets):
-            with open(temp_path / "datasets" / f"dataset_{idx}.py", "w") as f:
+            with open(temp_path / "datasets" / f"dataset_{idx}.py", "w",
+                      encoding='utf-8') as f:
                 f.write(inspect.cleandoc(dataset))
 
         if config is not None:
-            with open(temp_path / "config.yml", "w") as f:
+            with open(temp_path / "config.yml", "w", encoding='utf-8') as f:
                 f.write(config)
 
         if benchmark_utils is not None:
@@ -82,8 +84,8 @@ def temp_benchmark(
             benchmark_utils_dir.mkdir()
             (benchmark_utils_dir / "__init__.py").touch()
             for fname, content in benchmark_utils.items():
-                fname = (benchmark_utils_dir / fname).with_suffix(".py")
-                with open(fname, "w") as f:
+                fname_path = benchmark_utils_dir / f"{fname}.py"
+                with open(fname_path, "w", encoding='utf-8') as f:
                     f.write(inspect.cleandoc(content))
 
         yield Benchmark(temp_path)

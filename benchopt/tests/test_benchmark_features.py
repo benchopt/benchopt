@@ -1,9 +1,11 @@
 import pytest
-import tempfile
+import os
+import re
 
 from benchopt.cli.main import run
 from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.utils.dynamic_modules import _load_class_from_module
+from benchopt.utils.misc import OSSpecificNamedTemporaryFile
 
 from benchopt.tests import SELECT_ONE_PGD
 from benchopt.tests import SELECT_ONE_SIMULATED
@@ -65,7 +67,6 @@ def test_error_reporting(error, raise_install_error):
         else SystemExit
     )
 
-    import os
     prev_value = os.environ.get('BENCHOPT_RAISE_INSTALL_ERROR', '0')
 
     def raise_error():
@@ -259,11 +260,10 @@ def test_ignore_hidden_files():
     # Non-regression test to make sure hidden files in datasets and solvers
     # are ignored. If this is not the case, the call to run will fail if it
     # is not ignored as there is no Dataset/Solver defined in the file.
-    with tempfile.NamedTemporaryFile(
+    with OSSpecificNamedTemporaryFile(
         dir=str(DUMMY_BENCHMARK_PATH / 'datasets'),
         prefix='.hidden_dataset_',
-        suffix='.py',
-        delete=True
+        suffix='.py'
     ), CaptureRunOutput():
         run([
             str(DUMMY_BENCHMARK_PATH), '-l', '-d',
@@ -271,11 +271,10 @@ def test_ignore_hidden_files():
             '-r', '1', '-o', SELECT_ONE_OBJECTIVE, '--no-plot'
         ], 'benchopt', standalone_mode=False)
 
-    with tempfile.NamedTemporaryFile(
+    with OSSpecificNamedTemporaryFile(
         dir=str(DUMMY_BENCHMARK_PATH / 'solvers'),
         prefix='.hidden_solver_',
-        suffix='.py',
-        delete=True
+        suffix='.py'
     ), CaptureRunOutput():
         run([
             str(DUMMY_BENCHMARK_PATH), '-l', '-d',
@@ -351,16 +350,20 @@ def test_run_once_callback(n_iter):
 
 @pytest.mark.parametrize("test_case", ["without_data_home", "with_data_home"])
 def test_paths_config_key(test_case):
+    data_path = os.path.normpath("/path/to/data")
+    home_data_path = os.path.normpath("/path/to/home_data")
+    relative_data_path = os.path.normpath("path/to/data")
+
     if test_case == "without_data_home":
-        config = """
+        config = f"""
             data_paths:
-                data: /path/to/data
+                data: {data_path}
         """
     elif test_case == "with_data_home":
-        config = """
-            data_home: /path/to/home_data
+        config = f"""
+            data_home: {home_data_path}
             data_paths:
-                data: path/to/data
+                data: {relative_data_path}
         """
     else:
         raise Exception("Invalid test case value")
@@ -389,11 +392,9 @@ def test_paths_config_key(test_case):
             ], standalone_mode=False)
 
         if test_case == "without_data_home":
-            out.check_output(r"path/to/data", repetition=1)
+            out.check_output(re.escape(data_path), repetition=1)
         elif test_case == "with_data_home":
-            out.check_output(
-                r"/path/to/home_data/path/to/data",
-                repetition=1
-            )
+            expected_path = os.path.normpath("/path/to/home_data/path/to/data")
+            out.check_output(re.escape(expected_path), repetition=1)
         else:
             raise Exception("Invalid test case value")

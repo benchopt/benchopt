@@ -2,11 +2,11 @@ import re
 import time
 import tarfile
 import inspect
-import tempfile
 from pathlib import Path
 
 import click
 import os
+import sys
 import pytest
 from joblib.memory import _FUNCTION_HASHES
 from click.shell_completion import ShellComplete
@@ -16,6 +16,7 @@ from benchopt.utils.safe_import import _unskip_import
 from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.utils.stream_redirection import SuppressStd
 from benchopt.utils.dynamic_modules import _load_class_from_module
+from benchopt.utils.misc import OSSpecificNamedTemporaryFile
 
 
 from benchopt.tests import SELECT_ONE_PGD
@@ -83,7 +84,7 @@ class TestRunCmd:
         ("", rf"The folder '{CURRENT_DIR}' does not contain `objective.py`")],
         ids=['invalid_path', 'no_objective', "no_objective in default"])
     def test_invalid_benchmark(self, invalid_benchmark, match):
-        with pytest.raises(click.BadParameter, match=match):
+        with pytest.raises(click.BadParameter, match=re.escape(match)):
             if len(invalid_benchmark) > 0:
                 run([invalid_benchmark], 'benchopt', standalone_mode=False)
             else:
@@ -146,8 +147,10 @@ class TestRunCmd:
                      '-d', SELECT_ONE_SIMULATED, '-f', SELECT_ONE_PGD,
                      '-n', '1', '-r', '1', '-o', SELECT_ONE_OBJECTIVE,
                      '--no-plot'], 'benchopt', standalone_mode=False)
-
-        out.check_output(f'conda activate {test_env_name}')
+        if sys.platform == 'win32':
+            out.check_output(f'conda activate "{test_env_name}"')
+        else:
+            out.check_output(f'conda activate {test_env_name}')
         out.check_output('Simulated', repetition=1)
         out.check_output('Dummy Sparse Regression', repetition=1)
         out.check_output(r'Python-PGD\[step_size=1\]:', repetition=6)
@@ -166,7 +169,10 @@ class TestRunCmd:
                      '--no-plot', '--timeout', timeout], 'benchopt',
                     standalone_mode=False)
 
-        out.check_output(f'conda activate {test_env_name}')
+        if sys.platform == 'win32':
+            out.check_output(f'conda activate "{test_env_name}"')
+        else:
+            out.check_output(f'conda activate {test_env_name}')
         out.check_output('Simulated', repetition=1)
         out.check_output('Dummy Sparse Regression', repetition=1)
         out.check_output(r'Python-PGD\[step_size=1\]:', repetition=6)
@@ -209,7 +215,7 @@ class TestRunCmd:
 
         # Fourth test: --timeout and --no-timeout both specified
         match = 'You cannot specify both --timeout and --no-timeout options.'
-        with pytest.raises(click.BadParameter, match=match):
+        with pytest.raises(click.BadParameter, match=re.escape(match)):
             run([str(DUMMY_BENCHMARK_PATH), '-d', SELECT_ONE_SIMULATED,
                  '-f', SELECT_ONE_PGD, '-o', SELECT_ONE_OBJECTIVE,
                  '--no-plot', '--timeout=0', '--no-timeout'],
@@ -248,10 +254,11 @@ class TestRunCmd:
                      '-n', '1', '-r', '1', '-o', SELECT_ONE_OBJECTIVE,
                      '--profile', '--no-plot'],
                     'benchopt', standalone_mode=False)
-
+        python_pgd_path = os.path.join(DUMMY_BENCHMARK_PATH, 'solvers',
+                                       'python_pgd.py')
         out.check_output('using profiling', repetition=1)
         out.check_output(
-            f"File: .*{DUMMY_BENCHMARK_PATH}/solvers/python_pgd.py",
+            f"File: .*{re.escape(python_pgd_path)}",
             repetition=1
         )
         out.check_output(r'\s+'.join([
@@ -260,7 +267,7 @@ class TestRunCmd:
         out.check_output(r"def run\(self, n_iter\):", repetition=1)
 
     def test_invalid_config_file(self):
-        tmp = tempfile.NamedTemporaryFile(mode="w+")
+        tmp = OSSpecificNamedTemporaryFile(mode="w+")
         tmp.write("some_unknown_option: 0")
         tmp.flush()
         with pytest.raises(ValueError, match="Invalid config file option"):
@@ -279,7 +286,7 @@ class TestRunCmd:
           - python-pgd[step_size=[2, 3]]
           - Solver-Test[raise_error=False]
         """
-        tmp = tempfile.NamedTemporaryFile(mode="w+")
+        tmp = OSSpecificNamedTemporaryFile(mode="w+")
         tmp.write(config)
         tmp.flush()
 
@@ -388,7 +395,7 @@ class TestRunCmd:
                 name = "test_import_ctx"
 
             """)
-        with tempfile.NamedTemporaryFile(
+        with OSSpecificNamedTemporaryFile(
                 dir=DUMMY_BENCHMARK_PATH / "solvers",
                 mode='w', suffix='.py') as f:
             f.write(solver)
@@ -425,11 +432,12 @@ class TestRunCmd:
             """
 
         # TODO: use temp_benchmark for this test.
-        TmpFileCtx = tempfile.NamedTemporaryFile
+        TmpFileCtx = OSSpecificNamedTemporaryFile
         dataset_dir = DUMMY_BENCHMARK_PATH / "datasets"
 
-        with TmpFileCtx("w+", suffix='.py', dir=dataset_dir) as tmp_dataset, \
-             TmpFileCtx("w+") as tmp_config:
+        with TmpFileCtx(mode="w+", suffix='.py', dir=dataset_dir,
+                        ) as tmp_dataset, \
+                TmpFileCtx(mode="w+") as tmp_config:
 
             tmp_dataset.write(dataset_src)
             tmp_dataset.flush()
@@ -491,7 +499,7 @@ class TestInstallCmd:
         ('.', "The folder '.' does not contain `objective.py`")],
         ids=['invalid_path', 'no_objective'])
     def test_invalid_benchmark(self, invalid_benchmark, match):
-        with pytest.raises(click.BadParameter, match=match):
+        with pytest.raises(click.BadParameter, match=re.escape(match)):
             install([invalid_benchmark], 'benchopt', standalone_mode=False)
 
     def test_invalid_dataset(self):
@@ -556,6 +564,8 @@ class TestInstallCmd:
             f"already available in '{test_env_name}'\n", repetition=3
         )
 
+    @pytest.mark.skipif(sys.platform == 'win32',
+                        reason="Skipping test on Windows")
     def test_benchopt_install_in_env_with_requirements(
         self, test_env_name, uninstall_dummy_package
     ):
@@ -579,7 +589,7 @@ class TestInstallCmd:
         """
 
         # Some solvers are not installable, only keep a simple one.
-        solver = (DUMMY_BENCHMARK_PATH / "solvers" / "python_pgd.py")
+        solver = Path(DUMMY_BENCHMARK_PATH / "solvers" / "python_pgd.py")
         solvers = [solver.read_text()]
 
         with temp_benchmark(objective=objective, solvers=solvers) as benchmark:
@@ -594,7 +604,7 @@ class TestInstallCmd:
                     )
             assert objective.is_installed(env_name=test_env_name), out
 
-    def test_error_wih_missing_requirements(self, test_env_name):
+    def test_error_with_missing_requirements(self, test_env_name):
 
         # solver with missing dependency specified
         missing_deps_cls = """from benchopt import Base{Cls}
@@ -615,7 +625,7 @@ class TestInstallCmd:
         dataset = missing_deps_cls.format(Cls='Dataset')
         with temp_benchmark(datasets=[dataset]) as benchmark:
             match = "not importable:\nDataset\n- buggy-class"
-            with pytest.raises(AttributeError, match=match):
+            with pytest.raises(AttributeError, match=re.escape(match)):
                 with CaptureRunOutput():
                     install([
                         *f'{benchmark.benchmark_dir} -d buggy-class -y '
@@ -625,13 +635,16 @@ class TestInstallCmd:
         solver = missing_deps_cls.format(Cls='Solver')
         with temp_benchmark(solvers=[solver]) as benchmark:
             match = "not importable:\nSolver\n- buggy-class"
-            with pytest.raises(AttributeError, match=match):
+            with pytest.raises(AttributeError, match=re.escape(match)):
                 with CaptureRunOutput():
                     install([
                         *f'{benchmark.benchmark_dir} -s buggy-class -y '
                         f'--env-name {test_env_name}'.split()
                     ], 'benchopt', standalone_mode=False)
 
+    @pytest.mark.skipif(sys.platform == 'win32',
+                        reason="Skipping test on Windows because "
+                        "of --skip-install")
     def test_no_error_minimal_requirements(self, test_env_name):
 
         objective = """
@@ -863,7 +876,7 @@ class TestArchiveCmd:
         ("", rf"The folder '{CURRENT_DIR}' does not contain `objective.py`")],
         ids=['invalid_path', 'no_objective', "no_objective in default"])
     def test_invalid_benchmark(self, invalid_benchmark, match):
-        with pytest.raises(click.BadParameter, match=match):
+        with pytest.raises(click.BadParameter, match=re.escape(match)):
             if len(invalid_benchmark) > 0:
                 run([invalid_benchmark], 'benchopt', standalone_mode=False)
             else:

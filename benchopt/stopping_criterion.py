@@ -222,10 +222,12 @@ class StoppingCriterion():
 
         # check the different conditions:
         #     diverging / timeout / max_runs / stopping_criterion
+
         if math.isnan(objective) or delta_objective < -1e5:
             stop = True
             status = 'diverged'
-        elif self._deadline is not None and time.time() > self._deadline:
+
+        elif self._deadline is not None and time.time() >= self._deadline:
             stop = True
             status = 'timeout'
 

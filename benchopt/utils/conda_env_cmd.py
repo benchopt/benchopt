@@ -1,5 +1,4 @@
 import os
-import tempfile
 import warnings
 from pathlib import Path
 
@@ -7,7 +6,7 @@ import benchopt
 
 from .shell_cmd import _run_shell
 from .shell_cmd import _run_shell_in_conda_env
-from .misc import get_benchopt_requirement
+from .misc import get_benchopt_requirement, OSSpecificNamedTemporaryFile
 
 from ..config import DEBUG
 from ..config import get_setting
@@ -102,9 +101,8 @@ def create_conda_env(
     print(f"Creating conda env '{env_name}':... ", end='', flush=True)
     if DEBUG:
         print(f"\nconda env config:\n{'-' * 40}{benchopt_env}{'-' * 40}")
-    env_yaml = tempfile.NamedTemporaryFile(
-        mode="w+", prefix='conda_env_', suffix='.yml'
-    )
+    env_yaml = OSSpecificNamedTemporaryFile(
+        mode="w+", prefix='conda_env_', suffix='.yml')
     env_yaml.write(f"name: {env_name}{benchopt_env}")
     env_yaml.flush()
 
@@ -290,5 +288,8 @@ def get_conda_context():
     if exit_code != 0 or active_prefix is None:
         return None
     info = json.loads(payload)
-    info['active_prefix'] = active_prefix
+    info['active_prefix'] = os.path.normpath(active_prefix)
+    info['root_prefix'] = os.path.normpath(info['root_prefix'])
+    info['envs_dirs'] = [os.path.normpath(env_dir) for env_dir
+                         in info['envs_dirs']]
     return Context(**info)
