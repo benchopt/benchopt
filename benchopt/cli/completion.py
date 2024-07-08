@@ -2,7 +2,7 @@ from pathlib import Path
 
 
 from benchopt.benchmark import Benchmark
-from benchopt.utils.safe_import import skip_import
+from benchopt.utils.safe_import import mock_import
 from benchopt.utils.conda_env_cmd import list_conda_envs
 
 
@@ -16,7 +16,7 @@ def propose_from_list(candidates, incomplete):
 
 def complete_benchmarks(ctx, param, incomplete):
     "Auto-completion for benchmarks."
-    skip_import()
+    mock_import()
 
     # check the current incomplete path. If it does not exists, use its parent
     # as a starting point for lookup.
@@ -56,7 +56,7 @@ def find_benchmark_in_args(args):
 
 def complete_solvers(ctx, param, incomplete):
     "Auto-completion for solvers."
-    skip_import()
+    mock_import()
     benchmark = find_benchmark_in_args(ctx.args)
     if benchmark is None:
         return []
@@ -66,7 +66,7 @@ def complete_solvers(ctx, param, incomplete):
 
 def complete_datasets(ctx, param, incomplete):
     "Auto-completion for datasets."
-    skip_import()
+    mock_import()
     benchmark = find_benchmark_in_args(ctx.args)
     if benchmark is None:
         return []
@@ -76,7 +76,7 @@ def complete_datasets(ctx, param, incomplete):
 
 def complete_output_files(ctx, param, incomplete):
     "Auto-completion for output files."
-    skip_import()
+    mock_import()
     benchmark = find_benchmark_in_args(ctx.args)
     if benchmark is None:
         return []
@@ -94,7 +94,7 @@ def complete_output_files(ctx, param, incomplete):
 
 def complete_config_files(ctx, param, incomplete):
     "Auto-completion for configuration files."
-    skip_import()
+    mock_import()
     benchmark = find_benchmark_in_args(ctx.args)
     if benchmark is None:
         return []
