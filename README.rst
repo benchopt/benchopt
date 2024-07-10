@@ -85,7 +85,7 @@ Here is how to do so for the `L2-logistic Regression benchmark <https://github.c
 .. figure:: https://benchopt.github.io/_images/sphx_glr_plot_run_benchmark_001.png
    :target: how.html
    :align: center
-   :scale: 40%
+   :width: 60%
 
 These steps illustrate how to reproduce the `L2-logistic Regression benchmark <https://github.com/benchopt/benchmark_logreg_l2>`_.
 Find the complete list of the `Available benchmarks`_.
