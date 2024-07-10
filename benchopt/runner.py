@@ -202,7 +202,7 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
 
         def run_one_to_cvg_cached(**kwargs):
             res = _run_one_to_cvg_cached(**kwargs)
-            return res if res is not None else ([], 'not ready')
+            return res if res is not None else ([], 'not run yet')
 
     # Set objective an skip if necessary.
     skip, reason = objective.set_dataset(dataset)
@@ -269,7 +269,7 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
             )
         except RuntimeError as e:
             status = e.args[0]
-        if status in ['diverged', 'error', 'interrupted', 'not ready']:
+        if status in ['diverged', 'error', 'interrupted', 'not run yet']:
             run_statistics = []
             break
         run_statistics.extend(curve)
