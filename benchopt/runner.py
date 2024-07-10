@@ -13,6 +13,9 @@ from .utils.files import uniquify_results
 from .utils.pdb_helpers import exception_handler
 from .utils.terminal_output import TerminalOutput
 
+
+FAILURE_STATUS = ['diverged', 'error', 'interrupted']
+
 ##################################
 # Time one run of a solver
 ##################################
@@ -146,12 +149,12 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
                     stop_val, curve
                 )
         # Only run if save_final_results is defined in the objective.
-        if has_save_final_results:
+        if has_save_final_results and ctx.status not in FAILURE_STATUS:
             to_save = objective.save_final_results(**solver.get_result())
             if to_save is not None:
                 with open(meta["final_results"], 'wb') as f:
                     pickle.dump(to_save, f)
-    if ctx.status in ['diverged', 'error', 'interrupted']:
+    if ctx.status in FAILURE_STATUS:
         raise RuntimeError(ctx.status)
     return curve, ctx.status
 

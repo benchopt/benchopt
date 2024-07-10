@@ -6,6 +6,12 @@ import pytest
 from benchopt.tests import TEST_SOLVER
 from benchopt.tests import TEST_DATASET
 from benchopt.tests import TEST_OBJECTIVE
+
+from benchopt.tests import SELECT_ONE_PGD
+from benchopt.tests import SELECT_ONE_SIMULATED
+from benchopt.tests import SELECT_ONE_OBJECTIVE
+from benchopt.tests import DUMMY_BENCHMARK_PATH
+
 from benchopt.benchmark import _check_patterns
 from benchopt.benchmark import _extract_options
 from benchopt.benchmark import _extract_parameters
@@ -258,7 +264,7 @@ def test_extract_parameters():
         assert _extract_parameters(f"\"{token}\"") == [token]
 
 
-def test_error_caching(no_debug_test):
+def test_error_caching(no_debug_log):
 
     objective = """from benchopt import BaseObjective
 
@@ -316,3 +322,26 @@ def test_error_caching(no_debug_test):
 
     # error message should be displayed twice
     out.check_output("ValueError: Failing solver.", repetition=2)
+
+
+@pytest.mark.parametrize('n_jobs', [1, 2])
+def test_benchopt_run_script(n_jobs, no_debug_log):
+    from benchopt import run_benchmark
+
+    with temp_benchmark() as benchmark:
+        with CaptureRunOutput() as out:
+            run_benchmark(
+                str(benchmark.benchmark_dir),
+                solver_names=[SELECT_ONE_PGD],
+                dataset_names=[SELECT_ONE_SIMULATED],
+                objective_filters=[SELECT_ONE_OBJECTIVE],
+                max_runs=2, n_repetitions=1, n_jobs=n_jobs, plot_result=False
+            )
+
+    out.check_output('Simulated', repetition=1)
+    out.check_output('Dummy Sparse Regression', repetition=1)
+    out.check_output(r'Python-PGD\[step_size=1\]:', repetition=4)
+    out.check_output(r'Python-PGD\[step_size=1.5\]:', repetition=0)
+
+    # Make sure the results were saved in a result file
+    assert len(out.result_files) == 1, out.output

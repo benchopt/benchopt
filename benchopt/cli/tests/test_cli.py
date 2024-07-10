@@ -444,7 +444,7 @@ class TestRunCmd:
             with pytest.raises(TypeError, match=error_match):
                 run(run_cmd, 'benchopt', standalone_mode=False)
 
-    def test_result_collection(self, no_debug_test):
+    def test_result_collection(self, no_debug_log):
         solver = """
             from benchopt import BaseSolver
             import numpy as np
