@@ -10,7 +10,6 @@ from benchopt.tests import TEST_OBJECTIVE
 from benchopt.tests import SELECT_ONE_PGD
 from benchopt.tests import SELECT_ONE_SIMULATED
 from benchopt.tests import SELECT_ONE_OBJECTIVE
-from benchopt.tests import DUMMY_BENCHMARK_PATH
 
 from benchopt.benchmark import _check_patterns
 from benchopt.benchmark import _extract_options
