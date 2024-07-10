@@ -184,15 +184,11 @@ It assume that the python script is located at the same level as the benchmark f
 .. code-block:: python
 
     from benchopt import run_benchmark
-    from benchopt.benchmark import Benchmark
 
-    # load benchmark
-    BENCHMARK_PATH = "./"
-    benchmark = Benchmark(BENCHMARK_PATH)
 
     # run benchmark
     run_benchmark(
-        benchmark,
+        benchmark_path='.',
         solver_names=[
             "skglm",
             "celer",
