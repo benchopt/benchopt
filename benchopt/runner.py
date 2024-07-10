@@ -488,7 +488,7 @@ def run_benchmark(benchmark_path, solver_names=None, forced_solvers=(),
         solver_names + list(forced_solvers)
     )
     datasets = benchmark.check_dataset_patterns(dataset_names)
-    objective = benchmark.check_objective_patterns(objective_filters)
+    objective = benchmark.check_objective_filters(objective_filters)
 
     return _run_benchmark(
         benchmark, solvers, forced_solvers, datasets, objective,
