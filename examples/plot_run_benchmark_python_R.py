@@ -23,20 +23,11 @@ if not BENCHMARK_PATH.exists():
         f"{BENCHMARK_PATH.resolve()}"
     )
 
-benchmark = Benchmark(BENCHMARK_PATH)
-
-solvers = benchmark.check_solver_patterns(
-    ['Python-PGD[use_acceleration=False]', 'R-PGD']
-)
-datasets = benchmark.check_dataset_patterns(
-    ["Simulated[n_features=5000,n_samples=100,rho=0]"]
-)
-objectives = benchmark.check_objective_filters(
-    ['*[fit_intercept=False,reg=0.5]']
-)
-
 save_file = run_benchmark(
-    benchmark, solvers=solvers, datasets=datasets, objectives=objectives,
+    BENCHMARK_PATH,
+    solver_names=['Python-PGD[use_acceleration=False]', 'R-PGD'],
+    dataset_names=["Simulated[n_features=5000,n_samples=100,rho=0]"],
+    objective_filters=['*[fit_intercept=False,reg=0.5]'],
     max_runs=100, timeout=100, n_repetitions=5,
     plot_result=False, show_progress=False
 )

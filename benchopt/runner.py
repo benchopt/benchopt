@@ -7,10 +7,14 @@ from datetime import datetime
 from joblib import Parallel, delayed, hash
 
 from .callback import _Callback
+from .benchmark import Benchmark
 from .utils.sys_info import get_sys_info
 from .utils.files import uniquify_results
 from .utils.pdb_helpers import exception_handler
 from .utils.terminal_output import TerminalOutput
+
+
+FAILURE_STATUS = ['diverged', 'error', 'interrupted']
 
 ##################################
 # Time one run of a solver
@@ -145,12 +149,12 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
                     stop_val, curve
                 )
         # Only run if save_final_results is defined in the objective.
-        if has_save_final_results:
+        if has_save_final_results and ctx.status not in FAILURE_STATUS:
             to_save = objective.save_final_results(**solver.get_result())
             if to_save is not None:
                 with open(meta["final_results"], 'wb') as f:
                     pickle.dump(to_save, f)
-    if ctx.status in ['diverged', 'error', 'interrupted']:
+    if ctx.status in FAILURE_STATUS:
         raise RuntimeError(ctx.status)
     return curve, ctx.status
 
@@ -296,11 +300,11 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
     return run_statistics
 
 
-def run_benchmark(benchmark, solvers=None, forced_solvers=None,
-                  datasets=None, objectives=None, max_runs=10,
-                  n_repetitions=1, timeout=None, n_jobs=1, slurm=None,
-                  plot_result=True, display=True, html=True,  collect=False,
-                  show_progress=True, pdb=False, output_name="None"):
+def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
+                   datasets=None, objectives=None, max_runs=10,
+                   n_repetitions=1, timeout=None, n_jobs=1, slurm=None,
+                   plot_result=True, display=True, html=True,  collect=False,
+                   show_progress=True, pdb=False, output_name="None"):
     """Run full benchmark.
 
     Parameters
@@ -417,3 +421,80 @@ def run_benchmark(benchmark, solvers=None, forced_solvers=None,
         from benchopt.plotting import plot_benchmark
         plot_benchmark(save_file, benchmark, html=html, display=display)
     return save_file
+
+
+def run_benchmark(benchmark_path, solver_names=None, forced_solvers=(),
+                  dataset_names=None, objective_filters=None, max_runs=10,
+                  n_repetitions=1, timeout=None, n_jobs=1, slurm=None,
+                  plot_result=True, display=True, html=True,  collect=False,
+                  show_progress=True, pdb=False, output_name="None"):
+    """Run full benchmark.
+
+    Parameters
+    ----------
+    benchmark : benchopt.Benchmark object
+        Object to represent the benchmark.
+    solver_names : list | None
+        List of solver names to include in the benchmark. If None
+        all solvers available are run.
+    forced_solvers : list | None
+        List of solvers to include in the benchmark and for
+        which one forces recomputation.
+    dataset_names : list | None
+        List of dataset names to include. If None all available
+        datasets are used.
+    objective_filters : list | None
+        Filters to select specific objective parameters. If None,
+        all objective parameters are tested
+    max_runs : int
+        The maximum number of solver runs to perform to estimate
+        the convergence curve.
+    n_repetitions : int
+        The number of repetitions to run. Defaults to 1.
+    timeout : float
+        The maximum duration in seconds of the solver run.
+    n_jobs : int
+        Maximal number of workers to use to run the benchmark in parallel.
+    slurm : Path | None
+        If not None, launch the job on a slurm cluster using the file to get
+        the cluster config parameters.
+    plot_result : bool
+        If set to True (default), generate the result plot and save them in
+        the benchmark directory.
+    display : bool
+        If set to True (default), open the result plots at the end of the run,
+        otherwise, simply save them.
+    html : bool
+        If set to True (default), display the result plot in HTML, otherwise
+        in matplotlib figures, default is True.
+    collect : bool
+        If set to True, only collect the results that have been put in cache,
+        and ignore the results that are not computed yet, default is False.
+    show_progress : bool
+        If show_progress is set to True, display the progress of the benchmark.
+    pdb : bool
+        If pdb is set to True, open a debugger on error.
+    output_name : str
+        Filename for the parquet output. If given, the results will
+        be stored at <BENCHMARK>/outputs/<filename>.parquet.
+
+    Returns
+    -------
+    df : instance of pandas.DataFrame
+        The benchmark results. If multiple metrics were computed, each
+        one is stored in a separate column. If the number of metrics computed
+        by the objective is not the same for all parameters, the missing data
+        is set to `NaN`.
+    """
+    benchmark = Benchmark(benchmark_path)
+    solvers = benchmark.check_solver_patterns(
+        solver_names + list(forced_solvers)
+    )
+    datasets = benchmark.check_dataset_patterns(dataset_names)
+    objective = benchmark.check_objective_filters(objective_filters)
+
+    return _run_benchmark(
+        benchmark, solvers, forced_solvers, datasets, objective,
+        max_runs, n_repetitions, timeout, n_jobs, slurm,
+        plot_result, display, html, collect, show_progress, pdb, output_name
+    )

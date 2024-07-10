@@ -113,7 +113,7 @@ def test_solver_install_api(benchmark, solver_class):
 
 
 @pytest.mark.requires_install
-def test_solver_install(test_env_name, benchmark, solver_class, check_test):
+def test_solver_install(check_test, test_env_name, benchmark, solver_class):
 
     if check_test is not None:
         check_test(solver_class)
@@ -125,7 +125,7 @@ def test_solver_install(test_env_name, benchmark, solver_class, check_test):
     )
 
 
-def test_solver(benchmark, solver_class, check_test):
+def test_solver(check_test, benchmark, solver_class):
     # Check that a solver run with at least one configuration of a simulated
     # dataset.
 
