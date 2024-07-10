@@ -110,6 +110,8 @@ class Benchmark:
             self.url = f"https://github.com/benchopt/{self.name}"
         else:
             self.name = Path(self.url).name
+        # replace dots to avoid issues with `with_suffix``
+        self.name = self.name.replace('.', '-')
 
     ####################################################################
     # Helpers to access and validate objective, solvers and datasets
@@ -344,8 +346,8 @@ class Benchmark:
         that are already in cache.
         """
 
-        # Create a cached function the computations in the benchmark folder
-        # and handle cases where we force the run.
+        # Create a cached version of `func` and handle cases where we force
+        # the run.
         func_cached = self.mem.cache(func, ignore=ignore)
         if force:
             assert not collect, "Cannot collect and force computation."

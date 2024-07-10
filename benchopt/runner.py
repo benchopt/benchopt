@@ -150,12 +150,13 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
             if to_save is not None:
                 with open(meta["final_results"], 'wb') as f:
                     pickle.dump(to_save, f)
-
+    if ctx.status in ['diverged', 'error', 'interrupted']:
+        raise RuntimeError(ctx.status)
     return curve, ctx.status
 
 
 def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
-                   max_runs, timeout, force=False, collect=False,
+                   max_runs, timeout=None, force=False, collect=False,
                    output=None, pdb=False):
     """Run a benchmark for a given dataset, objective and solver.
 
@@ -253,15 +254,21 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
         stopping_criterion = solver._stopping_criterion.get_runner_instance(
             solver=solver,
             max_runs=max_runs,
-            timeout=timeout / n_repetitions,
+            timeout=timeout / n_repetitions if timeout is not None else None,
             output=output,
         )
-        curve, status = run_one_to_cvg_cached(
-            benchmark=benchmark, objective=objective,
-            solver=solver, meta=meta,
-            stopping_criterion=stopping_criterion,
-            force=force, output=output, pdb=pdb
+
+        args_run_one_to_cvg = dict(
+            benchmark=benchmark, objective=objective, solver=solver, meta=meta,
+            stopping_criterion=stopping_criterion, force=force, output=output,
+            pdb=pdb
         )
+        try:
+            curve, status = run_one_to_cvg_cached(
+                **args_run_one_to_cvg
+            )
+        except RuntimeError as e:
+            status = e.args[0]
         if status in ['diverged', 'error', 'interrupted', 'not run yet']:
             run_statistics = []
             break
@@ -291,7 +298,7 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
 
 def run_benchmark(benchmark, solvers=None, forced_solvers=None,
                   datasets=None, objectives=None, max_runs=10,
-                  n_repetitions=1, timeout=100, n_jobs=1, slurm=None,
+                  n_repetitions=1, timeout=None, n_jobs=1, slurm=None,
                   plot_result=True, display=True, html=True,  collect=False,
                   show_progress=True, pdb=False, output_name="None"):
     """Run full benchmark.
@@ -339,7 +346,7 @@ def run_benchmark(benchmark, solvers=None, forced_solvers=None,
     show_progress : bool
         If show_progress is set to True, display the progress of the benchmark.
     pdb : bool
-        It pdb is set to True, open a debugger on error.
+        If pdb is set to True, open a debugger on error.
     output_name : str
         Filename for the parquet output. If given, the results will
         be stored at <BENCHMARK>/outputs/<filename>.parquet.

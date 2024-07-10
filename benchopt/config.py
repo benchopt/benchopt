@@ -22,6 +22,7 @@ DEFAULT_GLOBAL_CONFIG = {
     'conda_cmd': 'conda',
     'shell': os.environ.get('SHELL', 'bash'),
     'cache': None,
+    'default_timeout': 100,
 }
 """
 * ``debug``: If set to true, enable debug logs.
@@ -241,7 +242,7 @@ def get_setting(name, config_file=None, benchmark_name=None,
     name : str
         Name of the config parameter to retrieve.
     config_file : str | Path
-        Path to a config file from which the setting can be retreives. When
+        Path to a config file from which the setting can be retrieved. When
         it is not provided, default to the global benchopt config file.
     benchmark_name : str
         Name of the benchmark for which the setting are retrieved.
@@ -347,6 +348,10 @@ def parse_value(value, default_value):
                       for v in value.split(',') if v != '']
             value = values
         assert isinstance(value, list), value
+    elif isinstance(default_value, int):
+        value = int(value)
+    elif isinstance(default_value, float):
+        value = float(value)
 
     return value
 
