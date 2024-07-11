@@ -6,6 +6,8 @@ import warnings
 import importlib
 from pathlib import Path
 
+from joblib.externals import cloudpickle
+
 from .safe_import import safe_import_context
 
 
@@ -13,7 +15,7 @@ def _get_module_from_file(module_filename, benchmark_dir=None):
     """Load a module from the name of the file"""
     module_filename = Path(module_filename)
     if benchmark_dir is not None:
-        # Use a package starting from the benchmark root folder.
+        # Use a package name derived from the benchmark root folder.
         module_filename = module_filename.resolve()
         benchmark_dir = Path(benchmark_dir).resolve().parent
         package_name = module_filename.relative_to(benchmark_dir)
@@ -32,6 +34,10 @@ def _get_module_from_file(module_filename, benchmark_dir=None):
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         sys.modules[package_name] = module
+
+        # Make functions define in the dynamic module pickleable
+        cloudpickle.register_pickle_by_value(module)
+
     return module
 
 

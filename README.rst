@@ -2,13 +2,13 @@
    :width: 350
    :align: center
 
-*—Making your optimization benchmarks simple and open—*
+*—Making your ML and optimization benchmarks simple and open—*
 
 ----
 
 |Test Status| |codecov| |Documentation| |Python 3.6+| |install-per-months| |discord| |SWH|
 
-``Benchopt`` is a benchmarking suite for optimization algorithms.
+``Benchopt`` is a benchmarking suite tailored for machine learning workflows.
 It is built for simplicity, transparency, and reproducibility.
 It is implemented in Python but can run algorithms written in **many programming languages**.
 
@@ -44,7 +44,7 @@ It is also possible to use the **latest development version**. To do so, run ins
 
 .. code-block:: bash
 
-    pip install --pre benchopt -U -i https://test.pypi.org/simple
+    pip install git+https://github.com/benchopt/benchopt.git
 
 
 Getting started
@@ -85,7 +85,7 @@ Here is how to do so for the `L2-logistic Regression benchmark <https://github.c
 .. figure:: https://benchopt.github.io/_images/sphx_glr_plot_run_benchmark_001.png
    :target: how.html
    :align: center
-   :scale: 40%
+   :width: 60%
 
 These steps illustrate how to reproduce the `L2-logistic Regression benchmark <https://github.com/benchopt/benchmark_logreg_l2>`_.
 Find the complete list of the `Available benchmarks`_.
@@ -113,7 +113,7 @@ or (why not) discuss new features to be added and future development directions 
 Citing Benchopt
 ---------------
 
-``Benchopt`` is a continuous effort to make reproducible and transparent optimization benchmarks.
+``Benchopt`` is a continuous effort to make reproducible and transparent ML and optimization benchmarks.
 Join us in this endeavor! If you use ``benchopt`` in a scientific publication, please cite
 
 .. code-block:: bibtex
@@ -204,7 +204,7 @@ Available benchmarks
    :target: https://www.python.org/downloads/release/python-360/
 .. |Documentation| image:: https://img.shields.io/badge/documentation-latest-blue
    :target: https://benchopt.github.io
-.. |codecov| image:: https://codecov.io/gh/benchopt/benchopt/branch/master/graph/badge.svg
+.. |codecov| image:: https://codecov.io/gh/benchopt/benchopt/branch/main/graph/badge.svg
    :target: https://codecov.io/gh/benchopt/benchopt
 .. |SWH| image:: https://archive.softwareheritage.org/badge/origin/https://github.com/benchopt/benchopt/
     :target: https://archive.softwareheritage.org/browse/origin/?origin_url=https://github.com/benchopt/benchopt

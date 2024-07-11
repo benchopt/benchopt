@@ -23,3 +23,17 @@
 .. _Badr Moufad: https://github.com/Badr-MOUFAD
 
 .. _Pierre Ablin: https://github.com/pierreablin
+
+.. _Christopher Marouani: https://github.com/chris-mrn
+
+.. _Célestin Eve: https://github.com/ceelestin
+
+.. _Pierre-Antoine Comby: https://github.com/paquiteau
+
+.. _Virginie Loison: https://www.linkedin.com/in/virginie-loison/
+
+.. _Julie Alberge: https://www.linkedin.com/in/julie-alberge
+
+.. _Jad Yehya: https://github.com/Jad-yehya
+
+.. _Mathieu Dagréou: https://matdag.github.io

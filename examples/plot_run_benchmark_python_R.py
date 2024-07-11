@@ -24,8 +24,8 @@ if not BENCHMARK_PATH.exists():
     )
 
 save_file = run_benchmark(
-    Benchmark(BENCHMARK_PATH),
-    ['Python-PGD[use_acceleration=False]', 'R-PGD'],
+    BENCHMARK_PATH,
+    solver_names=['Python-PGD[use_acceleration=False]', 'R-PGD'],
     dataset_names=["Simulated[n_features=5000,n_samples=100,rho=0]"],
     objective_filters=['*[fit_intercept=False,reg=0.5]'],
     max_runs=100, timeout=100, n_repetitions=5,
@@ -35,6 +35,7 @@ save_file = run_benchmark(
 
 kinds = list(PLOT_KINDS.keys())
 reset_solver_styles_idx()
-figs = plot_benchmark(save_file, benchmark=Benchmark(BENCHMARK_PATH),
-                      kinds=kinds, html=False)
+figs = plot_benchmark(
+    save_file, benchmark=Benchmark(BENCHMARK_PATH), kinds=kinds, html=False
+)
 plt.show()

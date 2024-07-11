@@ -124,6 +124,7 @@ First, all code that need to be imported should be placed under
             └── submodule1.py  # some more helpers
 
 Then, these modules and packages can be imported as a regular package, i.e.,
+
 .. code-block::
 
     from benchopt import safe_import_context
@@ -183,15 +184,11 @@ It assume that the python script is located at the same level as the benchmark f
 .. code-block:: python
 
     from benchopt import run_benchmark
-    from benchopt.benchmark import Benchmark
 
-    # load benchmark
-    BENCHMARK_PATH = "./"
-    benchmark = Benchmark(BENCHMARK_PATH)
 
     # run benchmark
     run_benchmark(
-        benchmark,
+        benchmark_path='.',
         solver_names=[
             "skglm",
             "celer",
@@ -215,3 +212,10 @@ It assume that the python script is located at the same level as the benchmark f
 
 .. |SlurmExecutor| replace:: ``submitit.SlurmExecutor``
 .. _SlurmExecutor: https://github.com/facebookincubator/submitit/blob/main/submitit/slurm/slurm.py#L214
+
+.. _save_final_results:
+
+Saving Final Results of a Solver
+--------------------------------
+
+Using the `save_final_results(**results)` method of the objective function to retrieve the results to save. They are saved in `outputs/final_results/` directory and reference is added in the benchmark `.parquet` file.
