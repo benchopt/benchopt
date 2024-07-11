@@ -114,7 +114,7 @@ def test_solver_install_api(benchmark, solver_class):
 
 
 @pytest.mark.requires_install
-def test_solver_install(test_env_name, benchmark, solver_class, check_test):
+def test_solver_install(check_test, test_env_name, benchmark, solver_class):
     # Skipping the specific R-PGD solver for Windows
     if sys.platform == 'win32':
         if hasattr(benchmark, 'name'):
