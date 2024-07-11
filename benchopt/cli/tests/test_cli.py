@@ -452,7 +452,7 @@ class TestRunCmd:
             with pytest.raises(TypeError, match=error_match):
                 run(run_cmd, 'benchopt', standalone_mode=False)
 
-    def test_result_collection(self, no_debug_test):
+    def test_result_collection(self, no_debug_log):
         solver = """
             from benchopt import BaseSolver
             import numpy as np
@@ -489,7 +489,7 @@ class TestRunCmd:
             # check that the results where collected for the correct solvers
             assert len(out.result_files) == 1
             out.check_output(r'done \(not enough run\)', repetition=1)
-            out.check_output('not ready', repetition=1)
+            out.check_output('not run yet', repetition=1)
 
 
 class TestInstallCmd:

@@ -6,6 +6,11 @@ Setting up an ML benchmark
 Benchopt can be used to run benchmarks on machine learning problems. This page
 explains the specificities of setting up a benchmark in this context.
 
+To easily get started with a new ML benchmark, we recommend using the dedicated
+``benchopt``'s `ML template <https://github.com/benchopt/template_benchmark_ml>`_ from github.
+This template provide a simple structure, with the different benchopt's options set to accomodate ML workflows.
+
+
 Cross-validation
 ----------------
 

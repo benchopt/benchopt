@@ -13,6 +13,8 @@ Frequently asked questions (FAQ)
 
     Learn how to :ref:`write_benchmark`, including creating an objective, a solver, and a dataset.
 
+    Also take a look at our template repository for `Optimization <https://github.com/benchopt/template_benchmark>`_ and `ML <https://github.com/benchopt/template_benchmark_ml>`_ to easily start a new benchmark.
+
 
 .. dropdown:: How are performance curves constructed and the solvers stopped?
 

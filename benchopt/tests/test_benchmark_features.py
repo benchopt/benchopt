@@ -89,7 +89,7 @@ def test_error_reporting(error, raise_install_error):
         os.environ['BENCHOPT_RAISE_INSTALL_ERROR'] = prev_value
 
 
-def test_objective_no_cv(no_debug_test):
+def test_objective_no_cv(no_debug_log):
 
     no_cv = """from benchopt import BaseObjective
 
@@ -114,7 +114,7 @@ def test_objective_no_cv(no_debug_test):
                 standalone_mode=False)
 
 
-def test_objective_save_final_results(no_debug_test):
+def test_objective_save_final_results(no_debug_log):
     save_final = """
     from benchopt import BaseObjective
 
@@ -150,7 +150,7 @@ def test_objective_save_final_results(no_debug_test):
     assert final_results == "test_value"
 
 
-def test_objective_cv_splitter(no_debug_test):
+def test_objective_cv_splitter(no_debug_log):
 
     objective = """from benchopt import BaseObjective, safe_import_context
         with safe_import_context() as import_ctx:
