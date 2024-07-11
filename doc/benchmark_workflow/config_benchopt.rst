@@ -36,20 +36,23 @@ The config files for benchopt follow the Microsoft Windows yml files structure. 
 
 .. code-block:: yml
 
-    [benchopt]
-    debug = true  # Activate or not debug logs
-    raise_install_error = no  # Raise/ignore install error. Default is ignore.
-    github_token = 0...0  # Token used to publish results on benchopt/results
+    debug: true  # Activate or not debug logs. Default is false.
+    conda_cmd: mamba  # Command to use to install packages. Default is conda.
+    github_token: 0...0  # Token used to publish results on benchopt/results
 
 For benchmark settings, they are grouped in a section with the same name as the benchmark. For a benchmark named ``benchmark_bench``, the config structure is:
 
 .. code-block:: yml
 
-    [benchmark_bench]
-    plots =
-        suboptimality_curve
-        bar_chart
-        objective_curve
+    benchmark_bench:
+        plots:
+            - suboptimality_curve
+            - bar_chart
+            - objective_curve
+        data_paths:
+            imagenet: /path/to/imagenet
+
+Note that specific benchmark config can also be set into the config file of the benchmark, located in the benchmark folder. The global config file is used as a fallback if the benchmark config file does not exist.
 
 
 .. _config_settings:
