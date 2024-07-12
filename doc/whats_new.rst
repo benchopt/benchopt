@@ -35,13 +35,13 @@ CLI
 - Add ``--download`` option in ``benchopt install`` to allow downloading
   the data when installing the benchmark. By `Thomas Moreau`_ (:gh:`718`)
 
-- Add ``--no-timeout`` option in ``benchopt run`` to allow solvers to bypass 
+- Add ``--no-timeout`` option in ``benchopt run`` to allow solvers to bypass
   timeout. By `Célestin Eve`_ (:gh:`725`)
 
 FIX
 ~~~
 
-- Disable caching of diverged/errored runs. By `Julie Alberge`_ and 
+- Disable caching of diverged/errored runs. By `Julie Alberge`_ and
   `Virginie Loison`_ (:gh:`735`)
 
 - Fix pickling of dynamic modules to allow for nested parallelism in
@@ -172,7 +172,7 @@ PLOT
   the :class:`~benchopt.BaseSolver` class. By `Badr Moufad`_ (:gh:`543`)
 - Enable visualizing the objective as function of ``stopping_criterion``: time,
   iteration, or tolerance. By `Badr Moufad`_ (:gh:`479`)
-- Add button to share and set specific views on the plot. For now, the view need
+- Add button to share and set specific views on the plot. For now, the view needs
   to be defined manually in the benchmark config file but an export button will
   be added in follow up PRs.
   By `Tanguy Lefort`_, `Amélie Vernay`_ and `Thomas Moreau`_ (:gh:`552`).
