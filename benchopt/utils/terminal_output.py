@@ -10,8 +10,8 @@ from ..config import DEBUG
 MIN_LINE_LENGTH = 20
 BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE = range(30, 38)
 
-CROSS = '\u2717' if sys.platform != 'win32' else r'\u2717'
-TICK = '\u2713' if sys.platform != 'win32' else r'\u2713'
+CROSS = '\u2717' if sys.platform != 'win32' else 'X'
+TICK = '\u2713' if sys.platform != 'win32' else 'V'
 
 
 STATUS = {

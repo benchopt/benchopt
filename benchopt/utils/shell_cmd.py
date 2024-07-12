@@ -153,7 +153,7 @@ def _run_shell_in_conda_env(script, env_name=None, raise_on_error=None,
                 # first line to use conda activate in bash script
                 # see https://github.com/conda/conda/issues/7980
                 f'eval "$(conda shell.bash hook)"\n'
-                f'conda activate {env_name}\n\n'
+                f'conda activate "{env_name}"\n\n'
 
                 # Run the actual script
                 f'# Run script\n{script}'

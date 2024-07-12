@@ -88,7 +88,7 @@ def get_benchopt_requirement(pytest=False):
 
 
 def NamedTemporaryFile(dir=None, mode='w+b', prefix=None,
-                                 suffix=None):
+                       suffix=None):
     """
     Returns a NamedTemporaryFile object, ensuring compatibility across Unix
     and Windows systems.
