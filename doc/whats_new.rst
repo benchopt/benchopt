@@ -177,7 +177,7 @@ PLOT
   the :class:`~benchopt.BaseSolver` class. By `Badr Moufad`_ (:gh:`543`)
 - Enable visualizing the objective as function of ``stopping_criterion``: time,
   iteration, or tolerance. By `Badr Moufad`_ (:gh:`479`)
-- Add button to share and set specific views on the plot. For now, the view need
+- Add button to share and set specific views on the plot. For now, the view needs
   to be defined manually in the benchmark config file but an export button will
   be added in follow up PRs.
   By `Tanguy Lefort`_, `Amélie Vernay`_ and `Thomas Moreau`_ (:gh:`552`).

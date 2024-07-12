@@ -32,7 +32,7 @@ For benchmark configuration files, they are usually located in the benchmark fol
 Config File Structure
 ---------------------
 
-The config files for benchopt follow the Microsoft Windows yml files structure. The global setting are grouped in a ``[benchopt]`` section:
+The config files for benchopt follow the YAML files structure:
 
 .. code-block:: yml
 
