@@ -87,7 +87,7 @@ def get_benchopt_requirement(pytest=False):
     return req, False
 
 
-def OSSpecificNamedTemporaryFile(dir=None, mode='w+b', prefix=None,
+def NamedTemporaryFile(dir=None, mode='w+b', prefix=None,
                                  suffix=None):
     """
     Returns a NamedTemporaryFile object, ensuring compatibility across Unix
