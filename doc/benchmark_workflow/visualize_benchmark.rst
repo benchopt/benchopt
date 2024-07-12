@@ -67,7 +67,7 @@ relative suboptimality ``(metric - min(metric)) / (metric[0] - min(metric))``.
 
 Use **Scale** to set ``x`` and ``y`` axis scale to linear or logarithmic.
 
-Similarly, use **X-axis** to change the quantity plotted in the x-axis and therefore plotting the metric as a function of time, iteration or tolerance.
+Similarly, use **X-axis** to change the quantity plotted in the x-axis and therefore plot the metric as a function of time, iteration or tolerance.
 
 .. note::
 
