@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from benchopt.plotting.plot_objective_curve import get_solver_style
 
 
-def plot_boxplot_chart(df, obj_col='objective_value', plotly=False):
+def plot_boxplot(df, obj_col='objective_value', plotly=False):
     solvers, data, colors = compute_solvers_boxplot_data(df, obj_col)
     dataset_name = df['data_name'].unique()[0]
     objective_name = df['objective_name'].unique()[0]
@@ -51,9 +51,21 @@ def compute_solvers_boxplot_data(df, obj_col):
 
 
 def compute_solver_boxplot_data(df, obj_col):
-    """Compute and shape data for ONE solver to display in boxplot"""
+    """Compute and shape data for ONE solver to display in boxplot
 
-    """By SOLVERS : Compute final time and final objective_value data"""
+    Parameters
+    ----------
+    df : instance of pandas.DataFrame
+        The benchmark results for one solver.
+    obj_col : str
+        Column to select in the DataFrame for the plot.
+
+    Returns
+    -------
+    dict : data to construct the boxplots in JS per solver or iterations.
+    """
+
+    # By SOLVERS : Compute final time and final objective_value data
     boxplot_by_solver = dict(
         final_times=(
             df[['idx_rep', 'time']]
@@ -67,7 +79,7 @@ def compute_solver_boxplot_data(df, obj_col):
         ).tolist()
     )
 
-    """By ITERATIONS : Compute time and objective_value"""
+    # By ITERATIONS : Compute time and objective_value per iteration
     max_iteration = df['idx_rep'].value_counts().max()
     # Arrays to keep data to send to html
     times = [[] for i in range(max_iteration)]
