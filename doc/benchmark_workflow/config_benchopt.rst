@@ -10,7 +10,7 @@ There are two configuration levels. The first level is the global config for the
 
 To get the BenchOpt global config file used by the benchopt command, you can run ``benchopt config``. Using the option ``--benchmark,-b <benchmark>`` allows to display the config file for a specific benchmark. See :ref:`config_file` for more details on how the config file path is resolved.
 
-The structure of the files follows the Microsoft Windows INI files structure and is described in :ref:`config_structure`. The available settings are listed in :ref:`config_settings`.
+The structure of the files follows the Yaml files structure and is described in :ref:`config_structure`. The available settings are listed in :ref:`config_settings`.
 
 The value of each setting can be accessed with the CLI using ``benchopt config [-b <benchmark>] get <name>``. Similarly, the setting value can be set using ``benchopt config [-b <benchmark>] set <name> <value>``.
 
@@ -22,34 +22,37 @@ Config File Location
 For the global configuration file, the resolution order is the following:
 
 1. The environment variable ``BENCHOPT_CONFIG`` is set to an existing file,
-2. A file ``benchopt.ini`` in the current directory,
-3. The default file is ``$HOME/.config/benchopt.ini``.
+2. A file ``benchopt.yml`` in the current directory,
+3. The default file is ``$HOME/.config/benchopt.yml``.
 
-For benchmark configuration files, they are usually located in the benchmark folder, and named ``benchopt.ini``. If it does not exist, the default is to use the global config file.
+For benchmark configuration files, they are usually located in the benchmark folder, and named ``benchopt.yml``. If it does not exist, the default is to use the global config file.
 
 .. _config_structure:
 
 Config File Structure
 ---------------------
 
-The config files for benchopt follow the Microsoft Windows INI files structure. The global settings are grouped in a ``[benchopt]`` section:
+The config files for benchopt follow the YAML files structure:
 
-.. code-block:: ini
+.. code-block:: yml
 
-    [benchopt]
-    debug = true  # Activate or not debug logs
-    raise_install_error = no  # Raise/ignore install error. Default is ignore.
-    github_token = 0...0  # Token used to publish results on benchopt/results
+    debug: true  # Activate or not debug logs. Default is false.
+    conda_cmd: mamba  # Command to use to install packages. Default is conda.
+    github_token: 0...0  # Token used to publish results on benchopt/results
 
 For benchmark settings, they are grouped in a section with the same name as the benchmark. For a benchmark named ``benchmark_bench``, the config structure is:
 
-.. code-block:: ini
+.. code-block:: yml
 
-    [benchmark_bench]
-    plots =
-        suboptimality_curve
-        bar_chart
-        objective_curve
+    benchmark_bench:
+        plots:
+            - suboptimality_curve
+            - bar_chart
+            - objective_curve
+        data_paths:
+            imagenet: /path/to/imagenet
+
+Note that specific benchmark config can also be set into the config file of the benchmark, located in the benchmark folder. The global config file is used as a fallback if the benchmark config file does not exist.
 
 
 .. _config_settings:
