@@ -24,12 +24,12 @@ Frequently asked questions (FAQ)
     can be set on a per solver basis.
     It is also possible to set various stopping criterions to decide when to
     stop growing the computational budget, to avoid wasting resources.
-    Visit the :ref:`performance_curves` page for more detail.
+    Visit the :ref:`performance_curves` page for more details.
 
 
 .. dropdown:: How can I reuse code in a benchmark?
 
-    For some solver and datasets, it is handy to share some operations or pre-processing steps.
+    For some solvers and datasets, it is handy to share some operations or pre-processing steps.
     Benchopt allows to factorize this code by :ref:`benchmark_utils_import`.
 
 

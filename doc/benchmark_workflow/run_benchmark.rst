@@ -68,7 +68,7 @@ Using a YAML file and the ``--config`` flag, it is possible to describe all deta
 
     benchopt run . --config ./example_config.yml
 
-Here is the content of configuration file ``example_config.yml`` if we were to run the two previous example into a single one.
+Here is the content of configuration file ``example_config.yml`` if we were to run the two previous examples into a single one.
 
 .. code-block:: yaml
 

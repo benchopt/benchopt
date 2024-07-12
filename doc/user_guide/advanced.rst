@@ -24,7 +24,7 @@ cluster. To install the necessary dependencies, please run:
 
 Note that for some clusters with shared python installation, it is necessary
 to call ``pip install --user`` to install the packages in the user space and
-not in the the system one.
+not in the system one.
 
 .. XXX - update this to point to the submitit doc if it is created.
 
@@ -48,8 +48,8 @@ Hereafter is an example of such config file:
       - module purge
       - module load cuda/10.1.2 cudnn/7.6.5.32-cuda-10.1 nccl/2.5.6-2-cuda
 
-Using such option, each configuration of ``(dataset, objective, solver)`` with
-unique parameters are launched as a separated job in a job-array on the SLURM
+Using such options, each configuration of ``(dataset, objective, solver)`` with
+unique parameters is launched as a separated job in a job-array on the SLURM
 cluster. Note that by default, no limitation is used on the number of
 simultaneous jobs that are run.
 
@@ -70,12 +70,12 @@ Some solvers might not be able to run with all the datasets present
 in a benchmark. This is typically the case when some datasets are
 represented using sparse data or for datasets that are too large.
 
-In this cases, a solver can be skipped at runtime, depending on the
+In these cases, a solver can be skipped at runtime, depending on the
 characteristic of the objective. In order to define for which cases
 a solver should be skip, the user needs to implement a method
 :func:`~benchopt.BaseSolver.skip` in the solver class that will take
 the input as the :func:`~benchopt.BaseSolver.set_objective` method.
-This method should return a boolean value that evaluate to ``True``
+This method should return a boolean value that evaluates to ``True``
 if the solver should be skipped, and a string giving the reason of
 why the solver is skipped, for display purposes. For instance,
 for a solver where the objective is set with keys `X, y, reg`,
@@ -107,7 +107,7 @@ functions. As a benchmark is not structured as proper python packages
 but imported dynamically to avoid installation issues, we resort to
 a special way of importing modules and functions defined for a benchmark.
 
-First, all code that need to be imported should be placed under
+First, all code that needs to be imported should be placed under
 ``BENCHMARK_DIR/benchmark_utils/``, as described here:
 
 .. code-block::
@@ -141,9 +141,9 @@ Then, these modules and packages can be imported as a regular package, i.e.,
 Caching pre-compilation and warmup effects
 ------------------------------------------
 
-For some solvers, such as solver relying on just-in-time compilation with
+For some solvers, such as solvers relying on just-in-time compilation with
 ``numba`` or ``jax``, the first iteration might be longer due to "warmup"
-effects. To avoid having such effect in the benchmark results, it is usually
+effects. To avoid having such effects in the benchmark results, it is usually
 advised to call the solver once before running the benchmark. This should be
 implemented in the ``Solver.warm_up`` method, which is empty by default and
 called after the `set_objective` method. For solvers with
@@ -178,8 +178,8 @@ Typical use-cases of that are
 - Automating the run of several benchmarks
 - Using ``vscode`` debugger where the python script serves as an entry point to benchopt internals
 
-The following script illustrate running the :ref:`benchmark Lasso <run_with_config_file>`.
-It assume that the python script is located at the same level as the benchmark folder.
+The following script illustrates running the :ref:`benchmark Lasso <run_with_config_file>`.
+It assumes that the python script is located at the same level as the benchmark folder.
 
 .. code-block:: python
 
