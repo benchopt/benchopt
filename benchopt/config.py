@@ -7,7 +7,6 @@ from pathlib import Path
 from collections.abc import Iterable
 from benchopt.constants import PLOT_KINDS
 
-
 BOOLEAN_STATES = configparser.ConfigParser.BOOLEAN_STATES
 CONFIG_FILE_NAME = 'benchopt.yml'
 
@@ -23,6 +22,7 @@ DEFAULT_GLOBAL_CONFIG = {
     'conda_cmd': 'conda',
     'shell': os.environ.get('SHELL', 'bash'),
     'cache': None,
+    'default_timeout': 100,
 }
 """
 * ``debug``: If set to true, enable debug logs.
@@ -43,7 +43,9 @@ DEFAULT_GLOBAL_CONFIG = {
 
 DEFAULT_BENCHMARK_CONFIG = {
     "plots": list(PLOT_KINDS),
-    "plot_configs": {}
+    "plot_configs": {},
+    "data_home": "",
+    "data_paths": {}
 }
 
 """
@@ -59,7 +61,7 @@ DEFAULT_BENCHMARK_CONFIG = {
     - relative_suboptimality_curve
     - bar_chart
 
-* ``plot_configs``, *list*: list of saved views that can be easily display for
+* ``plot_configs``, *dict*: list of saved views that can be easily display for
   the plot. Each view corresponds to a name, with specified values to select
   either:
 
@@ -86,6 +88,36 @@ DEFAULT_BENCHMARK_CONFIG = {
   the ``Save as view`` button in the plot controls and downloading eiher the
   new HTML file to save them or the config file in th erepo of the benchmark,
   so that these saved views are embeded in the next plot results automatically.
+
+* ``data_home``, *str*: Allows users to define a home path where the function
+  ``get_data_path()`` search data files defined in ``data_paths``.
+
+* ``data_paths``, *dict*: Allows users to store some data files in custom
+  locations. If you are writing your own benchmark, you can use this
+  options to allow users to use custom location for data files.
+  Otherwise, please refer to the benchmark's documentation you
+  use to know if you can use this option and which paths you must define.
+
+  For example, if the benchmark asks you to define a data path,
+  you can proceed as follows in the benchmark's ``config.yaml`` file:
+
+  .. code-block:: yaml
+    data_home: path/to/data/home
+
+    data_paths:
+        my_data_file: path/to/my/file.npz
+
+  In your benchmark's datasets, you can use the ``get_data_path()``
+  to retrieve the paths:
+
+  .. code-block:: python
+    from benchopt.config import get_data_path
+
+    path = get_data_path('my_data_file')
+
+    # The "path" variable now contains "path/to/data/home/path/to/my/file.npz"
+
+  If no paths are provided, the default path used is ``your_benchmark/data``
 """
 
 
@@ -210,7 +242,7 @@ def get_setting(name, config_file=None, benchmark_name=None,
     name : str
         Name of the config parameter to retrieve.
     config_file : str | Path
-        Path to a config file from which the setting can be retreives. When
+        Path to a config file from which the setting can be retrieved. When
         it is not provided, default to the global benchopt config file.
     benchmark_name : str
         Name of the benchmark for which the setting are retrieved.
@@ -261,6 +293,38 @@ def get_setting(name, config_file=None, benchmark_name=None,
     return value
 
 
+def get_data_path(key: str = None):
+    """
+    Parameters
+    ----------
+    key (str): The key to look for in the configuration file.
+
+    Returns
+    -------
+    If the key exists in config, it returns the path associated to the key.
+    If the key does not exist, it returns the path ended by the key name.
+    """
+    from .benchmark import get_running_benchmark
+    benchmark = get_running_benchmark()
+
+    data_home = benchmark.get_setting("data_home")
+
+    if data_home == "":
+        data_home = benchmark.benchmark_dir
+
+    path = Path(data_home)
+
+    if key is not None:
+        data_paths = benchmark.get_setting("data_paths")
+
+        if key in data_paths and data_paths[key] is not None:
+            path = path / Path(data_paths[key])
+        else:
+            path = path / key
+
+    return path
+
+
 def parse_value(value, default_value):
     if isinstance(default_value, bool):
         # convert string 0/1/true/false/yes/no/on/off to boolean
@@ -284,6 +348,10 @@ def parse_value(value, default_value):
                       for v in value.split(',') if v != '']
             value = values
         assert isinstance(value, list), value
+    elif isinstance(default_value, int):
+        value = int(value)
+    elif isinstance(default_value, float):
+        value = float(value)
 
     return value
 

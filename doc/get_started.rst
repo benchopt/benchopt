@@ -67,7 +67,7 @@ Finally, run the benchmark:
     To explore all benchopt CLI features, refer to :ref:`cli_ref`
     or run ``benchopt --help`` or ``benchopt COMMAND_NAME --help``.
 
-When the run is finished, benchopt automatically opens a window in you default browser and renders the results as a dashboard.
+When the run is finished, benchopt automatically opens a window in your default browser and renders the results as a dashboard.
 
 .. figure:: ./_static/results-get-started-lasso.png
    :align: center

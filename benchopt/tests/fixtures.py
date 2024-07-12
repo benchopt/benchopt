@@ -95,7 +95,7 @@ def pytest_generate_tests(metafunc):
 
 
 @pytest.fixture
-def no_debug_test(request):
+def no_debug_log(request):
     """Deactivate the debug logs for a test."""
     os.environ["BENCHOPT_DEBUG"] = "0"
     yield

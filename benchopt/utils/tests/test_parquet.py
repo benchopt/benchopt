@@ -14,7 +14,6 @@ from benchopt.utils.temp_benchmark import temp_benchmark
 
 from benchopt.config import DEFAULT_BENCHMARK_CONFIG
 
-from benchopt.tests import DUMMY_BENCHMARK
 from benchopt.tests import SELECT_ONE_PGD
 from benchopt.tests import SELECT_ONE_SIMULATED
 from benchopt.tests import SELECT_ONE_OBJECTIVE
@@ -55,9 +54,29 @@ def test_parquet_metadata():
 
 def test_metadata_saving():
 
-    dummy_config = yaml.safe_load(
-        DUMMY_BENCHMARK.get_config_file().read_text()
-    )
+    dummy_config = {
+        'plot_configs': {
+            'Init': {
+                'kind': 'suboptimality_curve',
+                'objective_column': 'objective_value',
+                'scale': 'loglog',
+                'ylim': ['5e-11', 100]
+            },
+            'View 2': {
+                'kind': 'objective_curve',
+                'objective_column': 'objective_mse',
+                'scale': 'semilog-x',
+                'xaxis_type': 'Iteration',
+                'xlim': [1, 120],
+                'ylim': ['5e1', '3.8e2']
+            }
+        }, 'plots': [
+            'objective_curve',
+           'suboptimality_curve',
+           'relative_suboptimality_curve',
+           'bar_chart'
+        ]
+    }
 
     with temp_benchmark() as benchmark:
         # Check that the computation caching is working properly.
@@ -71,7 +90,11 @@ def test_metadata_saving():
             run(run_cmd, 'benchopt', standalone_mode=False)
 
         config = get_metadata(Path(out.result_files[0]))
-        assert config == DEFAULT_BENCHMARK_CONFIG
+        expected_config = {
+            k: v for k, v in DEFAULT_BENCHMARK_CONFIG.items()
+            if k in ['plots', 'plot_configs']
+        }
+        assert config == expected_config
 
         config_file = benchmark.get_config_file()
         with config_file.open('w') as f:

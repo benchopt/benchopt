@@ -88,7 +88,7 @@ def test_error_reporting(error, raise_install_error):
         os.environ['BENCHOPT_RAISE_INSTALL_ERROR'] = prev_value
 
 
-def test_objective_no_cv(no_debug_test):
+def test_objective_no_cv(no_debug_log):
 
     no_cv = """from benchopt import BaseObjective
 
@@ -113,7 +113,43 @@ def test_objective_no_cv(no_debug_test):
                 standalone_mode=False)
 
 
-def test_objective_cv_splitter(no_debug_test):
+def test_objective_save_final_results(no_debug_log):
+    save_final = """
+    from benchopt import BaseObjective
+
+    class Objective(BaseObjective):
+        name = "cross_val"
+
+        min_benchopt_version = "0.0.0"
+
+        def set_data(self, X, y): self.X, self.y = X, y
+        def get_one_result(self): return 0
+        def evaluate_result(self, beta): return dict(value=1)
+
+        def save_final_results(self, beta):
+            return "test_value"
+
+        def get_objective(self):
+            return dict(X=self.X, y=self.y, lmbd=1)
+
+    """
+
+    import pandas as pd
+    import pickle
+
+    with temp_benchmark(objective=save_final) as benchmark:
+        with CaptureRunOutput(delete_result_files=False) as out:
+            run([
+                str(benchmark.benchmark_dir),
+                *('-s python-pgd -d test-dataset -n 1 -r 1 --no-plot').split()
+            ],  standalone_mode=False)
+        data = pd.read_parquet(out.result_files[0])
+        with open(data.loc[0, "final_results"], "rb") as final_result_file:
+            final_results = pickle.load(final_result_file)
+    assert final_results == "test_value"
+
+
+def test_objective_cv_splitter(no_debug_log):
 
     objective = """from benchopt import BaseObjective, safe_import_context
         with safe_import_context() as import_ctx:
@@ -311,3 +347,53 @@ def test_run_once_callback(n_iter):
             ], standalone_mode=False)
 
         out.check_output(rf"RUNONCE\({n_iter}\)", repetition=1)
+
+
+@pytest.mark.parametrize("test_case", ["without_data_home", "with_data_home"])
+def test_paths_config_key(test_case):
+    if test_case == "without_data_home":
+        config = """
+            data_paths:
+                data: /path/to/data
+        """
+    elif test_case == "with_data_home":
+        config = """
+            data_home: /path/to/home_data
+            data_paths:
+                data: path/to/data
+        """
+    else:
+        raise Exception("Invalid test case value")
+
+    custom_dataset = """
+        from benchopt import BaseDataset
+        from benchopt import config
+        import numpy as np
+
+        class Dataset(BaseDataset):
+            name = "custom_dataset"
+            def get_data(self):
+                path = config.get_data_path(key="data")
+                print(f"PATH${path}")
+
+                return dict(X=np.random.rand(3, 2), y=np.ones((3,)))
+    """
+
+    with temp_benchmark(datasets=[custom_dataset], config=config) as benchmark:
+        with CaptureRunOutput() as out:
+            run([
+                str(benchmark.benchmark_dir),
+                *'-s solver-test -d custom_dataset'
+                 ' -n 0 -r 1 --no-plot '
+                '-o dummy*[reg=0.5]'.split()
+            ], standalone_mode=False)
+
+        if test_case == "without_data_home":
+            out.check_output(r"path/to/data", repetition=1)
+        elif test_case == "with_data_home":
+            out.check_output(
+                r"/path/to/home_data/path/to/data",
+                repetition=1
+            )
+        else:
+            raise Exception("Invalid test case value")

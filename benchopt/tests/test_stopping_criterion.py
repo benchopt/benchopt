@@ -115,7 +115,7 @@ def test_key_to_monitor(criterion_class, strategy):
 @pytest.mark.parametrize('criterion_class', [
     SufficientDescentCriterion, SufficientProgressCriterion
 ])
-def test_key_to_monitor_objective(no_debug_test, criterion_class, strategy):
+def test_key_to_monitor_objective(no_debug_log, criterion_class, strategy):
     "Check that the criterion tracks the right objective key."
     key = 'test_key'
 
@@ -155,7 +155,7 @@ def test_key_to_monitor_objective(no_debug_test, criterion_class, strategy):
 
 
 @pytest.mark.parametrize('strategy', SAMPLING_STRATEGIES)
-def test_solver_strategy(no_debug_test, strategy):
+def test_solver_strategy(no_debug_log, strategy):
 
     solver = f"""from benchopt import BaseSolver
 
@@ -192,7 +192,7 @@ def test_solver_strategy(no_debug_test, strategy):
 @pytest.mark.parametrize('criterion_class', [
     SufficientDescentCriterion, SufficientProgressCriterion
 ])
-def test_stopping_criterion_strategy(no_debug_test, criterion_class, strategy):
+def test_stopping_criterion_strategy(no_debug_log, criterion_class, strategy):
 
     if strategy == "run_once":
         criterion_class = SingleRunCriterion
@@ -233,7 +233,7 @@ def test_stopping_criterion_strategy(no_debug_test, criterion_class, strategy):
 @pytest.mark.parametrize('criterion_class', [
     SufficientDescentCriterion, SufficientProgressCriterion
 ])
-def test_solver_override_strategy(no_debug_test, criterion_class, strategy):
+def test_solver_override_strategy(no_debug_log, criterion_class, strategy):
 
     if strategy == "run_once":
         criterion_class = SingleRunCriterion
@@ -271,7 +271,7 @@ def test_solver_override_strategy(no_debug_test, criterion_class, strategy):
                 standalone_mode=False)
 
 
-def test_dual_strategy(no_debug_test):
+def test_dual_strategy(no_debug_log):
 
     solver = """from benchopt import BaseSolver
     from benchopt.stopping_criterion import SufficientDescentCriterion
@@ -296,7 +296,7 @@ def test_dual_strategy(no_debug_test):
                     standalone_mode=False)
 
 
-def test_objective_equals_zero(no_debug_test):
+def test_objective_equals_zero(no_debug_log):
 
     objective = """from benchopt import BaseObjective
 

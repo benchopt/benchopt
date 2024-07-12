@@ -4,6 +4,7 @@ import warnings
 from pathlib import Path
 
 from benchopt.benchmark import Benchmark
+from benchopt.config import get_setting
 from benchopt.cli.completion import complete_solvers
 from benchopt.cli.completion import complete_datasets
 from benchopt.cli.completion import complete_benchmarks
@@ -51,6 +52,7 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
         "max_runs",
         "n_repetitions",
         "timeout",
+        "no_timeout",
         "n_jobs",
         "slurm",
         "collect",
@@ -118,10 +120,15 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               help='Number of repetitions that are averaged to estimate the '
               'runtime.')
 @click.option('--timeout',
-              default=100, show_default=True, type=str,
-              help='Stop a solver when run for more than <timeout> seconds.'
-              ' The syntax 10h or 10m can be used to denote 10 hours or '
-              'minutes respectively.')
+              default=None, show_default=True, type=str,
+              help='Stop a solver when run for more than <timeout> seconds. '
+              'The syntax 10h or 10m can be used to denote 10 hours or '
+              'minutes respectively. Not compatible with the --no-timeout '
+              'option.')
+@click.option('--no-timeout',
+              is_flag=True,
+              help='If set, prevent solvers from stopping after running for '
+              'a long time. Not compatible with the --timeout option.')
 @click.option('--collect',
               is_flag=True,
               help='If set, this run will only collect results which are '
@@ -182,15 +189,27 @@ def run(config_file=None, **kwargs):
 
     (
         benchmark, solver_names, forced_solvers, dataset_names,
-        objective_filters, max_runs, n_repetitions, timeout, n_jobs, slurm,
-        collect, plot, display, html, pdb, do_profile, env_name, output_name
+        objective_filters, max_runs, n_repetitions, timeout, no_timeout,
+        n_jobs, slurm, collect, plot, display, html, pdb, do_profile,
+        env_name, output_name
     ) = _get_run_args(kwargs, config)
 
-    try:
-        timeout = int(float(timeout))
-    except ValueError:  # already under string format
-        import pandas as pd
-        timeout = pd.to_timedelta(timeout).total_seconds()
+    # If --no-timeout is set and --timeout is not, skip these blocks
+    # and keep timeout = None
+    if no_timeout and timeout is not None:
+        raise click.BadParameter(
+            'You cannot specify both --timeout and --no-timeout options.'
+        )
+
+    if not no_timeout:
+        if timeout is None:
+            timeout = get_setting('default_timeout')
+        else:
+            try:
+                timeout = int(float(timeout))
+            except ValueError:  # already under string format
+                import pandas as pd
+                timeout = pd.to_timedelta(timeout).total_seconds()
 
     # Create the Benchmark object
     benchmark = Benchmark(benchmark)
@@ -218,7 +237,7 @@ def run(config_file=None, **kwargs):
             print("Running on SLURM")
             set_slurm_launch()
 
-        from benchopt.runner import run_benchmark
+        from benchopt.runner import _run_benchmark
 
         if do_profile:
             from benchopt.utils.profiling import use_profile
@@ -231,6 +250,7 @@ def run(config_file=None, **kwargs):
         # Check that the dataset/solver patterns match actual dataset
         datasets = benchmark.check_dataset_patterns(dataset_names)
         objectives = benchmark.check_objective_filters(objective_filters)
+
         # pyyaml returns tuples: make sure everything is a list
         if isinstance(solver_names, dict):
             solver_names = [solver_names]
@@ -240,7 +260,7 @@ def run(config_file=None, **kwargs):
             solver_names + list(forced_solvers)
         )
 
-        run_benchmark(
+        _run_benchmark(
             benchmark, solvers, forced_solvers,
             datasets=datasets, objectives=objectives,
             max_runs=max_runs, n_repetitions=n_repetitions,
@@ -315,7 +335,9 @@ def run(config_file=None, **kwargs):
     cmd = (
         rf"benchopt run --local {benchmark.benchmark_dir} "
         rf"--n-repetitions {n_repetitions} "
-        rf"--max-runs {max_runs} --timeout {timeout} "
+        rf"--max-runs {max_runs} "
+        rf"{f'--timeout {timeout} ' if timeout is not None else ''}"
+        rf"{'--no-timeout ' if no_timeout else ''} "
         rf"--n-jobs {n_jobs} {'--slurm' if slurm else ''} "
         rf"{solvers_option} {forced_solvers_option} "
         rf"{datasets_option} {objective_option} "

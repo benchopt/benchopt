@@ -34,7 +34,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
     - ``get_result(self)``: returns all parameters of interest, as a dict.
       The output is passed to ``Objective.evaluate_result``.
 
-    Note that two ``sampling_strategy`` can be used to construct the benchmark
+    Note that four ``sampling_strategy`` can be used to construct the benchmark
     curve:
 
     - ``'iteration'``: call the run method with max_iter number increasing
@@ -44,7 +44,8 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
     - ``'callback'``: a callable that should be called after each iteration or
       epoch. This callable periodically calls the objective's `compute`
       and returns False when the solver should stop.
-
+    - ``'run_once'``: call the run method once to get a single point. This is
+      typically used for ML benchmarks.
     """
 
     _base_class_name = 'Solver'
@@ -360,6 +361,16 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
       evaluated. This should be a dictionary where the keys correspond to the
       keyword arguments of `evaluate_result`.
 
+    Optionally, the `Solver` can implement the following methods to change its
+    behavior:
+
+    - `save_final_results(**result)`: Return the data to be saved from the
+       results of the solver. It will be saved as a `.pkl` file in the
+       `output/results` folder, and link to the benchmark results.
+
+    - `get_next(stop_val)`: Return the next iteration where the result will be
+      evaluated.
+
     This class is also used to specify information about the benchmark.
     In particular, it should have the following class attributes:
 
@@ -417,6 +428,20 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
             scalar value which will be used to detect convergence. With a
             dictionary, multiple metric values can be stored at once instead
             of running each separately.
+        """
+        pass
+
+    def save_final_results(self, **solver_result):
+        """Save the final results of the solver.
+
+        Parameters
+        ----------
+        solver_result : dict
+            All values needed to compute the objective metrics. This dictionary
+            is retrieved by calling ``solver_result = Solver.get_result()``.
+        Returns
+        -------
+        dict of values to save
         """
         pass
 
