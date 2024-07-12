@@ -26,7 +26,10 @@ API
   By `Thomas Moreau`_ (:gh:`706`).
 
 - Raise error when an invalid install_cmd is provided.
-  By `Jad Yehya` (:gh:`714`).
+  By `Jad Yehya`_ (:gh:`714`).
+
+- Add boxplot option to plot the benchmark results.
+  By `Melvine Nargeot`_ (:gh:`714`).
 
 CLI
 ~~~
