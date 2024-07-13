@@ -586,17 +586,15 @@ class TestInstallCmd:
 
         with temp_benchmark(objective=objective, solvers=solvers) as benchmark:
             objective = benchmark.get_benchmark_objective()
-            out = 'already installed but failed to import.'
             if not objective.is_installed(env_name=test_env_name):
-                with CaptureRunOutput() as out:
-                    install(
-                        [str(benchmark.benchmark_dir), '--env-name',
-                         test_env_name],
-                        'benchopt', standalone_mode=False
-                    )
+                install(
+                    [str(benchmark.benchmark_dir), '--env-name',
+                        test_env_name],
+                    'benchopt', standalone_mode=False
+                )
             assert objective.is_installed(
                 env_name=test_env_name, raise_on_not_installed=True
-            ), out.output
+            )
 
     def test_error_with_missing_requirements(self, test_env_name):
 
