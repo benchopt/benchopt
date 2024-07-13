@@ -637,10 +637,8 @@ class TestInstallCmd:
                         f'--env-name {test_env_name}'.split()
                     ], 'benchopt', standalone_mode=False)
 
-    @pytest.mark.skipif(sys.platform == 'win32',
-                        reason="Skipping test on Windows because "
-                        "of --skip-install")
-    def test_no_error_minimal_requirements(self, test_env_name):
+    def test_no_error_minimal_requirements(self, test_env_name,
+                                           uninstall_dummy_package):
 
         objective = """
             from benchopt import safe_import_context, BaseObjective
