@@ -6,7 +6,6 @@ from pathlib import Path
 
 import click
 import os
-import sys
 import pytest
 from joblib.memory import _FUNCTION_HASHES
 from click.shell_completion import ShellComplete
@@ -559,8 +558,6 @@ class TestInstallCmd:
             f"already available in '{test_env_name}'\n", repetition=3
         )
 
-    @pytest.mark.skipif(sys.platform == 'win32',
-                        reason="Skipping test on Windows")
     def test_benchopt_install_in_env_with_requirements(
         self, test_env_name, uninstall_dummy_package
     ):
@@ -597,7 +594,7 @@ class TestInstallCmd:
                          test_env_name],
                         'benchopt', standalone_mode=False
                     )
-            assert objective.is_installed(env_name=test_env_name), out
+            assert objective.is_installed(env_name=test_env_name), out.output
 
     def test_error_with_missing_requirements(self, test_env_name):
 
@@ -666,7 +663,7 @@ class TestInstallCmd:
                 import dummy_package
 
             class Dataset(BaseDataset):
-                name = 'buggy-class'
+                name = 'test-dataset'
                 install_cmd = 'conda'
                 def get_data(self): pass
         """
@@ -677,7 +674,7 @@ class TestInstallCmd:
         ) as benchmark:
             with CaptureRunOutput() as out:
                 install([
-                    *f'{benchmark.benchmark_dir} -d buggy-class -y '
+                    *f'{benchmark.benchmark_dir} -d test-dataset -y '
                     f'--env-name {test_env_name}'.split()
                 ], 'benchopt', standalone_mode=False)
         out.check_output(
