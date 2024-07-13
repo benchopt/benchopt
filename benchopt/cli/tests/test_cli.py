@@ -594,7 +594,9 @@ class TestInstallCmd:
                          test_env_name],
                         'benchopt', standalone_mode=False
                     )
-            assert objective.is_installed(env_name=test_env_name), out.output
+            assert objective.is_installed(
+                env_name=test_env_name, raise_on_not_installed=True
+            ), out.output
 
     def test_error_with_missing_requirements(self, test_env_name):
 
