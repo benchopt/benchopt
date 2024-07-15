@@ -53,6 +53,7 @@ def _run_shell(script, raise_on_error=None, capture_stdout=True,
         fast_failure_script = '\n'.join([
             f"{step} || exit /b %ERRORLEVEL%" for step in script.split("\n")
         ])
+        fast_failure_script = f"@echo off\n{fast_failure_script}"
     else:
         fast_failure_script = f"set -e\n{script}"
 
