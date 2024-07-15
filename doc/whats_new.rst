@@ -5,6 +5,21 @@ What's new
 
 .. currentmodule:: benchopt
 
+.. _changes_1_7:
+
+Version 1.7 - in development
+----------------------------
+
+CLI
+---
+
+API
+---
+
+FIX
+---
+
+
 .. _changes_1_6:
 
 Version 1.6 - 15/07/2024
