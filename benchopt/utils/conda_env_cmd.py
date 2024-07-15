@@ -185,7 +185,7 @@ def get_cmd_from_requirements(packages):
         ))
         packages = ' '.join(pkg.split(':')[-1] for pkg in conda_packages)
         cmd.append(
-            f"CALL {CONDA_CMD} install --update-all -y {channels} {packages}"
+            f"{CONDA_CMD} install --update-all -y {channels} {packages}"
         )
 
     if pip_packages:
