@@ -7,8 +7,8 @@ What's new
 
 .. _changes_1_6:
 
-Version 1.6 - In development
-----------------------------
+Version 1.6 - 15/07/2024
+------------------------
 
 API
 ~~~
