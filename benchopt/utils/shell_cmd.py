@@ -51,7 +51,8 @@ def _run_shell(script, raise_on_error=None, capture_stdout=True,
         fast_failure_script = f"begin; {script}; or exit 1; end"
     elif IS_CMD:
         fast_failure_script = '\n'.join([
-            f"{step} || exit /b %ERRORLEVEL%" if step.strip() else ""
+            f"{step}\nif %errorlevel% neq 0 exit %ERRORLEVEL%\n"
+            if step.strip() else ""
             for step in script.split("\n")
         ])
         fast_failure_script = f"@echo off\n{fast_failure_script}"
