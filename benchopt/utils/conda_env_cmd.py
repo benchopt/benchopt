@@ -16,6 +16,9 @@ SHELL = get_setting('shell')
 CONDA_CMD = get_setting('conda_cmd')
 PIP_CMD = f"{sys.executable} -m pip"
 
+if sys.platform == 'win32':
+    CONDA_CMD = f"CALL {CONDA_CMD}"
+
 
 # Yaml config file for benchopt env.
 BENCHOPT_ENV = """
