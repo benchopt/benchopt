@@ -118,7 +118,7 @@ def NamedTemporaryFile(dir=None, mode='w+b', prefix=None,
             raise EnvironmentError(
                 f"Your current Python version is {current_version.major}."
                 f"{current_version.minor}. Please upgrade to Python 3.12 or"
-                "higher for program to work correctly."
+                "higher for benchopt to work correctly on Windows."
             )
         return tempfile.NamedTemporaryFile(dir=dir, mode=mode, prefix=prefix,
                                            suffix=suffix, delete=True,

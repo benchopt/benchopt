@@ -1,17 +1,17 @@
+from ..config import DEBUG
 "Helper function for colored terminal outputs"
 import shutil
 import ctypes
 import platform
 import sys
-
-from ..config import DEBUG
+sys.stdout.reconfigure(encoding='utf-8')
 
 
 MIN_LINE_LENGTH = 20
 BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE = range(30, 38)
 
-CROSS = '\u2717' if sys.platform != 'win32' else 'X'
-TICK = '\u2713' if sys.platform != 'win32' else 'V'
+CROSS = '\u2717'
+TICK = '\u2713'
 
 
 STATUS = {
