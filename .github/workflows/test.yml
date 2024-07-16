@@ -27,14 +27,14 @@ jobs:
     strategy:
       matrix:
         include:
-          # - os: ubuntu-latest
-          #   version_python: 3.8
-          # - os: ubuntu-latest
-          #   version_python: 3.9
-          #   conda_cmd: 'mamba'
-          #   coverage: 'true'
-          # - os: macos-latest
-          #   version_python: 3.9
+          - os: ubuntu-latest
+            version_python: 3.8
+          - os: ubuntu-latest
+            version_python: 3.9
+            conda_cmd: 'mamba'
+            coverage: 'true'
+          - os: macos-latest
+            version_python: 3.9
           - os: windows-latest
             version_python: 3.12
     env:
