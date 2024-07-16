@@ -1,6 +1,7 @@
 import pytest
 import os
 import re
+from pathlib import Path
 
 from benchopt.cli.main import run
 from benchopt.utils.temp_benchmark import temp_benchmark
@@ -350,9 +351,9 @@ def test_run_once_callback(n_iter):
 
 @pytest.mark.parametrize("test_case", ["without_data_home", "with_data_home"])
 def test_paths_config_key(test_case):
-    data_path = os.path.normpath("/path/to/data")
-    home_data_path = os.path.normpath("/path/to/home_data")
-    relative_data_path = os.path.normpath("path/to/data")
+    data_path = Path("/path/to/data")
+    home_data_path = Path("/path/to/home_data")
+    relative_data_path = Path("path/to/data")
 
     if test_case == "without_data_home":
         config = f"""
@@ -392,9 +393,9 @@ def test_paths_config_key(test_case):
             ], standalone_mode=False)
 
         if test_case == "without_data_home":
-            out.check_output(re.escape(data_path), repetition=1)
+            out.check_output(re.escape(str(data_path)), repetition=1)
         elif test_case == "with_data_home":
-            expected_path = os.path.normpath("/path/to/home_data/path/to/data")
-            out.check_output(re.escape(expected_path), repetition=1)
+            expected_path = home_data_path / relative_data_path
+            out.check_output(re.escape(str(expected_path)), repetition=1)
         else:
             raise Exception("Invalid test case value")
