@@ -1,4 +1,5 @@
 import os
+import sys
 import warnings
 from pathlib import Path
 
@@ -13,6 +14,7 @@ from ..config import get_setting
 
 SHELL = get_setting('shell')
 CONDA_CMD = get_setting('conda_cmd')
+PIP_CMD = f"{sys.executable} -m pip"
 
 
 # Yaml config file for benchopt env.
@@ -184,13 +186,15 @@ def get_cmd_from_requirements(packages):
             f"-c {pkg.split(':')[0]}" for pkg in conda_packages if ':' in pkg
         ))
         packages = ' '.join(pkg.split(':')[-1] for pkg in conda_packages)
+        cmd.append("echo running conda")
         cmd.append(
             f"{CONDA_CMD} install --update-all -y {channels} {packages}"
         )
 
     if pip_packages:
         packages = ' '.join(pip_packages)
-        cmd.append(f"pip install {packages}")
+        cmd.append("echo running pip")
+        cmd.append(f"{PIP_CMD} install {packages}")
     return cmd
 
 
