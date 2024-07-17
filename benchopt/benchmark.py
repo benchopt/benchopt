@@ -37,8 +37,8 @@ MISSING_DEPS_MSG = (
     "dependencies should be specified in the `requirements` class attribute.\n"
     "Examples:\n"
     "   requirements = ['pkg'] # conda package `pkg`\n"
-    "   requirements = ['chan:pkg'] # package `pkg` in conda channel `chan`\n"
-    "   requirements = ['pip:pkg'] # PyPi package `pkg`"
+    "   requirements = ['chan::pkg'] # package `pkg` in conda channel `chan`\n"
+    "   requirements = ['pip::pkg'] # PyPi package `pkg`"
 )
 
 SUBSTITUTIONS = {"*": ".*"}
