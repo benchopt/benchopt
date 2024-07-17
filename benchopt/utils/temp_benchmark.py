@@ -84,8 +84,8 @@ def temp_benchmark(
             benchmark_utils_dir.mkdir()
             (benchmark_utils_dir / "__init__.py").touch()
             for fname, content in benchmark_utils.items():
-                fname_path = benchmark_utils_dir / f"{fname}.py"
-                with open(fname_path, "w", encoding='utf-8') as f:
+                fname = (benchmark_utils_dir / fname).with_suffix(".py")
+                with open(fname, "w") as f:
                     f.write(inspect.cleandoc(content))
 
         yield Benchmark(temp_path)
