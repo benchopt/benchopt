@@ -1,6 +1,5 @@
 import pytest
 import numpy as np
-import sys
 
 from benchopt.utils import product_param
 from benchopt.stopping_criterion import SAMPLING_STRATEGIES
