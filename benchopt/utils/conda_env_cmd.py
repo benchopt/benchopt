@@ -190,9 +190,10 @@ def get_cmd_from_requirements(packages):
     conda_packages = [pkg for pkg in packages if not pkg.startswith('pip::')]
     if conda_packages:
 
-        for i, pkg in enumerate(packages):
-            if ":" in pkg and "::" not in pkg:
-                packages[i] = pkg.replace(":", "::")
+        conda_packages = [
+            pkg.replace(":", "::") if ":" in pkg and "::" not in pkg else pkg
+            for pkg in conda_packages
+        ]
         channels = ' '.join(set(
             f"-c {pkg.rsplit('::', 1)[0]}"
             for pkg in conda_packages if '::' in pkg
