@@ -32,6 +32,7 @@ benchopt_front_page_convergence.pdf
 
 # Config files
 benchopt.ini
+benchopt.yml
 benchopt/version.py
 
 .DS_Store

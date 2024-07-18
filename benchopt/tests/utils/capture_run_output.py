@@ -36,7 +36,7 @@ class CaptureRunOutput(object):
 
         # Make sure to delete all the result that created by the run command.
         self.result_files = re.findall(
-            r'Saving result in: (.*\.parquet)', self.output
+            r'Saving result in: (.*\.parquet|.*\.csv)', self.output
         )
         if len(self.result_files) >= 1 and self.delete_result_files:
             for result_file in self.result_files:
@@ -61,6 +61,6 @@ class CaptureRunOutput(object):
             )
         else:
             assert len(matches) == repetition, (
-                f"Found {len(matches)} repetitions instead of {repetition} of"
+                f"Found {len(matches)} repetitions instead of {repetition} of "
                 f"'{pattern}' in output:\n{output}"
             )

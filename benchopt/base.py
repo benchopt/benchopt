@@ -34,7 +34,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
     - ``get_result(self)``: returns all parameters of interest, as a dict.
       The output is passed to ``Objective.evaluate_result``.
 
-    Note that two ``sampling_strategy`` can be used to construct the benchmark
+    Note that four ``sampling_strategy`` can be used to construct the benchmark
     curve:
 
     - ``'iteration'``: call the run method with max_iter number increasing
@@ -44,14 +44,17 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
     - ``'callback'``: a callable that should be called after each iteration or
       epoch. This callable periodically calls the objective's `compute`
       and returns False when the solver should stop.
-
+    - ``'run_once'``: call the run method once to get a single point. This is
+      typically used for ML benchmarks.
     """
 
     _base_class_name = 'Solver'
-    sampling_strategy = 'iteration'
+    sampling_strategy = None
 
     @property
-    def stopping_criterion(self):
+    def _stopping_criterion(self):
+        if hasattr(self, 'stopping_criterion'):
+            return self.stopping_criterion
         if self.sampling_strategy == 'run_once':
             return SingleRunCriterion()
         return SufficientProgressCriterion(strategy=self.sampling_strategy)
@@ -59,10 +62,10 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
     @property
     def _solver_strategy(self):
         """Change stop_strategy and stopping_strategy to sampling_strategy."""
-        if hasattr(self, 'sampling_strategy'):
-            return self.sampling_strategy
-        else:
-            return self.stopping_criterion.strategy
+        return (
+            self._stopping_criterion.strategy or self.sampling_strategy
+            or 'iteration'
+        )
 
     def _set_objective(self, objective, output=None):
         """Store the objective for hashing/pickling and check its compatibility
@@ -358,6 +361,16 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
       evaluated. This should be a dictionary where the keys correspond to the
       keyword arguments of `evaluate_result`.
 
+    Optionally, the `Solver` can implement the following methods to change its
+    behavior:
+
+    - `save_final_results(**result)`: Return the data to be saved from the
+       results of the solver. It will be saved as a `.pkl` file in the
+       `output/results` folder, and link to the benchmark results.
+
+    - `get_next(stop_val)`: Return the next iteration where the result will be
+      evaluated.
+
     This class is also used to specify information about the benchmark.
     In particular, it should have the following class attributes:
 
@@ -418,12 +431,34 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
         """
         pass
 
-    def __call__(self, solver_result):
+    def save_final_results(self, **solver_result):
+        """Save the final results of the solver.
+
+        Parameters
+        ----------
+        solver_result : dict
+            All values needed to compute the objective metrics. This dictionary
+            is retrieved by calling ``solver_result = Solver.get_result()``.
+        Returns
+        -------
+        dict of values to save
+        """
+        pass
+
+    def __call__(self, result):
         """Used to call the evaluation of the objective.
 
         This allows standardizing the output to a dictionary.
         """
-        objective_dict = self.evaluate_result(**solver_result)
+        if not isinstance(result, dict):
+            raise TypeError(
+                "The result returned by `Solver.get_result` should be a dict "
+                "whose keys are the arguments of `Objective.evaluate_result`. "
+                f"Got {result}."
+
+            )
+
+        objective_dict = self.evaluate_result(**result)
 
         if not isinstance(objective_dict, dict):
             objective_dict = {'value': objective_dict}
@@ -501,6 +536,13 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
         type for benchopt. The returned object will be passed to
         ``Objective.compute``.
         """
+        ...
+
+    def _get_one_result(self):
+        # Make sure the splits with CV are created before calling
+        # get_one_result
+        self.get_objective()
+        return self.get_one_result()
 
     # Reduce the pickling and hashing burden by only pickling class parameters.
     @staticmethod
