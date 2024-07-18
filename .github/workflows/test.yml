@@ -62,10 +62,6 @@ jobs:
 
       - run: conda info
 
-      #TODO Remove this when done debugging
-      - name: Print BENCHOPT_CONDA_CMD
-        run: echo "BENCHOPT_CONDA_CMD is ${{ env.BENCHOPT_CONDA_CMD }}"
-
       - name: Install Julia on Windows
         if: matrix.os == 'windows-latest'
         run:
@@ -76,12 +72,12 @@ jobs:
         run:
           conda install -yq julia[version">=1.10.0"]
 
+      # last command : Install mamba in base environment to make it accessible test env
       - name: Install benchopt and its dependencies
         run: |
           ${{ env.BENCHOPT_CONDA_CMD }} info
           ${{ env.BENCHOPT_CONDA_CMD }} install -yq pip
           pip install -e .[test]
-          # Install mamba in base environment to make it accessible test env
           test $BENCHOPT_CONDA_CMD == "mamba" && conda install -n base mamba || echo "using conda"
 
       - name: 'Run the tests'
