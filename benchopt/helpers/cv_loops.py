@@ -53,7 +53,8 @@ class NestedCVObjective(BaseObjective):
             scoring=self.scoring,
         )
 
-    def evaluate_result(self, best_score, best_params, best_estimator, cv_results, value):
+    def evaluate_result(self, best_score, best_params,
+                        best_estimator, cv_results, value):
         "Only return cv scores, best_score, best_params, best_estimator and results"
 
         test_scores = self.scorer(best_estimator, self.X_test, self.y_test)
@@ -67,7 +68,7 @@ class NestedCVObjective(BaseObjective):
             'cv_results': cv_results,
             **{f"test_{k}": v for k, v in test_scores.items()},
             **{f"train_{k}": v for k, v in train_scores.items()},
-            'value':1,
+            'value': 1,
         }
 
         return res
