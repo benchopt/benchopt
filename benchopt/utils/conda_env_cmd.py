@@ -109,7 +109,8 @@ def create_conda_env(
     if DEBUG:
         print(f"\nconda env config:\n{'-' * 40}{benchopt_env}{'-' * 40}")
     env_yaml = NamedTemporaryFile(
-        mode="w+", prefix='conda_env_', suffix='.yml')
+        mode="w+", prefix='conda_env_', suffix='.yml'
+    )
     env_yaml.write(f"name: {env_name}{benchopt_env}")
     env_yaml.flush()
 
