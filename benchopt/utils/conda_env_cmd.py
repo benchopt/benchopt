@@ -177,6 +177,7 @@ def get_cmd_from_requirements(packages):
     This detects the packages that need to be installed with pip and also
     the additional channels for conda packages.
     """
+    # TODO: remove with benchopt 1.7
     # If ":" is present but not "::", warn that this is legacy syntax.
     has_legacy_colon = any(":" in pkg and "::" not in pkg for pkg in packages)
     if has_legacy_colon:
@@ -197,7 +198,7 @@ def get_cmd_from_requirements(packages):
             for pkg in conda_packages if '::' in pkg
         ))
         conda_packages = ' '.join(
-            pkg.rsplit('::', 1)[1] for pkg in conda_packages
+            pkg.rsplit('::', 1)[-1] for pkg in conda_packages
         )
         cmd.append(
             f"{CONDA_CMD} install --update-all -y {channels} {conda_packages}"
