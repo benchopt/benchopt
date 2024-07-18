@@ -16,7 +16,9 @@ SHELL = get_setting('shell')
 CONDA_CMD = get_setting('conda_cmd')
 PIP_CMD = f"{sys.executable} -m pip"
 
-if sys.platform == 'win32':
+# On windows, calling conda without call exit the cmd script:
+# https://github.com/conda/conda/issues/12418
+if sys.platform == 'win32' and not CONDA_CMD.lower().startswith('call'):
     CONDA_CMD = f"CALL {CONDA_CMD}"
 
 
