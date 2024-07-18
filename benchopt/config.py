@@ -25,7 +25,7 @@ DEFAULT_GLOBAL_CONFIG = {
     'raise_install_error': False,
     'github_token': None,
     'data_dir': './data/',
-    'conda_cmd': 'conda',
+    'conda_cmd': 'conda' if sys.platform != 'win32' else 'call conda',
     'shell': os.environ.get('SHELL', DEFAULT_SHELL),
     'cache': None,
     'default_timeout': 100,

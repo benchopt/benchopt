@@ -1,11 +1,13 @@
-from ..config import DEBUG
 "Helper function for colored terminal outputs"
 import shutil
 import ctypes
 import platform
 import sys
-sys.stdout.reconfigure(encoding='utf-8')
 
+if sys.platform == 'win32':
+    sys.stdout.reconfigure(encoding='utf-8')
+
+from ..config import DEBUG
 
 MIN_LINE_LENGTH = 20
 BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE = range(30, 38)
