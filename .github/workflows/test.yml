@@ -78,7 +78,7 @@ jobs:
           ${{ env.BENCHOPT_CONDA_CMD }} info
           ${{ env.BENCHOPT_CONDA_CMD }} install -yq pip
           pip install -e .[test]
-          if [[ "${{ matrix.os }}" != "windows-latest" ]]
+          if [[ $RUNNER_OS != "Windows" ]]
           then
             test $BENCHOPT_CONDA_CMD == "mamba" && conda install -n base mamba || echo "using conda"
           fi
