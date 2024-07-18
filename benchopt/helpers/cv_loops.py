@@ -30,6 +30,10 @@ class NestedCVObjective(BaseObjective):
     def get_outer_cv(self):
         return ShuffleSplit(n_splits=10, test_size=0.2, random_state=1)
 
+    def get_grid_search(self, estimator, param_grid, cv, scoring, n_jobs):
+        return GridSearchCV(estimator, param_grid, cv=cv,
+                            scoring=scoring, n_jobs=n_jobs)
+
     # Internal helpers
 
     def set_data(self, X, y):
@@ -51,6 +55,7 @@ class NestedCVObjective(BaseObjective):
             y=self.y_train,
             cv=self.get_inner_cv(),
             scoring=self.scoring,
+            gs_cv=self.get_grid_search
         )
 
     def evaluate_result(self, best_score, best_params,
@@ -100,11 +105,12 @@ class CVSolver(BaseSolver):
         """Return an estimator compatible with the `sklearn.GridSearchCV`."""
         pass
 
-    def set_objective(self, X, y, cv, scoring):
+    def set_objective(self, X, y, cv, scoring, gs_cv):
         """Set the objective to run the cross-validation search."""
 
         self.X, self.y = X, y
         self.cv, self.scoring = cv, scoring
+        self.gs_cv = gs_cv
 
         self.estimator = clone(self.get_estimator())
 
@@ -114,7 +120,7 @@ class CVSolver(BaseSolver):
             n_jobs = 1
 
         # create grid search
-        self.clf = GridSearchCV(
+        self.clf = self.gs_cv(
             self.estimator, self.param_grid, cv=self.cv, scoring=self.scoring,
             n_jobs=n_jobs
         )
