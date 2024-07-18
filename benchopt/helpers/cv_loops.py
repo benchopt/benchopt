@@ -20,8 +20,9 @@ class NestedCVObjective(BaseObjective):
 
     # Public API
 
+    @abstractmethod
     def get_scoring(self):
-        return None
+        pass
 
     def get_inner_cv(self):
         return ShuffleSplit(n_splits=10, test_size=0.2, random_state=0)
@@ -48,12 +49,11 @@ class NestedCVObjective(BaseObjective):
         return dict(
             X=self.X_train,
             y=self.y_train,
-            sample_weight=self.sample_weight,
             cv=self.get_inner_cv(),
             scoring=self.scoring,
         )
 
-    def evaluate_result(self, best_score, best_params, best_estimator, cv_results):
+    def evaluate_result(self, best_score, best_params, best_estimator, cv_results, value):
         "Only return cv scores, best_score, best_params, best_estimator and results"
 
         test_scores = self.scorer(best_estimator, self.X_test, self.y_test)
@@ -67,6 +67,7 @@ class NestedCVObjective(BaseObjective):
             'cv_results': cv_results,
             **{f"test_{k}": v for k, v in test_scores.items()},
             **{f"train_{k}": v for k, v in train_scores.items()},
+            'value':1,
         }
 
         return res
@@ -98,10 +99,10 @@ class CVSolver(BaseSolver):
         """Return an estimator compatible with the `sklearn.GridSearchCV`."""
         pass
 
-    def set_objective(self, X, y, sample_weight, cv, scoring):
+    def set_objective(self, X, y, cv, scoring):
         """Set the objective to run the cross-validation search."""
 
-        self.X, self.y, self.sample_weight = X, y, sample_weight
+        self.X, self.y = X, y
         self.cv, self.scoring = cv, scoring
 
         self.estimator = clone(self.get_estimator())
@@ -122,8 +123,7 @@ class CVSolver(BaseSolver):
 
         self.clf.fit(
             self.X,
-            self.y,
-            sample_weight=self.sample_weight
+            self.y
         )
 
         self.best_params = self.clf.best_params_
@@ -131,9 +131,11 @@ class CVSolver(BaseSolver):
         self.cv_results = self.clf.cv_results_
         self.best_estimator = self.clf.best_estimator_
 
+    def get_result(self):
         return {
             'best_score': self.best_score,
             'best_params': self.best_params,
             'best_estimator': self.best_estimator,
             'cv_results': self.cv_results,
+            'value': self.best_score
         }
