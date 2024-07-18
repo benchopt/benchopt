@@ -42,7 +42,7 @@ jobs:
       JUNIT_XML: 'test-data.xml'
       VERSION_PYTHON: ${{ matrix.version_python }}
       COVERAGE: ${{ matrix.coverage }}
-      BENCHOPT_CONDA_CMD: ${{ matrix.conda_cmd || 'conda' }}
+      BENCHOPT_CONDA_CMD: ${{ matrix.conda_cmd || (matrix.os == 'windows-latest' && 'call conda') || 'conda' }}
 
     defaults:
       run:
@@ -61,6 +61,10 @@ jobs:
           miniforge-version: latest
 
       - run: conda info
+
+      #TODO Remove this when done debugging
+      - name: Print BENCHOPT_CONDA_CMD
+        run: echo "BENCHOPT_CONDA_CMD is ${{ env.BENCHOPT_CONDA_CMD }}"
 
       - name: Install Julia on Windows
         if: matrix.os == 'windows-latest'
