@@ -16,8 +16,18 @@ CLI
 API
 ---
 
+- Change channel specification in requirements, replacing the split format
+  with ``::`` instead of ``:``. This allow specifying URL channels.
+  By `Thomas Moreau`_ (:gh:`758`)
+
 FIX
 ---
+
+- Display for boxplot in the ``result.js`` was broken.
+  By `Thomas Moreau`_ (:gh:`757`)
+
+- Default value for ``data_home`` was incorrect.
+  By `Thomas Moreau`_ (:gh:`758`)
 
 
 .. _changes_1_6:
