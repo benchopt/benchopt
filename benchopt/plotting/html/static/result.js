@@ -96,7 +96,7 @@ const getChartData = () => {
     return getScatterCurves();
   } else if (isChart('bar_chart')) {
     return getBarData();
-  } else if (isChart('boxplot_chart')) {
+  } else if (isChart('boxplot')) {
     return getBoxplotData();
   }
 
@@ -113,7 +113,7 @@ const getLayout = () => {
     return getScatterChartLayout();
   } else if (isChart('bar_chart')) {
     return getBarChartLayout();
-  } else if (isChart('boxplot_chart')) {
+  } else if (isChart('boxplot')) {
     return getBoxplotChartLayout();
   }
 
@@ -576,7 +576,7 @@ const renderSidebar = () => {
  * Render Objective Column selector
  */
 const renderObjectiveColumnSelector = () => {
-  if (isChart('boxplot_chart') && state('yaxis_type') === 'time') {
+  if (isChart('boxplot') && state('yaxis_type') === 'time') {
     hide(document.querySelectorAll("#objective-column-form-group"));
   } else {
     show(document.querySelectorAll("#objective-column-form-group"), 'block');
@@ -587,13 +587,13 @@ const renderObjectiveColumnSelector = () => {
  * Render Scale selector
  */
 const renderScaleSelector = () => {
-  if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve', 'boxplot_chart'])) {
+  if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve', 'boxplot'])) {
     show(document.querySelectorAll("#scale-form-group"), 'block');
   } else {
     hide(document.querySelectorAll("#scale-form-group"));
   }
 
-  if (isChart('boxplot_chart')) {
+  if (isChart('boxplot')) {
     hide(document.querySelectorAll(".other_plot_option"));
     show(document.querySelectorAll(".boxplot_option"));
   } else {
@@ -617,7 +617,7 @@ const renderWithQuantilesToggle = () => {
  * Render xaxis type selector
  */
 const renderXAxisTypeSelector = () => {
-  if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve', 'boxplot_chart'])) {
+  if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve', 'boxplot'])) {
     show(document.querySelectorAll("#xaxis-type-form-group"), 'block');
   } else {
     hide(document.querySelectorAll("#xaxis-type-form-group"));
@@ -626,13 +626,13 @@ const renderXAxisTypeSelector = () => {
 
   // One for desktop and one for mobile
   xAxisTypeSelectors().forEach(selector => {
-    const optionToHide = isChart('boxplot_chart') ? "Time" : "Solver";
+    const optionToHide = isChart('boxplot') ? "Time" : "Solver";
     hide(xAxisTypeOption(optionToHide));
 
-    const optionToShow = isChart('boxplot_chart') ? "Solver" : "Time";
+    const optionToShow = isChart('boxplot') ? "Solver" : "Time";
     show(xAxisTypeOption(optionToShow));
 
-    if (isChart('boxplot_chart') || isIterationSamplingStrategy()) {
+    if (isChart('boxplot') || isIterationSamplingStrategy()) {
       show(xAxisTypeOption('Iteration'));
     }
   });
@@ -641,7 +641,7 @@ const renderXAxisTypeSelector = () => {
   // it only can be one of : 'Solver', 'Iteration',
   // so we have to change its value with an allowed value.
   // It's the same thing if we change to curve plot.
-  if (isChart('boxplot_chart') && state().xaxis_type === 'Time') {
+  if (isChart('boxplot') && state().xaxis_type === 'Time') {
     setState({xaxis_type: 'Solver'});
   } else if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve']) && state().xaxis_type === 'Solver') {
     setState({xaxis_type: 'Time'});
@@ -652,7 +652,7 @@ const renderXAxisTypeSelector = () => {
  * Render yaxis type selector
  */
 const renderYAxisTypeSelector = () => {
-  if (isChart('boxplot_chart')) {
+  if (isChart('boxplot')) {
     show(document.querySelectorAll("#yaxis-type-form-group"), 'block');
   } else {
     hide(document.querySelectorAll("#yaxis-type-form-group"));
@@ -925,7 +925,7 @@ const getYLabel = () => {
       return 'F(x) - F(x*) / F(x0) - F(x*)'
     case 'bar_chart':
       return 'Time [sec]';
-    case 'boxplot_chart':
+    case 'boxplot':
       return state('yaxis_type') === 'time' ?
           'Time [sec]'
           : (state('xaxis_type') === "Solver" ? "Final " : "") + state('objective_column');
