@@ -28,13 +28,13 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            version_python: 3.8
-          - os: ubuntu-latest
-            version_python: 3.9
+            version_python: "3.10"
             conda_cmd: 'mamba'
             coverage: 'true'
+          - os: ubuntu-latest
+            version_python: "3.11"
           - os: macos-latest
-            version_python: 3.9
+            version_python: "3.10"
     env:
       CONDA_ENV: 'testcondaenv'
       JUNIT_XML: 'test-data.xml'
@@ -94,9 +94,9 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            version_python: 3.9
+            version_python: "3.10"
           - os: macos-latest
-            version_python: 3.9
+            version_python: "3.10"
     env:
       JUNIT_XML: "test-data.xml"
       VERSION_PYTHON: ${{ matrix.version_python }}
@@ -119,11 +119,11 @@ jobs:
     strategy:
       matrix:
         include:
-          - version_python: "3.9"
-            version_pip: "21.3"
-          - version_python: "3.9"
-            version_pip: "22.2"
           - version_python: "3.10"
+            version_pip: "21.3"
+          - version_python: "3.10"
+            version_pip: "22.2"
+          - version_python: "3.11"
             version_pip: "latest"
     steps:
       - uses: actions/checkout@v3
