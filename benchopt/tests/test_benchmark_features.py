@@ -1,7 +1,7 @@
-import pytest
 import os
 import sys
 import re
+import pytest
 from pathlib import Path
 from benchopt.cli.main import run
 from benchopt.utils.temp_benchmark import temp_benchmark
@@ -354,10 +354,9 @@ def test_run_once_callback(n_iter):
     "without_data_home_rel", "with_data_home_rel"
 ])
 def test_paths_config_key(test_case):
-    # test case skipped as full path isn't correctly passed through
-    # in Windows
-    if sys.platform == 'win32' and test_case == "without_data_home_abs":
-        pytest.skip("Full path isn't well extracted on Windows")
+    data_path = Path("/path/to/data")
+    data_home = Path("/path/to/home_data")
+    data_path_rel = Path("path/to/data")
 
     if test_case == "without_data_home_abs":
         config = """
@@ -428,4 +427,6 @@ def test_paths_config_key(test_case):
         expected_path = str(Path(expected_path))
 
         out.check_output(re.escape(f"HOME${expected_home}"), repetition=1)
+
+        expected_path = expected_path.format(bench_dir=benchmark.benchmark_dir)
         out.check_output(re.escape(f"PATH${expected_path}"), repetition=1)
