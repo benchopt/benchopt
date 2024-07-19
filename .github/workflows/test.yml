@@ -80,11 +80,11 @@ jobs:
 
       # TODO merge this with previous test if possible
       #last command : Install mamba in base environment to make it accessible test env
-      - name: 'Install mamba'
+      - name: 'Install mamba in base environment'
         if: matrix.os != 'windows-latest'
         run: test $BENCHOPT_CONDA_CMD == "mamba" && conda install -n base mamba || echo "using conda"
 
-      - name: 'Run the tests'
+      - name: 'Run the tests on Ubuntu/OSX'
         if: matrix.os != 'windows-latest'
         run: continuous_integration/test_script.sh
 
