@@ -177,19 +177,39 @@ def get_cmd_from_requirements(packages):
     This detects the packages that need to be installed with pip and also
     the additional channels for conda packages.
     """
-    pip_packages = [pkg[4:] for pkg in packages if pkg.startswith('pip:')]
-    conda_packages = [pkg for pkg in packages if not pkg.startswith('pip:')]
-
-    cmd = []
-    if conda_packages:
-        channels = ' '.join(set(
-            f"-c {pkg.split(':')[0]}" for pkg in conda_packages if ':' in pkg
-        ))
-        packages = ' '.join(pkg.split(':')[-1] for pkg in conda_packages)
-        cmd.append(
-            f"{CONDA_CMD} install --update-all -y {channels} {packages}"
+    # TODO: remove with benchopt 1.7
+    # If ":" is present but not "::", warn that this is legacy syntax.
+    has_legacy_colon = any(":" in pkg and "::" not in pkg for pkg in packages)
+    if has_legacy_colon:
+        warnings.warn(
+            "The use of ':' to specify the channel of a dependency is "
+            "deprecated. Please use '::' instead.", DeprecationWarning
         )
 
+    cmd = []
+    conda_packages = [pkg for pkg in packages if not pkg.startswith('pip::')]
+    if conda_packages:
+
+        conda_packages = [
+            pkg.replace(":", "::") if ":" in pkg and "::" not in pkg else pkg
+            for pkg in conda_packages
+        ]
+        channels = ' '.join(set(
+            f"-c {pkg.rsplit('::', 1)[0]}"
+            for pkg in conda_packages if '::' in pkg
+        ))
+        conda_packages = ' '.join(
+            pkg.rsplit('::', 1)[-1] for pkg in conda_packages
+        )
+        cmd.append(
+            f"{CONDA_CMD} install --update-all -y {channels} {conda_packages}"
+        )
+
+    # TODO: simplify in benchopt 1.7
+    pip_packages = [
+        pkg.replace("pip::", "").replace("pip:", "")
+        for pkg in packages if pkg.startswith('pip:')
+    ]
     if pip_packages:
         packages = ' '.join(pip_packages)
         cmd.append(f"pip install {packages}")

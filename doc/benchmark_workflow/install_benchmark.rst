@@ -42,7 +42,7 @@ Examples:
 .. code-block:: python
 
   requirements = ['pkg']  # conda package `pkg`
-  requirements = ['chan:pkg']  # package `pkg` in conda channel `chan`
+  requirements = ['chan::pkg']  # package `pkg` in conda channel `chan`
 
 
 One might also need to install pip packages. This can be done by using the
@@ -51,5 +51,5 @@ channel `pip` and the `conda` installer. The syntax is the following:
 .. code-block:: python
 
   install_cmd = 'conda'  # optional
-  requirements = ['pip:pkg']  # pip package `pkg`
+  requirements = ['pip::pkg']  # pip package `pkg`
 

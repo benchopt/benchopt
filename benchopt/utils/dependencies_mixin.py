@@ -16,7 +16,7 @@ class DependenciesMixin:
     #
     # - 'conda': The class should have an attribute `requirements`.
     #          Benchopt will conda install `$requirements`, except for entries
-    #          starting with `pip:` which will be installed with `pip` in the
+    #          starting with `pip::` which will be installed with `pip` in the
     #          conda env.
     #
     # - 'shell': The solver should have attribute `install_script`. Benchopt
@@ -131,9 +131,10 @@ class DependenciesMixin:
                             "attribute `requirements`.\n"
                             "Examples:\n"
                             "   requirements = ['pkg'] # conda package `pkg`\n"
-                            "   requirements = ['chan:pkg'] # package `pkg` in"
-                            "conda channel `chan`\n"
-                            "   requirements = ['pip:pkg'] # pip package `pkg`"
+                            "   requirements = ['chan::pkg'] # package `pkg` "
+                            "in conda channel `chan`\n"
+                            "   requirements = ['pip::pkg'] "
+                            "# pip package `pkg`"
                         )
                 elif install_cmd_ == "shell":
                     install_file = (
