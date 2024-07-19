@@ -29,20 +29,8 @@ def test_cv_loops(no_debug_log):
         name = 'LR'
         param_grid = {'C' : [0.1, 1, 10]}
 
-        # The function that return the estimator class. It should follow the sklearn
-        # Estimator API for supervised learning.
         def get_estimator(self):
             return LogisticRegression()
-    """
-
-    solver2 = """from benchopt import BaseSolver
-
-    class Solver(BaseSolver):
-        name = "normal-solver"
-        sampling_strategy = 'iteration'
-        def set_objective(self, X, y): pass
-        def run(self, n_iter): pass
-        def get_result(self): return dict(beta=1)
     """
 
     dataset = """from benchopt import BaseDataset, safe_import_context
@@ -58,10 +46,10 @@ def test_cv_loops(no_debug_log):
         }
 
         def get_data(self):
-            X, y = make_classification(n_samples=self.n_samples, n_features=self.n_features, n_informative=1,
-                                    n_redundant=0, n_clusters_per_class=1, random_state=0)
+            X, y = make_classification(n_samples=self.n_samples,
+                        n_features=self.n_features, n_informative=1,
+                        n_redundant=0, n_clusters_per_class=1, random_state=0)
 
-            # The dictionary defines the keyword arguments for `Objective.set_data`
             return dict(X=X, y=y)
 
     """

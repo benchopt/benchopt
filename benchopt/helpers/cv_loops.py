@@ -12,7 +12,7 @@ with safe_import_context() as import_ctx:
 
 
 class NestedCVObjective(BaseObjective):
-    """Nested CV objective to run an inner CV per solver and return CV scores."""
+    """Nested CV objective with user provided scoring."""
 
     requirements = [
         'scikit-learn'
@@ -60,7 +60,6 @@ class NestedCVObjective(BaseObjective):
 
     def evaluate_result(self, best_score, best_params,
                         best_estimator, cv_results, value):
-        "Only return cv scores, best_score, best_params, best_estimator and results"
 
         test_scores = self.scorer(best_estimator, self.X_test, self.y_test)
         train_scores = self.scorer(best_estimator, self.X_train, self.y_train)
