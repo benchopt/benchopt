@@ -62,16 +62,9 @@ jobs:
 
       - run: conda info
 
-      - name: Install Julia on Windows
-        if: matrix.os == 'windows-latest'
-        run: |
-          call conda config --add channels https://repo.prefix.dev/julia-forge
-          call conda install -c conda-forge julia
-
-      - name: Install Julia on Ubuntu/OSX
-        if: matrix.os != 'windows-latest'
+      - name: Install Julia
         run:
-          conda install -yq julia[version">=1.10.0"]
+          ${{ env.BENCHOPT_CONDA_CMD }} install -yq -c https://repo.prefix.dev/julia-forge julia[version">=1.10.0"]
 
       - name: Install benchopt and its dependencies
         run: |
