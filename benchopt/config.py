@@ -264,7 +264,7 @@ def get_data_path(key: str = None):
     data_home = benchmark.get_setting("data_home")
 
     if data_home == "":
-        data_home = benchmark.benchmark_dir
+        data_home = benchmark.benchmark_dir / "data"
 
     path = Path(data_home)
 
