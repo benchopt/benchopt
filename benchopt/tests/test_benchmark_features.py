@@ -1,7 +1,6 @@
 import pytest
 import os
 import re
-from pathlib import Path
 
 from benchopt.cli.main import run
 from benchopt.utils.temp_benchmark import temp_benchmark
@@ -354,45 +353,45 @@ def test_run_once_callback(n_iter):
     "without_data_home_rel", "with_data_home_rel"
 ])
 def test_paths_config_key(test_case):
-    data_path = Path("/path/to/data")
-    home_data_path = Path("/path/to/home_data")
-    relative_data_path = Path("path/to/data")
+    data_path = "/path/to/data"
+    home_data_path = "/path/to/home_data"
+    relative_data_path = "path/to/data"
 
     if test_case == "without_data_home_abs":
         config = f"""
             data_paths:
                 dataset: {data_path}
         """
-        expected_path = Path("/path/to/data")
-        expected_home = Path("{bench_dir}/data")
+        expected_path = "/path/to/data"
+        expected_home = "{bench_dir}/data"
     elif test_case == "with_data_home_rel":
         config = f"""
             data_home: {home_data_path}
             data_paths:
                 dataset: {relative_data_path}
         """
-        expected_path = Path("/path/to/home_data/path/to/data")
-        expected_home = Path("/path/to/home_data")
+        expected_path = "/path/to/home_data/path/to/data"
+        expected_home = "/path/to/home_data"
     elif test_case == "with_data_home_abs":
         config = """
             data_home: /path/to/home_data
             data_paths:
                 dataset: /path/to/data
         """
-        expected_path = Path("/path/to/data")
-        expected_home = Path("/path/to/home_data")
+        expected_path = "/path/to/data"
+        expected_home = "/path/to/home_data"
     elif test_case == "without_data_home_rel":
         config = """
             data_paths:
                 dataset: path/to/data
         """
-        expected_home = Path("{bench_dir}/data")
-        expected_path = Path(f"{expected_home}/path/to/data")
+        expected_home = "{bench_dir}/data"
+        expected_path = f"{expected_home}/path/to/data"
     elif test_case == "no_config":
         config = """
         """
-        expected_home = Path("{bench_dir}/data")
-        expected_path = Path(f"{expected_home}/dataset")
+        expected_home = "{bench_dir}/data"
+        expected_path = f"{expected_home}/dataset"
     else:
         raise Exception("Invalid test case value")
 
