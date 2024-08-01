@@ -358,39 +358,41 @@ def test_paths_config_key(test_case):
     home_data_path = Path("/path/to/home_data")
     relative_data_path = Path("path/to/data")
 
-    if test_case == "without_data_home":
+    if test_case == "without_data_home_abs":
         config = f"""
             data_paths:
-                data: {data_path}
+                dataset: {data_path}
         """
-    elif test_case == "with_data_home":
+        expected_path = Path("/path/to/data")
+        expected_home = Path("{bench_dir}/data")
+    elif test_case == "with_data_home_rel":
         config = f"""
             data_home: {home_data_path}
             data_paths:
-                data: {relative_data_path}
+                dataset: {relative_data_path}
         """
-        expected_path = "/path/to/home_data/path/to/data"
-        expected_home = "/path/to/home_data"
+        expected_path = Path("/path/to/home_data/path/to/data")
+        expected_home = Path("/path/to/home_data")
     elif test_case == "with_data_home_abs":
         config = """
             data_home: /path/to/home_data
             data_paths:
                 dataset: /path/to/data
         """
-        expected_path = "/path/to/data"
-        expected_home = "/path/to/home_data"
+        expected_path = Path("/path/to/data")
+        expected_home = Path("/path/to/home_data")
     elif test_case == "without_data_home_rel":
         config = """
             data_paths:
                 dataset: path/to/data
         """
-        expected_home = "{bench_dir}/data"
-        expected_path = f"{expected_home}/path/to/data"
+        expected_home = Path("{bench_dir}/data")
+        expected_path = Path(f"{expected_home}/path/to/data")
     elif test_case == "no_config":
         config = """
         """
-        expected_home = "{bench_dir}/data"
-        expected_path = f"{expected_home}/dataset"
+        expected_home = Path("{bench_dir}/data")
+        expected_path = Path(f"{expected_home}/dataset")
     else:
         raise Exception("Invalid test case value")
 
@@ -421,10 +423,5 @@ def test_paths_config_key(test_case):
                 '-o dummy*[reg=0.5]'.split()
             ], standalone_mode=False)
 
-        if test_case == "without_data_home":
-            out.check_output(re.escape(str(data_path)), repetition=1)
-        elif test_case == "with_data_home":
-            expected_path = home_data_path / relative_data_path
-            out.check_output(re.escape(str(expected_path)), repetition=1)
-        else:
-            raise Exception("Invalid test case value")
+        out.check_output(re.escape(f"HOME${expected_home}"), repetition=1)
+        out.check_output(re.escape(f"PATH${expected_path}"), repetition=1)
