@@ -1,3 +1,4 @@
+import re
 import pytest
 import os
 import re
@@ -349,7 +350,10 @@ def test_run_once_callback(n_iter):
         out.check_output(rf"RUNONCE\({n_iter}\)", repetition=1)
 
 
-@pytest.mark.parametrize("test_case", ["without_data_home", "with_data_home"])
+@pytest.mark.parametrize("test_case", [
+    "no_config", "without_data_home_abs", "with_data_home_abs",
+    "without_data_home_rel", "with_data_home_rel"
+])
 def test_paths_config_key(test_case):
     data_path = Path("/path/to/data")
     home_data_path = Path("/path/to/home_data")
@@ -366,6 +370,28 @@ def test_paths_config_key(test_case):
             data_paths:
                 data: {relative_data_path}
         """
+        expected_path = "/path/to/home_data/path/to/data"
+        expected_home = "/path/to/home_data"
+    elif test_case == "with_data_home_abs":
+        config = """
+            data_home: /path/to/home_data
+            data_paths:
+                dataset: /path/to/data
+        """
+        expected_path = "/path/to/data"
+        expected_home = "/path/to/home_data"
+    elif test_case == "without_data_home_rel":
+        config = """
+            data_paths:
+                dataset: path/to/data
+        """
+        expected_home = "{bench_dir}/data"
+        expected_path = f"{expected_home}/path/to/data"
+    elif test_case == "no_config":
+        config = """
+        """
+        expected_home = "{bench_dir}/data"
+        expected_path = f"{expected_home}/dataset"
     else:
         raise Exception("Invalid test case value")
 
@@ -377,13 +403,17 @@ def test_paths_config_key(test_case):
         class Dataset(BaseDataset):
             name = "custom_dataset"
             def get_data(self):
-                path = config.get_data_path(key="data")
+                home = config.get_data_path()
+                path = config.get_data_path(key="dataset")
+                print(f"HOME${home}")
                 print(f"PATH${path}")
 
                 return dict(X=np.random.rand(3, 2), y=np.ones((3,)))
     """
 
     with temp_benchmark(datasets=[custom_dataset], config=config) as benchmark:
+        expected_home = expected_home.format(bench_dir=benchmark.benchmark_dir)
+        expected_path = expected_path.format(bench_dir=benchmark.benchmark_dir)
         with CaptureRunOutput() as out:
             run([
                 str(benchmark.benchmark_dir),

@@ -37,8 +37,8 @@ MISSING_DEPS_MSG = (
     "dependencies should be specified in the `requirements` class attribute.\n"
     "Examples:\n"
     "   requirements = ['pkg'] # conda package `pkg`\n"
-    "   requirements = ['chan:pkg'] # package `pkg` in conda channel `chan`\n"
-    "   requirements = ['pip:pkg'] # PyPi package `pkg`"
+    "   requirements = ['chan::pkg'] # package `pkg` in conda channel `chan`\n"
+    "   requirements = ['pip::pkg'] # PyPi package `pkg`"
 )
 
 SUBSTITUTIONS = {"*": ".*"}
@@ -377,9 +377,6 @@ class Benchmark:
     def get_config_file(self):
         "Get the location for the config file of the benchmark."
         yml_path = self.benchmark_dir / "config.yml"
-        ini_path = yml_path.with_suffix('.ini')
-        if not yml_path.exists() and ini_path.exists():
-            return ini_path
         return yml_path
 
     def get_setting(self, setting_name, default_config=None):

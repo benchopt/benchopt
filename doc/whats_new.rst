@@ -5,16 +5,42 @@ What's new
 
 .. currentmodule:: benchopt
 
+.. _changes_1_7:
+
+Version 1.7 - in development
+----------------------------
+
+CLI
+---
+
+API
+---
+
+- Change channel specification in requirements, replacing the split format
+  with ``::`` instead of ``:``. This allow specifying URL channels.
+  By `Thomas Moreau`_ (:gh:`758`)
+
+FIX
+---
+
+- Display for boxplot in the ``result.js`` was broken.
+  By `Thomas Moreau`_ (:gh:`757`)
+
+- Default value for ``data_home`` was incorrect.
+  By `Thomas Moreau`_ (:gh:`758`)
+
+
 .. _changes_1_6:
 
-Version 1.6 - In development
-----------------------------
+Version 1.6 - 15/07/2024
+------------------------
 
 API
 ~~~
 
-- Add a `save_final_results` method to Objective. If implemented it is run after the last solver iteration, to get desired outputs to be saved to file system.
-  By `Pierre-Antoine Comby`_ (:gh:`722`)
+- Add a `save_final_results` method to Objective. If implemented it is run
+  after the last solver iteration, to get desired outputs to be saved to file
+  system. By `Pierre-Antoine Comby`_ (:gh:`722`)
 
 - Add native way to do cross-validation in a benchmark with
   ``Objective.cv`` attribute that change split for each repetition.
@@ -24,7 +50,11 @@ API
   potentially non-trivial structures (like dictionaries).
   By `Thomas Moreau`_ (:gh:`706`).
 
-- Raise error when an invalid install_cmd is provided. By `Jad Yehya` (:gh:`714`).
+- Raise error when an invalid install_cmd is provided.
+  By `Jad Yehya`_ (:gh:`714`).
+
+- Add boxplot option to plot the benchmark results.
+  By `Melvine Nargeot`_ (:gh:`714`).
 
 CLI
 ~~~
@@ -37,6 +67,9 @@ CLI
 
 - Add ``--no-timeout`` option in ``benchopt run`` to allow solvers to bypass
   timeout. By `Célestin Eve`_ (:gh:`725`)
+
+- Remove support for deprecated ``.ini`` config files. All config files should
+  now use the ``yaml`` format. By `Thomas Moreau`_ (:gh:`699`)
 
 FIX
 ~~~

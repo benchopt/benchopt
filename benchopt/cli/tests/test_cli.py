@@ -572,7 +572,7 @@ class TestInstallCmd:
                 name = "requires_dummy"
                 install_cmd = 'conda'
                 requirements = [
-                    'pip:git+https://github.com/tommoral/dummy_package'
+                    'pip::git+https://github.com/tommoral/dummy_package'
                 ]
                 def set_data(self): pass
                 def evaluate_result(self, beta): pass
@@ -647,7 +647,7 @@ class TestInstallCmd:
                 name = "requires_dummy"
                 install_cmd = 'conda'
                 requirements = [
-                    'pip:git+https://github.com/tommoral/dummy_package'
+                    'pip::git+https://github.com/tommoral/dummy_package'
                 ]
                 def set_data(self): pass
                 def evaluate_result(self, beta): pass
