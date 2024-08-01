@@ -1,4 +1,3 @@
-import re
 import pytest
 import os
 import re
