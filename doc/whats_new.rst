@@ -29,6 +29,9 @@ FIX
 - Default value for ``data_home`` was incorrect.
   By `Thomas Moreau`_ (:gh:`758`)
 
+- Fix the ``skip`` API for objectives that was leading to a display error.
+  By `Thomas Moreau`_ (:gh:`763`)
+
 
 .. _changes_1_6:
 
