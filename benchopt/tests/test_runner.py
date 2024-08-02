@@ -3,7 +3,6 @@ import numpy as np
 
 import pytest
 
-from benchopt.tests import TEST_SOLVER
 from benchopt.tests import TEST_DATASET
 from benchopt.tests import TEST_OBJECTIVE
 
@@ -20,40 +19,58 @@ from benchopt.tests.utils import CaptureRunOutput
 from benchopt.cli.main import run
 
 
-class MockOutput:
-    def __init__(self):
-        self.reason = None
+@pytest.mark.parametrize('n_jobs', [1, 2, 4])
+def test_skip_api(n_jobs):
 
-    def skip(self, reason):
-        self.reason = reason
+    objective = """from benchopt import BaseObjective
 
+        class Objective(BaseObjective):
+            name = "Objective-skip"
+            parameters = dict(should_skip=[True, False])
 
-def test_skip_api():
+            def skip(self, X, y):
+                if self.should_skip:
+                    return True, "Objective$skip"
+                return False, None
 
-    dataset = TEST_DATASET.get_instance()
-    objective = TEST_OBJECTIVE.get_instance(reg=0)
-    objective.set_dataset(dataset)
+            def set_data(self, X, y): self.X, self.y = X, y
+            def get_objective(self): return dict(X=1)
+            def get_one_result(self): return dict(beta=0)
+            def evaluate_result(self, beta): return dict(value=1)
+    """
 
-    solver = TEST_SOLVER.get_instance()
+    solver = """from benchopt import BaseSolver
 
-    out = MockOutput()
-    skip = solver._set_objective(objective, out)
-    assert skip
-    assert out.reason == 'lmbd=0'
+    class Solver(BaseSolver):
+        name = "test-solver"
+        sampling_strategy = 'run_once'
+        parameters = dict(should_skip=[True, False])
 
-    objective = TEST_OBJECTIVE.get_instance(reg=1)
-    objective.set_dataset(dataset)
+        def skip(self, X):
+            if self.should_skip:
+                return True, "Solver$skip"
+            return False, None
 
-    out = MockOutput()
-    skip = solver._set_objective(objective, out)
-    assert not skip
-    assert out.reason is None
+        def set_objective(self, X): pass
+        def run(self, n_iter): print("RUN")
+        def get_result(self): return dict(beta=1)
+    """
 
-    dataset = TEST_DATASET.get_instance(skip=True)
-    objective = TEST_OBJECTIVE.get_instance()
-    skip, reason = objective.set_dataset(dataset)
-    assert skip
-    assert reason == 'X is all zeros'
+    with temp_benchmark(objective=objective, solvers=[solver]) as benchmark:
+        with CaptureRunOutput() as out:
+            run([*(
+                f'{benchmark.benchmark_dir} -s test-solver -d test-dataset '
+                f'-j {n_jobs} --no-plot'
+            ).split()], standalone_mode=False)
+
+    out.check_output(r"Objective-skip\[should_skip=True\] skip", repetition=1)
+    out.check_output(r"Reason: Objective\$skip", repetition=1)
+
+    out.check_output(r"test-solver\[should_skip=True\]: skip", repetition=1)
+    out.check_output(r"Reason: Solver\$skip", repetition=1)
+
+    out.check_output(r"test-solver\[should_skip=False\]: done", repetition=1)
+    out.check_output("RUN", repetition=1)
 
 
 def test_get_one_result():
