@@ -426,8 +426,8 @@ def test_paths_config_key(test_case):
                 '-o dummy*[reg=0.5]'.split()
             ], standalone_mode=False)
 
-        expected_home = re.escape((Path(expected_home)))
-        expected_path = re.escape((Path(expected_path)))
+        expected_home = str(Path(expected_home))
+        expected_path = str(Path(expected_path))
 
-        out.check_output(f"HOME${expected_home}", repetition=1)
-        out.check_output(f"PATH${expected_path}", repetition=1)
+        out.check_output(re.escape(f"HOME${expected_home}"), repetition=1)
+        out.check_output(re.escape(f"PATH${expected_path}"), repetition=1)
