@@ -1,6 +1,7 @@
 import pytest
 import os
 import sys
+import re
 from pathlib import Path
 from benchopt.cli.main import run
 from benchopt.utils.temp_benchmark import temp_benchmark
@@ -425,8 +426,8 @@ def test_paths_config_key(test_case):
                 '-o dummy*[reg=0.5]'.split()
             ], standalone_mode=False)
 
-        expected_home = str(Path(expected_home))
-        expected_path = str(Path(expected_path))
+        expected_home = re.escape(str(Path(expected_home)))
+        expected_path = re.escape(str(Path(expected_path)))
 
         out.check_output(f"HOME${expected_home}", repetition=1)
         out.check_output(f"PATH${expected_path}", repetition=1)
