@@ -354,25 +354,23 @@ def test_run_once_callback(n_iter):
     "without_data_home_rel", "with_data_home_rel"
 ])
 def test_paths_config_key(test_case):
+    # test case skipped as full path isn't correctly passed through
+    # in Windows
     if sys.platform == 'win32' and test_case == "without_data_home_abs":
         pytest.skip("Full path isn't well extracted on Windows")
 
-    data_path = "/path/to/data"
-    home_data_path = "/path/to/home_data"
-    relative_data_path = "path/to/data"
-
     if test_case == "without_data_home_abs":
-        config = f"""
+        config = """
             data_paths:
-                dataset: {data_path}
+                dataset: /path/to/data
         """
         expected_path = "/path/to/data"
         expected_home = "{bench_dir}/data"
     elif test_case == "with_data_home_rel":
-        config = f"""
-            data_home: {home_data_path}
+        config = """
+            data_home: /path/to/home_data
             data_paths:
-                dataset: {relative_data_path}
+                dataset: /path/to/data
         """
         expected_path = "/path/to/home_data/path/to/data"
         expected_home = "/path/to/home_data"
