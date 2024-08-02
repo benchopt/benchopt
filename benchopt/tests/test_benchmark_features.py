@@ -370,7 +370,7 @@ def test_paths_config_key(test_case):
         config = """
             data_home: /path/to/home_data
             data_paths:
-                dataset: /path/to/data
+                dataset: path/to/data
         """
         expected_path = "/path/to/home_data/path/to/data"
         expected_home = "/path/to/home_data"
