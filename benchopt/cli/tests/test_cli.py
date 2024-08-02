@@ -248,11 +248,10 @@ class TestRunCmd:
                      '-n', '1', '-r', '1', '-o', SELECT_ONE_OBJECTIVE,
                      '--profile', '--no-plot'],
                     'benchopt', standalone_mode=False)
-        python_pgd_path = os.path.join(DUMMY_BENCHMARK_PATH, 'solvers',
-                                       'python_pgd.py')
+        solver = DUMMY_BENCHMARK_PATH / 'solvers' / 'python_pgd.py'
         out.check_output('using profiling', repetition=1)
         out.check_output(
-            f"File: .*{re.escape(python_pgd_path)}",
+            f"File: .*{re.escape(solver)}",
             repetition=1
         )
         out.check_output(r'\s+'.join([
