@@ -63,6 +63,11 @@ def test_skip_api(n_jobs):
                 f'-j {n_jobs} --no-plot'
             ).split()], standalone_mode=False)
 
+            # Make sure joblib's executor is shutdown, as otherwise the output
+            # might be incomplete.
+            from joblib.externals.loky import get_reusable_executor
+            get_reusable_executor().shutdown(wait=True)
+
     out.check_output(r"Objective-skip\[should_skip=True\] skip", repetition=1)
     out.check_output(r"Reason: Objective\$skip", repetition=1)
 
