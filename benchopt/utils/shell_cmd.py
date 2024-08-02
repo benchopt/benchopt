@@ -73,10 +73,7 @@ def _run_shell(script, raise_on_error=None, capture_stdout=True,
     if raise_on_error is True:
         raise_on_error = "{output}"
 
-    if IS_CMD:
-        command = f'cmd /c "{tmp.name}"'
-    else:
-        command = f"{SHELL} {tmp.name}"
+    command = f'{SHELL} "{tmp.name}"'
 
     if capture_stdout:
         exit_code, output = subprocess.getstatusoutput(command)
