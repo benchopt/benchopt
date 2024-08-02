@@ -1,6 +1,7 @@
 import os
 import sys
 import stat
+import shutil
 import warnings
 import configparser
 import yaml
@@ -15,10 +16,13 @@ CONFIG_FILE_NAME = 'benchopt.yml'
 # sensitive information such as the Github token.
 GLOBAL_CONFIG_FILE_MODE = stat.S_IFREG | stat.S_IRUSR | stat.S_IWUSR
 
-if sys.platform != 'win32':
-    DEFAULT_SHELL = 'bash'
+if sys.platform == 'win32':
+    DEFAULT_SHELL = 'cmd /c'
 else:
-    DEFAULT_SHELL = 'cmd.exe'
+    if shutil.which('bash') is not None:
+        DEFAULT_SHELL = 'bash'
+    elif shutil.which('fish') is not None:
+        DEFAULT_SHELL = 'fish'
 
 DEFAULT_GLOBAL_CONFIG = {
     'debug': False,
