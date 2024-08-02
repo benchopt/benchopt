@@ -64,8 +64,9 @@ jobs:
 
       - name: Install Julia on Windows
         if: matrix.os == 'windows-latest'
-        run:
-          pip install julia
+        run: |
+          conda config --add channels https://repo.prefix.dev/julia-forge
+          conda install -c conda-forge julia
 
       - name: Install Julia on Ubuntu/OSX
         if: matrix.os != 'windows-latest'
