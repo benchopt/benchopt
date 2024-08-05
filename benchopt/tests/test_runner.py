@@ -1,5 +1,6 @@
 import time
 import numpy as np
+import sys
 
 import pytest
 
@@ -323,8 +324,12 @@ def test_error_caching(no_debug_log):
     out.check_output("ValueError: Failing solver.", repetition=2)
 
 
+# Under windows, the function needs to be pickleable
+# for parallel jobs to work with joblib
 @pytest.mark.parametrize('n_jobs', [1, 2])
 def test_benchopt_run_script(n_jobs, no_debug_log):
+    if sys.platform == 'win32' and n_jobs > 1:
+        pytest.skip("Parallel jobs are incompatible with Windows")
     from benchopt import run_benchmark
 
     with temp_benchmark() as benchmark:
