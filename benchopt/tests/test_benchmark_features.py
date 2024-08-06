@@ -421,8 +421,12 @@ def test_paths_config_key(test_case):
                 '-o dummy*[reg=0.5]'.split()
             ], standalone_mode=False)
 
-        expected_home = expected_home.format(bench_dir=benchmark.benchmark_dir)
+        expected_home = Path(
+            expected_home.format(bench_dir=benchmark.benchmark_dir).as_posix()
+        )
         out.check_output(re.escape(f"HOME${expected_home}"), repetition=1)
 
-        expected_path = expected_path.format(bench_dir=benchmark.benchmark_dir)
+        expected_path = Path(
+            expected_path.format(bench_dir=benchmark.benchmark_dir).as_posix()
+        )
         out.check_output(re.escape(f"PATH${expected_path}"), repetition=1)

@@ -52,7 +52,7 @@ def test_skip_api(n_jobs):
             return False, None
 
         def set_objective(self, X): pass
-        def run(self, n_iter): print("RUN")
+        def run(self, n_iter): print("benchopt$RUN")
         def get_result(self): return dict(beta=1)
     """
 
@@ -75,7 +75,7 @@ def test_skip_api(n_jobs):
     out.check_output(r"Reason: Solver\$skip", repetition=1)
 
     out.check_output(r"test-solver\[should_skip=False\]: done", repetition=1)
-    out.check_output("RUN", repetition=1)
+    out.check_output("benchopt$RUN", repetition=1)
 
 
 def test_get_one_result():

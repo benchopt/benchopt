@@ -1,28 +1,25 @@
 import os
 import sys
 import stat
-import shutil
 import warnings
-import configparser
-import yaml
 from pathlib import Path
 from collections.abc import Iterable
+
+import yaml
+
 from benchopt.constants import PLOT_KINDS
 
-BOOLEAN_STATES = configparser.ConfigParser.BOOLEAN_STATES
+BOOLEAN_STATES = {
+    '1': True, 'yes': True, 'true': True, 'on': True,
+    '0': False, 'no': False, 'false': False, 'off': False
+}
 CONFIG_FILE_NAME = 'benchopt.yml'
 
 # Global config file should be only accessible to current user as it stores
 # sensitive information such as the Github token.
 GLOBAL_CONFIG_FILE_MODE = stat.S_IFREG | stat.S_IRUSR | stat.S_IWUSR
 
-if sys.platform == 'win32':
-    DEFAULT_SHELL = 'cmd /c'
-else:
-    if shutil.which('bash') is not None:
-        DEFAULT_SHELL = 'bash'
-    elif shutil.which('fish') is not None:
-        DEFAULT_SHELL = 'fish'
+DEFAULT_SHELL = 'cmd /c' if sys.platform == 'win32' else 'bash'
 
 DEFAULT_GLOBAL_CONFIG = {
     'debug': False,
