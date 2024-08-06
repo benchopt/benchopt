@@ -24,11 +24,8 @@ except Exception:
     DUMMY_BENCHMARK = None
 try:
     TEST_OBJECTIVE = DUMMY_BENCHMARK.get_benchmark_objective()
-    TEST_SOLVER = [s for s in DUMMY_BENCHMARK.get_solvers()
-                   if s.name == "Solver-Test"][0]
     TEST_DATASET = [d for d in DUMMY_BENCHMARK.get_datasets()
                     if d.name == "Test-Dataset"][0]
 except Exception:
     TEST_OBJECTIVE = None
-    TEST_SOLVER = None
     TEST_DATASET = None

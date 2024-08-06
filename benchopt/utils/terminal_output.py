@@ -87,7 +87,7 @@ class TerminalOutput:
         new_output = TerminalOutput(self.n_repetitions, self.show_progress)
         new_output.set(
             solver=self.solver, dataset=self.dataset, objective=self.objective,
-            verbose=self.verbose, rep=self.rep
+            verbose=self.verbose, rep=self.rep, i_solver=self.i_solver
         )
         return new_output
 
@@ -150,7 +150,7 @@ class TerminalOutput:
 
     def show_status(self, status, dataset=False, objective=False):
         if dataset or objective:
-            assert status == 'not installed'
+            assert status in ['not installed', 'skip']
         tag = (
             self.dataset_tag if dataset else
             self.objective_tag if objective else self.solver_tag
