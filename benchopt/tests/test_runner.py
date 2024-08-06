@@ -1,8 +1,7 @@
 import time
-import numpy as np
-import sys
 
 import pytest
+import numpy as np
 
 from benchopt.tests import TEST_DATASET
 from benchopt.tests import TEST_OBJECTIVE
@@ -350,8 +349,6 @@ def test_error_caching(no_debug_log):
 # for parallel jobs to work with joblib
 @pytest.mark.parametrize('n_jobs', [1, 2])
 def test_benchopt_run_script(n_jobs, no_debug_log):
-    if sys.platform == 'win32' and n_jobs > 1:
-        pytest.skip("Parallel jobs are incompatible with Windows")
     from benchopt import run_benchmark
 
     with temp_benchmark() as benchmark:

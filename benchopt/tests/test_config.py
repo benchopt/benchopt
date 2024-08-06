@@ -23,12 +23,6 @@ def temp_config_file(permission='600'):
             os.chmod(config_file, 0o600)
         else:
             os.chmod(config_file, 0o666)
-            if 'github_token' in config_file.read_text():
-                warnings.warn(
-                    "The GitHub token is set in the configuration file. "
-                    "On Windows, this file may not be secure as it cannot be "
-                    "restricted to be readable only by the user."
-                )
     old_config_file = os.environ.get('BENCHOPT_CONFIG', None)
     os.environ['BENCHOPT_CONFIG'] = str(config_file)
     try:

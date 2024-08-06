@@ -1,8 +1,8 @@
 import os
-import sys
 import re
 import pytest
 from pathlib import Path
+
 from benchopt.cli.main import run
 from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.utils.dynamic_modules import _load_class_from_module
@@ -358,41 +358,41 @@ def test_paths_config_key(test_case):
     data_home = Path("/path/to/home_data")
     data_path_rel = Path("path/to/data")
 
-    if test_case == "without_data_home_abs":
-        config = """
-            data_paths:
-                dataset: /path/to/data
-        """
-        expected_path = "/path/to/data"
-        expected_home = "{bench_dir}/data"
-    elif test_case == "with_data_home_rel":
-        config = """
-            data_home: /path/to/home_data
-            data_paths:
-                dataset: path/to/data
-        """
-        expected_path = "/path/to/home_data/path/to/data"
-        expected_home = "/path/to/home_data"
-    elif test_case == "with_data_home_abs":
-        config = """
-            data_home: /path/to/home_data
-            data_paths:
-                dataset: /path/to/data
-        """
-        expected_path = "/path/to/data"
-        expected_home = "/path/to/home_data"
-    elif test_case == "without_data_home_rel":
-        config = """
-            data_paths:
-                dataset: path/to/data
-        """
-        expected_home = "{bench_dir}/data"
-        expected_path = f"{expected_home}/path/to/data"
-    elif test_case == "no_config":
+    if test_case == "no_config":
         config = """
         """
         expected_home = "{bench_dir}/data"
         expected_path = f"{expected_home}/dataset"
+    elif test_case == "without_data_home_abs":
+        config = f"""
+            data_paths:
+                dataset: {data_path}
+        """
+        expected_path = str(data_path)
+        expected_home = "{bench_dir}/data"
+    elif test_case == "without_data_home_rel":
+        config = f"""
+            data_paths:
+                dataset: {data_path_rel}
+        """
+        expected_home = "{bench_dir}/data"
+        expected_path = f"{expected_home}/path/to/data"
+    elif test_case == "with_data_home_rel":
+        config = f"""
+            data_home: {data_home}
+            data_paths:
+                dataset: {data_path_rel}
+        """
+        expected_path = str(data_home / data_path_rel)
+        expected_home = str(data_home)
+    elif test_case == "with_data_home_abs":
+        config = f"""
+            data_home: {data_home}
+            data_paths:
+                dataset: {data_path}
+        """
+        expected_path = str(data_path)
+        expected_home = str(data_home)
     else:
         raise Exception("Invalid test case value")
 
@@ -413,8 +413,6 @@ def test_paths_config_key(test_case):
     """
 
     with temp_benchmark(datasets=[custom_dataset], config=config) as benchmark:
-        expected_home = expected_home.format(bench_dir=benchmark.benchmark_dir)
-        expected_path = expected_path.format(bench_dir=benchmark.benchmark_dir)
         with CaptureRunOutput() as out:
             run([
                 str(benchmark.benchmark_dir),
@@ -423,9 +421,7 @@ def test_paths_config_key(test_case):
                 '-o dummy*[reg=0.5]'.split()
             ], standalone_mode=False)
 
-        expected_home = str(Path(expected_home))
-        expected_path = str(Path(expected_path))
-
+        expected_home = expected_home.format(bench_dir=benchmark.benchmark_dir)
         out.check_output(re.escape(f"HOME${expected_home}"), repetition=1)
 
         expected_path = expected_path.format(bench_dir=benchmark.benchmark_dir)
