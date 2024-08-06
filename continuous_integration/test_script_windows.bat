@@ -26,6 +26,11 @@ if "%COVERAGE%"=="true" (
 @echo on
 %TEST_CMD%
 if %errorlevel% neq 0 exit /b %errorlevel%
+
+REM Re-installing NumPy and Pandas to ensure all DLLs are present
+pip install --force-reinstall numpy pandas
+if %errorlevel% neq 0 exit /b %errorlevel%
+
 %TEST_CMD% --skip-install --cov-append
 if %errorlevel% neq 0 exit /b %errorlevel%
 @echo off
