@@ -30,7 +30,7 @@ def test_skip_api(n_jobs):
 
             def skip(self, X, y):
                 if self.should_skip:
-                    return True, "Objective$skip"
+                    return True, "Objective#SKIP"
                 return False, None
 
             def set_data(self, X, y): self.X, self.y = X, y
@@ -48,11 +48,11 @@ def test_skip_api(n_jobs):
 
         def skip(self, X):
             if self.should_skip:
-                return True, "Solver$skip"
+                return True, "Solver#SKIP"
             return False, None
 
         def set_objective(self, X): pass
-        def run(self, n_iter): print("benchopt$RUN")
+        def run(self, n_iter): print("Solver#RUN")
         def get_result(self): return dict(beta=1)
     """
 
@@ -69,13 +69,13 @@ def test_skip_api(n_jobs):
             get_reusable_executor().shutdown(wait=True)
 
     out.check_output(r"Objective-skip\[should_skip=True\] skip", repetition=1)
-    out.check_output(r"Reason: Objective\$skip", repetition=1)
+    out.check_output("Reason: Objective#SKIP", repetition=1)
 
     out.check_output(r"test-solver\[should_skip=True\]: skip", repetition=1)
-    out.check_output(r"Reason: Solver\$skip", repetition=1)
+    out.check_output("Reason: Solver#SKIP", repetition=1)
 
     out.check_output(r"test-solver\[should_skip=False\]: done", repetition=1)
-    out.check_output("benchopt$RUN", repetition=1)
+    out.check_output("Solver#RUN", repetition=1)
 
 
 def test_get_one_result():
