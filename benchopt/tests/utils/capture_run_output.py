@@ -53,7 +53,8 @@ class CaptureRunOutput(object):
             print(self.output)
 
     def check_output(self, pattern, repetition=None):
-        output = self.output
+
+        output = self.output.replace('\r\n', '\n').replace('\r', '\n')
 
         # Remove color for matches
         for c in range(30, 38):

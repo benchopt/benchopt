@@ -328,10 +328,10 @@ def run(config_file=None, **kwargs):
             f"and version in env {env_name} ({benchopt_version}) differ")
 
     # run the command in the conda env
-    solvers_option = ' '.join([f"-s '{s}'" for s in solver_names])
-    forced_solvers_option = ' '.join([f"-f '{s}'" for s in forced_solvers])
-    datasets_option = ' '.join([f"-d '{d}'" for d in dataset_names])
-    objective_option = ' '.join([f"-o '{o}'" for o in objective_filters])
+    solvers_option = ' '.join([f'-s "{s}"' for s in solver_names])
+    forced_solvers_option = ' '.join([f'-f "{s}"' for s in forced_solvers])
+    datasets_option = ' '.join([f'-d "{d}"' for d in dataset_names])
+    objective_option = ' '.join([f'-o "{o}"' for o in objective_filters])
     cmd = (
         rf"benchopt run --local {benchmark.benchmark_dir} "
         rf"--n-repetitions {n_repetitions} "

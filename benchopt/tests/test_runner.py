@@ -1,7 +1,7 @@
 import time
-import numpy as np
 
 import pytest
+import numpy as np
 
 from benchopt.tests import TEST_DATASET
 from benchopt.tests import TEST_OBJECTIVE
@@ -30,7 +30,7 @@ def test_skip_api(n_jobs):
 
             def skip(self, X, y):
                 if self.should_skip:
-                    return True, "Objective$skip"
+                    return True, "Objective#SKIP"
                 return False, None
 
             def set_data(self, X, y): self.X, self.y = X, y
@@ -48,11 +48,11 @@ def test_skip_api(n_jobs):
 
         def skip(self, X):
             if self.should_skip:
-                return True, "Solver$skip"
+                return True, "Solver#SKIP"
             return False, None
 
         def set_objective(self, X): pass
-        def run(self, n_iter): print("RUN")
+        def run(self, n_iter): print("Solver#RUN")
         def get_result(self): return dict(beta=1)
     """
 
@@ -69,13 +69,13 @@ def test_skip_api(n_jobs):
             get_reusable_executor().shutdown(wait=True)
 
     out.check_output(r"Objective-skip\[should_skip=True\] skip", repetition=1)
-    out.check_output(r"Reason: Objective\$skip", repetition=1)
+    out.check_output("Reason: Objective#SKIP", repetition=1)
 
     out.check_output(r"test-solver\[should_skip=True\]: skip", repetition=1)
-    out.check_output(r"Reason: Solver\$skip", repetition=1)
+    out.check_output("Reason: Solver#SKIP", repetition=1)
 
     out.check_output(r"test-solver\[should_skip=False\]: done", repetition=1)
-    out.check_output("RUN", repetition=1)
+    out.check_output("Solver#RUN", repetition=1)
 
 
 def test_get_one_result():
@@ -345,6 +345,8 @@ def test_error_caching(no_debug_log):
     out.check_output("ValueError: Failing solver.", repetition=2)
 
 
+# Under windows, the function needs to be pickleable
+# for parallel jobs to work with joblib
 @pytest.mark.parametrize('n_jobs', [1, 2])
 def test_benchopt_run_script(n_jobs, no_debug_log):
     from benchopt import run_benchmark

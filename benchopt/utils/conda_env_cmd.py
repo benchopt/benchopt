@@ -1,5 +1,5 @@
 import os
-import tempfile
+import sys
 import warnings
 from pathlib import Path
 
@@ -7,13 +7,19 @@ import benchopt
 
 from .shell_cmd import _run_shell
 from .shell_cmd import _run_shell_in_conda_env
-from .misc import get_benchopt_requirement
+from .misc import get_benchopt_requirement, NamedTemporaryFile
 
 from ..config import DEBUG
 from ..config import get_setting
 
 SHELL = get_setting('shell')
 CONDA_CMD = get_setting('conda_cmd')
+PIP_CMD = f"{sys.executable} -m pip"
+
+# On windows, calling conda without call exit the cmd script:
+# https://github.com/conda/conda/issues/12418
+if sys.platform == 'win32' and not CONDA_CMD.lower().startswith('call'):
+    CONDA_CMD = f"CALL {CONDA_CMD}"
 
 
 # Yaml config file for benchopt env.
@@ -102,7 +108,7 @@ def create_conda_env(
     print(f"Creating conda env '{env_name}':... ", end='', flush=True)
     if DEBUG:
         print(f"\nconda env config:\n{'-' * 40}{benchopt_env}{'-' * 40}")
-    env_yaml = tempfile.NamedTemporaryFile(
+    env_yaml = NamedTemporaryFile(
         mode="w+", prefix='conda_env_', suffix='.yml'
     )
     env_yaml.write(f"name: {env_name}{benchopt_env}")
@@ -212,7 +218,7 @@ def get_cmd_from_requirements(packages):
     ]
     if pip_packages:
         packages = ' '.join(pip_packages)
-        cmd.append(f"pip install {packages}")
+        cmd.append(f"{PIP_CMD} install {packages}")
     return cmd
 
 
@@ -310,5 +316,8 @@ def get_conda_context():
     if exit_code != 0 or active_prefix is None:
         return None
     info = json.loads(payload)
-    info['active_prefix'] = active_prefix
+    info['active_prefix'] = os.path.normpath(active_prefix)
+    info['root_prefix'] = os.path.normpath(info['root_prefix'])
+    info['envs_dirs'] = [os.path.normpath(env_dir) for env_dir
+                         in info['envs_dirs']]
     return Context(**info)
