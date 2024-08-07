@@ -354,8 +354,8 @@ def test_run_once_callback(n_iter):
     "without_data_home_rel", "with_data_home_rel"
 ])
 def test_paths_config_key(test_case):
-    data_path = Path("/path/to/data")
-    data_home = Path("/path/to/home_data")
+    data_path = Path("/path/to/data").resolve()
+    data_home = Path("/path/to/home_data").resolve()
     data_path_rel = Path("path/to/data")
 
     if test_case == "no_config":
