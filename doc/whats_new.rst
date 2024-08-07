@@ -10,14 +10,33 @@ What's new
 Version 1.7 - in development
 ----------------------------
 
+Major change
+------------
+
+- Benchopt is now supported on Windows!! \o/
+  By `Wassim Mazouz`_, `Mathurin Massias`_ and `Thomas Moreau`_ (:gh:`717`)
+
 CLI
 ---
 
 API
 ---
 
+- Change channel specification in requirements, replacing the split format
+  with ``::`` instead of ``:``. This allow specifying URL channels.
+  By `Thomas Moreau`_ (:gh:`758`)
+
 FIX
 ---
+
+- Display for boxplot in the ``result.js`` was broken.
+  By `Thomas Moreau`_ (:gh:`757`)
+
+- Default value for ``data_home`` was incorrect.
+  By `Thomas Moreau`_ (:gh:`758`)
+
+- Fix the ``skip`` API for objectives that was leading to a display error.
+  By `Thomas Moreau`_ (:gh:`763`)
 
 
 .. _changes_1_6:

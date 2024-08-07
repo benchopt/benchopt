@@ -14,7 +14,7 @@ from .utils.parametrized_name_mixin import product_param
 from .utils.parametrized_name_mixin import ParametrizedNameMixin
 
 from .utils.terminal_output import colorify
-from .utils.terminal_output import YELLOW
+from .utils.terminal_output import GREEN, YELLOW
 
 from .utils.conda_env_cmd import install_in_conda_env
 from .utils.conda_env_cmd import shell_install_in_conda_env
@@ -37,8 +37,8 @@ MISSING_DEPS_MSG = (
     "dependencies should be specified in the `requirements` class attribute.\n"
     "Examples:\n"
     "   requirements = ['pkg'] # conda package `pkg`\n"
-    "   requirements = ['chan:pkg'] # package `pkg` in conda channel `chan`\n"
-    "   requirements = ['pip:pkg'] # PyPi package `pkg`"
+    "   requirements = ['chan::pkg'] # package `pkg` in conda channel `chan`\n"
+    "   requirements = ['pip::pkg'] # PyPi package `pkg`"
 )
 
 SUBSTITUTIONS = {"*": ".*"}
@@ -429,7 +429,7 @@ class Benchmark:
             If True, make sure the data are downloaded on the computer.
         """
         # Collect all classes matching one of the patterns
-        print("Collecting packages:")
+        print("Collecting packages...", end='', flush=True)
 
         check_installs, missings = [], []
         objective = self.get_benchmark_objective()
@@ -461,7 +461,7 @@ class Benchmark:
             post_install_hooks += hooks
             if len(scripts) > 0 or len(reqs) > 0:
                 check_installs += [klass]
-        print('... done')
+        print(colorify(' done', GREEN))
 
         # Install the collected requirements
         list_install = '\n'.join([
@@ -486,31 +486,33 @@ class Benchmark:
             )
         for hooks in post_install_hooks:
             hooks(env_name=env_name)
-        print(' done')
+        print(colorify(' done', GREEN))
 
         # Check install for all classes that needed extra requirements
         print('- Checking installed packages...', end='', flush=True)
-        success = True
+        not_installed = set()
         for klass in set(check_installs + missings):
             cls_success = klass.is_installed(env_name=env_name)
             if cls_success and klass in missings:
                 # This class only depends on global requirements
                 missings.remove(klass)
-
-            success |= cls_success
+            elif not cls_success:
+                not_installed.add(klass.name)
 
         self.check_missing(missings)
 
         # If one failed, raise a warning to explain how to see the install
         # errors.
-        if not success:
+        if len(not_installed) == 0:
+            print(colorify(' done', GREEN))
+        else:
             warnings.warn(
                 "Some solvers were not successfully installed, and will thus "
                 "be ignored. Use 'export BENCHOPT_RAISE_INSTALL_ERROR=true' to"
                 " stop at any installation failure and print the traceback.",
                 UserWarning
             )
-        print(' done')
+            print(colorify(f" done (missing deps: {not_installed})", YELLOW))
 
         if download:
             self.download_all_data(include_datasets, env_name, quiet)

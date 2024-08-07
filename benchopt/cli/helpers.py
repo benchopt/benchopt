@@ -231,10 +231,10 @@ def print_info(cls_name_list, cls_list, env_name=None, verbose=False):
             if hasattr(cls, 'requirements') and cls.requirements:
                 print("> requirements:")
                 packages = cls.requirements
-                pip_packages = [pkg[4:] for pkg in packages
-                                if pkg.startswith('pip:')]
+                pip_packages = [pkg[5:] for pkg in packages
+                                if pkg.startswith('pip::')]
                 conda_packages = [pkg for pkg in packages
-                                  if not pkg.startswith('pip:')]
+                                  if not pkg.startswith('pip::')]
                 if len(conda_packages) > 0:
                     print("    conda install -c conda-forge "
                           f"{' '.join(conda_packages)}")

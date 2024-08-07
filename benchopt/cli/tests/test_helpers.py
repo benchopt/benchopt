@@ -1,6 +1,5 @@
 import pytest
 
-
 from benchopt.tests import DUMMY_BENCHMARK_PATH
 from benchopt.tests.utils import CaptureRunOutput
 from benchopt.utils.temp_benchmark import temp_benchmark

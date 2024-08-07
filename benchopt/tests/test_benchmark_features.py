@@ -1,9 +1,12 @@
+import os
+import re
 import pytest
-import tempfile
+from pathlib import Path
 
 from benchopt.cli.main import run
 from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.utils.dynamic_modules import _load_class_from_module
+from benchopt.utils.misc import NamedTemporaryFile
 
 from benchopt.tests import SELECT_ONE_PGD
 from benchopt.tests import SELECT_ONE_SIMULATED
@@ -65,7 +68,6 @@ def test_error_reporting(error, raise_install_error):
         else SystemExit
     )
 
-    import os
     prev_value = os.environ.get('BENCHOPT_RAISE_INSTALL_ERROR', '0')
 
     def raise_error():
@@ -259,11 +261,10 @@ def test_ignore_hidden_files():
     # Non-regression test to make sure hidden files in datasets and solvers
     # are ignored. If this is not the case, the call to run will fail if it
     # is not ignored as there is no Dataset/Solver defined in the file.
-    with tempfile.NamedTemporaryFile(
+    with NamedTemporaryFile(
         dir=str(DUMMY_BENCHMARK_PATH / 'datasets'),
         prefix='.hidden_dataset_',
-        suffix='.py',
-        delete=True
+        suffix='.py'
     ), CaptureRunOutput():
         run([
             str(DUMMY_BENCHMARK_PATH), '-l', '-d',
@@ -271,11 +272,10 @@ def test_ignore_hidden_files():
             '-r', '1', '-o', SELECT_ONE_OBJECTIVE, '--no-plot'
         ], 'benchopt', standalone_mode=False)
 
-    with tempfile.NamedTemporaryFile(
+    with NamedTemporaryFile(
         dir=str(DUMMY_BENCHMARK_PATH / 'solvers'),
         prefix='.hidden_solver_',
-        suffix='.py',
-        delete=True
+        suffix='.py'
     ), CaptureRunOutput():
         run([
             str(DUMMY_BENCHMARK_PATH), '-l', '-d',
@@ -349,35 +349,71 @@ def test_run_once_callback(n_iter):
         out.check_output(rf"RUNONCE\({n_iter}\)", repetition=1)
 
 
-@pytest.mark.parametrize("test_case", ["without_data_home", "with_data_home"])
+@pytest.mark.parametrize("test_case", [
+    "no_config", "without_data_home_abs", "with_data_home_abs",
+    "without_data_home_rel", "with_data_home_rel"
+])
 def test_paths_config_key(test_case):
-    if test_case == "without_data_home":
+    # Need to call resolve to avoid issues with varying drives on Windows
+    data_path = Path("/path/to/data").resolve()
+    data_home = Path("/path/to/home_data").resolve()
+    data_path_rel = Path("path/to/data")
+
+    if test_case == "no_config":
         config = """
-            data_paths:
-                data: /path/to/data
         """
-    elif test_case == "with_data_home":
-        config = """
-            data_home: /path/to/home_data
+        expected_home = "{bench_dir}/data"
+        expected_path = f"{expected_home}/dataset"
+    elif test_case == "without_data_home_abs":
+        config = f"""
             data_paths:
-                data: path/to/data
+                dataset: {data_path}
         """
+        expected_path = str(data_path)
+        expected_home = "{bench_dir}/data"
+    elif test_case == "without_data_home_rel":
+        config = f"""
+            data_paths:
+                dataset: {data_path_rel}
+        """
+        expected_home = "{bench_dir}/data"
+        expected_path = f"{expected_home}/path/to/data"
+    elif test_case == "with_data_home_rel":
+        config = f"""
+            data_home: {data_home}
+            data_paths:
+                dataset: {data_path_rel}
+        """
+        expected_path = str(data_home / data_path_rel)
+        expected_home = str(data_home)
+    elif test_case == "with_data_home_abs":
+        config = f"""
+            data_home: {data_home}
+            data_paths:
+                dataset: {data_path}
+        """
+        expected_path = str(data_path)
+        expected_home = str(data_home)
     else:
         raise Exception("Invalid test case value")
 
     custom_dataset = """
         from benchopt import BaseDataset
-        from benchopt import config
+        from benchopt.config import get_data_path
         import numpy as np
 
         class Dataset(BaseDataset):
             name = "custom_dataset"
             def get_data(self):
-                path = config.get_data_path(key="data")
-                print(f"PATH${path}")
+                home = get_data_path()
+                path = get_data_path(key="dataset")
+                print(f"HOME:{home}")
+                print(f"PATH:{path}")
 
                 return dict(X=np.random.rand(3, 2), y=np.ones((3,)))
     """
+
+    print("Config:", config)
 
     with temp_benchmark(datasets=[custom_dataset], config=config) as benchmark:
         with CaptureRunOutput() as out:
@@ -388,12 +424,13 @@ def test_paths_config_key(test_case):
                 '-o dummy*[reg=0.5]'.split()
             ], standalone_mode=False)
 
-        if test_case == "without_data_home":
-            out.check_output(r"path/to/data", repetition=1)
-        elif test_case == "with_data_home":
-            out.check_output(
-                r"/path/to/home_data/path/to/data",
-                repetition=1
-            )
-        else:
-            raise Exception("Invalid test case value")
+        expected_home = Path(
+            expected_home.format(bench_dir=benchmark.benchmark_dir.as_posix())
+        ).resolve()
+        out.check_output(re.escape(f"HOME:{expected_home}"), repetition=1)
+
+        expected_path = Path(
+            expected_path.format(bench_dir=benchmark.benchmark_dir.as_posix())
+        ).resolve()
+        print(f"Expected - home: {expected_home}, path: {expected_path}")
+        out.check_output(re.escape(f"PATH:{expected_path}"), repetition=1)

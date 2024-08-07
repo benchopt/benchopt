@@ -1,26 +1,33 @@
 import os
+import sys
 import stat
 import warnings
-import configparser
-import yaml
 from pathlib import Path
 from collections.abc import Iterable
+
+import yaml
+
 from benchopt.constants import PLOT_KINDS
 
-BOOLEAN_STATES = configparser.ConfigParser.BOOLEAN_STATES
+BOOLEAN_STATES = {
+    '1': True, 'yes': True, 'true': True, 'on': True,
+    '0': False, 'no': False, 'false': False, 'off': False
+}
 CONFIG_FILE_NAME = 'benchopt.yml'
 
 # Global config file should be only accessible to current user as it stores
 # sensitive information such as the Github token.
 GLOBAL_CONFIG_FILE_MODE = stat.S_IFREG | stat.S_IRUSR | stat.S_IWUSR
 
+DEFAULT_SHELL = 'cmd /c' if sys.platform == 'win32' else 'bash'
+
 DEFAULT_GLOBAL_CONFIG = {
     'debug': False,
     'raise_install_error': False,
     'github_token': None,
     'data_dir': './data/',
-    'conda_cmd': 'conda',
-    'shell': os.environ.get('SHELL', 'bash'),
+    'conda_cmd': 'conda' if sys.platform != 'win32' else 'call conda',
+    'shell': os.environ.get('SHELL', DEFAULT_SHELL),
     'cache': None,
     'default_timeout': 100,
 }
@@ -264,7 +271,7 @@ def get_data_path(key: str = None):
     data_home = benchmark.get_setting("data_home")
 
     if data_home == "":
-        data_home = benchmark.benchmark_dir
+        data_home = benchmark.benchmark_dir / "data"
 
     path = Path(data_home)
 
@@ -272,11 +279,15 @@ def get_data_path(key: str = None):
         data_paths = benchmark.get_setting("data_paths")
 
         if key in data_paths and data_paths[key] is not None:
-            path = path / Path(data_paths[key])
+            data_path = Path(data_paths[key])
+            if data_path.is_absolute():
+                path = data_path
+            else:
+                path = path / data_path
         else:
             path = path / key
 
-    return path
+    return path.resolve()
 
 
 def parse_value(value, default_value):
