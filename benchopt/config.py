@@ -287,7 +287,7 @@ def get_data_path(key: str = None):
         else:
             path = path / key
 
-    return path
+    return path.resolve()
 
 
 def parse_value(value, default_value):
