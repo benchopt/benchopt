@@ -279,7 +279,11 @@ def get_data_path(key: str = None):
         data_paths = benchmark.get_setting("data_paths")
 
         if key in data_paths and data_paths[key] is not None:
-            path = path / Path(data_paths[key])
+            data_path = Path(data_paths[key])
+            if data_path.is_absolute():
+                path = data_path
+            else:
+                path = path / data_path
         else:
             path = path / key
 

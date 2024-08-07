@@ -398,19 +398,22 @@ def test_paths_config_key(test_case):
 
     custom_dataset = """
         from benchopt import BaseDataset
-        from benchopt import config
+        from benchopt.config import get_data_path
         import numpy as np
 
         class Dataset(BaseDataset):
             name = "custom_dataset"
             def get_data(self):
-                home = config.get_data_path()
-                path = config.get_data_path(key="dataset")
-                print(f"HOME${home}")
-                print(f"PATH${path}")
+                home = get_data_path()
+                path = get_data_path(key="dataset")
+                print(f"HOME:{home}")
+                print(f"PATH:{path}")
 
                 return dict(X=np.random.rand(3, 2), y=np.ones((3,)))
     """
+
+    print("Config:", config)
+    print(f"Expected - home: {expected_home}, path: {expected_path}")
 
     with temp_benchmark(datasets=[custom_dataset], config=config) as benchmark:
         with CaptureRunOutput() as out:
@@ -424,9 +427,9 @@ def test_paths_config_key(test_case):
         expected_home = Path(
             expected_home.format(bench_dir=benchmark.benchmark_dir.as_posix())
         )
-        out.check_output(re.escape(f"HOME${expected_home}"), repetition=1)
+        out.check_output(re.escape(f"HOME:{expected_home}"), repetition=1)
 
         expected_path = Path(
             expected_path.format(bench_dir=benchmark.benchmark_dir.as_posix())
         )
-        out.check_output(re.escape(f"PATH${expected_path}"), repetition=1)
+        out.check_output(re.escape(f"PATH:{expected_path}"), repetition=1)
