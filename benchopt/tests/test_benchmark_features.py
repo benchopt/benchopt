@@ -354,6 +354,7 @@ def test_run_once_callback(n_iter):
     "without_data_home_rel", "with_data_home_rel"
 ])
 def test_paths_config_key(test_case):
+    # Need to call resolve to avoid issues with varying drives on Windows
     data_path = Path("/path/to/data").resolve()
     data_home = Path("/path/to/home_data").resolve()
     data_path_rel = Path("path/to/data")

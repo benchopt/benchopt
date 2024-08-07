@@ -10,6 +10,12 @@ What's new
 Version 1.7 - in development
 ----------------------------
 
+Major change
+------------
+
+- Benchopt is now supported on Windows!! \o/
+  By `Wassim Mazouz`_, `Mathurin Massias`_ and `Thomas Moreau`_ (:gh:`717`)
+
 CLI
 ---
 
