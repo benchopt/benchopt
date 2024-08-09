@@ -255,6 +255,33 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
             solver_description=inspect.cleandoc(solver.__doc__ or ""),
         )
 
+        obj_parameters = objective._parameters
+        slv_parameters = solver._parameters
+        ds_parameters = dataset._parameters
+
+        # Add a prefix to common keys between "meta", "obj_parameters",
+        # "slv_parameters", "ds_parameters" dictionaries to avoid
+        # erasing keys
+        all_keys = (meta.keys()
+                    | obj_parameters.keys()
+                    | slv_parameters.keys()
+                    | ds_parameters.keys())
+        common_keys = [key for key in all_keys
+                       if sum(key in d for d in
+                              (meta, obj_parameters,
+                               slv_parameters,
+                               ds_parameters)) >= 2]
+
+        for key in common_keys:
+            if key in obj_parameters:
+                obj_parameters["obj_" + key] = obj_parameters.pop(key)
+            if key in slv_parameters:
+                slv_parameters["solver_" + key] = slv_parameters.pop(key)
+            if key in ds_parameters:
+                ds_parameters["dataset_" + key] = ds_parameters.pop(key)
+
+        meta = {**meta, **obj_parameters, **slv_parameters, **ds_parameters}
+
         stopping_criterion = solver._stopping_criterion.get_runner_instance(
             solver=solver,
             max_runs=max_runs,
