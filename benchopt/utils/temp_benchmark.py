@@ -63,18 +63,20 @@ def temp_benchmark(
         temp_path = Path(tempdir)
         (temp_path / "solvers").mkdir()
         (temp_path / "datasets").mkdir()
-        with open(temp_path / "objective.py", "w") as f:
+        with open(temp_path / "objective.py", "w", encoding='utf-8') as f:
             f.write(inspect.cleandoc(objective))
         for idx, solver in enumerate(solvers):
-            with open(temp_path / "solvers" / f"solver_{idx}.py", "w") as f:
+            with open(temp_path / "solvers" / f"solver_{idx}.py", "w",
+                      encoding='utf-8') as f:
                 f.write(inspect.cleandoc(solver))
 
         for idx, dataset in enumerate(datasets):
-            with open(temp_path / "datasets" / f"dataset_{idx}.py", "w") as f:
+            with open(temp_path / "datasets" / f"dataset_{idx}.py", "w",
+                      encoding='utf-8') as f:
                 f.write(inspect.cleandoc(dataset))
 
         if config is not None:
-            with open(temp_path / "config.yml", "w") as f:
+            with open(temp_path / "config.yml", "w", encoding='utf-8') as f:
                 f.write(config)
 
         if benchmark_utils is not None:

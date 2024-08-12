@@ -237,7 +237,7 @@ def run(config_file=None, **kwargs):
             print("Running on SLURM")
             set_slurm_launch()
 
-        from benchopt.runner import run_benchmark
+        from benchopt.runner import _run_benchmark
 
         if do_profile:
             from benchopt.utils.profiling import use_profile
@@ -250,6 +250,7 @@ def run(config_file=None, **kwargs):
         # Check that the dataset/solver patterns match actual dataset
         datasets = benchmark.check_dataset_patterns(dataset_names)
         objectives = benchmark.check_objective_filters(objective_filters)
+
         # pyyaml returns tuples: make sure everything is a list
         if isinstance(solver_names, dict):
             solver_names = [solver_names]
@@ -259,7 +260,7 @@ def run(config_file=None, **kwargs):
             solver_names + list(forced_solvers)
         )
 
-        run_benchmark(
+        _run_benchmark(
             benchmark, solvers, forced_solvers,
             datasets=datasets, objectives=objectives,
             max_runs=max_runs, n_repetitions=n_repetitions,
@@ -327,10 +328,10 @@ def run(config_file=None, **kwargs):
             f"and version in env {env_name} ({benchopt_version}) differ")
 
     # run the command in the conda env
-    solvers_option = ' '.join([f"-s '{s}'" for s in solver_names])
-    forced_solvers_option = ' '.join([f"-f '{s}'" for s in forced_solvers])
-    datasets_option = ' '.join([f"-d '{d}'" for d in dataset_names])
-    objective_option = ' '.join([f"-o '{o}'" for o in objective_filters])
+    solvers_option = ' '.join([f'-s "{s}"' for s in solver_names])
+    forced_solvers_option = ' '.join([f'-f "{s}"' for s in forced_solvers])
+    datasets_option = ' '.join([f'-d "{d}"' for d in dataset_names])
+    objective_option = ' '.join([f'-o "{o}"' for o in objective_filters])
     cmd = (
         rf"benchopt run --local {benchmark.benchmark_dir} "
         rf"--n-repetitions {n_repetitions} "

@@ -18,11 +18,6 @@ class Solver(BaseSolver):
     def __init__(self, raise_error=False):
         self.raise_error = raise_error
 
-    def skip(self, X, y, lmbd):
-        if lmbd == 0:
-            return True, "lmbd=0"
-        return False, None
-
     def set_objective(self, X, y, lmbd):
         self.X, self.y, self.lmbd = X, y, lmbd
 

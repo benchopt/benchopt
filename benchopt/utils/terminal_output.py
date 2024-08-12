@@ -2,15 +2,18 @@
 import shutil
 import ctypes
 import platform
+import sys
+
+if sys.platform == 'win32':
+    sys.stdout.reconfigure(encoding='utf-8')
 
 from ..config import DEBUG
-
 
 MIN_LINE_LENGTH = 20
 BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE = range(30, 38)
 
-CROSS = u'\u2717'
-TICK = u'\u2713'
+CROSS = '\u2717'
+TICK = '\u2713'
 
 
 STATUS = {
@@ -18,7 +21,7 @@ STATUS = {
     'diverged': ("diverged", RED),
     'not installed': ('not installed', RED),
     'interrupted': ("interrupted", YELLOW),
-    'not ready': ('not ready', YELLOW),
+    'not run yet': ('not run yet', YELLOW),
     'skip': ('skip', YELLOW),
     'timeout': ("done (timeout)", YELLOW),
     'max_runs': ("done (not enough run)", YELLOW),
@@ -84,7 +87,7 @@ class TerminalOutput:
         new_output = TerminalOutput(self.n_repetitions, self.show_progress)
         new_output.set(
             solver=self.solver, dataset=self.dataset, objective=self.objective,
-            verbose=self.verbose, rep=self.rep
+            verbose=self.verbose, rep=self.rep, i_solver=self.i_solver
         )
         return new_output
 
@@ -147,7 +150,7 @@ class TerminalOutput:
 
     def show_status(self, status, dataset=False, objective=False):
         if dataset or objective:
-            assert status == 'not installed'
+            assert status in ['not installed', 'skip']
         tag = (
             self.dataset_tag if dataset else
             self.objective_tag if objective else self.solver_tag

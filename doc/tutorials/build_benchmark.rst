@@ -146,7 +146,7 @@ The three most important files are
 
     - ``objective.py``: it contains the information about the cost function we want to minimize. In other words, it defines the formal problem we are interested in.
     - ``solvers/python-gd.py``: it contains the information and code for the gradient descent solver, dedicated to the problem at hand.
-    - ``datasets/simulated.py``: it contains the information about the dataset, i.e. the values of \\(y \\) and \\(X \\) used to test the algorithms. All benchmark in fact must have a ``simulated.py`` file which is used for testing by Benchopt.
+    - ``datasets/simulated.py``: it contains the information about the dataset, i.e. the values of \\(y \\) and \\(X \\) used to test the algorithms. All benchmarks in fact must have a ``simulated.py`` file which is used for testing by Benchopt.
 
 Any benchmark must implement these three components; **in Benchopt indeed we consider that objectives, solvers and dataset are the building blocks of any optimization problem**.
 
@@ -161,7 +161,7 @@ The following figure details the methods that must be implemented in each file, 
 .. figure:: https://raw.githubusercontent.com/benchopt/communication_materials/main/sharedimages/benchopt_schema_dependency.svg
     :width: 800
 
-There are two kind of contents.
+There are two kinds of contents.
 First, code that defines core elements of the problem:
 
     - the ``evaluate_result`` method in ``objective.py``. It implements the loss function. For the template benchmark, this is exactly \\(g(\\beta) \\) when \\( \\beta \\) is provided as input:
@@ -174,7 +174,7 @@ First, code that defines core elements of the problem:
                 value=.5 * diff.dot(diff)
             )
 
-    - the ``run`` method in each solver, here ``python-gd``. It defines the steps taken by the algorithm. Benchopt dictates the maximal number of iterations to the solver, and therefore ``run`` takes the number of iterations as input while other parameters like the stepsize are class attributes. The estimate value of \\(\\beta \\) is updated in the class attributes, the ``run`` method does not require returns. For GD, the ``run`` function looks like
+    - the ``run`` method in each solver, here ``python-gd``. It defines the steps taken by the algorithm. Benchopt dictates the maximal number of iterations to the solver, and therefore ``run`` takes the number of iterations as input while other parameters like the stepsize are class attributes. The estimated value of \\(\\beta \\) is updated in the class attributes, the ``run`` method does not require returns. For GD, the ``run`` function looks like
 
     .. code-block:: python
 
@@ -281,7 +281,7 @@ Moreover we should also change the name of the objective from ``Ordinary Least S
     class Objective(BaseObjective):
         name = 'Ridge Regression'
 
-That's it for the ``objective.py`` file! We can now modify the solver. For simplicity we may directly edit ``python-gd.py``, but adding a new solver to the benchmark is a simple as adding another file in the solvers folder (more information in the `add a solver tutorial <https://benchopt.github.io/tutorials/add_solver.html>`_).
+That's it for the ``objective.py`` file! We can now modify the solver. For simplicity we may directly edit ``python-gd.py``, but adding a new solver to the benchmark is as simple as adding another file in the solvers folder (more information in the `add a solver tutorial <https://benchopt.github.io/tutorials/add_solver.html>`_).
 
 Modifying the solver means updating the ``run`` method, more specifically the gradient formula.
 Inside the ``python-gd.py`` file, the new ``run`` method looks like this
@@ -351,7 +351,7 @@ You should see the following plot (click image to zoom).
 
     Screenshot of the results computed by benchopt, shown in the default navigator. Plotting options can be manually changed in the left part of the window.
 
-We may observe that the GD-ridge with ``stepsize=1`` reaches a low cost value faster that when using smaller or larger stepsize. This is expected since the stepsize has been scaled optimally according to the theory of convex optimization, and therefore ``stepsize=1`` is in principle the fastest safe step.
+We may observe that the GD-ridge with ``stepsize=1`` reaches a low cost value faster than when using smaller or larger stepsize. This is expected since the stepsize has been scaled optimally according to the theory of convex optimization, and therefore ``stepsize=1`` is in principle the fastest safe step.
 
 One of the interesting features of Benchopt is its ability to easily compute and show several metrics over the run.
 We have computed the ridge penalization alongside the iterations, and we can observe its values by changing the ``Objective_column`` field to ``objective_penalty``. For better visualisation, you may change the ``Scale`` field to  ``semilog-x``. Observe that the ridge regularisation term increases with the iterations. Again this is expected since we initialized GD with a null vector for which the Euclidean norm is zero.

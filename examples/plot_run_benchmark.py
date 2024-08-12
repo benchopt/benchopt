@@ -20,20 +20,11 @@ BENCHMARK_PATH = (
 
 try:
 
-    benchmark = Benchmark(BENCHMARK_PATH)
-
-    solvers = benchmark.check_solver_patterns(
-        ['sklearn[liblinear]', 'sklearn[newton-cg]', 'lightning']
-    )
-    datasets = benchmark.check_dataset_patterns(
-        ["Simulated[n_features=500,n_samples=200]"]
-    )
-    objectives = benchmark.check_objective_filters(
-        ['L2 Logistic Regression[lmbd=1.0]']
-    )
-
     save_file = run_benchmark(
-        benchmark, solvers=solvers, datasets=datasets, objectives=objectives,
+        BENCHMARK_PATH,
+        solver_names=['sklearn[liblinear]', 'sklearn[newton-cg]', 'lightning'],
+        dataset_names=["Simulated[n_features=500,n_samples=200]"],
+        objective_filters=['L2 Logistic Regression[lmbd=1.0]'],
         max_runs=100, timeout=20, n_repetitions=15,
         plot_result=False, show_progress=True
     )

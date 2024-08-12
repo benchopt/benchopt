@@ -1,26 +1,33 @@
 import os
+import sys
 import stat
 import warnings
-import configparser
-import yaml
 from pathlib import Path
 from collections.abc import Iterable
+
+import yaml
+
 from benchopt.constants import PLOT_KINDS
 
-BOOLEAN_STATES = configparser.ConfigParser.BOOLEAN_STATES
+BOOLEAN_STATES = {
+    '1': True, 'yes': True, 'true': True, 'on': True,
+    '0': False, 'no': False, 'false': False, 'off': False
+}
 CONFIG_FILE_NAME = 'benchopt.yml'
 
 # Global config file should be only accessible to current user as it stores
 # sensitive information such as the Github token.
 GLOBAL_CONFIG_FILE_MODE = stat.S_IFREG | stat.S_IRUSR | stat.S_IWUSR
 
+DEFAULT_SHELL = 'cmd /c' if sys.platform == 'win32' else 'bash'
+
 DEFAULT_GLOBAL_CONFIG = {
     'debug': False,
     'raise_install_error': False,
     'github_token': None,
     'data_dir': './data/',
-    'conda_cmd': 'conda',
-    'shell': os.environ.get('SHELL', 'bash'),
+    'conda_cmd': 'conda' if sys.platform != 'win32' else 'call conda',
+    'shell': os.environ.get('SHELL', DEFAULT_SHELL),
     'cache': None,
     'default_timeout': 100,
 }
@@ -133,15 +140,9 @@ def get_global_config_file():
         )
     else:
 
-        def check_ini(path):
-            # If a path does not exist but exist with suffix .ini, returns it.
-            if not path.exists() and path.with_suffix('.ini').exists():
-                return path.with_suffix('.ini')
-            return path
-
-        config_file = check_ini(Path('.') / CONFIG_FILE_NAME)
+        config_file = Path('.') / CONFIG_FILE_NAME
         if not config_file.exists():
-            config_file = check_ini(Path.home() / '.config' / CONFIG_FILE_NAME)
+            config_file = Path.home() / '.config' / CONFIG_FILE_NAME
 
     # check that the global config file is only accessible to current user as
     # it stores critical information such as the github token.
@@ -158,43 +159,9 @@ def get_global_config_file():
     return config_file
 
 
-def convert_ini_to_yml(config_file):
-    warnings.warn(
-        f"'.ini' config files are deprecated. Existing file {config_file} "
-        "will be converted to `.yml` file. You can delete it."
-    )
-    config_ini = configparser.ConfigParser()
-    config_ini.read(config_file)
-    config = {}
-    for sec in config_ini.sections():
-        default = (
-            DEFAULT_GLOBAL_CONFIG if sec == "benchopt"
-            else DEFAULT_BENCHMARK_CONFIG
-        )
-        options = list(config_ini[sec].keys())
-        values = {
-            key: parse_value(config_ini.get(sec, key), default[key])
-            for key in options
-        }
-        if sec == "benchopt":
-            config.update(**values)
-        else:
-            config[sec] = values
-    config_file = config_file.with_suffix('.yml')
-    config_file.touch(mode=GLOBAL_CONFIG_FILE_MODE)
-    with config_file.open('w') as f:
-        yaml.safe_dump(config, f)
-
-
 def set_setting(name, value, config_file=None, benchmark_name=None):
     if config_file is None:
         config_file = get_global_config_file()
-
-    # Handle deprecated .ini config file by automatically
-    # converting them to .yml.
-    if config_file.suffix == ".ini":
-        convert_ini_to_yml(config_file)
-        config_file = config_file.with_suffix('.yml')
 
     # Get default value
     default_config = DEFAULT_BENCHMARK_CONFIG
@@ -254,12 +221,6 @@ def get_setting(name, config_file=None, benchmark_name=None,
     if config_file is None:
         config_file = get_global_config_file()
 
-    # Handle deprecated .ini config file by automatically
-    # converting them to .yml.
-    if config_file.suffix == ".ini":
-        convert_ini_to_yml(config_file)
-        config_file = config_file.with_suffix('.yml')
-
     # Get default value
     default_config_ = DEFAULT_BENCHMARK_CONFIG
     if benchmark_name is None:
@@ -310,7 +271,7 @@ def get_data_path(key: str = None):
     data_home = benchmark.get_setting("data_home")
 
     if data_home == "":
-        data_home = benchmark.benchmark_dir
+        data_home = benchmark.benchmark_dir / "data"
 
     path = Path(data_home)
 
@@ -318,11 +279,15 @@ def get_data_path(key: str = None):
         data_paths = benchmark.get_setting("data_paths")
 
         if key in data_paths and data_paths[key] is not None:
-            path = path / Path(data_paths[key])
+            data_path = Path(data_paths[key])
+            if data_path.is_absolute():
+                path = data_path
+            else:
+                path = path / data_path
         else:
             path = path / key
 
-    return path
+    return path.resolve()
 
 
 def parse_value(value, default_value):

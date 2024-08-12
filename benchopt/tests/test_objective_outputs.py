@@ -16,7 +16,7 @@ MINIMAL_SOLVER = """from benchopt import BaseSolver
     """
 
 
-def test_objective_bad_name(no_debug_test):
+def test_objective_bad_name(no_debug_log):
     # Check that if Obejctive.evaluate_result return a `name` field, a sensible
     # error is raised.
 
@@ -45,7 +45,7 @@ def test_objective_bad_name(no_debug_test):
     out.check_output("ValueError: objective output cannot be called 'name'")
 
 
-def test_objective_no_value(no_debug_test):
+def test_objective_no_value(no_debug_log):
     # Check that if Obejctive.evaluate_result does not return a `value` field,
     # a sensible error is raised.
 
@@ -76,7 +76,7 @@ def test_objective_no_value(no_debug_test):
     )
 
 
-def test_objective_nonnumeric_values(no_debug_test):
+def test_objective_nonnumeric_values(no_debug_log):
     # Check that non-numerical values in objective do not raise error
     # in saving and generating the plots.
 
