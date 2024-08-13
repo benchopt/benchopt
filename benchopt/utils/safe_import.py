@@ -1,6 +1,7 @@
 import sys
 import warnings
 import importlib
+import importlib.util
 
 from importlib.abc import Loader, MetaPathFinder
 from pathlib import Path
@@ -11,7 +12,8 @@ from joblib.externals import cloudpickle
 from ..config import RAISE_INSTALL_ERROR
 
 
-MOCK_IMPORT = False
+MOCK_ALL_IMPORT = False
+MOCK_FAILED_IMPORT = False
 BENCHMARK_DIR = None
 PACKAGE_NAME = "benchmark_utils"
 
@@ -28,19 +30,59 @@ class MockLoader(Loader):
 
 
 class MockFinder(MetaPathFinder):
+    def __init__(self):
+        self.specs = list()
+
     def find_spec(self, fullname, path, target=None):
-        return importlib.util.spec_from_loader(fullname, MockLoader(fullname))
+        """
+        MockFinder is inserted at the first place of the finders list,
+        so it is the first finder called by Python.
+        The aim is to check if we can import the module {fullname}, if not, we mock it.
+        If we try to import the module {fullname} to check ImportError or ModuleNotFoundError,
+        the mock finder will be called again that's why we store {fullname} in {self.specs} list
+        to skip the mock finder and check if the other finders throw errors.
+
+        Parameters
+        ----------
+        fullname
+        path
+        target
+
+        Returns
+        -------
+        None or a spec if the module is mocked
+        """
+        if fullname in self.specs:
+            return None
+
+        try:
+            if MOCK_ALL_IMPORT:
+                raise ImportError
+
+            self.specs.append(fullname)
+            importlib.import_module(fullname)  # Check if we can import the module {fullname}
+            return None  # If the module can be imported, we let other finders to import it, so we return None
+        except Exception:
+            return importlib.util.spec_from_loader(fullname, MockLoader(fullname))
 
 
-def mock_import():
-    global MOCK_IMPORT
-    MOCK_IMPORT = True
+def mock_all_import():
+    global MOCK_ALL_IMPORT
+    MOCK_ALL_IMPORT = True
+
+
+def mock_failed_import():
+    global MOCK_FAILED_IMPORT
+    MOCK_FAILED_IMPORT = True
 
 
 def _unmock_import():
     """Helper to reenable imports in tests."""
-    global MOCK_IMPORT
-    MOCK_IMPORT = False
+    global MOCK_ALL_IMPORT
+    MOCK_ALL_IMPORT = False
+
+    global MOCK_FAILED_IMPORT
+    MOCK_FAILED_IMPORT = False
 
 
 def set_benchmark_module(benchmark_dir):
@@ -85,7 +127,7 @@ class safe_import_context:
 
     def __enter__(self):
         # Mock import to speed up import
-        if MOCK_IMPORT:
+        if MOCK_ALL_IMPORT or MOCK_FAILED_IMPORT:
             sys.meta_path.insert(0, MockFinder())
 
         # Catch the import warning except if install errors are raised.
@@ -95,7 +137,7 @@ class safe_import_context:
         return self
 
     def __exit__(self, exc_type, exc_value, tb):
-        if MOCK_IMPORT:
+        if MOCK_ALL_IMPORT or MOCK_FAILED_IMPORT:
             sys.meta_path.pop(0)
 
             self.failed_import = True
