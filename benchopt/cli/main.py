@@ -17,7 +17,7 @@ from benchopt.utils.shell_cmd import _run_shell_in_conda_env
 from benchopt.utils.conda_env_cmd import get_benchopt_version_in_env
 from benchopt.utils.profiling import print_stats
 from benchopt.utils.slurm_executor import set_slurm_launch
-from benchopt.utils.safe_import import mock_failed_import
+from benchopt.utils.safe_import import mock_failed_import, _unmock_import
 
 
 main = click.Group(
@@ -436,6 +436,7 @@ def install(
     # Instanciate the benchmark
     mock_failed_import()
     benchmark = Benchmark(benchmark)
+    _unmock_import()
 
     # Get a list of all conda envs
     default_conda_env, conda_envs = list_conda_envs()
