@@ -1,4 +1,7 @@
-from benchopt.utils.safe_import import mock_all_import, mock_failed_import, _unmock_import, safe_import_context
+from benchopt.utils.safe_import import (mock_all_import,
+                                        mock_failed_import,
+                                        _unmock_import,
+                                        safe_import_context)
 from unittest.mock import Mock
 import sys
 
@@ -6,7 +9,7 @@ import sys
 def test_mock_all_import():
     mock_all_import()
 
-    with safe_import_context() as import_ctx:
+    with safe_import_context():
         import unknown_module
         import this
 
@@ -22,7 +25,7 @@ def test_mock_all_import():
 def test_mock_failed_import():
     mock_failed_import()
 
-    with safe_import_context() as import_ctx:
+    with safe_import_context():
         import unknown_module
         import this
 
@@ -33,4 +36,3 @@ def test_mock_failed_import():
     sys.modules.pop('this')
 
     _unmock_import()
-

@@ -37,9 +37,11 @@ class MockFinder(MetaPathFinder):
         """
         MockFinder is inserted at the first place of the finders list,
         so it is the first finder called by Python.
-        The aim is to check if we can import the module {fullname}, if not, we mock it.
-        If we try to import the module {fullname} to check ImportError or ModuleNotFoundError,
-        the mock finder will be called again that's why we store {fullname} in {self.specs} list
+        The aim is to check if we can import the module {fullname},
+        if not, we mock it. If we try to import the module {fullname}
+        to check ImportError or ModuleNotFoundError,
+        the mock finder will be called again that's why we
+        store {fullname} in {self.specs} list
         to skip the mock finder and check if the other finders throw errors.
 
         Parameters
@@ -60,10 +62,14 @@ class MockFinder(MetaPathFinder):
                 raise ImportError
 
             self.specs.append(fullname)
-            importlib.import_module(fullname)  # Check if we can import the module {fullname}
-            return None  # If the module can be imported, we let other finders to import it, so we return None
+            # Check if we can import the module {fullname}
+            importlib.import_module(fullname)
+            # If the module can be imported, we let other finders to import it,
+            # so we return None
+            return None
         except Exception:
-            return importlib.util.spec_from_loader(fullname, MockLoader(fullname))
+            return importlib.util.spec_from_loader(fullname,
+                                                   MockLoader(fullname))
 
 
 def mock_all_import():

@@ -17,7 +17,7 @@ from benchopt.utils.shell_cmd import _run_shell_in_conda_env
 from benchopt.utils.conda_env_cmd import get_benchopt_version_in_env
 from benchopt.utils.profiling import print_stats
 from benchopt.utils.slurm_executor import set_slurm_launch
-from benchopt.utils.safe_import import mock_failed_import, mock_all_import
+from benchopt.utils.safe_import import mock_failed_import
 
 
 main = click.Group(
