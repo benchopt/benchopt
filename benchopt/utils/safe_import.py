@@ -139,8 +139,8 @@ class safe_import_context:
     def __exit__(self, exc_type, exc_value, tb):
         if MOCK_ALL_IMPORT or MOCK_FAILED_IMPORT:
             sys.meta_path.pop(0)
-
             self.failed_import = True
+            self.import_error = exc_type, exc_value, tb
 
         # Prevent import error from propagating and tag
         if exc_type is not None and issubclass(exc_type, ImportError):
