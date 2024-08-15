@@ -37,3 +37,5 @@
 .. _Jad Yehya: https://github.com/Jad-yehya
 
 .. _Mathieu Dagréou: https://matdag.github.io
+
+.. _Wassim Mazouz: https://wassimmazouz.github.io/
