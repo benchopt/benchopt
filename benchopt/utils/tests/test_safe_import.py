@@ -58,7 +58,7 @@ def test_mock_all_import_with_benchmark():
 
     solver = """
         from benchopt import BaseSolver, safe_import_context
-        
+
         with safe_import_context() as import_ctx:
                 import unknown_module_solver
                 import nis
@@ -73,7 +73,7 @@ def test_mock_all_import_with_benchmark():
 
     dataset = """
         from benchopt import BaseDataset, safe_import_context
-        
+
         with safe_import_context() as import_ctx:
                 import unknown_module_dataset
                 import chunk
@@ -83,7 +83,10 @@ def test_mock_all_import_with_benchmark():
             def get_data(self): pass
     """
 
-    with temp_benchmark(objective=objective, datasets=[dataset], solvers=[solver]) as benchmark:
+    with temp_benchmark(
+            objective=objective,
+            datasets=[dataset],
+            solvers=[solver]) as benchmark:
         benchmark.get_solvers()
         benchmark.get_datasets()
         assert isinstance(sys.modules.get('unknown_module_objective'), Mock)
@@ -147,7 +150,9 @@ def test_mock_failed_import_with_benchmark():
                 def get_data(self): pass
         """
 
-    with temp_benchmark(objective=objective, datasets=[dataset], solvers=[solver]) as benchmark:
+    with temp_benchmark(objective=objective,
+                        datasets=[dataset],
+                        solvers=[solver]) as benchmark:
         benchmark.get_solvers()
         benchmark.get_datasets()
         assert isinstance(sys.modules.get('unknown_module_objective'), Mock)
