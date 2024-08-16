@@ -61,7 +61,7 @@ def test_mock_all_import_with_benchmark():
 
         with safe_import_context() as import_ctx:
                 import unknown_module_solver
-                import nis
+                import mailbox
 
         class Solver(BaseSolver):
             name = "test-solver"
@@ -93,14 +93,14 @@ def test_mock_all_import_with_benchmark():
         assert isinstance(sys.modules.get('unknown_module_solver'), Mock)
         assert isinstance(sys.modules.get('unknown_module_dataset'), Mock)
         assert isinstance(sys.modules.get('this'), Mock)
-        assert isinstance(sys.modules.get('nis'), Mock)
+        assert isinstance(sys.modules.get('mailbox'), Mock)
         assert isinstance(sys.modules.get('chunk'), Mock)
 
     sys.modules.pop('unknown_module_objective')
     sys.modules.pop('unknown_module_solver')
     sys.modules.pop('unknown_module_dataset')
     sys.modules.pop('this')
-    sys.modules.pop('nis')
+    sys.modules.pop('mailbox')
     sys.modules.pop('chunk')
 
     _unmock_import()
@@ -128,7 +128,7 @@ def test_mock_failed_import_with_benchmark():
 
             with safe_import_context() as import_ctx:
                     import unknown_module_solver
-                    import nis
+                    import mailbox
 
             class Solver(BaseSolver):
                 name = "test-solver"
@@ -159,14 +159,14 @@ def test_mock_failed_import_with_benchmark():
         assert isinstance(sys.modules.get('unknown_module_solver'), Mock)
         assert isinstance(sys.modules.get('unknown_module_dataset'), Mock)
         assert not isinstance(sys.modules.get('this'), Mock)
-        assert not isinstance(sys.modules.get('nis'), Mock)
+        assert not isinstance(sys.modules.get('mailbox'), Mock)
         assert not isinstance(sys.modules.get('chunk'), Mock)
 
         sys.modules.pop('unknown_module_objective')
         sys.modules.pop('unknown_module_solver')
         sys.modules.pop('unknown_module_dataset')
         sys.modules.pop('this')
-        sys.modules.pop('nis')
+        sys.modules.pop('mailbox')
         sys.modules.pop('chunk')
 
     _unmock_import()
