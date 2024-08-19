@@ -6,6 +6,11 @@ Setting up an ML benchmark
 Benchopt can be used to run benchmarks on machine learning problems. This page
 explains the specificities of setting up a benchmark in this context.
 
+To easily get started with a new ML benchmark, we recommend using the dedicated
+``benchopt``'s `ML template <https://github.com/benchopt/template_benchmark_ml>`_ from github.
+This template provides a simple structure, with the different benchopt's options set to accommodate ML workflows.
+
+
 Cross-validation
 ----------------
 
@@ -19,7 +24,7 @@ In benchopt, cross-validation is handled as separate runs of the ``Solver``,
 where the data is split into folds in ``Objective.get_objective``, by calling
 ``Objective.get_split``. This method takes in the data to split (typically
 ``numpy`` arrays or ``pandas`` dataframes) and returns the split data.
-The way the splits are defined depend on the ``Objective.cv`` attribute, which
+The way the splits are defined depends on the ``Objective.cv`` attribute, which
 must be defined by the user. A typical workflow is the following:
 
 .. code-block:: python
@@ -40,7 +45,7 @@ must be defined by the user. A typical workflow is the following:
 
         def get_objective(self):
             # Call `self.get_split` with the arrays to split.
-            # This method default behavior behave like sklearn's
+            # This method's default behavior is similar to sklearn's
             # `train_test_split`, splitting the input arrays using
             # the indexes returned by `self.cv.split`.
             self.X_train, self.X_test, self.y_train, self.y_test = \

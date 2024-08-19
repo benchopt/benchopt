@@ -53,14 +53,22 @@ class CaptureRunOutput(object):
             print(self.output)
 
     def check_output(self, pattern, repetition=None):
-        output = self.output
+
+        output = self.output.replace('\r\n', '\n').replace('\r', '\n')
+
+        # Remove color for matches
+        for c in range(30, 38):
+            output = output.replace(f"\033[1;{c}m", "")
+        output = output.replace("\033[0m", "")
+
         matches = re.findall(pattern, output)
+
         if repetition is None:
             assert len(matches) > 0, (
                 f"Could not find '{pattern}' in output:\n{output}"
             )
         else:
             assert len(matches) == repetition, (
-                f"Found {len(matches)} repetitions instead of {repetition} of"
+                f"Found {len(matches)} repetitions instead of {repetition} of "
                 f"'{pattern}' in output:\n{output}"
             )

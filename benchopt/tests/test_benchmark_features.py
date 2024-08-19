@@ -1,10 +1,12 @@
+import os
+import re
 import pytest
-import tempfile
+from pathlib import Path
 
 from benchopt.cli.main import run
-from benchopt.cli.main import test as _cmd_test
 from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.utils.dynamic_modules import _load_class_from_module
+from benchopt.utils.misc import NamedTemporaryFile
 
 from benchopt.tests import SELECT_ONE_PGD
 from benchopt.tests import SELECT_ONE_SIMULATED
@@ -29,21 +31,6 @@ def test_template_dataset():
     # Make sure that this error is not raised when listing all datasets from
     # the benchmark.
     DUMMY_BENCHMARK.get_datasets()
-
-
-def test_template_solver():
-    # Make sure that importing template_dataset raises an error.
-    with pytest.raises(ImportError):
-        template_dataset = (
-            DUMMY_BENCHMARK_PATH / 'solvers' / 'template_solver.py'
-        )
-        _load_class_from_module(
-            template_dataset, 'Solver', DUMMY_BENCHMARK_PATH
-        )
-
-    # Make sure that this error is not raised when listing all solvers from
-    # the benchmark.
-    DUMMY_BENCHMARK.get_solvers()
 
 
 def test_benchmark_submodule():
@@ -81,7 +68,6 @@ def test_error_reporting(error, raise_install_error):
         else SystemExit
     )
 
-    import os
     prev_value = os.environ.get('BENCHOPT_RAISE_INSTALL_ERROR', '0')
 
     def raise_error():
@@ -104,7 +90,7 @@ def test_error_reporting(error, raise_install_error):
         os.environ['BENCHOPT_RAISE_INSTALL_ERROR'] = prev_value
 
 
-def test_objective_no_cv(no_debug_test):
+def test_objective_no_cv(no_debug_log):
 
     no_cv = """from benchopt import BaseObjective
 
@@ -129,7 +115,43 @@ def test_objective_no_cv(no_debug_test):
                 standalone_mode=False)
 
 
-def test_objective_cv_splitter(no_debug_test):
+def test_objective_save_final_results(no_debug_log):
+    save_final = """
+    from benchopt import BaseObjective
+
+    class Objective(BaseObjective):
+        name = "cross_val"
+
+        min_benchopt_version = "0.0.0"
+
+        def set_data(self, X, y): self.X, self.y = X, y
+        def get_one_result(self): return 0
+        def evaluate_result(self, beta): return dict(value=1)
+
+        def save_final_results(self, beta):
+            return "test_value"
+
+        def get_objective(self):
+            return dict(X=self.X, y=self.y, lmbd=1)
+
+    """
+
+    import pandas as pd
+    import pickle
+
+    with temp_benchmark(objective=save_final) as benchmark:
+        with CaptureRunOutput(delete_result_files=False) as out:
+            run([
+                str(benchmark.benchmark_dir),
+                *('-s python-pgd -d test-dataset -n 1 -r 1 --no-plot').split()
+            ],  standalone_mode=False)
+        data = pd.read_parquet(out.result_files[0])
+        with open(data.loc[0, "final_results"], "rb") as final_result_file:
+            final_results = pickle.load(final_result_file)
+    assert final_results == "test_value"
+
+
+def test_objective_cv_splitter(no_debug_log):
 
     objective = """from benchopt import BaseObjective, safe_import_context
         with safe_import_context() as import_ctx:
@@ -239,11 +261,10 @@ def test_ignore_hidden_files():
     # Non-regression test to make sure hidden files in datasets and solvers
     # are ignored. If this is not the case, the call to run will fail if it
     # is not ignored as there is no Dataset/Solver defined in the file.
-    with tempfile.NamedTemporaryFile(
+    with NamedTemporaryFile(
         dir=str(DUMMY_BENCHMARK_PATH / 'datasets'),
         prefix='.hidden_dataset_',
-        suffix='.py',
-        delete=True
+        suffix='.py'
     ), CaptureRunOutput():
         run([
             str(DUMMY_BENCHMARK_PATH), '-l', '-d',
@@ -251,11 +272,10 @@ def test_ignore_hidden_files():
             '-r', '1', '-o', SELECT_ONE_OBJECTIVE, '--no-plot'
         ], 'benchopt', standalone_mode=False)
 
-    with tempfile.NamedTemporaryFile(
+    with NamedTemporaryFile(
         dir=str(DUMMY_BENCHMARK_PATH / 'solvers'),
         prefix='.hidden_solver_',
-        suffix='.py',
-        delete=True
+        suffix='.py'
     ), CaptureRunOutput():
         run([
             str(DUMMY_BENCHMARK_PATH), '-l', '-d',
@@ -329,76 +349,88 @@ def test_run_once_callback(n_iter):
         out.check_output(rf"RUNONCE\({n_iter}\)", repetition=1)
 
 
-def test_warm_up():
+@pytest.mark.parametrize("test_case", [
+    "no_config", "without_data_home_abs", "with_data_home_abs",
+    "without_data_home_rel", "with_data_home_rel"
+])
+def test_paths_config_key(test_case):
+    # Need to call resolve to avoid issues with varying drives on Windows
+    data_path = Path("/path/to/data").resolve()
+    data_home = Path("/path/to/home_data").resolve()
+    data_path_rel = Path("path/to/data")
 
-    solver1 = """from benchopt import BaseSolver
-    import numpy as np
+    if test_case == "no_config":
+        config = """
+        """
+        expected_home = "{bench_dir}/data"
+        expected_path = f"{expected_home}/dataset"
+    elif test_case == "without_data_home_abs":
+        config = f"""
+            data_paths:
+                dataset: {data_path}
+        """
+        expected_path = str(data_path)
+        expected_home = "{bench_dir}/data"
+    elif test_case == "without_data_home_rel":
+        config = f"""
+            data_paths:
+                dataset: {data_path_rel}
+        """
+        expected_home = "{bench_dir}/data"
+        expected_path = f"{expected_home}/path/to/data"
+    elif test_case == "with_data_home_rel":
+        config = f"""
+            data_home: {data_home}
+            data_paths:
+                dataset: {data_path_rel}
+        """
+        expected_path = str(data_home / data_path_rel)
+        expected_home = str(data_home)
+    elif test_case == "with_data_home_abs":
+        config = f"""
+            data_home: {data_home}
+            data_paths:
+                dataset: {data_path}
+        """
+        expected_path = str(data_path)
+        expected_home = str(data_home)
+    else:
+        raise Exception("Invalid test case value")
 
-    class Solver(BaseSolver):
-        name = 'solver1'
-        sampling_strategy = 'iteration'
+    custom_dataset = """
+        from benchopt import BaseDataset
+        from benchopt.config import get_data_path
+        import numpy as np
 
-        def set_objective(self, X, y, lmbd):
-            self.n_features = X.shape[1]
+        class Dataset(BaseDataset):
+            name = "custom_dataset"
+            def get_data(self):
+                home = get_data_path()
+                path = get_data_path(key="dataset")
+                print(f"HOME:{home}")
+                print(f"PATH:{path}")
 
-        def warm_up(self):
-            print("WARMUP")
-            self.run_once(1)
-
-        def run(self, n_iter): pass
-
-        def get_result(self, **data):
-            return {'beta': np.zeros(self.n_features)}
+                return dict(X=np.random.rand(3, 2), y=np.ones((3,)))
     """
 
-    with temp_benchmark(solvers=[solver1]) as benchmark:
+    print("Config:", config)
+
+    with temp_benchmark(datasets=[custom_dataset], config=config) as benchmark:
         with CaptureRunOutput() as out:
             run([
                 str(benchmark.benchmark_dir),
-                *'-s solver1 -d test-dataset -n 0 -r 5 --no-plot'.split(),
-                *'-o dummy*[reg=0.5]'.split()
-            ], standalone_mode=False)
-
-        # Make sure warmup is called exactly once
-        out.check_output("WARMUP", repetition=1)
-
-
-def test_pre_run_hook():
-
-    solver1 = """from benchopt import BaseSolver
-    import numpy as np
-
-    class Solver(BaseSolver):
-        name = 'solver1'
-        sampling_strategy = 'iteration'
-
-        def set_objective(self, X, y, lmbd):
-            self.n_features = X.shape[1]
-
-        def pre_run_hook(self, n_iter):
-            self._pre_run_hook_n_iter = n_iter
-
-        def run(self, n_iter):
-            assert self._pre_run_hook_n_iter == n_iter
-
-        def get_result(self, **data):
-            return {'beta': np.zeros(self.n_features)}
-    """
-
-    with temp_benchmark(solvers=[solver1]) as benchmark:
-        with CaptureRunOutput() as out:
-            run([
-                str(benchmark.benchmark_dir),
-                *'-s solver1 -d test-dataset -n 0 -r 5 --no-plot '
+                *'-s solver-test -d custom_dataset'
+                 ' -n 0 -r 1 --no-plot '
                 '-o dummy*[reg=0.5]'.split()
             ], standalone_mode=False)
 
-        with CaptureRunOutput() as out:
-            with pytest.raises(SystemExit, match="False"):
-                _cmd_test([
-                    str(benchmark.benchmark_dir), '-k', 'solver1',
-                    '--skip-install', '-v'
-                ], standalone_mode=False)
+        expected_home = Path(
+            expected_home.format(bench_dir=benchmark.benchmark_dir.as_posix())
+        ).resolve()
+        out.check_output(re.escape(f"HOME:{expected_home}"), repetition=1)
 
-        # Make sure warmup is called exactly once
-        out.check_output("3 passed, 1 skipped, 7 deselected", repetition=1)
+        expected_path = Path(
+            expected_path.format(bench_dir=benchmark.benchmark_dir.as_posix())
+        ).resolve()
+        print(f"Expected - home: {expected_home}, path: {expected_path}")
+        out.check_output(re.escape(f"PATH:{expected_path}"), repetition=1)

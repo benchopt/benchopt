@@ -5,6 +5,7 @@ import pytest
 from benchopt.benchmark import Benchmark
 from benchopt.utils.conda_env_cmd import create_conda_env
 from benchopt.utils.conda_env_cmd import delete_conda_env
+from benchopt.utils.shell_cmd import _run_shell_in_conda_env
 from benchopt.utils.dynamic_modules import _get_module_from_file
 
 from benchopt.tests import DUMMY_BENCHMARK_PATH
@@ -94,7 +95,7 @@ def pytest_generate_tests(metafunc):
 
 
 @pytest.fixture
-def no_debug_test(request):
+def no_debug_log(request):
     """Deactivate the debug logs for a test."""
     os.environ["BENCHOPT_DEBUG"] = "0"
     yield
@@ -139,11 +140,24 @@ def test_env_name(request):
     return _TEST_ENV_NAME
 
 
+@pytest.fixture(scope='function')
+def uninstall_dummy_package(test_env_name):
+    _run_shell_in_conda_env(
+        "pip uninstall -qqy dummy_package", env_name=test_env_name
+    )
+    yield
+    _run_shell_in_conda_env(
+        "pip uninstall -qqy dummy_package", env_name=test_env_name
+    )
+
+
 @pytest.fixture(scope='session')
 def empty_env_name(request):
     global _EMPTY_ENV_NAME
 
     if _EMPTY_ENV_NAME is None:
+        if request.config.getoption("--skip-env"):
+            pytest.skip("Skip creating a test env")
         env_name = f"_benchopt_test_env_{uuid.uuid4()}"
         request.addfinalizer(delete_empty_env)
 

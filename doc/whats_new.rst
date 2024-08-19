@@ -5,17 +5,95 @@ What's new
 
 .. currentmodule:: benchopt
 
+.. _changes_1_7:
+
+Version 1.7 - in development
+----------------------------
+
+Major change
+------------
+
+- Benchopt is now supported on Windows!! \o/
+  By `Wassim Mazouz`_, `Mathurin Massias`_ and `Thomas Moreau`_ (:gh:`717`)
+
+CLI
+---
+
+API
+---
+
+- Change channel specification in requirements, replacing the split format
+  with ``::`` instead of ``:``. This allow specifying URL channels.
+  By `Thomas Moreau`_ (:gh:`758`)
+
+FIX
+---
+
+- Display for boxplot in the ``result.js`` was broken.
+  By `Thomas Moreau`_ (:gh:`757`)
+
+- Default value for ``data_home`` was incorrect.
+  By `Thomas Moreau`_ (:gh:`758`)
+
+- Fix the ``skip`` API for objectives that was leading to a display error.
+  By `Thomas Moreau`_ (:gh:`763`)
+
+
 .. _changes_1_6:
 
-Version 1.6 - In development
-----------------------------
+Version 1.6 - 15/07/2024
+------------------------
 
 API
 ~~~
 
+- Add a `save_final_results` method to Objective. If implemented it is run
+  after the last solver iteration, to get desired outputs to be saved to file
+  system. By `Pierre-Antoine Comby`_ (:gh:`722`)
+
 - Add native way to do cross-validation in a benchmark with
   ``Objective.cv`` attribute that change split for each repetition.
   By `Christopher Marouani`_ and `Thomas Moreau`_ (:gh:`623`).
+
+- Run-config files now support having parameters as nested dict, with
+  potentially non-trivial structures (like dictionaries).
+  By `Thomas Moreau`_ (:gh:`706`).
+
+- Raise error when an invalid install_cmd is provided.
+  By `Jad Yehya`_ (:gh:`714`).
+
+- Add boxplot option to plot the benchmark results.
+  By `Melvine Nargeot`_ (:gh:`714`).
+
+CLI
+~~~
+
+- Add ``--collect`` option to allow gathering results which are already
+  in cache in a single parquet file. By `Thomas Moreau`_ (:gh:`710`)
+
+- Add ``--download`` option in ``benchopt install`` to allow downloading
+  the data when installing the benchmark. By `Thomas Moreau`_ (:gh:`718`)
+
+- Add ``--no-timeout`` option in ``benchopt run`` to allow solvers to bypass
+  timeout. By `Célestin Eve`_ (:gh:`725`)
+
+- Remove support for deprecated ``.ini`` config files. All config files should
+  now use the ``yaml`` format. By `Thomas Moreau`_ (:gh:`699`)
+
+FIX
+~~~
+
+- Disable caching of diverged/errored runs. By `Julie Alberge`_ and
+  `Virginie Loison`_ (:gh:`735`)
+
+- Fix pickling of dynamic modules to allow for nested parallelism in
+  distributed runs. By `Thomas Moreau`_ (:gh:`713`)
+
+DOC
+~~~
+
+- Add documentation for the `run_once` sampling strategy.
+  By `Mathieu Dagréou`_ (:gh:`700`).
 
 .. _changes_1_5_1:
 
@@ -72,7 +150,7 @@ PLOT
 
 - Add the possibility to save views of the plot in the HTML. These views can be
   created in the HTML interface and saved in config files, linked to output
-  parquet files, by `Amelie Vernay`_, `Tanguy Lefort`_, `Melvine Nargeot`_
+  parquet files, by `Amélie Vernay`_, `Tanguy Lefort`_, `Melvine Nargeot`_
   and `Thomas Moreau`_ (:gh:`552`).
 
 DOC
@@ -108,7 +186,7 @@ CLI
   By `Thomas Moreau`_ (:gh:`569`)
 - Deprecate ``.ini`` config file and use ``.yml`` files instead. A conversion
   should be performed automatically.
-  By `Tanguy Lefort`_, `Amelie Vernay`_ and `Thomas Moreau`_ (:gh:`552`).
+  By `Tanguy Lefort`_, `Amélie Vernay`_ and `Thomas Moreau`_ (:gh:`552`).
 
 API
 ~~~
@@ -136,10 +214,10 @@ PLOT
   the :class:`~benchopt.BaseSolver` class. By `Badr Moufad`_ (:gh:`543`)
 - Enable visualizing the objective as function of ``stopping_criterion``: time,
   iteration, or tolerance. By `Badr Moufad`_ (:gh:`479`)
-- Add button to share and set specific views on the plot. For now, the view need
+- Add button to share and set specific views on the plot. For now, the view needs
   to be defined manually in the benchmark config file but an export button will
   be added in follow up PRs.
-  By `Tanguy Lefort`_, `Amelie Vernay`_ and `Thomas Moreau`_ (:gh:`552`).
+  By `Tanguy Lefort`_, `Amélie Vernay`_ and `Thomas Moreau`_ (:gh:`552`).
 
 FIX
 ~~~

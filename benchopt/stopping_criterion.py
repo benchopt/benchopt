@@ -201,7 +201,8 @@ class StoppingCriterion():
             raise ValueError(
                 "Objective.evaluate_result() should contain a key named "
                 f"'{key}' to be used with this stopping_criterion. The name of"
-                " this key can be changed via the 'key_to_monitor' parameter."
+                " this key can be changed via the 'key_to_monitor' parameter. "
+                f"Available keys are {list(objective_list[0].keys())}"
             )
 
         # Modify the criterion state:
@@ -211,7 +212,9 @@ class StoppingCriterion():
         n_eval = len(objective_list) - 1
         objective = objective_list[-1][self.key_to_monitor]
         delta_objective = self._prev_objective - objective
-        delta_objective /= abs(objective_list[0][self.key_to_monitor])
+        first_objective = objective_list[0][self.key_to_monitor]
+        if first_objective != 0:
+            delta_objective /= abs(first_objective)
         self._prev_objective = objective
 
         # default value for is_flat
@@ -219,10 +222,12 @@ class StoppingCriterion():
 
         # check the different conditions:
         #     diverging / timeout / max_runs / stopping_criterion
+
         if math.isnan(objective) or delta_objective < -1e5:
             stop = True
             status = 'diverged'
-        elif self._deadline is not None and time.time() > self._deadline:
+
+        elif self._deadline is not None and time.time() >= self._deadline:
             stop = True
             status = 'timeout'
 
@@ -429,7 +434,9 @@ class SufficientProgressCriterion(StoppingCriterion):
         # Compute the current objective and update best value
         objective = objective_list[-1][self.key_to_monitor]
         delta_objective = self._best_objective - objective
-        delta_objective /= abs(objective_list[0][self.key_to_monitor])
+        first_objective = objective_list[0][self.key_to_monitor]
+        if first_objective != 0:
+            delta_objective /= abs(first_objective)
         self._best_objective = min(
             objective, self._best_objective
         )

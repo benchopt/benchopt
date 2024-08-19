@@ -11,7 +11,8 @@ from ..constants import PLOT_KINDS
 from ..utils.parquet import get_metadata as get_parquet_metadata
 
 from benchopt.benchmark import Benchmark
-from .plot_bar_chart import computeBarChartData  # noqa: F401
+from .plot_bar_chart import compute_bar_chart_data  # noqa: F401
+from .plot_boxplot import compute_solver_boxplot_data
 from .plot_objective_curve import compute_quantiles   # noqa: F401
 from .plot_objective_curve import get_solver_style
 from .plot_objective_curve import reset_solver_styles_idx
@@ -269,9 +270,10 @@ def shape_solvers_for_html(df, objective_column):
                 'q1': q1.tolist(),
                 'q9': q9.tolist(),
             },
-            'bar': {
-                **computeBarChartData(df, objective_column, solver)
-            },
+            'bar': compute_bar_chart_data(df, objective_column, solver),
+            'boxplot': compute_solver_boxplot_data(
+                df_filtered, objective_column
+            ),
             'color': color,
             'marker': marker,
             'sampling_strategy': sampling_strategy,

@@ -16,7 +16,7 @@ class DependenciesMixin:
     #
     # - 'conda': The class should have an attribute `requirements`.
     #          Benchopt will conda install `$requirements`, except for entries
-    #          starting with `pip:` which will be installed with `pip` in the
+    #          starting with `pip::` which will be installed with `pip` in the
     #          conda env.
     #
     # - 'shell': The solver should have attribute `install_script`. Benchopt
@@ -24,17 +24,26 @@ class DependenciesMixin:
     #           env directory as an argument. The command should then be
     #           installed in the `bin` folder of the env and can be imported
     #           with import_shell_cmd in the safe_import_context.
-    install_cmd = 'conda'
+    install_cmd = "conda"
 
     _error_displayed = False
 
     @classproperty
     def benchmark(cls):
-        return cls.__module__.split('.')[1]
+        return cls.__module__.split(".")[1]
 
     @classproperty
     def name(cls):
-        return cls.__module__.split('.')[-1]
+        return cls.__module__.split(".")[-1]
+
+    @classproperty
+    def install_cmd_(cls):
+        if cls.install_cmd not in ["conda", "shell"]:
+            raise ValueError(
+                f"{cls.install_cmd} is not a valid install command. "
+                "Please use 'conda' or 'shell' as install command."
+            )
+        return cls.install_cmd
 
     @classmethod
     def is_installed(cls, env_name=None, raise_on_not_installed=None,
@@ -69,11 +78,14 @@ class DependenciesMixin:
             else:
                 return True
         else:
-            return _run_shell_in_conda_env(
-                f"benchopt check-install {cls._benchmark_dir} "
-                f"{cls._module_filename} {cls._base_class_name}",
-                env_name=env_name, raise_on_error=raise_on_not_installed
-            ) == 0
+            return (
+                _run_shell_in_conda_env(
+                    f"benchopt check-install {cls._benchmark_dir} "
+                    f"{cls._module_filename} {cls._base_class_name}",
+                    env_name=env_name,
+                    raise_on_error=raise_on_not_installed,
+                ) == 0
+            )
 
     @classmethod
     def install(cls, env_name=None, force=False):
@@ -92,15 +104,17 @@ class DependenciesMixin:
         is_installed: bool
             True if the class is correctly installed in the environment.
         """
+        # Check that install_cmd is valid and if the cls is installed
+        install_cmd_ = cls.install_cmd_
         is_installed = cls.is_installed(env_name=env_name)
 
-        env_suffix = f" in '{env_name}'" if env_name else ''
+        env_suffix = f" in '{env_name}'" if env_name else ""
         if force or not is_installed:
             print(f"- Installing '{cls.name}'{env_suffix}:...",
-                  end='', flush=True)
+                  end="", flush=True)
             try:
                 cls._pre_install_hook(env_name=env_name)
-                if cls.install_cmd == 'conda':
+                if install_cmd_ == "conda":
                     if hasattr(cls, "requirements"):
                         install_in_conda_env(*cls.requirements,
                                              env_name=env_name,
@@ -117,14 +131,15 @@ class DependenciesMixin:
                             "attribute `requirements`.\n"
                             "Examples:\n"
                             "   requirements = ['pkg'] # conda package `pkg`\n"
-                            "   requirements = ['chan:pkg'] # package `pkg` in"
-                            "conda channel `chan`\n"
-                            "   requirements = ['pip:pkg'] # pip package `pkg`"
+                            "   requirements = ['chan::pkg'] # package `pkg` "
+                            "in conda channel `chan`\n"
+                            "   requirements = ['pip::pkg'] "
+                            "# pip package `pkg`"
                         )
-                elif cls.install_cmd == 'shell':
+                elif install_cmd_ == "shell":
                     install_file = (
-                        cls._module_filename.parents[1] / 'install_scripts' /
-                        cls.install_script
+                        cls._module_filename.parents[1] / "install_scripts"
+                        / cls.install_script
                     )
                     shell_install_in_conda_env(install_file, env_name=env_name)
                 cls._post_install_hook(env_name=env_name)
@@ -164,43 +179,35 @@ class DependenciesMixin:
         post_install_hooks: list of callable
             Post install hooks if one need to be run.
         """
+        # Check that install_cmd is valid and if the cls is installed
+        install_cmd_ = cls.install_cmd_
         is_installed = cls.is_installed(env_name=env_name)
 
+        missing_deps = None
         conda_reqs, shell_install_scripts, post_install_hooks = [], [], []
         if force or not is_installed:
             cls._pre_install_hook(env_name=env_name)
-            if cls.install_cmd == 'conda':
+            if install_cmd_ == "shell":
+                shell_install_scripts = [
+                    cls._module_filename.parents[1] / "install_scripts"
+                    / cls.install_script
+                ]
+            else:
                 conda_reqs = getattr(cls, "requirements", [])
                 if not is_installed and len(conda_reqs) == 0:
-                    # get details of class
-                    cls_type = cls.__base__.__name__.replace("Base", "")
-                    raise AttributeError(
-                        f"Could not find dependencies for {cls.name} "
-                        f"{cls_type} while it is not importable. This is "
-                        "probably due to missing dependency specification. "
-                        "The dependencies should be specified in class "
-                        "attribute `requirements`.\n"
-                        "Examples:\n"
-                        "   requirements = ['pkg'] # conda package `pkg`\n"
-                        "   requirements = ['chan:pkg'] # package `pkg` in"
-                        "conda channel `chan`\n"
-                        "   requirements = ['pip:pkg'] # PyPi package `pkg`"
-                    )
-            elif cls.install_cmd == 'shell':
-                shell_install_scripts = [
-                    cls._module_filename.parents[1] / 'install_scripts' /
-                    cls.install_script
-                ]
+                    missing_deps = cls
             post_install_hooks = [cls._post_install_hook]
         else:
-            env_suffix = f" in '{env_name}'" if env_name else ''
-            colored_cls_name = colorify(f'{cls.name}', YELLOW)
+            env_suffix = f" in '{env_name}'" if env_name else ""
+            colored_cls_name = colorify(cls.name, YELLOW)
             print(
                 f"- {colored_cls_name} already available{env_suffix}\n"
                 f"  No ImportError raised from {cls._module_filename}."
             )
 
-        return conda_reqs, shell_install_scripts, post_install_hooks
+        return (
+            conda_reqs, shell_install_scripts, post_install_hooks, missing_deps
+        )
 
     @classmethod
     def _pre_install_hook(cls, env_name=None):

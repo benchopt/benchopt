@@ -13,6 +13,8 @@ Frequently asked questions (FAQ)
 
     Learn how to :ref:`write_benchmark`, including creating an objective, a solver, and a dataset.
 
+    Also take a look at our template repository for `Optimization <https://github.com/benchopt/template_benchmark>`_ and `ML <https://github.com/benchopt/template_benchmark_ml>`_ to easily start a new benchmark.
+
 
 .. dropdown:: How are performance curves constructed and the solvers stopped?
 
@@ -22,12 +24,12 @@ Frequently asked questions (FAQ)
     can be set on a per solver basis.
     It is also possible to set various stopping criterions to decide when to
     stop growing the computational budget, to avoid wasting resources.
-    Visit the :ref:`performance_curves` page for more detail.
+    Visit the :ref:`performance_curves` page for more details.
 
 
 .. dropdown:: How can I reuse code in a benchmark?
 
-    For some solver and datasets, it is handy to share some operations or pre-processing steps.
+    For some solvers and datasets, it is handy to share some operations or pre-processing steps.
     Benchopt allows to factorize this code by :ref:`benchmark_utils_import`.
 
 

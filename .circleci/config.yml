@@ -135,7 +135,11 @@ jobs:
               git remote -v
               git fetch origin
               git reset --hard origin/main
-              git clean -xdf
+              mv .git ..
+              mv .gitignore ..
+              rm -rf *
+              mv ../.git .
+              mv ../.gitignore .
               echo "Deploying dev docs for ${CIRCLE_BRANCH}.";
               cp -a /tmp/build/html/* .;
               if [[ -z $(git diff) ]]; then

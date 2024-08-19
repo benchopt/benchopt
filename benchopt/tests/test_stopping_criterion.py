@@ -115,7 +115,7 @@ def test_key_to_monitor(criterion_class, strategy):
 @pytest.mark.parametrize('criterion_class', [
     SufficientDescentCriterion, SufficientProgressCriterion
 ])
-def test_key_to_monitor_objective(no_debug_test, criterion_class, strategy):
+def test_key_to_monitor_objective(no_debug_log, criterion_class, strategy):
     "Check that the criterion tracks the right objective key."
     key = 'test_key'
 
@@ -155,7 +155,7 @@ def test_key_to_monitor_objective(no_debug_test, criterion_class, strategy):
 
 
 @pytest.mark.parametrize('strategy', SAMPLING_STRATEGIES)
-def test_solver_strategy(no_debug_test, strategy):
+def test_solver_strategy(no_debug_log, strategy):
 
     solver = f"""from benchopt import BaseSolver
 
@@ -192,7 +192,7 @@ def test_solver_strategy(no_debug_test, strategy):
 @pytest.mark.parametrize('criterion_class', [
     SufficientDescentCriterion, SufficientProgressCriterion
 ])
-def test_stopping_criterion_strategy(no_debug_test, criterion_class, strategy):
+def test_stopping_criterion_strategy(no_debug_log, criterion_class, strategy):
 
     if strategy == "run_once":
         criterion_class = SingleRunCriterion
@@ -233,7 +233,7 @@ def test_stopping_criterion_strategy(no_debug_test, criterion_class, strategy):
 @pytest.mark.parametrize('criterion_class', [
     SufficientDescentCriterion, SufficientProgressCriterion
 ])
-def test_solver_override_strategy(no_debug_test, criterion_class, strategy):
+def test_solver_override_strategy(no_debug_log, criterion_class, strategy):
 
     if strategy == "run_once":
         criterion_class = SingleRunCriterion
@@ -271,7 +271,7 @@ def test_solver_override_strategy(no_debug_test, criterion_class, strategy):
                 standalone_mode=False)
 
 
-def test_dual_strategy(no_debug_test):
+def test_dual_strategy(no_debug_log):
 
     solver = """from benchopt import BaseSolver
     from benchopt.stopping_criterion import SufficientDescentCriterion
@@ -294,3 +294,40 @@ def test_dual_strategy(no_debug_test):
                 run([str(benchmark.benchmark_dir),
                     *('-s test-solver -d test-dataset --no-plot').split()],
                     standalone_mode=False)
+
+
+def test_objective_equals_zero(no_debug_log):
+
+    objective = """from benchopt import BaseObjective
+
+        class Objective(BaseObjective):
+            name = "test_obj"
+            min_benchopt_version = "0.0.0"
+
+            def set_data(self, X, y): pass
+            def get_one_result(self): pass
+            def evaluate_result(self, beta): return dict(value=0)
+            def get_objective(self): return dict(X=0, y=0)
+    """
+
+    solver = """from benchopt import BaseSolver
+    from benchopt.stopping_criterion import SufficientDescentCriterion
+
+    class Solver(BaseSolver):
+        name = "test-solver"
+        stopping_criterion = SufficientDescentCriterion()
+        def set_objective(self, X, y): pass
+        def run(self, n_iter): pass
+        def get_result(self): return dict(beta=1)
+    """
+
+    with temp_benchmark(
+            objective=objective,
+            solvers=[solver]
+    ) as benchmark:
+        with CaptureRunOutput() as out:
+            run([str(benchmark.benchmark_dir),
+                *('-s test-solver -d test-dataset --no-plot -n 0').split()],
+                standalone_mode=False)
+
+    out.check_output('done', 1)
