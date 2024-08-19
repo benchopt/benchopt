@@ -194,7 +194,7 @@ def run(config_file=None, **kwargs):
 
     (
         benchmark, mini_file, solver_names, forced_solvers, dataset_names,
-        objective_filters, max_runs, n_repetitions, timeout, np_timeout,
+        objective_filters, max_runs, n_repetitions, timeout, no_timeout,
         n_jobs, slurm, collect, plot, display, html, pdb, do_profile,
         env_name, output_name
     ) = _get_run_args(kwargs, config)
