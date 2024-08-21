@@ -68,6 +68,8 @@ class _MiniBenchmark(Benchmark):
         _get_module_from_file(mini_file)
 
         assert _objective is not None, "Need to set one objective."
+        assert len(_solvers) > 0, "Need to set at least one solver."
+        assert len(_datasets) > 0, "Need to set at least one dataset."
 
         self.mini_file = Path(mini_file)
         self.benchmark_dir = Path()
@@ -84,6 +86,14 @@ class _MiniBenchmark(Benchmark):
             d.mini_file = mini_file
         for s in _solvers:
             s.mini_file = mini_file
+
+    def __del__(self):
+        global _objective
+        _objective = None
+        global _solvers
+        _solvers = []
+        global _datasets
+        _datasets = []
 
     def get_benchmark_objective(self):
         return _objective
@@ -154,8 +164,6 @@ def solver(func=None, name=None, run_once=False, **params):
 def objective(func=None, name=None, min_benchopt_version=None):
     if func is None:
         return partial(objective, name=name)
-
-    print("call")
 
     global _objective
     assert _objective is None, "Can only call objective decorator once."
