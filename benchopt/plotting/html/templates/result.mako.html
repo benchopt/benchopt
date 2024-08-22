@@ -498,7 +498,7 @@
         </script>
         <!-- Manage plot -->
         <script>
-            window._dataframe = ${result['dataframe']};
+            window._dataframe = new dfd.DataFrame(${result['dataframe']});
             window._data = ${result['json']};
             window.metadata = ${json.dumps(result['metadata'])};
 
