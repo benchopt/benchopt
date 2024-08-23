@@ -1,28 +1,35 @@
 import os
+import sys
 import stat
 import warnings
-import configparser
-import yaml
 from pathlib import Path
 from collections.abc import Iterable
+
+import yaml
+
 from benchopt.constants import PLOT_KINDS
 
-
-BOOLEAN_STATES = configparser.ConfigParser.BOOLEAN_STATES
+BOOLEAN_STATES = {
+    '1': True, 'yes': True, 'true': True, 'on': True,
+    '0': False, 'no': False, 'false': False, 'off': False
+}
 CONFIG_FILE_NAME = 'benchopt.yml'
 
 # Global config file should be only accessible to current user as it stores
 # sensitive information such as the Github token.
 GLOBAL_CONFIG_FILE_MODE = stat.S_IFREG | stat.S_IRUSR | stat.S_IWUSR
 
+DEFAULT_SHELL = 'cmd /c' if sys.platform == 'win32' else 'bash'
+
 DEFAULT_GLOBAL_CONFIG = {
     'debug': False,
     'raise_install_error': False,
     'github_token': None,
     'data_dir': './data/',
-    'conda_cmd': 'conda',
-    'shell': os.environ.get('SHELL', 'bash'),
+    'conda_cmd': 'conda' if sys.platform != 'win32' else 'call conda',
+    'shell': os.environ.get('SHELL', DEFAULT_SHELL),
     'cache': None,
+    'default_timeout': 100,
 }
 """
 * ``debug``: If set to true, enable debug logs.
@@ -43,7 +50,9 @@ DEFAULT_GLOBAL_CONFIG = {
 
 DEFAULT_BENCHMARK_CONFIG = {
     "plots": list(PLOT_KINDS),
-    "plot_configs": {}
+    "plot_configs": {},
+    "data_home": "",
+    "data_paths": {}
 }
 
 """
@@ -59,7 +68,7 @@ DEFAULT_BENCHMARK_CONFIG = {
     - relative_suboptimality_curve
     - bar_chart
 
-* ``plot_configs``, *list*: list of saved views that can be easily display for
+* ``plot_configs``, *dict*: list of saved views that can be easily display for
   the plot. Each view corresponds to a name, with specified values to select
   either:
 
@@ -86,6 +95,36 @@ DEFAULT_BENCHMARK_CONFIG = {
   the ``Save as view`` button in the plot controls and downloading eiher the
   new HTML file to save them or the config file in th erepo of the benchmark,
   so that these saved views are embeded in the next plot results automatically.
+
+* ``data_home``, *str*: Allows users to define a home path where the function
+  ``get_data_path()`` search data files defined in ``data_paths``.
+
+* ``data_paths``, *dict*: Allows users to store some data files in custom
+  locations. If you are writing your own benchmark, you can use this
+  options to allow users to use custom location for data files.
+  Otherwise, please refer to the benchmark's documentation you
+  use to know if you can use this option and which paths you must define.
+
+  For example, if the benchmark asks you to define a data path,
+  you can proceed as follows in the benchmark's ``config.yaml`` file:
+
+  .. code-block:: yaml
+    data_home: path/to/data/home
+
+    data_paths:
+        my_data_file: path/to/my/file.npz
+
+  In your benchmark's datasets, you can use the ``get_data_path()``
+  to retrieve the paths:
+
+  .. code-block:: python
+    from benchopt.config import get_data_path
+
+    path = get_data_path('my_data_file')
+
+    # The "path" variable now contains "path/to/data/home/path/to/my/file.npz"
+
+  If no paths are provided, the default path used is ``your_benchmark/data``
 """
 
 
@@ -101,15 +140,9 @@ def get_global_config_file():
         )
     else:
 
-        def check_ini(path):
-            # If a path does not exist but exist with suffix .ini, returns it.
-            if not path.exists() and path.with_suffix('.ini').exists():
-                return path.with_suffix('.ini')
-            return path
-
-        config_file = check_ini(Path('.') / CONFIG_FILE_NAME)
+        config_file = Path('.') / CONFIG_FILE_NAME
         if not config_file.exists():
-            config_file = check_ini(Path.home() / '.config' / CONFIG_FILE_NAME)
+            config_file = Path.home() / '.config' / CONFIG_FILE_NAME
 
     # check that the global config file is only accessible to current user as
     # it stores critical information such as the github token.
@@ -126,43 +159,9 @@ def get_global_config_file():
     return config_file
 
 
-def convert_ini_to_yml(config_file):
-    warnings.warn(
-        f"'.ini' config files are deprecated. Existing file {config_file} "
-        "will be converted to `.yml` file. You can delete it."
-    )
-    config_ini = configparser.ConfigParser()
-    config_ini.read(config_file)
-    config = {}
-    for sec in config_ini.sections():
-        default = (
-            DEFAULT_GLOBAL_CONFIG if sec == "benchopt"
-            else DEFAULT_BENCHMARK_CONFIG
-        )
-        options = list(config_ini[sec].keys())
-        values = {
-            key: parse_value(config_ini.get(sec, key), default[key])
-            for key in options
-        }
-        if sec == "benchopt":
-            config.update(**values)
-        else:
-            config[sec] = values
-    config_file = config_file.with_suffix('.yml')
-    config_file.touch(mode=GLOBAL_CONFIG_FILE_MODE)
-    with config_file.open('w') as f:
-        yaml.safe_dump(config, f)
-
-
 def set_setting(name, value, config_file=None, benchmark_name=None):
     if config_file is None:
         config_file = get_global_config_file()
-
-    # Handle deprecated .ini config file by automatically
-    # converting them to .yml.
-    if config_file.suffix == ".ini":
-        convert_ini_to_yml(config_file)
-        config_file = config_file.with_suffix('.yml')
 
     # Get default value
     default_config = DEFAULT_BENCHMARK_CONFIG
@@ -210,7 +209,7 @@ def get_setting(name, config_file=None, benchmark_name=None,
     name : str
         Name of the config parameter to retrieve.
     config_file : str | Path
-        Path to a config file from which the setting can be retreives. When
+        Path to a config file from which the setting can be retrieved. When
         it is not provided, default to the global benchopt config file.
     benchmark_name : str
         Name of the benchmark for which the setting are retrieved.
@@ -221,12 +220,6 @@ def get_setting(name, config_file=None, benchmark_name=None,
 
     if config_file is None:
         config_file = get_global_config_file()
-
-    # Handle deprecated .ini config file by automatically
-    # converting them to .yml.
-    if config_file.suffix == ".ini":
-        convert_ini_to_yml(config_file)
-        config_file = config_file.with_suffix('.yml')
 
     # Get default value
     default_config_ = DEFAULT_BENCHMARK_CONFIG
@@ -261,6 +254,42 @@ def get_setting(name, config_file=None, benchmark_name=None,
     return value
 
 
+def get_data_path(key: str = None):
+    """
+    Parameters
+    ----------
+    key (str): The key to look for in the configuration file.
+
+    Returns
+    -------
+    If the key exists in config, it returns the path associated to the key.
+    If the key does not exist, it returns the path ended by the key name.
+    """
+    from .benchmark import get_running_benchmark
+    benchmark = get_running_benchmark()
+
+    data_home = benchmark.get_setting("data_home")
+
+    if data_home == "":
+        data_home = benchmark.benchmark_dir / "data"
+
+    path = Path(data_home)
+
+    if key is not None:
+        data_paths = benchmark.get_setting("data_paths")
+
+        if key in data_paths and data_paths[key] is not None:
+            data_path = Path(data_paths[key])
+            if data_path.is_absolute():
+                path = data_path
+            else:
+                path = path / data_path
+        else:
+            path = path / key
+
+    return path.resolve()
+
+
 def parse_value(value, default_value):
     if isinstance(default_value, bool):
         # convert string 0/1/true/false/yes/no/on/off to boolean
@@ -284,6 +313,10 @@ def parse_value(value, default_value):
                       for v in value.split(',') if v != '']
             value = values
         assert isinstance(value, list), value
+    elif isinstance(default_value, int):
+        value = int(value)
+    elif isinstance(default_value, float):
+        value = float(value)
 
     return value
 

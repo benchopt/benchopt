@@ -1,49 +1,81 @@
-import numpy as np
+import time
 
 import pytest
+import numpy as np
 
-from benchopt.tests import TEST_SOLVER
 from benchopt.tests import TEST_DATASET
 from benchopt.tests import TEST_OBJECTIVE
-from benchopt.benchmark import _filter_classes
+
+from benchopt.tests import SELECT_ONE_PGD
+from benchopt.tests import SELECT_ONE_SIMULATED
+from benchopt.tests import SELECT_ONE_OBJECTIVE
+
+from benchopt.benchmark import _check_patterns
 from benchopt.benchmark import _extract_options
 from benchopt.benchmark import _extract_parameters
+from benchopt.benchmark import _list_parametrized_classes
+from benchopt.utils.temp_benchmark import temp_benchmark
+from benchopt.tests.utils import CaptureRunOutput
+from benchopt.cli.main import run
 
 
-class MockOutput:
-    def __init__(self):
-        self.reason = None
+@pytest.mark.parametrize('n_jobs', [1, 2, 4])
+def test_skip_api(n_jobs):
 
-    def skip(self, reason):
-        self.reason = reason
+    objective = """from benchopt import BaseObjective
 
+        class Objective(BaseObjective):
+            name = "Objective-skip"
+            parameters = dict(should_skip=[True, False])
 
-def test_skip_api():
+            def skip(self, X, y):
+                if self.should_skip:
+                    return True, "Objective#SKIP"
+                return False, None
 
-    dataset = TEST_DATASET.get_instance()
-    objective = TEST_OBJECTIVE.get_instance(reg=0)
-    objective.set_dataset(dataset)
+            def set_data(self, X, y): self.X, self.y = X, y
+            def get_objective(self): return dict(X=1)
+            def get_one_result(self): return dict(beta=0)
+            def evaluate_result(self, beta): return dict(value=1)
+    """
 
-    solver = TEST_SOLVER.get_instance()
+    solver = """from benchopt import BaseSolver
 
-    out = MockOutput()
-    skip = solver._set_objective(objective, out)
-    assert skip
-    assert out.reason == 'lmbd=0'
+    class Solver(BaseSolver):
+        name = "test-solver"
+        sampling_strategy = 'run_once'
+        parameters = dict(should_skip=[True, False])
 
-    objective = TEST_OBJECTIVE.get_instance(reg=1)
-    objective.set_dataset(dataset)
+        def skip(self, X):
+            if self.should_skip:
+                return True, "Solver#SKIP"
+            return False, None
 
-    out = MockOutput()
-    skip = solver._set_objective(objective, out)
-    assert not skip
-    assert out.reason is None
+        def set_objective(self, X): pass
+        def run(self, n_iter): print("Solver#RUN")
+        def get_result(self): return dict(beta=1)
+    """
 
-    dataset = TEST_DATASET.get_instance(skip=True)
-    objective = TEST_OBJECTIVE.get_instance()
-    skip, reason = objective.set_dataset(dataset)
-    assert skip
-    assert reason == 'X is all zeros'
+    with temp_benchmark(objective=objective, solvers=[solver]) as benchmark:
+        with CaptureRunOutput() as out:
+            run([*(
+                f'{benchmark.benchmark_dir} -s test-solver -d test-dataset '
+                f'-j {n_jobs} --no-plot'
+            ).split()], standalone_mode=False)
+
+            # Make sure joblib's executor is shutdown, as otherwise the output
+            # might be incomplete.
+            from joblib.externals.loky import get_reusable_executor
+            get_reusable_executor().shutdown(wait=True)
+
+    out.check_output(r"Objective-skip\[should_skip=True\] skip", repetition=1)
+    out.check_output("Reason: Objective#SKIP", repetition=1)
+
+    out.check_output(r"test-solver\[should_skip=True\]: skip", repetition=1)
+    out.check_output("Reason: Solver#SKIP", repetition=1)
+
+    out.check_output(r"test-solver\[should_skip=False\]: done", repetition=1)
+    out.check_output("Solver#RUN", repetition=1)
 
 
 def test_get_one_result():
@@ -70,7 +102,9 @@ def test_filter_classes_two_parameters():
     # Test the selection of dataset with optional parameters.
 
     def filt_(filters):
-        return list(_filter_classes(TEST_DATASET_TWO_PARAMS, filters=filters))
+        return list(_list_parametrized_classes(*_check_patterns(
+            [TEST_DATASET_TWO_PARAMS], filters
+        )))
 
     # no selection (default grid)
     results = filt_(["Test-Dataset"])
@@ -114,15 +148,18 @@ def test_filter_classes_two_parameters():
     results = filt_(
         ["Test-Dataset[n_samples=[foo,bar], n_features=[True, False]]"])
     assert len(results) == 4
-    _assert_parameters_equal(results[0][0],
-                             dict(n_samples="foo", n_features=True))
-    _assert_parameters_equal(results[1][0],
-                             dict(n_samples="foo", n_features=False))
-    _assert_parameters_equal(results[2][0],
-                             dict(n_samples="bar", n_features=True))
-    _assert_parameters_equal(results[3][0],
-                             dict(n_samples="bar", n_features=False))
-
+    _assert_parameters_equal(
+        results[0][0], dict(n_samples="foo", n_features=True)
+    )
+    _assert_parameters_equal(
+        results[1][0], dict(n_samples="foo", n_features=False)
+    )
+    _assert_parameters_equal(
+        results[2][0], dict(n_samples="bar", n_features=True)
+    )
+    _assert_parameters_equal(
+        results[3][0], dict(n_samples="bar", n_features=False)
+    )
     # get list of tuples
     results = filt_(
         ["Test-Dataset['n_samples, n_features'=[(41, 19), (42, 20)]]"])
@@ -148,7 +185,9 @@ def test_filter_classes_one_param():
     # Test the selection of dataset with only one parameter.
 
     def filt_(filters):
-        return list(_filter_classes(TEST_DATASET_ONE_PARAM, filters=filters))
+        return list(_list_parametrized_classes(*_check_patterns(
+            [TEST_DATASET_ONE_PARAM], filters
+        )))
 
     # test positional parameter
     results = filt_(["Test-Dataset[42]"])
@@ -244,3 +283,88 @@ def test_extract_parameters():
         assert _extract_parameters(f"{token}") == [token]
         assert _extract_parameters(f"'{token}'") == [token]
         assert _extract_parameters(f"\"{token}\"") == [token]
+
+
+def test_error_caching(no_debug_log):
+
+    objective = """from benchopt import BaseObjective
+
+        class Objective(BaseObjective):
+            name = "test_obj"
+            min_benchopt_version = "0.0.0"
+
+            def set_data(self, X, y): pass
+            def get_one_result(self): pass
+            def evaluate_result(self, beta): return dict(value=1)
+            def get_objective(self): return dict(X=0, y=0)
+    """
+
+    solver1 = """from benchopt import BaseSolver
+
+    class Solver(BaseSolver):
+        name = "failing-solver"
+        sampling_strategy = 'iteration'
+        def set_objective(self, X, y): pass
+        def run(self, n_iter):
+            raise ValueError('Failing solver.')
+        def get_result(self): return dict(beta=1)
+    """
+
+    solver2 = """from benchopt import BaseSolver
+
+    class Solver(BaseSolver):
+        name = "normal-solver"
+        sampling_strategy = 'iteration'
+        def set_objective(self, X, y): pass
+        def run(self, n_iter): pass
+        def get_result(self): return dict(beta=1)
+    """
+
+    dataset = """from benchopt import BaseDataset
+
+    class Dataset(BaseDataset):
+        name = "dataset"
+        def get_data(self):
+            return dict(X=0, y=1)
+    """
+
+    with temp_benchmark(objective=objective,
+                        solvers=[solver1, solver2],
+                        datasets=[dataset]) as benchmark:
+        with CaptureRunOutput() as out:
+            for it in range(2):
+                run([str(benchmark.benchmark_dir),
+                    *' -d dataset --no-plot -r 1 -n 1'.split()],
+                    standalone_mode=False)
+                # benchmark is too quick to run, without sleep output files
+                # have the same name and the unlinking fails:
+                if it == 0:
+                    time.sleep(1.1)
+
+    # error message should be displayed twice
+    out.check_output("ValueError: Failing solver.", repetition=2)
+
+
+# Under windows, the function needs to be pickleable
+# for parallel jobs to work with joblib
+@pytest.mark.parametrize('n_jobs', [1, 2])
+def test_benchopt_run_script(n_jobs, no_debug_log):
+    from benchopt import run_benchmark
+
+    with temp_benchmark() as benchmark:
+        with CaptureRunOutput() as out:
+            run_benchmark(
+                str(benchmark.benchmark_dir),
+                solver_names=[SELECT_ONE_PGD],
+                dataset_names=[SELECT_ONE_SIMULATED],
+                objective_filters=[SELECT_ONE_OBJECTIVE],
+                max_runs=2, n_repetitions=1, n_jobs=n_jobs, plot_result=False
+            )
+
+    out.check_output('Simulated', repetition=1)
+    out.check_output('Dummy Sparse Regression', repetition=1)
+    out.check_output(r'Python-PGD\[step_size=1\]:', repetition=4)
+    out.check_output(r'Python-PGD\[step_size=1.5\]:', repetition=0)
+
+    # Make sure the results were saved in a result file
+    assert len(out.result_files) == 1, out.output

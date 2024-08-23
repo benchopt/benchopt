@@ -511,3 +511,14 @@ input:checked+.slider:before {
   border-color: rgb(37 99 235);!important;
   color: rgb(37 99 235);!important;
 }
+
+/* Hide q1, q3, max, min, upper fence, lower fence on boxplot */
+g.hovertext:has(path + [data-unformatted*="q1"]),
+g.hovertext:has(path + [data-unformatted*="q3"]),
+g.hovertext:has(path + [data-unformatted*="max"]),
+g.hovertext:has(path + [data-unformatted*="min"]),
+g.hovertext:has(path + [data-unformatted*="upper fence"]),
+g.hovertext:has(path + [data-unformatted*="lower fence"])
+{
+    display: none;
+}

@@ -68,7 +68,7 @@ Using a YAML file and the ``--config`` flag, it is possible to describe all deta
 
     benchopt run . --config ./example_config.yml
 
-Here is the content of configuration file ``example_config.yml`` if we were to run the two previous example into a single one.
+Here is the content of configuration file ``example_config.yml`` if we were to run the two previous examples into a single one.
 
 .. code-block:: yaml
 
@@ -79,7 +79,12 @@ Here is the content of configuration file ``example_config.yml`` if we were to r
 
     dataset:
         - leukemia
-        - simulated[n_samples=100,n_features=20]
+        - simulated[n_samples=100,n_features=10]
+        - simulated:
+            n_samples: 100
+            n_features: [20, 30]
+        - simulated:
+            n_samples, n_features: [[200, 20], [150, 30]]
 
 .. note::
 

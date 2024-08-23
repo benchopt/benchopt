@@ -44,7 +44,7 @@ It is also possible to use the **latest development version**. To do so, run ins
 
 .. code-block:: bash
 
-    pip install --pre benchopt -U -i https://test.pypi.org/simple
+    pip install git+https://github.com/benchopt/benchopt.git
 
 
 Getting started
@@ -85,7 +85,7 @@ Here is how to do so for the `L2-logistic Regression benchmark <https://github.c
 .. figure:: https://benchopt.github.io/_images/sphx_glr_plot_run_benchmark_001.png
    :target: how.html
    :align: center
-   :scale: 40%
+   :width: 60%
 
 These steps illustrate how to reproduce the `L2-logistic Regression benchmark <https://github.com/benchopt/benchmark_logreg_l2>`_.
 Find the complete list of the `Available benchmarks`_.
@@ -204,7 +204,7 @@ Available benchmarks
    :target: https://www.python.org/downloads/release/python-360/
 .. |Documentation| image:: https://img.shields.io/badge/documentation-latest-blue
    :target: https://benchopt.github.io
-.. |codecov| image:: https://codecov.io/gh/benchopt/benchopt/branch/master/graph/badge.svg
+.. |codecov| image:: https://codecov.io/gh/benchopt/benchopt/branch/main/graph/badge.svg
    :target: https://codecov.io/gh/benchopt/benchopt
 .. |SWH| image:: https://archive.softwareheritage.org/badge/origin/https://github.com/benchopt/benchopt/
     :target: https://archive.softwareheritage.org/browse/origin/?origin_url=https://github.com/benchopt/benchopt

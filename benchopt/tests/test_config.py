@@ -1,4 +1,5 @@
 import os
+import sys
 import pytest
 import warnings
 from pathlib import Path
@@ -13,8 +14,15 @@ from benchopt.config import set_setting, get_setting
 @contextmanager
 def temp_config_file(permission='600'):
     permission = int(f"100{permission}", base=8)
-    config_file = Path() / 'test_config_file.yml'
-    config_file.touch(mode=permission, exist_ok=False)
+    config_file = Path(Path() / 'test_config_file.yml')
+    if sys.platform != 'win32':
+        config_file.touch(mode=permission, exist_ok=False)
+    else:
+        config_file.touch(exist_ok=False)
+        if permission == 0o600:
+            os.chmod(config_file, 0o600)
+        else:
+            os.chmod(config_file, 0o666)
     old_config_file = os.environ.get('BENCHOPT_CONFIG', None)
     os.environ['BENCHOPT_CONFIG'] = str(config_file)
     try:
@@ -41,12 +49,14 @@ def test_parse_value():
     # Check that if the default is not a bool or a list, we return the value
     assert parse_value(1, 2) == 1
     assert parse_value(2.0, 1) == 2.0
-    assert parse_value('abc', 1) == 'abc'
     assert parse_value('abc', 'a') == 'abc'
 
 
+# Skip this test on Windows
+@pytest.mark.skipif(sys.platform == 'win32',
+                    reason="Skipping Unix-specific test on Windows")
 @pytest.mark.parametrize("permission", ["644", "655", "240"])
-def test_config_file_permission_warn(permission):
+def test_config_file_permission_warn_unix(permission):
     with temp_config_file(permission) as config_file:
         msg = f"{config_file} is with mode {permission}"
         with pytest.warns(UserWarning, match=msg):
@@ -54,6 +64,20 @@ def test_config_file_permission_warn(permission):
         assert str(global_config_file) == str(config_file)
 
 
+# Windows-specific test
+@pytest.mark.skipif(sys.platform != 'win32',
+                    reason="Skipping Windows-specific test on Unix systems")
+@pytest.mark.parametrize("permission", ["666"])
+def test_config_file_permission_warn_windows(permission):
+    with temp_config_file(permission) as config_file:
+        msg = f"{config_file} is with mode {permission}"
+        with pytest.warns(UserWarning, match=msg):
+            global_config_file = get_global_config_file()
+        assert str(global_config_file) == str(config_file)
+
+
+@pytest.mark.skipif(sys.platform == 'win32',
+                    reason="Skipping Unix-specific test on Windows")
 def test_config_file_permission_no_warning():
     with temp_config_file() as config_file:
         with warnings.catch_warnings():
@@ -71,7 +95,14 @@ def test_config_file_set(setting_key):
         ), default_value)
         assert get_setting(setting_key) == default_value
 
-        set_value = parse_value('True', default_value)
+        # pick arbitrary new and env values for this configuration parameter
+        if isinstance(default_value, (bool, str)) or default_value is None:
+            set_value = parse_value('True', default_value)
+            env_value = parse_value('False', default_value)
+        else:
+            set_value = parse_value(2 * default_value + 1, default_value)
+            env_value = parse_value(2 * default_value - 1, default_value)
+
         set_setting(setting_key, set_value)
 
         # Make sure the value is correctly set and retrieved
@@ -81,7 +112,6 @@ def test_config_file_set(setting_key):
             assert get_setting(setting_key) == set_value
 
             # Otherwise, we get the env value
-            env_value = parse_value('False', default_value)
             os.environ[f"BENCHOPT_{setting_key.upper()}"] = str(env_value)
             assert get_setting(setting_key) == env_value
             del os.environ[f"BENCHOPT_{setting_key.upper()}"]

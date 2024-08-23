@@ -1,7 +1,38 @@
+.. _manage_results:
+
+Manage benchmark results
+========================
+
+.. _collect_results:
+
+Collect benchmark results
+-------------------------
+
+Once the benchmark is run, the results are stored in a directory
+``./results`` in the benchmark directory, with a ``.parquet`` file.
+By default, the name of the file include the date and time of the run,
+but a custom name can be given using the :option:`--output` option of
+``benchopt run``.
+
+This result file is produced only once the full benchmark has been run.
+When the benchmark is run in parallel, the results that have already been
+computed can be collected using the :option:`--collect` option with
+``benchopt run``. Adding this option with the same command line will
+produce a parquet file with all the results that have been computed so far.
+
+
+Clean benchmark results
+-----------------------
+
+The results and cache of previously run benchmark can be cleaned using the
+``benchopt clean`` command. This command will remove the ``./results`` and
+``./__cache__`` directories in the benchmark directory.
+
+
 .. _publish_benchmark:
 
 Publish benchmark results
-=========================
+-------------------------
 
 
 Benchopt allows you to publish your benchmark results to
@@ -21,7 +52,7 @@ Workflow example:
     $ benchopt publish ./benchmark_logreg_l2 -t <GITHUB_TOKEN>
 
 You see that to publish you need to specify the value of ``<GITHUB_TOKEN>``.
-This GitHub access token contains 40 alphanumeric characters that allows GitHub
+This GitHub access token contains 40 alphanumeric characters that allow GitHub
 to identify you and use your account.
 After getting your personal token as explained below the last
 line will read something like:
@@ -35,10 +66,10 @@ line will read something like:
     Your GitHub access token is a sensitive information. Keep it
     secret as it is as powerful as your GitHub password!
 
-Let's now look how to create your personal GitHub token.
+Let's now see how to create your personal GitHub token.
 
 Obtaining a GitHub token
-------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 Visit `https://github.com/settings/tokens <https://github.com/settings/tokens>`_
 and click on ``generate new token``.
