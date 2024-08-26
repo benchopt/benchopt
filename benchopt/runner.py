@@ -266,11 +266,16 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
         for key in obj_parameters.keys():
             obj_parameters_prefixed["p_obj_" + key] = obj_parameters[key]
         for key in slv_parameters.keys():
-            slv_parameters_prefixed["p_solver_" + solver.name + "_" + key] = slv_parameters[key]
+            slv_parameters_prefixed["p_solver_" + solver.name + "_" + key]\
+                = slv_parameters[key]
         for key in ds_parameters.keys():
-            ds_parameters_prefixed["p_dataset_" + dataset.name + "_" + key] = ds_parameters[key]
+            ds_parameters_prefixed["p_dataset_" + dataset.name + "_" + key]\
+                = ds_parameters[key]
 
-        meta = {**meta, **obj_parameters_prefixed, **slv_parameters_prefixed, **ds_parameters_prefixed}
+        meta = {**meta,
+                **obj_parameters_prefixed,
+                **slv_parameters_prefixed,
+                **ds_parameters_prefixed}
 
         stopping_criterion = solver._stopping_criterion.get_runner_instance(
             solver=solver,

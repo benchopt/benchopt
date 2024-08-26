@@ -400,7 +400,7 @@ def test_prefix_with_same_parameters():
     """
 
     dataset1 = """from benchopt import BaseDataset
-    
+
         class Dataset(BaseDataset):
             name = "dataset1"
             parameters={
@@ -411,7 +411,7 @@ def test_prefix_with_same_parameters():
     """
 
     dataset2 = """from benchopt import BaseDataset
-    
+
         class Dataset(BaseDataset):
             name = "dataset2"
             parameters={
