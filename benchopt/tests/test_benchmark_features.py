@@ -16,7 +16,6 @@ from benchopt.tests import DUMMY_BENCHMARK_PATH
 from benchopt.tests.utils import patch_import
 from benchopt.tests.utils import patch_benchmark
 from benchopt.tests.utils import CaptureRunOutput
-from benchopt.tests.test_config import temp_config_file
 
 
 def test_template_dataset():
