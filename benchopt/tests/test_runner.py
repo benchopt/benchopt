@@ -368,3 +368,87 @@ def test_benchopt_run_script(n_jobs, no_debug_log):
 
     # Make sure the results were saved in a result file
     assert len(out.result_files) == 1, out.output
+
+
+def test_prefix_with_same_parameters():
+    from benchopt import run_benchmark
+
+    solver1 = """from benchopt import BaseSolver
+
+        class Solver(BaseSolver):
+            name = "solver1"
+            sampling_strategy = 'iteration'
+            parameters={
+                "seed": [3, 27]
+            }
+            def set_objective(self, X, y): pass
+            def run(self, n_iter): pass
+            def get_result(self): return dict(beta=1)
+    """
+
+    solver2 = """from benchopt import BaseSolver
+
+        class Solver(BaseSolver):
+            name = "solver2"
+            sampling_strategy = 'iteration'
+            parameters={
+                "seed": [3, 27]
+            }
+            def set_objective(self, X, y): pass
+            def run(self, n_iter): pass
+            def get_result(self): return dict(beta=1)
+    """
+
+    dataset1 = """from benchopt import BaseDataset
+    
+        class Dataset(BaseDataset):
+            name = "dataset1"
+            parameters={
+                "seed": [3, 27]
+            }
+            def get_data(self):
+                return dict(X=0, y=1)
+    """
+
+    dataset2 = """from benchopt import BaseDataset
+    
+        class Dataset(BaseDataset):
+            name = "dataset2"
+            parameters={
+                "seed": [3, 27]
+            }
+            def get_data(self):
+                return dict(X=0, y=1)
+    """
+
+    objective = """from benchopt import BaseObjective
+
+        class Objective(BaseObjective):
+            name = "test_obj"
+            min_benchopt_version = "0.0.0"
+
+            def set_data(self, X, y): pass
+            def get_one_result(self): pass
+            def evaluate_result(self, beta): return dict(value=1)
+            def get_objective(self): return dict(X=0, y=0)
+    """
+
+    with temp_benchmark(solvers=[solver1, solver2],
+                        datasets=[dataset1, dataset2],
+                        objective=objective
+                        ) as benchmark:
+        run_benchmark(
+            str(benchmark.benchmark_dir),
+            solver_names=["solver1", "solver2"],
+            dataset_names=["dataset1", "dataset2"],
+            max_runs=2, n_repetitions=1, n_jobs=1, plot_result=False
+        )
+
+        import pandas as pd
+
+        data = pd.read_parquet(benchmark.get_result_file())
+
+        assert "p_solver_solver1_seed" in data.columns
+        assert "p_solver_solver2_seed" in data.columns
+        assert "p_dataset_dataset1_seed" in data.columns
+        assert "p_dataset_dataset2_seed" in data.columns
