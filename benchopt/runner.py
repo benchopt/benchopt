@@ -259,28 +259,18 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
         slv_parameters = solver._parameters
         ds_parameters = dataset._parameters
 
-        # Add a prefix to common keys between "meta", "obj_parameters",
-        # "slv_parameters", "ds_parameters" dictionaries to avoid
-        # erasing keys
-        all_keys = (meta.keys()
-                    | obj_parameters.keys()
-                    | slv_parameters.keys()
-                    | ds_parameters.keys())
-        common_keys = [key for key in all_keys
-                       if sum(key in d for d in
-                              (meta, obj_parameters,
-                               slv_parameters,
-                               ds_parameters)) >= 2]
+        obj_parameters_prefixed = dict()
+        slv_parameters_prefixed = dict()
+        ds_parameters_prefixed = dict()
 
-        for key in common_keys:
-            if key in obj_parameters:
-                obj_parameters["obj_" + key] = obj_parameters.pop(key)
-            if key in slv_parameters:
-                slv_parameters["solver_" + key] = slv_parameters.pop(key)
-            if key in ds_parameters:
-                ds_parameters["dataset_" + key] = ds_parameters.pop(key)
+        for key in obj_parameters.keys():
+            obj_parameters_prefixed["p_obj_" + key] = obj_parameters[key]
+        for key in slv_parameters.keys():
+            slv_parameters_prefixed["p_solver_" + solver.name + "_" + key] = slv_parameters[key]
+        for key in ds_parameters.keys():
+            ds_parameters_prefixed["p_dataset_" + dataset.name + "_" + key] = ds_parameters[key]
 
-        meta = {**meta, **obj_parameters, **slv_parameters, **ds_parameters}
+        meta = {**meta, **obj_parameters_prefixed, **slv_parameters_prefixed, **ds_parameters_prefixed}
 
         stopping_criterion = solver._stopping_criterion.get_runner_instance(
             solver=solver,
