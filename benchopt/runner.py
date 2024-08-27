@@ -304,8 +304,9 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
 def run_benchmark(benchmark, solvers=None, forced_solvers=None,
                   datasets=None, objectives=None,
                   max_runs=10, n_repetitions=1, timeout=100,
-                  plot_result=True, display=True, html=True, output="None",
-                  parallel_config=None, show_progress=True, pdb=False):
+                  plot_result=True, display=True, html=True, collect=False,
+                  output="None", parallel_config=None, show_progress=True,
+                  pdb=False):
     """Run full benchmark.
 
     Parameters
@@ -351,7 +352,7 @@ def run_benchmark(benchmark, solvers=None, forced_solvers=None,
         If show_progress is set to True, display the progress of the benchmark.
     pdb : bool
         If pdb is set to True, open a debugger on error.
-    output_name : str
+    output : str
         Filename for the parquet output. If given, the results will
         be stored at <BENCHMARK>/outputs/<filename>.parquet.
 
@@ -396,10 +397,10 @@ def run_benchmark(benchmark, solvers=None, forced_solvers=None,
     # Save output in parquet file in the benchmark folder
     timestamp = datetime.now().strftime('%Y-%m-%d_%Hh%Mm%S')
     output_dir = benchmark.get_output_folder()
-    if output_name == "None":
+    if output == "None":
         save_file = output_dir / f'benchopt_run_{timestamp}.parquet'
     else:
-        save_file = output_dir / f"{output_name}.parquet"
+        save_file = output_dir / f"{output}.parquet"
         save_file = uniquify_results(save_file)
     try:
         df.to_parquet(save_file)
@@ -417,11 +418,11 @@ def run_benchmark(benchmark, solvers=None, forced_solvers=None,
     return save_file
 
 
-def run_benchmark(benchmark_path, solver_names=None, forced_solvers=(),
-                  dataset_names=None, objective_filters=None, max_runs=10,
-                  n_repetitions=1, timeout=None, n_jobs=1, slurm=None,
-                  plot_result=True, display=True, html=True,  collect=False,
-                  show_progress=True, pdb=False, output_name="None"):
+def _run_benchmark(benchmark_path, solver_names=None, forced_solvers=(),
+                   dataset_names=None, objective_filters=None, max_runs=10,
+                   n_repetitions=1, timeout=None, n_jobs=1, slurm=None,
+                   plot_result=True, display=True, html=True,  collect=False,
+                   show_progress=True, pdb=False, output_name="None"):
     """Run full benchmark.
 
     Parameters

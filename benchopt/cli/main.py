@@ -197,9 +197,9 @@ def run(config_file=None, **kwargs):
 
     (
         benchmark, solver_names, forced_solvers, dataset_names,
-        objective_filters, max_runs, n_repetitions, timeout, no_timeout, collect,
-        output, plot, display, html, n_jobs, parallel_config, slurm, pdb, do_profile,
-        env_name
+        objective_filters, max_runs, n_repetitions, timeout,
+        no_timeout, collect, output, plot, display, html, n_jobs,
+        parallel_config, slurm, pdb, do_profile, env_name
     ) = _get_run_args(kwargs, config)
 
     # If --no-timeout is set and --timeout is not, skip these blocks
