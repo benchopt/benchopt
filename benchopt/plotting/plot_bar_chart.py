@@ -87,7 +87,7 @@ def plot_bar_chart(df, obj_col='objective_value', plotly=False):
     return height_list
 
 
-def computeBarChartData(df, obj_col, solver):
+def compute_bar_chart_data(df, obj_col, solver):
     """Gives the list of bar chart values.
 
     Parameters

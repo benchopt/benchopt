@@ -1,6 +1,6 @@
 name: test
-
 on:
+
   push:
     branches:
       - main
@@ -14,6 +14,12 @@ on:
     # Run every day at 8:42am UTC.
     - cron:  '42 8 * * *'
 
+# Cancel in-progress workflows when pushing
+# a new commit on the same branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test_benchopt:
     name: Test
@@ -22,25 +28,27 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            version_python: 3.8
-          - os: ubuntu-latest
-            version_python: 3.9
+            version_python: "3.10"
             conda_cmd: 'mamba'
             coverage: 'true'
+          - os: ubuntu-latest
+            version_python: "3.11"
           - os: macos-latest
-            version_python: 3.9
+            version_python: "3.10"
+          - os: windows-latest
+            version_python: "3.12"
     env:
       CONDA_ENV: 'testcondaenv'
       JUNIT_XML: 'test-data.xml'
       VERSION_PYTHON: ${{ matrix.version_python }}
       COVERAGE: ${{ matrix.coverage }}
-      BENCHOPT_CONDA_CMD: ${{ matrix.conda_cmd || 'conda' }}
+      BENCHOPT_CONDA_CMD: ${{ matrix.conda_cmd || (matrix.os == 'windows-latest' && 'call conda') || 'conda' }}
 
     defaults:
       run:
         # Need to use this shell to get cond working properly.
         # See https://github.com/marketplace/actions/setup-miniconda#important
-        shell: bash -l {0}
+        shell: ${{ matrix.os == 'windows-latest' && 'cmd /C CALL {0}' || 'bash -l {0}' }}
 
     steps:
       - uses: actions/checkout@v3
@@ -54,16 +62,31 @@ jobs:
 
       - run: conda info
 
+      - name: Install Julia
+        run:
+          ${{ env.BENCHOPT_CONDA_CMD }} install -yq -c https://repo.prefix.dev/julia-forge julia[version">=1.10.0"]
+
       - name: Install benchopt and its dependencies
         run: |
-          conda info
-          conda install -yq pip
+          ${{ env.BENCHOPT_CONDA_CMD }} info
+          ${{ env.BENCHOPT_CONDA_CMD }} install -yq pip
           pip install -e .[test,submitit,dask]
           # Install mamba in base environment to make it accessible test env
           test $BENCHOPT_CONDA_CMD == "mamba" && conda install -n base mamba || echo "using conda"
 
-      - name: 'Run the tests'
+      # TODO merge this with previous test if possible
+      #last command : Install mamba in base environment to make it accessible test env
+      - name: 'Install mamba in base environment'
+        if: matrix.os != 'windows-latest'
+        run: test $BENCHOPT_CONDA_CMD == "mamba" && conda install -n base mamba || echo "using conda"
+
+      - name: 'Run the tests on Ubuntu/OSX'
+        if: matrix.os != 'windows-latest'
         run: continuous_integration/test_script.sh
+
+      - name: 'Run the tests on Windows'
+        if: matrix.os == 'windows-latest'
+        run: continuous_integration\test_script_windows.bat
 
       - name: Publish Test Report
         uses: mikepenz/action-junit-report@v2
@@ -73,7 +96,9 @@ jobs:
 
       - name: Upload coverage
         if: ${{ matrix.coverage == 'true' }}
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v4
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
           flags: test_benchopt
           fail_ci_if_error: true
@@ -86,9 +111,11 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            version_python: 3.9
+            version_python: "3.10"
           - os: macos-latest
-            version_python: 3.9
+            version_python: "3.10"
+          - os: windows-latest
+            version_python: "3.12"
     env:
       JUNIT_XML: "test-data.xml"
       VERSION_PYTHON: ${{ matrix.version_python }}
@@ -103,7 +130,7 @@ jobs:
         run: pip install -e .
 
       - name: Run benchopt without conda
-        run: benchopt run benchopt/tests/dummy_benchmark -d Simulated[n_features=100,n_samples=100,rho=0]  -o "*[reg=0.1]" -s python-pgd -r 1 -n 10 --no-plot
+        run: benchopt run benchopt/tests/dummy_benchmark -d Simulated[n_features=100,n_samples=100,rho=0]  -o "^*[reg=0.1]" -s python-pgd -r 1 -n 10 --no-plot
 
   test_benchopt_reqs:
     name: Test benchopt requirements detection
@@ -111,11 +138,11 @@ jobs:
     strategy:
       matrix:
         include:
-          - version_python: "3.9"
-            version_pip: "21.3"
-          - version_python: "3.9"
-            version_pip: "22.2"
           - version_python: "3.10"
+            version_pip: "21.3"
+          - version_python: "3.10"
+            version_pip: "22.2"
+          - version_python: "3.11"
             version_pip: "latest"
     steps:
       - uses: actions/checkout@v3

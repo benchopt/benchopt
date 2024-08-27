@@ -1,11 +1,10 @@
-import tempfile
-
 from abc import ABC, abstractmethod
 
 from .callback import _Callback
 from .stopping_criterion import SingleRunCriterion
 from .stopping_criterion import SufficientProgressCriterion
 
+from .utils.misc import NamedTemporaryFile
 from .utils.dependencies_mixin import DependenciesMixin
 from .utils.parametrized_name_mixin import ParametrizedNameMixin
 
@@ -30,7 +29,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
     - ``get_result(self)``: returns all parameters of interest, as a dict.
       The output is passed to ``Objective.evaluate_result``.
 
-    Note that two ``sampling_strategy`` can be used to construct the benchmark
+    Note that four ``sampling_strategy`` can be used to construct the benchmark
     curve:
 
     - ``'iteration'``: call the run method with max_iter number increasing
@@ -40,21 +39,28 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
     - ``'callback'``: a callable that should be called after each iteration or
       epoch. This callable periodically calls the objective's `compute`
       and returns False when the solver should stop.
-
+    - ``'run_once'``: call the run method once to get a single point. This is
+      typically used for ML benchmarks.
     """
 
     _base_class_name = 'Solver'
-    stopping_criterion = SufficientProgressCriterion(
-        strategy='iteration'
-    )
+    sampling_strategy = None
+
+    @property
+    def _stopping_criterion(self):
+        if hasattr(self, 'stopping_criterion'):
+            return self.stopping_criterion
+        if self.sampling_strategy == 'run_once':
+            return SingleRunCriterion()
+        return SufficientProgressCriterion(strategy=self.sampling_strategy)
 
     @property
     def _solver_strategy(self):
         """Change stop_strategy and stopping_strategy to sampling_strategy."""
-        if hasattr(self, 'sampling_strategy'):
-            return self.sampling_strategy
-        else:
-            return self.stopping_criterion.strategy
+        return (
+            self._stopping_criterion.strategy or self.sampling_strategy
+            or 'iteration'
+        )
 
     def _set_objective(self, objective, output=None):
         """Store the objective for hashing/pickling and check its compatibility
@@ -258,8 +264,8 @@ class CommandLineSolver(BaseSolver, ABC):
     """
 
     def __init__(self, **parameters):
-        self._data_file = tempfile.NamedTemporaryFile()
-        self._model_file = tempfile.NamedTemporaryFile()
+        self._data_file = NamedTemporaryFile()
+        self._model_file = NamedTemporaryFile()
         self.data_filename = self._data_file.name
         self.model_filename = self._model_file.name
         super().__init__(**parameters)
@@ -325,6 +331,16 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
       evaluated. This should be a dictionary where the keys correspond to the
       keyword arguments of `evaluate_result`.
 
+    Optionally, the `Solver` can implement the following methods to change its
+    behavior:
+
+    - `save_final_results(**result)`: Return the data to be saved from the
+       results of the solver. It will be saved as a `.pkl` file in the
+       `output/results` folder, and link to the benchmark results.
+
+    - `get_next(stop_val)`: Return the next iteration where the result will be
+      evaluated.
+
     This class is also used to specify information about the benchmark.
     In particular, it should have the following class attributes:
 
@@ -385,12 +401,34 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
         """
         pass
 
-    def __call__(self, solver_result):
+    def save_final_results(self, **solver_result):
+        """Save the final results of the solver.
+
+        Parameters
+        ----------
+        solver_result : dict
+            All values needed to compute the objective metrics. This dictionary
+            is retrieved by calling ``solver_result = Solver.get_result()``.
+        Returns
+        -------
+        dict of values to save
+        """
+        pass
+
+    def __call__(self, result):
         """Used to call the evaluation of the objective.
 
         This allows standardizing the output to a dictionary.
         """
-        objective_dict = self.evaluate_result(**solver_result)
+        if not isinstance(result, dict):
+            raise TypeError(
+                "The result returned by `Solver.get_result` should be a dict "
+                "whose keys are the arguments of `Objective.evaluate_result`. "
+                f"Got {result}."
+
+            )
+
+        objective_dict = self.evaluate_result(**result)
 
         if not isinstance(objective_dict, dict):
             objective_dict = {'value': objective_dict}
@@ -468,6 +506,13 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
         type for benchopt. The returned object will be passed to
         ``Objective.compute``.
         """
+        ...
+
+    def _get_one_result(self):
+        # Make sure the splits with CV are created before calling
+        # get_one_result
+        self.get_objective()
+        return self.get_one_result()
 
     # Reduce the pickling and hashing burden by only pickling class parameters.
     @staticmethod
@@ -480,3 +525,55 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
     def __reduce__(self):
         dataset = getattr(self, '_dataset', None)
         return self._reconstruct, (*self._get_reduce_args(), dataset)
+
+    def _default_split(self, cv_fold, *arrays):
+        train_index, test_index = cv_fold
+        res = ()
+        for x in arrays:
+            try:
+                res = (*res, x[train_index], x[test_index])
+            except TypeError as e:
+                raise TypeError(
+                    "The type of your data is not compatible with the default "
+                    "split.\nYou need to define a custom split function named "
+                    "`split` in the Objective class. This function should "
+                    "have the following signature:\n"
+                    "\t`split(self, cv_fold, *arrays)-> *split_arrays`,\n"
+                    "where `cv_fold` is the current fold obtained from "
+                    "`self.cv.split`."
+                ) from e
+        return res
+
+    def get_split(self, *arrays):
+        """Return the split of the data according to the cv attribute.
+
+        Parameters
+        ----------
+        arrays: list of array-like
+            The data to split. It should be indexable with the output of the
+            ``cv.split`` iterator, or compatible with ``Objective.split``.
+        """
+        if not hasattr(self, "cv"):
+            raise ValueError(
+                "To use `Objective.get_split`, Objective must define a cv "
+                "attribute in `Objective.set_dataset`. It should follow the "
+                "`sklearn.model_selection.BaseCrossValidator` API."
+            )
+
+        # In order to cope with n_repetition larger than the number of folds,
+        # cycle through the folds. We don't use itertools.repeat to avoid
+        # having to store the whole generator in memory.
+        if not hasattr(self, "_cv"):
+            metadata = getattr(self, "cv_metadata", {})
+
+            def repeat():
+                while True:
+                    for split_indexes in self.cv.split(*arrays, **metadata):
+                        yield split_indexes
+            self._cv = repeat()
+
+        # Perform the split with default split function if it is not defined by
+        # the user.
+        cv_fold = next(self._cv)
+        split_ = getattr(self, "split", self._default_split)
+        return split_(cv_fold, *arrays)

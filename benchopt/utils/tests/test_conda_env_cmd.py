@@ -1,3 +1,5 @@
+import pytest
+
 from benchopt.utils.conda_env_cmd import get_cmd_from_requirements
 from benchopt.config import get_setting
 
@@ -7,7 +9,7 @@ CONDA_CMD = get_setting("conda_cmd")
 
 def test_requirements_conda():
 
-    packages = ["dep1", "dep2", "chan1:dep3"]
+    packages = ["dep1", "dep2", "chan1::dep3"]
     cmd = get_cmd_from_requirements(packages)
 
     assert len(cmd) == 1
@@ -20,9 +22,23 @@ def test_requirements_conda():
     assert " -c chan1 " in cmd, f"missing channel in cmd: {cmd}"
 
 
+def test_deprecated_channel():
+
+    packages = ["chan:dep"]
+    with pytest.warns(DeprecationWarning):
+        cmd = get_cmd_from_requirements(packages)
+
+    assert len(cmd) == 1
+    cmd = cmd[0]
+
+    assert CONDA_CMD in cmd, f"Should use {CONDA_CMD} to install deps."
+    assert " dep" in cmd, f"missing dep in cmd: {cmd}"
+    assert " -c chan " in cmd, f"missing channel in cmd: {cmd}"
+
+
 def test_requirements_pip():
 
-    packages = ["pip:dep1", "pip:dep2"]
+    packages = ["pip::dep1", "pip::dep2"]
     cmd = get_cmd_from_requirements(packages)
 
     assert len(cmd) == 1
@@ -35,7 +51,7 @@ def test_requirements_pip():
 
 def test_requirements_mixed():
 
-    packages = ["dep1", "pip:dep2"]
+    packages = ["dep1", "pip::dep2"]
     cmd = get_cmd_from_requirements(packages)
 
     assert len(cmd) == 2

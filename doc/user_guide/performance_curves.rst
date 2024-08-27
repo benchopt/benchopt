@@ -18,7 +18,7 @@ Sampling strategies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The first way is to use ``Solver.sampling_strategy = "iteration"`` or ``Solver.sampling_strategy = "tolerance"``.
-This is used for black box solvers, where one can only get the result of the solver for a given number of iterations or for a given numerical tolerance.
+This is used for black-box solvers, where one can only get the result of the solver for a given number of iterations or for a given numerical tolerance.
 This sampling strategy creates curves by calling ``Solver.run(stop_val)`` several times with different values for the ``stop_val`` parameter:
 
 - if the solver's ``sampling_strategy`` is ``"iteration"``, ``stop_val`` is the number of iterations passed to ``run``.
@@ -45,6 +45,9 @@ In both cases, if the objective curve is flat (i.e., the variation of the object
 Note that the solver is restarted from scratch at each call to ``solver.run``.
 For more advanced configurations, the evolution of ``stop_val`` can be controlled on a per solver basis, by implementing a ``Solver.get_next`` method, which receives the current value for tolerance/number of iterations, and returns the next one.
 
+
+Note that the formula to compute the next ``stop_val`` can be configured on a per-solver basis, as described in: :ref:`sampling_strategy`.
+
 2. Using a callback
 ~~~~~~~~~~~~~~~~~~~
 
@@ -52,7 +55,7 @@ Restarting the solver from scratch, though inevitable to handle black box solver
 
 When a solver exposes the intermediate values of the iterates, it is possible to create the curve in a single solver run, by using ``sampling_strategy = "callback"``.
 In that case, the argument passed to ``Solver.run`` will be a callable object, ``callback``.
-This callback is created and manage by ``benchopt``.
+This callback is created and managed by ``benchopt``.
 Like with ``sampling_strategy == "iteration"``, the objective is computed after a number of callback's calls that grows geometrically. If the objective was computed after :math:`n` calls, the objective and timing will be computed again when reaching :math:`\max(n+1, \rho * n)` calls to the callback.
 The callback makes sure we do not account for objective computation time and also check for convergence every time the objective is computed (as described in the next section).
 It returns ``False`` when the solver should be stopped. A classical usage pattern is:
@@ -68,17 +71,36 @@ It returns ``False`` when the solver should be stopped. A classical usage patter
     def get_result(self):
         return {'x': self.x}
 
+.. _sampling_strategy:
+
+3. Changing the strategy to grow the computational budget (:code:`stop_val`)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The way benchopt varies the computational budget :code:`stop_val` can be
+configured on a per-solver basis. This is done by implementing a ``get_next``
+method in the ``Solver`` class. This method takes as input the previous value
+where the objective function has been logged, and outputs the next one. For
+instance, if a solver needs to be evaluated every 10 iterations, we would have
+
+.. code-block::
+
+    class Solver(BaseSolver):
+        ...
+        def get_next(self, stop_val):
+            return stop_val + 10
+
+This example allows to set a linear growth for the solver computational budget, instead of the default geometric growth.
 
 
 When are the solvers stopped?
 -----------------------------
 
-For each of the sampling strategies above, the solvers continue running (i.e. the callback returns ``True``, the number of iterations passed to ``Solver.run`` increases or the tolerance passed to ``Solver.run`` decreases) until it the ``StoppingCriterion.should_stop()`` associated to the solver ``Solver.stopping_criterion`` returns ``True``.
+For each of the sampling strategies above, the solvers continue running (i.e. the callback returns ``True``, the number of iterations passed to ``Solver.run`` increases or the tolerance passed to ``Solver.run`` decreases) until the ``StoppingCriterion.should_stop()`` associated to the solver ``Solver.stopping_criterion`` returns ``True``.
 
 This method takes into account the maximal number of runs given as ``--max-runs``, the timeout given by ``--timeout`` and also tries to stop the solver if it has converged.
-The convergence of a solver is determined by  the ``StoppingCriterion.check_convergence()`` method, based on the objective curve so far.
+The convergence of a solver is determined by the ``StoppingCriterion.check_convergence()`` method, based on the objective curve so far.
 There are three ``StoppingCriterion`` implemented in benchopt:
 
 - ``SufficientDescentCriterion(eps, patience)`` considers that the solver has converged when the relative decrease of the objective was less than a tolerance ``eps`` for more than ``patience`` calls to ``check_convergence``.
 - ``SufficientProgressCriterion(eps, patience)`` considers that the solver has converged when the objective has not decreased by more than a tolerance ``eps`` for more than ``patience`` calls to ``check_convergence``.
-- ``SingleRunCriterion(stop_val)`` only call the solver once with the given stop_val. This criterion designed for methods that converge to a given value, when one aim to benchmark final performance of multiple solvers.
+- ``SingleRunCriterion(stop_val)`` only calls the solver once with the given stop_val. This criterion is designed for methods that converge to a given value, when one aims to benchmark final performance of multiple solvers.

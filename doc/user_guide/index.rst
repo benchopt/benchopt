@@ -11,5 +11,7 @@ User guide
     API_ref
     CLI_ref
     advanced
+    ml_benchmark
     performance_curves
+    tweak_datasets
     distributed_run

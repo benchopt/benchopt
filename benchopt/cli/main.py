@@ -4,6 +4,7 @@ import warnings
 from pathlib import Path
 
 from benchopt.benchmark import Benchmark
+from benchopt.config import get_setting
 from benchopt.cli.completion import complete_solvers
 from benchopt.cli.completion import complete_datasets
 from benchopt.cli.completion import complete_benchmarks
@@ -51,6 +52,8 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
         "max_runs",
         "n_repetitions",
         "timeout",
+        "no_timeout",
+        "collect",
         "output",
         "plot",
         "display",
@@ -105,14 +108,24 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               help='Maximal number of runs for each solver. This corresponds '
               'to the number of points in the time/accuracy curve.')
 @click.option('--n-repetitions', '-r',
-              metavar='<int>', default=1, show_default=True, type=int,
+              metavar='<int>', default=None, show_default=True, type=int,
               help='Number of repetitions that are averaged to estimate the '
               'runtime.')
 @click.option('--timeout',
-              default=100, show_default=True, type=str,
-              help='Stop a solver when run for more than <timeout> seconds.'
-              ' The syntax 10h or 10m can be used to denote 10 hours or '
-              'minutes respectively.')
+              default=None, show_default=True, type=str,
+              help='Stop a solver when run for more than <timeout> seconds. '
+              'The syntax 10h or 10m can be used to denote 10 hours or '
+              'minutes respectively. Not compatible with the --no-timeout '
+              'option.')
+@click.option('--no-timeout',
+              is_flag=True,
+              help='If set, prevent solvers from stopping after running for '
+              'a long time. Not compatible with the --timeout option.')
+@click.option('--collect',
+              is_flag=True,
+              help='If set, this run will only collect results which are '
+              'already available in the cache. This flag allows to collect '
+              'results while all the solvers are not finished yet.')
 @click.option('--config', 'config_file', default=None,
               shell_complete=complete_config_files,
               help="YAML configuration file containing benchmark options.")
@@ -184,16 +197,27 @@ def run(config_file=None, **kwargs):
 
     (
         benchmark, solver_names, forced_solvers, dataset_names,
-        objective_filters, max_runs, n_repetitions, timeout, output, plot,
-        display, html, n_jobs, parallel_config, slurm, pdb, do_profile,
-        env_name,
+        objective_filters, max_runs, n_repetitions, timeout, no_timeout, collect,
+        output, plot, display, html, n_jobs, parallel_config, slurm, pdb, do_profile,
+        env_name
     ) = _get_run_args(kwargs, config)
 
-    try:
-        timeout = int(float(timeout))
-    except ValueError:  # already under string format
-        import pandas as pd
-        timeout = pd.to_timedelta(timeout).total_seconds()
+    # If --no-timeout is set and --timeout is not, skip these blocks
+    # and keep timeout = None
+    if no_timeout and timeout is not None:
+        raise click.BadParameter(
+            'You cannot specify both --timeout and --no-timeout options.'
+        )
+
+    if not no_timeout:
+        if timeout is None:
+            timeout = get_setting('default_timeout')
+        else:
+            try:
+                timeout = int(float(timeout))
+            except ValueError:  # already under string format
+                import pandas as pd
+                timeout = pd.to_timedelta(timeout).total_seconds()
 
     # Create the Benchmark object
     benchmark = Benchmark(benchmark)
@@ -215,7 +239,7 @@ def run(config_file=None, **kwargs):
     # If env_name is False, the flag `--local` has been used (default) so
     # run in the current environment.
     if env_name == 'False':
-        from benchopt.runner import run_benchmark
+        from benchopt.runner import _run_benchmark
 
         if do_profile:
             from benchopt.utils.profiling import use_profile
@@ -230,20 +254,26 @@ def run(config_file=None, **kwargs):
         objective.is_installed(raise_on_not_installed=True)
 
         # Check that the dataset/solver patterns match actual dataset
-        benchmark.validate_dataset_patterns(dataset_names)
-        benchmark.validate_objective_filters(objective_filters)
-        # pyyaml returns tuples: make sure everything is a list
-        benchmark.validate_solver_patterns(
-            list(solver_names) + list(forced_solvers)
-        )
-        print("ok")
+        datasets = benchmark.check_dataset_patterns(dataset_names)
+        objectives = benchmark.check_objective_filters(objective_filters)
 
-        run_benchmark(
-            benchmark, solver_names, forced_solvers,
-            dataset_names=dataset_names, objective_filters=objective_filters,
-            max_runs=max_runs, n_repetitions=n_repetitions, timeout=timeout,
-            output=output, plot_result=plot, display=display, html=html,
-            parallel_config=parallel_config, pdb=pdb
+        # pyyaml returns tuples: make sure everything is a list
+        if isinstance(solver_names, dict):
+            solver_names = [solver_names]
+        elif isinstance(solver_names, tuple):
+            solver_names = list(solver_names)
+        solvers = benchmark.check_solver_patterns(
+            solver_names + list(forced_solvers)
+        )
+
+        _run_benchmark(
+            benchmark, solvers, forced_solvers,
+            datasets=datasets, objectives=objectives,
+            max_runs=max_runs, n_repetitions=n_repetitions,
+            timeout=timeout, n_jobs=n_jobs, slurm=slurm,
+            output=output, plot_result=plot, display=display,
+            html=html, collect=collect, parallel_config=parallel_config,
+            pdb=pdb
         )
 
         print_stats()  # print profiling stats (does nothing if not profiling)
@@ -315,18 +345,22 @@ def run(config_file=None, **kwargs):
     if parallel_config:
         parallel_args += rf"--parallel-backend {parallel_config} "
     cmd = (
-        f"benchopt run --local {benchmark.benchmark_dir} "
-        f"{solvers_option} {forced_solvers_option} "
-        f"{datasets_option} {objective_option} "
-        f"--n-repetitions {n_repetitions} "
-        f"--max-runs {max_runs} --timeout {timeout} "
-        rf"--output {output}"
-        f"{'--plot' if plot else '--no-plot'} "
-        f"{'--display' if display else '--no-display'} "
-        f"{'--html' if html else '--no-html'} "
+        rf"benchopt run --local {benchmark.benchmark_dir} "
+        rf"--n-repetitions {n_repetitions} "
+        rf"--max-runs {max_runs} "
+        rf"{f'--timeout {timeout} ' if timeout is not None else ''}"
+        rf"{'--no-timeout ' if no_timeout else ''} "
+        rf"--n-jobs {n_jobs} {'--slurm' if slurm else ''} "
+        rf"{solvers_option} {forced_solvers_option} "
+        rf"{datasets_option} {objective_option} "
+        rf"{'--plot' if plot else '--no-plot'} "
+        rf"{'--display' if display else '--no-display'} "
+        rf"{'--html' if html else '--no-html'} "
         rf"{parallel_args}"
-        f"{'--pdb ' if pdb else ''}{'--profile' if do_profile else ''}"
-        .replace("\\", "\\\\")
+        rf"{'--pdb ' if pdb else ''}"
+        rf"{'--profile ' if do_profile else ''}"
+        rf"--output {output}"
+        .replace('\\', '\\\\')
     )
     raise SystemExit(_run_shell_in_conda_env(
         cmd, env_name=env_name, capture_stdout=False
@@ -370,6 +404,9 @@ def run(config_file=None, **kwargs):
               shell_complete=complete_config_files,
               help="YAML configuration file containing benchmark options, "
               "whose solvers and datasets will be installed.")
+@click.option('--download', is_flag=True,
+              help="If this flag is set, call `Dataset.get_data` for all "
+              "datasets, to make sure the data are present on the system.")
 @click.option('--env', '-e', 'env_name',
               flag_value='True', type=str, default='False',
               help="Install all requirements in a dedicated "
@@ -396,7 +433,7 @@ def run(config_file=None, **kwargs):
 def install(
         benchmark, minimal, solver_names, dataset_names, config_file=None,
         force=False, recreate=False, env_name='False', confirm=False,
-        quiet=False):
+        quiet=False, download=False):
 
     if config_file is not None:
         with open(config_file, "r") as f:
@@ -408,10 +445,8 @@ def install(
             forced_solvers = config.get("force-solver", tuple())
             solver_names = list(set(solver_names).union(set(forced_solvers)))
 
-    # Check that the dataset/solver patterns match actual dataset
+    # Instanciate the benchmark
     benchmark = Benchmark(benchmark)
-    benchmark.validate_dataset_patterns(dataset_names)
-    benchmark.validate_solver_patterns(solver_names)
 
     # Get a list of all conda envs
     default_conda_env, conda_envs = list_conda_envs()
@@ -461,11 +496,26 @@ def install(
         # create environment if necessary
         create_conda_env(env_name, recreate=recreate, quiet=quiet)
 
+    # List solver and datasets classes to install
+    if len(dataset_names) == 0 and len(solver_names) > 0:
+        datasets = []
+    else:
+        datasets = benchmark.check_dataset_patterns(
+            dataset_names, class_only=True
+        )
+    if len(solver_names) == 0 and len(dataset_names) > 0:
+        solvers = []
+    else:
+        solvers = benchmark.check_solver_patterns(
+            solver_names, class_only=True
+        )
+
     # install requirements
     print("# Install", flush=True)
     benchmark.install_all_requirements(
-        include_solvers=solver_names, include_datasets=dataset_names,
+        include_solvers=solvers, include_datasets=datasets,
         minimal=minimal, env_name=env_name, force=force, quiet=quiet,
+        download=download
     )
 
 

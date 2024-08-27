@@ -26,7 +26,8 @@ dummy_datasets = [
 
 @contextlib.contextmanager
 def temp_benchmark(
-        objective=None, datasets=None, solvers=None, config=None
+        objective=None, datasets=None, solvers=None, config=None,
+        benchmark_utils=None
 ):
     """Create Benchmark in a temporary folder, for test purposes.
 
@@ -44,6 +45,7 @@ def temp_benchmark(
     config: str | dict(fname->content) | None (default=None)
         Mapping between filenames and contents. If only one content is provided
         it will be written in `config.yml`. If None, no config file is created.
+    benchmark_utils: dict(fname->str) | None (default=None)
     """
     if objective is None:
         objective = dummy_objective
@@ -61,14 +63,16 @@ def temp_benchmark(
         temp_path = Path(tempdir)
         (temp_path / "solvers").mkdir()
         (temp_path / "datasets").mkdir()
-        with open(temp_path / "objective.py", "w") as f:
+        with open(temp_path / "objective.py", "w", encoding='utf-8') as f:
             f.write(inspect.cleandoc(objective))
         for idx, solver in enumerate(solvers):
-            with open(temp_path / "solvers" / f"solver_{idx}.py", "w") as f:
+            with open(temp_path / "solvers" / f"solver_{idx}.py", "w",
+                      encoding='utf-8') as f:
                 f.write(inspect.cleandoc(solver))
 
         for idx, dataset in enumerate(datasets):
-            with open(temp_path / "datasets" / f"dataset_{idx}.py", "w") as f:
+            with open(temp_path / "datasets" / f"dataset_{idx}.py", "w",
+                      encoding='utf-8') as f:
                 f.write(inspect.cleandoc(dataset))
 
         if config is not None:
@@ -78,5 +82,14 @@ def temp_benchmark(
                 raise ValueError("config should either be a string or a dict.")
             for fname, content in config.items():
                 (temp_path / fname).write_text(inspect.cleandoc(content))
+
+        if benchmark_utils is not None:
+            benchmark_utils_dir = (temp_path / "benchmark_utils")
+            benchmark_utils_dir.mkdir()
+            (benchmark_utils_dir / "__init__.py").touch()
+            for fname, content in benchmark_utils.items():
+                fname = (benchmark_utils_dir / fname).with_suffix(".py")
+                with open(fname, "w") as f:
+                    f.write(inspect.cleandoc(content))
 
         yield Benchmark(temp_path)

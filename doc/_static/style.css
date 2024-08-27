@@ -11,6 +11,59 @@ h2, h4 {
     height: 100%;
 }
 
+blockquote {
+    margin: 0 0 4px !important;
+}
+
+code {
+    color: #49759c !important;
+    background-color: #f3f5f9 !important;
+}
+
+section {
+    text-align: justify;
+}
+
+.alert-info {
+    background-color: #adb8cb !important;
+    border-color: #adb8cb !important;
+    color: #2c3e50 !important;
+}
+
+.method {
+    border-top: 3px solid #d0d0d0;
+    padding-top: 10px;
+}
+
+.function dt {
+    padding-top: 150px;
+    margin-top: -150px;
+    -webkit-background-clip: content-box;
+    background-clip: content-box;
+}
+
+#sidebar {
+    text-overflow: ellipsis;
+    max-height: 80%;
+    overflow-y: auto;
+}
+
+/* Make the sidebar table of content more compact and with larger indent */
+.bs-sidenav .nav .nav > li > a {
+    padding-left: 30px;
+    padding-top: 1px;
+    padding-bottom: 1px;
+}
+.bs-sidenav .nav .nav .nav > li > a {
+    padding-left: 50px;
+    padding-top: 1px;
+    padding-bottom: 1px;
+}
+.bs-sidenav .nav .nav .nav .nav > li > a {
+    padding-left: 70px;
+    padding-top: 1px;
+    padding-bottom: 1px;
+}
 .pre {
     color: #D05336;
 }

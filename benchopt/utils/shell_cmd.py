@@ -1,12 +1,16 @@
 import os
-import tempfile
 import subprocess
 
 from ..config import DEBUG
 from ..config import get_setting
 
+from benchopt.utils.misc import NamedTemporaryFile
+
 
 SHELL = get_setting('shell')
+
+IS_FISH = 'fish' in f"{SHELL}"
+IS_CMD = 'cmd' in f"{SHELL}"
 
 
 def _run_shell(script, raise_on_error=None, capture_stdout=True,
@@ -43,11 +47,23 @@ def _run_shell(script, raise_on_error=None, capture_stdout=True,
         )
 
     # Make sure the script fail at first failure
-    fast_failure_script = f"set -e\n{script}"
+    if IS_FISH:
+        fast_failure_script = f"begin; {script}; or exit 1; end"
+    elif IS_CMD:
+        fast_failure_script = '\n'.join([
+            f"{step}\nif %errorlevel% neq 0 exit %ERRORLEVEL%\n"
+            if step.strip() else ""
+            for step in script.split("\n")
+        ])
+        fast_failure_script = f"@echo off\n{fast_failure_script}"
+    else:
+        fast_failure_script = f"set -e\n{script}"
 
     # Use a TemporaryFile to make sure this file is cleaned up at
     # the end of this function.
-    tmp = tempfile.NamedTemporaryFile(mode="w+")
+    tmp = NamedTemporaryFile(
+        mode="w+", suffix=".sh" if not IS_CMD else ".bat"
+    )
     tmp.write(fast_failure_script)
     tmp.flush()
 
@@ -57,10 +73,12 @@ def _run_shell(script, raise_on_error=None, capture_stdout=True,
     if raise_on_error is True:
         raise_on_error = "{output}"
 
+    command = f'{SHELL} "{tmp.name}"'
+
     if capture_stdout:
-        exit_code, output = subprocess.getstatusoutput([f"{SHELL} {tmp.name}"])
+        exit_code, output = subprocess.getstatusoutput(command)
     else:
-        exit_code = os.system(f"{SHELL} {tmp.name}")
+        exit_code = os.system(command)
         output = ""
     if raise_on_error is not None and exit_code != 0:
         if isinstance(raise_on_error, str):
@@ -110,21 +128,36 @@ def _run_shell_in_conda_env(script, env_name=None, raise_on_error=None,
     if env_name not in [None, "False"]:
         # first line to use conda activate in bash script
         # Add necessary calls to make the script run in conda env.
-        script = (
-            # Make sure R_HOME is never passed down to subprocesses in
-            # different conda env as it might lead to trying to load packages
-            # from the wrong R-environment.
-            '# Setup conda\nunset R_HOME\n'
+        if IS_CMD:
+            # Windows specific handling
+            script = (
+                # Make sure R_HOME is unset in Windows to avoid conflicts
+                'SET "R_HOME="\n'
 
-            # Run hook to setup conda and activate the env.
-            # first line to use conda activate in bash script
-            # see https://github.com/conda/conda/issues/7980
-            f'eval "$(conda shell.bash hook)"\n'
-            f'conda activate {env_name}\n\n'
+                # Activate the conda environment using `CALL`
+                # to make sure it affects the current session
+                f'CALL conda activate "{env_name}"\n\n'
 
-            # Run the actual script
-            f'# Run script\n{script}'
-        )
+                # Run the actual script
+                f'{script}'
+            )
+        else:
+            script = (
+                # Make sure R_HOME is never passed down to subprocesses in
+                # different conda env as it might lead
+                # to trying to load packages
+                # from the wrong R-environment.
+                '# Setup conda\nunset R_HOME\n'
+
+                # Run hook to setup conda and activate the env.
+                # first line to use conda activate in bash script
+                # see https://github.com/conda/conda/issues/7980
+                f'eval "$(conda shell.bash hook)"\n'
+                f'conda activate "{env_name}"\n\n'
+
+                # Run the actual script
+                f'# Run script\n{script}'
+            )
 
     return _run_shell(
         script, raise_on_error=raise_on_error,

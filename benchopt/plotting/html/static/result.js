@@ -5,9 +5,9 @@ const NON_CONVERGENT_COLOR = 'rgba(0.8627, 0.8627, 0.8627)'
  * STATE MANAGEMENT
  *
  * The state represent the plot state. It's an object
- * that is stored into the window.state variable.
+ * that is stored into the window._state variable.
  *
- * Do not manually update window.state,
+ * Do not manually update window._state,
  * instead, foreach state modification,
  * you shoud call the setState() function
  * to keep the plot in sync with its state.
@@ -20,6 +20,7 @@ const NON_CONVERGENT_COLOR = 'rgba(0.8627, 0.8627, 0.8627)'
  *   - scale (string)
  *   - with_quantiles (boolean)
  *   - xaxis_type (string)
+ *   - yaxis_type (string)
  *   - hidden_solvers (array)
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
@@ -31,25 +32,25 @@ const NON_CONVERGENT_COLOR = 'rgba(0.8627, 0.8627, 0.8627)'
  * @param {Object} partialState
  */
 const setState = (partialState) => {
-  window.state = {...state(), ...partialState};
-  displayScatterElements(!isBarChart());
+  window._state = {...state(), ...partialState};
 
-  // TODO: `listIdXaxisSelection` to be removed after
-  // implementing responsiveness through breakpoints
-  // and removing content duplication between big screen and mobile
-  let listIdXaxisSelection = ["change_xaxis_type", "change_xaxis_type_mobile"];
-  listIdXaxisSelection.forEach(idXaxisSelection => updateXaxis(idXaxisSelection))
-
-  makePlot();
-  makeLegend();
+  renderSidebar();
+  renderPlot();
+  renderLegend();
 }
 
 /**
- * Retrieve the state object from window.state
+ * Retrieve the state object from window._state
  *
  * @returns Object
  */
-const state = () => window.state;
+const state = (key = undefined) => {
+  if (key) {
+    return window._state[key];
+  }
+
+  return window._state;
+}
 
 /**
  * Mapping between selectors and configuration
@@ -62,6 +63,7 @@ const config_mapping = {
   'scale': 'change_scaling',
   'with_quantiles': 'change_shades',
   'xaxis_type':'change_xaxis_type',
+  'yaxis_type':'change_yaxis_type',
 };
 
 /*
@@ -76,13 +78,47 @@ const config_mapping = {
 /**
  * Create/Update the plot.
  */
-const makePlot = () => {
+const renderPlot = () => {
   const div = document.getElementById('unique_plot');
-  const data = isBarChart() ? getBarData() : getScatterCurves();
-  const layout = isBarChart() ? getBarChartLayout() : getScatterChartLayout();
+  const data = getChartData();
+  const layout = getLayout();
 
   Plotly.react(div, data, layout);
 };
+
+/**
+ * Returns data formatted for Plotly.
+ *
+ * @returns {Array|*[]}
+ */
+const getChartData = () => {
+  if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve'])) {
+    return getScatterCurves();
+  } else if (isChart('bar_chart')) {
+    return getBarData();
+  } else if (isChart('boxplot')) {
+    return getBoxplotData();
+  }
+
+  throw new Error('Unknown plot kind.');
+}
+
+/**
+ * Returns layout object according to the plot kind.
+ *
+ * @returns Object
+ */
+const getLayout = () => {
+  if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve'])) {
+    return getScatterChartLayout();
+  } else if (isChart('bar_chart')) {
+    return getBarChartLayout();
+  } else if (isChart('boxplot')) {
+    return getBoxplotChartLayout();
+  }
+
+  throw new Error('Unknown plot kind.');
+}
 
 /**
  * Gives the data formatted for plotlyJS bar chart.
@@ -132,6 +168,57 @@ const getBarData = () => {
   return barData;
 };
 
+const getBoxplotData = () => {
+  return state('xaxis_type') === 'Solver' ? getSolverBoxplotData() : getIterationBoxplotData();
+}
+
+const getSolverBoxplotData = () => {
+  const boxplotData = [];
+
+  getSolvers().forEach(solver => {
+    boxplotData.push({
+      y: state("yaxis_type") === 'time' ? data(solver).boxplot.by_solver.final_times : data(solver).boxplot.by_solver.final_objective_value,
+      type: 'box',
+      name: solver,
+    });
+  });
+
+  return boxplotData
+}
+
+const getIterationBoxplotData = () => {
+  const boxplotData = [];
+
+  getSolvers().forEach(solver => {
+
+    // Build x
+    let x = [];
+    const iterations = data().solvers[solver].boxplot.by_iteration.times;
+
+    for (let iteration = 0; iteration < iterations.length; iteration++) {
+      for (let repetition = 0; repetition < iterations[iteration].length; repetition++) {
+        x.push(iteration)
+      }
+    }
+
+    let y = [];
+    let values = state("yaxis_type") === 'time' ? data(solver).boxplot.by_iteration.times : data(solver).boxplot.by_iteration.objective;
+    for (let iteration = 0; iteration < iterations.length; iteration++) {
+      for (let repetition = 0; repetition < iterations[iteration].length; repetition++) {
+        y.push(values[iteration][repetition])
+      }
+    }
+
+    boxplotData.push({
+      y: y,
+      x: x,
+      type: 'box',
+    });
+  });
+
+  return boxplotData
+}
+
 /**
  * Gives the data formatted for plotlyJS scatter chart.
  *
@@ -145,7 +232,7 @@ const getScatterCurves = () => {
   let xaxisType = state().xaxis_type;
 
   getSolvers().forEach(solver => {
-    solverSamplingStrategy = data(solver)['sampling_strategy'];
+    const solverSamplingStrategy = data(solver)['sampling_strategy'];
 
     // plot only solvers that were stopped using xaxis type
     // plot all solver if xaxis type is `time`
@@ -153,7 +240,7 @@ const getScatterCurves = () => {
       return
     }
 
-    ScatterXaxisProperty = xaxisType === "Time" ? 'x' : 'stop_val';
+    const ScatterXaxisProperty = xaxisType === "Time" ? 'x' : 'stop_val';
 
     curves.push({
       type: 'scatter',
@@ -233,15 +320,19 @@ const get_lim_plotly = (lim, ax) =>{
   };
   return lim;
 };
-const get_lim_config = (lim, ax) =>{
+
+const get_lim_config = (lim, ax) => {
   if(getScale()[ax + 'axis'] == 'log'){
     lim = [Math.pow(10, lim[0]), Math.pow(10, lim[1])]
   };
   return lim;
 };
 
+const setConfig = (config_item) => {
+  if (!config_item) {
+    return;
+  }
 
-const setConfig = (config_item) =>{
   // Retrieve the name of the config.
   let config_name = config_item.textContent;
   // Select on mobile version
@@ -264,9 +355,9 @@ const setConfig = (config_item) =>{
     const lims = ['xlim', 'ylim', 'hidden_solvers']
     for(let key in config_mapping){
       if (key in config){
-        value = config[key];
+        const value = config[key];
         document.getElementById(config_mapping[key]).value = value;
-        if (key == "kind"){
+        if (key === "kind"){
           key = "plot_kind";
         }
         update[key] = value;
@@ -282,17 +373,15 @@ const setConfig = (config_item) =>{
     let layout = {};
     for(const ax of ['x', 'y']){
       let lim = ax + 'lim';
-      if (config.hasOwnProperty(lim) & (config[lim] != null)){
+      if (config.hasOwnProperty(lim) & (config[lim] != null)) {
         layout[ax +'axis.range'] = get_lim_plotly(config[lim], ax);
-      };
-    };
+      }
+    }
 
     // update the plot
-    const div = document.getElementById('unique_plot');
-    Plotly.relayout(div, layout);
+    renderPlot();
   }
 };
-
 
 const saveView = () => {
   let n_configs = Object.keys(window.metadata.plot_configs).length;
@@ -302,10 +391,9 @@ const saveView = () => {
     return;
   }
 
-  // Retrieve the drop down menue selected values
+  // Retrieve the dropdown menu selected values
   let config = {};
   for(let key in config_mapping) {
-    value = config[key];
     config[key] = document.getElementById(config_mapping[key]).value;
   }
 
@@ -362,7 +450,6 @@ const downloadBlob = (blob, name) => {
 
   // To prevent the screen from going up when the user clicks on the button
   return false;
-
 };
 
 const exportConfigs = () => {
@@ -401,7 +488,7 @@ const exportHTML = () => {
  * on the fly.
  *
  * WARNING : If you add a new transformer function,
- * don't forget to register it in the object : window.tranformers,
+ * don't forget to register it in the object : window.transformers,
  * at the end of this section.
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
@@ -467,6 +554,135 @@ window.transformers = {
 
 /*
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * LEFT SIDEBAR MANAGEMENT
+ *
+ * Functions that control the left sidebar.
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
+
+/**
+ * Render sidebar
+ */
+const renderSidebar = () => {
+  renderObjectiveColumnSelector();
+  renderScaleSelector();
+  renderXAxisTypeSelector();
+  renderYAxisTypeSelector();
+  renderWithQuantilesToggle();
+  mapSelectorsToState();
+}
+
+/**
+ * Render Objective Column selector
+ */
+const renderObjectiveColumnSelector = () => {
+  if (isChart('boxplot') && state('yaxis_type') === 'time') {
+    hide(document.querySelectorAll("#objective-column-form-group"));
+  } else {
+    show(document.querySelectorAll("#objective-column-form-group"), 'block');
+  }
+};
+
+/**
+ * Render Scale selector
+ */
+const renderScaleSelector = () => {
+  if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve', 'boxplot'])) {
+    show(document.querySelectorAll("#scale-form-group"), 'block');
+  } else {
+    hide(document.querySelectorAll("#scale-form-group"));
+  }
+
+  if (isChart('boxplot')) {
+    hide(document.querySelectorAll(".other_plot_option"));
+    show(document.querySelectorAll(".boxplot_option"));
+  } else {
+    hide(document.querySelectorAll(".boxplot_option"));
+    show(document.querySelectorAll(".other_plot_option"));
+  }
+};
+
+/**
+ * Render WithQuantile toggle
+ */
+const renderWithQuantilesToggle = () => {
+  if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve'])) {
+    show(document.querySelectorAll("#change-shades-form-group"), 'flex');
+  } else {
+    hide(document.querySelectorAll("#change-shades-form-group"));
+  }
+};
+
+/**
+ * Render xaxis type selector
+ */
+const renderXAxisTypeSelector = () => {
+  if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve', 'boxplot'])) {
+    show(document.querySelectorAll("#xaxis-type-form-group"), 'block');
+  } else {
+    hide(document.querySelectorAll("#xaxis-type-form-group"));
+    return;
+  }
+
+  // One for desktop and one for mobile
+  xAxisTypeSelectors().forEach(selector => {
+    const optionToHide = isChart('boxplot') ? "Time" : "Solver";
+    hide(xAxisTypeOption(optionToHide));
+
+    const optionToShow = isChart('boxplot') ? "Solver" : "Time";
+    show(xAxisTypeOption(optionToShow));
+
+    if (isChart('boxplot') || isIterationSamplingStrategy()) {
+      show(xAxisTypeOption('Iteration'));
+    }
+  });
+
+  // X axis type 'Time' does not exist for boxplot,
+  // it only can be one of : 'Solver', 'Iteration',
+  // so we have to change its value with an allowed value.
+  // It's the same thing if we change to curve plot.
+  if (isChart('boxplot') && state().xaxis_type === 'Time') {
+    setState({xaxis_type: 'Solver'});
+  } else if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve']) && state().xaxis_type === 'Solver') {
+    setState({xaxis_type: 'Time'});
+  }
+};
+
+/**
+ * Render yaxis type selector
+ */
+const renderYAxisTypeSelector = () => {
+  if (isChart('boxplot')) {
+    show(document.querySelectorAll("#yaxis-type-form-group"), 'block');
+  } else {
+    hide(document.querySelectorAll("#yaxis-type-form-group"));
+  }
+};
+
+const xAxisTypeSelectors = () => {
+  return document.querySelectorAll("#change_xaxis_type, #change_xaxis_type_mobile");
+};
+
+const xAxisTypeOption = (type) => {
+  return document.querySelectorAll(
+      `#change_xaxis_type [value="${type}"], #change_xaxis_type_mobile [value="${type}"]`
+  );
+};
+
+const mapSelectorsToState = () => {
+  const currentState = state();
+
+  document.getElementById('dataset_selector').value = currentState.dataset;
+  document.getElementById('objective_selector').value = currentState.objective;
+  document.getElementById('objective_column').value = currentState.objective_column;
+  document.getElementById('plot_kind').value = currentState.plot_kind;
+  document.getElementById('change_scaling').value = currentState.scale;
+  document.getElementById('change_xaxis_type').value = currentState.xaxis_type;
+  document.getElementById('change_shades').checked = currentState.with_quantiles;
+};
+
+/*
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * TOOLS
  *
  * Various functions to simplify life.
@@ -475,13 +691,19 @@ window.transformers = {
 
 const data = (solver = null) => {
   return solver ?
-    window.data[state().dataset][state().objective][state().objective_column].solvers[solver]:
-    window.data[state().dataset][state().objective][state().objective_column]
+    window._data[state().dataset][state().objective][state().objective_column].solvers[solver]:
+    window._data[state().dataset][state().objective][state().objective_column]
 }
 
 const getSolvers = () => Object.keys(data().solvers);
 
-const isBarChart = () => state().plot_kind === 'bar_chart';
+const isChart = chart => {
+  if (typeof chart === 'string' || chart instanceof String) {
+    chart = [chart]
+  }
+
+  return chart.includes(state().plot_kind);
+}
 
 const isVisible = solver => !state().hidden_solvers.includes(solver);
 
@@ -507,18 +729,6 @@ const isAvailable = () => {
   return !isNotAvailable;
 }
 
-const displayScatterElements = shouldBeVisible => {
-  if (shouldBeVisible) {
-    document.getElementById('scale-form-group').style.display = 'inline-block';
-    document.getElementById('legend_container').style.display = 'block';
-    document.getElementById('plot_legend').style.display = 'flex';
-  } else {
-    document.getElementById('scale-form-group').style.display = 'none';
-    document.getElementById('legend_container').style.display = 'none';
-    document.getElementById('plot_legend').style.display = 'none';
-  }
-};
-
 const barDataToArrays = () => {
   const colors = [], texts = [], x = [], y = [];
 
@@ -539,6 +749,11 @@ const getScale = () => {
 const _getScale = (scale) => {
   switch (scale) {
     case 'loglog':
+      return {
+        xaxis: 'log',
+        yaxis: 'log',
+      };
+    case 'log': // used for boxplot
       return {
         xaxis: 'log',
         yaxis: 'log',
@@ -627,7 +842,6 @@ const getScatterChartLayout = () => {
 };
 
 const getBarChartLayout = () => {
-
   const layout = {
     autosize: !isSmallScreen(),
     modebar: {
@@ -667,13 +881,42 @@ const getBarChartLayout = () => {
         size: 32,
       }
     }];
+  }
+
+  return layout;
+};
+
+const getBoxplotChartLayout = () => {
+  const layout = {
+    autosize: !isSmallScreen(),
+    modebar: {
+      orientation: 'v',
+    },
+    yaxis: {
+      type: getScale().yaxis,
+      title: getYLabel(),
+      tickformat: '.1e',
+      gridcolor: '#ffffff',
+    },
+    xaxis: {
+      tickangle: -60,
+    },
+    showlegend: false,
+    title: `${state().objective}<br />Data: ${state().dataset}`,
+    plot_bgcolor: '#e5ecf6',
   };
+
+  if (isSmallScreen()) {
+    layout.width = 900;
+    layout.height = window.screen.availHeight - 200;
+    layout.dragmode = false;
+  }
 
   return layout;
 };
 
 const getYLabel = () => {
-  switch(state().plot_kind) {
+  switch(state('plot_kind')) {
     case 'objective_curve':
       return 'F(x)';
     case 'suboptimality_curve':
@@ -682,9 +925,54 @@ const getYLabel = () => {
       return 'F(x) - F(x*) / F(x0) - F(x*)'
     case 'bar_chart':
       return 'Time [sec]';
+    case 'boxplot':
+      return state('yaxis_type') === 'time' ?
+          'Time [sec]'
+          : (state('xaxis_type') === "Solver" ? "Final " : "") + state('objective_column');
     default:
       return 'unknown';
-  };
+  }
+};
+
+/**
+ * Returns true if sampling strategy 'Iteration' value is in data
+ *
+ * @returns {boolean}
+ */
+const isIterationSamplingStrategy = () => {
+  let options = new Set(['Time']);
+  // get solvers run for selected (dataset, objective, objective colum)
+  // and select their unique sampling strategies
+  getSolvers().forEach(solver => options.add(data().solvers[solver].sampling_strategy));
+
+  return options.has('Iteration')
+};
+
+/**
+ * Hide an HTML element by applying a none value to its display style property.
+ *
+ * @param HTMLElements
+ */
+const hide = HTMLElements => {
+  if (HTMLElements instanceof Element) {
+    HTMLElements = [HTMLElements]
+  }
+
+  HTMLElements.forEach(h => h.style.display = 'none');
+};
+
+/**
+ * Show an HTML element by applying an initial value to its display style property.
+ *
+ * @param HTMLElements
+ * @param style
+ */
+const show = (HTMLElements, style = 'initial') => {
+  if (HTMLElements instanceof Element) {
+    HTMLElements = [HTMLElements]
+  }
+
+  HTMLElements.forEach(h => h.style.display = style);
 };
 
 /*
@@ -699,7 +987,7 @@ const getSolverFromEvent = event => {
   const target = event.currentTarget;
 
   for (let i = 0; i < target.children.length; i++) {
-    if (target.children[i].className == 'solver') {
+    if (target.children[i].className === 'solver') {
       return target.children[i].firstChild.nodeValue;
     }
   }
@@ -742,7 +1030,7 @@ const handleSolverDoubleClick = solver => {
   hideAllSolversExcept(solver);
 };
 
-/**
+/*
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * MANAGE PLOT LEGEND
  *
@@ -754,13 +1042,22 @@ const handleSolverDoubleClick = solver => {
 /**
  * Creates the legend at the bottom of the plot.
  */
-const makeLegend = () => {
+const renderLegend = () => {
+  const legendContainer = document.getElementById('legend_container')
+
+  if (!isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve'])) {
+    hide(legendContainer);
+    return;
+  } else {
+    show(legendContainer);
+  }
+
   const legend = document.getElementById('plot_legend');
 
   legend.innerHTML = '';
   const solversDescription = window.metadata["solvers_description"];
 
-  Object.keys(data().solvers).forEach(solver => {
+  getSolvers().forEach(solver => {
     const color = data().solvers[solver].color;
     const symbolNumber = data().solvers[solver].marker;
 
@@ -877,35 +1174,6 @@ function createSolverDescription(legendItem, { description }) {
   descriptionContainer.prepend(legendItem);
 
   return descriptionContainer;
-}
-
-
-function updateXaxis(idXaxisTypeSelection) {
-  let selection = document.getElementById(idXaxisTypeSelection);
-  selection.innerHTML = "";
-
-  let xaxisType = state()["xaxis_type"];
-  let options = new Set(['Time']);
-
-  // get solvers run for selected (dataset, objective, objective colum)
-  // and select their unique sampling strategies
-  let solvers = data()['solvers'];
-  Object.values(solvers).forEach(solver => options.add(solver['sampling_strategy']));
-
-  // create xaxis type options
-  options.forEach(option => {
-    element = document.createElement('option');
-    element.setAttribute('value', option);
-    element.innerText = option;
-
-    selection.append(element);
-  });
-
-  // set selected value
-  if (!options.has(xaxisType)){
-    alert("Unknown xaxis type '"+ xaxisType + "'.");
-  }
-  selection.value = options.has(xaxisType) ? xaxisType : "Time";
 }
 
 /**
