@@ -35,4 +35,4 @@ Frequently asked questions (FAQ)
 
 .. dropdown:: Can I run a benchmark in parallel?
 
-    Benchopt allows to run different benchmarked methods in parallel, either with ``joblib`` using ``-j 4`` to run on multiple CPUs of a single machine or using SLURM, as described in :ref:`slurm_run`.
+    Benchopt allows to run different benchmarked methods in parallel, either with ``joblib`` using ``-j 4`` to run on multiple CPUs of a single machine or with more advanced distributed backend, detailed in :ref:`parallel_run`.

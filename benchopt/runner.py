@@ -4,7 +4,7 @@ import pickle
 
 from datetime import datetime
 
-from joblib import Parallel, delayed, hash
+from joblib import hash
 
 from .callback import _Callback
 from .benchmark import Benchmark
@@ -12,6 +12,7 @@ from .utils.sys_info import get_sys_info
 from .utils.files import uniquify_results
 from .utils.pdb_helpers import exception_handler
 from .utils.terminal_output import TerminalOutput
+from .utils.parallel_backends import parallel_run
 
 
 FAILURE_STATUS = ['diverged', 'error', 'interrupted']
@@ -300,11 +301,12 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
     return run_statistics
 
 
-def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
-                   datasets=None, objectives=None, max_runs=10,
-                   n_repetitions=1, timeout=None, n_jobs=1, slurm=None,
-                   plot_result=True, display=True, html=True,  collect=False,
-                   show_progress=True, pdb=False, output_name="None"):
+def run_benchmark(benchmark, solvers=None, forced_solvers=None,
+                  datasets=None, objectives=None,
+                  max_runs=10, n_repetitions=1, timeout=100,
+                  plot_result=True, display=True, html=True, collect=False,
+                  output="None", parallel_config=None, show_progress=True,
+                  pdb=False):
     """Run full benchmark.
 
     Parameters
@@ -330,11 +332,10 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
         The number of repetitions to run. Defaults to 1.
     timeout : float
         The maximum duration in seconds of the solver run.
-    n_jobs : int
-        Maximal number of workers to use to run the benchmark in parallel.
-    slurm : Path | None
-        If not None, launch the job on a slurm cluster using the file to get
-        the cluster config parameters.
+    parallel_config : dict | None
+        If not None, launch the job in parallel. The provided config serves to
+        set up parallelism using ``joblib.parallel_backend`` or ``submitit``.
+        See :ref:`parallel_run` for detailed description.
     plot_result : bool
         If set to True (default), generate the result plot and save them in
         the benchmark directory.
@@ -351,7 +352,7 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
         If show_progress is set to True, display the progress of the benchmark.
     pdb : bool
         If pdb is set to True, open a debugger on error.
-    output_name : str
+    output : str
         Filename for the parquet output. If given, the results will
         be stored at <BENCHMARK>/outputs/<filename>.parquet.
 
@@ -377,17 +378,11 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
         timeout=timeout, pdb=pdb, collect=collect
     )
 
-    if slurm is not None and not collect:
-        from .utils.slurm_executor import run_on_slurm
-        results = run_on_slurm(
-            benchmark, slurm, run_one_solver, common_kwargs,
-            all_runs
-        )
-    else:
-        results = Parallel(n_jobs=n_jobs)(
-            delayed(run_one_solver)(**common_kwargs, **kwargs)
-            for kwargs in all_runs
-        )
+    # TODO: Verify that "collect" still works
+    results = parallel_run(
+        benchmark, run_one_solver, common_kwargs, all_runs,
+        config=parallel_config
+    )
 
     run_statistics = []
     for curve in results:
@@ -402,10 +397,10 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
     # Save output in parquet file in the benchmark folder
     timestamp = datetime.now().strftime('%Y-%m-%d_%Hh%Mm%S')
     output_dir = benchmark.get_output_folder()
-    if output_name == "None":
+    if output == "None":
         save_file = output_dir / f'benchopt_run_{timestamp}.parquet'
     else:
-        save_file = output_dir / f"{output_name}.parquet"
+        save_file = output_dir / f"{output}.parquet"
         save_file = uniquify_results(save_file)
     try:
         df.to_parquet(save_file)
@@ -423,11 +418,11 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
     return save_file
 
 
-def run_benchmark(benchmark_path, solver_names=None, forced_solvers=(),
-                  dataset_names=None, objective_filters=None, max_runs=10,
-                  n_repetitions=1, timeout=None, n_jobs=1, slurm=None,
-                  plot_result=True, display=True, html=True,  collect=False,
-                  show_progress=True, pdb=False, output_name="None"):
+def _run_benchmark(benchmark_path, solver_names=None, forced_solvers=(),
+                   dataset_names=None, objective_filters=None, max_runs=10,
+                   n_repetitions=1, timeout=None, n_jobs=1, slurm=None,
+                   plot_result=True, display=True, html=True,  collect=False,
+                   show_progress=True, pdb=False, output_name="None"):
     """Run full benchmark.
 
     Parameters
