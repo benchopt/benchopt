@@ -96,7 +96,7 @@ const getChartData = () => {
     return getScatterCurves();
   } else if (isChart('bar_chart')) {
     return getBarData();
-  } else if (isChart('boxplot')) {
+  } else if (isChart('boxplot_chart')) {
     return getBoxplotData();
   }
 
@@ -113,7 +113,7 @@ const getLayout = () => {
     return getScatterChartLayout();
   } else if (isChart('bar_chart')) {
     return getBarChartLayout();
-  } else if (isChart('boxplot')) {
+  } else if (isChart('boxplot_chart')) {
     return getBoxplotChartLayout();
   }
 
@@ -235,12 +235,16 @@ const getScatterCurves = () => {
     const solverSamplingStrategy = data(solver)['sampling_strategy'];
 
     // plot only solvers that were stopped using xaxis type
-    // plot all solver if xaxis type is `time`
-    if(xaxisType !== "Time" && solverSamplingStrategy !== xaxisType) {
+    if(xaxisType !== "Time" && xaxisType !== "Energy consumption (Joules)" && solverSamplingStrategy !== xaxisType) {
       return
     }
 
-    const ScatterXaxisProperty = xaxisType === "Time" ? 'x' : 'stop_val';
+    let ScatterXaxisProperty = xaxisType === "Time" || xaxisType === "Energy consumption (Joules)" ? 'x' : 'stop_val';
+    let xValues = data(solver).scatter[ScatterXaxisProperty];
+
+    if (xaxisType === "Energy consumption (Joules)") {
+      xValues = xValues.map(value => value * 15); // 15 is the TDP
+    }
 
     curves.push({
       type: 'scatter',
@@ -256,18 +260,26 @@ const getScatterCurves = () => {
       legendgroup: solver,
       hovertemplate: solver + ' <br> (%{x:.1e},%{y:.1e}) <extra></extra>',
       visible: isVisible(solver) ? true : 'legendonly',
-      x: data(solver).scatter[ScatterXaxisProperty],
+      x: xValues,
       y: useTransformer(data(solver).scatter.y, 'y', data().transformers),
     });
 
     // skip plotting quantiles if xaxis is not time
     // as stop_val are predefined and hence deterministic
-    if(xaxisType !== "Time") {
+    if(xaxisType !== "Time" && xaxisType !== "Energy consumption (Joules)") {
       return
     }
 
     if (state().with_quantiles) {
       // Add shaded area for each solver, with proper style and visibility.
+
+      let q1Values = data(solver).scatter['q1'];
+      let q9Values = data(solver).scatter['q9'];
+
+      if (xaxisType === "Energy consumption (Joules)") {
+        q1Values = q1Values.map(value => value * 15); // 15 is the TDP
+        q9Values = q9Values.map(value => value * 15); // 15 is the TDP
+      }
 
       curves.push({
         type: 'scatter',
@@ -280,7 +292,7 @@ const getScatterCurves = () => {
         legendgroup: solver,
         hovertemplate: '(%{x:.1e},%{y:.1e}) <extra></extra>',
         visible: isVisible(solver) ? true : 'legendonly',
-        x: data(solver).scatter['q1'],
+        x: q1Values,
         y: useTransformer(data(solver).scatter.y, 'y', data().transformers),
       }, {
         type: 'scatter',
@@ -294,7 +306,7 @@ const getScatterCurves = () => {
         legendgroup: solver,
         hovertemplate: '(%{x:.1e},%{y:.1e}) <extra></extra>',
         visible: isVisible(solver) ? true : 'legendonly',
-        x: data(solver).scatter['q9'],
+        x: q9Values,
         y: useTransformer(data(solver).scatter.y, 'y', data().transformers),
       });
     }
@@ -576,7 +588,7 @@ const renderSidebar = () => {
  * Render Objective Column selector
  */
 const renderObjectiveColumnSelector = () => {
-  if (isChart('boxplot') && state('yaxis_type') === 'time') {
+  if (isChart('boxplot_chart') && state('yaxis_type') === 'time') {
     hide(document.querySelectorAll("#objective-column-form-group"));
   } else {
     show(document.querySelectorAll("#objective-column-form-group"), 'block');
@@ -587,13 +599,13 @@ const renderObjectiveColumnSelector = () => {
  * Render Scale selector
  */
 const renderScaleSelector = () => {
-  if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve', 'boxplot'])) {
+  if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve', 'boxplot_chart'])) {
     show(document.querySelectorAll("#scale-form-group"), 'block');
   } else {
     hide(document.querySelectorAll("#scale-form-group"));
   }
 
-  if (isChart('boxplot')) {
+  if (isChart('boxplot_chart')) {
     hide(document.querySelectorAll(".other_plot_option"));
     show(document.querySelectorAll(".boxplot_option"));
   } else {
@@ -617,42 +629,50 @@ const renderWithQuantilesToggle = () => {
  * Render xaxis type selector
  */
 const renderXAxisTypeSelector = () => {
-  if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve', 'boxplot'])) {
-    show(document.querySelectorAll("#xaxis-type-form-group"), 'block');
+  if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve', 'boxplot_chart'])) {
+      show(document.querySelectorAll("#xaxis-type-form-group"), 'block');
   } else {
-    hide(document.querySelectorAll("#xaxis-type-form-group"));
-    return;
+      hide(document.querySelectorAll("#xaxis-type-form-group"));
+      return;
   }
 
   // One for desktop and one for mobile
   xAxisTypeSelectors().forEach(selector => {
-    const optionToHide = isChart('boxplot') ? "Time" : "Solver";
-    hide(xAxisTypeOption(optionToHide));
+      const optionToHide = isChart('boxplot_chart') ? "Time" : "Solver";
+      hide(xAxisTypeOption(optionToHide));
 
-    const optionToShow = isChart('boxplot') ? "Solver" : "Time";
-    show(xAxisTypeOption(optionToShow));
+      const optionToShow = isChart('boxplot_chart') ? "Solver" : "Time";
+      show(xAxisTypeOption(optionToShow));
 
-    if (isChart('boxplot') || isIterationSamplingStrategy()) {
-      show(xAxisTypeOption('Iteration'));
-    }
+      if (isChart('boxplot_chart') || isIterationSamplingStrategy()) {
+          show(xAxisTypeOption('Iteration'));
+      }
+
+      if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve'])) {
+          show(xAxisTypeOption('Energy consumption (Joules)'));
+      } else {
+          hide(xAxisTypeOption('Energy consumption (Joules)'));
+      }
   });
 
   // X axis type 'Time' does not exist for boxplot,
   // it only can be one of : 'Solver', 'Iteration',
   // so we have to change its value with an allowed value.
   // It's the same thing if we change to curve plot.
-  if (isChart('boxplot') && state().xaxis_type === 'Time') {
-    setState({xaxis_type: 'Solver'});
+  if (isChart('boxplot_chart') && (state().xaxis_type === 'Time' || state().xaxis_type === 'Energy consumption (Joules)')) {
+      setState({xaxis_type: 'Solver'});
   } else if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve']) && state().xaxis_type === 'Solver') {
-    setState({xaxis_type: 'Time'});
+      setState({xaxis_type: 'Time'});
   }
 };
+
+
 
 /**
  * Render yaxis type selector
  */
 const renderYAxisTypeSelector = () => {
-  if (isChart('boxplot')) {
+  if (isChart('boxplot_chart')) {
     show(document.querySelectorAll("#yaxis-type-form-group"), 'block');
   } else {
     hide(document.querySelectorAll("#yaxis-type-form-group"));
@@ -925,7 +945,7 @@ const getYLabel = () => {
       return 'F(x) - F(x*) / F(x0) - F(x*)'
     case 'bar_chart':
       return 'Time [sec]';
-    case 'boxplot':
+    case 'boxplot_chart':
       return state('yaxis_type') === 'time' ?
           'Time [sec]'
           : (state('xaxis_type') === "Solver" ? "Final " : "") + state('objective_column');
