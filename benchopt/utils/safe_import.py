@@ -32,6 +32,7 @@ class MockLoader(Loader):
 class MockFinder(MetaPathFinder):
     def __init__(self):
         self.specs = list()
+        self.has_failed_import = False
 
     def find_spec(self, fullname, path, target=None):
         """
@@ -68,6 +69,7 @@ class MockFinder(MetaPathFinder):
             # so we return None
             return None
         except Exception:
+            self.has_failed_import = True
             return importlib.util.spec_from_loader(fullname,
                                                    MockLoader(fullname))
 
@@ -144,14 +146,11 @@ class safe_import_context:
 
     def __exit__(self, exc_type, exc_value, tb):
         if MOCK_ALL_IMPORT or MOCK_FAILED_IMPORT:
-            sys.meta_path.pop(0)
-            self.failed_import = True
-            self.import_error = exc_type, exc_value, tb
-
-        # Prevent import error from propagating and tag
-        if exc_type is not None and issubclass(exc_type, ImportError):
-            self.failed_import = True
-            self.import_error = exc_type, exc_value, tb
+            if isinstance(sys.meta_path[0], MockFinder):
+                if sys.meta_path[0].has_failed_import:
+                    self.failed_import = True
+                    self.import_error = exc_type, exc_value, tb
+                sys.meta_path.pop(0)
 
         if not RAISE_INSTALL_ERROR:
             self.record.__exit__(exc_type, exc_value, tb)
