@@ -155,5 +155,10 @@ class safe_import_context:
         if not RAISE_INSTALL_ERROR:
             self.record.__exit__(exc_type, exc_value, tb)
 
+        # Prevent import error from propagating and tag
+        if exc_type is not None and issubclass(exc_type, ImportError):
+            self.failed_import = True
+            self.import_error = exc_type, exc_value, tb
+
         # Returning True in __exit__ prevent error propagation
         return self.failed_import
