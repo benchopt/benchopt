@@ -13,7 +13,6 @@ from ..config import RAISE_INSTALL_ERROR
 
 
 MOCK_ALL_IMPORT = False
-MOCK_FAILED_IMPORT = False
 BENCHMARK_DIR = None
 PACKAGE_NAME = "benchmark_utils"
 
@@ -79,18 +78,10 @@ def mock_all_import():
     MOCK_ALL_IMPORT = True
 
 
-def mock_failed_import():
-    global MOCK_FAILED_IMPORT
-    MOCK_FAILED_IMPORT = True
-
-
 def _unmock_import():
     """Helper to reenable imports in tests."""
     global MOCK_ALL_IMPORT
     MOCK_ALL_IMPORT = False
-
-    global MOCK_FAILED_IMPORT
-    MOCK_FAILED_IMPORT = False
 
 
 def set_benchmark_module(benchmark_dir):
@@ -132,11 +123,11 @@ class safe_import_context:
         self.failed_import = False
         self.record = warnings.catch_warnings(record=True)
         self._benchmark_dir = BENCHMARK_DIR
+        self.benchopt_mock_finder = MockFinder()
 
     def __enter__(self):
         # Mock import to speed up import
-        if MOCK_ALL_IMPORT or MOCK_FAILED_IMPORT:
-            sys.meta_path.insert(0, MockFinder())
+        sys.meta_path.insert(0, self.benchopt_mock_finder)
 
         # Catch the import warning except if install errors are raised.
         if not RAISE_INSTALL_ERROR:
@@ -145,20 +136,17 @@ class safe_import_context:
         return self
 
     def __exit__(self, exc_type, exc_value, tb):
-        if MOCK_ALL_IMPORT or MOCK_FAILED_IMPORT:
-            if isinstance(sys.meta_path[0], MockFinder):
-                if sys.meta_path[0].has_failed_import:
-                    self.failed_import = True
-                    self.import_error = exc_type, exc_value, tb
-                sys.meta_path.pop(0)
+        if self.benchopt_mock_finder.has_failed_import:
+            self.failed_import = True
+            self.import_error = exc_type, exc_value, tb
+
+        for idx, meta_path in enumerate(sys.meta_path):
+            if isinstance(sys.meta_path[idx], MockFinder):
+                sys.meta_path.pop(idx)
+                break
 
         if not RAISE_INSTALL_ERROR:
             self.record.__exit__(exc_type, exc_value, tb)
-
-        # Prevent import error from propagating and tag
-        if exc_type is not None and issubclass(exc_type, ImportError):
-            self.failed_import = True
-            self.import_error = exc_type, exc_value, tb
 
         # Returning True in __exit__ prevent error propagation
         return self.failed_import
