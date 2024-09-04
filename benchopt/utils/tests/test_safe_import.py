@@ -1,5 +1,4 @@
 from benchopt.utils.safe_import import (mock_all_import,
-                                        mock_failed_import,
                                         _unmock_import,
                                         safe_import_context)
 from benchopt.utils.temp_benchmark import temp_benchmark
@@ -24,8 +23,6 @@ def test_mock_all_import():
 
 
 def test_mock_failed_import():
-    mock_failed_import()
-
     with safe_import_context():
         import unknown_module
         import this
@@ -35,8 +32,6 @@ def test_mock_failed_import():
 
     sys.modules.pop('unknown_module')
     sys.modules.pop('this')
-
-    _unmock_import()
 
 
 def test_mock_all_import_with_benchmark():
@@ -107,8 +102,6 @@ def test_mock_all_import_with_benchmark():
 
 
 def test_mock_failed_import_with_benchmark():
-    mock_failed_import()
-
     objective = """from benchopt import BaseObjective, safe_import_context
                 with safe_import_context() as import_ctx:
                     import unknown_module_objective
@@ -168,5 +161,3 @@ def test_mock_failed_import_with_benchmark():
         sys.modules.pop('this')
         sys.modules.pop('mailbox')
         sys.modules.pop('chunk')
-
-    _unmock_import()
