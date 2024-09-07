@@ -305,8 +305,8 @@ def info(benchmark, solver_names, dataset_names, env_name='False',
     print(f"Info regarding the benchmark '{benchmark.name}'")
 
     # validate solvers and datasets
-    benchmark.validate_dataset_patterns(dataset_names)
-    benchmark.validate_solver_patterns(solver_names)
+    benchmark.check_dataset_patterns(dataset_names)
+    benchmark.check_solver_patterns(solver_names)
 
     # get solvers and datasets in the benchmark
     all_solvers = benchmark.get_solvers()
