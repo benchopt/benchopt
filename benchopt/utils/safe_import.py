@@ -32,6 +32,8 @@ class MockFinder(MetaPathFinder):
     def __init__(self):
         self.specs = list()
         self.has_failed_import = False
+        self._import_errors = []
+        self._top_level_import = None
 
     def find_spec(self, fullname, path, target=None):
         """
@@ -57,20 +59,41 @@ class MockFinder(MetaPathFinder):
         if fullname in self.specs:
             return None
 
+        # Mock all imports if MOCK_ALL_IMPORT is True
+        if MOCK_ALL_IMPORT:
+            return importlib.util.spec_from_loader(
+                fullname, MockLoader(fullname)
+            )
+
+        # Otherwise, only mock the top level import when a failure occurs.
         try:
-            if MOCK_ALL_IMPORT:
-                raise ImportError
+            # Only mock the top level import in safe_import_context,
+            # to avoid edge effects with internal libraries imports.
+            if self._top_level_import is None:
+                self._top_level_import = fullname
+                sys.meta_path.remove(self)
 
             self.specs.append(fullname)
             # Check if we can import the module {fullname}
             importlib.import_module(fullname)
+
             # If the module can be imported, we let other finders to import it,
             # so we return None
             return None
-        except Exception:
-            self.has_failed_import = True
-            return importlib.util.spec_from_loader(fullname,
-                                                   MockLoader(fullname))
+        except Exception as e:
+            if RAISE_INSTALL_ERROR:
+                self.has_failed_import = True
+                raise e
+
+            # Log the error and mock the import object
+            self._import_errors.append((fullname, sys.exc_info()))
+            return importlib.util.spec_from_loader(
+                fullname, MockLoader(fullname)
+            )
+        finally:
+            if self._top_level_import == fullname:
+                self._top_level_import = None
+                sys.meta_path.insert(0, self)
 
 
 def mock_all_import():
@@ -120,14 +143,16 @@ class safe_import_context:
     """
 
     def __init__(self):
+        self.errors = []
         self.failed_import = False
+
         self.record = warnings.catch_warnings(record=True)
         self._benchmark_dir = BENCHMARK_DIR
-        self.benchopt_mock_finder = MockFinder()
+        self._mock_finder = MockFinder()
 
     def __enter__(self):
         # Mock import to speed up import
-        sys.meta_path.insert(0, self.benchopt_mock_finder)
+        sys.meta_path.insert(0, self._mock_finder)
 
         # Catch the import warning except if install errors are raised.
         if not RAISE_INSTALL_ERROR:
@@ -136,17 +161,12 @@ class safe_import_context:
         return self
 
     def __exit__(self, exc_type, exc_value, tb):
-        if self.benchopt_mock_finder.has_failed_import:
+        if self._mock_finder.has_failed_import:
             self.failed_import = True
-            self.import_error = exc_type, exc_value, tb
+            self.errors = self._mock_finder._import_errors
 
-        for idx, meta_path in enumerate(sys.meta_path):
-            if isinstance(sys.meta_path[idx], MockFinder):
-                sys.meta_path.pop(idx)
-                break
+        if self._mock_finder in sys.meta_path:
+            sys.meta_path.remove(self._mock_finder)
 
         if not RAISE_INSTALL_ERROR:
             self.record.__exit__(exc_type, exc_value, tb)
-
-        # Returning True in __exit__ prevent error propagation
-        return self.failed_import

@@ -26,7 +26,7 @@ class DependenciesMixin:
     #           with import_shell_cmd in the safe_import_context.
     install_cmd = "conda"
 
-    _error_displayed = False
+    _error_displayed = {}
 
     @classproperty
     def benchmark(cls):
@@ -67,16 +67,14 @@ class DependenciesMixin:
             returns True if no import failure has been detected.
         """
         if env_name is None:
-            if cls._import_ctx.failed_import:
-                exc_type, value, tb = cls._import_ctx.import_error
+            for pkg, (exc_type, value, tb) in cls._import_ctx.errors:
                 if raise_on_not_installed:
                     raise exc_type(value).with_traceback(tb)
-                if not cls._error_displayed and not quiet:
+                if not cls._error_displayed.get(pkg) and not quiet:
+                    print(f"Error while importing {pkg}:")
                     traceback.print_exception(exc_type, value, tb)
-                    cls._error_displayed = True
-                return False
-            else:
-                return True
+                    cls._error_displayed[pkg] = True
+            return cls._import_ctx.failed_import
         else:
             return (
                 _run_shell_in_conda_env(
