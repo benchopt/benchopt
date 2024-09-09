@@ -38,6 +38,7 @@ FIX
 - Fix the ``skip`` API for objectives that was leading to a display error.
   By `Thomas Moreau`_ (:gh:`763`)
 
+- Fix the ``info`` command By `Pierre-Antoine Comby`_ (:gh:`&67`)
 
 .. _changes_1_6:
 
