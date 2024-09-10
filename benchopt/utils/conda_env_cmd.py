@@ -191,15 +191,11 @@ def get_cmd_from_requirements(packages):
             "The use of ':' to specify the channel of a dependency is "
             "deprecated. Please use '::' instead.", DeprecationWarning
         )
+        packages = [pkg.replace(":", "::", 1) for pkg in packages]
 
     cmd = []
     conda_packages = [pkg for pkg in packages if not pkg.startswith('pip::')]
     if conda_packages:
-
-        conda_packages = [
-            pkg.replace(":", "::") if ":" in pkg and "::" not in pkg else pkg
-            for pkg in conda_packages
-        ]
         channels = ' '.join(set(
             f"-c {pkg.rsplit('::', 1)[0]}"
             for pkg in conda_packages if '::' in pkg
@@ -211,10 +207,8 @@ def get_cmd_from_requirements(packages):
             f"{CONDA_CMD} install --update-all -y {channels} {conda_packages}"
         )
 
-    # TODO: simplify in benchopt 1.7
     pip_packages = [
-        pkg.replace("pip::", "").replace("pip:", "")
-        for pkg in packages if pkg.startswith('pip:')
+        pkg.replace("pip::", "") for pkg in packages if pkg.startswith('pip::')
     ]
     if pip_packages:
         packages = ' '.join(pip_packages)
