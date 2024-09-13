@@ -2,6 +2,7 @@ import time
 
 import pytest
 import numpy as np
+import pandas as pd
 
 from benchopt.tests import TEST_DATASET
 from benchopt.tests import TEST_OBJECTIVE
@@ -378,48 +379,32 @@ def test_prefix_with_same_parameters():
         class Solver(BaseSolver):
             name = "solver1"
             sampling_strategy = 'iteration'
-            parameters={
-                "seed": [3, 27]
-            }
+            parameters = dict(seed=[3, 27])
             def set_objective(self, X, y): pass
             def run(self, n_iter): pass
             def get_result(self): return dict(beta=1)
     """
 
-    solver2 = """from benchopt import BaseSolver
-
-        class Solver(BaseSolver):
-            name = "solver2"
-            sampling_strategy = 'iteration'
-            parameters={
-                "seed": [3, 27]
-            }
-            def set_objective(self, X, y): pass
-            def run(self, n_iter): pass
-            def get_result(self): return dict(beta=1)
-    """
+    # Different name and extra parameter
+    solver2 = (
+        solver1.replace("solver1", "solver2")
+        .replace('seed=[3, 27]', 'seed=[2, 28], type=["s"]')
+    )
 
     dataset1 = """from benchopt import BaseDataset
 
         class Dataset(BaseDataset):
             name = "dataset1"
-            parameters={
-                "seed": [3, 27]
-            }
+            parameters = dict(seed=[3, 27])
             def get_data(self):
                 return dict(X=0, y=1)
     """
 
-    dataset2 = """from benchopt import BaseDataset
-
-        class Dataset(BaseDataset):
-            name = "dataset2"
-            parameters={
-                "seed": [3, 27]
-            }
-            def get_data(self):
-                return dict(X=0, y=1)
-    """
+    # Different name and extra parameter
+    dataset2 = (
+        dataset1.replace("dataset1", "dataset2")
+        .replace('seed=[3, 27]', 'seed=[2, 28], type=["d"]')
+    )
 
     objective = """from benchopt import BaseObjective
 
@@ -427,6 +412,7 @@ def test_prefix_with_same_parameters():
             name = "test_obj"
             min_benchopt_version = "0.0.0"
 
+            parameters = dict(test_p=[4])
             def set_data(self, X, y): pass
             def get_one_result(self): pass
             def evaluate_result(self, beta): return dict(value=1)
@@ -441,14 +427,29 @@ def test_prefix_with_same_parameters():
             str(benchmark.benchmark_dir),
             solver_names=["solver1", "solver2"],
             dataset_names=["dataset1", "dataset2"],
-            max_runs=2, n_repetitions=1, n_jobs=1, plot_result=False
+            max_runs=1, n_repetitions=1, n_jobs=1, plot_result=False
         )
 
-        import pandas as pd
+        df = pd.read_parquet(benchmark.get_result_file())
 
-        data = pd.read_parquet(benchmark.get_result_file())
+        assert "p_solver_seed" in df.columns
+        assert "p_solver_type" in df.columns
+        assert "p_dataset_seed" in df.columns
+        assert "p_dataset_type" in df.columns
+        assert "p_obj_test_p" in df.columns
 
-        assert "p_solver_solver1_seed" in data.columns
-        assert "p_solver_solver2_seed" in data.columns
-        assert "p_dataset_dataset1_seed" in data.columns
-        assert "p_dataset_dataset2_seed" in data.columns
+        assert df.query("p_solver_seed.isna()").shape[0] == 0
+        no_type = df.query("p_solver_type.isna()")['solver_name'].unique()
+        assert all('solver1' in s for s in no_type)
+
+        assert df.query("p_dataset_seed.isna()").shape[0] == 0
+        no_type = df.query("p_dataset_type.isna()")['data_name'].unique()
+        assert all('dataset1' in s for s in no_type)
+
+        assert df.query("p_obj_test_p.isna()").shape[0] == 0
+
+        # No mixing
+        assert "d" not in df['p_solver_type'].unique()
+        assert "s" in df['p_solver_type'].unique()
+        assert "s" not in df['p_dataset_type'].unique()
+        assert "d" in df['p_dataset_type'].unique()

@@ -245,37 +245,18 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
         output.set(rep=rep)
 
         # Get meta
-        meta = dict(
-            objective_name=str(objective),
-            solver_name=str(solver),
-            data_name=str(dataset),
-            idx_rep=rep,
-            sampling_strategy=sampling_strategy.capitalize(),
-            obj_description=obj_description,
-            solver_description=inspect.cleandoc(solver.__doc__ or ""),
-        )
-
-        obj_parameters = objective._parameters
-        slv_parameters = solver._parameters
-        ds_parameters = dataset._parameters
-
-        obj_parameters_prefixed = dict()
-        slv_parameters_prefixed = dict()
-        ds_parameters_prefixed = dict()
-
-        for key in obj_parameters.keys():
-            obj_parameters_prefixed["p_obj_" + key] = obj_parameters[key]
-        for key in slv_parameters.keys():
-            slv_parameters_prefixed["p_solver_" + solver.name + "_" + key]\
-                = slv_parameters[key]
-        for key in ds_parameters.keys():
-            ds_parameters_prefixed["p_dataset_" + dataset.name + "_" + key]\
-                = ds_parameters[key]
-
-        meta = {**meta,
-                **obj_parameters_prefixed,
-                **slv_parameters_prefixed,
-                **ds_parameters_prefixed}
+        meta = {
+            'objective_name': str(objective),
+            'obj_description': obj_description,
+            'solver_name': str(solver),
+            'solver_description': inspect.cleandoc(solver.__doc__ or ""),
+            'data_name': str(dataset),
+            'idx_rep': rep,
+            'sampling_strategy': sampling_strategy.capitalize(),
+            **{f"p_obj_{k}": v for k, v in objective._parameters.items()},
+            **{f"p_solver_{k}": v for k, v in solver._parameters.items()},
+            **{f"p_dataset_{k}": v for k, v in dataset._parameters.items()},
+        }
 
         stopping_criterion = solver._stopping_criterion.get_runner_instance(
             solver=solver,
