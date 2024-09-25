@@ -26,6 +26,11 @@ API
   with ``::`` instead of ``:``. This allow specifying URL channels.
   By `Thomas Moreau`_ (:gh:`758`)
 
+- Add ``Objective``, ``Solver`` and ``Dataset`` parameters as columns in the
+  result DataFrame. The parameters' names are respectively prefixed with
+  ``p_obj_|p_solver_|p_dataset_`` to avoid collapse between the different
+  components. By `Melvine Nargeot`_  and `Thomas Moreau`_ (:gh:`703`).
+
 FIX
 ---
 
