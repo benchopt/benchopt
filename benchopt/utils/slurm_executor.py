@@ -35,9 +35,16 @@ def get_slurm_executor(benchmark, slurm_config, timeout=100):
         # Timeout is in second in benchopt
         config['slurm_time'] = f"00:{int(1.5*timeout)}"
 
+    # Setting the array parallelism if specified in the config file
+    max_jobs = config.pop('max_jobs', None)
+
     slurm_folder = benchmark.get_slurm_folder()
     executor = submitit.AutoExecutor(slurm_folder)
     executor.update_parameters(**config)
+
+    # Updating the array parallelism parameter
+    if max_jobs is not None:
+        executor.update_parameters(slurm_array_parallelism=max_jobs)
     return executor
 
 
@@ -65,7 +72,7 @@ def run_on_slurm(
             for kwargs in all_runs
         ]
 
-    print(f"First job id: {tasks[0].job_id}")
+    print(f"Submitted array job {tasks[0].job_id}")
 
     for t in progress.track(as_completed(tasks), total=len(tasks)):
         exc = t.exception()
