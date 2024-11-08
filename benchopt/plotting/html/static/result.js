@@ -84,6 +84,7 @@ const renderPlot = () => {
   const layout = getLayout();
 
   Plotly.react(div, data, layout);
+  addExportButtons();
 };
 
 /**
@@ -478,6 +479,47 @@ const exportHTML = () => {
     {type: 'text/html'}
   );
   return downloadBlob(blob, location.pathname.split("/").pop());
+};
+
+const exportPDF = () => {
+    const div = document.getElementById('unique_plot');
+    
+    // Use Plotly's toImage to get high quality SVG
+    Plotly.toImage(div, {
+        format: 'svg',
+        width: 1200,
+        height: 800,
+        scale: 2  // Increase resolution
+    }).then(function(dataUrl) {
+        // Convert SVG to PDF using svg2pdf
+        const canvas = document.createElement('canvas');
+        const svg = new Image();
+        svg.onload = function() {
+            canvas.width = svg.width;
+            canvas.height = svg.height;
+            
+            // Create PDF
+            const pdf = new jsPDF({
+                orientation: 'landscape',
+                unit: 'px',
+                format: [svg.width, svg.height]
+            });
+            
+            // Add the plot
+            pdf.addImage(dataUrl, 'SVG', 0, 0, svg.width, svg.height);
+            
+            // Add title
+            const title = `${state().objective} - Data: ${state().dataset}`;
+            pdf.setFontSize(14);
+            pdf.text(title, 40, 30);
+            
+            // Save the PDF
+            pdf.save('benchopt_plot.pdf');
+        };
+        svg.src = dataUrl;
+    });
+    
+    return false;
 };
 
 /*
@@ -1028,6 +1070,21 @@ const handleSolverDoubleClick = solver => {
   }
 
   hideAllSolversExcept(solver);
+};
+
+const addExportButtons = () => {
+    const exportGroup = document.querySelector('.export-buttons-group');
+    if (!exportGroup) return;
+
+    // Add PDF export button if not already present 
+    if (!document.getElementById('export-pdf-button')) {
+        const pdfButton = document.createElement('button');
+        pdfButton.id = 'export-pdf-button';
+        pdfButton.className = 'export-button'; // Match existing button styles
+        pdfButton.innerHTML = 'Export PDF';
+        pdfButton.onclick = exportPDF;
+        exportGroup.appendChild(pdfButton);
+    }
 };
 
 /*
