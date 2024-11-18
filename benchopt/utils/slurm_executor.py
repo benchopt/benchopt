@@ -36,7 +36,7 @@ def get_slurm_executor(benchmark, slurm_config, timeout=100):
         config['slurm_time'] = f"00:{int(1.5*timeout)}"
 
     # Setting the array parallelism if specified in the config file
-    max_jobs = config.pop('max_jobs', None)
+    max_jobs = config.pop('slurm_array_parallelism', None)
 
     slurm_folder = benchmark.get_slurm_folder()
     executor = submitit.AutoExecutor(slurm_folder)

@@ -31,9 +31,9 @@ API
   ``p_obj_|p_solver_|p_dataset_`` to avoid collapse between the different
   components. By `Melvine Nargeot`_  and `Thomas Moreau`_ (:gh:`703`).
 
-- Add the option to have a ``max_jobs`` parameter in the config file to limit
-  the number of jobs that can be run in parallel when using SLURM.
-  By `Jad Yehya`_ (:gh:`775`)
+- Add the option to have a ``slurm_array_parallelism`` parameter in the
+  config file to limit the number of jobs that can be run in parallel 
+  when using SLURM. By `Jad Yehya`_ (:gh:`775`)
 
 FIX
 ---
