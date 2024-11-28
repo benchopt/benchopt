@@ -480,6 +480,19 @@ const exportHTML = () => {
   return downloadBlob(blob, location.pathname.split("/").pop());
 };
 
+const exportPDF = () => {
+  const plot = document.getElementById('unique_plot');
+
+  Plotly.downloadImage(plot,
+     {format: 'svg', 
+      // filename is the name of the solver used
+      filename: state().objective + '_' + state().dataset + '_' + state().objective_column + '_' + state().plot_kind ,
+    },
+    {height: plot.layout.height,
+      width: plot.layout.width
+    });
+};
+
 /*
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * DATA TRANSFORMERS
