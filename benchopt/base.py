@@ -443,6 +443,30 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
         """
         pass
 
+    def format_objective_dict(self, objective_dict):
+        """Format that the output of the objective.
+
+        Parameters
+        ----------
+        objective_dict: dict
+            The output of the objective function, which should be a dictionary
+            not containing the key 'name'. The keys of the dictionary should
+            will be prefixed with 'objective_'.
+
+        Returns
+        -------
+        objective_dict : dict
+            The objective formatted for the result.
+        """
+
+        if 'name' in objective_dict:
+            raise ValueError(
+                "objective output cannot be called 'name'."
+            )
+        return {
+            f'objective_{k}': v for k, v in objective_dict.items()
+        }
+
     def __call__(self, result):
         """Used to call the evaluation of the objective.
 
@@ -456,25 +480,22 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
 
             )
 
-        objective_dict = self.evaluate_result(**result)
+        objective_output = self.evaluate_result(**result)
 
-        if not isinstance(objective_dict, dict):
-            objective_dict = {'value': objective_dict}
+        if not isinstance(objective_output, (dict, list)):
+            objective_list = [{'value': objective_output}]
+        elif isinstance(objective_output, dict):
+            objective_list = [objective_output]
+        else:
+            objective_list = objective_output
 
-        if 'name' in objective_dict:
-            raise ValueError(
-                "objective output cannot be called 'name'."
-            )
+        objective_list = [
+            self.format_objective_dict(obj) for obj in objective_list
+        ]
 
-        # To make the objective part clear in the results, we prefix all
-        # keys with `objective_`.
-        objective_dict = {
-            f'objective_{k}': v for k, v in objective_dict.items()
-        }
+        return objective_list
 
-        return objective_dict
-
-    # Save the dataset object used to get the objective data so we can avoid
+    # Saved
     # hashing the data directly.
     def set_dataset(self, dataset):
         self._dataset = dataset

@@ -54,13 +54,15 @@ def run_one_resolution(objective, solver, meta, stop_val):
     solver.run(stop_val)
     delta_t = time.perf_counter() - t_start
     result = solver.get_result()
-    objective_dict = objective(result)
+    objective_list = objective(result)
 
     # Add system info in results
     info = get_sys_info()
 
-    return dict(**meta, stop_val=stop_val, time=delta_t,
-                **objective_dict, **info)
+    return [
+        dict(**meta, stop_val=stop_val, time=delta_t, **objective_dict, **info)
+        for objective_dict in objective_list
+    ]
 
 
 def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
@@ -140,9 +142,10 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
             stop_val = stopping_criterion.init_stop_val()
             while not stop:
 
-                cost = run_one_resolution_cached(stop_val=stop_val,
-                                                 **call_args)
-                curve.append(cost)
+                objective_list = run_one_resolution_cached(
+                    stop_val=stop_val, **call_args
+                )
+                curve.extend(objective_list)
 
                 # Check the stopping criterion and update rho if necessary.
                 stop, ctx.status, stop_val = stopping_criterion.should_stop(
