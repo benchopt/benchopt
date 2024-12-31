@@ -215,7 +215,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
                 .get_runner_instance(solver=self)
             )
             run_once_cb = _Callback(
-                lambda x: {'objective_value': 1},
+                lambda x: [{'objective_value': 1}],
                 solver=self,
                 meta={},
                 stopping_criterion=stopping_criterion
@@ -420,7 +420,7 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
 
         Returns
         -------
-        objective_value : float or dict {'name': float}
+        objective_value : float or dict {'name': float} or list of dict
             The value(s) of the objective function. If a dictionary is
             returned, it should at least contain a key `value` associated to a
             scalar value which will be used to detect convergence. With a
@@ -443,6 +443,37 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
         """
         pass
 
+    def format_objective_dict(self, objective_dict):
+        """Format the output of the objective.
+
+        This will prefix all keys in the dictionary with `objective_`
+        to make the objective part of the results clear.
+
+        Parameters
+        ----------
+        objective_dict: dict
+            The output of the objective function, which should be a dictionary
+            not containing the key 'name'.
+
+        Returns
+        -------
+        objective_dict : dict
+            The formatted objective to include in the DataFrame.
+        """
+
+        if not isinstance(objective_dict, dict):
+            raise ValueError(
+                "The output of the objective should be a list of dictionary "
+                "with no 'name' key in it"
+            )
+        elif 'name' in objective_dict:
+            raise ValueError(
+                "objective output cannot contain 'name' key"
+            )
+        return {
+            f'objective_{k}': v for k, v in objective_dict.items()
+        }
+
     def __call__(self, result):
         """Used to call the evaluation of the objective.
 
@@ -456,23 +487,20 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
 
             )
 
-        objective_dict = self.evaluate_result(**result)
+        objective_output = self.evaluate_result(**result)
 
-        if not isinstance(objective_dict, dict):
-            objective_dict = {'value': objective_dict}
+        if not isinstance(objective_output, (dict, list)):
+            objective_list = [{'value': objective_output}]
+        elif isinstance(objective_output, dict):
+            objective_list = [objective_output]
+        else:
+            objective_list = objective_output
 
-        if 'name' in objective_dict:
-            raise ValueError(
-                "objective output cannot be called 'name'."
-            )
+        objective_list = [
+            self.format_objective_dict(d) for d in objective_list
+        ]
 
-        # To make the objective part clear in the results, we prefix all
-        # keys with `objective_`.
-        objective_dict = {
-            f'objective_{k}': v for k, v in objective_dict.items()
-        }
-
-        return objective_dict
+        return objective_list
 
     # Save the dataset object used to get the objective data so we can avoid
     # hashing the data directly.
