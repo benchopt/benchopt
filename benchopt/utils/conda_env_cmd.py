@@ -224,6 +224,10 @@ def install_in_conda_env(*packages, env_name=None, force=False, quiet=False):
     if DEBUG:
         print(f"\ninstalling env packages:\n{'-' * 40}{env}{'-' * 40}")
 
+    # If installing in the current env, get its name.
+    if env_name is None:
+        env_name, _ = list_conda_envs()
+
     with NamedTemporaryFile(mode='w+', prefix='env_', suffix='.yml') as f:
         f.write(env)
         f.flush()
