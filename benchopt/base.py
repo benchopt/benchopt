@@ -445,7 +445,7 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
 
     def format_objective_dict(self, objective_dict):
         """Format the output of the objective.
-        
+
         This will prefix all keys in the dictionary with `objective_`
         to make the objective part of the results clear.
 
@@ -468,7 +468,7 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
             )
         elif 'name' in objective_dict:
             raise ValueError(
-                "objective output cannot contain a key 'name'"
+                "objective output cannot contain 'name' key"
             )
         return {
             f'objective_{k}': v for k, v in objective_dict.items()

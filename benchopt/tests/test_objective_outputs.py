@@ -43,7 +43,7 @@ def test_objective_bad_name(no_debug_log):
                     *'-s test-solver -d test-dataset -n 1 -r 1 --no-plot'
                     .split()], standalone_mode=False)
 
-    out.check_output("ValueError: objective output cannot be called 'name'")
+    out.check_output("ValueError: objective output cannot contain 'name' key")
 
 
 def test_objective_no_value(no_debug_log):
