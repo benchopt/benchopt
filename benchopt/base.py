@@ -215,7 +215,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
                 .get_runner_instance(solver=self)
             )
             run_once_cb = _Callback(
-                lambda x: {'objective_value': 1},
+                lambda x: [{'objective_value': 1}],
                 solver=self,
                 meta={},
                 stopping_criterion=stopping_criterion
@@ -420,7 +420,7 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
 
         Returns
         -------
-        objective_value : float or dict {'name': float}
+        objective_value : float or dict {'name': float} or list of dict
             The value(s) of the objective function. If a dictionary is
             returned, it should at least contain a key `value` associated to a
             scalar value which will be used to detect convergence. With a
