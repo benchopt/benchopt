@@ -444,24 +444,31 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
         pass
 
     def format_objective_dict(self, objective_dict):
-        """Format that the output of the objective.
+        """Format the output of the objective.
+        
+        This will prefix all keys in the dictionary with `objective_`
+        to make the objective part of the results clear.
 
         Parameters
         ----------
         objective_dict: dict
             The output of the objective function, which should be a dictionary
-            not containing the key 'name'. The keys of the dictionary should
-            will be prefixed with 'objective_'.
+            not containing the key 'name'.
 
         Returns
         -------
         objective_dict : dict
-            The objective formatted for the result.
+            The formatted objective to include in the DataFrame.
         """
 
-        if 'name' in objective_dict:
+        if not isinstance(objective_dict, dict):
             raise ValueError(
-                "objective output cannot be called 'name'."
+                "The output of the objective should be a list of dictionary "
+                "with no 'name' key in it"
+            )
+        elif 'name' in objective_dict:
+            raise ValueError(
+                "objective output cannot contain a key 'name'"
             )
         return {
             f'objective_{k}': v for k, v in objective_dict.items()
