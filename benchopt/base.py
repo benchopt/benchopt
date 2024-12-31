@@ -490,12 +490,12 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
             objective_list = objective_output
 
         objective_list = [
-            self.format_objective_dict(obj) for obj in objective_list
+            self.format_objective_dict(d) for d in objective_list
         ]
 
         return objective_list
 
-    # Saved
+    # Save the dataset object used to get the objective data so we can avoid
     # hashing the data directly.
     def set_dataset(self, dataset):
         self._dataset = dataset
