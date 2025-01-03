@@ -1,6 +1,6 @@
 
 
-def check_dask_config(config, backend):
+def check_dask_config(config):
     # Setup the client with `dask_*` parameters
     cluster = config.pop('dask_cluster', 'local')
     dask_config = {

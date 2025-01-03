@@ -29,7 +29,7 @@ def parallel_run(benchmark, run, kwargs, all_runs, config):
     else:
         if backend == 'dask':
             from .dask_backend import check_dask_config
-            config = check_dask_config(config, backend)
+            config = check_dask_config(config)
         with parallel_config(backend, **config):
             results = Parallel()(
                 delayed(run)(**kwargs, **run_kwargs)

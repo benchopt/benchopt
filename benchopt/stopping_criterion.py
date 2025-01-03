@@ -77,7 +77,7 @@ class StoppingCriterion():
             else f'objective_{key_to_monitor}'
         )
 
-    def get_runner_instance(self, max_runs=1, timeout=None, output=None,
+    def get_runner_instance(self, max_runs=1, timeout=None, terminal=None,
                             solver=None):
         """Copy the stopping criterion and set the parameters that depends on
         how benchopt runner is called.
@@ -89,7 +89,7 @@ class StoppingCriterion():
             the convergence curve.
         timeout : float
             The maximum duration in seconds of the solver run.
-        output : TerminalOutput or None
+        terminal : TerminalOutput or None
             Object to format string to display the progress of the solver.
         solver : BaseSolver
             The solver for which this stopping criterion is called. Used to get
@@ -121,6 +121,7 @@ class StoppingCriterion():
             )
 
         # Create a new instance of the class
+        print("RUNNER:", self.key_to_monitor)
         stopping_criterion = self.__class__(
             strategy=self.strategy, key_to_monitor=self.key_to_monitor,
             **self.kwargs,
@@ -130,7 +131,7 @@ class StoppingCriterion():
         stopping_criterion.rho = RHO
         stopping_criterion.timeout = timeout
         stopping_criterion.max_runs = max_runs
-        stopping_criterion.output = output
+        stopping_criterion.terminal = terminal
         stopping_criterion.solver = solver
 
         # Override get_next_stop_val if ``get_next`` is implemented for solver.
@@ -198,11 +199,15 @@ class StoppingCriterion():
         # Check that the objective is compatible with the stopping_criterion
         if self.key_to_monitor not in objective_list[0]:
             key = self.key_to_monitor.replace("objective_", "")
+            key_ok = [
+                k.replace("objective_", "") for k in objective_list[0]
+                if k.startswith("objective_") and k != 'objective_name'
+            ]
             raise ValueError(
                 "Objective.evaluate_result() should contain a key named "
                 f"'{key}' to be used with this stopping_criterion. The name of"
                 " this key can be changed via the 'key_to_monitor' parameter. "
-                f"Available keys are {list(objective_list[0].keys())}"
+                f"Available keys are {key_ok}"
             )
 
         # Modify the criterion state:
@@ -285,13 +290,13 @@ class StoppingCriterion():
 
     def debug(self, msg):
         """Helper to print debug messages."""
-        if self.output is not None:
-            self.output.debug(msg)
+        if self.terminal is not None:
+            self.terminal.debug(msg)
 
     def progress(self, progress):
         """Helper to print progress messages."""
-        if self.output is not None:
-            self.output.progress(progress)
+        if self.terminal is not None:
+            self.terminal.progress(progress)
 
     @staticmethod
     def _reconstruct(klass, kwargs, runner_kwargs):
@@ -307,7 +312,7 @@ class StoppingCriterion():
         if getattr(self, 'max_runs', None):
             runner_kwargs = dict(
                 max_runs=self.max_runs, timeout=self.timeout,
-                output=self.output, solver=self.solver
+                terminal=self.terminal, solver=self.solver
             )
         else:
             runner_kwargs = None
@@ -484,10 +489,10 @@ class SingleRunCriterion(StoppingCriterion):
     def init_stop_val(self):
         return self.stop_val
 
-    def get_runner_instance(self, max_runs=1, timeout=None, output=None,
+    def get_runner_instance(self, max_runs=1, timeout=None, terminal=None,
                             solver=None):
 
-        return super().get_runner_instance(1, timeout, output, solver)
+        return super().get_runner_instance(1, timeout, terminal, solver)
 
     def check_convergence(self, cost_curve):
         return True, 1

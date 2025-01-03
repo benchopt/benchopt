@@ -246,6 +246,7 @@ def run(config_file=None, **kwargs):
             use_profile()  # needs to be called before validate_solver_patterns
 
         # Get the config for parallel runs
+        # XXX: remove slurm in benchopt 1.8
         parallel_config = check_parallel_config(parallel_config, slurm, n_jobs)
 
         print("Loading objective, datasets and solvers...", end='', flush=True)
@@ -270,10 +271,9 @@ def run(config_file=None, **kwargs):
             benchmark, solvers, forced_solvers,
             datasets=datasets, objectives=objectives,
             max_runs=max_runs, n_repetitions=n_repetitions,
-            timeout=timeout, n_jobs=n_jobs, slurm=slurm,
-            output=output, plot_result=plot, display=display,
-            html=html, collect=collect, parallel_config=parallel_config,
-            pdb=pdb
+            timeout=timeout, output_file=output, plot_result=plot,
+            display=display, html=html, collect=collect,
+            parallel_config=parallel_config, pdb=pdb
         )
 
         print_stats()  # print profiling stats (does nothing if not profiling)

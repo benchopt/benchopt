@@ -112,22 +112,30 @@ class ParametrizedNameMixin():
         return str(cls.get_instance(**parameters))
 
     @staticmethod
-    def _load_instance(class_value, parameters):
+    def _load_instance(class_value, parameters, benchmark_dir):
+        # Make sure the running benchmark is set before loading the instance.
+        from benchopt.benchmark import Benchmark
+        Benchmark(benchmark_dir)
         klass = cloudpickle.loads(class_value)
         obj = klass.get_instance(**parameters)
         return obj
 
-    def _get_reduce_args(self):
+    def _get_mixin_args(self):
         """Get the arguments necessary to reconstruct the instance."""
 
         cls = self.__class__
         if cls not in _DYNAMIC_CLASS_PAYLOAD:
             _DYNAMIC_CLASS_PAYLOAD[cls] = cloudpickle.dumps(cls)
         class_value = _DYNAMIC_CLASS_PAYLOAD[cls]
-        return class_value, self._parameters
+
+        # Send the benchmark folder to the instance so it can access the config
+        from benchopt.benchmark import get_running_benchmark
+        benchmark_dir = get_running_benchmark().benchmark_dir
+
+        return class_value, self._parameters, benchmark_dir
 
     def __reduce__(self):
-        return self._load_instance, self._get_reduce_args()
+        return self._load_instance, self._get_mixin_args()
 
 
 def expand(keys, values):

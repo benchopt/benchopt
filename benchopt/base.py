@@ -62,7 +62,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
             or 'iteration'
         )
 
-    def _set_objective(self, objective, output=None):
+    def _set_objective(self, objective, terminal=None):
         """Store the objective for hashing/pickling and check its compatibility
 
         Parameters
@@ -79,7 +79,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
             If skip is False, the reason should be None.
         """
         self._objective = objective
-        self._output = output
+        self._terminal = terminal
 
         objective_dict = objective.get_objective()
         assert objective_dict is not None, (
@@ -90,8 +90,8 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         # Check if the objective is compatible with the solver
         skip, reason = self.skip(**objective_dict)
         if skip:
-            if self._output:
-                self._output.skip(reason)
+            if self._terminal:
+                self._terminal.skip(reason)
             return True
 
         self.set_objective(**objective_dict)
@@ -203,8 +203,8 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
             the solver on an easy to solve problem.
         """
 
-        if hasattr(self, '_output') and self._output is not None:
-            self._output.progress('caching warmup times.')
+        if hasattr(self, '_terminal') and self._terminal is not None:
+            self._terminal.progress('caching warmup times.')
 
         if self._solver_strategy == "callback":
             stopping_criterion = (
@@ -241,17 +241,17 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         self._warmup_done = True
 
     @staticmethod
-    def _reconstruct(class_value, parameters, objective, output):
-        obj = ParametrizedNameMixin._load_instance(class_value, parameters)
+    def _reconstruct(mixin_args, objective, terminal):
+        obj = ParametrizedNameMixin._load_instance(*mixin_args)
         if objective is not None:
-            obj._set_objective(objective, output=output)
+            obj._set_objective(objective, terminal=terminal)
         return obj
 
     def __reduce__(self):
         objective = getattr(self, '_objective', None)
-        output = getattr(self, '_output', None)
+        terminal = getattr(self, '_terminal', None)
         return self._reconstruct, (
-            *self._get_reduce_args(), objective, output,
+            self._get_mixin_args(), objective, terminal,
         )
 
 
@@ -516,15 +516,15 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
 
     # Reduce the pickling and hashing burden by only pickling class parameters.
     @staticmethod
-    def _reconstruct(class_value, parameters, dataset):
-        obj = ParametrizedNameMixin._load_instance(class_value, parameters)
+    def _reconstruct(mixin_args, dataset):
+        obj = ParametrizedNameMixin._load_instance(*mixin_args)
         if dataset is not None:
             obj.set_dataset(dataset)
         return obj
 
     def __reduce__(self):
         dataset = getattr(self, '_dataset', None)
-        return self._reconstruct, (*self._get_reduce_args(), dataset)
+        return self._reconstruct, (self._get_mixin_args(), dataset)
 
     def _default_split(self, cv_fold, *arrays):
         train_index, test_index = cv_fold

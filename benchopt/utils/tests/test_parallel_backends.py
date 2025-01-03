@@ -86,6 +86,8 @@ def test_dask_backend():
 
 
 def test_submitit_backend():
+    pytest.importorskip("submitit")
+
     parallel_config = "backend: submitit"
     solver1 = """from benchopt import BaseSolver
     import submitit
