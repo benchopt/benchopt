@@ -145,6 +145,8 @@ def test_key_to_monitor_objective(no_debug_log, criterion_class, strategy):
     """
 
     with temp_benchmark(objective=objective, solvers=[solver]) as benchmark:
+        # XXX: here the issue is that `get_deterministic_dynamic_class`
+        # changes the `key_to_monitor`, which is not expected.
         with CaptureRunOutput() as out:
             run([str(benchmark.benchmark_dir),
                 *'-s test-solver -d test-dataset -n 10 -r 1 --no-display'

@@ -1,8 +1,12 @@
 import itertools
+import hashlib
 from abc import abstractmethod
 
+from joblib.externals import cloudpickle
 
-from .dynamic_modules import _reconstruct_class
+
+# Cache for the cloudpickle payload of dynamic classes.
+_DYNAMIC_CLASS_PAYLOAD = {}
 
 
 class ParametrizedNameMixin():
@@ -22,6 +26,37 @@ class ParametrizedNameMixin():
         for k, v in _parameters.items():
             if not hasattr(self, k):
                 setattr(self, k, v)
+
+    @classmethod
+    def get_deterministic_dynamic_class(cls):
+        # Make the cloudpickle payload of this dynamic class deterministic
+        # XXX - remove when cloudpickle dynamic class payload are deterministic
+        # by default.
+        class_tracker = cloudpickle.cloudpickle._DYNAMIC_CLASS_TRACKER_BY_CLASS
+        id_tracker = cloudpickle.cloudpickle._DYNAMIC_CLASS_TRACKER_BY_ID
+
+        # reload class from cloudpickle payload to avoid issues with string and
+        # tuples interning. To avoid falling back to the original class, we
+        # need to remove the class from the class_tracker and id_tracker.
+        class_value = cloudpickle.dumps(cls)
+        with cloudpickle.cloudpickle._DYNAMIC_CLASS_TRACKER_LOCK:
+            idx = class_tracker.pop(cls)
+            id_tracker.pop(idx)
+        cls = cloudpickle.loads(class_value)
+
+        # Make the tracker_id argument of the pickle payload deterministic,
+        # based on the hash of the payload.
+        class_value = cloudpickle.dumps(cls)
+        class_value = class_value.replace(
+            class_tracker[cls].encode(), b'BENCHOPT_DYN_CLASS_TRACKER_ID'
+        )
+        hash_id = hashlib.md5(class_value).hexdigest()
+        with cloudpickle.cloudpickle._DYNAMIC_CLASS_TRACKER_LOCK:
+            id_tracker.pop(class_tracker[cls])
+            id_tracker[hash_id] = cls
+            class_tracker[cls] = hash_id
+
+        return cls
 
     @classmethod
     def get_instance(cls, **parameters):
@@ -76,14 +111,31 @@ class ParametrizedNameMixin():
         """Compute the parametrized name for a given set of parameters."""
         return str(cls.get_instance(**parameters))
 
-    @classmethod
-    def _reload_class(cls, pickled_module_hash=None):
+    @staticmethod
+    def _load_instance(class_value, parameters, benchmark_dir):
+        # Make sure the running benchmark is set before loading the instance.
+        from benchopt.benchmark import Benchmark
+        Benchmark(benchmark_dir)
+        klass = cloudpickle.loads(class_value)
+        obj = klass.get_instance(**parameters)
+        return obj
 
-        return _reconstruct_class(
-            cls._module_filename, cls._base_class_name,
-            cls._import_ctx.benchmark_dir,
-            pickled_module_hash=pickled_module_hash
-        )
+    def _get_mixin_args(self):
+        """Get the arguments necessary to reconstruct the instance."""
+
+        cls = self.__class__
+        if cls not in _DYNAMIC_CLASS_PAYLOAD:
+            _DYNAMIC_CLASS_PAYLOAD[cls] = cloudpickle.dumps(cls)
+        class_value = _DYNAMIC_CLASS_PAYLOAD[cls]
+
+        # Send the benchmark folder to the instance so it can access the config
+        from benchopt.benchmark import get_running_benchmark
+        benchmark_dir = get_running_benchmark().benchmark_dir
+
+        return class_value, self._parameters, benchmark_dir
+
+    def __reduce__(self):
+        return self._load_instance, self._get_mixin_args()
 
 
 def expand(keys, values):
