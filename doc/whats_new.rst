@@ -19,6 +19,13 @@ Major change
 CLI
 ---
 
+- Add a parallel backend system for ``benchopt run`` to setup distributed
+  run with ``dask`` and ``submitit``. See :ref:`parallel_run` for details.
+  By `Thomas Moreau`_ (:gh:`673`).
+
+- Deprecate the ``--slurm`` parameter which will be removed in benchopt 1.8.
+  By `Thomas Moreau`_ (:gh:`673`).
+
 API
 ---
 
@@ -26,12 +33,10 @@ API
   with ``::`` instead of ``:``. This allow specifying URL channels.
   By `Thomas Moreau`_ (:gh:`758`)
 
-ENH
----
-
-- Add a parallel backend system for ``benchopt run`` to setup distributed
-  run with ``dask`` and ``submitit``. See :ref:`parallel_run` for details.
-  By `Thomas Moreau`_ (:gh:`673`).
+- Add ``Objective``, ``Solver`` and ``Dataset`` parameters as columns in the
+  result DataFrame. The parameters' names are respectively prefixed with
+  ``p_obj_|p_solver_|p_dataset_`` to avoid collapse between the different
+  components. By `Melvine Nargeot`_  and `Thomas Moreau`_ (:gh:`703`).
 
 FIX
 ---
@@ -45,6 +50,7 @@ FIX
 - Fix the ``skip`` API for objectives that was leading to a display error.
   By `Thomas Moreau`_ (:gh:`763`)
 
+- Fix the ``info`` command By `Pierre-Antoine Comby`_ (:gh:`&67`)
 
 .. _changes_1_6:
 

@@ -3,18 +3,47 @@
 Manage benchmark results
 ========================
 
+.. _benchmark_results:
+
+Description of the benchmark results DataFrame
+-----------------------------------------------
+
+
+Once the benchmark is run, the results are stored as a ``pd.DataFrame`` in a
+``.parquet`` file, located in a directory ``./outputs`` in the benchmark
+directory, with a ``.parquet`` file.
+By default, the name of the file include the date and time of the run,
+as ``benchopt_run_<date>_<time>.parquet`` but a custom name can be given using
+the :option:`--output` option of ``benchopt run``.
+The DataFrame contains the following columns:
+
+- ``objective_name|solver_name|data_name``: the names of the different benchopt
+  components used for this line.
+- ``obj_description|solver_description``: A more verbose description of the
+  objective and solver, displayed in the HTML page.
+- ``p_obj_p``: the value of the objective's parameter ``p``.
+- ``p_solver_p``: the value of the solver's parameter ``p``.
+- ``p_dateset_p``: the value of the dataset's parameter ``p``.
+- ``time``: the time taken to run the solver until this point of the performance curve.
+- ``stop_val``: the number of iterations or the tolerance reached by the solver.
+- ``idx_rep``: If multiple repetitions are run for each solver with ``--n-rep``,
+  this column contains the repetition number.
+- ``sampling_strategy``: The sampling strategy used to generate the performance
+  curve of this solver. This allow to adapt the plot in the HTML depending on
+  each solver.
+- ``objective_k``: The value associated to the key ``k`` in the
+  ``Objective.evaluate_result`` dictionary.
+
+The remaining columns are informations about the system used to run the
+benchmark, with keys ``{'env_OMP_NUM_THREADS', 'platform', 'platform-architecture', 'platform-release', 'platform-version', 'system-cpus', 'system-processor', 'system-ram (GB)', 'version-cuda', 'version-numpy', 'version-scipy', 'benchmark-git-tag'}``.
+
+
 .. _collect_results:
 
 Collect benchmark results
 -------------------------
 
-Once the benchmark is run, the results are stored in a directory
-``./results`` in the benchmark directory, with a ``.parquet`` file.
-By default, the name of the file include the date and time of the run,
-but a custom name can be given using the :option:`--output` option of
-``benchopt run``.
-
-This result file is produced only once the full benchmark has been run.
+The result file is produced only once the full benchmark has been run.
 When the benchmark is run in parallel, the results that have already been
 computed can be collected using the :option:`--collect` option with
 ``benchopt run``. Adding this option with the same command line will

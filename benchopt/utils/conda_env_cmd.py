@@ -14,7 +14,6 @@ from ..config import get_setting
 
 SHELL = get_setting('shell')
 CONDA_CMD = get_setting('conda_cmd')
-PIP_CMD = f"{sys.executable} -m pip"
 
 # On windows, calling conda without call exit the cmd script:
 # https://github.com/conda/conda/issues/12418
@@ -177,13 +176,13 @@ def delete_conda_env(env_name):
                capture_stdout=True)
 
 
-def get_cmd_from_requirements(packages):
+def get_env_file_from_requirements(packages):
     """Process the packages from requirements and create the install cmd.
 
     This detects the packages that need to be installed with pip and also
     the additional channels for conda packages.
     """
-    # TODO: remove with benchopt 1.7
+    # TODO: remove with benchopt 1.8
     # If ":" is present but not "::", warn that this is legacy syntax.
     has_legacy_colon = any(":" in pkg and "::" not in pkg for pkg in packages)
     if has_legacy_colon:
@@ -191,35 +190,29 @@ def get_cmd_from_requirements(packages):
             "The use of ':' to specify the channel of a dependency is "
             "deprecated. Please use '::' instead.", DeprecationWarning
         )
+        packages = [pkg.replace(":", "::", 1) for pkg in packages]
 
-    cmd = []
     conda_packages = [pkg for pkg in packages if not pkg.startswith('pip::')]
     if conda_packages:
-
-        conda_packages = [
-            pkg.replace(":", "::") if ":" in pkg and "::" not in pkg else pkg
-            for pkg in conda_packages
-        ]
-        channels = ' '.join(set(
-            f"-c {pkg.rsplit('::', 1)[0]}"
+        channels = '\n  - '.join(sorted(set(
+            pkg.rsplit('::', 1)[0]
             for pkg in conda_packages if '::' in pkg
-        ))
-        conda_packages = ' '.join(
+        )))
+        channels = f"channels:\n  - {channels}\n" if channels else ""
+        conda_packages = '\n  - '.join(sorted(set(
             pkg.rsplit('::', 1)[-1] for pkg in conda_packages
-        )
-        cmd.append(
-            f"{CONDA_CMD} install --update-all -y {channels} {conda_packages}"
-        )
+        )))
+        env = f"{channels}dependencies:\n  - {conda_packages}"
+    else:
+        env = "dependencies:"
 
-    # TODO: simplify in benchopt 1.7
-    pip_packages = [
-        pkg.replace("pip::", "").replace("pip:", "")
-        for pkg in packages if pkg.startswith('pip:')
-    ]
+    pip_packages = '\n    - '.join(sorted(set(
+        pkg.replace("pip::", "") for pkg in packages if pkg.startswith('pip::')
+    )))
     if pip_packages:
-        packages = ' '.join(pip_packages)
-        cmd.append(f"{PIP_CMD} install {packages}")
-    return cmd
+        env += f"\n  - pip\n  - pip:\n    - {pip_packages}"
+
+    return env
 
 
 def install_in_conda_env(*packages, env_name=None, force=False, quiet=False):
@@ -227,18 +220,29 @@ def install_in_conda_env(*packages, env_name=None, force=False, quiet=False):
     if len(packages) == 0:
         return
 
-    cmd = get_cmd_from_requirements(packages)
-    if force:
-        cmd = [c + ' --force-reinstall' for c in cmd]
-    cmd = '\n'.join(cmd)
+    env = get_env_file_from_requirements(packages)
+    if DEBUG:
+        print(f"\ninstalling env packages:\n{'-' * 40}{env}{'-' * 40}")
 
-    error_msg = ("Failed to conda install packages "
-                 f"{packages if len(packages) > 1 else packages[0]}\n"
-                 "Error:{output}")
-    _run_shell_in_conda_env(
-        cmd, env_name=env_name, raise_on_error=error_msg,
-        capture_stdout=quiet
-    )
+    # If installing in the current env, get its name.
+    if env_name is None:
+        env_name, _ = list_conda_envs()
+
+    with NamedTemporaryFile(mode='w+', prefix='env_', suffix='.yml') as f:
+        f.write(env)
+        f.flush()
+        cmd = (
+            f"{CONDA_CMD} env update -n {env_name} -f {f.name}"
+            f"{' -q' if quiet else ''}"
+        )
+
+        error_msg = (
+            f"Failed to conda install packages {packages}\nError:{{output}}"
+        )
+        _run_shell_in_conda_env(
+            cmd, env_name=env_name, raise_on_error=error_msg,
+            capture_stdout=quiet
+        )
 
 
 def shell_install_in_conda_env(script, env_name=None, quiet=False):

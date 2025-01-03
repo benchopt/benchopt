@@ -673,7 +673,7 @@ class TestInstallCmd:
                     f'--env-name {test_env_name}'.split()
                 ], 'benchopt', standalone_mode=False)
         out.check_output(
-            "Successfully installed dummy_package-0.0.0", repetition=1
+            r"git\+https://github.com/tommoral/dummy_package"
         )
 
     def test_shell_complete(self):

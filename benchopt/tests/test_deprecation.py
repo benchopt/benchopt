@@ -1,19 +1,19 @@
 import pytest
 
-
 from benchopt import __version__
 from benchopt.cli.main import run
 from benchopt.utils.temp_benchmark import temp_benchmark
+from benchopt.utils.conda_env_cmd import get_env_file_from_requirements
 
 from benchopt.tests.utils import CaptureRunOutput
 
 
 ##############################################################################
-# Deprecation check for benchopt 1.7
-# XXX: remove in benchopt 1.7
+# Deprecation check for benchopt 1.8
+# XXX: remove in benchopt 1.8
 
 def test_slurm_deprecation():
-    assert __version__ < "1.7"
+    assert __version__ < "1.8"
     pytest.importorskip("submitit")
 
     slurm_config = """
@@ -54,3 +54,27 @@ def test_slurm_deprecation():
                     *'-s solver1 -d test-dataset -n 0 -r 5 --no-plot '
                     f'-o dummy*[reg=0.5] --slurm {slurm_config_file}'.split()
                 ], standalone_mode=False)
+
+
+def test_deprecated_channel_spec():
+    assert __version__ < "1.8"
+    with pytest.warns(DeprecationWarning):
+        env = get_env_file_from_requirements(["chan:pkg"])
+    assert env == "channels:\n  - chan\ndependencies:\n  - pkg"
+
+    with pytest.warns(DeprecationWarning):
+        env = get_env_file_from_requirements(["pip:pkg"])
+    assert env == "dependencies:\n  - pip\n  - pip:\n    - pkg"
+
+    with pytest.warns(DeprecationWarning):
+        env = get_env_file_from_requirements(["pip:git+https://test.org"])
+    assert env == (
+        "dependencies:\n  - pip\n  - pip:\n    - git+https://test.org"
+    )
+
+    with pytest.warns(DeprecationWarning):
+        env = get_env_file_from_requirements(["pkg1", "chan:pkg2", "pip:pkg3"])
+    assert env == (
+        "channels:\n  - chan\n"
+        "dependencies:\n  - pkg1\n  - pkg2\n  - pip\n  - pip:\n    - pkg3"
+    )

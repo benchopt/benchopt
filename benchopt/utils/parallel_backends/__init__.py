@@ -47,7 +47,7 @@ def check_parallel_config(parallel_config_file, slurm_config_file, n_jobs):
     Parameters
     ----------
     """
-    # XXX: remove in benchopt 1.7
+    # XXX: remove in benchopt 1.8
     if slurm_config_file is not None:
         assert parallel_config_file is None, (
             "Cannot use both `--slurm` and `--parallel-backend`. Only use the "
@@ -57,7 +57,7 @@ def check_parallel_config(parallel_config_file, slurm_config_file, n_jobs):
             "`--slurm` is deprecated, use `--parallel-backend` instead. "
             "The config files are similar but the new one should include the "
             "extra argument `backend : submitit` to select the submitit "
-            "backend. This will cause an error starting benchopt 1.7.",
+            "backend. This will cause an error starting benchopt 1.8.",
             DeprecationWarning
         )
         parallel_config_file = slurm_config_file
@@ -67,7 +67,7 @@ def check_parallel_config(parallel_config_file, slurm_config_file, n_jobs):
     if parallel_config_file is not None:
         with open(parallel_config_file, "r") as f:
             parallel_config = yaml.safe_load(f)
-        # XXX: remove in benchopt 1.7
+        # XXX: remove in benchopt 1.8
         if slurm_config_file is not None:
             parallel_config['backend'] = "submitit"
         if n_jobs is not None:
