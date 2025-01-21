@@ -114,6 +114,7 @@ def get_results(fnames, html_root, benchmark, config=None, copy=False):
 
         # JSON
         result['json'] = json.dumps(shape_datasets_for_html(df))
+        result['dataframe'] = df.to_json(orient="records")
 
         results.append(result)
 
