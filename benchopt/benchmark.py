@@ -445,24 +445,23 @@ class Benchmark:
         if len(shell_install_scripts) > 0 or len(conda_reqs) > 0:
             check_installs += [objective]
         to_install = itertools.chain(include_datasets, include_solvers)
-        if not minimal:
-            for klass in to_install:
-                reqs, scripts, hooks, missing = (
-                    klass.collect(env_name=env_name, force=force)
-                )
-                # If a class is not importable but has no requirements,
-                # it might be because the requirements are specified
-                # as global ones in the Objective. Otherwise, raise a
-                # comprehensible error.
-                if missing is not None:
-                    missings.append(missing)
+        for klass in to_install:
+            reqs, scripts, hooks, missing = (
+                klass.collect(env_name=env_name, force=force)
+            )
+            # If a class is not importable but has no requirements,
+            # it might be because the requirements are specified
+            # as global ones in the Objective. Otherwise, raise a
+            # comprehensible error.
+            if missing is not None:
+                missings.append(missing)
 
-                conda_reqs += reqs
-                shell_install_scripts += scripts
-                post_install_hooks += hooks
-                if len(scripts) > 0 or len(reqs) > 0:
-                    check_installs += [klass]
-            print(colorify(' done', GREEN))
+            conda_reqs += reqs
+            shell_install_scripts += scripts
+            post_install_hooks += hooks
+            if len(scripts) > 0 or len(reqs) > 0:
+                check_installs += [klass]
+        print(colorify(' done', GREEN))
 
         # Install the collected requirements
         list_install = '\n'.join([
