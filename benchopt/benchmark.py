@@ -405,7 +405,8 @@ class Benchmark:
     # Install and run helpers
     #####################################################
 
-    def install_all_requirements(self, include_solvers, include_datasets, env_name=None,
+    def install_all_requirements(self, include_solvers, include_datasets,
+                                 env_name=None,
                                  force=False, quiet=False, download=False):
         """Install all classes that are required for the run.
 
