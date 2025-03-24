@@ -405,8 +405,7 @@ class Benchmark:
     # Install and run helpers
     #####################################################
 
-    def install_all_requirements(self, include_solvers, include_datasets,
-                                 minimal=False, env_name=None,
+    def install_all_requirements(self, include_solvers, include_datasets, env_name=None,
                                  force=False, quiet=False, download=False):
         """Install all classes that are required for the run.
 
@@ -416,8 +415,6 @@ class Benchmark:
             patterns to select solvers to install.
         include_datasets : list of BaseDataset
             patterns to select datasets to install.
-        minimal : bool (default: False)
-            only install requirements for the objective function.
         env_name : str or None (default: None)
             Name of the conda env where the class should be installed. If
             None, tries to install it in the current environment.
