@@ -9,6 +9,10 @@ to specify and install requirements for the various components of the benchmarks
 - By default, calling ``benchopt install .`` will install the requirements for the
    benchmark, including all solvers and datasets.
 
+- The minimum requirements to run the benchmark are specified in
+  ``objective.py``. They can be installed using the command
+  ``benchopt install --minimal``.
+
 - The requirements that are specific to each ``Dataset/Solver`` can be
   specified in each class, and they can be installed individually by selecting
   the proper component using ``benchopt install -d dataset1 -s solver1``.

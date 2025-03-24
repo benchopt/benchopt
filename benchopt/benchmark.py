@@ -406,7 +406,7 @@ class Benchmark:
     #####################################################
 
     def install_all_requirements(self, include_solvers, include_datasets,
-                                 env_name=None,
+                                 minimal=False, env_name=None,
                                  force=False, quiet=False, download=False):
         """Install all classes that are required for the run.
 
@@ -416,6 +416,8 @@ class Benchmark:
             patterns to select solvers to install.
         include_datasets : list of BaseDataset
             patterns to select datasets to install.
+        minimal : bool (default: False)
+            only install requirements for the objective function.
         env_name : str or None (default: None)
             Name of the conda env where the class should be installed. If
             None, tries to install it in the current environment.
@@ -443,23 +445,24 @@ class Benchmark:
         if len(shell_install_scripts) > 0 or len(conda_reqs) > 0:
             check_installs += [objective]
         to_install = itertools.chain(include_datasets, include_solvers)
-        for klass in to_install:
-            reqs, scripts, hooks, missing = (
-                klass.collect(env_name=env_name, force=force)
-            )
-            # If a class is not importable but has no requirements,
-            # it might be because the requirements are specified
-            # as global ones in the Objective. Otherwise, raise a
-            # comprehensible error.
-            if missing is not None:
-                missings.append(missing)
+        if not minimal:
+            for klass in to_install:
+                reqs, scripts, hooks, missing = (
+                    klass.collect(env_name=env_name, force=force)
+                )
+                # If a class is not importable but has no requirements,
+                # it might be because the requirements are specified
+                # as global ones in the Objective. Otherwise, raise a
+                # comprehensible error.
+                if missing is not None:
+                    missings.append(missing)
 
-            conda_reqs += reqs
-            shell_install_scripts += scripts
-            post_install_hooks += hooks
-            if len(scripts) > 0 or len(reqs) > 0:
-                check_installs += [klass]
-        print(colorify(' done', GREEN))
+                conda_reqs += reqs
+                shell_install_scripts += scripts
+                post_install_hooks += hooks
+                if len(scripts) > 0 or len(reqs) > 0:
+                    check_installs += [klass]
+            print(colorify(' done', GREEN))
 
         # Install the collected requirements
         list_install = '\n'.join([
