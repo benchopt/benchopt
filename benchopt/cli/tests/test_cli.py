@@ -651,7 +651,7 @@ class TestInstallCmd:
                 def get_objective(self): pass
         """
 
-        solver = f"""from benchopt import BaseSolver
+        solver = """from benchopt import BaseSolver
             import numpy as np
 
             class Solver(BaseSolver):
@@ -668,7 +668,7 @@ class TestInstallCmd:
                     return 0
         """
 
-        dataset = f"""from benchopt import BaseDataset
+        dataset = """from benchopt import BaseDataset
             import numpy as np
 
             class Dataset(BaseDataset):
@@ -681,8 +681,11 @@ class TestInstallCmd:
             def get_data(): pass
         """
 
-        # Install should succeed because of --minimal option that does not install the fake package in solver
-        with temp_benchmark(objective=objective, solvers=[solver], datasets=[dataset]) as benchmark:
+        # Install should succeed because of --minimal option that does
+        # not install the fake package in solver
+        with temp_benchmark(objective=objective,
+                            solvers=[solver],
+                            datasets=[dataset]) as benchmark:
             with CaptureRunOutput() as out:
                 install([
                     *f'{benchmark.benchmark_dir} --minimal --force -y '
