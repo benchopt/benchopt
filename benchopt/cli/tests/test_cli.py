@@ -633,6 +633,64 @@ class TestInstallCmd:
                         f'--env-name {test_env_name}'.split()
                     ], 'benchopt', standalone_mode=False)
 
+    def test_minimal_installation(self, test_env_name):
+        objective = """
+            from benchopt import safe_import_context, BaseObjective
+
+            with safe_import_context() as import_ctx:
+                import dummy_package
+
+            class Objective(BaseObjective):
+                name = "requires_dummy"
+                requirements = [
+                    'pip::git+https://github.com/tommoral/dummy_package'
+                ]
+                def set_data(self): pass
+                def evaluate_result(self, beta): pass
+                def get_one_result(self): pass
+                def get_objective(self): pass
+        """
+
+        solver = f"""from benchopt import BaseSolver
+            import numpy as np
+
+            class Solver(BaseSolver):
+                name = 'solver1'
+
+                requirements = [
+                    "fake_package"
+                ]
+
+                def set_objective(self, X, y, lmbd): pass
+                def run(self, n_iter): pass
+
+                def get_result(self):
+                    return 0
+        """
+
+        dataset = f"""from benchopt import BaseDataset
+            import numpy as np
+
+            class Dataset(BaseDataset):
+                name = 'dataset1'
+
+                requirements = [
+                    "fake_package"
+                ]
+
+            def get_data(): pass
+        """
+
+        # Install should succeed because of --minimal option that does not install the fake package in solver
+        with temp_benchmark(objective=objective, solvers=[solver], datasets=[dataset]) as benchmark:
+            with CaptureRunOutput() as out:
+                install([
+                    *f'{benchmark.benchmark_dir} --minimal --force -y '
+                    f'--env-name {test_env_name}'.split()
+                ], 'benchopt', standalone_mode=False)
+
+        out.check_output('Checking installed packages...')
+
     def test_no_error_minimal_requirements(self, test_env_name,
                                            uninstall_dummy_package):
 
