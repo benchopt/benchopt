@@ -462,7 +462,7 @@ class Benchmark:
                 post_install_hooks += hooks
                 if len(scripts) > 0 or len(reqs) > 0:
                     check_installs += [klass]
-            print(colorify(' done', GREEN))
+        print(colorify(' done', GREEN))
 
         # Install the collected requirements
         list_install = '\n'.join([
