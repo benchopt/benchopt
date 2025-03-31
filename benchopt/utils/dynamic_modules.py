@@ -45,7 +45,7 @@ def _load_class_from_module(module_filename, class_name, benchmark_dir):
     """Load a class from a module_filename.
 
     This helper also stores info necessary for DependenciesMixing to check the
-    the correct installation and to reload the classes.
+    correct installation and to reload the classes.
 
     Parameters
     ----------

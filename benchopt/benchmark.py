@@ -1,4 +1,5 @@
 import re
+import ast
 import click
 import warnings
 import itertools
@@ -210,7 +211,6 @@ class Benchmark:
                     ))
 
             except Exception:
-
                 import traceback
                 tb_to_print = traceback.format_exc(chain=False)
 
@@ -232,6 +232,17 @@ class Benchmark:
                         return False
 
                 cls = FailedImport
+
+                # read with ast, return mockclass with correct attributes
+
+                # class MockClass(ParamtetrizedNameMixin, DependenciesMixin):
+                #     def __init__(self, name, install_cmd, requirements):
+                #         self.name = name
+                #         self.requirements = requirements
+                #         self.install_cmd = install_cmd
+                # name, install_cmd, reqs = get_cls_attributes(
+                #     module_filename, cls_name)
+                # cls = MockClass(name, install_cmd, reqs)
             classes.append(cls)
 
         classes.sort(key=lambda c: c.name.lower())
@@ -910,6 +921,26 @@ def buffer_iterator(it):
 
     return buffered_it(buffer), buffer
 
+
+def get_cls_attributes(module_file, cls_name):
+    module = ast.parse(module_filename.read_text())
+
+    cls_list = [node for node in module.body if isinstance(node, ast.ClassDef)
+                                           and node.name == cls_name]
+    if not cls_list:
+        raise ValueError(f"Could not find {cls_name} in module {module_file}.")
+    cls = cls_list[0]
+
+    for node in cls.body:
+        if isinstance(node, ast.Assign):
+            for target in node.targets:
+                if target.id == "requirements":
+                    reqs = ast.literal_eval(node.value)
+                elif target.id == "name":
+                    name = ast.literal_eval(node.value)
+                elif target.id == "install_cmd":
+                    install_cmd = ast.literal_eval(node.value)
+    return name, install_cmd, requirements
 
 def get_failed_import_object_name(module_file, cls_name):
     # Parse the module file to find the name of the failing object
