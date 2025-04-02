@@ -1,5 +1,6 @@
 """Utilities to load classes and module from filenames and class names.
 """
+import ast
 import sys
 import hashlib
 import warnings
@@ -9,7 +10,8 @@ from pathlib import Path
 from joblib.externals import cloudpickle
 
 from .safe_import import safe_import_context
-from .parametrized_name_mixin import ParametrizedNameMixin
+from .dependencies_mixin import DependenciesMixin
+
 
 
 def _get_module_from_file(module_filename, benchmark_dir=None):
@@ -74,10 +76,12 @@ def _load_class_from_module(module_filename, class_name, benchmark_dir):
             import traceback
             tb_to_print = traceback.format_exc(chain=False)
 
+            # avoid circular import
+            from .parametrized_name_mixin import ParametrizedNameMixin
             class FailedImport(ParametrizedNameMixin, DependenciesMixin):
                 "Object for the class list that raises error if used."
 
-                name, install_cmd, requirements = _get_failed_import_attributes(
+                name, install_cmd, requirements = _get_cls_attributes(
                     module_filename, class_name
                 )
 
@@ -137,7 +141,7 @@ def _reconstruct_class(module_filename, class_name, benchmark_dir,
 
 
 def _get_cls_attributes(module_file, cls_name):
-    module = ast.parse(module_filename.read_text())
+    module = ast.parse(module_file.read_text())
 
     cls_list = [node for node in module.body if isinstance(node, ast.ClassDef)
                                            and node.name == cls_name]
