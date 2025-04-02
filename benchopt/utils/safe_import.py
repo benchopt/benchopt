@@ -16,18 +16,6 @@ class SkipWithBlock(Exception):
     pass
 
 
-def skip_import():
-    """Once called, all the safe_import_context is skipped."""
-    global SKIP_IMPORT
-    SKIP_IMPORT = True
-
-
-def _unskip_import():
-    """Helper to reenable imports in tests."""
-    global SKIP_IMPORT
-    SKIP_IMPORT = False
-
-
 def set_benchmark_module(benchmark_dir):
     global BENCHMARK_DIR
     BENCHMARK_DIR = Path(benchmark_dir)

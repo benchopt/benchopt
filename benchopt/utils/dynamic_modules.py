@@ -13,6 +13,20 @@ from .safe_import import safe_import_context
 from .dependencies_mixin import DependenciesMixin
 
 
+SKIP_IMPORT = False
+
+
+def skip_import():
+    """Once called, all the safe_import_context is skipped."""
+    global SKIP_IMPORT
+    SKIP_IMPORT = True
+
+
+def _unskip_import():
+    """Helper to reenable imports in tests."""
+    global SKIP_IMPORT
+    SKIP_IMPORT = False
+
 
 def _get_module_from_file(module_filename, benchmark_dir=None):
     """Load a module from the name of the file"""
@@ -149,12 +163,12 @@ def _get_cls_attributes(module_file, cls_name):
         raise ValueError(f"Could not find {cls_name} in module {module_file}.")
     cls = cls_list[0]
 
-    name, install_cmd, reqs = None, "conda", []
+    name, install_cmd, requirements = None, "conda", []
     for node in cls.body:
         if isinstance(node, ast.Assign):
             for target in node.targets:
                 if target.id == "requirements":
-                    reqs = ast.literal_eval(node.value)
+                    requirements = ast.literal_eval(node.value)
                 elif target.id == "name":
                     name = ast.literal_eval(node.value)
                 elif target.id == "install_cmd":
