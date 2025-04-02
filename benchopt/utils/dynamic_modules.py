@@ -149,6 +149,7 @@ def _get_cls_attributes(module_file, cls_name):
         raise ValueError(f"Could not find {cls_name} in module {module_file}.")
     cls = cls_list[0]
 
+    name, install_cmd, reqs = None, "conda", []
     for node in cls.body:
         if isinstance(node, ast.Assign):
             for target in node.targets:
