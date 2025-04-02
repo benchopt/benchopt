@@ -198,51 +198,17 @@ class Benchmark:
                 # skip template solvers and datasets
                 continue
             # Get the class
-            try:
-                cls = _load_class_from_module(
-                    module_filename, class_name,
-                    benchmark_dir=self.benchmark_dir
-                )
-                if not issubclass(cls, base_class):
-                    warnings.warn(colorify(
-                        f"class {cls.__name__} in {module_filename} is not a "
-                        f"subclass from base class benchopt."
-                        f"{base_class.__name__}", YELLOW
-                    ))
+            cls = _load_class_from_module(
+                module_filename, class_name,
+                benchmark_dir=self.benchmark_dir
+            )
+            if not issubclass(cls, base_class):
+                warnings.warn(colorify(
+                    f"class {cls.__name__} in {module_filename} is not a "
+                    f"subclass from base class benchopt."
+                    f"{base_class.__name__}", YELLOW
+                ))
 
-            except Exception:
-                import traceback
-                tb_to_print = traceback.format_exc(chain=False)
-
-                class FailedImport(ParametrizedNameMixin, DependenciesMixin):
-                    "Object for the class list that raises error if used."
-
-                    name = get_failed_import_object_name(
-                        module_filename, class_name
-                    )
-
-                    @classmethod
-                    def is_installed(cls, **kwargs):
-                        print(
-                            f"Failed to import {class_name} from "
-                            f"{module_filename}. Please fix the following "
-                            "error to use this file with benchopt:\n"
-                            f"{tb_to_print}"
-                        )
-                        return False
-
-                cls = FailedImport
-
-                # read with ast, return mockclass with correct attributes
-
-                # class MockClass(ParamtetrizedNameMixin, DependenciesMixin):
-                #     def __init__(self, name, install_cmd, requirements):
-                #         self.name = name
-                #         self.requirements = requirements
-                #         self.install_cmd = install_cmd
-                # name, install_cmd, reqs = get_cls_attributes(
-                #     module_filename, cls_name)
-                # cls = MockClass(name, install_cmd, reqs)
             classes.append(cls)
 
         classes.sort(key=lambda c: c.name.lower())
@@ -922,46 +888,3 @@ def buffer_iterator(it):
     return buffered_it(buffer), buffer
 
 
-def get_cls_attributes(module_file, cls_name):
-    module = ast.parse(module_filename.read_text())
-
-    cls_list = [node for node in module.body if isinstance(node, ast.ClassDef)
-                                           and node.name == cls_name]
-    if not cls_list:
-        raise ValueError(f"Could not find {cls_name} in module {module_file}.")
-    cls = cls_list[0]
-
-    for node in cls.body:
-        if isinstance(node, ast.Assign):
-            for target in node.targets:
-                if target.id == "requirements":
-                    reqs = ast.literal_eval(node.value)
-                elif target.id == "name":
-                    name = ast.literal_eval(node.value)
-                elif target.id == "install_cmd":
-                    install_cmd = ast.literal_eval(node.value)
-    return name, install_cmd, requirements
-
-def get_failed_import_object_name(module_file, cls_name):
-    # Parse the module file to find the name of the failing object
-
-    import ast
-    module_ast = ast.parse(Path(module_file).read_text())
-    classdef = [
-        c for c in module_ast.body
-        if isinstance(c, ast.ClassDef) and c.name == cls_name
-    ]
-    if len(classdef) == 0:
-        raise ValueError(f"Could not find {cls_name} in module {module_file}.")
-    c = classdef[-1]
-    name_assign = [
-        a for a in c.body
-        if (isinstance(a, ast.Assign) and any(list(
-            (isinstance(t, ast.Name) and t.id == "name") for t in a.targets
-        )))
-    ]
-    if len(name_assign) == 0:
-        raise ValueError(
-            f"Could not find {cls_name} name in module {module_file}"
-        )
-    return name_assign[-1].value.value
