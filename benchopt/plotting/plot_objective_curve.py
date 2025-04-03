@@ -164,7 +164,7 @@ def get_solver_style(solver, plotly=True):
     marker = MARKERS[idx % len(MARKERS)]
 
     if plotly:
-        color = tuple(255*x if i != 3 else x for i, x in enumerate(color))
+        color = tuple(255*float(x) if i != 3 else float(x) for i, x in enumerate(color))
         color = f'rgba{color}'
         marker = idx
 
