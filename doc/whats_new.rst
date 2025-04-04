@@ -19,8 +19,15 @@ Major change
 CLI
 ---
 
+- Add `--gpu` flag to handle different requirements for GPU and CPU.
+  By `Mathurin Massias_` (:gh:`793`)
+
 API
 ---
+
+- Support `requirements` being a dictionary with keys `gpu` and `cpu`, for
+  classes whose install differ on GPU and CPU.
+  By `Mathurin Massias_` (:gh:`793`)
 
 - Change channel specification in requirements, replacing the split format
   with ``::`` instead of ``:``. This allow specifying URL channels.
