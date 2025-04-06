@@ -16,6 +16,9 @@ Major change
 - Benchopt is now supported on Windows!! \o/
   By `Wassim Mazouz`_, `Mathurin Massias`_ and `Thomas Moreau`_ (:gh:`717`)
 
+- You can now create benchmarks on the fly by writing your benchmark in a single file.
+  By `Thomas Moreau`_ (:gh:`641`)
+
 CLI
 ---
 

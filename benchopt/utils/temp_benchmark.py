@@ -7,6 +7,7 @@ from pathlib import Path
 
 from benchopt.benchmark import Benchmark
 from benchopt.tests import DUMMY_BENCHMARK_PATH
+from benchopt.mini import get_mini_benchmark
 
 
 dummy_objective = (DUMMY_BENCHMARK_PATH / 'objective.py').read_text()
@@ -89,3 +90,75 @@ def temp_benchmark(
                     f.write(inspect.cleandoc(content))
 
         yield Benchmark(temp_path)
+
+
+@contextlib.contextmanager
+def temp_mini_benchmark(
+        mini_bench=None, config=None,
+        benchmark_utils=None
+):
+    """Create Benchmark in a temporary folder, for test purposes.
+
+    Parameters
+    ----------
+    mini_bench: str | None (default=None)
+        Content of the mini benchmark file. If None, defaults to mini benchmark
+        defined inside this context manager
+    config: str | None (default=None)
+        Content of configuration file for running the Benchmark. If None,
+        no config file is created.
+    benchmark_utils: dict(fname->str) | None (default=None)
+    """
+    if mini_bench is None:
+        benchmark = """from benchopt.mini import solver, dataset, objective
+            import jax
+            
+            @dataset(
+                size=100,
+                random_state=0
+            )
+            def simulated(size, random_state):
+                key = jax.random.PRNGKey(random_state)
+                key, subkey = jax.random.split(key)
+                X = jax.random.normal(key, (size,))
+                return dict(X=X)
+            
+            
+            @solver(
+                name="Solver 1",
+                lr=[1e-2, 1e-3]
+            )
+            def solver1(n_iter, X, lr):
+                beta = X
+                for i in range(n_iter):
+                    beta -= lr * beta
+            
+                return dict(beta=beta)
+            
+            
+            @objective(name="Benchmark HVP")
+            def evaluate(beta):
+                return dict(value=(0.5 * beta.dot(beta)).item())
+        """
+    else:
+        benchmark = mini_bench
+
+    with tempfile.TemporaryDirectory() as tempdir:
+        temp_path = Path(tempdir)
+        with open(temp_path / "benchmark.py", "w", encoding='utf-8') as f:
+            f.write(inspect.cleandoc(benchmark))
+
+        if config is not None:
+            with open(temp_path / "config.yml", "w", encoding='utf-8') as f:
+                f.write(config)
+
+        if benchmark_utils is not None:
+            benchmark_utils_dir = (temp_path / "benchmark_utils")
+            benchmark_utils_dir.mkdir()
+            (benchmark_utils_dir / "__init__.py").touch()
+            for fname, content in benchmark_utils.items():
+                fname = (benchmark_utils_dir / fname).with_suffix(".py")
+                with open(fname, "w") as f:
+                    f.write(inspect.cleandoc(content))
+
+        yield get_mini_benchmark(temp_path / "benchmark.py")
