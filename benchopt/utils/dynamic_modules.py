@@ -37,8 +37,32 @@ def _get_module_from_file(module_filename, benchmark_dir=None):
 
         # Make functions define in the dynamic module pickleable
         cloudpickle.register_pickle_by_value(module)
-
     return module
+
+
+def _get_import_context(module):
+    """Helper to get the import context from a module.
+
+    In particular, if `import_ctx` is not defined, check that no local objects
+    is an instance of safe_import_context.
+    """
+    import_ctx = getattr(module, 'import_ctx', None)
+    if import_ctx is not None:
+        return import_ctx
+
+    for var_name in dir(module):
+        var = getattr(module, var_name)
+        if isinstance(var, safe_import_context):
+            import_ctx = var
+            warnings.warn(
+                "Import contexts should preferably be named import_ctx, "
+                f"got {var_name}.",  UserWarning
+            )
+            break
+    else:
+        import_ctx = safe_import_context()
+
+    return import_ctx
 
 
 def _load_class_from_module(module_filename, class_name, benchmark_dir):
@@ -62,29 +86,13 @@ def _load_class_from_module(module_filename, class_name, benchmark_dir):
     klass : class
         The klass requested from the given module.
     """
-    benchmark_dir = Path(benchmark_dir)
-    module_filename = Path(module_filename)
     module = _get_module_from_file(module_filename, benchmark_dir)
     klass = getattr(module, class_name)
 
-    # Store the info to easily reload the class
+    # Store the info to easily reload the class and check it is installed
     klass._module_filename = module_filename.resolve()
+    klass._import_ctx = _get_import_context(module)
 
-    klass._import_ctx = getattr(module, 'import_ctx', None)
-    if klass._import_ctx is None:
-        for var_name in dir(module):
-            var = getattr(module, var_name)
-            if isinstance(var, safe_import_context):
-                klass._import_ctx = var
-                warnings.warn(
-                    "Import contexts should preferably be named import_ctx, "
-                    f"got {var_name}.",  UserWarning
-                )
-                break
-        else:
-            klass._import_ctx = safe_import_context()
-
-    klass._benchmark_dir = benchmark_dir.resolve()
     return klass
 
 

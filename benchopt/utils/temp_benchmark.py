@@ -42,9 +42,9 @@ def temp_benchmark(
     solvers: str | list of str | None (default=None)
         Content of the solver.py file(s). If None, defaults to solvers of
         ``benchopt.tests.DUMMY_BENCHMARK``.
-    config: str | None (default=None)
-        Content of configuration file for running the Benchmark. If None,
-        no config file is created.
+    config: str | dict(fname->content) | None (default=None)
+        Mapping between filenames and contents. If only one content is provided
+        it will be written in `config.yml`. If None, no config file is created.
     benchmark_utils: dict(fname->str) | None (default=None)
     """
     if objective is None:
@@ -76,8 +76,12 @@ def temp_benchmark(
                 f.write(inspect.cleandoc(dataset))
 
         if config is not None:
-            with open(temp_path / "config.yml", "w", encoding='utf-8') as f:
-                f.write(config)
+            if isinstance(config, str):
+                config = {'config.yml': config}
+            if not isinstance(config, dict):
+                raise ValueError("config should either be a string or a dict.")
+            for fname, content in config.items():
+                (temp_path / fname).write_text(inspect.cleandoc(content))
 
         if benchmark_utils is not None:
             benchmark_utils_dir = (temp_path / "benchmark_utils")

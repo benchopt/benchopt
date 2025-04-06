@@ -84,12 +84,12 @@ class TerminalOutput:
         self.verbose = True
 
     def clone(self):
-        new_output = TerminalOutput(self.n_repetitions, self.show_progress)
-        new_output.set(
+        new_terminal = TerminalOutput(self.n_repetitions, self.show_progress)
+        new_terminal.set(
             solver=self.solver, dataset=self.dataset, objective=self.objective,
             verbose=self.verbose, rep=self.rep, i_solver=self.i_solver
         )
-        return new_output
+        return new_terminal
 
     def set(self, solver=None, dataset=None, objective=None, verbose=None,
             rep=None, i_solver=None):
