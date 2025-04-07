@@ -69,7 +69,7 @@ jobs:
       - name: Install benchopt and its dependencies
         run: |
           ${{ env.BENCHOPT_CONDA_CMD }} info
-          ${{ env.BENCHOPT_CONDA_CMD }} install -yqv pip
+          ${{ env.BENCHOPT_CONDA_CMD }} install -yq pip
           pip install -e .[test]
 
       # TODO merge this with previous test if possible
