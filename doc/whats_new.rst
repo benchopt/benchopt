@@ -13,14 +13,21 @@ Version 1.7 - in development
 Major change
 ------------
 
-- Benchopt is now supported on Windows!! \o/
+- Benchopt is now supported on Windows!! \\o/
   By `Wassim Mazouz`_, `Mathurin Massias`_ and `Thomas Moreau`_ (:gh:`717`)
 
 CLI
 ---
 
+- Add ``--gpu`` flag to ``benchopt install``, to handle different requirements
+  for GPU and CPU. By `Mathurin Massias`_ (:gh:`793`)
+
 API
 ---
+
+- Support ``requirements`` being a dictionary with keys ``"gpu"`` and ``"cpu"``, for
+  classes whose install differ on GPU and CPU.
+  By `Mathurin Massias`_ (:gh:`793`)
 
 - Change channel specification in requirements, replacing the split format
   with ``::`` instead of ``:``. This allow specifying URL channels.
@@ -43,7 +50,7 @@ FIX
 - Fix the ``skip`` API for objectives that was leading to a display error.
   By `Thomas Moreau`_ (:gh:`763`)
 
-- Fix the ``info`` command By `Pierre-Antoine Comby`_ (:gh:`&67`)
+- Fix the ``info`` command. By `Pierre-Antoine Comby`_ (:gh:`768`)
 
 .. _changes_1_6:
 
@@ -53,7 +60,7 @@ Version 1.6 - 15/07/2024
 API
 ~~~
 
-- Add a `save_final_results` method to Objective. If implemented it is run
+- Add a ``save_final_results`` method to Objective. If implemented it is run
   after the last solver iteration, to get desired outputs to be saved to file
   system. By `Pierre-Antoine Comby`_ (:gh:`722`)
 
@@ -98,7 +105,7 @@ FIX
 DOC
 ~~~
 
-- Add documentation for the `run_once` sampling strategy.
+- Add documentation for the ``run_once`` sampling strategy.
   By `Mathieu Dagréou`_ (:gh:`700`).
 
 .. _changes_1_5_1:

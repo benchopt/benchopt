@@ -159,7 +159,7 @@ class DependenciesMixin:
         return is_installed
 
     @classmethod
-    def collect(cls, env_name=None, force=False):
+    def collect(cls, env_name=None, force=False, gpu=False):
         """Collect info for global installation of all classes in an env.
 
         Parameters
@@ -194,6 +194,15 @@ class DependenciesMixin:
                 ]
             else:
                 conda_reqs = getattr(cls, "requirements", [])
+                if isinstance(conda_reqs, dict):
+                    try:
+                        conda_reqs = (conda_reqs["gpu"] if gpu
+                                      else conda_reqs["cpu"])
+                    except KeyError:
+                        raise ValueError(
+                            "If `requirements` is a dict, its keys should be "
+                            f"`cpu` and `gpu`, got {list(conda_reqs.keys())}"
+                        )
                 if not is_installed and len(conda_reqs) == 0:
                     missing_deps = cls
             post_install_hooks = [cls._post_install_hook]
