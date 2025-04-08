@@ -92,21 +92,19 @@ def test_gpu_flag(no_debug_log):
         with CaptureRunOutput():
             with pytest.raises(ValueError, match=re.escape(err)):
                 install([str(benchmark.benchmark_dir),
-                        *'-y -f -s solver1 --gpu'.split()],
+                         *'-y -f -s solver1 --gpu'.split()],
                         standalone_mode=False)
 
         # installing without gpu flag installs requirements["cpu"], hence OK
         with CaptureRunOutput() as out:
             install([str(benchmark.benchmark_dir),
                      *'-y -f -s solver1'.split()],
-                     standalone_mode=False)
+                    standalone_mode=False)
         out.check_output("All required solvers are already installed.")
-
 
         # all good with requirements["cpu"] for solver2, hence no error
         with CaptureRunOutput() as out:
             install([str(benchmark.benchmark_dir),
                      *'-y -f -s solver2 --gpu'.split()],
-                     standalone_mode=False)
+                    standalone_mode=False)
         out.check_output("All required solvers are already installed.")
-
