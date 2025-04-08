@@ -17,7 +17,7 @@ from benchopt.benchmark import _extract_parameters
 from benchopt.benchmark import _list_parametrized_classes
 from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.tests.utils import CaptureRunOutput
-from benchopt.cli.main import run, install
+from benchopt.cli.main import run
 
 
 @pytest.mark.parametrize('n_jobs', [1, 2, 4])
@@ -453,51 +453,3 @@ def test_prefix_with_same_parameters():
         assert "s" in df['p_solver_type'].unique()
         assert "s" not in df['p_dataset_type'].unique()
         assert "d" in df['p_dataset_type'].unique()
-
-
-
-def test_gpu_flag(no_debug_log):
-
-    objective = """from benchopt import BaseObjective
-
-        class Objective(BaseObjective):
-            name = "test_obj"
-            min_benchopt_version = "0.0.0"
-
-            def set_data(self, X, y): pass
-            def get_one_result(self): pass
-            def evaluate_result(self, beta): return dict(value=1)
-            def get_objective(self): return dict(X=0, y=0)
-    """
-
-    solver1 = """from benchopt import BaseSolver
-
-    class Solver(BaseSolver):
-        name = "failing-solver"
-        requirements = {"wrong_key": 1, "cpu": 2}
-    """
-
-    solver2 = """from benchopt import BaseSolver
-
-    class Solver(BaseSolver):
-        name = "normal-solver"
-        sampling_strategy = 'iteration'
-        requirements = []
-    """
-
-    dataset = """from benchopt import BaseDataset
-
-    class Dataset(BaseDataset):
-        name = "dataset"
-        def get_data(self):
-            return dict(X=0, y=1)
-    """
-
-    with temp_benchmark(objective=objective,
-                        solvers=[solver1, solver2],
-                        datasets=[dataset]) as benchmark:
-        with CaptureRunOutput() as out:
-            install([str(benchmark.benchmark_dir),
-                *' -s solver1 --gpu --env'.split()],
-                standalone_mode=False)
-

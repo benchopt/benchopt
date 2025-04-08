@@ -1,6 +1,7 @@
 import pytest
 
 from benchopt.cli.main import install
+from benchopt.tests.utils import CaptureRunOutput
 from benchopt.utils.temp_benchmark import temp_benchmark
 
 
@@ -52,3 +53,49 @@ def test_conda_default_install_cmd():
 
         # Check that the default 'install_cmd' is 'conda'
         assert getattr(solver_instance, "install_cmd", "conda") == "conda"
+
+
+def test_gpu_flag(no_debug_log):
+
+    objective = """from benchopt import BaseObjective
+
+        class Objective(BaseObjective):
+            name = "test_obj"
+            min_benchopt_version = "0.0.0"
+
+            def set_data(self, X, y): pass
+            def get_one_result(self): pass
+            def evaluate_result(self, beta): return dict(value=1)
+            def get_objective(self): return dict(X=0, y=0)
+    """
+
+    solver1 = """from benchopt import BaseSolver
+
+    class Solver(BaseSolver):
+        name = "solver1"
+        requirements = {"wrong_key": 1, "cpu": 2}
+    """
+
+    solver2 = """from benchopt import BaseSolver
+
+    class Solver(BaseSolver):
+        name = "solver2"
+        sampling_strategy = 'iteration'
+        requirements = []
+    """
+
+    dataset = """from benchopt import BaseDataset
+
+    class Dataset(BaseDataset):
+        name = "dataset"
+        def get_data(self):
+            return dict(X=0, y=1)
+    """
+
+    with temp_benchmark(objective=objective,
+                        solvers=[solver1, solver2],
+                        datasets=[dataset]) as benchmark:
+        with CaptureRunOutput():
+            install([str(benchmark.benchmark_dir),
+                     *'-y -s solver1 --gpu'.split()],
+                     standalone_mode=False)
