@@ -1,3 +1,4 @@
+import re
 import pytest
 
 from benchopt.cli.main import install
@@ -95,7 +96,9 @@ def test_gpu_flag(no_debug_log):
     with temp_benchmark(objective=objective,
                         solvers=[solver1, solver2],
                         datasets=[dataset]) as benchmark:
-        with CaptureRunOutput():
-            install([str(benchmark.benchmark_dir),
-                     *'-y -s solver1 --gpu'.split()],
-                     standalone_mode=False)
+        err = ("keys should be `cpu` and `gpu`, got ['wrong_key', 'cpu']")
+        with CaptureRunOutput() as out:
+            with pytest.raises(ValueError, match=re.escape(err)):
+                install([str(benchmark.benchmark_dir),
+                        *'-y -f -s solver1 --gpu'.split()],
+                        standalone_mode=False)
