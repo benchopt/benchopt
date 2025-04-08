@@ -200,7 +200,8 @@ class DependenciesMixin:
                     except KeyError:
                         raise ValueError(
                             "If `requirements` is a dict, its keys should be "
-                            f"`cpu` and `gpu`, got {list(conda_reqs.keys())}")
+                            f"`cpu` and `gpu`, got {list(conda_reqs.keys())}"
+                        )
                 if not is_installed and len(conda_reqs) == 0:
                     missing_deps = cls
             post_install_hooks = [cls._post_install_hook]

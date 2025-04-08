@@ -20,7 +20,7 @@ CLI
 ---
 
 - Add `--gpu` flag to handle different requirements for GPU and CPU.
-  By `Mathurin Massias_` (:gh:`793`)
+  By `Mathurin Massias`_ (:gh:`793`)
 
 API
 ---
