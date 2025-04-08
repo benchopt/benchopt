@@ -81,21 +81,13 @@ def test_gpu_flag(no_debug_log):
 
     class Solver(BaseSolver):
         name = "solver2"
+        requirements = {"gpu": [], "cpu": ["unknown_implausible_pkg"]}
         sampling_strategy = 'iteration'
-        requirements = []
-    """
-
-    dataset = """from benchopt import BaseDataset
-
-    class Dataset(BaseDataset):
-        name = "dataset"
-        def get_data(self):
-            return dict(X=0, y=1)
     """
 
     with temp_benchmark(objective=objective,
                         solvers=[solver1, solver2],
-                        datasets=[dataset]) as benchmark:
+                        ) as benchmark:
         err = ("keys should be `cpu` and `gpu`, got ['wrong_key', 'cpu']")
         with CaptureRunOutput():
             with pytest.raises(ValueError, match=re.escape(err)):
@@ -103,9 +95,18 @@ def test_gpu_flag(no_debug_log):
                         *'-y -f -s solver1 --gpu'.split()],
                         standalone_mode=False)
 
-        # installing without gpu flag install requirements["cpu"], hence OK
+        # installing without gpu flag installs requirements["cpu"], hence OK
         with CaptureRunOutput() as out:
             install([str(benchmark.benchmark_dir),
                      *'-y -f -s solver1'.split()],
                      standalone_mode=False)
         out.check_output("All required solvers are already installed.")
+
+
+        # all good with requirements["cpu"] for solver2, hence no error
+        with CaptureRunOutput() as out:
+            install([str(benchmark.benchmark_dir),
+                     *'-y -f -s solver2 --gpu'.split()],
+                     standalone_mode=False)
+        out.check_output("All required solvers are already installed.")
+
