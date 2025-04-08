@@ -68,15 +68,17 @@ def compute_solver_boxplot_data(df, obj_col):
     # By SOLVERS : Compute final time and final objective_value data
     boxplot_by_solver = dict(
         final_times=(
-            df[['idx_rep', 'time']]
-            .groupby('idx_rep')['time']
-            .max()
-        ).tolist(),
+            df[['idx_rep', 'stop_val', 'time']]
+            .groupby('idx_rep').apply(
+                lambda x: x['time'].loc[x['stop_val'] == x['stop_val'].max()]
+            )
+        ).transpose()[0].tolist(),
         final_objective_value=(
-            df[['idx_rep', obj_col]]
-            .groupby('idx_rep')[obj_col]
-            .min()
-        ).tolist()
+            df[['idx_rep', 'stop_val', obj_col]]
+            .groupby('idx_rep').apply(
+                lambda x: x[obj_col].loc[x['stop_val'] == x['stop_val'].max()]
+            )
+        ).transpose()[0].tolist()
     )
 
     # By ITERATIONS : Compute time and objective_value per iteration
