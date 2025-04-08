@@ -196,7 +196,8 @@ class DependenciesMixin:
                 conda_reqs = getattr(cls, "requirements", [])
                 if isinstance(conda_reqs, dict):
                     try:
-                        conda_reqs = conda_reqs["gpu"] if gpu else conda_reqs["cpu"]
+                        conda_reqs = (conda_reqs["gpu"] if gpu
+                                      else conda_reqs["cpu"])
                     except KeyError:
                         raise ValueError(
                             "If `requirements` is a dict, its keys should be "
