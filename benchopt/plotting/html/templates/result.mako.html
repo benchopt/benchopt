@@ -80,7 +80,7 @@
                         <div class="mt-8 px-8">
                             <label for="plot_kind" class="block text-sm font-medium text-white">Chart type</label>
                             <div class="mt-1 rounded-md shadow-sm">
-                                <select id="plot_kind" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({plot_kind: this.value, scale: (this.value === 'boxplot' || state().plot_kind === 'boxplot' ? 'linear' : state().scale)})">
+                                <select id="plot_kind" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({plot_kind: this.value, scale: (this.value === 'boxplot_chart' || state().plot_kind === 'boxplot_chart' ? 'linear' : state().scale)})">
                                     % for kind in result['kinds']:
                                     <option value="${kind}">${kind}</option>
                                     %endfor
@@ -108,15 +108,7 @@
                                     <option value="Time" class="hidden">Time</option>
                                     <option value="Iteration" class="hidden">Iteration</option>
                                     <option value="Solver" class="hidden">Solver</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div id="yaxis-type-form-group" class="mt-8 px-8">
-                            <label for="change_yaxis_type" class="block text-sm font-medium text-white">Y-axis</label>
-                            <div class="mt-1 rounded-md shadow-sm">
-                                <select id="change_yaxis_type" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({yaxis_type: this.value})">
-                                    <option value="objective_column">Objective metric</option>
-                                    <option value="time">Time</option>
+                                    <option value="Energy consumption (Joules)" class="hidden">Energy consumption</option> 
                                 </select>
                             </div>
                         </div>
