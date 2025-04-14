@@ -254,3 +254,49 @@ as binaries from the package managers from either Python, R or Julia.
     See for example on the L1 logistic regression benchmark for
     `an example <https://github.com/benchopt/benchmark_logreg_l1/blob/master/solvers/liblinear.py>`_
     that uses a ``'shell'`` as ``install_cmd``.
+
+Write a benchmark on the fly
+----------------------------
+
+You have the option to write the entire benchmark in a single file.
+The contents of the file should look like the following code:
+
+```python
+from benchopt.mini import solver, dataset, objective
+import jax
+
+@dataset(
+    size=100,
+    random_state=0
+)
+def simulated(size, random_state):
+    key = jax.random.PRNGKey(random_state)
+    key, subkey = jax.random.split(key)
+    X = jax.random.normal(key, (size,))
+    return dict(X=X)
+
+
+@solver(
+    name="Solver 1",
+    lr=[1e-2, 1e-3]
+)
+def solver1(n_iter, X, lr):
+    beta = X
+    for i in range(n_iter):
+        beta -= lr * beta
+
+    return dict(beta=beta)
+
+
+@objective(name="Benchmark HVP")
+def evaluate(beta):
+    return dict(value=(0.5 * beta.dot(beta)).item())
+```
+
+To run the benchmark, remember to add the `--mini` option. For instance
+if your file is named `my_benchmark.py` you can run your mini benchmark
+with the following command :
+
+```bash
+benchopt run --mini my_benchmark.py
+```
