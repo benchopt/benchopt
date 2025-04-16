@@ -202,12 +202,13 @@ class Benchmark:
                 module_filename, class_name,
                 benchmark_dir=self.benchmark_dir
             )
-            if not issubclass(cls, base_class):
-                warnings.warn(colorify(
-                    f"class {cls.__name__} in {module_filename} is not a "
-                    f"subclass from base class benchopt."
-                    f"{base_class.__name__}", YELLOW
-                ))
+            if (not issubclass(cls, base_class) and
+                cls.__name__ != "FailedImport"):
+                    warnings.warn(colorify(
+                        f"class {cls.__name__} in {module_filename} is not a "
+                        f"subclass from base class benchopt."
+                        f"{base_class.__name__}", YELLOW
+                    ))
 
             classes.append(cls)
 
