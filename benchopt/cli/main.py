@@ -417,10 +417,14 @@ def run(config_file=None, **kwargs):
               help="If this flag is set, no confirmation will be asked "
               "to the user to install requirements in the current environment."
               " Useless with options `-e/--env` or `--env-name`.")
+@click.option('--gpu', is_flag=True, default=False,
+              help="Use this flag to install requirements['gpu'] for solvers "
+                   "and datasets that have different requirements for GPU and "
+                   "CPU.")
 def install(
         benchmark, minimal, solver_names, dataset_names, config_file=None,
         force=False, recreate=False, env_name='False', confirm=False,
-        quiet=False, download=False):
+        quiet=False, download=False, gpu=False):
 
     if config_file is not None:
         with open(config_file, "r") as f:
@@ -432,7 +436,7 @@ def install(
             forced_solvers = config.get("force-solver", tuple())
             solver_names = list(set(solver_names).union(set(forced_solvers)))
 
-    # Instanciate the benchmark
+    # Instantiate the benchmark
     benchmark = Benchmark(benchmark)
 
     # Get a list of all conda envs
@@ -502,7 +506,7 @@ def install(
     benchmark.install_all_requirements(
         include_solvers=solvers, include_datasets=datasets,
         minimal=minimal, env_name=env_name, force=force, quiet=quiet,
-        download=download
+        download=download, gpu=gpu,
     )
 
 
