@@ -1,5 +1,3 @@
-import traceback
-
 from ..config import RAISE_INSTALL_ERROR
 
 from .class_property import classproperty

@@ -1,5 +1,4 @@
 import re
-import ast
 import click
 import warnings
 import itertools
@@ -10,9 +9,7 @@ from .base import BaseSolver, BaseDataset
 
 from .utils.safe_import import set_benchmark_module
 from .utils.dynamic_modules import _load_class_from_module
-from .utils.dependencies_mixin import DependenciesMixin
 from .utils.parametrized_name_mixin import product_param
-from .utils.parametrized_name_mixin import ParametrizedNameMixin
 
 from .utils.terminal_output import colorify
 from .utils.terminal_output import GREEN, YELLOW
@@ -70,6 +67,7 @@ class Benchmark:
     mem : joblib.Memory
         Caching mechanism for the benchmark.
     """
+
     def __init__(
         self, benchmark_dir, allow_meta_from_json=False,
     ):
@@ -203,12 +201,12 @@ class Benchmark:
                 benchmark_dir=self.benchmark_dir
             )
             if (not issubclass(cls, base_class) and
-                cls.__name__ != "FailedImport"):
-                    warnings.warn(colorify(
-                        f"class {cls.__name__} in {module_filename} is not a "
-                        f"subclass from base class benchopt."
-                        f"{base_class.__name__}", YELLOW
-                    ))
+                    cls.__name__ != "FailedImport"):
+                warnings.warn(colorify(
+                    f"class {cls.__name__} in {module_filename} is not a "
+                    f"subclass from base class benchopt."
+                    f"{base_class.__name__}", YELLOW
+                ))
 
             classes.append(cls)
 
@@ -891,5 +889,3 @@ def buffer_iterator(it):
             yield val
 
     return buffered_it(buffer), buffer
-
-

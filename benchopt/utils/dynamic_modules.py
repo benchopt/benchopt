@@ -3,13 +3,11 @@
 import ast
 import sys
 import hashlib
-import warnings
 import importlib
 from pathlib import Path
 
 from joblib.externals import cloudpickle
 
-from .safe_import import safe_import_context
 from .dependencies_mixin import DependenciesMixin
 
 
@@ -87,29 +85,30 @@ def _load_class_from_module(module_filename, class_name, benchmark_dir):
         module = _get_module_from_file(module_filename, benchmark_dir)
         klass = getattr(module, class_name)
     except Exception:
-            import traceback
-            tb_to_print = traceback.format_exc(chain=False)
+        import traceback
+        tb_to_print = traceback.format_exc(chain=False)
 
-            # avoid circular import
-            from .parametrized_name_mixin import ParametrizedNameMixin
-            class FailedImport(ParametrizedNameMixin, DependenciesMixin):
-                "Object for the class list that raises error if used."
+        # avoid circular import
+        from .parametrized_name_mixin import ParametrizedNameMixin
 
-                name, install_cmd, requirements = _get_cls_attributes(
-                    module_filename, class_name
+        class FailedImport(ParametrizedNameMixin, DependenciesMixin):
+            "Object for the class list that raises error if used."
+
+            name, install_cmd, requirements = _get_cls_attributes(
+                module_filename, class_name
+            )
+
+            @classmethod
+            def is_installed(cls, **kwargs):
+                print(
+                    f"Failed to import {class_name} from "
+                    f"{module_filename}. Please fix the following "
+                    "error to use this file with benchopt:\n"
+                    f"{tb_to_print}"
                 )
+                return False
 
-                @classmethod
-                def is_installed(cls, **kwargs):
-                    print(
-                        f"Failed to import {class_name} from "
-                        f"{module_filename}. Please fix the following "
-                        "error to use this file with benchopt:\n"
-                        f"{tb_to_print}"
-                    )
-                    return False
-
-            klass = FailedImport
+        klass = FailedImport
 
     # Store the info to easily reload the class
     klass._module_filename = module_filename.resolve()
@@ -158,7 +157,7 @@ def _get_cls_attributes(module_file, cls_name):
     module = ast.parse(module_file.read_text())
 
     cls_list = [node for node in module.body if isinstance(node, ast.ClassDef)
-                                           and node.name == cls_name]
+                and node.name == cls_name]
     if not cls_list:
         raise ValueError(f"Could not find {cls_name} in module {module_file}.")
     cls = cls_list[0]
@@ -174,27 +173,3 @@ def _get_cls_attributes(module_file, cls_name):
                 elif target.id == "install_cmd":
                     install_cmd = ast.literal_eval(node.value)
     return name, install_cmd, requirements
-
-# def _get_failed_import_object_name(module_file, cls_name):
-#     # Parse the module file to find the name of the failing object
-
-#     import ast
-#     module_ast = ast.parse(Path(module_file).read_text())
-#     classdef = [
-#         c for c in module_ast.body
-#         if isinstance(c, ast.ClassDef) and c.name == cls_name
-#     ]
-#     if len(classdef) == 0:
-#         raise ValueError(f"Could not find {cls_name} in module {module_file}.")
-#     c = classdef[-1]
-#     name_assign = [
-#         a for a in c.body
-#         if (isinstance(a, ast.Assign) and any(list(
-#             (isinstance(t, ast.Name) and t.id == "name") for t in a.targets
-#         )))
-#     ]
-#     if len(name_assign) == 0:
-#         raise ValueError(
-#             f"Could not find {cls_name} name in module {module_file}"
-#         )
-#     return name_assign[-1].value.value
