@@ -353,7 +353,8 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
       If it returns a dictionary, it should at least contain a key
       `value` associated to a scalar value which will be used to
       detect convergence. With a dictionary, multiple metric values can be
-      stored at once instead of running each separately. With a list of dictionaries, these metrics can be computed on different objects.
+      stored at once instead of running each separately. With a list of
+      dictionaries, these metrics can be computed on different objects.
 
     - `get_one_result()`: return one result for which the objective can be
       evaluated. This should be a dictionary where the keys correspond to the
