@@ -484,8 +484,8 @@ class SingleRunCriterion(StoppingCriterion):
 
         return super().get_runner_instance(1, timeout, output, solver)
 
-    def check_convergence(self, cost_curve):
-        return True, 1
+    def should_stop(self, stop_val, objective_list):
+        return True, 'done', stop_val
 
 
 class NoCriterion(StoppingCriterion):
