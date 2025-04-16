@@ -348,12 +348,12 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
 
     - `evaluate_result(**result)`: evaluate the metrics on the results of a
       solver. Its arguments should correspond to the key of the dictionary
-      returned by `Solver.get_result` and it can return a scalar value or
-      a dictionary.
+      returned by `Solver.get_result` and it can return a scalar value,
+      a dictionary or a list of dictionaries.
       If it returns a dictionary, it should at least contain a key
       `value` associated to a scalar value which will be used to
       detect convergence. With a dictionary, multiple metric values can be
-      stored at once instead of running each separately.
+      stored at once instead of running each separately. With a list of dictionaries, these metrics can be computed on different objects.
 
     - `get_one_result()`: return one result for which the objective can be
       evaluated. This should be a dictionary where the keys correspond to the
