@@ -157,7 +157,7 @@ def test_objective_nonnumeric_values(no_debug_log):
 
 
 def test_objective_multiple_points(no_debug_log):
-    # Check that if Obejctive.evaluate_result returns a list, we get
+    # Check that if Objective.evaluate_result returns a list, we get
     # multiple points in the final DataFrame.
 
     objective = """from benchopt import BaseObjective

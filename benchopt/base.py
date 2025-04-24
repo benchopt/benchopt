@@ -421,7 +421,7 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
 
         Returns
         -------
-        objective_value : float or dict {'name': float} or list of dict
+        objective_value : float or dict {str: float} or list of dict
             The value(s) of the objective function. If a dictionary is
             returned, it should at least contain a key `value` associated to a
             scalar value which will be used to detect convergence. With a
@@ -445,7 +445,7 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
         pass
 
     def format_objective_dict(self, objective_dict):
-        """Format the output of the objective.
+        """Format the output of Objective.evaluate_results.
 
         This will prefix all keys in the dictionary with `objective_`
         to make the objective part of the results clear.
@@ -464,8 +464,9 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
 
         if not isinstance(objective_dict, dict):
             raise ValueError(
-                "The output of the objective should be a list of dictionary "
-                "with no 'name' key in it"
+                "The output of Objective.evaluate_result should be either a single "
+                "dictionary or a list of dictionaries. Note that these dictionaries "
+                "cannot contain a key 'name'"
             )
         elif 'name' in objective_dict:
             raise ValueError(
