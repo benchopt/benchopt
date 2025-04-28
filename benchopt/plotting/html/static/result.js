@@ -17,11 +17,12 @@ const NON_CONVERGENT_COLOR = 'rgba(0.8627, 0.8627, 0.8627)'
  *   - objective (string),
  *   - objective_column (string),
  *   - plot_kind (string),
- *   - scale (string)
- *   - with_quantiles (boolean)
- *   - xaxis_type (string)
- *   - yaxis_type (string)
- *   - hidden_solvers (array)
+ *   - scale (string),
+ *   - with_quantiles (boolean),
+ *   - xaxis_type (string),
+ *   - yaxis_type (string),
+ *   - hidden_solvers (array),
+ *   - table_precision (integer),
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 
@@ -1321,11 +1322,76 @@ function renderTable() {
       cell.className = "px-6 py-4 border-b";
 
       const d = window._data[state().dataset][state().objective][metric].solvers[solver];
-      cell.innerHTML = d.scatter.y[d.scatter.y.length - 1];
+      cell.innerHTML = d.scatter.y[d.scatter.y.length - 1].toFixed(state()['table_precision']);
 
       row.appendChild(cell);
     })
 
     tableBody.appendChild(row);
   });
+}
+
+/**
+ * Set the precision of the result table.
+ *
+ * @param {number} precision - Must be an integer.
+ */
+function setTablePrecision(precision) {
+  if (precision > 0)
+    setState({'table_precision' : precision});
+}
+
+document.getElementById("table-decrease-button").addEventListener('click', () => {
+  setTablePrecision(state()['table_precision'] - 1);
+});
+
+document.getElementById("table-increase-button").addEventListener('click', () => {
+  setTablePrecision(state()['table_precision'] + 1);
+});
+
+document.getElementById("table-export").addEventListener('click', () => {
+  exportTable();
+})
+
+async function exportTable() {
+  const button = document.getElementById("table-export");
+  const defaultText = button.innerHTML;
+  button.innerHTML = "Copying";
+
+  let value = "\\begin{tabular}{l";
+  value += "c".repeat(getMetrics().length);
+  value += "}\n";
+  value += "\\hline\n";
+  value += "Solvers";
+
+  getMetrics().forEach(metric => value += ` & ${metric.replace('_', '\\_')}`);
+
+  value += " \\\\\n";
+  value += "\\hline\n";
+
+  getSolvers().forEach(solver => {
+    value += solver;
+
+    getMetrics().forEach(metric => {
+      const d = window._data[state().dataset][state().objective][metric].solvers[solver];
+      value += ` & ${d.scatter.y[d.scatter.y.length - 1].toFixed(state()['table_precision'])}`;
+    });
+
+    value += " \\\\\n";
+  });
+
+  value += "\\hline\n";
+
+  value += "\\end{tabular}";
+
+  try {
+    await navigator.clipboard.writeText(value);
+    console.log('Texte copié dans le presse-papiers !');
+    button.innerHTML = "Copied!";
+    setTimeout(() => button.innerHTML = defaultText, 2500);
+  } catch (err) {
+    console.error('Erreur lors de la copie :', err);
+    button.innerHTML = "Error!";
+    setTimeout(() => button.innerHTML = defaultText, 2500);
+  }
 }

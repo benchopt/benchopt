@@ -391,13 +391,20 @@
 
                 <!-- Plot -->
                 <div id="unique_plot"></div>
-                <div class="overflow-x-auto px-10 py-10">
+                <div class="w-full overflow-x-auto px-10 py-10">
                     <table class="table-fixed w-full text-sm text-left text-gray-500 border border-gray-200">
                         <thead class="text-xs text-gray-700 uppercase bg-gray-100">
                             <tr id="table-metrics"></tr>
                         </thead>
                         <tbody id="table-content" class="bg-white"></tbody>
                     </table>
+                    <div class="flex mt-2">
+                        <button id="table-export" class="inline-block underline text-gray-400">Export table in LaTeX</button>
+                        <span class="inline-block mx-2 text-gray-400">&bull;</span>
+                        <button id="table-increase-button" class="inline-block underline text-gray-400">Increase precision</button>
+                        <span class="inline-block mx-2 text-gray-400">&bull;</span>
+                        <button id="table-decrease-button" class="inline-block underline text-gray-400">Decrease precision</button>
+                    </div>
                 </div>
                 <div id="legend_container" class="pb-10 bg-slate-200">
                     <div class="px-10 mb-4 mt-4 text-base font-medium text-gray-700">
@@ -519,7 +526,8 @@
                     'with_quantiles': document.getElementById('change_shades').checked,
                     'xaxis_type':  document.getElementById('change_xaxis_type').value || "Time",
                     'yaxis_type':  document.getElementById('change_xaxis_type').value || "Time",
-                    'hidden_solvers': []
+                    'hidden_solvers': [],
+                    'table_precision': 2
                 });
                 const plot_configs = document.getElementsByClassName('view');
                 if (plot_configs.length > 0 ){
