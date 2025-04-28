@@ -4,9 +4,6 @@ from .callback import _Callback
 from .stopping_criterion import SingleRunCriterion
 from .stopping_criterion import SufficientProgressCriterion
 
-from .utils.safe_import import set_benchmark_module
-from .utils.dynamic_modules import get_file_hash
-from .utils.dynamic_modules import _reconstruct_class
 from .utils.misc import NamedTemporaryFile
 from .utils.dependencies_mixin import DependenciesMixin
 from .utils.parametrized_name_mixin import ParametrizedNameMixin
@@ -244,24 +241,12 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         self._warmup_done = True
 
     @staticmethod
-    def _reconstruct(module_filename, parameters, objective, output,
-                     pickled_module_hash=None, benchmark_dir=None):
-        set_benchmark_module(benchmark_dir)
-        Solver = _reconstruct_class(
-            module_filename, 'Solver', benchmark_dir, pickled_module_hash,
-        )
-        obj = Solver.get_instance(**parameters)
-        if objective is not None:
-            obj._set_objective(objective, output=output)
-        return obj
-
-    def __reduce__(self):
-        module_hash = get_file_hash(self._module_filename)
-        objective = getattr(self, '_objective', None)
-        output = getattr(self, '_output', None)
-        return self._reconstruct, (
-            self._module_filename, self._parameters, objective, output,
-            module_hash, str(self._import_ctx._benchmark_dir)
+    def get_pickle_hooks():
+        return (
+            lambda obj: (
+                getattr(obj, '_objective', None), getattr(obj, '_output', None)
+            ),
+            lambda obj, args: obj._set_objective(*args) if args[0] else None
         )
 
 
@@ -313,24 +298,6 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
             self._data = self.get_data()
 
         return self._data
-
-    # Reduce the pickling and hashing burden by only pickling class parameters.
-    @staticmethod
-    def _reconstruct(module_filename, pickled_module_hash, parameters,
-                     benchmark_dir):
-        set_benchmark_module(benchmark_dir)
-        Dataset = _reconstruct_class(
-            module_filename, 'Dataset', benchmark_dir, pickled_module_hash,
-        )
-        obj = Dataset.get_instance(**parameters)
-        return obj
-
-    def __reduce__(self):
-        module_hash = get_file_hash(self._module_filename)
-        return self._reconstruct, (
-            self._module_filename, module_hash, self._parameters,
-            str(self._import_ctx._benchmark_dir)
-        )
 
 
 class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
@@ -572,25 +539,11 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
         self.get_objective()
         return self.get_one_result()
 
-    # Reduce the pickling and hashing burden by only pickling class parameters.
     @staticmethod
-    def _reconstruct(module_filename, pickled_module_hash, parameters,
-                     dataset, benchmark_dir):
-        set_benchmark_module(benchmark_dir)
-        Objective = _reconstruct_class(
-            module_filename, 'Objective', benchmark_dir, pickled_module_hash,
-        )
-        obj = Objective.get_instance(**parameters)
-        if dataset is not None:
-            obj.set_dataset(dataset)
-        return obj
-
-    def __reduce__(self):
-        module_hash = get_file_hash(self._module_filename)
-        dataset = getattr(self, '_dataset', None)
-        return self._reconstruct, (
-            self._module_filename, module_hash, self._parameters, dataset,
-            str(self._import_ctx._benchmark_dir)
+    def get_pickle_hooks():
+        return (
+            lambda obj: getattr(obj, '_dataset', None),
+            lambda obj, dataset: obj.set_dataset(dataset)
         )
 
     def _default_split(self, cv_fold, *arrays):

@@ -124,7 +124,6 @@ class TestRunCmd:
 
     @pytest.mark.parametrize('n_jobs', [1, 2])
     def test_valid_call(self, n_jobs):
-
         with CaptureRunOutput() as out:
             run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,
                  '-f', SELECT_ONE_PGD, '-n', '1', '-r', '1', '-o',
