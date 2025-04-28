@@ -38,6 +38,9 @@ API
   ``p_obj_|p_solver_|p_dataset_`` to avoid collapse between the different
   components. By `Melvine Nargeot`_  and `Thomas Moreau`_ (:gh:`703`).
 
+- ``Objective`` can now return multiple evaluation at once, to store non-aggregated
+  metrics. See :ref:`multiple_evaluation`. By `Thomas Moreau`_ (:gh:`778`).
+
 FIX
 ---
 
