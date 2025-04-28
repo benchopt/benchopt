@@ -464,9 +464,9 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
 
         if not isinstance(objective_dict, dict):
             raise ValueError(
-                "The output of Objective.evaluate_result should be either a single "
-                "dictionary or a list of dictionaries. Note that these dictionaries "
-                "cannot contain a key 'name'"
+                "The output of Objective.evaluate_result should be either a "
+                "single dictionary or a list of dictionaries. Note that these "
+                "dictionaries cannot contain a key 'name'"
             )
         elif 'name' in objective_dict:
             raise ValueError(
