@@ -112,8 +112,8 @@ final results of a solver.
 
 .. _multiple_evaluation:
 
-Producing multiple evaluation at once
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Producing multiple evaluations at once
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The ``evaluate_result`` method can be used to produce multiple rows in the
 benchmark result dataframe. This is done by returning a list of dictionaries
@@ -123,14 +123,16 @@ have a key that matches the ``key_to_monitor`` for the solver (see :ref:`stoppin
 
 This feature typically allows to store metrics for each sample in a test set
 or for each fold in a cross-validation setting, allowing to compute aggregated
-statitics at plotting time.
+statistics at plotting time.
 
 .. _save_final_results:
 
 Saving Final Results of a Solver
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Using the `save_final_results(**results)` method of the objective function to retrieve the results to save. They are saved in `outputs/final_results/` directory and reference is added in the benchmark `.parquet` file.
+Using the `save_final_results(**results)` method of the objective function to
+retrieve the results to save. They are saved in `outputs/final_results/` directory
+and reference is added in the benchmark `.parquet` file.
 
 .. _benchmark_utils_import:
 

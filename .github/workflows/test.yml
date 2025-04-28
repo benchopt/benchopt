@@ -64,7 +64,7 @@ jobs:
 
       - name: Install Julia
         run:
-          ${{ env.BENCHOPT_CONDA_CMD }} install -yq -c https://repo.prefix.dev/julia-forge julia[version">=1.10.0"]
+          ${{ env.BENCHOPT_CONDA_CMD }} install -yq -c https://repo.prefix.dev/julia-forge julia[version=">=1.10.0"]
 
       - name: Install benchopt and its dependencies
         run: |
