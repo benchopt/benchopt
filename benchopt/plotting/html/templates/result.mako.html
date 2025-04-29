@@ -84,6 +84,7 @@
                                     % for kind in result['kinds']:
                                     <option value="${kind}">${kind}</option>
                                     %endfor
+                                    <option value="table">table</option>
                                 </select>
                             </div>
                         </div>
@@ -248,6 +249,7 @@
                                         % for kind in result['kinds']:
                                         <option value="${kind}">${kind}</option>
                                         %endfor
+                                        <option value="table">table</option>
                                     </select>
                                 </div>
                             </div>
@@ -391,7 +393,7 @@
 
                 <!-- Plot -->
                 <div id="unique_plot"></div>
-                <div class="w-full overflow-x-auto px-10 py-10">
+                <div id="result-table" class="w-full overflow-x-auto px-10 py-10">
                     <table class="table-fixed w-full text-sm text-left text-gray-500 border border-gray-200">
                         <thead class="text-xs text-gray-700 uppercase bg-gray-100">
                             <tr id="table-metrics"></tr>

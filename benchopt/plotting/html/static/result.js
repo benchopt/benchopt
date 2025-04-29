@@ -81,6 +81,14 @@ const config_mapping = {
  * Create/Update the plot.
  */
 const renderPlot = () => {
+  if (state()['plot_kind'] === 'table') {
+    document.getElementById('unique_plot').style.display = 'none';
+
+    return;
+  }
+
+  document.getElementById('unique_plot').style.display = 'block';
+
   const div = document.getElementById('unique_plot');
   const data = getChartData();
   const layout = getLayout();
@@ -578,7 +586,7 @@ const renderSidebar = () => {
  * Render Objective Column selector
  */
 const renderObjectiveColumnSelector = () => {
-  if (isChart('boxplot') && state('yaxis_type') === 'time') {
+  if ((isChart('boxplot') && state('yaxis_type') === 'time') || isChart('table')) {
     hide(document.querySelectorAll("#objective-column-form-group"));
   } else {
     show(document.querySelectorAll("#objective-column-form-group"), 'block');
@@ -1246,6 +1254,14 @@ document.getElementById('btn-main-menu').addEventListener('click', () => {
  */
 
 function renderTable() {
+  if (state()['plot_kind'] !== 'table') {
+    document.getElementById("result-table").style.display = "none";
+
+    return;
+  }
+
+  document.getElementById("result-table").style.display = "block";
+
   const header = document.getElementById("table-metrics");
 
   header.innerHTML = '';
@@ -1386,11 +1402,9 @@ async function exportTable() {
 
   try {
     await navigator.clipboard.writeText(value);
-    console.log('Texte copié dans le presse-papiers !');
-    button.innerHTML = "Copied!";
+    button.innerHTML = "Copied in clipboard!";
     setTimeout(() => button.innerHTML = defaultText, 2500);
   } catch (err) {
-    console.error('Erreur lors de la copie :', err);
     button.innerHTML = "Error!";
     setTimeout(() => button.innerHTML = defaultText, 2500);
   }
