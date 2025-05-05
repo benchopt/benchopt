@@ -121,6 +121,16 @@
                                 </select>
                             </div>
                         </div>
+                        <div id="table-value-type-form-group" class="mt-8 px-8">
+                            <label for="change_table_value_type" class="block text-sm font-medium text-white">Value type</label>
+                            <div class="mt-1 rounded-md shadow-sm">
+                                <select id="change_table_value_type" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({table_value_type: this.value})">
+                                    <option value="last">last</option>
+                                    <option value="min">min</option>
+                                    <option value="max">max</option>
+                                </select>
+                            </div>
+                        </div>
                         <div id="change-shades-form-group" class="flex items-center justify-between mt-8 px-8">
                             <div class="block text-sm font-medium text-white">Quantiles</div>
                             <label class="block switch">
@@ -283,6 +293,16 @@
                                     <select id="change_yaxis_type_mobile" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({yaxis_type: this.value})">
                                         <option value="objective_column">Objective metric</option>
                                         <option value="time">Time</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div id="table-value-type-form-group" class="mt-8 px-8">
+                                <label for="table_value_mobile" class="block text-sm font-medium text-white">Value type</label>
+                                <div class="mt-1 rounded-md shadow-sm">
+                                    <select id="table_value_mobile" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({table_value_type: this.value})">
+                                        <option value="last">last</option>
+                                        <option value="min">min</option>
+                                        <option value="max">max</option>
                                     </select>
                                 </div>
                             </div>
@@ -529,7 +549,8 @@
                     'xaxis_type':  document.getElementById('change_xaxis_type').value || "Time",
                     'yaxis_type':  document.getElementById('change_xaxis_type').value || "Time",
                     'hidden_solvers': [],
-                    'table_precision': 2
+                    'table_precision': 2,
+                    'table_value_type': 'last',
                 });
                 const plot_configs = document.getElementsByClassName('view');
                 if (plot_configs.length > 0 ){

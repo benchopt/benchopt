@@ -23,6 +23,7 @@ const NON_CONVERGENT_COLOR = 'rgba(0.8627, 0.8627, 0.8627)'
  *   - yaxis_type (string),
  *   - hidden_solvers (array),
  *   - table_precision (integer),
+ *   - table_value_type (string),
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 
@@ -579,6 +580,7 @@ const renderSidebar = () => {
   renderXAxisTypeSelector();
   renderYAxisTypeSelector();
   renderWithQuantilesToggle();
+  renderValueTypeSelector();
   mapSelectorsToState();
 }
 
@@ -678,6 +680,14 @@ const xAxisTypeOption = (type) => {
       `#change_xaxis_type [value="${type}"], #change_xaxis_type_mobile [value="${type}"]`
   );
 };
+
+const renderValueTypeSelector = () => {
+  if (isChart('table')) {
+    show(document.querySelectorAll("#table-value-type-form-group"), 'block');
+  } else {
+    hide(document.querySelectorAll("#table-value-type-form-group"));
+  }
+}
 
 const mapSelectorsToState = () => {
   const currentState = state();
@@ -1338,7 +1348,16 @@ function renderTable() {
       cell.className = "px-6 py-4 border-b";
 
       const d = window._data[state().dataset][state().objective][metric].solvers[solver];
-      cell.innerHTML = d.scatter.y[d.scatter.y.length - 1].toFixed(state()['table_precision']);
+
+      if (state()['table_value_type'] === 'last') {
+        cell.innerHTML = d.scatter.y[d.scatter.y.length - 1].toFixed(state()['table_precision']);
+      } else if (state()['table_value_type'] === 'min') {
+        cell.innerHTML = Math.min(...d.scatter.y).toFixed(state()['table_precision']);
+      } else if (state()['table_value_type'] === 'max') {
+        cell.innerHTML = Math.max(...d.scatter.y).toFixed(state()['table_precision']);
+      } else {
+        console.error("Unknown table value type");
+      }
 
       row.appendChild(cell);
     })
