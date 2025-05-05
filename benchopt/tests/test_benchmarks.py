@@ -17,7 +17,7 @@ def test_benchmark_objective(benchmark, dataset_simu):
     # the objective function is a dictionary containing a scalar value for
     # `objective_value`.
     result = objective._get_one_result()
-    objective_dict = objective(result)
+    objective_dict = objective(result)[0]
 
     assert 'objective_value' in objective_dict, (
         "When the output of objective is a dict, it should at least "
