@@ -58,7 +58,7 @@ Hovering over the question mark shows a tooltip with details about the objective
 
 
 The **Chart type** dropdown allows applying transformations to the plotted metric, such as suboptimality ``metric - min(metric)`` or
-relative suboptimality ``(metric - min(metric)) / (metric[0] - min(metric))``. It also allows to show bar charts or boxplots.
+relative suboptimality ``(metric - min(metric)) / (metric[0] - min(metric))``. It also allows to show bar charts, boxplots or tables.
 
 .. list-table::
    :widths: auto
@@ -72,6 +72,10 @@ relative suboptimality ``(metric - min(metric)) / (metric[0] - min(metric))``. I
        .. image:: ../_static/boxplot.png
          :width: 49%
          :alt: Boxplot
+
+   * - .. image:: ../_static/table.png
+         :width: 100%
+         :alt: Table
 
 .. note::
 

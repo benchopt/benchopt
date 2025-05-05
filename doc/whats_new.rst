@@ -38,6 +38,12 @@ API
   ``p_obj_|p_solver_|p_dataset_`` to avoid collapse between the different
   components. By `Melvine Nargeot`_  and `Thomas Moreau`_ (:gh:`703`).
 
+PLOT
+~~~~
+
+- Add the option to show HTML result values as a table instead
+  of a plot, by `Melvine Nargeot`_ (:gh:`794`).
+
 FIX
 ---
 
