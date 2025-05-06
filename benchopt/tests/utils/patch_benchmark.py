@@ -8,30 +8,6 @@ class FakeModule:
 
 
 @contextmanager
-def patch_benchmark(benchmark, component="objective", **updates):
-    "Patch a component of a given benchmark in the current interpreter"
-
-    if component == "objective":
-        obj = benchmark.get_benchmark_objective()
-    else:
-        raise ValueError("invalid component")
-
-    try:
-        na = object()
-        prev_value = {}
-        for k, v in updates.items():
-            prev_value[k] = getattr(obj, k, na)
-            setattr(obj, k, v)
-        yield
-    finally:
-        for k, v in prev_value.items():
-            if k is na:
-                delattr(obj, k)
-            else:
-                setattr(obj, k, v)
-
-
-@contextmanager
 def patch_import(**func_import):
     """Patch import in a context.
 
