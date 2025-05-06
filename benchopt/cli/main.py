@@ -62,6 +62,7 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
         "pdb",
         "profile",
         "env_name",
+        "no_cache",
         "output",
     ]
     return [cli_kwargs[name] for name in return_names]
@@ -170,6 +171,10 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               help="Run the benchmark in the conda environment "
               "named <env_name>. To install the required solvers and "
               "datasets, see the command `benchopt install`.")
+@click.option('--no-cache',
+              is_flag=True,
+              help='If set, disable the cache on disk for the run. Note that '
+              'this makes the run less tolerant to errors, use with caution.')
 @click.option("--output", default="None", type=str,
               help="Filename for the result output. "
               "If given, the results will "
@@ -191,7 +196,7 @@ def run(config_file=None, **kwargs):
         benchmark, solver_names, forced_solvers, dataset_names,
         objective_filters, max_runs, n_repetitions, timeout, no_timeout,
         n_jobs, slurm, collect, plot, display, html, pdb, do_profile,
-        env_name, output_name
+        env_name, no_cache, output_name
     ) = _get_run_args(kwargs, config)
 
     # If --no-timeout is set and --timeout is not, skip these blocks
@@ -212,7 +217,7 @@ def run(config_file=None, **kwargs):
                 timeout = pd.to_timedelta(timeout).total_seconds()
 
     # Create the Benchmark object
-    benchmark = Benchmark(benchmark)
+    benchmark = Benchmark(benchmark, no_cache=no_cache)
 
     if benchmark.min_version is not None:
         from packaging.version import parse

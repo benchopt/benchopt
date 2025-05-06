@@ -433,7 +433,8 @@ def run_benchmark(benchmark_path, solver_names=None, forced_solvers=(),
                   dataset_names=None, objective_filters=None, max_runs=10,
                   n_repetitions=1, timeout=None, n_jobs=1, slurm=None,
                   plot_result=True, display=True, html=True,  collect=False,
-                  show_progress=True, pdb=False, output_name="None"):
+                  show_progress=True, pdb=False, no_cache=False,
+                  output_name="None"):
     """Run full benchmark.
 
     Parameters
@@ -480,6 +481,10 @@ def run_benchmark(benchmark_path, solver_names=None, forced_solvers=(),
         If show_progress is set to True, display the progress of the benchmark.
     pdb : bool
         If pdb is set to True, open a debugger on error.
+    no_cache : bool
+        If set to True, this deactivates the caching mechanism integrated in
+        benchopt. Note that this makes the run less tolerant to errors, use it
+        with caution.
     output_name : str
         Filename for the parquet output. If given, the results will
         be stored at <BENCHMARK>/outputs/<filename>.parquet.
@@ -492,7 +497,7 @@ def run_benchmark(benchmark_path, solver_names=None, forced_solvers=(),
         by the objective is not the same for all parameters, the missing data
         is set to `NaN`.
     """
-    benchmark = Benchmark(benchmark_path)
+    benchmark = Benchmark(benchmark_path, no_cache=no_cache)
     solvers = benchmark.check_solver_patterns(
         solver_names + list(forced_solvers)
     )
