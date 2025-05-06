@@ -407,7 +407,8 @@ class Benchmark:
 
     def install_all_requirements(self, include_solvers, include_datasets,
                                  minimal=False, env_name=None,
-                                 force=False, quiet=False, download=False):
+                                 force=False, quiet=False, download=False,
+                                 gpu=False):
         """Install all classes that are required for the run.
 
         Parameters
@@ -427,6 +428,9 @@ class Benchmark:
             If True, silences the output of install commands.
         download : bool (default: False)
             If True, make sure the data are downloaded on the computer.
+        gpu : bool (default: False)
+            If True and the requirements of a class are a dict, install
+            requirements["gpu"] instead of requirements["cpu"].
         """
         # Collect all classes matching one of the patterns
         print("Collecting packages...", end='', flush=True)
@@ -445,15 +449,16 @@ class Benchmark:
         if len(shell_install_scripts) > 0 or len(conda_reqs) > 0:
             check_installs += [objective]
         to_install = itertools.chain(include_datasets, include_solvers)
+
         if not minimal:
             for klass in to_install:
                 reqs, scripts, hooks, missing = (
-                    klass.collect(env_name=env_name, force=force)
+                    klass.collect(env_name=env_name, force=force, gpu=gpu)
                 )
                 # If a class is not importable but has no requirements,
                 # it might be because the requirements are specified
-                # as global ones in the Objective. Otherwise, raise a
-                # comprehensible error.
+                # as global ones in the Objective. We keep track of them
+                # to check and raise a comprehensive error after the install
                 if missing is not None:
                     missings.append(missing)
 
@@ -896,8 +901,7 @@ def _get_used_parameters(klass, params):
             default.update(update)
             if default not in used_parameters:  # avoid duplicates
                 used_parameters.append(default)
-
-    return used_parameters
+                yield default
 
 
 def buffer_iterator(it):
