@@ -35,7 +35,7 @@ class CaptureRunOutput(object):
         return (
             "CaptureRunOutput(\n"
             f"    result_files={self.result_files})\n"
-            f"    output=\n{self.output})\n"
+            f"    output=\"\"\"\n{self.output})\n\"\"\"\n"
             ")"
         )
 
