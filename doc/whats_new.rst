@@ -58,6 +58,9 @@ FIX
 
 - Fix the ``info`` command. By `Pierre-Antoine Comby`_ (:gh:`768`)
 
+- Fix ignored ``--minimal`` option in ``benchopt install``.
+  By `Lionel Kusch`_ (:gh:`786`)
+
 .. _changes_1_6:
 
 Version 1.6 - 15/07/2024
