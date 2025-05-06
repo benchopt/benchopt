@@ -137,7 +137,7 @@ class TestRunCmd:
         out.check_output(r'Python-PGD\[step_size=1.5\]:', repetition=0)
 
         # Make sure the results were saved in a result file
-        assert len(out.result_files) == 1, out.output
+        assert len(out.result_files) == 1, out
 
     def test_valid_call_in_env(self, test_env_name):
         with CaptureRunOutput() as out:
@@ -154,7 +154,7 @@ class TestRunCmd:
         out.check_output(r'Python-PGD\[step_size=1.5\]:', repetition=0)
 
         # Make sure the results were saved in a result file
-        assert len(out.result_files) == 1, out.output
+        assert len(out.result_files) == 1, out
 
     @pytest.mark.parametrize('timeout', ['10', '1m', '0.03h', '100s'])
     def test_timeout_in_env(self, test_env_name, timeout):
@@ -173,7 +173,7 @@ class TestRunCmd:
         out.check_output(r'Python-PGD\[step_size=1.5\]:', repetition=0)
 
         # Make sure the results were saved in a result file
-        assert len(out.result_files) == 1, out.output
+        assert len(out.result_files) == 1, out
 
     def test_no_timeout(self):
         # First test: --timeout==0
@@ -357,11 +357,8 @@ class TestRunCmd:
             run(command, 'benchopt', standalone_mode=False)
             run(command, 'benchopt', standalone_mode=False)
 
-        result_files = re.findall(
-            r'Saving result in: (.*\.parquet)', out.output
-        )
-        names = [Path(result_file).stem for result_file in result_files]
-        assert names[0] == 'unique_name' and names[1] == 'unique_name_1'
+        names = [Path(result_file).stem for result_file in out.result_files]
+        assert names[0] == 'unique_name' and names[1] == 'unique_name_1', out
 
     def test_shell_complete(self):
         # Completion for benchmark name
@@ -480,7 +477,7 @@ class TestRunCmd:
             out.check_output('#RUN1', repetition=0)
 
             # check that the results where collected for the correct solvers
-            assert len(out.result_files) == 1
+            assert len(out.result_files) == 1, out
             out.check_output(r'done \(not enough run\)', repetition=1)
             out.check_output('not run yet', repetition=1)
 
@@ -700,16 +697,13 @@ class TestPlotCmd:
     @classmethod
     def setup_class(cls):
         "Make sure at least one result file is available"
-        with SuppressStd() as out:
+        with CaptureRunOutput(delete_result_files=False) as out:
             run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,
                  '-s', SELECT_ONE_PGD, '-n', '2', '-r', '1', '-o',
                  SELECT_ONE_OBJECTIVE, '--no-plot'], 'benchopt',
                 standalone_mode=False)
-        result_files = re.findall(
-            r'Saving result in: (.*\.parquet)', out.output
-        )
-        assert len(result_files) == 1, out.output
-        result_file = result_files[0]
+        assert len(out.result_files) == 1, out
+        result_file = out.result_files[0]
         cls.result_file = result_file
         cls.result_file = str(Path(result_file).relative_to(Path().resolve()))
 
@@ -788,7 +782,7 @@ class TestGenerateResultCmd:
     @classmethod
     def setup_class(cls):
         "Make sure at least one result file is available"
-        with SuppressStd() as out:
+        with CaptureRunOutput(delete_result_files=False) as out:
             clean([str(DUMMY_BENCHMARK_PATH)],
                   'benchopt', standalone_mode=False)
             run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,
@@ -800,11 +794,8 @@ class TestGenerateResultCmd:
                  '-s', SELECT_ONE_PGD, '-n', '2', '-r', '1', '-o',
                  SELECT_ONE_OBJECTIVE, '--no-plot'], 'benchopt',
                 standalone_mode=False)
-        result_files = re.findall(
-            r'Saving result in: (.*\.parquet)', out.output
-        )
-        assert len(result_files) == 2, out.output
-        cls.result_files = result_files
+        assert len(out.result_files) == 2, out
+        cls.result_files = out.result_files
 
     @classmethod
     def teardown_class(cls):
@@ -843,16 +834,13 @@ class TestArchiveCmd:
     @classmethod
     def setup_class(cls):
         "Make sure at least one result file is available"
-        with SuppressStd() as out:
+        with CaptureRunOutput(delete_result_files=False) as out:
             run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,
                  '-s', SELECT_ONE_PGD, '-n', '2', '-r', '1', '-o',
                  SELECT_ONE_OBJECTIVE, '--no-plot'], 'benchopt',
                 standalone_mode=False)
-        result_file = re.findall(
-            r'Saving result in: (.*\.parquet)', out.output
-        )
-        assert len(result_file) == 1, out.output
-        cls.result_file = result_file[0]
+        assert len(out.result_files) == 1, out
+        cls.result_file = out.result_files[0]
 
     @classmethod
     def teardown_class(cls):
