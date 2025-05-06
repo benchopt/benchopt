@@ -899,8 +899,7 @@ def _get_used_parameters(klass, params):
             default.update(update)
             if default not in used_parameters:  # avoid duplicates
                 used_parameters.append(default)
-
-    return used_parameters
+                yield default
 
 
 def buffer_iterator(it):
