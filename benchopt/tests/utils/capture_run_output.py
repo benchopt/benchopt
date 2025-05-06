@@ -34,7 +34,7 @@ class CaptureRunOutput(object):
     def __repr__(self):
         return (
             "CaptureRunOutput(\n"
-            f"    result_files={self.result_files})\n"
+            f"    result_files={self.result_files}\n"
             f"    output=\"\"\"\n{self.output})\n\"\"\"\n"
             ")"
         )

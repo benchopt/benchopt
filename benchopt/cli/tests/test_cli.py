@@ -630,7 +630,9 @@ class TestInstallCmd:
                         f'--env-name {test_env_name}'.split()
                     ], 'benchopt', standalone_mode=False)
 
-    def test_minimal_installation(self, test_env_name):
+    def test_minimal_installation(
+            self, test_env_name, uninstall_dummy_package, no_debug_log
+    ):
         objective = """
             from benchopt import safe_import_context, BaseObjective
 
@@ -648,34 +650,28 @@ class TestInstallCmd:
                 def get_objective(self): pass
         """
 
-        solver = """from benchopt import BaseSolver
-            import numpy as np
+        solver = """from benchopt import BaseSolver, safe_import_context
+
+            with safe_import_context() as import_ctx:
+                import fake_benchopt_package
 
             class Solver(BaseSolver):
                 name = 'solver1'
-
-                requirements = [
-                    "fake_package"
-                ]
-
+                requirements = ["fake_benchopt_package"] # raise if installed
                 def set_objective(self, X, y, lmbd): pass
                 def run(self, n_iter): pass
-
-                def get_result(self):
-                    return 0
+                def get_result(self): pass
         """
 
-        dataset = """from benchopt import BaseDataset
-            import numpy as np
+        dataset = """from benchopt import BaseDataset, safe_import_context
+
+            with safe_import_context() as import_ctx:
+                import fake_benchopt_package
 
             class Dataset(BaseDataset):
                 name = 'dataset1'
-
-                requirements = [
-                    "fake_package"
-                ]
-
-            def get_data(): pass
+                requirements = ["fake_benchopt_package"] # raise if installed
+                def get_data(): pass
         """
 
         # Install should succeed because of --minimal option that does
@@ -685,14 +681,15 @@ class TestInstallCmd:
                             datasets=[dataset]) as benchmark:
             with CaptureRunOutput() as out:
                 install([
-                    *f'{benchmark.benchmark_dir} --minimal --force -y '
+                    *f'{benchmark.benchmark_dir} -y --minimal '
                     f'--env-name {test_env_name}'.split()
                 ], 'benchopt', standalone_mode=False)
 
-        out.check_output('Checking installed packages...')
+        out.check_output('Checking installed packages... done')
 
-    def test_no_error_minimal_requirements(self, test_env_name,
-                                           uninstall_dummy_package):
+    def test_no_error_minimal_requirements(
+            self, test_env_name, uninstall_dummy_package
+    ):
 
         objective = """
             from benchopt import safe_import_context, BaseObjective
@@ -721,7 +718,6 @@ class TestInstallCmd:
 
             class Dataset(BaseDataset):
                 name = 'test-dataset'
-                install_cmd = 'conda'
                 def get_data(self): pass
         """
 
