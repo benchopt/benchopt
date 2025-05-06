@@ -459,6 +459,7 @@ class Benchmark:
                 # it might be because the requirements are specified
                 # as global ones in the Objective. We keep track of them
                 # to check and raise a comprehensive error after the install
+                # if it is still not importable.
                 if missing is not None:
                     missings.append(missing)
 
