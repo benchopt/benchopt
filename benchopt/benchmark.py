@@ -70,9 +70,12 @@ class Benchmark:
         Caching mechanism for the benchmark.
     """
     def __init__(
-        self, benchmark_dir, allow_meta_from_json=False,
+            self, benchmark_dir,
+            no_cache=False,
+            allow_meta_from_json=False,
     ):
         self.benchmark_dir = Path(benchmark_dir)
+        self.no_cache = no_cache
 
         global _RUNNING_BENCHMARK
         _RUNNING_BENCHMARK = self
@@ -329,6 +332,8 @@ class Benchmark:
 
     def get_cache_location(self):
         "Get the location for the cache of the benchmark."
+        if self.no_cache:
+            return None
         benchopt_cache_dir = get_setting("cache")
         if benchopt_cache_dir is None:
             return self.benchmark_dir / CACHE_DIR
@@ -345,6 +350,9 @@ class Benchmark:
         if it exists, or None if it does not. This is useful to gather results
         that are already in cache.
         """
+        if self.no_cache:
+            assert not collect, "Cannot collect when using `--no-cache`."
+            return func
 
         # Create a cached version of `func` and handle cases where we force
         # the run.
