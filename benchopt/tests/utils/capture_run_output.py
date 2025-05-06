@@ -11,15 +11,35 @@ class CaptureRunOutput(object):
 
     def __init__(self, delete_result_files=True):
         self.out = SuppressStd()
-        self.output = None
-        self.result_files = []
-
         self.delete_result_files = delete_result_files
 
-    def __enter__(self):
-        self.output = None
-        self.result_files = []
+    @property
+    def output(self):
+        if self.output_checker is None:
+            raise RuntimeError(
+                "Output not available yet, it will be available after "
+                "the context manager is exited."
+            )
+        return self.output_checker.output
 
+    @property
+    def result_files(self):
+        if self.output_checker is None:
+            raise RuntimeError(
+                "Output not available yet, it will be available after "
+                "the context manager is exited."
+            )
+        return self.output_checker.result_files
+
+    def __repr__(self):
+        return (
+            "CaptureRunOutput(\n"
+            f"    result_files={self.result_files})\n"
+            f"    output=\n{self.output})\n"
+            ")"
+        )
+
+    def __enter__(self):
         # To make it possible to capture stdout in the child worker, we need
         # to make sure the execturor is spawned in the context so shutdown any
         # existing executor.
