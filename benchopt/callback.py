@@ -86,13 +86,12 @@ class _Callback:
         Return True if the solver should be stopped.
         """
         result = self.solver.get_result()
-
-        objective_dict = self.objective(result)
-        self.curve.append(dict(
+        objective_list = self.objective(result)
+        self.curve.extend(dict(
             **self.meta, stop_val=self.it,
             time=self.time_iter,
             **objective_dict, **self.info
-        ))
+        ) for objective_dict in objective_list)
 
         # Check the stopping criterion
         should_stop_res = self.stopping_criterion.should_stop(

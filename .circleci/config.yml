@@ -42,7 +42,7 @@ jobs:
           name: Get conda running
           command: |
 
-            wget -q https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-$(uname)-$(uname -m).sh -O ~/miniconda.sh;
+            wget -q https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh -O ~/miniconda.sh;
             chmod +x ~/miniconda.sh;
             ~/miniconda.sh -b -p ~/miniconda;
             echo "export PATH=~/miniconda/bin:$PATH" >> $BASH_ENV;
@@ -135,7 +135,11 @@ jobs:
               git remote -v
               git fetch origin
               git reset --hard origin/main
-              git clean -xdf
+              mv .git ..
+              mv .gitignore ..
+              rm -rf *
+              mv ../.git .
+              mv ../.gitignore .
               echo "Deploying dev docs for ${CIRCLE_BRANCH}.";
               cp -a /tmp/build/html/* .;
               if [[ -z $(git diff) ]]; then

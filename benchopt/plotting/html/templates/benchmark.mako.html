@@ -107,8 +107,8 @@
           name_data_old = ""
         split = dataset.split('[')
         if len(split) > 1:
-          name_data_new, options = split
-          options = options[:-1]
+          name_data_new, *options = split
+          options = '['.join(options)[:-1]
         else:
           name_data_new, options = split[0], []
         not_disp_name = name_data_new == name_data_old

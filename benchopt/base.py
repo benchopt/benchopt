@@ -1,5 +1,3 @@
-import tempfile
-
 from abc import ABC, abstractmethod
 
 from .callback import _Callback
@@ -9,7 +7,7 @@ from .stopping_criterion import SufficientProgressCriterion
 from .utils.safe_import import set_benchmark_module
 from .utils.dynamic_modules import get_file_hash
 from .utils.dynamic_modules import _reconstruct_class
-
+from .utils.misc import NamedTemporaryFile
 from .utils.dependencies_mixin import DependenciesMixin
 from .utils.parametrized_name_mixin import ParametrizedNameMixin
 
@@ -34,7 +32,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
     - ``get_result(self)``: returns all parameters of interest, as a dict.
       The output is passed to ``Objective.evaluate_result``.
 
-    Note that two ``sampling_strategy`` can be used to construct the benchmark
+    Note that four ``sampling_strategy`` can be used to construct the benchmark
     curve:
 
     - ``'iteration'``: call the run method with max_iter number increasing
@@ -44,14 +42,17 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
     - ``'callback'``: a callable that should be called after each iteration or
       epoch. This callable periodically calls the objective's `compute`
       and returns False when the solver should stop.
-
+    - ``'run_once'``: call the run method once to get a single point. This is
+      typically used for ML benchmarks.
     """
 
     _base_class_name = 'Solver'
-    sampling_strategy = 'iteration'
+    sampling_strategy = None
 
     @property
-    def stopping_criterion(self):
+    def _stopping_criterion(self):
+        if hasattr(self, 'stopping_criterion'):
+            return self.stopping_criterion
         if self.sampling_strategy == 'run_once':
             return SingleRunCriterion()
         return SufficientProgressCriterion(strategy=self.sampling_strategy)
@@ -59,10 +60,10 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
     @property
     def _solver_strategy(self):
         """Change stop_strategy and stopping_strategy to sampling_strategy."""
-        if hasattr(self, 'sampling_strategy'):
-            return self.sampling_strategy
-        else:
-            return self.stopping_criterion.strategy
+        return (
+            self._stopping_criterion.strategy or self.sampling_strategy
+            or 'iteration'
+        )
 
     def _set_objective(self, objective, output=None):
         """Store the objective for hashing/pickling and check its compatibility
@@ -214,7 +215,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
                 .get_runner_instance(solver=self)
             )
             run_once_cb = _Callback(
-                lambda x: {'objective_value': 1},
+                lambda x: [{'objective_value': 1}],
                 solver=self,
                 meta={},
                 stopping_criterion=stopping_criterion
@@ -273,8 +274,8 @@ class CommandLineSolver(BaseSolver, ABC):
     """
 
     def __init__(self, **parameters):
-        self._data_file = tempfile.NamedTemporaryFile()
-        self._model_file = tempfile.NamedTemporaryFile()
+        self._data_file = NamedTemporaryFile()
+        self._model_file = NamedTemporaryFile()
         self.data_filename = self._data_file.name
         self.model_filename = self._model_file.name
         super().__init__(**parameters)
@@ -347,16 +348,27 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
 
     - `evaluate_result(**result)`: evaluate the metrics on the results of a
       solver. Its arguments should correspond to the key of the dictionary
-      returned by `Solver.get_result` and it can return a scalar value or
-      a dictionary.
+      returned by `Solver.get_result` and it can return a scalar value,
+      a dictionary or a list of dictionaries.
       If it returns a dictionary, it should at least contain a key
       `value` associated to a scalar value which will be used to
       detect convergence. With a dictionary, multiple metric values can be
-      stored at once instead of running each separately.
+      stored at once instead of running each separately. With a list of
+      dictionaries, these metrics can be computed on different objects.
 
     - `get_one_result()`: return one result for which the objective can be
       evaluated. This should be a dictionary where the keys correspond to the
       keyword arguments of `evaluate_result`.
+
+    Optionally, the `Solver` can implement the following methods to change its
+    behavior:
+
+    - `save_final_results(**result)`: Return the data to be saved from the
+       results of the solver. It will be saved as a `.pkl` file in the
+       `output/results` folder, and link to the benchmark results.
+
+    - `get_next(stop_val)`: Return the next iteration where the result will be
+      evaluated.
 
     This class is also used to specify information about the benchmark.
     In particular, it should have the following class attributes:
@@ -409,7 +421,7 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
 
         Returns
         -------
-        objective_value : float or dict {'name': float}
+        objective_value : float or dict {str: float} or list of dict
             The value(s) of the objective function. If a dictionary is
             returned, it should at least contain a key `value` associated to a
             scalar value which will be used to detect convergence. With a
@@ -418,28 +430,79 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
         """
         pass
 
-    def __call__(self, solver_result):
+    def save_final_results(self, **solver_result):
+        """Save the final results of the solver.
+
+        Parameters
+        ----------
+        solver_result : dict
+            All values needed to compute the objective metrics. This dictionary
+            is retrieved by calling ``solver_result = Solver.get_result()``.
+        Returns
+        -------
+        dict of values to save
+        """
+        pass
+
+    def format_objective_dict(self, objective_dict):
+        """Format the output of Objective.evaluate_results.
+
+        This will prefix all keys in the dictionary with `objective_`
+        to make the objective part of the results clear.
+
+        Parameters
+        ----------
+        objective_dict: dict
+            The output of the objective function, which should be a dictionary
+            not containing the key 'name'.
+
+        Returns
+        -------
+        objective_dict : dict
+            The formatted objective to include in the DataFrame.
+        """
+
+        if not isinstance(objective_dict, dict):
+            raise ValueError(
+                "The output of Objective.evaluate_result should be either a "
+                "single dictionary or a list of dictionaries. Note that these "
+                "dictionaries cannot contain a key 'name'"
+            )
+        elif 'name' in objective_dict:
+            raise ValueError(
+                "objective output cannot contain 'name' key"
+            )
+        return {
+            f'objective_{k}': v for k, v in objective_dict.items()
+        }
+
+    def __call__(self, result):
         """Used to call the evaluation of the objective.
 
         This allows standardizing the output to a dictionary.
         """
-        objective_dict = self.evaluate_result(**solver_result)
+        if not isinstance(result, dict):
+            raise TypeError(
+                "The result returned by `Solver.get_result` should be a dict "
+                "whose keys are the arguments of `Objective.evaluate_result`. "
+                f"Got {result}."
 
-        if not isinstance(objective_dict, dict):
-            objective_dict = {'value': objective_dict}
-
-        if 'name' in objective_dict:
-            raise ValueError(
-                "objective output cannot be called 'name'."
             )
 
-        # To make the objective part clear in the results, we prefix all
-        # keys with `objective_`.
-        objective_dict = {
-            f'objective_{k}': v for k, v in objective_dict.items()
-        }
+        objective_output = self.evaluate_result(**result)
 
-        return objective_dict
+        if not isinstance(objective_output, (dict, list)):
+            objective_list = [{'value': objective_output}]
+        elif isinstance(objective_output, dict):
+            objective_list = [objective_output]
+        else:
+            objective_list = objective_output
+
+        objective_list = [
+            self.format_objective_dict(d) for d in objective_list
+        ]
+
+        return objective_list
 
     # Save the dataset object used to get the objective data so we can avoid
     # hashing the data directly.
@@ -501,6 +564,13 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
         type for benchopt. The returned object will be passed to
         ``Objective.compute``.
         """
+        ...
+
+    def _get_one_result(self):
+        # Make sure the splits with CV are created before calling
+        # get_one_result
+        self.get_objective()
+        return self.get_one_result()
 
     # Reduce the pickling and hashing burden by only pickling class parameters.
     @staticmethod

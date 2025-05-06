@@ -58,7 +58,20 @@ Hovering over the question mark shows a tooltip with details about the objective
 
 
 The **Chart type** dropdown allows applying transformations to the plotted metric, such as suboptimality ``metric - min(metric)`` or
-relative suboptimality ``(metric - min(metric)) / (metric[0] - min(metric))``.
+relative suboptimality ``(metric - min(metric)) / (metric[0] - min(metric))``. It also allows to show bar charts or boxplots.
+
+.. list-table::
+   :widths: auto
+   :header-rows: 0
+   :align: center
+
+   * - .. image:: ../_static/barchart.png
+         :width: 49%
+         :alt: Bar Chart
+
+       .. image:: ../_static/boxplot.png
+         :width: 49%
+         :alt: Boxplot
 
 .. note::
 
@@ -67,7 +80,7 @@ relative suboptimality ``(metric - min(metric)) / (metric[0] - min(metric))``.
 
 Use **Scale** to set ``x`` and ``y`` axis scale to linear or logarithmic.
 
-Similarly, use **X-axis** to change the quantity plotted in the x-axis and therefore plotting the metric as a function of time, iteration or tolerance.
+Similarly, use **X-axis** to change the quantity plotted in the x-axis and therefore plot the metric as a function of time, iteration or tolerance.
 
 .. note::
 

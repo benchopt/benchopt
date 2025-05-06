@@ -64,13 +64,18 @@ class StoppingCriterion():
     def __init__(self, strategy=None, key_to_monitor='objective_value',
                  **kwargs):
 
-        assert strategy in SAMPLING_STRATEGIES, (
-            f"strategy should be in {SAMPLING_STRATEGIES}. Got '{strategy}'."
-        )
+        if strategy is not None:
+            assert strategy in SAMPLING_STRATEGIES, (
+                f"strategy should be in {SAMPLING_STRATEGIES}. "
+                f"Got '{strategy}'."
+            )
 
         self.kwargs = kwargs
         self.strategy = strategy
-        self.key_to_monitor = key_to_monitor
+        self.key_to_monitor = (
+            key_to_monitor if key_to_monitor.startswith('objective_')
+            else f'objective_{key_to_monitor}'
+        )
 
     def get_runner_instance(self, max_runs=1, timeout=None, output=None,
                             solver=None):
@@ -105,6 +110,14 @@ class StoppingCriterion():
                 " but did not called super().__init__(**kwargs) with all its "
                 "parameters in its constructor. See XXX for details on how "
                 "to implement a new StoppingCriterion."
+            )
+
+        if self.strategy is None:
+            self.strategy = solver.sampling_strategy or 'iteration'
+        elif solver is not None and solver.sampling_strategy is not None:
+            assert solver.sampling_strategy == self.strategy, (
+                'The strategy is set both in Solver.sampling_strategy and in '
+                'its criterion, and it does not match. Only set it once.'
             )
 
         # Create a new instance of the class
@@ -182,6 +195,16 @@ class StoppingCriterion():
             Next value for the stopping criterion. This value depends on the
             sampling strategy for the solver.
         """
+        # Check that the objective is compatible with the stopping_criterion
+        if self.key_to_monitor not in objective_list[0]:
+            key = self.key_to_monitor.replace("objective_", "")
+            raise ValueError(
+                "Objective.evaluate_result() should contain a key named "
+                f"'{key}' to be used with this stopping_criterion. The name of"
+                " this key can be changed via the 'key_to_monitor' parameter. "
+                f"Available keys are {list(objective_list[0].keys())}"
+            )
+
         # Modify the criterion state:
         # - compute the number of run with the curve. We need to remove 1 as
         #   it contains the initial evaluation.
@@ -189,7 +212,9 @@ class StoppingCriterion():
         n_eval = len(objective_list) - 1
         objective = objective_list[-1][self.key_to_monitor]
         delta_objective = self._prev_objective - objective
-        delta_objective /= abs(objective_list[0][self.key_to_monitor])
+        first_objective = objective_list[0][self.key_to_monitor]
+        if first_objective != 0:
+            delta_objective /= abs(first_objective)
         self._prev_objective = objective
 
         # default value for is_flat
@@ -197,10 +222,12 @@ class StoppingCriterion():
 
         # check the different conditions:
         #     diverging / timeout / max_runs / stopping_criterion
+
         if math.isnan(objective) or delta_objective < -1e5:
             stop = True
             status = 'diverged'
-        elif self._deadline is not None and time.time() > self._deadline:
+
+        elif self._deadline is not None and time.time() >= self._deadline:
             stop = True
             status = 'timeout'
 
@@ -305,7 +332,7 @@ class SufficientDescentCriterion(StoppingCriterion):
         updates.{COMMON_ARGS_DOC}
     """
 
-    def __init__(self, eps=EPS, patience=PATIENCE, strategy='iteration',
+    def __init__(self, eps=EPS, patience=PATIENCE, strategy=None,
                  key_to_monitor='objective_value'):
         self.eps = eps
         self.patience = patience
@@ -373,7 +400,7 @@ class SufficientProgressCriterion(StoppingCriterion):
         updates.{COMMON_ARGS_DOC}
     """
 
-    def __init__(self, eps=EPS, patience=PATIENCE, strategy='iteration',
+    def __init__(self, eps=EPS, patience=PATIENCE, strategy=None,
                  key_to_monitor='objective_value'):
         self.eps = eps
         self.patience = patience
@@ -407,7 +434,9 @@ class SufficientProgressCriterion(StoppingCriterion):
         # Compute the current objective and update best value
         objective = objective_list[-1][self.key_to_monitor]
         delta_objective = self._best_objective - objective
-        delta_objective /= abs(objective_list[0][self.key_to_monitor])
+        first_objective = objective_list[0][self.key_to_monitor]
+        if first_objective != 0:
+            delta_objective /= abs(first_objective)
         self._best_objective = min(
             objective, self._best_objective
         )
@@ -441,10 +470,10 @@ class SingleRunCriterion(StoppingCriterion):
         minus one for the ``'callback'`` strategy.
     """
 
-    def __init__(self, stop_val=1, *args, **kwargs):
+    def __init__(self, stop_val=1, strategy=None, *args, **kwargs):
         # Necessary as the criterion is given a strategy argument when
         # instanciated for an instance.
-        super().__init__(strategy="iteration", stop_val=stop_val)
+        super().__init__(strategy=strategy, stop_val=stop_val)
         self.stop_val = stop_val
 
     def init_stop_val(self):
@@ -455,8 +484,8 @@ class SingleRunCriterion(StoppingCriterion):
 
         return super().get_runner_instance(1, timeout, output, solver)
 
-    def check_convergence(self, cost_curve):
-        return True, 1
+    def should_stop(self, stop_val, objective_list):
+        return True, 'done', stop_val
 
 
 class NoCriterion(StoppingCriterion):

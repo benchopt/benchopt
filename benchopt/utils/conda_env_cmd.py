@@ -1,5 +1,5 @@
 import os
-import tempfile
+import sys
 import warnings
 from pathlib import Path
 
@@ -7,13 +7,18 @@ import benchopt
 
 from .shell_cmd import _run_shell
 from .shell_cmd import _run_shell_in_conda_env
-from .misc import get_benchopt_requirement
+from .misc import get_benchopt_requirement, NamedTemporaryFile
 
 from ..config import DEBUG
 from ..config import get_setting
 
 SHELL = get_setting('shell')
 CONDA_CMD = get_setting('conda_cmd')
+
+# On windows, calling conda without call exit the cmd script:
+# https://github.com/conda/conda/issues/12418
+if sys.platform == 'win32' and not CONDA_CMD.lower().startswith('call'):
+    CONDA_CMD = f"CALL {CONDA_CMD}"
 
 
 # Yaml config file for benchopt env.
@@ -22,7 +27,7 @@ channels:
   - conda-forge
   - nodefaults
 dependencies:
-  - python=3.9
+  - python=3.10
   - numpy
   - cython
   - compilers
@@ -102,7 +107,7 @@ def create_conda_env(
     print(f"Creating conda env '{env_name}':... ", end='', flush=True)
     if DEBUG:
         print(f"\nconda env config:\n{'-' * 40}{benchopt_env}{'-' * 40}")
-    env_yaml = tempfile.NamedTemporaryFile(
+    env_yaml = NamedTemporaryFile(
         mode="w+", prefix='conda_env_', suffix='.yml'
     )
     env_yaml.write(f"name: {env_name}{benchopt_env}")
@@ -155,7 +160,11 @@ def get_benchopt_version_in_env(env_name):
         if DEBUG:
             print(output)
         return None, None
-    benchopt_version, is_editable = output.split()
+    output = [
+        line for line in output.splitlines()
+        if line.startswith('BENCHOPT_VERSION:')
+    ][0]
+    _, benchopt_version, is_editable = output.split(":")
 
     return benchopt_version, is_editable == 'True'
 
@@ -167,29 +176,43 @@ def delete_conda_env(env_name):
                capture_stdout=True)
 
 
-def get_cmd_from_requirements(packages):
+def get_env_file_from_requirements(packages):
     """Process the packages from requirements and create the install cmd.
 
     This detects the packages that need to be installed with pip and also
     the additional channels for conda packages.
     """
-    pip_packages = [pkg[4:] for pkg in packages if pkg.startswith('pip:')]
-    conda_packages = [pkg for pkg in packages if not pkg.startswith('pip:')]
-
-    cmd = []
-    if conda_packages:
-        channels = ' '.join(set(
-            f"-c {pkg.split(':')[0]}" for pkg in conda_packages if ':' in pkg
-        ))
-        packages = ' '.join(pkg.split(':')[-1] for pkg in conda_packages)
-        cmd.append(
-            f"{CONDA_CMD} install --update-all -y {channels} {packages}"
+    # TODO: remove with benchopt 1.7
+    # If ":" is present but not "::", warn that this is legacy syntax.
+    has_legacy_colon = any(":" in pkg and "::" not in pkg for pkg in packages)
+    if has_legacy_colon:
+        warnings.warn(
+            "The use of ':' to specify the channel of a dependency is "
+            "deprecated. Please use '::' instead.", DeprecationWarning
         )
+        packages = [pkg.replace(":", "::", 1) for pkg in packages]
 
+    conda_packages = [pkg for pkg in packages if not pkg.startswith('pip::')]
+    if conda_packages:
+        channels = '\n  - '.join(sorted(set(
+            pkg.rsplit('::', 1)[0]
+            for pkg in conda_packages if '::' in pkg
+        )))
+        channels = f"channels:\n  - {channels}\n" if channels else ""
+        conda_packages = '\n  - '.join(sorted(set(
+            pkg.rsplit('::', 1)[-1] for pkg in conda_packages
+        )))
+        env = f"{channels}dependencies:\n  - {conda_packages}"
+    else:
+        env = "dependencies:"
+
+    pip_packages = '\n    - '.join(sorted(set(
+        pkg.replace("pip::", "") for pkg in packages if pkg.startswith('pip::')
+    )))
     if pip_packages:
-        packages = ' '.join(pip_packages)
-        cmd.append(f"pip install {packages}")
-    return cmd
+        env += f"\n  - pip\n  - pip:\n    - {pip_packages}"
+
+    return env
 
 
 def install_in_conda_env(*packages, env_name=None, force=False, quiet=False):
@@ -197,18 +220,29 @@ def install_in_conda_env(*packages, env_name=None, force=False, quiet=False):
     if len(packages) == 0:
         return
 
-    cmd = get_cmd_from_requirements(packages)
-    if force:
-        cmd = [c + ' --force-reinstall' for c in cmd]
-    cmd = '\n'.join(cmd)
+    env = get_env_file_from_requirements(packages)
+    if DEBUG:
+        print(f"\ninstalling env packages:\n{'-' * 40}{env}{'-' * 40}")
 
-    error_msg = ("Failed to conda install packages "
-                 f"{packages if len(packages) > 1 else packages[0]}\n"
-                 "Error:{output}")
-    _run_shell_in_conda_env(
-        cmd, env_name=env_name, raise_on_error=error_msg,
-        capture_stdout=quiet
-    )
+    # If installing in the current env, get its name.
+    if env_name is None:
+        env_name, _ = list_conda_envs()
+
+    with NamedTemporaryFile(mode='w+', prefix='env_', suffix='.yml') as f:
+        f.write(env)
+        f.flush()
+        cmd = (
+            f"{CONDA_CMD} env update -n {env_name} -f {f.name}"
+            f"{' -q' if quiet else ''}"
+        )
+
+        error_msg = (
+            f"Failed to conda install packages {packages}\nError:{{output}}"
+        )
+        _run_shell_in_conda_env(
+            cmd, env_name=env_name, raise_on_error=error_msg,
+            capture_stdout=quiet
+        )
 
 
 def shell_install_in_conda_env(script, env_name=None, quiet=False):
@@ -286,5 +320,8 @@ def get_conda_context():
     if exit_code != 0 or active_prefix is None:
         return None
     info = json.loads(payload)
-    info['active_prefix'] = active_prefix
+    info['active_prefix'] = os.path.normpath(active_prefix)
+    info['root_prefix'] = os.path.normpath(info['root_prefix'])
+    info['envs_dirs'] = [os.path.normpath(env_dir) for env_dir
+                         in info['envs_dirs']]
     return Context(**info)

@@ -6,10 +6,10 @@ Benchmark workflow
 
 
 .. toctree::
-    :maxdepth: 1
+    :maxdepth: 2
 
-    write_benchmark
     run_benchmark
+    write_benchmark
     visualize_benchmark
-    publish_benchmark
+    manage_benchmark_results
     config_benchopt

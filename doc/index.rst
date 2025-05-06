@@ -2,12 +2,12 @@
 ``Benchopt``
 =============
 
-*—Making your optimization benchmarks simple and open—*
+*—Making your ML and optimization benchmarks simple and open—*
 
 
 |Python 3.6+| |PyPI version| |License|
 
-Benchopt is a benchmarking suite for optimization algorithms.
+Benchopt is a benchmarking suite tailored for machine learning workflows.
 It is built for simplicity, transparency, and reproducibility.
 It is implemented in Python but can run algorithms written in many programming languages.
 
@@ -76,7 +76,7 @@ or (why not) discuss new features to be added and future development directions 
 Citing Benchopt
 ---------------
 
-Benchopt is a continuous effort to make reproducible and transparent optimization benchmarks.
+Benchopt is a continuous effort to make reproducible and transparent ML and optimization benchmarks.
 Join this endeavor! If you use benchopt in a scientific publication, please cite
 
 .. code-block:: bibtex
@@ -108,7 +108,7 @@ Join this endeavor! If you use benchopt in a scientific publication, please cite
 .. when adding/modifying pages, don't forget to update the toctree
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :hidden:
    :includehidden:
 

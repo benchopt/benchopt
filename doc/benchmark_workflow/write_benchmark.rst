@@ -157,6 +157,9 @@ This ``sampling_strategy`` can be:
   compute and store the objective and return ``False`` once the computations
   should stop.
 
+- ``'run_once'``: in this case, the ``run`` method of the solver is run only 
+once during the benchmark.
+
 Benchopt supports different types of solvers:
 
 - :ref:`python_solvers`
@@ -186,7 +189,7 @@ If your Python solver requires some packages such as `Numba <https://numba.pydat
 Benchopt allows you to list some requirements. The necessary packages should be available
 via `conda <https://docs.conda.io/en/latest/>`_ or
 `pip <https://packaging.python.org/guides/tool-recommendations/>`_.
-See `specifying_requirements`_ for more details on how to specify the requirements for benchopt classes.
+See :ref:`specify_requirements`_ for more details on how to specify the requirements for benchopt classes.
 
 .. _r_solvers:
 
