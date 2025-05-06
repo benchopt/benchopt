@@ -23,7 +23,7 @@ CLI
   for GPU and CPU. By `Mathurin Massias`_ (:gh:`793`)
 
 - Make it possible to run ``benchopt`` as ``python -m benchopt``, to ease running
-  in various environment and debugging. By `Remi Flamary`_ (:gh:`685`)
+  in various environment and debugging. By `Rémi Flamary`_ (:gh:`685`)
 
 API
 ---
