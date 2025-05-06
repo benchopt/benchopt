@@ -39,3 +39,5 @@
 .. _Mathieu Dagréou: https://matdag.github.io
 
 .. _Wassim Mazouz: https://wassimmazouz.github.io/
+
+.. _Rémi Flamary: https://remi.flamary.com/
