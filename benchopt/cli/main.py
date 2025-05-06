@@ -173,7 +173,7 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               "datasets, see the command `benchopt install`.")
 @click.option('--no-cache',
               is_flag=True,
-              help='If set, Disable the cache on disk for the run. Note that '
+              help='If set, disable the cache on disk for the run. Note that '
               'this makes the run less tolerant to errors, use with caution.')
 @click.option("--output", default="None", type=str,
               help="Filename for the result output. "
