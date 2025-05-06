@@ -32,13 +32,27 @@ class CaptureRunOutput(object):
 
     def __exit__(self, exc_class, value, traceback):
         self.out.__exit__(exc_class, value, traceback)
-        self.output = self.out.output
+        self.output_checker = BenchoptRunOutputProcessor(
+            self.out.output, self.delete_result_files
+        )
+
+        # If there was an exception, display the output
+        if exc_class is not None:
+            print(self.output_checker.output)
+
+    def check_output(self, pattern, repetition=None):
+        self.output_checker.check_output(pattern, repetition)
+
+
+class BenchoptRunOutputProcessor:
+    def __init__(self, output, delete_result_files=True):
+        self.output = output
 
         # Make sure to delete all the result that created by the run command.
         self.result_files = re.findall(
             r'Saving result in: (.*\.parquet|.*\.csv)', self.output
         )
-        if len(self.result_files) >= 1 and self.delete_result_files:
+        if len(self.result_files) >= 1 and delete_result_files:
             for result_file in self.result_files:
                 result_path = Path(result_file)
                 result_path.unlink()  # remove result file
@@ -47,10 +61,6 @@ class CaptureRunOutput(object):
                 for html_file in result_dir.glob(f'*{stem}*.html'):
                     # remove html files associated with this results
                     html_file.unlink()
-
-        # If there was an exception, display the output
-        if exc_class is not None:
-            print(self.output)
 
     def check_output(self, pattern, repetition=None):
 
