@@ -40,6 +40,12 @@ DEFAULT_DATASETS = {
         class Dataset(BaseDataset):
             name = "test-dataset"
             def get_data(self): return dict(X=None, y=None)
+    """,
+    'simulated.py': """from benchopt import BaseDataset
+
+        class Dataset(BaseDataset):
+            name = "simulated"
+            def get_data(self): return dict(X=None, y=None)
     """
 }
 DEFAULT_SOLVERS = {
