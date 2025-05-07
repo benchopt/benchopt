@@ -1,4 +1,3 @@
-import os
 import sys
 import inspect
 import tempfile
@@ -7,22 +6,7 @@ import contextlib
 from pathlib import Path
 
 from benchopt.benchmark import Benchmark
-from benchopt.tests import DUMMY_BENCHMARK_PATH
 
-
-dummy_objective = (DUMMY_BENCHMARK_PATH / 'objective.py').read_text()
-
-dummy_solvers = [
-    (DUMMY_BENCHMARK_PATH / "solvers" / p).read_text()
-    for p in os.listdir(DUMMY_BENCHMARK_PATH / "solvers")
-    if p.endswith(".py") and not p.startswith("template_")
-]
-
-dummy_datasets = [
-    (DUMMY_BENCHMARK_PATH / "datasets" / p).read_text()
-    for p in os.listdir(DUMMY_BENCHMARK_PATH / "datasets")
-    if p.endswith(".py") and not p.startswith("template_")
-]
 
 DEFAULT_OBJECTIVE = """from benchopt import BaseObjective
 
@@ -106,7 +90,10 @@ def temp_benchmark(
         datasets = {**DEFAULT_DATASETS, **datasets}
 
     # Make sure the benchmark_utils is reloaded
-    to_del = [m for m in sys.modules if "benchmark_utils" in m or "benchopt_benchmarks" in m]
+    to_del = [
+        m for m in sys.modules
+        if "benchmark_utils" in m or "benchopt_benchmarks" in m
+    ]
     for m in to_del:
         sys.modules.pop(m)
 
