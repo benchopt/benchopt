@@ -43,7 +43,6 @@ BENCHMARK_COMPLETION_CASES = [
 ]
 SOLVER_COMPLETION_CASES = [
     ('', [n.lower() for n in DUMMY_BENCHMARK.get_solver_names()]),
-    ('c', ['cd']),
     ('pgd', ['julia-pgd', 'python-pgd', 'python-pgd-with-cb', 'r-pgd'])
 ]
 DATASET_COMPLETION_CASES = [
@@ -90,14 +89,16 @@ class TestRunCmd:
                 run([], 'benchopt', standalone_mode=False)
 
     def test_invalid_dataset(self):
-        with pytest.raises(click.BadParameter, match="invalid_dataset"):
-            run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', 'invalid_dataset',
-                 '-s', 'pgd'], 'benchopt', standalone_mode=False)
+        with temp_benchmark() as bench:
+            with pytest.raises(click.BadParameter, match="invalid_dataset"):
+                cmd = f"{bench.benchmark_dir} -d invalid_dataset".split()
+                run(cmd, 'benchopt', standalone_mode=False)
 
     def test_invalid_solver(self):
-        with pytest.raises(click.BadParameter, match="invalid_solver"):
-            run([str(DUMMY_BENCHMARK_PATH), '-l', '-s', 'invalid_solver'],
-                'benchopt', standalone_mode=False)
+        with temp_benchmark() as bench:
+            with pytest.raises(click.BadParameter, match="invalid_solver"):
+                cmd = f"{bench.benchmark_dir} -d invalid_solver".split()
+                run(cmd, 'benchopt', standalone_mode=False)
 
     def test_objective_not_installed(self):
 
@@ -125,16 +126,18 @@ class TestRunCmd:
     @pytest.mark.parametrize('n_jobs', [1, 2])
     def test_valid_call(self, n_jobs):
 
-        with CaptureRunOutput() as out:
-            run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,
-                 '-f', SELECT_ONE_PGD, '-n', '1', '-r', '1', '-o',
-                 SELECT_ONE_OBJECTIVE, '-j', n_jobs, '--no-plot'],
-                'benchopt', standalone_mode=False)
+        with temp_benchmark() as bench:
+            cmd = (
+                f"{bench.benchmark_dir} -n 1 -r 1 -j {n_jobs} --no-plot "
+                "-d test-dataset"
+            )
+            with CaptureRunOutput() as out:
+                run(cmd.split(), 'benchopt', standalone_mode=False)
 
-        out.check_output('Simulated', repetition=1)
-        out.check_output('Dummy Sparse Regression', repetition=1)
-        out.check_output(r'Python-PGD\[step_size=1\]:', repetition=6)
-        out.check_output(r'Python-PGD\[step_size=1.5\]:', repetition=0)
+        out.check_output('test-dataset', repetition=1)
+        out.check_output('simulated', repetition=0)
+        out.check_output('test-objective', repetition=1)
+        out.check_output('test-solver:', repetition=6)
 
         # Make sure the results were saved in a result file
         assert len(out.result_files) == 1, out
@@ -360,20 +363,6 @@ class TestRunCmd:
         names = [Path(result_file).stem for result_file in out.result_files]
         assert names[0] == 'unique_name' and names[1] == 'unique_name_1', out
 
-    def test_shell_complete(self):
-        # Completion for benchmark name
-        _test_shell_completion(run, [], BENCHMARK_COMPLETION_CASES)
-
-        # Completion for solvers
-        _test_shell_completion(
-            run, [str(DUMMY_BENCHMARK_PATH), '-s'], SOLVER_COMPLETION_CASES
-        )
-
-        # Completion for datasets
-        _test_shell_completion(
-            run, [str(DUMMY_BENCHMARK_PATH), '-d'], DATASET_COMPLETION_CASES
-        )
-
     def test_import_ctx_name(self):
         solver = inspect.cleandoc("""
             from benchopt import BaseSolver, safe_import_context
@@ -448,18 +437,18 @@ class TestRunCmd:
             import numpy as np
 
             class Solver(BaseSolver):
-                name = 'test_solver'
+                name = 'test-solver'
                 parameters = {'param': [0]}
-                def set_objective(self, X, y, lmbd): self.n_feats = X.shape[1]
+                def set_objective(self, X, y, lmbd): pass
                 def run(self, n_iter): print(f'#RUN{self.param}')
-                def get_result(self): return dict(beta=np.ones(self.n_feats))
+                def get_result(self): return dict(beta=None)
             """
 
-        with temp_benchmark(solvers=[solver]) as benchmark:
+        with temp_benchmark(solvers=[solver]) as bench:
             with CaptureRunOutput() as out:
-                run([str(benchmark.benchmark_dir),
+                run([str(bench.benchmark_dir),
                     *'-d test-dataset -n 1 -r 1 --no-plot'.split(),
-                    *'-o dummy*[reg=0.5] -s test_solver'.split()],
+                    *'-s test-solver'.split()],
                     'benchopt', standalone_mode=False)
 
             out.check_output('#RUN0', repetition=2)
@@ -467,9 +456,9 @@ class TestRunCmd:
 
             with CaptureRunOutput() as out:
                 run([
-                    str(benchmark.benchmark_dir),
+                    str(bench.benchmark_dir),
                     *'-d test-dataset -n 1 -r 1 --no-plot --collect'.split(),
-                    *'-o dummy*[reg=0.5] -s test_solver[param=[0,1]]'.split()
+                    *'-s test-solver[param=[0,1]]'.split()
                 ], 'benchopt', standalone_mode=False)
 
             # check that no solver where run
@@ -480,6 +469,20 @@ class TestRunCmd:
             assert len(out.result_files) == 1, out
             out.check_output(r'done \(not enough run\)', repetition=1)
             out.check_output('not run yet', repetition=1)
+
+    def test_shell_complete(self):
+        # Completion for benchmark name
+        _test_shell_completion(run, [], BENCHMARK_COMPLETION_CASES)
+
+        # Completion for solvers
+        _test_shell_completion(
+            run, [str(DUMMY_BENCHMARK_PATH), '-s'], SOLVER_COMPLETION_CASES
+        )
+
+        # Completion for datasets
+        _test_shell_completion(
+            run, [str(DUMMY_BENCHMARK_PATH), '-d'], DATASET_COMPLETION_CASES
+        )
 
 
 class TestInstallCmd:

@@ -11,7 +11,7 @@ from benchopt.benchmark import Benchmark
 DEFAULT_OBJECTIVE = """from benchopt import BaseObjective
 
 class Objective(BaseObjective):
-    name = "test"
+    name = "test-objective"
     def set_data(self, X, y): pass
     def get_one_result(self): return dict(beta=None)
     def evaluate_result(self, beta): return 1
