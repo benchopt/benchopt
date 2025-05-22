@@ -58,9 +58,9 @@ the value of ``--timeout`` multiplied by ``1.5`` for each job.
 Note that the logs of each benchmark run can be found in ``./benchopt_run/``.
 
 ``slurm_array_parallelism`` can be used to limit the number of simultaneous
-jobs that are run. This is useful when the cluster has a limit on the number of
-simultaneous jobs that can be run. By default, this value is not set, which
-means that no limitation is used.
+jobs that are run. This is useful when the cluster has no limit on the number of
+simultaneous jobs that can be run. By default, this value is not set, leaving it to
+the cluster to adjust this.
 
 As we rely on ``joblib.Memory`` for caching the results, the cache should work
 exactly as if you were running the computation sequentially, as long as you have
