@@ -1,3 +1,4 @@
+import os
 import sys
 import builtins
 from contextlib import contextmanager
@@ -36,3 +37,16 @@ def patch_import(**func_import):
         yield
     finally:
         builtins.__import__ = builtins_import
+
+
+@contextmanager
+def patch_var_env(name, value):
+    try:
+        old_value = os.environ.get(name, None)
+        os.environ[name] = str(value)
+        yield
+    finally:
+        if old_value is None:
+            del os.environ[name]
+        else:
+            os.environ[name] = old_value

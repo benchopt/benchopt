@@ -24,7 +24,7 @@ from benchopt.tests import SELECT_ONE_OBJECTIVE
 from benchopt.tests import DUMMY_BENCHMARK
 from benchopt.tests import DUMMY_BENCHMARK_PATH
 from benchopt.tests.utils import CaptureRunOutput
-
+from benchopt.tests.utils import patch_var_env
 
 from benchopt.cli.main import run
 from benchopt.cli.main import install
@@ -126,13 +126,12 @@ class TestRunCmd:
     @pytest.mark.parametrize('n_jobs', [1, 2])
     def test_valid_call(self, n_jobs):
 
-        with temp_benchmark() as bench:
+        with temp_benchmark() as bench, CaptureRunOutput() as out:
             cmd = (
-                f"{bench.benchmark_dir} -n 1 -r 1 -j {n_jobs} --no-plot "
+                f"{bench.benchmark_dir} -r 1 -n 1 -j {n_jobs} --no-plot "
                 "-d test-dataset"
             )
-            with CaptureRunOutput() as out:
-                run(cmd.split(), 'benchopt', standalone_mode=False)
+            run(cmd.split(), 'benchopt', standalone_mode=False)
 
         out.check_output('test-dataset', repetition=1)
         out.check_output('simulated', repetition=0)
@@ -143,18 +142,20 @@ class TestRunCmd:
         assert len(out.result_files) == 1, out
 
     def test_valid_call_in_env(self, test_env_name):
-        with CaptureRunOutput() as out:
+        with temp_benchmark() as bench, CaptureRunOutput() as out:
+            cmd = (
+                f"{bench.benchmark_dir} -r 1 -n 1 --no-plot "
+                f"-d test-dataset --env-name {test_env_name}"
+            )
             with pytest.raises(SystemExit, match='False'):
-                run([str(DUMMY_BENCHMARK_PATH), '--env-name', test_env_name,
-                     '-d', SELECT_ONE_SIMULATED, '-f', SELECT_ONE_PGD,
-                     '-n', '1', '-r', '1', '-o', SELECT_ONE_OBJECTIVE,
-                     '--no-plot'], 'benchopt', standalone_mode=False)
+                run(cmd.split(), 'benchopt', standalone_mode=False)
 
         out.check_output(f'conda activate "{test_env_name}"')
-        out.check_output('Simulated', repetition=1)
-        out.check_output('Dummy Sparse Regression', repetition=1)
-        out.check_output(r'Python-PGD\[step_size=1\]:', repetition=6)
-        out.check_output(r'Python-PGD\[step_size=1.5\]:', repetition=0)
+        # test-dataset appears twice because of the call to the subcommand
+        out.check_output('test-dataset', repetition=2)
+        out.check_output('simulated', repetition=0)
+        out.check_output('test-objective', repetition=1)
+        out.check_output('test-solver:', repetition=6)
 
         # Make sure the results were saved in a result file
         assert len(out.result_files) == 1, out
@@ -179,44 +180,43 @@ class TestRunCmd:
         assert len(out.result_files) == 1, out
 
     def test_no_timeout(self):
-        # First test: --timeout==0
-        with CaptureRunOutput() as out_timeout:
-            run([str(DUMMY_BENCHMARK_PATH), '-d', SELECT_ONE_SIMULATED, '-f',
-                SELECT_ONE_PGD, '-o', SELECT_ONE_OBJECTIVE, '--no-plot',
-                '--timeout=0'], 'benchopt', standalone_mode=False)
-        out_timeout.check_output('timeout', repetition=1)
+        args = "--no-plot -d test-dataset".split()
 
-        try:
-            old_value = os.environ.get('BENCHOPT_DEFAULT_TIMEOUT')
-            os.environ['BENCHOPT_DEFAULT_TIMEOUT'] = "0"
-            # Second test: no option about timeout
-            with CaptureRunOutput() as out_timeout_default:
-                run([str(DUMMY_BENCHMARK_PATH), '-d', SELECT_ONE_SIMULATED,
-                     '-f', SELECT_ONE_PGD, '-o', SELECT_ONE_OBJECTIVE,
-                     '--no-plot'], 'benchopt', standalone_mode=False)
-            out_timeout_default.check_output('timeout', repetition=1)
+        # First test: --timeout==0
+        with temp_benchmark() as bench, CaptureRunOutput() as out:
+            run(
+                [f"{bench.benchmark_dir}", *args, "--timeout=0"],
+                "benchopt", standalone_mode=False
+            )
+        out.check_output("(timeout)", repetition=1)
+
+        with patch_var_env("BENCHOPT_DEFAULT_TIMEOUT", 0):
+            # Second test: no option about timeout, env_var set to 0
+            with temp_benchmark() as bench, CaptureRunOutput() as out:
+                run(
+                    [f"{bench.benchmark_dir}", *args],
+                    "benchopt", standalone_mode=False
+                )
+            out.check_output("(timeout)", repetition=1)
 
             # Third test: --no-timeout
-            with CaptureRunOutput() as out_no_timeout:
-                run([str(DUMMY_BENCHMARK_PATH), '-d',
-                     SELECT_ONE_SIMULATED, '-f', SELECT_ONE_PGD,
-                     '-o', SELECT_ONE_OBJECTIVE, '--no-plot', '--no-timeout'],
-                    'benchopt', standalone_mode=False)
-            out_no_timeout.check_output('timeout', repetition=0)
-
-        finally:
-            if old_value is not None:
-                os.environ['BENCHOPT_DEFAULT_TIMEOUT'] = old_value
-            else:
-                del os.environ['BENCHOPT_DEFAULT_TIMEOUT']
+            with temp_benchmark() as bench, CaptureRunOutput() as out:
+                run(
+                    [f"{bench.benchmark_dir}", *args, "--no-timeout"],
+                    "benchopt", standalone_mode=False
+                )
+            out.check_output("(timeout)", repetition=0)
 
         # Fourth test: --timeout and --no-timeout both specified
         match = 'You cannot specify both --timeout and --no-timeout options.'
+
         with pytest.raises(click.BadParameter, match=re.escape(match)):
-            run([str(DUMMY_BENCHMARK_PATH), '-d', SELECT_ONE_SIMULATED,
-                 '-f', SELECT_ONE_PGD, '-o', SELECT_ONE_OBJECTIVE,
-                 '--no-plot', '--timeout=0', '--no-timeout'],
-                'benchopt', standalone_mode=False)
+            with temp_benchmark() as bench, CaptureRunOutput() as out:
+                run(
+                    [f"{bench.benchmark_dir}", *args,
+                     "--timeout=0", "--no-timeout"],
+                    "benchopt", standalone_mode=False
+                )
 
     def test_custom_parameters(self):
         SELECT_DATASETS = r'simulated[n_features=[100, 200]]'
