@@ -286,66 +286,6 @@ def test_extract_parameters():
         assert _extract_parameters(f"\"{token}\"") == [token]
 
 
-def test_error_caching(no_debug_log):
-
-    objective = """from benchopt import BaseObjective
-
-        class Objective(BaseObjective):
-            name = "test_obj"
-            min_benchopt_version = "0.0.0"
-
-            def set_data(self, X, y): pass
-            def get_one_result(self): pass
-            def evaluate_result(self, beta): return dict(value=1)
-            def get_objective(self): return dict(X=0, y=0)
-    """
-
-    solver1 = """from benchopt import BaseSolver
-
-    class Solver(BaseSolver):
-        name = "failing-solver"
-        sampling_strategy = 'iteration'
-        def set_objective(self, X, y): pass
-        def run(self, n_iter):
-            raise ValueError('Failing solver.')
-        def get_result(self): return dict(beta=1)
-    """
-
-    solver2 = """from benchopt import BaseSolver
-
-    class Solver(BaseSolver):
-        name = "normal-solver"
-        sampling_strategy = 'iteration'
-        def set_objective(self, X, y): pass
-        def run(self, n_iter): pass
-        def get_result(self): return dict(beta=1)
-    """
-
-    dataset = """from benchopt import BaseDataset
-
-    class Dataset(BaseDataset):
-        name = "dataset"
-        def get_data(self):
-            return dict(X=0, y=1)
-    """
-
-    with temp_benchmark(objective=objective,
-                        solvers=[solver1, solver2],
-                        datasets=[dataset]) as benchmark:
-        with CaptureRunOutput() as out:
-            for it in range(2):
-                run([str(benchmark.benchmark_dir),
-                    *' -d dataset --no-plot -r 1 -n 1'.split()],
-                    standalone_mode=False)
-                # benchmark is too quick to run, without sleep output files
-                # have the same name and the unlinking fails:
-                if it == 0:
-                    time.sleep(1.1)
-
-    # error message should be displayed twice
-    out.check_output("ValueError: Failing solver.", repetition=2)
-
-
 # Under windows, the function needs to be pickleable
 # for parallel jobs to work with joblib
 @pytest.mark.parametrize('n_jobs', [1, 2])
@@ -453,3 +393,92 @@ def test_prefix_with_same_parameters():
         assert "s" in df['p_solver_type'].unique()
         assert "s" not in df['p_dataset_type'].unique()
         assert "d" in df['p_dataset_type'].unique()
+
+
+class TestCache:
+    """Test the cache of the benchmark."""
+
+    objective = """from benchopt import BaseObjective
+
+        class Objective(BaseObjective):
+            name = "test_obj"
+            min_benchopt_version = "0.0.0"
+
+            def set_data(self, X, y): pass
+            def get_one_result(self): pass
+            def evaluate_result(self, beta): return dict(value=1)
+            def get_objective(self): return dict(X=0, y=0)
+    """
+
+    solver = """from benchopt import BaseSolver
+
+    class Solver(BaseSolver):
+        name = "test-solver"
+        sampling_strategy = 'run_once'
+        def set_objective(self, X, y): pass
+        def run(self, _): print("#RUN_SOLVER")
+        def get_result(self): return dict(beta=1)
+    """
+
+    dataset = """from benchopt import BaseDataset
+
+    class Dataset(BaseDataset):
+        name = "test-dataset"
+        def get_data(self): return dict(X=0, y=1)
+    """
+
+    @pytest.mark.parametrize('n_reps', [1, 4])
+    def test_cache(self, no_debug_log, n_reps):
+        with temp_benchmark(
+                objective=self.objective, solvers=self.solver,
+                datasets=self.dataset
+        ) as benchmark:
+            with CaptureRunOutput() as out:
+                for it in range(3):
+                    run([str(benchmark.benchmark_dir),
+                        *f'--no-plot -r {n_reps}'.split()],
+                        standalone_mode=False)
+
+        # Check that the run are only call once per repetition, but not cached
+        # when using multiple repetitions
+        out.check_output("#RUN_SOLVER", repetition=n_reps)
+
+    @pytest.mark.parametrize('n_reps', [1, 4])
+    def test_no_cache(self, no_debug_log, n_reps):
+        with temp_benchmark(
+                objective=self.objective, solvers=self.solver,
+                datasets=self.dataset
+        ) as benchmark:
+            with CaptureRunOutput() as out:
+                for it in range(3):
+                    run([str(benchmark.benchmark_dir),
+                        *f'--no-plot -r {n_reps} --no-cache'.split()],
+                        standalone_mode=False)
+
+        # Check that the run is not cached when using --no-cache
+        out.check_output("#RUN_SOLVER", repetition=n_reps * 3)
+
+    def test_no_error_caching(self, no_debug_log):
+
+        solver_fail = """from benchopt import BaseSolver
+
+        class Solver(BaseSolver):
+            name = "failing-solver"
+            sampling_strategy = 'iteration'
+            def set_objective(self, X, y): pass
+            def run(self, n_iter):
+                raise ValueError('Failing solver.')
+            def get_result(self): return dict(beta=1)
+        """
+
+        with temp_benchmark(objective=self.objective,
+                            solvers=[self.solver, solver_fail],
+                            datasets=self.dataset) as benchmark:
+            with CaptureRunOutput() as out:
+                for it in range(3):
+                    run([str(benchmark.benchmark_dir),
+                        *' -d test-dataset --no-plot -r 1 -n 1'.split()],
+                        standalone_mode=False)
+
+        # error message should be displayed twice
+        out.check_output("ValueError: Failing solver.", repetition=3)

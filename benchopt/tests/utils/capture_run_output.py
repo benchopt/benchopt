@@ -75,12 +75,17 @@ class BenchoptRunOutputProcessor:
         if len(self.result_files) >= 1 and delete_result_files:
             for result_file in self.result_files:
                 result_path = Path(result_file)
-                result_path.unlink()  # remove result file
+                self.safe_unlink(result_path)  # remove result file
                 result_dir = result_path.parents[0]
                 stem = result_path.stem
                 for html_file in result_dir.glob(f'*{stem}*.html'):
                     # remove html files associated with this results
-                    html_file.unlink()
+                    self.safe_unlink(html_file)
+
+    def safe_unlink(self, file):
+        # Avoid error when the file is no present due to conficting names.
+        if file.exists():
+            file.unlink()
 
     def check_output(self, pattern, repetition=None):
 
