@@ -67,14 +67,24 @@ def run_on_slurm(
     with ExitStack() as stack:
         for kwargs in all_runs:
             solver = kwargs.get("solver")
-            override = tuple(sorted(getattr(solver, "slurm_params", {}).items())) if solver and hasattr(solver, "slurm_params") else ()
+            override = (
+                tuple(sorted(getattr(solver, "slurm_params", {}).items()))
+                if solver and hasattr(solver, "slurm_params")
+                else ()
+            )
 
             if override not in executors:
-                executor = get_slurm_executor(benchmark, slurm_config, common_kwargs["timeout"], solver)
+                executor = get_slurm_executor(
+                    benchmark, slurm_config, common_kwargs["timeout"], solver
+                )
                 stack.enter_context(executor.batch())
                 executors[override] = executor
 
-            future = executors[override].submit(run_one_solver, **common_kwargs, **kwargs)
+            future = executors[override].submit(
+                run_one_solver,
+                **common_kwargs,
+                **kwargs,
+            )
             tasks.append(future)
 
     print(f"First job id: {tasks[0].job_id}")
