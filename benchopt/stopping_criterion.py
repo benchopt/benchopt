@@ -121,7 +121,6 @@ class StoppingCriterion():
             )
 
         # Create a new instance of the class
-        print("RUNNER:", self.key_to_monitor)
         stopping_criterion = self.__class__(
             strategy=self.strategy, key_to_monitor=self.key_to_monitor,
             **self.kwargs,

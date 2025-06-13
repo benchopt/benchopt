@@ -425,10 +425,11 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
 
 def run_benchmark(benchmark_path, solver_names=None, forced_solvers=(),
                   dataset_names=None, objective_filters=None, max_runs=10,
-                  n_repetitions=1, timeout=None, n_jobs=1, slurm=None,
+                  n_repetitions=1, timeout=None,
+                  n_jobs=1, parallel_config=None, slurm=None,
                   plot_result=True, display=True, html=True,  collect=False,
-                  show_progress=True, pdb=False, parallel_config=None,
-                  no_cache=False, output_file="None"):
+                  show_progress=True, pdb=False, no_cache=False,
+                  output_file="None"):
     """Run full benchmark.
 
     Parameters
@@ -456,7 +457,11 @@ def run_benchmark(benchmark_path, solver_names=None, forced_solvers=(),
         The maximum duration in seconds of the solver run.
     n_jobs : int
         Maximal number of workers to use to run the benchmark in parallel.
-    slurm : Path | None
+    parallel_config : dict | None
+        If not None, launch the job in parallel. The provided config serves to
+        set up parallelism using ``joblib.parallel_backend`` or ``submitit``.
+        See :ref:`parallel_run` for detailed description.
+    slurm : Path | None, (_Deprecated_)
         If not None, launch the job on a slurm cluster using the file to get
         the cluster config parameters.
     plot_result : bool
@@ -475,10 +480,6 @@ def run_benchmark(benchmark_path, solver_names=None, forced_solvers=(),
         If show_progress is set to True, display the progress of the benchmark.
     pdb : bool
         If pdb is set to True, open a debugger on error.
-    parallel_config : dict | None
-        If not None, launch the job in parallel. The provided config serves to
-        set up parallelism using ``joblib.parallel_backend`` or ``submitit``.
-        See :ref:`parallel_run` for detailed description.
     no_cache : bool
         If set to True, this deactivates the caching mechanism integrated in
         benchopt. Note that this makes the run less tolerant to errors, use it

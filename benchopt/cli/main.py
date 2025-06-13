@@ -54,7 +54,6 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
         "timeout",
         "no_timeout",
         "collect",
-        "output",
         "plot",
         "display",
         "html",
