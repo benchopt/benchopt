@@ -4,7 +4,7 @@ import pickle
 
 from datetime import datetime
 
-from joblib import Parallel, delayed, hash
+from joblib import hash
 
 from .callback import _Callback
 from .benchmark import Benchmark
@@ -12,6 +12,8 @@ from .utils.sys_info import get_sys_info
 from .utils.files import uniquify_results
 from .utils.pdb_helpers import exception_handler
 from .utils.terminal_output import TerminalOutput
+from .utils.parallel_backends import parallel_run
+from .utils.parallel_backends import check_parallel_config
 
 
 FAILURE_STATUS = ['diverged', 'error', 'interrupted']
@@ -66,7 +68,7 @@ def run_one_resolution(objective, solver, meta, stop_val):
 
 
 def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
-                   force=False, output=None, pdb=False):
+                   force=False, terminal=None, pdb=False):
     """Run all repetitions of the solver for a value of stopping criterion.
 
     Parameters
@@ -102,19 +104,17 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
     curve = []
 
     # Augment the metadata with final_results if necessary.
-    base_method = getattr(
-        super(type(objective), objective),
-        'save_final_results', None
+    has_save_final_results = (
+        objective.save_final_results.__qualname__ !=
+        "BaseObjective.save_final_results"
     )
-
-    has_save_final_results = objective.save_final_results is not base_method
     if has_save_final_results:
         final_results = benchmark.get_output_folder() / 'final_results'
         final_results /= f"{hash(meta)}.pkl"
         final_results.parent.mkdir(exist_ok=True, parents=True)
         meta["final_results"] = str(final_results)
 
-    with exception_handler(output, pdb=pdb) as ctx:
+    with exception_handler(terminal, pdb=pdb) as ctx:
 
         if solver._solver_strategy == "callback":
 
@@ -164,7 +164,7 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
 
 def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
                    max_runs, timeout=None, force=False, collect=False,
-                   output=None, pdb=False):
+                   terminal=None, pdb=False):
     """Run a benchmark for a given dataset, objective and solver.
 
     Parameters
@@ -190,7 +190,7 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
     collect : bool
         If set to True, only collect the results that have been put in cache,
         and ignore the results that are not computed yet, default is False.
-    output : TerminalOutput or None
+    terminal : TerminalOutput or None
         Object to format string to display the progress of the solver.
     pdb : bool
         It pdb is set to True, open a debugger on error.
@@ -202,7 +202,7 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
     """
 
     run_one_to_cvg_cached = benchmark.cache(
-        run_one_to_cvg, ignore=['force', 'output', 'pdb'], collect=collect
+        run_one_to_cvg, ignore=['force', 'terminal', 'pdb'], collect=collect
     )
     if collect:
         _run_one_to_cvg_cached = run_one_to_cvg_cached
@@ -214,7 +214,7 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
     # Set objective an skip if necessary.
     skip, reason = objective.set_dataset(dataset)
     if skip:
-        output.skip(reason, objective=True)
+        terminal.skip(reason, objective=True)
         return []
 
     states = []
@@ -241,11 +241,11 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
             n_repetitions = 1
 
     for rep in range(n_repetitions):
-        skip = solver._set_objective(objective, output=output)
+        skip = solver._set_objective(objective, terminal=terminal)
         if skip:
             return []
 
-        output.set(rep=rep)
+        terminal.set(rep=rep)
 
         # Get meta
         meta = {
@@ -265,13 +265,13 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
             solver=solver,
             max_runs=max_runs,
             timeout=timeout / n_repetitions if timeout is not None else None,
-            output=output,
+            terminal=terminal,
         )
 
         args_run_one_to_cvg = dict(
             benchmark=benchmark, objective=objective, solver=solver, meta=meta,
-            stopping_criterion=stopping_criterion, force=force, output=output,
-            pdb=pdb
+            stopping_criterion=stopping_criterion, force=force,
+            terminal=terminal, pdb=pdb
         )
         try:
             curve, status = run_one_to_cvg_cached(
@@ -293,7 +293,7 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
         else:
             status = 'done'
 
-    output.show_status(status=status)
+    terminal.show_status(status=status)
     # Make sure to flush so the parallel output is properly display
     print(end='', flush=True)
 
@@ -308,9 +308,10 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
 
 def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
                    datasets=None, objectives=None, max_runs=10,
-                   n_repetitions=1, timeout=None, n_jobs=1, slurm=None,
-                   plot_result=True, display=True, html=True,  collect=False,
-                   show_progress=True, pdb=False, output_name="None"):
+                   n_repetitions=1, timeout=100,
+                   plot_result=True, display=True, html=True, collect=False,
+                   output_file="None", parallel_config=None,
+                   show_progress=True, pdb=False):
     """Run full benchmark.
 
     Parameters
@@ -336,11 +337,10 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
         The number of repetitions to run. Defaults to 1.
     timeout : float
         The maximum duration in seconds of the solver run.
-    n_jobs : int
-        Maximal number of workers to use to run the benchmark in parallel.
-    slurm : Path | None
-        If not None, launch the job on a slurm cluster using the file to get
-        the cluster config parameters.
+    parallel_config : dict | None
+        If not None, launch the job in parallel. The provided config serves to
+        set up parallelism using ``joblib.parallel_backend`` or ``submitit``.
+        See :ref:`parallel_run` for detailed description.
     plot_result : bool
         If set to True (default), generate the result plot and save them in
         the benchmark directory.
@@ -357,7 +357,7 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
         If show_progress is set to True, display the progress of the benchmark.
     pdb : bool
         If pdb is set to True, open a debugger on error.
-    output_name : str
+    output_file : str
         Filename for the parquet output. If given, the results will
         be stored at <BENCHMARK>/outputs/<filename>.parquet.
 
@@ -369,31 +369,25 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
         by the objective is not the same for all parameters, the missing data
         is set to `NaN`.
     """
-    output = TerminalOutput(n_repetitions, show_progress)
-    output.set(verbose=True)
+    terminal = TerminalOutput(n_repetitions, show_progress)
+    terminal.set(verbose=True)
 
     # List all datasets, objective and solvers to run based on the filters
     # provided. Merge the solver_names and forced to run all necessary solvers.
     all_runs = benchmark.get_all_runs(
         solvers, forced_solvers, datasets, objectives,
-        output=output
+        terminal=terminal
     )
     common_kwargs = dict(
         benchmark=benchmark, n_repetitions=n_repetitions, max_runs=max_runs,
         timeout=timeout, pdb=pdb, collect=collect
     )
 
-    if slurm is not None and not collect:
-        from .utils.slurm_executor import run_on_slurm
-        results = run_on_slurm(
-            benchmark, slurm, run_one_solver, common_kwargs,
-            all_runs
-        )
-    else:
-        results = Parallel(n_jobs=n_jobs)(
-            delayed(run_one_solver)(**common_kwargs, **kwargs)
-            for kwargs in all_runs
-        )
+    # TODO: Verify that "collect" still works
+    results = parallel_run(
+        benchmark, run_one_solver, common_kwargs, all_runs,
+        config=parallel_config
+    )
 
     run_statistics = []
     for curve in results:
@@ -402,39 +396,40 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
     import pandas as pd
     df = pd.DataFrame(run_statistics)
     if df.empty:
-        output.savefile_status()
+        terminal.savefile_status()
         raise SystemExit(1)
 
     # Save output in parquet file in the benchmark folder
     timestamp = datetime.now().strftime('%Y-%m-%d_%Hh%Mm%S')
     output_dir = benchmark.get_output_folder()
-    if output_name == "None":
-        save_file = output_dir / f'benchopt_run_{timestamp}.parquet'
+    if output_file == "None":
+        output_file = output_dir / f'benchopt_run_{timestamp}.parquet'
     else:
-        save_file = output_dir / f"{output_name}.parquet"
-        save_file = uniquify_results(save_file)
+        output_file = output_dir / f"{output_file}.parquet"
+        output_file = uniquify_results(output_file)
     try:
-        df.to_parquet(save_file)
+        df.to_parquet(output_file)
     except Exception:
         # Failed to save the results as a parquet file, falling back
         # to csv. This can be due to mixed types columns or missing
         # dependencies.
-        save_file = save_file.with_suffix(".csv")
-        df.to_csv(save_file)
-    output.savefile_status(save_file=save_file)
+        output_file = output_file.with_suffix(".csv")
+        df.to_csv(output_file)
+    terminal.savefile_status(output_file)
 
     if plot_result:
         from benchopt.plotting import plot_benchmark
-        plot_benchmark(save_file, benchmark, html=html, display=display)
-    return save_file
+        plot_benchmark(output_file, benchmark, html=html, display=display)
+    return output_file
 
 
 def run_benchmark(benchmark_path, solver_names=None, forced_solvers=(),
                   dataset_names=None, objective_filters=None, max_runs=10,
-                  n_repetitions=1, timeout=None, n_jobs=1, slurm=None,
+                  n_repetitions=1, timeout=None,
+                  n_jobs=1, parallel_config=None, slurm=None,
                   plot_result=True, display=True, html=True,  collect=False,
                   show_progress=True, pdb=False, no_cache=False,
-                  output_name="None"):
+                  output_file="None"):
     """Run full benchmark.
 
     Parameters
@@ -462,7 +457,11 @@ def run_benchmark(benchmark_path, solver_names=None, forced_solvers=(),
         The maximum duration in seconds of the solver run.
     n_jobs : int
         Maximal number of workers to use to run the benchmark in parallel.
-    slurm : Path | None
+    parallel_config : dict | None
+        If not None, launch the job in parallel. The provided config serves to
+        set up parallelism using ``joblib.parallel_backend`` or ``submitit``.
+        See :ref:`parallel_run` for detailed description.
+    slurm : Path | None, (_Deprecated_)
         If not None, launch the job on a slurm cluster using the file to get
         the cluster config parameters.
     plot_result : bool
@@ -485,7 +484,7 @@ def run_benchmark(benchmark_path, solver_names=None, forced_solvers=(),
         If set to True, this deactivates the caching mechanism integrated in
         benchopt. Note that this makes the run less tolerant to errors, use it
         with caution.
-    output_name : str
+    output_file : str
         Filename for the parquet output. If given, the results will
         be stored at <BENCHMARK>/outputs/<filename>.parquet.
 
@@ -502,10 +501,25 @@ def run_benchmark(benchmark_path, solver_names=None, forced_solvers=(),
         solver_names + list(forced_solvers)
     )
     datasets = benchmark.check_dataset_patterns(dataset_names)
-    objective = benchmark.check_objective_filters(objective_filters)
+    objectives = benchmark.check_objective_filters(objective_filters)
+
+    parallel_config = check_parallel_config(slurm, None, n_jobs)
 
     return _run_benchmark(
-        benchmark, solvers, forced_solvers, datasets, objective,
-        max_runs, n_repetitions, timeout, n_jobs, slurm,
-        plot_result, display, html, collect, show_progress, pdb, output_name
+        benchmark=benchmark,
+        solvers=solvers,
+        forced_solvers=forced_solvers,
+        datasets=datasets,
+        objectives=objectives,
+        max_runs=max_runs,
+        n_repetitions=n_repetitions,
+        timeout=timeout,
+        plot_result=plot_result,
+        display=display,
+        html=html,
+        collect=collect,
+        show_progress=show_progress,
+        parallel_config=parallel_config,
+        pdb=pdb,
+        output_file=output_file
     )
