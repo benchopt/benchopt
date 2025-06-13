@@ -5,7 +5,6 @@ import inspect
 from pathlib import Path
 
 import click
-import os
 import pytest
 from joblib.memory import _FUNCTION_HASHES
 from click.shell_completion import ShellComplete
@@ -162,19 +161,20 @@ class TestRunCmd:
 
     @pytest.mark.parametrize('timeout', ['10', '1m', '0.03h', '100s'])
     def test_timeout_in_env(self, test_env_name, timeout):
-        with CaptureRunOutput() as out:
+        with temp_benchmark() as bench, CaptureRunOutput() as out:
+            cmd = (
+                f"{bench.benchmark_dir} -r 1 -n 1 --timeout {timeout} "
+                f"--no-plot -d test-dataset --env-name {test_env_name}"
+            )
             with pytest.raises(SystemExit, match='False'):
-                run([str(DUMMY_BENCHMARK_PATH), '--env-name', test_env_name,
-                     '-d', SELECT_ONE_SIMULATED, '-f', SELECT_ONE_PGD,
-                     '-n', '1', '-r', '1', '-o', SELECT_ONE_OBJECTIVE,
-                     '--no-plot', '--timeout', timeout], 'benchopt',
-                    standalone_mode=False)
+                run(cmd.split(), 'benchopt', standalone_mode=False)
 
         out.check_output(f'conda activate "{test_env_name}"')
-        out.check_output('Simulated', repetition=1)
-        out.check_output('Dummy Sparse Regression', repetition=1)
-        out.check_output(r'Python-PGD\[step_size=1\]:', repetition=6)
-        out.check_output(r'Python-PGD\[step_size=1.5\]:', repetition=0)
+        # test-dataset appears twice because of the call to the subcommand
+        out.check_output('test-dataset', repetition=2)
+        out.check_output('simulated', repetition=0)
+        out.check_output('test-objective', repetition=1)
+        out.check_output('test-solver:', repetition=6)
 
         # Make sure the results were saved in a result file
         assert len(out.result_files) == 1, out
