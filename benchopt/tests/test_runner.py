@@ -480,3 +480,23 @@ class TestCache:
 
         # error message should be displayed twice
         out.check_output("ValueError: Failing solver.", repetition=3)
+
+    @pytest.mark.parametrize('n_reps', [1, 4])
+    def test_cache_order(self, no_debug_log, n_reps):
+        with temp_benchmark(
+                objective=self.objective, datasets=self.dataset,
+                solvers=[self.solver, self.solver.replace("test-solver", "test-solver2")]
+        ) as benchmark:
+            with CaptureRunOutput() as out:
+                run([str(benchmark.benchmark_dir),
+                     *"-s test-solver -s test-solver2".split(),
+                     *f'--no-plot -r {n_reps}'.split()],
+                    standalone_mode=False)
+                run([str(benchmark.benchmark_dir),
+                     *"-s test-solver2 -s test-solver".split(),
+                    *f'--no-plot -r {n_reps}'.split()],
+                    standalone_mode=False)
+
+        # Check that the run are only call once per repetition, but not cached
+        # when using multiple repetitions
+        out.check_output("#RUN_SOLVER", repetition=n_reps * 2)
