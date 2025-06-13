@@ -70,9 +70,12 @@ class Benchmark:
         Caching mechanism for the benchmark.
     """
     def __init__(
-        self, benchmark_dir, allow_meta_from_json=False,
+            self, benchmark_dir,
+            no_cache=False,
+            allow_meta_from_json=False,
     ):
         self.benchmark_dir = Path(benchmark_dir)
+        self.no_cache = no_cache
 
         global _RUNNING_BENCHMARK
         _RUNNING_BENCHMARK = self
@@ -329,6 +332,8 @@ class Benchmark:
 
     def get_cache_location(self):
         "Get the location for the cache of the benchmark."
+        if self.no_cache:
+            return None
         benchopt_cache_dir = get_setting("cache")
         if benchopt_cache_dir is None:
             return self.benchmark_dir / CACHE_DIR
@@ -345,6 +350,9 @@ class Benchmark:
         if it exists, or None if it does not. This is useful to gather results
         that are already in cache.
         """
+        if self.no_cache:
+            assert not collect, "Cannot collect when using `--no-cache`."
+            return func
 
         # Create a cached version of `func` and handle cases where we force
         # the run.
@@ -407,7 +415,8 @@ class Benchmark:
 
     def install_all_requirements(self, include_solvers, include_datasets,
                                  minimal=False, env_name=None,
-                                 force=False, quiet=False, download=False):
+                                 force=False, quiet=False, download=False,
+                                 gpu=False):
         """Install all classes that are required for the run.
 
         Parameters
@@ -427,6 +436,9 @@ class Benchmark:
             If True, silences the output of install commands.
         download : bool (default: False)
             If True, make sure the data are downloaded on the computer.
+        gpu : bool (default: False)
+            If True and the requirements of a class are a dict, install
+            requirements["gpu"] instead of requirements["cpu"].
         """
         # Collect all classes matching one of the patterns
         print("Collecting packages...", end='', flush=True)
@@ -445,22 +457,25 @@ class Benchmark:
         if len(shell_install_scripts) > 0 or len(conda_reqs) > 0:
             check_installs += [objective]
         to_install = itertools.chain(include_datasets, include_solvers)
-        for klass in to_install:
-            reqs, scripts, hooks, missing = (
-                klass.collect(env_name=env_name, force=force)
-            )
-            # If a class is not importable but has no requirements,
-            # it might be because the requirements are specified
-            # as global ones in the Objective. Otherwise, raise a
-            # comprehensible error.
-            if missing is not None:
-                missings.append(missing)
 
-            conda_reqs += reqs
-            shell_install_scripts += scripts
-            post_install_hooks += hooks
-            if len(scripts) > 0 or len(reqs) > 0:
-                check_installs += [klass]
+        if not minimal:
+            for klass in to_install:
+                reqs, scripts, hooks, missing = (
+                    klass.collect(env_name=env_name, force=force, gpu=gpu)
+                )
+                # If a class is not importable but has no requirements,
+                # it might be because the requirements are specified
+                # as global ones in the Objective. We keep track of them
+                # to check and raise a comprehensive error after the install
+                # if it is still not importable.
+                if missing is not None:
+                    missings.append(missing)
+
+                conda_reqs += reqs
+                shell_install_scripts += scripts
+                post_install_hooks += hooks
+                if len(scripts) > 0 or len(reqs) > 0:
+                    check_installs += [klass]
         print(colorify(' done', GREEN))
 
         # Install the collected requirements
@@ -897,8 +912,7 @@ def _get_used_parameters(klass, params):
             default.update(update)
             if default not in used_parameters:  # avoid duplicates
                 used_parameters.append(default)
-
-    return used_parameters
+                yield default
 
 
 def buffer_iterator(it):

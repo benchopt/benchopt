@@ -136,7 +136,7 @@ class TestRunCmd:
         out.check_output(r'Python-PGD\[step_size=1.5\]:', repetition=0)
 
         # Make sure the results were saved in a result file
-        assert len(out.result_files) == 1, out.output
+        assert len(out.result_files) == 1, out
 
     def test_valid_call_in_env(self, test_env_name):
         with CaptureRunOutput() as out:
@@ -153,7 +153,7 @@ class TestRunCmd:
         out.check_output(r'Python-PGD\[step_size=1.5\]:', repetition=0)
 
         # Make sure the results were saved in a result file
-        assert len(out.result_files) == 1, out.output
+        assert len(out.result_files) == 1, out
 
     @pytest.mark.parametrize('timeout', ['10', '1m', '0.03h', '100s'])
     def test_timeout_in_env(self, test_env_name, timeout):
@@ -172,7 +172,7 @@ class TestRunCmd:
         out.check_output(r'Python-PGD\[step_size=1.5\]:', repetition=0)
 
         # Make sure the results were saved in a result file
-        assert len(out.result_files) == 1, out.output
+        assert len(out.result_files) == 1, out
 
     def test_no_timeout(self):
         # First test: --timeout==0
@@ -353,11 +353,8 @@ class TestRunCmd:
             run(command, 'benchopt', standalone_mode=False)
             run(command, 'benchopt', standalone_mode=False)
 
-        result_files = re.findall(
-            r'Saving result in: (.*\.parquet)', out.output
-        )
-        names = [Path(result_file).stem for result_file in result_files]
-        assert names[0] == 'unique_name' and names[1] == 'unique_name_1'
+        names = [Path(result_file).stem for result_file in out.result_files]
+        assert names[0] == 'unique_name' and names[1] == 'unique_name_1', out
 
     def test_shell_complete(self):
         # Completion for benchmark name
@@ -476,7 +473,7 @@ class TestRunCmd:
             out.check_output('#RUN1', repetition=0)
 
             # check that the results where collected for the correct solvers
-            assert len(out.result_files) == 1
+            assert len(out.result_files) == 1, out
             out.check_output(r'done \(not enough run\)', repetition=1)
             out.check_output('not run yet', repetition=1)
 
@@ -629,8 +626,66 @@ class TestInstallCmd:
                         f'--env-name {test_env_name}'.split()
                     ], 'benchopt', standalone_mode=False)
 
-    def test_no_error_minimal_requirements(self, test_env_name,
-                                           uninstall_dummy_package):
+    def test_minimal_installation(
+            self, test_env_name, uninstall_dummy_package, no_debug_log
+    ):
+        objective = """
+            from benchopt import safe_import_context, BaseObjective
+
+            with safe_import_context() as import_ctx:
+                import dummy_package
+
+            class Objective(BaseObjective):
+                name = "requires_dummy"
+                requirements = [
+                    'pip::git+https://github.com/tommoral/dummy_package'
+                ]
+                def set_data(self): pass
+                def evaluate_result(self, beta): pass
+                def get_one_result(self): pass
+                def get_objective(self): pass
+        """
+
+        solver = """from benchopt import BaseSolver, safe_import_context
+
+            with safe_import_context() as import_ctx:
+                import fake_benchopt_package
+
+            class Solver(BaseSolver):
+                name = 'solver1'
+                requirements = ["fake_benchopt_package"] # raise if installed
+                def set_objective(self, X, y, lmbd): pass
+                def run(self, n_iter): pass
+                def get_result(self): pass
+        """
+
+        dataset = """from benchopt import BaseDataset, safe_import_context
+
+            with safe_import_context() as import_ctx:
+                import fake_benchopt_package
+
+            class Dataset(BaseDataset):
+                name = 'dataset1'
+                requirements = ["fake_benchopt_package"] # raise if installed
+                def get_data(): pass
+        """
+
+        # Install should succeed because of --minimal option that does
+        # not install the fake package in solver
+        with temp_benchmark(objective=objective,
+                            solvers=[solver],
+                            datasets=[dataset]) as benchmark:
+            with CaptureRunOutput() as out:
+                install([
+                    *f'{benchmark.benchmark_dir} -y --minimal '
+                    f'--env-name {test_env_name}'.split()
+                ], 'benchopt', standalone_mode=False)
+
+        out.check_output('Checking installed packages... done')
+
+    def test_no_error_minimal_requirements(
+            self, test_env_name, uninstall_dummy_package
+    ):
 
         objective = """
             from benchopt import safe_import_context, BaseObjective
@@ -659,7 +714,6 @@ class TestInstallCmd:
 
             class Dataset(BaseDataset):
                 name = 'test-dataset'
-                install_cmd = 'conda'
                 def get_data(self): pass
         """
 
@@ -696,16 +750,13 @@ class TestPlotCmd:
     @classmethod
     def setup_class(cls):
         "Make sure at least one result file is available"
-        with SuppressStd() as out:
+        with CaptureRunOutput(delete_result_files=False) as out:
             run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,
                  '-s', SELECT_ONE_PGD, '-n', '2', '-r', '1', '-o',
                  SELECT_ONE_OBJECTIVE, '--no-plot'], 'benchopt',
                 standalone_mode=False)
-        result_files = re.findall(
-            r'Saving result in: (.*\.parquet)', out.output
-        )
-        assert len(result_files) == 1, out.output
-        result_file = result_files[0]
+        assert len(out.result_files) == 1, out
+        result_file = out.result_files[0]
         cls.result_file = result_file
         cls.result_file = str(Path(result_file).relative_to(Path().resolve()))
 
@@ -784,7 +835,7 @@ class TestGenerateResultCmd:
     @classmethod
     def setup_class(cls):
         "Make sure at least one result file is available"
-        with SuppressStd() as out:
+        with CaptureRunOutput(delete_result_files=False) as out:
             clean([str(DUMMY_BENCHMARK_PATH)],
                   'benchopt', standalone_mode=False)
             run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,
@@ -796,11 +847,8 @@ class TestGenerateResultCmd:
                  '-s', SELECT_ONE_PGD, '-n', '2', '-r', '1', '-o',
                  SELECT_ONE_OBJECTIVE, '--no-plot'], 'benchopt',
                 standalone_mode=False)
-        result_files = re.findall(
-            r'Saving result in: (.*\.parquet)', out.output
-        )
-        assert len(result_files) == 2, out.output
-        cls.result_files = result_files
+        assert len(out.result_files) == 2, out
+        cls.result_files = out.result_files
 
     @classmethod
     def teardown_class(cls):
@@ -839,16 +887,13 @@ class TestArchiveCmd:
     @classmethod
     def setup_class(cls):
         "Make sure at least one result file is available"
-        with SuppressStd() as out:
+        with CaptureRunOutput(delete_result_files=False) as out:
             run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,
                  '-s', SELECT_ONE_PGD, '-n', '2', '-r', '1', '-o',
                  SELECT_ONE_OBJECTIVE, '--no-plot'], 'benchopt',
                 standalone_mode=False)
-        result_file = re.findall(
-            r'Saving result in: (.*\.parquet)', out.output
-        )
-        assert len(result_file) == 1, out.output
-        cls.result_file = result_file[0]
+        assert len(out.result_files) == 1, out
+        cls.result_file = out.result_files[0]
 
     @classmethod
     def teardown_class(cls):

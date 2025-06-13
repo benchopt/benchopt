@@ -13,11 +13,20 @@ Version 1.7 - in development
 Major change
 ------------
 
-- Benchopt is now supported on Windows!! \o/
+- Benchopt is now supported on Windows!! \\o/
   By `Wassim Mazouz`_, `Mathurin Massias`_ and `Thomas Moreau`_ (:gh:`717`)
 
 CLI
 ---
+
+- Add ``--no-cache`` option to ``benchopt run``, to disable caching.
+  By `Thomas Moreau`_ (:gh:`800`)
+
+- Add ``--gpu`` flag to ``benchopt install``, to handle different requirements
+  for GPU and CPU. By `Mathurin Massias`_ (:gh:`793`)
+
+- Make it possible to run ``benchopt`` as ``python -m benchopt``, to ease
+  running in various environment and debugging. By `Rémi Flamary`_ (:gh:`685`)
 
 - Add a parallel backend system for ``benchopt run`` to setup distributed
   run with ``dask`` and ``submitit``. See :ref:`parallel_run` for details.
@@ -29,6 +38,10 @@ CLI
 API
 ---
 
+- Support ``requirements`` being a dictionary with keys ``"gpu"`` and ``"cpu"``, for
+  classes whose install differ on GPU and CPU.
+  By `Mathurin Massias`_ (:gh:`793`)
+
 - Change channel specification in requirements, replacing the split format
   with ``::`` instead of ``:``. This allow specifying URL channels.
   By `Thomas Moreau`_ (:gh:`758`)
@@ -37,6 +50,9 @@ API
   result DataFrame. The parameters' names are respectively prefixed with
   ``p_obj_|p_solver_|p_dataset_`` to avoid collapse between the different
   components. By `Melvine Nargeot`_  and `Thomas Moreau`_ (:gh:`703`).
+
+- ``Objective`` can now return multiple evaluation at once, to store non-aggregated
+  metrics. See :ref:`multiple_evaluation`. By `Thomas Moreau`_ (:gh:`778`).
 
 FIX
 ---
@@ -50,7 +66,10 @@ FIX
 - Fix the ``skip`` API for objectives that was leading to a display error.
   By `Thomas Moreau`_ (:gh:`763`)
 
-- Fix the ``info`` command By `Pierre-Antoine Comby`_ (:gh:`&67`)
+- Fix the ``info`` command. By `Pierre-Antoine Comby`_ (:gh:`768`)
+
+- Fix ignored ``--minimal`` option in ``benchopt install``.
+  By `Lionel Kusch`_ (:gh:`786`)
 
 .. _changes_1_6:
 
@@ -60,7 +79,7 @@ Version 1.6 - 15/07/2024
 API
 ~~~
 
-- Add a `save_final_results` method to Objective. If implemented it is run
+- Add a ``save_final_results`` method to Objective. If implemented it is run
   after the last solver iteration, to get desired outputs to be saved to file
   system. By `Pierre-Antoine Comby`_ (:gh:`722`)
 
@@ -105,7 +124,7 @@ FIX
 DOC
 ~~~
 
-- Add documentation for the `run_once` sampling strategy.
+- Add documentation for the ``run_once`` sampling strategy.
   By `Mathieu Dagréou`_ (:gh:`700`).
 
 .. _changes_1_5_1:

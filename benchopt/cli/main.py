@@ -64,6 +64,8 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
         "pdb",
         "profile",
         "env_name",
+        "no_cache",
+        "output",
     ]
     return [cli_kwargs[name] for name in return_names]
 
@@ -177,6 +179,10 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               help="Run the benchmark in the conda environment "
               "named <env_name>. To install the required solvers and "
               "datasets, see the command `benchopt install`.")
+@click.option('--no-cache',
+              is_flag=True,
+              help='If set, disable the cache on disk for the run. Note that '
+              'this makes the run less tolerant to errors, use with caution.')
 @click.option("--output", default="None", type=str,
               help="Filename for the result output. "
               "If given, the results will "
@@ -197,9 +203,9 @@ def run(config_file=None, **kwargs):
 
     (
         benchmark, solver_names, forced_solvers, dataset_names,
-        objective_filters, max_runs, n_repetitions, timeout,
-        no_timeout, collect, output, plot, display, html, n_jobs,
-        parallel_config, slurm, pdb, do_profile, env_name
+        objective_filters, max_runs, n_repetitions, timeout, no_timeout,
+        collect, plot, display, html, n_jobs, parallel_config, slurm, pdb,
+        do_profile, env_name, no_cache, output
     ) = _get_run_args(kwargs, config)
 
     # If --no-timeout is set and --timeout is not, skip these blocks
@@ -220,7 +226,7 @@ def run(config_file=None, **kwargs):
                 timeout = pd.to_timedelta(timeout).total_seconds()
 
     # Create the Benchmark object
-    benchmark = Benchmark(benchmark)
+    benchmark = Benchmark(benchmark, no_cache=no_cache)
 
     if benchmark.min_version is not None:
         from packaging.version import parse
@@ -430,10 +436,14 @@ def run(config_file=None, **kwargs):
               help="If this flag is set, no confirmation will be asked "
               "to the user to install requirements in the current environment."
               " Useless with options `-e/--env` or `--env-name`.")
+@click.option('--gpu', is_flag=True, default=False,
+              help="Use this flag to install requirements['gpu'] for solvers "
+                   "and datasets that have different requirements for GPU and "
+                   "CPU.")
 def install(
         benchmark, minimal, solver_names, dataset_names, config_file=None,
         force=False, recreate=False, env_name='False', confirm=False,
-        quiet=False, download=False):
+        quiet=False, download=False, gpu=False):
 
     if config_file is not None:
         with open(config_file, "r") as f:
@@ -445,7 +455,7 @@ def install(
             forced_solvers = config.get("force-solver", tuple())
             solver_names = list(set(solver_names).union(set(forced_solvers)))
 
-    # Instanciate the benchmark
+    # Instantiate the benchmark
     benchmark = Benchmark(benchmark)
 
     # Get a list of all conda envs
@@ -515,7 +525,7 @@ def install(
     benchmark.install_all_requirements(
         include_solvers=solvers, include_datasets=datasets,
         minimal=minimal, env_name=env_name, force=force, quiet=quiet,
-        download=download
+        download=download, gpu=gpu,
     )
 
 

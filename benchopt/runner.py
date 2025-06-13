@@ -56,13 +56,15 @@ def run_one_resolution(objective, solver, meta, stop_val):
     solver.run(stop_val)
     delta_t = time.perf_counter() - t_start
     result = solver.get_result()
-    objective_dict = objective(result)
+    objective_list = objective(result)
 
     # Add system info in results
     info = get_sys_info()
 
-    return dict(**meta, stop_val=stop_val, time=delta_t,
-                **objective_dict, **info)
+    return [
+        dict(**meta, stop_val=stop_val, time=delta_t, **objective_dict, **info)
+        for objective_dict in objective_list
+    ]
 
 
 def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
@@ -140,9 +142,10 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
             stop_val = stopping_criterion.init_stop_val()
             while not stop:
 
-                cost = run_one_resolution_cached(stop_val=stop_val,
-                                                 **call_args)
-                curve.append(cost)
+                objective_list = run_one_resolution_cached(
+                    stop_val=stop_val, **call_args
+                )
+                curve.extend(objective_list)
 
                 # Check the stopping criterion and update rho if necessary.
                 stop, ctx.status, stop_val = stopping_criterion.should_stop(
@@ -423,10 +426,10 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
 def run_benchmark(benchmark_path, solver_names=None, forced_solvers=(),
                   dataset_names=None, objective_filters=None, max_runs=10,
                   n_repetitions=1, timeout=None, n_jobs=1, slurm=None,
-                  plot_result=True, display=True, html=True, collect=False,
+                  plot_result=True, display=True, html=True,  collect=False,
                   show_progress=True, pdb=False, parallel_config=None,
-                  output_file="None"):
-    """Helper to run a benchmark in a script.
+                  no_cache=False, output_file="None"):
+    """Run full benchmark.
 
     Parameters
     ----------
@@ -476,6 +479,10 @@ def run_benchmark(benchmark_path, solver_names=None, forced_solvers=(),
         If not None, launch the job in parallel. The provided config serves to
         set up parallelism using ``joblib.parallel_backend`` or ``submitit``.
         See :ref:`parallel_run` for detailed description.
+    no_cache : bool
+        If set to True, this deactivates the caching mechanism integrated in
+        benchopt. Note that this makes the run less tolerant to errors, use it
+        with caution.
     output_file : str
         Filename for the parquet output. If given, the results will
         be stored at <BENCHMARK>/outputs/<filename>.parquet.
@@ -488,7 +495,7 @@ def run_benchmark(benchmark_path, solver_names=None, forced_solvers=(),
         by the objective is not the same for all parameters, the missing data
         is set to `NaN`.
     """
-    benchmark = Benchmark(benchmark_path)
+    benchmark = Benchmark(benchmark_path, no_cache=no_cache)
     solvers = benchmark.check_solver_patterns(
         solver_names + list(forced_solvers)
     )

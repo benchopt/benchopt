@@ -39,3 +39,7 @@
 .. _Mathieu Dagréou: https://matdag.github.io
 
 .. _Wassim Mazouz: https://wassimmazouz.github.io/
+
+.. _Rémi Flamary: https://remi.flamary.com/
+
+.. _Lionel Kusch: https://www.linkedin.com/in/lionel-kusch-0439b310a/
