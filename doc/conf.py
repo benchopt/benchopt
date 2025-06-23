@@ -46,6 +46,7 @@ extensions = [
     'gh_substitutions',  # custom ext, see ./sphinxext/gh_substitutions.py
     "sphinx_design",
     "sphinx_copybutton",
+    "sphinxcontrib.mermaid",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
