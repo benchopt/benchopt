@@ -65,7 +65,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
             or 'iteration'
         )
 
-    def _set_objective(self, objective, output=None):
+    def _set_objective(self, objective):
         """Store the objective for hashing/pickling and check its compatibility
 
         Parameters
@@ -82,7 +82,6 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
             If skip is False, the reason should be None.
         """
         self._objective = objective
-        self._output = output
 
         objective_dict = objective.get_objective()
         assert objective_dict is not None, (
@@ -92,13 +91,10 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
 
         # Check if the objective is compatible with the solver
         skip, reason = self.skip(**objective_dict)
-        if skip:
-            if self._output:
-                self._output.skip(reason)
-            return True
+        if not skip:
+            self.set_objective(**objective_dict)
 
-        self.set_objective(**objective_dict)
-        return False
+        return skip, reason
 
     @abstractmethod
     def set_objective(self, **objective_dict):
@@ -206,9 +202,6 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
             the solver on an easy to solve problem.
         """
 
-        if hasattr(self, '_output') and self._output is not None:
-            self._output.progress('caching warmup times.')
-
         if self._solver_strategy == "callback":
             stopping_criterion = (
                 SingleRunCriterion(stop_val=stop_val)
@@ -244,7 +237,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         self._warmup_done = True
 
     @staticmethod
-    def _reconstruct(module_filename, parameters, objective, output,
+    def _reconstruct(module_filename, parameters, objective,
                      pickled_module_hash=None, benchmark_dir=None):
         set_benchmark_module(benchmark_dir)
         Solver = _reconstruct_class(
@@ -252,15 +245,14 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         )
         obj = Solver.get_instance(**parameters)
         if objective is not None:
-            obj._set_objective(objective, output=output)
+            obj._set_objective(objective)
         return obj
 
     def __reduce__(self):
         module_hash = get_file_hash(self._module_filename)
         objective = getattr(self, '_objective', None)
-        output = getattr(self, '_output', None)
         return self._reconstruct, (
-            self._module_filename, self._parameters, objective, output,
+            self._module_filename, self._parameters, objective,
             module_hash, str(self._import_ctx._benchmark_dir)
         )
 

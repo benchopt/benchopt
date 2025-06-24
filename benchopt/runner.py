@@ -211,7 +211,7 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
             res = _run_one_to_cvg_cached(**kwargs)
             return res if res is not None else ([], 'not run yet')
 
-    # Set objective an skip if necessary.
+    # Set objective and skip if necessary.
     skip, reason = objective.set_dataset(dataset)
     if skip:
         output.skip(reason, objective=True)
@@ -241,8 +241,9 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
             n_repetitions = 1
 
     for rep in range(n_repetitions):
-        skip = solver._set_objective(objective, output=output)
+        skip, reason = solver._set_objective(objective)
         if skip:
+            output.skip(reason)
             return []
 
         output.set(rep=rep)
@@ -282,8 +283,8 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
         if status in ['diverged', 'error', 'interrupted', 'not run yet']:
             run_statistics = []
             break
-        run_statistics.extend(curve)
         states.append(status)
+        run_statistics.extend(curve)
 
     else:
         if 'max_runs' in states:

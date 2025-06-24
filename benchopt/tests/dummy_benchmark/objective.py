@@ -39,9 +39,13 @@ class Objective(BaseObjective):
         return dict(beta=np.zeros(self.X.shape[1]))
 
     def evaluate_result(self, beta):
-        diff = self.y - self.X.dot(beta)
-        mse = .5 * diff.dot(diff)
-        regularization = abs(beta).sum()
+        if isinstance(beta, int):
+            mse = 1
+            regularization = 1
+        else:
+            diff = self.y - self.X.dot(beta)
+            mse = .5 * diff.dot(diff)
+            regularization = abs(beta).sum()
         objective_value = mse + self.lmbd * regularization
 
         # To test for multiple type of return value, makes this depend on the
