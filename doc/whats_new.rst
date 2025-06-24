@@ -64,6 +64,9 @@ FIX
 - Fix ignored ``--minimal`` option in ``benchopt install``.
   By `Lionel Kusch`_ (:gh:`786`)
 
+- Fix cache miss when order of the solver changes.
+  By `Thomas Moreau`_ (:gh:`806`)
+
 .. _changes_1_6:
 
 Version 1.6 - 15/07/2024
