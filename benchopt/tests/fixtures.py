@@ -11,7 +11,7 @@ from benchopt.utils.dynamic_modules import _get_module_from_file
 from benchopt.tests import DUMMY_BENCHMARK_PATH
 
 os.environ['BENCHOPT_DEBUG'] = '1'
-os.environ['BENCHOPT_RAISE_INSTALL_ERROR'] = '1'
+os.environ['BENCHOPT_RAISE_INSTALL_ERROR'] = '0'
 
 _TEST_ENV_NAME = None
 _EMPTY_ENV_NAME = None

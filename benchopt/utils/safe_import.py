@@ -1,31 +1,110 @@
 import sys
 import warnings
 import importlib
+import importlib.util
+
+from importlib.abc import Loader, MetaPathFinder
 from pathlib import Path
+from unittest.mock import Mock
 
 from joblib.externals import cloudpickle
 
 from ..config import RAISE_INSTALL_ERROR
 
-SKIP_IMPORT = False
+
+MOCK_ALL_IMPORT = False
 BENCHMARK_DIR = None
 PACKAGE_NAME = "benchmark_utils"
 
 
-class SkipWithBlock(Exception):
-    pass
+class MockLoader(Loader):
+    def __init__(self, name):
+        self.name = name
+
+    def create_module(self, spec):
+        return Mock(name=self.name)
+
+    def exec_module(self, module):
+        module.__path__ = []
 
 
-def skip_import():
-    """Once called, all the safe_import_context is skipped."""
-    global SKIP_IMPORT
-    SKIP_IMPORT = True
+class MockFinder(MetaPathFinder):
+    def __init__(self):
+        self.specs = list()
+        self.has_failed_import = False
+        self._import_errors = []
+        self._top_level_import = None
+
+    def find_spec(self, fullname, path, target=None):
+        """
+        MockFinder is inserted at the first place of the finders list,
+        so it is the first finder called by Python.
+        The aim is to check if we can import the module {fullname},
+        if not, we mock it. If we try to import the module {fullname}
+        to check ImportError or ModuleNotFoundError,
+        the mock finder will be called again that's why we
+        store {fullname} in {self.specs} list
+        to skip the mock finder and check if the other finders throw errors.
+
+        Parameters
+        ----------
+        fullname
+        path
+        target
+
+        Returns
+        -------
+        None or a spec if the module is mocked
+        """
+        if fullname in self.specs:
+            return None
+
+        # Mock all imports if MOCK_ALL_IMPORT is True
+        if MOCK_ALL_IMPORT:
+            return importlib.util.spec_from_loader(
+                fullname, MockLoader(fullname)
+            )
+
+        # Otherwise, only mock the top level import when a failure occurs.
+        try:
+            # Only mock the top level import in safe_import_context,
+            # to avoid edge effects with internal libraries imports.
+            if self._top_level_import is None:
+                self._top_level_import = fullname
+                sys.meta_path.remove(self)
+
+            self.specs.append(fullname)
+            # Check if we can import the module {fullname}
+            importlib.import_module(fullname)
+
+            # If the module can be imported, we let other finders to import it,
+            # so we return None
+            return None
+        except Exception as e:
+            if RAISE_INSTALL_ERROR:
+                self.has_failed_import = True
+                raise e
+
+            # Log the error and mock the import object
+            self._import_errors.append((fullname, sys.exc_info()))
+            return importlib.util.spec_from_loader(
+                fullname, MockLoader(fullname)
+            )
+        finally:
+            if self._top_level_import == fullname:
+                self._top_level_import = None
+                sys.meta_path.insert(0, self)
 
 
-def _unskip_import():
+def mock_all_import():
+    global MOCK_ALL_IMPORT
+    MOCK_ALL_IMPORT = True
+
+
+def _unmock_import():
     """Helper to reenable imports in tests."""
-    global SKIP_IMPORT
-    SKIP_IMPORT = False
+    global MOCK_ALL_IMPORT
+    MOCK_ALL_IMPORT = False
 
 
 def set_benchmark_module(benchmark_dir):
@@ -55,7 +134,7 @@ class safe_import_context:
     This context allows to avoid errors on ImportError, to be able to report
     that a solver/dataset is not installed.
 
-    Moreover, this context also allows to skip the import when simply listing
+    Moreover, this context also allows to mock the import when simply listing
     all solvers, for benchmark's installation or auto completion. Note that all
     costly imports should be protected with this import for benchopt to perform
     best.
@@ -64,48 +143,30 @@ class safe_import_context:
     """
 
     def __init__(self):
+        self.errors = []
         self.failed_import = False
+
         self.record = warnings.catch_warnings(record=True)
         self._benchmark_dir = BENCHMARK_DIR
+        self._mock_finder = MockFinder()
 
     def __enter__(self):
-        # Skip context if necessary to speed up import
-        if SKIP_IMPORT:
-            # See https://stackoverflow.com/questions/12594148/skipping-execution-of-with-block  # noqa
-            sys.settrace(lambda *args, **keys: None)
-            frame = sys._getframe(1)
-            frame.f_trace = self.trace
-            return self
+        # Mock import to speed up import
+        sys.meta_path.insert(0, self._mock_finder)
 
         # Catch the import warning except if install errors are raised.
         if not RAISE_INSTALL_ERROR:
             self.record.__enter__()
+
         return self
 
-    def trace(self, frame, event, arg):
-        raise SkipWithBlock()
-
     def __exit__(self, exc_type, exc_value, tb):
-
-        if SKIP_IMPORT:
+        if self._mock_finder.has_failed_import:
             self.failed_import = True
-            self.import_error = (
-                RuntimeError, "Should not check install with skip import", None
-            )
-            return True
+            self.errors = self._mock_finder._import_errors
 
-        silence_error = False
-
-        # prevent import error from propagating and tag
-        if exc_type is not None and issubclass(exc_type, ImportError):
-            self.failed_import = True
-            self.import_error = exc_type, exc_value, tb
-
-            # Prevent the error propagation
-            silence_error = True
+        if self._mock_finder in sys.meta_path:
+            sys.meta_path.remove(self._mock_finder)
 
         if not RAISE_INSTALL_ERROR:
             self.record.__exit__(exc_type, exc_value, tb)
-
-        # Returning True in __exit__ prevent error propagation.
-        return silence_error
