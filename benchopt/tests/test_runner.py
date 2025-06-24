@@ -485,7 +485,10 @@ class TestCache:
     def test_cache_order(self, no_debug_log, n_reps):
         with temp_benchmark(
                 objective=self.objective, datasets=self.dataset,
-                solvers=[self.solver, self.solver.replace("test-solver", "test-solver2")]
+                solvers=[
+                    self.solver,
+                    self.solver.replace("test-solver", "test-solver2")
+                ]
         ) as benchmark:
             with CaptureRunOutput() as out:
                 run([str(benchmark.benchmark_dir),
