@@ -313,6 +313,7 @@ class TestRunCmd:
         # Make a first run that should be put in cache
         with CaptureRunOutput() as out:
             run(run_cmd, 'benchopt', standalone_mode=False)
+        print(out.output)
 
         # Check that this run was properly done. If only one is detected, this
         # could indicate that the clean command does not work properly.
@@ -323,6 +324,7 @@ class TestRunCmd:
         # second time without force
         with CaptureRunOutput() as out:
             run(run_cmd, 'benchopt', standalone_mode=False)
+        print(out.output)
 
         out.check_output(r'Python-PGD\[step_size=1\]:',
                          repetition=1)
@@ -330,6 +332,7 @@ class TestRunCmd:
         # Check that the cache is also hit when running in parallel
         with CaptureRunOutput() as out:
             run(run_cmd + ['-j', 2], 'benchopt', standalone_mode=False)
+        print(out.output)
 
         out.check_output(r'Python-PGD\[step_size=1\]:',
                          repetition=1)

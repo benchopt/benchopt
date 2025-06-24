@@ -374,6 +374,10 @@ class Benchmark:
             def _func_cached(**kwargs):
                 if kwargs.get('force', False):
                     return func_cached.call(**kwargs)[0]
+                from joblib import hashing
+                print(f"Calling {func.__name__} with {func_cached._get_args_id(**kwargs)}")
+                for k, v in kwargs.items():
+                    print(f"Using {k}={hashing.hash(v)}")
                 return func_cached(**kwargs)
 
         return _func_cached
