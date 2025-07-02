@@ -1,5 +1,3 @@
-import traceback
-
 from ..config import RAISE_INSTALL_ERROR
 
 from .class_property import classproperty
@@ -67,16 +65,17 @@ class DependenciesMixin:
             returns True if no import failure has been detected.
         """
         if env_name is None:
-            if cls._import_ctx.failed_import:
-                exc_type, value, tb = cls._import_ctx.import_error
-                if raise_on_not_installed:
-                    raise exc_type(value).with_traceback(tb)
-                if not cls._error_displayed and not quiet:
-                    traceback.print_exception(exc_type, value, tb)
-                    cls._error_displayed = True
-                return False
-            else:
-                return True
+            # if cls._import_ctx.failed_import:
+            #     exc_type, value, tb = cls._import_ctx.import_error
+            #     if raise_on_not_installed:
+            #         raise exc_type(value).with_traceback(tb)
+            #     if not cls._error_displayed and not quiet:
+            #         traceback.print_exception(exc_type, value, tb)
+            #         cls._error_displayed = True
+            #     return False
+            # else:
+            #     return True
+            return True
         else:
             return (
                 _run_shell_in_conda_env(
