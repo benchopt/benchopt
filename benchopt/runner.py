@@ -278,6 +278,7 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
             curve, status = run_one_to_cvg_cached(
                 **args_run_one_to_cvg
             )
+            run_statistics.extend(curve)
         except RuntimeError as e:
             status = e.args[0]
         if status in ['diverged', 'error', 'interrupted', 'not run yet']:
