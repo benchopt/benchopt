@@ -24,21 +24,20 @@ def get_slurm_launch():
 
 
 def get_slurm_executor(benchmark, slurm_config, timeout=100, solver=None):
-
     with open(slurm_config, "r") as f:
         config = yaml.safe_load(f)
 
     # Apply solver-specific overrides if the solver has slurm_params
-    if solver and hasattr(solver, 'slurm_params'):
+    if solver and hasattr(solver, "slurm_params"):
         config.update(solver.slurm_params)
 
     # If the job timeout is not specified in the config file, use 1.5x the
     # benchopt timeout. This value is a trade-off between helping the
     # scheduler (low slurm_time allow for faster accept) and avoiding
     # killing the job too early.
-    if 'slurm_time' not in config:
+    if "slurm_time" not in config:
         # Timeout is in second in benchopt
-        config['slurm_time'] = f"00:{int(1.5*timeout)}"
+        config["slurm_time"] = f"00:{int(1.5 * timeout)}"
 
     slurm_folder = benchmark.get_slurm_folder()
     executor = submitit.AutoExecutor(slurm_folder)
@@ -47,13 +46,8 @@ def get_slurm_executor(benchmark, slurm_config, timeout=100, solver=None):
 
 
 def run_on_slurm(
-    benchmark,
-    slurm_config,
-    run_one_solver,
-    common_kwargs,
-    all_runs
+    benchmark, slurm_config, run_one_solver, common_kwargs, all_runs
 ):
-
     if not _SLURM_INSTALLED:
         raise ImportError(
             "Benchopt needs submitit and rich to launch computation on a "
