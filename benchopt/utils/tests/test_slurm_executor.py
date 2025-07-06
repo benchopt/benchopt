@@ -5,7 +5,9 @@ from benchopt.utils.slurm_executor import (
     get_slurm_executor,
     run_on_slurm,
 )
-from submitit.slurm.test_slurm import mocked_slurm
+
+submitit = pytest.importorskip("submitit")
+from submitit.slurm.test_slurm import mocked_slurm  # noqa: E402
 
 
 @pytest.fixture
