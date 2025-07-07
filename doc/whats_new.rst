@@ -31,6 +31,9 @@ CLI
 API
 ---
 
+- Add ``slurm_params`` attribute to ``Solver`` to allow overriding the
+  default SLURM config. By `Pierre-Louis Barbarant`_ (:gh:`805`)
+
 - Support ``requirements`` being a dictionary with keys ``"gpu"`` and ``"cpu"``, for
   classes whose install differ on GPU and CPU.
   By `Mathurin Massias`_ (:gh:`793`)
