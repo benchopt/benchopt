@@ -30,9 +30,9 @@ def harmonize_slurm_config(slurm_cfg):
     new_slurm_cfg = {}
     for k, v in slurm_cfg.items():
         if k in eq_dict:
-            new_slurm_cfg[eq_dict[k]] = v
+            new_slurm_cfg["slurm_" + eq_dict[k]] = v
         else:
-            new_slurm_cfg[k] = v
+            new_slurm_cfg["slurm_" + k] = v
     return new_slurm_cfg
 
 
@@ -56,6 +56,7 @@ def get_slurm_solver_config(solver, slurm_bench_cfg):
         static_solver_cfg,
         dyn_solver_cfg,
     )
+
     return solver_cfg
 
 
