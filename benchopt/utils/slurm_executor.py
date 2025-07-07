@@ -23,31 +23,60 @@ def get_slurm_launch():
     return _LAUNCHING_SLURM
 
 
-def get_slurm_executor(benchmark, slurm_config, timeout=100, solver=None):
-    with open(slurm_config, "r") as f:
-        config = yaml.safe_load(f)
+def harmonize_slurm_config(slurm_cfg):
+    """Harmonize SLURM config for handling equivalent key names problem"""
+    slurm_cfg = {k.removeprefix("slurm_"): v for k, v in slurm_cfg.items()}
+    eq_dict = submitit.SlurmExecutor._equivalence_dict()
+    new_slurm_cfg = {}
+    for k, v in slurm_cfg.items():
+        if k in eq_dict:
+            new_slurm_cfg[eq_dict[k]] = v
+        else:
+            new_slurm_cfg[k] = v
+    return new_slurm_cfg
 
-    # Apply solver-specific overrides if the solver has slurm_params
-    if solver and hasattr(solver, "slurm_params"):
-        config.update(solver.slurm_params)
+
+def merge_slurm_configs(*slurm_cfgs):
+    """Merge multiple SLURM config dicts in order, with later dicts overriding earlier ones."""
+    slurm_cfg = {}
+    for cfg in slurm_cfgs:
+        cfg = harmonize_slurm_config(cfg)
+        slurm_cfg.update(cfg)
+    return slurm_cfg
+
+
+def get_slurm_solver_config(solver, slurm_bench_cfg):
+    """Generate and merge SLURM configuration for a solver from static, dynamic, and benchmark configs."""
+    static_solver_cfg = getattr(solver, "slurm_params", {})
+    dyn_solver_cfg = {
+        k: v for k, v in solver._parameters.items() if k.startswith("slurm_")
+    }
+    solver_cfg = merge_slurm_configs(
+        slurm_bench_cfg,
+        static_solver_cfg,
+        dyn_solver_cfg,
+    )
+    return solver_cfg
+
+
+def get_slurm_executor(benchmark, slurm_config, timeout=100):
+    slurm_folder = benchmark.get_slurm_folder()
+    executor = submitit.AutoExecutor(slurm_folder)
+
+    executor.update_parameters(**slurm_config)
 
     # If the job timeout is not specified in the config file, use 1.5x the
     # benchopt timeout. This value is a trade-off between helping the
     # scheduler (low slurm_time allow for faster accept) and avoiding
     # killing the job too early.
-    if "slurm_time" not in config:
+    if "time" not in executor.parameters:
         # Timeout is in second in benchopt
-        config["slurm_time"] = f"00:{int(1.5 * timeout)}"
+        executor.update_parameters(timeout_min=int((timeout * 1.5) // 60) + 1)
 
-    slurm_folder = benchmark.get_slurm_folder()
-    executor = submitit.AutoExecutor(slurm_folder)
-    executor.update_parameters(**config)
     return executor
 
 
-def run_on_slurm(
-    benchmark, slurm_config, run_one_solver, common_kwargs, all_runs
-):
+def run_on_slurm(benchmark, slurm_cfg_path, run_one_solver, common_kwargs, all_runs):
     if not _SLURM_INSTALLED:
         raise ImportError(
             "Benchopt needs submitit and rich to launch computation on a "
@@ -55,26 +84,26 @@ def run_on_slurm(
             "the --slurm option."
         )
 
-    executors = {}
+    executor_dict = {}
     tasks = []
+
+    # Get benchmark slurm config
+    with open(slurm_cfg_path, "r") as f:
+        bench_slurm_cfg = yaml.safe_load(f)
 
     with ExitStack() as stack:
         for kwargs in all_runs:
             solver = kwargs.get("solver")
-            override = (
-                tuple(sorted(getattr(solver, "slurm_params", {}).items()))
-                if solver and hasattr(solver, "slurm_params")
-                else ()
-            )
-
-            if override not in executors:
+            slurm_cfg = get_slurm_solver_config(solver, bench_slurm_cfg)
+            cfg_key = tuple(sorted(slurm_cfg.items()))
+            if cfg_key not in executor_dict:
                 executor = get_slurm_executor(
-                    benchmark, slurm_config, common_kwargs["timeout"], solver
+                    benchmark, slurm_cfg, common_kwargs["timeout"]
                 )
                 stack.enter_context(executor.batch())
-                executors[override] = executor
+                executor_dict[cfg_key] = executor
 
-            future = executors[override].submit(
+            future = executor_dict[cfg_key].submit(
                 run_one_solver,
                 **common_kwargs,
                 **kwargs,
