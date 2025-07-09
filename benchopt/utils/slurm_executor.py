@@ -41,6 +41,14 @@ def get_slurm_executor(benchmark, slurm_config, timeout=100):
     return executor
 
 
+def merge_configs(slurm_config, solver):
+    solver_slurm_params = {
+        **slurm_config,
+        **getattr(solver, "slurm_params", {}),
+    }
+    return tuple(sorted(solver_slurm_params.items()))
+
+
 def run_on_slurm(
     benchmark, slurm_config, run_one_solver, common_kwargs, all_runs
 ):
@@ -61,7 +69,7 @@ def run_on_slurm(
                 **slurm_config,
                 **getattr(solver, "slurm_params", {}),
             }
-            executor_config = tuple(sorted(solver_slurm_params.items()))
+            executor_config = merge_configs(slurm_config, solver)
 
             if executor_config not in executors:
                 executor = get_slurm_executor(
