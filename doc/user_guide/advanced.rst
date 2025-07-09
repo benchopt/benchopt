@@ -61,10 +61,10 @@ As we rely on ``joblib.Memory`` for caching the results, the cache should work
 exactly as if you were running the computation sequentially, as long as you have
 a shared file-system between the nodes used for the computations.
 
-Overriding the SLURM parameters
--------------------------------
-
 .. _slurm_override:
+
+Overriding the SLURM parameters for one solver
+----------------------------------------------
 
 You can also override the SLURM parameters for a specific solver by
 defining a ``slurm_params`` attribute in the solver class. This allows to
@@ -98,7 +98,8 @@ The parameters defined in the ``slurm_params`` should be compatible with
 the `submitit` library, as they are passed to the `submitit.AutoExecutor`
 class. For more information on the available parameters, please refer to
 the `submitit documentation <https://github.com/facebookincubator/submitit>`_.
-
+Note that in this case, the jobs with different SLURM parameters will be  
+launched as one job array per configuration.  
 
 .. _skipping_solver:
 
