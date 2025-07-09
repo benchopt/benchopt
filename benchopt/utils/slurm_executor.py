@@ -23,13 +23,9 @@ def get_slurm_launch():
     return _LAUNCHING_SLURM
 
 
-def get_slurm_executor(benchmark, slurm_config, timeout=100, solver=None):
+def get_slurm_executor(benchmark, slurm_config, timeout=100):
     with open(slurm_config, "r") as f:
         config = yaml.safe_load(f)
-
-    # Apply solver-specific overrides if the solver has slurm_params
-    if solver and hasattr(solver, "slurm_params"):
-        config.update(solver.slurm_params)
 
     # If the job timeout is not specified in the config file, use 1.5x the
     # benchopt timeout. This value is a trade-off between helping the
@@ -61,20 +57,22 @@ def run_on_slurm(
     with ExitStack() as stack:
         for kwargs in all_runs:
             solver = kwargs.get("solver")
-            override = (
-                tuple(sorted(getattr(solver, "slurm_params", {}).items()))
-                if solver and hasattr(solver, "slurm_params")
-                else ()
-            )
+            solver_slurm_params = {
+                **slurm_config,
+                **getattr(solver, "slurm_params", {}),
+            }
+            executor_config = tuple(sorted(solver_slurm_params.items()))
 
-            if override not in executors:
+            if executor_config not in executors:
                 executor = get_slurm_executor(
-                    benchmark, slurm_config, common_kwargs["timeout"], solver
+                    benchmark,
+                    solver_slurm_params,
+                    timeout=common_kwargs["timeout"],
                 )
                 stack.enter_context(executor.batch())
-                executors[override] = executor
+                executors[executor_config] = executor
 
-            future = executors[override].submit(
+            future = executors[executor_config].submit(
                 run_one_solver,
                 **common_kwargs,
                 **kwargs,
