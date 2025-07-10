@@ -23,11 +23,8 @@ def get_slurm_launch():
     return _LAUNCHING_SLURM
 
 
-def get_slurm_executor(benchmark, slurm_config, timeout=100):
-    with open(slurm_config, "r") as f:
-        config = yaml.safe_load(f)
-
-    # If the job timeout is not specified in the config file, use 1.5x the
+def get_slurm_executor(benchmark, config, timeout=100):
+    # If the job timeout is not specified in the config dict, use 1.5x the
     # benchopt timeout. This value is a trade-off between helping the
     # scheduler (low slurm_time allow for faster accept) and avoiding
     # killing the job too early.
@@ -42,11 +39,14 @@ def get_slurm_executor(benchmark, slurm_config, timeout=100):
 
 
 def merge_configs(slurm_config, solver):
+    """Merge the slurm config with solver-specific slurm params."""
+    with open(slurm_config, "r") as f:
+        slurm_config = yaml.safe_load(f)
     solver_slurm_params = {
         **slurm_config,
         **getattr(solver, "slurm_params", {}),
     }
-    return tuple(sorted(solver_slurm_params.items()))
+    return solver_slurm_params
 
 
 def run_on_slurm(
@@ -65,11 +65,8 @@ def run_on_slurm(
     with ExitStack() as stack:
         for kwargs in all_runs:
             solver = kwargs.get("solver")
-            solver_slurm_params = {
-                **slurm_config,
-                **getattr(solver, "slurm_params", {}),
-            }
-            executor_config = merge_configs(slurm_config, solver)
+            solver_slurm_params = merge_configs(slurm_config, solver)
+            executor_config = tuple(sorted(solver_slurm_params.items()))
 
             if executor_config not in executors:
                 executor = get_slurm_executor(

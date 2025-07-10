@@ -35,22 +35,12 @@ def dummy_solver():
     return DummySolver()
 
 
-@pytest.fixture
-def dummy_solver_override():
-    class DummySolver:
-        slurm_params = {
-            "slurm_time": "00:01",
-            "slurm_nodes": 2,
-            "slurm_mem": "1234MB",
-        }
-
-    return DummySolver()
-
-
 def test_get_slurm_executor(dummy_slurm_config):
     # Test witthout solver overrides
+    with open(dummy_slurm_config, "r") as f:
+        config = yaml.safe_load(f)
     with mocked_slurm():
-        executor = get_slurm_executor(DUMMY_BENCHMARK, dummy_slurm_config)
+        executor = get_slurm_executor(DUMMY_BENCHMARK, config)
     assert executor._executor.parameters["time"] == "00:10"
     assert executor._executor.parameters["partition"] == "test_partition"
     assert executor._executor.parameters["nodes"] == 1
@@ -58,11 +48,12 @@ def test_get_slurm_executor(dummy_slurm_config):
 
 def test_merge_configs(dummy_slurm_config, dummy_solver):
     # Test with solver overrides
-    config_override = merge_configs(dummy_solver, dummy_slurm_config)
-    executor_config = get_slurm_executor(DUMMY_BENCHMARK, config_override)
-    assert executor_config["slurm_time"] == "00:01"
-    assert executor_config["slurm_nodes"] == 2
-    assert executor_config["slurm_mem"] == "1234MB"
+    config_override = merge_configs(dummy_slurm_config, dummy_solver)
+    with mocked_slurm():
+        executor = get_slurm_executor(DUMMY_BENCHMARK, config_override)
+    assert executor._executor.parameters["time"] == "00:01"
+    assert executor._executor.parameters["nodes"] == 2
+    assert executor._executor.parameters["mem"] == "1234MB"
 
 
 def test_run_on_slurm(dummy_slurm_config, dummy_solver):
