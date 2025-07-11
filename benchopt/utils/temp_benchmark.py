@@ -1,4 +1,5 @@
 import os
+import yaml
 import inspect
 import tempfile
 import contextlib
@@ -42,9 +43,10 @@ def temp_benchmark(
     solvers: str | list of str | None (default=None)
         Content of the solver.py file(s). If None, defaults to solvers of
         ``benchopt.tests.DUMMY_BENCHMARK``.
-    config: str | None (default=None)
-        Content of configuration file for running the Benchmark. If None,
-        no config file is created.
+    config: str | dict(fname->str) | None (default=None)
+        Configuration files for running the Benchmark. If only one str is
+        passed, this creates only one `config.yml` file. If None, no config
+        file is created.
     benchmark_utils: dict(fname->str) | None (default=None)
     """
     if objective is None:
@@ -76,8 +78,15 @@ def temp_benchmark(
                 f.write(inspect.cleandoc(dataset))
 
         if config is not None:
-            with open(temp_path / "config.yml", "w", encoding='utf-8') as f:
-                f.write(config)
+            if not isinstance(config, dict):
+                config = {"config.yml": config}
+            for fname, content in config.items():
+                if isinstance(content, dict):
+                    # If content is a dict, write it as YAML
+                    content = yaml.dump(content)
+                config_path = (temp_path / fname).with_suffix(".yml")
+                with open(config_path, "w", encoding='utf-8') as f:
+                    f.write(content)
 
         if benchmark_utils is not None:
             benchmark_utils_dir = (temp_path / "benchmark_utils")

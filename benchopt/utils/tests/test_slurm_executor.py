@@ -1,26 +1,22 @@
 import pytest
-import yaml
-from benchopt.tests import DUMMY_BENCHMARK
 from benchopt.utils.slurm_executor import (
     get_slurm_executor,
     run_on_slurm,
     merge_configs,
 )
+from benchopt.utils.temp_benchmark import temp_benchmark
 
 submitit = pytest.importorskip("submitit")
 from submitit.slurm.test_slurm import mocked_slurm  # noqa: E402
 
 
 @pytest.fixture
-def dummy_slurm_config(tmp_path):
-    config = {
+def dummy_slurm_config():
+    return {
         "slurm_time": "00:10",
         "slurm_partition": "test_partition",
         "slurm_nodes": 1,
     }
-    config_path = tmp_path / "slurm.yaml"
-    config_path.write_text(yaml.dump(config))
-    return config_path
 
 
 @pytest.fixture
@@ -36,38 +32,72 @@ def dummy_solver():
 
 
 def test_get_slurm_executor(dummy_slurm_config):
-    # Test witthout solver overrides
-    with open(dummy_slurm_config, "r") as f:
-        config = yaml.safe_load(f)
-    with mocked_slurm():
-        executor = get_slurm_executor(DUMMY_BENCHMARK, config)
-    assert executor._executor.parameters["time"] == "00:10"
-    assert executor._executor.parameters["partition"] == "test_partition"
-    assert executor._executor.parameters["nodes"] == 1
+
+    with temp_benchmark() as bench:
+        # Test without solver overrides
+        with mocked_slurm():
+            executor = get_slurm_executor(bench, dummy_slurm_config)
+    parameters = executor._executor.parameters
+    assert parameters["time"] == dummy_slurm_config["slurm_time"]
+    assert parameters["partition"] == dummy_slurm_config["slurm_partition"]
+    assert parameters["nodes"] == dummy_slurm_config["slurm_nodes"]
 
 
-def test_merge_configs(dummy_slurm_config, dummy_solver):
+def test_merge_configs(dummy_solver, dummy_slurm_config):
     # Test with solver overrides
     config_override = merge_configs(dummy_slurm_config, dummy_solver)
-    with mocked_slurm():
-        executor = get_slurm_executor(DUMMY_BENCHMARK, config_override)
-    assert executor._executor.parameters["time"] == "00:01"
-    assert executor._executor.parameters["nodes"] == 2
-    assert executor._executor.parameters["mem"] == "1234MB"
+
+    with temp_benchmark() as bench:
+        with mocked_slurm():
+            executor = get_slurm_executor(bench, config_override)
+
+    parameters = executor._executor.parameters
+    assert parameters["time"] == dummy_solver.slurm_params["slurm_time"]
+    assert parameters["nodes"] == dummy_solver.slurm_params["slurm_nodes"]
+    assert parameters["mem"] == dummy_solver.slurm_params["slurm_mem"]
+    assert parameters["partition"] == dummy_slurm_config["slurm_partition"]
 
 
-def test_run_on_slurm(dummy_slurm_config, dummy_solver):
-    def dummy_solver_runner(*args, **kwargs):
-        return "done"
+def test_run_on_slurm(monkeypatch, dummy_solver, dummy_slurm_config):
+
+    class MockedTask:
+        def __init__(self, config):
+            self.job_id = "12"
+            self.config = config
+
+        def done(self): return True
+        def exception(self): return None
+        def result(self): return self.config
+
+    def submit(self, *args, **kwargs):
+        # Mock submit to return a mocked task, with the executor's parameters
+        return MockedTask(self._executor.parameters)
+    monkeypatch.setattr(submitit.AutoExecutor, 'submit', submit)
 
     # Run the function
-    res = run_on_slurm(
-        benchmark=DUMMY_BENCHMARK,
-        slurm_config=dummy_slurm_config,
-        run_one_solver=dummy_solver_runner,
-        common_kwargs={"timeout": None},
-        all_runs=[{"solver": dummy_solver}],
-    )
+    config = {'slurm_config': dummy_slurm_config}
+    with temp_benchmark(config=config) as bench:
+        with mocked_slurm():
+            res = run_on_slurm(
+                benchmark=bench,
+                slurm_config=bench.benchmark_dir / "slurm_config.yml",
+                run_one_solver=lambda **kwargs: "done",
+                common_kwargs={"timeout": None},
+                all_runs=[
+                    {"solver": dummy_solver},
+                    {"solver": None}
+                ],
+            )
 
-    assert len(res) == 1
-    assert res[0] == "done"
+    assert len(res) == 2
+    p_overwrite = res[0]
+
+    assert p_overwrite["time"] == dummy_solver.slurm_params["slurm_time"]
+    assert p_overwrite["nodes"] == dummy_solver.slurm_params["slurm_nodes"]
+    assert p_overwrite["mem"] == dummy_solver.slurm_params["slurm_mem"]
+    assert p_overwrite["partition"] == dummy_slurm_config["slurm_partition"]
+
+    p_default = res[1]
+    assert p_default["time"] == dummy_slurm_config["slurm_time"]
+    assert p_default["nodes"] == dummy_slurm_config["slurm_nodes"]
+    assert p_default["partition"] == dummy_slurm_config["slurm_partition"]

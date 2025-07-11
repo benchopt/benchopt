@@ -40,8 +40,6 @@ def get_slurm_executor(benchmark, config, timeout=100):
 
 def merge_configs(slurm_config, solver):
     """Merge the slurm config with solver-specific slurm params."""
-    with open(slurm_config, "r") as f:
-        slurm_config = yaml.safe_load(f)
     solver_slurm_params = {
         **slurm_config,
         **getattr(solver, "slurm_params", {}),
@@ -61,6 +59,10 @@ def run_on_slurm(
 
     executors = {}
     tasks = []
+
+    # Load the slurm config from a file if provided
+    with open(slurm_config, "r") as f:
+        slurm_config = yaml.safe_load(f)
 
     with ExitStack() as stack:
         for kwargs in all_runs:
