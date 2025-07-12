@@ -67,13 +67,13 @@ def run_on_slurm(
     with ExitStack() as stack:
         for kwargs in all_runs:
             solver = kwargs.get("solver")
-            solver_slurm_params = merge_configs(slurm_config, solver)
-            executor_config = tuple(sorted(solver_slurm_params.items()))
+            solver_slurm_config = merge_configs(slurm_config, solver)
+            executor_config = tuple(sorted(solver_slurm_config.items()))
 
             if executor_config not in executors:
                 executor = get_slurm_executor(
                     benchmark,
-                    solver_slurm_params,
+                    solver_slurm_config,
                     timeout=common_kwargs["timeout"],
                 )
                 stack.enter_context(executor.batch())
