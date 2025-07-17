@@ -52,7 +52,9 @@ def hashable_pytree(pytree):
     if isinstance(pytree, (list, tuple)):
         return tuple(hashable_pytree(item) for item in sorted(pytree))
     elif isinstance(pytree, dict):
-        return tuple((k, hashable_pytree(v)) for k, v in sorted(pytree.items()))
+        return tuple(
+            (k, hashable_pytree(v)) for k, v in sorted(pytree.items())
+        )
     else:
         return pytree
 
