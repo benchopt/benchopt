@@ -13,12 +13,12 @@ class StatusHandler(object):
 
 
 @contextmanager
-def exception_handler(output, pdb=False):
+def exception_handler(terminal, pdb=False):
     """Context manager to handle exception with option to open a debugger.
 
     Parameter
     ---------
-    output : TerminalOutput
+    terminal : TerminalOutput
         Object to format string to display the progress of the solver.
     pdb : bool
         If set to True, open a debugger if an error is raised.
@@ -28,13 +28,13 @@ def exception_handler(output, pdb=False):
         yield ctx
     except KeyboardInterrupt:
         ctx.status = 'interrupted'
-        output.show_status('interrupted')
+        terminal.show_status('interrupted')
         raise SystemExit(1)
     except BaseException:
         ctx.status = 'error'
 
         if pdb:
-            output.show_status('error')
+            terminal.show_status('error')
             traceback.print_exc()
             # Use ipdb if it is available and default to pdb otherwise.
             try:
@@ -44,7 +44,7 @@ def exception_handler(output, pdb=False):
             post_mortem()
 
         if DEBUG:
-            output.show_status('error')
+            terminal.show_status('error')
             raise
         else:
             print()
