@@ -16,6 +16,10 @@ def dummy_slurm_config():
         "slurm_time": "00:10",
         "slurm_partition": "test_partition",
         "slurm_nodes": 1,
+        "slurm_additional_parameters": {
+            "slurm_mem": "1000MB",
+            "slurm_gres": "gpu:1",
+        },
     }
 
 

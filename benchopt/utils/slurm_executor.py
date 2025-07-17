@@ -47,6 +47,16 @@ def merge_configs(slurm_config, solver):
     return solver_slurm_params
 
 
+def hashable_pytree(pytree):
+    """Flatten a pytree into a list."""
+    if isinstance(pytree, (list, tuple)):
+        return tuple(hashable_pytree(item) for item in sorted(pytree))
+    elif isinstance(pytree, dict):
+        return tuple((k, hashable_pytree(v)) for k, v in sorted(pytree.items()))
+    else:
+        return pytree
+
+
 def run_on_slurm(
     benchmark, slurm_config, run_one_solver, common_kwargs, all_runs
 ):
@@ -68,7 +78,7 @@ def run_on_slurm(
         for kwargs in all_runs:
             solver = kwargs.get("solver")
             solver_slurm_config = merge_configs(slurm_config, solver)
-            executor_config = tuple(sorted(solver_slurm_config.items()))
+            executor_config = hashable_pytree(solver_slurm_config)
 
             if executor_config not in executors:
                 executor = get_slurm_executor(
