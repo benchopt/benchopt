@@ -424,7 +424,9 @@ def test_paths_config_key(test_case, n_jobs):
             def get_result(self): return dict(beta=1)
     """
 
-    with temp_benchmark(datasets=dataset, solvers=solver, config=config) as benchmark:
+    with temp_benchmark(
+            datasets=dataset, solvers=solver, config=config
+    ) as benchmark:
         with CaptureRunOutput() as out:
             run([
                 str(benchmark.benchmark_dir),
