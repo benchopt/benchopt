@@ -66,6 +66,46 @@ As we rely on ``joblib.Memory`` for caching the results, the cache should work
 exactly as if you were running the computation sequentially, as long as you have
 a shared file-system between the nodes used for the computations.
 
+.. _slurm_override:
+
+Overriding the SLURM parameters for one solver
+----------------------------------------------
+
+You can also override the SLURM parameters for a specific solver by
+defining a ``slurm_params`` attribute in the solver class. This allows to
+specify a different SLURM partition, resources, or other parameters that
+are specific to that solver. The parameters defined in the solver class
+will override the global SLURM config defined in the config file:
+
+.. code-block:: python
+
+    class Solver(BaseSolver):
+        """GPU-based solver that needs GPU partition and specific resources."""
+        name = 'GPU-Solver'
+        
+        parameters = {...}
+        
+        # Override global SLURM config for this solver
+        slurm_params = {
+            'slurm_partition': 'gpu',
+            'slurm_gres': 'gpu:1',
+            'slurm_time': '02:00:00',
+            'slurm_cpus_per_task': 8,
+            'slurm_mem': '16GB',
+        }
+        
+        requirements = ['torch']
+        
+        def set_objective(self, X, y):
+            ...
+
+The parameters defined in the ``slurm_params`` should be compatible with
+the `submitit` library, as they are passed to the `submitit.AutoExecutor`
+class. For more information on the available parameters, please refer to
+the `submitit documentation <https://github.com/facebookincubator/submitit>`_.
+Note that in this case, the jobs with different SLURM parameters will be  
+launched as one job array per configuration.  
+
 .. _skipping_solver:
 
 Skipping a solver for a given problem
