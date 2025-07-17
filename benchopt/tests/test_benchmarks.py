@@ -115,6 +115,10 @@ def test_solver_install_api(benchmark, solver_class):
 @pytest.mark.requires_install
 def test_solver_install(check_test, test_env_name, benchmark, solver_class):
 
+    # Make sure that the current benchmark is correctly set
+    from benchopt.benchmark import Benchmark
+    benchmark = Benchmark(benchmark.benchmark_dir)
+
     if check_test is not None:
         check_test(solver_class)
 
