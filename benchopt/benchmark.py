@@ -563,7 +563,7 @@ class Benchmark:
             )
 
     def get_all_runs(self, solvers=None, forced_solvers=None,
-                     datasets=None, objectives=None, output=None):
+                     datasets=None, objectives=None, terminal=None):
         """Generator with all combinations to run for the benchmark.
 
         Parameters
@@ -580,8 +580,8 @@ class Benchmark:
         objectives : list | None
             Filters to select specific objective parameters. If None,
             all objective parameters are tested
-        output : TerminalOutput or None
-            Object to manage the output in the terminal.
+        terminal : TerminalOutput or None
+            Object to format string to display the terminal.
 
         Yields
         ------
@@ -595,25 +595,25 @@ class Benchmark:
             _list_parametrized_classes(*solvers)
         )
         for dataset, is_installed in all_datasets:
-            output.set(dataset=dataset)
+            terminal.set(dataset=dataset)
             if not is_installed:
-                output.show_status('not installed', dataset=True)
+                terminal.show_status('not installed', dataset=True)
                 continue
-            output.display_dataset()
+            terminal.display_dataset()
             all_objectives = _list_parametrized_classes(
                 *objectives, check_installed=False
             )
             for objective, is_installed in all_objectives:
-                output.set(objective=objective)
+                terminal.set(objective=objective)
                 if not is_installed:
-                    output.show_status('not installed', objective=True)
+                    terminal.show_status('not installed', objective=True)
                     continue
-                output.display_objective()
+                terminal.display_objective()
                 for i_solver, (solver, is_installed) in enumerate(all_solvers):
-                    output.set(solver=solver, i_solver=i_solver)
+                    terminal.set(solver=solver, i_solver=i_solver)
 
                     if not is_installed:
-                        output.show_status('not installed')
+                        terminal.show_status('not installed')
                         continue
 
                     force = is_matched(
@@ -621,7 +621,7 @@ class Benchmark:
                     )
                     yield dict(
                         dataset=dataset, objective=objective, solver=solver,
-                        force=force, output=output.clone()
+                        force=force, terminal=terminal.clone()
                     )
                 all_solvers = solvers_buffer
 

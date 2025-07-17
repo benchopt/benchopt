@@ -66,7 +66,7 @@ def run_one_resolution(objective, solver, meta, stop_val):
 
 
 def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
-                   force=False, output=None, pdb=False):
+                   force=False, terminal=None, pdb=False):
     """Run all repetitions of the solver for a value of stopping criterion.
 
     Parameters
@@ -85,6 +85,8 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
     force : bool
         If force is set to True, ignore the cache and run the computations
         for the solver anyway. Else, use the cache if available.
+    terminal : TerminalOutput or None
+        Object to format string to display the progress of the solver.
     pdb : bool
         It pdb is set to True, open a debugger on error.
 
@@ -114,7 +116,7 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
         final_results.parent.mkdir(exist_ok=True, parents=True)
         meta["final_results"] = str(final_results)
 
-    with exception_handler(output, pdb=pdb) as ctx:
+    with exception_handler(terminal, pdb=pdb) as ctx:
 
         if solver._solver_strategy == "callback":
 
@@ -164,7 +166,7 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
 
 def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
                    max_runs, timeout=None, force=False, collect=False,
-                   output=None, pdb=False):
+                   terminal=None, pdb=False):
     """Run a benchmark for a given dataset, objective and solver.
 
     Parameters
@@ -190,7 +192,7 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
     collect : bool
         If set to True, only collect the results that have been put in cache,
         and ignore the results that are not computed yet, default is False.
-    output : TerminalOutput or None
+    terminal : TerminalOutput or None
         Object to format string to display the progress of the solver.
     pdb : bool
         It pdb is set to True, open a debugger on error.
@@ -202,7 +204,7 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
     """
 
     run_one_to_cvg_cached = benchmark.cache(
-        run_one_to_cvg, ignore=['force', 'output', 'pdb'], collect=collect
+        run_one_to_cvg, ignore=['force', 'terminal', 'pdb'], collect=collect
     )
     if collect:
         _run_one_to_cvg_cached = run_one_to_cvg_cached
@@ -214,7 +216,7 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
     # Set objective and skip if necessary.
     skip, reason = objective.set_dataset(dataset)
     if skip:
-        output.skip(reason, objective=True)
+        terminal.skip(reason, objective=True)
         return []
 
     states = []
@@ -243,10 +245,10 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
     for rep in range(n_repetitions):
         skip, reason = solver._set_objective(objective)
         if skip:
-            output.skip(reason)
+            terminal.skip(reason)
             return []
 
-        output.set(rep=rep)
+        terminal.set(rep=rep)
 
         # Get meta
         meta = {
@@ -266,13 +268,13 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
             solver=solver,
             max_runs=max_runs,
             timeout=timeout / n_repetitions if timeout is not None else None,
-            output=output,
+            terminal=terminal,
         )
 
         args_run_one_to_cvg = dict(
             benchmark=benchmark, objective=objective, solver=solver, meta=meta,
-            stopping_criterion=stopping_criterion, force=force, output=output,
-            pdb=pdb
+            stopping_criterion=stopping_criterion, force=force,
+            terminal=terminal, pdb=pdb
         )
         try:
             curve, status = run_one_to_cvg_cached(
@@ -294,7 +296,7 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
         else:
             status = 'done'
 
-    output.show_status(status=status)
+    terminal.show_status(status=status)
     # Make sure to flush so the parallel output is properly display
     print(end='', flush=True)
 
@@ -370,14 +372,14 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
         by the objective is not the same for all parameters, the missing data
         is set to `NaN`.
     """
-    output = TerminalOutput(n_repetitions, show_progress)
-    output.set(verbose=True)
+    terminal = TerminalOutput(n_repetitions, show_progress)
+    terminal.set(verbose=True)
 
     # List all datasets, objective and solvers to run based on the filters
     # provided. Merge the solver_names and forced to run all necessary solvers.
     all_runs = benchmark.get_all_runs(
         solvers, forced_solvers, datasets, objectives,
-        output=output
+        terminal=terminal
     )
     common_kwargs = dict(
         benchmark=benchmark, n_repetitions=n_repetitions, max_runs=max_runs,
@@ -403,7 +405,7 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
     import pandas as pd
     df = pd.DataFrame(run_statistics)
     if df.empty:
-        output.savefile_status()
+        terminal.savefile_status()
         raise SystemExit(1)
 
     # Save output in parquet file in the benchmark folder
@@ -422,7 +424,7 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
         # dependencies.
         save_file = save_file.with_suffix(".csv")
         df.to_csv(save_file)
-    output.savefile_status(save_file=save_file)
+    terminal.savefile_status(save_file=save_file)
 
     if plot_result:
         from benchopt.plotting import plot_benchmark
