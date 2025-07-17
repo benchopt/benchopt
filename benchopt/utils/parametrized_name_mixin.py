@@ -2,9 +2,6 @@ import itertools
 from abc import abstractmethod
 
 
-from .dynamic_modules import _reconstruct_class
-
-
 class ParametrizedNameMixin():
     """Mixing for parametric classes representation and naming.
     """
@@ -76,14 +73,44 @@ class ParametrizedNameMixin():
         """Compute the parametrized name for a given set of parameters."""
         return str(cls.get_instance(**parameters))
 
-    @classmethod
-    def _reload_class(cls, pickled_module_hash=None):
+    @staticmethod
+    def _load_instance(benchmark_dir, class_info, parameters):
+        # Make sure the running benchmark is set before loading the instance.
+        from benchopt.benchmark import Benchmark
+        from benchopt.utils.dynamic_modules import _load_class_from_module
+        Benchmark(benchmark_dir)
+        klass = _load_class_from_module(*class_info, benchmark_dir)
+        obj = klass.get_instance(**parameters)
+        return obj
 
-        return _reconstruct_class(
-            cls._module_filename, cls._base_class_name,
-            cls._import_ctx.benchmark_dir,
-            pickled_module_hash=pickled_module_hash
+    def _get_mixin_args(self):
+        """Get the arguments necessary to reconstruct the instance."""
+
+        class_info = (
+            str(self.__class__._module_filename),
+            self.__class__._base_class_name,
         )
+
+        # Send the benchmark folder to the instance so it can access the config
+        from benchopt.benchmark import get_running_benchmark
+        benchmark_dir = get_running_benchmark().benchmark_dir
+
+        return str(benchmark_dir), class_info, self._parameters
+
+    def __setstate__(self, state):
+        """Default setstate method to reconstruct the instance.
+
+        If `_get_state` is defined, this function should be overridden.
+        """
+        assert len(state) == 0, (
+            "If `_get_state` is defined, this function should be overridden."
+        )
+
+    def _get_state(self):
+        return {}
+
+    def __reduce__(self):
+        return self._load_instance, self._get_mixin_args(), self._get_state()
 
 
 def expand(keys, values):
