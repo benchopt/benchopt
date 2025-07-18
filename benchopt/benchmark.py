@@ -1,13 +1,16 @@
 import re
+import sys
 import click
 import warnings
+import importlib
 import itertools
 from pathlib import Path
+
+from joblib.externals import cloudpickle
 
 from .config import get_setting
 from .base import BaseSolver, BaseDataset
 
-from .utils.safe_import import set_benchmark_module
 from .utils.dynamic_modules import _load_class_from_module
 from .utils.dependencies_mixin import DependenciesMixin
 from .utils.parametrized_name_mixin import product_param
@@ -27,9 +30,10 @@ from .config import RAISE_INSTALL_ERROR
 # Global variable to access the benchmark currently running globally
 _RUNNING_BENCHMARK = None
 
-# Constant to name cache directory and folder of slurm outputs
+# Constant to name cache directory, SLURM output's folder and utils module
 CACHE_DIR = '__cache__'
 SLURM_JOB_NAME = 'benchopt_run'
+PACKAGE_NAME = "benchmark_utils"
 
 
 MISSING_DEPS_MSG = (
@@ -79,7 +83,7 @@ class Benchmark:
 
         global _RUNNING_BENCHMARK
         _RUNNING_BENCHMARK = self
-        set_benchmark_module(self.benchmark_dir)
+        self.set_benchmark_module()
 
         # Load the benchmark metadat defined in `objective.py` or
         # in `benchmark_meta.json`.
@@ -116,6 +120,25 @@ class Benchmark:
         # replace dots to avoid issues with `with_suffix``
         self.name = self.name.replace('.', '-')
 
+    def set_benchmark_module(self):
+        # add PACKAGE_NAME as a module if it exists.
+        # XXX: Maybe worth using function _get_module_from_file?
+        module_file = self.benchmark_dir / PACKAGE_NAME / '__init__.py'
+        if module_file.exists():
+            spec = importlib.util.spec_from_file_location(
+                PACKAGE_NAME, module_file
+            )
+            module = importlib.util.module_from_spec(spec)
+            sys.modules[PACKAGE_NAME] = module
+            spec.loader.exec_module(module)
+            cloudpickle.register_pickle_by_value(module)
+        elif module_file.parent.exists():
+            warnings.warn(
+                "Folder `benchmark_utils` exists but is missing `__init__.py`."
+                " Make sure it is a proper module to allow importing from it.",
+                ImportWarning
+            )
+
     ####################################################################
     # Helpers to access and validate objective, solvers and datasets
     ####################################################################
@@ -135,7 +158,7 @@ class Benchmark:
             )
 
         return _load_class_from_module(
-            module_filename, "Objective", benchmark_dir=self.benchmark_dir
+            self.benchmark_dir, module_filename, "Objective"
         )
 
     def check_objective_filters(self, objective_filters):
@@ -202,8 +225,7 @@ class Benchmark:
             # Get the class
             try:
                 cls = _load_class_from_module(
-                    module_filename, class_name,
-                    benchmark_dir=self.benchmark_dir
+                    self.benchmark_dir, module_filename, class_name,
                 )
                 if not issubclass(cls, base_class):
                     warnings.warn(colorify(

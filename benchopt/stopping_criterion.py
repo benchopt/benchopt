@@ -296,16 +296,21 @@ class StoppingCriterion():
     @staticmethod
     def _reconstruct(klass, kwargs, runner_kwargs):
         criterion = klass(**kwargs)
-        return criterion.get_runner_instance(**runner_kwargs)
+        if runner_kwargs:
+            return criterion.get_runner_instance(**runner_kwargs)
+        return criterion
 
     def __reduce__(self):
         kwargs = dict(
             strategy=self.strategy, **self.kwargs
         )
-        runner_kwargs = dict(
-            max_runs=self.max_runs, timeout=self.timeout,
-            terminal=self.terminal, solver=self.solver
-        )
+        if getattr(self, 'max_runs', None):
+            runner_kwargs = dict(
+                max_runs=self.max_runs, timeout=self.timeout,
+                terminal=self.terminal, solver=self.solver
+            )
+        else:
+            runner_kwargs = None
         return self._reconstruct, (self.__class__, kwargs, runner_kwargs)
 
     def get_next_stop_val(self, stop_val):

@@ -70,6 +70,9 @@ FIX
 - Fix cache miss when order of the solver changes.
   By `Thomas Moreau`_ (:gh:`806`)
 
+- Fix ``get_data_path`` not working with parallel runs.
+  By `Thomas Moreau`_ (:gh:`815`)
+
 .. _changes_1_6:
 
 Version 1.6 - 15/07/2024
