@@ -25,7 +25,7 @@ def test_template_dataset():
             DUMMY_BENCHMARK_PATH / 'datasets' / 'template_dataset.py'
         )
         _load_class_from_module(
-            template_dataset, 'Dataset', DUMMY_BENCHMARK_PATH
+            DUMMY_BENCHMARK_PATH, template_dataset, 'Dataset'
         )
 
     # Make sure that this error is not raised when listing all datasets from

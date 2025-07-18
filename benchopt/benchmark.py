@@ -158,7 +158,7 @@ class Benchmark:
             )
 
         return _load_class_from_module(
-            module_filename, "Objective", benchmark_dir=self.benchmark_dir
+            self.benchmark_dir, module_filename, "Objective"
         )
 
     def check_objective_filters(self, objective_filters):
@@ -225,8 +225,7 @@ class Benchmark:
             # Get the class
             try:
                 cls = _load_class_from_module(
-                    module_filename, class_name,
-                    benchmark_dir=self.benchmark_dir
+                    self.benchmark_dir, module_filename, class_name,
                 )
                 if not issubclass(cls, base_class):
                     warnings.warn(colorify(

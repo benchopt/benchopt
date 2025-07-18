@@ -74,28 +74,33 @@ class ParametrizedNameMixin():
         return str(cls.get_instance(**parameters))
 
     @staticmethod
-    def _load_instance(benchmark_dir, class_info, parameters):
+    def _load_instance(benchmark_dir, cls_info, parameters):
         # Make sure the running benchmark is set before loading the instance.
         from benchopt.benchmark import Benchmark
-        from benchopt.utils.dynamic_modules import _load_class_from_module
         Benchmark(benchmark_dir)
-        klass = _load_class_from_module(*class_info, benchmark_dir)
+
+        # Load the dynamic class
+        from benchopt.utils.dynamic_modules import _reconstruct_class
+        klass = _reconstruct_class(benchmark_dir, *cls_info)
+
+        # Set the parameters of the parametrized class.
         obj = klass.get_instance(**parameters)
         return obj
 
     def _get_mixin_args(self):
         """Get the arguments necessary to reconstruct the instance."""
 
-        class_info = (
+        cls_info = (
             str(self.__class__._module_filename),
             self.__class__._base_class_name,
+            self.__class__._file_hash
         )
 
         # Send the benchmark folder to the instance so it can access the config
         from benchopt.benchmark import get_running_benchmark
         benchmark_dir = get_running_benchmark().benchmark_dir
 
-        return str(benchmark_dir), class_info, self._parameters
+        return str(benchmark_dir), cls_info, self._parameters
 
     def __setstate__(self, state):
         """Default setstate method to reconstruct the instance.

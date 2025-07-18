@@ -395,8 +395,7 @@ class TestRunCmd:
                        " got import_ctx_wrong_name.")
             with pytest.warns(UserWarning, match=err_msg):
                 _load_class_from_module(
-                    f.name, "Solver",
-                    benchmark_dir=DUMMY_BENCHMARK_PATH
+                    DUMMY_BENCHMARK_PATH, f.name, "Solver",
                 )
 
     def test_handle_class_init_error(self):
