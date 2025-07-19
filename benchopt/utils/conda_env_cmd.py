@@ -40,6 +40,8 @@ EMPTY_ENV = """
 channels:
   - conda-forge
   - nodefaults
+dependencies:
+  - python=3.10
 """
 
 

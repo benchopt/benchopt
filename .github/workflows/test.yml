@@ -64,13 +64,21 @@ jobs:
 
       - name: Install Julia
         run:
-          ${{ env.BENCHOPT_CONDA_CMD }} install -yq -c https://repo.prefix.dev/julia-forge julia[version">=1.10.0"]
+          ${{ env.BENCHOPT_CONDA_CMD }} install -yq -c https://repo.prefix.dev/julia-forge julia[version=">=1.10.0"]
 
-      - name: Install benchopt and its dependencies
+      - name: Install benchopt and its dependencies on POSIX systems
+        if: matrix.os != 'windows-latest'
         run: |
           ${{ env.BENCHOPT_CONDA_CMD }} info
           ${{ env.BENCHOPT_CONDA_CMD }} install -yq pip
-          pip install -e .[test]
+          pip install -e ".[test,slurm]"
+    
+      - name: Install benchopt and its dependencies on Windows
+        if: matrix.os == 'windows-latest'
+        run: |
+          ${{ env.BENCHOPT_CONDA_CMD }} info
+          ${{ env.BENCHOPT_CONDA_CMD }} install -yq pip
+          pip install -e ".[test]"
 
       # TODO merge this with previous test if possible
       #last command : Install mamba in base environment to make it accessible test env

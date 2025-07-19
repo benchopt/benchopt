@@ -56,7 +56,7 @@ def _get_module_from_file(module_filename, benchmark_dir=None):
     return module
 
 
-def _load_class_from_module(module_filename, class_name, benchmark_dir):
+def _load_class_from_module(benchmark_dir, module_filename, class_name):
     """Load a class from a module_filename.
 
     This helper also stores info necessary for DependenciesMixing to check the
@@ -64,13 +64,13 @@ def _load_class_from_module(module_filename, class_name, benchmark_dir):
 
     Parameters
     ----------
+    benchmark_dir : str or Path
+        Path to the benchmark_dir. It will be used to set the package
+        name relative to it.
     module_filename : str or Path
         Path to the file defining the module to load the class from.
     class_name : str
         Name of the class to load
-    benchmark_dir : str or Path
-        Path to the benchmark_dir. It will be used to set the package
-        name relative to it.
 
     Returns
     -------
@@ -113,7 +113,34 @@ def _load_class_from_module(module_filename, class_name, benchmark_dir):
     # Store the info to easily reload the class
     klass._module_filename = module_filename.resolve()
     klass._benchmark_dir = benchmark_dir.resolve()
+    klass._import_ctx = _get_import_context(module)
+    klass._file_hash = get_file_hash(klass._module_filename)
+
     return klass
+
+
+def _get_import_context(module):
+    """Helper to get the import context from a module.
+    In particular, if `import_ctx` is not defined, check that no local objects
+    is an instance of safe_import_context.
+    """
+    import_ctx = getattr(module, 'import_ctx', None)
+    if import_ctx is not None:
+        return import_ctx
+
+    for var_name in dir(module):
+        var = getattr(module, var_name)
+        if isinstance(var, safe_import_context):
+            import_ctx = var
+            warnings.warn(
+                "Import contexts should preferably be named import_ctx, "
+                f"got {var_name}.",  UserWarning
+            )
+            break
+    else:
+        import_ctx = safe_import_context()
+
+    return import_ctx
 
 
 def get_file_hash(filename):
@@ -125,17 +152,20 @@ def get_file_hash(filename):
     return hasher.hexdigest()
 
 
-def _reconstruct_class(module_filename, class_name, benchmark_dir,
-                       pickled_module_hash=None):
+def _reconstruct_class(
+        benchmark_dir, module_filename, class_name, pickled_module_hash
+):
     """Retrieve a class in module defined by its filename.
 
     Parameters
     ----------
+    benchmark_dir : str or Path
+        Folder containing the benchmark.
     module_filename : str or Path
-        path to the module from which the class should be retrieved.
+        Path to the module from which the class should be retrieved.
     class_name : str
         Name of the class to retrieve.
-    pickled_module_has : str or None
+    module_hash : str or None
         MD5 hash of the module file, to ensure the module did not changed.
 
     Returns
@@ -143,14 +173,13 @@ def _reconstruct_class(module_filename, class_name, benchmark_dir,
     class: type
         The class that was requested.
     """
-    if pickled_module_hash is not None:
-        module_hash = get_file_hash(module_filename)
-        assert pickled_module_hash == module_hash, (
-            f'{class_name} class changed between pickle and unpickle. This '
-            'object should not be stored using pickle for long term storage.'
-        )
+    module_hash = get_file_hash(module_filename)
+    assert pickled_module_hash == module_hash, (
+        f'{class_name} class changed between pickle and unpickle. This '
+        'object should not be stored using pickle for long term storage.'
+    )
 
-    return _load_class_from_module(module_filename, class_name, benchmark_dir)
+    return _load_class_from_module(benchmark_dir, module_filename, class_name)
 
 
 def _get_cls_attributes(module_file, cls_name):

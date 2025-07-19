@@ -194,6 +194,9 @@ Available benchmarks
    * - `Bilevel Optimization <https://github.com/benchopt/benchmark_bilevel>`_
      - `Results <https://benchopt.github.io/results/benchmark_bilevel.html>`__
      - |Build Status Bilevel|
+   * - `Sorted L-One Penalized Estimation (SLOPE) <https://github.com/benchopt/benchmark_slope>`_
+     - `Results <https://benchopt.github.io/results/benchmark_slope.html>`__
+     - |Build Status SLOPE|
 
 
 
@@ -247,3 +250,5 @@ Available benchmarks
    :target: https://github.com/benchopt/benchmark_resnet_classif/actions
 .. |Build Status Bilevel| image:: https://github.com/benchopt/benchmark_bilevel/actions/workflows/main.yml/badge.svg
    :target: https://github.com/benchopt/benchmark_bilevel/actions
+.. |Build Status SLOPE| image:: https://github.com/benchopt/benchmark_slope/actions/workflows/ci.yml/badge.svg
+   :target: https://github.com/benchopt/benchmark_slope/actions

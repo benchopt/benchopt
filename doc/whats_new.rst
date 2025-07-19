@@ -19,11 +19,20 @@ Major change
 CLI
 ---
 
+- Add ``--no-cache`` option to ``benchopt run``, to disable caching.
+  By `Thomas Moreau`_ (:gh:`800`)
+
 - Add ``--gpu`` flag to ``benchopt install``, to handle different requirements
   for GPU and CPU. By `Mathurin Massias`_ (:gh:`793`)
 
+- Make it possible to run ``benchopt`` as ``python -m benchopt``, to ease
+  running in various environment and debugging. By `Rémi Flamary`_ (:gh:`685`)
+
 API
 ---
+
+- Add ``slurm_params`` attribute to ``Solver`` to allow overriding the
+  default SLURM config. By `Pierre-Louis Barbarant`_ (:gh:`805`)
 
 - Support ``requirements`` being a dictionary with keys ``"gpu"`` and ``"cpu"``, for
   classes whose install differ on GPU and CPU.
@@ -38,6 +47,9 @@ API
   ``p_obj_|p_solver_|p_dataset_`` to avoid collapse between the different
   components. By `Melvine Nargeot`_  and `Thomas Moreau`_ (:gh:`703`).
 
+- ``Objective`` can now return multiple evaluation at once, to store non-aggregated
+  metrics. See :ref:`multiple_evaluation`. By `Thomas Moreau`_ (:gh:`778`).
+
 FIX
 ---
 
@@ -51,6 +63,15 @@ FIX
   By `Thomas Moreau`_ (:gh:`763`)
 
 - Fix the ``info`` command. By `Pierre-Antoine Comby`_ (:gh:`768`)
+
+- Fix ignored ``--minimal`` option in ``benchopt install``.
+  By `Lionel Kusch`_ (:gh:`786`)
+
+- Fix cache miss when order of the solver changes.
+  By `Thomas Moreau`_ (:gh:`806`)
+
+- Fix ``get_data_path`` not working with parallel runs.
+  By `Thomas Moreau`_ (:gh:`815`)
 
 .. _changes_1_6:
 

@@ -1,13 +1,16 @@
 import re
+import sys
 import click
 import warnings
+import importlib
 import itertools
 from pathlib import Path
+
+from joblib.externals import cloudpickle
 
 from .config import get_setting
 from .base import BaseSolver, BaseDataset
 
-from .utils.safe_import import set_benchmark_module
 from .utils.dynamic_modules import _load_class_from_module
 from .utils.parametrized_name_mixin import product_param
 
@@ -25,9 +28,10 @@ from .config import RAISE_INSTALL_ERROR
 # Global variable to access the benchmark currently running globally
 _RUNNING_BENCHMARK = None
 
-# Constant to name cache directory and folder of slurm outputs
+# Constant to name cache directory, SLURM output's folder and utils module
 CACHE_DIR = '__cache__'
 SLURM_JOB_NAME = 'benchopt_run'
+PACKAGE_NAME = "benchmark_utils"
 
 
 MISSING_DEPS_MSG = (
@@ -69,13 +73,16 @@ class Benchmark:
     """
 
     def __init__(
-        self, benchmark_dir, allow_meta_from_json=False,
+            self, benchmark_dir,
+            no_cache=False,
+            allow_meta_from_json=False,
     ):
         self.benchmark_dir = Path(benchmark_dir)
+        self.no_cache = no_cache
 
         global _RUNNING_BENCHMARK
         _RUNNING_BENCHMARK = self
-        set_benchmark_module(self.benchmark_dir)
+        self.set_benchmark_module()
 
         # Load the benchmark metadat defined in `objective.py` or
         # in `benchmark_meta.json`.
@@ -112,6 +119,25 @@ class Benchmark:
         # replace dots to avoid issues with `with_suffix``
         self.name = self.name.replace('.', '-')
 
+    def set_benchmark_module(self):
+        # add PACKAGE_NAME as a module if it exists.
+        # XXX: Maybe worth using function _get_module_from_file?
+        module_file = self.benchmark_dir / PACKAGE_NAME / '__init__.py'
+        if module_file.exists():
+            spec = importlib.util.spec_from_file_location(
+                PACKAGE_NAME, module_file
+            )
+            module = importlib.util.module_from_spec(spec)
+            sys.modules[PACKAGE_NAME] = module
+            spec.loader.exec_module(module)
+            cloudpickle.register_pickle_by_value(module)
+        elif module_file.parent.exists():
+            warnings.warn(
+                "Folder `benchmark_utils` exists but is missing `__init__.py`."
+                " Make sure it is a proper module to allow importing from it.",
+                ImportWarning
+            )
+
     ####################################################################
     # Helpers to access and validate objective, solvers and datasets
     ####################################################################
@@ -131,7 +157,7 @@ class Benchmark:
             )
 
         return _load_class_from_module(
-            module_filename, "Objective", benchmark_dir=self.benchmark_dir
+            self.benchmark_dir, module_filename, "Objective"
         )
 
     def check_objective_filters(self, objective_filters):
@@ -197,8 +223,7 @@ class Benchmark:
                 continue
             # Get the class
             cls = _load_class_from_module(
-                module_filename, class_name,
-                benchmark_dir=self.benchmark_dir
+                self.benchmark_dir, module_filename, class_name,
             )
             if (not issubclass(cls, base_class) and
                     cls.__name__ != "FailedImport"):
@@ -207,7 +232,6 @@ class Benchmark:
                     f"subclass from base class benchopt."
                     f"{base_class.__name__}", YELLOW
                 ))
-
             classes.append(cls)
 
         classes.sort(key=lambda c: c.name.lower())
@@ -305,6 +329,8 @@ class Benchmark:
 
     def get_cache_location(self):
         "Get the location for the cache of the benchmark."
+        if self.no_cache:
+            return None
         benchopt_cache_dir = get_setting("cache")
         if benchopt_cache_dir is None:
             return self.benchmark_dir / CACHE_DIR
@@ -321,6 +347,9 @@ class Benchmark:
         if it exists, or None if it does not. This is useful to gather results
         that are already in cache.
         """
+        if self.no_cache:
+            assert not collect, "Cannot collect when using `--no-cache`."
+            return func
 
         # Create a cached version of `func` and handle cases where we force
         # the run.
@@ -425,22 +454,25 @@ class Benchmark:
         if len(shell_install_scripts) > 0 or len(conda_reqs) > 0:
             check_installs += [objective]
         to_install = itertools.chain(include_datasets, include_solvers)
-        for klass in to_install:
-            reqs, scripts, hooks, missing = (
-                klass.collect(env_name=env_name, force=force, gpu=gpu)
-            )
-            # If a class is not importable but has no requirements,
-            # it might be because the requirements are specified
-            # as global ones in the Objective. Otherwise, raise a
-            # comprehensible error.
-            if missing is not None:
-                missings.append(missing)
 
-            conda_reqs += reqs
-            shell_install_scripts += scripts
-            post_install_hooks += hooks
-            if len(scripts) > 0 or len(reqs) > 0:
-                check_installs += [klass]
+        if not minimal:
+            for klass in to_install:
+                reqs, scripts, hooks, missing = (
+                    klass.collect(env_name=env_name, force=force, gpu=gpu)
+                )
+                # If a class is not importable but has no requirements,
+                # it might be because the requirements are specified
+                # as global ones in the Objective. We keep track of them
+                # to check and raise a comprehensive error after the install
+                # if it is still not importable.
+                if missing is not None:
+                    missings.append(missing)
+
+                conda_reqs += reqs
+                shell_install_scripts += scripts
+                post_install_hooks += hooks
+                if len(scripts) > 0 or len(reqs) > 0:
+                    check_installs += [klass]
         print(colorify(' done', GREEN))
 
         # Install the collected requirements
@@ -528,7 +560,7 @@ class Benchmark:
             )
 
     def get_all_runs(self, solvers=None, forced_solvers=None,
-                     datasets=None, objectives=None, output=None):
+                     datasets=None, objectives=None, terminal=None):
         """Generator with all combinations to run for the benchmark.
 
         Parameters
@@ -545,8 +577,8 @@ class Benchmark:
         objectives : list | None
             Filters to select specific objective parameters. If None,
             all objective parameters are tested
-        output : TerminalOutput or None
-            Object to manage the output in the terminal.
+        terminal : TerminalOutput or None
+            Object to format string to display the terminal.
 
         Yields
         ------
@@ -560,25 +592,25 @@ class Benchmark:
             _list_parametrized_classes(*solvers)
         )
         for dataset, is_installed in all_datasets:
-            output.set(dataset=dataset)
+            terminal.set(dataset=dataset)
             if not is_installed:
-                output.show_status('not installed', dataset=True)
+                terminal.show_status('not installed', dataset=True)
                 continue
-            output.display_dataset()
+            terminal.display_dataset()
             all_objectives = _list_parametrized_classes(
                 *objectives, check_installed=False
             )
             for objective, is_installed in all_objectives:
-                output.set(objective=objective)
+                terminal.set(objective=objective)
                 if not is_installed:
-                    output.show_status('not installed', objective=True)
+                    terminal.show_status('not installed', objective=True)
                     continue
-                output.display_objective()
+                terminal.display_objective()
                 for i_solver, (solver, is_installed) in enumerate(all_solvers):
-                    output.set(solver=solver, i_solver=i_solver)
+                    terminal.set(solver=solver, i_solver=i_solver)
 
                     if not is_installed:
-                        output.show_status('not installed')
+                        terminal.show_status('not installed')
                         continue
 
                     force = is_matched(
@@ -586,7 +618,7 @@ class Benchmark:
                     )
                     yield dict(
                         dataset=dataset, objective=objective, solver=solver,
-                        force=force, output=output.clone()
+                        force=force, terminal=terminal.clone()
                     )
                 all_solvers = solvers_buffer
 
@@ -875,8 +907,7 @@ def _get_used_parameters(klass, params):
             default.update(update)
             if default not in used_parameters:  # avoid duplicates
                 used_parameters.append(default)
-
-    return used_parameters
+                yield default
 
 
 def buffer_iterator(it):

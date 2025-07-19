@@ -11,15 +11,35 @@ class CaptureRunOutput(object):
 
     def __init__(self, delete_result_files=True):
         self.out = SuppressStd()
-        self.output = None
-        self.result_files = []
-
         self.delete_result_files = delete_result_files
 
-    def __enter__(self):
-        self.output = None
-        self.result_files = []
+    @property
+    def output(self):
+        if self.output_checker is None:
+            raise RuntimeError(
+                "Output not available yet, it will be available after "
+                "the context manager is exited."
+            )
+        return self.output_checker.output
 
+    @property
+    def result_files(self):
+        if self.output_checker is None:
+            raise RuntimeError(
+                "Output not available yet, it will be available after "
+                "the context manager is exited."
+            )
+        return self.output_checker.result_files
+
+    def __repr__(self):
+        return (
+            "CaptureRunOutput(\n"
+            f"    result_files={self.result_files}\n"
+            f"    output=\"\"\"\n{self.output})\n\"\"\"\n"
+            ")"
+        )
+
+    def __enter__(self):
         # To make it possible to capture stdout in the child worker, we need
         # to make sure the execturor is spawned in the context so shutdown any
         # existing executor.
@@ -32,25 +52,40 @@ class CaptureRunOutput(object):
 
     def __exit__(self, exc_class, value, traceback):
         self.out.__exit__(exc_class, value, traceback)
-        self.output = self.out.output
+        self.output_checker = BenchoptRunOutputProcessor(
+            self.out.output, self.delete_result_files
+        )
+
+        # If there was an exception, display the output
+        if exc_class is not None:
+            print(self.output_checker.output)
+
+    def check_output(self, pattern, repetition=None):
+        self.output_checker.check_output(pattern, repetition)
+
+
+class BenchoptRunOutputProcessor:
+    def __init__(self, output, delete_result_files=True):
+        self.output = output
 
         # Make sure to delete all the result that created by the run command.
         self.result_files = re.findall(
             r'Saving result in: (.*\.parquet|.*\.csv)', self.output
         )
-        if len(self.result_files) >= 1 and self.delete_result_files:
+        if len(self.result_files) >= 1 and delete_result_files:
             for result_file in self.result_files:
                 result_path = Path(result_file)
-                result_path.unlink()  # remove result file
+                self.safe_unlink(result_path)  # remove result file
                 result_dir = result_path.parents[0]
                 stem = result_path.stem
                 for html_file in result_dir.glob(f'*{stem}*.html'):
                     # remove html files associated with this results
-                    html_file.unlink()
+                    self.safe_unlink(html_file)
 
-        # If there was an exception, display the output
-        if exc_class is not None:
-            print(self.output)
+    def safe_unlink(self, file):
+        # Avoid error when the file is no present due to conficting names.
+        if file.exists():
+            file.unlink()
 
     def check_output(self, pattern, repetition=None):
 

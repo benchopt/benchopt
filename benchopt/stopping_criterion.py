@@ -77,7 +77,7 @@ class StoppingCriterion():
             else f'objective_{key_to_monitor}'
         )
 
-    def get_runner_instance(self, max_runs=1, timeout=None, output=None,
+    def get_runner_instance(self, max_runs=1, timeout=None, terminal=None,
                             solver=None):
         """Copy the stopping criterion and set the parameters that depends on
         how benchopt runner is called.
@@ -89,7 +89,7 @@ class StoppingCriterion():
             the convergence curve.
         timeout : float
             The maximum duration in seconds of the solver run.
-        output : TerminalOutput or None
+        terminal : TerminalOutput or None
             Object to format string to display the progress of the solver.
         solver : BaseSolver
             The solver for which this stopping criterion is called. Used to get
@@ -130,7 +130,7 @@ class StoppingCriterion():
         stopping_criterion.rho = RHO
         stopping_criterion.timeout = timeout
         stopping_criterion.max_runs = max_runs
-        stopping_criterion.output = output
+        stopping_criterion.terminal = terminal
         stopping_criterion.solver = solver
 
         # Override get_next_stop_val if ``get_next`` is implemented for solver.
@@ -285,27 +285,32 @@ class StoppingCriterion():
 
     def debug(self, msg):
         """Helper to print debug messages."""
-        if self.output is not None:
-            self.output.debug(msg)
+        if self.terminal is not None:
+            self.terminal.debug(msg)
 
     def progress(self, progress):
         """Helper to print progress messages."""
-        if self.output is not None:
-            self.output.progress(progress)
+        if self.terminal is not None:
+            self.terminal.progress(progress)
 
     @staticmethod
     def _reconstruct(klass, kwargs, runner_kwargs):
         criterion = klass(**kwargs)
-        return criterion.get_runner_instance(**runner_kwargs)
+        if runner_kwargs:
+            return criterion.get_runner_instance(**runner_kwargs)
+        return criterion
 
     def __reduce__(self):
         kwargs = dict(
             strategy=self.strategy, **self.kwargs
         )
-        runner_kwargs = dict(
-            max_runs=self.max_runs, timeout=self.timeout,
-            output=self.output, solver=self.solver
-        )
+        if getattr(self, 'max_runs', None):
+            runner_kwargs = dict(
+                max_runs=self.max_runs, timeout=self.timeout,
+                terminal=self.terminal, solver=self.solver
+            )
+        else:
+            runner_kwargs = None
         return self._reconstruct, (self.__class__, kwargs, runner_kwargs)
 
     def get_next_stop_val(self, stop_val):
@@ -479,13 +484,13 @@ class SingleRunCriterion(StoppingCriterion):
     def init_stop_val(self):
         return self.stop_val
 
-    def get_runner_instance(self, max_runs=1, timeout=None, output=None,
+    def get_runner_instance(self, max_runs=1, timeout=None, terminal=None,
                             solver=None):
 
-        return super().get_runner_instance(1, timeout, output, solver)
+        return super().get_runner_instance(1, timeout, terminal, solver)
 
-    def check_convergence(self, cost_curve):
-        return True, 1
+    def should_stop(self, stop_val, objective_list):
+        return True, 'done', stop_val
 
 
 class NoCriterion(StoppingCriterion):

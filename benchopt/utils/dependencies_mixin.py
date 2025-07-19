@@ -77,9 +77,12 @@ class DependenciesMixin:
             #     return True
             return True
         else:
+            # Get the current benchmark directory
+            from benchopt.benchmark import get_running_benchmark
+            benchmark_dir = get_running_benchmark().benchmark_dir
             return (
                 _run_shell_in_conda_env(
-                    f"benchopt check-install {cls._benchmark_dir} "
+                    f"benchopt check-install {benchmark_dir} "
                     f"{cls._module_filename} {cls._base_class_name}",
                     env_name=env_name,
                     raise_on_error=raise_on_not_installed,
