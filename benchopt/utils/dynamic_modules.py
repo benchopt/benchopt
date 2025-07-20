@@ -178,6 +178,15 @@ def _set_cls_attr_from_ast(module_file, cls_name, ctx):
         raise ValueError(f"Could not find {cls_name} in module {module_file}.")
     cls = cls_list[0]
 
+    known_methods = [
+        # Dataset methods
+        "get_data",
+        # Objective methods
+        "set_data", "get_objective", "evaluate_result", "get_one_result",
+        # Solver methods
+        "set_objective", "run", "get_result"
+    ]
+
     ctx['_base_class_name'] = cls_name
     ctx['name'], ctx['install_cmd'], ctx['requirements'] = None, "conda", []
     for node in cls.body:
@@ -189,3 +198,6 @@ def _set_cls_attr_from_ast(module_file, cls_name, ctx):
                     ctx['name'] = ast.literal_eval(node.value)
                 elif target.id == "install_cmd":
                     ctx['install_cmd'] = ast.literal_eval(node.value)
+        if isinstance(node, ast.FunctionDef):
+            if node.name in known_methods:
+                ctx[node.name] = lambda *args, **kwargs: None
