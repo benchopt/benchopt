@@ -1,7 +1,6 @@
 import re
 import time
 import tarfile
-import inspect
 from pathlib import Path
 
 import click
@@ -14,9 +13,7 @@ from benchopt.plotting import PLOT_KINDS
 from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.utils.stream_redirection import SuppressStd
 from benchopt.utils.misc import NamedTemporaryFile
-from benchopt.utils.dynamic_modules import (
-    _load_class_from_module, _unskip_import
-    )
+from benchopt.utils.dynamic_modules import _unskip_import
 
 
 from benchopt.tests import SELECT_ONE_PGD

@@ -1,11 +1,7 @@
 from benchopt import BaseDataset
 
-from benchopt import safe_import_context
-
-
-with safe_import_context() as import_ctx:
-    from sklearn.datasets import fetch_openml
-    from sklearn.preprocessing import LabelBinarizer
+from sklearn.datasets import fetch_openml
+from sklearn.preprocessing import LabelBinarizer
 
 
 class Dataset(BaseDataset):

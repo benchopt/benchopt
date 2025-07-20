@@ -150,9 +150,8 @@ def test_objective_save_final_results(no_debug_log):
 
 def test_objective_cv_splitter(no_debug_log):
 
-    objective = """from benchopt import BaseObjective, safe_import_context
-        with safe_import_context() as import_ctx:
-            import numpy as np
+    objective = """from benchopt import BaseObjective
+        import numpy as np
 
         class Splitter():
             def split(self, X, y, groups=None):

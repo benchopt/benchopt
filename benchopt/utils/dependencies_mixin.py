@@ -21,7 +21,7 @@ class DependenciesMixin:
     #           will run `install_script` in a shell and provide the conda
     #           env directory as an argument. The command should then be
     #           installed in the `bin` folder of the env and can be imported
-    #           with import_shell_cmd in the safe_import_context.
+    #           with import_shell_cmd.
     install_cmd = "conda"
 
     _error_displayed = False

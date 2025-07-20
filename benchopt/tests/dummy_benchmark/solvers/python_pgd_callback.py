@@ -1,8 +1,7 @@
-from benchopt import BaseSolver, safe_import_context
+from benchopt import BaseSolver
 
-with safe_import_context() as import_ctx:
-    import numpy as np
-    from scipy import sparse
+import numpy as np
+from scipy import sparse
 
 
 class Solver(BaseSolver):

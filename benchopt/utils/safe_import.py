@@ -1,7 +1,4 @@
-import sys
 import warnings
-
-from ..config import RAISE_INSTALL_ERROR
 
 SKIP_IMPORT = False
 BENCHMARK_DIR = None
