@@ -77,7 +77,6 @@ def _load_class_from_module(benchmark_dir, module_filename, class_name):
     klass : class
         The klass requested from the given module.
     """
-    global SKIP_IMPORT
     benchmark_dir = Path(benchmark_dir)
     module_filename = Path(module_filename)
     try:

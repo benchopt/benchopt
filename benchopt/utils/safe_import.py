@@ -1,8 +1,5 @@
 import warnings
 
-SKIP_IMPORT = False
-BENCHMARK_DIR = None
-
 
 class SkipWithBlock(Exception):
     pass
