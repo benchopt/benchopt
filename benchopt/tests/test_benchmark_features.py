@@ -20,7 +20,7 @@ from benchopt.tests.utils import CaptureRunOutput
 
 def test_template_dataset():
     # Make sure that importing template_dataset raises an error.
-    with pytest.raises(ImportError):
+    with pytest.raises(ValueError):
         template_dataset = (
             DUMMY_BENCHMARK_PATH / 'datasets' / 'template_dataset.py'
         )
@@ -63,10 +63,7 @@ def test_benchopt_min_version():
 @pytest.mark.parametrize('raise_install_error', [0, 1])
 def test_error_reporting(error, raise_install_error):
 
-    expected_exc = (
-        ImportError if raise_install_error and error is ImportError
-        else SystemExit
-    )
+    expected_exc = error if raise_install_error else SystemExit
 
     prev_value = os.environ.get('BENCHOPT_RAISE_INSTALL_ERROR', '0')
 

@@ -104,20 +104,17 @@ class TestRunCmd:
 
         # Make sure that when the Objective is not installed, due to a missing
         # dependency, an error is raised.
-        objective = """from benchopt import BaseObjective
-        from benchopt import safe_import_context
-
-        with safe_import_context() as import_ctx:
-            import fake_module
+        objective = """import fake_module
+        from benchopt import BaseObjective
 
         class Objective(BaseObjective):
             name = 'dummy'
         """
-        with temp_benchmark(objective=objective) as benchmark:
-            with pytest.raises(
-                    ModuleNotFoundError,
-                    match="No module named 'fake_module'"
-            ):
+        with pytest.raises(
+                ModuleNotFoundError,
+                match="No module named 'fake_module'"
+        ):
+            with temp_benchmark(objective=objective) as benchmark:
                 run(
                     [str(benchmark.benchmark_dir), '-n', '1'],
                     'benchopt', standalone_mode=False
@@ -375,30 +372,6 @@ class TestRunCmd:
             run, [str(DUMMY_BENCHMARK_PATH), '-d'], DATASET_COMPLETION_CASES
         )
 
-    def test_import_ctx_name(self):
-        solver = inspect.cleandoc("""
-            from benchopt import BaseSolver, safe_import_context
-            with safe_import_context() as import_ctx_wrong_name:
-                import numpy as np
-
-
-            class Solver(BaseSolver):
-                name = "test_import_ctx"
-
-            """)
-        with NamedTemporaryFile(
-                dir=DUMMY_BENCHMARK_PATH / "solvers",
-                mode='w', suffix='.py') as f:
-            f.write(solver)
-            f.flush()
-
-            err_msg = ("Import contexts should preferably be named import_ctx,"
-                       " got import_ctx_wrong_name.")
-            with pytest.warns(UserWarning, match=err_msg):
-                _load_class_from_module(
-                    DUMMY_BENCHMARK_PATH, f.name, "Solver",
-                )
-
     def test_handle_class_init_error(self):
         # dataset with a wrong param name
         dataset_src = (
@@ -559,10 +532,9 @@ class TestInstallCmd:
     ):
 
         objective = """
-            from benchopt import safe_import_context, BaseObjective
+            from benchopt import BaseObjective
 
-            with safe_import_context() as import_ctx:
-                import dummy_package
+            import dummy_package
 
             class Objective(BaseObjective):
                 name = "requires_dummy"
@@ -596,10 +568,7 @@ class TestInstallCmd:
 
         # solver with missing dependency specified
         missing_deps_cls = """from benchopt import Base{Cls}
-            from benchopt import safe_import_context
-
-            with safe_import_context() as import_ctx:
-                import invalid_module
+            import invalid_module
 
             class {Cls}(Base{Cls}):
                 name = 'buggy-class'
@@ -634,10 +603,8 @@ class TestInstallCmd:
             self, test_env_name, uninstall_dummy_package, no_debug_log
     ):
         objective = """
-            from benchopt import safe_import_context, BaseObjective
-
-            with safe_import_context() as import_ctx:
-                import dummy_package
+            import dummy_package
+            from benchopt import BaseObjective
 
             class Objective(BaseObjective):
                 name = "requires_dummy"
@@ -650,10 +617,8 @@ class TestInstallCmd:
                 def get_objective(self): pass
         """
 
-        solver = """from benchopt import BaseSolver, safe_import_context
-
-            with safe_import_context() as import_ctx:
-                import fake_benchopt_package
+        solver = """from benchopt import BaseSolver
+            import fake_benchopt_package
 
             class Solver(BaseSolver):
                 name = 'solver1'
@@ -663,10 +628,8 @@ class TestInstallCmd:
                 def get_result(self): pass
         """
 
-        dataset = """from benchopt import BaseDataset, safe_import_context
-
-            with safe_import_context() as import_ctx:
-                import fake_benchopt_package
+        dataset = """from benchopt import BaseDataset
+            import fake_benchopt_package
 
             class Dataset(BaseDataset):
                 name = 'dataset1'
@@ -692,10 +655,8 @@ class TestInstallCmd:
     ):
 
         objective = """
-            from benchopt import safe_import_context, BaseObjective
-
-            with safe_import_context() as import_ctx:
-                import dummy_package
+            import dummy_package
+            from benchopt import BaseObjective
 
             class Objective(BaseObjective):
                 name = "requires_dummy"
@@ -710,11 +671,9 @@ class TestInstallCmd:
         """
 
         # solver with missing dependency specified
-        missing_deps_dataset = """from benchopt import BaseDataset
-            from benchopt import safe_import_context
-
-            with safe_import_context() as import_ctx:
-                import dummy_package
+        missing_deps_dataset = """
+            import dummy_package
+            from benchopt import BaseDataset
 
             class Dataset(BaseDataset):
                 name = 'test-dataset'

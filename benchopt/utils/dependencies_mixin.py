@@ -65,29 +65,20 @@ class DependenciesMixin:
             returns True if no import failure has been detected.
         """
         if env_name is None:
-            # if cls._import_ctx.failed_import:
-            #     exc_type, value, tb = cls._import_ctx.import_error
-            #     if raise_on_not_installed:
-            #         raise exc_type(value).with_traceback(tb)
-            #     if not cls._error_displayed and not quiet:
-            #         traceback.print_exception(exc_type, value, tb)
-            #         cls._error_displayed = True
-            #     return False
-            # else:
-            #     return True
+            # Import worked in the current envionment, no need to check
             return True
-        else:
-            # Get the current benchmark directory
-            from benchopt.benchmark import get_running_benchmark
-            benchmark_dir = get_running_benchmark().benchmark_dir
-            return (
-                _run_shell_in_conda_env(
-                    f"benchopt check-install {benchmark_dir} "
-                    f"{cls._module_filename} {cls._base_class_name}",
-                    env_name=env_name,
-                    raise_on_error=raise_on_not_installed,
-                ) == 0
-            )
+
+        # Get the current benchmark directory
+        from benchopt.benchmark import get_running_benchmark
+        benchmark_dir = get_running_benchmark().benchmark_dir
+        return (
+            _run_shell_in_conda_env(
+                f"benchopt check-install {benchmark_dir} "
+                f"{cls._module_filename} {cls._base_class_name}",
+                env_name=env_name,
+                raise_on_error=raise_on_not_installed,
+            ) == 0
+        )
 
     @classmethod
     def install(cls, env_name=None, force=False):

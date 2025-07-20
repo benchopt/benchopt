@@ -10,12 +10,12 @@ from joblib.externals import cloudpickle
 
 from .dependencies_mixin import DependenciesMixin
 
-
 SKIP_IMPORT = False
 
 
 def skip_import():
-    """Once called, all the safe_import_context is skipped."""
+    """Once called, all dynamic classes are not imported but necessary info is
+    retrieved from the file."""
     global SKIP_IMPORT
     SKIP_IMPORT = True
 
@@ -84,28 +84,41 @@ def _load_class_from_module(benchmark_dir, module_filename, class_name):
         assert not SKIP_IMPORT  # go directly to except to skip import
         module = _get_module_from_file(module_filename, benchmark_dir)
         klass = getattr(module, class_name)
-    except Exception:
+    except Exception as e:
         import traceback
         tb_to_print = traceback.format_exc(chain=False)
 
         # avoid circular import
         from .parametrized_name_mixin import ParametrizedNameMixin
+        from ..base import BaseSolver, BaseDataset, BaseObjective
+        base_cls = dict(
+            Solver=BaseSolver, Dataset=BaseDataset, Objective=BaseObjective
+        )[class_name]
 
-        class FailedImport(ParametrizedNameMixin, DependenciesMixin):
+        class FailedImport(base_cls, ParametrizedNameMixin, DependenciesMixin):
             "Object for the class list that raises error if used."
 
-            name, install_cmd, requirements = _get_cls_attributes(
-                module_filename, class_name
-            )
+            _set_cls_attr_from_ast(module_filename, class_name, locals())
+            exc = e
 
             @classmethod
-            def is_installed(cls, **kwargs):
-                print(
-                    f"Failed to import {class_name} from "
-                    f"{module_filename}. Please fix the following "
-                    "error to use this file with benchopt:\n"
-                    f"{tb_to_print}"
-                )
+            def is_installed(cls, env_name=None, raise_on_not_installed=False,
+                             **kwargs):
+                if env_name is not None:
+                    return super().is_installed(
+                        env_name=env_name,
+                        raise_on_not_installed=raise_on_not_installed,
+                        **kwargs
+                    )
+                if not SKIP_IMPORT:
+                    if raise_on_not_installed:
+                        raise cls.exc
+                    print(
+                        f"Failed to import {class_name} from "
+                        f"{module_filename}. Please fix the following "
+                        "error to use this file with benchopt:\n"
+                        f"{tb_to_print}"
+                    )
                 return False
 
         klass = FailedImport
@@ -113,34 +126,9 @@ def _load_class_from_module(benchmark_dir, module_filename, class_name):
     # Store the info to easily reload the class
     klass._module_filename = module_filename.resolve()
     klass._benchmark_dir = benchmark_dir.resolve()
-    klass._import_ctx = _get_import_context(module)
     klass._file_hash = get_file_hash(klass._module_filename)
 
     return klass
-
-
-def _get_import_context(module):
-    """Helper to get the import context from a module.
-    In particular, if `import_ctx` is not defined, check that no local objects
-    is an instance of safe_import_context.
-    """
-    import_ctx = getattr(module, 'import_ctx', None)
-    if import_ctx is not None:
-        return import_ctx
-
-    for var_name in dir(module):
-        var = getattr(module, var_name)
-        if isinstance(var, safe_import_context):
-            import_ctx = var
-            warnings.warn(
-                "Import contexts should preferably be named import_ctx, "
-                f"got {var_name}.",  UserWarning
-            )
-            break
-    else:
-        import_ctx = safe_import_context()
-
-    return import_ctx
 
 
 def get_file_hash(filename):
@@ -182,7 +170,7 @@ def _reconstruct_class(
     return _load_class_from_module(benchmark_dir, module_filename, class_name)
 
 
-def _get_cls_attributes(module_file, cls_name):
+def _set_cls_attr_from_ast(module_file, cls_name, ctx):
     module = ast.parse(module_file.read_text())
 
     cls_list = [node for node in module.body if isinstance(node, ast.ClassDef)
@@ -191,14 +179,14 @@ def _get_cls_attributes(module_file, cls_name):
         raise ValueError(f"Could not find {cls_name} in module {module_file}.")
     cls = cls_list[0]
 
-    name, install_cmd, requirements = None, "conda", []
+    ctx['_base_class_name'] = cls_name
+    ctx['name'], ctx['install_cmd'], ctx['requirements'] = None, "conda", []
     for node in cls.body:
         if isinstance(node, ast.Assign):
             for target in node.targets:
                 if target.id == "requirements":
-                    requirements = ast.literal_eval(node.value)
+                    ctx['requirements'] = ast.literal_eval(node.value)
                 elif target.id == "name":
-                    name = ast.literal_eval(node.value)
+                    ctx['name'] = ast.literal_eval(node.value)
                 elif target.id == "install_cmd":
-                    install_cmd = ast.literal_eval(node.value)
-    return name, install_cmd, requirements
+                    ctx['install_cmd'] = ast.literal_eval(node.value)
