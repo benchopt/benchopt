@@ -18,6 +18,9 @@ class Solver(JuliaSolver):
     # Config of the solver
     name = 'Julia-PGD'
     sampling_strategy = 'iteration'
+    requirements = [
+        'https://repo.prefix.dev/julia-forge::julia', 'pip::julia'
+    ]
 
     def set_objective(self, X, y, lmbd):
         self.X, self.y, self.lmbd = X, y, lmbd
