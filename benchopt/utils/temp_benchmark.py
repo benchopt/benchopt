@@ -55,14 +55,14 @@ def temp_benchmark(
     Parameters
     ----------
     objective: str | None (default=None)
-        Content of the objective.py file. If None, defaults to objective of
-        ``benchopt.tests.DUMMY_BENCHMARK``.
+        Content of the objective.py file. If None, defaults to
+        ``DEFAULT_OBJECTIVE``.
     datasets: str | list of str | None (default=None)
-        Content of the dataset.py file(s). If None, defaults to datasets of
-        ``benchopt.tests.DUMMY_BENCHMARK``.
+        Content of the dataset.py file(s). If None, defaults to
+        ``DEFAULT_DATASETS``.
     solvers: str | list of str | dict of str | None (default=None)
-        Content of the solver.py file(s). If None, defaults to solvers of
-        ``benchopt.tests.DUMMY_BENCHMARK``.
+        Content of the solver.py file(s). If None, defaults to
+        ``DEFAULT_SOLVERS``.
     config: str | dict(fname->str) | None (default=None)
         Configuration files for running the Benchmark. If only one str is
         passed, this creates only one `config.yml` file. If None, no config
