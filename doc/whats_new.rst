@@ -73,6 +73,9 @@ FIX
 - Fix ``get_data_path`` not working with parallel runs.
   By `Thomas Moreau`_ (:gh:`815`)
 
+- Fix ``UnboundedLocalError`` when RuntimeError on ``warm_up``.
+  By `Johan Larsson`_ (:gh:`809`)
+
 .. _changes_1_6:
 
 Version 1.6 - 15/07/2024

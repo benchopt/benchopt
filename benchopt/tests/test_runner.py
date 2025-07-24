@@ -394,6 +394,36 @@ def test_prefix_with_same_parameters():
         assert "d" in df['p_dataset_type'].unique()
 
 
+def test_warmup_error(no_debug_log):
+    # Non-regression test for benchopt/benchopt#808
+    from benchopt import run_benchmark
+
+    solver = """from benchopt import BaseSolver
+
+        class Solver(BaseSolver):
+            name = "solver1"
+            sampling_strategy = 'iteration'
+            def warm_up(self): raise RuntimeError("Warmup error")
+            def set_objective(self, X, y, lmbd): pass
+            def run(self, n_iter): pass
+            def get_result(self): return dict(beta=1)
+    """
+
+    with temp_benchmark(solvers=solver) as benchmark:
+        with pytest.raises(SystemExit, match="1"):
+            with CaptureRunOutput() as out:
+                run_benchmark(
+                    str(benchmark.benchmark_dir),
+                    solver_names=["solver1"],
+                    dataset_names=["simu*[n_features=10,n_samples=10,rho=0]"],
+                    objective_filters=["dummy sparse regression[reg=0.1]"],
+                    max_runs=1, n_repetitions=1, n_jobs=1, plot_result=False
+                )
+            out.check_output("ValueError: Warmup error", repetition=1)
+            out.check_output("UnboundLocalError", repetition=0)
+            out.check_output("No output produced.", repetition=1)
+
+
 class TestCache:
     """Test the cache of the benchmark."""
 
