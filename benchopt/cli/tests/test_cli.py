@@ -324,50 +324,46 @@ class TestRunCmd:
             out.check_output(r'test-solver\[param1=27\]:', repetition=2)
             out.check_output(r'test-solver\[param1=42\]:', repetition=0)
 
-
     @pytest.mark.parametrize('n_rep', [1, 2, 4])
     def test_caching(self, n_rep):
-        clean([str(DUMMY_BENCHMARK_PATH)], 'benchopt', standalone_mode=False)
-
         # XXX - remove once this is fixed upstream with joblib/joblib#1289
         _FUNCTION_HASHES.clear()
 
-        # Check that the computation caching is working properly.
-        run_cmd = [str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,
-                   '-s', SELECT_ONE_PGD, '-n', '1', '-r', str(n_rep),
-                   '-o', SELECT_ONE_OBJECTIVE, '--no-plot']
+        with temp_benchmark() as bench:
 
-        # Make a first run that should be put in cache
-        with CaptureRunOutput() as out:
-            run(run_cmd, 'benchopt', standalone_mode=False)
+            # Check that the computation caching is working properly.
+            run_cmd = (
+                f"{bench.benchmark_dir} -d test-dataset -s test-solver "
+                f"-n 1 -r {n_rep} --no-plot"
+            ).split()
 
-        # Check that this run was properly done. If only one is detected, this
-        # could indicate that the clean command does not work properly.
-        out.check_output(r'Python-PGD\[step_size=1\]:',
-                         repetition=5*n_rep+1)
+            # Make a first run that should be put in cache
+            with CaptureRunOutput() as out:
+                run(run_cmd, 'benchopt', standalone_mode=False)
 
-        # Now check that the cache is hit when running the benchmark a
-        # second time without force
-        with CaptureRunOutput() as out:
-            run(run_cmd, 'benchopt', standalone_mode=False)
+            # Check that this run was properly done. If only one is detected, this
+            # could indicate that the clean command does not work properly.
+            out.check_output('test-solver:', repetition=5*n_rep+1)
 
-        out.check_output(r'Python-PGD\[step_size=1\]:',
-                         repetition=1)
+            # Now check that the cache is hit when running the benchmark a
+            # second time without force
+            with CaptureRunOutput() as out:
+                run(run_cmd, 'benchopt', standalone_mode=False)
 
-        # Check that the cache is also hit when running in parallel
-        with CaptureRunOutput() as out:
-            run(run_cmd + ['-j', 2], 'benchopt', standalone_mode=False)
+            out.check_output('test-solver:', repetition=1)
 
-        out.check_output(r'Python-PGD\[step_size=1\]:',
-                         repetition=1)
+            # Check that the cache is also hit when running in parallel
+            with CaptureRunOutput() as out:
+                run(run_cmd + ['-j', 2], 'benchopt', standalone_mode=False)
 
-        # Make sure that -f option forces the re-run for the solver
-        run_cmd[4] = '-f'
-        with CaptureRunOutput() as out:
-            run(run_cmd, 'benchopt', standalone_mode=False)
+            out.check_output('test-solver:', repetition=1)
 
-        out.check_output(r'Python-PGD\[step_size=1\]:',
-                         repetition=5*n_rep+1)
+            # Make sure that -f option forces the re-run for the solver
+            run_cmd[3] = '-f'
+            with CaptureRunOutput() as out:
+                run(run_cmd, 'benchopt', standalone_mode=False)
+
+            out.check_output('test-solver:', repetition=5*n_rep+1)
 
     def test_changing_output_name(self):
         command = [
@@ -525,13 +521,13 @@ class TestInstallCmd:
                      '-y'], 'benchopt', standalone_mode=False)
 
     def test_valid_call(self):
-        with CaptureRunOutput() as out:
+        with temp_benchmark() as bench, CaptureRunOutput() as out:
             install(
-                [str(DUMMY_BENCHMARK_PATH), '-d', SELECT_ONE_SIMULATED, '-s',
-                 SELECT_ONE_PGD, '-y'], 'benchopt', standalone_mode=False
+                f"{bench.benchmark_dir} -d test-dataset -s test-solver -y".split(),
+                'benchopt', standalone_mode=False
             )
 
-        out.check_output(f"Installing '{DUMMY_BENCHMARK.name}' requirements")
+        out.check_output(f"Installing '{bench.name}' requirements")
         out.check_output("already available\n", repetition=3)
 
     def test_download_data(self):
@@ -776,11 +772,13 @@ class TestPlotCmd:
     @classmethod
     def setup_class(cls):
         "Make sure at least one result file is available"
+        cls.ctx = temp_benchmark()
+        cls.bench = cls.ctx.__enter__()
         with CaptureRunOutput(delete_result_files=False) as out:
-            run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,
-                 '-s', SELECT_ONE_PGD, '-n', '2', '-r', '1', '-o',
-                 SELECT_ONE_OBJECTIVE, '--no-plot'], 'benchopt',
-                standalone_mode=False)
+            run(
+                f"{cls.bench.benchmark_dir} -d test-dataset -n 2 -r 1 "
+                "--no-plot".split(), 'benchopt', standalone_mode=False
+            )
         assert len(out.result_files) == 1, out
         result_file = out.result_files[0]
         cls.result_file = result_file
@@ -789,32 +787,32 @@ class TestPlotCmd:
     @classmethod
     def teardown_class(cls):
         "Make sure at least one result file is available"
-        Path(cls.result_file).unlink()
+        cls.ctx.__exit__(None, None, None)
 
     def test_plot_invalid_file(self):
 
         with pytest.raises(FileNotFoundError, match=r"invalid_file"):
-            plot([str(DUMMY_BENCHMARK_PATH), '-f', 'invalid_file', '--no-html',
-                  '--no-display'], 'benchopt', standalone_mode=False)
+            plot(f"{self.bench.benchmark_dir} -f invalid_file --no-html "
+                 f"--no-display".split(), 'benchopt', standalone_mode=False)
 
     def test_plot_invalid_kind(self):
 
         with pytest.raises(ValueError, match=r"invalid_kind"):
-            plot([str(DUMMY_BENCHMARK_PATH), '-k', 'invalid_kind', '--no-html',
-                  '--no-display'], 'benchopt', standalone_mode=False)
+            plot(f"{self.bench.benchmark_dir} -k invalid_kind --no-html "
+                 f"--no-display".split(), 'benchopt', standalone_mode=False)
 
     def test_plot_html_ignore_kind(self):
 
         with pytest.warns(UserWarning, match=r"Cannot specify '--kind'"):
-            plot([str(DUMMY_BENCHMARK_PATH), '-k', 'invalid_kind', '--html',
-                  '--no-display'], 'benchopt', standalone_mode=False)
+            plot(f"{self.bench.benchmark_dir} -k invalid_kind --html "
+                 f"--no-display".split(), 'benchopt', standalone_mode=False)
 
     @pytest.mark.parametrize('kind', PLOT_KINDS)
     def test_valid_call(self, kind):
 
         with SuppressStd() as out:
-            plot([str(DUMMY_BENCHMARK_PATH), '-f', self.result_file,
-                  '-k', kind, '--no-display', '--no-html'],
+            plot(f"{self.bench.benchmark_dir} -f {self.result_file} -k {kind} "
+                 "--no-display --no-html".split(),
                  'benchopt', standalone_mode=False)
 
         saved_files = re.findall(r'Save .* as: (.*\.pdf)', out.output)
@@ -829,8 +827,9 @@ class TestPlotCmd:
     def test_valid_call_html(self):
 
         with SuppressStd() as out:
-            plot([str(DUMMY_BENCHMARK_PATH), '-f', self.result_file,
-                  '--no-display', '--html'], 'benchopt', standalone_mode=False)
+            plot(f"{self.bench.benchmark_dir} -f {self.result_file} "
+                 "--no-display --html".split(),
+                 'benchopt', standalone_mode=False)
 
         saved_files = re.findall(
             r'Writing.* results to (.*\.html)', out.output
@@ -848,7 +847,7 @@ class TestPlotCmd:
 
         # Completion for solvers
         _test_shell_completion(
-            plot, [str(DUMMY_BENCHMARK_PATH), '-f'], [
+            plot, f"{self.bench.benchmark_dir} -f".split(), [
                 ('', [self.result_file]),
                 (self.result_file[:-4], [self.result_file]),
                 ('_invalid_file', []),
@@ -861,18 +860,16 @@ class TestGenerateResultCmd:
     @classmethod
     def setup_class(cls):
         "Make sure at least one result file is available"
+        cls.ctx = temp_benchmark()
+        cls.bench = cls.ctx.__enter__()
         with CaptureRunOutput(delete_result_files=False) as out:
-            clean([str(DUMMY_BENCHMARK_PATH)],
+            clean([str(cls.bench.benchmark_dir)],
                   'benchopt', standalone_mode=False)
-            run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,
-                 '-s', SELECT_ONE_PGD, '-n', '2', '-r', '1', '-o',
-                 SELECT_ONE_OBJECTIVE, '--no-plot'], 'benchopt',
-                standalone_mode=False)
+            run(f"{cls.bench.benchmark_dir} -d test-dataset -n 2 -r 1 "
+                "--no-plot".split(), 'benchopt', standalone_mode=False)
             time.sleep(1)  # Make sure there is 2 separate files
-            run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,
-                 '-s', SELECT_ONE_PGD, '-n', '2', '-r', '1', '-o',
-                 SELECT_ONE_OBJECTIVE, '--no-plot'], 'benchopt',
-                standalone_mode=False)
+            run(f"{cls.bench.benchmark_dir} -d test-dataset -n 2 -r 1 "
+                "--no-plot".split(), 'benchopt', standalone_mode=False)
         assert len(out.result_files) == 2, out
         cls.result_files = out.result_files
 
@@ -886,11 +883,11 @@ class TestGenerateResultCmd:
 
         with SuppressStd() as out:
             generate_results([
-                '--root', str(DUMMY_BENCHMARK_PATH.parent), '--no-display'
+                '--root', str(self.bench.benchmark_dir.parent), '--no-display'
             ], 'benchopt', standalone_mode=False)
         html_results = re.findall(r'Writing results to (.*\.html)', out.output)
         html_benchmark = re.findall(
-            rf'Writing {DUMMY_BENCHMARK.name} results to (.*\.html)',
+            rf'Writing {self.bench.benchmark_dir.name} results to (.*\.html)',
             out.output
         )
         html_index = re.findall(r'Writing index to (.*\.html)', out.output)
@@ -913,18 +910,20 @@ class TestArchiveCmd:
     @classmethod
     def setup_class(cls):
         "Make sure at least one result file is available"
+        cls.ctx = temp_benchmark(extra_files={"README": ""})
+        cls.bench = cls.ctx.__enter__()
         with CaptureRunOutput(delete_result_files=False) as out:
-            run([str(DUMMY_BENCHMARK_PATH), '-l', '-d', SELECT_ONE_SIMULATED,
-                 '-s', SELECT_ONE_PGD, '-n', '2', '-r', '1', '-o',
-                 SELECT_ONE_OBJECTIVE, '--no-plot'], 'benchopt',
-                standalone_mode=False)
+            run(
+                f"{cls.bench.benchmark_dir} -d test-dataset -n 2 -r 1 "
+                "--no-plot".split(), 'benchopt', standalone_mode=False
+            )
         assert len(out.result_files) == 1, out
         cls.result_file = out.result_files[0]
 
     @classmethod
     def teardown_class(cls):
         "Clean up the result file."
-        Path(cls.result_file).unlink()
+        cls.ctx.__exit__(None, None, None)
 
     @pytest.mark.parametrize('invalid_benchmark, match', [
         ('invalid_benchmark', "Path 'invalid_benchmark' does not exist."),
@@ -941,7 +940,7 @@ class TestArchiveCmd:
     def test_call(self):
 
         with SuppressStd() as out:
-            archive([str(DUMMY_BENCHMARK_PATH)], 'benchopt',
+            archive([str(self.bench.benchmark_dir)], 'benchopt',
                     standalone_mode=False)
         saved_files = re.findall(r'Results are in (.*\.tar.gz)', out.output)
         try:
@@ -973,8 +972,8 @@ class TestArchiveCmd:
     def test_call_with_outputs(self):
 
         with SuppressStd() as out:
-            archive([str(DUMMY_BENCHMARK_PATH), "--with-outputs"], 'benchopt',
-                    standalone_mode=False)
+            archive(f"{self.bench.benchmark_dir} --with-outputs".split(),
+                    'benchopt', standalone_mode=False)
         saved_files = re.findall(r'Results are in (.*\.tar.gz)', out.output)
         try:
             assert len(saved_files) == 1

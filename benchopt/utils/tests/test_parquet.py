@@ -14,9 +14,6 @@ from benchopt.utils.misc import NamedTemporaryFile
 
 from benchopt.config import DEFAULT_BENCHMARK_CONFIG
 
-from benchopt.tests import SELECT_ONE_PGD
-from benchopt.tests import SELECT_ONE_SIMULATED
-from benchopt.tests import SELECT_ONE_OBJECTIVE
 from benchopt.tests.utils import CaptureRunOutput
 
 

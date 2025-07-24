@@ -48,7 +48,7 @@ DEFAULT_SOLVERS = {
 @contextlib.contextmanager
 def temp_benchmark(
         objective=None, datasets=None, solvers=None, config=None,
-        benchmark_utils=None
+        benchmark_utils=None, extra_files=None
 ):
     """Create Benchmark in a temporary folder, for test purposes.
 
@@ -68,6 +68,10 @@ def temp_benchmark(
         passed, this creates only one `config.yml` file. If None, no config
         file is created.
     benchmark_utils: dict(fname->str) | None (default=None)
+        Content of the benchmark_utils module.
+    extra_files: dict(fname->str) | None (default=None)
+        Additional files to be added to the benchmark directory. If None,
+        no extra files are created.
     """
     if objective is None:
         objective = DEFAULT_OBJECTIVE
@@ -91,32 +95,33 @@ def temp_benchmark(
     else:
         datasets = {**DEFAULT_DATASETS, **datasets}
 
-    with tempfile.TemporaryDirectory() as tempdir:
-        temp_path = Path(tempdir)
+    with tempfile.TemporaryDirectory(
+            prefix="temp_benchmarks", suffix="", dir="."
+    ) as tempdir:
+        temp_path = Path(tempdir) / "bench"
+        temp_path.mkdir()
         (temp_path / "solvers").mkdir()
         (temp_path / "datasets").mkdir()
         with open(temp_path / "objective.py", "w", encoding='utf-8') as f:
             f.write(inspect.cleandoc(objective))
         for fname, content in solvers.items():
             fname = temp_path / "solvers" / fname
-            with open(fname, "w", encoding='utf-8') as f:
-                f.write(inspect.cleandoc(content))
+            fname.write_text(inspect.cleandoc(content), encoding='utf-8')
 
         for fname, content in datasets.items():
             fname = temp_path / "datasets" / fname
-            with open(fname, "w", encoding='utf-8') as f:
-                f.write(inspect.cleandoc(content))
+            fname.write_text(inspect.cleandoc(content), encoding='utf-8')
 
         if config is not None:
             if not isinstance(config, dict):
+                assert isinstance(config, str), "config must be a dict or str"
                 config = {"config.yml": config}
             for fname, content in config.items():
                 if isinstance(content, dict):
                     # If content is a dict, write it as YAML
                     content = yaml.dump(content)
                 config_path = (temp_path / fname).with_suffix(".yml")
-                with open(config_path, "w", encoding='utf-8') as f:
-                    f.write(content)
+                config_path.write_text(content, encoding='utf-8')
 
         if benchmark_utils is not None:
             benchmark_utils_dir = (temp_path / "benchmark_utils")
@@ -125,8 +130,12 @@ def temp_benchmark(
             for fname, content in benchmark_utils.items():
                 fname = (benchmark_utils_dir / fname).with_suffix(".py")
                 fname.parent.mkdir(exist_ok=True, parents=True)
-                with open(fname, "w", encoding='utf-8') as f:
-                    f.write(inspect.cleandoc(content))
+                fname.write_text(inspect.cleandoc(content), encoding='utf-8')
+
+        if extra_files is not None:
+            assert isinstance(extra_files, dict), "extra_files must be a dict"
+            for fname, content in extra_files.items():
+                (temp_path / fname).write_text(content, encoding='utf-8')
 
         yield Benchmark(temp_path)
 

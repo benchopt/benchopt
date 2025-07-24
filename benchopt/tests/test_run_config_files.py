@@ -33,7 +33,9 @@ CONFIG = """
 
 def test_config_solver_no_params(no_debug_log):
     config = {"run_config.yml": CONFIG}
-    solver = SOLVER.replace("parameters = dict(param1=[None], param2=[None])", "")
+    solver = SOLVER.replace(
+        "parameters = dict(param1=[None], param2=[None])", ""
+    )
     with temp_benchmark(solvers=solver, config=config) as bench:
         with CaptureRunOutput() as out:
             config_file = bench.benchmark_dir / "run_config.yml"
@@ -46,7 +48,9 @@ def test_config_solver_no_params(no_debug_log):
 
 def test_config_solver_no_params_error(no_debug_log):
     config = {"run_config.yml": CONFIG.replace(" #PARAMS", "[param1=0]")}
-    solver = SOLVER.replace("parameters = dict(param1=[None], param2=[None])", "")
+    solver = SOLVER.replace(
+        "parameters = dict(param1=[None], param2=[None])", ""
+    )
     with temp_benchmark(solvers=solver, config=config) as bench:
         error = (
             "Unknown parameter 'param1' for solver solver1.\n"
@@ -125,7 +129,9 @@ def test_config_solver_with_params_str_list(no_debug_log):
 
 
 def test_config_solver_with_params_str_value(no_debug_log):
-    config = {"run_config.yml": CONFIG.replace(" #PARAMS", "[param1=0, param2=1]")}
+    config = {
+        "run_config.yml": CONFIG.replace(" #PARAMS", "[param1=0, param2=1]")
+    }
 
     with temp_benchmark(solvers=SOLVER, config=config) as bench:
         config_file = bench.benchmark_dir / "run_config.yml"
