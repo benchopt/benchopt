@@ -1,4 +1,5 @@
 import pytest
+import inspect
 import numpy as np
 import pandas as pd
 
@@ -393,6 +394,36 @@ def test_prefix_with_same_parameters():
         assert "d" in df['p_dataset_type'].unique()
 
 
+def test_warmup_error(no_debug_log):
+    # Non-regression test for benchopt/benchopt#808
+    from benchopt import run_benchmark
+
+    solver = """from benchopt import BaseSolver
+
+        class Solver(BaseSolver):
+            name = "solver1"
+            sampling_strategy = 'iteration'
+            def warm_up(self): raise RuntimeError("Warmup error")
+            def set_objective(self, X, y, lmbd): pass
+            def run(self, n_iter): pass
+            def get_result(self): return dict(beta=1)
+    """
+
+    with temp_benchmark(solvers=solver) as benchmark:
+        with pytest.raises(SystemExit, match="1"):
+            with CaptureRunOutput() as out:
+                run_benchmark(
+                    str(benchmark.benchmark_dir),
+                    solver_names=["solver1"],
+                    dataset_names=["simu*[n_features=10,n_samples=10,rho=0]"],
+                    objective_filters=["dummy sparse regression[reg=0.1]"],
+                    max_runs=1, n_repetitions=1, n_jobs=1, plot_result=False
+                )
+            out.check_output("ValueError: Warmup error", repetition=1)
+            out.check_output("UnboundLocalError", repetition=0)
+            out.check_output("No output produced.", repetition=1)
+
+
 class TestCache:
     """Test the cache of the benchmark."""
 
@@ -430,11 +461,10 @@ class TestCache:
         with temp_benchmark(
                 objective=self.objective, solvers=self.solver,
                 datasets=self.dataset
-        ) as benchmark:
+        ) as bench:
             with CaptureRunOutput() as out:
                 for it in range(3):
-                    run([str(benchmark.benchmark_dir),
-                        *f'--no-plot -r {n_reps}'.split()],
+                    run(f"{bench.benchmark_dir} --no-plot -r {n_reps}".split(),
                         standalone_mode=False)
 
         # Check that the run are only call once per repetition, but not cached
@@ -446,12 +476,11 @@ class TestCache:
         with temp_benchmark(
                 objective=self.objective, solvers=self.solver,
                 datasets=self.dataset
-        ) as benchmark:
+        ) as bench:
             with CaptureRunOutput() as out:
                 for it in range(3):
-                    run([str(benchmark.benchmark_dir),
-                        *f'--no-plot -r {n_reps} --no-cache'.split()],
-                        standalone_mode=False)
+                    run(f"{bench.benchmark_dir} --no-plot -r {n_reps} "
+                        "--no-cache".split(), standalone_mode=False)
 
         # Check that the run is not cached when using --no-cache
         out.check_output("#RUN_SOLVER", repetition=n_reps * 3)
@@ -471,12 +500,59 @@ class TestCache:
 
         with temp_benchmark(objective=self.objective,
                             solvers=[self.solver, solver_fail],
-                            datasets=self.dataset) as benchmark:
+                            datasets=self.dataset) as bench:
             with CaptureRunOutput() as out:
                 for it in range(3):
-                    run([str(benchmark.benchmark_dir),
-                        *' -d test-dataset --no-plot -r 1 -n 1'.split()],
+                    run(f"{bench.benchmark_dir} --no-plot -r 1 -n 1".split(),
                         standalone_mode=False)
 
         # error message should be displayed twice
         out.check_output("ValueError: Failing solver.", repetition=3)
+
+    @pytest.mark.parametrize('n_reps', [1, 4])
+    def test_cache_order(self, no_debug_log, n_reps):
+        with temp_benchmark(
+                objective=self.objective, datasets=self.dataset,
+                solvers=[
+                    self.solver,
+                    self.solver.replace("test-solver", "test-solver2")
+                    .replace("#RUN_SOLVER", "#RUN_2SOLVER")
+                ]
+        ) as bench:
+            with CaptureRunOutput() as out:
+                run([str(bench.benchmark_dir),
+                     *"-s test-solver -s test-solver2 "
+                     f'--no-plot -r {n_reps}'.split()],
+                    standalone_mode=False)
+                run([str(bench.benchmark_dir),
+                     *"-s test-solver2 -s test-solver "
+                    f'--no-plot -r {n_reps}'.split()],
+                    standalone_mode=False)
+
+        # Check that the run are only call once per repetition, but not cached
+        # when using multiple repetitions
+        out.check_output("#RUN_SOLVER", repetition=n_reps)
+        out.check_output("#RUN_2SOLVER", repetition=n_reps)
+
+    @pytest.mark.parametrize('n_reps', [1, 4])
+    def test_cache_invalid(self, no_debug_log, n_reps):
+        with temp_benchmark(
+                objective=self.objective, datasets=self.dataset,
+                solvers=self.solver,
+        ) as bench:
+            with CaptureRunOutput() as out:
+                run(f"{bench.benchmark_dir} --no-plot -r {n_reps} -j2".split(),
+                    standalone_mode=False)
+                # Modify the solver, to make the cache invalid
+                solver_file = bench.benchmark_dir / 'solvers' / 'solver_0.py'
+                modified_solver = inspect.cleandoc(self.solver.replace(
+                    "#RUN_SOLVER", "#RUN_SOLVER_MODIFIED"
+                ))
+                assert solver_file.exists()
+                solver_file.write_text(inspect.cleandoc(modified_solver))
+
+                run(f"{bench.benchmark_dir} --no-plot -r {n_reps} -j2".split(),
+                    standalone_mode=False)
+
+        # Check that the 2nd run is not cached and the cache is invalidated.
+        out.check_output("#RUN_SOLVER_MODIFIED", repetition=n_reps)

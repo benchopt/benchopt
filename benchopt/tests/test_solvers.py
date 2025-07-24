@@ -10,24 +10,25 @@ from benchopt.tests.utils import CaptureRunOutput
 
 
 def test_template_solver():
-
     solvers = {
-        "template_solver.py": "raise ImportError()"
+        "template_solver.py": "raise ValueError()"
     }
 
     with temp_benchmark(solvers=solvers) as bench:
         # Make sure that importing template_solver raises an error.
-        with pytest.raises(ImportError):
+        with pytest.raises(ValueError):
             template_solver = (
                 bench.benchmark_dir / 'solvers' / 'template_solver.py'
             )
             _load_class_from_module(
-                template_solver, 'Solver', bench.benchmark_dir
+                bench.benchmark_dir, template_solver, 'Solver'
             )
 
         # Make sure that this error is not raised when listing
         # all solvers from the benchmark.
-        bench.get_solvers()
+        solvers = bench.get_solvers()
+        assert len(solvers) == 1
+        assert solvers[0].name == 'test-solver'
 
 
 def test_warm_up():

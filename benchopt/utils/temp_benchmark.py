@@ -1,4 +1,6 @@
+import os
 import sys
+import yaml
 import inspect
 import tempfile
 import contextlib
@@ -62,9 +64,10 @@ def temp_benchmark(
     solvers: str | list of str | dict of str | None (default=None)
         Content of the solver.py file(s). If None, defaults to solvers of
         ``benchopt.tests.DUMMY_BENCHMARK``.
-    config: str | None (default=None)
-        Content of configuration file for running the Benchmark. If None,
-        no config file is created.
+    config: str | dict(fname->str) | None (default=None)
+        Configuration files for running the Benchmark. If only one str is
+        passed, this creates only one `config.yml` file. If None, no config
+        file is created.
     benchmark_utils: dict(fname->str) | None (default=None)
     """
     if objective is None:
@@ -89,14 +92,6 @@ def temp_benchmark(
     else:
         datasets = {**DEFAULT_DATASETS, **datasets}
 
-    # Make sure the benchmark_utils is reloaded
-    to_del = [
-        m for m in sys.modules
-        if "benchmark_utils" in m or "benchopt_benchmarks" in m
-    ]
-    for m in to_del:
-        sys.modules.pop(m)
-
     with tempfile.TemporaryDirectory() as tempdir:
         temp_path = Path(tempdir)
         (temp_path / "solvers").mkdir()
@@ -114,8 +109,15 @@ def temp_benchmark(
                 f.write(inspect.cleandoc(content))
 
         if config is not None:
-            with open(temp_path / "config.yml", "w", encoding='utf-8') as f:
-                f.write(config)
+            if not isinstance(config, dict):
+                config = {"config.yml": config}
+            for fname, content in config.items():
+                if isinstance(content, dict):
+                    # If content is a dict, write it as YAML
+                    content = yaml.dump(content)
+                config_path = (temp_path / fname).with_suffix(".yml")
+                with open(config_path, "w", encoding='utf-8') as f:
+                    f.write(content)
 
         if benchmark_utils is not None:
             benchmark_utils_dir = (temp_path / "benchmark_utils")
@@ -128,3 +130,11 @@ def temp_benchmark(
                     f.write(inspect.cleandoc(content))
 
         yield Benchmark(temp_path)
+
+        # to avoid border effects, remove the benchmark directory
+        to_del = [
+            m for m in sys.modules
+            if "benchmark_utils" in m or "benchopt_benchmarks" in m
+        ]
+        for m in to_del:
+            sys.modules.pop(m)

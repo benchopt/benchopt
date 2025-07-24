@@ -12,7 +12,6 @@ from benchopt.tests.utils import CaptureRunOutput
 
 
 def test_template_dataset():
-
     datasets = {
         "template_dataset.py": "raise ImportError()"
     }
@@ -24,7 +23,7 @@ def test_template_dataset():
                 bench.benchmark_dir / 'datasets' / 'template_dataset.py'
             )
             _load_class_from_module(
-                template_dataset, 'Dataset', bench.benchmark_dir
+                bench.benchmark_dir, template_dataset, 'Dataset'
             )
 
         # Make sure that this error is not raised when listing
@@ -409,7 +408,8 @@ def test_run_once_callback(n_iter):
     "no_config", "without_data_home_abs", "with_data_home_abs",
     "without_data_home_rel", "with_data_home_rel"
 ])
-def test_paths_config_key(test_case):
+@pytest.mark.parametrize("n_jobs", [1, 2])
+def test_paths_config_key(test_case, n_jobs):
     # Need to call resolve to avoid issues with varying drives on Windows
     data_path = Path("/path/to/data").resolve()
     data_home = Path("/path/to/home_data").resolve()
@@ -453,7 +453,7 @@ def test_paths_config_key(test_case):
     else:
         raise Exception("Invalid test case value")
 
-    custom_dataset = """
+    dataset = """
         from benchopt import BaseDataset
         from benchopt.config import get_data_path
 
@@ -468,23 +468,32 @@ def test_paths_config_key(test_case):
                 return dict(X=None, y=None)
     """
 
-    print("Config:", config)
+    solver = """
+        from benchopt import BaseSolver
 
-    with temp_benchmark(datasets=[custom_dataset], config=config) as benchmark:
+        class Solver(BaseSolver):
+            name = "test-solver"
+            def set_objective(self, X, y, lmbd): pass
+            def run(self, n_iter): pass
+            def get_result(self): return dict(beta=1)
+    """
+
+    with temp_benchmark(
+            datasets=dataset, solvers=solver, config=config
+    ) as bench:
         with CaptureRunOutput() as out:
-            run([
-                str(benchmark.benchmark_dir),
-                *'-s test-solver -d custom_dataset'
-                 ' -n 0 -r 1 --no-plot'.split()
-            ], standalone_mode=False)
+            run(
+                f"{bench.benchmark_dir} -s test-solver -d custom_dataset "
+                f"-n 0 -r 1 --no-plot -j {n_jobs}".split(),
+                standalone_mode=False
+            )
 
         expected_home = Path(
-            expected_home.format(bench_dir=benchmark.benchmark_dir.as_posix())
+            expected_home.format(bench_dir=bench.benchmark_dir.as_posix())
         ).resolve()
         out.check_output(re.escape(f"HOME:{expected_home}"), repetition=1)
 
         expected_path = Path(
-            expected_path.format(bench_dir=benchmark.benchmark_dir.as_posix())
+            expected_path.format(bench_dir=bench.benchmark_dir.as_posix())
         ).resolve()
-        print(f"Expected - home: {expected_home}, path: {expected_path}")
         out.check_output(re.escape(f"PATH:{expected_path}"), repetition=1)
