@@ -78,13 +78,11 @@ def test_metadata_saving():
         ]
     }
 
-    with temp_benchmark() as benchmark:
+    with temp_benchmark() as bench:
         # Check that the computation caching is working properly.
-        run_cmd = [
-            str(benchmark.benchmark_dir), '-d', SELECT_ONE_SIMULATED,
-            '-s', SELECT_ONE_PGD, '-n', '1', '-r', str(1),
-            '-o', SELECT_ONE_OBJECTIVE, '--no-display',
-        ]
+        run_cmd = (
+            f"{bench.benchmark_dir} -d test-dataset -n 1 -r {1} --no-display"
+        ).split()
 
         with CaptureRunOutput(delete_result_files=False) as out:
             run(run_cmd, 'benchopt', standalone_mode=False)
@@ -96,14 +94,14 @@ def test_metadata_saving():
         }
         assert config == expected_config
 
-        config_file = benchmark.get_config_file()
+        config_file = bench.get_config_file()
         with config_file.open('w') as f:
             yaml.safe_dump(dummy_config, f)
 
         # Make sure that plot update the metadata of existing files.
         with CaptureRunOutput(delete_result_files=False):
             plot(
-                [str(benchmark.benchmark_dir), '--no-display'],
+                [str(bench.benchmark_dir), '--no-display'],
                 'benchopt', standalone_mode=False
             )
 

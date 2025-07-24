@@ -6,10 +6,6 @@ import pandas as pd
 from benchopt.tests import TEST_DATASET
 from benchopt.tests import TEST_OBJECTIVE
 
-from benchopt.tests import SELECT_ONE_PGD
-from benchopt.tests import SELECT_ONE_SIMULATED
-from benchopt.tests import SELECT_ONE_OBJECTIVE
-
 from benchopt.benchmark import _check_patterns
 from benchopt.benchmark import _extract_options
 from benchopt.benchmark import _extract_parameters
@@ -295,16 +291,15 @@ def test_benchopt_run_script(n_jobs, no_debug_log):
         with CaptureRunOutput() as out:
             run_benchmark(
                 str(benchmark.benchmark_dir),
-                solver_names=[SELECT_ONE_PGD],
-                dataset_names=[SELECT_ONE_SIMULATED],
-                objective_filters=[SELECT_ONE_OBJECTIVE],
+                solver_names=["test-solver"],
+                dataset_names=["simulated"],
                 max_runs=2, n_repetitions=1, n_jobs=n_jobs, plot_result=False
             )
 
-    out.check_output('Simulated', repetition=1)
-    out.check_output('Dummy Sparse Regression', repetition=1)
-    out.check_output(r'Python-PGD\[step_size=1\]:', repetition=4)
-    out.check_output(r'Python-PGD\[step_size=1.5\]:', repetition=0)
+    out.check_output('simulated', repetition=1)
+    out.check_output('test-objective', repetition=1)
+    out.check_output('test-solver:', repetition=4)
+    out.check_output('template_solver:', repetition=0)
 
     # Make sure the results were saved in a result file
     assert len(out.result_files) == 1, out.output
@@ -415,13 +410,12 @@ def test_warmup_error(no_debug_log):
                 run_benchmark(
                     str(benchmark.benchmark_dir),
                     solver_names=["solver1"],
-                    dataset_names=["simu*[n_features=10,n_samples=10,rho=0]"],
-                    objective_filters=["dummy sparse regression[reg=0.1]"],
+                    dataset_names=["test-dataset"],
                     max_runs=1, n_repetitions=1, n_jobs=1, plot_result=False
                 )
-            out.check_output("ValueError: Warmup error", repetition=1)
-            out.check_output("UnboundLocalError", repetition=0)
-            out.check_output("No output produced.", repetition=1)
+        out.check_output("RuntimeError: Warmup error", repetition=1)
+        out.check_output("UnboundLocalError", repetition=0)
+        out.check_output("No output produced.", repetition=1)
 
 
 class TestCache:
@@ -541,7 +535,7 @@ class TestCache:
                 solvers=self.solver,
         ) as bench:
             with CaptureRunOutput() as out:
-                run(f"{bench.benchmark_dir} --no-plot -r {n_reps} -j2".split(),
+                run(f"{bench.benchmark_dir} --no-plot -r {n_reps}".split(),
                     standalone_mode=False)
                 # Modify the solver, to make the cache invalid
                 solver_file = bench.benchmark_dir / 'solvers' / 'solver_0.py'

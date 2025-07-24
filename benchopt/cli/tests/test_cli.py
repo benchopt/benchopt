@@ -270,40 +270,60 @@ class TestRunCmd:
             run(f'{str(DUMMY_BENCHMARK_PATH)} --config {tmp.name}'.split(),
                 'benchopt', standalone_mode=False)
 
-    def test_config_file(self):
+    def test_config_file(self, no_debug_log):
+        n_reps = 2
         config = f"""
         objective:
-          - {SELECT_ONE_OBJECTIVE}
+          - test-objective
         dataset:
-          - {SELECT_ONE_SIMULATED}
-        n-repetitions: 2
-        max-runs: 1
-        force-solver:
-          - python-pgd[step_size=[2, 3]]
-          - Solver-Test[raise_error=False]
+          - test-dataset
+        solver:
+          - test-solver[param1=42]
+        n-repetitions: {n_reps}
+        max-runs: 0
         """
-        tmp = NamedTemporaryFile(mode="w+")
-        tmp.write(config)
-        tmp.flush()
 
-        run_cmd = [str(DUMMY_BENCHMARK_PATH), '--config', tmp.name,
-                   '--no-plot']
+        solver = """from benchopt import BaseSolver
 
-        with CaptureRunOutput() as out:
-            run(run_cmd, 'benchopt', standalone_mode=False)
+        class Solver(BaseSolver):
+            name = "test-solver"
+            parameters = {'param1':[0]}
+            strategy = "run_once"
 
-        out.check_output(r'Solver-Test\[raise_error=False\]:', repetition=11)
-        out.check_output(r'Python-PGD\[step_size=2\]:', repetition=11)
-        out.check_output(r'Python-PGD\[step_size=3\]:', repetition=11)
+            def set_objective(self, X, y, lmbd): pass
+            def run(self, _): print(f"Solver#RUN#{self.param1}")
+            def get_result(self): return dict(beta=1)
+        """
 
-        # test that CLI options take precedence
-        with CaptureRunOutput() as out:
-            run(run_cmd + ['-f', 'Solver-Test'],
-                'benchopt', standalone_mode=False)
+        with temp_benchmark(config=config, solvers=solver) as bench:
+            with CaptureRunOutput() as out:
+                run(
+                    f"{bench.benchmark_dir} --no-plot --config "
+                    f"{bench.benchmark_dir / 'config.yml'}".split(),
+                    'benchopt', standalone_mode=False
+                )
 
-        out.check_output(r'Solver-Test\[raise_error=False\]:', repetition=11)
-        out.check_output(
-            r'Python-PGD\[step_size=1.5\]:', repetition=0)
+            out.check_output('test-objective', repetition=1)
+            out.check_output('test-dataset', repetition=1)
+            out.check_output('simulated', repetition=0)
+            out.check_output(r'test-solver\[param1=42\]:', repetition=n_reps+1)
+            out.check_output(r'test-solver\[param1=0\]:', repetition=0)
+
+            # test that CLI options take precedence
+            with CaptureRunOutput() as out:
+
+                run(
+                    f"{bench.benchmark_dir} --no-plot --config "
+                    f"{bench.benchmark_dir / 'config.yml'} "
+                    "-s test-solver[param1=27] -r 1".split(),
+                    'benchopt', standalone_mode=False)
+
+            out.check_output('test-objective', repetition=1)
+            out.check_output('test-dataset', repetition=1)
+            out.check_output('simulated', repetition=0)
+            out.check_output(r'test-solver\[param1=27\]:', repetition=2)
+            out.check_output(r'test-solver\[param1=42\]:', repetition=0)
+
 
     @pytest.mark.parametrize('n_rep', [1, 2, 4])
     def test_caching(self, n_rep):
