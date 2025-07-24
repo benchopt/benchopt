@@ -43,3 +43,5 @@
 .. _Rémi Flamary: https://remi.flamary.com/
 
 .. _Lionel Kusch: https://www.linkedin.com/in/lionel-kusch-0439b310a/
+
+.. _Johan Larsson: https://jolars.co

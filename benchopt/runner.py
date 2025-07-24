@@ -15,6 +15,15 @@ from .utils.terminal_output import TerminalOutput
 
 
 FAILURE_STATUS = ['diverged', 'error', 'interrupted']
+SUCCESS_STATUS = ['done', 'max_runs', 'timeout']
+
+
+class FailedRun(RuntimeError):
+    """Exception raised when a solver run fails."""
+    def __init__(self, status):
+        super().__init__()
+        self.status = status
+
 
 ##################################
 # Time one run of a solver
@@ -97,10 +106,6 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
     status : 'done' | 'diverged' | 'timeout' | 'max_runs'
         The status on which the solver was stopped.
     """
-
-    # The warm-up step called for each repetition bit only run once.
-    solver._warm_up()
-
     curve = []
 
     # Augment the metadata with final_results if necessary.
@@ -117,6 +122,8 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
         meta["final_results"] = str(final_results)
 
     with exception_handler(terminal, pdb=pdb) as ctx:
+        # The warm-up step called for each repetition bit only run once.
+        solver._warm_up()
 
         if solver._solver_strategy == "callback":
 
@@ -160,7 +167,7 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
                 with open(meta["final_results"], 'wb') as f:
                     pickle.dump(to_save, f)
     if ctx.status in FAILURE_STATUS:
-        raise RuntimeError(ctx.status)
+        raise FailedRun(ctx.status)
     return curve, ctx.status
 
 
@@ -280,13 +287,15 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
             curve, status = run_one_to_cvg_cached(
                 **args_run_one_to_cvg
             )
-        except RuntimeError as e:
-            status = e.args[0]
-        if status in ['diverged', 'error', 'interrupted', 'not run yet']:
+            run_statistics.extend(curve)
+        except FailedRun as e:
+            status = e.status
+
+        # Handle the status for which we do not want to try other repetitions
+        if status not in SUCCESS_STATUS:
             run_statistics = []
             break
         states.append(status)
-        run_statistics.extend(curve)
 
     else:
         if 'max_runs' in states:
