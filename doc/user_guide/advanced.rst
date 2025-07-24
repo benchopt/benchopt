@@ -82,9 +82,9 @@ will override the global SLURM config defined in the config file:
     class Solver(BaseSolver):
         """GPU-based solver that needs GPU partition and specific resources."""
         name = 'GPU-Solver'
-        
+
         parameters = {...}
-        
+
         # Override global SLURM config for this solver
         slurm_params = {
             'slurm_partition': 'gpu',
@@ -93,9 +93,9 @@ will override the global SLURM config defined in the config file:
             'slurm_cpus_per_task': 8,
             'slurm_mem': '16GB',
         }
-        
+
         requirements = ['torch']
-        
+
         def set_objective(self, X, y):
             ...
 
@@ -103,8 +103,8 @@ The parameters defined in the ``slurm_params`` should be compatible with
 the `submitit` library, as they are passed to the `submitit.AutoExecutor`
 class. For more information on the available parameters, please refer to
 the `submitit documentation <https://github.com/facebookincubator/submitit>`_.
-Note that in this case, the jobs with different SLURM parameters will be  
-launched as one job array per configuration.  
+Note that in this case, the jobs with different SLURM parameters will be
+launched as one job array per configuration.
 
 .. _skipping_solver:
 
@@ -207,14 +207,11 @@ First, all code that needs to be imported should be placed under
 
 Then, these modules and packages can be imported as a regular package, i.e.,
 
-.. code-block::
+.. code-block:: python
 
-    from benchopt import safe_import_context
-
-    with safe_import_context() as import_ctx:
-        from benchmark_utils import helper1
-        from benchmark_utils.helper1 import func1
-        from benchmark_utils.helper_module.submodule1 import func2
+    from benchmark_utils import helper1
+    from benchmark_utils.helper1 import func1
+    from benchmark_utils.helper_module.submodule1 import func2
 
 
 

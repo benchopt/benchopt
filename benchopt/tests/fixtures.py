@@ -103,6 +103,14 @@ def no_debug_log(request):
 
 
 @pytest.fixture
+def no_raise_install(request):
+    """Deactivate the raise install error for a test."""
+    os.environ["BENCHOPT_RAISE_INSTALL_ERROR"] = "0"
+    yield
+    os.environ["BENCHOPT_RAISE_INSTALL_ERROR"] = "1"
+
+
+@pytest.fixture
 def check_test(request):
 
     if 'benchmark' not in request.fixturenames:

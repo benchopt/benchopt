@@ -1,12 +1,5 @@
-from benchopt import BaseObjective, safe_import_context
-
-# All packages other than benchopt should be imported in this context.
-# - This allows to list solvers even when a package is not installed,
-#   in particular for listing dependencies to install.
-# - This allows to skip imports when listing solvers and datasets
-#   for auto completion.
-with safe_import_context() as import_ctx:
-    import numpy as np
+import numpy as np
+from benchopt import BaseObjective
 
 
 class Objective(BaseObjective):
