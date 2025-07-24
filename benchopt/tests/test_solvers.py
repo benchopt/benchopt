@@ -18,7 +18,7 @@ def test_template_solver():
             DUMMY_BENCHMARK_PATH / 'solvers' / 'template_solver.py'
         )
         _load_class_from_module(
-            template_dataset, 'Solver', DUMMY_BENCHMARK_PATH
+            DUMMY_BENCHMARK_PATH, template_dataset, 'Solver'
         )
 
     # Make sure that this error is not raised when listing all solvers from
