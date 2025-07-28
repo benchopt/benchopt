@@ -1,3 +1,5 @@
+import traceback
+
 from ..config import RAISE_INSTALL_ERROR
 
 from .class_property import classproperty
@@ -65,7 +67,16 @@ class DependenciesMixin:
             returns True if no import failure has been detected.
         """
         if env_name is None:
-            # Import worked in the current envionment, no need to check
+            if hasattr(cls, "_import_ctx") and cls._import_ctx.failed_import:
+                exc_type, value, tb = cls._import_ctx.import_error
+                if raise_on_not_installed:
+                    raise exc_type(value).with_traceback(tb)
+                if not cls._error_displayed and not quiet:
+                    traceback.print_exception(exc_type, value, tb)
+                    cls._error_displayed = True
+                return False
+
+            # Import worked in the current environment, no need to check
             return True
 
         # Get the current benchmark directory

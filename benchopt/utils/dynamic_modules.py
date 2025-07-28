@@ -3,12 +3,14 @@
 import ast
 import sys
 import hashlib
+import warnings
 import importlib
 from pathlib import Path
 
 from joblib.externals import cloudpickle
 
 from .dependencies_mixin import DependenciesMixin
+from .safe_import import safe_import_context
 
 SKIP_IMPORT = False
 
@@ -83,6 +85,7 @@ def _load_class_from_module(benchmark_dir, module_filename, class_name):
         assert not SKIP_IMPORT  # go directly to except to skip import
         module = _get_module_from_file(module_filename, benchmark_dir)
         klass = getattr(module, class_name)
+        klass._import_ctx = _get_import_context(module)
     except Exception as e:
         import traceback
         tb_to_print = traceback.format_exc(chain=False)
@@ -128,6 +131,30 @@ def _load_class_from_module(benchmark_dir, module_filename, class_name):
     klass._file_hash = get_file_hash(klass._module_filename)
 
     return klass
+
+
+def _get_import_context(module):
+    """Helper to get the import context from a module.
+    In particular, if `import_ctx` is not defined, check that no local objects
+    is an instance of safe_import_context.
+    """
+    import_ctx = getattr(module, 'import_ctx', None)
+    if import_ctx is not None:
+        return import_ctx
+
+    for var_name in dir(module):
+        var = getattr(module, var_name)
+        if isinstance(var, safe_import_context):
+            import_ctx = var
+            warnings.warn(
+                "Import contexts should preferably be named import_ctx, "
+                f"got {var_name}.",  UserWarning
+            )
+            break
+    else:
+        import_ctx = safe_import_context()
+
+    return import_ctx
 
 
 def get_file_hash(filename):
