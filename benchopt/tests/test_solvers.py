@@ -159,7 +159,8 @@ def test_solver_return_early_callback(eval_every):
     with temp_benchmark(solvers=solver, objective=objective) as bench:
         with CaptureRunOutput() as out:
             run(
-                f"{bench.benchmark_dir} -d test-dataset -n 10 --no-plot".split(),
+                f"{bench.benchmark_dir} -d test-dataset -n 10 "
+                "--no-plot".split(),
                 "benchopt", standalone_mode=False
             )
         # Make sure the solver returns early and the last value is only logged
