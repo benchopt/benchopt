@@ -105,17 +105,16 @@ def test_pre_run_hook():
 def test_invalid_get_result(strategy):
 
     solver1 = f"""from benchopt import BaseSolver
-    import numpy as np
 
-    class Solver(BaseSolver):
-        name = 'solver1'
-        strategy = '{strategy}'
-
-        def set_objective(self, X, y, lmbd): pass
-        def run(self, n_iter): pass
-
-        def get_result(self):
-            return 0
+        class Solver(BaseSolver):
+            name = 'solver1'
+            sampling_strategy = '{strategy}'
+            def set_objective(self, X, y, lmbd): pass
+            def run(self, n_iter_or_cb):
+                if callable(n_iter_or_cb):
+                    while n_iter_or_cb():
+                        pass
+            def get_result(self): return 0
     """
 
     with temp_benchmark(solvers=[solver1]) as benchmark:
@@ -126,3 +125,28 @@ def test_invalid_get_result(strategy):
                     *'-s solver1 -d test-dataset -n 0 -r 5 --no-plot'.split(),
                     *'-o dummy*[reg=0.5]'.split()
                 ], standalone_mode=False)
+
+
+@pytest.mark.parametrize('strategy', SAMPLING_STRATEGIES)
+def test_solver_return_early_callback(strategy):
+
+    solver1 = """from benchopt import BaseSolver
+
+    class Solver(BaseSolver):
+        name = 'test-solver'
+        sampling_strategy = 'callback'
+        def set_objective(self, X, y, lmbd): pass
+        def run(self, cb):
+            for i in range(4):
+                self.val = i
+                cb()
+        def get_result(self): return {'beta': self.val}
+    """
+
+    with temp_benchmark(solvers=[solver1]) as bench:
+        with CaptureRunOutput():
+            run(
+                f"{bench.benchmark_dir} -d test-dataset -n 10 -r 5 "
+                "--no-plot -o dummy*[reg=0.5]".split(),
+                "benchopt", standalone_mode=False
+            )
