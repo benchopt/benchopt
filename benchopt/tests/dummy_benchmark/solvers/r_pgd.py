@@ -37,7 +37,7 @@ class Solver(BaseSolver):
         self.r_pgd = robjects.r['proximal_gradient_descent']
 
     def run(self, n_iter):
-        with default_converter + numpy2ri.converter:
+        with (default_converter + numpy2ri.converter).context():
             coefs = self.r_pgd(
                 self.X, self.y[:, None], self.lmbd, n_iter=n_iter
             )
