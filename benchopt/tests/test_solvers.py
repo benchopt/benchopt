@@ -104,7 +104,7 @@ def test_pre_run_hook():
 @pytest.mark.parametrize('strategy', SAMPLING_STRATEGIES)
 def test_invalid_get_result(strategy):
 
-    solver1 = f"""from benchopt import BaseSolver
+    solver = f"""from benchopt import BaseSolver
 
         class Solver(BaseSolver):
             name = 'solver1'
@@ -117,7 +117,7 @@ def test_invalid_get_result(strategy):
             def get_result(self): return 0
     """
 
-    with temp_benchmark(solvers=[solver1]) as benchmark:
+    with temp_benchmark(solvers=solver) as benchmark:
         with pytest.raises(TypeError, match='get_result` should be a dict '):
             with CaptureRunOutput():
                 run([
@@ -127,26 +127,43 @@ def test_invalid_get_result(strategy):
                 ], standalone_mode=False)
 
 
-@pytest.mark.parametrize('strategy', SAMPLING_STRATEGIES)
-def test_solver_return_early_callback(strategy):
+@pytest.mark.parametrize('eval_every', [1, 10])
+def test_solver_return_early_callback(eval_every):
 
-    solver1 = """from benchopt import BaseSolver
+    solver = f"""from benchopt import BaseSolver
+    from benchopt.stopping_criterion import NoCriterion
 
     class Solver(BaseSolver):
         name = 'test-solver'
         sampling_strategy = 'callback'
+        stopping_criterion = NoCriterion()
+        def get_next(self, stop_val): return stop_val + {eval_every}
         def set_objective(self, X, y, lmbd): pass
         def run(self, cb):
-            for i in range(4):
+            for i in range(3):
                 self.val = i
                 cb()
-        def get_result(self): return {'beta': self.val}
+        def get_result(self): return {{'val': self.val}}
+    """
+    objective = """from benchopt import BaseObjective
+    class Objective(BaseObjective):
+        name = "test-objective"
+        def set_data(self, X, y): pass
+        def evaluate_result(self, val):
+            print(f"EVAL#{val}")
+            return 1
+        def get_one_result(self): pass
+        def get_objective(self): return dict(X=None, y=None, lmbd=None)
     """
 
-    with temp_benchmark(solvers=[solver1]) as bench:
-        with CaptureRunOutput():
+    with temp_benchmark(solvers=solver, objective=objective) as bench:
+        with CaptureRunOutput() as out:
             run(
-                f"{bench.benchmark_dir} -d test-dataset -n 10 -r 5 "
-                "--no-plot -o dummy*[reg=0.5]".split(),
+                f"{bench.benchmark_dir} -d test-dataset -n 10 --no-plot".split(),
                 "benchopt", standalone_mode=False
             )
+        # Make sure the solver returns early and the last value is only logged
+        # once.
+        out.check_output("EVAL#0", repetition=1)
+        out.check_output("EVAL#2", repetition=1)
+        out.check_output("EVAL#3", repetition=0)
