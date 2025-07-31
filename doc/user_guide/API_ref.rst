@@ -62,6 +62,7 @@ Benchopt utils
    :toctree: generated/
 
    run_benchmark
+   safe_import_context
    plotting.plot_benchmark
    datasets.simulated.make_correlated_data
    utils.profile
