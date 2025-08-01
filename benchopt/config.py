@@ -19,7 +19,9 @@ CONFIG_FILE_NAME = 'benchopt.yml'
 # sensitive information such as the Github token.
 GLOBAL_CONFIG_FILE_MODE = stat.S_IFREG | stat.S_IRUSR | stat.S_IWUSR
 
-DEFAULT_SHELL = 'cmd /c' if sys.platform == 'win32' else 'bash'
+DEFAULT_SHELL = (
+    'cmd /c' if sys.platform == 'win32' else 'bash --norc --noprofile'
+)
 
 DEFAULT_GLOBAL_CONFIG = {
     'debug': False,

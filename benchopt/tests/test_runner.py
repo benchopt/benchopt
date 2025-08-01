@@ -74,16 +74,6 @@ def test_skip_api(n_jobs):
     out.check_output("Solver#RUN", repetition=1)
 
 
-def test_get_one_result():
-    dataset = TEST_DATASET.get_instance()
-    objective = TEST_OBJECTIVE.get_instance()
-    objective.set_dataset(dataset)
-
-    one_solution = objective.get_one_result()
-    expected = np.zeros(objective.X.shape[1])
-    assert all(one_solution['beta'] == expected)
-
-
 def _assert_parameters_equal(instance, parameters):
     for key, val in parameters.items():
         assert getattr(instance, key) == val

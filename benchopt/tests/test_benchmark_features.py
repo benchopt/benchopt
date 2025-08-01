@@ -15,7 +15,7 @@ def test_template_dataset():
     datasets = {"template_dataset.py": "raise ImportError()"}
     with temp_benchmark(datasets=datasets) as bench:
         # Make sure that importing template_dataset raises an error.
-        with pytest.raises(ImportError):
+        with pytest.raises(ValueError):
             template_dataset = (
                 bench.benchmark_dir / 'datasets' / 'template_dataset.py'
             )

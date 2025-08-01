@@ -9,8 +9,8 @@ from benchopt.utils.dynamic_modules import _load_class_from_module
 from benchopt.tests.utils import CaptureRunOutput
 
 
-def test_template_solver():
-    solvers = {"template_solver.py": "raise ValueError()"}
+def test_solver_template():
+    solvers = {"template_solver.py": "raise ImportError()"}
 
     with temp_benchmark(solvers=solvers) as bench:
         # Make sure that importing template_solver raises an error.
@@ -29,7 +29,31 @@ def test_template_solver():
         assert solvers[0].name == 'test-solver'
 
 
-def test_warm_up():
+def test_custom_parameters(no_debug_log):
+    solver = """from benchopt import BaseSolver
+
+    class Solver(BaseSolver):
+        name = 'test-solver'
+        parameters = {'param1': [0], 'param2': [9]}
+        def set_objective(self, X, y, lmbd): pass
+        def run(self, n_iter): pass
+        def get_result(self): return dict(beta=None)
+    """
+
+    select_solvers = 'test-solver[param1=[1,2],param2=9]'
+
+    with temp_benchmark(solvers=solver) as bench, CaptureRunOutput() as out:
+        run(
+            f"{bench.benchmark_dir} -d simulated -s {select_solvers} -n 0 "
+            "--no-plot".split(),
+            'benchopt', standalone_mode=False)
+
+    out.check_output(r'test-solver\[param1=0', repetition=0)
+    out.check_output(r'test-solver\[param1=1,param2=9\]', repetition=2)
+    out.check_output(r'test-solver\[param1=2,param2=9\]', repetition=2)
+
+
+def test_solver_warm_up():
 
     solver1 = """from benchopt import BaseSolver
     import numpy as np
@@ -58,7 +82,7 @@ def test_warm_up():
         out.check_output("WARMUP", repetition=1)
 
 
-def test_pre_run_hook():
+def test_solver_pre_run_hook():
 
     solver1 = """from benchopt import BaseSolver
     import numpy as np
@@ -95,7 +119,7 @@ def test_pre_run_hook():
 
 
 @pytest.mark.parametrize('strategy', SAMPLING_STRATEGIES)
-def test_invalid_get_result(strategy):
+def test_solver_invalid_get_result(strategy):
 
     solver = f"""from benchopt import BaseSolver
 
