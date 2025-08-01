@@ -13,7 +13,7 @@ from benchopt.tests.utils import CaptureRunOutput
 
 def test_template_solver():
     # Make sure that importing template_dataset raises an error.
-    with pytest.raises(ImportError):
+    with pytest.raises(ValueError):
         template_dataset = (
             DUMMY_BENCHMARK_PATH / 'solvers' / 'template_solver.py'
         )

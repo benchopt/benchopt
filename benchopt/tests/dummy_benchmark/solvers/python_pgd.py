@@ -1,8 +1,7 @@
-from benchopt import BaseSolver, safe_import_context
+from benchopt import BaseSolver
 from benchopt.utils import profile
 
-with safe_import_context() as import_ctx:
-    import numpy as np
+import numpy as np
 
 
 class Solver(BaseSolver):

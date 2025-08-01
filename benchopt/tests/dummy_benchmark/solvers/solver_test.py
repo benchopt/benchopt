@@ -1,13 +1,11 @@
 from benchopt import BaseSolver
-from benchopt import safe_import_context
 
-with safe_import_context() as import_ctx:
-    import numpy as np
-    import dummy_solver_import
-    from benchmark_utils import dummy_function
-    from benchmark_utils.dummy_submodule.dummy_subsubmodule import (
-        error_raiser
-    )
+import numpy as np
+import dummy_solver_import
+from benchmark_utils import dummy_function
+from benchmark_utils.dummy_submodule.dummy_subsubmodule import (
+    error_raiser
+)
 
 
 class Solver(BaseSolver):

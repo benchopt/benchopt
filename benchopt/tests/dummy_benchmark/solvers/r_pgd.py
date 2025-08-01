@@ -1,23 +1,20 @@
 from pathlib import Path
 
 from benchopt import BaseSolver
-from benchopt import safe_import_context
 
+import numpy as np
+from scipy.sparse import issparse
 
-with safe_import_context() as import_ctx:
-    import numpy as np
-    from scipy.sparse import issparse
+# Import helpers from rpy2 and benchopt.helpers.r_lang
+from rpy2 import robjects
+from rpy2.robjects import numpy2ri
+from rpy2.robjects import default_converter
+from benchopt.helpers.r_lang import import_func_from_r_file
 
-    # Import helpers from rpy2 and benchopt.helpers.r_lang
-    from rpy2 import robjects
-    from rpy2.robjects import numpy2ri
-    from rpy2.robjects import default_converter
-    from benchopt.helpers.r_lang import import_func_from_r_file
-
-    # Import R function defined in r_pgd.R so they can be retrieved as python
-    # functions using `func = robjects.r['FUNC_NAME']`
-    R_FILE = str(Path(__file__).with_suffix('.R'))
-    import_func_from_r_file(R_FILE)
+# Import R function defined in r_pgd.R so they can be retrieved as python
+# functions using `func = robjects.r['FUNC_NAME']`
+R_FILE = str(Path(__file__).with_suffix('.R'))
+import_func_from_r_file(R_FILE)
 
 
 class Solver(BaseSolver):

@@ -2,25 +2,11 @@ import sys
 import warnings
 
 from ..config import RAISE_INSTALL_ERROR
-
-SKIP_IMPORT = False
-BENCHMARK_DIR = None
+from . import dynamic_modules
 
 
 class SkipWithBlock(Exception):
     pass
-
-
-def skip_import():
-    """Once called, all the safe_import_context is skipped."""
-    global SKIP_IMPORT
-    SKIP_IMPORT = True
-
-
-def _unskip_import():
-    """Helper to reenable imports in tests."""
-    global SKIP_IMPORT
-    SKIP_IMPORT = False
 
 
 class safe_import_context:
@@ -36,14 +22,18 @@ class safe_import_context:
 
     Finally, this context also catches import warnings.
     """
-
     def __init__(self):
         self.failed_import = False
         self.record = warnings.catch_warnings(record=True)
 
     def __enter__(self):
+        warnings.warn(
+            "safe_import_context is deprecated in benchopt 1.7. You can now "
+            "directly import all modules as in a regular Python script.",
+            DeprecationWarning
+        )
         # Skip context if necessary to speed up import
-        if SKIP_IMPORT:
+        if dynamic_modules.SKIP_IMPORT:
             # See https://stackoverflow.com/questions/12594148/skipping-execution-of-with-block  # noqa
             sys.settrace(lambda *args, **keys: None)
             frame = sys._getframe(1)
@@ -53,6 +43,7 @@ class safe_import_context:
         # Catch the import warning except if install errors are raised.
         if not RAISE_INSTALL_ERROR:
             self.record.__enter__()
+
         return self
 
     def trace(self, frame, event, arg):
@@ -60,25 +51,20 @@ class safe_import_context:
 
     def __exit__(self, exc_type, exc_value, tb):
 
-        if SKIP_IMPORT:
+        if dynamic_modules.SKIP_IMPORT:
             self.failed_import = True
             self.import_error = (
                 RuntimeError, "Should not check install with skip import", None
             )
             return True
-
         silence_error = False
-
         # prevent import error from propagating and tag
         if exc_type is not None and issubclass(exc_type, ImportError):
             self.failed_import = True
             self.import_error = exc_type, exc_value, tb
-
             # Prevent the error propagation
             silence_error = True
-
         if not RAISE_INSTALL_ERROR:
             self.record.__exit__(exc_type, exc_value, tb)
-
         # Returning True in __exit__ prevent error propagation.
         return silence_error
