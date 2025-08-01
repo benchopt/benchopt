@@ -157,7 +157,7 @@ This ``sampling_strategy`` can be:
   compute and store the objective and return ``False`` once the computations
   should stop.
 
-- ``'run_once'``: in this case, the ``run`` method of the solver is run only 
+- ``'run_once'``: in this case, the ``run`` method of the solver is run only
 once during the benchmark.
 
 Benchopt supports different types of solvers:
@@ -207,12 +207,6 @@ It uses the R code in:
 
 .. literalinclude:: ../../benchmarks/benchmark_lasso/solvers/r_pgd.R
     :language: R
-
-.. note::
-
-    This uses the function :func:`benchopt.safe_import_context` to avoid
-    a crash when R is not available. The solver is in this case
-    just skipped.
 
 .. _julia_solvers:
 

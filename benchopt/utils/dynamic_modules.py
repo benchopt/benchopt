@@ -1,5 +1,6 @@
 """Utilities to load classes and module from filenames and class names.
 """
+import ast
 import sys
 import hashlib
 import warnings
@@ -8,7 +9,23 @@ from pathlib import Path
 
 from joblib.externals import cloudpickle
 
+from .dependencies_mixin import DependenciesMixin
 from .safe_import import safe_import_context
+
+SKIP_IMPORT = False
+
+
+def skip_import():
+    """Once called, all dynamic classes are not imported but necessary info is
+    retrieved from the file."""
+    global SKIP_IMPORT
+    SKIP_IMPORT = True
+
+
+def _unskip_import():
+    """Helper to reenable imports in tests."""
+    global SKIP_IMPORT
+    SKIP_IMPORT = False
 
 
 def _get_module_from_file(module_filename, benchmark_dir=None):
@@ -45,7 +62,7 @@ def _load_class_from_module(benchmark_dir, module_filename, class_name):
     """Load a class from a module_filename.
 
     This helper also stores info necessary for DependenciesMixing to check the
-    the correct installation and to reload the classes.
+    correct installation and to reload the classes.
 
     Parameters
     ----------
@@ -64,14 +81,53 @@ def _load_class_from_module(benchmark_dir, module_filename, class_name):
     """
     benchmark_dir = Path(benchmark_dir)
     module_filename = Path(module_filename)
-    module = _get_module_from_file(
-        module_filename, benchmark_dir=benchmark_dir
-    )
-    klass = getattr(module, class_name)
+    try:
+        assert not SKIP_IMPORT  # go directly to except to skip import
+        module = _get_module_from_file(module_filename, benchmark_dir)
+        klass = getattr(module, class_name)
+        klass._import_ctx = _get_import_context(module)
+    except Exception as e:
+        import traceback
+        tb_to_print = traceback.format_exc(chain=False)
+
+        # avoid circular import
+        from .parametrized_name_mixin import ParametrizedNameMixin
+        from ..base import BaseSolver, BaseDataset, BaseObjective
+        base_cls = dict(
+            Solver=BaseSolver, Dataset=BaseDataset, Objective=BaseObjective
+        )[class_name]
+
+        class FailedImport(base_cls, ParametrizedNameMixin, DependenciesMixin):
+            "Object for the class list that raises error if used."
+
+            _set_cls_attr_from_ast(module_filename, class_name, locals())
+            exc = e
+
+            @classmethod
+            def is_installed(cls, env_name=None, raise_on_not_installed=False,
+                             **kwargs):
+                if env_name is not None:
+                    return super().is_installed(
+                        env_name=env_name,
+                        raise_on_not_installed=raise_on_not_installed,
+                        **kwargs
+                    )
+                if not SKIP_IMPORT:
+                    if raise_on_not_installed:
+                        raise cls.exc
+                    print(
+                        f"Failed to import {class_name} from "
+                        f"{module_filename}. Please fix the following "
+                        "error to use this file with benchopt:\n"
+                        f"{tb_to_print}"
+                    )
+                return False
+
+        klass = FailedImport
 
     # Store the info to easily reload the class
     klass._module_filename = module_filename.resolve()
-    klass._import_ctx = _get_import_context(module)
+    klass._benchmark_dir = benchmark_dir.resolve()
     klass._file_hash = get_file_hash(klass._module_filename)
 
     return klass
@@ -138,3 +194,37 @@ def _reconstruct_class(
     )
 
     return _load_class_from_module(benchmark_dir, module_filename, class_name)
+
+
+def _set_cls_attr_from_ast(module_file, cls_name, ctx):
+    module = ast.parse(module_file.read_text())
+
+    cls_list = [node for node in module.body if isinstance(node, ast.ClassDef)
+                and node.name == cls_name]
+    if not cls_list:
+        raise ValueError(f"Could not find {cls_name} in module {module_file}.")
+    cls = cls_list[0]
+
+    known_methods = [
+        # Dataset methods
+        "get_data",
+        # Objective methods
+        "set_data", "get_objective", "evaluate_result", "get_one_result",
+        # Solver methods
+        "set_objective", "run", "get_result"
+    ]
+
+    ctx['_base_class_name'] = cls_name
+    ctx['name'], ctx['install_cmd'], ctx['requirements'] = None, "conda", []
+    for node in cls.body:
+        if isinstance(node, ast.Assign):
+            for target in node.targets:
+                if target.id == "requirements":
+                    ctx['requirements'] = ast.literal_eval(node.value)
+                elif target.id == "name":
+                    ctx['name'] = ast.literal_eval(node.value)
+                elif target.id == "install_cmd":
+                    ctx['install_cmd'] = ast.literal_eval(node.value)
+        if isinstance(node, ast.FunctionDef):
+            if node.name in known_methods:
+                ctx[node.name] = lambda *args, **kwargs: None

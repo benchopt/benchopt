@@ -16,6 +16,11 @@ Major change
 - Benchopt is now supported on Windows!! \\o/
   By `Wassim Mazouz`_, `Mathurin Massias`_ and `Thomas Moreau`_ (:gh:`717`)
 
+- Imports in the benchmark are now done without the ``safe_import_context``,
+  while keeping the possibility to list solvers and datasets even when a
+  package is not installed. The helper is deprecated and will be removed in
+  benchopt ``1.8``. By `Mathurin Massias`_  and `Thomas Moreau`_ (:gh:`788`)
+
 CLI
 ---
 
@@ -75,6 +80,9 @@ FIX
 
 - Fix ``UnboundedLocalError`` when RuntimeError on ``warm_up``.
   By `Johan Larsson`_ (:gh:`809`)
+
+- Fix error when solver finishes before callback.
+  By `Thomas Moreau`_ (:gh:`817`)
 
 .. _changes_1_6:
 
