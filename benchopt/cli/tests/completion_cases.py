@@ -2,9 +2,6 @@ import pytest
 
 from click.shell_completion import ShellComplete
 
-from benchopt.cli.main import run
-from benchopt.cli.main import install
-
 from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.utils.dynamic_modules import _unskip_import
 

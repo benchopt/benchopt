@@ -1,4 +1,4 @@
-from contextlib import contextmanager, nullcontext
+from contextlib import nullcontext
 
 from benchopt.config import DEBUG
 from benchopt.base import BaseSolver

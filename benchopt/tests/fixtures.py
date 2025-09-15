@@ -1,7 +1,6 @@
 import os
 import uuid
 import pytest
-from contextlib import contextmanager
 
 from benchopt.benchmark import Benchmark
 from benchopt.utils.temp_benchmark import temp_benchmark

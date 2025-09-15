@@ -71,7 +71,9 @@ def test_r_solver(test_env_name):
             'benchopt', standalone_mode=False
         )
         solver = bench.get_solvers()[0]
-        solver.is_installed(env_name=test_env_name, raise_on_not_installed=True)
+        solver.is_installed(
+            env_name=test_env_name, raise_on_not_installed=True
+        )
         with pytest.raises(SystemExit, match="False"):
             run([
                 str(bench.benchmark_dir), '-s', 'r_solver', '-n', '1', '-r', 1,
@@ -124,12 +126,15 @@ def test_julia_solver(test_env_name):
             'benchopt', standalone_mode=False
         )
         solver = bench.get_solvers()[0]
-        solver.is_installed(env_name=test_env_name, raise_on_not_installed=True)
+        solver.is_installed(
+            env_name=test_env_name, raise_on_not_installed=True
+        )
 
         with pytest.raises(SystemExit, match="False"):
             run([
-                str(bench.benchmark_dir), '-s', 'julia_solver', '-n', '1', '-r', 1,
-                '-d', 'simulated', '--no-plot', '--env-name', test_env_name
+                str(bench.benchmark_dir), '-s', 'julia_solver', '-n', '1',
+                '-r', 1, '-d', 'simulated', '--no-plot',
+                '--env-name', test_env_name
             ], 'benchopt', standalone_mode=False)
 
     out.check_output("julia_solver:", repetition=6)

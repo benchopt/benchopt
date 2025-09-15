@@ -23,9 +23,6 @@ from benchopt.cli.process_results import plot
 from benchopt.cli.process_results import generate_results
 
 from benchopt.cli.tests.completion_cases import _test_shell_completion
-from benchopt.cli.tests.completion_cases import bench_completion_cases
-from benchopt.cli.tests.completion_cases import solver_completion_cases
-from benchopt.cli.tests.completion_cases import dataset_completion_cases
 
 
 CURRENT_DIR = Path.cwd()
@@ -183,7 +180,8 @@ class TestRunCmd:
                 return dict(X=None, y=None)
         """
 
-        with temp_benchmark(datasets=dataset) as bench, CaptureRunOutput() as out:
+        with temp_benchmark(datasets=dataset) as bench, \
+                CaptureRunOutput() as out:
             run(
                 f"{bench.benchmark_dir} -d test-dataset[param1=[2,3]] "
                 "-n 1 --no-plot".split(),
@@ -212,7 +210,8 @@ class TestRunCmd:
                 time.sleep(0.1)
             def get_result(self): return dict(beta=None)
         """
-        with temp_benchmark(solvers=solver) as bench, CaptureRunOutput() as out:
+        with temp_benchmark(solvers=solver) as bench, \
+                CaptureRunOutput() as out:
             with pytest.raises(SystemExit, match='False'):
                 run(
                     f"{bench.benchmark_dir} --env-name {test_env_name} "
@@ -310,8 +309,8 @@ class TestRunCmd:
             with CaptureRunOutput() as out:
                 run(run_cmd, 'benchopt', standalone_mode=False)
 
-            # Check that this run was properly done. If only one is detected, this
-            # could indicate that the clean command does not work properly.
+            # Check that this run was properly done. If only one is detected,
+            # this indicates that the clean command does not work properly.
             out.check_output('test-solver:', repetition=5*n_rep+1)
 
             # Now check that the cache is hit when running the benchmark a
@@ -482,7 +481,7 @@ class TestInstallCmd:
         with temp_benchmark() as bench:
             with pytest.raises(RuntimeError, match=msg):
                 install(
-                    f"{bench.benchmark_dir} --env-name {empty_env_name}".split(),
+                    [str(bench.benchmark_dir), '--env-name', empty_env_name],
                     'benchopt', standalone_mode=False
                 )
 
