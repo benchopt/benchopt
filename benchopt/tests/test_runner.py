@@ -1,11 +1,8 @@
 import pytest
 import inspect
-import numpy as np
 import pandas as pd
 
-from benchopt.tests import TEST_DATASET
-from benchopt.tests import TEST_OBJECTIVE
-
+from benchopt import BaseDataset
 from benchopt.benchmark import _check_patterns
 from benchopt.benchmark import _extract_options
 from benchopt.benchmark import _extract_parameters
@@ -79,9 +76,11 @@ def _assert_parameters_equal(instance, parameters):
         assert getattr(instance, key) == val
 
 
-class TEST_DATASET_TWO_PARAMS(TEST_DATASET):
+class TestDatasetTwoParams(BaseDataset):
     """Used to test the selection of datasets by keyword parameters."""
+    name = "Test-Dataset"
     parameters = {'n_samples': [10, 11], 'n_features': [20, 21]}
+    def get_data(self): pass
 
 
 def test_filter_classes_two_parameters():
@@ -89,7 +88,7 @@ def test_filter_classes_two_parameters():
 
     def filt_(filters):
         return list(_list_parametrized_classes(*_check_patterns(
-            [TEST_DATASET_TWO_PARAMS], filters
+            [TestDatasetTwoParams], filters
         )))
 
     # no selection (default grid)
@@ -162,9 +161,11 @@ def test_filter_classes_two_parameters():
         filt_(["Test-Dataset[n_targets=42]"])
 
 
-class TEST_DATASET_ONE_PARAM(TEST_DATASET):
+class TestDatasetOneParam(BaseDataset):
     """Used to test the selection of dataset with a positional parameter."""
+    name = "Test-Dataset"
     parameters = {'n_samples': [10, 11]}
+    def get_data(self): pass
 
 
 def test_filter_classes_one_param():
@@ -172,7 +173,7 @@ def test_filter_classes_one_param():
 
     def filt_(filters):
         return list(_list_parametrized_classes(*_check_patterns(
-            [TEST_DATASET_ONE_PARAM], filters
+            [TestDatasetOneParam], filters
         )))
 
     # test positional parameter

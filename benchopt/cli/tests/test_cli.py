@@ -6,16 +6,12 @@ from pathlib import Path
 import click
 import pytest
 from joblib.memory import _FUNCTION_HASHES
-from click.shell_completion import ShellComplete
 
 from benchopt.plotting import PLOT_KINDS
 from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.utils.stream_redirection import SuppressStd
-from benchopt.utils.dynamic_modules import _unskip_import
 
 
-from benchopt.tests import DUMMY_BENCHMARK
-from benchopt.tests import DUMMY_BENCHMARK_PATH
 from benchopt.tests.utils import CaptureRunOutput
 from benchopt.tests.utils import patch_var_env
 
@@ -26,45 +22,13 @@ from benchopt.cli.helpers import archive
 from benchopt.cli.process_results import plot
 from benchopt.cli.process_results import generate_results
 
+from benchopt.cli.tests.completion_cases import _test_shell_completion
+from benchopt.cli.tests.completion_cases import bench_completion_cases
+from benchopt.cli.tests.completion_cases import solver_completion_cases
+from benchopt.cli.tests.completion_cases import dataset_completion_cases
 
-ALL_BENCHMARKS = [str(DUMMY_BENCHMARK_PATH)]
 
-BENCHMARK_COMPLETION_CASES = [
-    (str(DUMMY_BENCHMARK_PATH.parent), ALL_BENCHMARKS),
-    (str(DUMMY_BENCHMARK_PATH.parent)[:-2], ALL_BENCHMARKS),
-    (str(DUMMY_BENCHMARK_PATH)[:-2], ALL_BENCHMARKS)
-]
-SOLVER_COMPLETION_CASES = [
-    ('', [n.lower() for n in DUMMY_BENCHMARK.get_solver_names()]),
-    ('pgd', ['julia-pgd', 'python-pgd', 'python-pgd-with-cb', 'r-pgd'])
-]
-DATASET_COMPLETION_CASES = [
-    ('', [n.lower() for n in DUMMY_BENCHMARK.get_dataset_names()]),
-    ('simu', ['simulated']),
-    ('lated', ['simulated']),
-]
 CURRENT_DIR = Path.cwd()
-
-
-def _get_completion(cmd, args, incomplete):
-    complete = ShellComplete(cmd, {}, '', '')
-    proposals = complete.get_completions(args, incomplete)
-    return [c.value for c in proposals]
-
-
-def _test_shell_completion(cmd, args, test_cases):
-    for incomplete, expected in test_cases:
-        proposals = _get_completion(cmd, args, incomplete)
-        n_res = len(expected)
-        assert len(proposals) == n_res, (
-            f"Expected {n_res} completion proposal, got '{proposals}'"
-        )
-        if n_res == 1:
-            assert proposals[0] == expected[0], proposals
-        elif expected is not None:
-            assert set(proposals) == set(expected), proposals
-
-    _unskip_import()
 
 
 class TestRunCmd:
@@ -437,18 +401,25 @@ class TestRunCmd:
             out.check_output(r'done \(not enough run\)', repetition=1)
             out.check_output('not run yet', repetition=1)
 
-    def test_shell_complete(self):
+    def test_complete_bench(self, bench_completion_cases):
+
         # Completion for benchmark name
-        _test_shell_completion(run, [], BENCHMARK_COMPLETION_CASES)
+        _test_shell_completion(run, [], bench_completion_cases)
+
+    def test_complete_solvers(self, solver_completion_cases):
+        benchmark_dir, solver_completion_cases = solver_completion_cases
 
         # Completion for solvers
         _test_shell_completion(
-            run, [str(DUMMY_BENCHMARK_PATH), '-s'], SOLVER_COMPLETION_CASES
+            run, [str(benchmark_dir), '-s'], solver_completion_cases
         )
+
+    def test_complete_datasets(self, dataset_completion_cases):
+        benchmark_dir, dataset_completion_cases = dataset_completion_cases
 
         # Completion for datasets
         _test_shell_completion(
-            run, [str(DUMMY_BENCHMARK_PATH), '-d'], DATASET_COMPLETION_CASES
+            run, [str(benchmark_dir), '-d'], dataset_completion_cases
         )
 
 
@@ -690,18 +661,25 @@ class TestInstallCmd:
             r"git\+https://github.com/tommoral/dummy_package"
         )
 
-    def test_shell_complete(self):
+    def test_complete_bench(self, bench_completion_cases):
+
         # Completion for benchmark name
-        _test_shell_completion(install, [], BENCHMARK_COMPLETION_CASES)
+        _test_shell_completion(install, [], bench_completion_cases)
+
+    def test_complete_solvers(self, solver_completion_cases):
+        benchmark_dir, solver_completion_cases = solver_completion_cases
 
         # Completion for solvers
         _test_shell_completion(
-            run, [str(DUMMY_BENCHMARK_PATH), '-s'], SOLVER_COMPLETION_CASES
+            install, [str(benchmark_dir), '-s'], solver_completion_cases
         )
+
+    def test_complete_datasets(self, dataset_completion_cases):
+        benchmark_dir, dataset_completion_cases = dataset_completion_cases
 
         # Completion for datasets
         _test_shell_completion(
-            run, [str(DUMMY_BENCHMARK_PATH), '-d'], DATASET_COMPLETION_CASES
+            install, [str(benchmark_dir), '-d'], dataset_completion_cases
         )
 
 
@@ -779,11 +757,14 @@ class TestPlotCmd:
             for f in saved_files:
                 Path(f).unlink()
 
-    def test_shell_complete(self):
-        # Completion for benchmark name
-        _test_shell_completion(plot, [], BENCHMARK_COMPLETION_CASES)
+    def test_complete_bench(self, bench_completion_cases):
 
-        # Completion for solvers
+        # Completion for benchmark name
+        _test_shell_completion(plot, [], bench_completion_cases)
+
+    def test_complete_result_files(self):
+
+        # Completion for result files
         _test_shell_completion(
             plot, f"{self.bench.benchmark_dir} -f".split(), [
                 ('', [self.result_file]),
@@ -939,6 +920,6 @@ class TestArchiveCmd:
             for f in saved_files:
                 Path(f).unlink()
 
-    def test_shell_complete(self):
+    def test_complete_bench(self, bench_completion_cases):
         # Completion for benchmark name
-        _test_shell_completion(archive, [], BENCHMARK_COMPLETION_CASES)
+        _test_shell_completion(archive, [], bench_completion_cases)

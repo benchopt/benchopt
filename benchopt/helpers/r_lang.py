@@ -9,12 +9,13 @@ if os.environ.get('R_HOME', None) is not None:
 def setup_rpy2():
     import rpy2  # noqa: E402
     import rpy2.situation
-
-    # Hide the R warnings
-    rpy2.robjects.r['options'](warn=-1)
+    import rpy2.robjects
 
     # Set the R_HOME directory to the one of the R RHOME ouput
     os.environ['R_HOME'] = rpy2.situation.r_home_from_subprocess()
+
+    # Hide the R warnings
+    rpy2.robjects.r['options'](warn=-1)
 
 
 def get_package_not_installed_error():
