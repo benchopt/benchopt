@@ -5,9 +5,17 @@ import os
 if os.environ.get('R_HOME', None) is not None:
     del os.environ['R_HOME']
 
+try:
+    import rpy2  # noqa: F401
+except ImportError:
+    raise ImportError(
+        "rpy2 is not installed. Please make sure the solver requirements are "
+        "installed. If the requirements are missing, add "
+        "`requirements = ['r-base', 'rpy2']` to your solver."
+    )
+
 
 def setup_rpy2():
-    import rpy2  # noqa: E402
     import rpy2.situation
     import rpy2.robjects
 

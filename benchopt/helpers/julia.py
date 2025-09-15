@@ -1,20 +1,11 @@
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 
 from benchopt.config import DEBUG
 from benchopt.base import BaseSolver
 from benchopt.utils.stream_redirection import SuppressStd
 from benchopt.utils.shell_cmd import _run_shell_in_conda_env
 
-
-# nullcontext is not available in python <=3.6 so we resort to this
-# for backward compat.
-@contextmanager
-def nullcontext(enter_result=None):
-    yield enter_result
-
-
-def assert_julia_installed():
-    import julia  # noqa: F401
+import julia
 
 
 # Singleton to get the julia interpreter only once
@@ -28,7 +19,6 @@ def get_jl_interpreter():
         out = nullcontext() if DEBUG else SuppressStd()
         try:
             with out:
-                import julia
                 # configure the julia runtime
                 runtime_config = {
                     'compiled_modules': False,
