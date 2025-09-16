@@ -23,10 +23,10 @@ from benchopt.cli.process_results import plot
 from benchopt.cli.process_results import generate_results
 
 from benchopt.cli.tests.completion_cases import _test_shell_completion
-from benchopt.cli.tests.completion_cases import (
-    bench_completion_cases,  # noqa: F401
-    solver_completion_cases,  # noqa: F401
-    dataset_completion_cases  # noqa: F401
+from benchopt.cli.tests.completion_cases import (  # noqa: F401
+    bench_completion_cases,
+    solver_completion_cases,
+    dataset_completion_cases
 )
 
 
@@ -405,12 +405,12 @@ class TestRunCmd:
             out.check_output(r'done \(not enough run\)', repetition=1)
             out.check_output('not run yet', repetition=1)
 
-    def test_complete_bench(self, bench_completion_cases):
+    def test_complete_bench(self, bench_completion_cases):  # noqa: F811
 
         # Completion for benchmark name
         _test_shell_completion(run, [], bench_completion_cases)
 
-    def test_complete_solvers(self, solver_completion_cases):
+    def test_complete_solvers(self, solver_completion_cases):  # noqa: F811
         benchmark_dir, solver_completion_cases = solver_completion_cases
 
         # Completion for solvers
@@ -418,7 +418,7 @@ class TestRunCmd:
             run, [str(benchmark_dir), '-s'], solver_completion_cases
         )
 
-    def test_complete_datasets(self, dataset_completion_cases):
+    def test_complete_datasets(self, dataset_completion_cases):  # noqa: F811
         benchmark_dir, dataset_completion_cases = dataset_completion_cases
 
         # Completion for datasets
@@ -665,12 +665,12 @@ class TestInstallCmd:
             r"git\+https://github.com/tommoral/dummy_package"
         )
 
-    def test_complete_bench(self, bench_completion_cases):
+    def test_complete_bench(self, bench_completion_cases):  # noqa: F811
 
         # Completion for benchmark name
         _test_shell_completion(install, [], bench_completion_cases)
 
-    def test_complete_solvers(self, solver_completion_cases):
+    def test_complete_solvers(self, solver_completion_cases):  # noqa: F811
         benchmark_dir, solver_completion_cases = solver_completion_cases
 
         # Completion for solvers
@@ -678,7 +678,7 @@ class TestInstallCmd:
             install, [str(benchmark_dir), '-s'], solver_completion_cases
         )
 
-    def test_complete_datasets(self, dataset_completion_cases):
+    def test_complete_datasets(self, dataset_completion_cases):  # noqa: F811
         benchmark_dir, dataset_completion_cases = dataset_completion_cases
 
         # Completion for datasets
@@ -763,7 +763,7 @@ class TestPlotCmd:
             for f in saved_files:
                 Path(f).unlink()
 
-    def test_complete_bench(self, bench_completion_cases):
+    def test_complete_bench(self, bench_completion_cases):  # noqa: F811
 
         # Completion for benchmark name
         _test_shell_completion(plot, [], bench_completion_cases)
@@ -926,6 +926,6 @@ class TestArchiveCmd:
             for f in saved_files:
                 Path(f).unlink()
 
-    def test_complete_bench(self, bench_completion_cases):
+    def test_complete_bench(self, bench_completion_cases):  # noqa: F811
         # Completion for benchmark name
         _test_shell_completion(archive, [], bench_completion_cases)
