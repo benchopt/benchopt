@@ -1,3 +1,4 @@
+import sys
 import pytest
 
 from benchopt.cli.main import install, run
@@ -84,6 +85,9 @@ def test_r_solver(test_env_name):
 
 
 def test_julia_solver(test_env_name):
+    if sys.platform.startswith("win"):
+        pytest.skip("Julia's PyCall library fail to install on Windows")
+
     solver = """
     from benchopt.helpers.julia import JuliaSolver
     from benchopt.helpers.julia import get_jl_interpreter

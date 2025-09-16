@@ -6,7 +6,7 @@ class Solver(BaseSolver):
     name = 'gd'
     sampling_strategy = 'callback'
 
-    parameters = {'lr': [1e-3]}
+    parameters = {'lr': [1e-3, 1e-2]}
 
     def set_objective(self, X):
         self.X = X

@@ -224,7 +224,8 @@ class TestRunCmd:
                     'benchopt', standalone_mode=False
                 )
         out.check_output('using profiling', repetition=1)
-        out.check_output("File: .*/bench/solvers/solver_0.py", repetition=1)
+        fname = str(Path("./bench/solvers/solver_0.py"))
+        out.check_output(f"File: .*/{fname}", repetition=1)
         out.check_output(r'\s+'.join([
             "Line #", "Hits", "Time", "Per Hit", "% Time", "Line Contents"
         ]), repetition=1)
