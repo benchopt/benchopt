@@ -23,6 +23,11 @@ from benchopt.cli.process_results import plot
 from benchopt.cli.process_results import generate_results
 
 from benchopt.cli.tests.completion_cases import _test_shell_completion
+from benchopt.cli.tests.completion_cases import (
+    bench_completion_cases,  # noqa: F401
+    solver_completion_cases,  # noqa: F401
+    dataset_completion_cases  # noqa: F401
+)
 
 
 CURRENT_DIR = Path.cwd()
@@ -697,7 +702,9 @@ class TestPlotCmd:
         assert len(out.result_files) == 1, out
         result_file = out.result_files[0]
         cls.result_file = result_file
-        cls.result_file = str(Path(result_file).relative_to(Path().resolve()))
+        cls.result_file = str(
+            Path(result_file).resolve().relative_to(Path().resolve())
+        )
 
     @classmethod
     def teardown_class(cls):
