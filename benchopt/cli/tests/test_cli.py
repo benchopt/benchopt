@@ -368,7 +368,6 @@ class TestRunCmd:
     def test_result_collection(self, no_debug_log):
         solver = """
             from benchopt import BaseSolver
-            import numpy as np
 
             class Solver(BaseSolver):
                 name = 'test-solver'
@@ -450,10 +449,10 @@ class TestInstallCmd:
 
     def test_valid_call(self):
         with temp_benchmark() as bench, CaptureCmdOutput() as out:
-            install([
-                str(bench.benchmark_dir), '-d', 'test-dataset',
-                '-s', 'test-solver', '-y'
-            ], 'benchopt', standalone_mode=False)
+            install(
+               f"{bench.benchmark_dir} -y".split(),
+               'benchopt', standalone_mode=False
+            )
 
         out.check_output(f"Installing '{bench.name}' requirements")
         out.check_output("already available\n", repetition=3)

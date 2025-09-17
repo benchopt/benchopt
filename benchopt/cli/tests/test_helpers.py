@@ -13,7 +13,7 @@ class TestCheckInstallCmd:
     def test_solver_installed(self):
         with temp_benchmark() as bench:
             solver = bench.benchmark_dir / 'solvers' / 'test_solver.py'
-            with pytest.raises(SystemExit, match=r'0'):
+            with pytest.raises(SystemExit, match='0'):
                 check_install([
                     str(bench.benchmark_dir), str(solver.resolve()), 'Solver'
                 ], 'benchopt')
@@ -21,7 +21,7 @@ class TestCheckInstallCmd:
     def test_solver_does_not_exists(self):
         with temp_benchmark() as bench:
             solver = bench.benchmark_dir / 'solvers' / 'invalid.py'
-            with pytest.raises(FileNotFoundError, match=r'invalid.py'):
+            with pytest.raises(FileNotFoundError, match='invalid.py'):
                 check_install([
                     str(bench.benchmark_dir), str(solver.resolve()), 'Solver'
                 ], 'benchopt')
@@ -29,7 +29,7 @@ class TestCheckInstallCmd:
     def test_dataset_installed(self):
         with temp_benchmark() as bench:
             dataset = bench.benchmark_dir / 'datasets' / 'simulated.py'
-            with pytest.raises(SystemExit, match=r'0'):
+            with pytest.raises(SystemExit, match='0'):
                 check_install([
                     str(bench.benchmark_dir), str(dataset.resolve()), 'Dataset'
                 ], 'benchopt')
@@ -37,7 +37,7 @@ class TestCheckInstallCmd:
     def test_dataset_does_not_exists(self):
         with temp_benchmark() as bench:
             dataset = bench.benchmark_dir / 'datasets' / 'invalid.py'
-            with pytest.raises(FileNotFoundError, match=r'invalid.py'):
+            with pytest.raises(FileNotFoundError, match='invalid.py'):
                 check_install([
                     str(bench.benchmark_dir), str(dataset.resolve()), 'Dataset'
                 ], 'benchopt')

@@ -355,7 +355,7 @@ def test_run_once_iteration(n_iter):
 
         def set_objective(self, X, y, lmbd): self.run_once({n_iter})
         def run(self, n_iter): print(f"RUNONCE({{n_iter}})")
-        def get_result(self, **data): return dict(beta=None)
+        def get_result(self): return dict(beta=None)
     """
 
     with temp_benchmark(solvers=[solver1]) as benchmark:
