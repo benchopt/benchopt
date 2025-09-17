@@ -449,8 +449,8 @@ class TestInstallCmd:
     def test_valid_call(self):
         with temp_benchmark() as bench, CaptureCmdOutput() as out:
             install(
-               f"{bench.benchmark_dir} -y".split(),
-               'benchopt', standalone_mode=False
+               f"{bench.benchmark_dir} -d test-dataset -s test-solver "
+               "-y".split(), 'benchopt', standalone_mode=False
             )
 
         out.check_output(f"Installing '{bench.name}' requirements")
