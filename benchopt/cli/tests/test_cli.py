@@ -9,10 +9,9 @@ from joblib.memory import _FUNCTION_HASHES
 
 from benchopt.plotting import PLOT_KINDS
 from benchopt.utils.temp_benchmark import temp_benchmark
-from benchopt.utils.stream_redirection import SuppressStd
 
 
-from benchopt.tests.utils import CaptureRunOutput
+from benchopt.tests.utils import CaptureCmdOutput
 from benchopt.tests.utils import patch_var_env
 
 from benchopt.cli.main import run
@@ -82,7 +81,7 @@ class TestRunCmd:
     @pytest.mark.parametrize('n_jobs', [1, 2])
     def test_valid_call(self, n_jobs):
 
-        with temp_benchmark() as bench, CaptureRunOutput() as out:
+        with temp_benchmark() as bench, CaptureCmdOutput() as out:
             cmd = (
                 f"{bench.benchmark_dir} -r 1 -n 1 -j {n_jobs} --no-plot "
                 "-d test-dataset"
@@ -98,7 +97,7 @@ class TestRunCmd:
         assert len(out.result_files) == 1, out
 
     def test_valid_call_in_env(self, test_env_name):
-        with temp_benchmark() as bench, CaptureRunOutput() as out:
+        with temp_benchmark() as bench, CaptureCmdOutput() as out:
             cmd = (
                 f"{bench.benchmark_dir} -r 1 -n 1 --no-plot "
                 f"-d test-dataset --env-name {test_env_name}"
@@ -118,7 +117,7 @@ class TestRunCmd:
 
     @pytest.mark.parametrize('timeout', ['10', '1m', '0.03h', '100s'])
     def test_timeout_in_env(self, test_env_name, timeout):
-        with temp_benchmark() as bench, CaptureRunOutput() as out:
+        with temp_benchmark() as bench, CaptureCmdOutput() as out:
             cmd = (
                 f"{bench.benchmark_dir} -r 1 -n 1 --timeout {timeout} "
                 f"--no-plot -d test-dataset --env-name {test_env_name}"
@@ -140,7 +139,7 @@ class TestRunCmd:
         args = "--no-plot -d test-dataset".split()
 
         # First test: --timeout==0
-        with temp_benchmark() as bench, CaptureRunOutput() as out:
+        with temp_benchmark() as bench, CaptureCmdOutput() as out:
             run(
                 [f"{bench.benchmark_dir}", *args, "--timeout=0"],
                 "benchopt", standalone_mode=False
@@ -149,7 +148,7 @@ class TestRunCmd:
 
         with patch_var_env("BENCHOPT_DEFAULT_TIMEOUT", 0):
             # Second test: no option about timeout, env_var set to 0
-            with temp_benchmark() as bench, CaptureRunOutput() as out:
+            with temp_benchmark() as bench, CaptureCmdOutput() as out:
                 run(
                     [f"{bench.benchmark_dir}", *args],
                     "benchopt", standalone_mode=False
@@ -157,7 +156,7 @@ class TestRunCmd:
             out.check_output("(timeout)", repetition=1)
 
             # Third test: --no-timeout
-            with temp_benchmark() as bench, CaptureRunOutput() as out:
+            with temp_benchmark() as bench, CaptureCmdOutput() as out:
                 run(
                     [f"{bench.benchmark_dir}", *args, "--no-timeout"],
                     "benchopt", standalone_mode=False
@@ -168,7 +167,7 @@ class TestRunCmd:
         match = 'You cannot specify both --timeout and --no-timeout options.'
 
         with pytest.raises(click.BadParameter, match=re.escape(match)):
-            with temp_benchmark() as bench, CaptureRunOutput() as out:
+            with temp_benchmark() as bench, CaptureCmdOutput() as out:
                 run(
                     [f"{bench.benchmark_dir}", *args,
                      "--timeout=0", "--no-timeout"],
@@ -186,7 +185,7 @@ class TestRunCmd:
         """
 
         with temp_benchmark(datasets=dataset) as bench, \
-                CaptureRunOutput() as out:
+                CaptureCmdOutput() as out:
             run(
                 f"{bench.benchmark_dir} -d test-dataset[param1=[2,3]] "
                 "-n 1 --no-plot".split(),
@@ -216,7 +215,7 @@ class TestRunCmd:
             def get_result(self): return dict(beta=None)
         """
         with temp_benchmark(solvers=solver) as bench, \
-                CaptureRunOutput() as out:
+                CaptureCmdOutput() as out:
             with pytest.raises(SystemExit, match='False'):
                 run(
                     f"{bench.benchmark_dir} --env-name {test_env_name} "
@@ -257,7 +256,7 @@ class TestRunCmd:
         """
 
         with temp_benchmark(config=config, solvers=solver) as bench:
-            with CaptureRunOutput() as out:
+            with CaptureCmdOutput() as out:
                 run(
                     f"{bench.benchmark_dir} --no-plot --config "
                     f"{bench.benchmark_dir / 'config.yml'}".split(),
@@ -271,7 +270,7 @@ class TestRunCmd:
             out.check_output(r'test-solver\[param1=0\]:', repetition=0)
 
             # test that CLI options take precedence
-            with CaptureRunOutput() as out:
+            with CaptureCmdOutput() as out:
 
                 run(
                     f"{bench.benchmark_dir} --no-plot --config "
@@ -311,7 +310,7 @@ class TestRunCmd:
             ).split()
 
             # Make a first run that should be put in cache
-            with CaptureRunOutput() as out:
+            with CaptureCmdOutput() as out:
                 run(run_cmd, 'benchopt', standalone_mode=False)
 
             # Check that this run was properly done. If only one is detected,
@@ -320,26 +319,26 @@ class TestRunCmd:
 
             # Now check that the cache is hit when running the benchmark a
             # second time without force
-            with CaptureRunOutput() as out:
+            with CaptureCmdOutput() as out:
                 run(run_cmd, 'benchopt', standalone_mode=False)
 
             out.check_output('test-solver:', repetition=1)
 
             # Check that the cache is also hit when running in parallel
-            with CaptureRunOutput() as out:
+            with CaptureCmdOutput() as out:
                 run(run_cmd + ['-j', 2], 'benchopt', standalone_mode=False)
 
             out.check_output('test-solver:', repetition=1)
 
             # Make sure that -f option forces the re-run for the solver
             run_cmd[3] = '-f'
-            with CaptureRunOutput() as out:
+            with CaptureCmdOutput() as out:
                 run(run_cmd, 'benchopt', standalone_mode=False)
 
             out.check_output('test-solver:', repetition=5*n_rep+1)
 
     def test_changing_output_name(self):
-        with temp_benchmark() as bench, CaptureRunOutput() as out:
+        with temp_benchmark() as bench, CaptureCmdOutput() as out:
             command = (
                 f"{bench.benchmark_dir} -d test-dataset  -n 1 --no-plot "
                 "--output unique_name".split()
@@ -380,7 +379,7 @@ class TestRunCmd:
             """
 
         with temp_benchmark(solvers=[solver]) as bench:
-            with CaptureRunOutput() as out:
+            with CaptureCmdOutput() as out:
                 run([str(bench.benchmark_dir),
                     *'-d test-dataset -n 1 -r 1 --no-plot'.split(),
                     *'-s test-solver'.split()],
@@ -389,7 +388,7 @@ class TestRunCmd:
             out.check_output('#RUN0', repetition=2)
             out.check_output('#RUN1', repetition=0)
 
-            with CaptureRunOutput() as out:
+            with CaptureCmdOutput() as out:
                 run([
                     str(bench.benchmark_dir),
                     *'-d test-dataset -n 1 -r 1 --no-plot --collect'.split(),
@@ -450,7 +449,7 @@ class TestInstallCmd:
                 install(cmd, 'benchopt', standalone_mode=False)
 
     def test_valid_call(self):
-        with temp_benchmark() as bench, CaptureRunOutput() as out:
+        with temp_benchmark() as bench, CaptureCmdOutput() as out:
             install([
                 str(bench.benchmark_dir), '-d', 'test-dataset',
                 '-s', 'test-solver', '-y'
@@ -470,7 +469,7 @@ class TestInstallCmd:
                 def get_data(self): print("LOAD DATA")
         """
         with temp_benchmark(datasets=[dataset]) as benchmark:
-            with CaptureRunOutput() as out:
+            with CaptureCmdOutput() as out:
                 install([
                     *f'{benchmark.benchmark_dir} -d test_dataset '
                     '-y --download'.split()
@@ -491,7 +490,7 @@ class TestInstallCmd:
                 )
 
     def test_benchopt_install_in_env(self, test_env_name):
-        with temp_benchmark() as bench, CaptureRunOutput() as out:
+        with temp_benchmark() as bench, CaptureCmdOutput() as out:
             install(
                 [str(bench.benchmark_dir), '--env-name', test_env_name],
                 'benchopt', standalone_mode=False
@@ -555,7 +554,7 @@ class TestInstallCmd:
         with temp_benchmark(datasets=dataset) as benchmark:
             match = "not importable:\nDataset\n- buggy-class"
             with pytest.raises(AttributeError, match=re.escape(match)):
-                with CaptureRunOutput():
+                with CaptureCmdOutput():
                     install(
                         f'{benchmark.benchmark_dir} -d buggy-class -y'.split(),
                         'benchopt', standalone_mode=False
@@ -565,7 +564,7 @@ class TestInstallCmd:
         with temp_benchmark(solvers=solver) as benchmark:
             match = "not importable:\nSolver\n- buggy-class"
             with pytest.raises(AttributeError, match=re.escape(match)):
-                with CaptureRunOutput():
+                with CaptureCmdOutput():
                     install(
                         f'{benchmark.benchmark_dir} -s buggy-class -y'.split(),
                         'benchopt', standalone_mode=False
@@ -614,7 +613,7 @@ class TestInstallCmd:
         with temp_benchmark(objective=objective,
                             solvers=[solver],
                             datasets=[dataset]) as benchmark:
-            with CaptureRunOutput() as out:
+            with CaptureCmdOutput() as out:
                 install([
                     *f'{benchmark.benchmark_dir} -y --minimal '
                     f'--env-name {test_env_name}'.split()
@@ -656,7 +655,7 @@ class TestInstallCmd:
                 objective=objective,
                 datasets=[missing_deps_dataset]
         ) as benchmark:
-            with CaptureRunOutput() as out:
+            with CaptureCmdOutput() as out:
                 install([
                     *f'{benchmark.benchmark_dir} -d test-dataset -y '
                     f'--env-name {test_env_name}'.split()
@@ -694,7 +693,7 @@ class TestPlotCmd:
         "Make sure at least one result file is available"
         cls.ctx = temp_benchmark()
         cls.bench = cls.ctx.__enter__()
-        with CaptureRunOutput(delete_result_files=False) as out:
+        with CaptureCmdOutput(delete_result_files=False) as out:
             run(
                 f"{cls.bench.benchmark_dir} -d test-dataset -n 2 -r 1 "
                 "--no-plot".split(), 'benchopt', standalone_mode=False
@@ -732,36 +731,24 @@ class TestPlotCmd:
     @pytest.mark.parametrize('kind', PLOT_KINDS)
     def test_valid_call(self, kind):
 
-        with SuppressStd() as out:
+        with CaptureCmdOutput() as out:
             plot(f"{self.bench.benchmark_dir} -f {self.result_file} -k {kind} "
                  "--no-display --no-html".split(),
                  'benchopt', standalone_mode=False)
 
-        saved_files = re.findall(r'Save .* as: (.*\.pdf)', out.output)
-        try:
-            assert len(saved_files) == 1
-            assert kind in saved_files[0]
-        finally:
-            # Make sure to clean up all files even when the test fails
-            for f in saved_files:
-                Path(f).unlink()
+        assert len(out.result_files) == 1
+        assert kind in out.result_files[0]
+        assert '.pdf' in out.result_files[0]
 
     def test_valid_call_html(self):
 
-        with SuppressStd() as out:
+        with CaptureCmdOutput() as out:
             plot(f"{self.bench.benchmark_dir} -f {self.result_file} "
                  "--no-display --html".split(),
                  'benchopt', standalone_mode=False)
 
-        saved_files = re.findall(
-            r'Writing.* results to (.*\.html)', out.output
-        )
-        try:
-            assert len(saved_files) == 2
-        finally:
-            # Make sure to clean up all files even when the test fails
-            for f in saved_files:
-                Path(f).unlink()
+        assert len(out.result_files) == 2
+        assert all('.html' in f for f in out.result_files)
 
     def test_complete_bench(self, bench_completion_cases):  # noqa: F811
 
@@ -787,14 +774,15 @@ class TestGenerateResultCmd:
         "Make sure at least one result file is available"
         cls.ctx = temp_benchmark()
         cls.bench = cls.ctx.__enter__()
-        with CaptureRunOutput(delete_result_files=False) as out:
+        with CaptureCmdOutput(delete_result_files=False) as out:
             clean([str(cls.bench.benchmark_dir)],
                   'benchopt', standalone_mode=False)
             run(f"{cls.bench.benchmark_dir} -d test-dataset -n 2 -r 1 "
-                "--no-plot".split(), 'benchopt', standalone_mode=False)
-            time.sleep(1)  # Make sure there is 2 separate files
+                "--no-plot --output out1".split(),
+                'benchopt', standalone_mode=False)
             run(f"{cls.bench.benchmark_dir} -d test-dataset -n 2 -r 1 "
-                "--no-plot".split(), 'benchopt', standalone_mode=False)
+                "--no-plot --output out2".split(),
+                'benchopt', standalone_mode=False)
         assert len(out.result_files) == 2, out
         cls.result_files = out.result_files
 
@@ -806,28 +794,24 @@ class TestGenerateResultCmd:
 
     def test_call(self):
 
-        with SuppressStd() as out:
+        with CaptureCmdOutput() as out:
             generate_results([
                 '--root', str(self.bench.benchmark_dir.parent), '--no-display'
             ], 'benchopt', standalone_mode=False)
-        html_results = re.findall(r'Writing results to (.*\.html)', out.output)
-        html_benchmark = re.findall(
-            rf'Writing {self.bench.benchmark_dir.name} results to (.*\.html)',
-            out.output
-        )
-        html_index = re.findall(r'Writing index to (.*\.html)', out.output)
-        try:
-            assert len(html_index) == 1, out.output
-            assert len(html_benchmark) == 1, out.output
-            assert len(html_results) == len(self.result_files), out.output
-            print(out.output)
-            for f in self.result_files:
-                basename = Path(f).stem
-                assert any(basename in res for res in html_results)
-        finally:
-            # Make sure to clean up all files even when the test fails
-            for f in html_results + html_benchmark + html_index:
-                Path(f).unlink()
+
+        assert len(out.result_files) == 2 + len(self.result_files), out.output
+        html_index = [f for f in out.result_files if 'index' in f]
+        html_benchmark = [
+            f for f in out.result_files
+            if f"{self.bench.benchmark_dir.name}.html" in f
+        ]
+        html_results = [f for f in out.result_files if 'out' in f]
+        assert len(html_index) == 1, out.output
+        assert len(html_benchmark) == 1, out.output
+        assert len(html_results) == len(self.result_files), out.output
+        for f in self.result_files:
+            basename = Path(f).stem
+            assert any(basename in res for res in html_results)
 
 
 class TestArchiveCmd:
@@ -837,7 +821,7 @@ class TestArchiveCmd:
         "Make sure at least one result file is available"
         cls.ctx = temp_benchmark(extra_files={"README": ""})
         cls.bench = cls.ctx.__enter__()
-        with CaptureRunOutput(delete_result_files=False) as out:
+        with CaptureCmdOutput(delete_result_files=False) as out:
             run(
                 f"{cls.bench.benchmark_dir} -d test-dataset -n 2 -r 1 "
                 "--no-plot".split(), 'benchopt', standalone_mode=False
@@ -862,69 +846,62 @@ class TestArchiveCmd:
             else:
                 run([], 'benchopt', standalone_mode=False)
 
+    def count_files_in_archive(self, archive_file):
+        counts = {k: 0 for k in [
+            "__pycache__", "outputs", "objective.py", "datasets",
+            "solvers", "README"
+        ]}
+
+        with tarfile.open(archive_file, "r:gz") as tar:
+            for elem in tar.getmembers():
+                for k in counts:
+                    counts[k] += k in elem.name
+                assert elem.uname == "benchopt"
+        return counts
+
     def test_call(self):
 
-        with SuppressStd() as out:
+        with CaptureCmdOutput(delete_result_files=False) as out:
             archive([str(self.bench.benchmark_dir)], 'benchopt',
                     standalone_mode=False)
-        saved_files = re.findall(r'Results are in (.*\.tar.gz)', out.output)
+
         try:
-            assert len(saved_files) == 1
-            saved_file = saved_files[0]
-
-            counts = {k: 0 for k in [
-                "__pycache__", "outputs", "objective.py", "datasets",
-                "solvers", "README"
-            ]}
-
-            with tarfile.open(saved_file, "r:gz") as tar:
-                for elem in tar.getmembers():
-                    for k in counts:
-                        counts[k] += k in elem.name
-                    assert elem.uname == "benchopt"
-
-            assert counts["README"] == 1, counts
-            assert counts["objective.py"] == 1, counts
-            assert counts["datasets"] >= 1, counts
-            assert counts["solvers"] >= 1, counts
-            assert counts["outputs"] == 0, counts
-            assert counts["__pycache__"] == 0, counts
+            assert len(out.result_files) == 1
+            saved_file = out.result_files[0]
+            counts = self.count_files_in_archive(saved_file)
         finally:
             # Make sure to clean up all files even when the test fails
-            for f in saved_files:
+            for f in out.result_files:
                 Path(f).unlink()
+
+        assert counts["README"] == 1, counts
+        assert counts["objective.py"] == 1, counts
+        assert counts["datasets"] >= 1, counts
+        assert counts["solvers"] >= 1, counts
+        assert counts["outputs"] == 0, counts
+        assert counts["__pycache__"] == 0, counts
 
     def test_call_with_outputs(self):
 
-        with SuppressStd() as out:
+        with CaptureCmdOutput(delete_result_files=False) as out:
             archive(f"{self.bench.benchmark_dir} --with-outputs".split(),
                     'benchopt', standalone_mode=False)
         saved_files = re.findall(r'Results are in (.*\.tar.gz)', out.output)
         try:
-            assert len(saved_files) == 1
-            saved_file = saved_files[0]
-
-            counts = {k: 0 for k in [
-                "__pycache__", "outputs", "objective.py", "datasets",
-                "solvers", "README"
-            ]}
-
-            with tarfile.open(saved_file, "r:gz") as tar:
-                for elem in tar.getmembers():
-                    for k in counts:
-                        counts[k] += k in elem.name
-                    assert elem.uname == "benchopt"
-
-            assert counts["README"] == 1, counts
-            assert counts["objective.py"] == 1, counts
-            assert counts["datasets"] >= 1, counts
-            assert counts["solvers"] >= 1, counts
-            assert counts["outputs"] >= 1, counts
-            assert counts["__pycache__"] == 0, counts
+            assert len(out.result_files) == 1
+            saved_file = out.result_files[0]
+            counts = self.count_files_in_archive(saved_file)
         finally:
             # Make sure to clean up all files even when the test fails
             for f in saved_files:
                 Path(f).unlink()
+
+        assert counts["README"] == 1, counts
+        assert counts["objective.py"] == 1, counts
+        assert counts["datasets"] >= 1, counts
+        assert counts["solvers"] >= 1, counts
+        assert counts["outputs"] >= 1, counts
+        assert counts["__pycache__"] == 0, counts
 
     def test_complete_bench(self, bench_completion_cases):  # noqa: F811
         # Completion for benchmark name

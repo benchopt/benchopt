@@ -2,7 +2,7 @@ from contextlib import nullcontext
 
 from benchopt.config import DEBUG
 from benchopt.base import BaseSolver
-from benchopt.utils.stream_redirection import SuppressStd
+from benchopt.utils.suppress_std import SuppressStd
 from benchopt.utils.shell_cmd import _run_shell_in_conda_env
 
 import julia

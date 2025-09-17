@@ -8,7 +8,7 @@ from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.utils.dynamic_modules import _load_class_from_module
 
 from benchopt.tests.utils import patch_import
-from benchopt.tests.utils import CaptureRunOutput
+from benchopt.tests.utils import CaptureCmdOutput
 
 
 def test_template_dataset():
@@ -34,7 +34,7 @@ def test_ignore_hidden_files(no_debug_log):
     # is not ignored as there is no Dataset/Solver defined in the file.
     datasets = {".hidden_dataset_.py": ""}
     with temp_benchmark(datasets=datasets) as bench:
-        with CaptureRunOutput() as out:
+        with CaptureCmdOutput() as out:
             run(
                 f"{bench.benchmark_dir} -d test-dataset -s test-solver "
                 "-n 1 -r 1 --no-plot".split(),
@@ -45,7 +45,7 @@ def test_ignore_hidden_files(no_debug_log):
 
     solvers = {".hidden_solverdataset_.py": ""}
     with temp_benchmark(solvers=solvers) as bench:
-        with CaptureRunOutput() as out:
+        with CaptureCmdOutput() as out:
             run(
                 f"{bench.benchmark_dir} -d test-dataset -s test-solver "
                 "-n 1 -r 1 --no-plot".split(),
@@ -104,7 +104,7 @@ def test_benchopt_min_version():
 
     objective = objective.replace("99.9", "0.0")
     with temp_benchmark(objective=objective) as bench:
-        with CaptureRunOutput() as out:
+        with CaptureCmdOutput() as out:
             # check than benchmark with low requirement runs
             run(
                 [str(bench.benchmark_dir), *run_args],
@@ -142,7 +142,7 @@ def test_import_error_reporting(error, raise_install_error):
         os.environ['BENCHOPT_RAISE_INSTALL_ERROR'] = str(raise_install_error)
         with patch_import(fake_module=raise_error):
             with temp_benchmark(solvers=solver) as bench:
-                with CaptureRunOutput() as out, pytest.raises(expected_exc):
+                with CaptureCmdOutput() as out, pytest.raises(expected_exc):
                     run([
                         *f"{bench.benchmark_dir} -s solver-test "
                         "-d test-dataset -n 1 --no-plot".split()
@@ -210,7 +210,7 @@ def test_objective_save_final_results(no_debug_log):
     import pickle
 
     with temp_benchmark(objective=save_final) as benchmark:
-        with CaptureRunOutput(delete_result_files=False) as out:
+        with CaptureCmdOutput(delete_result_files=False) as out:
             run([
                 str(benchmark.benchmark_dir),
                 *('-s test-solver -d test-dataset -n 1 -r 1 --no-plot').split()
@@ -279,7 +279,7 @@ def test_objective_cv_splitter(no_debug_log):
                 objective=objective, solvers=solver, datasets=dataset
     ) as benchmark:
         print(list(benchmark.benchmark_dir.glob("datasets/*")))
-        with CaptureRunOutput() as out:
+        with CaptureCmdOutput() as out:
             run([str(benchmark.benchmark_dir),
                 *('-s test-solver -d test-dataset --no-plot').split()],
                 standalone_mode=False)
@@ -296,7 +296,7 @@ def test_objective_cv_splitter(no_debug_log):
     with temp_benchmark(
             objective=objective, solvers=solver, datasets=dataset
     ) as benchmark:
-        with CaptureRunOutput() as out:
+        with CaptureCmdOutput() as out:
             run([str(benchmark.benchmark_dir),
                 *('-s test-solver -d test-dataset -r 2 --no-plot').split()],
                 standalone_mode=False)
@@ -312,7 +312,7 @@ def test_objective_cv_splitter(no_debug_log):
     with temp_benchmark(
             objective=objective, solvers=solver, datasets=dataset
     ) as benchmark:
-        with CaptureRunOutput() as out:
+        with CaptureCmdOutput() as out:
             run([str(benchmark.benchmark_dir),
                 *('-s test-solver -d test-dataset -r 5 --no-plot').split()],
                 standalone_mode=False)
@@ -329,7 +329,7 @@ def test_objective_cv_splitter(no_debug_log):
     with temp_benchmark(
             objective=objective, solvers=solver, datasets=dataset
     ) as benchmark:
-        with CaptureRunOutput() as out:
+        with CaptureCmdOutput() as out:
             run([
                 str(benchmark.benchmark_dir),
                 *('-s test-solver -d test-dataset -j 3 -r 4 --no-plot').split()
@@ -359,7 +359,7 @@ def test_run_once_iteration(n_iter):
     """
 
     with temp_benchmark(solvers=[solver1]) as benchmark:
-        with CaptureRunOutput() as out:
+        with CaptureCmdOutput() as out:
             run([
                 str(benchmark.benchmark_dir),
                 *'-s solver1 -d test-dataset -n 0 -r 1 --no-plot'.split()
@@ -388,7 +388,7 @@ def test_run_once_callback(n_iter):
     """
 
     with temp_benchmark(solvers=[solver1]) as benchmark:
-        with CaptureRunOutput() as out:
+        with CaptureCmdOutput() as out:
             run([
                 str(benchmark.benchmark_dir),
                 *'-s solver1 -d test-dataset -n 0 -r 1 --no-plot'.split()
@@ -474,7 +474,7 @@ def test_paths_config_key(test_case, n_jobs):
     with temp_benchmark(
             datasets=dataset, solvers=solver, config=config
     ) as bench:
-        with CaptureRunOutput() as out:
+        with CaptureCmdOutput() as out:
             run(
                 f"{bench.benchmark_dir} -s test-solver -d custom_dataset "
                 f"-n 0 -r 1 --no-plot -j {n_jobs}".split(),

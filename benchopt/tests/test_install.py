@@ -2,7 +2,7 @@ import re
 import pytest
 
 from benchopt.cli.main import install
-from benchopt.tests.utils import CaptureRunOutput
+from benchopt.tests.utils import CaptureCmdOutput
 from benchopt.utils.temp_benchmark import temp_benchmark
 
 
@@ -86,21 +86,21 @@ def test_gpu_flag(no_debug_log):
                         solvers=[solver1, solver2],
                         ) as benchmark:
         err = ("keys should be `cpu` and `gpu`, got ['wrong_key', 'cpu']")
-        with CaptureRunOutput():
+        with CaptureCmdOutput():
             with pytest.raises(ValueError, match=re.escape(err)):
                 install([str(benchmark.benchmark_dir),
                          *'-y -f -s solver1 --gpu'.split()],
                         standalone_mode=False)
 
         # installing without gpu flag installs requirements["cpu"], hence OK
-        with CaptureRunOutput() as out:
+        with CaptureCmdOutput() as out:
             install([str(benchmark.benchmark_dir),
                      *'-y -f -s solver1'.split()],
                     standalone_mode=False)
         out.check_output("All required solvers are already installed.")
 
         # all good with requirements["gpu"] for solver2, hence no error
-        with CaptureRunOutput() as out:
+        with CaptureCmdOutput() as out:
             install([str(benchmark.benchmark_dir),
                      *'-y -f -s solver2 --gpu'.split()],
                     standalone_mode=False)

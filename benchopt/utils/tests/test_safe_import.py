@@ -2,7 +2,7 @@ import pytest
 
 from benchopt.utils.dynamic_modules import _load_class_from_module
 from benchopt.utils.temp_benchmark import temp_benchmark
-from benchopt.tests.utils import CaptureRunOutput
+from benchopt.tests.utils import CaptureCmdOutput
 
 
 def test_import_ctx():
@@ -19,7 +19,7 @@ def test_import_ctx():
         def get_result(self): return dict(beta=1)
     """
     with temp_benchmark(solvers=solver) as bench:
-        with CaptureRunOutput() as out:
+        with CaptureCmdOutput() as out:
             solver = _load_class_from_module(
                 bench.benchmark_dir,
                 bench.benchmark_dir / "solvers" / "solver_0.py",

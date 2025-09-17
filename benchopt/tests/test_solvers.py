@@ -6,7 +6,7 @@ from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.stopping_criterion import SAMPLING_STRATEGIES
 from benchopt.utils.dynamic_modules import _load_class_from_module
 
-from benchopt.tests.utils import CaptureRunOutput
+from benchopt.tests.utils import CaptureCmdOutput
 
 
 def test_solver_template():
@@ -42,7 +42,7 @@ def test_custom_parameters(no_debug_log):
 
     select_solvers = 'test-solver[param1=[1,2],param2=9]'
 
-    with temp_benchmark(solvers=solver) as bench, CaptureRunOutput() as out:
+    with temp_benchmark(solvers=solver) as bench, CaptureCmdOutput() as out:
         run(
             f"{bench.benchmark_dir} -d simulated -s {select_solvers} -n 0 "
             "--no-plot".split(),
@@ -72,7 +72,7 @@ def test_solver_warm_up():
     """
 
     with temp_benchmark(solvers=[solver1]) as benchmark:
-        with CaptureRunOutput() as out:
+        with CaptureCmdOutput() as out:
             run([
                 str(benchmark.benchmark_dir),
                 *'-s solver1 -d test-dataset -n 0 -r 5 --no-plot'.split(),
@@ -101,13 +101,13 @@ def test_solver_pre_run_hook():
     """
 
     with temp_benchmark(solvers=[solver1]) as benchmark:
-        with CaptureRunOutput() as out:
+        with CaptureCmdOutput() as out:
             run([
                 str(benchmark.benchmark_dir),
                 *'-s solver1 -d test-dataset -n 0 -r 5 --no-plot'.split()
             ], standalone_mode=False)
 
-        with CaptureRunOutput() as out:
+        with CaptureCmdOutput() as out:
             with pytest.raises(SystemExit, match="False"):
                 _cmd_test([
                     str(benchmark.benchmark_dir), '-k', 'solver1',
@@ -136,7 +136,7 @@ def test_solver_invalid_get_result(strategy):
 
     with temp_benchmark(solvers=solver) as benchmark:
         with pytest.raises(TypeError, match='get_result` should be a dict '):
-            with CaptureRunOutput():
+            with CaptureCmdOutput():
                 run([
                     str(benchmark.benchmark_dir),
                     *'-s solver1 -d test-dataset -n 0 -r 5 --no-plot'.split()
@@ -173,7 +173,7 @@ def test_solver_return_early_callback(eval_every):
     """
 
     with temp_benchmark(solvers=solver, objective=objective) as bench:
-        with CaptureRunOutput() as out:
+        with CaptureCmdOutput() as out:
             run(
                 f"{bench.benchmark_dir} -d test-dataset -n 10 "
                 "--no-plot".split(),

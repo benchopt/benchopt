@@ -3,7 +3,7 @@ from subprocess import check_output
 
 from benchopt.utils.temp_benchmark import temp_benchmark
 
-from benchopt.tests.utils.capture_run_output import BenchoptRunOutputProcessor
+from benchopt.tests.utils.capture_cmd_output import BenchoptCmdOutputProcessor
 
 
 def test_run_benchopt_module(no_debug_log):
@@ -16,7 +16,7 @@ def test_run_benchopt_module(no_debug_log):
             sys.executable, "-m", "benchopt", "run", tmp_dir.benchmark_dir,
             "-d", "test-dataset", '-n', "0", "--no-plot"
         ],).decode("utf-8")
-        output = BenchoptRunOutputProcessor(output)
+        output = BenchoptCmdOutputProcessor(output)
 
     output.check_output('test-dataset', repetition=1)
     output.check_output('simulated', repetition=0)

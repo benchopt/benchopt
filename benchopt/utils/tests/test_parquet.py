@@ -14,7 +14,7 @@ from benchopt.utils.misc import NamedTemporaryFile
 
 from benchopt.config import DEFAULT_BENCHMARK_CONFIG
 
-from benchopt.tests.utils import CaptureRunOutput
+from benchopt.tests.utils import CaptureCmdOutput
 
 
 def test_parquet_metadata():
@@ -81,7 +81,7 @@ def test_metadata_saving():
             f"{bench.benchmark_dir} -d test-dataset -n 1 -r {1} --no-display"
         ).split()
 
-        with CaptureRunOutput(delete_result_files=False) as out:
+        with CaptureCmdOutput(delete_result_files=False) as out:
             run(run_cmd, 'benchopt', standalone_mode=False)
 
         config = get_metadata(Path(out.result_files[0]))
@@ -96,7 +96,7 @@ def test_metadata_saving():
             yaml.safe_dump(dummy_config, f)
 
         # Make sure that plot update the metadata of existing files.
-        with CaptureRunOutput(delete_result_files=False):
+        with CaptureCmdOutput(delete_result_files=False):
             plot(
                 [str(bench.benchmark_dir), '--no-display'],
                 'benchopt', standalone_mode=False
@@ -105,7 +105,7 @@ def test_metadata_saving():
         assert get_metadata(Path(out.result_files[0])) == dummy_config
 
         # Make sure that run store the metadata when creating a file.
-        with CaptureRunOutput(delete_result_files=False) as out:
+        with CaptureCmdOutput(delete_result_files=False) as out:
             run(run_cmd, 'benchopt', standalone_mode=False)
 
         assert get_metadata(Path(out.result_files[0])) == dummy_config

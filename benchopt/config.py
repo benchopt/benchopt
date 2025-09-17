@@ -111,6 +111,7 @@ DEFAULT_BENCHMARK_CONFIG = {
   you can proceed as follows in the benchmark's ``config.yaml`` file:
 
   .. code-block:: yaml
+
     data_home: path/to/data/home
 
     data_paths:
@@ -120,6 +121,7 @@ DEFAULT_BENCHMARK_CONFIG = {
   to retrieve the paths:
 
   .. code-block:: python
+
     from benchopt.config import get_data_path
 
     path = get_data_path('my_data_file')

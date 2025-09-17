@@ -3,7 +3,7 @@ import pytest
 from benchopt.cli.main import run
 from benchopt.utils.temp_benchmark import temp_benchmark
 
-from benchopt.tests.utils import CaptureRunOutput
+from benchopt.tests.utils import CaptureCmdOutput
 
 SOLVER = """from benchopt import BaseSolver
     import numpy as np
@@ -37,7 +37,7 @@ def test_config_solver_no_params(no_debug_log):
         "parameters = dict(param1=[None], param2=[None])", ""
     )
     with temp_benchmark(solvers=solver, config=config) as bench:
-        with CaptureRunOutput() as out:
+        with CaptureCmdOutput() as out:
             config_file = bench.benchmark_dir / "run_config.yml"
             run([
                 str(bench.benchmark_dir),
@@ -57,7 +57,7 @@ def test_config_solver_no_params_error(no_debug_log):
             "This solver has no parameters."
         )
         config_file = bench.benchmark_dir / "run_config.yml"
-        with CaptureRunOutput():
+        with CaptureCmdOutput():
             with pytest.raises(ValueError, match=error):
                 run([
                     str(bench.benchmark_dir),
@@ -69,7 +69,7 @@ def test_config_solver_with_params(no_debug_log):
     config = {"run_config.yml": CONFIG}
     with temp_benchmark(solvers=SOLVER, config=config) as bench:
         config_file = bench.benchmark_dir / "run_config.yml"
-        with CaptureRunOutput() as out:
+        with CaptureCmdOutput() as out:
             run([
                 str(bench.benchmark_dir),
                 *f'--config {config_file}'.split()
@@ -89,7 +89,7 @@ def test_config_solver_with_params_error(no_debug_log):
             "Possible parameters are:\n- param1\n- param2"
         )
 
-        with CaptureRunOutput():
+        with CaptureCmdOutput():
             with pytest.raises(ValueError, match=error):
                 run([
                     str(bench.benchmark_dir),
@@ -104,7 +104,7 @@ def test_config_solver_with_params_list_error(no_debug_log):
         config_file = bench.benchmark_dir / "run_config.yml"
 
         error = "Ambiguous positional parameter for solver1."
-        with CaptureRunOutput():
+        with CaptureCmdOutput():
             with pytest.raises(ValueError, match=error):
                 run([
                     str(bench.benchmark_dir),
@@ -117,7 +117,7 @@ def test_config_solver_with_params_str_list(no_debug_log):
 
     with temp_benchmark(solvers=SOLVER, config=config) as bench:
         config_file = bench.benchmark_dir / "run_config.yml"
-        with CaptureRunOutput() as out:
+        with CaptureCmdOutput() as out:
             run([
                 str(bench.benchmark_dir),
                 *f'--config {config_file}'.split()
@@ -135,7 +135,7 @@ def test_config_solver_with_params_str_value(no_debug_log):
 
     with temp_benchmark(solvers=SOLVER, config=config) as bench:
         config_file = bench.benchmark_dir / "run_config.yml"
-        with CaptureRunOutput() as out:
+        with CaptureCmdOutput() as out:
             run([
                 str(bench.benchmark_dir),
                 *f'--config {config_file}'.split()
@@ -153,7 +153,7 @@ def test_config_solver_with_params_yaml_list(no_debug_log):
 
     with temp_benchmark(solvers=SOLVER, config=config) as bench:
         config_file = bench.benchmark_dir / "run_config.yml"
-        with CaptureRunOutput() as out:
+        with CaptureCmdOutput() as out:
             run([
                 str(bench.benchmark_dir),
                 *f'--config {config_file}'.split()
@@ -172,7 +172,7 @@ def test_config_solver_with_params_yaml_items(no_debug_log):
     """)}
     with temp_benchmark(solvers=SOLVER, config=config) as bench:
         config_file = bench.benchmark_dir / "run_config.yml"
-        with CaptureRunOutput() as out:
+        with CaptureCmdOutput() as out:
             run([
                 str(bench.benchmark_dir),
                 *f'--config {config_file}'.split()
@@ -190,7 +190,7 @@ def test_config_solver_with_params_yaml_value(no_debug_log):
     """)}
     with temp_benchmark(solvers=SOLVER, config=config) as bench:
         config_file = bench.benchmark_dir / "run_config.yml"
-        with CaptureRunOutput() as out:
+        with CaptureCmdOutput() as out:
             run([
                 str(bench.benchmark_dir),
                 *f'--config {config_file}'.split()
@@ -209,7 +209,7 @@ def test_config_solver_with_params_complex_param(no_debug_log):
     """)}
     with temp_benchmark(solvers=SOLVER, config=config) as bench:
         config_file = bench.benchmark_dir / "run_config.yml"
-        with CaptureRunOutput() as out:
+        with CaptureCmdOutput() as out:
             run([
                 str(bench.benchmark_dir),
                 *f'--config {config_file}'.split()
@@ -228,7 +228,7 @@ def test_config_solver_with_one_param_list(no_debug_log):
     with temp_benchmark(solvers=solver, config=config) as bench:
         config_file = bench.benchmark_dir / "run_config.yml"
 
-        with CaptureRunOutput() as out:
+        with CaptureCmdOutput() as out:
             run([
                 str(bench.benchmark_dir),
                 *f'--config {config_file}'.split()
@@ -248,7 +248,7 @@ def test_config_solver_with_one_param_yaml_list(no_debug_log):
     with temp_benchmark(solvers=solver, config=config) as bench:
         config_file = bench.benchmark_dir / "run_config.yml"
 
-        with CaptureRunOutput() as out:
+        with CaptureCmdOutput() as out:
             run([
                 str(bench.benchmark_dir),
                 *f'--config {config_file}'.split()
@@ -267,7 +267,7 @@ def test_config_solver_double_param_yaml_list(no_debug_log):
     with temp_benchmark(solvers=SOLVER, config=config) as bench:
         config_file = bench.benchmark_dir / "run_config.yml"
 
-        with CaptureRunOutput() as out:
+        with CaptureCmdOutput() as out:
             run([
                 str(bench.benchmark_dir),
                 *f'--config {config_file}'.split()
@@ -284,7 +284,7 @@ def test_config_solver_double_param_solver_yaml(no_debug_log):
     with temp_benchmark(solvers=SOLVER, config=config) as bench:
         config_file = bench.benchmark_dir / "run_config.yml"
 
-        with CaptureRunOutput() as out:
+        with CaptureCmdOutput() as out:
             run([
                 str(bench.benchmark_dir),
                 *f'--config {config_file}'.split()

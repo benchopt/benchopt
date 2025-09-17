@@ -1,6 +1,6 @@
 import pytest
 
-from benchopt.tests.utils import CaptureRunOutput
+from benchopt.tests.utils import CaptureCmdOutput
 from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.utils.terminal_output import TICK, CROSS
 
@@ -57,7 +57,7 @@ class TestCheckDataCmd:
                 return {'X': 1, 'y': 2}
         """
         with temp_benchmark(datasets=dataset) as benchmark:
-            with CaptureRunOutput() as out:
+            with CaptureCmdOutput() as out:
                 check_data(
                     [str(benchmark.benchmark_dir), '-d', 'test_data'],
                     'benchopt', standalone_mode=False
@@ -79,7 +79,7 @@ class TestCheckDataCmd:
                 return {'X': 1, 'y': 2}
         """
         with temp_benchmark(datasets=dataset) as benchmark:
-            with CaptureRunOutput() as out:
+            with CaptureCmdOutput() as out:
                 check_data(
                     [str(benchmark.benchmark_dir), '-d', 'test_data'],
                     'benchopt', standalone_mode=False

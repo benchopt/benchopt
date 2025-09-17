@@ -8,7 +8,7 @@ from benchopt.benchmark import _extract_options
 from benchopt.benchmark import _extract_parameters
 from benchopt.benchmark import _list_parametrized_classes
 from benchopt.utils.temp_benchmark import temp_benchmark
-from benchopt.tests.utils import CaptureRunOutput
+from benchopt.tests.utils import CaptureCmdOutput
 from benchopt.cli.main import run
 
 
@@ -50,7 +50,7 @@ def test_skip_api(n_jobs):
     """
 
     with temp_benchmark(objective=objective, solvers=[solver]) as benchmark:
-        with CaptureRunOutput() as out:
+        with CaptureCmdOutput() as out:
             run([*(
                 f'{benchmark.benchmark_dir} -s test-solver -d test-dataset '
                 f'-j {n_jobs} --no-plot'
@@ -76,7 +76,7 @@ def _assert_parameters_equal(instance, parameters):
         assert getattr(instance, key) == val
 
 
-class TestDatasetTwoParams(BaseDataset):
+class _DatasetTwoParams(BaseDataset):
     """Used to test the selection of datasets by keyword parameters."""
     name = "Test-Dataset"
     parameters = {'n_samples': [10, 11], 'n_features': [20, 21]}
@@ -88,7 +88,7 @@ def test_filter_classes_two_parameters():
 
     def filt_(filters):
         return list(_list_parametrized_classes(*_check_patterns(
-            [TestDatasetTwoParams], filters
+            [_DatasetTwoParams], filters
         )))
 
     # no selection (default grid)
@@ -161,7 +161,7 @@ def test_filter_classes_two_parameters():
         filt_(["Test-Dataset[n_targets=42]"])
 
 
-class TestDatasetOneParam(BaseDataset):
+class _DatasetOneParam(BaseDataset):
     """Used to test the selection of dataset with a positional parameter."""
     name = "Test-Dataset"
     parameters = {'n_samples': [10, 11]}
@@ -173,7 +173,7 @@ def test_filter_classes_one_param():
 
     def filt_(filters):
         return list(_list_parametrized_classes(*_check_patterns(
-            [TestDatasetOneParam], filters
+            [_DatasetOneParam], filters
         )))
 
     # test positional parameter
@@ -279,7 +279,7 @@ def test_benchopt_run_script(n_jobs, no_debug_log):
     from benchopt import run_benchmark
 
     with temp_benchmark() as benchmark:
-        with CaptureRunOutput() as out:
+        with CaptureCmdOutput() as out:
             run_benchmark(
                 str(benchmark.benchmark_dir),
                 solver_names=["test-solver"],
@@ -397,7 +397,7 @@ def test_warmup_error(no_debug_log):
 
     with temp_benchmark(solvers=solver) as benchmark:
         with pytest.raises(SystemExit, match="1"):
-            with CaptureRunOutput() as out:
+            with CaptureCmdOutput() as out:
                 run_benchmark(
                     str(benchmark.benchmark_dir),
                     solver_names=["solver1"],
@@ -447,7 +447,7 @@ class TestCache:
                 objective=self.objective, solvers=self.solver,
                 datasets=self.dataset
         ) as bench:
-            with CaptureRunOutput() as out:
+            with CaptureCmdOutput() as out:
                 for it in range(3):
                     run(f"{bench.benchmark_dir} --no-plot -r {n_reps}".split(),
                         standalone_mode=False)
@@ -462,7 +462,7 @@ class TestCache:
                 objective=self.objective, solvers=self.solver,
                 datasets=self.dataset
         ) as bench:
-            with CaptureRunOutput() as out:
+            with CaptureCmdOutput() as out:
                 for it in range(3):
                     run(f"{bench.benchmark_dir} --no-plot -r {n_reps} "
                         "--no-cache".split(), standalone_mode=False)
@@ -486,7 +486,7 @@ class TestCache:
         with temp_benchmark(objective=self.objective,
                             solvers=[self.solver, solver_fail],
                             datasets=self.dataset) as bench:
-            with CaptureRunOutput() as out:
+            with CaptureCmdOutput() as out:
                 for it in range(3):
                     run(f"{bench.benchmark_dir} --no-plot -r 1 -n 1".split(),
                         standalone_mode=False)
@@ -504,7 +504,7 @@ class TestCache:
                     .replace("#RUN_SOLVER", "#RUN_2SOLVER")
                 ]
         ) as bench:
-            with CaptureRunOutput() as out:
+            with CaptureCmdOutput() as out:
                 run([str(bench.benchmark_dir),
                      *"-s test-solver -s test-solver2 "
                      f'--no-plot -r {n_reps}'.split()],
@@ -525,7 +525,7 @@ class TestCache:
                 objective=self.objective, datasets=self.dataset,
                 solvers=self.solver,
         ) as bench:
-            with CaptureRunOutput() as out:
+            with CaptureCmdOutput() as out:
                 run(f"{bench.benchmark_dir} --no-plot -r {n_reps}".split(),
                     standalone_mode=False)
                 # Modify the solver, to make the cache invalid

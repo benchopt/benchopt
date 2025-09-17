@@ -4,7 +4,7 @@ import pytest
 from benchopt.cli.main import install, run
 from benchopt.utils.temp_benchmark import temp_benchmark
 
-from benchopt.tests.utils import CaptureRunOutput
+from benchopt.tests.utils import CaptureCmdOutput
 
 
 DATASET = """from benchopt import BaseDataset
@@ -66,7 +66,7 @@ def test_r_solver(test_env_name):
         objective=OBJECTIVE,
         datasets=DATASET,
         solvers={"r_solver.py": solver, "r_solver.R": r_solver}
-    ) as bench, CaptureRunOutput() as out:
+    ) as bench, CaptureCmdOutput() as out:
         install(
             [str(bench.benchmark_dir), '--env-name', test_env_name],
             'benchopt', standalone_mode=False
@@ -124,7 +124,7 @@ def test_julia_solver(test_env_name):
         objective=OBJECTIVE,
         datasets=DATASET,
         solvers={"julia.py": solver, "julia.jl": julia_solver},
-    ) as bench, CaptureRunOutput() as out:
+    ) as bench, CaptureCmdOutput() as out:
         install(
             [str(bench.benchmark_dir), '--env-name', test_env_name],
             'benchopt', standalone_mode=False
