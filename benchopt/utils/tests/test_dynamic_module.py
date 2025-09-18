@@ -1,6 +1,6 @@
 from joblib import Parallel, delayed
 
-from benchopt.tests.utils import CaptureRunOutput
+from benchopt.tests.utils import CaptureCmdOutput
 from benchopt.utils.temp_benchmark import temp_benchmark
 
 
@@ -30,13 +30,13 @@ def test_pickling_dynamic_module():
         Solver, _ = benchmark.check_solver_patterns(["test-solver"])[0]
         assert Solver.is_installed()
 
-        with CaptureRunOutput() as out:
+        with CaptureCmdOutput() as out:
             Solver.run(None, None)
         out.check_output("FUNC1", repetition=1)
 
         # This will fail if the benchmark_utils module is not pickled by value
         # by cloudpickle.
-        with CaptureRunOutput():
+        with CaptureCmdOutput():
             Parallel(n_jobs=2)(
                 delayed(Solver.run)(None, None) for _ in range(2)
             )

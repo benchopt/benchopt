@@ -1,21 +1,14 @@
 import pytest
 import inspect
-import numpy as np
 import pandas as pd
 
-from benchopt.tests import TEST_DATASET
-from benchopt.tests import TEST_OBJECTIVE
-
-from benchopt.tests import SELECT_ONE_PGD
-from benchopt.tests import SELECT_ONE_SIMULATED
-from benchopt.tests import SELECT_ONE_OBJECTIVE
-
+from benchopt import BaseDataset
 from benchopt.benchmark import _check_patterns
 from benchopt.benchmark import _extract_options
 from benchopt.benchmark import _extract_parameters
 from benchopt.benchmark import _list_parametrized_classes
 from benchopt.utils.temp_benchmark import temp_benchmark
-from benchopt.tests.utils import CaptureRunOutput
+from benchopt.tests.utils import CaptureCmdOutput
 from benchopt.cli.main import run
 
 
@@ -57,7 +50,7 @@ def test_skip_api(n_jobs):
     """
 
     with temp_benchmark(objective=objective, solvers=[solver]) as benchmark:
-        with CaptureRunOutput() as out:
+        with CaptureCmdOutput() as out:
             run([*(
                 f'{benchmark.benchmark_dir} -s test-solver -d test-dataset '
                 f'-j {n_jobs} --no-plot'
@@ -78,24 +71,16 @@ def test_skip_api(n_jobs):
     out.check_output("Solver#RUN", repetition=1)
 
 
-def test_get_one_result():
-    dataset = TEST_DATASET.get_instance()
-    objective = TEST_OBJECTIVE.get_instance()
-    objective.set_dataset(dataset)
-
-    one_solution = objective.get_one_result()
-    expected = np.zeros(objective.X.shape[1])
-    assert all(one_solution['beta'] == expected)
-
-
 def _assert_parameters_equal(instance, parameters):
     for key, val in parameters.items():
         assert getattr(instance, key) == val
 
 
-class TEST_DATASET_TWO_PARAMS(TEST_DATASET):
+class _DatasetTwoParams(BaseDataset):
     """Used to test the selection of datasets by keyword parameters."""
+    name = "Test-Dataset"
     parameters = {'n_samples': [10, 11], 'n_features': [20, 21]}
+    def get_data(self): pass
 
 
 def test_filter_classes_two_parameters():
@@ -103,7 +88,7 @@ def test_filter_classes_two_parameters():
 
     def filt_(filters):
         return list(_list_parametrized_classes(*_check_patterns(
-            [TEST_DATASET_TWO_PARAMS], filters
+            [_DatasetTwoParams], filters
         )))
 
     # no selection (default grid)
@@ -176,9 +161,11 @@ def test_filter_classes_two_parameters():
         filt_(["Test-Dataset[n_targets=42]"])
 
 
-class TEST_DATASET_ONE_PARAM(TEST_DATASET):
+class _DatasetOneParam(BaseDataset):
     """Used to test the selection of dataset with a positional parameter."""
+    name = "Test-Dataset"
     parameters = {'n_samples': [10, 11]}
+    def get_data(self): pass
 
 
 def test_filter_classes_one_param():
@@ -186,7 +173,7 @@ def test_filter_classes_one_param():
 
     def filt_(filters):
         return list(_list_parametrized_classes(*_check_patterns(
-            [TEST_DATASET_ONE_PARAM], filters
+            [_DatasetOneParam], filters
         )))
 
     # test positional parameter
@@ -292,19 +279,18 @@ def test_benchopt_run_script(n_jobs, no_debug_log):
     from benchopt import run_benchmark
 
     with temp_benchmark() as benchmark:
-        with CaptureRunOutput() as out:
+        with CaptureCmdOutput() as out:
             run_benchmark(
                 str(benchmark.benchmark_dir),
-                solver_names=[SELECT_ONE_PGD],
-                dataset_names=[SELECT_ONE_SIMULATED],
-                objective_filters=[SELECT_ONE_OBJECTIVE],
+                solver_names=["test-solver"],
+                dataset_names=["simulated"],
                 max_runs=2, n_repetitions=1, n_jobs=n_jobs, plot_result=False
             )
 
-    out.check_output('Simulated', repetition=1)
-    out.check_output('Dummy Sparse Regression', repetition=1)
-    out.check_output(r'Python-PGD\[step_size=1\]:', repetition=4)
-    out.check_output(r'Python-PGD\[step_size=1.5\]:', repetition=0)
+    out.check_output('simulated', repetition=1)
+    out.check_output('test-objective', repetition=1)
+    out.check_output('test-solver:', repetition=4)
+    out.check_output('template_solver:', repetition=0)
 
     # Make sure the results were saved in a result file
     assert len(out.result_files) == 1, out.output
@@ -411,17 +397,16 @@ def test_warmup_error(no_debug_log):
 
     with temp_benchmark(solvers=solver) as benchmark:
         with pytest.raises(SystemExit, match="1"):
-            with CaptureRunOutput() as out:
+            with CaptureCmdOutput() as out:
                 run_benchmark(
                     str(benchmark.benchmark_dir),
                     solver_names=["solver1"],
-                    dataset_names=["simu*[n_features=10,n_samples=10,rho=0]"],
-                    objective_filters=["dummy sparse regression[reg=0.1]"],
+                    dataset_names=["test-dataset"],
                     max_runs=1, n_repetitions=1, n_jobs=1, plot_result=False
                 )
-            out.check_output("ValueError: Warmup error", repetition=1)
-            out.check_output("UnboundLocalError", repetition=0)
-            out.check_output("No output produced.", repetition=1)
+        out.check_output("RuntimeError: Warmup error", repetition=1)
+        out.check_output("UnboundLocalError", repetition=0)
+        out.check_output("No output produced.", repetition=1)
 
 
 class TestCache:
@@ -462,7 +447,7 @@ class TestCache:
                 objective=self.objective, solvers=self.solver,
                 datasets=self.dataset
         ) as bench:
-            with CaptureRunOutput() as out:
+            with CaptureCmdOutput() as out:
                 for it in range(3):
                     run(f"{bench.benchmark_dir} --no-plot -r {n_reps}".split(),
                         standalone_mode=False)
@@ -477,7 +462,7 @@ class TestCache:
                 objective=self.objective, solvers=self.solver,
                 datasets=self.dataset
         ) as bench:
-            with CaptureRunOutput() as out:
+            with CaptureCmdOutput() as out:
                 for it in range(3):
                     run(f"{bench.benchmark_dir} --no-plot -r {n_reps} "
                         "--no-cache".split(), standalone_mode=False)
@@ -501,7 +486,7 @@ class TestCache:
         with temp_benchmark(objective=self.objective,
                             solvers=[self.solver, solver_fail],
                             datasets=self.dataset) as bench:
-            with CaptureRunOutput() as out:
+            with CaptureCmdOutput() as out:
                 for it in range(3):
                     run(f"{bench.benchmark_dir} --no-plot -r 1 -n 1".split(),
                         standalone_mode=False)
@@ -519,7 +504,7 @@ class TestCache:
                     .replace("#RUN_SOLVER", "#RUN_2SOLVER")
                 ]
         ) as bench:
-            with CaptureRunOutput() as out:
+            with CaptureCmdOutput() as out:
                 run([str(bench.benchmark_dir),
                      *"-s test-solver -s test-solver2 "
                      f'--no-plot -r {n_reps}'.split()],
@@ -540,8 +525,8 @@ class TestCache:
                 objective=self.objective, datasets=self.dataset,
                 solvers=self.solver,
         ) as bench:
-            with CaptureRunOutput() as out:
-                run(f"{bench.benchmark_dir} --no-plot -r {n_reps} -j2".split(),
+            with CaptureCmdOutput() as out:
+                run(f"{bench.benchmark_dir} --no-plot -r {n_reps}".split(),
                     standalone_mode=False)
                 # Modify the solver, to make the cache invalid
                 solver_file = bench.benchmark_dir / 'solvers' / 'solver_0.py'

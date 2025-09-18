@@ -72,7 +72,7 @@ jobs:
           ${{ env.BENCHOPT_CONDA_CMD }} info
           ${{ env.BENCHOPT_CONDA_CMD }} install -yq pip
           pip install -e ".[test,slurm]"
-    
+
       - name: Install benchopt and its dependencies on Windows
         if: matrix.os == 'windows-latest'
         run: |
@@ -136,7 +136,7 @@ jobs:
         run: pip install -e .
 
       - name: Run benchopt without conda
-        run: benchopt run benchopt/tests/dummy_benchmark -d Simulated[n_features=100,n_samples=100,rho=0]  -o "^*[reg=0.1]" -s python-pgd -r 1 -n 10 --no-plot
+        run: benchopt run examples/minimal_benchmark -r 1 -n 10 --no-plot
 
   test_benchopt_reqs:
     name: Test benchopt requirements detection

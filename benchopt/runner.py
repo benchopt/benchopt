@@ -510,6 +510,8 @@ def run_benchmark(benchmark_path, solver_names=None, forced_solvers=(),
         is set to `NaN`.
     """
     benchmark = Benchmark(benchmark_path, no_cache=no_cache)
+    if solver_names is None:
+        solver_names = []
     solvers = benchmark.check_solver_patterns(
         solver_names + list(forced_solvers)
     )
