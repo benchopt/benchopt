@@ -7,8 +7,8 @@ What's new
 
 .. _changes_1_7:
 
-Version 1.7 - in development
-----------------------------
+Version 1.7 - 18/09/2025
+------------------------
 
 Major change
 ------------
@@ -39,8 +39,8 @@ API
 - Add ``slurm_params`` attribute to ``Solver`` to allow overriding the
   default SLURM config. By `Pierre-Louis Barbarant`_ (:gh:`805`)
 
-- Support ``requirements`` being a dictionary with keys ``"gpu"`` and ``"cpu"``, for
-  classes whose install differ on GPU and CPU.
+- Support ``requirements`` being a dictionary with keys ``"gpu"`` and
+  ``"cpu"``, for classes whose install differ on GPU and CPU.
   By `Mathurin Massias`_ (:gh:`793`)
 
 - Change channel specification in requirements, replacing the split format
@@ -52,8 +52,9 @@ API
   ``p_obj_|p_solver_|p_dataset_`` to avoid collapse between the different
   components. By `Melvine Nargeot`_  and `Thomas Moreau`_ (:gh:`703`).
 
-- ``Objective`` can now return multiple evaluation at once, to store non-aggregated
-  metrics. See :ref:`multiple_evaluation`. By `Thomas Moreau`_ (:gh:`778`).
+- ``Objective`` can now return multiple evaluation at once, to store
+  non-aggregated metrics. See :ref:`multiple_evaluation`.
+  By `Thomas Moreau`_ (:gh:`778`).
 
 FIX
 ---
