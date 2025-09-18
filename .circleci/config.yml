@@ -97,11 +97,11 @@ jobs:
           name: make result
           command: |
             pip install -U numba
-            benchopt run benchopt/tests/dummy_benchmark -d Simulated[n_features=100,n_samples=100,rho=0]  -o "*[reg=0.05]" -s python-pgd -s cd -s Solver-Test -r 5 -n 15 --output benchmark-result
+            benchopt run examples/minimal_benchmark -r 5 -n 25 --output benchmark-result
 
       # Save the results
       - store_artifacts:
-          path: benchopt/tests/dummy_benchmark/outputs/dummy_benchmark_benchmark-result.html
+          path: example/minimal_benchmark/outputs/minimal_benchmark_benchmark-result.html
           destination: result.html
 
   deploy:
