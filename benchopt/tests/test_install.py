@@ -2,18 +2,15 @@ import re
 import pytest
 
 from benchopt.cli.main import install
-from benchopt.tests.utils import CaptureRunOutput
+from benchopt.tests.utils import CaptureCmdOutput
 from benchopt.utils.temp_benchmark import temp_benchmark
 
 
 def test_invalid_install_cmd():
     # Solver with an invalid install command
     invalid_solver = """
-    from benchopt import BaseSolver, safe_import_context
-
-    with safe_import_context() as import_ctx:
-        raise ImportError()
-
+    import fake_module
+    from benchopt import BaseSolver
 
     class Solver(BaseSolver):
         name = "invalid-solver"
@@ -89,21 +86,21 @@ def test_gpu_flag(no_debug_log):
                         solvers=[solver1, solver2],
                         ) as benchmark:
         err = ("keys should be `cpu` and `gpu`, got ['wrong_key', 'cpu']")
-        with CaptureRunOutput():
+        with CaptureCmdOutput():
             with pytest.raises(ValueError, match=re.escape(err)):
                 install([str(benchmark.benchmark_dir),
                          *'-y -f -s solver1 --gpu'.split()],
                         standalone_mode=False)
 
         # installing without gpu flag installs requirements["cpu"], hence OK
-        with CaptureRunOutput() as out:
+        with CaptureCmdOutput() as out:
             install([str(benchmark.benchmark_dir),
                      *'-y -f -s solver1'.split()],
                     standalone_mode=False)
         out.check_output("All required solvers are already installed.")
 
         # all good with requirements["gpu"] for solver2, hence no error
-        with CaptureRunOutput() as out:
+        with CaptureCmdOutput() as out:
             install([str(benchmark.benchmark_dir),
                      *'-y -f -s solver2 --gpu'.split()],
                     standalone_mode=False)

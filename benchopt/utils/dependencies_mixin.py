@@ -23,7 +23,7 @@ class DependenciesMixin:
     #           will run `install_script` in a shell and provide the conda
     #           env directory as an argument. The command should then be
     #           installed in the `bin` folder of the env and can be imported
-    #           with import_shell_cmd in the safe_import_context.
+    #           with import_shell_cmd.
     install_cmd = "conda"
 
     _error_displayed = False
@@ -67,7 +67,7 @@ class DependenciesMixin:
             returns True if no import failure has been detected.
         """
         if env_name is None:
-            if cls._import_ctx.failed_import:
+            if hasattr(cls, "_import_ctx") and cls._import_ctx.failed_import:
                 exc_type, value, tb = cls._import_ctx.import_error
                 if raise_on_not_installed:
                     raise exc_type(value).with_traceback(tb)
@@ -75,17 +75,21 @@ class DependenciesMixin:
                     traceback.print_exception(exc_type, value, tb)
                     cls._error_displayed = True
                 return False
-            else:
-                return True
-        else:
-            return (
-                _run_shell_in_conda_env(
-                    f"benchopt check-install {cls._benchmark_dir} "
-                    f"{cls._module_filename} {cls._base_class_name}",
-                    env_name=env_name,
-                    raise_on_error=raise_on_not_installed,
-                ) == 0
-            )
+
+            # Import worked in the current environment, no need to check
+            return True
+
+        # Get the current benchmark directory
+        from benchopt.benchmark import get_running_benchmark
+        benchmark_dir = get_running_benchmark().benchmark_dir
+        return (
+            _run_shell_in_conda_env(
+                f"benchopt check-install {benchmark_dir} "
+                f"{cls._module_filename} {cls._base_class_name}",
+                env_name=env_name,
+                raise_on_error=raise_on_not_installed,
+            ) == 0
+        )
 
     @classmethod
     def install(cls, env_name=None, force=False):

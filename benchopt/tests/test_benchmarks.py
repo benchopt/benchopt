@@ -109,6 +109,10 @@ def test_solver_install_api(benchmark, solver_class):
 @pytest.mark.requires_install
 def test_solver_install(check_test, test_env_name, benchmark, solver_class):
 
+    # Make sure that the current benchmark is correctly set
+    from benchopt.benchmark import Benchmark
+    benchmark = Benchmark(benchmark.benchmark_dir)
+
     if check_test is not None:
         check_test(solver_class)
 
@@ -158,7 +162,7 @@ def test_solver(check_test, benchmark, solver_class):
 
         objective.set_dataset(dataset)
         solver = solver_class.get_instance()
-        skip = solver._set_objective(objective)
+        skip, reason = solver._set_objective(objective)
         if skip:
             continue
         solver_ran_once = True

@@ -2,7 +2,7 @@ from pathlib import Path
 
 
 from benchopt.benchmark import Benchmark
-from benchopt.utils.safe_import import skip_import
+from benchopt.utils.dynamic_modules import skip_import
 from benchopt.utils.conda_env_cmd import list_conda_envs
 
 
