@@ -3,6 +3,35 @@ import numpy as np
 
 from benchopt.utils import product_param
 from benchopt.stopping_criterion import SAMPLING_STRATEGIES
+from benchopt.utils.dynamic_modules import _get_module_from_file
+
+
+@pytest.fixture(autouse=True)
+def check_test(request):
+
+    if 'benchmark' not in request.fixturenames:
+        raise ValueError(
+            '`check_test` fixture should only be used in tests parametrized '
+            'with `benchmark` fixture'
+        )
+
+    benchmark = request.getfixturevalue('benchmark')
+    test_config_file = benchmark.get_test_config_file()
+    if test_config_file is None:
+        return None
+    test_config_module = _get_module_from_file(test_config_file)
+    check_func_name = f"check_{request.function.__name__}"
+    check_func = getattr(test_config_module, check_func_name, None)
+    if check_func is not None:
+        try:
+            check_func(
+                benchmark,
+                *[request.getfixturevalue(f) for f in request.fixturenames
+                  if f not in ['check_test', 'benchmark', 'request']]
+            )
+        except TypeError:
+            # Backward compatibility for benchmarks before benchopt 1.7.1
+            check_func(request.getfixturevalue('solver_class'))
 
 
 def test_benchmark_objective(benchmark, dataset_simu):
@@ -49,15 +78,13 @@ def test_dataset_class(benchmark, dataset_class):
     )
 
 
-def test_dataset_get_data(benchmark, check_test, dataset_class):
+def test_dataset_get_data(benchmark, dataset_class):
     """Check that all installed dataset_class.get_data return the right result
     """
 
     # skip the test if the dataset is not installed
     if not dataset_class.is_installed():
         pytest.skip("Dataset is not installed")
-
-    check_test(dataset_class)
 
     dataset = dataset_class.get_instance()
 
@@ -107,14 +134,11 @@ def test_solver_install_api(benchmark, solver_class):
 
 
 @pytest.mark.requires_install
-def test_solver_install(check_test, test_env_name, benchmark, solver_class):
+def test_solver_install(test_env_name, benchmark, solver_class):
 
     # Make sure that the current benchmark is correctly set
     from benchopt.benchmark import Benchmark
     benchmark = Benchmark(benchmark.benchmark_dir)
-
-    if check_test is not None:
-        check_test(solver_class)
 
     # assert that install works when forced to reinstalls
     solver_class.install(env_name=test_env_name)
@@ -123,12 +147,9 @@ def test_solver_install(check_test, test_env_name, benchmark, solver_class):
     )
 
 
-def test_solver(check_test, benchmark, solver_class):
+def test_solver(benchmark, solver_class):
     # Check that a solver run with at least one configuration of a simulated
     # dataset.
-
-    if check_test is not None:
-        check_test(solver_class)
 
     if not solver_class.is_installed():
         pytest.skip("Solver is not installed")
