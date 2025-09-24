@@ -39,7 +39,6 @@ class TestCmdTest:
         out.check_output("test session starts", repetition=1)
         out.check_output("PASSED", repetition=8)
         out.check_output("SKIPPED", repetition=1)
-        print(out.output)
 
     def test_skip_test(self):
         test_config = """import pytest
@@ -80,8 +79,8 @@ class TestCmdTest:
                 )
 
         out.check_output("test session starts", repetition=1)
+        out.check_output("::test_solver", repetition=1)
         out.check_output("test_dataset_get_data", repetition=0)
-        out.check_output(r"test_solver\[", repetition=1)
         out.check_output("XFAIL", repetition=1)
 
     def test_complete_bench(self, bench_completion_cases):  # noqa: F811
