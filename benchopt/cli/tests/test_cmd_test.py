@@ -66,6 +66,26 @@ class TestCmdTest:
     def test_xfail_test(self):
         test_config = """import pytest
 
+        def check_test_solver_run(benchmark, solver):
+            pytest.xfail("xfail for TEST")
+        """
+        with temp_benchmark(
+            extra_files={'test_config.py': test_config}
+        ) as bench, CaptureCmdOutput() as out:
+            with pytest.raises(SystemExit, match="False"):
+                benchopt_test(
+                   [str(bench.benchmark_dir), "-k", "test_solver_run"],
+                   'benchopt', standalone_mode=False
+                )
+
+        out.check_output("test session starts", repetition=1)
+        out.check_output(r"test_solver_run\[", repetition=1)
+        out.check_output("test_dataset_get_data", repetition=0)
+        out.check_output("XFAIL", repetition=1)
+
+    def test_deprecated_check_test_solver(self):
+        test_config = """import pytest
+
         def check_test_solver(benchmark, solver):
             pytest.xfail("xfail for TEST")
         """
@@ -74,13 +94,9 @@ class TestCmdTest:
         ) as bench, CaptureCmdOutput() as out:
             with pytest.raises(SystemExit, match="False"):
                 benchopt_test(
-                   rf"{bench.benchmark_dir} -k test_solver\[".split(),
-                   'benchopt', standalone_mode=False
+                    [str(bench.benchmark_dir), "-k", "test_solver_run"],
+                    'benchopt', standalone_mode=False
                 )
-
-        out.check_output("test session starts", repetition=1)
-        out.check_output("::test_solver", repetition=1)
-        out.check_output("test_dataset_get_data", repetition=0)
         out.check_output("XFAIL", repetition=1)
 
     def test_complete_bench(self, bench_completion_cases):  # noqa: F811
