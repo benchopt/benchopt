@@ -19,6 +19,9 @@ API
 FIX
 ---
 
+- Fix `--download` option in `benchopt install` when using multiple datasets.
+  By `Thomas Moreau`_ (:gh:`821`)
+
 .. _changes_1_7:
 
 Version 1.7 - 18/09/2025

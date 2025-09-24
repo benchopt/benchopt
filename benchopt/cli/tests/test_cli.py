@@ -466,15 +466,26 @@ class TestInstallCmd:
                 name = 'test_dataset'
                 def get_data(self): print("LOAD DATA")
         """
-        with temp_benchmark(datasets=[dataset]) as benchmark:
+        dataset2 = dataset.replace("dataset", "dataset2")
+        with temp_benchmark(datasets=[dataset, dataset2]) as benchmark:
             with CaptureCmdOutput() as out:
                 install([
                     *f'{benchmark.benchmark_dir} -d test_dataset '
                     '-y --download'.split()
                 ], 'benchopt', standalone_mode=False)
 
-        out.check_output("LOAD DATA", repetition=1)
-        out.check_output("Loading data:", repetition=1)
+            out.check_output("LOAD DATA", repetition=1)
+            out.check_output("Loading data:", repetition=1)
+
+        # Check it works with 2 datasets
+            with CaptureCmdOutput() as out:
+                install([
+                    *f'{benchmark.benchmark_dir} -y --download '
+                    '-d test_dataset -d test_dataset2'.split()
+                ], 'benchopt', standalone_mode=False)
+
+            out.check_output("LOAD DATA", repetition=2)
+            out.check_output("Loading data:", repetition=1)
 
     def test_existing_empty_env(self, empty_env_name):
         msg = (
