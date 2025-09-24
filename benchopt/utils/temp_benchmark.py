@@ -135,7 +135,9 @@ def temp_benchmark(
         if extra_files is not None:
             assert isinstance(extra_files, dict), "extra_files must be a dict"
             for fname, content in extra_files.items():
-                (temp_path / fname).write_text(content, encoding='utf-8')
+                (temp_path / fname).write_text(
+                    inspect.cleandoc(content), encoding='utf-8'
+                )
 
         yield Benchmark(temp_path)
 
