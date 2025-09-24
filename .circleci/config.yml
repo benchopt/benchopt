@@ -18,12 +18,6 @@ jobs:
             ~/miniconda.sh -b -p ~/miniconda;
             echo "export PATH=~/miniconda/bin:$PATH" >> $BASH_ENV;
 
-            # update conda pkgs cache
-            mkdir ~/conda_pkgs 2>/dev/null || echo 'already exists'
-            cp -r ~/miniconda/pkgs/* ~/conda_pkgs/
-            rm -rf ~/miniconda/pkgs
-            ln -s ~/conda_pkgs ~/miniconda/pkgs
-
       - run:
           name: Get Python running
           command: |
@@ -32,14 +26,13 @@ jobs:
             mamba install python=3.10 r-base rpy2 \
                           numpy cython -yq
             pip install --upgrade "setuptools<58.5"
-            pip install --upgrade --progress-bar off git+https://github.com/scikit-learn-contrib/lightning.git
             pip install --upgrade --progress-bar off -e .[doc]
 
       - save_cache:
           key: pkgs-cache
           paths:
             - ~/.cache/pip
-            - ~/conda_pkgs
+            - ~/miniconda
 
       # Look at what we have and fail early if there is some library conflict
       - run:
@@ -77,10 +70,13 @@ jobs:
 
   deploy:
     docker:
-      - image: cimg/python:3.9.11-browsers
+      - image: cimg/python:3.10-browsers
     steps:
       - attach_workspace:
           at: /tmp/build
+      - run:
+        name: Install jq
+        command: sudo apt-get update && sudo apt-get install -y jq
       - run:
           name: Fetch docs
           command: |
@@ -104,9 +100,6 @@ jobs:
                 DEST="dev"
             elif [ -n "$CIRCLE_TAG" ]; then
                 DEST="$CIRCLE_TAG"
-                # Also update stable -> copy into "stable/"
-                rm -rf stable
-                cp -a "$CIRCLE_TAG" stable
             else
                 echo "Should not trigger deploy outside main branch or a tag"
                 exit 1
@@ -118,7 +111,7 @@ jobs:
             if [ -n "$CIRCLE_TAG" ]; then
                 # Also update stable -> copy into "stable/"
                 rm -rf stable
-                cp -a "$DEST" stable
+                cp -r "$DEST" stable
             fi
 
             # Creating the version dropdown
@@ -138,7 +131,7 @@ jobs:
               touch .nojekyll;
               git add -A;
               MSG="Update docs for $DEST (build ${CIRCLE_BUILD_NUM})"
-              git commit -m "$MSG"";
+              git commit -m "$MSG";
               git push origin main;
             fi
 
