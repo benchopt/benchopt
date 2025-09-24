@@ -1,5 +1,3 @@
-# Tagging a commit with [circle front] will build the front page and perform test-doc.
-# Tagging a commit with [circle full] will build everything.
 version: 2
 jobs:
   build_docs:
@@ -7,36 +5,9 @@ jobs:
       - image: cimg/python:3.9.11-browsers
     steps:
       - checkout
-      - run:
-          name: Set BASH_ENV
-          command: |
-            echo "set -e" >> $BASH_ENV
-            echo "export DISPLAY=:99" >> $BASH_ENV
-            echo "export OPENBLAS_NUM_THREADS=4" >> $BASH_ENV
-            echo "BASH_ENV:"
-            cat $BASH_ENV
-
-      - run:
-          name: Merge with upstream
-          command: |
-            echo $(git log -1 --pretty=%B) | tee gitlog.txt
-            echo ${CI_PULL_REQUEST//*pull\//} | tee merge.txt
-            if [[ $(cat merge.txt) != "" ]]; then
-              echo "Merging $(cat merge.txt)";
-              git remote add upstream https://github.com/benchopt/benchopt.git;
-              git pull --ff-only upstream "refs/pull/$(cat merge.txt)/merge";
-              git fetch upstream main;
-            fi
-
-      # Load our data
       - restore_cache:
           keys:
             - pkgs-cache
-
-      - run:
-          name: Spin up Xvfb
-          command: |
-            /sbin/start-stop-daemon --start --quiet --pidfile /tmp/custom_xvfb_99.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :99 -screen 0 1400x900x24 -ac +extension GLX +render -noreset;
 
       - run:
           name: Get conda running
@@ -125,31 +96,50 @@ jobs:
           command: |
             set -e;
             cd ~/benchopt.github.io;
-            if [[ "${CIRCLE_BRANCH}" != "main" ]]; then
-              echo "No deployment (build: ${CIRCLE_BRANCH}).";
+
+            git config --global user.email "circle@benchopt.com";
+            git config --global user.name "Circle CI";
+
+            if [ "$CIRCLE_BRANCH" == "main" ]; then
+                DEST="dev"
+            elif [ -n "$CIRCLE_TAG" ]; then
+                DEST="$CIRCLE_TAG"
+                # Also update stable -> copy into "stable/"
+                rm -rf stable
+                cp -a "$CIRCLE_TAG" stable
             else
-              git config --global user.email "circle@benchopt.com";
-              git config --global user.name "Circle CI";
-              cd ~/benchopt.github.io;
-              git checkout main
-              git remote -v
-              git fetch origin
-              git reset --hard origin/main
-              mv .git ..
-              mv .gitignore ..
-              rm -rf *
-              mv ../.git .
-              mv ../.gitignore .
-              echo "Deploying dev docs for ${CIRCLE_BRANCH}.";
-              cp -a /tmp/build/html/* .;
-              if [[ -z $(git diff) ]]; then
-                echo "Nothing to commit"
-              else
-                touch .nojekyll;
-                git add -A;
-                git commit -m "CircleCI update of dev docs (${CIRCLE_BUILD_NUM}).";
-                git push origin main;
-              fi
+                echo "Should not trigger deploy outside main branch or a tag"
+                exit 1
+            fi
+
+            # copying the current doc to its destination
+            rm -rf "$DEST"
+            cp -r /tmp/build/html/ "$DEST";
+            if [ -n "$CIRCLE_TAG" ]; then
+                # Also update stable -> copy into "stable/"
+                rm -rf stable
+                cp -a "$DEST" stable
+            fi
+
+            # Creating the version dropdown
+            VERSIONS=$(ls -d v* | sort -Vr | jq -R -s -c 'split("\n")[:-1]')
+            cat > versions.json <<EOF
+            {
+              "stable": "stable",
+              "dev": "dev",
+              "versions": $VERSIONS
+            }
+            EOF
+
+            echo "Deploying dev docs for ${CIRCLE_BRANCH}.";
+            if [[ -z $(git diff) ]]; then
+              echo "Nothing to commit"
+            else
+              touch .nojekyll;
+              git add -A;
+              MSG="Update docs for $DEST (build ${CIRCLE_BUILD_NUM})"
+              git commit -m "$MSG"";
+              git push origin main;
             fi
 
 workflows:
@@ -163,5 +153,6 @@ workflows:
             - build_docs
           filters:
             branches:
-              only:
-                - main
+              only: main
+            tags:
+              only: /.*/
