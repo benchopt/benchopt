@@ -2,7 +2,7 @@ version: 2
 jobs:
   build_docs:
     docker:
-      - image: cimg/python:3.9.11-browsers
+      - image: cimg/python:3.10-browsers
     steps:
       - checkout
       - restore_cache:
