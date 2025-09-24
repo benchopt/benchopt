@@ -13,13 +13,19 @@ Version 1.8 - in development
 CLI
 ---
 
+- Allow skipping any tests in ``benchopt test`` with configuration in
+  ``test_conf.py``, by defining a function ``check_TEST_NAME``, which
+  is called before the test with the same arguments.
+  By `Thomas Moreau`_ (:gh:`801`)
+
+
 API
 ---
 
 FIX
 ---
 
-- Fix `--download` option in `benchopt install` when using multiple datasets.
+- Fix ``--download`` option in ``benchopt install`` when using multiple datasets.
   By `Thomas Moreau`_ (:gh:`821`)
 
 .. _changes_1_7:

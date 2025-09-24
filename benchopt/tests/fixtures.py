@@ -7,7 +7,6 @@ from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.utils.conda_env_cmd import create_conda_env
 from benchopt.utils.conda_env_cmd import delete_conda_env
 from benchopt.utils.shell_cmd import _run_shell_in_conda_env
-from benchopt.utils.dynamic_modules import _get_module_from_file
 
 os.environ['BENCHOPT_DEBUG'] = '1'
 os.environ['BENCHOPT_RAISE_INSTALL_ERROR'] = '1'
@@ -128,24 +127,6 @@ def no_raise_install(request):
     os.environ["BENCHOPT_RAISE_INSTALL_ERROR"] = "0"
     yield
     os.environ["BENCHOPT_RAISE_INSTALL_ERROR"] = "1"
-
-
-@pytest.fixture
-def check_test(request):
-
-    if 'benchmark' not in request.fixturenames:
-        raise ValueError(
-            '`check_test` fixture should only be used in tests parametrized '
-            'with `benchmark` fixture'
-        )
-
-    benchmark = request.getfixturevalue('benchmark')
-    test_config_file = benchmark.get_test_config_file()
-    if test_config_file is None:
-        return None
-    test_config_module = _get_module_from_file(test_config_file)
-    check_func_name = f"check_{request.function.__name__}"
-    return getattr(test_config_module, check_func_name, None)
 
 
 @pytest.fixture(scope='session')
