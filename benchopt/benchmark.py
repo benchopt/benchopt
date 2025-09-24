@@ -533,7 +533,7 @@ class Benchmark:
         if len(datasets) == 0:
             return
         cmd = f"benchopt check-data {self.benchmark_dir} -d "
-        cmd += "-d ".join(d.name for d in datasets)
+        cmd += " -d ".join(d.name for d in datasets)
         _run_shell_in_conda_env(
             cmd, env_name=env_name, raise_on_error=True, capture_stdout=False
         )
