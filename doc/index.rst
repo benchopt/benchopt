@@ -17,7 +17,7 @@ Reproducing an existing benchmark should be as easy as running
 
    benchopt run . --config ./example_config.yml
 
-.. figure:: https://benchopt.github.io/_images/sphx_glr_plot_run_benchmark_001.png
+.. figure:: _images/sphx_glr_plot_run_benchmark_001.png
    :align: center
    :width: 70 %
 

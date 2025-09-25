@@ -15,12 +15,12 @@ Running the benchmark on a SLURM cluster
 Benchopt also allows easily running the benchmark in parallel on a SLURM
 cluster. To install the necessary dependencies, please run:
 
-.. prompt:: bash $
+.. prompt:: bash
 
-    pip install benchopt[slurm]
+    $ pip install benchopt[slurm]
 
     # Or for dev install
-    pip install -e .[slurm]
+    $ pip install -e .[slurm]
 
 Note that for some clusters with shared python installation, it is necessary
 to call ``pip install --user`` to install the packages in the user space and
