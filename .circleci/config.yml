@@ -115,7 +115,7 @@ jobs:
             fi
 
             # Creating the version dropdown
-            VERSIONS=$(ls -d v* | sort -Vr | jq -R -s -c 'split("\n")[:-1]')
+            VERSIONS=$(ls -d [0-9]* | sort -Vr | jq -R -s -c 'split("\n")[:-1]')
             cat > versions.json <<EOF
             {
               "stable": "stable",
@@ -125,11 +125,10 @@ jobs:
             EOF
 
             echo "Deploying dev docs for ${CIRCLE_BRANCH}.";
-            if [[ -z $(git diff) ]]; then
+            git add -A;
+            if [[ -z $(git diff --staged) ]]; then
               echo "Nothing to commit"
             else
-              touch .nojekyll;
-              git add -A;
               MSG="Update docs for $DEST (build ${CIRCLE_BUILD_NUM})"
               git commit -m "$MSG";
               git push origin main;

@@ -1,16 +1,16 @@
 {% extends "!layout.html" %}
 
+
 {% block footer %}
-<div style="margin-top: 1em;">
-  <label for="version-select">Version:</label>
-  <select id="version-select"></select>
-</div>
 
 <script>
 fetch("{{ pathto('', 1) }}versions.json")
   .then(response => response.json())
   .then(data => {
-    const select = document.getElementById("version-select");
+    const select = document.createElement("select");
+    select.id = "version-select";
+    const header_buttons = document.getElementsByClassName("article-header-buttons")[0];
+    header_buttons.insertBefore(select, header_buttons.firstChild);
     const current = window.location.pathname.split('/')[1];  // e.g. "dev" or "v1.2"
 
     // Stable and dev first
