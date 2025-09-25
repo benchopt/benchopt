@@ -75,8 +75,8 @@ jobs:
       - attach_workspace:
           at: /tmp/build
       - run:
-        name: Install jq
-        command: sudo apt-get update && sudo apt-get install -y jq
+          name: Install jq
+          command: sudo apt-get update && sudo apt-get install -y jq
       - run:
           name: Fetch docs
           command: |
