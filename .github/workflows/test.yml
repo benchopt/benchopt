@@ -39,7 +39,6 @@ jobs:
             version_python: "3.12"
     env:
       CONDA_ENV: 'testcondaenv'
-      JUNIT_XML: 'test-data.xml'
       VERSION_PYTHON: ${{ matrix.version_python }}
       COVERAGE: ${{ matrix.coverage }}
       BENCHOPT_CONDA_CMD: ${{ matrix.conda_cmd || (matrix.os == 'windows-latest' && 'call conda') || 'conda' }}
@@ -94,12 +93,6 @@ jobs:
         if: matrix.os == 'windows-latest'
         run: continuous_integration\test_script_windows.bat
 
-      - name: Publish Test Report
-        uses: mikepenz/action-junit-report@v2
-        with:
-          report_paths: ${{ env.JUNIT_XML }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Upload coverage
         if: ${{ matrix.coverage == 'true' }}
         uses: codecov/codecov-action@v4
@@ -123,7 +116,6 @@ jobs:
           - os: windows-latest
             version_python: "3.12"
     env:
-      JUNIT_XML: "test-data.xml"
       VERSION_PYTHON: ${{ matrix.version_python }}
 
     steps:
