@@ -1,9 +1,14 @@
+import sys
 import yaml
 from contextlib import ExitStack
+
+from benchopt.benchmark import get_setting
+from benchopt.utils.terminal_output import print_normalize
 
 try:
     import submitit
     from submitit.helpers import as_completed
+    from submitit.core.utils import FailedJobError
     from rich import progress
 
     _SLURM_INSTALLED = True
@@ -98,13 +103,30 @@ def run_on_slurm(
             )
             tasks.append(future)
 
-    print(f"First job id: {tasks[0].job_id}")
+    main_job_ids = {str(t.job_id).split('_')[0] for t in tasks}
+    print_normalize(f"Job array IDs: {main_job_ids}")
 
-    for t in progress.track(as_completed(tasks), total=len(tasks)):
-        exc = t.exception()
-        if exc is not None:
-            for tt in tasks:
-                tt.cancel()
-            raise exc
+    try: 
+        for t in progress.track(as_completed(tasks), total=len(tasks)):
+            exc = t.exception()
+            debug = get_setting("debug")
+            if exc is not None and debug:
+                raise exc
+
+    except (KeyboardInterrupt, SystemExit) as e:
+        print_normalize(f"{type(e).__name__}: Cancelling all tasks")
+        for t in tasks:
+            t.cancel()
+        sys.exit(1)
+
+    except FailedJobError:
+        print_normalize("A job failed with debug mode activated. Cancelling all tasks.")
+        for t in tasks:
+            t.cancel()
+        raise
+
+    except Exception as e:
+        print_normalize(f"{type(e).__name__}: Tasks will not be cancelled.")
+        raise
 
     return [t.result() for t in tasks]
