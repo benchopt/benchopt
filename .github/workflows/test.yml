@@ -50,7 +50,7 @@ jobs:
         shell: ${{ matrix.os == 'windows-latest' && 'cmd /C CALL {0}' || 'bash -l {0}' }}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
       - name: Setup Conda
         uses: conda-incubator/setup-miniconda@v2
         with:
@@ -119,7 +119,7 @@ jobs:
       VERSION_PYTHON: ${{ matrix.version_python }}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
       - uses: actions/setup-python@v3
         with:
           python-version: ${{ env.VERSION_PYTHON }}
@@ -143,7 +143,7 @@ jobs:
           - version_python: "3.11"
             version_pip: "latest"
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
       - uses: actions/setup-python@v3
         with:
           python-version: ${{ matrix.version_python }}
