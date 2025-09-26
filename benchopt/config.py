@@ -19,7 +19,9 @@ CONFIG_FILE_NAME = 'benchopt.yml'
 # sensitive information such as the Github token.
 GLOBAL_CONFIG_FILE_MODE = stat.S_IFREG | stat.S_IRUSR | stat.S_IWUSR
 
-DEFAULT_SHELL = 'cmd /c' if sys.platform == 'win32' else 'bash'
+DEFAULT_SHELL = (
+    'cmd /c' if sys.platform == 'win32' else 'bash --norc --noprofile'
+)
 
 DEFAULT_GLOBAL_CONFIG = {
     'debug': False,
@@ -109,6 +111,7 @@ DEFAULT_BENCHMARK_CONFIG = {
   you can proceed as follows in the benchmark's ``config.yaml`` file:
 
   .. code-block:: yaml
+
     data_home: path/to/data/home
 
     data_paths:
@@ -118,6 +121,7 @@ DEFAULT_BENCHMARK_CONFIG = {
   to retrieve the paths:
 
   .. code-block:: python
+
     from benchopt.config import get_data_path
 
     path = get_data_path('my_data_file')

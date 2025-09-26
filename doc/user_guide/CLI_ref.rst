@@ -3,6 +3,13 @@
 Command line interface (CLI) references
 =======================================
 
+Benchopt provides a command line interface (CLI) to run benchmarks, that is
+installed together with the package. If the package is installed in a specific
+environment (e.g. conda), the CLI is available in the corresponding
+environment. To facilitate running the CLI, the command can also be run
+by calling ``python -m benchopt``. This is equivalent to running the command
+``benchopt`` in the environment where the package is installed.
+
 The following commands are built using the
 `click <https://click.palletsprojects.com/en/8.0.x/>`_ package which provides tab
 completion for the command options. You however need to activate shell

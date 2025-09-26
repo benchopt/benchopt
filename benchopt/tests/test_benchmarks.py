@@ -3,6 +3,7 @@ import numpy as np
 
 from benchopt.utils import product_param
 from benchopt.stopping_criterion import SAMPLING_STRATEGIES
+from benchopt.utils.dynamic_modules import _get_module_from_file
 
 
 def test_benchmark_objective(benchmark, dataset_simu):
@@ -17,7 +18,7 @@ def test_benchmark_objective(benchmark, dataset_simu):
     # the objective function is a dictionary containing a scalar value for
     # `objective_value`.
     result = objective._get_one_result()
-    objective_dict = objective(result)
+    objective_dict = objective(result)[0]
 
     assert 'objective_value' in objective_dict, (
         "When the output of objective is a dict, it should at least "
@@ -58,14 +59,6 @@ def test_dataset_get_data(benchmark, dataset_class):
         pytest.skip("Dataset is not installed")
 
     dataset = dataset_class.get_instance()
-
-    if dataset_class.name.lower() == 'finance':
-        pytest.skip("Do not download finance.")
-
-    # XXX TODO remove when scikit-learn releases the fix
-    # see https://github.com/scikit-learn/scikit-learn/pull/23358
-    if dataset_class.name.lower() == 'leukemia':
-        pytest.skip("Leukemia download is broken in scikit-learn 1.1.0")
 
     data = dataset._get_data()
     assert isinstance(data, (tuple, dict)), (
@@ -113,10 +106,11 @@ def test_solver_install_api(benchmark, solver_class):
 
 
 @pytest.mark.requires_install
-def test_solver_install(check_test, test_env_name, benchmark, solver_class):
+def test_solver_install(test_env_name, benchmark, solver_class):
 
-    if check_test is not None:
-        check_test(solver_class)
+    # Make sure that the current benchmark is correctly set
+    from benchopt.benchmark import Benchmark
+    benchmark = Benchmark(benchmark.benchmark_dir)
 
     # assert that install works when forced to reinstalls
     solver_class.install(env_name=test_env_name)
@@ -125,12 +119,9 @@ def test_solver_install(check_test, test_env_name, benchmark, solver_class):
     )
 
 
-def test_solver(check_test, benchmark, solver_class):
+def test_solver_run(benchmark, solver_class):
     # Check that a solver run with at least one configuration of a simulated
     # dataset.
-
-    if check_test is not None:
-        check_test(solver_class)
 
     if not solver_class.is_installed():
         pytest.skip("Solver is not installed")
@@ -164,7 +155,7 @@ def test_solver(check_test, benchmark, solver_class):
 
         objective.set_dataset(dataset)
         solver = solver_class.get_instance()
-        skip = solver._set_objective(objective)
+        skip, reason = solver._set_objective(objective)
         if skip:
             continue
         solver_ran_once = True
@@ -206,3 +197,49 @@ def _test_solver_one_objective(solver, objective):
 
             diff = val_eps - val_star
             assert diff >= 0
+
+
+##############################################################################
+# --- Utilities to test the CLI commands ----------------------------------- #
+##############################################################################
+
+
+@pytest.fixture(autouse=True)
+def check_test(request):
+
+    if 'benchmark' not in request.fixturenames:
+        raise ValueError(
+            '`check_test` fixture should only be used in tests parametrized '
+            'with `benchmark` fixture'
+        )
+
+    benchmark = request.getfixturevalue('benchmark')
+    test_config_file = benchmark.get_test_config_file()
+    if test_config_file is None:
+        return None
+    test_config_module = _get_module_from_file(test_config_file)
+    check_func_name = f"check_{request.function.__name__}"
+    check_func = getattr(test_config_module, check_func_name, None)
+    if check_func is None and request.function.__name__ == "test_solver_run":
+        # Backward compatibility for benchmarks before benchopt 1.7.1
+        check_func = getattr(test_config_module, "check_test_solver", None)
+        if check_func is not None:
+            warn_msg = (
+                "The function `check_test_solver` is deprecated since "
+                "benchopt 1.7.1. Please rename it to `check_test_solver_run`."
+            )
+            pytest.warns(DeprecationWarning, match=warn_msg)
+    if check_func is not None:
+        try:
+            check_func(
+                benchmark,
+                *[
+                    request.getfixturevalue(f) for f in request.fixturenames
+                    if f not in [
+                        'check_test', 'benchmark', 'request', 'test_env_name'
+                    ]
+                ]
+            )
+        except TypeError:
+            # Backward compatibility for benchmarks before benchopt 1.7.1
+            check_func(request.getfixturevalue('solver_class'))

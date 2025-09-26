@@ -1,7 +1,6 @@
 import pytest
 
-from benchopt.tests import DUMMY_BENCHMARK_PATH
-from benchopt.tests.utils import CaptureRunOutput
+from benchopt.tests.utils import CaptureCmdOutput
 from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.utils.terminal_output import TICK, CROSS
 
@@ -12,32 +11,36 @@ from benchopt.cli.helpers import check_install
 
 class TestCheckInstallCmd:
     def test_solver_installed(self):
-        pgd_solver = DUMMY_BENCHMARK_PATH / 'solvers' / 'python_pgd.py'
-        with pytest.raises(SystemExit, match=r'0'):
-            check_install([
-                str(DUMMY_BENCHMARK_PATH), str(pgd_solver.resolve()), 'Solver'
-            ], 'benchopt')
+        with temp_benchmark() as bench:
+            solver = bench.benchmark_dir / 'solvers' / 'test_solver.py'
+            with pytest.raises(SystemExit, match='0'):
+                check_install([
+                    str(bench.benchmark_dir), str(solver.resolve()), 'Solver'
+                ], 'benchopt')
 
     def test_solver_does_not_exists(self):
-        pgd_solver = DUMMY_BENCHMARK_PATH / 'solvers' / 'invalid.py'
-        with pytest.raises(FileNotFoundError, match=r'invalid.py'):
-            check_install([
-                str(DUMMY_BENCHMARK_PATH), str(pgd_solver.resolve()), 'Solver'
-            ], 'benchopt')
+        with temp_benchmark() as bench:
+            solver = bench.benchmark_dir / 'solvers' / 'invalid.py'
+            with pytest.raises(FileNotFoundError, match='invalid.py'):
+                check_install([
+                    str(bench.benchmark_dir), str(solver.resolve()), 'Solver'
+                ], 'benchopt')
 
     def test_dataset_installed(self):
-        pgd_solver = DUMMY_BENCHMARK_PATH / 'datasets' / 'simulated.py'
-        with pytest.raises(SystemExit, match=r'0'):
-            check_install([
-                str(DUMMY_BENCHMARK_PATH), str(pgd_solver.resolve()), 'Dataset'
-            ], 'benchopt')
+        with temp_benchmark() as bench:
+            dataset = bench.benchmark_dir / 'datasets' / 'simulated.py'
+            with pytest.raises(SystemExit, match='0'):
+                check_install([
+                    str(bench.benchmark_dir), str(dataset.resolve()), 'Dataset'
+                ], 'benchopt')
 
     def test_dataset_does_not_exists(self):
-        pgd_solver = DUMMY_BENCHMARK_PATH / 'datasets' / 'invalid.py'
-        with pytest.raises(FileNotFoundError, match=r'invalid.py'):
-            check_install([
-                str(DUMMY_BENCHMARK_PATH), str(pgd_solver.resolve()), 'Dataset'
-            ], 'benchopt')
+        with temp_benchmark() as bench:
+            dataset = bench.benchmark_dir / 'datasets' / 'invalid.py'
+            with pytest.raises(FileNotFoundError, match='invalid.py'):
+                check_install([
+                    str(bench.benchmark_dir), str(dataset.resolve()), 'Dataset'
+                ], 'benchopt')
 
 
 class TestCheckDataCmd:
@@ -54,7 +57,7 @@ class TestCheckDataCmd:
                 return {'X': 1, 'y': 2}
         """
         with temp_benchmark(datasets=dataset) as benchmark:
-            with CaptureRunOutput() as out:
+            with CaptureCmdOutput() as out:
                 check_data(
                     [str(benchmark.benchmark_dir), '-d', 'test_data'],
                     'benchopt', standalone_mode=False
@@ -76,7 +79,7 @@ class TestCheckDataCmd:
                 return {'X': 1, 'y': 2}
         """
         with temp_benchmark(datasets=dataset) as benchmark:
-            with CaptureRunOutput() as out:
+            with CaptureCmdOutput() as out:
                 check_data(
                     [str(benchmark.benchmark_dir), '-d', 'test_data'],
                     'benchopt', standalone_mode=False
