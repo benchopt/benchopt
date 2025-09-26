@@ -17,7 +17,7 @@ So far, ``benchopt`` has been tested with `Python <https://www.python.org/>`_,
 `R <https://www.r-project.org/>`_, `Julia <https://julialang.org/>`_
 and `C/C++ <https://isocpp.org/>`_ (compiled binaries with a command line interface).
 Programs available via `conda <https://docs.conda.io/en/latest/>`_ should be compatible as well.
-See for instance an `example of usage <https://benchopt.github.io/auto_examples/plot_run_benchmark_python_R.html>`_ with ``R``.
+See for instance an `example of usage <https://benchopt.github.io/stable/auto_examples/plot_run_benchmark_python_R.html>`_ with ``R``.
 
 
 Install
@@ -91,13 +91,13 @@ These steps illustrate how to reproduce the `L2-logistic Regression benchmark <h
 Find the complete list of the `Available benchmarks`_.
 Also, refer to the `documentation <https://benchopt.github.io/>`_ to learn more about ``benchopt`` CLI and its features.
 You can also easily extend this benchmark by adding a dataset, solver or metric.
-Learn that and more in the `Benchmark workflow <https://benchopt.github.io/benchmark_workflow/index.html>`_.
+Learn that and more in the `Benchmark workflow <https://benchopt.github.io/stable/benchmark_workflow/index.html>`_.
 
 
 Creating a benchmark
 ^^^^^^^^^^^^^^^^^^^^
 
-The section `Write a benchmark <https://benchopt.github.io/benchmark_workflow/write_benchmark.html>`_ of the documentation provides a tutorial
+The section `Write a benchmark <https://benchopt.github.io/stable/benchmark_workflow/write_benchmark.html>`_ of the documentation provides a tutorial
 for creating a benchmark. The ``benchopt`` community also maintains
 a `template benchmark <https://github.com/benchopt/template_benchmark>`_ to quickly and easily start a new benchmark.
 
@@ -168,13 +168,13 @@ Available benchmarks
      - `Results <https://benchopt.github.io/results/benchmark_logreg_l1.html>`__
      - |Build Status LogRegL1|
    * - `L2-regularized Huber regression <https://github.com/benchopt/benchmark_huber_l2>`_
-     -
+     - `Results <https://benchopt.github.io/results/benchmark_huber_l2.html>`__
      - |Build Status HuberL2|
    * - `L1-Regularized Quantile Regression <https://github.com/benchopt/benchmark_quantile_regression>`_
      - `Results <https://benchopt.github.io/results/benchmark_quantile_regression.html>`__
      - |Build Status QuantileRegL1|
    * - `Linear SVM for Binary Classification <https://github.com/benchopt/benchmark_linear_svm_binary_classif_no_intercept>`_
-     -
+     - `Results <https://benchopt.github.io/results/benchmark_linear_svm_binary_classif_no_intercept.html>`__
      - |Build Status LinearSVM|
    * - `Linear ICA <https://github.com/benchopt/benchmark_linear_ica>`_
      -
@@ -183,7 +183,7 @@ Available benchmarks
      -
      - |Build Status JointDiag|
    * - `1D Total Variation Denoising <https://github.com/benchopt/benchmark_tv_1d>`_
-     -
+     - `Results <https://benchopt.github.io/results/benchmark_tv_1d.html>`__
      - |Build Status TV1D|
    * - `2D Total Variation Denoising <https://github.com/benchopt/benchmark_tv_2d>`_
      -
@@ -195,7 +195,7 @@ Available benchmarks
      - `Results <https://benchopt.github.io/results/benchmark_bilevel.html>`__
      - |Build Status Bilevel|
    * - `Sorted L-One Penalized Estimation (SLOPE) <https://github.com/benchopt/benchmark_slope>`_
-     - `Results <https://benchopt.github.io/results/benchmark_slope.html>`__
+     - 
      - |Build Status SLOPE|
 
 
@@ -211,7 +211,7 @@ Available benchmarks
    :target: https://codecov.io/gh/benchopt/benchopt
 .. |SWH| image:: https://archive.softwareheritage.org/badge/origin/https://github.com/benchopt/benchopt/
     :target: https://archive.softwareheritage.org/browse/origin/?origin_url=https://github.com/benchopt/benchopt
-.. |discord| image:: https://dcbadge.vercel.app/api/server/EA2HGQb7nv?style=flat
+.. |discord| image:: https://dcbadge.limes.pink/api/server/EA2HGQb7nv?style=flat
    :target: https://discord.gg/EA2HGQb7nv
 .. |install-per-months| image:: https://static.pepy.tech/badge/benchopt/month
    :target: https://pepy.tech/project/benchopt

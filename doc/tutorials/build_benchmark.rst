@@ -3,10 +3,10 @@
 Understanding and building a simple benchmark
 =============================================
 
-Are you looking for a simple, step-by-step introduction to the `Benchopt <https://benchopt.github.io/index.html>`_ library?
+Are you looking for a simple, step-by-step introduction to the `Benchopt <https://benchopt.github.io/>`_ library?
 Then look no further!
 In this tutorial, we are going to learn how to use the Benchopt library to compare various algorithms in order to minimize a given cost.
-This tutorial complements the `write a benchmark <https://benchopt.github.io/benchmark_workflow/write_benchmark.html>`_ webpage with a more practical, hands-on approach.
+This tutorial complements the :ref:`write_benchmark` workflow with a more practical, hands-on approach.
 
 Let's say you are interested in benchmarking solvers to minimize the cost function of the `ridge regression problem <https://en.wikipedia.org/wiki/Ridge_regression>`_, a variant of linear regression which is a common problem in supervised machine learning. This cost function writes as follows:
 
@@ -57,7 +57,7 @@ Benchopt can be installed simply using ``pip`` by running in a terminal
     pip install -U benchopt
 
 Benchopt and its dependencies are going to be installed, just wait until this is done.
-If you have any issue with the installation, you may have a look at the `installation page <https://benchopt.github.io/get_started.html>`_.
+If you have any issue with the installation, you may have a look at the :ref:`get_started:`.
 
 Installing and running a first benchmark
 ----------------------------------------
@@ -281,7 +281,7 @@ Moreover we should also change the name of the objective from ``Ordinary Least S
     class Objective(BaseObjective):
         name = 'Ridge Regression'
 
-That's it for the ``objective.py`` file! We can now modify the solver. For simplicity we may directly edit ``python-gd.py``, but adding a new solver to the benchmark is as simple as adding another file in the solvers folder (more information in the `add a solver tutorial <https://benchopt.github.io/tutorials/add_solver.html>`_).
+That's it for the ``objective.py`` file! We can now modify the solver. For simplicity we may directly edit ``python-gd.py``, but adding a new solver to the benchmark is as simple as adding another file in the solvers folder (more information in the :ref:`add_solver` tutorial.
 
 Modifying the solver means updating the ``run`` method, more specifically the gradient formula.
 Inside the ``python-gd.py`` file, the new ``run`` method looks like this
@@ -359,6 +359,6 @@ We have computed the ridge penalization alongside the iterations, and we can obs
 Concluding remarks
 ------------------
 
-Thank you for completing this tutorial! Hopefully your understanding of Benchopt benchmark is now sufficient to start your own benchmark. You may find more information in the online documentation about `writing a benchmark <https://benchopt.github.io/benchmark_workflow/write_benchmark.html>`_. Moreover, there are a lot of other interesting features to Benchopt, feel free to go over the online documentation to learn more about `Command Line Interface <https://benchopt.github.io/user_guide/CLI_ref.html>`_, `publishing benchmark results <https://benchopt.github.io/benchmark_workflow/publish_benchmark.html>`_, or `configuring Benchopt <https://benchopt.github.io/benchmark_workflow/config_benchopt.html>`_.
+Thank you for completing this tutorial! Hopefully your understanding of Benchopt benchmark is now sufficient to start your own benchmark. You may find more information in the online documentation about :ref:`write_benchmark`. Moreover, there are a lot of other interesting features to Benchopt, feel free to go over the online documentation to learn more about the :ref:`cli_ref`, hot to :ref:`publish_benchmark`, or :ref:`config_benchopt`.
 
 As a final word, for simplicity, the way we cloned the template_benchmark repository to create our benchmark slightly differs from the recommended procedure. Instead, to start you benchmark, follow the instructions found in the `README.rst file <https://github.com/benchopt/template_benchmark>`_.

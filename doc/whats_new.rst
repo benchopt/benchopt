@@ -323,7 +323,7 @@ CLI
 
 - Add support for custom parameters in CLI for objectives, datasets, and
   solvers, through the syntax ``-s solver_name[parameter=value]``. See the `CLI
-  documentation <https://benchopt.github.io/cli.html>`_ for more details on the
+  documentation <https://benchopt.github.io/stable/cli.html>`_ for more details on the
   syntax. By `Tom Dupré la Tour`_ (:gh:`362`).
 
 - Add ``--slurm`` option in ``benchopt run`` to allow running the benchmark on
