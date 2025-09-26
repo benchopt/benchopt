@@ -120,7 +120,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/setup-python@v3
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ env.VERSION_PYTHON }}
 
@@ -144,7 +144,7 @@ jobs:
             version_pip: "latest"
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/setup-python@v3
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.version_python }}
       - name: Install specific version of pip
