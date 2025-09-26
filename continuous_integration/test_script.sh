@@ -5,7 +5,7 @@ set -e
 conda info
 pip freeze
 
-TEST_CMD="python -m pytest -vs --durations=20 --junitxml=$JUNIT_XML"
+TEST_CMD="python -m pytest -vs --durations=20"
 TEST_CMD="$TEST_CMD --test-env $CONDA_ENV"
 
 # Un-comment when debugging the CI
