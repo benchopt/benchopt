@@ -98,7 +98,7 @@ class TestRunCmd:
     def test_valid_call_in_env(self, test_env_name):
         with temp_benchmark() as bench, CaptureCmdOutput() as out:
             cmd = (
-                f"{bench.benchmark_dir} -r 1 -n 1 --no-plot "
+                f"{bench.benchmark_dir} -n 1 --no-plot "
                 f"-d test-dataset --env-name {test_env_name}"
             )
             with pytest.raises(SystemExit, match='False'):
