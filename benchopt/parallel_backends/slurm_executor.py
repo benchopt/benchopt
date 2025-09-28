@@ -1,4 +1,3 @@
-import yaml
 from contextlib import ExitStack
 
 try:
