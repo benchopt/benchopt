@@ -5,7 +5,7 @@ from benchopt.cli.main import run
 from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.utils.conda_env_cmd import get_env_file_from_requirements
 
-from benchopt.tests.utils import CaptureRunOutput
+from benchopt.tests.utils import CaptureCmdOutput
 
 
 ##############################################################################
@@ -36,7 +36,7 @@ def test_slurm_deprecation():
             config={'slurm.yml': slurm_config}
     ) as benchmark:
         slurm_config_file = benchmark.benchmark_dir / "slurm.yml"
-        with CaptureRunOutput():
+        with CaptureCmdOutput():
             msg = "Cannot use both `--slurm` and `--parallel-backend`."
             with pytest.raises(AssertionError, match=msg):
                 run([
@@ -46,7 +46,7 @@ def test_slurm_deprecation():
                     f'--parallel-config {slurm_config_file}'.split()
                 ], standalone_mode=False)
 
-        with CaptureRunOutput():
+        with CaptureCmdOutput():
             msg = "`--slurm` is deprecated, use `--parallel-backend` instead."
             with pytest.warns(DeprecationWarning, match=msg):
                 run([
