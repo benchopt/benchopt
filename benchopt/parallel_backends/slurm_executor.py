@@ -72,10 +72,6 @@ def run_on_slurm(
     executors = {}
     tasks = []
 
-    # Load the slurm config from a file if provided
-    with open(slurm_config, "r") as f:
-        slurm_config = yaml.safe_load(f)
-
     with ExitStack() as stack:
         for kwargs in all_runs:
             solver = kwargs.get("solver")

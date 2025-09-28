@@ -515,7 +515,7 @@ def test_warm_up():
     """
 
     with temp_benchmark(solvers=[solver1]) as benchmark:
-        with CaptureRunOutput() as out:
+        with CaptureCmdOutput() as out:
             run([
                 str(benchmark.benchmark_dir),
                 *'-s solver1 -d test-dataset -n 0 -r 5 --no-plot'.split(),
@@ -548,14 +548,14 @@ def test_pre_run_hook():
     """
 
     with temp_benchmark(solvers=[solver1]) as benchmark:
-        with CaptureRunOutput() as out:
+        with CaptureCmdOutput() as out:
             run([
                 str(benchmark.benchmark_dir),
                 *'-s solver1 -d test-dataset -n 0 -r 5 --no-plot '
                 '-o dummy*[reg=0.5]'.split()
             ], standalone_mode=False)
 
-        with CaptureRunOutput() as out:
+        with CaptureCmdOutput() as out:
             with pytest.raises(SystemExit, match="False"):
                 _cmd_test([
                     str(benchmark.benchmark_dir), '-k', 'solver1',

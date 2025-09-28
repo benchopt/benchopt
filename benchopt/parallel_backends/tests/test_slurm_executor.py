@@ -1,5 +1,5 @@
 import pytest
-from benchopt.utils.slurm_executor import (
+from benchopt.parallel_backends.slurm_executor import (
     get_slurm_executor,
     run_on_slurm,
     merge_configs,
@@ -79,12 +79,11 @@ def test_run_on_slurm(monkeypatch, dummy_solver, dummy_slurm_config):
     monkeypatch.setattr(submitit.AutoExecutor, 'submit', submit)
 
     # Run the function
-    config = {'slurm_config': dummy_slurm_config}
-    with temp_benchmark(config=config) as bench:
+    with temp_benchmark() as bench:
         with mocked_slurm():
             res = run_on_slurm(
                 benchmark=bench,
-                slurm_config=bench.benchmark_dir / "slurm_config.yml",
+                slurm_config=dummy_slurm_config,
                 run_one_solver=lambda **kwargs: "done",
                 common_kwargs={"timeout": None},
                 all_runs=[

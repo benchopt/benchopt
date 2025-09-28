@@ -4,8 +4,6 @@ from benchopt import __version__
 from benchopt.cli.main import run
 from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.utils.conda_env_cmd import get_env_file_from_requirements
-from benchopt.utils.temp_benchmark import temp_benchmark
-from benchopt.cli.main import run
 
 from benchopt.tests.utils import CaptureRunOutput
 

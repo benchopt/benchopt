@@ -4,7 +4,7 @@ import pytest
 from benchopt.cli.main import run
 from benchopt.utils.temp_benchmark import temp_benchmark
 
-from benchopt.tests.utils import CaptureRunOutput
+from benchopt.tests.utils import CaptureCmdOutput
 
 
 def test_missing_backend():
@@ -28,7 +28,7 @@ def test_missing_backend():
             config={"parallel_config.yml": parallel_config}
     ) as benchmark:
         parallel_config_file = benchmark.benchmark_dir / "parallel_config.yml"
-        with CaptureRunOutput():
+        with CaptureCmdOutput():
             msg = "Could not find `backend` specification "
             with pytest.raises(AssertionError, match=msg):
                 run([
@@ -53,14 +53,14 @@ def test_dask_backend():
     class Solver(BaseSolver):
         name = "solver1"
         sampling_strategy = "iteration"
-        def set_objective(self, X, y, lmbd): self.n_features = X.shape[1]
+        def set_objective(self, X, y, lmbd): pass
         def run(self, n_iter): pass
         def get_result(self):
             from distributed import get_client
             client = get_client()
             assert "Client-worker" in client.id, client.id
             print(client.id)
-            return {"beta": np.zeros(self.n_features)}
+            return {"beta": 1}
     """
 
     with temp_benchmark(
@@ -68,11 +68,10 @@ def test_dask_backend():
             config={"parallel_config.yml": parallel_config}
     ) as benchmark:
         parallel_config_file = benchmark.benchmark_dir / "parallel_config.yml"
-        with CaptureRunOutput() as out:
+        with CaptureCmdOutput() as out:
             run([
                 str(benchmark.benchmark_dir),
                 *"-s solver1 -d test-dataset -n 0 -r 1 --no-plot "
-                "-o dummy*[reg=0.5] "
                 f"--parallel-config {parallel_config_file}".split()
             ], standalone_mode=False)
 
@@ -96,12 +95,12 @@ def test_submitit_backend():
     class Solver(BaseSolver):
         name = "solver1"
         sampling_strategy = "iteration"
-        def set_objective(self, X, y, lmbd): self.n_features = X.shape[1]
+        def set_objective(self, X, y, lmbd): pass
         def run(self, n_iter): pass
         def get_result(self):
             # This will fail if not run in a submitit worker
             job_env = submitit.JobEnvironment()
-            return {"beta": np.zeros(self.n_features)}
+            return {"beta": 1}
     """
 
     with temp_benchmark(
@@ -109,11 +108,10 @@ def test_submitit_backend():
             config={"parallel_config.yml": parallel_config}
     ) as benchmark:
         parallel_config_file = benchmark.benchmark_dir / "parallel_config.yml"
-        with CaptureRunOutput() as out:
+        with CaptureCmdOutput() as out:
             run([
                 str(benchmark.benchmark_dir),
                 *"-s solver1 -d test-dataset -n 0 -r 1 --no-plot "
-                "-o dummy*[reg=0.5] "
                 f"--parallel-config {parallel_config_file}".split()
             ], standalone_mode=False)
 

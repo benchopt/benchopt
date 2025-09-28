@@ -12,8 +12,8 @@ from .utils.sys_info import get_sys_info
 from .utils.files import uniquify_results
 from .utils.pdb_helpers import exception_handler
 from .utils.terminal_output import TerminalOutput
-from .utils.parallel_backends import parallel_run
-from .utils.parallel_backends import check_parallel_config
+from .parallel_backends import parallel_run
+from .parallel_backends import check_parallel_config
 
 
 FAILURE_STATUS = ['diverged', 'error', 'interrupted']

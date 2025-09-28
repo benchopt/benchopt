@@ -1,5 +1,5 @@
 from ..utils.sys_info import get_cuda_version
-from ..utils.parallel_backends import is_distributed_frontal
+from ..parallel_backends import is_distributed_frontal
 
 
 def requires_gpu():

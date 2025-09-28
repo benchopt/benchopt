@@ -16,7 +16,7 @@ from benchopt.utils.conda_env_cmd import create_conda_env
 from benchopt.utils.shell_cmd import _run_shell_in_conda_env
 from benchopt.utils.conda_env_cmd import get_benchopt_version_in_env
 from benchopt.utils.profiling import print_stats
-from benchopt.utils.parallel_backends import check_parallel_config
+from benchopt.parallel_backends import check_parallel_config
 
 
 main = click.Group(

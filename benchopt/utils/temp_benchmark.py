@@ -121,6 +121,8 @@ def temp_benchmark(
                 if isinstance(content, dict):
                     # If content is a dict, write it as YAML
                     content = yaml.dump(content)
+                else:
+                    content = inspect.cleandoc(content)
                 config_path = (temp_path / fname).with_suffix(".yml")
                 config_path.write_text(content, encoding='utf-8')
 
