@@ -348,7 +348,7 @@ def run(config_file=None, **kwargs):
     if n_jobs:
         parallel_args += f"--n-jobs {n_jobs} "
     if parallel_config:
-        parallel_args += rf"--parallel-backend {parallel_config} "
+        parallel_args += rf"--parallel-config {parallel_config} "
     cmd = (
         rf"benchopt run --local {benchmark.benchmark_dir} "
         rf"{f'--n-repetitions {n_repetitions}' if n_repetitions else ''} "
