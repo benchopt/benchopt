@@ -145,9 +145,10 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               "parallel.")
 @click.option("--slurm",
               metavar="<slurm_config.yml>", default=None,
-              help="Run the computation using submitit on a SLURM cluster. "
-              "The YAML file provided to this argument is used to setup the "
-              "SLURM job. See :ref:`slurm_run` for a detailed description.")
+              help="(_Deprecated_) Run the computation using submitit on a "
+              "SLURM cluster. The YAML file provided as an argument is used "
+              "to setup the SLURM job. See :ref:`slurm_run` for a detailed "
+              "description and various options.")
 @click.option("--parallel-config",
               metavar="<parallel_config.yml>", default=None,
               help="Run in parallel with the specified backend configuration. "
