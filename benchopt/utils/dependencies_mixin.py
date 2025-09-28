@@ -3,7 +3,6 @@ import traceback
 from ..config import RAISE_INSTALL_ERROR
 
 from .class_property import classproperty
-from .safe_import import get_benchmark_dir
 from .shell_cmd import _run_shell_in_conda_env
 from .conda_env_cmd import install_in_conda_env
 from .conda_env_cmd import shell_install_in_conda_env

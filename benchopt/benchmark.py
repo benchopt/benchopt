@@ -582,11 +582,7 @@ class Benchmark:
             Filters to select specific objective parameters. If None,
             all objective parameters are tested
         terminal : TerminalOutput or None
-<<<<<<< HEAD
-            Object to manage the output in the terminal.
-=======
             Object to format string to display the terminal.
->>>>>>> main
 
         Yields
         ------
