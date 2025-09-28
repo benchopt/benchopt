@@ -18,6 +18,13 @@ CLI
   is called before the test with the same arguments.
   By `Thomas Moreau`_ (:gh:`801`)
 
+- Add a parallel backend system for ``benchopt run`` to setup distributed
+  run with ``dask`` and ``submitit``. See :ref:`parallel_run` for details.
+  By `Thomas Moreau`_ (:gh:`673`).
+
+- Deprecate the ``--slurm`` parameter which will be removed in benchopt 1.8.
+  By `Thomas Moreau`_ (:gh:`673`).
+
 
 API
 ---
@@ -58,13 +65,6 @@ CLI
 
 - Make it possible to run ``benchopt`` as ``python -m benchopt``, to ease
   running in various environment and debugging. By `Rémi Flamary`_ (:gh:`685`)
-
-- Add a parallel backend system for ``benchopt run`` to setup distributed
-  run with ``dask`` and ``submitit``. See :ref:`parallel_run` for details.
-  By `Thomas Moreau`_ (:gh:`673`).
-
-- Deprecate the ``--slurm`` parameter which will be removed in benchopt 1.8.
-  By `Thomas Moreau`_ (:gh:`673`).
 
 API
 ---
