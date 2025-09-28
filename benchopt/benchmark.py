@@ -1,17 +1,18 @@
 import re
+import sys
 import click
 import warnings
+import importlib
 import itertools
 from pathlib import Path
+
+from joblib.externals import cloudpickle
 
 from .config import get_setting
 from .base import BaseSolver, BaseDataset
 
-from .utils.safe_import import set_benchmark_module
 from .utils.dynamic_modules import _load_class_from_module
-from .utils.dependencies_mixin import DependenciesMixin
 from .utils.parametrized_name_mixin import product_param
-from .utils.parametrized_name_mixin import ParametrizedNameMixin
 
 from .utils.terminal_output import colorify
 from .utils.terminal_output import GREEN, YELLOW
@@ -27,9 +28,10 @@ from .config import RAISE_INSTALL_ERROR
 # Global variable to access the benchmark currently running globally
 _RUNNING_BENCHMARK = None
 
-# Constant to name cache directory and folder of slurm outputs
+# Constant to name cache directory, SLURM output's folder and utils module
 CACHE_DIR = '__cache__'
 SLURM_JOB_NAME = 'benchopt_run'
+PACKAGE_NAME = "benchmark_utils"
 
 
 MISSING_DEPS_MSG = (
@@ -69,6 +71,7 @@ class Benchmark:
     mem : joblib.Memory
         Caching mechanism for the benchmark.
     """
+
     def __init__(
             self, benchmark_dir,
             no_cache=False,
@@ -79,7 +82,7 @@ class Benchmark:
 
         global _RUNNING_BENCHMARK
         _RUNNING_BENCHMARK = self
-        set_benchmark_module(self.benchmark_dir)
+        self.set_benchmark_module()
 
         # Load the benchmark metadat defined in `objective.py` or
         # in `benchmark_meta.json`.
@@ -116,6 +119,25 @@ class Benchmark:
         # replace dots to avoid issues with `with_suffix``
         self.name = self.name.replace('.', '-')
 
+    def set_benchmark_module(self):
+        # add PACKAGE_NAME as a module if it exists.
+        # XXX: Maybe worth using function _get_module_from_file?
+        module_file = self.benchmark_dir / PACKAGE_NAME / '__init__.py'
+        if module_file.exists():
+            spec = importlib.util.spec_from_file_location(
+                PACKAGE_NAME, module_file
+            )
+            module = importlib.util.module_from_spec(spec)
+            sys.modules[PACKAGE_NAME] = module
+            spec.loader.exec_module(module)
+            cloudpickle.register_pickle_by_value(module)
+        elif module_file.parent.exists():
+            warnings.warn(
+                "Folder `benchmark_utils` exists but is missing `__init__.py`."
+                " Make sure it is a proper module to allow importing from it.",
+                ImportWarning
+            )
+
     ####################################################################
     # Helpers to access and validate objective, solvers and datasets
     ####################################################################
@@ -135,7 +157,7 @@ class Benchmark:
             )
 
         return _load_class_from_module(
-            module_filename, "Objective", benchmark_dir=self.benchmark_dir
+            self.benchmark_dir, module_filename, "Objective"
         )
 
     def check_objective_filters(self, objective_filters):
@@ -200,41 +222,16 @@ class Benchmark:
                 # skip template solvers and datasets
                 continue
             # Get the class
-            try:
-                cls = _load_class_from_module(
-                    module_filename, class_name,
-                    benchmark_dir=self.benchmark_dir
-                )
-                if not issubclass(cls, base_class):
-                    warnings.warn(colorify(
-                        f"class {cls.__name__} in {module_filename} is not a "
-                        f"subclass from base class benchopt."
-                        f"{base_class.__name__}", YELLOW
-                    ))
-
-            except Exception:
-
-                import traceback
-                tb_to_print = traceback.format_exc(chain=False)
-
-                class FailedImport(ParametrizedNameMixin, DependenciesMixin):
-                    "Object for the class list that raises error if used."
-
-                    name = get_failed_import_object_name(
-                        module_filename, class_name
-                    )
-
-                    @classmethod
-                    def is_installed(cls, **kwargs):
-                        print(
-                            f"Failed to import {class_name} from "
-                            f"{module_filename}. Please fix the following "
-                            "error to use this file with benchopt:\n"
-                            f"{tb_to_print}"
-                        )
-                        return False
-
-                cls = FailedImport
+            cls = _load_class_from_module(
+                self.benchmark_dir, module_filename, class_name,
+            )
+            if (not issubclass(cls, base_class) and
+                    cls.__name__ != "FailedImport"):
+                warnings.warn(colorify(
+                    f"class {cls.__name__} in {module_filename} is not a "
+                    f"subclass from base class benchopt."
+                    f"{base_class.__name__}", YELLOW
+                ))
             classes.append(cls)
 
         classes.sort(key=lambda c: c.name.lower())
@@ -540,7 +537,7 @@ class Benchmark:
         if len(datasets) == 0:
             return
         cmd = f"benchopt check-data {self.benchmark_dir} -d "
-        cmd += "-d ".join(d.name for d in datasets)
+        cmd += " -d ".join(d.name for d in datasets)
         _run_shell_in_conda_env(
             cmd, env_name=env_name, raise_on_error=True, capture_stdout=False
         )
@@ -585,7 +582,11 @@ class Benchmark:
             Filters to select specific objective parameters. If None,
             all objective parameters are tested
         terminal : TerminalOutput or None
+<<<<<<< HEAD
             Object to manage the output in the terminal.
+=======
+            Object to format string to display the terminal.
+>>>>>>> main
 
         Yields
         ------
@@ -929,28 +930,3 @@ def buffer_iterator(it):
             yield val
 
     return buffered_it(buffer), buffer
-
-
-def get_failed_import_object_name(module_file, cls_name):
-    # Parse the module file to find the name of the failing object
-
-    import ast
-    module_ast = ast.parse(Path(module_file).read_text())
-    classdef = [
-        c for c in module_ast.body
-        if isinstance(c, ast.ClassDef) and c.name == cls_name
-    ]
-    if len(classdef) == 0:
-        raise ValueError(f"Could not find {cls_name} in module {module_file}.")
-    c = classdef[-1]
-    name_assign = [
-        a for a in c.body
-        if (isinstance(a, ast.Assign) and any(list(
-            (isinstance(t, ast.Name) and t.id == "name") for t in a.targets
-        )))
-    ]
-    if len(name_assign) == 0:
-        raise ValueError(
-            f"Could not find {cls_name} name in module {module_file}"
-        )
-    return name_assign[-1].value.value

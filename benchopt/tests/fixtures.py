@@ -3,18 +3,17 @@ import uuid
 import pytest
 
 from benchopt.benchmark import Benchmark
+from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.utils.conda_env_cmd import create_conda_env
 from benchopt.utils.conda_env_cmd import delete_conda_env
 from benchopt.utils.shell_cmd import _run_shell_in_conda_env
-from benchopt.utils.dynamic_modules import _get_module_from_file
-
-from benchopt.tests import DUMMY_BENCHMARK_PATH
 
 os.environ['BENCHOPT_DEBUG'] = '1'
 os.environ['BENCHOPT_RAISE_INSTALL_ERROR'] = '1'
 
 _TEST_ENV_NAME = None
 _EMPTY_ENV_NAME = None
+_TEST_BENCHMARK = None
 
 
 def class_ids(p):
@@ -42,8 +41,26 @@ def pytest_addoption(parser):
 
 def pytest_configure(config):
     """Setup pytest for benchopt testing"""
+    global _TEST_BENCHMARK
 
     config.addinivalue_line("markers", "requires_install")
+
+    # Create the benchmark for which the tests are run. If it is not provided,
+    # we use a temporary benchmark with a dummy dataset and solver.
+    benchmark_path = config.getoption("benchmark")
+    if benchmark_path is not None:
+        _TEST_BENCHMARK = Benchmark(benchmark_path)
+    else:
+        ctx = temp_benchmark()
+        _TEST_BENCHMARK = ctx.__enter__()
+        config._ctx = ctx
+
+
+def pytest_unconfigure(config):
+    """Teardown the temporary benchmark if any."""
+    if hasattr(config, "_ctx"):
+        config._ctx.__exit__(None, None, None)
+        del config._ctx
 
 
 def pytest_collection_modifyitems(config, items):
@@ -61,11 +78,13 @@ def pytest_generate_tests(metafunc):
     """Generate the test on the fly to take --benchmark into account.
     """
 
-    # Get all benchmarks
-    benchmark = metafunc.config.getoption("benchmark")
+    benchmark = _TEST_BENCHMARK
     if benchmark is None:
-        benchmark = DUMMY_BENCHMARK_PATH
-    benchmark = Benchmark(benchmark)
+        raise ValueError(
+            "The benchmark on which to run the tests has not been configured. "
+            "When not provided, a temporary benchmark should be used. Please "
+            "report this issue on GitHub."
+        )
 
     # Make sure the tested benchmark is installed (we can import the Objective)
     benchmark.get_benchmark_objective().is_installed(
@@ -103,21 +122,11 @@ def no_debug_log(request):
 
 
 @pytest.fixture
-def check_test(request):
-
-    if 'benchmark' not in request.fixturenames:
-        raise ValueError(
-            '`check_test` fixture should only be used in tests parametrized '
-            'with `benchmark` fixture'
-        )
-
-    benchmark = request.getfixturevalue('benchmark')
-    test_config_file = benchmark.get_test_config_file()
-    if test_config_file is None:
-        return None
-    test_config_module = _get_module_from_file(test_config_file)
-    check_func_name = f"check_{request.function.__name__}"
-    return getattr(test_config_module, check_func_name, None)
+def no_raise_install(request):
+    """Deactivate the raise install error for a test."""
+    os.environ["BENCHOPT_RAISE_INSTALL_ERROR"] = "0"
+    yield
+    os.environ["BENCHOPT_RAISE_INSTALL_ERROR"] = "1"
 
 
 @pytest.fixture(scope='session')

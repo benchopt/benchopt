@@ -5,10 +5,6 @@ from abc import abstractmethod
 from joblib.externals import cloudpickle
 
 
-# Cache for the cloudpickle payload of dynamic classes.
-_DYNAMIC_CLASS_PAYLOAD = {}
-
-
 class ParametrizedNameMixin():
     """Mixing for parametric classes representation and naming.
     """
@@ -112,30 +108,48 @@ class ParametrizedNameMixin():
         return str(cls.get_instance(**parameters))
 
     @staticmethod
-    def _load_instance(class_value, parameters, benchmark_dir):
+    def _load_instance(benchmark_dir, cls_info, parameters):
         # Make sure the running benchmark is set before loading the instance.
         from benchopt.benchmark import Benchmark
         Benchmark(benchmark_dir)
-        klass = cloudpickle.loads(class_value)
+
+        # Load the dynamic class
+        from benchopt.utils.dynamic_modules import _reconstruct_class
+        klass = _reconstruct_class(benchmark_dir, *cls_info)
+
+        # Set the parameters of the parametrized class.
         obj = klass.get_instance(**parameters)
         return obj
 
     def _get_mixin_args(self):
         """Get the arguments necessary to reconstruct the instance."""
 
-        cls = self.__class__
-        if cls not in _DYNAMIC_CLASS_PAYLOAD:
-            _DYNAMIC_CLASS_PAYLOAD[cls] = cloudpickle.dumps(cls)
-        class_value = _DYNAMIC_CLASS_PAYLOAD[cls]
+        cls_info = (
+            str(self.__class__._module_filename),
+            self.__class__._base_class_name,
+            self.__class__._file_hash
+        )
 
         # Send the benchmark folder to the instance so it can access the config
         from benchopt.benchmark import get_running_benchmark
         benchmark_dir = get_running_benchmark().benchmark_dir
 
-        return class_value, self._parameters, benchmark_dir
+        return str(benchmark_dir), cls_info, self._parameters
+
+    def __setstate__(self, state):
+        """Default setstate method to reconstruct the instance.
+
+        If `_get_state` is defined, this function should be overridden.
+        """
+        assert len(state) == 0, (
+            "If `_get_state` is defined, this function should be overridden."
+        )
+
+    def _get_state(self):
+        return {}
 
     def __reduce__(self):
-        return self._load_instance, self._get_mixin_args()
+        return self._load_instance, self._get_mixin_args(), self._get_state()
 
 
 def expand(keys, values):

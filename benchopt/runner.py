@@ -17,6 +17,15 @@ from .utils.parallel_backends import check_parallel_config
 
 
 FAILURE_STATUS = ['diverged', 'error', 'interrupted']
+SUCCESS_STATUS = ['done', 'max_runs', 'timeout']
+
+
+class FailedRun(RuntimeError):
+    """Exception raised when a solver run fails."""
+    def __init__(self, status):
+        super().__init__()
+        self.status = status
+
 
 ##################################
 # Time one run of a solver
@@ -87,6 +96,8 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
     force : bool
         If force is set to True, ignore the cache and run the computations
         for the solver anyway. Else, use the cache if available.
+    terminal : TerminalOutput or None
+        Object to format string to display the progress of the solver.
     pdb : bool
         It pdb is set to True, open a debugger on error.
 
@@ -97,10 +108,6 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
     status : 'done' | 'diverged' | 'timeout' | 'max_runs'
         The status on which the solver was stopped.
     """
-
-    # The warm-up step called for each repetition bit only run once.
-    solver._warm_up()
-
     curve = []
 
     # Augment the metadata with final_results if necessary.
@@ -115,6 +122,8 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
         meta["final_results"] = str(final_results)
 
     with exception_handler(terminal, pdb=pdb) as ctx:
+        # The warm-up step called for each repetition bit only run once.
+        solver._warm_up()
 
         if solver._solver_strategy == "callback":
 
@@ -158,7 +167,7 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
                 with open(meta["final_results"], 'wb') as f:
                     pickle.dump(to_save, f)
     if ctx.status in FAILURE_STATUS:
-        raise RuntimeError(ctx.status)
+        raise FailedRun(ctx.status)
     return curve, ctx.status
 
 
@@ -211,7 +220,7 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
             res = _run_one_to_cvg_cached(**kwargs)
             return res if res is not None else ([], 'not run yet')
 
-    # Set objective an skip if necessary.
+    # Set objective and skip if necessary.
     skip, reason = objective.set_dataset(dataset)
     if skip:
         terminal.skip(reason, objective=True)
@@ -241,8 +250,9 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
             n_repetitions = 1
 
     for rep in range(n_repetitions):
-        skip = solver._set_objective(objective, terminal=terminal)
+        skip, reason = solver._set_objective(objective)
         if skip:
+            terminal.skip(reason)
             return []
 
         terminal.set(rep=rep)
@@ -277,12 +287,14 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
             curve, status = run_one_to_cvg_cached(
                 **args_run_one_to_cvg
             )
-        except RuntimeError as e:
-            status = e.args[0]
-        if status in ['diverged', 'error', 'interrupted', 'not run yet']:
+            run_statistics.extend(curve)
+        except FailedRun as e:
+            status = e.status
+
+        # Handle the status for which we do not want to try other repetitions
+        if status not in SUCCESS_STATUS:
             run_statistics = []
             break
-        run_statistics.extend(curve)
         states.append(status)
 
     else:
@@ -415,7 +427,7 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
         # dependencies.
         output_file = output_file.with_suffix(".csv")
         df.to_csv(output_file)
-    terminal.savefile_status(output_file)
+    terminal.savefile_status(save_file=output_file)
 
     if plot_result:
         from benchopt.plotting import plot_benchmark
@@ -497,6 +509,8 @@ def run_benchmark(benchmark_path, solver_names=None, forced_solvers=(),
         is set to `NaN`.
     """
     benchmark = Benchmark(benchmark_path, no_cache=no_cache)
+    if solver_names is None:
+        solver_names = []
     solvers = benchmark.check_solver_patterns(
         solver_names + list(forced_solvers)
     )

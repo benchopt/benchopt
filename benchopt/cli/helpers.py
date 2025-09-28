@@ -463,7 +463,7 @@ def check_install(benchmark, module_filename, base_class_name):
 
     # Get class to check
     klass = _load_class_from_module(
-        module_filename, base_class_name, benchmark.benchmark_dir
+         benchmark.benchmark_dir, module_filename, base_class_name
     )
     klass.is_installed(raise_on_not_installed=True)
 

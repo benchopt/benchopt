@@ -351,7 +351,7 @@ def run(config_file=None, **kwargs):
         parallel_args += rf"--parallel-backend {parallel_config} "
     cmd = (
         rf"benchopt run --local {benchmark.benchmark_dir} "
-        rf"--n-repetitions {n_repetitions} "
+        rf"{f'--n-repetitions {n_repetitions}' if n_repetitions else ''} "
         rf"--max-runs {max_runs} "
         rf"{f'--timeout {timeout} ' if timeout is not None else ''}"
         rf"{'--no-timeout ' if no_timeout else ''} "
