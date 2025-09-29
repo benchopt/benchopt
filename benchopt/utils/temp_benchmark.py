@@ -111,7 +111,6 @@ def temp_benchmark(
         (temp_path / "datasets").mkdir()
         with open(temp_path / "objective.py", "w", encoding='utf-8') as f:
             f.write(inspect.cleandoc(objective))
-            print(objective)
         for fname, content in solvers.items():
             fname = temp_path / "solvers" / fname
             fname.write_text(inspect.cleandoc(content), encoding='utf-8')
