@@ -19,6 +19,8 @@ class Objective(BaseObjective):
     def get_objective(self): return dict(X=None, y=None, lmbd=None)
 """
 
+IDX_BENCHMARK = 0
+
 DEFAULT_DATASETS = {
     'test_dataset.py': """from benchopt import BaseDataset
 
@@ -96,15 +98,20 @@ def temp_benchmark(
     else:
         datasets = {**DEFAULT_DATASETS, **datasets}
 
+    global IDX_BENCHMARK
+    idx = IDX_BENCHMARK
+    IDX_BENCHMARK += 1
+
     with tempfile.TemporaryDirectory(
             prefix="temp_benchmarks", suffix="", dir="."
     ) as tempdir:
-        temp_path = Path(tempdir) / "bench"
+        temp_path = Path(tempdir) / f"bench_{idx}"
         temp_path.mkdir()
         (temp_path / "solvers").mkdir()
         (temp_path / "datasets").mkdir()
         with open(temp_path / "objective.py", "w", encoding='utf-8') as f:
             f.write(inspect.cleandoc(objective))
+            print(objective)
         for fname, content in solvers.items():
             fname = temp_path / "solvers" / fname
             fname.write_text(inspect.cleandoc(content), encoding='utf-8')
@@ -142,7 +149,8 @@ def temp_benchmark(
                     inspect.cleandoc(content), encoding='utf-8'
                 )
 
-        yield Benchmark(temp_path)
+        bench = Benchmark(temp_path)
+        yield bench
 
         # to avoid border effects, remove the benchmark directory
         to_del = [

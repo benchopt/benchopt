@@ -34,7 +34,6 @@ def test_missing_backend():
                 run([
                     str(benchmark.benchmark_dir),
                     *"-s solver1 -d test-dataset -n 0 -r 1 --no-plot "
-                    "-o dummy*[reg=0.5] "
                     f"--parallel-config {parallel_config_file}".split()
                 ], standalone_mode=False)
 

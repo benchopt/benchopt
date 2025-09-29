@@ -113,7 +113,10 @@ class StoppingCriterion():
             )
 
         if self.strategy is None:
-            self.strategy = solver.sampling_strategy or 'iteration'
+            if solver is None:
+                self.strategy = 'iteration'
+            else:
+                self.strategy = solver.sampling_strategy or 'iteration'
         elif solver is not None and solver.sampling_strategy is not None:
             assert solver.sampling_strategy == self.strategy, (
                 'The strategy is set both in Solver.sampling_strategy and in '
@@ -306,7 +309,8 @@ class StoppingCriterion():
 
     def __reduce__(self):
         kwargs = dict(
-            strategy=self.strategy, **self.kwargs
+            strategy=self.strategy, key_to_monitor=self.key_to_monitor,
+            **self.kwargs
         )
         if getattr(self, 'max_runs', None):
             runner_kwargs = dict(
