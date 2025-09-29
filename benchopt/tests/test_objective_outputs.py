@@ -84,7 +84,7 @@ def test_objective_no_value(no_debug_log):
     # check that the error is comprehensive when the key is missing
     solver_key = solver.replace(
         "#STOP",
-        "stopping_criterion=SufficientProgressCriterion(strategy='run_once', key_to_monitor='XXX')"
+        "stopping_criterion=SufficientProgressCriterion(key_to_monitor='XXX')"
     )
     with temp_benchmark(objective=objective, solvers=solver_key) as bench:
         with pytest.raises(SystemExit, match='1'):
