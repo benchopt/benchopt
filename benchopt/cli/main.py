@@ -347,6 +347,8 @@ def run(config_file=None, **kwargs):
     parallel_args = ""
     if n_jobs:
         parallel_args += f"--n-jobs {n_jobs} "
+    if slurm:  # XXX: remove in benchopt 1.9
+        parallel_args += rf"--slurm {slurm} "
     if parallel_config:
         parallel_args += rf"--parallel-config {parallel_config} "
     cmd = (
@@ -355,7 +357,6 @@ def run(config_file=None, **kwargs):
         rf"--max-runs {max_runs} "
         rf"{f'--timeout {timeout} ' if timeout is not None else ''}"
         rf"{'--no-timeout ' if no_timeout else ''} "
-        rf"--n-jobs {n_jobs} {'--slurm' if slurm else ''} "
         rf"{solvers_option} {forced_solvers_option} "
         rf"{datasets_option} {objective_option} "
         rf"{'--plot' if plot else '--no-plot'} "
