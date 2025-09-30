@@ -365,7 +365,7 @@ def run(config_file=None, **kwargs):
         rf"{parallel_args}"
         rf"{'--pdb ' if pdb else ''}"
         rf"{'--profile ' if do_profile else ''}"
-        rf"{f'--output \"{output}\"' if output != 'None' else ''}"
+        rf"--output {output}"
         .replace('\\', '\\\\')
     )
     raise SystemExit(_run_shell_in_conda_env(
