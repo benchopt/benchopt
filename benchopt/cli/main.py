@@ -59,7 +59,7 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
         "html",
         "n_jobs",
         "parallel_config",
-        "slurm",  # XXX: remove in benchopt 1.7
+        "slurm",  # XXX: remove in benchopt 1.9
         "pdb",
         "profile",
         "env_name",
@@ -251,7 +251,7 @@ def run(config_file=None, **kwargs):
             use_profile()  # needs to be called before validate_solver_patterns
 
         # Get the config for parallel runs
-        # XXX: remove slurm in benchopt 1.8
+        # XXX: remove slurm in benchopt 1.9
         parallel_config = check_parallel_config(parallel_config, slurm, n_jobs)
 
         print("Loading objective, datasets and solvers...", end='', flush=True)
