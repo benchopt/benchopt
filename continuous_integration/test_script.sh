@@ -18,7 +18,7 @@ if [[ "$COVERAGE" == "true" ]]; then
 fi
 
 set -x
-$TEST_CMD -k "not dask and not submitit"
+$TEST_CMD -k "not dask"
 set +x
 
 if [[ "$COVERAGE" == "true" ]]; then
