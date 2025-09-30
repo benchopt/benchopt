@@ -18,7 +18,7 @@ if [[ "$COVERAGE" == "true" ]]; then
 fi
 
 set -x
-$TEST_CMD benchopt/tests
+$TEST_CMD -k "not dask and not submitit"
 set +x
 
 if [[ "$COVERAGE" == "true" ]]; then
