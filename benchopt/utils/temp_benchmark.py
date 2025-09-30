@@ -15,7 +15,7 @@ class Objective(BaseObjective):
     name = "test-objective"
     def set_data(self, X, y): pass
     def get_one_result(self): return dict(beta=None)
-    def evaluate_result(self, beta): return 1
+    def evaluate_result(self, beta): return 1.
     def get_objective(self): return dict(X=None, y=None, lmbd=None)
 """
 

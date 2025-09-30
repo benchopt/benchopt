@@ -122,10 +122,9 @@ def test_import_error_reporting(error, raise_install_error):
 
     expected_exc = error if raise_install_error else SystemExit
 
-    solver = """from benchopt import BaseSolver, safe_import_context
+    solver = """from benchopt import BaseSolver
 
-    with safe_import_context() as import_ctx:
-        import fake_module
+    import fake_module
 
     class Solver(BaseSolver):
         name = "solver-test"
