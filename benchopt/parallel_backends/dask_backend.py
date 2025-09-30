@@ -4,8 +4,8 @@ def check_dask_config(config):
     # Setup the client with `dask_*` parameters
     cluster = config.pop('dask_cluster', 'local')
     dask_config = {
-        k[5:]: config.pop(k) for k, v in list(config.items())
-        if k.startswith('dask_')
+        key.replace("dask_", ""): config.pop(key) for key in list(config)
+        if key.startswith('dask_')
     }
     if cluster == 'coiled':
         import coiled
