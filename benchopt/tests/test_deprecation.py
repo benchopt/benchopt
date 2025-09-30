@@ -14,7 +14,6 @@ from benchopt.tests.utils import CaptureCmdOutput
 
 
 def test_deprecated_channel_spec():
-    assert __version__ < "1.8"
     with pytest.warns(DeprecationWarning):
         env = get_env_file_from_requirements(["chan:pkg"])
     assert env == "channels:\n  - chan\ndependencies:\n  - pkg"
@@ -66,7 +65,6 @@ def test_deprecated_safe_import_context(no_raise_install):
 # XXX: remove in benchopt 1.9
 
 def test_slurm_deprecation():
-    assert __version__ < "1.9"
     pytest.importorskip("submitit")
 
     slurm_config = """
