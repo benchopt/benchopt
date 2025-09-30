@@ -18,7 +18,7 @@ if [[ "$COVERAGE" == "true" ]]; then
 fi
 
 set -x
-$TEST_CMD -k test_benchmark_features.py
+$TEST_CMD benchopt/tests
 set +x
 
 if [[ "$COVERAGE" == "true" ]]; then
