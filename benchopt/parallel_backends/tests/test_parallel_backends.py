@@ -78,6 +78,7 @@ def test_dask_backend():
     effective_workers = len(client._scheduler_identity.get('workers', {}))
     assert client_name in client.id
     assert effective_workers == n_workers
+    client.close()
 
     out.check_output("Distributed run with backend: dask", repetition=1)
     out.check_output(client_name, repetition=0)
