@@ -340,10 +340,10 @@ def run(config_file=None, **kwargs):
             f"and version in env {env_name} ({benchopt_version}) differ")
 
     # run the command in the conda env
-    solvers_option = " ".join([f"-s '{s}'" for s in solver_names])
-    forced_solvers_option = " ".join([f"-f '{s}'" for s in forced_solvers])
-    datasets_option = " ".join([f"-d '{d}'" for d in dataset_names])
-    objective_option = " ".join([f"-o '{o}'" for o in objective_filters])
+    solvers_option = " ".join([f'-s "{s}"' for s in solver_names])
+    forced_solvers_option = " ".join([f'-f "{s}"' for s in forced_solvers])
+    datasets_option = " ".join([f'-d "{d}"' for d in dataset_names])
+    objective_option = " ".join([f'-o "{o}"' for o in objective_filters])
     parallel_args = ""
     if n_jobs:
         parallel_args += f"--n-jobs {n_jobs} "
@@ -365,7 +365,7 @@ def run(config_file=None, **kwargs):
         rf"{parallel_args}"
         rf"{'--pdb ' if pdb else ''}"
         rf"{'--profile ' if do_profile else ''}"
-        rf"--output {output}"
+        rf"{f'--output \"{output}\"' if output != 'None' else ''}"
         .replace('\\', '\\\\')
     )
     raise SystemExit(_run_shell_in_conda_env(
