@@ -37,6 +37,10 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
             raise ValueError(
                 f"Invalid config file option {k}. "
                 "See list of valid options with `benchopt run -h`.")
+            
+        # parse if value is on a single line
+        if not isinstance(v, list) and var_name in ["objective", "dataset", "solver"]:
+            v = [v]
 
         # only override CLI variables if they have their default value
         if (ctx.get_parameter_source(var_name) is not None and
