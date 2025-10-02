@@ -116,7 +116,7 @@ def get_sys_info():
 
     # Info on dependency libs
     info["version-cuda"] = get_cuda_version()
-    info["version-numpy"] = np.__version__,
+    info["version-numpy"] = np.__version__
     info["version-numpy-libs"] = _get_numpy_libs()
     info["version-scipy"] = scipy.__version__
 
