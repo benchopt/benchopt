@@ -259,8 +259,8 @@ def test_extract_parameters():
     assert _extract_parameters("foo=(bar, baz)") == {'foo': ('bar', 'baz')}
     assert _extract_parameters("foo=(0, 1),bar=2") == {'foo': (0, 1), 'bar': 2}
     assert _extract_parameters("foo=[100, 200]") == {'foo': [100, 200]}
-    assert _extract_parameters("foo=/path/to/file,bar=baz") == \
-        {'foo': '/path/to/file', 'bar': 'baz'}
+    assert _extract_parameters("foo=/path/to/my-file,bar=baz") == \
+        {'foo': '/path/to/my-file', 'bar': 'baz'}
     assert _extract_parameters("foo=[\\path\\to\\file,other\\path]") == \
         {'foo': ['\\path\\to\\file', 'other\\path']}
 
