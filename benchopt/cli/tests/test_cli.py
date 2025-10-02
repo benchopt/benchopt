@@ -230,11 +230,12 @@ class TestRunCmd:
         out.check_output(r"time.sleep\(0.1\)", repetition=1)
 
     def test_config_file_single_line(self, no_debug_log):
-        config = """
+        n_reps = 2
+        config = f"""
         objective: test-objective
         dataset: test-dataset
         solver: test-solver[param1=42]
-        n-repetitions: 2
+        n-repetitions: {n_reps}
         max-runs: 0
         """
 
@@ -251,11 +252,13 @@ class TestRunCmd:
         """
 
         with temp_benchmark(config=config, solvers=solver) as bench:
-            run(
-                f"{bench.benchmark_dir} --no-plot --config "
-                f"{bench.benchmark_dir / 'config.yml'}".split(),
-                'benchopt', standalone_mode=False
-            )
+            with CaptureCmdOutput() as out:
+                run(
+                    f"{bench.benchmark_dir} --no-plot --config "
+                    f"{bench.benchmark_dir / 'config.yml'}".split(),
+                    'benchopt', standalone_mode=False
+                )
+            out.check_output(r'test-solver\[param1=42\]:', repetition=n_reps+1)
 
     def test_config_file(self, no_debug_log):
         n_reps = 2
