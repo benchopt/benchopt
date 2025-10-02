@@ -732,6 +732,9 @@ def _extract_parameters(string):
     # Accepts dots, dashes and slashes within names.
     string = re.sub(r"[a-zA-Z/\\][a-zA-Z0-9._\-/\\]*", r"'\g<0>'", string)
 
+    # double all backslashes for ast eval
+    string = re.sub(r"\\", r"\\\\", string)
+
     # Third, change back the hashes to their original names.
     for match in all_matches:
         string = string.replace(str(hash(match)), match)
