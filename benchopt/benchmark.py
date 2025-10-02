@@ -729,8 +729,7 @@ def _extract_parameters(string):
         string = string.replace(match, str(hash(match)))
 
     # Second, add quotes to all variable names (foo -> 'foo').
-    # Accepts dots and dashes within names.
-    # string = re.sub(r"[a-zA-Z][a-zA-Z0-9._-]*", r"'\g<0>'", string)
+    # Accepts dots, dashes and slashes within names.
     string = re.sub(r"[a-zA-Z/\\][a-zA-Z0-9._\-/\\]*", r"'\g<0>'", string)
 
     # Third, change back the hashes to their original names.
