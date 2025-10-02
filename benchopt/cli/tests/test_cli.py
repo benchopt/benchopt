@@ -231,6 +231,7 @@ class TestRunCmd:
 
     def test_config_file(self, no_debug_log):
         n_reps = 2
+        
         config = f"""
         objective:
           - test-objective
@@ -241,6 +242,21 @@ class TestRunCmd:
         n-repetitions: {n_reps}
         max-runs: 0
         """
+        self.run_config_file(config, n_reps, no_debug_log)
+        
+    def test_config_file_single_line(self, no_debug_log):
+        n_reps = 2
+        
+        config = f"""
+        objective: test-objective
+        dataset: test-dataset
+        solver: test-solver[param1=42]
+        n-repetitions: {n_reps}
+        max-runs: 0
+        """ 
+        self.run_config_file(config, n_reps, no_debug_log)     
+    
+    def run_config_file(self, config, n_reps, no_debug_log):        
 
         solver = """from benchopt import BaseSolver
 
