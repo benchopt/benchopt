@@ -18,6 +18,13 @@ CLI
   is called before the test with the same arguments.
   By `Thomas Moreau`_ (:gh:`801`)
 
+- Add a parallel backend system for ``benchopt run`` to setup distributed
+  run with ``dask`` and ``submitit``. See :ref:`parallel_run` for details.
+  By `Thomas Moreau`_ (:gh:`673`).
+
+- Deprecate the ``--slurm`` parameter which will be removed in benchopt 1.8.
+  By `Thomas Moreau`_ (:gh:`673`).
+
 
 API
 ---
@@ -330,7 +337,7 @@ CLI
   syntax. By `Tom Dupré la Tour`_ (:gh:`362`).
 
 - Add ``--slurm`` option in ``benchopt run`` to allow running the benchmark on
-  a SLURM cluster. See the :ref:`slurm_run` for more details on the config.
+  a SLURM cluster. See the :ref:`slurm_backend` for more details on the config.
   By `Thomas Moreau`_ (:gh:`407`)
 
 - Add ``benchopt archive`` to create a ``tar.gz`` archive with the benchmark's

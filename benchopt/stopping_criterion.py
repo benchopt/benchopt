@@ -113,7 +113,10 @@ class StoppingCriterion():
             )
 
         if self.strategy is None:
-            self.strategy = solver.sampling_strategy or 'iteration'
+            if solver is None:
+                self.strategy = 'iteration'
+            else:
+                self.strategy = solver.sampling_strategy or 'iteration'
         elif solver is not None and solver.sampling_strategy is not None:
             assert solver.sampling_strategy == self.strategy, (
                 'The strategy is set both in Solver.sampling_strategy and in '
@@ -198,11 +201,15 @@ class StoppingCriterion():
         # Check that the objective is compatible with the stopping_criterion
         if self.key_to_monitor not in objective_list[0]:
             key = self.key_to_monitor.replace("objective_", "")
+            key_ok = [
+                k.replace("objective_", "") for k in objective_list[0]
+                if k.startswith("objective_") and k != 'objective_name'
+            ]
             raise ValueError(
                 "Objective.evaluate_result() should contain a key named "
                 f"'{key}' to be used with this stopping_criterion. The name of"
                 " this key can be changed via the 'key_to_monitor' parameter. "
-                f"Available keys are {list(objective_list[0].keys())}"
+                f"Available keys are {key_ok}"
             )
 
         # Modify the criterion state:
@@ -302,7 +309,8 @@ class StoppingCriterion():
 
     def __reduce__(self):
         kwargs = dict(
-            strategy=self.strategy, **self.kwargs
+            strategy=self.strategy, key_to_monitor=self.key_to_monitor,
+            **self.kwargs
         )
         if getattr(self, 'max_runs', None):
             runner_kwargs = dict(

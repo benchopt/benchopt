@@ -54,7 +54,6 @@ def _get_module_from_file(module_filename, benchmark_dir=None):
 
         # Make functions define in the dynamic module pickleable
         cloudpickle.register_pickle_by_value(module)
-
     return module
 
 
@@ -125,7 +124,7 @@ def _load_class_from_module(benchmark_dir, module_filename, class_name):
 
         klass = FailedImport
 
-    # Store the info to easily reload the class
+    # Store the info to easily reload the class and check it is installed
     klass._module_filename = module_filename.resolve()
     klass._benchmark_dir = benchmark_dir.resolve()
     klass._file_hash = get_file_hash(klass._module_filename)

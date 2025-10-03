@@ -15,9 +15,11 @@ class Objective(BaseObjective):
     name = "test-objective"
     def set_data(self, X, y): pass
     def get_one_result(self): return dict(beta=None)
-    def evaluate_result(self, beta): return 1
+    def evaluate_result(self, beta): return 1.
     def get_objective(self): return dict(X=None, y=None, lmbd=None)
 """
+
+IDX_BENCHMARK = 0
 
 DEFAULT_DATASETS = {
     'test_dataset.py': """from benchopt import BaseDataset
@@ -63,10 +65,11 @@ def temp_benchmark(
     solvers: str | list of str | dict of str | None (default=None)
         Content of the solver.py file(s). If None, defaults to
         ``DEFAULT_SOLVERS``.
-    config: str | dict(fname->str) | None (default=None)
+    config: str | dict(fname->content) | None (default=None)
         Configuration files for running the Benchmark. If only one str is
         passed, this creates only one `config.yml` file. If None, no config
-        file is created.
+        file is created. If a dict, the content can either be a str or a dict,
+        which will be written as a YAML file.
     benchmark_utils: dict(fname->str) | None (default=None)
         Content of the benchmark_utils module.
     extra_files: dict(fname->str) | None (default=None)
@@ -95,10 +98,14 @@ def temp_benchmark(
     else:
         datasets = {**DEFAULT_DATASETS, **datasets}
 
+    global IDX_BENCHMARK
+    idx = IDX_BENCHMARK
+    IDX_BENCHMARK += 1
+
     with tempfile.TemporaryDirectory(
             prefix="temp_benchmarks", suffix="", dir="."
     ) as tempdir:
-        temp_path = Path(tempdir) / "bench"
+        temp_path = Path(tempdir) / f"bench_{idx}"
         temp_path.mkdir()
         (temp_path / "solvers").mkdir()
         (temp_path / "datasets").mkdir()
@@ -120,6 +127,8 @@ def temp_benchmark(
                 if isinstance(content, dict):
                     # If content is a dict, write it as YAML
                     content = yaml.dump(content)
+                else:
+                    content = inspect.cleandoc(content)
                 config_path = (temp_path / fname).with_suffix(".yml")
                 config_path.write_text(content, encoding='utf-8')
 
@@ -139,7 +148,8 @@ def temp_benchmark(
                     inspect.cleandoc(content), encoding='utf-8'
                 )
 
-        yield Benchmark(temp_path)
+        bench = Benchmark(temp_path)
+        yield bench
 
         # to avoid border effects, remove the benchmark directory
         to_del = [

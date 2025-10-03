@@ -111,4 +111,4 @@ Then create a token named benchopt, ticking the **repo** box as shown below:
 Then click on ``generate token`` and copy this token of 40 characters in a
 secure location. Note that the token can be stored in a config file for benchopt
 using ``benchopt config set github_token <TOKEN>``. More info on config files can
-be found in :ref:`config_doc`.
+be found in :ref:`config_benchopt`.
