@@ -17,11 +17,13 @@ const NON_CONVERGENT_COLOR = 'rgba(0.8627, 0.8627, 0.8627)'
  *   - objective (string),
  *   - objective_column (string),
  *   - plot_kind (string),
- *   - scale (string)
- *   - with_quantiles (boolean)
- *   - xaxis_type (string)
- *   - yaxis_type (string)
- *   - hidden_solvers (array)
+ *   - scale (string),
+ *   - with_quantiles (boolean),
+ *   - xaxis_type (string),
+ *   - yaxis_type (string),
+ *   - hidden_solvers (array),
+ *   - table_precision (integer),
+ *   - table_value_type (string),
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 
@@ -37,6 +39,7 @@ const setState = (partialState) => {
   renderSidebar();
   renderPlot();
   renderLegend();
+  renderTable();
 }
 
 /**
@@ -79,6 +82,14 @@ const config_mapping = {
  * Create/Update the plot.
  */
 const renderPlot = () => {
+  if (state()['plot_kind'] === 'table') {
+    document.getElementById('unique_plot').style.display = 'none';
+
+    return;
+  }
+
+  document.getElementById('unique_plot').style.display = 'block';
+
   const div = document.getElementById('unique_plot');
   const data = getChartData();
   const layout = getLayout();
@@ -569,6 +580,7 @@ const renderSidebar = () => {
   renderXAxisTypeSelector();
   renderYAxisTypeSelector();
   renderWithQuantilesToggle();
+  renderValueTypeSelector();
   mapSelectorsToState();
 }
 
@@ -576,7 +588,7 @@ const renderSidebar = () => {
  * Render Objective Column selector
  */
 const renderObjectiveColumnSelector = () => {
-  if (isChart('boxplot') && state('yaxis_type') === 'time') {
+  if ((isChart('boxplot') && state('yaxis_type') === 'time') || isChart('table')) {
     hide(document.querySelectorAll("#objective-column-form-group"));
   } else {
     show(document.querySelectorAll("#objective-column-form-group"), 'block');
@@ -668,6 +680,14 @@ const xAxisTypeOption = (type) => {
       `#change_xaxis_type [value="${type}"], #change_xaxis_type_mobile [value="${type}"]`
   );
 };
+
+const renderValueTypeSelector = () => {
+  if (isChart('table')) {
+    show(document.querySelectorAll("#table-value-type-form-group"), 'block');
+  } else {
+    hide(document.querySelectorAll("#table-value-type-form-group"));
+  }
+}
 
 const mapSelectorsToState = () => {
   const currentState = state();
@@ -975,6 +995,12 @@ const show = (HTMLElements, style = 'initial') => {
   HTMLElements.forEach(h => h.style.display = style);
 };
 
+const getMetrics = () => {
+  const select = document.getElementById("objective_column");
+
+  return Array.from(select.options).map(option => option.value);
+}
+
 /*
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * MANAGE HIDDEN SOLVERS
@@ -1197,7 +1223,7 @@ const createSymbol = (symbolNumber, color) => {
   return svg;
 }
 
-/**
+/*
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * EVENT REGISTRATIONS
  *
@@ -1228,3 +1254,177 @@ document.getElementById('btn-main-menu').addEventListener('click', () => {
 
   elmt.style.display = 'block';
 });
+
+/*
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * TABLE MANAGEMENT
+ *
+ * Functions that control the result table.
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
+
+function renderTable() {
+  if (state()['plot_kind'] !== 'table') {
+    document.getElementById("result-table").style.display = "none";
+
+    return;
+  }
+
+  document.getElementById("result-table").style.display = "block";
+
+  const header = document.getElementById("table-metrics");
+
+  header.innerHTML = '';
+
+  const solverCell = document.createElement("th");
+  solverCell.setAttribute("scope", "col");
+  solverCell.className = 'w-1/3 px-6 py-3 border-b';
+  solverCell.innerHTML = "Solvers";
+
+  header.appendChild(solverCell);
+
+  getMetrics().forEach(metric => {
+    const headerItem = document.createElement("th");
+
+    headerItem.setAttribute("scope", "col");
+    headerItem.setAttribute("class", "w-1/3 px-6 py-3 border-b");
+
+    headerItem.innerHTML = metric;
+
+    header.appendChild(headerItem);
+  });
+
+  const tableBody = document.getElementById("table-content");
+
+  tableBody.innerHTML = '';
+
+  getSolvers().forEach(solver => {
+    const row = document.createElement("tr");
+    row.setAttribute("class", "relative hover:bg-gray-50");
+
+    const cell = document.createElement("td");
+    cell.className = "px-6 py-4 border-b";
+
+    const color = data().solvers[solver].color;
+    const symbolNumber = data().solvers[solver].marker;
+
+    const item = document.createElement('div');
+    item.style.display = 'flex';
+    item.style.flexDirection = 'row';
+    item.style.alignItems = 'center';
+    item.style.position = 'relative';
+    item.className = 'py-6 px-4';
+
+    if (!isVisible(solver)) {
+      item.style.opacity = 0.5;
+    }
+
+    // Create the HTML text node for the solver name in the legend
+    const textContainer = document.createElement('div');
+    textContainer.style.marginLeft = '0.5rem';
+    textContainer.className = 'solver';
+    textContainer.appendChild(document.createTextNode(solver));
+
+    // Create the horizontal bar in the legend to represent the curve
+    const hBar = document.createElement('div');
+    hBar.style.height = '2px';
+    hBar.style.width = '33px';
+    hBar.style.backgroundColor = color;
+    hBar.style.position = 'absolute';
+    hBar.style.left = '1em';
+    hBar.style.zIndex = 10;
+
+    // Append elements to the legend item
+    item.appendChild(createSymbol(symbolNumber, color));
+    item.appendChild(hBar);
+    item.appendChild(textContainer)
+
+    cell.appendChild(item);
+
+    row.appendChild(cell);
+
+    getMetrics().forEach(metric => {
+      const cell = document.createElement("td");
+      cell.className = "px-6 py-4 border-b";
+
+      const d = window._data[state().dataset][state().objective][metric].solvers[solver];
+
+      if (state()['table_value_type'] === 'last') {
+        cell.innerHTML = d.scatter.y[d.scatter.y.length - 1].toFixed(state()['table_precision']);
+      } else if (state()['table_value_type'] === 'min') {
+        cell.innerHTML = Math.min(...d.scatter.y).toFixed(state()['table_precision']);
+      } else if (state()['table_value_type'] === 'max') {
+        cell.innerHTML = Math.max(...d.scatter.y).toFixed(state()['table_precision']);
+      } else {
+        console.error("Unknown table value type");
+      }
+
+      row.appendChild(cell);
+    })
+
+    tableBody.appendChild(row);
+  });
+}
+
+/**
+ * Set the precision of the result table.
+ *
+ * @param {number} precision - Must be an integer.
+ */
+function setTablePrecision(precision) {
+  if (precision > 0)
+    setState({'table_precision' : precision});
+}
+
+document.getElementById("table-decrease-button").addEventListener('click', () => {
+  setTablePrecision(state()['table_precision'] - 1);
+});
+
+document.getElementById("table-increase-button").addEventListener('click', () => {
+  setTablePrecision(state()['table_precision'] + 1);
+});
+
+document.getElementById("table-export").addEventListener('click', () => {
+  exportTable();
+})
+
+async function exportTable() {
+  const button = document.getElementById("table-export");
+  const defaultText = button.innerHTML;
+  button.innerHTML = "Copying";
+
+  let value = "\\begin{tabular}{l";
+  value += "c".repeat(getMetrics().length);
+  value += "}\n";
+  value += "\\hline\n";
+  value += "Solvers";
+
+  getMetrics().forEach(metric => value += ` & ${metric.replace('_', '\\_')}`);
+
+  value += " \\\\\n";
+  value += "\\hline\n";
+
+  getSolvers().forEach(solver => {
+    value += solver;
+
+    getMetrics().forEach(metric => {
+      const d = window._data[state().dataset][state().objective][metric].solvers[solver];
+      value += ` & ${d.scatter.y[d.scatter.y.length - 1].toFixed(state()['table_precision'])}`;
+    });
+
+    value += " \\\\\n";
+  });
+
+  value += "\\hline\n";
+
+  value += "\\end{tabular}";
+
+  try {
+    await navigator.clipboard.writeText(value);
+    button.innerHTML = "Copied in clipboard!";
+    setTimeout(() => button.innerHTML = defaultText, 2500);
+  } catch (err) {
+    button.innerHTML = "Error!";
+    setTimeout(() => button.innerHTML = defaultText, 2500);
+  }
+}

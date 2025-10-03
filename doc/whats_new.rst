@@ -82,6 +82,12 @@ API
   non-aggregated metrics. See :ref:`multiple_evaluation`.
   By `Thomas Moreau`_ (:gh:`778`).
 
+PLOT
+~~~~
+
+- Add the option to show HTML result values as a table instead
+  of a plot, by `Melvine Nargeot`_ (:gh:`794`).
+
 FIX
 ---
 
