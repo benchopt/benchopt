@@ -83,7 +83,7 @@ const renderPlot = () => {
   const data = getChartData();
   const layout = getLayout();
 
-  Plotly.react(div, data, layout);
+  Plotly.react(div, data, layout, {editable: true});
 };
 
 /**
