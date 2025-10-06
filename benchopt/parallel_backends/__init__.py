@@ -17,9 +17,9 @@ def is_distributed_frontal():
     return _DISTRIBUTED_FRONTAL
 
 
-def parallel_run(benchmark, run, kwargs, all_runs, config):
+def parallel_run(benchmark, run, kwargs, all_runs, config, collect=False):
     config = config or {}
-    backend = config.pop('backend', 'loky')
+    backend = config.pop('backend', 'loky') if not collect else 'loky'
     assert backend in DISTRIBUTED_BACKENDS, (
         f"Unknown backend {backend}. Valid backends: {DISTRIBUTED_BACKENDS}."
     )

@@ -395,10 +395,9 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
         timeout=timeout, pdb=pdb, collect=collect
     )
 
-    # TODO: Verify that "collect" still works
     results = parallel_run(
         benchmark, run_one_solver, common_kwargs, all_runs,
-        config=parallel_config
+        config=parallel_config, collect=collect
     )
 
     run_statistics = []

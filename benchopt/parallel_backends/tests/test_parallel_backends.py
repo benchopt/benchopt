@@ -1,10 +1,38 @@
+import sys
 import pytest
 
 
 from benchopt.cli.main import run
 from benchopt.utils.temp_benchmark import temp_benchmark
 
-from benchopt.tests.utils import CaptureCmdOutput
+from benchopt.tests.utils import CaptureCmdOutput, patch_import
+
+
+@pytest.mark.parametrize("backend", ["submitit", "dask"])
+def test_backend_not_installed(backend):
+    config = f"""
+    backend: {backend}
+    """
+
+    def raise_error():
+        raise ImportError("important debug message")
+
+    # Remove imported modules to force re-import
+    for k in list(sys.modules):
+        modules = ['parallel_backends', 'submitit', 'distributed', 'dask']
+        if any(m in k for m in modules):
+            print("removing", k)
+            del sys.modules[k]
+    with patch_import(submitit=raise_error, distributed=raise_error):
+        with temp_benchmark(config={"parallel_config.yml": config}) as bench:
+            parallel_config_file = bench.benchmark_dir / "parallel_config.yml"
+            msg = f"pip install benchopt.{backend}."
+            with pytest.raises(ImportError, match=msg):
+                run([
+                    str(bench.benchmark_dir),
+                    *"-s test-solver -d test-dataset -n 0 -r 1 --no-plot "
+                    f"--parallel-config {parallel_config_file}".split()
+                ], standalone_mode=False)
 
 
 def test_missing_backend():

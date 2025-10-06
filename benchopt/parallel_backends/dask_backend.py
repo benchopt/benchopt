@@ -1,3 +1,11 @@
+try:
+    from dask.distributed import Client
+except ImportError:
+    raise ImportError(
+        "To run benchopt with the dask backend, please install "
+        "the `distributed` package: `pip install benchopt[dask]` or "
+        "`pip install distributed`"
+    )
 
 
 def check_dask_config(config):
@@ -33,7 +41,6 @@ def check_dask_config(config):
     if 'n_jobs' in config:
         dask_config['n_workers'] = config.pop('n_jobs')
 
-    from distributed import Client
     config['client'] = Client(**dask_config)
 
     return config
