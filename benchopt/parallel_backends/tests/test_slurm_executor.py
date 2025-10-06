@@ -10,7 +10,6 @@ from benchopt.parallel_backends.slurm_executor import (  # noqa: E402
 from benchopt.utils.temp_benchmark import temp_benchmark  # noqa: E402
 
 
-
 @pytest.fixture
 def dummy_slurm_config():
     return {
