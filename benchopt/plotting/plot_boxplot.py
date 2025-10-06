@@ -10,7 +10,7 @@ def plot_boxplot(df, obj_col='objective_value', plotly=False):
 
     fig, ax = plt.subplots()
 
-    boxplot = plt.boxplot(data, labels=solvers, patch_artist=True)
+    boxplot = plt.boxplot(data, tick_labels=solvers, patch_artist=True)
 
     for box, color in zip(boxplot['boxes'], colors):
         box.set(color=color, linewidth=1, alpha=0.7)
@@ -68,14 +68,12 @@ def compute_solver_boxplot_data(df, obj_col):
     # By SOLVERS : Compute final time and final objective_value data
     boxplot_by_solver = dict(
         final_times=(
-            df[['idx_rep', 'stop_val', 'time']]
-            .groupby('idx_rep').apply(
+            df.groupby('idx_rep')[['time', 'stop_val']].apply(
                 lambda x: x['time'].loc[x['stop_val'] == x['stop_val'].max()]
             )
         ).transpose()[0].tolist(),
         final_objective_value=(
-            df[['idx_rep', 'stop_val', obj_col]]
-            .groupby('idx_rep').apply(
+            df.groupby('idx_rep')[['stop_val', obj_col]].apply(
                 lambda x: x[obj_col].loc[x['stop_val'] == x['stop_val'].max()]
             )
         ).transpose()[0].tolist()

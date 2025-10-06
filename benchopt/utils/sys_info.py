@@ -25,7 +25,7 @@ def _get_processor_name():
         all_info = Path('/proc/cpuinfo').read_text()
         for line in all_info.splitlines():
             if "model name" in line:
-                out = re.sub(r".*model name.*:\s*", "", line, 1)
+                out = re.sub(r".*model name.*:\s*", "", line, count=1)
     return out
 
 

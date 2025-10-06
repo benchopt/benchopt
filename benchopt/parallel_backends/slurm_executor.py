@@ -1,26 +1,15 @@
-import yaml
 from contextlib import ExitStack
 
 try:
     import submitit
     from submitit.helpers import as_completed
     from rich import progress
-
-    _SLURM_INSTALLED = True
 except ImportError:
-    _SLURM_INSTALLED = False
-
-
-_LAUNCHING_SLURM = False
-
-
-def set_slurm_launch():
-    global _LAUNCHING_SLURM
-    _LAUNCHING_SLURM = True
-
-
-def get_slurm_launch():
-    return _LAUNCHING_SLURM
+    raise ImportError(
+        "To run benchopt with the submitit backend, please install "
+        "the `submitit` package: `pip install benchopt[submitit]` or "
+        "`pip install submitit rich`."
+    )
 
 
 def get_slurm_executor(benchmark, config, timeout=100):
@@ -62,19 +51,9 @@ def hashable_pytree(pytree):
 def run_on_slurm(
     benchmark, slurm_config, run_one_solver, common_kwargs, all_runs
 ):
-    if not _SLURM_INSTALLED:
-        raise ImportError(
-            "Benchopt needs submitit and rich to launch computation on a "
-            "SLURM cluster. Please use `pip install submitit rich` to use "
-            "the --slurm option."
-        )
 
     executors = {}
     tasks = []
-
-    # Load the slurm config from a file if provided
-    with open(slurm_config, "r") as f:
-        slurm_config = yaml.safe_load(f)
 
     with ExitStack() as stack:
         for kwargs in all_runs:

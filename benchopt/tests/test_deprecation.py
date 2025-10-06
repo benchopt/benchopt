@@ -1,13 +1,18 @@
 import pytest
 
-from benchopt.utils.conda_env_cmd import get_env_file_from_requirements
-from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.cli.main import run
+from benchopt.utils.temp_benchmark import temp_benchmark
+from benchopt.utils.conda_env_cmd import get_env_file_from_requirements
+
+from benchopt.tests.utils import CaptureCmdOutput
 
 
-# TODO: remove this test in benchopt 1.7
+##############################################################################
+# Deprecation check for benchopt 1.8
+# XXX: remove in benchopt 1.8
+
+
 def test_deprecated_channel_spec():
-
     with pytest.warns(DeprecationWarning):
         env = get_env_file_from_requirements(["chan:pkg"])
     assert env == "channels:\n  - chan\ndependencies:\n  - pkg"
@@ -45,10 +50,41 @@ def test_deprecated_safe_import_context(no_raise_install):
             def get_result(self): return {'beta': 1}
     """
 
-    with temp_benchmark(solvers=solver) as benchmark:
+    with temp_benchmark(solvers=solver) as bench:
         with pytest.warns(DeprecationWarning, match="safe_import_context"):
             with pytest.raises(SystemExit, match='1'):
                 run(
-                    f"{benchmark.benchmark_dir} -s test-solver -d test-dataset"
+                    f"{bench.benchmark_dir} -s test-solver -d test-dataset"
                     " -n 1 -r 1 --no-plot".split(), standalone_mode=False
                 )
+
+
+##############################################################################
+# Deprecation check for benchopt 1.9
+# XXX: remove in benchopt 1.9
+
+def test_slurm_deprecation():
+    pytest.importorskip("submitit")
+
+    slurm_config = """
+    timeout_min: 1
+    """
+
+    with temp_benchmark(config={'slurm.yml': slurm_config}) as bench:
+        slurm_config_file = bench.benchmark_dir / "slurm.yml"
+        with CaptureCmdOutput():
+            msg = "Cannot use both `--slurm` and `--parallel-backend`."
+            with pytest.raises(AssertionError, match=msg):
+                run(
+                    f"{bench.benchmark_dir} -d test-dataset -n 0 -r 5 "
+                    f"--no-plot --slurm {slurm_config_file} "
+                    f"--parallel-config {slurm_config_file}".split(),
+                    standalone_mode=False)
+
+        with CaptureCmdOutput():
+            msg = "`--slurm` is deprecated, use `--parallel-backend` instead."
+            with pytest.warns(DeprecationWarning, match=msg):
+                run(
+                    f"{bench.benchmark_dir} -d test-dataset -n 0 -r 5 "
+                    f"--no-plot --slurm {slurm_config_file}".split(),
+                    standalone_mode=False)

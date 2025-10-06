@@ -1,7 +1,6 @@
 import pytest
 
 from benchopt.cli.main import run
-from benchopt.cli.main import test as _cmd_test
 from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.stopping_criterion import SAMPLING_STRATEGIES
 from benchopt.utils.dynamic_modules import _load_class_from_module
@@ -96,6 +95,7 @@ def test_solver_pre_run_hook():
 
         def pre_run_hook(self, n_iter):
             self._pre_run_hook_n_iter = n_iter
+            print(f"PRERUN {n_iter}")
         def run(self, n_iter):
             assert self._pre_run_hook_n_iter == n_iter
     """
@@ -104,18 +104,9 @@ def test_solver_pre_run_hook():
         with CaptureCmdOutput() as out:
             run([
                 str(benchmark.benchmark_dir),
-                *'-s solver1 -d test-dataset -n 0 -r 5 --no-plot'.split()
+                *'-s solver1 -d test-dataset -n 2 -r 2 --no-plot'.split()
             ], standalone_mode=False)
-
-        with CaptureCmdOutput() as out:
-            with pytest.raises(SystemExit, match="False"):
-                _cmd_test([
-                    str(benchmark.benchmark_dir), '-k', 'solver1',
-                    '--skip-install', '-v'
-                ], standalone_mode=False)
-
-        # Make sure warmup is called exactly once
-        out.check_output("3 passed, 1 skipped, 5 deselected", repetition=1)
+        out.check_output("PRERUN 2", repetition=2)
 
 
 @pytest.mark.parametrize('strategy', SAMPLING_STRATEGIES)

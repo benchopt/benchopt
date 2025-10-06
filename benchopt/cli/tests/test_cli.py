@@ -344,7 +344,7 @@ class TestRunCmd:
                 run(run_cmd, 'benchopt', standalone_mode=False)
 
             # Check that this run was properly done. If only one is detected,
-            # this indicates that the clean command does not work properly.
+            # this indicates that the temp_benchmark does not run properly.
             out.check_output('test-solver:', repetition=5*n_rep+1)
 
             # Now check that the cache is hit when running the benchmark a
@@ -374,7 +374,8 @@ class TestRunCmd:
                 "--output unique_name".split()
             )
             run(command, 'benchopt', standalone_mode=False)
-            run(command, 'benchopt', standalone_mode=False)
+            with pytest.warns(UserWarning, match="already exists"):
+                run(command, 'benchopt', standalone_mode=False)
 
         names = [Path(result_file).stem for result_file in out.result_files]
         assert names[0] == 'unique_name' and names[1] == 'unique_name_1', out
