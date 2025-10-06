@@ -8,31 +8,18 @@ from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.tests.utils import CaptureCmdOutput, patch_import
 
 
-@pytest.mark.parametrize("backend", ["submitit", "dask"])
-def test_backend_not_installed(backend):
-    config = f"""
-    backend: {backend}
-    """
-
-    def raise_error():
-        raise ImportError("important debug message")
-
+# Utils to help testing parallel backends when some packages are not installed
+def unimport_backends():
     # Remove imported modules to force re-import
     for k in list(sys.modules):
         modules = ['parallel_backends', 'submitit', 'distributed', 'dask']
         if any(m in k for m in modules):
             print("removing", k)
             del sys.modules[k]
-    with patch_import(submitit=raise_error, distributed=raise_error):
-        with temp_benchmark(config={"parallel_config.yml": config}) as bench:
-            parallel_config_file = bench.benchmark_dir / "parallel_config.yml"
-            msg = f"pip install benchopt.{backend}."
-            with pytest.raises(ImportError, match=msg):
-                run([
-                    str(bench.benchmark_dir),
-                    *"-s test-solver -d test-dataset -n 0 -r 1 --no-plot "
-                    f"--parallel-config {parallel_config_file}".split()
-                ], standalone_mode=False)
+
+
+def raise_error():
+    raise ImportError("important debug message")
 
 
 def test_missing_backend():
@@ -64,6 +51,50 @@ def test_missing_backend():
                     *"-s solver1 -d test-dataset -n 0 -r 1 --no-plot "
                     f"--parallel-config {parallel_config_file}".split()
                 ], standalone_mode=False)
+
+
+@pytest.mark.parametrize("backend", ["submitit", "dask"])
+def test_backend_not_installed(backend):
+    config = f"""
+    backend: {backend}
+    """
+
+    # Remove imported modules to force re-import
+    unimport_backends()
+    with patch_import(submitit=raise_error, distributed=raise_error):
+        with temp_benchmark(config={"parallel_config.yml": config}) as bench:
+            parallel_config_file = bench.benchmark_dir / "parallel_config.yml"
+            msg = f"pip install benchopt.{backend}."
+            with pytest.raises(ImportError, match=msg):
+                run([
+                    str(bench.benchmark_dir),
+                    *"-d test-dataset -n 0 -r 1 --no-plot "
+                    f"--parallel-config {parallel_config_file}".split()
+                ], standalone_mode=False)
+
+
+@pytest.mark.parametrize("backend", ["submitit", "dask"])
+def test_backend_collect(backend):
+    config = f"""
+    backend: {backend}
+    """
+
+    # Remove imported modules to force re-import, should raise error if collect
+    # tries to run on the specified backend
+    unimport_backends()
+    with patch_import(submitit=raise_error, distributed=raise_error):
+        with temp_benchmark(config={"parallel_config.yml": config}) as bench:
+            cmd = f"{bench.benchmark_dir} -d test-dataset -n 0 -r 1 --no-plot"
+            parallel_config_file = bench.benchmark_dir / "parallel_config.yml"
+            with CaptureCmdOutput() as out:
+                run(cmd.split(), standalone_mode=False)
+            out.check_output("test-solver:", repetition=4)
+            with CaptureCmdOutput() as out:
+                run(
+                    f"{cmd} --collect --parallel-config {parallel_config_file}"
+                    .split(), standalone_mode=False
+                )
+    out.check_output("test-solver:", repetition=1)
 
 
 def test_dask_backend():
@@ -103,13 +134,17 @@ def test_dask_backend():
             ], standalone_mode=False)
 
     client = distributed.get_client()
-    effective_workers = len(client._scheduler_identity.get('workers', {}))
+    workers = client._scheduler_identity.get('workers', {})
+    effective_workers = len(workers)
     assert client_name in client.id
     assert effective_workers == n_workers
     client.close()
 
     out.check_output("Distributed run with backend: dask", repetition=1)
+    # The name of the client on the workers should be Client-worker-*, and not
+    # the name set in the config (client_name)
     out.check_output(client_name, repetition=0)
+    out.check_output("Client-worker-", repetition=1)
 
 
 def test_submitit_backend():
