@@ -1,8 +1,5 @@
 import itertools
-import hashlib
 from abc import abstractmethod
-
-from joblib.externals import cloudpickle
 
 
 class ParametrizedNameMixin():
