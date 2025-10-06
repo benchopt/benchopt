@@ -113,7 +113,10 @@ def get_results(fnames, html_root, benchmark, config=None, copy=False):
         )
 
         # JSON
-        result['json'] = json.dumps(shape_datasets_for_html(df))
+        result['json'] = json.dumps(shape_datasets_for_html(
+            df,
+            benchmark.get_datasets()
+        ))
 
         results.append(result)
 
@@ -163,28 +166,34 @@ def get_metadata(df, plot_configs):
     return metadata
 
 
-def shape_datasets_for_html(df):
+def shape_datasets_for_html(df, dataset_classes):
     """Return a dictionary with plotting data for each dataset."""
     datasets_data = {}
 
-    for dataset in df['data_name'].unique():
-        datasets_data[dataset] = shape_objectives_for_html(df, dataset)
+    for dataset_class in dataset_classes:
+        datasets_data[dataset_class.name] = shape_objectives_for_html(
+            df,
+            dataset_class.plot_data,
+            dataset_class.name
+        )
 
     return datasets_data
 
 
-def shape_objectives_for_html(df, dataset):
+def shape_objectives_for_html(df, custom_plot_func, dataset):
     """Return a dictionary with plotting data for each objective."""
     objectives_data = {}
 
     for objective in df['objective_name'].unique():
         objectives_data[objective] = shape_objectives_columns_for_html(
-            df, dataset, objective)
+            df, custom_plot_func, dataset, objective)
 
     return objectives_data
 
 
-def shape_objectives_columns_for_html(df, dataset, objective):
+def shape_objectives_columns_for_html(
+    df, custom_plot_func, dataset, objective
+):
     """Return a dictionary with plotting data for each objective column."""
     objective_columns_data = {}
     columns = [
@@ -196,7 +205,11 @@ def shape_objectives_columns_for_html(df, dataset, objective):
         df_filtered = df.query(
             "data_name == @dataset & objective_name == @objective"
         )
-        columns_data = shape_solvers_for_html(df_filtered, column)
+        columns_data = shape_solvers_for_html(
+            df_filtered,
+            column,
+            custom_plot_func
+        )
         if columns_data is None:
             # Non-numeric column, skipping it
             continue
@@ -214,7 +227,7 @@ def shape_objectives_columns_for_html(df, dataset, objective):
     return objective_columns_data
 
 
-def shape_solvers_for_html(df, objective_column):
+def shape_solvers_for_html(df, objective_column, custom_plot_func):
     """Return a dictionary with plotting data for each solver."""
     solver_data = {}
     reset_solver_styles_idx()
@@ -229,10 +242,11 @@ def shape_solvers_for_html(df, objective_column):
 
         # compute median of 'time' and objective_column
         fields = ["time", objective_column]
-        groupby_stop_val_median = (
+        groupby_stop_val_median_unfiltered = (
             df_filtered.groupby('stop_val')[fields]
             .median(numeric_only=True)
         )
+        groupby_stop_val_median = groupby_stop_val_median_unfiltered[fields]
         if objective_column not in groupby_stop_val_median:
             # Non-numeric values, skipping this column
             return None
@@ -277,6 +291,10 @@ def shape_solvers_for_html(df, objective_column):
             'color': color,
             'marker': marker,
             'sampling_strategy': sampling_strategy,
+            # TODO give grouped df ?
+            'custom_plots': custom_plot_func(
+                groupby_stop_val_median_unfiltered
+            )
         }
 
     return solver_data

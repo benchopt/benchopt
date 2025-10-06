@@ -18,3 +18,13 @@ class Dataset(BaseDataset):
         The dictionary's keys are the kwargs passed to ``Objective.set_data``.
         """
         return dict(X=np.random.randn(10, 2))
+
+    def plot_data(df):
+        return {
+            'name': 'custom test',
+            'type': 'scatter',
+            'y_axis': 'Custom objective',
+            'y': df['objective_value'].tolist(),
+            'x_axis': 'custom time',
+            'x': df['time'].tolist(),
+        }

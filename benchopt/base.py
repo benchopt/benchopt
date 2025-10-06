@@ -283,6 +283,10 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
         """
         ...
 
+    @staticmethod
+    def plot_data(df):
+        return {}
+
     def _get_data(self):
         "Wrapper to make sure the returned results are correctly formated."
 

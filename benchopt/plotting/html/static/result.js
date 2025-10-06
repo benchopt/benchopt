@@ -92,7 +92,9 @@ const renderPlot = () => {
  * @returns {Array|*[]}
  */
 const getChartData = () => {
-  if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve'])) {
+  if (state().plot_kind === "custom") {
+    return getCustomData();
+  } else if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve'])) {
     return getScatterCurves();
   } else if (isChart('bar_chart')) {
     return getBarData();
@@ -109,7 +111,9 @@ const getChartData = () => {
  * @returns Object
  */
 const getLayout = () => {
-  if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve'])) {
+  if (state().plot_kind === "custom") {
+    return getCustomChartLayout();
+  } else if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve'])) {
     return getScatterChartLayout();
   } else if (isChart('bar_chart')) {
     return getBarChartLayout();
@@ -117,6 +121,37 @@ const getLayout = () => {
     return getBoxplotChartLayout();
   }
 
+  throw new Error('Unknown plot kind.');
+}
+
+const getCustomData = () => {
+  const data_type = data(getSolvers()[0]).custom_plots.type;
+  if (data_type === 'scatter') {
+    // create a list of object to plot in plotly
+    const curves = [];
+
+    getSolvers().forEach(solver => {
+      curves.push({
+        type: 'scatter',
+        name: solver,
+        mode: 'lines+markers',
+        line: {
+          color: data(solver).color,
+        },
+        marker: {
+          symbol: data(solver).marker,
+          size: 10,
+        },
+        legendgroup: solver,
+        hovertemplate: solver + ' <br> (%{x:.1e},%{y:.1e}) <extra></extra>',
+        visible: isVisible(solver) ? true : 'legendonly',
+        x: data(solver).custom_plots["x"],
+        y: data(solver).custom_plots["y"],
+      });
+    });
+
+    return curves;
+  }
   throw new Error('Unknown plot kind.');
 }
 
@@ -587,7 +622,7 @@ const renderObjectiveColumnSelector = () => {
  * Render Scale selector
  */
 const renderScaleSelector = () => {
-  if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve', 'boxplot'])) {
+  if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve', 'boxplot', 'scatter'])) {
     show(document.querySelectorAll("#scale-form-group"), 'block');
   } else {
     hide(document.querySelectorAll("#scale-form-group"));
@@ -617,7 +652,10 @@ const renderWithQuantilesToggle = () => {
  * Render xaxis type selector
  */
 const renderXAxisTypeSelector = () => {
-  if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve', 'boxplot'])) {
+  if (state().plot_kind === 'custom') {
+    hide(document.querySelectorAll("#xaxis-type-form-group"));
+    return;
+  } else if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve', 'boxplot'])) {
     show(document.querySelectorAll("#xaxis-type-form-group"), 'block');
   } else {
     hide(document.querySelectorAll("#xaxis-type-form-group"));
@@ -701,8 +739,14 @@ const isChart = chart => {
   if (typeof chart === 'string' || chart instanceof String) {
     chart = [chart]
   }
-
-  return chart.includes(state().plot_kind);
+  let plot_kind;
+  if (state().plot_kind === "custom") {
+    plot_kind = data(getSolvers()[0]).custom_plots.type;
+  }
+  else {
+    plot_kind = state().plot_kind;
+  }
+  return chart.includes(plot_kind);
 }
 
 const isVisible = solver => !state().hidden_solvers.includes(solver);
@@ -778,8 +822,22 @@ const _getScale = (scale) => {
   }
 }
 
+const getCustomChartLayout = () => {
+  if (data(getSolvers()[0]).custom_plots.type === 'scatter') {
+    return getScatterChartLayout();
+  }
+  throw new Error('Unknown plot kind.');
+}
+
 const getScatterChartLayout = () => {
   let xaxisType = state().xaxis_type;
+  let xaxisName;
+  if (state().plot_kind === "custom") {
+    xaxisName = data(getSolvers()[0]).custom_plots.x_axis;
+  }
+  else {
+    xaxisName = xaxisType === "Time" ? "Time [sec]": xaxisType;
+  }
 
   const layout = {
     autosize: !isSmallScreen(),
@@ -800,7 +858,7 @@ const getScatterChartLayout = () => {
     },
     xaxis: {
       type: getScale().xaxis,
-      title: xaxisType === "Time" ? "Time [sec]": xaxisType,
+      title: xaxisName,
       tickformat:  ["Time", "Tolerance"].includes(xaxisType) ? '.1e': '',
       tickangle: -45,
       gridcolor: '#ffffff',
@@ -929,6 +987,8 @@ const getYLabel = () => {
       return state('yaxis_type') === 'time' ?
           'Time [sec]'
           : (state('xaxis_type') === "Solver" ? "Final " : "") + state('objective_column');
+    case 'custom':
+      return data(getSolvers()[0]).custom_plots.y_axis;
     default:
       return 'unknown';
   }
@@ -1045,7 +1105,7 @@ const handleSolverDoubleClick = solver => {
 const renderLegend = () => {
   const legendContainer = document.getElementById('legend_container')
 
-  if (!isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve'])) {
+  if (!isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve', 'scatter'])) {
     hide(legendContainer);
     return;
   } else {
