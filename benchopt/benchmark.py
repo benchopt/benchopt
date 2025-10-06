@@ -877,8 +877,6 @@ def _list_parametrized_classes(*classes, check_installed=True):
             yield klass.name, False
             continue
 
-        klass = klass.get_deterministic_dynamic_class()
-
         for parameters in _get_used_parameters(klass, params):
             yield klass.get_instance(**parameters), True
 

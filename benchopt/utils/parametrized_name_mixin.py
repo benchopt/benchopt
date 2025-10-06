@@ -24,37 +24,6 @@ class ParametrizedNameMixin():
                 setattr(self, k, v)
 
     @classmethod
-    def get_deterministic_dynamic_class(cls):
-        # Make the cloudpickle payload of this dynamic class deterministic
-        # XXX - remove when cloudpickle dynamic class payload are deterministic
-        # by default.
-        class_tracker = cloudpickle.cloudpickle._DYNAMIC_CLASS_TRACKER_BY_CLASS
-        id_tracker = cloudpickle.cloudpickle._DYNAMIC_CLASS_TRACKER_BY_ID
-
-        # reload class from cloudpickle payload to avoid issues with string and
-        # tuples interning. To avoid falling back to the original class, we
-        # need to remove the class from the class_tracker and id_tracker.
-        class_value = cloudpickle.dumps(cls)
-        with cloudpickle.cloudpickle._DYNAMIC_CLASS_TRACKER_LOCK:
-            idx = class_tracker.pop(cls)
-            id_tracker.pop(idx)
-        cls = cloudpickle.loads(class_value)
-
-        # Make the tracker_id argument of the pickle payload deterministic,
-        # based on the hash of the payload.
-        class_value = cloudpickle.dumps(cls)
-        class_value = class_value.replace(
-            class_tracker[cls].encode(), b'BENCHOPT_DYN_CLASS_TRACKER_ID'
-        )
-        hash_id = hashlib.md5(class_value).hexdigest()
-        with cloudpickle.cloudpickle._DYNAMIC_CLASS_TRACKER_LOCK:
-            id_tracker.pop(class_tracker[cls])
-            id_tracker[hash_id] = cls
-            class_tracker[cls] = hash_id
-
-        return cls
-
-    @classmethod
     def get_instance(cls, **parameters):
         """Helper function to instantiate an object and save its parameters.
 
