@@ -5,6 +5,7 @@ import warnings
 import importlib
 import itertools
 from pathlib import Path
+import random
 
 from joblib.externals import cloudpickle
 
@@ -60,6 +61,8 @@ class Benchmark:
         Folder containing the benchmark. The folder should at least
         contain an `objective.py` file defining the `Objective`
         function for the benchmark.
+    seed: int | None
+        Random seed for the benchmark. If None, a random seed is chosen.
     allow_meta_from_json : bool
         If set to True, allow the object to be instanciated even when
         objective.py cannot be found. In this case, the metadata are retrieved
@@ -74,6 +77,7 @@ class Benchmark:
 
     def __init__(
             self, benchmark_dir,
+            seed=None,
             no_cache=False,
             allow_meta_from_json=False,
     ):
@@ -118,6 +122,11 @@ class Benchmark:
             self.name = Path(self.url).name
         # replace dots to avoid issues with `with_suffix``
         self.name = self.name.replace('.', '-')
+
+        # Set the random seed for the benchmark
+        if seed is None:
+            seed = random.randint(0, 2**32 - 1)
+        self.seed = seed
 
     def set_benchmark_module(self):
         # add PACKAGE_NAME as a module if it exists.

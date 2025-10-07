@@ -70,6 +70,7 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
         "env_name",
         "no_cache",
         "output",
+        "seed",
     ]
     return [cli_kwargs[name] for name in return_names]
 
@@ -197,6 +198,11 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               " If not provided, the output will be saved as "
               "<BENCHMARK>/outputs/benchopt_run_<timestamp>.parquet."
               )
+@click.option('--seed',
+              metavar="<seed>", type=int, default=None,
+              help="Seed to control the stochasticity of the "
+              "benchmark. If it is not provided, a random seed is generated "
+              "to make the benchmark reproducible.")
 def run(config_file=None, **kwargs):
     print("Benchopt is running!")
     if config_file is not None:
@@ -209,7 +215,7 @@ def run(config_file=None, **kwargs):
         benchmark, solver_names, forced_solvers, dataset_names,
         objective_filters, max_runs, n_repetitions, timeout, no_timeout,
         collect, plot, display, html, n_jobs, parallel_config, slurm, pdb,
-        do_profile, env_name, no_cache, output
+        do_profile, env_name, no_cache, output, seed
     ) = _get_run_args(kwargs, config)
 
     # If --no-timeout is set and --timeout is not, skip these blocks
@@ -230,7 +236,7 @@ def run(config_file=None, **kwargs):
                 timeout = pd.to_timedelta(timeout).total_seconds()
 
     # Create the Benchmark object
-    benchmark = Benchmark(benchmark, no_cache=no_cache)
+    benchmark = Benchmark(benchmark, seed=seed, no_cache=no_cache)
 
     if benchmark.min_version is not None:
         from packaging.version import parse
