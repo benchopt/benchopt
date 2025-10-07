@@ -236,7 +236,7 @@ def run(config_file=None, **kwargs):
                 timeout = pd.to_timedelta(timeout).total_seconds()
 
     # Create the Benchmark object
-    benchmark = Benchmark(benchmark, seed=seed, no_cache=no_cache)
+    benchmark = Benchmark(benchmark, no_cache=no_cache, seed=seed)
 
     if benchmark.min_version is not None:
         from packaging.version import parse
