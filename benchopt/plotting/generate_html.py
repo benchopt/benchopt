@@ -243,7 +243,7 @@ def shape_solvers_for_html(df, objective_column, custom_plot_func):
         # compute median of 'time' and objective_column
         fields = ["time", objective_column]
         groupby_stop_val_median_unfiltered = (
-            df_filtered.groupby('stop_val')[fields]
+            df_filtered.groupby('stop_val')
             .median(numeric_only=True)
         )
         groupby_stop_val_median = groupby_stop_val_median_unfiltered[fields]

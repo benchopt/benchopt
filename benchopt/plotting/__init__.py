@@ -9,6 +9,7 @@ from ..utils.parquet import update_metadata
 from ..constants import PLOT_KINDS
 from .helpers import get_plot_id
 from .plot_boxplot import plot_boxplot  # noqa: F401
+from .plot_custom import plot_custom  # noqa: F401
 from .plot_bar_chart import plot_bar_chart  # noqa: F401
 from .plot_objective_curve import plot_objective_curve  # noqa: F401
 from .plot_objective_curve import plot_suboptimality_curve  # noqa: F401
@@ -70,11 +71,13 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
             k for k in df.columns
             if k.startswith('objective_') and k != 'objective_name'
         ]
-        datasets = df['data_name'].unique()
         output_dir = benchmark.get_output_folder()
         figs = []
-        for data in datasets:
+        for dataset in benchmark.get_datasets():
+            data = dataset.name
             df_data = df[df['data_name'] == data]
+            if df_data.empty:
+                continue
             objective_names = df['objective_name'].unique()
             for objective_name in objective_names:
                 df_obj = df_data[df_data['objective_name'] == objective_name]
@@ -97,9 +100,15 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
                         continue
                     plot_func = globals()[PLOT_KINDS[kind]]
                     try:
-                        fig = plot_func(df_obj, obj_col=obj_col, plotly=plotly)
+                        if kind == "custom":
+                            fig = plot_func(df_obj, dataset.plot_data)
+                        else:
+                            fig = plot_func(df_obj, obj_col=obj_col, plotly=plotly)
                     except TypeError:
-                        fig = plot_func(df_obj, obj_col=obj_col)
+                        if kind == "custom":
+                            fig = plot_func(df_obj, dataset.plot_data)
+                        else:
+                            fig = plot_func(df_obj, obj_col=obj_col)
                     save_name = output_dir / f"{plot_id}_{obj_col}_{kind}"
                     if hasattr(fig, 'write_html'):
                         save_name = save_name.with_suffix('.html')

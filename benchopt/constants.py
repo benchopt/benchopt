@@ -4,5 +4,5 @@ PLOT_KINDS = {
     'relative_suboptimality_curve': 'plot_relative_suboptimality_curve',
     'bar_chart': 'plot_bar_chart',
     'boxplot': 'plot_boxplot',
-    'custom': 'none'  # TODO handle custom plots
+    'custom': 'plot_custom'
 }
