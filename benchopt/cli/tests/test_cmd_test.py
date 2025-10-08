@@ -41,7 +41,7 @@ class TestCmdTest:
         out.check_output("SKIPPED", repetition=1)
 
     def test_valid_call_in_env_no_pytest(self, test_env_name):
-        with temp_benchmark() as bench, CaptureCmdOutput() as out:
+        with temp_benchmark() as bench, CaptureCmdOutput():
             msg = f"pytest is not installed in conda env {test_env_name}"
             with pytest.raises(ModuleNotFoundError, match=msg):
                 benchopt_test(
