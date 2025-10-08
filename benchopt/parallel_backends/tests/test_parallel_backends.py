@@ -1,4 +1,3 @@
-import sys
 import pytest
 
 
@@ -6,16 +5,6 @@ from benchopt.cli.main import run
 from benchopt.utils.temp_benchmark import temp_benchmark
 
 from benchopt.tests.utils import CaptureCmdOutput, patch_import
-
-
-# Utils to help testing parallel backends when some packages are not installed
-def unimport_backends():
-    # Remove imported modules to force re-import
-    for k in list(sys.modules):
-        modules = ['parallel_backends', 'submitit', 'distributed', 'dask']
-        if any(m in k for m in modules):
-            print("removing", k)
-            del sys.modules[k]
 
 
 def raise_error():
@@ -60,8 +49,10 @@ def test_backend_not_installed(backend):
     """
 
     # Remove imported modules to force re-import
-    unimport_backends()
-    with patch_import(submitit=raise_error, distributed=raise_error):
+    with patch_import(
+            submitit=raise_error, distributed=raise_error,
+            rm_modules=['parallel_backends', 'submitit', 'distributed', 'dask']
+    ):
         with temp_benchmark(config={"parallel_config.yml": config}) as bench:
             parallel_config_file = bench.benchmark_dir / "parallel_config.yml"
             msg = f"pip install benchopt.{backend}."
@@ -81,8 +72,10 @@ def test_backend_collect(backend):
 
     # Remove imported modules to force re-import, should raise error if collect
     # tries to run on the specified backend
-    unimport_backends()
-    with patch_import(submitit=raise_error, distributed=raise_error):
+    with patch_import(
+            submitit=raise_error, distributed=raise_error,
+            rm_modules=['parallel_backends', 'submitit', 'distributed', 'dask']
+    ):
         with temp_benchmark(config={"parallel_config.yml": config}) as bench:
             cmd = f"{bench.benchmark_dir} -d test-dataset -n 0 -r 1 --no-plot"
             parallel_config_file = bench.benchmark_dir / "parallel_config.yml"
