@@ -7,6 +7,7 @@ from benchopt.utils.temp_benchmark import temp_benchmark
 
 
 from benchopt.tests.utils import CaptureCmdOutput
+from benchopt.utils.shell_cmd import _run_shell_in_conda_env
 
 from benchopt.cli.main import test as benchopt_test
 
@@ -40,13 +41,15 @@ class TestCmdTest:
         out.check_output("PASSED", repetition=8)
         out.check_output("SKIPPED", repetition=1)
 
-    def test_valid_call_in_env_no_pytest(self, test_env_name):
-        with temp_benchmark() as bench, CaptureCmdOutput():
+    def test_valid_call_in_env_no_pytest(self, test_env_name, no_pytest):
+        with temp_benchmark() as bench:
             msg = f"pytest is not installed in conda env {test_env_name}"
             with pytest.raises(ModuleNotFoundError, match=msg):
+                assert 1 == _run_shell_in_conda_env(
+                    "which pytest", env_name=test_env_name
+                )
                 benchopt_test(
-                   f"{bench.benchmark_dir} --skip-install "
-                   f"--env-name {test_env_name}".split(),
+                   f"{bench.benchmark_dir} --env-name {test_env_name}".split(),
                    'benchopt', standalone_mode=False
                 )
 
