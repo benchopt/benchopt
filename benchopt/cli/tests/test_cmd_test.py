@@ -40,6 +40,16 @@ class TestCmdTest:
         out.check_output("PASSED", repetition=8)
         out.check_output("SKIPPED", repetition=1)
 
+    def test_valid_call_in_env_no_pytest(self, test_env_name):
+        with temp_benchmark() as bench, CaptureCmdOutput() as out:
+            msg = f"pytest is not installed in conda env {test_env_name}"
+            with pytest.raises(ModuleNotFoundError, match=msg):
+                benchopt_test(
+                   f"{bench.benchmark_dir} --skip-install "
+                   f"--env-name {test_env_name}".split(),
+                   'benchopt', standalone_mode=False
+                )
+
     def test_skip_test(self):
         test_config = """import pytest
 
