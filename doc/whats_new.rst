@@ -32,6 +32,9 @@ API
 FIX
 ---
 
+- Fix running ``benchopt test`` when ``pytest`` is not installed
+  in the conda env. By `Thomas Moreau`_ (:gh:`838`)
+
 - Fix ``--download`` option in ``benchopt install`` when using multiple datasets.
   By `Thomas Moreau`_ (:gh:`821`)
 
