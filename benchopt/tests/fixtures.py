@@ -165,15 +165,15 @@ def no_pytest(test_env_name):
     cmd = "which pytest\npip uninstall -qqy pytest"
 
     exitcode = _run_shell_in_conda_env(cmd, env_name=test_env_name)
-    print(f"Exit code: {exitcode}")
     yield
     # If pytest was not installed before, exit code is 1 so do not reinstall
     # otherwise, reinstall it
     if exitcode == 0:
-        _run_shell_in_conda_env(
-            "pip install -qqy pytest", env_name=test_env_name,
-            capture_output=False
+        exitcode, output = _run_shell_in_conda_env(
+            "pip install -q pytest", env_name=test_env_name,
+            return_output=True
         )
+        assert exitcode == 0, output
 
 
 @pytest.fixture(scope='session')
