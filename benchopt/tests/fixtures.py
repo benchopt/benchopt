@@ -171,7 +171,8 @@ def no_pytest(test_env_name):
     # otherwise, reinstall it
     if exitcode == 0:
         _run_shell_in_conda_env(
-            "pip install -qqy pytest", env_name=test_env_name
+            "pip install -qqy pytest", env_name=test_env_name,
+            capture_output=False
         )
 
 
