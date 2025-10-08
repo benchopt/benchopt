@@ -4,9 +4,6 @@ from .callback import _Callback
 from .stopping_criterion import SingleRunCriterion
 from .stopping_criterion import SufficientProgressCriterion
 
-from .utils.safe_import import set_benchmark_module
-from .utils.dynamic_modules import get_file_hash
-from .utils.dynamic_modules import _reconstruct_class
 from .utils.misc import NamedTemporaryFile
 from .utils.dependencies_mixin import DependenciesMixin
 from .utils.parametrized_name_mixin import ParametrizedNameMixin
@@ -65,7 +62,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
             or 'iteration'
         )
 
-    def _set_objective(self, objective, output=None):
+    def _set_objective(self, objective):
         """Store the objective for hashing/pickling and check its compatibility
 
         Parameters
@@ -82,7 +79,6 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
             If skip is False, the reason should be None.
         """
         self._objective = objective
-        self._output = output
 
         objective_dict = objective.get_objective()
         assert objective_dict is not None, (
@@ -92,13 +88,10 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
 
         # Check if the objective is compatible with the solver
         skip, reason = self.skip(**objective_dict)
-        if skip:
-            if self._output:
-                self._output.skip(reason)
-            return True
+        if not skip:
+            self.set_objective(**objective_dict)
 
-        self.set_objective(**objective_dict)
-        return False
+        return skip, reason
 
     @abstractmethod
     def set_objective(self, **objective_dict):
@@ -206,16 +199,13 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
             the solver on an easy to solve problem.
         """
 
-        if hasattr(self, '_output') and self._output is not None:
-            self._output.progress('caching warmup times.')
-
         if self._solver_strategy == "callback":
             stopping_criterion = (
                 SingleRunCriterion(stop_val=stop_val)
                 .get_runner_instance(solver=self)
             )
             run_once_cb = _Callback(
-                lambda x: {'objective_value': 1},
+                lambda x: [{'objective_value': 1}],
                 solver=self,
                 meta={},
                 stopping_criterion=stopping_criterion
@@ -243,26 +233,14 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         self.warm_up()
         self._warmup_done = True
 
-    @staticmethod
-    def _reconstruct(module_filename, parameters, objective, output,
-                     pickled_module_hash=None, benchmark_dir=None):
-        set_benchmark_module(benchmark_dir)
-        Solver = _reconstruct_class(
-            module_filename, 'Solver', benchmark_dir, pickled_module_hash,
-        )
-        obj = Solver.get_instance(**parameters)
-        if objective is not None:
-            obj._set_objective(objective, output=output)
-        return obj
+    def _get_state(self):
+        """Return the state of the objective for pickling."""
+        return dict(objective=getattr(self, '_objective', None))
 
-    def __reduce__(self):
-        module_hash = get_file_hash(self._module_filename)
-        objective = getattr(self, '_objective', None)
-        output = getattr(self, '_output', None)
-        return self._reconstruct, (
-            self._module_filename, self._parameters, objective, output,
-            module_hash, str(self._import_ctx._benchmark_dir)
-        )
+    def __setstate__(self, state):
+        objective = state['objective']
+        if objective is not None:
+            self._set_objective(objective)
 
 
 class CommandLineSolver(BaseSolver, ABC):
@@ -314,24 +292,6 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
 
         return self._data
 
-    # Reduce the pickling and hashing burden by only pickling class parameters.
-    @staticmethod
-    def _reconstruct(module_filename, pickled_module_hash, parameters,
-                     benchmark_dir):
-        set_benchmark_module(benchmark_dir)
-        Dataset = _reconstruct_class(
-            module_filename, 'Dataset', benchmark_dir, pickled_module_hash,
-        )
-        obj = Dataset.get_instance(**parameters)
-        return obj
-
-    def __reduce__(self):
-        module_hash = get_file_hash(self._module_filename)
-        return self._reconstruct, (
-            self._module_filename, module_hash, self._parameters,
-            str(self._import_ctx._benchmark_dir)
-        )
-
 
 class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
     """Base class to define an objective function
@@ -348,12 +308,13 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
 
     - `evaluate_result(**result)`: evaluate the metrics on the results of a
       solver. Its arguments should correspond to the key of the dictionary
-      returned by `Solver.get_result` and it can return a scalar value or
-      a dictionary.
+      returned by `Solver.get_result` and it can return a scalar value,
+      a dictionary or a list of dictionaries.
       If it returns a dictionary, it should at least contain a key
       `value` associated to a scalar value which will be used to
       detect convergence. With a dictionary, multiple metric values can be
-      stored at once instead of running each separately.
+      stored at once instead of running each separately. With a list of
+      dictionaries, these metrics can be computed on different objects.
 
     - `get_one_result()`: return one result for which the objective can be
       evaluated. This should be a dictionary where the keys correspond to the
@@ -420,7 +381,7 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
 
         Returns
         -------
-        objective_value : float or dict {'name': float}
+        objective_value : float or dict {str: float} or list of dict
             The value(s) of the objective function. If a dictionary is
             returned, it should at least contain a key `value` associated to a
             scalar value which will be used to detect convergence. With a
@@ -443,6 +404,38 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
         """
         pass
 
+    def format_objective_dict(self, objective_dict):
+        """Format the output of Objective.evaluate_results.
+
+        This will prefix all keys in the dictionary with `objective_`
+        to make the objective part of the results clear.
+
+        Parameters
+        ----------
+        objective_dict: dict
+            The output of the objective function, which should be a dictionary
+            not containing the key 'name'.
+
+        Returns
+        -------
+        objective_dict : dict
+            The formatted objective to include in the DataFrame.
+        """
+
+        if not isinstance(objective_dict, dict):
+            raise ValueError(
+                "The output of Objective.evaluate_result should be either a "
+                "single dictionary or a list of dictionaries. Note that these "
+                "dictionaries cannot contain a key 'name'"
+            )
+        elif 'name' in objective_dict:
+            raise ValueError(
+                "objective output cannot contain 'name' key"
+            )
+        return {
+            f'objective_{k}': v for k, v in objective_dict.items()
+        }
+
     def __call__(self, result):
         """Used to call the evaluation of the objective.
 
@@ -456,23 +449,20 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
 
             )
 
-        objective_dict = self.evaluate_result(**result)
+        objective_output = self.evaluate_result(**result)
 
-        if not isinstance(objective_dict, dict):
-            objective_dict = {'value': objective_dict}
+        if not isinstance(objective_output, (dict, list)):
+            objective_list = [{'value': objective_output}]
+        elif isinstance(objective_output, dict):
+            objective_list = [objective_output]
+        else:
+            objective_list = objective_output
 
-        if 'name' in objective_dict:
-            raise ValueError(
-                "objective output cannot be called 'name'."
-            )
+        objective_list = [
+            self.format_objective_dict(d) for d in objective_list
+        ]
 
-        # To make the objective part clear in the results, we prefix all
-        # keys with `objective_`.
-        objective_dict = {
-            f'objective_{k}': v for k, v in objective_dict.items()
-        }
-
-        return objective_dict
+        return objective_list
 
     # Save the dataset object used to get the objective data so we can avoid
     # hashing the data directly.
@@ -542,26 +532,14 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
         self.get_objective()
         return self.get_one_result()
 
-    # Reduce the pickling and hashing burden by only pickling class parameters.
-    @staticmethod
-    def _reconstruct(module_filename, pickled_module_hash, parameters,
-                     dataset, benchmark_dir):
-        set_benchmark_module(benchmark_dir)
-        Objective = _reconstruct_class(
-            module_filename, 'Objective', benchmark_dir, pickled_module_hash,
-        )
-        obj = Objective.get_instance(**parameters)
-        if dataset is not None:
-            obj.set_dataset(dataset)
-        return obj
+    def _get_state(self):
+        """Return the state of the objective for pickling."""
+        return dict(dataset=getattr(self, '_dataset', None))
 
-    def __reduce__(self):
-        module_hash = get_file_hash(self._module_filename)
-        dataset = getattr(self, '_dataset', None)
-        return self._reconstruct, (
-            self._module_filename, module_hash, self._parameters, dataset,
-            str(self._import_ctx._benchmark_dir)
-        )
+    def __setstate__(self, state):
+        dataset = state['dataset']
+        if dataset is not None:
+            self.set_dataset(dataset)
 
     def _default_split(self, cv_fold, *arrays):
         train_index, test_index = cv_fold

@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 
 from benchopt.cli.main import run
-from benchopt.tests.utils import CaptureRunOutput
+from benchopt.tests.utils import CaptureCmdOutput
 from benchopt.utils.temp_benchmark import temp_benchmark
 
 from benchopt.stopping_criterion import SAMPLING_STRATEGIES
@@ -145,7 +145,7 @@ def test_key_to_monitor_objective(no_debug_log, criterion_class, strategy):
     """
 
     with temp_benchmark(objective=objective, solvers=[solver]) as benchmark:
-        with CaptureRunOutput() as out:
+        with CaptureCmdOutput() as out:
             run([str(benchmark.benchmark_dir),
                 *'-s test-solver -d test-dataset -n 10 -r 1 --no-display'
                 .split()], standalone_mode=False)
@@ -182,7 +182,7 @@ def test_solver_strategy(no_debug_log, strategy):
             objective=MINIMAL_OBJECTIVE,
             solvers=[solver]
     ) as benchmark:
-        with CaptureRunOutput():
+        with CaptureCmdOutput():
             run([str(benchmark.benchmark_dir),
                 *('-s test-solver -d test-dataset --no-plot -n 0').split()],
                 standalone_mode=False)
@@ -223,7 +223,7 @@ def test_stopping_criterion_strategy(no_debug_log, criterion_class, strategy):
             objective=MINIMAL_OBJECTIVE,
             solvers=[solver]
     ) as benchmark:
-        with CaptureRunOutput():
+        with CaptureCmdOutput():
             run([str(benchmark.benchmark_dir),
                 *('-s test-solver -d test-dataset --no-plot -n 0').split()],
                 standalone_mode=False)
@@ -265,7 +265,7 @@ def test_solver_override_strategy(no_debug_log, criterion_class, strategy):
             objective=MINIMAL_OBJECTIVE,
             solvers=[solver]
     ) as benchmark:
-        with CaptureRunOutput():
+        with CaptureCmdOutput():
             run([str(benchmark.benchmark_dir),
                 *('-s test-solver -d test-dataset --no-plot -n 0').split()],
                 standalone_mode=False)
@@ -290,7 +290,7 @@ def test_dual_strategy(no_debug_log):
             solvers=[solver]
     ) as benchmark:
         with pytest.raises(AssertionError, match="Only set it once."):
-            with CaptureRunOutput():
+            with CaptureCmdOutput():
                 run([str(benchmark.benchmark_dir),
                     *('-s test-solver -d test-dataset --no-plot').split()],
                     standalone_mode=False)
@@ -325,7 +325,7 @@ def test_objective_equals_zero(no_debug_log):
             objective=objective,
             solvers=[solver]
     ) as benchmark:
-        with CaptureRunOutput() as out:
+        with CaptureCmdOutput() as out:
             run([str(benchmark.benchmark_dir),
                 *('-s test-solver -d test-dataset --no-plot -n 0').split()],
                 standalone_mode=False)

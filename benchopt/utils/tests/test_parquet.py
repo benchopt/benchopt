@@ -14,10 +14,7 @@ from benchopt.utils.misc import NamedTemporaryFile
 
 from benchopt.config import DEFAULT_BENCHMARK_CONFIG
 
-from benchopt.tests import SELECT_ONE_PGD
-from benchopt.tests import SELECT_ONE_SIMULATED
-from benchopt.tests import SELECT_ONE_OBJECTIVE
-from benchopt.tests.utils import CaptureRunOutput
+from benchopt.tests.utils import CaptureCmdOutput
 
 
 def test_parquet_metadata():
@@ -78,15 +75,13 @@ def test_metadata_saving():
         ]
     }
 
-    with temp_benchmark() as benchmark:
+    with temp_benchmark() as bench:
         # Check that the computation caching is working properly.
-        run_cmd = [
-            str(benchmark.benchmark_dir), '-d', SELECT_ONE_SIMULATED,
-            '-s', SELECT_ONE_PGD, '-n', '1', '-r', str(1),
-            '-o', SELECT_ONE_OBJECTIVE, '--no-display',
-        ]
+        run_cmd = (
+            f"{bench.benchmark_dir} -d test-dataset -n 1 -r {1} --no-display"
+        ).split()
 
-        with CaptureRunOutput(delete_result_files=False) as out:
+        with CaptureCmdOutput(delete_result_files=False) as out:
             run(run_cmd, 'benchopt', standalone_mode=False)
 
         config = get_metadata(Path(out.result_files[0]))
@@ -96,21 +91,21 @@ def test_metadata_saving():
         }
         assert config == expected_config
 
-        config_file = benchmark.get_config_file()
+        config_file = bench.get_config_file()
         with config_file.open('w') as f:
             yaml.safe_dump(dummy_config, f)
 
         # Make sure that plot update the metadata of existing files.
-        with CaptureRunOutput(delete_result_files=False):
+        with CaptureCmdOutput(delete_result_files=False):
             plot(
-                [str(benchmark.benchmark_dir), '--no-display'],
+                [str(bench.benchmark_dir), '--no-display'],
                 'benchopt', standalone_mode=False
             )
 
         assert get_metadata(Path(out.result_files[0])) == dummy_config
 
         # Make sure that run store the metadata when creating a file.
-        with CaptureRunOutput(delete_result_files=False) as out:
+        with CaptureCmdOutput(delete_result_files=False) as out:
             run(run_cmd, 'benchopt', standalone_mode=False)
 
         assert get_metadata(Path(out.result_files[0])) == dummy_config

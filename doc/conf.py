@@ -79,7 +79,7 @@ release = version
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = 'en'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -123,7 +123,7 @@ html_theme_options = {
     "home_page_in_toc": True,
     # for a complete list of themes refer to https://pygments.org/styles/
     "pygment_light_style": "colorful",
-    "pygment_dark_style": "gruvbox-dark",
+    "pygment_dark_style": "github-dark",
 }
 
 html_sidebars = {

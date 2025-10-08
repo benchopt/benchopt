@@ -5,26 +5,92 @@ What's new
 
 .. currentmodule:: benchopt
 
-.. _changes_1_7:
+.. _changes_1_8:
 
-Version 1.7 - in development
+Version 1.8 - in development
 ----------------------------
-
-Major change
-------------
-
-- Benchopt is now supported on Windows!! \o/
-  By `Wassim Mazouz`_, `Mathurin Massias`_ and `Thomas Moreau`_ (:gh:`717`)
 
 CLI
 ---
 
+- Allow skipping any tests in ``benchopt test`` with configuration in
+  ``test_conf.py``, by defining a function ``check_TEST_NAME``, which
+  is called before the test with the same arguments.
+  By `Thomas Moreau`_ (:gh:`801`)
+
+- Add a parallel backend system for ``benchopt run`` to setup distributed
+  run with ``dask`` and ``submitit``. See :ref:`parallel_run` for details.
+  By `Thomas Moreau`_ (:gh:`673`).
+
+- Deprecate the ``--slurm`` parameter which will be removed in benchopt 1.8.
+  By `Thomas Moreau`_ (:gh:`673`).
+
+
 API
 ---
+
+FIX
+---
+
+- Fix running ``benchopt test`` when ``pytest`` is not installed
+  in the conda env. By `Thomas Moreau`_ (:gh:`838`)
+
+- Fix ``--download`` option in ``benchopt install`` when using multiple datasets.
+  By `Thomas Moreau`_ (:gh:`821`)
+
+- Fix ``-n-repetitions`` option required for ``benchopt run`` in conda env.
+  By `Thomas Moreau`_ (:gh:`831`)
+
+.. _changes_1_7:
+
+Version 1.7 - 18/09/2025
+------------------------
+
+Major change
+------------
+
+- Benchopt is now supported on Windows!! \\o/
+  By `Wassim Mazouz`_, `Mathurin Massias`_ and `Thomas Moreau`_ (:gh:`717`)
+
+- Imports in the benchmark are now done without the ``safe_import_context``,
+  while keeping the possibility to list solvers and datasets even when a
+  package is not installed. The helper is deprecated and will be removed in
+  benchopt ``1.8``. By `Mathurin Massias`_  and `Thomas Moreau`_ (:gh:`788`)
+
+CLI
+---
+
+- Add ``--no-cache`` option to ``benchopt run``, to disable caching.
+  By `Thomas Moreau`_ (:gh:`800`)
+
+- Add ``--gpu`` flag to ``benchopt install``, to handle different requirements
+  for GPU and CPU. By `Mathurin Massias`_ (:gh:`793`)
+
+- Make it possible to run ``benchopt`` as ``python -m benchopt``, to ease
+  running in various environment and debugging. By `Rémi Flamary`_ (:gh:`685`)
+
+API
+---
+
+- Add ``slurm_params`` attribute to ``Solver`` to allow overriding the
+  default SLURM config. By `Pierre-Louis Barbarant`_ (:gh:`805`)
+
+- Support ``requirements`` being a dictionary with keys ``"gpu"`` and
+  ``"cpu"``, for classes whose install differ on GPU and CPU.
+  By `Mathurin Massias`_ (:gh:`793`)
 
 - Change channel specification in requirements, replacing the split format
   with ``::`` instead of ``:``. This allow specifying URL channels.
   By `Thomas Moreau`_ (:gh:`758`)
+
+- Add ``Objective``, ``Solver`` and ``Dataset`` parameters as columns in the
+  result DataFrame. The parameters' names are respectively prefixed with
+  ``p_obj_|p_solver_|p_dataset_`` to avoid collapse between the different
+  components. By `Melvine Nargeot`_  and `Thomas Moreau`_ (:gh:`703`).
+
+- ``Objective`` can now return multiple evaluation at once, to store
+  non-aggregated metrics. See :ref:`multiple_evaluation`.
+  By `Thomas Moreau`_ (:gh:`778`).
 
 FIX
 ---
@@ -38,7 +104,22 @@ FIX
 - Fix the ``skip`` API for objectives that was leading to a display error.
   By `Thomas Moreau`_ (:gh:`763`)
 
-- Fix the ``info`` command By `Pierre-Antoine Comby`_ (:gh:`&67`)
+- Fix the ``info`` command. By `Pierre-Antoine Comby`_ (:gh:`768`)
+
+- Fix ignored ``--minimal`` option in ``benchopt install``.
+  By `Lionel Kusch`_ (:gh:`786`)
+
+- Fix cache miss when order of the solver changes.
+  By `Thomas Moreau`_ (:gh:`806`)
+
+- Fix ``get_data_path`` not working with parallel runs.
+  By `Thomas Moreau`_ (:gh:`815`)
+
+- Fix ``UnboundedLocalError`` when RuntimeError on ``warm_up``.
+  By `Johan Larsson`_ (:gh:`809`)
+
+- Fix error when solver finishes before callback.
+  By `Thomas Moreau`_ (:gh:`817`)
 
 .. _changes_1_6:
 
@@ -48,7 +129,7 @@ Version 1.6 - 15/07/2024
 API
 ~~~
 
-- Add a `save_final_results` method to Objective. If implemented it is run
+- Add a ``save_final_results`` method to Objective. If implemented it is run
   after the last solver iteration, to get desired outputs to be saved to file
   system. By `Pierre-Antoine Comby`_ (:gh:`722`)
 
@@ -93,7 +174,7 @@ FIX
 DOC
 ~~~
 
-- Add documentation for the `run_once` sampling strategy.
+- Add documentation for the ``run_once`` sampling strategy.
   By `Mathieu Dagréou`_ (:gh:`700`).
 
 .. _changes_1_5_1:
@@ -255,11 +336,11 @@ CLI
 
 - Add support for custom parameters in CLI for objectives, datasets, and
   solvers, through the syntax ``-s solver_name[parameter=value]``. See the `CLI
-  documentation <https://benchopt.github.io/cli.html>`_ for more details on the
+  documentation <https://benchopt.github.io/stable/cli.html>`_ for more details on the
   syntax. By `Tom Dupré la Tour`_ (:gh:`362`).
 
 - Add ``--slurm`` option in ``benchopt run`` to allow running the benchmark on
-  a SLURM cluster. See the :ref:`slurm_run` for more details on the config.
+  a SLURM cluster. See the :ref:`slurm_backend` for more details on the config.
   By `Thomas Moreau`_ (:gh:`407`)
 
 - Add ``benchopt archive`` to create a ``tar.gz`` archive with the benchmark's

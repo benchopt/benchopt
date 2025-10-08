@@ -1,21 +1,14 @@
-import time
-
 import pytest
-import numpy as np
+import inspect
+import pandas as pd
 
-from benchopt.tests import TEST_DATASET
-from benchopt.tests import TEST_OBJECTIVE
-
-from benchopt.tests import SELECT_ONE_PGD
-from benchopt.tests import SELECT_ONE_SIMULATED
-from benchopt.tests import SELECT_ONE_OBJECTIVE
-
+from benchopt import BaseDataset
 from benchopt.benchmark import _check_patterns
 from benchopt.benchmark import _extract_options
 from benchopt.benchmark import _extract_parameters
 from benchopt.benchmark import _list_parametrized_classes
 from benchopt.utils.temp_benchmark import temp_benchmark
-from benchopt.tests.utils import CaptureRunOutput
+from benchopt.tests.utils import CaptureCmdOutput
 from benchopt.cli.main import run
 
 
@@ -57,7 +50,7 @@ def test_skip_api(n_jobs):
     """
 
     with temp_benchmark(objective=objective, solvers=[solver]) as benchmark:
-        with CaptureRunOutput() as out:
+        with CaptureCmdOutput() as out:
             run([*(
                 f'{benchmark.benchmark_dir} -s test-solver -d test-dataset '
                 f'-j {n_jobs} --no-plot'
@@ -78,24 +71,16 @@ def test_skip_api(n_jobs):
     out.check_output("Solver#RUN", repetition=1)
 
 
-def test_get_one_result():
-    dataset = TEST_DATASET.get_instance()
-    objective = TEST_OBJECTIVE.get_instance()
-    objective.set_dataset(dataset)
-
-    one_solution = objective.get_one_result()
-    expected = np.zeros(objective.X.shape[1])
-    assert all(one_solution['beta'] == expected)
-
-
 def _assert_parameters_equal(instance, parameters):
     for key, val in parameters.items():
         assert getattr(instance, key) == val
 
 
-class TEST_DATASET_TWO_PARAMS(TEST_DATASET):
+class _DatasetTwoParams(BaseDataset):
     """Used to test the selection of datasets by keyword parameters."""
+    name = "Test-Dataset"
     parameters = {'n_samples': [10, 11], 'n_features': [20, 21]}
+    def get_data(self): pass
 
 
 def test_filter_classes_two_parameters():
@@ -103,7 +88,7 @@ def test_filter_classes_two_parameters():
 
     def filt_(filters):
         return list(_list_parametrized_classes(*_check_patterns(
-            [TEST_DATASET_TWO_PARAMS], filters
+            [_DatasetTwoParams], filters
         )))
 
     # no selection (default grid)
@@ -176,9 +161,11 @@ def test_filter_classes_two_parameters():
         filt_(["Test-Dataset[n_targets=42]"])
 
 
-class TEST_DATASET_ONE_PARAM(TEST_DATASET):
+class _DatasetOneParam(BaseDataset):
     """Used to test the selection of dataset with a positional parameter."""
+    name = "Test-Dataset"
     parameters = {'n_samples': [10, 11]}
+    def get_data(self): pass
 
 
 def test_filter_classes_one_param():
@@ -186,7 +173,7 @@ def test_filter_classes_one_param():
 
     def filt_(filters):
         return list(_list_parametrized_classes(*_check_patterns(
-            [TEST_DATASET_ONE_PARAM], filters
+            [_DatasetOneParam], filters
         )))
 
     # test positional parameter
@@ -272,6 +259,10 @@ def test_extract_parameters():
     assert _extract_parameters("foo=(bar, baz)") == {'foo': ('bar', 'baz')}
     assert _extract_parameters("foo=(0, 1),bar=2") == {'foo': (0, 1), 'bar': 2}
     assert _extract_parameters("foo=[100, 200]") == {'foo': [100, 200]}
+    assert _extract_parameters("foo=/path/to/my-file,bar=baz") == \
+        {'foo': '/path/to/my-file', 'bar': 'baz'}
+    assert _extract_parameters("foo=[\\path\\to\\file,other\\path]") == \
+        {'foo': ['\\path\\to\\file', 'other\\path']}
 
     # Special case with a list of tuple parameters
     assert _extract_parameters("'foo, bar'=[(0, 1),(1, 0)]") == \
@@ -285,7 +276,145 @@ def test_extract_parameters():
         assert _extract_parameters(f"\"{token}\"") == [token]
 
 
-def test_error_caching(no_debug_log):
+# Under windows, the function needs to be pickleable
+# for parallel jobs to work with joblib
+@pytest.mark.parametrize('n_jobs', [1, 2])
+def test_benchopt_run_script(n_jobs, no_debug_log):
+    from benchopt import run_benchmark
+
+    with temp_benchmark() as benchmark:
+        with CaptureCmdOutput() as out:
+            run_benchmark(
+                str(benchmark.benchmark_dir),
+                solver_names=["test-solver"],
+                dataset_names=["simulated"],
+                max_runs=2, n_repetitions=1, n_jobs=n_jobs, plot_result=False
+            )
+
+    out.check_output('simulated', repetition=1)
+    out.check_output('test-objective', repetition=1)
+    out.check_output('test-solver:', repetition=4)
+    out.check_output('template_solver:', repetition=0)
+
+    # Make sure the results were saved in a result file
+    assert len(out.result_files) == 1, out.output
+
+
+def test_prefix_with_same_parameters():
+    from benchopt import run_benchmark
+
+    solver1 = """from benchopt import BaseSolver
+
+        class Solver(BaseSolver):
+            name = "solver1"
+            sampling_strategy = 'iteration'
+            parameters = dict(seed=[3, 27])
+            def set_objective(self, X, y): pass
+            def run(self, n_iter): pass
+            def get_result(self): return dict(beta=1)
+    """
+
+    # Different name and extra parameter
+    solver2 = (
+        solver1.replace("solver1", "solver2")
+        .replace('seed=[3, 27]', 'seed=[2, 28], type=["s"]')
+    )
+
+    dataset1 = """from benchopt import BaseDataset
+
+        class Dataset(BaseDataset):
+            name = "dataset1"
+            parameters = dict(seed=[3, 27])
+            def get_data(self):
+                return dict(X=0, y=1)
+    """
+
+    # Different name and extra parameter
+    dataset2 = (
+        dataset1.replace("dataset1", "dataset2")
+        .replace('seed=[3, 27]', 'seed=[2, 28], type=["d"]')
+    )
+
+    objective = """from benchopt import BaseObjective
+
+        class Objective(BaseObjective):
+            name = "test_obj"
+            min_benchopt_version = "0.0.0"
+
+            parameters = dict(test_p=[4])
+            def set_data(self, X, y): pass
+            def get_one_result(self): pass
+            def evaluate_result(self, beta): return dict(value=1)
+            def get_objective(self): return dict(X=0, y=0)
+    """
+
+    with temp_benchmark(solvers=[solver1, solver2],
+                        datasets=[dataset1, dataset2],
+                        objective=objective
+                        ) as benchmark:
+        run_benchmark(
+            str(benchmark.benchmark_dir),
+            solver_names=["solver1", "solver2"],
+            dataset_names=["dataset1", "dataset2"],
+            max_runs=1, n_repetitions=1, n_jobs=1, plot_result=False
+        )
+
+        df = pd.read_parquet(benchmark.get_result_file())
+
+        assert "p_solver_seed" in df.columns
+        assert "p_solver_type" in df.columns
+        assert "p_dataset_seed" in df.columns
+        assert "p_dataset_type" in df.columns
+        assert "p_obj_test_p" in df.columns
+
+        assert df.query("p_solver_seed.isna()").shape[0] == 0
+        no_type = df.query("p_solver_type.isna()")['solver_name'].unique()
+        assert all('solver1' in s for s in no_type)
+
+        assert df.query("p_dataset_seed.isna()").shape[0] == 0
+        no_type = df.query("p_dataset_type.isna()")['data_name'].unique()
+        assert all('dataset1' in s for s in no_type)
+
+        assert df.query("p_obj_test_p.isna()").shape[0] == 0
+
+        # No mixing
+        assert "d" not in df['p_solver_type'].unique()
+        assert "s" in df['p_solver_type'].unique()
+        assert "s" not in df['p_dataset_type'].unique()
+        assert "d" in df['p_dataset_type'].unique()
+
+
+def test_warmup_error(no_debug_log):
+    # Non-regression test for benchopt/benchopt#808
+    from benchopt import run_benchmark
+
+    solver = """from benchopt import BaseSolver
+
+        class Solver(BaseSolver):
+            name = "solver1"
+            sampling_strategy = 'iteration'
+            def warm_up(self): raise RuntimeError("Warmup error")
+            def set_objective(self, X, y, lmbd): pass
+            def run(self, n_iter): pass
+            def get_result(self): return dict(beta=1)
+    """
+
+    with temp_benchmark(solvers=solver) as benchmark:
+        with pytest.raises(SystemExit, match="1"):
+            with CaptureCmdOutput() as out:
+                run_benchmark(
+                    str(benchmark.benchmark_dir),
+                    solver_names=["solver1"],
+                    dataset_names=["test-dataset"],
+                    max_runs=1, n_repetitions=1, n_jobs=1, plot_result=False
+                )
+        out.check_output("RuntimeError: Warmup error", repetition=1)
+        out.check_output("UnboundLocalError", repetition=0)
+        out.check_output("No output produced.", repetition=1)
+
+
+class TestCache:
+    """Test the cache of the benchmark."""
 
     objective = """from benchopt import BaseObjective
 
@@ -299,72 +428,120 @@ def test_error_caching(no_debug_log):
             def get_objective(self): return dict(X=0, y=0)
     """
 
-    solver1 = """from benchopt import BaseSolver
+    solver = """from benchopt import BaseSolver
 
     class Solver(BaseSolver):
-        name = "failing-solver"
-        sampling_strategy = 'iteration'
+        name = "test-solver"
+        sampling_strategy = 'run_once'
         def set_objective(self, X, y): pass
-        def run(self, n_iter):
-            raise ValueError('Failing solver.')
-        def get_result(self): return dict(beta=1)
-    """
-
-    solver2 = """from benchopt import BaseSolver
-
-    class Solver(BaseSolver):
-        name = "normal-solver"
-        sampling_strategy = 'iteration'
-        def set_objective(self, X, y): pass
-        def run(self, n_iter): pass
+        def run(self, _): print("#RUN_SOLVER")
         def get_result(self): return dict(beta=1)
     """
 
     dataset = """from benchopt import BaseDataset
 
     class Dataset(BaseDataset):
-        name = "dataset"
-        def get_data(self):
-            return dict(X=0, y=1)
+        name = "test-dataset"
+        def get_data(self): return dict(X=0, y=1)
     """
 
-    with temp_benchmark(objective=objective,
-                        solvers=[solver1, solver2],
-                        datasets=[dataset]) as benchmark:
-        with CaptureRunOutput() as out:
-            for it in range(2):
-                run([str(benchmark.benchmark_dir),
-                    *' -d dataset --no-plot -r 1 -n 1'.split()],
+    @pytest.mark.parametrize('n_reps', [1, 4])
+    def test_cache(self, no_debug_log, n_reps):
+        with temp_benchmark(
+                objective=self.objective, solvers=self.solver,
+                datasets=self.dataset
+        ) as bench:
+            with CaptureCmdOutput() as out:
+                for it in range(3):
+                    run(f"{bench.benchmark_dir} --no-plot -r {n_reps}".split(),
+                        standalone_mode=False)
+
+        # Check that the run are only call once per repetition, but not cached
+        # when using multiple repetitions
+        out.check_output("#RUN_SOLVER", repetition=n_reps)
+
+    @pytest.mark.parametrize('n_reps', [1, 4])
+    def test_no_cache(self, no_debug_log, n_reps):
+        with temp_benchmark(
+                objective=self.objective, solvers=self.solver,
+                datasets=self.dataset
+        ) as bench:
+            with CaptureCmdOutput() as out:
+                for it in range(3):
+                    run(f"{bench.benchmark_dir} --no-plot -r {n_reps} "
+                        "--no-cache".split(), standalone_mode=False)
+
+        # Check that the run is not cached when using --no-cache
+        out.check_output("#RUN_SOLVER", repetition=n_reps * 3)
+
+    def test_no_error_caching(self, no_debug_log):
+
+        solver_fail = """from benchopt import BaseSolver
+
+        class Solver(BaseSolver):
+            name = "failing-solver"
+            sampling_strategy = 'iteration'
+            def set_objective(self, X, y): pass
+            def run(self, n_iter):
+                raise ValueError('Failing solver.')
+            def get_result(self): return dict(beta=1)
+        """
+
+        with temp_benchmark(objective=self.objective,
+                            solvers=[self.solver, solver_fail],
+                            datasets=self.dataset) as bench:
+            with CaptureCmdOutput() as out:
+                for it in range(3):
+                    run(f"{bench.benchmark_dir} --no-plot -r 1 -n 1".split(),
+                        standalone_mode=False)
+
+        # error message should be displayed twice
+        out.check_output("ValueError: Failing solver.", repetition=3)
+
+    @pytest.mark.parametrize('n_reps', [1, 4])
+    def test_cache_order(self, no_debug_log, n_reps):
+        with temp_benchmark(
+                objective=self.objective, datasets=self.dataset,
+                solvers=[
+                    self.solver,
+                    self.solver.replace("test-solver", "test-solver2")
+                    .replace("#RUN_SOLVER", "#RUN_2SOLVER")
+                ]
+        ) as bench:
+            with CaptureCmdOutput() as out:
+                run([str(bench.benchmark_dir),
+                     *"-s test-solver -s test-solver2 "
+                     f'--no-plot -r {n_reps}'.split()],
                     standalone_mode=False)
-                # benchmark is too quick to run, without sleep output files
-                # have the same name and the unlinking fails:
-                if it == 0:
-                    time.sleep(1.1)
+                run([str(bench.benchmark_dir),
+                     *"-s test-solver2 -s test-solver "
+                    f'--no-plot -r {n_reps}'.split()],
+                    standalone_mode=False)
 
-    # error message should be displayed twice
-    out.check_output("ValueError: Failing solver.", repetition=2)
+        # Check that the run are only call once per repetition, but not cached
+        # when using multiple repetitions
+        out.check_output("#RUN_SOLVER", repetition=n_reps)
+        out.check_output("#RUN_2SOLVER", repetition=n_reps)
 
+    @pytest.mark.parametrize('n_reps', [1, 4])
+    def test_cache_invalid(self, no_debug_log, n_reps):
+        with temp_benchmark(
+                objective=self.objective, datasets=self.dataset,
+                solvers=self.solver,
+        ) as bench:
+            with CaptureCmdOutput() as out:
+                run(f"{bench.benchmark_dir} --no-plot -r {n_reps}".split(),
+                    standalone_mode=False)
+                # Modify the solver, to make the cache invalid
+                solver_file = bench.benchmark_dir / 'solvers' / 'solver_0.py'
+                modified_solver = inspect.cleandoc(self.solver.replace(
+                    "#RUN_SOLVER", "#RUN_SOLVER_MODIFIED"
+                ))
+                assert solver_file.exists()
+                solver_file.write_text(inspect.cleandoc(modified_solver))
 
-# Under windows, the function needs to be pickleable
-# for parallel jobs to work with joblib
-@pytest.mark.parametrize('n_jobs', [1, 2])
-def test_benchopt_run_script(n_jobs, no_debug_log):
-    from benchopt import run_benchmark
+                run(f"{bench.benchmark_dir} --no-plot -r {n_reps} -j2".split(),
+                    standalone_mode=False)
 
-    with temp_benchmark() as benchmark:
-        with CaptureRunOutput() as out:
-            run_benchmark(
-                str(benchmark.benchmark_dir),
-                solver_names=[SELECT_ONE_PGD],
-                dataset_names=[SELECT_ONE_SIMULATED],
-                objective_filters=[SELECT_ONE_OBJECTIVE],
-                max_runs=2, n_repetitions=1, n_jobs=n_jobs, plot_result=False
-            )
-
-    out.check_output('Simulated', repetition=1)
-    out.check_output('Dummy Sparse Regression', repetition=1)
-    out.check_output(r'Python-PGD\[step_size=1\]:', repetition=4)
-    out.check_output(r'Python-PGD\[step_size=1.5\]:', repetition=0)
-
-    # Make sure the results were saved in a result file
-    assert len(out.result_files) == 1, out.output
+        # Check that the 2nd run is not cached and the cache is invalidated.
+        out.check_output("#RUN_SOLVER_MODIFIED", repetition=n_reps)

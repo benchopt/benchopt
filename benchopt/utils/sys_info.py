@@ -25,7 +25,7 @@ def _get_processor_name():
         all_info = Path('/proc/cpuinfo').read_text()
         for line in all_info.splitlines():
             if "model name" in line:
-                out = re.sub(r".*model name.*:\s*", "", line, 1)
+                out = re.sub(r".*model name.*:\s*", "", line, count=1)
     return out
 
 
@@ -116,7 +116,8 @@ def get_sys_info():
 
     # Info on dependency libs
     info["version-cuda"] = get_cuda_version()
-    info["version-numpy"] = (np.__version__, _get_numpy_libs())
+    info["version-numpy"] = np.__version__
+    info["version-numpy-libs"] = _get_numpy_libs()
     info["version-scipy"] = scipy.__version__
 
     # Info on benchmark version

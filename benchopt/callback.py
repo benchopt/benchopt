@@ -85,13 +85,14 @@ class _Callback:
 
         Return True if the solver should be stopped.
         """
+        self._last_it_log = self.it
         result = self.solver.get_result()
-        objective_dict = self.objective(result)
-        self.curve.append(dict(
+        objective_list = self.objective(result)
+        self.curve.extend(dict(
             **self.meta, stop_val=self.it,
             time=self.time_iter,
             **objective_dict, **self.info
-        ))
+        ) for objective_dict in objective_list)
 
         # Check the stopping criterion
         should_stop_res = self.stopping_criterion.should_stop(
@@ -110,4 +111,16 @@ class _Callback:
         status : 'done' | 'diverged' | 'timeout' | 'max_runs'
             The status on which the solver was stopped.
         """
+        if self.status == 'running':
+            # If we reach this point, this means that the solver has returned
+            # before the stopping criterion was met. Evaluate the results one
+            # last time before returning if the last log was not the previous
+            # iteration.
+            # Stop time and update computation time since the beginning
+            t0 = time.perf_counter()
+            self.time_iter += t0 - self.time_callback
+            if self._last_it_log != self.it - 1:
+                self.log_value()
+            # Update the status to done
+            self.status = 'done'
         return self.curve, self.status

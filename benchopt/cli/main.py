@@ -16,7 +16,7 @@ from benchopt.utils.conda_env_cmd import create_conda_env
 from benchopt.utils.shell_cmd import _run_shell_in_conda_env
 from benchopt.utils.conda_env_cmd import get_benchopt_version_in_env
 from benchopt.utils.profiling import print_stats
-from benchopt.utils.slurm_executor import set_slurm_launch
+from benchopt.parallel_backends import check_parallel_config
 
 
 main = click.Group(
@@ -38,6 +38,11 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
                 f"Invalid config file option {k}. "
                 "See list of valid options with `benchopt run -h`.")
 
+        # parse if value is on a single line
+        if (not isinstance(v, list) and
+                var_name in ["objective", "dataset", "solver"]):
+            v = [v]
+
         # only override CLI variables if they have their default value
         if (ctx.get_parameter_source(var_name) is not None and
                 ctx.get_parameter_source(var_name).name == 'DEFAULT'):
@@ -53,15 +58,17 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
         "n_repetitions",
         "timeout",
         "no_timeout",
-        "n_jobs",
-        "slurm",
         "collect",
         "plot",
         "display",
         "html",
+        "n_jobs",
+        "parallel_config",
+        "slurm",  # XXX: remove in benchopt 1.9
         "pdb",
         "profile",
         "env_name",
+        "no_cache",
         "output",
     ]
     return [cli_kwargs[name] for name in return_names]
@@ -102,16 +109,7 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               " with the syntax `dataset[parameter=value]`. "
               "To include multiple datasets, use multiple `-d` options.",
               shell_complete=complete_datasets)
-@click.option('--n-jobs', '-j',
-              metavar="<int>", default=1, show_default=True, type=int,
-              help='Maximal number of workers to run the benchmark in '
-              'parallel.')
-@click.option('--slurm',
-              metavar="<slurm_config.yml>", default=None,
-              help='Run the computation using submitit on a SLURM cluster. '
-              'The YAML file provided to this argument is used to setup the '
-              'SLURM job. See :ref:`slurm_run` for a detailed description.')
-@click.option('--max-runs', '-n',
+@click.option("--max-runs", "-n",
               metavar="<int>", default=100, show_default=True, type=int,
               help='Maximal number of runs for each solver. This corresponds '
               'to the number of points in the time/accuracy curve.')
@@ -146,7 +144,22 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
 @click.option('--html/--no-html', default=True,
               help="If set to True (default), render the results as an HTML "
               "page, otherwise create matplotlib figures, saved as PNG.")
-@click.option('--pdb',
+@click.option("--n-jobs", "-j",
+              metavar="<int>", default=None, show_default=True, type=int,
+              help="Maximal number of workers to run the benchmark in "
+              "parallel.")
+@click.option("--slurm",
+              metavar="<slurm_config.yml>", default=None,
+              help="(_Deprecated_) Run the computation using submitit on a "
+              "SLURM cluster. The YAML file provided as an argument is used "
+              "to setup the SLURM job. See :ref:`slurm_run`.")
+@click.option("--parallel-config",
+              metavar="<parallel_config.yml>", default=None,
+              help="Run in parallel with the specified backend configuration. "
+              "The YAML file provided to this argument is used to setup the"
+              "parallel run. See :ref:`parallel_run` for a detailed "
+              "description.")
+@click.option("--pdb",
               is_flag=True,
               help="Launch a debugger if there is an error. This will launch "
               "ipdb if it is installed and default to pdb otherwise.")
@@ -170,6 +183,10 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               help="Run the benchmark in the conda environment "
               "named <env_name>. To install the required solvers and "
               "datasets, see the command `benchopt install`.")
+@click.option('--no-cache',
+              is_flag=True,
+              help='If set, disable the cache on disk for the run. Note that '
+              'this makes the run less tolerant to errors, use with caution.')
 @click.option("--output", default="None", type=str,
               help="Filename for the result output. "
               "If given, the results will "
@@ -181,6 +198,7 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               "<BENCHMARK>/outputs/benchopt_run_<timestamp>.parquet."
               )
 def run(config_file=None, **kwargs):
+    print("Benchopt is running!")
     if config_file is not None:
         with open(config_file, "r") as f:
             config = yaml.safe_load(f)
@@ -190,8 +208,8 @@ def run(config_file=None, **kwargs):
     (
         benchmark, solver_names, forced_solvers, dataset_names,
         objective_filters, max_runs, n_repetitions, timeout, no_timeout,
-        n_jobs, slurm, collect, plot, display, html, pdb, do_profile,
-        env_name, output_name
+        collect, plot, display, html, n_jobs, parallel_config, slurm, pdb,
+        do_profile, env_name, no_cache, output
     ) = _get_run_args(kwargs, config)
 
     # If --no-timeout is set and --timeout is not, skip these blocks
@@ -212,7 +230,7 @@ def run(config_file=None, **kwargs):
                 timeout = pd.to_timedelta(timeout).total_seconds()
 
     # Create the Benchmark object
-    benchmark = Benchmark(benchmark)
+    benchmark = Benchmark(benchmark, no_cache=no_cache)
 
     if benchmark.min_version is not None:
         from packaging.version import parse
@@ -231,18 +249,17 @@ def run(config_file=None, **kwargs):
     # If env_name is False, the flag `--local` has been used (default) so
     # run in the current environment.
     if env_name == 'False':
-
-        print("Benchopt is running")
-        if slurm is not None:
-            print("Running on SLURM")
-            set_slurm_launch()
-
         from benchopt.runner import _run_benchmark
 
         if do_profile:
             from benchopt.utils.profiling import use_profile
             use_profile()  # needs to be called before validate_solver_patterns
 
+        # Get the config for parallel runs
+        # XXX: remove slurm in benchopt 1.9
+        parallel_config = check_parallel_config(parallel_config, slurm, n_jobs)
+
+        print("Loading objective, datasets and solvers...", end='', flush=True)
         # Check that the objective is installed or raise an error
         objective = benchmark.get_benchmark_objective()
         objective.is_installed(raise_on_not_installed=True)
@@ -264,9 +281,9 @@ def run(config_file=None, **kwargs):
             benchmark, solvers, forced_solvers,
             datasets=datasets, objectives=objectives,
             max_runs=max_runs, n_repetitions=n_repetitions,
-            timeout=timeout, n_jobs=n_jobs, slurm=slurm,
-            plot_result=plot, display=display, html=html,
-            collect=collect, pdb=pdb, output_name=output_name
+            timeout=timeout, output_file=output, plot_result=plot,
+            display=display, html=html, collect=collect,
+            parallel_config=parallel_config, pdb=pdb
         )
 
         print_stats()  # print profiling stats (does nothing if not profiling)
@@ -328,25 +345,32 @@ def run(config_file=None, **kwargs):
             f"and version in env {env_name} ({benchopt_version}) differ")
 
     # run the command in the conda env
-    solvers_option = ' '.join([f'-s "{s}"' for s in solver_names])
-    forced_solvers_option = ' '.join([f'-f "{s}"' for s in forced_solvers])
-    datasets_option = ' '.join([f'-d "{d}"' for d in dataset_names])
-    objective_option = ' '.join([f'-o "{o}"' for o in objective_filters])
+    solvers_option = " ".join([f'-s "{s}"' for s in solver_names])
+    forced_solvers_option = " ".join([f'-f "{s}"' for s in forced_solvers])
+    datasets_option = " ".join([f'-d "{d}"' for d in dataset_names])
+    objective_option = " ".join([f'-o "{o}"' for o in objective_filters])
+    parallel_args = ""
+    if n_jobs:
+        parallel_args += f"--n-jobs {n_jobs} "
+    if slurm:  # XXX: remove in benchopt 1.9
+        parallel_args += rf"--slurm {slurm} "
+    if parallel_config:
+        parallel_args += rf"--parallel-config {parallel_config} "
     cmd = (
         rf"benchopt run --local {benchmark.benchmark_dir} "
-        rf"--n-repetitions {n_repetitions} "
+        rf"{f'--n-repetitions {n_repetitions}' if n_repetitions else ''} "
         rf"--max-runs {max_runs} "
         rf"{f'--timeout {timeout} ' if timeout is not None else ''}"
         rf"{'--no-timeout ' if no_timeout else ''} "
-        rf"--n-jobs {n_jobs} {'--slurm' if slurm else ''} "
         rf"{solvers_option} {forced_solvers_option} "
         rf"{datasets_option} {objective_option} "
         rf"{'--plot' if plot else '--no-plot'} "
         rf"{'--display' if display else '--no-display'} "
         rf"{'--html' if html else '--no-html'} "
+        rf"{parallel_args}"
         rf"{'--pdb ' if pdb else ''}"
         rf"{'--profile ' if do_profile else ''}"
-        rf"--output {output_name}"
+        rf"--output {output}"
         .replace('\\', '\\\\')
     )
     raise SystemExit(_run_shell_in_conda_env(
@@ -417,10 +441,14 @@ def run(config_file=None, **kwargs):
               help="If this flag is set, no confirmation will be asked "
               "to the user to install requirements in the current environment."
               " Useless with options `-e/--env` or `--env-name`.")
+@click.option('--gpu', is_flag=True, default=False,
+              help="Use this flag to install requirements['gpu'] for solvers "
+                   "and datasets that have different requirements for GPU and "
+                   "CPU.")
 def install(
         benchmark, minimal, solver_names, dataset_names, config_file=None,
         force=False, recreate=False, env_name='False', confirm=False,
-        quiet=False, download=False):
+        quiet=False, download=False, gpu=False):
 
     if config_file is not None:
         with open(config_file, "r") as f:
@@ -432,7 +460,7 @@ def install(
             forced_solvers = config.get("force-solver", tuple())
             solver_names = list(set(solver_names).union(set(forced_solvers)))
 
-    # Instanciate the benchmark
+    # Instantiate the benchmark
     benchmark = Benchmark(benchmark)
 
     # Get a list of all conda envs
@@ -502,7 +530,7 @@ def install(
     benchmark.install_all_requirements(
         include_solvers=solvers, include_datasets=datasets,
         minimal=minimal, env_name=env_name, force=force, quiet=quiet,
-        download=download
+        download=download, gpu=gpu,
     )
 
 
