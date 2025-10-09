@@ -44,20 +44,15 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
         The matplotlib figures for convergence curve and bar chart
         for each dataset.
     """
-    config = get_metadata(fname)
-    params = ["plots", "plot_configs"]
-    for param in params:
-        options = benchmark.get_setting(param, default_config=config)
-        if options is not None:
-            config[param] = options
-
-    update_metadata(fname, config)
+    plot_config = get_metadata(fname)
+    plot_config = benchmark.get_plot_config(default_config=plot_config)
+    update_metadata(fname, plot_config)
 
     if kinds is not None and len(kinds) > 0:
-        config["plots"] = kinds
+        plot_config["plots"] = kinds
 
     if html:
-        plot_benchmark_html(fname, benchmark, config, display)
+        plot_benchmark_html(fname, benchmark, plot_config, display)
 
     else:
         # Load the results.
@@ -82,7 +77,7 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
                 plot_id = get_plot_id(benchmark.name, df_obj)
 
                 for kind, obj_col in itertools.product(
-                        config["plots"], obj_cols
+                        plot_config["plots"], obj_cols
                 ):
                     if kind not in PLOT_KINDS:
                         raise ValueError(

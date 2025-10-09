@@ -1,0 +1,7 @@
+plot_configs:
+  Raw:
+    kind: objective_curve
+    scale: linear
+  Subopt. (log):
+    kind: suboptimality_curve
+    scale: loglog

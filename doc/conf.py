@@ -218,6 +218,10 @@ sphinx_gallery_conf = {
     'backreferences_dir': 'generated',
     'examples_dirs': '../examples',
     'gallery_dirs': 'auto_examples',
+    'filename_pattern': r'/run_.*\.py',
+    'ignore_pattern': r'.*_benchmark/',
+    'capture_repr': ('_repr_html_', '__repr__'),
+    # 'image_scrapers': ("benchopt.helpers.examples.cli_scraper",),
 }
 
 # -- Options for copybutton ---------------------------------------------
