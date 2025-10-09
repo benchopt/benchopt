@@ -11,7 +11,7 @@ from joblib.externals import cloudpickle
 from .config import get_setting
 from .base import BaseSolver, BaseDataset
 
-from .utils.dynamic_modules import _load_class_from_module
+from .utils.dynamic_modules import _load_class_from_module, FailedImport
 from .utils.parametrized_name_mixin import product_param
 
 from .utils.terminal_output import colorify
@@ -811,17 +811,21 @@ def _check_patterns(all_classes, patterns, name_type='dataset',
         raise TypeError()
     patterns = [p for q in patterns for p in preprocess_patterns(q)]
 
-    # Check that the provided patterns match at least one dataset and pair the
-    # matching clas with the selector.
+    # Check that each provided pattern matches at least one dataset and pair
+    # the matching class with the selector.
     matched, invalid_patterns = [], []
     for p, args, kwargs in patterns:
-        matched += [
+        matched_cls = [
             (cls, (args, kwargs))
             for cls in all_classes
             if is_matched(cls.name, [p])
         ]
-        if len(matched) == 0:
+        if len(matched_cls) == 0:
             invalid_patterns.append(p)
+        matched.extend([
+            (cls, p) if not isinstance(cls, FailedImport) else (cls, ([], {}))
+            for cls, p in matched_cls
+        ])
 
     # If some patterns did not matched any class, raise an error
     if len(invalid_patterns) > 0:
@@ -838,7 +842,7 @@ def _check_patterns(all_classes, patterns, name_type='dataset',
     for cls, (args, kwargs) in matched:
         param_names = [p.strip() for k in cls.parameters for p in k.split(',')]
         if len(args) != 0:
-            if len(cls.parameters) > 1:
+            if len(param_names) > 1:
                 raise ValueError(
                     f"Ambiguous positional parameter for {cls.name}."
                 )
@@ -846,7 +850,13 @@ def _check_patterns(all_classes, patterns, name_type='dataset',
                 raise ValueError(
                     f"Both positional and keyword parameters for {cls.name}."
                 )
-            kwargs = {list(cls.parameters.keys())[0]: args}
+            elif len(param_names) == 0:
+                raise ValueError(
+                    f"Positional parameter provided for {cls.name} which has"
+                    " no parameter."
+                )
+            # Use the single parameter name for this class.
+            kwargs = {param_names[0]: args}
         else:
             bad_params = [
                 p.strip() for k in kwargs for p in k.split(',')

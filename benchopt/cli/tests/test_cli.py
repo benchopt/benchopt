@@ -77,6 +77,35 @@ class TestRunCmd:
                     'benchopt', standalone_mode=False
                 )
 
+    def test_solver_not_installed(self):
+
+        # Make sure that when the Solver is not installed, due to a missing
+        # dependency, an error is raised.
+        solver = """import fake_module
+        from benchopt import BaseObjective
+
+        class Solver(BaseSolver):
+            name = 'dummy'
+            parameters = {'a': [0]}
+        """
+        with temp_benchmark(solvers=solver) as benchmark:
+            msg = "No module named 'fake_module'"
+            with pytest.raises(ModuleNotFoundError, match=msg):
+                run(
+                    f"{benchmark.benchmark_dir} -n 1 -s dummy".split(),
+                    'benchopt', standalone_mode=False
+                )
+            with pytest.raises(ModuleNotFoundError, match=msg):
+                run(
+                    f"{benchmark.benchmark_dir} -n 1 -s dummy[1]".split(),
+                    'benchopt', standalone_mode=False
+                )
+            with pytest.raises(ModuleNotFoundError, match=msg):
+                run(
+                    f"{benchmark.benchmark_dir} -n 1 -s dummy[a=1]".split(),
+                    'benchopt', standalone_mode=False
+                )
+
     @pytest.mark.parametrize('n_jobs', [1, 2])
     def test_valid_call(self, n_jobs):
 
