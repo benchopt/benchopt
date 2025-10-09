@@ -626,7 +626,7 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
         if not isinstance(self.params, dict):
             raise ValueError("`params` should be a dictionary.")
         for key, values in self.params.items():
-            if isinstance(values, Ellipsis):
+            if values is Ellipsis:
                 if key not in ["dataset", "solver"]:
                     raise ValueError(
                         f"... may only be used for 'dataset' or "
