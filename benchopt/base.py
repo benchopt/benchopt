@@ -606,7 +606,21 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
     def get_name(self):
         return self.name.replace(" ", "_")
 
-    def check_params(self):  # TODO add
+    def check(self):
+        self.check_type()
+        self.check_params()
+
+    def check_type(self):
+        if not hasattr(self, 'type'):
+            raise ValueError("Plot should have a `type` attribute.")
+        supported_types = ['scatter']
+        if self.type not in supported_types:
+            raise ValueError(
+                f"Plot type should be one of {' '.join(supported_types)}. "
+                f"Got {self.type}."
+            )
+
+    def check_params(self):
         if not hasattr(self, 'params'):
             self.params = {}
         if not isinstance(self.params, dict):
