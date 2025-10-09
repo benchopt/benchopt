@@ -112,8 +112,6 @@ def benchopt_run(benchmark_name, n=5, r=1, config=None):
 
     benchmark = Benchmark(benchmark_dir)
     with CaptureCmdOutput() as out:
-        pass
-    if True:
         save_file = run_benchmark(
             benchmark_dir, max_runs=n, n_repetitions=r,
             plot_result=False, no_cache=True
