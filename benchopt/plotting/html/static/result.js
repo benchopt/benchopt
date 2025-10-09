@@ -99,8 +99,7 @@ const getChartData = () => {
   } else if (isChart('boxplot')) {
     return getBoxplotData();
   }
-
-  throw new Error('Unknown plot kind.');
+  return getCustomData();
 }
 
 /**
@@ -116,8 +115,7 @@ const getLayout = () => {
   } else if (isChart('boxplot')) {
     return getBoxplotChartLayout();
   }
-
-  throw new Error('Unknown plot kind.');
+  return getCustomChartLayout();
 }
 
 /**
@@ -219,11 +217,82 @@ const getIterationBoxplotData = () => {
   return boxplotData
 }
 
+const getCustomPlotData = () => {
+  let params = getParams();
+  for (let data of window._custom_plots[state().plot_kind]) {
+    let found = true;
+    for (let param of params) {
+      if (state().param !== data.param) {
+        found = false;
+        break;
+      }
+    }
+    if (found) return data;
+  }
+  throw new Error("No custom plot data found for the current state");
+}
+
+// TODO add other types of custom plots
 /**
  * Gives the data formatted for plotlyJS scatter chart.
  *
  * @returns {array}
  */
+const getCustomData = () => {
+  // create a list of object to plot in plotly
+  const curves = [];
+  getCustomPlotData().data.forEach(curveData => {
+    curves.push({
+      type: 'scatter',
+      name: curveData.label,
+      mode: 'lines+markers',
+      line: {
+        color: curveData.color,
+      },
+      marker: {
+        symbol: curveData.marker,
+        size: 10,
+      },
+      legendgroup: curveData.label,
+      hovertemplate: curveData.label + ' <br> (%{x:.1e},%{y:.1e}) <extra></extra>',
+      x: curveData.x,
+      y: curveData.y,
+    });
+
+    if ("q1" in curveData && "q9" in curveData) {
+      curves.push({
+        type: 'scatter',
+        mode: 'lines',
+        showlegend: false,
+        line: {
+          width: 0,
+          color: curveData.color,
+        },
+        legendgroup: curveData.label,
+        hovertemplate: '(%{x:.1e},%{y:.1e}) <extra></extra>',
+        x: curveData.q1,
+        y: curveData.y,
+      }, {
+        type: 'scatter',
+        mode: 'lines',
+        showlegend: false,
+        fill: 'tonextx',
+        line: {
+          width: 0,
+          color: curveData.color,
+        },
+        legendgroup: curveData.label,
+        hovertemplate: '(%{x:.1e},%{y:.1e}) <extra></extra>',
+        x: curveData.q9,
+        y: curveData.y,
+      });
+    }
+  });
+
+  return curves;
+};
+
+
 const getScatterCurves = () => {
   // create a list of object to plot in plotly
   const curves = [];
@@ -564,6 +633,8 @@ window.transformers = {
  * Render sidebar
  */
 const renderSidebar = () => {
+  renderDatasetSelector();
+  renderObjectiveSelector();
   renderObjectiveColumnSelector();
   renderScaleSelector();
   renderXAxisTypeSelector();
@@ -572,14 +643,32 @@ const renderSidebar = () => {
   mapSelectorsToState();
 }
 
+const renderDatasetSelector = () => {
+  if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve', 'bar_chart', 'boxplot'])) {
+    show(document.querySelectorAll("#dataset-form-group"), 'block');
+  } else {
+    hide(document.querySelectorAll("#dataset-form-group"));
+  }
+};
+
+const renderObjectiveSelector = () => {
+  if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve', 'bar_chart', 'boxplot'])) {
+    show(document.querySelectorAll("#objective-form-group"), 'block');
+  } else {
+    hide(document.querySelectorAll("#objective-form-group"));
+  }
+};
+
 /**
  * Render Objective Column selector
  */
 const renderObjectiveColumnSelector = () => {
   if (isChart('boxplot') && state('yaxis_type') === 'time') {
     hide(document.querySelectorAll("#objective-column-form-group"));
-  } else {
+  } else if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve', 'bar_chart'])) {
     show(document.querySelectorAll("#objective-column-form-group"), 'block');
+  } else {
+    hide(document.querySelectorAll("#objective-column-form-group"));
   }
 };
 
@@ -587,10 +676,10 @@ const renderObjectiveColumnSelector = () => {
  * Render Scale selector
  */
 const renderScaleSelector = () => {
-  if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve', 'boxplot'])) {
-    show(document.querySelectorAll("#scale-form-group"), 'block');
-  } else {
+  if (isChart(['bar_chart'])) {
     hide(document.querySelectorAll("#scale-form-group"));
+  } else {
+    show(document.querySelectorAll("#scale-form-group"), 'block');
   }
 
   if (isChart('boxplot')) {
@@ -693,6 +782,17 @@ const data = (solver = null) => {
   return solver ?
     window._data[state().dataset][state().objective][state().objective_column].solvers[solver]:
     window._data[state().dataset][state().objective][state().objective_column]
+}
+
+const getParams = () => {
+  let kind = state().plot_kind;
+  let params = [];
+  Object.keys(state()).forEach(key => {
+    if (key.includes(kind)) {
+      params.push(key);
+    }
+  });
+  return params;
 }
 
 const getSolvers = () => Object.keys(data().solvers);
@@ -911,6 +1011,70 @@ const getBoxplotChartLayout = () => {
     layout.height = window.screen.availHeight - 200;
     layout.dragmode = false;
   }
+
+  return layout;
+};
+
+
+const getCustomChartLayout = () => {
+  let customData = getCustomPlotData();
+
+  const layout = {
+    autosize: !isSmallScreen(),
+    modebar: {
+      orientation: 'v',
+    },
+    height: 700,
+    showlegend: false,
+    legend: {
+      title: {
+        text: 'Solvers',
+      },
+      orientation: 'h',
+      xanchor: 'center',
+      yanchor: 'top',
+      y: -.2,
+      x: .5
+    },
+    xaxis: {
+      type: getScale().xaxis,
+      title: customData.x_label,
+      tickformat: '.1e', // TODO adapt if xaxis is not numeric
+      tickangle: -45,
+      gridcolor: '#ffffff',
+      zeroline : false,
+    },
+    yaxis: {
+      type: getScale().yaxis,
+      title: customData.y_label,
+      tickformat: '.1e',
+      gridcolor: '#ffffff',
+      zeroline : false,
+    },
+    title: `${customData.title}`,
+    plot_bgcolor: '#e5ecf6',
+  };
+
+  if (isSmallScreen()) {
+    layout.width = 900;
+    layout.height = window.screen.availHeight - 200;
+    layout.dragmode = false;
+  }
+
+  if (!isAvailable()) {
+    layout.annotations = [{
+      xref: 'paper',
+      yref: 'paper',
+      x: 0.5,
+      y: 0.5,
+      text: 'Not available',
+      showarrow: false,
+      font: {
+        color: 'black',
+        size: 32,
+      }
+    }];
+  };
 
   return layout;
 };

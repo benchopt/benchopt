@@ -34,8 +34,18 @@
                             </span>
                         </h1>
                     </div>
+                    <div class="mt-8 px-8">
+                        <label for="plot_kind" class="block text-sm font-medium text-white">Chart type</label>
+                        <div class="mt-1 rounded-md shadow-sm">
+                            <select id="plot_kind" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({plot_kind: this.value, scale: (this.value === 'boxplot' || state().plot_kind === 'boxplot' ? 'linear' : state().scale)})">
+                                % for kind in result['kinds']:
+                                <option value="${kind}">${kind}</option>
+                                %endfor
+                            </select>
+                        </div>
+                    </div>
                     <div class="flex-1 flex flex-col">
-                        <div class="mt-10 px-8">
+                        <div id="dataset-form-group" class="mt-8 px-8">
                             <label for="dataset_selector" class="block text-sm font-medium text-white">Dataset:</label>
                             <div class="mt-1 rounded-md shadow-sm">
                                 <select id="dataset_selector" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({dataset: this.value})">
@@ -45,7 +55,7 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="mt-8 px-8">
+                        <div id="objective-form-group" class="mt-8 px-8">
                             <label for="objective_selector" class="block text-sm font-medium text-white">Objective:</label>
                             <div class="mt-1 rounded-md shadow-sm">
                                 <select id="objective_selector" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({objective: this.value})">
@@ -73,16 +83,6 @@
                                 <select id="objective_column" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({objective_column: this.value})">
                                     % for obj_col in result['obj_cols']:
                                     <option value="${obj_col}">${obj_col}</option>
-                                    %endfor
-                                </select>
-                            </div>
-                        </div>
-                        <div class="mt-8 px-8">
-                            <label for="plot_kind" class="block text-sm font-medium text-white">Chart type</label>
-                            <div class="mt-1 rounded-md shadow-sm">
-                                <select id="plot_kind" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({plot_kind: this.value, scale: (this.value === 'boxplot' || state().plot_kind === 'boxplot' ? 'linear' : state().scale)})">
-                                    % for kind in result['kinds']:
-                                    <option value="${kind}">${kind}</option>
                                     %endfor
                                 </select>
                             </div>
@@ -127,6 +127,20 @@
                                 <span class="slider round"></span>
                             </label>
                         </div>
+                        % for custom_kind in result["custom_plot_params"]:
+                            % for custom_param in result["custom_plot_params"][custom_kind]:
+                                <div id="${custom_kind}_${custom_param}_form_group" class="mt-8 px-8">
+                                    <label for="change_${custom_kind}_${custom_param}" class="block text-sm font-medium text-white">${custom_param}</label>
+                                    <div class="mt-1 rounded-md shadow-sm">
+                                        <select id="change_${custom_kind}_${custom_param}" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({${custom_kind}: this.value})">
+                                            % for option in result["custom_plot_params"][custom_kind][custom_param]:
+                                                <option value="${option}">${option}</option>
+                                            % endfor
+                                        </select>
+                                    </div>
+                                </div>
+                            % endfor
+                        % endfor
                         <div class="flex items-center justify-between mt-8 px-8">
                             <a href="#" class="w-full inline-flex items-center justify-center px-4 py-2 space-x-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" onclick="return saveView()">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
@@ -208,9 +222,19 @@
                             </div>
                         </div>
                     </div>
-                    <!-- Mobile menu, show/hide based on menu state. -->
+                    <!-- Mobile menu, show/hide based on menu state. TODO check this -->
                     <div class="hidden" id="mobile-plot-form">
                         <div class="px-2 pt-2 pb-3 space-y-4" onchange="setAllViewsToNonActive()">
+                            <div class="px-8">
+                                <label for="plot_kind" class="block text-sm font-medium text-white">Chart type</label>
+                                <div class="mt-1 rounded-md shadow-sm">
+                                    <select id="plot_kind" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({plot_kind: this.value})">
+                                        % for kind in result['kinds']:
+                                        <option value="${kind}">${kind}</option>
+                                        %endfor
+                                    </select>
+                                </div>
+                            </div>
                             <div class="px-8">
                                 <label for="dataset_selector" class="block text-sm font-medium text-white">Dataset:</label>
                                 <div class="mt-1 rounded-md shadow-sm">
@@ -237,16 +261,6 @@
                                     <select id="objective_column" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({objective_column: this.value})">
                                         % for obj_col in result['obj_cols']:
                                         <option value="${obj_col}">${obj_col}</option>
-                                        %endfor
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="px-8">
-                                <label for="plot_kind" class="block text-sm font-medium text-white">Chart type</label>
-                                <div class="mt-1 rounded-md shadow-sm">
-                                    <select id="plot_kind" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({plot_kind: this.value})">
-                                        % for kind in result['kinds']:
-                                        <option value="${kind}">${kind}</option>
                                         %endfor
                                     </select>
                                 </div>
@@ -498,6 +512,7 @@
         <!-- Manage plot -->
         <script>
             window._data = ${result['json']};
+            window._custom_plots = ${result['json_custom_plots']};
             window.metadata = ${json.dumps(result['metadata'])};
 
             window.addEventListener("load", () => {
@@ -511,7 +526,12 @@
                     'with_quantiles': document.getElementById('change_shades').checked,
                     'xaxis_type':  document.getElementById('change_xaxis_type').value || "Time",
                     'yaxis_type':  document.getElementById('change_xaxis_type').value || "Time",
-                    'hidden_solvers': []
+                    'hidden_solvers': [],
+                    % for custom_kind in result["custom_plot_params"]:
+                        % for custom_param in result["custom_plot_params"][custom_kind]:
+                            '${custom_kind}_${custom_param}': document.getElementById('change_${custom_kind}_${custom_param}').value,
+                        % endfor
+                    % endfor
                 });
                 const plot_configs = document.getElementsByClassName('view');
                 if (plot_configs.length > 0 ){

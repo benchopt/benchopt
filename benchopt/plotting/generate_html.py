@@ -108,12 +108,16 @@ def get_results(fnames, html_root, benchmark, config=None, copy=False):
             objective_names=df['objective_name'].unique(),
             obj_cols=[k for k in df.columns if k.startswith('objective_')
                       and k != 'objective_name'],
-            kinds=config_.get('plots', list(PLOT_KINDS)),
+            kinds=list(PLOT_KINDS) + benchmark.get_custom_plot_names(),
             metadata=get_metadata(df, config_.get('plot_configs', {})),
+            custom_plot_params=benchmark.get_custom_plot_params(df),
         )
 
         # JSON
         result['json'] = json.dumps(shape_datasets_for_html(df))
+        result['json_custom_plots'] = json.dumps(
+            shape_custom_plots_for_html(df, benchmark)
+        )
 
         results.append(result)
 
@@ -161,6 +165,14 @@ def get_metadata(df, plot_configs):
         metadata["obj_description"] = ""
 
     return metadata
+
+
+def shape_custom_plots_for_html(df, benchmark):
+    return {
+        plot.name: plot.get_instance()
+            .get_all_plots(df)
+        for plot in benchmark.get_custom_plots()
+    }
 
 
 def shape_datasets_for_html(df):
@@ -405,7 +417,8 @@ def render_all_results(results, benchmark, home='index.html'):
     for result in results:
         html = Template(
             filename=str(template),
-            input_encoding="utf-8"
+            input_encoding="utf-8",
+            strict_undefined=True
         ).render(
             result=result,
             benchmark=benchmark,

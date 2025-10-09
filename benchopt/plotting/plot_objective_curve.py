@@ -4,7 +4,7 @@ CMAP = plt.get_cmap('tab20')
 COLORS = [CMAP(i) for i in range(CMAP.N)]
 COLORS = COLORS[::2] + COLORS[1::2]
 MARKERS = {i: v for i, v in enumerate(plt.Line2D.markers)}
-
+EPS = 1e-10
 
 solvers_idx = {}
 
@@ -13,8 +13,63 @@ def _remove_prefix(text, prefix):
     return text[len(prefix):] if text.startswith(prefix) else text
 
 
-def plot_objective_curve(df, obj_col='objective_value',
-                         suboptimality=False, relative=False):
+def compute_solvers_objective_curve_data(df, obj_col, suboptimality, relative):
+    """Compute and shape data for MANY solvers to display in objective curve"""
+    df = df.copy()
+    data = {}
+    data["solvers"] = {}
+    solver_names = df['solver_name'].unique()
+
+    dataset_name = df['data_name'].unique()[0]
+    objective_name = df['objective_name'].unique()[0]
+    data["title"] = f"{objective_name}\nData: {dataset_name}"
+
+    y_label = "F(x)"
+    if suboptimality:
+        y_label = "F(x) - F(x*)"
+        c_star = df[obj_col].min() - EPS
+        df.loc[:, obj_col] -= c_star
+
+    if relative:
+        if suboptimality:
+            y_label = "F(x) - F(x*) / F(x0) - F(x*)"
+        else:
+            y_label = "F(x) / F(x0)"
+        max_f_0 = df[df['stop_val'] == 1][obj_col].max()
+        df.loc[:, obj_col] /= max_f_0
+    data["y_label"] = y_label
+
+    for solver_name in solver_names:
+        df_filtered = df[df['solver_name'] == solver_name]
+        data["solvers"][solver_name] = compute_solver_objective_curve_data(
+            df_filtered, obj_col
+        )
+
+    return data
+
+
+def compute_solver_objective_curve_data(df, obj_col, solver_name):
+    curve = df.groupby('stop_val').median(numeric_only=True).to_numpy()
+
+    q1 = df.groupby('stop_val')['time'].quantile(.1).to_numpy()
+    q9 = df.groupby('stop_val')['time'].quantile(.9).to_numpy()
+
+    color, marker = get_solver_style(solver_name, plotly=False)
+
+    return {
+        "x": curve['time'].tolist(),
+        "y": curve[obj_col].tolist(),
+        "q1": q1.tolist(),
+        "q9": q9.tolist(),
+        "color": color,
+        "marker": marker,
+    }
+
+
+def plot_objective_curve(
+    df, obj_col='objective_value',
+    suboptimality=False, relative=False
+):
     """Plot objective curve for a given benchmark and dataset.
 
     Plot the objective value F(x) as a function of the time.
@@ -39,26 +94,9 @@ def plot_objective_curve(df, obj_col='objective_value',
         The rendered figure.
     """
 
-    df = df.copy()
-    solver_names = df['solver_name'].unique()
-    dataset_name = df['data_name'].unique()[0]
-    objective_name = df['objective_name'].unique()[0]
-    title = f"{objective_name}\nData: {dataset_name}"
-    df.query(f"`{obj_col}` not in [inf, -inf]", inplace=True)
-    y_label = "F(x)"
-    if suboptimality:
-        eps = 1e-10
-        y_label = "F(x) - F(x*)"
-        c_star = df[obj_col].min() - eps
-        df.loc[:, obj_col] -= c_star
-
-    if relative:
-        if suboptimality:
-            y_label = "F(x) - F(x*) / F(x0) - F(x*)"
-        else:
-            y_label = "F(x) / F(x0)"
-        max_f_0 = df[df['stop_val'] == 1][obj_col].max()
-        df.loc[:, obj_col] /= max_f_0
+    data = compute_solvers_objective_curve_data(
+        df, obj_col, suboptimality, relative
+    )
 
     fig = plt.figure()
 
@@ -66,35 +104,31 @@ def plot_objective_curve(df, obj_col='objective_value',
         plt.text(0.5, 0.5, "Not Available")
         return fig
 
-    for i, solver_name in enumerate(solver_names):
-        df_ = df[df['solver_name'] == solver_name]
-        curve = df_.groupby('stop_val').median(numeric_only=True)
-
-        # XXX: necessary since numpy 1.24.0 broke matplotolib compat
-        # with pandas. Remove once matplotlib/matplotlib#24773 is solved.
-        q1 = df_.groupby('stop_val')['time'].quantile(.1).to_numpy()
-        q9 = df_.groupby('stop_val')['time'].quantile(.9).to_numpy()
-
-        color, marker = get_solver_style(solver_name, plotly=False)
-        plt.loglog(curve['time'], curve[obj_col], color=color, marker=marker,
-                   label=solver_name, linewidth=3)
-
-        # XXX: ditto from above, remove to_numpy once compat is restored.
-        plt.fill_betweenx(
-            curve[obj_col].to_numpy(), q1, q9, color=color, alpha=.3
+    for solver_name in data["solvers"]:
+        solver_data = data["solvers"][solver_name]
+        plt.loglog(
+            solver_data['x'], solver_data['y'],
+            color=solver_data['color'], marker=solver_data['marker'],
+            label=solver_name, linewidth=3
         )
 
+        if 'q1' in solver_data and 'q9' in solver_data:
+            plt.fill_betweenx(
+                solver_data['y'], solver_data["q1"], solver_data["q9"],
+                color=solver_data['color'], alpha=.3
+            )
+
     if suboptimality and not relative:
-        plt.hlines(eps, df['time'].min(), df['time'].max(), color='k',
+        plt.hlines(EPS, df['time'].min(), df['time'].max(), color='k',
                    linestyle='--')
         plt.xlim(df['time'].min(), df['time'].max())
 
     # Format the plot to be nice
     plt.legend(fontsize=14)
     plt.xlabel("Time [sec]", fontsize=14)
-    plt.ylabel(f"{_remove_prefix(obj_col, 'objective_')}: {y_label}",
+    plt.ylabel(f"{_remove_prefix(obj_col, 'objective_')}: {data['y_label']}",
                fontsize=14)
-    plt.title(title, fontsize=14)
+    plt.title(data["title"], fontsize=14)
     plt.tight_layout()
 
     return fig

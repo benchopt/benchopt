@@ -9,7 +9,7 @@ from pathlib import Path
 from joblib.externals import cloudpickle
 
 from .config import get_setting
-from .base import BaseSolver, BaseDataset
+from .base import BaseSolver, BaseDataset, BasePlot
 
 from .utils.dynamic_modules import _load_class_from_module
 from .utils.parametrized_name_mixin import product_param
@@ -196,6 +196,35 @@ class Benchmark:
             self.get_datasets(), dataset_patterns, name_type='dataset',
             class_only=class_only
         )
+
+    def get_custom_plots(self):
+        return self._list_benchmark_classes(BasePlot)
+
+    def get_custom_plot_names(self):
+        return [
+            plot.name for plot in self.get_custom_plots()
+        ]
+
+    def get_custom_plot_params(self, df):
+        plot_params = {}
+        for plot in self.get_custom_plots():
+            plot_params[plot.name] = {}
+            for param in plot.params:
+                if plot.params[param] is Ellipsis:
+                    if param == "dataset":
+                        plot_params[plot.name][param] = \
+                            df['data_name'].unique().tolist()
+                    elif param == "solver":
+                        plot_params[plot.name][param] = \
+                            df['solver_name'].unique().tolist()
+                else:
+                    plot_params[plot.name][param] = plot.params[param]
+
+        return plot_params
+
+    def check_custom_plots(self):
+        for plot in self.get_custom_plots():
+            plot.check_params()
 
     def _list_benchmark_classes(self, base_class):
         """Load all classes with the same name from a benchmark's subpackage.
