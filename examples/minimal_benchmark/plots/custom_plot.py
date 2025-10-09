@@ -3,6 +3,7 @@ from benchopt import BasePlot
 
 class Plot(BasePlot):
     name = "Custom plot 1"
+    type = "scatter"
     params = {
         "dataset": ...,  # Will fetch the dataset names from the df
         "color": ["blue", "red"]

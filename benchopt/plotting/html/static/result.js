@@ -92,14 +92,16 @@ const renderPlot = () => {
  * @returns {Array|*[]}
  */
 const getChartData = () => {
-  if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve'])) {
+  if (isCustomPlot()) {
+    return getCustomData();
+  } else if (isChart('scatter')) {
     return getScatterCurves();
   } else if (isChart('bar_chart')) {
     return getBarData();
   } else if (isChart('boxplot')) {
     return getBoxplotData();
   }
-  return getCustomData();
+  throw new Error("Unknown plot kind : " + state().plot_kind);
 }
 
 /**
@@ -108,14 +110,16 @@ const getChartData = () => {
  * @returns Object
  */
 const getLayout = () => {
-  if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve'])) {
+  if (isCustomPlot()) {
+    return getCustomChartLayout();
+  } else if (isChart('scatter')) {
     return getScatterChartLayout();
   } else if (isChart('bar_chart')) {
     return getBarChartLayout();
   } else if (isChart('boxplot')) {
     return getBoxplotChartLayout();
   }
-  return getCustomChartLayout();
+  throw new Error("Unknown plot kind : " + state().plot_kind);
 }
 
 /**
@@ -645,18 +649,18 @@ const renderSidebar = () => {
 }
 
 const renderDatasetSelector = () => {
-  if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve', 'bar_chart', 'boxplot'])) {
-    show(document.querySelectorAll("#dataset-form-group"), 'block');
-  } else {
+  if (isCustomPlot()) {
     hide(document.querySelectorAll("#dataset-form-group"));
+  } else {
+    show(document.querySelectorAll("#dataset-form-group"), 'block');
   }
 };
 
 const renderObjectiveSelector = () => {
-  if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve', 'bar_chart', 'boxplot'])) {
-    show(document.querySelectorAll("#objective-form-group"), 'block');
-  } else {
+  if (isCustomPlot()) {
     hide(document.querySelectorAll("#objective-form-group"));
+  } else {
+    show(document.querySelectorAll("#objective-form-group"), 'block');
   }
 };
 
@@ -664,12 +668,12 @@ const renderObjectiveSelector = () => {
  * Render Objective Column selector
  */
 const renderObjectiveColumnSelector = () => {
-  if (isChart('boxplot') && state('yaxis_type') === 'time') {
+  if (isCustomPlot()) {
     hide(document.querySelectorAll("#objective-column-form-group"));
-  } else if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve', 'bar_chart'])) {
-    show(document.querySelectorAll("#objective-column-form-group"), 'block');
+  } else if (isChart('boxplot') && state('yaxis_type') === 'time') {
+    hide(document.querySelectorAll("#objective-column-form-group"));
   } else {
-    hide(document.querySelectorAll("#objective-column-form-group"));
+    show(document.querySelectorAll("#objective-column-form-group"), 'block');
   }
 };
 
@@ -677,7 +681,7 @@ const renderObjectiveColumnSelector = () => {
  * Render Scale selector
  */
 const renderScaleSelector = () => {
-  if (isChart(['bar_chart'])) {
+  if (isChart('bar_chart')) {
     hide(document.querySelectorAll("#scale-form-group"));
   } else {
     show(document.querySelectorAll("#scale-form-group"), 'block');
@@ -696,7 +700,9 @@ const renderScaleSelector = () => {
  * Render WithQuantile toggle
  */
 const renderWithQuantilesToggle = () => {
-  if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve'])) {
+  if (isCustomPlot()) {
+    hide(document.querySelectorAll("#change-shades-form-group"));
+  } else if (isChart('scatter')) {
     show(document.querySelectorAll("#change-shades-form-group"), 'flex');
   } else {
     hide(document.querySelectorAll("#change-shades-form-group"));
@@ -707,7 +713,10 @@ const renderWithQuantilesToggle = () => {
  * Render xaxis type selector
  */
 const renderXAxisTypeSelector = () => {
-  if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve', 'boxplot'])) {
+  if (isCustomPlot()) {
+    hide(document.querySelectorAll("#xaxis-type-form-group"));
+    return;
+  } else if (isChart(['scatter', 'boxplot'])) {
     show(document.querySelectorAll("#xaxis-type-form-group"), 'block');
   } else {
     hide(document.querySelectorAll("#xaxis-type-form-group"));
@@ -733,7 +742,7 @@ const renderXAxisTypeSelector = () => {
   // It's the same thing if we change to curve plot.
   if (isChart('boxplot') && state().xaxis_type === 'Time') {
     setState({xaxis_type: 'Solver'});
-  } else if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve']) && state().xaxis_type === 'Solver') {
+  } else if (isChart(['scatter']) && state().xaxis_type === 'Solver') {
     setState({xaxis_type: 'Time'});
   }
 };
@@ -807,12 +816,25 @@ const getParams = () => {
 
 const getSolvers = () => Object.keys(data().solvers);
 
+const isCustomPlot = () => {
+  let non_custom_kinds = ['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve', 'bar_chart', 'boxplot'];
+  return !non_custom_kinds.includes(state().plot_kind);
+}
+
 const isChart = chart => {
   if (typeof chart === 'string' || chart instanceof String) {
     chart = [chart]
   }
 
-  return chart.includes(state().plot_kind);
+  let plot_kind = state().plot_kind;
+  if (["objective_curve", "suboptimality_curve", "relative_suboptimality_curve"].includes(plot_kind)) {
+    plot_kind = 'scatter';
+  }
+  else if (!["bar_chart", "boxplot"].includes(plot_kind)) {
+    let custom_data = getCustomPlotData();
+    plot_kind = custom_data.type;
+  }
+  return chart.includes(plot_kind);
 }
 
 const isVisible = solver => !state().hidden_solvers.includes(solver);
@@ -1218,8 +1240,7 @@ const handleSolverDoubleClick = solver => {
  */
 const renderLegend = () => {
   const legendContainer = document.getElementById('legend_container')
-
-  if (!isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve'])) {
+  if (!isChart('scatter') || isCustomPlot()) {
     hide(legendContainer);
     return;
   } else {
