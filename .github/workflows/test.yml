@@ -127,8 +127,28 @@ jobs:
       - name: Install benchopt and its dependencies
         run: pip install -e .
 
-      - name: Run benchopt without conda
+      - name: Run benchopt run without conda
         run: benchopt run examples/minimal_benchmark -r 1 -n 10 --no-plot
+
+  test_no_pytest:
+    name: Test benchopt test without pytest installed
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+      - name: Setup Conda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          activate-environment: 'testcondaenv'
+          python-version: 3.12
+          # Use miniforge to only get conda-forge as default channel.
+          miniforge-version: latest
+
+      - name: Install benchopt and its dependencies
+        run: pip install -e .
+
+      - name: Run benchopt test without pytest
+        run: benchopt test examples/minimal_benchmark --env-name test_benchopt --skip-install
 
   test_benchopt_reqs:
     name: Test benchopt requirements detection
