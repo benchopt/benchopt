@@ -627,16 +627,10 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
             raise ValueError("`params` should be a dictionary.")
         for key, values in self.params.items():
             if values is Ellipsis:
-                if key not in ["dataset", "solver"]:
-                    raise ValueError(
-                        f"... may only be used for 'dataset' or "
-                        f"'solver' parameter. "
-                        f"Found {key}."
-                    )
                 continue
-            elif not isinstance(values, list):
+            if not isinstance(values, list):
                 raise ValueError(
-                    f"The values of params should be a list. "
+                    f"The values of params should be a list or ... . "
                     f"Got {values} for key {key}."
                 )
 
@@ -654,10 +648,10 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
         plot_kwargs.remove('df')
 
         # Make sure all params are in the plot signature
-        if not keys.issubset(plot_kwargs):
+        if not keys == plot_kwargs:
             raise ValueError(
-                f"The keys of params {keys} should be in the signature of "
-                f"`plot` {plot_kwargs}."
+                f"The keys of params {keys} should match the signature of "
+                f"`plot` function, {plot_kwargs}."
             )
 
     def get_all_plots(self, df):
