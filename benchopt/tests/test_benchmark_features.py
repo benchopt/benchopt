@@ -558,3 +558,35 @@ def test_pre_run_hook():
 
         # Make sure warmup is called exactly once
         out.check_output("3 passed, 1 skipped, 5 deselected", repetition=1)
+
+
+def test_custom_plot(no_debug_log):
+    plot = """from benchopt import BasePlot
+
+    class Plot(BasePlot):
+        name = "Custom plot 1"
+        type = "scatter"
+        params = {}
+
+        def plot(self, df):
+            return {
+                "title": "Example plot",
+                "x_label": "custom time",
+                "y_label": "custom objective value",
+                "data": [{
+                    "x": [],
+                    "y": [],
+                    "color": "blue",
+                    "marker": "circle",
+                    "label": "label",
+                }]
+            }
+    """
+
+    with temp_benchmark(plot=plot) as bench:
+        with CaptureCmdOutput() as out:
+            run([str(bench.benchmark_dir),
+                 *'-n 1 -r 1 --no-display'
+                 .split()], standalone_mode=False)
+
+        out.check_output("Rendering benchmark results", repetition=1)

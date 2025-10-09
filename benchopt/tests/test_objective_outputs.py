@@ -175,20 +175,3 @@ def test_objective_multiple_points(no_debug_log):
     assert len(df) == 6
     assert df['objective_value'].unique().tolist() == [0, 1, 2]
     assert df['idx_rep'].unique().tolist() == [0, 1]
-
-
-def test_plot(no_debug_log):
-    plot = """from benchopt import BasePlot
-
-        class Plot(BasePlot):
-            name = "Custom plot 1"
-            type = "scatter"
-    """
-
-    with temp_benchmark(plot=plot, solvers=MINIMAL_SOLVER) as bench:
-        with CaptureCmdOutput() as out:
-            run([str(bench.benchmark_dir),
-                 *'-s test-solver -d test-dataset -n 1 -r 1 --no-display'
-                 .split()], standalone_mode=False)
-
-        assert out.result_files[0].endswith('.csv')
