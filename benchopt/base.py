@@ -664,6 +664,8 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
                     values.append(df['data_name'].unique().tolist())
                 elif key == "solver":
                     values.append(df['solver_name'].unique().tolist())
+                else:
+                    values.append(df[key].unique().tolist())
             else:
                 values.append(self.params[key])
 
