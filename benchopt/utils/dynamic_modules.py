@@ -1,5 +1,6 @@
 """Utilities to load classes and module from filenames and class names.
 """
+from abc import ABCMeta
 import ast
 import sys
 import hashlib
@@ -26,6 +27,16 @@ def _unskip_import():
     """Helper to reenable imports in tests."""
     global SKIP_IMPORT
     SKIP_IMPORT = False
+
+
+class FailedImport(ABCMeta):
+    """MetaClass for fake classes mimicking components that cannot be imported.
+
+    This class should be used as a metaclass so that the class type can be
+    checked and to have an informative representation.
+    """
+    def __repr__(cls):
+        return f"<FailedImport: {cls.cls_name}({cls.name}):{cls.exc}>"
 
 
 def _get_module_from_file(module_filename, benchmark_dir=None):
@@ -96,11 +107,13 @@ def _load_class_from_module(benchmark_dir, module_filename, class_name):
             Solver=BaseSolver, Dataset=BaseDataset, Objective=BaseObjective
         )[class_name]
 
-        class FailedImport(base_cls, ParametrizedNameMixin, DependenciesMixin):
+        class klass(base_cls, ParametrizedNameMixin, DependenciesMixin,
+                    metaclass=FailedImport):
             "Object for the class list that raises error if used."
 
             _set_cls_attr_from_ast(module_filename, class_name, locals())
             exc = e
+            cls_name = class_name
 
             @classmethod
             def is_installed(cls, env_name=None, raise_on_not_installed=False,
@@ -121,8 +134,6 @@ def _load_class_from_module(benchmark_dir, module_filename, class_name):
                         f"{tb_to_print}"
                     )
                 return False
-
-        klass = FailedImport
 
     # Store the info to easily reload the class and check it is installed
     klass._module_filename = module_filename.resolve()
