@@ -633,6 +633,7 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
                         f"'solver' parameter. "
                         f"Found {key}."
                     )
+                continue
             elif not isinstance(values, list):
                 raise ValueError(
                     f"The values of params should be a list. "
@@ -650,7 +651,7 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
             name for name, _ in
             inspect.signature(self.plot).parameters.items()
         ])
-        keys.remove('df')
+        plot_kwargs.remove('df')
 
         # Make sure all params are in the plot signature
         if not keys.issubset(plot_kwargs):
