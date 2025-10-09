@@ -159,7 +159,6 @@ def get_metadata(df, plot_configs):
         metadata["obj_description"] = obj_description
     except KeyError:
         metadata["obj_description"] = ""
-    print(metadata)
 
     return metadata
 
