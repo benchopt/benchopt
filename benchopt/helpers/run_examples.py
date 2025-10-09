@@ -75,7 +75,8 @@ function setup_{self.uid}(){{
     // Replace the command by the equivalent CLI call
     var cmd = document.getElementById("cmd-{self.uid}");
     var code_elem = cmd.parentElement.previousElementSibling;
-    code_elem.firstChild.firstChild.innerHTML = cmd.children[0].children[0].innerHTML;
+    cmd_html = cmd.children[0].children[0].innerHTML;
+    code_elem.firstChild.firstChild.innerHTML = cmd_html;
     cmd.setAttribute("style", "display: none;");
 
 }}
