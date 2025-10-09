@@ -222,7 +222,7 @@ const getCustomPlotData = () => {
   for (let data of window._custom_plots[state().plot_kind]) {
     let found = true;
     for (let param of params) {
-      if (state().param !== data.param) {
+      if (state()[param] !== data[param]) {
         found = false;
         break;
       }

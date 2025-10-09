@@ -5,9 +5,10 @@ class Plot(BasePlot):
     name = "Custom plot 1"
     params = {
         "dataset": ...,  # Will fetch the dataset names from the df
+        "color": ["blue", "red"]
     }
 
-    def plot(self, df, dataset):
+    def plot(self, df, dataset, color):
         df = df[(df['data_name'] == dataset)]
         data = [
             {
@@ -15,7 +16,7 @@ class Plot(BasePlot):
                 "y": (
                     df[(df['solver_name'] == solver)]
                     ["objective_value"].values.tolist()),
-                "color": "blue",
+                "color": color,
                 "marker": "circle",
                 "label": solver,
             }
