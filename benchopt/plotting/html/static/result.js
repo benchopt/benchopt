@@ -641,6 +641,7 @@ const renderSidebar = () => {
   renderYAxisTypeSelector();
   renderWithQuantilesToggle();
   mapSelectorsToState();
+  renderCustomParams();
 }
 
 const renderDatasetSelector = () => {
@@ -747,6 +748,15 @@ const renderYAxisTypeSelector = () => {
     hide(document.querySelectorAll("#yaxis-type-form-group"));
   }
 };
+
+const renderCustomParams = () => {
+  hide(document.querySelectorAll(`[id$='-custom-params-container']`));
+  let non_custom_kinds = ['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve', 'bar_chart', 'boxplot'];
+  if (!non_custom_kinds.includes(state().plot_kind)) {
+    show(document.querySelectorAll(`#${state().plot_kind}-custom-params-container`), 'block');
+  }
+}
+
 
 const xAxisTypeSelectors = () => {
   return document.querySelectorAll("#change_xaxis_type, #change_xaxis_type_mobile");

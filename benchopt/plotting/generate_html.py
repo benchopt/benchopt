@@ -169,7 +169,7 @@ def get_metadata(df, plot_configs):
 
 def shape_custom_plots_for_html(df, benchmark):
     return {
-        plot.name: plot.get_instance()
+        plot.get_name(): plot.get_instance()
             .get_all_plots(df)
         for plot in benchmark.get_custom_plots()
     }

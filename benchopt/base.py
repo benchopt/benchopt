@@ -603,7 +603,10 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
     def plot(self, df, **kwargs):
         ...
 
-    def check_params(self):
+    def get_name(self):
+        return self.name.replace(" ", "_")
+
+    def check_params(self):  # TODO add
         if not hasattr(self, 'params'):
             self.params = {}
         if not isinstance(self.params, dict):
@@ -664,7 +667,7 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
         for kwargs in combinations:
             data = self.plot(df, **kwargs)
             for key in kwargs:
-                data[self.name + '_' + key] = kwargs[key]
+                data[self.get_name() + '_' + key] = kwargs[key]
             plots.append(data)
 
         return plots

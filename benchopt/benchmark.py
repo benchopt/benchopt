@@ -198,27 +198,29 @@ class Benchmark:
         )
 
     def get_custom_plots(self):
-        return self._list_benchmark_classes(BasePlot)
+        return [plot.get_instance()
+                for plot in self._list_benchmark_classes(BasePlot)]
 
     def get_custom_plot_names(self):
         return [
-            plot.name for plot in self.get_custom_plots()
+            plot.get_name() for plot in self.get_custom_plots()
         ]
 
     def get_custom_plot_params(self, df):
         plot_params = {}
         for plot in self.get_custom_plots():
-            plot_params[plot.name] = {}
+            plot_name = plot.get_name()
+            plot_params[plot_name] = {}
             for param in plot.params:
                 if plot.params[param] is Ellipsis:
                     if param == "dataset":
-                        plot_params[plot.name][param] = \
+                        plot_params[plot_name][param] = \
                             df['data_name'].unique().tolist()
                     elif param == "solver":
-                        plot_params[plot.name][param] = \
+                        plot_params[plot_name][param] = \
                             df['solver_name'].unique().tolist()
                 else:
-                    plot_params[plot.name][param] = plot.params[param]
+                    plot_params[plot_name][param] = plot.params[param]
 
         return plot_params
 
