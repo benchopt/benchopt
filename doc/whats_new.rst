@@ -32,6 +32,9 @@ API
 FIX
 ---
 
+- Fix parsing of the parameters when a class is not installed.
+  By `Thomas Moreau`_ (:gh:`844`)
+
 - Fix running ``benchopt test`` when ``pytest`` is not installed
   in the conda env. By `Thomas Moreau`_ (:gh:`838`)
 
