@@ -12,7 +12,9 @@ class Plot(BasePlot):
         data = [
             {
                 "x": df["time"].values.tolist(),
-                "y": df[(df['solver_name'] == solver)]["objective_value"].values.tolist(),
+                "y": (
+                    df[(df['solver_name'] == solver)]
+                    ["objective_value"].values.tolist()),
                 "color": "blue",
                 "marker": "circle",
                 "label": solver,

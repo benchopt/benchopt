@@ -42,7 +42,7 @@ def compute_solvers_objective_curve_data(df, obj_col, suboptimality, relative):
     for solver_name in solver_names:
         df_filtered = df[df['solver_name'] == solver_name]
         data["solvers"][solver_name] = compute_solver_objective_curve_data(
-            df_filtered, obj_col
+            df_filtered, obj_col, solver_name
         )
 
     return data
