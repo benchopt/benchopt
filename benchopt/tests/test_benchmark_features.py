@@ -596,11 +596,11 @@ def test_custom_plot_errors(no_debug_log):
     plot = """from benchopt import BasePlot
 
     class Plot(BasePlot):
-        name = "Custom plot 1"
-        type = "scatter"
-        title = "Example plot"
-        xlabel = "custom time"
-        ylabel = "custom objective value"
+        name = 'Custom plot 1'
+        type = 'scatter'
+        title = 'Example plot'
+        xlabel = 'custom time'
+        ylabel = 'custom objective value'
         params = {}
 
         def plot(self, df):

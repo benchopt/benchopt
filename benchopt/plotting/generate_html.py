@@ -239,6 +239,10 @@ def shape_solvers_for_html(df, objective_column):
         if len(df_filtered) == 0:
             continue
 
+        if not pd.api.types.is_numeric_dtype(df_filtered[objective_column]):
+            # Non-numeric values, skipping this column
+            return None
+
         # to preserve support of previous benchopt version
         # where 'sampling_strategy' wasn't saved in solver meta
         if "sampling_strategy" in df_filtered:
