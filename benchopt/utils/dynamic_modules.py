@@ -91,9 +91,10 @@ def _load_class_from_module(benchmark_dir, module_filename, class_name):
 
         # avoid circular import
         from .parametrized_name_mixin import ParametrizedNameMixin
-        from ..base import BaseSolver, BaseDataset, BaseObjective
+        from ..base import BaseSolver, BaseDataset, BaseObjective, BasePlot
         base_cls = dict(
-            Solver=BaseSolver, Dataset=BaseDataset, Objective=BaseObjective
+            Solver=BaseSolver, Dataset=BaseDataset,
+            Objective=BaseObjective, Plot=BasePlot
         )[class_name]
 
         class FailedImport(base_cls, ParametrizedNameMixin, DependenciesMixin):

@@ -566,21 +566,21 @@ def test_custom_plot(no_debug_log):
     class Plot(BasePlot):
         name = "Custom plot 1"
         type = "scatter"
+        title = "Example plot"
+        xlabel = "custom time"
+        ylabel = "custom objective value"
         params = {}
 
         def plot(self, df):
-            return {
-                "title": "Example plot",
-                "x_label": "custom time",
-                "y_label": "custom objective value",
-                "data": [{
+            return [
+                {
                     "x": [],
                     "y": [],
                     "color": "blue",
                     "marker": "circle",
                     "label": "label",
-                }]
-            }
+                }
+            ]
     """
 
     with temp_benchmark(plot=plot) as bench:
@@ -597,22 +597,22 @@ def test_custom_plot_errors(no_debug_log):
 
     class Plot(BasePlot):
         name = "Custom plot 1"
-        type = 'scatter'
+        type = "scatter"
+        title = "Example plot"
+        xlabel = "custom time"
+        ylabel = "custom objective value"
         params = {}
 
         def plot(self, df):
-            return {
-                "title": "Example plot",
-                "x_label": "custom time",
-                "y_label": "custom objective value",
-                "data": [{
+            return [
+                {
                     "x": [],
                     "y": [],
-                    'color': 'blue',
+                    "color": "blue",
                     "marker": "circle",
                     "label": "label",
-                }]
-            }
+                }
+            ]
     """
 
     error_plot = plot.replace("type = 'scatter'", "")
