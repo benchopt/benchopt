@@ -558,3 +558,103 @@ def test_pre_run_hook():
 
         # Make sure warmup is called exactly once
         out.check_output("3 passed, 1 skipped, 5 deselected", repetition=1)
+
+
+def test_custom_plot(no_debug_log):
+    plot = """from benchopt import BasePlot
+
+    class Plot(BasePlot):
+        name = "Custom plot 1"
+        type = "scatter"
+        title = "Example plot"
+        xlabel = "custom time"
+        ylabel = "custom objective value"
+        params = {}
+
+        def plot(self, df):
+            return [
+                {
+                    "x": [],
+                    "y": [],
+                    "color": "blue",
+                    "marker": "circle",
+                    "label": "label",
+                }
+            ]
+    """
+
+    with temp_benchmark(plot=plot) as bench:
+        with CaptureCmdOutput() as out:
+            run([str(bench.benchmark_dir),
+                 *'-n 1 -r 1 --no-display'
+                 .split()], standalone_mode=False)
+
+        out.check_output("Rendering benchmark results", repetition=1)
+
+
+def test_custom_plot_errors(no_debug_log):
+    plot = """from benchopt import BasePlot
+
+    class Plot(BasePlot):
+        name = 'Custom plot 1'
+        type = 'scatter'
+        title = 'Example plot'
+        xlabel = 'custom time'
+        ylabel = 'custom objective value'
+        params = {}
+
+        def plot(self, df):
+            return [
+                {
+                    "x": [],
+                    "y": [],
+                    "color": "blue",
+                    "marker": "circle",
+                    "label": "label",
+                }
+            ]
+    """
+
+    error_plot = plot.replace("type = 'scatter'", "")
+    with pytest.raises(ValueError, match="Plot should have a"):
+        with temp_benchmark(plot=error_plot) as bench:
+            run([str(bench.benchmark_dir),
+                 *'-n 1 -r 1 --no-display'
+                 .split()], standalone_mode=False)
+
+    error_plot = plot.replace("type = 'scatter'", "type = 'curving'")
+    with pytest.raises(ValueError, match="Plot type should be one of"):
+        with temp_benchmark(plot=error_plot) as bench:
+            run([str(bench.benchmark_dir),
+                 *'-n 1 -r 1 --no-display'
+                 .split()], standalone_mode=False)
+
+    error_plot = plot.replace("params = {}", "params = []")
+    with pytest.raises(ValueError, match="`params` should be a dictionary."):
+        with temp_benchmark(plot=error_plot) as bench:
+            run([str(bench.benchmark_dir),
+                 *'-n 1 -r 1 --no-display'
+                 .split()], standalone_mode=False)
+
+    error_plot = plot.replace("params = {}", "params = {'color': 'blue'}")
+    with pytest.raises(ValueError,
+                       match="The values of params should be a list"):
+        with temp_benchmark(plot=error_plot) as bench:
+            run([str(bench.benchmark_dir),
+                 *'-n 1 -r 1 --no-display'
+                 .split()], standalone_mode=False)
+
+    error_plot = plot.replace("params = {}", "params = {'color': []}")
+    with pytest.raises(ValueError,
+                       match="The values of params should be non empty"):
+        with temp_benchmark(plot=error_plot) as bench:
+            run([str(bench.benchmark_dir),
+                 *'-n 1 -r 1 --no-display'
+                 .split()], standalone_mode=False)
+
+    error_plot = plot.replace("params = {}", "params = {'color': ['blue']}")
+    with pytest.raises(ValueError, match="should match the signature of"):
+        with temp_benchmark(plot=error_plot) as bench:
+            run([str(bench.benchmark_dir),
+                 *'-n 1 -r 1 --no-display'
+                 .split()], standalone_mode=False)

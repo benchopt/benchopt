@@ -1,4 +1,6 @@
 from abc import ABC, abstractmethod
+import itertools
+import inspect
 
 from .callback import _Callback
 from .stopping_criterion import SingleRunCriterion
@@ -592,3 +594,96 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
         cv_fold = next(self._cv)
         split_ = getattr(self, "split", self._default_split)
         return split_(cv_fold, *arrays)
+
+
+class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
+    _base_class_name = 'Plot'
+
+    @abstractmethod
+    def plot(self, df, **kwargs):
+        ...
+
+    def get_name(self):
+        return self.name.replace(" ", "_")
+
+    def check(self):
+        self.check_type()
+        self.check_params()
+
+    def check_type(self):
+        if not hasattr(self, 'type'):
+            raise ValueError("Plot should have a `type` attribute.")
+        supported_types = ['scatter']
+        if self.type not in supported_types:
+            raise ValueError(
+                f"Plot type should be one of {' '.join(supported_types)}. "
+                f"Got {self.type}."
+            )
+
+    def check_params(self):
+        if not hasattr(self, 'params'):
+            self.params = {}
+        if not isinstance(self.params, dict):
+            raise ValueError("`params` should be a dictionary.")
+        for key, values in self.params.items():
+            if values is Ellipsis:
+                continue
+            if not isinstance(values, list):
+                raise ValueError(
+                    f"The values of params should be a list or ... . "
+                    f"Got {values} for key {key}."
+                )
+
+            if len(values) == 0:
+                raise ValueError(
+                    f"The values of params should be non empty. "
+                    f"Got {values} for key {key}."
+                )
+
+        keys = set(self.params.keys())
+        plot_kwargs = set([
+            name for name, _ in
+            inspect.signature(self.plot).parameters.items()
+        ])
+        plot_kwargs.remove('df')
+
+        # Make sure all params are in the plot signature
+        if not keys == plot_kwargs:
+            raise ValueError(
+                f"The keys of params {keys} should match the signature of "
+                f"`plot` function, {plot_kwargs}."
+            )
+
+    def get_all_plots(self, df):
+        # Get all combinations
+        keys = self.params.keys()
+        values = []
+        for key in keys:
+            if self.params[key] is Ellipsis:
+                if key == "dataset":
+                    values.append(df['data_name'].unique().tolist())
+                elif key == "solver":
+                    values.append(df['solver_name'].unique().tolist())
+                else:
+                    values.append(df[key].unique().tolist())
+            else:
+                values.append(self.params[key])
+
+        combinations = [
+            dict(zip(keys, v))
+            for v in itertools.product(*values)
+        ]
+
+        plots = []
+        for kwargs in combinations:
+            data = {}
+            data["data"] = self.plot(df, **kwargs)
+            data["type"] = self.type
+            data["title"] = self.title
+            data["xlabel"] = self.xlabel
+            data["ylabel"] = self.ylabel
+            for key in kwargs:
+                data[self.get_name() + '_' + key] = kwargs[key]
+            plots.append(data)
+
+        return plots
