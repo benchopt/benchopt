@@ -1,6 +1,7 @@
 import time
 import inspect
 import pickle
+import hashlib
 
 from datetime import datetime
 
@@ -25,6 +26,16 @@ class FailedRun(RuntimeError):
     def __init__(self, status):
         super().__init__()
         self.status = status
+
+
+def seed_run(objective, dataset, solver, repetition, base_seed):
+    data = f"{base_seed}_{repetition}"
+    data += f"_{str(objective)}_{str(dataset)}_{str(solver)}"
+    digest = hashlib.sha256(data.encode()).hexdigest()
+    seed = int(digest, 16) % (2**32 - 1)
+    objective.seed = seed
+    dataset.seed = seed
+    solver.seed = seed
 
 
 ##################################
@@ -283,6 +294,9 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
             stopping_criterion=stopping_criterion, force=force,
             terminal=terminal, pdb=pdb
         )
+
+        seed_run(objective, dataset, solver, rep, benchmark.seed)
+
         try:
             curve, status = run_one_to_cvg_cached(
                 **args_run_one_to_cvg
