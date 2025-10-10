@@ -107,7 +107,9 @@ def get_results(fnames, html_root, benchmark, config=None, copy=False):
             objective_names=df['objective_name'].unique(),
             obj_cols=[k for k in df.columns if k.startswith('objective_')
                       and k != 'objective_name'],
-            kinds=list(PLOT_KINDS) + benchmark.get_custom_plot_names(),
+            kinds=config_.get(
+                'plots',
+                list(PLOT_KINDS) + benchmark.get_custom_plot_names()),
             metadata=get_metadata(df, config_.get('plot_configs', {})),
             custom_plot_params=benchmark.get_custom_plot_params(df),
         )
