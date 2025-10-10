@@ -336,7 +336,7 @@ class TestRunCmd:
             # Check that the computation caching is working properly.
             run_cmd = (
                 f"{bench.benchmark_dir} -d test-dataset -s test-solver "
-                f"-n 1 -r {n_rep} --no-plot"
+                f"-n 1 -r {n_rep} --no-plot --seed 0"
             ).split()
 
             # Make a first run that should be put in cache
@@ -412,7 +412,7 @@ class TestRunCmd:
             with CaptureCmdOutput() as out:
                 run([str(bench.benchmark_dir),
                     *'-d test-dataset -n 1 -r 1 --no-plot'.split(),
-                    *'-s test-solver'.split()],
+                    *'-s test-solver --seed 0'.split()],
                     'benchopt', standalone_mode=False)
 
             out.check_output('#RUN0', repetition=2)
@@ -422,7 +422,7 @@ class TestRunCmd:
                 run([
                     str(bench.benchmark_dir),
                     *'-d test-dataset -n 1 -r 1 --no-plot --collect'.split(),
-                    *'-s test-solver[param=[0,1]]'.split()
+                    *'-s test-solver[param=[0,1]] --seed 0'.split()
                 ], 'benchopt', standalone_mode=False)
 
             # check that no solver where run
