@@ -48,19 +48,21 @@ def compute_solvers_objective_curve_data(df, obj_col, suboptimality, relative):
     return data
 
 
-def compute_solver_objective_curve_data(df, obj_col, solver_name):
+def compute_solver_objective_curve_data(
+    df, obj_col, solver_name, plotly=False
+):
     curve = df.groupby('stop_val').median(numeric_only=True)
-
     q1 = df.groupby('stop_val')['time'].quantile(.1)
     q9 = df.groupby('stop_val')['time'].quantile(.9)
 
-    color, marker = get_solver_style(solver_name, plotly=False)
+    color, marker = get_solver_style(solver_name, plotly=plotly)
 
     return {
         "x": curve['time'].tolist(),
         "y": curve[obj_col].tolist(),
         "q1": q1.tolist(),
         "q9": q9.tolist(),
+        "stop_val": df.index.tolist(),
         "color": color,
         "marker": marker,
     }

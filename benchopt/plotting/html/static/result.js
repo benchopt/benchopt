@@ -320,10 +320,10 @@ const getScatterCurves = () => {
       name: solver,
       mode: 'lines+markers',
       line: {
-        color: data(solver).color,
+        color: data(solver).scatter.color,
       },
       marker: {
-        symbol: data(solver).marker,
+        symbol: data(solver).scatter.marker,
         size: 10,
       },
       legendgroup: solver,
@@ -1253,8 +1253,8 @@ const renderLegend = () => {
   const solversDescription = window.metadata["solvers_description"];
 
   getSolvers().forEach(solver => {
-    const color = data().solvers[solver].color;
-    const symbolNumber = data().solvers[solver].marker;
+    const color = data().solvers[solver].scatter.color;
+    const symbolNumber = data().solvers[solver].scatter.marker;
 
     let legendItem = createLegendItem(solver, color, symbolNumber);
 

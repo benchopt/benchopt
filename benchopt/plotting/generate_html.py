@@ -13,9 +13,9 @@ from ..utils.parquet import get_metadata as get_parquet_metadata
 from benchopt.benchmark import Benchmark
 from .plot_bar_chart import compute_bar_chart_data  # noqa: F401
 from .plot_boxplot import compute_solver_boxplot_data
-from .plot_objective_curve import compute_quantiles   # noqa: F401
 from .plot_objective_curve import get_solver_style
 from .plot_objective_curve import reset_solver_styles_idx
+from .plot_objective_curve import compute_solver_objective_curve_data
 
 ROOT = Path(__file__).parent / "html"
 DEFAULT_HTML_DIR = Path("html")
@@ -238,19 +238,6 @@ def shape_solvers_for_html(df, objective_column):
         if len(df_filtered) == 0:
             continue
 
-        # compute median of 'time' and objective_column
-        fields = ["time", objective_column]
-        groupby_stop_val_median = (
-            df_filtered.groupby('stop_val')[fields]
-            .median(numeric_only=True)
-        )
-        if objective_column not in groupby_stop_val_median:
-            # Non-numeric values, skipping this column
-            return None
-
-        q1, q9 = compute_quantiles(df_filtered)
-
-        color, marker = get_solver_style(solver)
         # to preserve support of previous benchopt version
         # where 'sampling_strategy' wasn't saved in solver meta
         if "sampling_strategy" in df_filtered:
@@ -274,19 +261,13 @@ def shape_solvers_for_html(df, objective_column):
         sampling_strategy = sampling_strategy[0]
 
         solver_data[solver] = {
-            'scatter': {
-                'x': groupby_stop_val_median['time'].tolist(),
-                'y': groupby_stop_val_median[objective_column].tolist(),
-                'stop_val': groupby_stop_val_median.index.tolist(),
-                'q1': q1.tolist(),
-                'q9': q9.tolist(),
-            },
+            'scatter': compute_solver_objective_curve_data(
+                df_filtered, objective_column, solver, plotly=True
+            ),
             'bar': compute_bar_chart_data(df, objective_column, solver),
             'boxplot': compute_solver_boxplot_data(
                 df_filtered, objective_column
             ),
-            'color': color,
-            'marker': marker,
             'sampling_strategy': sampling_strategy,
         }
 
