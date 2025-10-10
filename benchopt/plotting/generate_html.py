@@ -13,7 +13,6 @@ from ..utils.parquet import get_metadata as get_parquet_metadata
 from benchopt.benchmark import Benchmark
 from .plot_bar_chart import compute_bar_chart_data  # noqa: F401
 from .plot_boxplot import compute_solver_boxplot_data
-from .plot_objective_curve import get_solver_style
 from .plot_objective_curve import reset_solver_styles_idx
 from .plot_objective_curve import compute_solver_objective_curve_data
 
