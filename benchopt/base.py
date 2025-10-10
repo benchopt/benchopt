@@ -676,8 +676,12 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
 
         plots = []
         for kwargs in combinations:
-            data = self.plot(df, **kwargs)
+            data = {}
+            data["data"] = self.plot(df, **kwargs)
             data["type"] = self.type
+            data["title"] = self.title
+            data["xlabel"] = self.xlabel
+            data["ylabel"] = self.ylabel
             for key in kwargs:
                 data[self.get_name() + '_' + key] = kwargs[key]
             plots.append(data)

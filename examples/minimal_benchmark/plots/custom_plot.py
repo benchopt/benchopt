@@ -4,6 +4,9 @@ from benchopt import BasePlot
 class Plot(BasePlot):
     name = "Custom plot 1"
     type = "scatter"
+    title = "Example plot"
+    xlabel = "custom time"
+    ylabel = "custom objective value"
     params = {
         "dataset": ...,  # Will fetch the dataset names from the df
         "color": ["blue", "red"]
@@ -11,7 +14,7 @@ class Plot(BasePlot):
 
     def plot(self, df, dataset, color):
         df = df[(df['data_name'] == dataset)]
-        data = [
+        return [
             {
                 "x": df["time"].values.tolist(),
                 "y": (
@@ -23,9 +26,3 @@ class Plot(BasePlot):
             }
             for solver in df['solver_name'].unique()
         ]
-        return {
-            "title": "Example plot",
-            "x_label": "custom time",
-            "y_label": "custom objective value",
-            "data": data
-        }
