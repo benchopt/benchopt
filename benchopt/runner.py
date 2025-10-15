@@ -1,7 +1,6 @@
 import time
 import inspect
 import pickle
-import hashlib
 
 from datetime import datetime
 
@@ -29,13 +28,16 @@ class FailedRun(RuntimeError):
 
 
 def seed_run(objective, dataset, solver, repetition, base_seed):
-    data = f"{base_seed}_{repetition}"
-    data += f"_{str(objective)}_{str(dataset)}_{str(solver)}"
-    digest = hashlib.sha256(data.encode()).hexdigest()
-    seed = int(digest, 16) % (2**32 - 1)
-    objective.seed = seed
-    dataset.seed = seed
-    solver.seed = seed
+    seed_dict = {
+        "base_seed": str(base_seed),
+        "objective": str(objective),
+        "dataset": str(dataset),
+        "solver": str(solver),
+        "repetition": str(repetition)
+    }
+    objective.seed_dict = seed_dict
+    dataset.seed_dict = seed_dict
+    solver.seed_dict = seed_dict
 
 
 ##################################
