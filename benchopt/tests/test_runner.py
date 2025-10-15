@@ -550,56 +550,161 @@ class TestCache:
 class TestSeed:
     """Test the seeding."""
 
-    objective = """from benchopt import BaseObjective
+    def get_objective(
+        self, name="test-objective", print_seed=False, ignore_objective=False,
+        ignore_dataset=False, ignore_solver=False
+    ):
+        seed_args = f"{ignore_objective},{ignore_dataset},{ignore_solver}"
+        print_str = "print('#SEED=',{self.get_seed(" + seed_args + ")})"
+        return (
+            f"""from benchopt import BaseObjective
 
-        class Objective(BaseObjective):
-            name = "test_obj"
-            min_benchopt_version = "0.0.0"
+            class Objective(BaseObjective):
+                name = "{name}"
+                min_benchopt_version = "0.0.0"
 
-            def set_data(self, X, y): pass
-            def get_one_result(self): pass
-            def evaluate_result(self, beta): return dict(value=1)
-            def get_objective(self): return dict(X=0, y=0)
-    """
+                def set_data(self, X, y): pass
+                def get_one_result(self): pass
+                def evaluate_result(self, beta):
+                    {print_str if print_seed else ""}
+                    return dict(value=1)
+                def get_objective(self): return dict(X=0, y=0)
+            """
+        )
 
-    solver = """from benchopt import BaseSolver
+    def get_dataset(
+        self, name="test-dataset", print_seed=False, ignore_objective=False,
+        ignore_dataset=False, ignore_solver=False
+    ):
+        seed_args = f"{ignore_objective},{ignore_dataset},{ignore_solver}"
+        print_str = "print('#SEED=',{self.get_seed(" + seed_args + ")})"
+        return (
+            f"""from benchopt import BaseDataset
 
-    class Solver(BaseSolver):
-        name = "test-solver"
-        sampling_strategy = 'run_once'
-        def set_objective(self, X, y): pass
-        def run(self, _): print(f"#SEED={self.get_seed()}")
-        def get_result(self): return dict(beta=1)
-    """
+            class Dataset(BaseDataset):
+                name = "{name}"
+                def get_data(self):
+                    {print_str if print_seed else ""}
+                    return dict(X=0, y=1)
+            """
+        )
 
-    solver_ignore = """from benchopt import BaseSolver
+    def get_solver(
+        self, name="test-solver", print_seed=False, ignore_objective=False,
+        ignore_dataset=False, ignore_solver=False
+    ):
+        seed_args = f"{ignore_objective},{ignore_dataset},{ignore_solver}"
+        print_str = "print('#SEED=',{self.get_seed(" + seed_args + ")})"
+        return (
+            f"""from benchopt import BaseSolver
 
-    class Solver(BaseSolver):
-        name = "test-solver"
-        sampling_strategy = 'run_once'
-        def set_objective(self, X, y): pass
-        def run(self, _): print(f"#SEED={self.get_seed(ignore_dataset=True)}")
-        def get_result(self): return dict(beta=1)
-    """
+            class Solver(BaseSolver):
+                name = "{name}"
+                sampling_strategy = 'run_once'
+                def set_objective(self, X, y): pass
+                def run(self, _):
+                    {print_str if print_seed else ""}
+                    return
+                def get_result(self): return dict(beta=1)
+            """
+        )
 
-    dataset = """from benchopt import BaseDataset
+    @pytest.mark.parametrize('ignore_objective', [True, False])
+    @pytest.mark.parametrize('ignore_dataset', [True, False])
+    @pytest.mark.parametrize('ignore_solver', [True, False])
+    @pytest.mark.parametrize('objective_name', ["obj1", "obj2"])
+    @pytest.mark.parametrize('dataset_name', ["dataset1", "dataset2"])
+    @pytest.mark.parametrize('solver_name', ["solver1", "solver2"])
+    def test_ignore(
+        self, no_debug_log, ignore_objective, ignore_dataset, ignore_solver,
+        objective_name, dataset_name, solver_name
+    ):
+        seeds = []
 
-    class Dataset(BaseDataset):
-        name = "test-dataset"
-        def get_data(self): return dict(X=0, y=1)
-    """
-
-    dataset2 = """from benchopt import BaseDataset
-
-    class Dataset(BaseDataset):
-        name = "test-dataset2"
-        def get_data(self): return dict(X=0, y=1)
-    """
-
-    def test_seed_simple(self, no_debug_log):
         with temp_benchmark(
-                objective=self.objective, solvers=self.solver,
-                datasets=self.dataset
+            objective=self.get_objective(
+                name="obj1",
+            ),
+            solvers=self.get_solver(
+                name="solver1",
+                print_seed=True,
+                ignore_objective=ignore_objective,
+                ignore_dataset=ignore_dataset,
+                ignore_solver=ignore_solver
+            ),
+            datasets=self.get_dataset(name="dataset1")
+        ) as bench:
+            with CaptureCmdOutput() as out:
+                cmd_str = f"{bench.benchmark_dir} --no-cache "
+                cmd_str += "--no-plot --seed 0"
+                run(cmd_str.split(), standalone_mode=False)
+
+        parsed_output = out.output.split("\n")
+        for s in parsed_output:
+            if s.startswith("#SEED="):
+                seeds.append(s)
+
+        with temp_benchmark(
+            objective=self.get_objective(
+                name=objective_name,
+            ),
+            solvers=self.get_solver(
+                name=solver_name,
+                print_seed=True,
+                ignore_objective=ignore_objective,
+                ignore_dataset=ignore_dataset,
+                ignore_solver=ignore_solver
+            ),
+            datasets=self.get_dataset(name=dataset_name)
+        ) as bench:
+            with CaptureCmdOutput() as out:
+                cmd_str = f"{bench.benchmark_dir} --no-cache "
+                cmd_str += "--no-plot --seed 0"
+                run(cmd_str.split(), standalone_mode=False)
+
+        parsed_output = out.output.split("\n")
+        for s in parsed_output:
+            if s.startswith("#SEED="):
+                seeds.append(s)
+
+        assert len(seeds) == 2
+
+        if (
+            (objective_name == "obj1" or ignore_objective) and
+            (dataset_name == "dataset1" or ignore_dataset) and
+            (solver_name == "solver1" or ignore_solver)
+        ):
+            assert seeds[0] == seeds[1]
+        else:
+            assert seeds[0] != seeds[1]
+
+    def test_objective_simple(self, no_debug_log):
+        with temp_benchmark(
+            objective=self.get_objective(print_seed=True),
+            solvers=self.get_solver(),
+            datasets=self.get_dataset()
+        ) as bench:
+            with CaptureCmdOutput() as out:
+                cmd_str = f"{bench.benchmark_dir} --no-cache "
+                cmd_str += "--no-plot --seed 0"
+                for it in range(2):
+                    run(cmd_str.split(),
+                        standalone_mode=False)
+
+        parsed_output = out.output.split("\n")
+        seeds = []
+        for s in parsed_output:
+            if s.startswith("#SEED="):
+                seeds.append(s)
+
+        assert len(seeds) == 2, f"Found {len(seeds)} seeds instead of 2"
+        assert seeds[0] == seeds[1], "Seeds are not equal"
+
+    def test_dataset_simple(self, no_debug_log):
+        with temp_benchmark(
+            objective=self.get_objective(),
+            solvers=self.get_solver(),
+            datasets=self.get_dataset(print_seed=True)
         ) as bench:
             with CaptureCmdOutput() as out:
                 cmd_str = f"{bench.benchmark_dir} --no-cache "
@@ -619,8 +724,9 @@ class TestSeed:
 
     def test_seed_different(self, no_debug_log):
         with temp_benchmark(
-                objective=self.objective, solvers=self.solver,
-                datasets=self.dataset
+            objective=self.get_objective(),
+            solvers=self.get_solver(print_seed=True),
+            datasets=self.get_dataset()
         ) as bench:
             with CaptureCmdOutput() as out:
                 cmd_str = f"{bench.benchmark_dir} --no-cache --no-plot "
@@ -639,8 +745,9 @@ class TestSeed:
 
     def test_seed_repetition(self, no_debug_log):
         with temp_benchmark(
-                objective=self.objective, solvers=self.solver,
-                datasets=self.dataset
+            objective=self.get_objective(),
+            solvers=self.get_solver(print_seed=True),
+            datasets=self.get_dataset()
         ) as bench:
             with CaptureCmdOutput() as out:
                 cmd_str = f"{bench.benchmark_dir} --no-cache "
@@ -661,43 +768,3 @@ class TestSeed:
         assert seeds[0] != seeds[1], (
             "Seeds for different repetitions should not be equal"
         )
-
-    def test_seed_datasets(self, no_debug_log):
-        with temp_benchmark(
-                objective=self.objective, solvers=self.solver,
-                datasets=[self.dataset, self.dataset2]
-        ) as bench:
-            with CaptureCmdOutput() as out:
-                cmd_str = f"{bench.benchmark_dir} --no-cache "
-                cmd_str += "--no-plot --seed 0"
-                run(cmd_str.split(),
-                    standalone_mode=False)
-
-        parsed_output = out.output.split("\n")
-        seeds = []
-        for s in parsed_output:
-            if s.startswith("#SEED="):
-                seeds.append(s)
-
-        assert len(seeds) == 2
-        assert seeds[0] != seeds[1]
-
-    def test_seed_datasets_ignore(self, no_debug_log):
-        with temp_benchmark(
-                objective=self.objective, solvers=self.solver_ignore,
-                datasets=[self.dataset, self.dataset2]
-        ) as bench:
-            with CaptureCmdOutput() as out:
-                cmd_str = f"{bench.benchmark_dir} --no-cache "
-                cmd_str += "--no-plot --seed 0"
-                run(cmd_str.split(),
-                    standalone_mode=False)
-
-        parsed_output = out.output.split("\n")
-        seeds = []
-        for s in parsed_output:
-            if s.startswith("#SEED="):
-                seeds.append(s)
-
-        assert len(seeds) == 2
-        assert seeds[0] == seeds[1]

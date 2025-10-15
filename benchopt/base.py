@@ -10,11 +10,18 @@ from .utils.dependencies_mixin import DependenciesMixin
 from .utils.parametrized_name_mixin import ParametrizedNameMixin
 
 
-def get_seed(seed_dict, ignore):
+def get_seed(seed_dict, ignore_objective, ignore_dataset, ignore_solver):
     dict_keys = ["base_seed", "objective", "dataset", "solver", "repetition"]
     hash_list = []
     for key in dict_keys:
-        if key in ignore:
+        if ignore_objective and key == "objective":
+            hash_list.append("*")
+            continue
+        if ignore_dataset and key == "dataset":
+            hash_list.append("*")
+            continue
+        if ignore_solver and key == "solver":
+            hash_list.append("*")
             continue
         if key not in seed_dict:
             raise ValueError(f"Seed dict is not initialized correctly, "
@@ -264,18 +271,11 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         self, ignore_objective=False,
         ignore_dataset=False, ignore_solver=False
     ):
-        ignore = []
-        if ignore_objective:
-            ignore.append("objective")
-        if ignore_dataset:
-            ignore.append("dataset")
-        if ignore_solver:
-            ignore.append("solver")
-
         if not hasattr(self, "seed_dict"):
             raise ValueError(f"seed_dict was not initialized for {self}")
 
-        return get_seed(self.seed_dict, ignore)
+        return get_seed(self.seed_dict, ignore_objective,
+                        ignore_dataset, ignore_solver)
 
 
 class CommandLineSolver(BaseSolver, ABC):
@@ -331,18 +331,11 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
         self, ignore_objective=False,
         ignore_dataset=False, ignore_solver=False
     ):
-        ignore = []
-        if ignore_objective:
-            ignore.append("objective")
-        if ignore_dataset:
-            ignore.append("dataset")
-        if ignore_solver:
-            ignore.append("solver")
-
         if not hasattr(self, "seed_dict"):
             raise ValueError(f"seed_dict was not initialized for {self}")
 
-        return get_seed(self.seed_dict, ignore)
+        return get_seed(self.seed_dict, ignore_objective,
+                        ignore_dataset, ignore_solver)
 
 
 class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
@@ -649,15 +642,8 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
         self, ignore_objective=False,
         ignore_dataset=False, ignore_solver=False
     ):
-        ignore = []
-        if ignore_objective:
-            ignore.append("objective")
-        if ignore_dataset:
-            ignore.append("dataset")
-        if ignore_solver:
-            ignore.append("solver")
-
         if not hasattr(self, "seed_dict"):
             raise ValueError(f"seed_dict was not initialized for {self}")
 
-        return get_seed(self.seed_dict, ignore)
+        return get_seed(self.seed_dict, ignore_objective,
+                        ignore_dataset, ignore_solver)

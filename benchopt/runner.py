@@ -233,6 +233,16 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
             res = _run_one_to_cvg_cached(**kwargs)
             return res if res is not None else ([], 'not run yet')
 
+    # Seed the run in case the dataset needs a seed
+    # since the repetition does not matter here
+    seed_run(
+        objective=objective,
+        dataset=dataset,
+        solver=solver,
+        repetition=1,
+        base_seed=benchmark.seed
+    )
+
     # Set objective and skip if necessary.
     skip, reason = objective.set_dataset(dataset)
     if skip:
