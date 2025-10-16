@@ -33,7 +33,7 @@ FIX
 ---
 
 - Improve AST parsing when missing attributes in the class.
-  By `Thomas Moreau`_ (:gh:`845`)
+  By `Thomas Moreau`_ (:gh:`846`)
 
 - Fix check_patterns when a class is not installed and represented with a
   FailedImport class. By `Thomas Moreau`_ (:gh:`844`)

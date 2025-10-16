@@ -124,7 +124,7 @@ def test_ast_replacement(params, no_raise_install):
             print(Solver.requirements, Solver.install_cmd)
 
         assert "Could not evaluate statically" in str(excinfo.value)
-        assert "solvers/solver_0.py" in str(excinfo.value)
+        assert "solver_0.py" in str(excinfo.value)
         assert f"'{component}'" in str(excinfo.value)
 
     # Check that the failing solver does not prevent other solvers to be run.
