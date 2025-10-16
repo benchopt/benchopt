@@ -111,13 +111,14 @@ def _load_class_from_module(benchmark_dir, module_filename, class_name):
                     metaclass=FailedImport):
             "Object for the class list that raises error if used."
 
-            _set_cls_attr_from_ast(module_filename, class_name, locals())
             exc = e
+            _error_displayed = False
+            _set_cls_attr_from_ast(module_filename, class_name, locals())
             cls_name = class_name
 
             @classmethod
             def is_installed(cls, env_name=None, raise_on_not_installed=False,
-                             **kwargs):
+                             quiet=False, **kwargs):
                 if env_name is not None:
                     return super().is_installed(
                         env_name=env_name,
@@ -127,12 +128,14 @@ def _load_class_from_module(benchmark_dir, module_filename, class_name):
                 if not SKIP_IMPORT:
                     if raise_on_not_installed:
                         raise cls.exc
-                    print(
-                        f"Failed to import {class_name} from "
-                        f"{module_filename}. Please fix the following "
-                        "error to use this file with benchopt:\n"
-                        f"{tb_to_print}"
-                    )
+                    if not cls._error_displayed and not quiet:
+                        print(
+                            f"Failed to import {class_name} from "
+                            f"{module_filename}. Please fix the following "
+                            "error to use this file with benchopt:\n"
+                            f"{tb_to_print}"
+                        )
+                        cls._error_displayed = True
                 return False
 
     # Store the info to easily reload the class and check it is installed
@@ -212,7 +215,13 @@ def _set_cls_attr_from_ast(module_file, cls_name, ctx):
     cls_list = [node for node in module.body if isinstance(node, ast.ClassDef)
                 and node.name == cls_name]
     if not cls_list:
-        raise ValueError(f"Could not find {cls_name} in module {module_file}.")
+        exc = ValueError(
+            f"Could not find {cls_name} in module {module_file}."
+        )
+        exc.__cause__ = ctx['exc']
+        ctx['exc'] = exc
+        ctx['name'] = module_file.stem
+        return
     cls = cls_list[0]
 
     known_methods = [
@@ -229,12 +238,12 @@ def _set_cls_attr_from_ast(module_file, cls_name, ctx):
     for node in cls.body:
         if isinstance(node, ast.Assign):
             for target in node.targets:
-                if target.id == "requirements":
-                    ctx['requirements'] = ast.literal_eval(node.value)
-                elif target.id == "name":
-                    ctx['name'] = ast.literal_eval(node.value)
-                elif target.id == "install_cmd":
-                    ctx['install_cmd'] = ast.literal_eval(node.value)
+                if target.id in ["name", "requirements", "install_cmd"]:
+                    try:
+                        ctx[target.id] = ast.literal_eval(node.value)
+                    except Exception as exc:
+                        def raise_err(): raise exc
+                        ctx[target.id] = property(raise_err)
         if isinstance(node, ast.FunctionDef):
             if node.name in known_methods:
                 ctx[node.name] = lambda *args, **kwargs: None
