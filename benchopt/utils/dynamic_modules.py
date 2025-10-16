@@ -5,6 +5,7 @@ import ast
 import sys
 import hashlib
 import warnings
+import traceback
 import importlib
 from pathlib import Path
 
@@ -12,6 +13,7 @@ from joblib.externals import cloudpickle
 
 from .dependencies_mixin import DependenciesMixin
 from .safe_import import safe_import_context
+from .class_property import classproperty
 
 SKIP_IMPORT = False
 
@@ -36,7 +38,7 @@ class FailedImport(ABCMeta):
     checked and to have an informative representation.
     """
     def __repr__(cls):
-        return f"<FailedImport: {cls.cls_name}({cls.name}):{cls.exc}>"
+        return f"<FailedImport: {cls.cls_name}({cls.name})|| Exc: [{cls.exc}]>"
 
 
 def _get_module_from_file(module_filename, benchmark_dir=None):
@@ -211,6 +213,7 @@ def _reconstruct_class(
 
 def _set_cls_attr_from_ast(module_file, cls_name, ctx):
     module = ast.parse(module_file.read_text())
+    name = f"{module_file.stem}"
 
     cls_list = [node for node in module.body if isinstance(node, ast.ClassDef)
                 and node.name == cls_name]
@@ -220,7 +223,7 @@ def _set_cls_attr_from_ast(module_file, cls_name, ctx):
         )
         exc.__cause__ = ctx['exc']
         ctx['exc'] = exc
-        ctx['name'] = module_file.stem
+        ctx['name'] = name
         return
     cls = cls_list[0]
 
@@ -242,8 +245,29 @@ def _set_cls_attr_from_ast(module_file, cls_name, ctx):
                     try:
                         ctx[target.id] = ast.literal_eval(node.value)
                     except Exception as exc:
-                        def raise_err(): raise exc
-                        ctx[target.id] = property(raise_err)
+                        if target.id == "name":
+                            exc = ValueError(
+                                f"Could not evaluate the name of the class "
+                                f"{cls_name} in module {module_file}.\n"
+                                f"{traceback.format_exc()}"
+                            )
+                            exc.__cause__ = ctx['exc']
+                            ctx['exc'] = exc
+                        else:
+                            msg = (
+                                f"Could not evaluate statically '{target.id}' "
+                                f"of the class {cls_name} in {module_file}.\n"
+                                f"{traceback.format_exc()}"
+                            )
+                            def raise_err(self, msg=msg): raise ValueError(msg)
+                            ctx[target.id] = classproperty(raise_err)
         if isinstance(node, ast.FunctionDef):
             if node.name in known_methods:
                 ctx[node.name] = lambda *args, **kwargs: None
+
+    if ctx['name'] is None:
+        exc = ValueError(f"Could not evaluate the name of the class "
+                         f"{cls_name} in module {module_file}.")
+        exc.__cause__ = ctx['exc']
+        ctx['exc'] = exc
+        ctx['name'] = name
