@@ -282,6 +282,7 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
 
         # Get meta
         meta = {
+            'base_seed': benchmark.seed,
             'objective_name': str(objective),
             'obj_description': obj_description,
             'solver_name': str(solver),
