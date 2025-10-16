@@ -27,7 +27,7 @@ class Objective(BaseObjective):
 """
 
 
-def test_r_solver(test_env_name):
+def test_r_solver(test_env_name, no_debug_log):
     solver = """
     from benchopt import BaseSolver
     from benchopt.helpers.r_lang import import_func_from_r_file, converter_ctx
@@ -66,25 +66,27 @@ def test_r_solver(test_env_name):
         objective=OBJECTIVE,
         datasets=DATASET,
         solvers={"r_solver.py": solver, "r_solver.R": r_solver}
-    ) as bench, CaptureCmdOutput() as out:
-        install(
-            [str(bench.benchmark_dir), '--env-name', test_env_name],
-            'benchopt', standalone_mode=False
-        )
+    ) as bench:
+        with CaptureCmdOutput(exit=0) as out:
+            install(
+                [str(bench.benchmark_dir), '--env-name', test_env_name],
+                'benchopt', standalone_mode=False
+            )
+        out.check_output("r_solver:", repetition=1)
         solver = bench.get_solvers()[0]
         solver.is_installed(
             env_name=test_env_name, raise_on_not_installed=True
         )
-        with pytest.raises(SystemExit, match="False"):
+        with CaptureCmdOutput(exit=False) as out:
             run([
                 str(bench.benchmark_dir), '-s', 'r_solver', '-n', '1', '-r', 1,
                 '-d', 'simulated', '--no-plot', '--env-name', test_env_name
             ], 'benchopt', standalone_mode=False)
 
-    out.check_output("r_solver:", repetition=6)
+        out.check_output("r_solver:", repetition=3)
 
 
-def test_julia_solver(test_env_name):
+def test_julia_solver(test_env_name, no_debug_log):
     if sys.platform.startswith("win"):
         pytest.skip("Julia's PyCall library fail to install on Windows")
 
@@ -124,21 +126,24 @@ def test_julia_solver(test_env_name):
         objective=OBJECTIVE,
         datasets=DATASET,
         solvers={"julia.py": solver, "julia.jl": julia_solver},
-    ) as bench, CaptureCmdOutput() as out:
-        install(
-            [str(bench.benchmark_dir), '--env-name', test_env_name],
-            'benchopt', standalone_mode=False
-        )
+    ) as bench:
+
+        with CaptureCmdOutput(exit=0) as out:
+            install(
+                [str(bench.benchmark_dir), '--env-name', test_env_name],
+                'benchopt', standalone_mode=False
+            )
+        out.check_output("julia_solver:", repetition=1)
         solver = bench.get_solvers()[0]
         solver.is_installed(
             env_name=test_env_name, raise_on_not_installed=True
         )
 
-        with pytest.raises(SystemExit, match="False"):
+        with CaptureCmdOutput(exit=False) as out:
             run([
                 str(bench.benchmark_dir), '-s', 'julia_solver', '-n', '1',
                 '-r', 1, '-d', 'simulated', '--no-plot',
                 '--env-name', test_env_name
             ], 'benchopt', standalone_mode=False)
 
-    out.check_output("julia_solver:", repetition=6)
+        out.check_output("julia_solver:", repetition=3)

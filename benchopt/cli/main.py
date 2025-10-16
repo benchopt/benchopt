@@ -527,11 +527,12 @@ def install(
 
     # install requirements
     print("# Install", flush=True)
-    benchmark.install_all_requirements(
+    exit_code = benchmark.install_all_requirements(
         include_solvers=solvers, include_datasets=datasets,
         minimal=minimal, env_name=env_name, force=force, quiet=quiet,
         download=download, gpu=gpu,
     )
+    raise SystemExit(exit_code)
 
 
 @main.command(

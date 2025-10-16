@@ -7,7 +7,9 @@ from .shell_cmd import _run_shell_in_conda_env
 from .conda_env_cmd import install_in_conda_env
 from .conda_env_cmd import shell_install_in_conda_env
 
-from .terminal_output import colorify, YELLOW
+from .terminal_output import colorify, RED, BLUE, GREEN, TICK, CROSS
+RED_CROSS = colorify(CROSS, RED)
+GREEN_TICK = colorify(TICK, GREEN)
 
 
 class DependenciesMixin:
@@ -183,9 +185,21 @@ class DependenciesMixin:
         post_install_hooks: list of callable
             Post install hooks if one need to be run.
         """
+        colored_cls_name = colorify(cls.name, BLUE)
+        print(f"- {colored_cls_name}: ", end="", flush=True)
+
+        def fail_fast(exc):
+            if RAISE_INSTALL_ERROR:
+                raise exc
+            print(f"failed to get requirements {RED_CROSS}\n{exc}")
+            return [], [], [], cls
+
         # Check that install_cmd is valid and if the cls is installed
-        install_cmd_ = cls.install_cmd_
-        is_installed = cls.is_installed(env_name=env_name)
+        try:
+            install_cmd_ = cls.install_cmd_
+        except Exception as exc:
+            return fail_fast(exc)
+        is_installed = cls.is_installed(env_name=env_name, quiet=True)
 
         missing_deps = None
         conda_reqs, shell_install_scripts, post_install_hooks = [], [], []
@@ -197,7 +211,11 @@ class DependenciesMixin:
                     / cls.install_script
                 ]
             else:
-                conda_reqs = getattr(cls, "requirements", [])
+                try:
+                    conda_reqs = getattr(cls, "requirements", [])
+                except Exception as exc:
+                    return fail_fast(exc)
+
                 if isinstance(conda_reqs, dict):
                     try:
                         conda_reqs = (conda_reqs["gpu"] if gpu
@@ -212,11 +230,7 @@ class DependenciesMixin:
             post_install_hooks = [cls._post_install_hook]
         else:
             env_suffix = f" in '{env_name}'" if env_name else ""
-            colored_cls_name = colorify(cls.name, YELLOW)
-            print(
-                f"- {colored_cls_name} already available{env_suffix}\n"
-                f"  No ImportError raised from {cls._module_filename}."
-            )
+            print(f"already available{env_suffix}", GREEN_TICK)
 
         return (
             conda_reqs, shell_install_scripts, post_install_hooks, missing_deps
