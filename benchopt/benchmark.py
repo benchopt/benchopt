@@ -558,12 +558,18 @@ class Benchmark:
         for klass in missings:
             cls_type = klass.__base__.__name__.replace("Base", "")
             try:
+                # Check for invalid install_cmd
+                hasattr(klass, "install_cmd")
+                # Check for invalid requirements
                 if not hasattr(klass, "requirements"):
                     reason = "no requirements"
                 else:
                     reason = "incomplete requirements"
-            except ValueError:
-                reason = "invalid requirements"
+            except ValueError as e:
+                if "install_cmd" in str(e):
+                    reason = "invalid install_cmd"
+                else:
+                    reason = "invalid requirements"
             cls_types[cls_type].append(f"{klass.name} ({reason})")
         cls_types = {
             k: f'{cls_type}\n' + '\n'.join([f'- {c}' for c in v])

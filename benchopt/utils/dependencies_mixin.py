@@ -112,7 +112,7 @@ class DependenciesMixin:
         """
         # Check that install_cmd is valid and if the cls is installed
         install_cmd_ = cls.install_cmd_
-        is_installed = cls.is_installed(env_name=env_name)
+        is_installed = cls.is_installed(env_name=env_name, quiet=True)
 
         env_suffix = f" in '{env_name}'" if env_name else ""
         if force or not is_installed:
@@ -228,6 +228,7 @@ class DependenciesMixin:
                 if not is_installed and len(conda_reqs) == 0:
                     missing_deps = cls
             post_install_hooks = [cls._post_install_hook]
+            print(f"collected", GREEN_TICK)
         else:
             env_suffix = f" in '{env_name}'" if env_name else ""
             print(f"already available{env_suffix}", GREEN_TICK)
