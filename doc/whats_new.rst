@@ -25,6 +25,8 @@ CLI
 - Deprecate the ``--slurm`` parameter which will be removed in benchopt 1.8.
   By `Thomas Moreau`_ (:gh:`673`).
 
+- Improved output formatting for benchmark ``run/install/test``.
+  By `Thomas Moreau`_ (:gh:`847`).
 
 API
 ---
