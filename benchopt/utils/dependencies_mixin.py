@@ -110,7 +110,7 @@ class DependenciesMixin:
         """
         # Check that install_cmd is valid and if the cls is installed
         install_cmd_ = cls.install_cmd_
-        is_installed = cls.is_installed(env_name=env_name)
+        is_installed = cls.is_installed(env_name=env_name, quiet=True)
 
         env_suffix = f" in '{env_name}'" if env_name else ""
         if force or not is_installed:
@@ -185,7 +185,7 @@ class DependenciesMixin:
         """
         # Check that install_cmd is valid and if the cls is installed
         install_cmd_ = cls.install_cmd_
-        is_installed = cls.is_installed(env_name=env_name)
+        is_installed = cls.is_installed(env_name=env_name, quiet=True)
 
         missing_deps = None
         conda_reqs, shell_install_scripts, post_install_hooks = [], [], []
