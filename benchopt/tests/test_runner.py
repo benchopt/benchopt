@@ -401,7 +401,7 @@ def test_warmup_error(no_debug_log):
 
     with temp_benchmark(solvers=solver) as benchmark:
         with CaptureCmdOutput() as out:
-            exit_code = run_benchmark(
+            exit_code, _ = run_benchmark(
                 str(benchmark.benchmark_dir),
                 solver_names=["solver1"],
                 dataset_names=["test-dataset"],

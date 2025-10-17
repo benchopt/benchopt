@@ -289,7 +289,7 @@ def run(config_file=None, **kwargs):
             solver_names + list(forced_solvers)
         )
 
-        exit_code = _run_benchmark(
+        exit_code, _ = _run_benchmark(
             benchmark, solvers, forced_solvers,
             datasets=datasets, objectives=objectives,
             max_runs=max_runs, n_repetitions=n_repetitions,

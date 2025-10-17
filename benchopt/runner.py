@@ -375,11 +375,11 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
 
     Returns
     -------
-    df : instance of pandas.DataFrame
-        The benchmark results. If multiple metrics were computed, each
-        one is stored in a separate column. If the number of metrics computed
-        by the objective is not the same for all parameters, the missing data
-        is set to `NaN`.
+    exit_code : int
+        Exit code of the benchmark run. 0 if everything went fine,
+        1 otherwise.
+    output_file : Path
+        Path to the output file where the results have been saved.
     """
     exit_code = 0
     terminal = TerminalOutput(n_repetitions, show_progress)
@@ -409,7 +409,7 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
     df = pd.DataFrame(run_statistics)
     if df.empty:
         terminal.savefile_status()
-        return 1
+        return 1, None
 
     # Save output in parquet file in the benchmark folder
     output_dir = benchmark.get_output_folder()
@@ -437,7 +437,7 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
             print(f"Failed to plot the benchmark results: {e}")
             exit_code = 1
 
-    return exit_code
+    return exit_code, output_file
 
 
 def run_benchmark(benchmark_path, solver_names=None, forced_solvers=(),
@@ -507,11 +507,11 @@ def run_benchmark(benchmark_path, solver_names=None, forced_solvers=(),
 
     Returns
     -------
-    df : instance of pandas.DataFrame
-        The benchmark results. If multiple metrics were computed, each
-        one is stored in a separate column. If the number of metrics computed
-        by the objective is not the same for all parameters, the missing data
-        is set to `NaN`.
+    exit_code : int
+        Exit code of the benchmark run. 0 if everything went fine,
+        1 otherwise.
+    output_file : Path
+        Path to the output file where the results have been saved.
     """
     benchmark = Benchmark(benchmark_path, no_cache=no_cache)
     if solver_names is None:
