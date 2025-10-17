@@ -214,8 +214,8 @@ class Benchmark:
         for plot in self.get_custom_plots():
             plot_name = plot.get_name()
             plot_params[plot_name] = {}
-            for param in plot.params:
-                if plot.params[param] is Ellipsis:
+            for param in plot.dropdown:
+                if plot.dropdown[param] is Ellipsis:
                     if param == "dataset":
                         plot_params[plot_name][param] = \
                             df['data_name'].unique().tolist()
@@ -223,7 +223,7 @@ class Benchmark:
                         plot_params[plot_name][param] = \
                             df['solver_name'].unique().tolist()
                 else:
-                    plot_params[plot_name][param] = plot.params[param]
+                    plot_params[plot_name][param] = plot.dropdown[param]
 
         return plot_params
 

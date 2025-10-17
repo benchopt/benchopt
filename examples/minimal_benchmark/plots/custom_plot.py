@@ -7,7 +7,7 @@ class Plot(BasePlot):
     title = "Example plot"
     xlabel = "custom time"
     ylabel = "custom objective value"
-    params = {
+    dropdown = {
         "dataset": ...,  # Will fetch the dataset names from the df
         "color": ["blue", "red"]
     }

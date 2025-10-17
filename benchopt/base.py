@@ -621,45 +621,45 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
             )
 
     def check_params(self):
-        if not hasattr(self, 'params'):
-            self.params = {}
-        if not isinstance(self.params, dict):
-            raise ValueError("`params` should be a dictionary.")
-        for key, values in self.params.items():
+        if not hasattr(self, 'dropdown'):
+            self.dropdown = {}
+        if not isinstance(self.dropdown, dict):
+            raise ValueError("`dropdown` should be a dictionary.")
+        for key, values in self.dropdown.items():
             if values is Ellipsis:
                 continue
             if not isinstance(values, list):
                 raise ValueError(
-                    f"The values of params should be a list or ... . "
+                    f"The values of dropdown should be a list or ... . "
                     f"Got {values} for key {key}."
                 )
 
             if len(values) == 0:
                 raise ValueError(
-                    f"The values of params should be non empty. "
+                    f"The values of dropdown should be non empty. "
                     f"Got {values} for key {key}."
                 )
 
-        keys = set(self.params.keys())
+        keys = set(self.dropdown.keys())
         plot_kwargs = set([
             name for name, _ in
             inspect.signature(self.plot).parameters.items()
         ])
         plot_kwargs.remove('df')
 
-        # Make sure all params are in the plot signature
+        # Make sure all dropdown keys are in the plot signature
         if not keys == plot_kwargs:
             raise ValueError(
-                f"The keys of params {keys} should match the signature of "
+                f"The keys of dropdown {keys} should match the signature of "
                 f"`plot` function, {plot_kwargs}."
             )
 
     def get_all_plots(self, df):
         # Get all combinations
-        keys = self.params.keys()
+        keys = self.dropdown.keys()
         values = []
         for key in keys:
-            if self.params[key] is Ellipsis:
+            if self.dropdown[key] is Ellipsis:
                 if key == "dataset":
                     values.append(df['data_name'].unique().tolist())
                 elif key == "solver":
@@ -667,7 +667,7 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
                 else:
                     values.append(df[key].unique().tolist())
             else:
-                values.append(self.params[key])
+                values.append(self.dropdown[key])
 
         combinations = [
             dict(zip(keys, v))

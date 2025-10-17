@@ -569,7 +569,7 @@ def test_custom_plot(no_debug_log):
         title = "Example plot"
         xlabel = "custom time"
         ylabel = "custom objective value"
-        params = {}
+        dropdown = {}
 
         def plot(self, df):
             return [
@@ -601,7 +601,7 @@ def test_custom_plot_errors(no_debug_log):
         title = 'Example plot'
         xlabel = 'custom time'
         ylabel = 'custom objective value'
-        params = {}
+        dropdown = {}
 
         def plot(self, df):
             return [
@@ -629,30 +629,33 @@ def test_custom_plot_errors(no_debug_log):
                  *'-n 1 -r 1 --no-display'
                  .split()], standalone_mode=False)
 
-    error_plot = plot.replace("params = {}", "params = []")
-    with pytest.raises(ValueError, match="`params` should be a dictionary."):
+    error_plot = plot.replace("dropdown = {}", "dropdown = []")
+    with pytest.raises(ValueError, match="`dropdown` should be a dictionary."):
         with temp_benchmark(plot=error_plot) as bench:
             run([str(bench.benchmark_dir),
                  *'-n 1 -r 1 --no-display'
                  .split()], standalone_mode=False)
 
-    error_plot = plot.replace("params = {}", "params = {'color': 'blue'}")
+    error_plot = plot.replace("dropdown = {}", "dropdown = {'color': 'blue'}")
     with pytest.raises(ValueError,
-                       match="The values of params should be a list"):
+                       match="The values of dropdown should be a list"):
         with temp_benchmark(plot=error_plot) as bench:
             run([str(bench.benchmark_dir),
                  *'-n 1 -r 1 --no-display'
                  .split()], standalone_mode=False)
 
-    error_plot = plot.replace("params = {}", "params = {'color': []}")
+    error_plot = plot.replace("dropdown = {}", "dropdown = {'color': []}")
     with pytest.raises(ValueError,
-                       match="The values of params should be non empty"):
+                       match="The values of dropdown should be non empty"):
         with temp_benchmark(plot=error_plot) as bench:
             run([str(bench.benchmark_dir),
                  *'-n 1 -r 1 --no-display'
                  .split()], standalone_mode=False)
 
-    error_plot = plot.replace("params = {}", "params = {'color': ['blue']}")
+    error_plot = plot.replace(
+        "dropdown = {}",
+        "dropdown = {'color': ['blue']}"
+    )
     with pytest.raises(ValueError, match="should match the signature of"):
         with temp_benchmark(plot=error_plot) as bench:
             run([str(bench.benchmark_dir),
