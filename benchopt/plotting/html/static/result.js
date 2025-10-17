@@ -223,17 +223,9 @@ const getIterationBoxplotData = () => {
 
 const getCustomPlotData = () => {
   let params = getParams();
-  for (let data of window._custom_plots[state().plot_kind]) {
-    let found = true;
-    for (let param of params) {
-      if (state()[param] !== data[param]) {
-        found = false;
-        break;
-      }
-    }
-    if (found) return data;
-  }
-  throw new Error("No custom plot data found for the current state");
+  let param_values = params.map(param => state()[param]);
+  let data_key = [state().plot_kind, ...param_values].join('_');
+  return window._custom_plots[state().plot_kind][data_key];
 }
 
 // TODO add other types of custom plots

@@ -10,6 +10,7 @@ from .stopping_criterion import SufficientProgressCriterion
 from .utils.misc import NamedTemporaryFile
 from .utils.dependencies_mixin import DependenciesMixin
 from .utils.parametrized_name_mixin import ParametrizedNameMixin
+from .utils.parametrized_name_mixin import product_param
 
 CMAP = plt.get_cmap('tab20')
 COLORS = [CMAP(i) for i in range(CMAP.N)]
@@ -675,36 +676,36 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
                 f"`plot` function, {plot_kwargs}."
             )
 
+    def _export_metadata(self):
+        return {
+            'type': self.type,
+            'title': self.title,
+            'xlabel': self.xlabel,
+            'ylabel': self.ylabel,
+        }
+
     def _get_all_plots(self, df):
         # Get all combinations
-        keys = self.dropdown.keys()
-        values = []
-        for key in keys:
-            if self.dropdown[key] is Ellipsis:
-                if key == "dataset":
-                    values.append(df['data_name'].unique().tolist())
-                elif key == "solver":
-                    values.append(df['solver_name'].unique().tolist())
+        dropdown = {**self.dropdown}
+        for k, v in dropdown.items():
+            if v is Ellipsis:
+                if k == "dataset":
+                    dropdown[k] = df['data_name'].unique().tolist()
+                elif k == "solver":
+                    dropdown[k] = df['solver_name'].unique().tolist()
                 else:
-                    values.append(df[key].unique().tolist())
-            else:
-                values.append(self.dropdown[key])
+                    dropdown[k] = df[k].unique().tolist()
 
-        combinations = [
-            dict(zip(keys, v))
-            for v in itertools.product(*values)
-        ]
+        combinations = product_param(dropdown)
 
-        plots = []
+        plots = {}
         for kwargs in combinations:
-            data = {}
+            data = self._export_metadata()
             data["data"] = self.plot(df, **kwargs)
-            data["type"] = self.type
-            data["title"] = self.title
-            data["xlabel"] = self.xlabel
-            data["ylabel"] = self.ylabel
-            for key in kwargs:
-                data[self._get_name() + '_' + key] = kwargs[key]
-            plots.append(data)
+            key_list = (
+                [self._get_name()] + list(kwargs.values())
+            )
+            key = '_'.join(map(str, key_list))
+            plots[key] = data
 
         return plots

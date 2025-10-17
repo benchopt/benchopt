@@ -206,13 +206,13 @@ class Benchmark:
 
     def get_custom_plot_names(self):
         return [
-            plot.get_name() for plot in self.get_custom_plots()
+            plot._get_name() for plot in self.get_custom_plots()
         ]
 
     def get_custom_plot_params(self, df):
         plot_params = {}
         for plot in self.get_custom_plots():
-            plot_name = plot.get_name()
+            plot_name = plot._get_name()
             plot_params[plot_name] = {}
             for param in plot.dropdown:
                 if plot.dropdown[param] is Ellipsis:

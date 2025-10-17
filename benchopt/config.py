@@ -51,7 +51,7 @@ DEFAULT_GLOBAL_CONFIG = {
 """
 
 DEFAULT_BENCHMARK_CONFIG = {
-    "plots": list(PLOT_KINDS),
+    "plots": None,
     "plot_configs": {},
     "data_home": "",
     "data_paths": {}
