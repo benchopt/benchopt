@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-import itertools
 import inspect
 import matplotlib.pyplot as plt
 
