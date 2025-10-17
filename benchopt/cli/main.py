@@ -2,6 +2,7 @@ import yaml
 import click
 import warnings
 from pathlib import Path
+import random
 
 from benchopt.benchmark import Benchmark
 from benchopt.config import get_setting
@@ -70,6 +71,7 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
         "env_name",
         "no_cache",
         "output",
+        "seed",
     ]
     return [cli_kwargs[name] for name in return_names]
 
@@ -197,6 +199,11 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               " If not provided, the output will be saved as "
               "<BENCHMARK>/outputs/benchopt_run_<timestamp>.parquet."
               )
+@click.option('--seed',
+              metavar="<seed>", type=int, default=None,
+              help="Seed to control the stochasticity of the "
+              "benchmark. If it is not provided, a random seed is generated "
+              "to make the benchmark reproducible.")
 def run(config_file=None, **kwargs):
     if config_file is not None:
         with open(config_file, "r") as f:
@@ -208,7 +215,7 @@ def run(config_file=None, **kwargs):
         benchmark, solver_names, forced_solvers, dataset_names,
         objective_filters, max_runs, n_repetitions, timeout, no_timeout,
         collect, plot, display, html, n_jobs, parallel_config, slurm, pdb,
-        do_profile, env_name, no_cache, output
+        do_profile, env_name, no_cache, output, seed
     ) = _get_run_args(kwargs, config)
 
     if env_name == "False":
@@ -240,8 +247,13 @@ def run(config_file=None, **kwargs):
                 import pandas as pd
                 timeout = pd.to_timedelta(timeout).total_seconds()
 
+    # Set a random seed if none is given
+    if seed is None:
+        seed = random.randint(0, 2**32 - 1)
+        print(f"Selected random seed: {seed}")
+
     # Create the Benchmark object
-    benchmark = Benchmark(benchmark, no_cache=no_cache)
+    benchmark = Benchmark(benchmark, no_cache=no_cache, seed=seed)
 
     # Check if the benchmark is compatible with the current benchopt version
     if benchmark.min_version is not None:
