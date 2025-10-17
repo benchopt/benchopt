@@ -252,7 +252,7 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
             objective=objective,
             dataset=dataset,
             solver=solver,
-            repetition=1,
+            repetition=0,
             base_seed=benchmark.seed
         )
 
@@ -279,20 +279,6 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
     )
 
     for rep in range(n_repetitions):
-        seed_run(
-            objective=objective,
-            dataset=dataset,
-            solver=solver,
-            repetition=rep,
-            base_seed=benchmark.seed
-        )
-
-        # Set objective and skip if necessary.
-        skip, reason = objective.set_dataset(dataset)
-        if skip:
-            terminal.skip(reason, objective=True)
-            return []
-
         skip, reason = solver._set_objective(objective)
         if skip:
             terminal.skip(reason)
@@ -341,6 +327,21 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
             run_statistics = []
             break
         states.append(status)
+
+        if rep < n_repetitions - 1:
+            seed_run(
+                objective=objective,
+                dataset=dataset,
+                solver=solver,
+                repetition=rep+1,
+                base_seed=benchmark.seed
+            )
+
+            # Set objective and skip if necessary.
+            skip, reason = objective.set_dataset(dataset)
+            if skip:
+                terminal.skip(reason, objective=True)
+                return []
 
     else:
         if 'max_runs' in states:

@@ -552,10 +552,10 @@ class TestSeed:
     """Test the seeding."""
 
     def get_objective(
-        self, name="test-objective", print_seed=False, ignore_objective=False,
-        ignore_dataset=False, ignore_solver=False
+        self, name="test-objective", print_seed=False, use_objective=True,
+        use_dataset=True, use_solver=True
     ):
-        seed_args = f"{ignore_objective},{ignore_dataset},{ignore_solver}"
+        seed_args = f"{use_objective},{use_dataset},{use_solver}"
         print_str = "print('#SEED=',{self.get_seed(" + seed_args + ")})"
         return (
             f"""from benchopt import BaseObjective
@@ -574,10 +574,10 @@ class TestSeed:
         )
 
     def get_dataset(
-        self, name="test-dataset", print_seed=False, ignore_objective=False,
-        ignore_dataset=False, ignore_solver=False
+        self, name="test-dataset", print_seed=False, use_objective=True,
+        use_dataset=True, use_solver=True
     ):
-        seed_args = f"{ignore_objective},{ignore_dataset},{ignore_solver}"
+        seed_args = f"{use_objective},{use_dataset},{use_solver}"
         print_str = "print('#SEED=',{self.get_seed(" + seed_args + ")})"
         return (
             f"""from benchopt import BaseDataset
@@ -591,10 +591,10 @@ class TestSeed:
         )
 
     def get_solver(
-        self, name="test-solver", print_seed=False, ignore_objective=False,
-        ignore_dataset=False, ignore_solver=False
+        self, name="test-solver", print_seed=False, use_objective=True,
+        use_dataset=True, use_solver=True
     ):
-        seed_args = f"{ignore_objective},{ignore_dataset},{ignore_solver}"
+        seed_args = f"{use_objective},{use_dataset},{use_solver}"
         print_str = "print('#SEED=',{self.get_seed(" + seed_args + ")})"
         return (
             f"""from benchopt import BaseSolver
@@ -610,14 +610,14 @@ class TestSeed:
             """
         )
 
-    @pytest.mark.parametrize('ignore_objective', [True, False])
-    @pytest.mark.parametrize('ignore_dataset', [True, False])
-    @pytest.mark.parametrize('ignore_solver', [True, False])
+    @pytest.mark.parametrize('use_objective', [True, False])
+    @pytest.mark.parametrize('use_dataset', [True, False])
+    @pytest.mark.parametrize('use_solver', [True, False])
     @pytest.mark.parametrize('objective_name', ["obj1", "obj2"])
     @pytest.mark.parametrize('dataset_name', ["dataset1", "dataset2"])
     @pytest.mark.parametrize('solver_name', ["solver1", "solver2"])
     def test_ignore(
-        self, no_debug_log, ignore_objective, ignore_dataset, ignore_solver,
+        self, no_debug_log, use_objective, use_dataset, use_solver,
         objective_name, dataset_name, solver_name
     ):
         seeds = []
@@ -629,9 +629,9 @@ class TestSeed:
             solvers=self.get_solver(
                 name="solver1",
                 print_seed=True,
-                ignore_objective=ignore_objective,
-                ignore_dataset=ignore_dataset,
-                ignore_solver=ignore_solver
+                use_objective=use_objective,
+                use_dataset=use_dataset,
+                use_solver=use_solver
             ),
             datasets=self.get_dataset(name="dataset1")
         ) as bench:
@@ -652,9 +652,9 @@ class TestSeed:
             solvers=self.get_solver(
                 name=solver_name,
                 print_seed=True,
-                ignore_objective=ignore_objective,
-                ignore_dataset=ignore_dataset,
-                ignore_solver=ignore_solver
+                use_objective=use_objective,
+                use_dataset=use_dataset,
+                use_solver=use_solver
             ),
             datasets=self.get_dataset(name=dataset_name)
         ) as bench:
@@ -671,9 +671,9 @@ class TestSeed:
         assert len(seeds) == 2
 
         if (
-            (objective_name == "obj1" or ignore_objective) and
-            (dataset_name == "dataset1" or ignore_dataset) and
-            (solver_name == "solver1" or ignore_solver)
+            (objective_name == "obj1" or not use_objective) and
+            (dataset_name == "dataset1" or not use_dataset) and
+            (solver_name == "solver1" or not use_solver)
         ):
             assert seeds[0] == seeds[1]
         else:

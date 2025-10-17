@@ -12,24 +12,24 @@ from .utils.dependencies_mixin import DependenciesMixin
 from .utils.parametrized_name_mixin import ParametrizedNameMixin
 
 
-def get_seed(seed_dict, ignore_objective, ignore_dataset,
-             ignore_solver, ignore_repetition):
-    ignore_keys = {
-        "base_seed": False,
-        "objective": ignore_objective,
-        "dataset": ignore_dataset,
-        "solver": ignore_solver,
-        "repetition": ignore_repetition
+def get_seed(seed_dict, use_objective, use_dataset,
+             use_solver, use_repetition):
+    use_keys = {
+        "base_seed": True,
+        "objective": use_objective,
+        "dataset": use_dataset,
+        "solver": use_solver,
+        "repetition": use_repetition
     }
     hash_list = []
-    for key in ignore_keys:
+    for key in use_keys:
         if key not in seed_dict:
             raise ValueError(f"Seed dict is not initialized correctly, "
                              f"missing {key} key.")
-        elif ignore_keys[key]:
-            hash_list.append("*")
-        else:
+        elif use_keys[key]:
             hash_list.append(seed_dict[key])
+        else:
+            hash_list.append("*")
 
     hash_string = "_".join(hash_list)
     digest = hashlib.sha256(hash_string.encode()).hexdigest()
@@ -284,15 +284,19 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
             self._set_objective(objective)
 
     def get_seed(
-        self, ignore_objective=False, ignore_dataset=False,
-        ignore_solver=False, ignore_repetition=False,
+        self, use_objective=True, use_dataset=True,
+        use_solver=True, use_repetition=True,
     ):
+        """Get the random seed for this solver instance. Setting use_objective,
+        use_dataset, use_solver or use_repetition to False will return a seed
+        that is not affected by the corresponding component.
+        """
         if not hasattr(self, "seed_dict"):
             raise ValueError(f"seed_dict was not initialized for {self}")
 
         return get_seed(
-            self.seed_dict, ignore_objective, ignore_dataset,
-            ignore_solver, ignore_repetition
+            self.seed_dict, use_objective, use_dataset,
+            use_solver, use_repetition
         )
 
 
@@ -346,15 +350,19 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
         return self._data
 
     def get_seed(
-        self, ignore_objective=False, ignore_dataset=False,
-        ignore_solver=False, ignore_repetition=False,
+        self, use_objective=True, use_dataset=True,
+        use_solver=True, use_repetition=True,
     ):
+        """Get the random seed for this solver instance. Setting use_objective,
+        use_dataset, use_solver or use_repetition to False will return a seed
+        that is not affected by the corresponding component.
+        """
         if not hasattr(self, "seed_dict"):
             raise ValueError(f"seed_dict was not initialized for {self}")
 
         return get_seed(
-            self.seed_dict, ignore_objective, ignore_dataset,
-            ignore_solver, ignore_repetition
+            self.seed_dict, use_objective, use_dataset,
+            use_solver, use_repetition
         )
 
 
@@ -662,13 +670,17 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
         return split_(cv_fold, *arrays)
 
     def get_seed(
-        self, ignore_objective=False, ignore_dataset=False,
-        ignore_solver=False, ignore_repetition=False
+        self, use_objective=True, use_dataset=True,
+        use_solver=True, use_repetition=True,
     ):
+        """Get the random seed for this solver instance. Setting use_objective,
+        use_dataset, use_solver or use_repetition to False will return a seed
+        that is not affected by the corresponding component.
+        """
         if not hasattr(self, "seed_dict"):
             raise ValueError(f"seed_dict was not initialized for {self}")
 
         return get_seed(
-            self.seed_dict, ignore_objective, ignore_dataset,
-            ignore_solver, ignore_repetition
+            self.seed_dict, use_objective, use_dataset,
+            use_solver, use_repetition
         )
