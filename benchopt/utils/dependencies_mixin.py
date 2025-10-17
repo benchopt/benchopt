@@ -228,7 +228,7 @@ class DependenciesMixin:
                 if not is_installed and len(conda_reqs) == 0:
                     missing_deps = cls
             post_install_hooks = [cls._post_install_hook]
-            print(f"collected", GREEN_TICK)
+            print("collected", GREEN_TICK)
         else:
             env_suffix = f" in '{env_name}'" if env_name else ""
             print(f"already available{env_suffix}", GREEN_TICK)
