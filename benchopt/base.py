@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 import itertools
 import inspect
+import matplotlib.pyplot as plt
 
 from .callback import _Callback
 from .stopping_criterion import SingleRunCriterion
@@ -9,6 +10,10 @@ from .stopping_criterion import SufficientProgressCriterion
 from .utils.misc import NamedTemporaryFile
 from .utils.dependencies_mixin import DependenciesMixin
 from .utils.parametrized_name_mixin import ParametrizedNameMixin
+
+CMAP = plt.get_cmap('tab20')
+COLORS = [CMAP(i) for i in range(CMAP.N)]
+COLORS = COLORS[::2] + COLORS[1::2]
 
 
 class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
@@ -598,19 +603,35 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
 
 class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
     _base_class_name = 'Plot'
+    label_dict = {}
 
     @abstractmethod
     def plot(self, df, **kwargs):
         ...
 
-    def get_name(self):
+    def get_style(self, label):
+        idx = self.label_dict.get(label, len(self.label_dict))
+        self.label_dict[label] = idx
+
+        color = COLORS[idx % len(COLORS)]
+
+        color = tuple(
+            int(255*x) if i != 3 else float(x)
+            for i, x in enumerate(color)
+        )
+        color = f'rgba{color}'
+        marker = idx
+
+        return color, marker
+
+    def _get_name(self):
         return self.name.replace(" ", "_")
 
     def check(self):
-        self.check_type()
-        self.check_params()
+        self._check_type()
+        self._check_params()
 
-    def check_type(self):
+    def _check_type(self):
         if not hasattr(self, 'type'):
             raise ValueError("Plot should have a `type` attribute.")
         supported_types = ['scatter']
@@ -620,7 +641,7 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
                 f"Got {self.type}."
             )
 
-    def check_params(self):
+    def _check_params(self):
         if not hasattr(self, 'dropdown'):
             self.dropdown = {}
         if not isinstance(self.dropdown, dict):
@@ -654,7 +675,7 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
                 f"`plot` function, {plot_kwargs}."
             )
 
-    def get_all_plots(self, df):
+    def _get_all_plots(self, df):
         # Get all combinations
         keys = self.dropdown.keys()
         values = []
@@ -683,7 +704,7 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
             data["xlabel"] = self.xlabel
             data["ylabel"] = self.ylabel
             for key in kwargs:
-                data[self.get_name() + '_' + key] = kwargs[key]
+                data[self._get_name() + '_' + key] = kwargs[key]
             plots.append(data)
 
         return plots
