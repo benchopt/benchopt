@@ -20,7 +20,7 @@ BENCHMARK_PATH = (
 
 try:
 
-    save_file = run_benchmark(
+    _, save_file = run_benchmark(
         BENCHMARK_PATH,
         solver_names=['sklearn[liblinear]', 'sklearn[newton-cg]', 'lightning'],
         dataset_names=["Simulated[n_features=500,n_samples=200]"],

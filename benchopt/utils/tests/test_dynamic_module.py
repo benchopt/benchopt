@@ -2,9 +2,11 @@ import pytest
 from joblib import Parallel, delayed
 
 from benchopt.cli.main import run as run_cmd
-from benchopt.tests.utils import CaptureCmdOutput
+from benchopt.cli.main import install as install_cmd
 from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.utils.temp_benchmark import DEFAULT_SOLVERS
+
+from benchopt.tests.utils import CaptureCmdOutput
 from benchopt.cli.tests.completion_cases import _test_shell_completion
 
 
@@ -66,19 +68,6 @@ def test_ast_replacement_no_name():
         with pytest.raises(NameError, match="'failure' is not defined"):
             Solver.is_installed(raise_on_not_installed=True)
 
-    # Check that the failing solver does not prevent other solvers to be run.
-    with temp_benchmark(solvers=[*DEFAULT_SOLVERS.values(), solver]) as bench:
-        run_cmd(
-            f"{bench.benchmark_dir} -s test-solver --no-plot".split(),
-            'benchopt', standalone_mode=False
-        )
-
-        # Check that completion also works
-        _test_shell_completion(
-            run_cmd, f"{bench.benchmark_dir} -s".split(),
-            [("", ['test-solver', 'solver_1'])]
-        )
-
 
 def test_ast_replacement_name_undefined():
     # Test that the AST replacement works when a dynamic module is not
@@ -110,7 +99,7 @@ def test_ast_replacement_name_undefined():
     # failing requirements
     "requirements = ['', f'{undefined}']",
 ])
-def test_ast_replacement(params, no_raise_install):
+def test_ast_replacement(params):
     # Test that the AST replacement works when a dynamic module is not
     # importable. In particular, this makes sure that the module filename
     # is correctly stored in the class.
@@ -155,7 +144,7 @@ def test_ast_replacement(params, no_raise_install):
     # failing requirements
     "name = 'my-solver'\n        requirements = ['', f'{undefined}']",
 ])
-def test_ast_failures_dont_block_run(params):
+def test_ast_failures_dont_block_run(params, no_raise_install):
     solver = f"""
     from benchopt import BaseSolver
     failure
@@ -166,6 +155,11 @@ def test_ast_failures_dont_block_run(params):
         def run(self, _): pass
         def get_result(self): return dict(beta=1)
     """
+
+    invalid_component = params.splitlines()[-1].split("=")[0].strip()
+    if invalid_component == "pass":
+        invalid_component = "name"
+
     # Check that the failing solver does not prevent other solvers to be run.
     with temp_benchmark(solvers=[*DEFAULT_SOLVERS.values(), solver]) as bench:
         run_cmd(
@@ -182,3 +176,21 @@ def test_ast_failures_dont_block_run(params):
             run_cmd, f"{bench.benchmark_dir} -s".split(),
             [("", expected_solvers)]
         )
+
+        for args in ["-s test-solver", "--minimal", ""]:
+            exit_code = 1 if not args else None
+            with CaptureCmdOutput(exit=exit_code) as out:
+                install_cmd(
+                    f"{bench.benchmark_dir} -y {args}".split(),
+                    'benchopt', standalone_mode=False
+                )
+            print(out.output)
+            if args:
+                out.check_output("No new requirements installed")
+            else:
+                if invalid_component == "name":
+                    out.check_output("solver_1: collected ✓")
+                    out.check_output("incomplete requirements")
+                else:
+                    out.check_output("my-solver: failed to get requirements ✗")
+                    out.check_output(f"invalid {invalid_component}")

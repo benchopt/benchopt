@@ -551,12 +551,11 @@ def test_pre_run_hook():
             )
 
         with CaptureCmdOutput() as out:
-            with pytest.raises(SystemExit, match="False"):
-                _cmd_test(
-                    f"{benchmark.benchmark_dir} -k solver1 --skip-install"
-                    " -v".split(),
-                    standalone_mode=False
-                )
+            _cmd_test(
+                f"{benchmark.benchmark_dir} -k solver1 --skip-install"
+                " -v".split(),
+                standalone_mode=False
+            )
 
         # Make sure warmup is called exactly once
         out.check_output("3 passed, 1 skipped, 5 deselected", repetition=1)

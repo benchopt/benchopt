@@ -1,4 +1,5 @@
 import re
+import sys
 
 import click
 import pytest
@@ -31,14 +32,35 @@ class TestCmdTest:
 
     def test_valid_call(self):
         with temp_benchmark() as bench, CaptureCmdOutput() as out:
-            with pytest.raises(SystemExit, match="False"):
-                benchopt_test(
-                   f"{bench.benchmark_dir} --skip-install".split(),
-                   'benchopt', standalone_mode=False
-                )
+            benchopt_test(
+                f"{bench.benchmark_dir} --skip-install".split(),
+                'benchopt', standalone_mode=False
+            )
 
         out.check_output("test session starts", repetition=1)
         out.check_output("PASSED", repetition=8)
+        out.check_output("SKIPPED", repetition=1)
+
+    def test_valid_call_fail(self):
+        solver = """
+        from benchopt import BaseSolver
+        class Solver(BaseSolver):
+            name = "failing-solver"
+            def set_objective(self, X, y, lmbd): pass
+            def run(self, _): raise ValueError("Intentional Error")
+            def get_result(self): return dict(beta=1)
+        """
+        with temp_benchmark(solvers=solver) as bench:
+            exit_code = 1 if sys.platform == "win32" else 256
+            with CaptureCmdOutput(exit=exit_code) as out:
+                benchopt_test(
+                    f"{bench.benchmark_dir} --skip-install".split(),
+                    'benchopt', standalone_mode=False
+                )
+
+        out.check_output("test session starts", repetition=1)
+        out.check_output("FAILED", repetition=2)
+        out.check_output("PASSED", repetition=7)
         out.check_output("SKIPPED", repetition=1)
 
     def test_valid_call_in_env_no_pytest(self, test_env_name, no_pytest):
@@ -64,11 +86,10 @@ class TestCmdTest:
         with temp_benchmark(
             extra_files={'test_config.py': test_config}
         ) as bench, CaptureCmdOutput() as out:
-            with pytest.raises(SystemExit, match="False"):
-                benchopt_test(
-                   f"{bench.benchmark_dir} -k dataset_get_data".split(),
-                   'benchopt', standalone_mode=False
-                )
+            benchopt_test(
+                f"{bench.benchmark_dir} -k dataset_get_data".split(),
+                'benchopt', standalone_mode=False
+            )
 
         out.check_output("test session starts", repetition=1)
         out.check_output("test_dataset_get_data", repetition=2)
@@ -85,11 +106,10 @@ class TestCmdTest:
         with temp_benchmark(
             extra_files={'test_config.py': test_config}
         ) as bench, CaptureCmdOutput() as out:
-            with pytest.raises(SystemExit, match="False"):
-                benchopt_test(
-                   [str(bench.benchmark_dir), "-k", "test_solver_run"],
-                   'benchopt', standalone_mode=False
-                )
+            benchopt_test(
+                [str(bench.benchmark_dir), "-k", "test_solver_run"],
+                'benchopt', standalone_mode=False
+            )
 
         out.check_output("test session starts", repetition=1)
         out.check_output(r"test_solver_run\[", repetition=1)
@@ -105,11 +125,10 @@ class TestCmdTest:
         with temp_benchmark(
             extra_files={'test_config.py': test_config}
         ) as bench, CaptureCmdOutput() as out:
-            with pytest.raises(SystemExit, match="False"):
-                benchopt_test(
-                    [str(bench.benchmark_dir), "-k", "test_solver_run"],
-                    'benchopt', standalone_mode=False
-                )
+            benchopt_test(
+                [str(bench.benchmark_dir), "-k", "test_solver_run"],
+                'benchopt', standalone_mode=False
+            )
         out.check_output("XFAIL", repetition=1)
 
     def test_complete_bench(self, bench_completion_cases):  # noqa: F811

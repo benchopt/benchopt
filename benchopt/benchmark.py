@@ -438,7 +438,8 @@ class Benchmark:
             requirements["gpu"] instead of requirements["cpu"].
         """
         # Collect all classes matching one of the patterns
-        print("Collecting packages...", end='', flush=True)
+        print("Collecting packages:")
+        exit_code = 0
 
         check_installs, missings = [], []
         objective = self.get_benchmark_objective()
@@ -448,7 +449,7 @@ class Benchmark:
         if missing_deps:
             raise AttributeError(
                 "Could not find dependencies in objective.py while it is not "
-                f"importable. {MISSING_DEPS_MSG}"
+                f"importable.\n\n{MISSING_DEPS_MSG}"
             )
 
         if len(shell_install_scripts) > 0 or len(conda_reqs) > 0:
@@ -480,11 +481,14 @@ class Benchmark:
             f"- {klass.name}" for klass in check_installs
         ])
         if len(list_install) == 0:
-            self.check_missing(missings)
-            print("All required solvers are already installed.")
+            exit_code = self.check_missing(missings)
+            print("No new requirements installed")
             if download:
-                self.download_all_data(include_datasets, env_name, quiet)
-            return
+                exit_code = max(
+                    exit_code,
+                    self.download_all_data(include_datasets, env_name, quiet)
+                )
+            return exit_code
 
         print(f"Installing required packages for:\n{list_install}\n...",
               end='', flush=True)
@@ -511,7 +515,7 @@ class Benchmark:
             elif not cls_success:
                 not_installed.add(klass.name)
 
-        self.check_missing(missings)
+        exit_code = self.check_missing(missings)
 
         # If one failed, raise a warning to explain how to see the install
         # errors.
@@ -527,14 +531,18 @@ class Benchmark:
             print(colorify(f" done (missing deps: {not_installed})", YELLOW))
 
         if download:
-            self.download_all_data(include_datasets, env_name, quiet)
+            exit_code = max(
+                exit_code,
+                self.download_all_data(include_datasets, env_name, quiet)
+            )
+        return exit_code
 
     def download_all_data(self, datasets, env_name, quiet):
         if len(datasets) == 0:
-            return
+            return 0
         cmd = f"benchopt check-data {self.benchmark_dir} -d "
         cmd += " -d ".join(d.name for d in datasets)
-        _run_shell_in_conda_env(
+        return _run_shell_in_conda_env(
             cmd, env_name=env_name, raise_on_error=True, capture_stdout=False
         )
 
@@ -542,22 +550,38 @@ class Benchmark:
         # Check that classes not importable, with no requirements, only depends
         # on global requirements specified in Objective.requirements.
         # Otherwise, we raise a comprehensible error.
-        if len(missings) > 0:
-            # Format the list of classes missing requirements.
-            cls_types = {'Solver': [], 'Dataset': []}
-            for klass in missings:
-                cls_type = klass.__base__.__name__.replace("Base", "")
-                cls_types[cls_type].append(klass.name)
-            cls_types = {
-                k: f'{cls_type}\n' + '\n'.join([f'- {c}' for c in v])
-                for k, v in cls_types.items() if len(v) > 0
-            }
-            missing_cls = '\n'.join(cls_types.values())
+        if len(missings) == 0:
+            return 0
 
-            raise AttributeError(
-                f"Could not find dependencies for the following classes while "
-                f"they are not importable:\n{missing_cls}\n{MISSING_DEPS_MSG}"
-            )
+        # Format the list of classes missing requirements.
+        cls_types = {'Solver': [], 'Dataset': []}
+        for klass in missings:
+            cls_type = klass.__base__.__name__.replace("Base", "")
+            try:
+                # Check for invalid install_cmd
+                hasattr(klass, "install_cmd")
+                # Check for invalid requirements
+                if not hasattr(klass, "requirements"):
+                    reason = "no requirements"
+                else:
+                    reason = "incomplete requirements"
+            except ValueError as e:
+                if "install_cmd" in str(e):
+                    reason = "invalid install_cmd"
+                else:
+                    reason = "invalid requirements"
+            cls_types[cls_type].append(f"{klass.name} ({reason})")
+        cls_types = {
+            k: f'{cls_type}\n' + '\n'.join([f'- {c}' for c in v])
+            for k, v in cls_types.items() if len(v) > 0
+        }
+        missing_cls = '\n'.join(cls_types.values())
+
+        print(
+            f"Could not find dependencies for the following classes while "
+            f"they are not importable:\n{missing_cls}\n\n{MISSING_DEPS_MSG}"
+        )
+        return 1
 
     def get_all_runs(self, solvers=None, forced_solvers=None,
                      datasets=None, objectives=None, terminal=None):
