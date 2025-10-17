@@ -25,12 +25,20 @@ CLI
 - Deprecate the ``--slurm`` parameter which will be removed in benchopt 1.8.
   By `Thomas Moreau`_ (:gh:`673`).
 
+- Improved output formatting for benchmark ``run/install/test``.
+  By `Thomas Moreau`_ (:gh:`847`).
 
 API
 ---
 
 FIX
 ---
+
+- Improve AST parsing when missing attributes in the class.
+  By `Thomas Moreau`_ (:gh:`846`)
+
+- Fix check_patterns when a class is not installed and represented with a
+  FailedImport class. By `Thomas Moreau`_ (:gh:`844`)
 
 - Fix running ``benchopt test`` when ``pytest`` is not installed
   in the conda env. By `Thomas Moreau`_ (:gh:`838`)

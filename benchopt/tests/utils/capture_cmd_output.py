@@ -1,5 +1,7 @@
 import re
+import pytest
 from pathlib import Path
+from contextlib import nullcontext
 
 from joblib.executor import get_memmapping_executor
 
@@ -20,9 +22,13 @@ OUTPUT_FILES_PATTERN = [
 class CaptureCmdOutput(object):
     "Context to capture run cmd output and files."
 
-    def __init__(self, delete_result_files=True):
-        self.out = SuppressStd()
+    def __init__(self, delete_result_files=True, exit=None):
         self.delete_result_files = delete_result_files
+        self.out = SuppressStd()
+        self.exit_ctx = (
+            pytest.raises(SystemExit, match=str(exit)) if exit is not None
+            else nullcontext()
+        )
 
     @property
     def output(self):
@@ -59,17 +65,24 @@ class CaptureCmdOutput(object):
 
         # Redirect the stdout/stderr fd to temp file
         self.out.__enter__()
+        self.exit_ctx.__enter__()
         return self
 
     def __exit__(self, exc_class, value, traceback):
-        self.out.__exit__(exc_class, value, traceback)
+        self.out.__exit__(None, None, None)
+
+        # Check the exit code raised with SystemExit if needed
+        suppressed = self.exit_ctx.__exit__(exc_class, value, traceback)
+
         self.output_checker = BenchoptCmdOutputProcessor(
             self.out.output, self.delete_result_files
         )
 
         # If there was an exception, display the output
-        if exc_class is not None:
+        if not suppressed and exc_class is not None:
             print(self.output_checker.output)
+
+        return suppressed
 
     def check_output(self, pattern, repetition=None):
         self.output_checker.check_output(pattern, repetition)

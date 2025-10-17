@@ -339,7 +339,7 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
     def _get_data(self, uses_seed):
         "Wrapper to make sure the returned results are correctly formated."
 
-        # Automatically cache the _data to avoid reloading it.s
+        # Automatically cache the _data to avoid reloading it.
         if not hasattr(self, '_data') or self._data is None:
             self._data = self.get_data()
 
@@ -536,9 +536,9 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
     # hashing the data directly.
     def set_dataset(self, dataset):
         self._dataset = dataset
+        assert self.is_installed(raise_on_not_installed=True)
 
         uses_seed = class_uses_seeding(dataset.__class__)
-
         data = dataset._get_data(uses_seed)
 
         # Check if the dataset is compatible with the objective
