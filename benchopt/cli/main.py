@@ -2,6 +2,7 @@ import yaml
 import click
 import warnings
 from pathlib import Path
+import random
 
 from benchopt.benchmark import Benchmark
 from benchopt.config import get_setting
@@ -234,6 +235,11 @@ def run(config_file=None, **kwargs):
             except ValueError:  # already under string format
                 import pandas as pd
                 timeout = pd.to_timedelta(timeout).total_seconds()
+
+    # Set a random seed if none is given
+    if seed is None:
+        seed = random.randint(0, 2**32 - 1)
+        print(f"Selected random seed: {benchmark.seed}")
 
     # Create the Benchmark object
     benchmark = Benchmark(benchmark, no_cache=no_cache, seed=seed)

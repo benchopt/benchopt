@@ -5,7 +5,6 @@ import warnings
 import importlib
 import itertools
 from pathlib import Path
-import random
 
 from joblib.externals import cloudpickle
 
@@ -124,8 +123,6 @@ class Benchmark:
         self.name = self.name.replace('.', '-')
 
         # Set the random seed for the benchmark
-        if seed is None:
-            seed = random.randint(0, 2**32 - 1)
         self.seed = seed
 
     def set_benchmark_module(self):

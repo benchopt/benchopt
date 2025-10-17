@@ -233,22 +233,6 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
             res = _run_one_to_cvg_cached(**kwargs)
             return res if res is not None else ([], 'not run yet')
 
-    # Seed the run in case the dataset needs a seed
-    # since the repetition does not matter here
-    seed_run(
-        objective=objective,
-        dataset=dataset,
-        solver=solver,
-        repetition=1,
-        base_seed=benchmark.seed
-    )
-
-    # Set objective and skip if necessary.
-    skip, reason = objective.set_dataset(dataset)
-    if skip:
-        terminal.skip(reason, objective=True)
-        return []
-
     states = []
     run_statistics = []
 
@@ -273,6 +257,20 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
             n_repetitions = 1
 
     for rep in range(n_repetitions):
+        seed_run(
+            objective=objective,
+            dataset=dataset,
+            solver=solver,
+            repetition=rep,
+            base_seed=benchmark.seed
+        )
+
+        # Set objective and skip if necessary.
+        skip, reason = objective.set_dataset(dataset)
+        if skip:
+            terminal.skip(reason, objective=True)
+            return []
+
         skip, reason = solver._set_objective(objective)
         if skip:
             terminal.skip(reason)
@@ -307,8 +305,6 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
             stopping_criterion=stopping_criterion, force=force,
             terminal=terminal, pdb=pdb
         )
-
-        seed_run(objective, dataset, solver, rep, benchmark.seed)
 
         try:
             curve, status = run_one_to_cvg_cached(

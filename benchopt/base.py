@@ -10,23 +10,23 @@ from .utils.dependencies_mixin import DependenciesMixin
 from .utils.parametrized_name_mixin import ParametrizedNameMixin
 
 
-def get_seed(seed_dict, ignore_objective, ignore_dataset, ignore_solver):
-    dict_keys = ["base_seed", "objective", "dataset", "solver", "repetition"]
+def get_seed(seed_dict, ignore_objective, ignore_dataset, ignore_solver, ignore_repetition):
+    ignore_keys = {
+        "base_seed": False,
+        "objective": ignore_objective,
+        "dataset": ignore_dataset,
+        "solver": ignore_solver,
+        "repetition": ignore_repetition
+    }
     hash_list = []
-    for key in dict_keys:
-        if ignore_objective and key == "objective":
-            hash_list.append("*")
-            continue
-        if ignore_dataset and key == "dataset":
-            hash_list.append("*")
-            continue
-        if ignore_solver and key == "solver":
-            hash_list.append("*")
-            continue
+    for key in ignore_keys:
         if key not in seed_dict:
             raise ValueError(f"Seed dict is not initialized correctly, "
                              f"missing {key} key.")
-        hash_list.append(seed_dict[key])
+        elif ignore_keys[key]:
+            hash_list.append("*")
+        else:
+            hash_list.append(seed_dict[key])
 
     hash_string = "_".join(hash_list)
     digest = hashlib.sha256(hash_string.encode()).hexdigest()
@@ -268,14 +268,16 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
             self._set_objective(objective)
 
     def get_seed(
-        self, ignore_objective=False,
-        ignore_dataset=False, ignore_solver=False
+        self, ignore_objective=False, ignore_dataset=False,
+        ignore_solver=False, ignore_repetition=False,
     ):
         if not hasattr(self, "seed_dict"):
             raise ValueError(f"seed_dict was not initialized for {self}")
 
-        return get_seed(self.seed_dict, ignore_objective,
-                        ignore_dataset, ignore_solver)
+        return get_seed(
+            self.seed_dict, ignore_objective, ignore_dataset,
+            ignore_solver, ignore_repetition
+        )
 
 
 class CommandLineSolver(BaseSolver, ABC):
@@ -328,14 +330,16 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
         return self._data
 
     def get_seed(
-        self, ignore_objective=False,
-        ignore_dataset=False, ignore_solver=False
+        self, ignore_objective=False, ignore_dataset=False,
+        ignore_solver=False, ignore_repetition=False,
     ):
         if not hasattr(self, "seed_dict"):
             raise ValueError(f"seed_dict was not initialized for {self}")
 
-        return get_seed(self.seed_dict, ignore_objective,
-                        ignore_dataset, ignore_solver)
+        return get_seed(
+            self.seed_dict, ignore_objective, ignore_dataset,
+            ignore_solver, ignore_repetition
+        )
 
 
 class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
@@ -639,11 +643,13 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
         return split_(cv_fold, *arrays)
 
     def get_seed(
-        self, ignore_objective=False,
-        ignore_dataset=False, ignore_solver=False
+        self, ignore_objective=False, ignore_dataset=False,
+        ignore_solver=False, ignore_repetition=False
     ):
         if not hasattr(self, "seed_dict"):
             raise ValueError(f"seed_dict was not initialized for {self}")
 
-        return get_seed(self.seed_dict, ignore_objective,
-                        ignore_dataset, ignore_solver)
+        return get_seed(
+            self.seed_dict, ignore_objective, ignore_dataset,
+            ignore_solver, ignore_repetition
+        )
