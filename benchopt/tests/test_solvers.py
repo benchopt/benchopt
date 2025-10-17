@@ -17,9 +17,10 @@ def test_solver_template():
             template_solver = (
                 bench.benchmark_dir / 'solvers' / 'template_solver.py'
             )
-            _load_class_from_module(
+            template = _load_class_from_module(
                 bench.benchmark_dir, template_solver, 'Solver'
             )
+            template.is_installed(raise_on_not_installed=True)
 
         # Make sure that this error is not raised when listing
         # all solvers from the benchmark.

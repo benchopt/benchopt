@@ -163,15 +163,15 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               is_flag=True,
               help="Launch a debugger if there is an error. This will launch "
               "ipdb if it is installed and default to pdb otherwise.")
-@click.option('--local', '-l', 'env_name',
-              flag_value='False', default=True,
-              help="Run the benchmark in the local conda environment.")
 @click.option('--profile',
               flag_value='True', default=False,
               help="Will do line profiling on all functions with @profile "
                    "decorator. Requires the line-profiler package. "
                    "The profile decorator needs to be imported "
                    "with: from benchopt.utils import profile")
+@click.option('--local', '-l', 'env_name',
+              flag_value='False', default=True,
+              help="Run the benchmark in the local conda environment.")
 @click.option('--env', '-e', 'env_name',
               flag_value='True',
               help="Run the benchmark in a dedicated conda environment "
@@ -198,7 +198,6 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               "<BENCHMARK>/outputs/benchopt_run_<timestamp>.parquet."
               )
 def run(config_file=None, **kwargs):
-    print("Benchopt is running!")
     if config_file is not None:
         with open(config_file, "r") as f:
             config = yaml.safe_load(f)
@@ -211,6 +210,18 @@ def run(config_file=None, **kwargs):
         collect, plot, display, html, n_jobs, parallel_config, slurm, pdb,
         do_profile, env_name, no_cache, output
     ) = _get_run_args(kwargs, config)
+
+    if env_name == "False":
+        print("Benchopt is running!")
+    else:
+        if env_name == 'True':
+            print("Launching benchopt in a dedicated conda environment")
+        else:
+            # check provided <env_name>
+            # (to avoid empty name like `--env-name ""`)
+            if len(env_name) == 0:
+                raise RuntimeError("Empty environment name.")
+            print(f"Launching benchopt in env {env_name}")
 
     # If --no-timeout is set and --timeout is not, skip these blocks
     # and keep timeout = None
@@ -232,6 +243,7 @@ def run(config_file=None, **kwargs):
     # Create the Benchmark object
     benchmark = Benchmark(benchmark, no_cache=no_cache)
 
+    # Check if the benchmark is compatible with the current benchopt version
     if benchmark.min_version is not None:
         from packaging.version import parse
         from benchopt import __version__
@@ -246,8 +258,7 @@ def run(config_file=None, **kwargs):
                 "for this benchmark."
             )
 
-    # If env_name is False, the flag `--local` has been used (default) so
-    # run in the current environment.
+    # If env_name is False, run in the current environment.
     if env_name == 'False':
         from benchopt.runner import _run_benchmark
 
@@ -267,6 +278,7 @@ def run(config_file=None, **kwargs):
         # Check that the dataset/solver patterns match actual dataset
         datasets = benchmark.check_dataset_patterns(dataset_names)
         objectives = benchmark.check_objective_filters(objective_filters)
+        print(" done.")
 
         # pyyaml returns tuples: make sure everything is a list
         if isinstance(solver_names, dict):
@@ -277,7 +289,7 @@ def run(config_file=None, **kwargs):
             solver_names + list(forced_solvers)
         )
 
-        _run_benchmark(
+        exit_code, _ = _run_benchmark(
             benchmark, solvers, forced_solvers,
             datasets=datasets, objectives=objectives,
             max_runs=max_runs, n_repetitions=n_repetitions,
@@ -288,6 +300,8 @@ def run(config_file=None, **kwargs):
 
         print_stats()  # print profiling stats (does nothing if not profiling)
 
+        if exit_code != 0:
+            raise SystemExit(exit_code)
         return
 
     default_conda_env, all_conda_envs = list_conda_envs()
@@ -304,15 +318,11 @@ def run(config_file=None, **kwargs):
             "'benchopt run' with options '-e/--env' or '--env-name'."
         )
 
+    # Check the name of the environment the benchmark will be run in
     if env_name == 'True':
         env_name = f"benchopt_{benchmark.name}"
         install_cmd = f"`benchopt install -e {benchmark.benchmark_dir}`"
     else:
-        # check provided <env_name>
-        # (to avoid empty name like `--env-name ""`)
-        if len(env_name) == 0:
-            raise RuntimeError("Empty environment name.")
-
         install_cmd = (
             f"`benchopt install --env-name {env_name} "
             f"{benchmark.benchmark_dir}`"
@@ -325,8 +335,6 @@ def run(config_file=None, **kwargs):
             f"does not exist. Make sure to run {install_cmd} to create the "
             "benchmark and install the dependencies."
         )
-
-    print(f"Launching benchopt in env {env_name}")
 
     # check if environment was set up with benchopt
     benchopt_version, is_editable = get_benchopt_version_in_env(env_name)
@@ -373,9 +381,11 @@ def run(config_file=None, **kwargs):
         rf"--output {output}"
         .replace('\\', '\\\\')
     )
-    raise SystemExit(_run_shell_in_conda_env(
+    exit_code = _run_shell_in_conda_env(
         cmd, env_name=env_name, capture_stdout=False
-    ) != 0)
+    )
+    if exit_code != 0:
+        raise SystemExit(exit_code)
 
 
 @main.command(
@@ -527,11 +537,13 @@ def install(
 
     # install requirements
     print("# Install", flush=True)
-    benchmark.install_all_requirements(
+    exit_code = benchmark.install_all_requirements(
         include_solvers=solvers, include_datasets=datasets,
         minimal=minimal, env_name=env_name, force=force, quiet=quiet,
         download=download, gpu=gpu,
     )
+    if exit_code != 0:
+        raise SystemExit(exit_code)
 
 
 @main.command(
@@ -585,6 +597,8 @@ def test(benchmark, env_name, pytest_args):
         '--import-mode importlib'
     )
 
-    raise SystemExit(_run_shell_in_conda_env(
+    exit_code = _run_shell_in_conda_env(
         cmd, env_name=env_name, capture_stdout=False
-    ) != 0)
+    )
+    if exit_code != 0:
+        raise SystemExit(exit_code)
