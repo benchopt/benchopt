@@ -215,10 +215,12 @@ class Benchmark:
         for plot in self.get_custom_plots():
             plot._check()
 
-    def get_plt_plots(self, df):
+    def get_plt_plots(self, df, output_dir, kind=None):
         figs = []
         for plot in self.get_custom_plots():
-            figs.extend(plot._get_plt_plot(df))
+            if kind is not None and plot._get_name() != kind:
+                continue
+            figs.extend(plot._get_plt_plot(df, output_dir))
         return figs
 
     def _list_benchmark_classes(self, base_class):

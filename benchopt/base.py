@@ -718,19 +718,19 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
 
         return plots, dropdown
 
-    def _get_plt_plot(self, df):
+    def _get_plt_plot(self, df, output_dir):
         if self.type == "scatter":
-            return self._get_plt_plot_scatter(df)
+            return self._get_plt_plot_scatter(df, output_dir)
         else:
             raise NotImplementedError(
                 f"Plot type {self.type} not implemented for matplotlib."
             )
 
-    def _get_plt_plot_scatter(self, df):
+    def _get_plt_plot_scatter(self, df, output_dir):
         df = df.copy()
         data, _ = self._get_all_plots(df)
         figs = []
-        for plot_datas in data.values():
+        for key, plot_datas in data.items():
 
             fig = plt.figure()
             for plot_data in plot_datas["data"]:
@@ -758,6 +758,14 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
             plt.title(plot_datas["title"], fontsize=14)
             plt.tight_layout()
 
+            save_name = output_dir / f"{key}"
+            if hasattr(fig, 'write_html'):
+                save_name = save_name.with_suffix('.html')
+                fig.write_html(str(save_name), include_mathjax='cdn')
+            else:
+                save_name = save_name.with_suffix('.pdf')
+                plt.savefig(save_name)
+            print(f'Save {key} as: {save_name}')
             figs.append(fig)
 
         return figs
