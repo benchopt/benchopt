@@ -5,7 +5,6 @@ import ast
 import sys
 import hashlib
 import warnings
-import traceback
 import importlib
 from pathlib import Path
 
@@ -244,20 +243,23 @@ def _set_cls_attr_from_ast(module_file, cls_name, ctx):
                 if target.id in ["name", "requirements", "install_cmd"]:
                     try:
                         ctx[target.id] = ast.literal_eval(node.value)
-                    except Exception as exc:
+                    except Exception:
                         if target.id == "name":
                             exc = ValueError(
                                 f"Could not evaluate the name of the class "
                                 f"{cls_name} in module {module_file}.\n"
-                                f"{traceback.format_exc()}"
+                                f"The name should be a string literal."
                             )
                             exc.__cause__ = ctx['exc']
                             ctx['exc'] = exc
+                            ctx['name'] = name
                         else:
                             msg = (
                                 f"Could not evaluate statically '{target.id}' "
                                 f"of the class {cls_name} in {module_file}.\n"
-                                f"{traceback.format_exc()}"
+                                "By default, this should be a string literal. "
+                                "If dynamic evaluation is necessary, use "
+                                "`safe_import_context`."
                             )
                             def raise_err(self, msg=msg): raise ValueError(msg)
                             ctx[target.id] = classproperty(raise_err)
@@ -266,8 +268,9 @@ def _set_cls_attr_from_ast(module_file, cls_name, ctx):
                 ctx[node.name] = lambda *args, **kwargs: None
 
     if ctx['name'] is None:
-        exc = ValueError(f"Could not evaluate the name of the class "
-                         f"{cls_name} in module {module_file}.")
-        exc.__cause__ = ctx['exc']
-        ctx['exc'] = exc
+        warnings.warn(
+            f"The class {cls_name} in module {module_file} has no name "
+            "attribute. Using the module filename as a fallback.",
+            UserWarning
+        )
         ctx['name'] = name

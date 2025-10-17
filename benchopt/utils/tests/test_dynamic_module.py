@@ -46,32 +46,25 @@ def test_pickling_dynamic_module():
             )
 
 
-@pytest.mark.parametrize("params", [
-    # no name
-    "pass",
-    # failing name
-    "name = test-solver",
-])
-def test_ast_replacement_no_name(params):
+def test_ast_replacement_no_name():
     # Test that the AST replacement works when a dynamic module is not
     # importable. In particular, this makes sure that the module filename
     # is correctly stored in the class.
 
-    solver = f"""
+    solver = """
     from benchopt import BaseSolver
     failure
 
     class Solver(BaseSolver):
-        {params}
+        pass
     """
     with temp_benchmark(solvers=solver) as bench:
         # Get the solver from the list of tuples
-        Solver, _ = bench.check_solver_patterns(["solver_0"])[0]
+        with pytest.warns(UserWarning, match="has no name attribute"):
+            Solver, _ = bench.check_solver_patterns(["solver_0"])[0]
         assert not Solver.is_installed()
-        with pytest.raises(ValueError) as excinfo:
+        with pytest.raises(NameError, match="'failure' is not defined"):
             Solver.is_installed(raise_on_not_installed=True)
-        assert "Could not evaluate the name" in str(excinfo.value)
-        assert "'failure' is not defined" in str(excinfo.value.__cause__)
 
     # Check that the failing solver does not prevent other solvers to be run.
     with temp_benchmark(solvers=[*DEFAULT_SOLVERS.values(), solver]) as bench:
@@ -85,6 +78,28 @@ def test_ast_replacement_no_name(params):
             run_cmd, f"{bench.benchmark_dir} -s".split(),
             [("", ['test-solver', 'solver_1'])]
         )
+
+
+def test_ast_replacement_name_undefined():
+    # Test that the AST replacement works when a dynamic module is not
+    # importable. In particular, this makes sure that the module filename
+    # is correctly stored in the class.
+
+    solver = """
+    from benchopt import BaseSolver
+    failure
+
+    class Solver(BaseSolver):
+        name = undefined
+    """
+    with temp_benchmark(solvers=solver) as bench:
+        # Get the solver from the list of tuples
+        Solver, _ = bench.check_solver_patterns(["solver_0"])[0]
+        assert not Solver.is_installed()
+        with pytest.raises(ValueError) as excinfo:
+            Solver.is_installed(raise_on_not_installed=True)
+        assert "Could not evaluate the name" in str(excinfo.value)
+        assert "'failure' is not defined" in str(excinfo.value.__cause__)
 
 
 @pytest.mark.parametrize("params", [
@@ -127,6 +142,30 @@ def test_ast_replacement(params, no_raise_install):
         assert "solver_0.py" in str(excinfo.value)
         assert f"'{component}'" in str(excinfo.value)
 
+
+@pytest.mark.parametrize("params", [
+    # no name
+    "pass",
+    # undefined name
+    "name = undefined",
+    # undefined install_cmd
+    "name = 'my-solver'\n        install_cmd = undefined",
+    # undefined requirements
+    "name = 'my-solver'\n        requirements = undefined",
+    # failing requirements
+    "name = 'my-solver'\n        requirements = ['', f'{undefined}']",
+])
+def test_ast_failures_dont_block_run(params):
+    solver = f"""
+    from benchopt import BaseSolver
+    failure
+
+    class Solver(BaseSolver):
+        {params}
+        def set_objective(self, X, y, lmbd): pass
+        def run(self, _): pass
+        def get_result(self): return dict(beta=1)
+    """
     # Check that the failing solver does not prevent other solvers to be run.
     with temp_benchmark(solvers=[*DEFAULT_SOLVERS.values(), solver]) as bench:
         run_cmd(
@@ -135,7 +174,11 @@ def test_ast_replacement(params, no_raise_install):
         )
 
         # Check that completion also works
+        expected_solvers = (
+            ['test-solver', 'solver_1'] if 'my-solver' not in params
+            else ['my-solver', 'test-solver']
+        )
         _test_shell_completion(
             run_cmd, f"{bench.benchmark_dir} -s".split(),
-            [("", ['test-solver', 'my-solver'])]
+            [("", expected_solvers)]
         )
