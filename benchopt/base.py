@@ -1,4 +1,6 @@
 from abc import ABC, abstractmethod
+import inspect
+import matplotlib.pyplot as plt
 
 from .callback import _Callback
 from .stopping_criterion import SingleRunCriterion
@@ -7,6 +9,11 @@ from .stopping_criterion import SufficientProgressCriterion
 from .utils.misc import NamedTemporaryFile
 from .utils.dependencies_mixin import DependenciesMixin
 from .utils.parametrized_name_mixin import ParametrizedNameMixin
+from .utils.parametrized_name_mixin import product_param
+
+CMAP = plt.get_cmap('tab20')
+COLORS = [CMAP(i) for i in range(CMAP.N)]
+COLORS = COLORS[::2] + COLORS[1::2]
 
 
 class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
@@ -593,3 +600,112 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
         cv_fold = next(self._cv)
         split_ = getattr(self, "split", self._default_split)
         return split_(cv_fold, *arrays)
+
+
+class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
+    _base_class_name = 'Plot'
+    label_dict = {}
+
+    @abstractmethod
+    def plot(self, df, **kwargs):
+        ...
+
+    def get_style(self, label):
+        idx = self.label_dict.get(label, len(self.label_dict))
+        self.label_dict[label] = idx
+
+        color = COLORS[idx % len(COLORS)]
+
+        color = tuple(
+            int(255*x) if i != 3 else float(x)
+            for i, x in enumerate(color)
+        )
+        color = f'rgba{color}'
+        marker = idx
+
+        return color, marker
+
+    def _get_name(self):
+        return self.name.replace(" ", "_")
+
+    def check(self):
+        self._check_type()
+        self._check_params()
+
+    def _check_type(self):
+        if not hasattr(self, 'type'):
+            raise ValueError("Plot should have a `type` attribute.")
+        supported_types = ['scatter']
+        if self.type not in supported_types:
+            raise ValueError(
+                f"Plot type should be one of {' '.join(supported_types)}. "
+                f"Got {self.type}."
+            )
+
+    def _check_params(self):
+        if not hasattr(self, 'dropdown'):
+            self.dropdown = {}
+        if not isinstance(self.dropdown, dict):
+            raise ValueError("`dropdown` should be a dictionary.")
+        for key, values in self.dropdown.items():
+            if values is Ellipsis:
+                continue
+            if not isinstance(values, list):
+                raise ValueError(
+                    f"The values of dropdown should be a list or ... . "
+                    f"Got {values} for key {key}."
+                )
+
+            if len(values) == 0:
+                raise ValueError(
+                    f"The values of dropdown should be non empty. "
+                    f"Got {values} for key {key}."
+                )
+
+        keys = set(self.dropdown.keys())
+        plot_kwargs = set([
+            name for name, _ in
+            inspect.signature(self.plot).parameters.items()
+        ])
+        plot_kwargs.remove('df')
+
+        # Make sure all dropdown keys are in the plot signature
+        if not keys == plot_kwargs:
+            raise ValueError(
+                f"The keys of dropdown {keys} should match the signature of "
+                f"`plot` function, {plot_kwargs}."
+            )
+
+    def _export_metadata(self):
+        return {
+            'type': self.type,
+            'title': self.title,
+            'xlabel': self.xlabel,
+            'ylabel': self.ylabel,
+        }
+
+    def _get_all_plots(self, df):
+        # Get all combinations
+        dropdown = {**self.dropdown}
+        for k, v in dropdown.items():
+            if v is Ellipsis:
+                if k == "dataset":
+                    dropdown[k] = df['data_name'].unique().tolist()
+                elif k == "solver":
+                    dropdown[k] = df['solver_name'].unique().tolist()
+                else:
+                    dropdown[k] = df[k].unique().tolist()
+
+        combinations = product_param(dropdown)
+
+        plots = {}
+        for kwargs in combinations:
+            data = self._export_metadata()
+            data["data"] = self.plot(df, **kwargs)
+            key_list = (
+                [self._get_name()] + list(kwargs.values())
+            )
+            key = '_'.join(map(str, key_list))
+            plots[key] = data
+
+        return plots

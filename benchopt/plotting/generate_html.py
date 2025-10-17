@@ -13,9 +13,8 @@ from ..utils.parquet import get_metadata as get_parquet_metadata
 from benchopt.benchmark import Benchmark
 from .plot_bar_chart import compute_bar_chart_data  # noqa: F401
 from .plot_boxplot import compute_solver_boxplot_data
-from .plot_objective_curve import compute_quantiles   # noqa: F401
-from .plot_objective_curve import get_solver_style
 from .plot_objective_curve import reset_solver_styles_idx
+from .plot_objective_curve import compute_solver_objective_curve_data
 
 ROOT = Path(__file__).parent / "html"
 DEFAULT_HTML_DIR = Path("html")
@@ -108,12 +107,18 @@ def get_results(fnames, html_root, benchmark, config=None, copy=False):
             objective_names=df['objective_name'].unique(),
             obj_cols=[k for k in df.columns if k.startswith('objective_')
                       and k != 'objective_name'],
-            kinds=config_.get('plots', list(PLOT_KINDS)),
+            kinds=config_.get(
+                'plots',
+                list(PLOT_KINDS) + benchmark.get_custom_plot_names()),
             metadata=get_metadata(df, config_.get('plot_configs', {})),
+            custom_plot_params=benchmark.get_custom_plot_params(df),
         )
 
         # JSON
         result['json'] = json.dumps(shape_datasets_for_html(df))
+        result['json_custom_plots'] = json.dumps(
+            shape_custom_plots_for_html(df, benchmark)
+        )
 
         results.append(result)
 
@@ -161,6 +166,13 @@ def get_metadata(df, plot_configs):
         metadata["obj_description"] = ""
 
     return metadata
+
+
+def shape_custom_plots_for_html(df, benchmark):
+    return {
+        plot._get_name(): plot._get_all_plots(df)
+        for plot in benchmark.get_custom_plots()
+    }
 
 
 def shape_datasets_for_html(df):
@@ -227,19 +239,10 @@ def shape_solvers_for_html(df, objective_column):
         if len(df_filtered) == 0:
             continue
 
-        # compute median of 'time' and objective_column
-        fields = ["time", objective_column]
-        groupby_stop_val_median = (
-            df_filtered.groupby('stop_val')[fields]
-            .median(numeric_only=True)
-        )
-        if objective_column not in groupby_stop_val_median:
+        if not pd.api.types.is_numeric_dtype(df_filtered[objective_column]):
             # Non-numeric values, skipping this column
             return None
 
-        q1, q9 = compute_quantiles(df_filtered)
-
-        color, marker = get_solver_style(solver)
         # to preserve support of previous benchopt version
         # where 'sampling_strategy' wasn't saved in solver meta
         if "sampling_strategy" in df_filtered:
@@ -263,19 +266,13 @@ def shape_solvers_for_html(df, objective_column):
         sampling_strategy = sampling_strategy[0]
 
         solver_data[solver] = {
-            'scatter': {
-                'x': groupby_stop_val_median['time'].tolist(),
-                'y': groupby_stop_val_median[objective_column].tolist(),
-                'stop_val': groupby_stop_val_median.index.tolist(),
-                'q1': q1.tolist(),
-                'q9': q9.tolist(),
-            },
+            'scatter': compute_solver_objective_curve_data(
+                df_filtered, objective_column, solver, plotly=True
+            ),
             'bar': compute_bar_chart_data(df, objective_column, solver),
             'boxplot': compute_solver_boxplot_data(
                 df_filtered, objective_column
             ),
-            'color': color,
-            'marker': marker,
             'sampling_strategy': sampling_strategy,
         }
 
@@ -405,7 +402,8 @@ def render_all_results(results, benchmark, home='index.html'):
     for result in results:
         html = Template(
             filename=str(template),
-            input_encoding="utf-8"
+            input_encoding="utf-8",
+            strict_undefined=True
         ).render(
             result=result,
             benchmark=benchmark,
