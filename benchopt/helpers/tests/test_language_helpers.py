@@ -67,7 +67,7 @@ def test_r_solver(test_env_name, no_debug_log):
         datasets=DATASET,
         solvers={"r_solver.py": solver, "r_solver.R": r_solver}
     ) as bench:
-        with CaptureCmdOutput(exit=0) as out:
+        with CaptureCmdOutput() as out:
             install(
                 [str(bench.benchmark_dir), '--env-name', test_env_name],
                 'benchopt', standalone_mode=False
@@ -77,7 +77,7 @@ def test_r_solver(test_env_name, no_debug_log):
         solver.is_installed(
             env_name=test_env_name, raise_on_not_installed=True
         )
-        with CaptureCmdOutput(exit=False) as out:
+        with CaptureCmdOutput() as out:
             run([
                 str(bench.benchmark_dir), '-s', 'r_solver', '-n', '1', '-r', 1,
                 '-d', 'simulated', '--no-plot', '--env-name', test_env_name
@@ -128,7 +128,7 @@ def test_julia_solver(test_env_name, no_debug_log):
         solvers={"julia.py": solver, "julia.jl": julia_solver},
     ) as bench:
 
-        with CaptureCmdOutput(exit=0) as out:
+        with CaptureCmdOutput() as out:
             install(
                 [str(bench.benchmark_dir), '--env-name', test_env_name],
                 'benchopt', standalone_mode=False
@@ -139,7 +139,7 @@ def test_julia_solver(test_env_name, no_debug_log):
             env_name=test_env_name, raise_on_not_installed=True
         )
 
-        with CaptureCmdOutput(exit=False) as out:
+        with CaptureCmdOutput() as out:
             run([
                 str(bench.benchmark_dir), '-s', 'julia_solver', '-n', '1',
                 '-r', 1, '-d', 'simulated', '--no-plot',

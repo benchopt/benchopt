@@ -129,8 +129,7 @@ class TestRunCmd:
                 f"{bench.benchmark_dir} -n 1 --no-plot "
                 f"-d test-dataset --env-name {test_env_name}"
             )
-            with pytest.raises(SystemExit, match='False'):
-                run(cmd.split(), 'benchopt', standalone_mode=False)
+            run(cmd.split(), 'benchopt', standalone_mode=False)
 
         out.check_output(f'conda activate "{test_env_name}"')
         # test-dataset appears twice because of the call to the subcommand
@@ -149,8 +148,7 @@ class TestRunCmd:
                 f"{bench.benchmark_dir} -r 1 -n 1 --timeout {timeout} "
                 f"--no-plot -d test-dataset --env-name {test_env_name}"
             )
-            with pytest.raises(SystemExit, match='False'):
-                run(cmd.split(), 'benchopt', standalone_mode=False)
+            run(cmd.split(), 'benchopt', standalone_mode=False)
 
         out.check_output(f'conda activate "{test_env_name}"')
         # test-dataset appears twice because of the call to the subcommand
@@ -243,12 +241,11 @@ class TestRunCmd:
         """
         with temp_benchmark(solvers=solver) as bench, \
                 CaptureCmdOutput() as out:
-            with pytest.raises(SystemExit, match='False'):
-                run(
-                    f"{bench.benchmark_dir} --env-name {test_env_name} "
-                    "-s test-solver -n 1 -r 1 --profile --no-plot".split(),
-                    'benchopt', standalone_mode=False
-                )
+            run(
+                f"{bench.benchmark_dir} --env-name {test_env_name} "
+                "-s test-solver -n 1 -r 1 --profile --no-plot".split(),
+                'benchopt', standalone_mode=False
+            )
         out.check_output('using profiling', repetition=1)
         out.check_output("File: .*solver_0.py", repetition=1)
         out.check_output(r'\s+'.join([

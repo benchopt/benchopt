@@ -37,7 +37,7 @@ class TestInstallCmd:
                 install(cmd, 'benchopt', standalone_mode=False)
 
     def test_valid_call(self):
-        with temp_benchmark() as bench, CaptureCmdOutput(exit=0) as out:
+        with temp_benchmark() as bench, CaptureCmdOutput() as out:
             install(
                f"{bench.benchmark_dir} -d test-dataset -s test-solver "
                "-y".split(), 'benchopt', standalone_mode=False
@@ -102,7 +102,7 @@ class TestInstallCmd:
         """
         dataset2 = dataset.replace("dataset", "dataset2")
         with temp_benchmark(datasets=[dataset, dataset2]) as benchmark:
-            with CaptureCmdOutput(exit=0) as out:
+            with CaptureCmdOutput() as out:
                 install([
                     *f'{benchmark.benchmark_dir} -d test_dataset '
                     '-y --download'.split()
@@ -112,7 +112,7 @@ class TestInstallCmd:
             out.check_output("Loading data:", repetition=1)
 
         # Check it works with 2 datasets
-            with CaptureCmdOutput(exit=0) as out:
+            with CaptureCmdOutput() as out:
                 install([
                     *f'{benchmark.benchmark_dir} -y --download '
                     '-d test_dataset -d test_dataset2'.split()
@@ -133,7 +133,7 @@ class TestInstallCmd:
                 )
 
     def test_benchopt_install_in_env(self, test_env_name, no_debug_log):
-        with temp_benchmark() as bench, CaptureCmdOutput(exit=0) as out:
+        with temp_benchmark() as bench, CaptureCmdOutput() as out:
             install(
                 [str(bench.benchmark_dir), '--env-name', test_env_name],
                 'benchopt', standalone_mode=False
@@ -169,7 +169,7 @@ class TestInstallCmd:
 
         with temp_benchmark(objective=objective) as bench:
             objective = bench.get_benchmark_objective()
-            with CaptureCmdOutput(exit=0) as out:
+            with CaptureCmdOutput() as out:
                 install(
                     [str(bench.benchmark_dir), '--env-name', test_env_name],
                     'benchopt', standalone_mode=False
@@ -258,7 +258,7 @@ class TestInstallCmd:
         with temp_benchmark(objective=objective,
                             solvers=[solver],
                             datasets=[dataset]) as benchmark:
-            with CaptureCmdOutput(exit=0) as out:
+            with CaptureCmdOutput() as out:
                 install([
                     *f'{benchmark.benchmark_dir} -y --minimal '
                     f'--env-name {test_env_name}'.split()
@@ -300,7 +300,7 @@ class TestInstallCmd:
                 objective=objective,
                 datasets=[missing_deps_dataset]
         ) as benchmark:
-            with CaptureCmdOutput(exit=0) as out:
+            with CaptureCmdOutput() as out:
                 install([
                     *f'{benchmark.benchmark_dir} -d test-dataset -y '
                     f'--env-name {test_env_name}'.split()
@@ -352,13 +352,13 @@ class TestInstallCmd:
             success_msg = "No new requirements installed"
             # installing without gpu flag installs requirements["cpu"],
             # hence OK
-            with CaptureCmdOutput(exit=0) as out:
+            with CaptureCmdOutput() as out:
                 install(f"{bench.benchmark_dir} -yf -s solver1".split(),
                         standalone_mode=False)
             out.check_output(success_msg)
 
             # all good with requirements["gpu"] for solver2, hence no error
-            with CaptureCmdOutput(exit=0) as out:
+            with CaptureCmdOutput() as out:
                 install(f"{bench.benchmark_dir} -yf -s solver2 --gpu".split(),
                         standalone_mode=False)
             out.check_output(success_msg)
