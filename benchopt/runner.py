@@ -248,6 +248,20 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
     # the name of metrics in Objective.compute
     obj_description = objective.__doc__ or ""
 
+    seed_run(
+            objective=objective,
+            dataset=dataset,
+            solver=solver,
+            repetition=1,
+            base_seed=benchmark.seed
+        )
+
+    # Set objective and skip if necessary.
+    skip, reason = objective.set_dataset(dataset)
+    if skip:
+        terminal.skip(reason, objective=True)
+        return []
+
     if n_repetitions is None:
         if hasattr(objective, "cv"):
             n_repetitions = objective.cv.get_n_splits(
