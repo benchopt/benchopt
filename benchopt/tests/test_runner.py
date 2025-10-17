@@ -454,7 +454,7 @@ class TestCache:
             with CaptureCmdOutput() as out:
                 for it in range(3):
                     run(f"{bench.benchmark_dir} --no-plot "
-                        f"-r {n_reps} --seed 0".split(),
+                        f"-r {n_reps}".split(),
                         standalone_mode=False)
 
         # Check that the run are only call once per repetition, but not cached
@@ -512,11 +512,11 @@ class TestCache:
             with CaptureCmdOutput() as out:
                 run([str(bench.benchmark_dir),
                      *"-s test-solver -s test-solver2 "
-                     f'--no-plot -r {n_reps} --seed 0'.split()],
+                     f'--no-plot -r {n_reps}'.split()],
                     standalone_mode=False)
                 run([str(bench.benchmark_dir),
                      *"-s test-solver2 -s test-solver "
-                    f'--no-plot -r {n_reps} --seed 0'.split()],
+                    f'--no-plot -r {n_reps}'.split()],
                     standalone_mode=False)
 
         # Check that the run are only call once per repetition, but not cached

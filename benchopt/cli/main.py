@@ -239,7 +239,7 @@ def run(config_file=None, **kwargs):
     # Set a random seed if none is given
     if seed is None:
         seed = random.randint(0, 2**32 - 1)
-        print(f"Selected random seed: {benchmark.seed}")
+        print(f"Selected random seed: {seed}")
 
     # Create the Benchmark object
     benchmark = Benchmark(benchmark, no_cache=no_cache, seed=seed)

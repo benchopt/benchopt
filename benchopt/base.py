@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 import hashlib
+import ast
+import inspect
 
 from .callback import _Callback
 from .stopping_criterion import SingleRunCriterion
@@ -10,7 +12,8 @@ from .utils.dependencies_mixin import DependenciesMixin
 from .utils.parametrized_name_mixin import ParametrizedNameMixin
 
 
-def get_seed(seed_dict, ignore_objective, ignore_dataset, ignore_solver, ignore_repetition):
+def get_seed(seed_dict, ignore_objective, ignore_dataset,
+             ignore_solver, ignore_repetition):
     ignore_keys = {
         "base_seed": False,
         "objective": ignore_objective,
@@ -32,6 +35,19 @@ def get_seed(seed_dict, ignore_objective, ignore_dataset, ignore_solver, ignore_
     digest = hashlib.sha256(hash_string.encode()).hexdigest()
     seed = int(digest, 16) % (2**32 - 1)
     return seed
+
+
+def class_uses_seeding(cls):
+    # Get source code of the class
+    src = inspect.getsource(cls)
+    tree = ast.parse(src)
+
+    # Walk through the AST and look for calls to self.get_seed
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
+            if node.func.attr == "get_seed":
+                return True
+    return False
 
 
 class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
@@ -320,11 +336,14 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
         """
         ...
 
-    def _get_data(self):
+    def _get_data(self, uses_seed):
         "Wrapper to make sure the returned results are correctly formated."
 
         # Automatically cache the _data to avoid reloading it.s
         if not hasattr(self, '_data') or self._data is None:
+            self._data = self.get_data()
+
+        if uses_seed:
             self._data = self.get_data()
 
         return self._data
@@ -517,7 +536,10 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
     # hashing the data directly.
     def set_dataset(self, dataset):
         self._dataset = dataset
-        data = dataset._get_data()
+
+        uses_seed = class_uses_seeding(dataset.__class__)
+
+        data = dataset._get_data(uses_seed)
 
         # Check if the dataset is compatible with the objective
         skip, reason = self.skip(**data)
