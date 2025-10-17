@@ -1,42 +1,13 @@
-# Tagging a commit with [circle front] will build the front page and perform test-doc.
-# Tagging a commit with [circle full] will build everything.
 version: 2
 jobs:
   build_docs:
     docker:
-      - image: cimg/python:3.9.11-browsers
+      - image: cimg/python:3.10-browsers
     steps:
       - checkout
-      - run:
-          name: Set BASH_ENV
-          command: |
-            echo "set -e" >> $BASH_ENV
-            echo "export DISPLAY=:99" >> $BASH_ENV
-            echo "export OPENBLAS_NUM_THREADS=4" >> $BASH_ENV
-            echo "BASH_ENV:"
-            cat $BASH_ENV
-
-      - run:
-          name: Merge with upstream
-          command: |
-            echo $(git log -1 --pretty=%B) | tee gitlog.txt
-            echo ${CI_PULL_REQUEST//*pull\//} | tee merge.txt
-            if [[ $(cat merge.txt) != "" ]]; then
-              echo "Merging $(cat merge.txt)";
-              git remote add upstream https://github.com/benchopt/benchopt.git;
-              git pull --ff-only upstream "refs/pull/$(cat merge.txt)/merge";
-              git fetch upstream main;
-            fi
-
-      # Load our data
       - restore_cache:
           keys:
             - pkgs-cache
-
-      - run:
-          name: Spin up Xvfb
-          command: |
-            /sbin/start-stop-daemon --start --quiet --pidfile /tmp/custom_xvfb_99.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :99 -screen 0 1400x900x24 -ac +extension GLX +render -noreset;
 
       - run:
           name: Get conda running
@@ -44,14 +15,8 @@ jobs:
 
             wget -q https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh -O ~/miniconda.sh;
             chmod +x ~/miniconda.sh;
-            ~/miniconda.sh -b -p ~/miniconda;
+            ~/miniconda.sh -u -b -p ~/miniconda;
             echo "export PATH=~/miniconda/bin:$PATH" >> $BASH_ENV;
-
-            # update conda pkgs cache
-            mkdir ~/conda_pkgs 2>/dev/null || echo 'already exists'
-            cp -r ~/miniconda/pkgs/* ~/conda_pkgs/
-            rm -rf ~/miniconda/pkgs
-            ln -s ~/conda_pkgs ~/miniconda/pkgs
 
       - run:
           name: Get Python running
@@ -61,14 +26,13 @@ jobs:
             mamba install python=3.10 r-base rpy2 \
                           numpy cython -yq
             pip install --upgrade "setuptools<58.5"
-            pip install --upgrade --progress-bar off git+https://github.com/scikit-learn-contrib/lightning.git
             pip install --upgrade --progress-bar off -e .[doc]
 
       - save_cache:
           key: pkgs-cache
           paths:
             - ~/.cache/pip
-            - ~/conda_pkgs
+            - ~/miniconda
 
       # Look at what we have and fail early if there is some library conflict
       - run:
@@ -97,19 +61,22 @@ jobs:
           name: make result
           command: |
             pip install -U numba
-            benchopt run benchopt/tests/dummy_benchmark -d Simulated[n_features=100,n_samples=100,rho=0]  -o "*[reg=0.05]" -s python-pgd -s cd -s Solver-Test -r 5 -n 15 --output benchmark-result
+            benchopt run examples/minimal_benchmark -r 5 -n 25 --output benchmark-result
 
       # Save the results
       - store_artifacts:
-          path: benchopt/tests/dummy_benchmark/outputs/dummy_benchmark_benchmark-result.html
+          path: example/minimal_benchmark/outputs/minimal_benchmark_benchmark-result.html
           destination: result.html
 
   deploy:
     docker:
-      - image: cimg/python:3.9.11-browsers
+      - image: cimg/python:3.10-browsers
     steps:
       - attach_workspace:
           at: /tmp/build
+      - run:
+          name: Install jq
+          command: sudo apt-get update && sudo apt-get install -y jq
       - run:
           name: Fetch docs
           command: |
@@ -125,31 +92,46 @@ jobs:
           command: |
             set -e;
             cd ~/benchopt.github.io;
-            if [[ "${CIRCLE_BRANCH}" != "main" ]]; then
-              echo "No deployment (build: ${CIRCLE_BRANCH}).";
+
+            git config --global user.email "circle@benchopt.com";
+            git config --global user.name "Circle CI";
+
+            if [ "$CIRCLE_BRANCH" == "main" ]; then
+                DEST="dev"
+            elif [ -n "$CIRCLE_TAG" ]; then
+                DEST="$CIRCLE_TAG"
             else
-              git config --global user.email "circle@benchopt.com";
-              git config --global user.name "Circle CI";
-              cd ~/benchopt.github.io;
-              git checkout main
-              git remote -v
-              git fetch origin
-              git reset --hard origin/main
-              mv .git ..
-              mv .gitignore ..
-              rm -rf *
-              mv ../.git .
-              mv ../.gitignore .
-              echo "Deploying dev docs for ${CIRCLE_BRANCH}.";
-              cp -a /tmp/build/html/* .;
-              if [[ -z $(git diff) ]]; then
-                echo "Nothing to commit"
-              else
-                touch .nojekyll;
-                git add -A;
-                git commit -m "CircleCI update of dev docs (${CIRCLE_BUILD_NUM}).";
-                git push origin main;
-              fi
+                echo "Should not trigger deploy outside main branch or a tag"
+                exit 1
+            fi
+
+            # copying the current doc to its destination
+            rm -rf "$DEST"
+            cp -r /tmp/build/html/ "$DEST";
+            if [ -n "$CIRCLE_TAG" ]; then
+                # Also update stable -> copy into "stable/"
+                rm -rf stable
+                cp -r "$DEST" stable
+            fi
+
+            # Creating the version dropdown
+            VERSIONS=$(ls -d [0-9]* | sort -Vr | jq -R -s -c 'split("\n")[:-1]')
+            cat > versions.json <<EOF
+            {
+              "stable": "stable",
+              "dev": "dev",
+              "versions": $VERSIONS
+            }
+            EOF
+
+            echo "Deploying dev docs for ${CIRCLE_BRANCH}.";
+            git add -A;
+            if [[ -z $(git diff --staged) ]]; then
+              echo "Nothing to commit"
+            else
+              MSG="Update docs for $DEST (build ${CIRCLE_BUILD_NUM})"
+              git commit -m "$MSG";
+              git push origin main;
             fi
 
 workflows:
@@ -163,5 +145,6 @@ workflows:
             - build_docs
           filters:
             branches:
-              only:
-                - main
+              only: main
+            tags:
+              only: /.*/

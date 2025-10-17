@@ -1,17 +1,34 @@
 import re
+import pytest
 from pathlib import Path
+from contextlib import nullcontext
 
 from joblib.executor import get_memmapping_executor
 
-from benchopt.utils.stream_redirection import SuppressStd
+from benchopt.utils.suppress_std import SuppressStd
+
+OUTPUT_FILES_PATTERN = [
+    # Run command
+    r'Saving result in: (.*\.parquet|.*\.csv)',
+    # Plot command - no-html
+    r'Save .* as: (.*\.pdf)',
+    # Plot command - html || generate results
+    r'Writing .* to (.*\.html)',
+    # Archive command
+    r'Results are in (.*\.tar.gz)',
+]
 
 
-class CaptureRunOutput(object):
+class CaptureCmdOutput(object):
     "Context to capture run cmd output and files."
 
-    def __init__(self, delete_result_files=True):
-        self.out = SuppressStd()
+    def __init__(self, delete_result_files=True, exit=None):
         self.delete_result_files = delete_result_files
+        self.out = SuppressStd()
+        self.exit_ctx = (
+            pytest.raises(SystemExit, match=str(exit)) if exit is not None
+            else nullcontext()
+        )
 
     @property
     def output(self):
@@ -33,7 +50,7 @@ class CaptureRunOutput(object):
 
     def __repr__(self):
         return (
-            "CaptureRunOutput(\n"
+            "CaptureCmdOutput(\n"
             f"    result_files={self.result_files}\n"
             f"    output=\"\"\"\n{self.output})\n\"\"\"\n"
             ")"
@@ -48,30 +65,39 @@ class CaptureRunOutput(object):
 
         # Redirect the stdout/stderr fd to temp file
         self.out.__enter__()
+        self.exit_ctx.__enter__()
         return self
 
     def __exit__(self, exc_class, value, traceback):
-        self.out.__exit__(exc_class, value, traceback)
-        self.output_checker = BenchoptRunOutputProcessor(
+        self.out.__exit__(None, None, None)
+
+        # Check the exit code raised with SystemExit if needed
+        suppressed = self.exit_ctx.__exit__(exc_class, value, traceback)
+
+        self.output_checker = BenchoptCmdOutputProcessor(
             self.out.output, self.delete_result_files
         )
 
         # If there was an exception, display the output
-        if exc_class is not None:
+        if not suppressed and exc_class is not None:
             print(self.output_checker.output)
+
+        return suppressed
 
     def check_output(self, pattern, repetition=None):
         self.output_checker.check_output(pattern, repetition)
 
 
-class BenchoptRunOutputProcessor:
+class BenchoptCmdOutputProcessor:
     def __init__(self, output, delete_result_files=True):
         self.output = output
 
         # Make sure to delete all the result that created by the run command.
-        self.result_files = re.findall(
-            r'Saving result in: (.*\.parquet|.*\.csv)', self.output
-        )
+        self.result_files = []
+        for pat in OUTPUT_FILES_PATTERN:
+            self.result_files.extend(
+                re.findall(pat, self.output)
+            )
         if len(self.result_files) >= 1 and delete_result_files:
             for result_file in self.result_files:
                 result_path = Path(result_file)

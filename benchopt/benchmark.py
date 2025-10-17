@@ -1,17 +1,18 @@
 import re
+import sys
 import click
 import warnings
+import importlib
 import itertools
 from pathlib import Path
+
+from joblib.externals import cloudpickle
 
 from .config import get_setting
 from .base import BaseSolver, BaseDataset
 
-from .utils.safe_import import set_benchmark_module
-from .utils.dynamic_modules import _load_class_from_module
-from .utils.dependencies_mixin import DependenciesMixin
+from .utils.dynamic_modules import _load_class_from_module, FailedImport
 from .utils.parametrized_name_mixin import product_param
-from .utils.parametrized_name_mixin import ParametrizedNameMixin
 
 from .utils.terminal_output import colorify
 from .utils.terminal_output import GREEN, YELLOW
@@ -27,9 +28,10 @@ from .config import RAISE_INSTALL_ERROR
 # Global variable to access the benchmark currently running globally
 _RUNNING_BENCHMARK = None
 
-# Constant to name cache directory and folder of slurm outputs
+# Constant to name cache directory, SLURM output's folder and utils module
 CACHE_DIR = '__cache__'
 SLURM_JOB_NAME = 'benchopt_run'
+PACKAGE_NAME = "benchmark_utils"
 
 
 MISSING_DEPS_MSG = (
@@ -69,6 +71,7 @@ class Benchmark:
     mem : joblib.Memory
         Caching mechanism for the benchmark.
     """
+
     def __init__(
             self, benchmark_dir,
             no_cache=False,
@@ -79,7 +82,7 @@ class Benchmark:
 
         global _RUNNING_BENCHMARK
         _RUNNING_BENCHMARK = self
-        set_benchmark_module(self.benchmark_dir)
+        self.set_benchmark_module()
 
         # Load the benchmark metadat defined in `objective.py` or
         # in `benchmark_meta.json`.
@@ -116,6 +119,25 @@ class Benchmark:
         # replace dots to avoid issues with `with_suffix``
         self.name = self.name.replace('.', '-')
 
+    def set_benchmark_module(self):
+        # add PACKAGE_NAME as a module if it exists.
+        # XXX: Maybe worth using function _get_module_from_file?
+        module_file = self.benchmark_dir / PACKAGE_NAME / '__init__.py'
+        if module_file.exists():
+            spec = importlib.util.spec_from_file_location(
+                PACKAGE_NAME, module_file
+            )
+            module = importlib.util.module_from_spec(spec)
+            sys.modules[PACKAGE_NAME] = module
+            spec.loader.exec_module(module)
+            cloudpickle.register_pickle_by_value(module)
+        elif module_file.parent.exists():
+            warnings.warn(
+                "Folder `benchmark_utils` exists but is missing `__init__.py`."
+                " Make sure it is a proper module to allow importing from it.",
+                ImportWarning
+            )
+
     ####################################################################
     # Helpers to access and validate objective, solvers and datasets
     ####################################################################
@@ -135,7 +157,7 @@ class Benchmark:
             )
 
         return _load_class_from_module(
-            module_filename, "Objective", benchmark_dir=self.benchmark_dir
+            self.benchmark_dir, module_filename, "Objective"
         )
 
     def check_objective_filters(self, objective_filters):
@@ -200,41 +222,16 @@ class Benchmark:
                 # skip template solvers and datasets
                 continue
             # Get the class
-            try:
-                cls = _load_class_from_module(
-                    module_filename, class_name,
-                    benchmark_dir=self.benchmark_dir
-                )
-                if not issubclass(cls, base_class):
-                    warnings.warn(colorify(
-                        f"class {cls.__name__} in {module_filename} is not a "
-                        f"subclass from base class benchopt."
-                        f"{base_class.__name__}", YELLOW
-                    ))
-
-            except Exception:
-
-                import traceback
-                tb_to_print = traceback.format_exc(chain=False)
-
-                class FailedImport(ParametrizedNameMixin, DependenciesMixin):
-                    "Object for the class list that raises error if used."
-
-                    name = get_failed_import_object_name(
-                        module_filename, class_name
-                    )
-
-                    @classmethod
-                    def is_installed(cls, **kwargs):
-                        print(
-                            f"Failed to import {class_name} from "
-                            f"{module_filename}. Please fix the following "
-                            "error to use this file with benchopt:\n"
-                            f"{tb_to_print}"
-                        )
-                        return False
-
-                cls = FailedImport
+            cls = _load_class_from_module(
+                self.benchmark_dir, module_filename, class_name,
+            )
+            if (not issubclass(cls, base_class) and
+                    cls.__name__ != "FailedImport"):
+                warnings.warn(colorify(
+                    f"class {cls.__name__} in {module_filename} is not a "
+                    f"subclass from base class benchopt."
+                    f"{base_class.__name__}", YELLOW
+                ))
             classes.append(cls)
 
         classes.sort(key=lambda c: c.name.lower())
@@ -441,7 +438,8 @@ class Benchmark:
             requirements["gpu"] instead of requirements["cpu"].
         """
         # Collect all classes matching one of the patterns
-        print("Collecting packages...", end='', flush=True)
+        print("Collecting packages:")
+        exit_code = 0
 
         check_installs, missings = [], []
         objective = self.get_benchmark_objective()
@@ -451,7 +449,7 @@ class Benchmark:
         if missing_deps:
             raise AttributeError(
                 "Could not find dependencies in objective.py while it is not "
-                f"importable. {MISSING_DEPS_MSG}"
+                f"importable.\n\n{MISSING_DEPS_MSG}"
             )
 
         if len(shell_install_scripts) > 0 or len(conda_reqs) > 0:
@@ -483,11 +481,14 @@ class Benchmark:
             f"- {klass.name}" for klass in check_installs
         ])
         if len(list_install) == 0:
-            self.check_missing(missings)
-            print("All required solvers are already installed.")
+            exit_code = self.check_missing(missings)
+            print("No new requirements installed")
             if download:
-                self.download_all_data(include_datasets, env_name, quiet)
-            return
+                exit_code = max(
+                    exit_code,
+                    self.download_all_data(include_datasets, env_name, quiet)
+                )
+            return exit_code
 
         print(f"Installing required packages for:\n{list_install}\n...",
               end='', flush=True)
@@ -514,7 +515,7 @@ class Benchmark:
             elif not cls_success:
                 not_installed.add(klass.name)
 
-        self.check_missing(missings)
+        exit_code = self.check_missing(missings)
 
         # If one failed, raise a warning to explain how to see the install
         # errors.
@@ -530,14 +531,18 @@ class Benchmark:
             print(colorify(f" done (missing deps: {not_installed})", YELLOW))
 
         if download:
-            self.download_all_data(include_datasets, env_name, quiet)
+            exit_code = max(
+                exit_code,
+                self.download_all_data(include_datasets, env_name, quiet)
+            )
+        return exit_code
 
     def download_all_data(self, datasets, env_name, quiet):
         if len(datasets) == 0:
-            return
+            return 0
         cmd = f"benchopt check-data {self.benchmark_dir} -d "
-        cmd += "-d ".join(d.name for d in datasets)
-        _run_shell_in_conda_env(
+        cmd += " -d ".join(d.name for d in datasets)
+        return _run_shell_in_conda_env(
             cmd, env_name=env_name, raise_on_error=True, capture_stdout=False
         )
 
@@ -545,25 +550,41 @@ class Benchmark:
         # Check that classes not importable, with no requirements, only depends
         # on global requirements specified in Objective.requirements.
         # Otherwise, we raise a comprehensible error.
-        if len(missings) > 0:
-            # Format the list of classes missing requirements.
-            cls_types = {'Solver': [], 'Dataset': []}
-            for klass in missings:
-                cls_type = klass.__base__.__name__.replace("Base", "")
-                cls_types[cls_type].append(klass.name)
-            cls_types = {
-                k: f'{cls_type}\n' + '\n'.join([f'- {c}' for c in v])
-                for k, v in cls_types.items() if len(v) > 0
-            }
-            missing_cls = '\n'.join(cls_types.values())
+        if len(missings) == 0:
+            return 0
 
-            raise AttributeError(
-                f"Could not find dependencies for the following classes while "
-                f"they are not importable:\n{missing_cls}\n{MISSING_DEPS_MSG}"
-            )
+        # Format the list of classes missing requirements.
+        cls_types = {'Solver': [], 'Dataset': []}
+        for klass in missings:
+            cls_type = klass.__base__.__name__.replace("Base", "")
+            try:
+                # Check for invalid install_cmd
+                hasattr(klass, "install_cmd")
+                # Check for invalid requirements
+                if not hasattr(klass, "requirements"):
+                    reason = "no requirements"
+                else:
+                    reason = "incomplete requirements"
+            except ValueError as e:
+                if "install_cmd" in str(e):
+                    reason = "invalid install_cmd"
+                else:
+                    reason = "invalid requirements"
+            cls_types[cls_type].append(f"{klass.name} ({reason})")
+        cls_types = {
+            k: f'{cls_type}\n' + '\n'.join([f'- {c}' for c in v])
+            for k, v in cls_types.items() if len(v) > 0
+        }
+        missing_cls = '\n'.join(cls_types.values())
+
+        print(
+            f"Could not find dependencies for the following classes while "
+            f"they are not importable:\n{missing_cls}\n\n{MISSING_DEPS_MSG}"
+        )
+        return 1
 
     def get_all_runs(self, solvers=None, forced_solvers=None,
-                     datasets=None, objectives=None, output=None):
+                     datasets=None, objectives=None, terminal=None):
         """Generator with all combinations to run for the benchmark.
 
         Parameters
@@ -580,8 +601,8 @@ class Benchmark:
         objectives : list | None
             Filters to select specific objective parameters. If None,
             all objective parameters are tested
-        output : TerminalOutput or None
-            Object to manage the output in the terminal.
+        terminal : TerminalOutput or None
+            Object to format string to display the terminal.
 
         Yields
         ------
@@ -595,25 +616,25 @@ class Benchmark:
             _list_parametrized_classes(*solvers)
         )
         for dataset, is_installed in all_datasets:
-            output.set(dataset=dataset)
+            terminal.set(dataset=dataset)
             if not is_installed:
-                output.show_status('not installed', dataset=True)
+                terminal.show_status('not installed', dataset=True)
                 continue
-            output.display_dataset()
+            terminal.display_dataset()
             all_objectives = _list_parametrized_classes(
                 *objectives, check_installed=False
             )
             for objective, is_installed in all_objectives:
-                output.set(objective=objective)
+                terminal.set(objective=objective)
                 if not is_installed:
-                    output.show_status('not installed', objective=True)
+                    terminal.show_status('not installed', objective=True)
                     continue
-                output.display_objective()
+                terminal.display_objective()
                 for i_solver, (solver, is_installed) in enumerate(all_solvers):
-                    output.set(solver=solver, i_solver=i_solver)
+                    terminal.set(solver=solver, i_solver=i_solver)
 
                     if not is_installed:
-                        output.show_status('not installed')
+                        terminal.show_status('not installed')
                         continue
 
                     force = is_matched(
@@ -621,7 +642,7 @@ class Benchmark:
                     )
                     yield dict(
                         dataset=dataset, objective=objective, solver=solver,
-                        force=force, output=output.clone()
+                        force=force, terminal=terminal.clone()
                     )
                 all_solvers = solvers_buffer
 
@@ -732,8 +753,11 @@ def _extract_parameters(string):
         string = string.replace(match, str(hash(match)))
 
     # Second, add quotes to all variable names (foo -> 'foo').
-    # Accepts dots and dashes within names.
-    string = re.sub(r"[a-zA-Z][a-zA-Z0-9._-]*", r"'\g<0>'", string)
+    # Accepts dots, dashes and slashes within names.
+    string = re.sub(r"[a-zA-Z/\\][a-zA-Z0-9._\-/\\]*", r"'\g<0>'", string)
+
+    # double all backslashes for ast eval
+    string = re.sub(r"\\", r"\\\\", string)
 
     # Third, change back the hashes to their original names.
     for match in all_matches:
@@ -811,17 +835,21 @@ def _check_patterns(all_classes, patterns, name_type='dataset',
         raise TypeError()
     patterns = [p for q in patterns for p in preprocess_patterns(q)]
 
-    # Check that the provided patterns match at least one dataset and pair the
-    # matching clas with the selector.
+    # Check that each provided pattern matches at least one dataset and pair
+    # the matching class with the selector.
     matched, invalid_patterns = [], []
     for p, args, kwargs in patterns:
-        matched += [
+        matched_cls = [
             (cls, (args, kwargs))
             for cls in all_classes
             if is_matched(cls.name, [p])
         ]
-        if len(matched) == 0:
+        if len(matched_cls) == 0:
             invalid_patterns.append(p)
+        matched.extend([
+            (cls, p) if not isinstance(cls, FailedImport) else (cls, ([], {}))
+            for cls, p in matched_cls
+        ])
 
     # If some patterns did not matched any class, raise an error
     if len(invalid_patterns) > 0:
@@ -838,7 +866,7 @@ def _check_patterns(all_classes, patterns, name_type='dataset',
     for cls, (args, kwargs) in matched:
         param_names = [p.strip() for k in cls.parameters for p in k.split(',')]
         if len(args) != 0:
-            if len(cls.parameters) > 1:
+            if len(param_names) > 1:
                 raise ValueError(
                     f"Ambiguous positional parameter for {cls.name}."
                 )
@@ -846,7 +874,13 @@ def _check_patterns(all_classes, patterns, name_type='dataset',
                 raise ValueError(
                     f"Both positional and keyword parameters for {cls.name}."
                 )
-            kwargs = {list(cls.parameters.keys())[0]: args}
+            elif len(param_names) == 0:
+                raise ValueError(
+                    f"Positional parameter provided for {cls.name} which has"
+                    " no parameter."
+                )
+            # Use the single parameter name for this class.
+            kwargs = {param_names[0]: args}
         else:
             bad_params = [
                 p.strip() for k in kwargs for p in k.split(',')
@@ -923,28 +957,3 @@ def buffer_iterator(it):
             yield val
 
     return buffered_it(buffer), buffer
-
-
-def get_failed_import_object_name(module_file, cls_name):
-    # Parse the module file to find the name of the failing object
-
-    import ast
-    module_ast = ast.parse(Path(module_file).read_text())
-    classdef = [
-        c for c in module_ast.body
-        if isinstance(c, ast.ClassDef) and c.name == cls_name
-    ]
-    if len(classdef) == 0:
-        raise ValueError(f"Could not find {cls_name} in module {module_file}.")
-    c = classdef[-1]
-    name_assign = [
-        a for a in c.body
-        if (isinstance(a, ast.Assign) and any(list(
-            (isinstance(t, ast.Name) and t.id == "name") for t in a.targets
-        )))
-    ]
-    if len(name_assign) == 0:
-        raise ValueError(
-            f"Could not find {cls_name} name in module {module_file}"
-        )
-    return name_assign[-1].value.value

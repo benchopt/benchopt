@@ -145,23 +145,3 @@ coverage:
 	$(SPHINXBUILD) -b coverage $(ALLSPHINXOPTS) $(BUILDDIR)/coverage
 	@echo "Testing of coverage in the sources finished, look at the " \
 		  "results in $(BUILDDIR)/coverage/python.txt."
-
-.PHONY: install
-install:
-	rm -rf _build/doctrees _build/benchopt.github.io
-	# first clone the benchopt/benchopt.github.io repo because it may ask
-	# for password and we don't want to delay this long build in
-	# the middle of it
-	# --no-checkout just fetches the root folder without content
-	# --depth 1 is a speed optimization since we don't need the
-	# history prior to the last commit
-	git clone --no-checkout --depth 1 https://github.com/benchopt/benchopt.github.io.git _build/benchopt.github.io
-	touch _build/benchopt.github.io/.nojekyll
-	make html
-	cd _build/ && \
-	cp -r html/* benchopt.github.io && \
-	cd benchopt.github.io && \
-	git add * && \
-	git add .nojekyll && \
-	git commit -a -m 'Make install' && \
-	git push

@@ -14,3 +14,4 @@ User guide
     ml_benchmark
     performance_curves
     tweak_datasets
+    distributed_run

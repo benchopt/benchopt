@@ -1,9 +1,8 @@
-import pytest
 import pandas as pd
 
 from benchopt.cli.main import run
 from benchopt.utils.temp_benchmark import temp_benchmark
-from benchopt.tests.utils import CaptureRunOutput
+from benchopt.tests.utils import CaptureCmdOutput
 
 
 MINIMAL_SOLVER = """from benchopt import BaseSolver
@@ -33,15 +32,11 @@ def test_objective_bad_name(no_debug_log):
             def get_objective(self): return dict(X=0, y=0)
     """
 
-    with temp_benchmark(
-            objective=objective,
-            solvers=MINIMAL_SOLVER
-    ) as benchmark:
-        with pytest.raises(SystemExit, match='1'):
-            with CaptureRunOutput() as out:
-                run([str(benchmark.benchmark_dir),
-                    *'-s test-solver -d test-dataset -n 1 -r 1 --no-plot'
-                    .split()], standalone_mode=False)
+    with temp_benchmark(objective=objective, solvers=MINIMAL_SOLVER) as bench:
+        with CaptureCmdOutput(exit=1) as out:
+            run([str(bench.benchmark_dir),
+                *'-s test-solver -d test-dataset -n 1 -r 1 --no-plot'.split()],
+                standalone_mode=False)
 
     out.check_output("ValueError: objective output cannot contain 'name' key")
 
@@ -73,27 +68,26 @@ def test_objective_no_value(no_debug_log):
         def get_result(self): return dict(beta=1)
     """
 
-    with temp_benchmark(objective=objective, solvers=solver) as benchmark:
-        with pytest.raises(SystemExit, match='1'):
-            with CaptureRunOutput() as out:
-                run([str(benchmark.benchmark_dir),
-                    *'-s test-solver -d test-dataset -n 1 -r 1 --no-plot'
-                    .split()], standalone_mode=False)
+    with temp_benchmark(objective=objective, solvers=solver) as bench:
+        with CaptureCmdOutput(exit=1) as out:
+            run([str(bench.benchmark_dir),
+                *'-s test-solver -d test-dataset -n 1 -r 1 --no-plot'
+                .split()], standalone_mode=False)
 
     out.check_output(
         r"Objective.evaluate_result\(\) should contain a key named 'value'"
     )
 
+    # check that the error is comprehensive when the key is missing
     solver_key = solver.replace(
         "#STOP",
         "stopping_criterion=SufficientProgressCriterion(key_to_monitor='XXX')"
     )
-    with temp_benchmark(objective=objective, solvers=solver_key) as benchmark:
-        with pytest.raises(SystemExit, match='1'):
-            with CaptureRunOutput() as out:
-                run([str(benchmark.benchmark_dir),
-                    *'-s test-solver -d test-dataset -n 1 -r 1 --no-plot'
-                    .split()], standalone_mode=False)
+    with temp_benchmark(objective=objective, solvers=solver_key) as bench:
+        with CaptureCmdOutput(exit=1) as out:
+            run([str(bench.benchmark_dir),
+                *'-s test-solver -d test-dataset -n 1 -r 1 --no-plot'
+                .split()], standalone_mode=False)
 
     out.check_output(
         r"Objective.evaluate_result\(\) should contain a key named 'XXX'"
@@ -102,9 +96,9 @@ def test_objective_no_value(no_debug_log):
     # Check that there is no error if the key is present or if using
     # a solver with strategy run_once.
     for solver in [MINIMAL_SOLVER, solver_key.replace('XXX', 'test_acc')]:
-        with temp_benchmark(objective=objective, solvers=solver) as benchmark:
-            with CaptureRunOutput() as out:
-                run([str(benchmark.benchmark_dir),
+        with temp_benchmark(objective=objective, solvers=solver) as bench:
+            with CaptureCmdOutput() as out:
+                run([str(bench.benchmark_dir),
                     *'-s test-solver -d test-dataset -n 1 -r 1 --no-plot'
                     .split()], standalone_mode=False)
 
@@ -130,12 +124,9 @@ def test_objective_nonnumeric_values(no_debug_log):
                 return dict(X=0, y=0)
     """
 
-    with temp_benchmark(
-            objective=objective,
-            solvers=MINIMAL_SOLVER
-    ) as benchmark:
-        with CaptureRunOutput() as out:
-            run([str(benchmark.benchmark_dir),
+    with temp_benchmark(objective=objective, solvers=MINIMAL_SOLVER) as bench:
+        with CaptureCmdOutput() as out:
+            run([str(bench.benchmark_dir),
                  *'-s test-solver -d test-dataset -n 1 -r 1 --no-display'
                  .split()], standalone_mode=False)
 
@@ -144,12 +135,9 @@ def test_objective_nonnumeric_values(no_debug_log):
     objective = objective.replace(
         "test_obj={}", "test_obj={'a':0, 'b': 1.0, 'c': '', 'd': {}}"
     )
-    with temp_benchmark(
-            objective=objective,
-            solvers=MINIMAL_SOLVER
-    ) as benchmark:
-        with CaptureRunOutput() as out:
-            run([str(benchmark.benchmark_dir),
+    with temp_benchmark(objective=objective, solvers=MINIMAL_SOLVER) as bench:
+        with CaptureCmdOutput() as out:
+            run([str(bench.benchmark_dir),
                  *'-s test-solver -d test-dataset -n 1 -r 1 --no-display'
                  .split()], standalone_mode=False)
 
@@ -173,12 +161,9 @@ def test_objective_multiple_points(no_debug_log):
             def get_objective(self): return dict(X=0, y=0)
     """
 
-    with temp_benchmark(
-            objective=objective,
-            solvers=MINIMAL_SOLVER
-    ) as benchmark:
-        with CaptureRunOutput(delete_result_files=False) as out:
-            run([str(benchmark.benchmark_dir),
+    with temp_benchmark(objective=objective, solvers=MINIMAL_SOLVER) as bench:
+        with CaptureCmdOutput(delete_result_files=False) as out:
+            run([str(bench.benchmark_dir),
                 *'-s test-solver -d test-dataset -n 1 -r 2 --no-plot'
                 .split()], standalone_mode=False)
         df = pd.read_parquet(out.result_files[0])

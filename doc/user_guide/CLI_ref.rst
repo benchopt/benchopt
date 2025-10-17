@@ -1,7 +1,7 @@
 .. _cli_ref:
 
-Command line interface (CLI) references
-=======================================
+Command line interface (CLI)
+============================
 
 Benchopt provides a command line interface (CLI) to run benchmarks, that is
 installed together with the package. If the package is installed in a specific
