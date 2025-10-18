@@ -17,7 +17,7 @@ def get_slurm_executor(benchmark, config, timeout=100):
     # benchopt timeout. This value is a trade-off between helping the
     # scheduler (low slurm_time allow for faster accept) and avoiding
     # killing the job too early.
-    if "slurm_time" not in config:
+    if "slurm_time" not in config and timeout is not None:
         # Timeout is in second in benchopt
         config["slurm_time"] = f"00:{int(1.5 * timeout)}"
 

@@ -1,13 +1,16 @@
 import pytest
+
+from benchopt import runner
+from benchopt.parallel_backends.slurm_executor import (
+    get_slurm_executor,
+    get_solver_slurm_config,
+    run_on_slurm,
+)
+from benchopt.utils.temp_benchmark import temp_benchmark
+from benchopt.tests.utils.capture_cmd_output import CaptureCmdOutput
+
 submitit = pytest.importorskip("submitit")
 from submitit.slurm.test_slurm import mocked_slurm  # noqa: E402
-
-from benchopt.parallel_backends.slurm_executor import (  # noqa: E402
-    get_slurm_executor,
-    run_on_slurm,
-    merge_configs,
-)
-from benchopt.utils.temp_benchmark import temp_benchmark  # noqa: E402
 
 
 @pytest.fixture
@@ -37,70 +40,154 @@ def dummy_solver():
 
 def test_get_slurm_executor(dummy_slurm_config):
 
-    with temp_benchmark() as bench:
-        # Test without solver overrides
-        with mocked_slurm():
-            executor = get_slurm_executor(bench, dummy_slurm_config)
+    with mocked_slurm(), temp_benchmark() as bench:
+        executor = get_slurm_executor(bench, dummy_slurm_config)
     parameters = executor._executor.parameters
     assert parameters["time"] == dummy_slurm_config["slurm_time"]
     assert parameters["partition"] == dummy_slurm_config["slurm_partition"]
     assert parameters["nodes"] == dummy_slurm_config["slurm_nodes"]
 
 
-def test_merge_configs(dummy_solver, dummy_slurm_config):
+def test_merge_configs(dummy_slurm_config):
     # Test with solver overrides
-    config_override = merge_configs(dummy_slurm_config, dummy_solver)
+    solver = """
+    from benchopt import BaseSolver
 
-    with temp_benchmark() as bench:
-        with mocked_slurm():
-            executor = get_slurm_executor(bench, config_override)
+    class Solver(BaseSolver):
+        name = "dummy"
+        slurm_params = {
+            "slurm_time": "00:01",
+            "slurm_nodes": 2,
+            "slurm_mem": "1234MB",
+        }
+        def set_objective(self, **kwargs): pass
+        def run(self, _): pass
+        def get_result(self): return dict(beta=1)
+    """
+
+    with mocked_slurm(), temp_benchmark(solvers=solver) as bench:
+        solver = bench.get_solvers()[0].get_instance()
+        config_override = get_solver_slurm_config(solver, dummy_slurm_config)
+        executor = get_slurm_executor(bench, config_override)
 
     parameters = executor._executor.parameters
-    assert parameters["time"] == dummy_solver.slurm_params["slurm_time"]
-    assert parameters["nodes"] == dummy_solver.slurm_params["slurm_nodes"]
-    assert parameters["mem"] == dummy_solver.slurm_params["slurm_mem"]
+    assert parameters["time"] == solver.slurm_params["slurm_time"]
+    assert parameters["nodes"] == solver.slurm_params["slurm_nodes"]
+    assert parameters["mem"] == solver.slurm_params["slurm_mem"]
     assert parameters["partition"] == dummy_slurm_config["slurm_partition"]
 
 
-def test_run_on_slurm(monkeypatch, dummy_solver, dummy_slurm_config):
+def test_run_on_slurm(monkeypatch, dummy_slurm_config):
 
     class MockedTask:
-        def __init__(self, config):
+        def __init__(self, solver, config):
             self.job_id = "12"
+            self.solver = solver
             self.config = config
 
         def done(self): return True
         def exception(self): return None
-        def result(self): return self.config
 
-    def submit(self, *args, **kwargs):
+        # Result return as many information about the run as possible
+        def result(self): return [{
+            'solver': str(self.solver), **self.config,
+            **{f"p_{k}": v for k, v in self.solver._parameters.items()}
+        }]
+
+    # Fake submit to allow running as on a slurm cluster and
+    # get the configuration back
+    def submit(self, *args, solver, **kwargs):
         # Mock submit to return a mocked task, with the executor's parameters
-        return MockedTask(self._executor.parameters)
+        return MockedTask(solver, self._executor.parameters)
     monkeypatch.setattr(submitit.AutoExecutor, 'submit', submit)
+    monkeypatch.setattr(runner, 'run_one_solver', submit)
+
+    parallel_config = {
+        "backend": "submitit",
+        "slurm_nodes": 1,
+        "slurm_gres": "gpu:1",
+    }
+
+    slurm_params = {
+        "slurm_time": "00:01",
+        "slurm_nodes": 2,
+        "slurm_mem": "1234MB",
+    }
+    my_params = {"p": [0, 1], "slurm_nodes": [3]}
+    slurm_params_str = f"slurm_params = {slurm_params}"
+    my_params_str = f"parameters = {my_params}"
+
+    solver = """
+        from benchopt import BaseSolver
+
+        class Solver(BaseSolver):
+            name = "{name}"
+            {parameters}
+            {slurm_params}
+            def set_objective(self, **kwargs): pass
+            def run(self, _): pass
+            def get_result(self): return dict(beta=1)
+    """
+    solvers = [
+        solver.format(name='solver_no_params', parameters="", slurm_params=""),
+        solver.format(
+            name='solver_slurm_params', parameters="",
+            slurm_params=slurm_params_str
+        ),
+        solver.format(
+            name='solver_my_params', parameters=my_params_str, slurm_params=""
+        ),
+        solver.format(
+            name='solver_all_params', parameters=my_params_str,
+            slurm_params=slurm_params_str
+        ),
+    ]
 
     # Run the function
-    with temp_benchmark() as bench:
-        with mocked_slurm():
-            res = run_on_slurm(
-                benchmark=bench,
-                slurm_config=dummy_slurm_config,
-                run_one_solver=lambda **kwargs: "done",
-                common_kwargs={"timeout": None},
-                all_runs=[
-                    {"solver": dummy_solver},
-                    {"solver": None}
-                ],
+    with temp_benchmark(solvers=solvers) as bench, mocked_slurm():
+        with CaptureCmdOutput(delete_result_files=False) as out:
+            runner.run_benchmark(
+                bench.benchmark_dir, [
+                    "solver_no_params", "solver_slurm_params",
+                    "solver_my_params[p=2]",
+                    "solver_my_params[p=2,slurm_nodes=4]",
+                    "solver_all_params[p=2]",
+                    "solver_all_params[p=2,slurm_nodes=4]"
+                ], dataset_names=["test-dataset"],
+                timeout=None,
+                parallel_config=parallel_config
             )
+        import pandas as pd
+        df = pd.read_parquet(out.result_files[0]).set_index("solver")
 
-    assert len(res) == 2
-    p_overwrite = res[0]
+    assert len(df) == 6
 
-    assert p_overwrite["time"] == dummy_solver.slurm_params["slurm_time"]
-    assert p_overwrite["nodes"] == dummy_solver.slurm_params["slurm_nodes"]
-    assert p_overwrite["mem"] == dummy_solver.slurm_params["slurm_mem"]
-    assert p_overwrite["partition"] == dummy_slurm_config["slurm_partition"]
+    # Default parameter from global config is never overidden
+    assert (df['gres'] == "gpu:1").all()
 
-    p_default = res[1]
-    assert p_default["time"] == dummy_slurm_config["slurm_time"]
-    assert p_default["nodes"] == dummy_slurm_config["slurm_nodes"]
-    assert p_default["partition"] == dummy_slurm_config["slurm_partition"]
+    # If no parameters and no slurm_params, no override of global config
+    p_default = df.loc['solver_no_params']
+    for p in ["nodes", "time", "mem"]:
+        assert p_default[p] == parallel_config.get(f"slurm_{p}", None)
+
+    # If slurm_params is set, it is used as a global config
+    p_slurm_params = df.loc["solver_slurm_params"]
+    for p in ["nodes", "time", "mem"]:
+        assert p_slurm_params[p] == slurm_params.get(f"slurm_{p}", None)
+
+    # Check that parameters override works
+    all_params = df.query("p_p == 2")
+    assert len(all_params) == 4
+    assert all(all_params["p_slurm_nodes"] == all_params["nodes"])
+
+    # Check that default are either parallel_config or slurm_params
+    p_my_params = df[df.index.str.contains("solver_my_params")]
+    for p in ["time", "mem"]:
+        assert all(
+            p_my_params[p].fillna(-1) == parallel_config.get(f"slurm_{p}", -1)
+        )
+    p_all_params = df[df.index.str.contains("solver_all_params")]
+    for p in ["time", "mem"]:
+        assert all(
+            p_all_params[p].fillna(-1) == slurm_params.get(f"slurm_{p}", -1)
+        )
