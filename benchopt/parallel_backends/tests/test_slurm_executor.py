@@ -4,7 +4,6 @@ from benchopt import runner
 from benchopt.parallel_backends.slurm_executor import (
     get_slurm_executor,
     get_solver_slurm_config,
-    run_on_slurm,
 )
 from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.tests.utils.capture_cmd_output import CaptureCmdOutput
