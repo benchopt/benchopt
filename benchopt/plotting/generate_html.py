@@ -269,6 +269,11 @@ def shape_solvers_for_html(df, objective_column):
                 'stop_val': groupby_stop_val_median.index.tolist(),
                 'q1': q1.tolist(),
                 'q9': q9.tolist(),
+                'is_log_scale_available':
+                    1 if np.sum(
+                        groupby_stop_val_median[objective_column]
+                        .to_numpy() >= 0
+                    ) >= 3 else 0
             },
             'bar': compute_bar_chart_data(df, objective_column, solver),
             'boxplot': compute_solver_boxplot_data(

@@ -303,8 +303,6 @@ const getScatterCurves = () => {
   return curves;
 };
 
-
-
 /*
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * CONFIG MANAGEMENT
@@ -599,6 +597,12 @@ const renderScaleSelector = () => {
   } else {
     hide(document.querySelectorAll(".boxplot_option"));
     show(document.querySelectorAll(".other_plot_option"));
+  }
+
+  if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve']) && scatterPlotHasMoreThan2PositiveValues()) {
+    show(document.querySelectorAll(".log_related"));
+  } else {
+    hide(document.querySelectorAll(".log_related"));
   }
 };
 
@@ -974,6 +978,18 @@ const show = (HTMLElements, style = 'initial') => {
 
   HTMLElements.forEach(h => h.style.display = style);
 };
+
+const scatterPlotHasMoreThan2PositiveValues = () => {
+  let res = true
+
+  getSolvers().forEach(solver => {
+    let isLogScaleAvailable = data(solver).scatter.is_log_scale_available
+
+    res = res && isLogScaleAvailable
+  });
+
+  return res
+}
 
 /*
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
