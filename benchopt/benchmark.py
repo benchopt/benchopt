@@ -119,9 +119,6 @@ class Benchmark:
         # replace dots to avoid issues with `with_suffix``
         self.name = self.name.replace('.', '-')
 
-        # Check format of plots
-        self.check_custom_plots()
-
     def set_benchmark_module(self):
         # add PACKAGE_NAME as a module if it exists.
         # XXX: Maybe worth using function _get_module_from_file?

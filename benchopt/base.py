@@ -629,7 +629,7 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
 
     def check(self):
         self._check_type()
-        self._check_params()
+        self._check_dropdown()
 
     def _check_type(self):
         if not hasattr(self, 'type'):
@@ -641,7 +641,7 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
                 f"Got {self.type}."
             )
 
-    def _check_params(self):
+    def _check_dropdown(self):
         if not hasattr(self, 'dropdown'):
             self.dropdown = {}
         if not isinstance(self.dropdown, dict):
