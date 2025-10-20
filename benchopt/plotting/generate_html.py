@@ -14,7 +14,7 @@ from benchopt.benchmark import Benchmark
 from .plot_bar_chart import compute_bar_chart_data  # noqa: F401
 from .plot_boxplot import compute_solver_boxplot_data
 from .helpers import reset_solver_styles_idx
-from .plot_objective_curve import compute_solver_objective_curve_data
+from .plot_objective_curve import compute_objective_curve_data
 
 ROOT = Path(__file__).parent / "html"
 DEFAULT_HTML_DIR = Path("html")
@@ -176,6 +176,11 @@ def get_custom_plots_for_html(df, benchmark):
         data, dropdown = plot._get_all_plots(df)
         custom_data[plot._get_name()] = data
         custom_dropdown[plot._get_name()] = dropdown
+
+    objective_curve_data, objective_curve_dropdown = \
+        compute_objective_curve_data(df)
+    custom_data["objective_curve"] = objective_curve_data
+    custom_dropdown["objective_curve"] = objective_curve_dropdown
     return custom_data, custom_dropdown
 
 
@@ -270,9 +275,6 @@ def shape_solvers_for_html(df, objective_column):
         sampling_strategy = sampling_strategy[0]
 
         solver_data[solver] = {
-            'scatter': compute_solver_objective_curve_data(
-                df_filtered, objective_column, solver, plotly=True
-            ),
             'bar': compute_bar_chart_data(df, objective_column, solver),
             'boxplot': compute_solver_boxplot_data(
                 df_filtered, objective_column

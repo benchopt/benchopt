@@ -94,8 +94,6 @@ const renderPlot = () => {
 const getChartData = () => {
   if (isCustomPlot()) {
     return getCustomData();
-  } else if (isChart('scatter')) {
-    return getScatterCurves();
   } else if (isChart('bar_chart')) {
     return getBarData();
   } else if (isChart('boxplot')) {
@@ -112,8 +110,6 @@ const getChartData = () => {
 const getLayout = () => {
   if (isCustomPlot()) {
     return getCustomChartLayout();
-  } else if (isChart('scatter')) {
-    return getScatterChartLayout();
   } else if (isChart('bar_chart')) {
     return getBarChartLayout();
   } else if (isChart('boxplot')) {
@@ -237,7 +233,30 @@ const getCustomPlotData = () => {
 const getCustomData = () => {
   // create a list of object to plot in plotly
   const curves = [];
+  let min_y = Infinity;
   getCustomPlotData().data.forEach(curveData => {
+    min_y = Math.min(min_y, ...curveData.y);
+  });
+  getCustomPlotData().data.forEach(curveData => {
+    y = curveData.y;
+    if ("q1" in curveData && "q9" in curveData && state().with_quantiles) {
+      q1 = curveData.q1;
+      q9 = curveData.q9;
+    }
+    if (state().suboptimal_curve) {
+      y = y.map(value => value - min_y);
+      if ("q1" in curveData && "q9" in curveData && state().with_quantiles) {
+        q1 = q1.map(value => value - min_y);
+        q9 = q9.map(value => value - min_y);
+      }
+    }
+    if (state().relative_curve) {
+      y = y.map(value => value / (y[0] - min_y));
+      if ("q1" in curveData && "q9" in curveData && state().with_quantiles) {
+        q1 = q1.map(value => value / (y[0] - min_y));
+        q9 = q9.map(value => value / (y[0] - min_y));
+      }
+    }
     curves.push({
       type: 'scatter',
       name: curveData.label,
@@ -252,10 +271,10 @@ const getCustomData = () => {
       legendgroup: curveData.label,
       hovertemplate: curveData.label + ' <br> (%{x:.1e},%{y:.1e}) <extra></extra>',
       x: curveData.x,
-      y: curveData.y,
+      y: y,
     });
 
-    if ("q1" in curveData && "q9" in curveData) {
+    if ("q1" in curveData && "q9" in curveData && state().with_quantiles) {
       curves.push({
         type: 'scatter',
         mode: 'lines',
@@ -266,8 +285,8 @@ const getCustomData = () => {
         },
         legendgroup: curveData.label,
         hovertemplate: '(%{x:.1e},%{y:.1e}) <extra></extra>',
-        x: curveData.q1,
-        y: curveData.y,
+        x: q1,
+        y: y,
       }, {
         type: 'scatter',
         mode: 'lines',
@@ -279,8 +298,8 @@ const getCustomData = () => {
         },
         legendgroup: curveData.label,
         hovertemplate: '(%{x:.1e},%{y:.1e}) <extra></extra>',
-        x: curveData.q9,
-        y: curveData.y,
+        x: q9,
+        y: y,
       });
     }
   });
@@ -636,6 +655,7 @@ const renderSidebar = () => {
   renderXAxisTypeSelector();
   renderYAxisTypeSelector();
   renderWithQuantilesToggle();
+  renderSuboptimalRelativeToggle();
   mapSelectorsToState();
   renderCustomParams();
 }
@@ -692,12 +712,18 @@ const renderScaleSelector = () => {
  * Render WithQuantile toggle
  */
 const renderWithQuantilesToggle = () => {
-  if (isCustomPlot()) {
-    hide(document.querySelectorAll("#change-shades-form-group"));
-  } else if (isChart('scatter')) {
+  if (isChart('scatter')) {
     show(document.querySelectorAll("#change-shades-form-group"), 'flex');
   } else {
     hide(document.querySelectorAll("#change-shades-form-group"));
+  }
+};
+
+const renderSuboptimalRelativeToggle = () => {
+  if (isChart('scatter')) {
+    show(document.querySelectorAll("#change-relative-suboptimal-form-group"), 'flex');
+  } else {
+    hide(document.querySelectorAll("#change-relative-suboptimal-form-group"));
   }
 };
 
@@ -809,7 +835,7 @@ const getParams = () => {
 const getSolvers = () => Object.keys(data().solvers);
 
 const isCustomPlot = () => {
-  let non_custom_kinds = ['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve', 'bar_chart', 'boxplot'];
+  let non_custom_kinds = ['bar_chart', 'boxplot'];
   return !non_custom_kinds.includes(state().plot_kind);
 }
 
@@ -819,7 +845,7 @@ const isChart = chart => {
   }
 
   let plot_kind = state().plot_kind;
-  if (["objective_curve", "suboptimality_curve", "relative_suboptimality_curve"].includes(plot_kind)) {
+  if ("objective_curve" === plot_kind) {
     plot_kind = 'scatter';
   }
   else if (!["bar_chart", "boxplot"].includes(plot_kind)) {
@@ -831,7 +857,7 @@ const isChart = chart => {
 
 const isVisible = solver => !state().hidden_solvers.includes(solver);
 
-const isSolverAvailable = solver => data(solver).scatter.y.filter(value => !isNaN(value)).length > 0;
+const isSolverAvailable = solver => !isNaN(data(solver).bar.y);
 
 const isSmallScreen = () => window.screen.availHeight < 900;
 

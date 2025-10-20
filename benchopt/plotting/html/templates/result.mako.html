@@ -127,6 +127,20 @@
                                 <span class="slider round"></span>
                             </label>
                         </div>
+                        <div id="change-relative-suboptimal-form-group" class="flex items-center justify-between mt-8 px-8">
+                            <div class="block text-sm font-medium text-white">Suboptimal Curve</div>
+                            <label class="block switch">
+                                <input id="change_suboptimal" type="checkbox" onchange="setState({suboptimal_curve: this.checked})">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                        <div id="change-relative-suboptimal-form-group" class="flex items-center justify-between mt-8 px-8">
+                            <div class="block text-sm font-medium text-white">Relative Curve</div>
+                            <label class="block switch">
+                                <input id="change_relative" type="checkbox" onchange="setState({relative_curve: this.checked})">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
                         % for custom_kind in result["custom_plot_params"]:
                             <div id="${custom_kind}-custom-params-container">
                             % for custom_param in result["custom_plot_params"][custom_kind]:
@@ -307,6 +321,21 @@
                                     <span class="slider round"></span>
                                 </label>
                             </div>
+                            <div id="change-relative-suboptimal-form-group" class="flex items-center justify-between mt-8 px-8">
+                                <div class="block text-sm font-medium text-white">Suboptimal Curve</div>
+                                <label class="block switch">
+                                    <input id="change_suboptimal" type="checkbox" onchange="setState({suboptimal_curve: this.checked})">
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+                            <div id="change-relative-suboptimal-form-group" class="flex items-center justify-between mt-8 px-8">
+                                <div class="block text-sm font-medium text-white">Relative Curve</div>
+                                <label class="block switch">
+                                    <input id="change_relative" type="checkbox" onchange="setState({relative_curve: this.checked})">
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+                            <div>
                             <div>
                             % for custom_kind in result["custom_plot_params"]:
                                 <div id="${custom_kind}-custom-params-container">
@@ -543,6 +572,8 @@
                     'plot_kind': document.getElementById('plot_kind').value,
                     'scale': document.getElementById('change_scaling').value,
                     'with_quantiles': document.getElementById('change_shades').checked,
+                    'suboptimal_curve': document.getElementById('change_suboptimal').checked,
+                    'relative_curve': document.getElementById('change_relative').checked,
                     'xaxis_type':  document.getElementById('change_xaxis_type').value || "Time",
                     'yaxis_type':  document.getElementById('change_xaxis_type').value || "Time",
                     'hidden_solvers': [],

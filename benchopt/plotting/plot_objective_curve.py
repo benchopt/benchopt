@@ -9,6 +9,59 @@ def _remove_prefix(text, prefix):
     return text[len(prefix):] if text.startswith(prefix) else text
 
 
+def compute_objective_curve_data(df, obj_col='objective_value'):
+    data = {}
+    dropdown = {
+        "Dataset": df['data_name'].unique(),
+        "Objective": df['objective_name'].unique(),
+        "Solver": df['solver_name'].unique(),
+        "X-axis": ["Time", "Iteration"],
+    }
+    for dataset in df['data_name'].unique():
+        for objective in df['objective_name'].unique():
+            for solver in df['solver_name'].unique():
+                data_filtered = df[
+                    (df['data_name'] == dataset) &
+                    (df['solver_name'] == solver) &
+                    (df['objective_name'] == objective)
+                ]
+                if data_filtered.empty:
+                    continue
+
+                key_list = ["objective_curve", dataset, objective, solver]
+
+                curve = data_filtered.groupby('stop_val').median(
+                    numeric_only=True)
+                q1 = data_filtered.groupby('stop_val')['time'].quantile(.1)
+                q9 = data_filtered.groupby('stop_val')['time'].quantile(.9)
+
+                color, marker = get_solver_style(solver)
+
+                key = "_".join(key_list + ["Time"])
+                data[key] = {
+                    "x": curve['time'].tolist(),
+                    "y": curve[obj_col].tolist(),
+                    "q1": q1.tolist(),
+                    "q9": q9.tolist(),
+                    "color": color,
+                    "marker": marker,
+                    "label": solver,
+                }
+
+                key = "_".join(key_list + ["Iteration"])
+                data[key] = {
+                    "x": list(range(len(curve))),
+                    "y": curve[obj_col].tolist(),
+                    "q1": q1.tolist(),
+                    "q9": q9.tolist(),
+                    "color": color,
+                    "marker": marker,
+                    "label": solver,
+                }
+
+    return data, dropdown
+
+
 def compute_solvers_objective_curve_data(df, obj_col, suboptimality, relative):
     """Compute and shape data for MANY solvers to display in objective curve"""
     df = df.copy()

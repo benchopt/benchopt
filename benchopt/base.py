@@ -692,6 +692,8 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
                     dropdown[k] = df['data_name'].unique().tolist()
                 elif k == "solver":
                     dropdown[k] = df['solver_name'].unique().tolist()
+                elif k == "objective":
+                    dropdown[k] = df['objective_name'].unique().tolist()
                 else:
                     dropdown[k] = df[k].unique().tolist()
 
