@@ -9,7 +9,7 @@ def _remove_prefix(text, prefix):
     return text[len(prefix):] if text.startswith(prefix) else text
 
 
-def compute_objective_curve_data(df, obj_col='objective_value'):
+def compute_objective_curve_data(df):
     data = {}
     dropdown = {
         "Dataset": df['data_name'].unique(),
@@ -17,6 +17,8 @@ def compute_objective_curve_data(df, obj_col='objective_value'):
         "Solver": df['solver_name'].unique(),
         "X-axis": ["Time", "Iteration"],
     }
+    if "objective_value" not in df.columns:
+        return data, dropdown
     for dataset in df['data_name'].unique():
         for objective in df['objective_name'].unique():
             for solver in df['solver_name'].unique():
@@ -40,7 +42,7 @@ def compute_objective_curve_data(df, obj_col='objective_value'):
                 key = "_".join(key_list + ["Time"])
                 data[key] = {
                     "x": curve['time'].tolist(),
-                    "y": curve[obj_col].tolist(),
+                    "y": curve["objective_value"].tolist(),
                     "q1": q1.tolist(),
                     "q9": q9.tolist(),
                     "color": color,
@@ -51,7 +53,7 @@ def compute_objective_curve_data(df, obj_col='objective_value'):
                 key = "_".join(key_list + ["Iteration"])
                 data[key] = {
                     "x": list(range(len(curve))),
-                    "y": curve[obj_col].tolist(),
+                    "y": curve["objective_value"].tolist(),
                     "q1": q1.tolist(),
                     "q9": q9.tolist(),
                     "color": color,
