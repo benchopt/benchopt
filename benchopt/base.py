@@ -627,7 +627,7 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
     def _get_name(self):
         return self.name.replace(" ", "_")
 
-    def check(self):
+    def _check(self):
         self._check_type()
         self._check_dropdown()
 

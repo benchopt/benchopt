@@ -226,7 +226,7 @@ class Benchmark:
 
     def check_custom_plots(self):
         for plot in self.get_custom_plots():
-            plot.check()
+            plot._check()
 
     def _list_benchmark_classes(self, base_class):
         """Load all classes with the same name from a benchmark's subpackage.
