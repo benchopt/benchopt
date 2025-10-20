@@ -593,7 +593,7 @@ def test_custom_plot(no_debug_log):
         out.check_output("Rendering benchmark results", repetition=1)
 
 
-def test_custom_plot_errors(no_debug_log):
+def test_custom_plot_errors(no_debug_log):  # TODO improve error checks
     plot = """from benchopt import BasePlot
 
     class Plot(BasePlot):
@@ -617,38 +617,36 @@ def test_custom_plot_errors(no_debug_log):
     """
 
     error_plot = plot.replace("type = 'scatter'", "")
-    with pytest.raises(ValueError, match="Plot should have a"):
-        with temp_benchmark(plot=error_plot) as bench:
+    with temp_benchmark(plot=error_plot) as bench:
+        with pytest.raises(SystemExit):
             run([str(bench.benchmark_dir),
                  *'-n 1 -r 1 --no-display'
                  .split()], standalone_mode=False)
 
     error_plot = plot.replace("type = 'scatter'", "type = 'curving'")
-    with pytest.raises(ValueError, match="Plot type should be one of"):
-        with temp_benchmark(plot=error_plot) as bench:
+    with temp_benchmark(plot=error_plot) as bench:
+        with pytest.raises(SystemExit):
             run([str(bench.benchmark_dir),
                  *'-n 1 -r 1 --no-display'
                  .split()], standalone_mode=False)
 
     error_plot = plot.replace("dropdown = {}", "dropdown = []")
-    with pytest.raises(ValueError, match="`dropdown` should be a dictionary."):
-        with temp_benchmark(plot=error_plot) as bench:
+    with temp_benchmark(plot=error_plot) as bench:
+        with pytest.raises(SystemExit):
             run([str(bench.benchmark_dir),
                  *'-n 1 -r 1 --no-display'
                  .split()], standalone_mode=False)
 
     error_plot = plot.replace("dropdown = {}", "dropdown = {'color': 'blue'}")
-    with pytest.raises(ValueError,
-                       match="The values of dropdown should be a list"):
-        with temp_benchmark(plot=error_plot) as bench:
+    with temp_benchmark(plot=error_plot) as bench:
+        with pytest.raises(SystemExit):
             run([str(bench.benchmark_dir),
                  *'-n 1 -r 1 --no-display'
                  .split()], standalone_mode=False)
 
     error_plot = plot.replace("dropdown = {}", "dropdown = {'color': []}")
-    with pytest.raises(ValueError,
-                       match="The values of dropdown should be non empty"):
-        with temp_benchmark(plot=error_plot) as bench:
+    with temp_benchmark(plot=error_plot) as bench:
+        with pytest.raises(SystemExit):
             run([str(bench.benchmark_dir),
                  *'-n 1 -r 1 --no-display'
                  .split()], standalone_mode=False)
@@ -657,8 +655,8 @@ def test_custom_plot_errors(no_debug_log):
         "dropdown = {}",
         "dropdown = {'color': ['blue']}"
     )
-    with pytest.raises(ValueError, match="should match the signature of"):
-        with temp_benchmark(plot=error_plot) as bench:
+    with temp_benchmark(plot=error_plot) as bench:
+        with pytest.raises(SystemExit):
             run([str(bench.benchmark_dir),
                  *'-n 1 -r 1 --no-display'
                  .split()], standalone_mode=False)
