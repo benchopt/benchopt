@@ -1,12 +1,8 @@
 import matplotlib.pyplot as plt
 
-CMAP = plt.get_cmap('tab20')
-COLORS = [CMAP(i) for i in range(CMAP.N)]
-COLORS = COLORS[::2] + COLORS[1::2]
-MARKERS = {i: v for i, v in enumerate(plt.Line2D.markers)}
-EPS = 1e-10
+from .helpers import get_solver_style
 
-solvers_idx = {}
+EPS = 1e-10
 
 
 def _remove_prefix(text, prefix):
@@ -185,24 +181,3 @@ def compute_quantiles(df_filtered):
     q9 = df_filtered.groupby('stop_val')['time'].quantile(.9)
 
     return q1, q9
-
-
-def reset_solver_styles_idx():
-    "Reset solvers indices used to define colors and markers."
-    solvers_idx.clear()
-
-
-def get_solver_style(solver, plotly=True):
-    idx = solvers_idx.get(solver, len(solvers_idx))
-    solvers_idx[solver] = idx
-
-    color = COLORS[idx % len(COLORS)]
-    marker = MARKERS[idx % len(MARKERS)]
-
-    if plotly:
-        color = tuple(int(255*x) if i != 3 else float(x)
-                      for i, x in enumerate(color))
-        color = f'rgba{color}'
-        marker = idx
-
-    return color, marker

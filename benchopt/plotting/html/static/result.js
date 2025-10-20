@@ -859,7 +859,7 @@ const barDataToArrays = () => {
   getSolvers().forEach(solver => {
     x.push(solver);
     y.push(data(solver).bar.y);
-    colors.push(data(solver).bar.text === '' ? data(solver).color : NON_CONVERGENT_COLOR);
+    colors.push(data(solver).bar.text === '' ? data(solver).bar.color : NON_CONVERGENT_COLOR);
     texts.push(data(solver).bar.text);
   });
 
