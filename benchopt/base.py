@@ -610,6 +610,10 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
     def plot(self, df, **kwargs):
         ...
 
+    @abstractmethod
+    def get_metadata(self, df, **kwargs):
+        ...
+
     def get_style(self, label):
         idx = self.label_dict.get(label, len(self.label_dict))
         self.label_dict[label] = idx
@@ -676,14 +680,6 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
                 f"`plot` function, {plot_kwargs}."
             )
 
-    def _export_metadata(self):
-        return {
-            'type': self.type,
-            'title': self.title,
-            'xlabel': self.xlabel,
-            'ylabel': self.ylabel,
-        }
-
     def _get_all_plots(self, df):
         # Get all combinations
         dropdown = {**self.dropdown}
@@ -702,7 +698,8 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
 
         plots = {}
         for kwargs in combinations:
-            data = self._export_metadata()
+            data = self.get_metadata(df, **kwargs)
+            data["type"] = self.type
             data["data"] = self.plot(df, **kwargs)
             key_list = (
                 [self._get_name()] + list(kwargs.values())

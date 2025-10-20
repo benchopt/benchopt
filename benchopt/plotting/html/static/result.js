@@ -1088,7 +1088,7 @@ const getCustomChartLayout = () => {
     },
     xaxis: {
       type: getScale().xaxis,
-      title: customData.x_label,
+      title: customData.xlabel,
       tickformat: '.1e', // TODO adapt if xaxis is not numeric
       tickangle: -45,
       gridcolor: '#ffffff',
@@ -1096,7 +1096,7 @@ const getCustomChartLayout = () => {
     },
     yaxis: {
       type: getScale().yaxis,
-      title: customData.y_label,
+      title: customData.ylabel,
       tickformat: '.1e',
       gridcolor: '#ffffff',
       zeroline : false,
