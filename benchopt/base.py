@@ -707,4 +707,4 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
             key = '_'.join(map(str, key_list))
             plots[key] = data
 
-        return plots
+        return plots, dropdown
