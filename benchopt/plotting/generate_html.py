@@ -173,6 +173,11 @@ def get_custom_plots_for_html(df, benchmark):
     custom_data = {}
     custom_dropdown = {}
     for plot in benchmark.get_custom_plots():
+        if plot._get_name() == "Objective_Curve":
+            plot.dropdown["objective_column"] = [
+                c for c in df.columns
+                if c.startswith('objective_') and c != 'objective_name'
+            ]
         data, dropdown = plot._get_all_plots(df)
         custom_data[plot._get_name()] = data
         custom_dropdown[plot._get_name()] = dropdown

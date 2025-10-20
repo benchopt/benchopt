@@ -1,16 +1,17 @@
-from benchopt import BasePlot
+from .base import BasePlot
 
 
-class Plot(BasePlot):
+class ObjectiveCurvePlot(BasePlot):
     name = "Objective Curve"
     type = "scatter"
     dropdown = {
         "dataset": ...,
         "objective": ...,
+        "objective_column": ["TEMP"],
         "X_axis": ["Time", "Iteration"],
     }
 
-    def plot(self, df, dataset, objective, X_axis):
+    def plot(self, df, dataset, objective, objective_column, X_axis):
         df = df[df['data_name'] == dataset]
         df = df[df['objective_name'] == objective]
         x = df["time"].values.tolist()
@@ -21,7 +22,7 @@ class Plot(BasePlot):
                 "x": x,
                 "y": (
                     df[(df['solver_name'] == solver)]
-                    ["objective_value"].values.tolist()),
+                    [objective_column].values.tolist()),
                 "color": self.get_style(solver)[0],
                 "marker": self.get_style(solver)[1],
                 "label": solver,
@@ -29,7 +30,7 @@ class Plot(BasePlot):
             for solver in df['solver_name'].unique()
         ]
 
-    def get_metadata(self, df, dataset, objective, X_axis):
+    def get_metadata(self, df, dataset, objective, objective_column, X_axis):
         df = df[df['data_name'] == dataset]
         df = df[df['objective_name'] == objective]
         title = f"Objective Curve\nData: {dataset}\nObjective: {objective}"
