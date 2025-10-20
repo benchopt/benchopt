@@ -375,12 +375,13 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
 
     Returns
     -------
-    df : instance of pandas.DataFrame
-        The benchmark results. If multiple metrics were computed, each
-        one is stored in a separate column. If the number of metrics computed
-        by the objective is not the same for all parameters, the missing data
-        is set to `NaN`.
+    exit_code : int
+        Exit code of the benchmark run. 0 if everything went fine,
+        1 otherwise.
+    output_file : Path
+        Path to the output file where the results have been saved.
     """
+    exit_code = 0
     terminal = TerminalOutput(n_repetitions, show_progress)
     terminal.set(verbose=True)
 
@@ -408,12 +409,12 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
     df = pd.DataFrame(run_statistics)
     if df.empty:
         terminal.savefile_status()
-        raise SystemExit(1)
+        return 1, None
 
     # Save output in parquet file in the benchmark folder
-    timestamp = datetime.now().strftime('%Y-%m-%d_%Hh%Mm%S')
     output_dir = benchmark.get_output_folder()
     if output_file == "None":
+        timestamp = datetime.now().strftime('%Y-%m-%d_%Hh%Mm%S')
         output_file = output_dir / f'benchopt_run_{timestamp}.parquet'
     else:
         output_file = output_dir / f"{output_file}.parquet"
@@ -429,9 +430,14 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
     terminal.savefile_status(save_file=output_file)
 
     if plot_result:
-        from benchopt.plotting import plot_benchmark
-        plot_benchmark(output_file, benchmark, html=html, display=display)
-    return output_file
+        try:
+            from benchopt.plotting import plot_benchmark
+            plot_benchmark(output_file, benchmark, html=html, display=display)
+        except Exception as e:
+            print(f"Failed to plot the benchmark results: {e}")
+            exit_code = 1
+
+    return exit_code, output_file
 
 
 def run_benchmark(benchmark_path, solver_names=None, forced_solvers=(),
@@ -501,11 +507,11 @@ def run_benchmark(benchmark_path, solver_names=None, forced_solvers=(),
 
     Returns
     -------
-    df : instance of pandas.DataFrame
-        The benchmark results. If multiple metrics were computed, each
-        one is stored in a separate column. If the number of metrics computed
-        by the objective is not the same for all parameters, the missing data
-        is set to `NaN`.
+    exit_code : int
+        Exit code of the benchmark run. 0 if everything went fine,
+        1 otherwise.
+    output_file : Path
+        Path to the output file where the results have been saved.
     """
     benchmark = Benchmark(benchmark_path, no_cache=no_cache)
     if solver_names is None:

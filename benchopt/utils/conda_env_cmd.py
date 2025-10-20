@@ -95,7 +95,7 @@ def create_conda_env(
         print("done")
         return
 
-    force = "--force" if recreate else ""
+    force = " --force" if recreate else ""
 
     benchopt_requirement, benchopt_editable = get_benchopt_requirement(pytest)
 
@@ -119,7 +119,7 @@ def create_conda_env(
         if not quiet:
             print()
         _run_shell(
-            f"{CONDA_CMD} env create {force} -n {env_name} -f {env_yaml.name}",
+            f"{CONDA_CMD} env create -yn{force} {env_name} -f {env_yaml.name}",
             capture_stdout=quiet, raise_on_error=True
         )
         # the channels priorities cannot be set through the yaml file,
@@ -174,7 +174,7 @@ def get_benchopt_version_in_env(env_name):
 def delete_conda_env(env_name):
     """Delete a conda env with name env_name."""
 
-    _run_shell(f"{CONDA_CMD} env remove -n {env_name}",
+    _run_shell(f"{CONDA_CMD} env remove -yn {env_name}",
                capture_stdout=True)
 
 

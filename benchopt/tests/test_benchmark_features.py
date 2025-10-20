@@ -20,13 +20,15 @@ def test_template_dataset():
             template_dataset = (
                 bench.benchmark_dir / 'datasets' / 'template_dataset.py'
             )
-            _load_class_from_module(
+            template = _load_class_from_module(
                 bench.benchmark_dir, template_dataset, 'Dataset'
             )
+            template.is_installed(raise_on_not_installed=True)
 
         # Make sure that this error is not raised when listing
         # all datasets from the benchmark.
-        bench.get_datasets()
+        all_dataset = bench.get_datasets()
+        assert not any(d.name == template.name for d in all_dataset)
 
 
 def test_ignore_hidden_files(no_debug_log):
@@ -549,12 +551,11 @@ def test_pre_run_hook():
             )
 
         with CaptureCmdOutput() as out:
-            with pytest.raises(SystemExit, match="False"):
-                _cmd_test(
-                    f"{benchmark.benchmark_dir} -k solver1 --skip-install"
-                    " -v".split(),
-                    standalone_mode=False
-                )
+            _cmd_test(
+                f"{benchmark.benchmark_dir} -k solver1 --skip-install"
+                " -v".split(),
+                standalone_mode=False
+            )
 
         # Make sure warmup is called exactly once
         out.check_output("3 passed, 1 skipped, 5 deselected", repetition=1)

@@ -9,7 +9,7 @@ class FakeModule:
 
 
 @contextmanager
-def patch_import(**func_import):
+def patch_import(rm_modules=('benchopt_benchmarks',), **func_import):
     """Patch import in a context.
 
     Given module names and asssociated functions, call the function when the
@@ -21,7 +21,7 @@ def patch_import(**func_import):
 
     # Make sure we reimport the benchmark component after patching the imports
     for k in list(sys.modules):
-        if 'benchopt_benchmarks' in k:
+        if any(m in k for m in rm_modules):
             del sys.modules[k]
 
     def fake_import(name, *args, **kwargs):
