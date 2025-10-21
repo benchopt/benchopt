@@ -308,87 +308,6 @@ const getCustomData = () => {
 };
 
 
-const getScatterCurves = () => {
-  // create a list of object to plot in plotly
-  const curves = [];
-
-  // For each solver, add the median curve with proper style and visibility.
-  let xaxisType = state().xaxis_type;
-
-  getSolvers().forEach(solver => {
-    const solverSamplingStrategy = data(solver)['sampling_strategy'];
-
-    // plot only solvers that were stopped using xaxis type
-    // plot all solver if xaxis type is `time`
-    if(xaxisType !== "Time" && solverSamplingStrategy !== xaxisType) {
-      return
-    }
-
-    const ScatterXaxisProperty = xaxisType === "Time" ? 'x' : 'stop_val';
-
-    curves.push({
-      type: 'scatter',
-      name: solver,
-      mode: 'lines+markers',
-      line: {
-        color: data(solver).scatter.color,
-      },
-      marker: {
-        symbol: data(solver).scatter.marker,
-        size: 10,
-      },
-      legendgroup: solver,
-      hovertemplate: solver + ' <br> (%{x:.1e},%{y:.1e}) <extra></extra>',
-      visible: isVisible(solver) ? true : 'legendonly',
-      x: data(solver).scatter[ScatterXaxisProperty],
-      y: useTransformer(data(solver).scatter.y, 'y', data().transformers),
-    });
-
-    // skip plotting quantiles if xaxis is not time
-    // as stop_val are predefined and hence deterministic
-    if(xaxisType !== "Time") {
-      return
-    }
-
-    if (state().with_quantiles) {
-      // Add shaded area for each solver, with proper style and visibility.
-
-      curves.push({
-        type: 'scatter',
-        mode: 'lines',
-        showlegend: false,
-        line: {
-          width: 0,
-          color: data(solver).color,
-        },
-        legendgroup: solver,
-        hovertemplate: '(%{x:.1e},%{y:.1e}) <extra></extra>',
-        visible: isVisible(solver) ? true : 'legendonly',
-        x: data(solver).scatter['q1'],
-        y: useTransformer(data(solver).scatter.y, 'y', data().transformers),
-      }, {
-        type: 'scatter',
-        mode: 'lines',
-        showlegend: false,
-        fill: 'tonextx',
-        line: {
-          width: 0,
-          color: data(solver).color,
-        },
-        legendgroup: solver,
-        hovertemplate: '(%{x:.1e},%{y:.1e}) <extra></extra>',
-        visible: isVisible(solver) ? true : 'legendonly',
-        x: data(solver).scatter['q9'],
-        y: useTransformer(data(solver).scatter.y, 'y', data().transformers),
-      });
-    }
-  });
-
-  return curves;
-};
-
-
-
 /*
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * CONFIG MANAGEMENT
@@ -845,10 +764,7 @@ const isChart = chart => {
   }
 
   let plot_kind = state().plot_kind;
-  if ("objective_curve" === plot_kind) {
-    plot_kind = 'scatter';
-  }
-  else if (!["bar_chart", "boxplot"].includes(plot_kind)) {
+  if (!["bar_chart", "boxplot"].includes(plot_kind)) {
     let custom_data = getCustomPlotData();
     plot_kind = custom_data.type;
   }
@@ -927,69 +843,6 @@ const _getScale = (scale) => {
       console.error('Unknown scale value : ' + state().scale);
   }
 }
-
-const getScatterChartLayout = () => {
-  let xaxisType = state().xaxis_type;
-
-  const layout = {
-    autosize: !isSmallScreen(),
-    modebar: {
-      orientation: 'v',
-    },
-    height: 700,
-    showlegend: false,
-    legend: {
-      title: {
-        text: 'Solvers',
-      },
-      orientation: 'h',
-      xanchor: 'center',
-      yanchor: 'top',
-      y: -.2,
-      x: .5
-    },
-    xaxis: {
-      type: getScale().xaxis,
-      title: xaxisType === "Time" ? "Time [sec]": xaxisType,
-      tickformat:  ["Time", "Tolerance"].includes(xaxisType) ? '.1e': '',
-      tickangle: -45,
-      gridcolor: '#ffffff',
-      zeroline : false,
-    },
-    yaxis: {
-      type: getScale().yaxis,
-      title: getYLabel(),
-      tickformat: '.1e',
-      gridcolor: '#ffffff',
-      zeroline : false,
-    },
-    title: `${state().objective}<br />Data: ${state().dataset}`,
-    plot_bgcolor: '#e5ecf6',
-  };
-
-  if (isSmallScreen()) {
-    layout.width = 900;
-    layout.height = window.screen.availHeight - 200;
-    layout.dragmode = false;
-  }
-
-  if (!isAvailable()) {
-    layout.annotations = [{
-      xref: 'paper',
-      yref: 'paper',
-      x: 0.5,
-      y: 0.5,
-      text: 'Not available',
-      showarrow: false,
-      font: {
-        color: 'black',
-        size: 32,
-      }
-    }];
-  };
-
-  return layout;
-};
 
 const getBarChartLayout = () => {
   const layout = {
