@@ -1,8 +1,6 @@
 from abc import ABC, abstractmethod
 import hashlib
 import ast
-import inspect
-import linecache
 
 from .callback import _Callback
 from .stopping_criterion import SingleRunCriterion
@@ -40,8 +38,7 @@ def get_seed(seed_dict, use_objective, use_dataset,
 
 def class_uses_seeding(cls):
     # Get source code of the class
-    file = inspect.getfile(cls)
-    src = ''.join(linecache.getlines(file))
+    src = cls._module_filename.read_text()
     tree = ast.parse(src)
 
     # Walk through the AST and look for calls to self.get_seed
@@ -545,7 +542,7 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
         self._dataset = dataset
         assert self.is_installed(raise_on_not_installed=True)
 
-        uses_seed = class_uses_seeding(dataset.__class__)
+        uses_seed = class_uses_seeding(dataset)
         data = dataset._get_data(uses_seed)
 
         # Check if the dataset is compatible with the objective
