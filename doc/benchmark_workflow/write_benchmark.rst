@@ -17,9 +17,11 @@ structure. For example
     ├── datasets/
     │   ├── dataset1.py  # some dataset
     │   └── dataset2.py  # some dataset
-    └── solvers/
-        ├── solver1.py  # some solver
-        └── solver2.py  # some solver
+    ├── solvers/
+    │   ├── solver1.py  # some solver
+    │   └── solver2.py  # some solver
+    └── plots/
+        └── custom_plot.py  # (optional) some custom plot
 
 Examples of actual benchmarks are available in the
 `benchopt organisation <https://github.com/benchopt/>`_ such
