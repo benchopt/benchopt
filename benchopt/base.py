@@ -14,6 +14,7 @@ from .utils.parametrized_name_mixin import product_param
 CMAP = plt.get_cmap('tab20')
 COLORS = [CMAP(i) for i in range(CMAP.N)]
 COLORS = COLORS[::2] + COLORS[1::2]
+MARKERS = {i: v for i, v in enumerate(plt.Line2D.markers)}
 
 
 class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
@@ -614,18 +615,21 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
     def get_metadata(self, df, **kwargs):
         ...
 
-    def get_style(self, label):
+    def get_style(self, label, plotly=True):
         idx = self.label_dict.get(label, len(self.label_dict))
         self.label_dict[label] = idx
 
         color = COLORS[idx % len(COLORS)]
 
-        color = tuple(
-            int(255*x) if i != 3 else float(x)
-            for i, x in enumerate(color)
-        )
-        color = f'rgba{color}'
-        marker = idx
+        if plotly:
+            color = tuple(
+                int(255*x) if i != 3 else float(x)
+                for i, x in enumerate(color)
+            )
+            color = f'rgba{color}'
+            marker = idx
+        else:
+            marker = MARKERS[idx % len(MARKERS)]
 
         return color, marker
 
@@ -691,6 +695,11 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
                     dropdown[k] = df['solver_name'].unique().tolist()
                 elif k == "objective":
                     dropdown[k] = df['objective_name'].unique().tolist()
+                elif k == "objective_column":
+                    dropdown["objective_column"] = [
+                        c for c in df.columns
+                        if c.startswith('objective_') and c != 'objective_name'
+                    ]
                 else:
                     dropdown[k] = df[k].unique().tolist()
 
@@ -708,3 +717,47 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
             plots[key] = data
 
         return plots, dropdown
+
+    def _get_plt_plot(self, df):
+        if self.type == "scatter":
+            return self._get_plt_plot_scatter(df)
+        else:
+            raise NotImplementedError(
+                f"Plot type {self.type} not implemented for matplotlib."
+            )
+
+    def _get_plt_plot_scatter(self, df):
+        df = df.copy()
+        data, _ = self._get_all_plots(df)
+        figs = []
+        for plot_datas in data.values():
+
+            fig = plt.figure()
+            for plot_data in plot_datas["data"]:
+                color, marker = self.get_style(
+                    plot_data["label"], plotly=False
+                )
+                plt.loglog(
+                    plot_data["x"], plot_data["y"], color=color,
+                    marker=marker, label=plot_data["label"],
+                    linewidth=3
+                )
+
+                if "q1" in plot_data and "q9" in plot_data:
+                    q1 = plot_data["q1"]
+                    q9 = plot_data["q9"]
+                    plt.fill_betweenx(
+                        plot_data["y"], q1, q9, color=plot_data["color"],
+                        alpha=.3
+                    )
+
+            # Format the plot to be nice
+            plt.legend(fontsize=14)
+            plt.xlabel(plot_datas["xlabel"], fontsize=14)
+            plt.ylabel(plot_datas["ylabel"], fontsize=14)
+            plt.title(plot_datas["title"], fontsize=14)
+            plt.tight_layout()
+
+            figs.append(fig)
+
+        return figs

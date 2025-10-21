@@ -215,6 +215,12 @@ class Benchmark:
         for plot in self.get_custom_plots():
             plot._check()
 
+    def get_plt_plots(self, df):
+        figs = []
+        for plot in self.get_custom_plots():
+            figs.extend(plot._get_plt_plot(df))
+        return figs
+
     def _list_benchmark_classes(self, base_class):
         """Load all classes with the same name from a benchmark's subpackage.
 

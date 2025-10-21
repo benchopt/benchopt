@@ -7,28 +7,34 @@ class ObjectiveCurvePlot(BasePlot):
     dropdown = {
         "dataset": ...,
         "objective": ...,
-        "objective_column": ["TEMP"],
+        "objective_column": ...,
         "X_axis": ["Time", "Iteration"],
     }
 
     def plot(self, df, dataset, objective, objective_column, X_axis):
         df = df[df['data_name'] == dataset]
         df = df[df['objective_name'] == objective]
-        x = df["time"].values.tolist()
-        if X_axis == "Iteration":
-            x = list(range(len(x)))
-        return [
-            {
-                "x": x,
-                "y": (
-                    df[(df['solver_name'] == solver)]
-                    [objective_column].values.tolist()),
-                "color": self.get_style(solver)[0],
-                "marker": self.get_style(solver)[1],
-                "label": solver,
-            }
-            for solver in df['solver_name'].unique()
-        ]
+
+        plots = []
+        for solver in df['solver_name'].unique():
+            y = (
+                df[(df['solver_name'] == solver)][objective_column]
+                .values.tolist()
+            )
+            x = df[(df['solver_name'] == solver)]["time"].values.tolist()
+            if X_axis == "Iteration":
+                x = list(range(len(x)))
+
+            plots.append(
+                {
+                    "x": x,
+                    "y": y,
+                    "color": self.get_style(solver)[0],
+                    "marker": self.get_style(solver)[1],
+                    "label": solver,
+                }
+            )
+        return plots
 
     def get_metadata(self, df, dataset, objective, objective_column, X_axis):
         df = df[df['data_name'] == dataset]

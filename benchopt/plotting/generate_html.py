@@ -14,7 +14,6 @@ from benchopt.benchmark import Benchmark
 from .plot_bar_chart import compute_bar_chart_data  # noqa: F401
 from .plot_boxplot import compute_solver_boxplot_data
 from .helpers import reset_solver_styles_idx
-from .plot_objective_curve import compute_objective_curve_data
 
 ROOT = Path(__file__).parent / "html"
 DEFAULT_HTML_DIR = Path("html")
@@ -173,19 +172,10 @@ def get_custom_plots_for_html(df, benchmark):
     custom_data = {}
     custom_dropdown = {}
     for plot in benchmark.get_custom_plots():
-        if plot._get_name() == "Objective_Curve":
-            plot.dropdown["objective_column"] = [
-                c for c in df.columns
-                if c.startswith('objective_') and c != 'objective_name'
-            ]
         data, dropdown = plot._get_all_plots(df)
         custom_data[plot._get_name()] = data
         custom_dropdown[plot._get_name()] = dropdown
 
-    objective_curve_data, objective_curve_dropdown = \
-        compute_objective_curve_data(df)
-    custom_data["objective_curve"] = objective_curve_data
-    custom_dropdown["objective_curve"] = objective_curve_dropdown
     return custom_data, custom_dropdown
 
 

@@ -10,9 +10,6 @@ from ..constants import PLOT_KINDS
 from .helpers import get_plot_id
 from .plot_boxplot import plot_boxplot  # noqa: F401
 from .plot_bar_chart import plot_bar_chart  # noqa: F401
-from .plot_objective_curve import plot_objective_curve  # noqa: F401
-from .plot_objective_curve import plot_suboptimality_curve  # noqa: F401
-from .plot_objective_curve import plot_relative_suboptimality_curve  # noqa: F401 E501
 from .generate_html import plot_benchmark_html
 
 
@@ -56,6 +53,12 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
     if kinds is not None and len(kinds) > 0:
         config["plots"] = kinds
 
+    if "plots" not in config:
+        config["plots"] = (
+            list(PLOT_KINDS.keys()) +
+            benchmark.get_custom_plot_names()
+        )
+
     if html:
         plot_benchmark_html(fname, benchmark, config, display)
 
@@ -72,7 +75,14 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
         ]
         datasets = df['data_name'].unique()
         output_dir = benchmark.get_output_folder()
+
         figs = []
+
+        for kind in config["plots"]:
+            if kind in benchmark.get_custom_plot_names():
+                kind_figs = benchmark.get_plt_plots(df)
+                figs.extend(kind_figs)
+
         for data in datasets:
             df_data = df[df['data_name'] == data]
             objective_names = df['objective_name'].unique()
@@ -85,10 +95,7 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
                         config["plots"], obj_cols
                 ):
                     if kind not in PLOT_KINDS:
-                        raise ValueError(
-                            f"Requesting invalid plot '{kind}'."
-                            f"Should be in:\n{PLOT_KINDS}"
-                        )
+                        continue
                     # For now only plot bar chart and suboptimality for
                     # objective_value for which we monitor convergence
                     # XXX - find a better solution

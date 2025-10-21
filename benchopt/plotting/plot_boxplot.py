@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 
-from benchopt.plotting.plot_objective_curve import get_solver_style
+from benchopt.plotting.helpers import get_solver_style
 
 
 def plot_boxplot(df, obj_col='objective_value', plotly=False):

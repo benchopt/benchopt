@@ -13,7 +13,7 @@ class Plot(BasePlot):
         df = df[(df['data_name'] == dataset)]
         return [
             {
-                "x": df["time"].values.tolist(),
+                "x": df[(df['solver_name'] == solver)]["time"].values.tolist(),
                 "y": (
                     df[(df['solver_name'] == solver)]
                     ["objective_value"].values.tolist()),
