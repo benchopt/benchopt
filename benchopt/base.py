@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-import hashlib
 import ast
 
 from .callback import _Callback
@@ -9,31 +8,7 @@ from .stopping_criterion import SufficientProgressCriterion
 from .utils.misc import NamedTemporaryFile
 from .utils.dependencies_mixin import DependenciesMixin
 from .utils.parametrized_name_mixin import ParametrizedNameMixin
-
-
-def get_seed(seed_dict, use_objective, use_dataset,
-             use_solver, use_repetition):
-    use_keys = {
-        "base_seed": True,
-        "objective": use_objective,
-        "dataset": use_dataset,
-        "solver": use_solver,
-        "repetition": use_repetition
-    }
-    hash_list = []
-    for key in use_keys:
-        if key not in seed_dict:
-            raise ValueError(f"Seed dict is not initialized correctly, "
-                             f"missing {key} key.")
-        elif use_keys[key]:
-            hash_list.append(seed_dict[key])
-        else:
-            hash_list.append("*")
-
-    hash_string = "_".join(hash_list)
-    digest = hashlib.sha256(hash_string.encode()).hexdigest()
-    seed = int(digest, 16) % (2**32 - 1)
-    return seed
+from .utils.seed_mixin import SeedMixin
 
 
 def class_uses_seeding(cls):
@@ -49,7 +24,7 @@ def class_uses_seeding(cls):
     return False
 
 
-class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
+class BaseSolver(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
     """A base class for solver wrappers in Benchopt.
 
     Solvers that derive from this class should implement three methods:
@@ -282,22 +257,6 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         if objective is not None:
             self._set_objective(objective)
 
-    def get_seed(
-        self, use_objective=True, use_dataset=True,
-        use_solver=True, use_repetition=True,
-    ):
-        """Get the random seed for this solver instance. Setting use_objective,
-        use_dataset, use_solver or use_repetition to False will return a seed
-        that is not affected by the corresponding component.
-        """
-        if not hasattr(self, "seed_dict"):
-            raise ValueError(f"seed_dict was not initialized for {self}")
-
-        return get_seed(
-            self.seed_dict, use_objective, use_dataset,
-            use_solver, use_repetition
-        )
-
 
 class CommandLineSolver(BaseSolver, ABC):
     """A base class for solvers that are called through command lines
@@ -315,7 +274,7 @@ class CommandLineSolver(BaseSolver, ABC):
         super().__init__(**parameters)
 
 
-class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
+class BaseDataset(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
     """Base class to define a dataset in a benchmark.
 
     Datasets that derive from this class should implement one method:
@@ -348,24 +307,8 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
 
         return self._data
 
-    def get_seed(
-        self, use_objective=True, use_dataset=True,
-        use_solver=True, use_repetition=True,
-    ):
-        """Get the random seed for this solver instance. Setting use_objective,
-        use_dataset, use_solver or use_repetition to False will return a seed
-        that is not affected by the corresponding component.
-        """
-        if not hasattr(self, "seed_dict"):
-            raise ValueError(f"seed_dict was not initialized for {self}")
 
-        return get_seed(
-            self.seed_dict, use_objective, use_dataset,
-            use_solver, use_repetition
-        )
-
-
-class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
+class BaseObjective(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
     """Base class to define an objective function
 
     Objectives that derive from this class needs to implement four methods:
@@ -667,19 +610,3 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
         cv_fold = next(self._cv)
         split_ = getattr(self, "split", self._default_split)
         return split_(cv_fold, *arrays)
-
-    def get_seed(
-        self, use_objective=True, use_dataset=True,
-        use_solver=True, use_repetition=True,
-    ):
-        """Get the random seed for this solver instance. Setting use_objective,
-        use_dataset, use_solver or use_repetition to False will return a seed
-        that is not affected by the corresponding component.
-        """
-        if not hasattr(self, "seed_dict"):
-            raise ValueError(f"seed_dict was not initialized for {self}")
-
-        return get_seed(
-            self.seed_dict, use_objective, use_dataset,
-            use_solver, use_repetition
-        )
