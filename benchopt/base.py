@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 import hashlib
 import ast
 import inspect
+import linecache
 
 from .callback import _Callback
 from .stopping_criterion import SingleRunCriterion
@@ -39,7 +40,8 @@ def get_seed(seed_dict, use_objective, use_dataset,
 
 def class_uses_seeding(cls):
     # Get source code of the class
-    src = inspect.getsource(cls)
+    file = inspect.getfile(cls)
+    src = ''.join(linecache.getlines(file))
     tree = ast.parse(src)
 
     # Walk through the AST and look for calls to self.get_seed
