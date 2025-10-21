@@ -31,6 +31,10 @@ CLI
 API
 ---
 
+- Add ``BasePlot`` class to allow custom plotting functions
+  in benchmarks.
+  By `Hippolyte Verninas`_ (:gh:`842`)
+
 FIX
 ---
 
