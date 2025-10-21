@@ -82,6 +82,13 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
             if kind in benchmark.get_custom_plot_names():
                 kind_figs = benchmark.get_plt_plots(df)
                 figs.extend(kind_figs)
+            elif kind not in PLOT_KINDS:
+                valid_kinds = (
+                    list(PLOT_KINDS.keys()) +
+                    benchmark.get_custom_plot_names()
+                )
+                raise ValueError(f"Unknown plot kind: {kind}. Should be "
+                                 f"one of {valid_kinds}")
 
         for data in datasets:
             df_data = df[df['data_name'] == data]
