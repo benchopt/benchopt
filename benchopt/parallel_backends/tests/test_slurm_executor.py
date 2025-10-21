@@ -1,14 +1,14 @@
 import pytest
+submitit = pytest.importorskip("submitit")
 
-from benchopt import runner
-from benchopt.parallel_backends.slurm_executor import (
+from benchopt import runner  # noqa: E402
+from benchopt.parallel_backends.slurm_executor import (  # noqa: E402
     get_slurm_executor,
     get_solver_slurm_config,
 )
-from benchopt.utils.temp_benchmark import temp_benchmark
-from benchopt.tests.utils.capture_cmd_output import CaptureCmdOutput
+from benchopt.tests.utils import CaptureCmdOutput  # noqa: E402
+from benchopt.utils.temp_benchmark import temp_benchmark  # noqa: E402
 
-submitit = pytest.importorskip("submitit")
 from submitit.slurm.test_slurm import mocked_slurm  # noqa: E402
 
 
