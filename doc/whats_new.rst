@@ -31,6 +31,9 @@ CLI
 API
 ---
 
+- Add seeding for the base classes (via ``self.get_seed``) to improve random control
+  By `Hippolyte Verninas`_ (:gh:`837`)
+
 FIX
 ---
 
