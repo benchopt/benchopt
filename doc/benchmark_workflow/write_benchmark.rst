@@ -150,6 +150,8 @@ Example
   once during the benchmark.
 
 
+.. _custom_plots:
+
 4. Plots
 --------
 
