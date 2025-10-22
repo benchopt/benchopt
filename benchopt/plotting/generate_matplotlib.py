@@ -6,6 +6,8 @@ def get_figures(benchmark, df, output_dir, kinds):
     figs = []
     plot_data, _ = benchmark.get_plot_data(df, plotly_style=False)
     for plot_name in plot_data.keys():
+        if plot_name not in kinds:
+            continue
         figs.append(get_plot_figure(plot_data[plot_name], df, output_dir))
     return figs
 

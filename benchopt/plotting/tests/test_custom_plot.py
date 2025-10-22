@@ -19,8 +19,8 @@ def test_custom_plot(no_debug_log):
                 {
                     "x": [],
                     "y": [],
-                    "color": "blue",
-                    "marker": "circle",
+                    "color": [0, 0, 1, 1],
+                    "marker": 0,
                     "label": "label",
                 }
             ]
@@ -55,8 +55,8 @@ def test_custom_plot_errors(no_debug_log):  # TODO improve error checks
                 {
                     "x": [],
                     "y": [],
-                    "color": "blue",
-                    "marker": "circle",
+                    "color": [0, 0, 1, 1],
+                    "marker": 0,
                     "label": "label",
                 }
             ]

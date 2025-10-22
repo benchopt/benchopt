@@ -504,8 +504,8 @@ class TestPlotCmd:
                             df[(df['solver_name'] == solver)]
                             ["objective_value"].values.tolist()
                         ),
-                        "color": "black",
-                        "marker": "circle",
+                        "color": [0,0,0,1],
+                        "marker": 0,
                         "label": solver,
                     }
                     for solver in df['solver_name'].unique()
