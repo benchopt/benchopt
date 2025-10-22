@@ -219,14 +219,17 @@ class Benchmark:
         for plot in self.get_custom_plots():
             plot._check()
 
-    def get_matplotlib_plots(self, df, output_dir, kind=None):
-        "Get the matplotlib figures of the avaible custom plots"
-        figs = []
+    def get_plot_data(self, df):
+        "Get the data to plot for the benchmark."
+        self.check_custom_plots()
+        custom_data = {}
+        custom_dropdown = {}
         for plot in self.get_custom_plots():
-            if kind is not None and plot._get_name() != kind:
-                continue
-            figs.extend(plot._get_plt_plot(df, output_dir))
-        return figs
+            data, dropdown = plot._get_all_plots(df)
+            custom_data[plot._get_name()] = data
+            custom_dropdown[plot._get_name()] = dropdown
+
+        return custom_data, custom_dropdown
 
     def _list_benchmark_classes(self, base_class):
         """Load all classes with the same name from a benchmark's subpackage.

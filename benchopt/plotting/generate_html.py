@@ -96,7 +96,7 @@ def get_results(fnames, html_root, benchmark, config=None, copy=False):
             fname = fname_in_output
         fname = fname.absolute().relative_to(html_root.absolute())
 
-        custom_data, custom_dropdown = get_custom_plots_for_html(df, benchmark)
+        custom_data, custom_dropdown = benchmark.get_plot_data(df)
 
         # Generate figures
         result = dict(
@@ -106,11 +106,14 @@ def get_results(fnames, html_root, benchmark, config=None, copy=False):
             sysinfo=sysinfo,
             dataset_names=df['data_name'].unique(),
             objective_names=df['objective_name'].unique(),
-            obj_cols=[k for k in df.columns if k.startswith('objective_')
-                      and k != 'objective_name'],
+            obj_cols=[
+                k for k in df.columns
+                if k.startswith('objective_') and k != 'objective_name'
+            ],
             kinds=config_.get(
                 'plots',
-                list(PLOT_KINDS) + benchmark.get_custom_plot_names()),
+                list(PLOT_KINDS) + benchmark.get_custom_plot_names()
+            ),
             metadata=get_metadata(df, config_.get('plot_configs', {})),
             custom_plot_params=custom_dropdown,
         )
@@ -165,18 +168,6 @@ def get_metadata(df, plot_configs):
         metadata["obj_description"] = ""
 
     return metadata
-
-
-def get_custom_plots_for_html(df, benchmark):
-    benchmark.check_custom_plots()
-    custom_data = {}
-    custom_dropdown = {}
-    for plot in benchmark.get_custom_plots():
-        data, dropdown = plot._get_all_plots(df)
-        custom_data[plot._get_name()] = data
-        custom_dropdown[plot._get_name()] = dropdown
-
-    return custom_data, custom_dropdown
 
 
 def shape_datasets_for_html(df):
