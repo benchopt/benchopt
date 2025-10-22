@@ -80,7 +80,8 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
 
         for kind in config["plots"]:
             if kind in benchmark.get_custom_plot_names():
-                kind_figs = benchmark.get_plt_plots(df, output_dir, kind=kind)
+                kind_figs = benchmark.get_matplotlib_plots(
+                    df, output_dir, kind=kind)
                 figs.extend(kind_figs)
             elif kind not in PLOT_KINDS:
                 valid_kinds = (

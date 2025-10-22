@@ -198,7 +198,8 @@ class Benchmark:
         )
 
     def get_custom_plots(self):
-        from .plotting.base_plots import BasePlot, ObjectiveCurvePlot
+        "List all available custom plot classes for the benchmark"
+        from .plotting.base import BasePlot, ObjectiveCurvePlot
         custom_plots = [
             plot.get_instance()
             for plot in self._list_benchmark_classes(BasePlot)
@@ -207,15 +208,18 @@ class Benchmark:
         return custom_plots
 
     def get_custom_plot_names(self):
+        "List all custom plot names available"
         return [
             plot._get_name() for plot in self.get_custom_plots()
         ]
 
     def check_custom_plots(self):
+        "Check if the available custom plots have valid definitions"
         for plot in self.get_custom_plots():
             plot._check()
 
-    def get_plt_plots(self, df, output_dir, kind=None):
+    def get_matplotlib_plots(self, df, output_dir, kind=None):
+        "Get the matplotlib figures of the avaible custom plots"
         figs = []
         for plot in self.get_custom_plots():
             if kind is not None and plot._get_name() != kind:
