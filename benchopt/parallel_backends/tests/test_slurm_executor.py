@@ -104,8 +104,7 @@ def test_run_on_slurm(monkeypatch, dummy_slurm_config):
         # Mock submit to return a mocked task, with the executor's parameters
         return MockedTask(solver, self._executor.parameters)
 
-    monkeypatch.setattr(
-        "submitit.AutoExecutor.submit", submit)
+    monkeypatch.setattr("submitit.AutoExecutor.submit", submit)
     monkeypatch.setattr(
         "submitit.helpers.as_completed.__defaults__", (None, 0.1)
     )

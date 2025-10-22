@@ -91,9 +91,9 @@ class. For more information on the available parameters, please refer to
 the `submitit documentation <https://github.com/facebookincubator/submitit>`_.
 
 Note that by default, no limitation is used on the number of
-simultaneous jobs that are run. ``slurm_array_parallelism`` can be used to
-limit the number of simultaneous jobs that are run. By default, this value is
-not set, leaving it to the cluster to adjust this.
+simultaneous jobs that are run, leaving the cluster to adjust this. The
+``slurm_array_parallelism`` parameter can be set to limit the number of
+simultaneous jobs that are run when necessary.
 
 If ``slurm_time`` is not set in the config file, benchopt uses by default
 the value of ``--timeout`` multiplied by ``1.5`` for each job.
@@ -107,7 +107,8 @@ a shared file-system between the nodes used for the computations.
 Overriding the SLURM parameters for one solver or one run
 ---------------------------------------------------------
 
-It is also possible to override the SLURM parameters for a specific solver, or even varying them per run.
+It is possible to override the SLURM parameters for a specific solver, or varying
+them for different runs of a given solver.
 
 To specify specific configuration for one solver, you can define a
 ``slurm_params`` attribute in the solver class, which specifies different
