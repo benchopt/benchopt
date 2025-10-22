@@ -155,7 +155,9 @@ Example
 4. Plots
 --------
 
-Warning: this is still an experimental feature and the API may change in future releases (and may also contain bugs).
+.. warning::
+
+   This feature is experimental and the API may change in future releases without further notice.
 
 Custom plots can be defined to visualize specific quantities of interest
 during the benchmark. By default, BenchOpt provides some standard plots such as
