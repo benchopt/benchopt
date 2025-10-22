@@ -4,7 +4,7 @@ from .runner import run_benchmark
 from .base import BaseSolver
 from .base import BaseDataset
 from .base import BaseObjective
-from .base import BasePlot
+from .plotting.base_plots import BasePlot
 
 # TODO: remove this import in benchopt 1.8
 # Context to allow safe imports

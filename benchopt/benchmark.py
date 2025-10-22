@@ -9,8 +9,7 @@ from pathlib import Path
 from joblib.externals import cloudpickle
 
 from .config import get_setting
-from .base import BaseSolver, BaseDataset, BasePlot
-from .base_plots import ObjectiveCurvePlot
+from .base import BaseSolver, BaseDataset
 
 from .utils.dynamic_modules import _load_class_from_module, FailedImport
 from .utils.parametrized_name_mixin import product_param
@@ -199,6 +198,7 @@ class Benchmark:
         )
 
     def get_custom_plots(self):
+        from .plotting.base_plots import BasePlot, ObjectiveCurvePlot
         custom_plots = [
             plot.get_instance()
             for plot in self._list_benchmark_classes(BasePlot)
