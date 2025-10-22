@@ -233,10 +233,13 @@ const getCustomPlotData = () => {
 const getCustomData = () => {
   // create a list of object to plot in plotly
   const curves = [];
+
+  // get the minimum y value over all curves
   let min_y = Infinity;
   getCustomPlotData().data.forEach(curveData => {
     min_y = Math.min(min_y, ...curveData.y);
   });
+
   getCustomPlotData().data.forEach(curveData => {
     y = curveData.y;
     if ("q1" in curveData && "q9" in curveData && state().with_quantiles) {
