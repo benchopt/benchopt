@@ -1,6 +1,6 @@
 import pytest
 
-from benchopt import runner
+from benchopt.runner import run_benchmark
 from benchopt.tests.utils import CaptureCmdOutput
 from benchopt.utils.temp_benchmark import temp_benchmark
 
@@ -151,10 +151,10 @@ def test_run_on_slurm(monkeypatch, dummy_slurm_config):
         ),
     ]
 
-    # Run the function
+    # Run the function on a mocked slurm cluster
     with temp_benchmark(solvers=solvers) as bench, mocked_slurm():
         with CaptureCmdOutput(delete_result_files=False) as out:
-            runner.run_benchmark(
+            run_benchmark(
                 bench.benchmark_dir, [
                     "solver_no_params", "solver_slurm_params",
                     "solver_my_params[p=2]",
@@ -167,6 +167,7 @@ def test_run_on_slurm(monkeypatch, dummy_slurm_config):
                 plot_result=False
             )
 
+        # Get the results
         import pandas as pd
         df = pd.read_parquet(out.result_files[0]).set_index("solver")
 
