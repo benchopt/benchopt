@@ -18,8 +18,12 @@ class ObjectiveCurvePlot(BasePlot):
         plots = []
         for solver in df['solver_name'].unique():
             df_filtered = (
-                df[df['solver_name'] == solver].groupby('stop_val')
+                df[df['solver_name'] == solver]
+                .select_dtypes(include=['number'])
+                .groupby('stop_val')
             )
+            if objective_column not in df_filtered:
+                continue
             y = (
                 df_filtered[objective_column]
                 .median().values.tolist()

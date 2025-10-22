@@ -78,6 +78,16 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
         datasets = df['data_name'].unique()
         output_dir = benchmark.get_output_folder()
 
+        valid_kinds = (
+            list(PLOT_KINDS.keys()) + benchmark.get_custom_plot_names()
+        )
+        for kind in config["plots"]:
+            if kind not in valid_kinds:
+                raise ValueError(
+                    f"Invalid plot kind '{kind}'. Available kinds are: "
+                    f"{valid_kinds}"
+                )
+
         figs = []
 
         kind_figs = get_figures(
