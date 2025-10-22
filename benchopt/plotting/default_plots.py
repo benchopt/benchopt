@@ -22,15 +22,16 @@ class ObjectiveCurvePlot(BasePlot):
                 .select_dtypes(include=['number'])
                 .groupby('stop_val')
             )
-            if objective_column not in df_filtered:
+            df_filtered_median = df_filtered.median()
+            if objective_column not in df_filtered_median:
                 continue
             y = (
-                df_filtered[objective_column]
-                .median().values.tolist()
+                df_filtered_median[objective_column]
+                .values.tolist()
             )
-            x = df_filtered["time"].median().values.tolist()
+            x = df_filtered_median["time"].values.tolist()
             if X_axis == "Iteration":
-                x = df_filtered["time"].median().index.tolist()
+                x = df_filtered_median["time"].index.tolist()
 
             curve_data = {
                 "x": x,

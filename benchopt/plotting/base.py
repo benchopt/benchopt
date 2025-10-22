@@ -9,7 +9,6 @@ from ..utils.parametrized_name_mixin import product_param
 CMAP = plt.get_cmap('tab20')
 COLORS = [CMAP(i) for i in range(CMAP.N)]
 COLORS = COLORS[::2] + COLORS[1::2]
-MARKERS = {i: v for i, v in enumerate(plt.Line2D.markers)}
 
 
 class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
@@ -24,23 +23,13 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
     def get_metadata(self, df, **kwargs):
         ...
 
-    def get_style(self, label, plotly=True):
+    def get_style(self, label):
         idx = self.label_dict.get(label, len(self.label_dict))
         self.label_dict[label] = idx
 
         color = COLORS[idx % len(COLORS)]
 
-        if plotly:
-            color = tuple(
-                int(255*x) if i != 3 else float(x)
-                for i, x in enumerate(color)
-            )
-            color = f'rgba{color}'
-            marker = idx
-        else:
-            marker = MARKERS[idx % len(MARKERS)]
-
-        return color, marker
+        return color, idx
 
     def _get_name(self):
         return self.name.replace(" ", "_")

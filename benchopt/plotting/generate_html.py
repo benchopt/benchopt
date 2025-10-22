@@ -96,7 +96,9 @@ def get_results(fnames, html_root, benchmark, config=None, copy=False):
             fname = fname_in_output
         fname = fname.absolute().relative_to(html_root.absolute())
 
-        custom_data, custom_dropdown = benchmark.get_plot_data(df)
+        custom_data, custom_dropdown = benchmark.get_plot_data(
+            df, plotly_style=True
+        )
 
         # Generate figures
         result = dict(

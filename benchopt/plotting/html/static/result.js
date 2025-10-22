@@ -267,6 +267,7 @@ const getCustomData = () => {
       marker: {
         symbol: curveData.marker,
         size: 10,
+        color: curveData.color,
       },
       legendgroup: curveData.label,
       hovertemplate: curveData.label + ' <br> (%{x:.1e},%{y:.1e}) <extra></extra>',
