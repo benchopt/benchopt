@@ -1,15 +1,16 @@
 import pytest
+
+from benchopt import runner
+from benchopt.tests.utils import CaptureCmdOutput
+from benchopt.utils.temp_benchmark import temp_benchmark
+
 submitit = pytest.importorskip("submitit")
 
-from benchopt import runner  # noqa: E402
+from submitit.slurm.test_slurm import mocked_slurm  # noqa: E402
 from benchopt.parallel_backends.slurm_executor import (  # noqa: E402
     get_slurm_executor,
     get_solver_slurm_config,
 )
-from benchopt.tests.utils import CaptureCmdOutput  # noqa: E402
-from benchopt.utils.temp_benchmark import temp_benchmark  # noqa: E402
-
-from submitit.slurm.test_slurm import mocked_slurm  # noqa: E402
 
 
 @pytest.fixture
@@ -79,8 +80,11 @@ def test_merge_configs(dummy_slurm_config):
 def test_run_on_slurm(monkeypatch, dummy_slurm_config):
 
     class MockedTask:
+        next_job_id = 0
+
         def __init__(self, solver, config):
-            self.job_id = "12"
+            self.job_id = self.next_job_id
+            self.next_job_id += 1
             self.solver = solver
             self.config = config
 
@@ -89,7 +93,8 @@ def test_run_on_slurm(monkeypatch, dummy_slurm_config):
 
         # Result return as many information about the run as possible
         def result(self): return [{
-            'solver': str(self.solver), **self.config,
+            'solver': str(self.solver),
+            **self.config,  # Dump executor config
             **{f"p_{k}": v for k, v in self.solver._parameters.items()}
         }]
 
@@ -98,8 +103,12 @@ def test_run_on_slurm(monkeypatch, dummy_slurm_config):
     def submit(self, *args, solver, **kwargs):
         # Mock submit to return a mocked task, with the executor's parameters
         return MockedTask(solver, self._executor.parameters)
-    monkeypatch.setattr(submitit.AutoExecutor, 'submit', submit)
-    monkeypatch.setattr(runner, 'run_one_solver', submit)
+
+    monkeypatch.setattr(
+        "submitit.AutoExecutor.submit", submit)
+    monkeypatch.setattr(
+        "submitit.helpers.as_completed.__defaults__", (None, 0.1)
+    )
 
     parallel_config = {
         "backend": "submitit",
@@ -154,8 +163,10 @@ def test_run_on_slurm(monkeypatch, dummy_slurm_config):
                     "solver_all_params[p=2,slurm_nodes=4]"
                 ], dataset_names=["test-dataset"],
                 timeout=None,
-                parallel_config=parallel_config
+                parallel_config=parallel_config,
+                plot_result=False
             )
+
         import pandas as pd
         df = pd.read_parquet(out.result_files[0]).set_index("solver")
 
