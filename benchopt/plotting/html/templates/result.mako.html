@@ -37,7 +37,7 @@
                     <div class="mt-8 px-8">
                         <label for="plot_kind" class="block text-sm font-medium text-white">Chart type</label>
                         <div class="mt-1 rounded-md shadow-sm">
-                            <select id="plot_kind" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({plot_kind: this.value, scale: (this.value === 'boxplot' || state().plot_kind === 'boxplot' ? 'linear' : state().scale)})">
+                            <select id="plot_kind" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({plot_kind: this.value, scale: (this.value === 'boxplot' || this.value === 'bar_chart' ? 'linear' : state().scale)})">
                                 % for kind in result['kinds']:
                                 <option value="${kind}">${kind}</option>
                                 %endfor
@@ -244,7 +244,7 @@
                             <div class="px-8">
                                 <label for="plot_kind" class="block text-sm font-medium text-white">Chart type</label>
                                 <div class="mt-1 rounded-md shadow-sm">
-                                    <select id="plot_kind" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({plot_kind: this.value})">
+                                    <select id="plot_kind" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({plot_kind: this.value, scale: (this.value === 'boxplot' || this.value  === 'bar_chart' ? 'linear' : state().scale)})">
                                         % for kind in result['kinds']:
                                         <option value="${kind}">${kind}</option>
                                         %endfor
