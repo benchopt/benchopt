@@ -6,7 +6,7 @@ conda info
 pip freeze
 
 TEST_CMD="python -m pytest -vs --durations=20"
-TEST_CMD="$TEST_CMD --test-env $CONDA_ENV"
+TEST_CMD="$TEST_CMD --test-env $CONDA_ENV --o faulthandler-timeout=300"
 
 # Un-comment when debugging the CI
 # TEST_CMD="$TEST_CMD --skip-install"
