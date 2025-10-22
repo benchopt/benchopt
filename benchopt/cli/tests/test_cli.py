@@ -482,45 +482,48 @@ class TestRunCmd:
 
 
 class TestPlotCmd:
-    custom_plot = """from benchopt import BasePlot
+    custom_plot = """
+        from benchopt import BasePlot
 
-class Plot(BasePlot):
-    name = "custom_plot"
-    type = "scatter"
-    dropdown = {
-        "dataset": ...,  # Will fetch the dataset names from the df
-    }
-
-    def plot(self, df, dataset):
-        df = df[(df['data_name'] == dataset)]
-        return [
-            {
-                "x": df[(df['solver_name'] == solver)]["time"].values.tolist(),
-                "y": (
-                    df[(df['solver_name'] == solver)]
-                    ["objective_value"].values.tolist()),
-                "color": "black",
-                "marker": "circle",
-                "label": solver,
+        class Plot(BasePlot):
+            name = "custom_plot"
+            type = "scatter"
+            dropdown = {
+                "dataset": ...,  # Will fetch the dataset names from the df
             }
-            for solver in df['solver_name'].unique()
-        ]
 
-    def get_metadata(self, df, dataset):
-        df = df[(df['data_name'] == dataset)]
-        title = "Custom Plot 1"
-        return {
-            "title": title,
-            "xlabel": "Custom X-axis",
-            "ylabel": "Custom Y-axis",
-        }
+            def plot(self, df, dataset):
+                df = df[(df['data_name'] == dataset)]
+                return [
+                    {
+                        "x": (
+                            df[(df['solver_name'] == solver)]
+                            ["time"].values.tolist()
+                        ),
+                        "y": (
+                            df[(df['solver_name'] == solver)]
+                            ["objective_value"].values.tolist()
+                        ),
+                        "color": "black",
+                        "marker": "circle",
+                        "label": solver,
+                    }
+                    for solver in df['solver_name'].unique()
+                ]
 
-    """
+            def get_metadata(self, df, dataset):
+                df = df[(df['data_name'] == dataset)]
+                title = "Custom Plot 1"
+                return {
+                    "title": title,
+                    "xlabel": "Custom X-axis",
+                    "ylabel": "Custom Y-axis",
+                }"""
 
     @classmethod
     def setup_class(cls):
         "Make sure at least one result file is available"
-        cls.ctx = temp_benchmark(plot=cls.custom_plot)
+        cls.ctx = temp_benchmark(plots=cls.custom_plot)
         cls.bench = cls.ctx.__enter__()
         with CaptureCmdOutput(delete_result_files=False) as out:
             run(

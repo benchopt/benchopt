@@ -53,7 +53,7 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
     if kinds is not None and len(kinds) > 0:
         config["plots"] = kinds
 
-    if "plots" not in config:
+    if "plots" not in config or config["plots"] is None:
         config["plots"] = (
             list(PLOT_KINDS.keys()) +
             benchmark.get_custom_plot_names()

@@ -81,10 +81,9 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
 
         keys = set(self.dropdown.keys())
         plot_kwargs = set([
-            name for name, _ in
-            inspect.signature(self.plot).parameters.items()
+            name for name in inspect.signature(self.plot).parameters
+            if name != 'df'
         ])
-        plot_kwargs.remove('df')
 
         # Make sure all dropdown keys are in the plot signature
         if not keys == plot_kwargs:
@@ -178,49 +177,3 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
             figs.append(fig)
 
         return figs
-
-
-class ObjectiveCurvePlot(BasePlot):
-    name = "Objective Curve"
-    type = "scatter"
-    dropdown = {
-        "dataset": ...,
-        "objective": ...,
-        "objective_column": ...,
-        "X_axis": ["Time", "Iteration"],
-    }
-
-    def plot(self, df, dataset, objective, objective_column, X_axis):
-        df = df[df['data_name'] == dataset]
-        df = df[df['objective_name'] == objective]
-
-        plots = []
-        for solver in df['solver_name'].unique():
-            y = (
-                df[(df['solver_name'] == solver)][objective_column]
-                .values.tolist()
-            )
-            x = df[(df['solver_name'] == solver)]["time"].values.tolist()
-            if X_axis == "Iteration":
-                x = list(range(len(x)))
-
-            plots.append(
-                {
-                    "x": x,
-                    "y": y,
-                    "color": self.get_style(solver)[0],
-                    "marker": self.get_style(solver)[1],
-                    "label": solver,
-                }
-            )
-        return plots
-
-    def get_metadata(self, df, dataset, objective, objective_column, X_axis):
-        df = df[df['data_name'] == dataset]
-        df = df[df['objective_name'] == objective]
-        title = f"Objective Curve\nData: {dataset}\nObjective: {objective}"
-        return {
-            "title": title,
-            "xlabel": X_axis,
-            "ylabel": "Objective Value",
-        }

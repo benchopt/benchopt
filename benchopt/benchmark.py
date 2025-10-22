@@ -199,7 +199,8 @@ class Benchmark:
 
     def get_custom_plots(self):
         "List all available custom plot classes for the benchmark"
-        from .plotting.base import BasePlot, ObjectiveCurvePlot
+        from .plotting.base import BasePlot
+        from .plotting.default_plots import ObjectiveCurvePlot
         custom_plots = [
             plot.get_instance()
             for plot in self._list_benchmark_classes(BasePlot)

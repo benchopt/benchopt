@@ -49,7 +49,7 @@ DEFAULT_SOLVERS = {
 
 @contextlib.contextmanager
 def temp_benchmark(
-        objective=None, datasets=None, solvers=None, plot=None,
+        objective=None, datasets=None, solvers=None, plots=None,
         config=None, benchmark_utils=None, extra_files=None
 ):
     """Create Benchmark in a temporary folder, for test purposes.
@@ -65,7 +65,7 @@ def temp_benchmark(
     solvers: str | list of str | dict of str | None (default=None)
         Content of the solver.py file(s). If None, defaults to
         ``DEFAULT_SOLVERS``.
-    plot: str | list of str | dict of str | None (default=None)
+    plots: str | list of str | dict of str | None (default=None)
         Content of the plot.py file(s). If None, no plot file is created.
     config: str | dict(fname->content) | None (default=None)
         Configuration files for running the Benchmark. If only one str is
@@ -89,8 +89,8 @@ def temp_benchmark(
         datasets = [datasets]
     if isinstance(solvers, str):
         solvers = [solvers]
-    if isinstance(plot, str):
-        plot = [plot]
+    if isinstance(plots, str):
+        plots = [plots]
 
     if isinstance(solvers, list):
         solvers = {f"solver_{idx}.py": s for idx, s in enumerate(solvers)}
@@ -102,8 +102,8 @@ def temp_benchmark(
     else:
         datasets = {**DEFAULT_DATASETS, **datasets}
 
-    if isinstance(plot, list):
-        plot = {f"plot_{idx}.py": p for idx, p in enumerate(plot)}
+    if isinstance(plots, list):
+        plots = {f"plot_{idx}.py": p for idx, p in enumerate(plots)}
 
     global IDX_BENCHMARK
     idx = IDX_BENCHMARK
@@ -127,8 +127,8 @@ def temp_benchmark(
             fname = temp_path / "datasets" / fname
             fname.write_text(inspect.cleandoc(content), encoding='utf-8')
 
-        if plot is not None:
-            for fname, content in plot.items():
+        if plots is not None:
+            for fname, content in plots.items():
                 fname = temp_path / "plots" / fname
                 fname.write_text(inspect.cleandoc(content), encoding='utf-8')
 
