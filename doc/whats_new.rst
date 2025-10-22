@@ -31,6 +31,9 @@ CLI
 API
 ---
 
+- Allow to override SLURM config on a per run basis with ``Solver.parameters``
+  See `slurm_override`_. By `Geraud Ilinca`_ and `Thomas Moreau`_ (:gh:`848`)
+
 FIX
 ---
 

@@ -46,4 +46,6 @@
 
 .. _Johan Larsson: https://jolars.co
 
-.. _Pierre-Louis Barbarant: ihttps://www.linkedin.com/in/plbarbarant/
+.. _Pierre-Louis Barbarant: https://www.linkedin.com/in/plbarbarant/
+
+.. _Geraud Ilinca: https://www.linkedin.com/in/geraud-ilinca
