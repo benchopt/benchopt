@@ -110,7 +110,7 @@ Overriding the SLURM parameters for one solver or one run
 It is possible to override the SLURM parameters for a specific solver, or varying
 them for different runs of a given solver.
 
-To specify specific configuration for one solver, you can define a
+To specify a specific configuration for one solver, you can use the
 ``slurm_params`` attribute in the solver class, which specifies different
 SLURM's job parameters for the solver. If you want to vary some parameters
 per run, you can define them in the ``parameters`` attribute of the solver.
