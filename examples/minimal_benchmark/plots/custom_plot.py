@@ -17,8 +17,8 @@ class Plot(BasePlot):
                 "y": (
                     df[(df['solver_name'] == solver)]
                     ["objective_value"].values.tolist()),
-                "color": [0, 0, 1, 1] if color == "blue" else [1, 0, 0, 1],
-                "marker": 0,
+                "color": color,  # possible to use the rgba instead
+                "marker": "x",  # possible to give an int instead
                 "label": solver,
             }
             for solver in df['solver_name'].unique()

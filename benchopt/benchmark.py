@@ -6,6 +6,7 @@ import importlib
 import itertools
 from pathlib import Path
 import matplotlib.pyplot as plt
+import matplotlib
 
 from joblib.externals import cloudpickle
 
@@ -47,6 +48,7 @@ MISSING_DEPS_MSG = (
 SUBSTITUTIONS = {"*": ".*"}
 
 MARKERS = {i: v for i, v in enumerate(plt.Line2D.markers)}
+MARKERS_STR = {v: i for i, v in MARKERS.items()}
 
 
 def get_running_benchmark():
@@ -231,17 +233,22 @@ class Benchmark:
             data, dropdown = plot._get_all_plots(df)
             for key in data:
                 for idx in range(len(data[key]["data"])):
+                    marker = data[key]["data"][idx]["marker"]
                     if plotly_style:
                         color = data[key]["data"][idx]["color"]
+                        if isinstance(color, str):
+                            color = matplotlib.colors.to_rgba(color)
                         color = tuple(
                             int(255*x) if i != 3 else float(x)
                             for i, x in enumerate(color)
                         )
                         data[key]["data"][idx]["color"] = f"rgba{color}"
+                        if isinstance(marker, str):
+                            marker = MARKERS_STR.get(marker)
                     else:
-                        marker = data[key]["data"][idx]["marker"]
-                        marker = MARKERS[marker % len(MARKERS)]
-                        data[key]["data"][idx]["marker"] = marker
+                        if isinstance(marker, int):
+                            marker = MARKERS[marker % len(MARKERS)]
+                    data[key]["data"][idx]["marker"] = marker
 
             custom_data[plot._get_name()] = data
             custom_dropdown[plot._get_name()] = dropdown
