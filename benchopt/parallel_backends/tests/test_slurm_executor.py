@@ -80,29 +80,33 @@ def test_merge_configs(dummy_slurm_config):
 def test_run_on_slurm(monkeypatch, dummy_slurm_config):
 
     class MockedTask:
-        next_job_id = 0
 
-        def __init__(self, solver, config):
-            self.job_id = self.next_job_id
-            self.next_job_id += 1
-            self.solver = solver
+        def __init__(self, task, config):
+            self.job_id = "fake"
+            self.task = task
             self.config = config
 
         def done(self): return True
         def exception(self): return None
 
         # Result return as many information about the run as possible
-        def result(self): return [{
-            'solver': str(self.solver),
-            **self.config,  # Dump executor config
-            **{f"p_{k}": v for k, v in self.solver._parameters.items()}
-        }]
+        # Need to output a list for `results`, and benchopt also expect
+        # a list from `run_one_solver`
+        def results(self):
+            func, args, kwargs = self.task
+            res = func(*args, **kwargs)
+            res = [
+                {**r, **{f"s_{k}": v for k, v in self.config.items()}}
+                for r in res
+            ]
+
+            return [res]
 
     # Fake submit to allow running as on a slurm cluster and
     # get the configuration back
-    def submit(self, *args, solver, **kwargs):
+    def submit(self, func, *args, **kwargs):
         # Mock submit to return a mocked task, with the executor's parameters
-        return MockedTask(solver, self._executor.parameters)
+        return MockedTask((func, args, kwargs), self._executor.parameters)
 
     monkeypatch.setattr("submitit.AutoExecutor.submit", submit)
     monkeypatch.setattr(
@@ -152,7 +156,7 @@ def test_run_on_slurm(monkeypatch, dummy_slurm_config):
 
     # Run the function on a mocked slurm cluster
     with temp_benchmark(solvers=solvers) as bench, mocked_slurm():
-        with CaptureCmdOutput(delete_result_files=False) as out:
+        with CaptureCmdOutput(delete_result_files=False, debug=True) as out:
             run_benchmark(
                 bench.benchmark_dir, [
                     "solver_no_params", "solver_slurm_params",
@@ -161,43 +165,46 @@ def test_run_on_slurm(monkeypatch, dummy_slurm_config):
                     "solver_all_params[p=2]",
                     "solver_all_params[p=2,slurm_nodes=4]"
                 ], dataset_names=["test-dataset"],
+                max_runs=0,
                 timeout=None,
                 parallel_config=parallel_config,
-                plot_result=False
+                plot_result=False,
             )
 
         # Get the results
         import pandas as pd
-        df = pd.read_parquet(out.result_files[0]).set_index("solver")
+        df = pd.read_parquet(out.result_files[0]).set_index("solver_name")
 
     assert len(df) == 6
 
     # Default parameter from global config is never overidden
-    assert (df['gres'] == "gpu:1").all()
+    assert (df['s_gres'] == "gpu:1").all()
 
     # If no parameters and no slurm_params, no override of global config
     p_default = df.loc['solver_no_params']
     for p in ["nodes", "time", "mem"]:
-        assert p_default[p] == parallel_config.get(f"slurm_{p}", None)
+        assert p_default[f"s_{p}"] == parallel_config.get(f"slurm_{p}", None)
 
     # If slurm_params is set, it is used as a global config
     p_slurm_params = df.loc["solver_slurm_params"]
     for p in ["nodes", "time", "mem"]:
-        assert p_slurm_params[p] == slurm_params.get(f"slurm_{p}", None)
+        assert p_slurm_params[f"s_{p}"] == slurm_params.get(f"slurm_{p}", None)
 
     # Check that parameters override works
-    all_params = df.query("p_p == 2")
+    all_params = df.query("p_solver_p == 2")
     assert len(all_params) == 4
-    assert all(all_params["p_slurm_nodes"] == all_params["nodes"])
+    assert all(all_params["p_solver_slurm_nodes"] == all_params["s_nodes"])
 
     # Check that default are either parallel_config or slurm_params
     p_my_params = df[df.index.str.contains("solver_my_params")]
     for p in ["time", "mem"]:
         assert all(
-            p_my_params[p].fillna(-1) == parallel_config.get(f"slurm_{p}", -1)
+            p_my_params[f"s_{p}"].fillna("") ==
+            parallel_config.get(f"slurm_{p}", "")
         )
     p_all_params = df[df.index.str.contains("solver_all_params")]
     for p in ["time", "mem"]:
         assert all(
-            p_all_params[p].fillna(-1) == slurm_params.get(f"slurm_{p}", -1)
+            p_all_params[f"s_{p}"].fillna("") ==
+            slurm_params.get(f"slurm_{p}", "")
         )

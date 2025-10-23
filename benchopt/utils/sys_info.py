@@ -79,8 +79,14 @@ def _get_numpy_libs():
 
 
 def _get_git_tag():
-    err, tag = _run_shell("git describe --tags --abbrev=0", return_output=True)
-    if err != 0:
+    tag = None
+    try:
+        err, tag = _run_shell(
+            "git describe --tags --abbrev=0", return_output=True
+        )
+        if err != 0:
+            raise RuntimeError(err)
+    except Exception as err:
         if DEBUG:
             print(err, tag)
         tag = None
