@@ -58,7 +58,7 @@ the benchmark runner has not yet created the correct runtime context, and the
 seed has not been initialized.
 
 Examples
-~~~~~~~~~~~~~~~~~
+~~~~~~~~
 
 We provide an example for custom objective, however, the same logic applies for
 custom datasets and solvers.
