@@ -27,6 +27,19 @@ class FailedRun(RuntimeError):
         self.status = status
 
 
+def seed_run(objective, dataset, solver, repetition, base_seed):
+    seed_dict = {
+        "base_seed": str(base_seed),
+        "objective": str(objective),
+        "dataset": str(dataset),
+        "solver": str(solver),
+        "repetition": str(repetition)
+    }
+    objective.seed_dict = seed_dict
+    dataset.seed_dict = seed_dict
+    solver.seed_dict = seed_dict
+
+
 ##################################
 # Time one run of a solver
 ##################################
@@ -220,12 +233,6 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
             res = _run_one_to_cvg_cached(**kwargs)
             return res if res is not None else ([], 'not run yet')
 
-    # Set objective and skip if necessary.
-    skip, reason = objective.set_dataset(dataset)
-    if skip:
-        terminal.skip(reason, objective=True)
-        return []
-
     states = []
     run_statistics = []
 
@@ -240,6 +247,20 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
     # the name of metrics in Objective.compute
     obj_description = objective.__doc__ or ""
 
+    seed_run(
+            objective=objective,
+            dataset=dataset,
+            solver=solver,
+            repetition=0,
+            base_seed=benchmark.seed
+        )
+
+    # Set objective and skip if necessary.
+    skip, reason = objective.set_dataset(dataset)
+    if skip:
+        terminal.skip(reason, objective=True)
+        return []
+
     if n_repetitions is None:
         if hasattr(objective, "cv"):
             n_repetitions = objective.cv.get_n_splits(
@@ -248,6 +269,13 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
         else:
             # we set 1 by default so that the solver run at least once
             n_repetitions = 1
+
+    # Test if classes use seeding:
+    uses_seed = (
+        objective._uses_seed or
+        dataset._uses_seed or
+        solver._uses_seed
+    )
 
     for rep in range(n_repetitions):
         skip, reason = solver._set_objective(objective)
@@ -259,6 +287,7 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
 
         # Get meta
         meta = {
+            'base_seed': benchmark.seed if uses_seed else "",
             'objective_name': str(objective),
             'obj_description': obj_description,
             'solver_name': str(solver),
@@ -283,6 +312,7 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
             stopping_criterion=stopping_criterion, force=force,
             terminal=terminal, pdb=pdb
         )
+
         try:
             curve, status = run_one_to_cvg_cached(
                 **args_run_one_to_cvg
@@ -296,6 +326,21 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
             run_statistics = []
             break
         states.append(status)
+
+        if rep < n_repetitions - 1:
+            seed_run(
+                objective=objective,
+                dataset=dataset,
+                solver=solver,
+                repetition=rep+1,
+                base_seed=benchmark.seed
+            )
+
+            # Set objective and skip if necessary.
+            skip, reason = objective.set_dataset(dataset)
+            if skip:
+                terminal.skip(reason, objective=True)
+                return []
 
     else:
         if 'max_runs' in states:

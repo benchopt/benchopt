@@ -65,6 +65,8 @@ class Benchmark:
         objective.py cannot be found. In this case, the metadata are retrieved
         from the benchmark_meta.json file. This should only be used to generate
         HTML pages with results.
+    seed: int | None
+        Random seed for the benchmark. If None, a random seed is chosen.
 
     Attributes
     ----------
@@ -76,6 +78,7 @@ class Benchmark:
             self, benchmark_dir,
             no_cache=False,
             allow_meta_from_json=False,
+            seed=None,
     ):
         self.benchmark_dir = Path(benchmark_dir)
         self.no_cache = no_cache
@@ -118,6 +121,9 @@ class Benchmark:
             self.name = Path(self.url).name
         # replace dots to avoid issues with `with_suffix``
         self.name = self.name.replace('.', '-')
+
+        # Set the random seed for the benchmark
+        self.seed = seed
 
     def set_benchmark_module(self):
         # add PACKAGE_NAME as a module if it exists.

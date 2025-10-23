@@ -7,9 +7,10 @@ from .stopping_criterion import SufficientProgressCriterion
 from .utils.misc import NamedTemporaryFile
 from .utils.dependencies_mixin import DependenciesMixin
 from .utils.parametrized_name_mixin import ParametrizedNameMixin
+from .utils.seed_mixin import SeedMixin
 
 
-class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
+class BaseSolver(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
     """A base class for solver wrappers in Benchopt.
 
     Solvers that derive from this class should implement three methods:
@@ -259,7 +260,7 @@ class CommandLineSolver(BaseSolver, ABC):
         super().__init__(**parameters)
 
 
-class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
+class BaseDataset(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
     """Base class to define a dataset in a benchmark.
 
     Datasets that derive from this class should implement one method:
@@ -287,13 +288,13 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
         "Wrapper to make sure the returned results are correctly formated."
 
         # Automatically cache the _data to avoid reloading it.
-        if not hasattr(self, '_data') or self._data is None:
+        if not hasattr(self, '_data') or self._data is None or self._uses_seed:
             self._data = self.get_data()
 
         return self._data
 
 
-class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
+class BaseObjective(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
     """Base class to define an objective function
 
     Objectives that derive from this class needs to implement four methods:
@@ -469,6 +470,7 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
     def set_dataset(self, dataset):
         self._dataset = dataset
         assert self.is_installed(raise_on_not_installed=True)
+
         data = dataset._get_data()
 
         # Check if the dataset is compatible with the objective
