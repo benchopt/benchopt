@@ -35,7 +35,7 @@ Examples:
 - If you want different randomness per repetition but the same randomness for
   all solvers on the same dataset/objective, set
   ``use_solver=False`` and ``use_repetition=True``.
-- If you want the same randomness for all repetitions and solvers, fix
+- If you want the same randomness for all repetitions and solvers, set
   ``use_repetition=False`` and ``use_solver=False``.
 
 How seeding is provided
