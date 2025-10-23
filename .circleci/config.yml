@@ -65,7 +65,7 @@ jobs:
 
       # Save the results
       - store_artifacts:
-          path: example/minimal_benchmark/outputs/minimal_benchmark_benchmark-result.html
+          path: examples/minimal_benchmark/outputs/minimal_benchmark_benchmark-result.html
           destination: result.html
 
   deploy:
