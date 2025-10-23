@@ -225,9 +225,10 @@ class Benchmark:
         custom_data = {}
         custom_dropdown = {}
         for plot in self.get_custom_plots():
+            plot_name = plot._get_name()
             data, dropdown = plot._get_all_plots(df)
-            custom_data[plot._get_name()] = data
-            custom_dropdown[plot._get_name()] = dropdown
+            custom_data[plot_name] = data
+            custom_dropdown[plot_name] = dropdown
         return custom_data, custom_dropdown
 
     def _list_benchmark_classes(self, base_class):
