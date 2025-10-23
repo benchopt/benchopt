@@ -39,7 +39,7 @@ class SuppressStd(object):
 
         return self
 
-    def _debug_output(self):  # nocover
+    def _debug_output(self):  # pragma: no cover
         """Thread to output captured stdout in real time."""
         last_pos = 0
         while not self.should_stop:
