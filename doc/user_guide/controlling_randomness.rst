@@ -79,7 +79,7 @@ We provide an example for custom ``Objective``, however, the same logic applies 
             seed = self.get_seed(
                 use_objective=True,
                 use_dataset=True,
-                use_solver=True,
+                use_solver=False,
                 use_repetition=True
             )
             rng = np.random.RandomState(seed)
