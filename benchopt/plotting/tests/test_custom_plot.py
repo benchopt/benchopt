@@ -42,7 +42,22 @@ def test_custom_plot(no_debug_log):
         out.check_output("Rendering benchmark results", repetition=1)
 
 
-def test_custom_plot_errors(no_debug_log):  # TODO improve error checks
+@pytest.mark.parametrize(
+    "pat, replace, msg",
+    [
+        ("type = 'scatter'", "", "Plot should have a `type` attribute."),
+        ("type = 'scatter'", "type = 'curving'", "Plot type should be one of"),
+        ("dropdown = {}", "dropdown = []",
+         "`dropdown` should be a dictionary"),
+        ("dropdown = {}", "dropdown = {'color': 'blue'}",
+         "The values of dropdown should be a list or ..."),
+        ("dropdown = {}", "dropdown = {'color': []}",
+         "The values of dropdown should be non empty"),
+        ("dropdown = {}", "dropdown = {'color': ['blue']}",
+         "should match the signature"),
+    ]
+)
+def test_custom_plot_errors(no_debug_log, pat, replace, msg):
     plot = """from benchopt import BasePlot
 
     class Plot(BasePlot):
@@ -69,47 +84,9 @@ def test_custom_plot_errors(no_debug_log):  # TODO improve error checks
             }
     """
 
-    error_plot = plot.replace("type = 'scatter'", "")
+    error_plot = plot.replace(pat, replace)
     with temp_benchmark(plots=error_plot) as bench:
-        with pytest.raises(SystemExit):
-            run([str(bench.benchmark_dir),
-                 *'-n 1 -r 1 --no-display'
-                 .split()], standalone_mode=False)
-
-    error_plot = plot.replace("type = 'scatter'", "type = 'curving'")
-    with temp_benchmark(plots=error_plot) as bench:
-        with pytest.raises(SystemExit):
-            run([str(bench.benchmark_dir),
-                 *'-n 1 -r 1 --no-display'
-                 .split()], standalone_mode=False)
-
-    error_plot = plot.replace("dropdown = {}", "dropdown = []")
-    with temp_benchmark(plots=error_plot) as bench:
-        with pytest.raises(SystemExit):
-            run([str(bench.benchmark_dir),
-                 *'-n 1 -r 1 --no-display'
-                 .split()], standalone_mode=False)
-
-    error_plot = plot.replace("dropdown = {}", "dropdown = {'color': 'blue'}")
-    with temp_benchmark(plots=error_plot) as bench:
-        with pytest.raises(SystemExit):
-            run([str(bench.benchmark_dir),
-                 *'-n 1 -r 1 --no-display'
-                 .split()], standalone_mode=False)
-
-    error_plot = plot.replace("dropdown = {}", "dropdown = {'color': []}")
-    with temp_benchmark(plots=error_plot) as bench:
-        with pytest.raises(SystemExit):
-            run([str(bench.benchmark_dir),
-                 *'-n 1 -r 1 --no-display'
-                 .split()], standalone_mode=False)
-
-    error_plot = plot.replace(
-        "dropdown = {}",
-        "dropdown = {'color': ['blue']}"
-    )
-    with temp_benchmark(plots=error_plot) as bench:
-        with pytest.raises(SystemExit):
-            run([str(bench.benchmark_dir),
-                 *'-n 1 -r 1 --no-display'
-                 .split()], standalone_mode=False)
+        with CaptureCmdOutput(exit=1) as out:
+            run(f"{bench.benchmark_dir} -n 1 -r 1 --no-display"
+                .split(), standalone_mode=False)
+        out.check_output(msg)
