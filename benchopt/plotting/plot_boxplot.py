@@ -1,11 +1,11 @@
 import matplotlib.pyplot as plt
 
-from benchopt.plotting.plot_objective_curve import get_solver_style
+from benchopt.plotting.helpers import get_solver_style
 
 
 def plot_boxplot(df, obj_col='objective_value', plotly=False):
     solvers, data, colors = compute_solvers_boxplot_data(df, obj_col)
-    dataset_name = df['data_name'].unique()[0]
+    dataset_name = df['dataset_name'].unique()[0]
     objective_name = df['objective_name'].unique()[0]
 
     fig, ax = plt.subplots()

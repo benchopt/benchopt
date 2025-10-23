@@ -49,3 +49,5 @@
 .. _Pierre-Louis Barbarant: https://www.linkedin.com/in/plbarbarant/
 
 .. _Geraud Ilinca: https://www.linkedin.com/in/geraud-ilinca
+
+.. _Hippolyte Verninas: https://www.linkedin.com/in/hippolyte-verninas

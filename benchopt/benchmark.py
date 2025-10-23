@@ -197,6 +197,40 @@ class Benchmark:
             class_only=class_only
         )
 
+    def get_custom_plots(self):
+        "List all available custom plot classes for the benchmark"
+        from .plotting.base import BasePlot
+        from .plotting.default_plots import ObjectiveCurvePlot
+        custom_plots = [
+            plot.get_instance()
+            for plot in self._list_benchmark_classes(BasePlot)
+        ]
+        custom_plots.append(ObjectiveCurvePlot())
+        return custom_plots
+
+    def get_custom_plot_names(self):
+        "List all custom plot names available"
+        return [
+            plot._get_name() for plot in self.get_custom_plots()
+        ]
+
+    def check_custom_plots(self):
+        "Check if the available custom plots have valid definitions"
+        for plot in self.get_custom_plots():
+            plot._check()
+
+    def get_plot_data(self, df):
+        "Get the data to plot for the benchmark."
+        self.check_custom_plots()
+        custom_data = {}
+        custom_dropdown = {}
+        for plot in self.get_custom_plots():
+            plot_name = plot._get_name()
+            data, dropdown = plot._get_all_plots(df)
+            custom_data[plot_name] = data
+            custom_dropdown[plot_name] = dropdown
+        return custom_data, custom_dropdown
+
     def _list_benchmark_classes(self, base_class):
         """Load all classes with the same name from a benchmark's subpackage.
 

@@ -10,10 +10,8 @@ from ..constants import PLOT_KINDS
 from .helpers import get_plot_id
 from .plot_boxplot import plot_boxplot  # noqa: F401
 from .plot_bar_chart import plot_bar_chart  # noqa: F401
-from .plot_objective_curve import plot_objective_curve  # noqa: F401
-from .plot_objective_curve import plot_suboptimality_curve  # noqa: F401
-from .plot_objective_curve import plot_relative_suboptimality_curve  # noqa: F401 E501
 from .generate_html import plot_benchmark_html
+from .generate_matplotlib import get_figures
 
 
 def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
@@ -56,9 +54,16 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
     if kinds is not None and len(kinds) > 0:
         config["plots"] = kinds
 
+    if "plots" not in config or config["plots"] is None:
+        config["plots"] = (
+            list(PLOT_KINDS.keys()) +
+            benchmark.get_custom_plot_names()
+        )
+
     if html:
         plot_benchmark_html(fname, benchmark, config, display)
 
+    # TODO: rewrite this when default plots are also custom plots
     else:
         # Load the results.
         if fname.suffix == '.parquet':
@@ -70,11 +75,28 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
             k for k in df.columns
             if k.startswith('objective_') and k != 'objective_name'
         ]
-        datasets = df['data_name'].unique()
+        datasets = df['dataset_name'].unique()
         output_dir = benchmark.get_output_folder()
+
+        valid_kinds = (
+            list(PLOT_KINDS.keys()) + benchmark.get_custom_plot_names()
+        )
+        for kind in config["plots"]:
+            if kind not in valid_kinds:
+                raise ValueError(
+                    f"Invalid plot kind '{kind}'. Available kinds are: "
+                    f"{valid_kinds}"
+                )
+
         figs = []
+
+        kind_figs = get_figures(
+            benchmark, df, output_dir, config["plots"]
+        )
+        figs.extend(kind_figs)
+
         for data in datasets:
-            df_data = df[df['data_name'] == data]
+            df_data = df[df['dataset_name'] == data]
             objective_names = df['objective_name'].unique()
             for objective_name in objective_names:
                 df_obj = df_data[df_data['objective_name'] == objective_name]
@@ -85,10 +107,7 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
                         config["plots"], obj_cols
                 ):
                     if kind not in PLOT_KINDS:
-                        raise ValueError(
-                            f"Requesting invalid plot '{kind}'."
-                            f"Should be in:\n{PLOT_KINDS}"
-                        )
+                        continue
                     # For now only plot bar chart and suboptimality for
                     # objective_value for which we monitor convergence
                     # XXX - find a better solution

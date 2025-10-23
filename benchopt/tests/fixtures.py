@@ -43,6 +43,9 @@ def pytest_configure(config):
     """Setup pytest for benchopt testing"""
     global _TEST_BENCHMARK
 
+    import matplotlib
+    matplotlib.use("Agg")
+
     config.addinivalue_line("markers", "requires_install")
 
     # Create the benchmark for which the tests are run. If it is not provided,
