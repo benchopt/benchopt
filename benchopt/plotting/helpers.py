@@ -13,6 +13,7 @@ MARKERS = {i: v for i, v in enumerate(plt.Line2D.markers)}
 MARKERS_STR = {v: i for i, v in MARKERS.items()}
 
 
+# TODO: remove (used for backward compatibility)
 def get_solver_style(solver, plotly=True):
     idx = solvers_idx.get(solver, len(solvers_idx))
     solvers_idx[solver] = idx

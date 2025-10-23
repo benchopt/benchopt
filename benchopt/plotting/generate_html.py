@@ -120,6 +120,7 @@ def get_results(fnames, html_root, benchmark, config=None, copy=False):
         )
 
         # JSON
+        # TODO remove json in the future when all plots use custom_data
         result['json'] = json.dumps(shape_datasets_for_html(df))
         result['json_custom_plots'] = custom_data
 

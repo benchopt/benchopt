@@ -31,7 +31,7 @@ class ObjectiveCurvePlot(BasePlot):
             )
             x = df_filtered_median["time"].values.tolist()
             if X_axis == "Iteration":
-                x = df_filtered_median["time"].index.tolist()
+                x = df_filtered_median.index.tolist()
 
             curve_data = {
                 "x": x,
