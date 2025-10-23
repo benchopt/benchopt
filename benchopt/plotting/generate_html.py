@@ -13,7 +13,7 @@ from ..utils.parquet import get_metadata as get_parquet_metadata
 from benchopt.benchmark import Benchmark
 from .plot_bar_chart import compute_bar_chart_data  # noqa: F401
 from .plot_boxplot import compute_solver_boxplot_data
-from .helpers import reset_solver_styles_idx
+from .helpers import reset_solver_styles_idx, update_plot_data_style
 
 ROOT = Path(__file__).parent / "html"
 DEFAULT_HTML_DIR = Path("html")
@@ -96,9 +96,8 @@ def get_results(fnames, html_root, benchmark, config=None, copy=False):
             fname = fname_in_output
         fname = fname.absolute().relative_to(html_root.absolute())
 
-        custom_data, custom_dropdown = benchmark.get_plot_data(
-            df, plotly_style=True
-        )
+        custom_data, custom_dropdown = benchmark.get_plot_data(df)
+        custom_data = update_plot_data_style(custom_data, plotly=True)
 
         # Generate figures
         result = dict(

@@ -2,6 +2,7 @@ import numpy as np
 from hashlib import md5
 
 import matplotlib.pyplot as plt
+import matplotlib
 
 solvers_idx = {}
 
@@ -9,6 +10,7 @@ CMAP = plt.get_cmap('tab20')
 COLORS = [CMAP(i) for i in range(CMAP.N)]
 COLORS = COLORS[::2] + COLORS[1::2]
 MARKERS = {i: v for i, v in enumerate(plt.Line2D.markers)}
+MARKERS_STR = {v: i for i, v in MARKERS.items()}
 
 
 def get_solver_style(solver, plotly=True):
@@ -60,3 +62,31 @@ def get_plot_id(benchmark, df):
     hasher.update(f'{max_n_rep} {max_stop_val} {min_stop_val}'.encode('utf-8'))
     plot_id = hasher.hexdigest()
     return plot_id
+
+
+def update_plot_data_style(plot_data, plotly=True):
+    """Update the color and marker of each trace in the plot data."""
+    custom_data = {**plot_data}
+    for plot_name in custom_data:
+        for key in custom_data[plot_name]:
+            data = custom_data[plot_name][key]["data"]
+            for idx in range(len(data)):
+                marker = data[idx]["marker"]
+                if plotly:
+                    color = data["color"]
+                    if isinstance(color, str):
+                        color = matplotlib.colors.to_rgba(color)
+                    color = tuple(
+                        int(255*x) if i != 3 else float(x)
+                        for i, x in enumerate(color)
+                    )
+                    custom_data[plot_name][key]["data"][idx]["color"] = \
+                        f"rgba{color}"
+                    if isinstance(marker, str):
+                        marker = MARKERS_STR.get(marker)
+                else:
+                    if isinstance(marker, int):
+                        marker = MARKERS[marker % len(MARKERS)]
+                custom_data[plot_name][key]["data"][idx]["marker"] = marker
+
+    return custom_data
