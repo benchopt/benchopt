@@ -3,7 +3,7 @@ Controlling randomness in Benchopt
 
 Benchopt provides a deterministic seeding mechanism so benchmarks can be
 reproduced reliably across runs, solvers, datasets and repetitions. This page
-explains how ``get_seed`` works and how to use it correctly inside
+explains how ``get_seed`` works and how to use it inside
 ``Objective``, ``Dataset`` and ``Solver`` classes.
 
 Seed helper
