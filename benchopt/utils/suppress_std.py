@@ -39,7 +39,8 @@ class SuppressStd(object):
 
         return self
 
-    def _debug_output(self):
+    def _debug_output(self):  # nocover
+        """Thread to output captured stdout in real time."""
         last_pos = 0
         while not self.should_stop:
             cur_pos = os.lseek(self.tfile.fileno(), 0, os.SEEK_END)
@@ -53,7 +54,7 @@ class SuppressStd(object):
                         pass
                 last_pos = cur_pos
             else:
-                time.sleep(0.1)
+                time.sleep(0.05)
 
         cur_pos = os.lseek(self.tfile.fileno(), 0, os.SEEK_END)
         if last_pos < cur_pos:

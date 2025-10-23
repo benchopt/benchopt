@@ -156,7 +156,7 @@ def test_run_on_slurm(monkeypatch, dummy_slurm_config):
 
     # Run the function on a mocked slurm cluster
     with temp_benchmark(solvers=solvers) as bench, mocked_slurm():
-        with CaptureCmdOutput(delete_result_files=False, debug=True) as out:
+        with CaptureCmdOutput(delete_result_files=False) as out:
             run_benchmark(
                 bench.benchmark_dir, [
                     "solver_no_params", "solver_slurm_params",
