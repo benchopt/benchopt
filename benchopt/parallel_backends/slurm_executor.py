@@ -120,4 +120,4 @@ def run_on_slurm(
                 tt.cancel()
             raise exc
 
-    return [t.result() for t in tasks]
+    return [t.results()[0] for t in tasks]
