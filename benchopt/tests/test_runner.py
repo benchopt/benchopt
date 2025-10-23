@@ -372,7 +372,7 @@ def test_prefix_with_same_parameters():
         assert all('solver1' in s for s in no_type)
 
         assert df.query("p_dataset_seed.isna()").shape[0] == 0
-        no_type = df.query("p_dataset_type.isna()")['data_name'].unique()
+        no_type = df.query("p_dataset_type.isna()")['dataset_name'].unique()
         assert all('dataset1' in s for s in no_type)
 
         assert df.query("p_obj_test_p.isna()").shape[0] == 0

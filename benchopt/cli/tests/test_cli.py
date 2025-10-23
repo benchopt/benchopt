@@ -493,7 +493,7 @@ class TestPlotCmd:
             }
 
             def plot(self, df, dataset):
-                df = df[(df['data_name'] == dataset)]
+                df = df[(df['dataset_name'] == dataset)]
                 return [
                     {
                         "x": (

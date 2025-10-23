@@ -52,7 +52,7 @@ def get_plot_id(benchmark, df):
 
     # Hash benchmark, dataset, objective and solver names in the benchmark
     hasher.update(benchmark.encode('utf-8'))  # benchmark
-    hasher.update(df['data_name'].unique()[0].encode('utf-8'))
+    hasher.update(df['dataset_name'].unique()[0].encode('utf-8'))
     hasher.update(df['objective_name'].unique()[0].encode('utf-8'))
     for s in df['solver_name'].unique():
         hasher.update(s.encode('utf-8'))

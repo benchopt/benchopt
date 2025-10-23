@@ -86,7 +86,7 @@ def get_results(fnames, html_root, benchmark, config=None, copy=False):
 
         config_ = get_parquet_metadata(fname) if config is None else config
 
-        datasets = list(df['data_name'].unique())
+        datasets = list(df['dataset_name'].unique())
         sysinfo = get_sysinfo(df)
         # Copy result file if necessary
         # and give a relative path for HTML page access
@@ -105,7 +105,7 @@ def get_results(fnames, html_root, benchmark, config=None, copy=False):
             fname_short=fname.name,
             datasets=datasets,
             sysinfo=sysinfo,
-            dataset_names=df['data_name'].unique(),
+            dataset_names=df['dataset_name'].unique(),
             objective_names=df['objective_name'].unique(),
             obj_cols=[
                 k for k in df.columns
@@ -175,7 +175,7 @@ def shape_datasets_for_html(df):
     """Return a dictionary with plotting data for each dataset."""
     datasets_data = {}
 
-    for dataset in df['data_name'].unique():
+    for dataset in df['dataset_name'].unique():
         datasets_data[dataset] = shape_objectives_for_html(df, dataset)
 
     return datasets_data
@@ -202,7 +202,7 @@ def shape_objectives_columns_for_html(df, dataset, objective):
 
     for column in columns:
         df_filtered = df.query(
-            "data_name == @dataset & objective_name == @objective"
+            "dataset_name == @dataset & objective_name == @objective"
         )
         columns_data = shape_solvers_for_html(df_filtered, column)
         if columns_data is None:

@@ -10,7 +10,7 @@ class Plot(BasePlot):
     }
 
     def plot(self, df, dataset, color):
-        df = df[(df['data_name'] == dataset)]
+        df = df[(df['dataset_name'] == dataset)]
         return [
             {
                 "x": df[(df['solver_name'] == solver)]["time"].values.tolist(),
@@ -25,7 +25,7 @@ class Plot(BasePlot):
         ]
 
     def get_metadata(self, df, dataset, color):
-        df = df[(df['data_name'] == dataset)]
+        df = df[(df['dataset_name'] == dataset)]
         title = f"Custom Plot 1\nData: {dataset}\nColor: {color}"
         return {
             "title": title,

@@ -75,7 +75,7 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
             k for k in df.columns
             if k.startswith('objective_') and k != 'objective_name'
         ]
-        datasets = df['data_name'].unique()
+        datasets = df['dataset_name'].unique()
         output_dir = benchmark.get_output_folder()
 
         valid_kinds = (
@@ -96,7 +96,7 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
         figs.extend(kind_figs)
 
         for data in datasets:
-            df_data = df[df['data_name'] == data]
+            df_data = df[df['dataset_name'] == data]
             objective_names = df['objective_name'].unique()
             for objective_name in objective_names:
                 df_obj = df_data[df_data['objective_name'] == objective_name]

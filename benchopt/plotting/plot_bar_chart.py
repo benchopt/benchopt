@@ -24,7 +24,7 @@ def plot_bar_chart(df, obj_col='objective_value', plotly=False):
         The matplotlib figure of the objective values.
     """
     solver_names = df['solver_name'].unique()
-    dataset_name = df['data_name'].unique()[0]
+    dataset_name = df['dataset_name'].unique()[0]
     objective_name = df['objective_name'].unique()[0]
     n_solvers = len(solver_names)
 

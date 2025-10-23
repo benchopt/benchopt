@@ -86,12 +86,8 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
         dropdown = {**self.dropdown}
         for k, v in dropdown.items():
             if v is Ellipsis:
-                if k == "dataset":
-                    dropdown[k] = df['data_name'].unique().tolist()
-                elif k == "solver":
-                    dropdown[k] = df['solver_name'].unique().tolist()
-                elif k == "objective":
-                    dropdown[k] = df['objective_name'].unique().tolist()
+                if k in ["dataset", "solver", "objective"]:
+                    dropdown[k] = df[f'{k}_name'].unique().tolist()
                 elif k == "objective_column":
                     dropdown["objective_column"] = [
                         c for c in df.columns
