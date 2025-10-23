@@ -60,8 +60,8 @@ seed has not been initialized.
 Examples
 ~~~~~~~~
 
-We provide an example for custom objective, however, the same logic applies for
-custom datasets and solvers.
+We provide an example for custom ``Objective``, however, the same logic applies for
+``Dataset`` and ``Solver`` objects.
 
 .. code-block:: python
 
