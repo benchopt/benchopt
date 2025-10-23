@@ -9,31 +9,33 @@ This page explains how the ``get_seed`` method works and how to use it inside
 Seed helper
 -----------
 
-All benchopt base classes include a seeding mixin.
-**Benchopt derives a deterministic seed from the experiment axes you choose.**
+All benchopt base classes include a seeding mixin which provides a ``get_seed``
+method, to derive **a deterministic seed from the chosen experiment axes.**
 
 This function returns an integer seed computed deterministically from the
-benchmark identity and the boolean flags you pass. The seed should be passed
-to your RNG constructors (for example ``numpy.random.RandomState`` or
-``random.Random``) to obtain deterministic pseudo-random streams.
+benchmark identity and the boolean flags you pass. The seed should then
+be used to seed random number generators (*e.g.* ``numpy.random.RandomState``,
+or ``torch.manual_seed``) to obtain deterministic pseudo-random streams.
 
 ``get_seed(use_objective=True, use_dataset=True,
            use_solver=True, use_repetition=True)``
 
-Each flag corresponds to an experiment axis that can affect the seed:
+Each argument is a flag which corresponds to an axis of the experiment. Setting the
+flag to ``True`` makes the seed vary when this element changes. 
 
 - ``use_objective``: include the objective identity.
 - ``use_dataset``: include the dataset identity.
 - ``use_solver``: include the solver identity.
 - ``use_repetition``: include the repetition index.
 
-By toggling these flags, you choose which experimental axes **cause randomness
-to change**.
+By toggling these flags, you choose which experimental axes cause randomness
+to change. By default, the generated seed is different for each combination of
+``Dataset``, ``Objective``, ``Solver`` and varies across repetition.
 
 Examples:
 
 - If you want different randomness per repetition but the same randomness for
-  all solvers on the same dataset/objective, set
+  all solvers for a given ``(dataset, objective)`` couple, set
   ``use_solver=False`` and ``use_repetition=True``.
 - If you want the same randomness for all repetitions and solvers, set
   ``use_repetition=False`` and ``use_solver=False``.
