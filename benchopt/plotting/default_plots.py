@@ -36,9 +36,8 @@ class ObjectiveCurvePlot(BasePlot):
             curve_data = {
                 "x": x,
                 "y": y,
-                "color": self.get_style(solver)[0],
-                "marker": self.get_style(solver)[1],
                 "label": solver,
+                **self.get_style(solver)
             }
 
             if X_axis == "Time":

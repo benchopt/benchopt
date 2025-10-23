@@ -512,8 +512,7 @@ class TestPlotCmd:
                 ]
 
             def get_metadata(self, df, dataset):
-                df = df[(df['data_name'] == dataset)]
-                title = "Custom Plot 1"
+                title = f"Custom Plot - {dataset}"
                 return {
                     "title": title,
                     "xlabel": "Custom X-axis",

@@ -29,7 +29,7 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
 
         color = COLORS[idx % len(COLORS)]
 
-        return color, idx
+        return {'color': color, 'marker': idx}
 
     def _get_name(self):
         return self.name.replace(" ", "_")
