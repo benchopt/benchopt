@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-import ast
 
 from .callback import _Callback
 from .stopping_criterion import SingleRunCriterion
@@ -9,19 +8,6 @@ from .utils.misc import NamedTemporaryFile
 from .utils.dependencies_mixin import DependenciesMixin
 from .utils.parametrized_name_mixin import ParametrizedNameMixin
 from .utils.seed_mixin import SeedMixin
-
-
-def class_uses_seeding(cls):
-    # Get source code of the class
-    src = cls._module_filename.read_text()
-    tree = ast.parse(src)
-
-    # Walk through the AST and look for calls to self.get_seed
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
-            if node.func.attr == "get_seed":
-                return True
-    return False
 
 
 class BaseSolver(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
@@ -298,11 +284,11 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
         """
         ...
 
-    def _get_data(self, uses_seed=False):
+    def _get_data(self):
         "Wrapper to make sure the returned results are correctly formated."
 
         # Automatically cache the _data to avoid reloading it.
-        if not hasattr(self, '_data') or self._data is None or uses_seed:
+        if not hasattr(self, '_data') or self._data is None or self._uses_seed:
             self._data = self.get_data()
 
         return self._data
@@ -485,8 +471,7 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
         self._dataset = dataset
         assert self.is_installed(raise_on_not_installed=True)
 
-        uses_seed = class_uses_seeding(dataset)
-        data = dataset._get_data(uses_seed)
+        data = dataset._get_data()
 
         # Check if the dataset is compatible with the objective
         skip, reason = self.skip(**data)

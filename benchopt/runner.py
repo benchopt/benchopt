@@ -14,7 +14,6 @@ from .utils.pdb_helpers import exception_handler
 from .utils.terminal_output import TerminalOutput
 from .parallel_backends import parallel_run
 from .parallel_backends import check_parallel_config
-from .base import class_uses_seeding
 
 
 FAILURE_STATUS = ['diverged', 'error', 'interrupted']
@@ -273,9 +272,9 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
 
     # Test if classes use seeding:
     uses_seed = (
-        class_uses_seeding(objective.__class__) or
-        class_uses_seeding(dataset.__class__) or
-        class_uses_seeding(solver.__class__)
+        objective._uses_seed or
+        dataset._uses_seed or
+        solver._uses_seed
     )
 
     for rep in range(n_repetitions):

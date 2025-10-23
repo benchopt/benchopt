@@ -28,6 +28,7 @@ def get_seed(seed_dict, use_objective, use_dataset,
 
 class SeedMixin:
     """Mixin class to manage random seed for reproducibility."""
+    _uses_seed = False
 
     def get_seed(
         self, use_objective=True, use_dataset=True,
@@ -40,6 +41,7 @@ class SeedMixin:
         if not hasattr(self, "seed_dict"):
             raise ValueError(f"seed_dict was not initialized for {self}")
 
+        self._uses_seed = True
         return get_seed(
             self.seed_dict, use_objective, use_dataset,
             use_solver, use_repetition
