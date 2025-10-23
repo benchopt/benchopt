@@ -22,9 +22,9 @@ OUTPUT_FILES_PATTERN = [
 class CaptureCmdOutput(object):
     "Context to capture run cmd output and files."
 
-    def __init__(self, delete_result_files=True, exit=None):
+    def __init__(self, delete_result_files=True, exit=None, debug=False):
         self.delete_result_files = delete_result_files
-        self.out = SuppressStd()
+        self.out = SuppressStd(debug=debug)
         self.exit_ctx = (
             pytest.raises(SystemExit, match=str(exit)) if exit is not None
             else nullcontext()

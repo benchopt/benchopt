@@ -67,25 +67,91 @@ Hereafter is an example of such config file:
     :caption: ./config_parallel.yml
 
     backend: submitit
-    slurm_time: 01:00:00        # max runtime 1 hour
-    slurm_gres: gpu:1           # requires 1 GPU per job
+    slurm_time: 01:00:00          # max runtime 1 hour
+    slurm_gres: gpu:1             # requires 1 GPU per job
+    slurm_stderr_to_stdout: True  # redirect all outputs to a single log file
     slurm_additional_parameters:
-      ntasks: 1                 # Number of tasks per job
-      cpus-per-task: 10         # requires 10 CPUs per job
-      qos: QOS_NAME             # Queue used for the jobs
-      distribution: block:block # Distribution on the node's architectures
-      account: ACC@NAME         # Account for the jobs
+      ntasks: 1                   # Number of tasks per job
+      cpus-per-task: 10           # requires 10 CPUs per job
+      qos: QOS_NAME               # Queue used for the jobs
+      distribution: block:block   # Distribution on the node's architectures
+      account: ACC@NAME           # Account for the jobs
     slurm_setup:  # sbatch script commands added before the main job
       - '#SBATCH -C v100-16g'
       - module purge
       - module load cuda/10.1.2 cudnn/7.6.5.32-cuda-10.1 nccl/2.5.6-2-cuda
 
+Using this backend, each configuration of ``(dataset, objective, solver)`` with
+unique parameters is launched as a separated job in a job-array on the SLURM
+cluster. The logs of each run can be found in ``./benchopt_run/``.
+
+The parameters defined in this config file should be compatible with
+the ``submitit`` library, as they are passed to the ``submitit.AutoExecutor``
+class. For more information on the available parameters, please refer to
+the `submitit documentation <https://github.com/facebookincubator/submitit>`_.
+
 Note that by default, no limitation is used on the number of
-simultaneous jobs that are run.
+simultaneous jobs that are run, leaving the cluster to adjust this. The
+``slurm_array_parallelism`` parameter can be set to limit the number of
+simultaneous jobs that are run when necessary.
 
 If ``slurm_time`` is not set in the config file, benchopt uses by default
 the value of ``--timeout`` multiplied by ``1.5`` for each job.
-Note that the logs of each benchmark run can be found in ``./benchopt_run/``.
+
+As we rely on ``joblib.Memory`` for caching the results, the cache should work
+exactly as if you were running the computation sequentially, as long as you have
+a shared file-system between the nodes used for the computations.
+
+.. _slurm_override:
+
+Overriding the SLURM parameters for one solver or one run
+---------------------------------------------------------
+
+It is possible to override the SLURM parameters for a specific solver, or varying
+them for different runs of a given solver.
+
+To specify a specific configuration for one solver, you can use the
+``slurm_params`` attribute in the solver class, which specifies different
+SLURM's job parameters for the solver. If you want to vary some parameters
+per run, you can define them in the ``parameters`` attribute of the solver.
+Note that for this to work, the parameters defined in the ``parameters``
+dictionary should all be prefixed with ``slurm_`` to be recognized as parameters
+for this backend.
+
+.. code-block:: python
+
+    class Solver(BaseSolver):
+        """GPU-based solver that needs GPU partition and specific resources."""
+        name = 'GPU-Solver'
+
+        parameters = {
+            ...
+            'slurm_nodes': [1, 2],  # Varying number of nodes per run
+        }
+
+        # Override global SLURM config for this solver
+        slurm_params = {
+            'slurm_partition': 'gpu',
+            'slurm_gres': 'gpu:1',
+            'slurm_time': '02:00:00',
+            'slurm_cpus_per_task': 8,
+            'slurm_mem': '16GB',
+        }
+
+        requirements = ['torch']
+
+        def set_objective(self, X, y):
+            ...
+
+As discussed above, the parameters described here should be compatible with the
+``submitit`` backend. When the benchmark is run with the ``submitit`` backend,
+the global SLURM config will be updated with the parameters defined in the
+``slurm_params`` attribute of the solver, and then for each run. The final
+configuration used for a given run is thus obtained by merging the global SLURM
+config, the solver-specific parameters, and the run-specific parameters, with
+priority given to the run-specific parameters. Note that in this case, the jobs
+with different SLURM parameters will be launched as one job array per
+configuration.
 
 
 .. _dask_backend:

@@ -8,6 +8,7 @@ __pycache__
 /doc/_build
 /doc/auto_examples
 /doc/**/generated
+/doc/sg_execution_times.rst
 /examples/benchmark_*
 .coverage
 
@@ -36,5 +37,7 @@ benchopt.ini
 benchopt.yml
 benchopt/version.py
 
+# Misc files
 .DS_Store
 coverage.xml
+TODOs.md

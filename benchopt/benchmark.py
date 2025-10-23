@@ -617,8 +617,8 @@ class Benchmark:
         )
         return 1
 
-    def get_all_runs(self, solvers=None, forced_solvers=None,
-                     datasets=None, objectives=None, terminal=None):
+    def _get_all_runs(self, solvers=None, forced_solvers=None,
+                      datasets=None, objectives=None, terminal=None):
         """Generator with all combinations to run for the benchmark.
 
         Parameters
@@ -848,7 +848,7 @@ def _check_patterns(all_classes, patterns, name_type='dataset',
     """
     # If no patterns is provided or all is provided, return all the classes.
     if (patterns is None or len(patterns) == 0
-            or any(p == 'all' for p, *_ in patterns)):
+            or any(p == 'all' for p in patterns)):
         all_valid_patterns = [(cls, cls.parameters) for cls in all_classes]
         if not class_only:
             return all_valid_patterns
