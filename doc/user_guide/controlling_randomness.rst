@@ -21,7 +21,7 @@ or ``torch.manual_seed``) to obtain deterministic pseudo-random streams.
            use_solver=True, use_repetition=True)``
 
 Each argument is a flag which corresponds to an axis of the experiment. Setting the
-flag to ``True`` makes the seed vary when this element changes. 
+flag to ``True`` makes the seed vary when this element changes.
 
 - ``use_objective``: include the objective identity.
 - ``use_dataset``: include the dataset identity.
@@ -73,7 +73,7 @@ We provide an example for custom ``Objective``, however, the same logic applies 
     class Objective(BaseObjective):
         name = "example"
 
-        def evaluate_result(self, beta):
+        def get_objective(self):
             # deterministic seed that depends on objective, dataset, solver,
             # and repetition
             seed = self.get_seed(
@@ -84,4 +84,4 @@ We provide an example for custom ``Objective``, however, the same logic applies 
             )
             rng = np.random.RandomState(seed)
             noise = rng.randn(*beta.shape)
-            return dict(value=np.sum(beta**2), aux_noise=noise)
+            return dict(X=self.X, aux_noise=noise)
