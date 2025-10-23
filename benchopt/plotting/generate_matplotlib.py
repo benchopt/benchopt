@@ -53,12 +53,8 @@ def get_plot_scatter(key, plot_data, df, output_dir):
     plt.tight_layout()
 
     save_name = output_dir / f"{key}"
-    if hasattr(fig, 'write_html'):
-        save_name = save_name.with_suffix('.html')
-        fig.write_html(str(save_name), include_mathjax='cdn')
-    else:
-        save_name = save_name.with_suffix('.pdf')
-        plt.savefig(save_name)
+    save_name = save_name.with_suffix('.pdf')
+    plt.savefig(save_name)
     print(f'Save {key} as: {save_name}')
 
     return fig
