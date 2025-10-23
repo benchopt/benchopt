@@ -73,7 +73,7 @@ def update_plot_data_style(plot_data, plotly=True):
             for idx in range(len(data)):
                 marker = data[idx]["marker"]
                 if plotly:
-                    color = data["color"]
+                    color = data[idx]["color"]
                     if isinstance(color, str):
                         color = matplotlib.colors.to_rgba(color)
                     color = tuple(
