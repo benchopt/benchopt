@@ -49,8 +49,8 @@ DEFAULT_SOLVERS = {
 
 @contextlib.contextmanager
 def temp_benchmark(
-        objective=None, datasets=None, solvers=None, config=None,
-        benchmark_utils=None, extra_files=None
+        objective=None, datasets=None, solvers=None, plots=None,
+        config=None, benchmark_utils=None, extra_files=None
 ):
     """Create Benchmark in a temporary folder, for test purposes.
 
@@ -65,6 +65,8 @@ def temp_benchmark(
     solvers: str | list of str | dict of str | None (default=None)
         Content of the solver.py file(s). If None, defaults to
         ``DEFAULT_SOLVERS``.
+    plots: str | list of str | dict of str | None (default=None)
+        Content of the plot.py file(s). If None, no plot file is created.
     config: str | dict(fname->content) | None (default=None)
         Configuration files for running the Benchmark. If only one str is
         passed, this creates only one `config.yml` file. If None, no config
@@ -87,6 +89,8 @@ def temp_benchmark(
         datasets = [datasets]
     if isinstance(solvers, str):
         solvers = [solvers]
+    if isinstance(plots, str):
+        plots = [plots]
 
     if isinstance(solvers, list):
         solvers = {f"solver_{idx}.py": s for idx, s in enumerate(solvers)}
@@ -97,6 +101,9 @@ def temp_benchmark(
         datasets = {f"dataset_{idx}.py": d for idx, d in enumerate(datasets)}
     else:
         datasets = {**DEFAULT_DATASETS, **datasets}
+
+    if isinstance(plots, list):
+        plots = {f"plot_{idx}.py": p for idx, p in enumerate(plots)}
 
     global IDX_BENCHMARK
     idx = IDX_BENCHMARK
@@ -109,6 +116,7 @@ def temp_benchmark(
         temp_path.mkdir()
         (temp_path / "solvers").mkdir()
         (temp_path / "datasets").mkdir()
+        (temp_path / "plots").mkdir()
         with open(temp_path / "objective.py", "w", encoding='utf-8') as f:
             f.write(inspect.cleandoc(objective))
         for fname, content in solvers.items():
@@ -118,6 +126,11 @@ def temp_benchmark(
         for fname, content in datasets.items():
             fname = temp_path / "datasets" / fname
             fname.write_text(inspect.cleandoc(content), encoding='utf-8')
+
+        if plots is not None:
+            for fname, content in plots.items():
+                fname = temp_path / "plots" / fname
+                fname.write_text(inspect.cleandoc(content), encoding='utf-8')
 
         if config is not None:
             if not isinstance(config, dict):

@@ -31,6 +31,10 @@ CLI
 API
 ---
 
+- Add the possibility of creating custom plots for each benchmark.
+  See `custom_plots`_ for the documentation. 
+  By `Hippolyte Verninas`_ (:gh:`842`)
+
 FIX
 ---
 

@@ -7,8 +7,6 @@ from collections.abc import Iterable
 
 import yaml
 
-from benchopt.constants import PLOT_KINDS
-
 BOOLEAN_STATES = {
     '1': True, 'yes': True, 'true': True, 'on': True,
     '0': False, 'no': False, 'false': False, 'off': False
@@ -51,7 +49,7 @@ DEFAULT_GLOBAL_CONFIG = {
 """
 
 DEFAULT_BENCHMARK_CONFIG = {
-    "plots": list(PLOT_KINDS),
+    "plots": None,
     "plot_configs": {},
     "data_home": "",
     "data_paths": {}

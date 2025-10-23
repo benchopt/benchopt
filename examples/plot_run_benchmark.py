@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from benchopt import run_benchmark
 from benchopt.benchmark import Benchmark
 from benchopt.plotting import plot_benchmark, PLOT_KINDS
-from benchopt.plotting.plot_objective_curve import reset_solver_styles_idx
+from benchopt.plotting.helpers import reset_solver_styles_idx
 
 
 BENCHMARK_PATH = (
