@@ -11,14 +11,14 @@ def get_figures(benchmark, df, output_dir, kinds):
     for plot_name in plot_data.keys():
         if plot_name not in kinds:
             continue
-        figs.append(get_plot_figure(plot_data[plot_name], df, output_dir))
+        figs.append(get_plot_figure(plot_data[plot_name], output_dir))
     return figs
 
 
-def get_plot_figure(plot_datas, df, output_dir):
+def get_plot_figure(plot_datas, output_dir):
     for key, plot_data in plot_datas.items():
         if plot_data["type"] == "scatter":
-            return get_plot_scatter(key, plot_data, df, output_dir)
+            return get_plot_scatter(key, plot_data, output_dir)
         else:
             raise NotImplementedError(
                 f"Plot type {plot_data['type']} "
@@ -26,9 +26,7 @@ def get_plot_figure(plot_datas, df, output_dir):
             )
 
 
-def get_plot_scatter(key, plot_data, df, output_dir):
-    df = df.copy()
-
+def get_plot_scatter(key, plot_data, output_dir):
     fig = plt.figure()
     for curve_data in plot_data["data"]:
         plt.loglog(
