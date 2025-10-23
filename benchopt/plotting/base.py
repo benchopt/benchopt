@@ -17,13 +17,53 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
 
     @abstractmethod
     def plot(self, df, **kwargs):
+        """Produce plot traces for a given selection.
+
+        Parameters
+        ----------
+        df : pandas.DataFrame
+            Full results dataframe for the run.
+        **kwargs :
+            Selection parameters that match the plot ``dropdown`` keys
+            (e.g. ``dataset``, ``objective``, ``objective_column``).
+
+        Returns
+        -------
+        list of dict
+            List of trace dictionaries. Each trace must include at least
+            ``x``, ``y`` and ``label``, ``color``, ``marker``.
+            Optional keys: , ``q1``, ``q9``.
+        """
         ...
 
     @abstractmethod
     def get_metadata(self, df, **kwargs):
+        """Return short metadata for the plot.
+
+        Parameters
+        ----------
+        df : pandas.DataFrame
+            Full results dataframe for the run.
+        **kwargs :
+            Same selection parameters as for ``plot``.
+
+        Returns
+        -------
+        dict
+            Metadata dictionary containing at least ``title``, ``xlabel``
+            and ``ylabel``.
+        """
         ...
 
     def get_style(self, label):
+        """Get a consistent style dict for a trace label.
+
+        Returns
+        -------
+        dict
+            Contains {'color': color, 'marker': index}
+        """
+
         idx = self.label_dict.get(label, len(self.label_dict))
         self.label_dict[label] = idx
 
