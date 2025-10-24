@@ -9,7 +9,6 @@ from ..utils.parquet import update_metadata
 from ..constants import PLOT_KINDS
 from .helpers import get_plot_id
 from .plot_boxplot import plot_boxplot  # noqa: F401
-from .plot_bar_chart import plot_bar_chart  # noqa: F401
 from .generate_html import plot_benchmark_html
 from .generate_matplotlib import get_figures
 

@@ -11,7 +11,6 @@ from ..constants import PLOT_KINDS
 from ..utils.parquet import get_metadata as get_parquet_metadata
 
 from benchopt.benchmark import Benchmark
-from .plot_bar_chart import compute_bar_chart_data  # noqa: F401
 from .plot_boxplot import compute_solver_boxplot_data
 from .helpers import reset_solver_styles_idx, update_plot_data_style
 
@@ -263,7 +262,6 @@ def shape_solvers_for_html(df, objective_column):
         sampling_strategy = sampling_strategy[0]
 
         solver_data[solver] = {
-            'bar': compute_bar_chart_data(df, objective_column, solver),
             'boxplot': compute_solver_boxplot_data(
                 df_filtered, objective_column
             ),

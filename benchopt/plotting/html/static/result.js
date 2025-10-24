@@ -92,8 +92,8 @@ const renderPlot = () => {
  * @returns {Array|*[]}
  */
 const getChartData = () => {
-  if (isCustomPlot()) {
-    return getCustomData();
+  if (isChart('scatter')) {
+    return getScatterData();
   } else if (isChart('bar_chart')) {
     return getBarData();
   } else if (isChart('boxplot')) {
@@ -108,8 +108,8 @@ const getChartData = () => {
  * @returns Object
  */
 const getLayout = () => {
-  if (isCustomPlot()) {
-    return getCustomChartLayout();
+  if (isChart('scatter')) {
+    return getScatterChartLayout();
   } else if (isChart('bar_chart')) {
     return getBarChartLayout();
   } else if (isChart('boxplot')) {
@@ -124,7 +124,8 @@ const getLayout = () => {
  * @returns {array}
  */
 const getBarData = () => {
-  if (!isAvailable()) return [{type:'bar'}];
+  // TODO fix with other PR
+  // if (!isAvailable()) return [{type:'bar'}];
 
   const {x, y, colors, texts} = barDataToArrays()
 
@@ -142,16 +143,16 @@ const getBarData = () => {
     textangle: '-90',
   }];
 
-  x.forEach(solver => {
-    // Add times for each convergent solver
+  getCustomPlotData().data.forEach(curveData => {
+    // Add times for each convergent bar
     // Check if text is not 'Did not converge'
-    if (data(solver).bar.text === '') {
-      let nbTimes = data(solver).bar.times.length
+    if (curveData.text === '') {
+      let nbTimes = curveData.times.length
 
       barData.push({
         type: 'scatter',
-        x: new Array(nbTimes).fill(solver),
-        y: data(solver).bar.times,
+        x: new Array(nbTimes).fill(curveData.label),
+        y: curveData.times,
         marker: {
           color: 'black',
           symbol: 'line-ew-open'
@@ -230,7 +231,7 @@ const getCustomPlotData = () => {
  *
  * @returns {array}
  */
-const getCustomData = () => {
+const getScatterData = () => {
   // create a list of object to plot in plotly
   const curves = [];
 
@@ -802,11 +803,11 @@ const isAvailable = () => {
 const barDataToArrays = () => {
   const colors = [], texts = [], x = [], y = [];
 
-  getSolvers().forEach(solver => {
-    x.push(solver);
-    y.push(data(solver).bar.y);
-    colors.push(data(solver).bar.text === '' ? data(solver).bar.color : NON_CONVERGENT_COLOR);
-    texts.push(data(solver).bar.text);
+  getCustomPlotData().data.forEach(curveData => {
+    x.push(curveData.label);
+    y.push(curveData.y);
+    colors.push(curveData.text === '' ? curveData.color : NON_CONVERGENT_COLOR);
+    texts.push(curveData.text);
   });
 
   return {x, y, colors, texts}
@@ -849,6 +850,7 @@ const _getScale = (scale) => {
 }
 
 const getBarChartLayout = () => {
+  let data = getCustomPlotData();
   const layout = {
     autosize: !isSmallScreen(),
     modebar: {
@@ -856,7 +858,7 @@ const getBarChartLayout = () => {
     },
     yaxis: {
       type: 'log',
-      title: 'Time [sec]',
+      title: data["ylabel"],
       tickformat: '.1e',
       gridcolor: '#ffffff',
     },
@@ -865,7 +867,7 @@ const getBarChartLayout = () => {
       ticktext: getSolvers(),
     },
     showlegend: false,
-    title: `${state().objective}<br />Data: ${state().dataset}`,
+    title: data["title"],
     plot_bgcolor: '#e5ecf6',
   };
 
@@ -875,20 +877,21 @@ const getBarChartLayout = () => {
     layout.dragmode = false;
   }
 
-  if (!isAvailable()) {
-    layout.annotations = [{
-      xref: 'paper',
-      yref: 'paper',
-      x: 0.5,
-      y: 0.5,
-      text: 'Not available',
-      showarrow: false,
-      font: {
-        color: 'black',
-        size: 32,
-      }
-    }];
-  }
+  // TODO: fix with other PR
+  // if (!isAvailable()) {
+  //   layout.annotations = [{
+  //     xref: 'paper',
+  //     yref: 'paper',
+  //     x: 0.5,
+  //     y: 0.5,
+  //     text: 'Not available',
+  //     showarrow: false,
+  //     font: {
+  //       color: 'black',
+  //       size: 32,
+  //     }
+  //   }];
+  // }
 
   return layout;
 };
@@ -923,7 +926,7 @@ const getBoxplotChartLayout = () => {
 };
 
 
-const getCustomChartLayout = () => {
+const getScatterChartLayout = () => {
   let customData = getCustomPlotData();
 
   const layout = {

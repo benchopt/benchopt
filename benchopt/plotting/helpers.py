@@ -72,8 +72,17 @@ def update_plot_data_style(plot_data, plotly=True):
         for key in custom_data[plot_name]:
             data = custom_data[plot_name][key]["data"]
             for idx in range(len(data)):
-                marker = data[idx]["marker"]
-                if plotly:
+                if "marker" in data[idx]:
+                    marker = data[idx]["marker"]
+
+                    if plotly and isinstance(marker, str):
+                        marker = MARKERS_STR[marker]
+                    elif not plotly and isinstance(marker, int):
+                        marker = MARKERS[marker % len(MARKERS)]
+
+                    custom_data[plot_name][key]["data"][idx]["marker"] = marker
+
+                if "color" in data[idx] and plotly:
                     color = data[idx]["color"]
                     if isinstance(color, str):
                         color = matplotlib.colors.to_rgba(color)
@@ -83,11 +92,5 @@ def update_plot_data_style(plot_data, plotly=True):
                     )
                     custom_data[plot_name][key]["data"][idx]["color"] = \
                         f"rgba{color}"
-                    if isinstance(marker, str):
-                        marker = MARKERS_STR.get(marker)
-                else:
-                    if isinstance(marker, int):
-                        marker = MARKERS[marker % len(MARKERS)]
-                custom_data[plot_name][key]["data"][idx]["marker"] = marker
 
     return custom_data

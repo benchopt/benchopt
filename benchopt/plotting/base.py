@@ -81,7 +81,7 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
     def _check_type(self):
         if not hasattr(self, 'type'):
             raise ValueError("Plot should have a `type` attribute.")
-        supported_types = ['scatter']
+        supported_types = ['scatter', 'bar_chart']
         if self.type not in supported_types:
             raise ValueError(
                 f"Plot type should be one of {' '.join(supported_types)}. "
