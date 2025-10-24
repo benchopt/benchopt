@@ -7,12 +7,10 @@ import numpy as np
 import pandas as pd
 from mako.template import Template
 
-from ..constants import PLOT_KINDS
 from ..utils.parquet import get_metadata as get_parquet_metadata
 
 from benchopt.benchmark import Benchmark
-from .plot_boxplot import compute_solver_boxplot_data
-from .helpers import reset_solver_styles_idx, update_plot_data_style
+from .helpers import update_plot_data_style
 
 ROOT = Path(__file__).parent / "html"
 DEFAULT_HTML_DIR = Path("html")
@@ -112,7 +110,7 @@ def get_results(fnames, html_root, benchmark, config=None, copy=False):
             ],
             kinds=config_.get(
                 'plots',
-                list(PLOT_KINDS) + benchmark.get_custom_plot_names()
+                benchmark.get_custom_plot_names()
             ),
             metadata=get_metadata(df, config_.get('plot_configs', {})),
             custom_plot_params=custom_dropdown,
@@ -225,7 +223,6 @@ def shape_objectives_columns_for_html(df, dataset, objective):
 def shape_solvers_for_html(df, objective_column):
     """Return a dictionary with plotting data for each solver."""
     solver_data = {}
-    reset_solver_styles_idx()
     for solver in df['solver_name'].unique():
         df_filtered = df.query("solver_name == @solver")
 
@@ -262,9 +259,6 @@ def shape_solvers_for_html(df, objective_column):
         sampling_strategy = sampling_strategy[0]
 
         solver_data[solver] = {
-            'boxplot': compute_solver_boxplot_data(
-                df_filtered, objective_column
-            ),
             'sampling_strategy': sampling_strategy,
         }
 

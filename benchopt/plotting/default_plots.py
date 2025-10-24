@@ -120,3 +120,85 @@ class BarChart(BasePlot):
             "title": f"{objective}\nData: {dataset}",
             "ylabel": "Time [sec]",
         }
+
+
+def _get_boxplot_solver(df, Y_axis, objective_column):
+    if Y_axis == "Time":
+        return (
+            df.groupby('idx_rep')[['time', 'stop_val']]
+            .apply(lambda x: (
+                x['time']
+                .loc[x['stop_val'] == x['stop_val'].max()]
+            ))
+            .transpose()[0].tolist()
+        )
+    else:
+        return (
+            df.groupby('idx_rep')[['stop_val', objective_column]]
+            .apply(lambda x: (
+                x[objective_column]
+                .loc[x['stop_val'] == x['stop_val'].max()]
+            ))
+            .transpose()[0].tolist()
+        )
+
+
+def _get_boxplot_iteration(df, Y_axis, objective_column):
+    max_iteration = df['idx_rep'].value_counts().max()
+    data = []
+    for i in range(max_iteration):
+        if Y_axis == "Time":
+            data.append(
+                df.query('idx_rep == @i')['time'].tolist()
+            )
+        else:
+            data.append(
+                df.query('idx_rep == @i')[objective_column].tolist()
+            )
+    return data
+
+
+class BoxPlot(BasePlot):
+    name = "boxplot"
+    type = "boxplot"
+    dropdown = {
+        "dataset": ...,
+        "objective": ...,
+        "objective_column": ...,
+        "X_axis": ["Solver", "Iteration"],
+        "Y_axis": ["Time", "Objective Metric"],
+    }
+
+    def plot(self, df, dataset, objective, objective_column, X_axis, Y_axis):
+        df = df[df['dataset_name'] == dataset]
+        df = df[df['objective_name'] == objective]
+
+        plot_data = []
+        for solver in df['solver_name'].unique():
+            df_filtered = df[df['solver_name'] == solver]
+            if X_axis == "Solver":
+                y = _get_boxplot_solver(df_filtered, Y_axis, objective_column)
+                x = [solver]
+            else:
+                y = _get_boxplot_iteration(
+                    df_filtered, Y_axis, objective_column
+                )
+                x = list(range(len(y)))
+
+            plot_data.append({
+                "x": x,
+                "y": y,
+                "label": solver,
+                "color": self.get_style(solver)["color"],
+            })
+
+        return plot_data
+
+    def get_metadata(
+        self, df, dataset, objective, objective_column, X_axis, Y_axis
+    ):
+        return {
+            "title": f"{objective}\nData: {dataset}",
+            "xlabel": X_axis,
+            "ylabel": Y_axis,
+        }

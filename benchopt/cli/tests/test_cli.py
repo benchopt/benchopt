@@ -6,9 +6,7 @@ import click
 import pytest
 from joblib.memory import _FUNCTION_HASHES
 
-from benchopt.plotting import PLOT_KINDS
 from benchopt.utils.temp_benchmark import temp_benchmark
-
 
 from benchopt.tests.utils import CaptureCmdOutput
 from benchopt.tests.utils import patch_var_env
@@ -559,7 +557,7 @@ class TestPlotCmd:
             plot(f"{self.bench.benchmark_dir} -k invalid_kind --html "
                  f"--no-display".split(), 'benchopt', standalone_mode=False)
 
-    @pytest.mark.parametrize('kind', list(PLOT_KINDS.keys()) + ["custom_plot"])
+    @pytest.mark.parametrize('kind', ["custom_plot"])
     def test_valid_call(self, kind):
 
         with CaptureCmdOutput() as out:
