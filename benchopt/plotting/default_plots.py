@@ -84,7 +84,12 @@ class BarChart(BasePlot):
 
         plots = []
         for solver in df['solver_name'].unique():
-            df_filtered = df[(df['solver_name'] == solver)]
+            df_filtered = (
+                df[(df['solver_name'] == solver)]
+                .select_dtypes(include=['number'])
+            )
+            if objective_column not in df_filtered:
+                continue
             c_star = df_filtered[objective_column].min() + EPS
             df_tol = df_filtered.groupby('stop_val').filter(
                 lambda x: x[objective_column].max() < c_star)
