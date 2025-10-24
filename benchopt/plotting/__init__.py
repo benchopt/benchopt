@@ -14,6 +14,30 @@ from .generate_html import plot_benchmark_html
 from .generate_matplotlib import get_figures
 
 
+BACKWARD_COMPAT_PLOTS = {
+    "objective_curve": "Objective_Curve",
+    "suboptimality_curve": "Objective_Curve",
+    "relative_suboptimality_curve": "Objective_Curve"
+}
+
+
+def sanitize_options(options):
+    """Flatten a pytree into a list."""
+    if isinstance(options, (list, tuple)):
+        # Avoid duplicates while preserving order
+        seen = set()
+        return [
+            sanitize_options(item) for item in options
+            if item not in seen and not seen.add(item)
+        ]
+    elif isinstance(options, dict):
+        return {
+            k: sanitize_options(v) for k, v in options.items()
+        }
+    else:
+        return BACKWARD_COMPAT_PLOTS.get(options, options)
+
+
 def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
                    html=True):
     """Plot convergence curve and bar chart for a given benchmark.
@@ -47,7 +71,7 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
     for param in params:
         options = benchmark.get_setting(param, default_config=config)
         if options is not None:
-            config[param] = options
+            config[param] = sanitize_options(options)
 
     update_metadata(fname, config)
 
@@ -70,6 +94,8 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
             df = pd.read_parquet(fname)
         else:
             df = pd.read_csv(fname)
+        if "data_name" in df.columns:
+            df = df.rename(columns={"data_name": "dataset_name"})
 
         obj_cols = [
             k for k in df.columns

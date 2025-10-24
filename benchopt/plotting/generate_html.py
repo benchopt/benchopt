@@ -83,6 +83,8 @@ def get_results(fnames, html_root, benchmark, config=None, copy=False):
             df = pd.read_parquet(fname)
         else:
             df = pd.read_csv(fname)
+        if "data_name" in df.columns:
+            df = df.rename(columns={"data_name": "dataset_name"})
 
         config_ = get_parquet_metadata(fname) if config is None else config
 
@@ -95,9 +97,6 @@ def get_results(fnames, html_root, benchmark, config=None, copy=False):
             shutil.copy(fname, fname_in_output)
             fname = fname_in_output
         fname = fname.absolute().relative_to(html_root.absolute())
-
-        custom_data, custom_dropdown = benchmark.get_plot_data(df)
-        custom_data = update_plot_data_style(custom_data, plotly=True)
 
         # Generate figures
         result = dict(
@@ -122,6 +121,11 @@ def get_results(fnames, html_root, benchmark, config=None, copy=False):
         # JSON
         # TODO remove json in the future when all plots use custom_data
         result['json'] = json.dumps(shape_datasets_for_html(df))
+
+        custom_data, custom_dropdown = benchmark.get_plot_data(
+            df, result['kinds']
+        )
+        custom_data = update_plot_data_style(custom_data, plotly=True)
         result['json_custom_plots'] = json.dumps(custom_data)
 
         results.append(result)

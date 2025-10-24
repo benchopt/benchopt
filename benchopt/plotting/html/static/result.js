@@ -239,8 +239,10 @@ const getCustomData = () => {
   getCustomPlotData().data.forEach(curveData => {
     min_y = Math.min(min_y, ...curveData.y);
   });
+  min_y -=  1e-10; // to avoid zeros in log scale
 
   getCustomPlotData().data.forEach(curveData => {
+    solver = curveData.label;
     y = curveData.y;
     if ("q1" in curveData && "q9" in curveData && state().with_quantiles) {
       q1 = curveData.q1;
@@ -262,7 +264,7 @@ const getCustomData = () => {
     }
     curves.push({
       type: 'scatter',
-      name: curveData.label,
+      name: solver,
       mode: 'lines+markers',
       line: {
         color: curveData.color,
@@ -272,8 +274,9 @@ const getCustomData = () => {
         size: 10,
         color: curveData.color,
       },
-      legendgroup: curveData.label,
-      hovertemplate: curveData.label + ' <br> (%{x:.1e},%{y:.1e}) <extra></extra>',
+      legendgroup: solver,
+      hovertemplate: solver + ' <br> (%{x:.1e},%{y:.1e}) <extra></extra>',
+      visible: isVisible(solver) ? true : 'legendonly',
       x: curveData.x,
       y: y,
     });
@@ -287,8 +290,9 @@ const getCustomData = () => {
           width: 0,
           color: curveData.color,
         },
-        legendgroup: curveData.label,
+        legendgroup: solver,
         hovertemplate: '(%{x:.1e},%{y:.1e}) <extra></extra>',
+        visible: isVisible(solver) ? true : 'legendonly',
         x: q1,
         y: y,
       }, {
@@ -300,8 +304,9 @@ const getCustomData = () => {
           width: 0,
           color: curveData.color,
         },
-        legendgroup: curveData.label,
+        legendgroup: solver,
         hovertemplate: '(%{x:.1e},%{y:.1e}) <extra></extra>',
+        visible: isVisible(solver) ? true : 'legendonly',
         x: q9,
         y: y,
       });
@@ -738,10 +743,20 @@ const mapSelectorsToState = () => {
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 
+// Get the data for a given plot state, indexed by solver name.
 const data = (solver = null) => {
-  return solver ?
-    window._data[state().dataset][state().objective][state().objective_column].solvers[solver]:
-    window._data[state().dataset][state().objective][state().objective_column]
+  let solvers;
+  const kind = state().plot_kind;
+  if (kind === 'bar_chart' || kind === 'boxplot') {
+      const info = state();
+      solvers = window._data[info.dataset][info.objective][info.objective_column].solvers;
+    }
+    else{
+      solvers = getCustomPlotData().data.reduce(
+        (map, obj) => {map[obj.label] = obj; return map}, {}
+      );
+    }
+    return solver ? solvers[solver]: solvers;
 }
 
 const getParams = () => {
@@ -755,7 +770,7 @@ const getParams = () => {
   return params;
 }
 
-const getSolvers = () => Object.keys(data().solvers);
+const getSolvers = () => Object.keys(data());
 
 const isCustomPlot = () => {
   let non_custom_kinds = ['bar_chart', 'boxplot'];
@@ -777,7 +792,7 @@ const isChart = chart => {
 
 const isVisible = solver => !state().hidden_solvers.includes(solver);
 
-const isSolverAvailable = solver => !isNaN(data(solver).bar.y);
+const isSolverAvailable = solver => data(solver) !== null;
 
 const isSmallScreen = () => window.screen.availHeight < 900;
 
@@ -1014,7 +1029,7 @@ const isIterationSamplingStrategy = () => {
   let options = new Set(['Time']);
   // get solvers run for selected (dataset, objective, objective colum)
   // and select their unique sampling strategies
-  getSolvers().forEach(solver => options.add(data().solvers[solver].sampling_strategy));
+  getSolvers().forEach(solver => options.add(data(solver).sampling_strategy));
 
   return options.has('Iteration')
 };
@@ -1115,7 +1130,7 @@ const handleSolverDoubleClick = solver => {
  */
 const renderLegend = () => {
   const legendContainer = document.getElementById('legend_container')
-  if (!isChart('scatter') || isCustomPlot()) {
+  if (!isChart('scatter')) {
     hide(legendContainer);
     return;
   } else {
@@ -1128,8 +1143,8 @@ const renderLegend = () => {
   const solversDescription = window.metadata["solvers_description"];
 
   getSolvers().forEach(solver => {
-    const color = data().solvers[solver].scatter.color;
-    const symbolNumber = data().solvers[solver].scatter.marker;
+    const color = data(solver).color;
+    const symbolNumber = data(solver).marker;
 
     let legendItem = createLegendItem(solver, color, symbolNumber);
 
