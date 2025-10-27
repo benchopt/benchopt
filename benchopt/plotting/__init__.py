@@ -15,9 +15,9 @@ from .generate_matplotlib import get_figures
 
 
 BACKWARD_COMPAT_PLOTS = {
-    "objective_curve": "Objective_Curve",
-    "suboptimality_curve": "Objective_Curve",
-    "relative_suboptimality_curve": "Objective_Curve"
+    "objective_curve": "objective_curve",
+    "suboptimality_curve": "objective_curve",
+    "relative_suboptimality_curve": "objective_curve"
 }
 
 
