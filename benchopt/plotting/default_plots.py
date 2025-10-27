@@ -145,16 +145,13 @@ def _get_boxplot_solver(df, Y_axis, objective_column):
 
 def _get_boxplot_iteration(df, Y_axis, objective_column):
     max_iteration = df['idx_rep'].value_counts().max()
-    data = []
+    data = [[] for i in range(max_iteration)]
+    if Y_axis == "Time":
+        objective_column = 'time'
     for i in range(max_iteration):
-        if Y_axis == "Time":
-            data.append(
-                df.query('idx_rep == @i')['time'].tolist()
-            )
-        else:
-            data.append(
-                df.query('idx_rep == @i')[objective_column].tolist()
-            )
+        temp_data = df.query('idx_rep == @i')[objective_column].tolist()
+        for k in range(len(temp_data)):
+            data[k].append(temp_data[k])
     return data
 
 

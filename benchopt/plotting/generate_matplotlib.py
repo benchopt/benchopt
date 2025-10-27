@@ -17,15 +17,19 @@ def get_figures(benchmark, df, output_dir, kinds):
 
 
 def get_plot_figure(plot_datas, output_dir):
+    figs = []
     for key, plot_data in plot_datas.items():
         if plot_data["type"] == "scatter":
-            return get_plot_scatter(key, plot_data, output_dir)
-        if plot_data["type"] == "bar_chart":
-            return get_plot_barchart(key, plot_data, output_dir)
-        raise NotImplementedError(
-            f"Plot type {plot_data['type']} "
-            f"not implemented for matplotlib."
-        )
+            figs.append(get_plot_scatter(key, plot_data, output_dir))
+        elif plot_data["type"] == "bar_chart":
+            figs.append(get_plot_barchart(key, plot_data, output_dir))
+        elif plot_data["type"] == "boxplot":
+            figs.append(get_plot_boxplot(key, plot_data, output_dir))
+        else:
+            raise NotImplementedError(
+                f"Plot type {plot_data['type']} "
+                f"not implemented for matplotlib."
+            )
 
 
 def get_plot_scatter(key, plot_data, output_dir):
@@ -108,6 +112,50 @@ def get_plot_barchart(key, plot_data, output_dir):
     ax.set_ylabel(plot_data["ylabel"])
     ax.set_title(plot_data["title"], fontsize=12)
     fig.tight_layout()
+
+    save_name = output_dir / f"{key}"
+    save_name = save_name.with_suffix('.pdf')
+    plt.savefig(save_name)
+    print(f'Save {key} as: {save_name}')
+
+    return fig
+
+
+def get_plot_boxplot(key, plot_data, output_dir):
+    fig = plt.figure()
+
+    # collect the union of all labels (x tick names)
+    all_labels = []
+    for d in plot_data["data"]:
+        for x in d["x"]:
+            if x not in all_labels:
+                all_labels.append(x)
+
+    for data in plot_data["data"]:
+        # all datasets with the same label stack on the *exact* same x
+        positions = [all_labels.index(x) for x in data["x"]]
+
+        boxplot = plt.boxplot(
+            data["y"],
+            positions=positions,
+            widths=0.6,           # you can keep this fixed
+            patch_artist=True,
+        )
+
+        color = data["color"]
+        for box in boxplot["boxes"]:
+            box.set(color=color, linewidth=1, alpha=0.7)
+            box.set_facecolor(color)
+        for median in boxplot["medians"]:
+            median.set(color=color, linewidth=1)
+        for whisker in boxplot["whiskers"]:
+            whisker.set(color=color, linewidth=1)
+        for flier in boxplot["fliers"]:
+            flier.set(color=color)
+
+    plt.xticks(range(len(all_labels)), all_labels, rotation=45)
+    plt.title(plot_data["title"])
+    plt.ylabel(plot_data["ylabel"])
 
     save_name = output_dir / f"{key}"
     save_name = save_name.with_suffix('.pdf')
