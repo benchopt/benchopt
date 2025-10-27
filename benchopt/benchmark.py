@@ -197,6 +197,25 @@ class Benchmark:
             class_only=class_only
         )
 
+    def get_base_plots(self):
+        "List all available base plot classes for the benchmark"
+        import inspect
+        from .plotting import default_plots
+
+        base_plots = [
+            plot.get_instance()
+            for _, plot in inspect.getmembers(default_plots, inspect.isclass)
+            if issubclass(plot, default_plots.BasePlot)
+            and hasattr(plot, 'type')
+        ]
+        return base_plots
+
+    def get_base_plot_names(self):
+        "List all base plot names available"
+        return [
+            plot._get_name() for plot in self.get_base_plots()
+        ]
+
     def get_custom_plots(self):
         "List all available custom plot classes for the benchmark"
         from .plotting.base import BasePlot

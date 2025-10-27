@@ -578,7 +578,7 @@
                     'relative_curve': document.getElementById('change_relative').checked,
                     'xaxis_type':  document.getElementById('change_xaxis_type').value || "Time",
                     'yaxis_type':  document.getElementById('change_xaxis_type').value || "Time",
-                    'hidden_solvers': [],
+                    'hidden_curves': [],
                     % for custom_kind in result["custom_plot_params"]:
                         % for custom_param in result["custom_plot_params"][custom_kind]:
                             '${custom_kind}_${custom_param}': document.getElementById('change_${custom_kind}_${custom_param}').value,
