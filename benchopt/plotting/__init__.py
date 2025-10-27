@@ -79,7 +79,7 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
 
     if "plots" not in config or config["plots"] is None:
         config["plots"] = (
-            benchmark.get_base_plot_names() +
+            benchmark.get_default_plot_names() +
             list(PLOT_KINDS.keys()) +
             benchmark.get_custom_plot_names()
         )
@@ -105,7 +105,7 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
         output_dir = benchmark.get_output_folder()
 
         valid_kinds = (
-            benchmark.get_base_plot_names() +
+            benchmark.get_default_plot_names() +
             list(PLOT_KINDS.keys()) +
             benchmark.get_custom_plot_names()
         )

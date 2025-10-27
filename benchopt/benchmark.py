@@ -197,7 +197,7 @@ class Benchmark:
             class_only=class_only
         )
 
-    def get_base_plots(self):
+    def get_default_plots(self):
         "List all available base plot classes for the benchmark"
         import inspect
         from .plotting import default_plots
@@ -210,10 +210,10 @@ class Benchmark:
         ]
         return base_plots
 
-    def get_base_plot_names(self):
+    def get_default_plot_names(self):
         "List all base plot names available"
         return [
-            plot._get_name() for plot in self.get_base_plots()
+            plot._get_name() for plot in self.get_default_plots()
         ]
 
     def get_custom_plots(self):
@@ -238,7 +238,7 @@ class Benchmark:
 
     def get_plot_data(self, df, kinds):
         "Get the data to plot for the benchmark."
-        all_plots = self.get_base_plots() + self.get_custom_plots()
+        all_plots = self.get_default_plots() + self.get_custom_plots()
         self.check_custom_plots()
         all_data = {}
         all_dropdown = {}
