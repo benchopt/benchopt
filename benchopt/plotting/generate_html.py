@@ -108,7 +108,7 @@ def get_results(fnames, html_root, benchmark, config=None, copy=False):
             ],
             kinds=config_.get(
                 'plots',
-                benchmark.get_custom_plot_names()
+                benchmark.get_plot_names()
             ),
             metadata=get_metadata(df, config_.get('plot_configs', {})),
         )

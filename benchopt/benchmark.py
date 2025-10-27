@@ -197,49 +197,40 @@ class Benchmark:
             class_only=class_only
         )
 
-    def get_default_plots(self):
-        "List all available base plot classes for the benchmark"
-        import inspect
-        from .plotting import default_plots
-
-        base_plots = [
-            plot.get_instance()
-            for _, plot in inspect.getmembers(default_plots, inspect.isclass)
-            if issubclass(plot, default_plots.BasePlot)
-            and hasattr(plot, 'type')
-        ]
-        return base_plots
-
-    def get_default_plot_names(self):
-        "List all base plot names available"
-        return [
-            plot._get_name() for plot in self.get_default_plots()
-        ]
-
-    def get_custom_plots(self):
+    def get_plots(self):
         "List all available custom plot classes for the benchmark"
         from .plotting.base import BasePlot
+        from .plotting.default_plots import (
+            ObjectiveCurvePlot,
+            BarChart,
+            BoxPlot
+        )
+        default_plots = [
+            ObjectiveCurvePlot.get_instance(),
+            BarChart.get_instance(),
+            BoxPlot.get_instance()
+        ]
         custom_plots = [
             plot.get_instance()
             for plot in self._list_benchmark_classes(BasePlot)
         ]
-        return custom_plots
+        return default_plots + custom_plots
 
-    def get_custom_plot_names(self):
+    def get_plot_names(self):
         "List all custom plot names available"
         return [
-            plot._get_name() for plot in self.get_custom_plots()
+            plot._get_name() for plot in self.get_plots()
         ]
 
-    def check_custom_plots(self):
+    def check_plots(self):
         "Check if the available custom plots have valid definitions"
-        for plot in self.get_custom_plots():
+        for plot in self.get_plots():
             plot._check()
 
     def get_plot_data(self, df, kinds):
         "Get the data to plot for the benchmark."
-        all_plots = self.get_default_plots() + self.get_custom_plots()
-        self.check_custom_plots()
+        all_plots = self.get_plots()
+        self.check_plots()
         all_data = {}
         all_dropdown = {}
         for plot in all_plots:
