@@ -4,16 +4,15 @@ on:
   push:
     branches:
       - main
+    tags:
+      - '**'
   pull_request:
     branches:
       - main
-  create:
-    tags:
-      - '**'
 
 jobs:
-  build-n-publish:
-    name: Release to PyPI and TestPyPI 📦
+  build-package:
+    name: Build package 📦
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v5
@@ -22,21 +21,26 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v6
       with:
-        python-version: "3.10"
+        python-version: "3.12"
     - name: Install pypa/build
       run: >-
-        python -m
-        pip install
-        build
-        --user
+        python -m pip install build --user
     - name: Build a binary wheel and a source tarball
       run: >-
-        python -m
-        build
-        --sdist
-        --wheel
-        --outdir dist/
-        .
+        python -m build --sdist --wheel --outdir dist/ .
+    - name: Upload dist artifacts
+      uses: actions/upload-artifact@v5
+      with:
+        name: dist
+        path: dist/*
+
+  release-package:
+    name: Publish package on PyPI 🐍
+    needs: build-package
+    runs-on: ubuntu-latest
+    # Only run when the ref is a tag pushed (push event with tags)
+    if: ${{ startsWith(github.ref, 'refs/tags') }}
+    steps:
     - name: Wait for all tests to succeed
       uses: fountainhead/action-wait-for-check@v1.2.0
       id: wait-for-tests
@@ -45,23 +49,15 @@ jobs:
         checkName: report_test
         timeoutSeconds: 1600  # timeout after 30min
         intervalSeconds: 30  # check every 30sec
-        ref: ${{ github.event.pull_request.head.sha || github.sha }}
-
-    - name: Debug
-      run: |
-        echo ${{ github.ref }}
-        echo ${{ steps.wait-for-tests.outputs.conclusion }}
-        echo ${{ github.ref == 'refs/heads/main' && steps.wait-for-tests.outputs.conclusion == 'success' }}
-
-    - name: Publish distribution 📦 to Test PyPI
-      if: ${{ github.ref == 'refs/heads/main' && steps.wait-for-tests.outputs.conclusion == 'success' }}
-      uses: pypa/gh-action-pypi-publish@release/v1
+        ref: ${{ github.sha }}
+    - name: Download dist artifacts
+      uses: actions/download-artifact@v5
       with:
-        password: ${{ secrets.TEST_PYPI_API_TOKEN }}
-        repository_url: https://test.pypi.org/legacy/
+        name: dist
+        path: dist
 
     - name: Publish distribution 📦 to PyPI
-      if: ${{ startsWith(github.ref, 'refs/tags') && steps.wait-for-tests.outputs.conclusion == 'success' }}
+      if: ${{ steps.wait-for-tests.outputs.conclusion == 'success' }}
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         password: ${{ secrets.PYPI_API_TOKEN }}
