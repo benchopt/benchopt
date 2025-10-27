@@ -1,13 +1,18 @@
 from hashlib import md5
-
 import matplotlib.pyplot as plt
 import matplotlib
+
+from .base import BasePlot
 
 CMAP = plt.get_cmap('tab20')
 COLORS = [CMAP(i) for i in range(CMAP.N)]
 COLORS = COLORS[::2] + COLORS[1::2]
 MARKERS = {i: v for i, v in enumerate(plt.Line2D.markers)}
 MARKERS_STR = {v: i for i, v in MARKERS.items()}
+
+
+def reset_solver_styles():
+    BasePlot.label_dict.clear()
 
 
 def get_plot_id(benchmark, df):
