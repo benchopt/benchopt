@@ -166,16 +166,14 @@ const getBarData = () => {
 const getBoxplotData = () => {
   const boxplotData = [];
 
-  getPlotData().data.forEach(dataset => {
-    // dataset.x is like ["A", "B", "C"]
-    // dataset.y is like [[vals for A], [vals for B], [vals for C]]
-    dataset.x.forEach((label, i) => {
+  getPlotData().data.forEach(plotData => {
+    plotData.x.forEach((label, i) => {
       boxplotData.push({
-        y: dataset.y[i],
+        y: plotData.y[i],
         name: label,
         type: 'box',
-        line: {color: dataset.color},
-        fillcolor: dataset.color,
+        line: {color: plotData.color},
+        fillcolor: plotData.color,
         boxpoints: false
       });
     });
@@ -186,9 +184,9 @@ const getBoxplotData = () => {
 
 
 const getPlotData = () => {
-  let params = getParams();
-  let param_values = params.map(param => state()[param]);
-  let data_key = [state().plot_kind, ...param_values].join('_');
+  let dropdowns = getPlotDropdowns();
+  let dropdown_values = dropdowns.map(dropdown => state()[dropdown]);
+  let data_key = [state().plot_kind, ...dropdown_values].join('_');
   return window._custom_plots[state().plot_kind][data_key];
 }
 
@@ -476,7 +474,7 @@ const renderSidebar = () => {
   renderWithQuantilesToggle();
   renderSuboptimalRelativeToggle();
   mapSelectorsToState();
-  renderCustomParams();
+  renderPlotDropdowns();
 }
 
 /**
@@ -518,7 +516,7 @@ const renderSuboptimalRelativeToggle = () => {
 };
 
 
-const renderCustomParams = () => {
+const renderPlotDropdowns = () => {
   hide(document.querySelectorAll(`[id$='-custom-params-container']`));
   show(document.querySelectorAll(`#${state().plot_kind}-custom-params-container`), 'block');
 
@@ -548,7 +546,7 @@ const data = (curve = null) => {
   return curve ? curves[curve]: curves;
 }
 
-const getParams = () => {
+const getPlotDropdowns = () => {
   let kind = state().plot_kind;
   let params = [];
   Object.keys(state()).forEach(key => {
@@ -793,20 +791,6 @@ const getScatterChartLayout = () => {
   return layout;
 };
 
-
-/**
- * Returns true if sampling strategy 'Iteration' value is in data
- *
- * @returns {boolean}
- */
-const isIterationSamplingStrategy = () => {
-  let options = new Set(['Time']);
-  // get solvers run for selected (dataset, objective, objective colum)
-  // and select their unique sampling strategies
-  getCurves().forEach(solver => options.add(data(solver).sampling_strategy));
-
-  return options.has('Iteration')
-};
 
 /**
  * Hide an HTML element by applying a none value to its display style property.

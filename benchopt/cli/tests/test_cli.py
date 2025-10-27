@@ -581,7 +581,7 @@ class TestPlotCmd:
             ("boxplot", 4), ("bar_chart", 1)
         ]
     )
-    def test_valid_call(self, kind, n_files):
+    def test_valid_call_mpl(self, kind, n_files):
 
         with CaptureCmdOutput() as out:
             plot(f"{self.bench.benchmark_dir} -f {self.result_file} -k {kind} "
