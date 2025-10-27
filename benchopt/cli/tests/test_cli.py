@@ -575,22 +575,28 @@ class TestPlotCmd:
                  f"--no-display".split(), 'benchopt', standalone_mode=False)
 
     @pytest.mark.parametrize(
-        ('kind', 'n_files'),
+        ('kind', 'expected_n_files'),
         [
-            ("custom_plot", 1), ("objective_curve", 2),
-            ("boxplot", 4), ("bar_chart", 1)
+            ("custom_plot", 1),
+            ("objective_curve", 2),
+            ("boxplot", 4),
+            ("bar_chart", 1),
+            (None, 8)  # all kinds
         ]
     )
-    def test_valid_call_mpl(self, kind, n_files):
+    def test_valid_call_mpl(self, kind, expected_n_files):
 
         with CaptureCmdOutput() as out:
-            plot(f"{self.bench.benchmark_dir} -f {self.result_file} -k {kind} "
-                 "--no-display --no-html".split(),
-                 'benchopt', standalone_mode=False)
+            cmd = f"{self.bench.benchmark_dir} -f {self.result_file} "
+            cmd += "--no-display --no-html "
+            if kind is not None:
+                cmd += f"--kind {kind}"
+            plot(cmd.split(), 'benchopt', standalone_mode=False)
 
-        assert len(out.result_files) == n_files
+        assert len(out.result_files) == expected_n_files
         for file in out.result_files:
-            assert kind in file
+            if kind is not None:
+                assert kind in file
             assert '.pdf' in file
 
     def test_valid_call_html(self):
