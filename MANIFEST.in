@@ -1,6 +1,4 @@
 include LICENSE
-include setup.py
-include setup.cfg
 include CHANGE.md
 include conftest.py
 include pyproject.toml
@@ -32,3 +30,4 @@ recursive-include examples *.py
 recursive-include examples *.txt
 
 exclude .mailmap
+exclude .flake8
