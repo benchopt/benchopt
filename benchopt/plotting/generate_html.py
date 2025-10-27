@@ -3,7 +3,6 @@ import shutil
 import webbrowser
 from pathlib import Path
 from datetime import datetime
-import numpy as np
 import pandas as pd
 from mako.template import Template
 
@@ -118,7 +117,6 @@ def get_results(fnames, html_root, benchmark, config=None, copy=False):
 
         # JSON
         # TODO remove json in the future when all plots use custom_data
-        result['json'] = json.dumps(shape_datasets_for_html(df))
         result['json_custom_plots'] = json.dumps(custom_data)
 
         results.append(result)
@@ -167,102 +165,6 @@ def get_metadata(df, plot_configs):
         metadata["obj_description"] = ""
 
     return metadata
-
-
-def shape_datasets_for_html(df):
-    """Return a dictionary with plotting data for each dataset."""
-    datasets_data = {}
-
-    for dataset in df['dataset_name'].unique():
-        datasets_data[dataset] = shape_objectives_for_html(df, dataset)
-
-    return datasets_data
-
-
-def shape_objectives_for_html(df, dataset):
-    """Return a dictionary with plotting data for each objective."""
-    objectives_data = {}
-
-    for objective in df['objective_name'].unique():
-        objectives_data[objective] = shape_objectives_columns_for_html(
-            df, dataset, objective)
-
-    return objectives_data
-
-
-def shape_objectives_columns_for_html(df, dataset, objective):
-    """Return a dictionary with plotting data for each objective column."""
-    objective_columns_data = {}
-    columns = [
-        c for c in df.columns
-        if c.startswith('objective_') and c != 'objective_name'
-    ]
-
-    for column in columns:
-        df_filtered = df.query(
-            "dataset_name == @dataset & objective_name == @objective"
-        )
-        columns_data = shape_solvers_for_html(df_filtered, column)
-        if columns_data is None:
-            # Non-numeric column, skipping it
-            continue
-        objective_columns_data[column] = {
-            'solvers': columns_data,
-            # Values used in javascript to do computation
-            'transformers': {
-                'c_star': float(df_filtered[column].min() - 1e-10),
-                'max_f_0': float(
-                    df_filtered[df_filtered['stop_val'] == 1][column].max()
-                )
-            }
-        }
-
-    return objective_columns_data
-
-
-def shape_solvers_for_html(df, objective_column):
-    """Return a dictionary with plotting data for each solver."""
-    solver_data = {}
-    for solver in df['solver_name'].unique():
-        df_filtered = df.query("solver_name == @solver")
-
-        # remove infinite values
-        df_filtered = df_filtered.replace([np.inf, -np.inf], np.nan)
-        df_filtered = df_filtered.dropna(subset=[objective_column])
-        if len(df_filtered) == 0:
-            continue
-
-        if not pd.api.types.is_numeric_dtype(df_filtered[objective_column]):
-            # Non-numeric values, skipping this column
-            return None
-
-        # to preserve support of previous benchopt version
-        # where 'sampling_strategy' wasn't saved in solver meta
-        if "sampling_strategy" in df_filtered:
-            sampling_strategy = df_filtered['sampling_strategy'].unique()
-        elif "stopping_strategy" in df_filtered:
-            sampling_strategy = df_filtered['stopping_strategy'].unique()
-        else:
-            sampling_strategy = ["Time"]
-
-        if len(sampling_strategy) != 1:
-            found_sampling_strategies = ', '.join(
-                f"`{item}`" for item in sampling_strategy
-            )
-
-            raise Exception(
-                "Solver can be run using only one sampling strategy. "
-                f"Expected one sampling strategy "
-                f"but found {found_sampling_strategies}"
-            )
-
-        sampling_strategy = sampling_strategy[0]
-
-        solver_data[solver] = {
-            'sampling_strategy': sampling_strategy,
-        }
-
-    return solver_data
 
 
 def get_sysinfo(df):
