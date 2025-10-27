@@ -238,20 +238,18 @@ class Benchmark:
 
     def get_plot_data(self, df, kinds):
         "Get the data to plot for the benchmark."
-        from .plotting.default_plots import ObjectiveCurvePlot
-
+        all_plots = self.get_base_plots() + self.get_custom_plots()
         self.check_custom_plots()
-        custom_data = {}
-        custom_dropdown = {}
-        all_plots = [ObjectiveCurvePlot()] + self.get_custom_plots()
+        all_data = {}
+        all_dropdown = {}
         for plot in all_plots:
             plot_name = plot._get_name()
             if plot_name not in kinds:
                 continue
             data, dropdown = plot._get_all_plots(df)
-            custom_data[plot_name] = data
-            custom_dropdown[plot_name] = dropdown
-        return custom_data, custom_dropdown
+            all_data[plot_name] = data
+            all_dropdown[plot_name] = dropdown
+        return all_data, all_dropdown
 
     def _list_benchmark_classes(self, base_class):
         """Load all classes with the same name from a benchmark's subpackage.
