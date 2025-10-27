@@ -11,7 +11,6 @@ MARKERS_STR = {v: i for i, v in MARKERS.items()}
 
 
 def get_plot_id(benchmark, df):
-
     hasher = md5()
 
     # Hash benchmark, dataset, objective and solver names in the benchmark
@@ -28,12 +27,16 @@ def get_plot_id(benchmark, df):
     return plot_id
 
 
-# TODO update title for html format (\n)
 def update_plot_data_style(plot_data, plotly=True):
     """Update the color and marker of each trace in the plot data."""
     custom_data = {**plot_data}
     for plot_name in custom_data:
         for key in custom_data[plot_name]:
+            if plotly:
+                title = custom_data[plot_name][key]["title"]
+                title = title.replace('\n', '<br />')
+                custom_data[plot_name][key]["title"] = title
+
             data = custom_data[plot_name][key]["data"]
             for idx in range(len(data)):
                 if "marker" in data[idx]:
