@@ -138,7 +138,7 @@ const getBarData = () => {
     textangle: '-90',
   }];
 
-  getCustomPlotData().data.forEach(curveData => {
+  getPlotData().data.forEach(curveData => {
     // Add times for each convergent bar
     // Check if text is not 'Did not converge'
     if (curveData.text === '') {
@@ -166,7 +166,7 @@ const getBarData = () => {
 const getBoxplotData = () => {
   const boxplotData = [];
 
-  getCustomPlotData().data.forEach(dataset => {
+  getPlotData().data.forEach(dataset => {
     // dataset.x is like ["A", "B", "C"]
     // dataset.y is like [[vals for A], [vals for B], [vals for C]]
     dataset.x.forEach((label, i) => {
@@ -185,7 +185,7 @@ const getBoxplotData = () => {
 };
 
 
-const getCustomPlotData = () => {
+const getPlotData = () => {
   let params = getParams();
   let param_values = params.map(param => state()[param]);
   let data_key = [state().plot_kind, ...param_values].join('_');
@@ -204,12 +204,12 @@ const getScatterData = () => {
 
   // get the minimum y value over all curves
   let min_y = Infinity;
-  getCustomPlotData().data.forEach(curveData => {
+  getPlotData().data.forEach(curveData => {
     min_y = Math.min(min_y, ...curveData.y);
   });
   min_y -=  1e-10; // to avoid zeros in log scale
 
-  getCustomPlotData().data.forEach(curveData => {
+  getPlotData().data.forEach(curveData => {
     label = curveData.label;
     y = curveData.y;
     if ("q1" in curveData && "q9" in curveData && state().with_quantiles) {
@@ -542,7 +542,7 @@ const mapSelectorsToState = () => {
 
 // Get the data for a given plot state, indexed by curve names.
 const data = (curve = null) => {
-  let curves = getCustomPlotData().data.reduce(
+  let curves = getPlotData().data.reduce(
     (map, obj) => {map[obj.label] = obj; return map}, {}
   );
   return curve ? curves[curve]: curves;
@@ -573,7 +573,7 @@ const isChart = chart => {
 
   let plot_kind = state().plot_kind;
   if (!["bar_chart", "boxplot"].includes(plot_kind)) {
-    let custom_data = getCustomPlotData();
+    let custom_data = getPlotData();
     plot_kind = custom_data.type;
   }
   return chart.includes(plot_kind);
@@ -606,7 +606,7 @@ const isAvailable = () => {
 const barDataToArrays = () => {
   const colors = [], texts = [], x = [], y = [];
 
-  getCustomPlotData().data.forEach(plotData => {
+  getPlotData().data.forEach(plotData => {
     x.push(plotData.label);
     y.push(plotData.y);
     colors.push(plotData.text === '' ? plotData.color : NON_CONVERGENT_COLOR);
@@ -653,7 +653,7 @@ const _getScale = (scale) => {
 }
 
 const getBarChartLayout = () => {
-  let data = getCustomPlotData();
+  let data = getPlotData();
   const layout = {
     autosize: !isSmallScreen(),
     modebar: {
@@ -700,7 +700,7 @@ const getBarChartLayout = () => {
 };
 
 const getBoxplotChartLayout = () => {
-  plot_info = getCustomPlotData()
+  plot_info = getPlotData()
   const layout = {
     autosize: !isSmallScreen(),
     modebar: {
@@ -731,7 +731,7 @@ const getBoxplotChartLayout = () => {
 
 
 const getScatterChartLayout = () => {
-  let customData = getCustomPlotData();
+  let customData = getPlotData();
 
   const layout = {
     autosize: !isSmallScreen(),
