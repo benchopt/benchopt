@@ -23,7 +23,7 @@ if not BENCHMARK_PATH.exists():
         f"{BENCHMARK_PATH.resolve()}"
     )
 
-_, save_file = run_benchmark(
+save_file = run_benchmark(
     BENCHMARK_PATH,
     solver_names=['Python-PGD[use_acceleration=False]', 'R-PGD'],
     dataset_names=["Simulated[n_features=5000,n_samples=100,rho=0]"],

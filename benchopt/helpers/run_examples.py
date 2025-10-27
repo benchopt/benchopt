@@ -44,11 +44,6 @@ class HTMLResultPage:
         html = console.export_html(
             inline_styles=True, code_format="<pre>{code}</pre>"
         )
-        # Another option is to use ansi2html
-        # from ansi2html import Ansi2HTMLConverter
-        # conv = Ansi2HTMLConverter()
-        # html = conv.convert(output, full=False)
-        # print(conv.produce_headers())
         return html
 
     def cmd_to_html(self, cmd):
