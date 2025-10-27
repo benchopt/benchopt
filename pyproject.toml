@@ -30,7 +30,6 @@ classifiers = [
   "Programming Language :: Python :: 3.13",
   "Programming Language :: R",
   "Programming Language :: Other",
-  "License :: OSI Approved :: BSD License",
 ]
 # Inferred from classifiers; adjust if different
 requires-python = ">=3.9"
