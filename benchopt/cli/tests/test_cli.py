@@ -577,7 +577,7 @@ class TestPlotCmd:
     @pytest.mark.parametrize(
         ('kind', 'n_files'),
         [
-            ("custom_plot", 1), ("Objective_Curve", 2),
+            ("custom_plot", 1), ("objective_curve", 2),
             ("boxplot", 4), ("bar_chart", 1)
         ]
     )

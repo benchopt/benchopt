@@ -7,7 +7,7 @@ EPS = 1e-8
 
 
 class ObjectiveCurvePlot(BasePlot):
-    name = "Objective Curve"
+    name = "objective_curve"
     type = "scatter"
     dropdown = {
         "dataset": ...,
@@ -60,7 +60,6 @@ class ObjectiveCurvePlot(BasePlot):
     def get_metadata(self, df, dataset, objective, objective_column, X_axis):
         df = df[df["dataset_name"] == dataset]
         df = df[df['objective_name'] == objective]
-        # TODO use br
         title = f"{objective}\nData: {dataset} "
         return {
             "title": title,

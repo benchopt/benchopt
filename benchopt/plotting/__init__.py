@@ -72,16 +72,17 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
     if kinds is not None and len(kinds) > 0:
         config["plots"] = kinds
 
+    valid_kinds = (
+        benchmark.get_default_plot_names() +
+        benchmark.get_custom_plot_names()
+    )
+
     if "plots" not in config or config["plots"] is None:
-        config["plots"] = (
-            benchmark.get_default_plot_names() +
-            benchmark.get_custom_plot_names()
-        )
+        config["plots"] = valid_kinds
 
     if html:
         plot_benchmark_html(fname, benchmark, config, display)
 
-    # TODO: rewrite this when default plots are also custom plots
     else:
         # Load the results.
         if fname.suffix == '.parquet':
@@ -93,10 +94,6 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
 
         output_dir = benchmark.get_output_folder()
 
-        valid_kinds = (
-            benchmark.get_default_plot_names() +
-            benchmark.get_custom_plot_names()
-        )
         for kind in config["plots"]:
             if kind not in valid_kinds:
                 raise ValueError(

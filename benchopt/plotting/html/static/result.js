@@ -120,8 +120,7 @@ const getLayout = () => {
  * @returns {array}
  */
 const getBarData = () => {
-  // TODO fix with other PR
-  // if (!isAvailable()) return [{type:'bar'}];
+  if (!isAvailable()) return [{type:'bar'}];
 
   const {x, y, colors, texts} = barDataToArrays()
 
@@ -193,7 +192,7 @@ const getCustomPlotData = () => {
   return window._custom_plots[state().plot_kind][data_key];
 }
 
-// TODO add other types of custom plots
+
 /**
  * Gives the data formatted for plotlyJS scatter chart.
  *
@@ -681,7 +680,7 @@ const getBarChartLayout = () => {
     layout.dragmode = false;
   }
 
-  // TODO: fix with other PR
+  // TODO what does this do ??
   if (!isAvailable()) {
     layout.annotations = [{
       xref: 'paper',
@@ -689,6 +688,7 @@ const getBarChartLayout = () => {
       x: 0.5,
       y: 0.5,
       text: 'Not available',
+      showlegend: false,
       showarrow: false,
       font: {
         color: 'black',
@@ -696,7 +696,6 @@ const getBarChartLayout = () => {
       }
     }];
   }
-
   return layout;
 };
 
