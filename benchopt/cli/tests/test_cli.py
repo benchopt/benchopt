@@ -557,17 +557,24 @@ class TestPlotCmd:
             plot(f"{self.bench.benchmark_dir} -k invalid_kind --html "
                  f"--no-display".split(), 'benchopt', standalone_mode=False)
 
-    @pytest.mark.parametrize('kind', ["custom_plot"])
-    def test_valid_call(self, kind):
+    @pytest.mark.parametrize(
+        ('kind', 'n_files'),
+        [
+            ("custom_plot", 1), ("Objective_Curve", 2),
+            ("boxplot", 4), ("bar_chart", 1)
+        ]
+    )
+    def test_valid_call(self, kind, n_files):
 
         with CaptureCmdOutput() as out:
             plot(f"{self.bench.benchmark_dir} -f {self.result_file} -k {kind} "
                  "--no-display --no-html".split(),
                  'benchopt', standalone_mode=False)
 
-        assert len(out.result_files) == 1
-        assert kind in out.result_files[0]
-        assert '.pdf' in out.result_files[0]
+        assert len(out.result_files) == n_files
+        for file in out.result_files:
+            assert kind in file
+            assert '.pdf' in file
 
     def test_valid_call_html(self):
 

@@ -6,7 +6,7 @@ from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.tests.utils import CaptureCmdOutput
 
 
-def test_custom_plot(no_debug_log):
+def test_custom_plot_scatter(no_debug_log):
     plot = """from benchopt import BasePlot
 
     class Plot(BasePlot):
