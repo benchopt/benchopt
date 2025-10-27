@@ -20,11 +20,11 @@ def get_plot_figure(plot_datas, output_dir):
     figs = []
     for key, plot_data in plot_datas.items():
         if plot_data["type"] == "scatter":
-            fig = get_plot_scatter(key, plot_data, output_dir)
+            fig = get_plot_scatter(plot_data)
         elif plot_data["type"] == "bar_chart":
-            fig = get_plot_barchart(key, plot_data, output_dir)
+            fig = get_plot_barchart(plot_data)
         elif plot_data["type"] == "boxplot":
-            fig = get_plot_boxplot(key, plot_data, output_dir)
+            fig = get_plot_boxplot(plot_data)
         else:
             raise NotImplementedError(
                 f"Plot type {plot_data['type']} "
