@@ -20,19 +20,25 @@ def get_plot_figure(plot_datas, output_dir):
     figs = []
     for key, plot_data in plot_datas.items():
         if plot_data["type"] == "scatter":
-            figs.append(get_plot_scatter(key, plot_data, output_dir))
+            fig = get_plot_scatter(key, plot_data, output_dir)
         elif plot_data["type"] == "bar_chart":
-            figs.append(get_plot_barchart(key, plot_data, output_dir))
+            fig = get_plot_barchart(key, plot_data, output_dir)
         elif plot_data["type"] == "boxplot":
-            figs.append(get_plot_boxplot(key, plot_data, output_dir))
+            fig = get_plot_boxplot(key, plot_data, output_dir)
         else:
             raise NotImplementedError(
                 f"Plot type {plot_data['type']} "
                 f"not implemented for matplotlib."
             )
+        save_name = output_dir / f"{key}"
+        save_name = save_name.with_suffix('.pdf')
+        fig.savefig(save_name)
+        print(f'Save {key} as: {save_name}')
+        figs.append(fig)
+    return figs
 
 
-def get_plot_scatter(key, plot_data, output_dir):
+def get_plot_scatter(plot_data):
     fig = plt.figure()
     for curve_data in plot_data["data"]:
         plt.loglog(
@@ -56,15 +62,10 @@ def get_plot_scatter(key, plot_data, output_dir):
     plt.title(plot_data["title"], fontsize=14)
     plt.tight_layout()
 
-    save_name = output_dir / f"{key}"
-    save_name = save_name.with_suffix('.pdf')
-    plt.savefig(save_name)
-    print(f'Save {key} as: {save_name}')
-
     return fig
 
 
-def get_plot_barchart(key, plot_data, output_dir):
+def get_plot_barchart(plot_data):
     fig = plt.figure()
     n_bars = len(plot_data["data"])
 
@@ -113,15 +114,10 @@ def get_plot_barchart(key, plot_data, output_dir):
     ax.set_title(plot_data["title"], fontsize=12)
     fig.tight_layout()
 
-    save_name = output_dir / f"{key}"
-    save_name = save_name.with_suffix('.pdf')
-    plt.savefig(save_name)
-    print(f'Save {key} as: {save_name}')
-
     return fig
 
 
-def get_plot_boxplot(key, plot_data, output_dir):
+def get_plot_boxplot(plot_data):
     fig = plt.figure()
 
     # collect the union of all labels (x tick names)
@@ -156,10 +152,5 @@ def get_plot_boxplot(key, plot_data, output_dir):
     plt.xticks(range(len(all_labels)), all_labels, rotation=45)
     plt.title(plot_data["title"])
     plt.ylabel(plot_data["ylabel"])
-
-    save_name = output_dir / f"{key}"
-    save_name = save_name.with_suffix('.pdf')
-    plt.savefig(save_name)
-    print(f'Save {key} as: {save_name}')
 
     return fig
