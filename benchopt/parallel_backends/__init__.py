@@ -67,8 +67,11 @@ def check_parallel_config(parallel_config_file, slurm_config_file, n_jobs):
     # Load parallel config from config file. If None is provided,
     # default to joblib backend ('loky').
     if parallel_config_file is not None:
-        with open(parallel_config_file, "r") as f:
-            parallel_config = yaml.safe_load(f)
+        if not isinstance(parallel_config_file, dict):
+            with open(parallel_config_file, "r") as f:
+                parallel_config = yaml.safe_load(f)
+        else:
+            parallel_config = parallel_config_file
         # XXX: remove in benchopt 1.8
         if slurm_config_file is not None:
             parallel_config['backend'] = "submitit"

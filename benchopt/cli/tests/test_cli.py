@@ -197,6 +197,23 @@ class TestRunCmd:
                     "benchopt", standalone_mode=False
                 )
 
+    def test_pattern_all(self):
+
+        with temp_benchmark() as bench, CaptureCmdOutput() as out:
+            cmd = (
+                f"{bench.benchmark_dir} -r 1 -n 1 --no-plot "
+                "-d all -s all -o all"
+            )
+            run(cmd.split(), 'benchopt', standalone_mode=False)
+
+        out.check_output('test-dataset', repetition=1)
+        out.check_output('simulated', repetition=1)
+        out.check_output('test-objective', repetition=2)
+        out.check_output('test-solver:', repetition=12)
+
+        # Make sure the results were saved in a result file
+        assert len(out.result_files) == 1, out
+
     def test_custom_parameters(self, no_debug_log):
         dataset = """from benchopt import BaseDataset
         class Dataset(BaseDataset):

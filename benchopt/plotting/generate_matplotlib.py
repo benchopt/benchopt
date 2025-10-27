@@ -7,7 +7,7 @@ from .helpers import update_plot_data_style
 def get_figures(benchmark, df, output_dir, kinds):
     "Get the matplotlib figures of the avaible custom plots"
     figs = []
-    plot_data, _ = benchmark.get_plot_data(df)
+    plot_data, _ = benchmark.get_plot_data(df, kinds)
     plot_data = update_plot_data_style(plot_data, plotly=False)
     for plot_name in plot_data.keys():
         if plot_name not in kinds:

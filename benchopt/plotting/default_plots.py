@@ -17,7 +17,7 @@ class ObjectiveCurvePlot(BasePlot):
     }
 
     def plot(self, df, dataset, objective, objective_column, X_axis):
-        df = df[df['dataset_name'] == dataset]
+        df = df[df["dataset_name"] == dataset]
         df = df[df['objective_name'] == objective]
 
         plots = []
@@ -58,7 +58,7 @@ class ObjectiveCurvePlot(BasePlot):
         return plots
 
     def get_metadata(self, df, dataset, objective, objective_column, X_axis):
-        df = df[df['dataset_name'] == dataset]
+        df = df[df["dataset_name"] == dataset]
         df = df[df['objective_name'] == objective]
         # TODO use br
         title = f"{objective}\nData: {dataset} "

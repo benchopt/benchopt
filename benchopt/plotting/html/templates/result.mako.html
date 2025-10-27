@@ -39,7 +39,9 @@
                         <div class="mt-1 rounded-md shadow-sm">
                             <select id="plot_kind" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({plot_kind: this.value, scale: (this.value === 'boxplot' || this.value === 'bar_chart' ? 'linear' : state().scale)})">
                                 % for kind in result['kinds']:
-                                <option value="${kind}">${kind}</option>
+                                <option value="${kind}">
+                                    ${kind.replace("_", " ").capitalize()}
+                                </option>
                                 %endfor
                             </select>
                         </div>
@@ -449,7 +451,7 @@
         </script>
         <!-- Manage plot -->
         <script>
-            window._custom_plots = ${result['json_custom_plots']};
+            window._custom_plots = ${result['json_plots']};
             window.metadata = ${json.dumps(result['metadata'])};
 
             window.addEventListener("load", () => {
