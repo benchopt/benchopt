@@ -599,15 +599,31 @@ class TestPlotCmd:
                 assert kind in file
             assert '.pdf' in file
 
-    def test_valid_call_html(self):
+    @pytest.mark.parametrize(
+        'kind',
+        ["custom_plot", "objective_curve", "boxplot", "bar_chart", None]
+    )
+    def test_valid_call_html(self, kind):
 
-        with CaptureCmdOutput() as out:
-            plot(f"{self.bench.benchmark_dir} -f {self.result_file} "
-                 "--no-display --html".split(),
-                 'benchopt', standalone_mode=False)
+        with CaptureCmdOutput(delete_result_files=False) as out:
+            cmd = f"{self.bench.benchmark_dir} -f {self.result_file} "
+            cmd += "--no-display --html "
+            if kind is not None:
+                cmd += f"--kind {kind}"
+            plot(cmd.split(), 'benchopt', standalone_mode=False)
 
         assert len(out.result_files) == 2
         assert all('.html' in f for f in out.result_files)
+
+        with open(out.result_files[0], 'r') as f:
+            html_content = f.read()
+            if kind is not None:
+                assert f"<option value=\"{kind}\"" in html_content
+            else:
+                for k in [
+                    "custom_plot", "objective_curve", "boxplot", "bar_chart"
+                ]:
+                    assert f"<option value=\"{k}\"" in html_content
 
     def test_complete_bench(self, bench_completion_cases):  # noqa: F811
 
