@@ -117,7 +117,7 @@ def get_results(fnames, html_root, benchmark, config=None, copy=False):
             df, result['kinds']
         )
         custom_data = update_plot_data_style(custom_data, plotly=True)
-        result['json_custom_plots'] = json.dumps(custom_data)
+        result['json_plots'] = json.dumps(custom_data)
         result['custom_plot_params'] = custom_dropdown
 
         results.append(result)

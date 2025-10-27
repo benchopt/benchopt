@@ -676,7 +676,7 @@ const getBarChartLayout = () => {
     },
     xaxis: {
       tickangle: -60,
-      ticktext: getSolvers(),
+      ticktext: Array(data.data.map(d => d.label)),
     },
     showlegend: false,
     title: data["title"],
