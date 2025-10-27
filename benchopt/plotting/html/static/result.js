@@ -543,18 +543,10 @@ const mapSelectorsToState = () => {
 
 // Get the data for a given plot state, indexed by curve names.
 const data = (curve = null) => {
-  let curves;
-  const kind = state().plot_kind;
-  if (kind === 'bar_chart' || kind === 'boxplot') {
-      const info = state();
-      curves = window._data[info.dataset][info.objective][info.objective_column].solvers;
-    }
-    else{
-      curves = getCustomPlotData().data.reduce(
-        (map, obj) => {map[obj.label] = obj; return map}, {}
-      );
-    }
-    return curve ? curves[curve]: curves;
+  let curves = getCustomPlotData().data.reduce(
+    (map, obj) => {map[obj.label] = obj; return map}, {}
+  );
+  return curve ? curves[curve]: curves;
 }
 
 const getParams = () => {
@@ -690,20 +682,20 @@ const getBarChartLayout = () => {
   }
 
   // TODO: fix with other PR
-  // if (!isAvailable()) {
-  //   layout.annotations = [{
-  //     xref: 'paper',
-  //     yref: 'paper',
-  //     x: 0.5,
-  //     y: 0.5,
-  //     text: 'Not available',
-  //     showarrow: false,
-  //     font: {
-  //       color: 'black',
-  //       size: 32,
-  //     }
-  //   }];
-  // }
+  if (!isAvailable()) {
+    layout.annotations = [{
+      xref: 'paper',
+      yref: 'paper',
+      x: 0.5,
+      y: 0.5,
+      text: 'Not available',
+      showarrow: false,
+      font: {
+        color: 'black',
+        size: 32,
+      }
+    }];
+  }
 
   return layout;
 };
