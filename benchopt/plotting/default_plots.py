@@ -124,23 +124,23 @@ class BarChart(BasePlot):
 
 def _get_boxplot_solver(df, Y_axis, objective_column):
     if Y_axis == "Time":
-        return (
+        return [
             df.groupby('idx_rep')[['time', 'stop_val']]
             .apply(lambda x: (
                 x['time']
                 .loc[x['stop_val'] == x['stop_val'].max()]
             ))
             .transpose()[0].tolist()
-        )
+        ]
     else:
-        return (
+        return [
             df.groupby('idx_rep')[['stop_val', objective_column]]
             .apply(lambda x: (
                 x[objective_column]
                 .loc[x['stop_val'] == x['stop_val'].max()]
             ))
             .transpose()[0].tolist()
-        )
+        ]
 
 
 def _get_boxplot_iteration(df, Y_axis, objective_column):

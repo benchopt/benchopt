@@ -167,16 +167,23 @@ const getBarData = () => {
 const getBoxplotData = () => {
   const boxplotData = [];
 
-  getCustomPlotData().data.forEach(plot_data => {
-    boxplotData.push({
-      y: plot_data["y"].flat(),
-      x: plot_data["x"].flat(),
-      type: 'box',
+  getCustomPlotData().data.forEach(dataset => {
+    // dataset.x is like ["A", "B", "C"]
+    // dataset.y is like [[vals for A], [vals for B], [vals for C]]
+    dataset.x.forEach((label, i) => {
+      boxplotData.push({
+        y: dataset.y[i],          // <-- one box per label
+        name: label,              // <-- used for x and grouping
+        type: 'box',
+        line: {color: dataset.color},
+        fillcolor: dataset.color, // keep it same as matplotlib behavior
+        boxpoints: false          // (match matplotlib: no scatter points by default)
+      });
     });
   });
 
-  return boxplotData
-}
+  return boxplotData;
+};
 
 
 const getCustomPlotData = () => {
