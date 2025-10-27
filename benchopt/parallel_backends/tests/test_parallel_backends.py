@@ -140,8 +140,12 @@ def test_dask_backend():
     out.check_output("Client-worker-", repetition=1)
 
 
-def test_submitit_backend():
+def test_submitit_backend(monkeypatch):
     pytest.importorskip("submitit")
+    # Make as_completed fast, as default is to wait 10 secs between checks
+    monkeypatch.setattr(
+        "submitit.helpers.as_completed.__defaults__", (None, 0.1)
+    )
 
     parallel_config = "backend: submitit"
     solver1 = """from benchopt import BaseSolver

@@ -1,7 +1,7 @@
 import numpy as np
 
 from .helpers_compat import get_figure, _make_bars
-from .plot_objective_curve import get_solver_style
+from .helpers import get_solver_style
 
 PLOTLY_GRAY = (.8627, .8627, .8627)
 
@@ -24,7 +24,7 @@ def plot_bar_chart(df, obj_col='objective_value', plotly=False):
         The matplotlib figure of the objective values.
     """
     solver_names = df['solver_name'].unique()
-    dataset_name = df['data_name'].unique()[0]
+    dataset_name = df['dataset_name'].unique()[0]
     objective_name = df['objective_name'].unique()[0]
     n_solvers = len(solver_names)
 
@@ -122,4 +122,6 @@ def compute_bar_chart_data(df, obj_col, solver):
         height = this_df['time'].median()
         times = this_df['time'].tolist()
 
-    return dict(y=height, times=times, text=text)
+    color, _ = get_solver_style(solver)
+
+    return dict(y=height, times=times, text=text, color=color)

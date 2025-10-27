@@ -389,12 +389,12 @@ input:checked+.slider:before {
 }
 
 /* Description solver when hovered */
-.solver-description-container {
+.curve-description-container {
   position: relative;
   display: inline-flex;
 }
 
-.solver-description-content {
+.curve-description-content {
   display: flex;
   flex-direction: column;
   visibility: hidden;
@@ -419,12 +419,12 @@ input:checked+.slider:before {
 }
 
 /* Show description when hovered */
-.solver-description-container:hover .solver-description-content {
+.curve-description-container:hover .curve-description-content {
   visibility: visible;
 }
 
 /*Arrow at the bottom of the description*/
-.solver-description-container .solver-description-content::after {
+.curve-description-container .curve-description-content::after {
   content: " ";
   position: absolute;
   top: 100%;
@@ -435,12 +435,12 @@ input:checked+.slider:before {
   border-color: rgb(55 65 81) transparent transparent transparent;
 }
 
-.solver-description-title {
+.curve-description-title {
   margin-bottom: 1em;
   font-weight: bolder;
 }
 
-.solver-description-body {
+.curve-description-body {
   max-height: 450px;
   overflow-y: auto;
 }

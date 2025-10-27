@@ -199,6 +199,23 @@ class TestRunCmd:
                     "benchopt", standalone_mode=False
                 )
 
+    def test_pattern_all(self):
+
+        with temp_benchmark() as bench, CaptureCmdOutput() as out:
+            cmd = (
+                f"{bench.benchmark_dir} -r 1 -n 1 --no-plot "
+                "-d all -s all -o all"
+            )
+            run(cmd.split(), 'benchopt', standalone_mode=False)
+
+        out.check_output('test-dataset', repetition=1)
+        out.check_output('simulated', repetition=1)
+        out.check_output('test-objective', repetition=2)
+        out.check_output('test-solver:', repetition=12)
+
+        # Make sure the results were saved in a result file
+        assert len(out.result_files) == 1, out
+
     def test_custom_parameters(self, no_debug_log):
         dataset = """from benchopt import BaseDataset
         class Dataset(BaseDataset):
@@ -482,11 +499,47 @@ class TestRunCmd:
 
 
 class TestPlotCmd:
+    custom_plot = """
+        from benchopt import BasePlot
+
+        class Plot(BasePlot):
+            name = "custom_plot"
+            type = "scatter"
+            dropdown = {
+                "dataset": ...,  # Will fetch the dataset names from the df
+            }
+
+            def plot(self, df, dataset):
+                df = df[(df['dataset_name'] == dataset)]
+                return [
+                    {
+                        "x": (
+                            df[(df['solver_name'] == solver)]
+                            ["time"].values.tolist()
+                        ),
+                        "y": (
+                            df[(df['solver_name'] == solver)]
+                            ["objective_value"].values.tolist()
+                        ),
+                        "color": [0,0,0,1],
+                        "marker": 0,
+                        "label": solver,
+                    }
+                    for solver in df['solver_name'].unique()
+                ]
+
+            def get_metadata(self, df, dataset):
+                title = f"Custom Plot - {dataset}"
+                return {
+                    "title": title,
+                    "xlabel": "Custom X-axis",
+                    "ylabel": "Custom Y-axis",
+                }"""
 
     @classmethod
     def setup_class(cls):
         "Make sure at least one result file is available"
-        cls.ctx = temp_benchmark()
+        cls.ctx = temp_benchmark(plots=cls.custom_plot)
         cls.bench = cls.ctx.__enter__()
         with CaptureCmdOutput(delete_result_files=False) as out:
             run(
@@ -523,7 +576,7 @@ class TestPlotCmd:
             plot(f"{self.bench.benchmark_dir} -k invalid_kind --html "
                  f"--no-display".split(), 'benchopt', standalone_mode=False)
 
-    @pytest.mark.parametrize('kind', PLOT_KINDS)
+    @pytest.mark.parametrize('kind', list(PLOT_KINDS.keys()) + ["custom_plot"])
     def test_valid_call(self, kind):
 
         with CaptureCmdOutput() as out:

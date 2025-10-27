@@ -21,7 +21,7 @@ const NON_CONVERGENT_COLOR = 'rgba(0.8627, 0.8627, 0.8627)'
  *   - with_quantiles (boolean)
  *   - xaxis_type (string)
  *   - yaxis_type (string)
- *   - hidden_solvers (array)
+ *   - hidden_curves (array)
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 
@@ -92,15 +92,14 @@ const renderPlot = () => {
  * @returns {Array|*[]}
  */
 const getChartData = () => {
-  if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve'])) {
-    return getScatterCurves();
+  if (isCustomPlot()) {
+    return getCustomData();
   } else if (isChart('bar_chart')) {
     return getBarData();
   } else if (isChart('boxplot')) {
     return getBoxplotData();
   }
-
-  throw new Error('Unknown plot kind.');
+  throw new Error("Unknown plot kind : " + state().plot_kind);
 }
 
 /**
@@ -109,15 +108,14 @@ const getChartData = () => {
  * @returns Object
  */
 const getLayout = () => {
-  if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve'])) {
-    return getScatterChartLayout();
+  if (isCustomPlot()) {
+    return getCustomChartLayout();
   } else if (isChart('bar_chart')) {
     return getBarChartLayout();
   } else if (isChart('boxplot')) {
     return getBoxplotChartLayout();
   }
-
-  throw new Error('Unknown plot kind.');
+  throw new Error("Unknown plot kind : " + state().plot_kind);
 }
 
 /**
@@ -175,7 +173,7 @@ const getBoxplotData = () => {
 const getSolverBoxplotData = () => {
   const boxplotData = [];
 
-  getSolvers().forEach(solver => {
+  getCurves().forEach(solver => {
     boxplotData.push({
       y: state("yaxis_type") === 'time' ? data(solver).boxplot.by_solver.final_times : data(solver).boxplot.by_solver.final_objective_value,
       type: 'box',
@@ -189,7 +187,7 @@ const getSolverBoxplotData = () => {
 const getIterationBoxplotData = () => {
   const boxplotData = [];
 
-  getSolvers().forEach(solver => {
+  getCurves().forEach(solver => {
 
     // Build x
     let x = [];
@@ -219,69 +217,84 @@ const getIterationBoxplotData = () => {
   return boxplotData
 }
 
+const getCustomPlotData = () => {
+  let params = getParams();
+  let param_values = params.map(param => state()[param]);
+  let data_key = [state().plot_kind, ...param_values].join('_');
+  return window._custom_plots[state().plot_kind][data_key];
+}
+
+// TODO add other types of custom plots
 /**
  * Gives the data formatted for plotlyJS scatter chart.
  *
  * @returns {array}
  */
-const getScatterCurves = () => {
+const getCustomData = () => {
   // create a list of object to plot in plotly
   const curves = [];
 
-  // For each solver, add the median curve with proper style and visibility.
-  let xaxisType = state().xaxis_type;
+  // get the minimum y value over all curves
+  let min_y = Infinity;
+  getCustomPlotData().data.forEach(curveData => {
+    min_y = Math.min(min_y, ...curveData.y);
+  });
+  min_y -=  1e-10; // to avoid zeros in log scale
 
-  getSolvers().forEach(solver => {
-    const solverSamplingStrategy = data(solver)['sampling_strategy'];
-
-    // plot only solvers that were stopped using xaxis type
-    // plot all solver if xaxis type is `time`
-    if(xaxisType !== "Time" && solverSamplingStrategy !== xaxisType) {
-      return
+  getCustomPlotData().data.forEach(curveData => {
+    label = curveData.label;
+    y = curveData.y;
+    if ("q1" in curveData && "q9" in curveData && state().with_quantiles) {
+      q1 = curveData.q1;
+      q9 = curveData.q9;
     }
-
-    const ScatterXaxisProperty = xaxisType === "Time" ? 'x' : 'stop_val';
-
+    if (state().suboptimal_curve) {
+      y = y.map(value => value - min_y);
+      if ("q1" in curveData && "q9" in curveData && state().with_quantiles) {
+        q1 = q1.map(value => value - min_y);
+        q9 = q9.map(value => value - min_y);
+      }
+    }
+    if (state().relative_curve) {
+      y = y.map(value => value / (y[0] - min_y));
+      if ("q1" in curveData && "q9" in curveData && state().with_quantiles) {
+        q1 = q1.map(value => value / (y[0] - min_y));
+        q9 = q9.map(value => value / (y[0] - min_y));
+      }
+    }
     curves.push({
       type: 'scatter',
-      name: solver,
+      name: label,
       mode: 'lines+markers',
       line: {
-        color: data(solver).color,
+        color: curveData.color,
       },
       marker: {
-        symbol: data(solver).marker,
+        symbol: curveData.marker,
         size: 10,
+        color: curveData.color,
       },
-      legendgroup: solver,
-      hovertemplate: solver + ' <br> (%{x:.1e},%{y:.1e}) <extra></extra>',
-      visible: isVisible(solver) ? true : 'legendonly',
-      x: data(solver).scatter[ScatterXaxisProperty],
-      y: useTransformer(data(solver).scatter.y, 'y', data().transformers),
+      legendgroup: label,
+      hovertemplate: label + ' <br> (%{x:.1e},%{y:.1e}) <extra></extra>',
+      visible: isVisible(label) ? true : 'legendonly',
+      x: curveData.x,
+      y: y,
     });
 
-    // skip plotting quantiles if xaxis is not time
-    // as stop_val are predefined and hence deterministic
-    if(xaxisType !== "Time") {
-      return
-    }
-
-    if (state().with_quantiles) {
-      // Add shaded area for each solver, with proper style and visibility.
-
+    if ("q1" in curveData && "q9" in curveData && state().with_quantiles) {
       curves.push({
         type: 'scatter',
         mode: 'lines',
         showlegend: false,
         line: {
           width: 0,
-          color: data(solver).color,
+          color: curveData.color,
         },
-        legendgroup: solver,
+        legendgroup: label,
         hovertemplate: '(%{x:.1e},%{y:.1e}) <extra></extra>',
-        visible: isVisible(solver) ? true : 'legendonly',
-        x: data(solver).scatter['q1'],
-        y: useTransformer(data(solver).scatter.y, 'y', data().transformers),
+        visible: isVisible(label) ? true : 'legendonly',
+        x: q1,
+        y: y,
       }, {
         type: 'scatter',
         mode: 'lines',
@@ -289,20 +302,19 @@ const getScatterCurves = () => {
         fill: 'tonextx',
         line: {
           width: 0,
-          color: data(solver).color,
+          color: curveData.color,
         },
-        legendgroup: solver,
+        legendgroup: label,
         hovertemplate: '(%{x:.1e},%{y:.1e}) <extra></extra>',
-        visible: isVisible(solver) ? true : 'legendonly',
-        x: data(solver).scatter['q9'],
-        y: useTransformer(data(solver).scatter.y, 'y', data().transformers),
+        visible: isVisible(label) ? true : 'legendonly',
+        x: q9,
+        y: y,
       });
     }
   });
 
   return curves;
 };
-
 
 
 /*
@@ -352,7 +364,7 @@ const setConfig = (config_item) => {
     // Get the updated state
     let config = window.metadata.plot_configs[config_name];
     let update = {};
-    const lims = ['xlim', 'ylim', 'hidden_solvers']
+    const lims = ['xlim', 'ylim', 'hidden_curves']
     for(let key in config_mapping){
       if (key in config){
         const value = config[key];
@@ -482,78 +494,6 @@ const exportHTML = () => {
 
 /*
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- * DATA TRANSFORMERS
- *
- * Transformers are used to modify data
- * on the fly.
- *
- * WARNING : If you add a new transformer function,
- * don't forget to register it in the object : window.transformers,
- * at the end of this section.
- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- */
-
-/**
- * Select the right transformer according to the state.
- * If the requested transformer does not exists,
- * it returns raw data.
- *
- * @param {Object} data
- * @param {String} solver
- * @param {String} axis it could be x, y, q1, q9
- * @returns {array}
- */
-const useTransformer = (data, axis, options) => {
-  try {
-    let transformer = 'transformer_' + axis + '_' + state().plot_kind;
-    return window.transformers[transformer](data, options);
-  } catch(error) {
-    return data;
-  }
-};
-
-/**
- * Transform data on the y axis for subotimality curve.
- *
- * @param {Object} data
- * @param {String} solver
- * @returns {array}
- */
-const transformer_y_suboptimality_curve = (y, options) => {
-  // Retrieve c_star value
-  const c_star = options.c_star;
-
-  // Compute suboptimality for each data
-  return y.map(value => value - c_star);
-};
-
-/**
- * Transform data ont the y axis for relative suboptimality curve.
- *
- * @param {Object} data
- * @param {String} solver
- * @returns {array}
- */
-const transformer_y_relative_suboptimality_curve = (y, options) => {
-  // Retrieve transformer values
-  const c_star = options.c_star;
-  const max_f_0 = options.max_f_0;
-
-  // Compute relative suboptimality for each data
-  return y.map(value => (value - c_star) / (max_f_0 - c_star));
-};
-
-/**
- * Store all the transformer functions to be callable
- * by the useTransformer function.
- */
-window.transformers = {
-  transformer_y_suboptimality_curve,
-  transformer_y_relative_suboptimality_curve,
-};
-
-/*
- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * LEFT SIDEBAR MANAGEMENT
  *
  * Functions that control the left sidebar.
@@ -564,19 +504,41 @@ window.transformers = {
  * Render sidebar
  */
 const renderSidebar = () => {
+  renderDatasetSelector();
+  renderObjectiveSelector();
   renderObjectiveColumnSelector();
   renderScaleSelector();
   renderXAxisTypeSelector();
   renderYAxisTypeSelector();
   renderWithQuantilesToggle();
+  renderSuboptimalRelativeToggle();
   mapSelectorsToState();
+  renderCustomParams();
 }
+
+const renderDatasetSelector = () => {
+  if (isCustomPlot()) {
+    hide(document.querySelectorAll("#dataset-form-group"));
+  } else {
+    show(document.querySelectorAll("#dataset-form-group"), 'block');
+  }
+};
+
+const renderObjectiveSelector = () => {
+  if (isCustomPlot()) {
+    hide(document.querySelectorAll("#objective-form-group"));
+  } else {
+    show(document.querySelectorAll("#objective-form-group"), 'block');
+  }
+};
 
 /**
  * Render Objective Column selector
  */
 const renderObjectiveColumnSelector = () => {
-  if (isChart('boxplot') && state('yaxis_type') === 'time') {
+  if (isCustomPlot()) {
+    hide(document.querySelectorAll("#objective-column-form-group"));
+  } else if (isChart('boxplot') && state('yaxis_type') === 'time') {
     hide(document.querySelectorAll("#objective-column-form-group"));
   } else {
     show(document.querySelectorAll("#objective-column-form-group"), 'block');
@@ -587,10 +549,10 @@ const renderObjectiveColumnSelector = () => {
  * Render Scale selector
  */
 const renderScaleSelector = () => {
-  if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve', 'boxplot'])) {
-    show(document.querySelectorAll("#scale-form-group"), 'block');
-  } else {
+  if (isChart('bar_chart')) {
     hide(document.querySelectorAll("#scale-form-group"));
+  } else {
+    show(document.querySelectorAll("#scale-form-group"), 'block');
   }
 
   if (isChart('boxplot')) {
@@ -606,10 +568,18 @@ const renderScaleSelector = () => {
  * Render WithQuantile toggle
  */
 const renderWithQuantilesToggle = () => {
-  if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve'])) {
+  if (isChart('scatter')) {
     show(document.querySelectorAll("#change-shades-form-group"), 'flex');
   } else {
     hide(document.querySelectorAll("#change-shades-form-group"));
+  }
+};
+
+const renderSuboptimalRelativeToggle = () => {
+  if (isChart('scatter')) {
+    show(document.querySelectorAll("#change-relative-suboptimal-form-group"), 'flex');
+  } else {
+    hide(document.querySelectorAll("#change-relative-suboptimal-form-group"));
   }
 };
 
@@ -617,7 +587,10 @@ const renderWithQuantilesToggle = () => {
  * Render xaxis type selector
  */
 const renderXAxisTypeSelector = () => {
-  if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve', 'boxplot'])) {
+  if (isCustomPlot()) {
+    hide(document.querySelectorAll("#xaxis-type-form-group"));
+    return;
+  } else if (isChart(['scatter', 'boxplot'])) {
     show(document.querySelectorAll("#xaxis-type-form-group"), 'block');
   } else {
     hide(document.querySelectorAll("#xaxis-type-form-group"));
@@ -643,7 +616,7 @@ const renderXAxisTypeSelector = () => {
   // It's the same thing if we change to curve plot.
   if (isChart('boxplot') && state().xaxis_type === 'Time') {
     setState({xaxis_type: 'Solver'});
-  } else if (isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve']) && state().xaxis_type === 'Solver') {
+  } else if (isChart(['scatter']) && state().xaxis_type === 'Solver') {
     setState({xaxis_type: 'Time'});
   }
 };
@@ -658,6 +631,15 @@ const renderYAxisTypeSelector = () => {
     hide(document.querySelectorAll("#yaxis-type-form-group"));
   }
 };
+
+const renderCustomParams = () => {
+  hide(document.querySelectorAll(`[id$='-custom-params-container']`));
+  let non_custom_kinds = ['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve', 'bar_chart', 'boxplot'];
+  if (!non_custom_kinds.includes(state().plot_kind)) {
+    show(document.querySelectorAll(`#${state().plot_kind}-custom-params-container`), 'block');
+  }
+}
+
 
 const xAxisTypeSelectors = () => {
   return document.querySelectorAll("#change_xaxis_type, #change_xaxis_type_mobile");
@@ -689,25 +671,56 @@ const mapSelectorsToState = () => {
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 
-const data = (solver = null) => {
-  return solver ?
-    window._data[state().dataset][state().objective][state().objective_column].solvers[solver]:
-    window._data[state().dataset][state().objective][state().objective_column]
+// Get the data for a given plot state, indexed by curve names.
+const data = (curve = null) => {
+  let curves;
+  const kind = state().plot_kind;
+  if (kind === 'bar_chart' || kind === 'boxplot') {
+      const info = state();
+      curves = window._data[info.dataset][info.objective][info.objective_column].solvers;
+    }
+    else{
+      curves = getCustomPlotData().data.reduce(
+        (map, obj) => {map[obj.label] = obj; return map}, {}
+      );
+    }
+    return curve ? curves[curve]: curves;
 }
 
-const getSolvers = () => Object.keys(data().solvers);
+const getParams = () => {
+  let kind = state().plot_kind;
+  let params = [];
+  Object.keys(state()).forEach(key => {
+    if (key.includes(kind)) {
+      params.push(key);
+    }
+  });
+  return params;
+}
+
+const getCurves = () => Object.keys(data());
+
+const isCustomPlot = () => {
+  let non_custom_kinds = ['bar_chart', 'boxplot'];
+  return !non_custom_kinds.includes(state().plot_kind);
+}
 
 const isChart = chart => {
   if (typeof chart === 'string' || chart instanceof String) {
     chart = [chart]
   }
 
-  return chart.includes(state().plot_kind);
+  let plot_kind = state().plot_kind;
+  if (!["bar_chart", "boxplot"].includes(plot_kind)) {
+    let custom_data = getCustomPlotData();
+    plot_kind = custom_data.type;
+  }
+  return chart.includes(plot_kind);
 }
 
-const isVisible = solver => !state().hidden_solvers.includes(solver);
+const isVisible = curve => !state().hidden_curves.includes(curve);
 
-const isSolverAvailable = solver => data(solver).scatter.y.filter(value => !isNaN(value)).length > 0;
+const isSolverAvailable = solver => data(solver) !== null;
 
 const isSmallScreen = () => window.screen.availHeight < 900;
 
@@ -720,7 +733,7 @@ const isSmallScreen = () => window.screen.availHeight < 900;
 const isAvailable = () => {
   let isNotAvailable = true;
 
-  getSolvers().forEach(solver => {
+  getCurves().forEach(solver => {
     if (isSolverAvailable(solver)) {
       isNotAvailable = false;
     }
@@ -732,10 +745,10 @@ const isAvailable = () => {
 const barDataToArrays = () => {
   const colors = [], texts = [], x = [], y = [];
 
-  getSolvers().forEach(solver => {
+  getCurves().forEach(solver => {
     x.push(solver);
     y.push(data(solver).bar.y);
-    colors.push(data(solver).bar.text === '' ? data(solver).color : NON_CONVERGENT_COLOR);
+    colors.push(data(solver).bar.text === '' ? data(solver).bar.color : NON_CONVERGENT_COLOR);
     texts.push(data(solver).bar.text);
   });
 
@@ -778,69 +791,6 @@ const _getScale = (scale) => {
   }
 }
 
-const getScatterChartLayout = () => {
-  let xaxisType = state().xaxis_type;
-
-  const layout = {
-    autosize: !isSmallScreen(),
-    modebar: {
-      orientation: 'v',
-    },
-    height: 700,
-    showlegend: false,
-    legend: {
-      title: {
-        text: 'Solvers',
-      },
-      orientation: 'h',
-      xanchor: 'center',
-      yanchor: 'top',
-      y: -.2,
-      x: .5
-    },
-    xaxis: {
-      type: getScale().xaxis,
-      title: xaxisType === "Time" ? "Time [sec]": xaxisType,
-      tickformat:  ["Time", "Tolerance"].includes(xaxisType) ? '.1e': '',
-      tickangle: -45,
-      gridcolor: '#ffffff',
-      zeroline : false,
-    },
-    yaxis: {
-      type: getScale().yaxis,
-      title: getYLabel(),
-      tickformat: '.1e',
-      gridcolor: '#ffffff',
-      zeroline : false,
-    },
-    title: `${state().objective}<br />Data: ${state().dataset}`,
-    plot_bgcolor: '#e5ecf6',
-  };
-
-  if (isSmallScreen()) {
-    layout.width = 900;
-    layout.height = window.screen.availHeight - 200;
-    layout.dragmode = false;
-  }
-
-  if (!isAvailable()) {
-    layout.annotations = [{
-      xref: 'paper',
-      yref: 'paper',
-      x: 0.5,
-      y: 0.5,
-      text: 'Not available',
-      showarrow: false,
-      font: {
-        color: 'black',
-        size: 32,
-      }
-    }];
-  };
-
-  return layout;
-};
-
 const getBarChartLayout = () => {
   const layout = {
     autosize: !isSmallScreen(),
@@ -855,7 +805,7 @@ const getBarChartLayout = () => {
     },
     xaxis: {
       tickangle: -60,
-      ticktext: getSolvers(),
+      ticktext: getCurves(),
     },
     showlegend: false,
     title: `${state().objective}<br />Data: ${state().dataset}`,
@@ -915,6 +865,70 @@ const getBoxplotChartLayout = () => {
   return layout;
 };
 
+
+const getCustomChartLayout = () => {
+  let customData = getCustomPlotData();
+
+  const layout = {
+    autosize: !isSmallScreen(),
+    modebar: {
+      orientation: 'v',
+    },
+    height: 700,
+    showlegend: false,
+    legend: {
+      title: {
+        text: 'Solvers',
+      },
+      orientation: 'h',
+      xanchor: 'center',
+      yanchor: 'top',
+      y: -.2,
+      x: .5
+    },
+    xaxis: {
+      type: getScale().xaxis,
+      title: customData.xlabel,
+      tickformat: '.1e', // TODO adapt if xaxis is not numeric
+      tickangle: -45,
+      gridcolor: '#ffffff',
+      zeroline : false,
+    },
+    yaxis: {
+      type: getScale().yaxis,
+      title: customData.ylabel,
+      tickformat: '.1e',
+      gridcolor: '#ffffff',
+      zeroline : false,
+    },
+    title: `${customData.title}`,
+    plot_bgcolor: '#e5ecf6',
+  };
+
+  if (isSmallScreen()) {
+    layout.width = 900;
+    layout.height = window.screen.availHeight - 200;
+    layout.dragmode = false;
+  }
+
+  if (!isAvailable()) {
+    layout.annotations = [{
+      xref: 'paper',
+      yref: 'paper',
+      x: 0.5,
+      y: 0.5,
+      text: 'Not available',
+      showarrow: false,
+      font: {
+        color: 'black',
+        size: 32,
+      }
+    }];
+  };
+
+  return layout;
+};
+
 const getYLabel = () => {
   switch(state('plot_kind')) {
     case 'objective_curve':
@@ -943,7 +957,7 @@ const isIterationSamplingStrategy = () => {
   let options = new Set(['Time']);
   // get solvers run for selected (dataset, objective, objective colum)
   // and select their unique sampling strategies
-  getSolvers().forEach(solver => options.add(data().solvers[solver].sampling_strategy));
+  getCurves().forEach(solver => options.add(data(solver).sampling_strategy));
 
   return options.has('Iteration')
 };
@@ -976,18 +990,18 @@ const show = (HTMLElements, style = 'initial') => {
 };
 
 /*
- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- * MANAGE HIDDEN SOLVERS
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * MANAGE HIDDEN CURVES
  *
- * Functions to hide/display and memorize solvers which were clicked
- * by user on the legend of the plot.
- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * Functions to hide/display and memorize curves which
+ * were clicked by user on the legend of the plot.
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
-const getSolverFromEvent = event => {
+const getCurveFromEvent = event => {
   const target = event.currentTarget;
 
   for (let i = 0; i < target.children.length; i++) {
-    if (target.children[i].className === 'solver') {
+    if (target.children[i].className === 'curve') {
       return target.children[i].firstChild.nodeValue;
     }
   }
@@ -995,39 +1009,39 @@ const getSolverFromEvent = event => {
   return null;
 };
 
-const purgeHiddenSolvers = () => setState({hidden_solvers: []});
+const purgeHiddenCurves = () => setState({hidden_curves: []});
 
-const hideAllSolversExcept = solver => {setState({hidden_solvers: getSolvers().filter(elmt => elmt !== solver)})};
+const hideAllCurvesExcept = curve => {setState({hidden_curves: getCurves().filter(elmt => elmt !== curve)})};
 
-const hideSolver = solver => isVisible(solver) ? setState({hidden_solvers: [...state().hidden_solvers, solver]}) : null;
+const hideCurve = curve => isVisible(curve) ? setState({hidden_curves: [...state().hidden_curves, curve]}) : null;
 
-const showSolver = solver => setState({hidden_solvers: state().hidden_solvers.filter(hidden => hidden !== solver)});
+const showCurve = curve => setState({hidden_curves: state().hidden_curves.filter(hidden => hidden !== curve)});
 
 /**
- * Add or remove solver name from the list of hidden solvers.
+ * Add or remove curve name from the list of hidden curves.
  *
- * @param {String} solver
+ * @param {String} curve
  * @returns {void}
  */
-const handleSolverClick = solver => {
-  if (!isVisible(solver)) {
-    showSolver(solver);
+const handleCurveClick = curve => {
+  if (!isVisible(curve)) {
+    showCurve(curve);
 
     return;
   }
 
-  hideSolver(solver);
+  hideCurve(curve);
 };
 
-const handleSolverDoubleClick = solver => {
-  // If all solvers except one are hidden, so double click should show all solvers
-  if (state().hidden_solvers.length === getSolvers().length - 1) {
-    purgeHiddenSolvers();
+const handleCurveDoubleClick = curve => {
+  // If all curves except one are hidden, so double click should show all curves
+  if (state().hidden_curves.length === getCurves().length - 1) {
+    purgeHiddenCurves();
 
     return;
   }
 
-  hideAllSolversExcept(solver);
+  hideAllCurvesExcept(curve);
 };
 
 /*
@@ -1044,8 +1058,7 @@ const handleSolverDoubleClick = solver => {
  */
 const renderLegend = () => {
   const legendContainer = document.getElementById('legend_container')
-
-  if (!isChart(['objective_curve', 'suboptimality_curve', 'relative_suboptimality_curve'])) {
+  if (!isChart('scatter')) {
     hide(legendContainer);
     return;
   } else {
@@ -1055,41 +1068,42 @@ const renderLegend = () => {
   const legend = document.getElementById('plot_legend');
 
   legend.innerHTML = '';
-  const solversDescription = window.metadata["solvers_description"];
+  const curvesDescription = window.metadata["solvers_description"];
 
-  getSolvers().forEach(solver => {
-    const color = data().solvers[solver].color;
-    const symbolNumber = data().solvers[solver].marker;
+  getCurves().forEach(curve => {
+    const color = data(curve).color;
+    const symbolNumber = data(curve).marker;
 
-    let legendItem = createLegendItem(solver, color, symbolNumber);
+    let legendItem = createLegendItem(curve, color, symbolNumber);
 
     // preserve compatibility with prev version
-    if(solversDescription === null || solversDescription === undefined) {
+    if(curvesDescription === null || curvesDescription === undefined) {
       legend.appendChild(legendItem);
       return;
     }
 
-    let payload = {
-      description: solversDescription[solver],
-    }
-
-    legend.appendChild(
-      createSolverDescription(legendItem, payload)
+    let payload = createSolverDescription(
+      legendItem, {
+        description: curvesDescription[curve],
+      }
     );
+    if (payload === undefined) {
+      legend.appendChild(legendItem);
+    }
   });
 }
 
 /**
- * Creates a legend item which contains the solver name,
- * the solver marker as an SVG and an horizontal bar with
- * the solver color.
+ * Creates a legend item which contains the curve name,
+ * the curve marker as an SVG and an horizontal bar with
+ * the curve color.
  *
- * @param {String} solver
+ * @param {String} curve
  * @param {String} color
  * @param {int} symbolNumber
- * @retuns {HTMLElement}
+ * @returns {HTMLElement}
  */
-const createLegendItem = (solver, color, symbolNumber) => {
+const createLegendItem = (curve, color, symbolNumber) => {
   // Create item container
   const item = document.createElement('div');
   item.style.display = 'flex';
@@ -1099,46 +1113,46 @@ const createLegendItem = (solver, color, symbolNumber) => {
   item.style.cursor = 'pointer';
   item.className = 'bg-white py-1 px-4 shadow-sm mt-2 rounded'
 
-  if (!isVisible(solver)) {
+  if (!isVisible(curve)) {
     item.style.opacity = 0.5;
   }
 
-  // Click on a solver in the legend
+  // Click on a curve in the legend
   item.addEventListener('click', event => {
-    solver = getSolverFromEvent(event);
+    curve = getCurveFromEvent(event);
 
-    if (!getSolvers().includes(solver)) {
-      console.error('An invalid solver has been handled during the click event.');
+    if (!getCurves().includes(curve)) {
+      console.error('An invalid curve has been handled during the click event.');
 
       return;
     }
 
     // In javascript we must simulate double click.
-    // So first click is handled and kept in memory (window.clickedSolver)
+    // So first click is handled and kept in memory (window.clickedCurve)
     // during 500ms, if nothing else happen timeout will execute
     // single click function. However, if an other click happen during this
     // 500ms, it clears the timeout and execute the double click function.
-    if (!window.clickedSolver) {
-      window.clickedSolver = solver;
+    if (!window.clickedCurve) {
+      window.clickedCurve = curve;
 
       // Timeout will execute single click function after 500ms
       window.clickedTimeout = setTimeout(() => {
-        window.clickedSolver = null;
+        window.clickedCurve = null;
 
-        handleSolverClick(solver);
+        handleCurveClick(curve);
       }, 500);
-    } else if (window.clickedSolver === solver) {
+    } else if (window.clickedCurve === curve) {
       clearTimeout(window.clickedTimeout);
-      window.clickedSolver = null;
-      handleSolverDoubleClick(solver);
+      window.clickedCurve = null;
+      handleCurveDoubleClick(curve);
     }
   });
 
-  // Create the HTML text node for the solver name in the legend
+  // Create the HTML text node for the curve name in the legend
   const textContainer = document.createElement('div');
   textContainer.style.marginLeft = '0.5rem';
-  textContainer.className = 'solver';
-  textContainer.appendChild(document.createTextNode(solver));
+  textContainer.className = 'curve';
+  textContainer.appendChild(document.createTextNode(curve));
 
   // Create the horizontal bar in the legend to represent the curve
   const hBar = document.createElement('div');
@@ -1160,14 +1174,14 @@ const createLegendItem = (solver, color, symbolNumber) => {
 
 function createSolverDescription(legendItem, { description }) {
   if (description === null || description === undefined || description === "")
-    description = "No description provided";
+    return;
 
   let descriptionContainer = document.createElement("div");
-  descriptionContainer.setAttribute("class", "solver-description-container")
+  descriptionContainer.setAttribute("class", "curve-description-container")
 
   descriptionContainer.innerHTML = `
-  <div class="solver-description-content text-sm">
-    <span class="solver-description-body">${description}</span>
+  <div class="curve-description-content text-sm">
+    <span class="curve-description-body">${description}</span>
   </div>
   `;
 
