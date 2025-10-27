@@ -51,13 +51,13 @@ def test_metadata_saving():
     dummy_config = {
         'plot_configs': {
             'Init': {
-                'kind': 'suboptimality_curve',
+                'kind': 'objective_curve',
                 'objective_column': 'objective_value',
                 'scale': 'loglog',
                 'ylim': ['5e-11', 100]
             },
             'View 2': {
-                'kind': 'objective_curve',
+                'kind': 'bar_chart',
                 'objective_column': 'objective_mse',
                 'scale': 'semilog-x',
                 'xaxis_type': 'Iteration',
@@ -66,8 +66,6 @@ def test_metadata_saving():
             }
         }, 'plots': [
             'objective_curve',
-            'suboptimality_curve',
-            'relative_suboptimality_curve',
             'bar_chart'
         ]
     }

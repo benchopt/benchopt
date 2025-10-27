@@ -39,7 +39,9 @@
                         <div class="mt-1 rounded-md shadow-sm">
                             <select id="plot_kind" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({plot_kind: this.value, scale: (this.value === 'boxplot' || this.value === 'bar_chart' ? 'linear' : state().scale)})">
                                 % for kind in result['kinds']:
-                                <option value="${kind}">${kind}</option>
+                                <option value="${kind}">
+                                    ${kind.replace("_", " ").capitalize()}
+                                </option>
                                 %endfor
                             </select>
                         </div>
@@ -576,7 +578,7 @@
                     'relative_curve': document.getElementById('change_relative').checked,
                     'xaxis_type':  document.getElementById('change_xaxis_type').value || "Time",
                     'yaxis_type':  document.getElementById('change_xaxis_type').value || "Time",
-                    'hidden_solvers': [],
+                    'hidden_curves': [],
                     % for custom_kind in result["custom_plot_params"]:
                         % for custom_param in result["custom_plot_params"][custom_kind]:
                             '${custom_kind}_${custom_param}': document.getElementById('change_${custom_kind}_${custom_param}').value,
