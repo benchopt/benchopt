@@ -71,9 +71,10 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
 
         return {'color': color, 'marker': idx}
 
-    def _get_name(self):
+    @classmethod
+    def _get_name(cls):
         """Get a simple name for plot comparison"""
-        return self.name.replace(" ", "_").lower()
+        return cls.name.replace(" ", "_").lower()
 
     def _check(self):
         self._check_type()

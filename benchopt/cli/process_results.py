@@ -6,6 +6,7 @@ from benchopt.config import get_setting
 from benchopt.benchmark import Benchmark
 from benchopt.cli.completion import complete_benchmarks
 from benchopt.cli.completion import complete_output_files
+from benchopt.cli.completion import complete_plots
 
 process_results = click.Group(
     name='Process results',
@@ -25,6 +26,7 @@ process_results = click.Group(
               "folder.")
 @click.option('--kind', '-k', 'kinds',
               multiple=True, show_default=True, type=str,
+              shell_complete=complete_plots,
               help="Specify the type of figure to plot")
 @click.option('--display/--no-display', default=True,
               help="Whether or not to display the plot on the screen. "

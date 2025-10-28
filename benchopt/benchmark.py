@@ -197,7 +197,7 @@ class Benchmark:
             class_only=class_only
         )
 
-    def get_plots(self):
+    def _get_plots_classes(self):
         "List all available custom plot classes for the benchmark"
         from .plotting.base import BasePlot
         from .plotting.default_plots import (
@@ -206,20 +206,23 @@ class Benchmark:
             BoxPlot
         )
         default_plots = [
-            ObjectiveCurvePlot.get_instance(),
-            BarChart.get_instance(),
-            BoxPlot.get_instance()
+            ObjectiveCurvePlot,
+            BarChart,
+            BoxPlot
         ]
-        custom_plots = [
-            plot.get_instance()
-            for plot in self._list_benchmark_classes(BasePlot)
-        ]
+        custom_plots = self._list_benchmark_classes(BasePlot)
         return default_plots + custom_plots
+
+    def get_plots(self):
+        return [
+            plot.get_instance()
+            for plot in self._get_plots_classes()
+        ]
 
     def get_plot_names(self):
         "List all custom plot names available"
         return [
-            plot._get_name() for plot in self.get_plots()
+            plot._get_name() for plot in self._get_plots_classes()
         ]
 
     def check_plots(self):
