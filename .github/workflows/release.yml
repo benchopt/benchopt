@@ -72,7 +72,7 @@ jobs:
 
   github-release:
     name: >-
-      Sign the loky 🔐 distribution 📦 with Sigstore
+      Sign the benchopt distribution 📦 with Sigstore 🔐
       and upload them to GitHub Release
     needs:
     - publish-to-pypi
