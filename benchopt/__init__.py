@@ -10,7 +10,7 @@ from .plotting.base import BasePlot
 # Context to allow safe imports
 from .utils.safe_import import safe_import_context
 
-from .version import version as __version__
+__version__ = "1.8.dev0"
 
 __all__ = [
     'BaseSolver', 'BaseDataset', 'BaseObjective', 'BasePlot',
