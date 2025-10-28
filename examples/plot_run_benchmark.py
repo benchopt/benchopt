@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 from benchopt import run_benchmark
 from benchopt.benchmark import Benchmark
 from benchopt.plotting import plot_benchmark
+from benchopt.plotting.helpers import reset_solver_styles
 
 
 BENCHMARK_PATH = (
@@ -35,6 +36,7 @@ except RuntimeError:
         f"{BENCHMARK_PATH.resolve()}"
     )
 
+reset_solver_styles()
 
 figs = plot_benchmark(
     save_file, benchmark=Benchmark(BENCHMARK_PATH), html=False
