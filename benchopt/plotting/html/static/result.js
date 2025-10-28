@@ -57,9 +57,12 @@ const config_mapping = {
   'dataset': 'dataset_selector',
   'objective': 'objective_selector',
   'objective_column': 'objective_column',
-  'kind': 'plot_kind',
-  'scale': 'change_scaling',
+  'plot_kind': 'plot_kind',
+  'scale': 'change_scale',
   'with_quantiles': 'change_shades',
+  'suboptimal_curve': 'change_suboptimal',
+  'relative_curve': 'change_relative',
+  'hidden_curves': '',
 };
 
 /*
@@ -313,6 +316,15 @@ const get_lim_config = (lim, ax) => {
   return lim;
 };
 
+const DEFAULT_CONFIG_OPTIONS = [
+  "plot_kind",
+  "hidden_curves",
+  "scale",
+  "with_quantiles",
+  "suboptimal_curve",
+  "relative_curve",
+];
+
 const setConfig = (config_item) => {
   if (!config_item) {
     return;
@@ -336,32 +348,27 @@ const setConfig = (config_item) => {
   if (config_name !== "no_selected_view") {
     // Get the updated state
     let config = window.metadata.plot_configs[config_name];
+    console.log(config);
     let update = {};
-    const lims = ['xlim', 'ylim', 'hidden_curves']
-    for(let key in config_mapping){
-      if (key in config){
-        const value = config[key];
-        document.getElementById(config_mapping[key]).value = value;
-        if (key === "kind"){
-          key = "plot_kind";
+    // const lims = ['xlim', 'ylim', 'hidden_curves']
+    const lims = ['hidden_curves']
+    for(let key in config){
+      const value = config[key];
+      if (key in config_mapping) {
+        if (config_mapping[key] !== '') {
+          div_key = config_mapping[key];
+          console.log(div_key, value);
+          document.getElementById(div_key).value = value;
         }
-        update[key] = value;
       }
-      else if (!lims.includes(key)) {
-        document.getElementById(config_mapping[key]).selectedIndex = 0;
-        update[key] = document.getElementById(config_mapping[key]).value;
+      else {
+        div_key = "change_" + key;
+        document.getElementById(div_key).value = value;
       }
+      update[key] = value;
     }
 
     setState(update);
-
-    let layout = {};
-    for(const ax of ['x', 'y']){
-      let lim = ax + 'lim';
-      if (config.hasOwnProperty(lim) & (config[lim] != null)) {
-        layout[ax +'axis.range'] = get_lim_plotly(config[lim], ax);
-      }
-    }
 
     // update the plot
     renderPlot();
@@ -378,14 +385,13 @@ const saveView = () => {
 
   // Retrieve the dropdown menu selected values
   let config = {};
-  for(let key in config_mapping) {
-    config[key] = document.getElementById(config_mapping[key]).value;
+  dropdowns = getPlotDropdowns();
+  for(let key of dropdowns) {
+    config[key] = state()[key];
   }
-
-  // Retrieve the range of the plots.
-  const fig = document.getElementById('unique_plot');
-  config['xlim'] = get_lim_config(fig.layout.xaxis.range, 'x');
-  config['ylim'] = get_lim_config(fig.layout.yaxis.range, 'y');
+  for (let option of DEFAULT_CONFIG_OPTIONS) {
+    config[option] = state()[option];
+  }
 
   let noViewAvailableElement = document.getElementById('no_view_available');
 
@@ -533,7 +539,7 @@ const renderPlotDropdowns = () => {
 const mapSelectorsToState = () => {
   const currentState = state();
   document.getElementById('plot_kind').value = currentState.plot_kind;
-  document.getElementById('change_scaling').value = currentState.scale;
+  document.getElementById('change_scale').value = currentState.scale;
   document.getElementById('change_shades').checked = currentState.with_quantiles;
 };
 

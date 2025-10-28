@@ -48,9 +48,9 @@
                     </div>
                     <div class="flex-1 flex flex-col">
                         <div id="scale-form-group" class="mt-8 px-8">
-                            <label for="change_scaling" class="block text-sm font-medium text-white">Scale</label>
+                            <label for="change_scale" class="block text-sm font-medium text-white">Scale</label>
                             <div class="mt-1 rounded-md shadow-sm">
-                                <select id="change_scaling" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({scale: this.value})">
+                                <select id="change_scale" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({scale: this.value})">
                                     <option value="linear">linear</option>
                                     <!-- Options for other plots -->
                                     <option class="other_plot_option" value="semilog-y">semilog-y</option>
@@ -193,9 +193,9 @@
                                 </div>
                             </div>
                             <div id="scale-form-group" class="px-8">
-                                <label for="change_scaling" class="block text-sm font-medium text-white">Scale</label>
+                                <label for="change_scale" class="block text-sm font-medium text-white">Scale</label>
                                 <div class="mt-1 rounded-md shadow-sm">
-                                    <select id="change_scaling" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({scale: this.value})">
+                                    <select id="change_scale" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({scale: this.value})">
                                         <option value="linear">linear</option>
                                         <!-- Options for other plots -->
                                         <option class="other_plot_option" value="semilog-y">semilog-y</option>
@@ -461,7 +461,7 @@
                 // Initialize plot state
                 setState({
                     'plot_kind': document.getElementById('plot_kind').value,
-                    'scale': document.getElementById('change_scaling').value,
+                    'scale': document.getElementById('change_scale').value,
                     'with_quantiles': document.getElementById('change_shades').checked,
                     'suboptimal_curve': document.getElementById('change_suboptimal').checked,
                     'relative_curve': document.getElementById('change_relative').checked,
