@@ -302,20 +302,6 @@ const getScatterData = () => {
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 
-const get_lim_plotly = (lim, ax) =>{
-  if(getScale()[ax + 'axis'] == 'log'){
-    lim = [Math.log10(parseFloat(lim[0])), Math.log10(parseFloat(lim[1]))]
-  };
-  return lim;
-};
-
-const get_lim_config = (lim, ax) => {
-  if(getScale()[ax + 'axis'] == 'log'){
-    lim = [Math.pow(10, lim[0]), Math.pow(10, lim[1])]
-  };
-  return lim;
-};
-
 const DEFAULT_CONFIG_OPTIONS = [
   "plot_kind",
   "hidden_curves",
@@ -528,13 +514,11 @@ const renderSuboptimalRelativeToggle = () => {
   }
 };
 
-
 const renderPlotDropdowns = () => {
   hide(document.querySelectorAll(`[id$='-custom-params-container']`));
   show(document.querySelectorAll(`#${state().plot_kind}-custom-params-container`), 'block');
 
 }
-
 
 const mapSelectorsToState = () => {
   const currentState = state();
@@ -571,11 +555,6 @@ const getPlotDropdowns = () => {
 }
 
 const getCurves = () => Object.keys(data());
-
-const isCustomPlot = () => {
-  let non_custom_kinds = ['bar_chart', 'boxplot'];
-  return !non_custom_kinds.includes(state().plot_kind);
-}
 
 const isChart = chart => {
   if (typeof chart === 'string' || chart instanceof String) {
