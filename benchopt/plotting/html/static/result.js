@@ -75,10 +75,17 @@ const config_mapping = {
  * Create/Update the plot.
  */
 const renderPlot = () => {
-  const div = document.getElementById('unique_plot');
+  let div;
+  if (isChart('scatter')) {
+    div = document.getElementById('scatter_plot_container');
+  } else {
+    div = document.getElementById('plot_container');
+  }
   const data = getChartData();
   const layout = getLayout();
 
+  Plotly.purge(document.getElementById('scatter_plot_container'));
+  Plotly.purge(document.getElementById('plot_container'));
   Plotly.react(div, data, layout);
 };
 
