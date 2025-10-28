@@ -31,21 +31,26 @@ jobs:
     - name: Upload dist artifacts
       uses: actions/upload-artifact@v5
       with:
-        name: dist
+        name: python-package
         path: dist/*
 
-  release-package:
+  publish-to-pypi:
     name: Publish package on PyPI 🐍
     needs: build-package
     runs-on: ubuntu-latest
     # Only run when the ref is a tag pushed (push event with tags)
     if: ${{ startsWith(github.ref, 'refs/tags') }}
+    environment:
+      name: pypi
+      url: https://pypi.org/p/benchopt/
+    permissions:
+      id-token: write
     steps:
     - name: Wait for all tests to succeed
       uses: fountainhead/action-wait-for-check@v1.2.0
       id: wait-for-tests
       with:
-        token: ${{ secrets.GITHUB_TOKEN }}
+        token: ${{ github.token }}
         checkName: report_test
         timeoutSeconds: 1600  # timeout after 30min
         intervalSeconds: 30  # check every 30sec
@@ -53,12 +58,58 @@ jobs:
     - name: Download dist artifacts
       uses: actions/download-artifact@v5
       with:
-        name: dist
+        name: python-package
         path: dist
-
-    - name: Publish distribution 📦 to PyPI
+    - name: Publish distribution 📦 to TestPyPI
       if: ${{ steps.wait-for-tests.outputs.conclusion == 'success' }}
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
-        password: ${{ secrets.PYPI_API_TOKEN }}
+        repository-url: https://test.pypi.org/legacy/
+
+    - name: Publish distribution 📦 to PyPI
+      if: ${{ success() && steps.wait-for-tests.outputs.conclusion == 'success' }}
+      uses: pypa/gh-action-pypi-publish@release/v1
+
+  github-release:
+    name: >-
+      Sign the loky 🔐 distribution 📦 with Sigstore
+      and upload them to GitHub Release
+    needs:
+    - publish-to-pypi
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      id-token: write
+
+    steps:
+    - name: Download all the dists
+      uses: actions/download-artifact@v4
+      with:
+        name: python-package
+        path: dist/
+    - name: Sign the dists with Sigstore
+      uses: sigstore/gh-action-sigstore-python@v3.0.0
+      with:
+        inputs: >-
+          ./dist/*.tar.gz
+          ./dist/*.whl
+    - name: Create GitHub Release
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      run: >-
+        gh release create
+        "$GITHUB_REF_NAME"
+        --repo "$GITHUB_REPOSITORY"
+        --notes ""
+    - name: Upload artifact signatures to GitHub Release
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      # Upload to GitHub Release using the `gh` CLI.
+      # `dist/` contains the built packages, and the
+      # sigstore-produced signatures and certificates.
+      run: >-
+        gh release upload
+        "$GITHUB_REF_NAME" dist/**
+        --repo "$GITHUB_REPOSITORY"
 
