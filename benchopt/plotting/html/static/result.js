@@ -334,7 +334,6 @@ const setConfig = (config_item) => {
   if (config_name !== "no_selected_view") {
     // Get the updated state
     let config = window.metadata.plot_configs[config_name];
-    console.log(config);
     let update = {};
     // const lims = ['xlim', 'ylim', 'hidden_curves']
     const lims = ['hidden_curves']
@@ -343,7 +342,6 @@ const setConfig = (config_item) => {
       if (key in config_mapping) {
         if (config_mapping[key] !== '') {
           div_key = config_mapping[key];
-          console.log(div_key, value);
           document.getElementById(div_key).value = value;
         }
       }
@@ -525,6 +523,8 @@ const mapSelectorsToState = () => {
   document.getElementById('plot_kind').value = currentState.plot_kind;
   document.getElementById('change_scale').value = currentState.scale;
   document.getElementById('change_shades').checked = currentState.with_quantiles;
+  document.getElementById('change_suboptimal').checked = currentState.suboptimal_curve;
+  document.getElementById('change_relative').checked = currentState.relative_curve;
 };
 
 /*
