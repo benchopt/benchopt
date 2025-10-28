@@ -615,15 +615,14 @@ class TestPlotCmd:
         assert len(out.result_files) == 2
         assert all('.html' in f for f in out.result_files)
 
-        with open(out.result_files[0], 'r') as f:
-            html_content = f.read()
-            if kind is not None:
-                assert f"<option value=\"{kind}\"" in html_content
-            else:
-                for k in [
-                    "custom_plot", "objective_curve", "boxplot", "bar_chart"
-                ]:
+        html_content = Path(out.result_files[0]).read_text()
+            for k in [
+                "custom_plot", "objective_curve", "boxplot", "bar_chart"
+            ]:
+                if kind is None or k == kind:
                     assert f"<option value=\"{k}\"" in html_content
+                else:
+                    assert f"<option value=\"{k}\"" not in html_content
 
     def test_complete_bench(self, bench_completion_cases):  # noqa: F811
 
