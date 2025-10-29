@@ -48,6 +48,8 @@ extensions = [
     "sphinx_copybutton",
 ]
 
+autosectionlabel_maxdepth = 1
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
@@ -225,6 +227,7 @@ sphinx_gallery_conf = {
     # 'image_scrapers': ("benchopt.helpers.examples.cli_scraper",),
 }
 
+
 # -- Options for copybutton ---------------------------------------------
 # complete explanation of the regex expression can be found here
 # https://sphinx-copybutton.readthedocs.io/en/latest/ \
@@ -241,7 +244,7 @@ try:
     _original_func = gen_rst.execute_code_block
 
     def func_with_ctx(*args, **kwargs):
-        """Wrapper that stores the current example path and block index in env vars."""
+        """Wrapper that stores the current example file and path iterator."""
         global current_exc_info
 
         # Set env vars for use inside example execution

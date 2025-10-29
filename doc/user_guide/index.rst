@@ -15,3 +15,4 @@ User guide
     performance_curves
     tweak_datasets
     distributed_run
+    tests_definition

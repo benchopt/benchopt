@@ -404,7 +404,7 @@ def render_all_results(results, benchmark, home='index.html'):
             strict_undefined=True
         ).render(
             result=result,
-            benchmark=benchmark,
+            benchmark=benchmark.name,
             static=STATIC, home=home
         )
         htmls.append(html)
@@ -473,7 +473,7 @@ def plot_benchmark_html(
 
     # Create the figures and render the page as a html.
     results = get_results(fnames, html_root, benchmark, config, copy=copy)
-    htmls = render_all_results(results, benchmark.name, home=html_home)
+    htmls = render_all_results(results, benchmark, home=html_home)
 
     # Save the resulting page in the HTML folder
     for result, html in zip(results, htmls):

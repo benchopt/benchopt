@@ -3,13 +3,14 @@ import inspect
 from html import escape
 from pathlib import Path
 
+from benchopt.constants import PLOT_KINDS
 from benchopt.tests.utils import CaptureCmdOutput
 from benchopt.plotting.generate_html import get_results, render_all_results
 
 # Used to monkey-patch sphinx-gallery behavior and retrieve a path iterator
 SPHINX_GALLERY_CTX = {}
 
-EXAMPLES_DIR = Path(__file__).parent.parent.parent / 'examples'
+# Output build dir for sphinx-gallery
 BUILD_DIR = Path() / "_build" / "html" / "auto_examples"
 
 
@@ -55,7 +56,7 @@ class HTMLResultPage:
         from sphinx.highlighting import PygmentsBridge
 
         bridge = PygmentsBridge('html', 'sphinx')
-        html = bridge.highlight_block(cmd, 'console')
+        html = bridge.highlight_block(f"$ {cmd}", 'console')
         return html
 
     def _repr_html_(self):
@@ -85,7 +86,7 @@ class HTMLResultPage:
 
 
 def benchopt_run(
-    benchmark_name=None, benchmark_dir=None, n=5, r=1, config=None
+    benchmark_name=None, benchmark_dir=None, n=5, r=1, plot_config=None
 ):
     """Run a benchmark from benchopt.examples with benchopt.
 
@@ -102,27 +103,45 @@ def benchopt_run(
     r : int, default=1
         Number of times to repeat each experiment.
     """
+
     from benchopt.runner import run_benchmark
     from benchopt.benchmark import Benchmark
 
+    is_sphinx = "paths" in SPHINX_GALLERY_CTX
     if benchmark_dir is None:
-        benchmark_dir = EXAMPLES_DIR / benchmark_name
+        import inspect
+        example_dir = Path(inspect.stack()[1].filename).parent
+        benchmark_dir = (example_dir / benchmark_name).resolve()
 
     benchmark = Benchmark(benchmark_dir)
-    with CaptureCmdOutput() as out:
+    cmd = f"benchopt run {benchmark.name} -n {n} -r {r}"
+
+    if not is_sphinx:
+        print(f"Running command:\n{cmd}")
+        print("-" * 40)
+
+    with CaptureCmdOutput(debug=not is_sphinx) as out:
         save_file = run_benchmark(
             benchmark_dir, max_runs=n, n_repetitions=r,
             plot_result=False, no_cache=True
         )
 
-        if config is None:
-            config = benchmark.get_plot_config()
+        # plot the results to generate the HTML
         html_root = Path('.')
+        if plot_config is None:
+            plot_config = benchmark.get_plot_config()
+        if "plots" not in plot_config or plot_config["plots"] is None:
+            plot_config["plots"] = (
+                benchmark.get_default_plot_names() +
+                list(PLOT_KINDS.keys()) +
+                benchmark.get_custom_plot_names()
+            )
 
         results = get_results(
-            [save_file], html_root, benchmark, config=config
+            [save_file], html_root, benchmark, config=plot_config
         )
-        html = render_all_results(results, benchmark.name, home='#')[0]
+        html = render_all_results(results, benchmark, home='#')[0]
+    if not is_sphinx:
+        print("-" * 40)
 
-    cmd = f"$ benchopt run {benchmark.name} -n {n} -r {r}"
     return HTMLResultPage(html, out.output, cmd)

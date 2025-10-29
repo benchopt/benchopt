@@ -15,7 +15,7 @@ from benchopt.helpers.run_examples import benchopt_run
 benchopt_run('minimal_benchmark', n=20, r=2)
 
 # %%
-# This runs the benchmark named ``minimal_benchmark``` located in the
+# This runs the benchmark named ``minimal_benchmark`` located in the
 # ``examples`` folder.
 #
 # The parameters ``n``  controls the number of point on the curves, while ``r``
@@ -27,14 +27,14 @@ benchopt_run('minimal_benchmark', n=20, r=2)
 benchopt_run('minimal_benchmark', n=30, r=5)
 
 # %%
-# Here,  the display is not ideal because both solvers reach convergence very
+# Here, the display is not ideal because both solvers reach convergence very
 # quickly. You can change the display by selecting the scale of the axis in
-# the plot configuration pannel.
+# the plot configuration panel.
 # Go to the *Change plot* banner at the top of the HTML file, and change the
 # scale to ``loglog`` on the drop down menu.
 #
 # Note that for convenience, this can be saved as a view in the configuration
-# of the benchmark. See :ref:`here <customize_plots>` for more details.
+# of the benchmark. See :ref:`here <plot_configs>` for more details.
 # Here, clicking on ``Subopt. (log)`` in the *Available plots* above the
 # figure will change take you to a view with the right scale, and looking at
 # suboptimality instead of objective value.

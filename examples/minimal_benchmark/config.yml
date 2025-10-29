@@ -1,7 +1,6 @@
 plot_configs:
-  Raw:
-    kind: objective_curve
-    scale: linear
   Subopt. (log):
-    kind: suboptimality_curve
+    kind: objective_curve
     scale: loglog
+  Runtimes:
+    kind: bar_chart

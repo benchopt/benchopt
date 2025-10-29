@@ -32,11 +32,11 @@ API
 ---
 
 - Add the possibility of creating custom plots for each benchmark.
-  See `custom_plots`_ for the documentation.
+  See :ref:`custom_plots` for the documentation.
   By `Hippolyte Verninas`_ (:gh:`842`)
 
 - Allow to override SLURM config on a per run basis with ``Solver.parameters``
-  See `slurm_override`_. By `Geraud Ilinca`_ and `Thomas Moreau`_ (:gh:`848`)
+  See :ref:`slurm_override`. By `Geraud Ilinca`_ and `Thomas Moreau`_ (:gh:`848`)
 
 FIX
 ---

@@ -49,7 +49,7 @@ An objective class should define 4 methods:
 - ``set_data(**data)``: allows to specify the data. See the data as a dictionary
   of Python variables without any constraint. In the following example, the data
   contains only one variable ``X``. This data is provided by the
-  ``Dataset.get_data()`` method of a dataset_.
+  ``Dataset.get_data()`` method of a datasets_.
 - ``get_objective()``: returns the information that each method will need to
   provide a result. The information is also passed as a dictionary, which will
   serve as input for the ``Solver.set_objective`` method of the solvers_.
@@ -73,8 +73,8 @@ An objective class needs to inherit from a base class,
   Multiple metrics can be returned by ``Objective.evaluate_result`` as long as
   they are stored in a dictionary, with a key being ``value`` corresponding to the main metric to track.
 
-Example
-~~~~~~~
+Objective Example
+~~~~~~~~~~~~~~~~~
 
 .. literalinclude:: ../../examples/minimal_benchmark/objective.py
 
@@ -93,8 +93,8 @@ a dataset should implement one method:
 A dataset class also needs to inherit from a base class called
 :class:`benchopt.BaseDataset`.
 
-Example
-~~~~~~~
+Dataset Example
+~~~~~~~~~~~~~~~
 
 .. literalinclude:: ../../examples/minimal_benchmark/datasets/simulated.py
 
@@ -120,8 +120,8 @@ A solver must define three methods:
   Objective. This method returns a dictionary that is passed to
   ``Objective.evaluate_result``.
 
-Example
-~~~~~~~
+Solver Example
+~~~~~~~~~~~~~~
 
 .. literalinclude:: ../../examples/minimal_benchmark/solvers/gd.py
 
@@ -147,7 +147,7 @@ Example
     should stop.
 
   - ``'run_once'``: in this case, the ``run`` method of the solver is run only
-  once during the benchmark.
+    once during the benchmark.
 
 
 .. _custom_plots:

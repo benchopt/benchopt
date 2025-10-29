@@ -68,6 +68,8 @@ DEFAULT_BENCHMARK_CONFIG = {
     - relative_suboptimality_curve
     - bar_chart
 
+.. _plot_configs:
+
 * ``plot_configs``, *dict*: list of saved views that can be easily display for
   the plot. Each view corresponds to a name, with specified values to select
   either:
