@@ -52,8 +52,10 @@ class HTMLResultPage:
         return html
 
     def cmd_to_html(self, cmd):
-
-        from sphinx.highlighting import PygmentsBridge
+        try:
+            from sphinx.highlighting import PygmentsBridge
+        except ImportError:
+            return f"$ {cmd}"
 
         bridge = PygmentsBridge('html', 'sphinx')
         html = bridge.highlight_block(f"$ {cmd}", 'console')
