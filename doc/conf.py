@@ -230,3 +230,28 @@ sphinx_gallery_conf = {
 # use.html#using-regexp-prompt-identifiers
 copybutton_prompt_text = r">>> |\.\.\. |\$ |In \[\d*\]: | {2,5}\.\.\.: | {5,8}: "  # noqa
 copybutton_prompt_is_regexp = True
+
+# -- Monkey patching gen_rst.execute_script to add context env vars -------
+# Keep a reference to the original function
+try:
+    from sphinx_gallery import gen_rst
+    from benchopt.helpers.run_examples import SPHINX_GALLERY_CTX
+
+    _original_func = gen_rst.execute_code_block
+
+    def func_with_ctx(*args, **kwargs):
+        """Wrapper that stores the current example path and block index in env vars."""
+        global current_exc_info
+
+        # Set env vars for use inside example execution
+        script_vars = args[3]
+        SPHINX_GALLERY_CTX["paths"] = script_vars['image_path_iterator']
+        try:
+            return _original_func(*args, **kwargs)
+        finally:
+            pass
+
+    # Apply the patch
+    gen_rst.execute_code_block = func_with_ctx
+except ImportError:
+    raise

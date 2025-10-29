@@ -7,15 +7,17 @@ from benchopt.tests.utils import CaptureCmdOutput
 from benchopt.plotting.generate_html import get_results, render_all_results
 
 EXAMPLES_DIR = Path(__file__).parent.parent.parent / 'examples'
+SPHINX_GALLERY_CTX = {}
 
 
 class HTMLResultPage:
-    def __init__(self, html, output, cmd):
+    def __init__(self, result_html, output, cmd):
         self.uid = uuid4().hex
         self.max_height = 700
-        self.html = escape(html)
-        self.cmd_html = self.cmd_to_html(cmd)
+
+        self.cmd, self.cmd_html = cmd, self.cmd_to_html(cmd)
         self.output_html = self.output_to_html(output)
+        self.result_html = result_html
 
     def merge_lines(self, output):
         out = []
@@ -55,6 +57,20 @@ class HTMLResultPage:
         return html
 
     def _repr_html_(self):
+        src_result_html = f"srcdoc='{escape(self.result_html)}'"
+        if "paths" in SPHINX_GALLERY_CTX:
+            html_path = next(SPHINX_GALLERY_CTX["paths"])
+            html_path = Path(
+                html_path.replace("images", "html_results")
+            ).with_suffix('.html')
+            html_path = html_path.relative_to(Path("auto_examples").resolve())
+            src_result_html = f"src='./{html_path}'"
+            html_path = (
+                Path() / "_build" / "html" / "auto_examples" / html_path
+            )
+            html_path.parent.mkdir(parents=True, exist_ok=True)
+            html_path.write_text(self.result_html, encoding='utf-8')
+
         return f"""
 <pre id="cmd-{self.uid}">
     {self.cmd_html}
@@ -81,30 +97,36 @@ function setup_{self.uid}(){{
         {self.output_html}
     </div>
 </div>
-<iframe id="result-{self.uid}" class="benchmark_result" srcdoc='{self.html}'
+<iframe id="result-{self.uid}" class="benchmark_result" {src_result_html}
         frameBorder='0' style="position: relative; width: 100%;"
         onload='setup_{self.uid}()'>
 </iframe>
 """
 
 
-def benchopt_run(benchmark_name, n=5, r=1, config=None):
+def benchopt_run(
+    benchmark_name=None, benchmark_dir=None, n=5, r=1, config=None
+):
     """Run a benchmark from benchopt.examples with benchopt.
 
     Parameters
     ----------
     benchmark_name : str
         Name of the benchmark to run. Must be one of the benchmarks in
-        `benchopt.helpers.examples`.
+        `examples`.
+    benchmark_dir : str or Path, optional
+        Path to the benchmark to run. This is used instead of `benchmark_name`
+        if provided.
     n : int, default=5
         Maximal number of iterations used for iterative solvers.
     r : int, default=1
         Number of times to repeat each experiment.
     """
     from benchopt.runner import run_benchmark
-
-    benchmark_dir = EXAMPLES_DIR / benchmark_name
     from benchopt.benchmark import Benchmark
+
+    if benchmark_dir is None:
+        benchmark_dir = EXAMPLES_DIR / benchmark_name
 
     benchmark = Benchmark(benchmark_dir)
     with CaptureCmdOutput() as out:
@@ -122,5 +144,5 @@ def benchopt_run(benchmark_name, n=5, r=1, config=None):
         )
         html = render_all_results(results, benchmark.name, home='#')[0]
 
-    cmd = f"$ benchopt run {benchmark_name} -n {n} -r {r}"
+    cmd = f"$ benchopt run {benchmark.name} -n {n} -r {r}"
     return HTMLResultPage(html, out.output, cmd)
