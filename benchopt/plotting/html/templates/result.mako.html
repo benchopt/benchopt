@@ -596,5 +596,29 @@
             ${static['symbols.js']}
             ${static['result.js']}
         </script>
+        <script>
+            // Script to communicate height to parent if in an iframe
+            (function() {
+                function sendHeight() {
+                    try {
+                        if (window.self !== window.top) {
+                            window.parent.postMessage(
+                            { source: "benchopt-result-height", height: document.body.scrollHeight },
+                            "*"
+                            );
+                        }
+                    } catch (e) { /* ignore */ }
+                }
+
+                // Send on load and on resize / content change
+                window.addEventListener("load", sendHeight);
+                window.addEventListener("resize", sendHeight);
+
+                // Optional: observe DOM mutations to detect dynamic content
+                const observer = new MutationObserver(sendHeight);
+                observer.observe(document.body, { childList: true, subtree: true });
+                }
+            )();
+        </script>
     </body>
 </html>

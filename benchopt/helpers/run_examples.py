@@ -1,18 +1,20 @@
 import io
+import inspect
 from html import escape
-from uuid import uuid4
 from pathlib import Path
 
 from benchopt.tests.utils import CaptureCmdOutput
 from benchopt.plotting.generate_html import get_results, render_all_results
 
-EXAMPLES_DIR = Path(__file__).parent.parent.parent / 'examples'
+# Used to monkey-patch sphinx-gallery behavior and retrieve a path iterator
 SPHINX_GALLERY_CTX = {}
+
+EXAMPLES_DIR = Path(__file__).parent.parent.parent / 'examples'
+BUILD_DIR = Path() / "_build" / "html" / "auto_examples"
 
 
 class HTMLResultPage:
     def __init__(self, result_html, output, cmd):
-        self.uid = uuid4().hex
         self.max_height = 700
 
         self.cmd, self.cmd_html = cmd, self.cmd_to_html(cmd)
@@ -59,49 +61,27 @@ class HTMLResultPage:
     def _repr_html_(self):
         src_result_html = f"srcdoc='{escape(self.result_html)}'"
         if "paths" in SPHINX_GALLERY_CTX:
+            # Save the result HTML to a file to be loaded in the iframe
+            # for the doc
             html_path = next(SPHINX_GALLERY_CTX["paths"])
             html_path = Path(
                 html_path.replace("images", "html_results")
             ).with_suffix('.html')
             html_path = html_path.relative_to(Path("auto_examples").resolve())
-            src_result_html = f"src='./{html_path}'"
-            html_path = (
-                Path() / "_build" / "html" / "auto_examples" / html_path
-            )
+            src_result_html = f"src='{html_path}'"
+
+            html_path = BUILD_DIR / html_path
             html_path.parent.mkdir(parents=True, exist_ok=True)
             html_path.write_text(self.result_html, encoding='utf-8')
 
-        return f"""
-<pre id="cmd-{self.uid}">
-    {self.cmd_html}
-</pre>
-<script>
-function setup_{self.uid}(){{
-    setTimeout(() => {{
-        var iframe = document.getElementById("result-{self.uid}");
-        iframe.height = iframe.contentWindow.document.body.scrollHeight;
-        console.log(iframe.height)
-    }}, "100");
-
-    // Replace the command by the equivalent CLI call
-    var cmd = document.getElementById("cmd-{self.uid}");
-    var code_elem = cmd.parentElement.previousElementSibling;
-    cmd_html = cmd.children[0].children[0].innerHTML;
-    code_elem.firstChild.firstChild.innerHTML = cmd_html;
-    cmd.setAttribute("style", "display: none;");
-
-}}
-</script>
-<div class="sphx-glr-script-out highlight-none notranslate">
-    <div class="highlight">
-        {self.output_html}
-    </div>
-</div>
-<iframe id="result-{self.uid}" class="benchmark_result" {src_result_html}
-        frameBorder='0' style="position: relative; width: 100%;"
-        onload='setup_{self.uid}()'>
-</iframe>
-"""
+        return inspect.cleandoc(f"""
+            <pre class="cmd-equiv"> {self.cmd_html}</pre>
+            <div class="sphx-glr-script-out highlight-none notranslate">
+                <div class="highlight">{self.output_html}</div>
+            </div>
+            <iframe class="benchmark_result" {src_result_html} frameBorder='0'
+                    style="position: relative; width: 100%;"></iframe>
+        """)
 
 
 def benchopt_run(
