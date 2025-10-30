@@ -9,14 +9,13 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 from benchopt import run_benchmark
 from benchopt.benchmark import Benchmark
-from benchopt.plotting import plot_benchmark, PLOT_KINDS
-from benchopt.plotting.helpers import reset_solver_styles_idx
+from benchopt.plotting import plot_benchmark
+from benchopt.plotting.helpers import reset_solver_styles
 
 
 BENCHMARK_PATH = (
     Path().resolve().parent / 'benchmarks' / 'benchmark_logreg_l2'
 )
-
 
 try:
 
@@ -37,9 +36,9 @@ except RuntimeError:
         f"{BENCHMARK_PATH.resolve()}"
     )
 
+reset_solver_styles()
 
-kinds = list(PLOT_KINDS.keys())
-reset_solver_styles_idx()
-figs = plot_benchmark(save_file, benchmark=Benchmark(BENCHMARK_PATH),
-                      kinds=kinds, html=False)
+figs = plot_benchmark(
+    save_file, benchmark=Benchmark(BENCHMARK_PATH), html=False
+)
 plt.show()

@@ -71,9 +71,10 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
 
         return {'color': color, 'marker': idx}
 
-    def _get_name(self):
+    @classmethod
+    def _get_name(cls):
         """Get a simple name for plot comparison"""
-        return self.name.replace(" ", "_").lower()
+        return cls.name.replace(" ", "_").lower()
 
     def _check(self):
         self._check_type()
@@ -82,7 +83,7 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
     def _check_type(self):
         if not hasattr(self, 'type'):
             raise ValueError("Plot should have a `type` attribute.")
-        supported_types = ['scatter']
+        supported_types = ['scatter', 'bar_chart', "boxplot"]
         if self.type not in supported_types:
             raise ValueError(
                 f"Plot type should be one of {' '.join(supported_types)}. "

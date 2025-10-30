@@ -35,6 +35,9 @@ API
   See `custom_plots`_ for the documentation.
   By `Hippolyte Verninas`_ (:gh:`842`)
 
+- Implement ``bar_chart`` and ``boxplot`` using the new plotting backend.
+  By `Hippolyte Verninas`_ (:gh:`852`)
+
 - Allow to override SLURM config on a per run basis with ``Solver.parameters``
   See `slurm_override`_. By `Geraud Ilinca`_ and `Thomas Moreau`_ (:gh:`848`)
 

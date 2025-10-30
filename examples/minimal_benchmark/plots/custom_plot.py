@@ -13,10 +13,20 @@ class Plot(BasePlot):
         df = df[(df['dataset_name'] == dataset)]
         return [
             {
-                "x": df[(df['solver_name'] == solver)]["time"].values.tolist(),
                 "y": (
-                    df[(df['solver_name'] == solver)]
-                    ["objective_value"].values.tolist()),
+                    df[df['solver_name'] == solver]
+                    .select_dtypes(include=['number'])
+                    .groupby('stop_val')
+                    .median()["objective_value"]
+                    .values.tolist()
+                ),
+                "x": (
+                    df[df['solver_name'] == solver]
+                    .select_dtypes(include=['number'])
+                    .groupby('stop_val')
+                    .median()
+                    .index.tolist()
+                ),
                 "color": color,  # possible to use the rgba instead
                 "marker": "x",  # possible to give an int instead
                 "label": solver,
