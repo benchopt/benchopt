@@ -186,4 +186,4 @@ Example
 ~~~~~~~
 
 .. literalinclude:: ../../benchopt/plotting/default_plots.py
-    :start-at: class ObjectiveCurvePlot(BasePlot):
+    :pyobject: ObjectiveCurvePlot
