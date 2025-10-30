@@ -1,4 +1,5 @@
 import re
+import pytest
 
 from benchopt.helpers.run_examples import benchopt_run, HTMLResultPage
 
@@ -7,6 +8,7 @@ from benchopt.utils.temp_benchmark import temp_benchmark
 
 def test_run_example_benchmark(no_debug_log):
     """Test that an example benchmark runs end-to-end."""
+    pytest.skipimport("rich")
 
     with temp_benchmark() as bench:
         output = benchopt_run(benchmark_dir=bench.benchmark_dir, n=2, r=3)
