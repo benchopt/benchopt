@@ -2,14 +2,109 @@
 requires = [
   "setuptools>=42",
   "wheel",
-  "setuptools_scm>=6.2"
 ]
 build-backend = "setuptools.build_meta"
 
-[tool.setuptools_scm]
-write_to = "benchopt/version.py"
-local_scheme = "no-local-version"
-fallback_version = "99.0.dev0"
+# Project metadata migrated from setup.cfg (PEP 621)
+[project]
+name = "benchopt"
+description = "Benchmark toolkit for optimization"
+readme = { file = "README.rst", content-type = "text/x-rst" }
+license = "BSD-3-Clause"
+license-files = ["LICENSE"]
+maintainers = [
+  { name = "Thomas Moreau", email = "thomas.moreau@inria.fr" }
+]
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Topic :: System :: Benchmark",
+  "Topic :: Software Development :: Libraries",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+  "Operating System :: OS Independent",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "Environment :: Console",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: R",
+  "Programming Language :: Other",
+]
+# Inferred from classifiers; adjust if different
+requires-python = ">=3.9"
+dependencies = [
+  "numpy",
+  "scipy",
+  "pandas",
+  "matplotlib",
+  "click>=8.0",
+  "joblib>=1.4",
+  "pygithub",
+  "mako",
+  "psutil",
+  "plotly>=4.12",
+  "pyyaml",
+  "line-profiler",
+  "pyarrow",
+]
+dynamic = ["version"]
+
+[project.urls]
+Documentation = "https://benchopt.github.io/"
+Source = "https://github.com/benchopt/benchopt"
+Tracker = "https://github.com/benchopt/benchopt/issues"
+
+[project.scripts]
+benchopt = "benchopt.cli:benchopt"
+
+[project.optional-dependencies]
+test = [
+  "pytest",
+  "pytest-cov",
+  "pytest-timeout",
+  "coverage",
+]
+doc = [
+  "numpydoc",
+  "sphinx",
+  "sphinx-book-theme",
+  "sphinx-design",
+  "sphinx-click",
+  "sphinx_gallery",
+  "sphinx-prompt",
+  "sphinx-copybutton",
+  "pillow",
+  "scikit-learn",
+]
+submitit = [
+  "submitit",
+  "rich",
+]
+dask = [
+  "coiled",
+  "distributed",
+  "dask_jobqueue",
+]
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages]
+find = {}
+
+
+[tool.setuptools.package-data]
+"benchopt.plotting" = [
+  "html/static/main.css",
+  "html/templates/index.mako.html",
+  "html/templates/result.mako.html",
+  "html/templates/benchmark.mako.html",
+]
+
+[tool.setuptools.dynamic]
+version = {attr = "benchopt.__version__"}
+
 
 [tool.pytest.ini_options]
 minversion = "6.0"
@@ -34,7 +129,7 @@ source = [
 ]
 omit = [
   "*/tests/*",
-  "setup.py"
+  "setup.py",
 ]
 parallel = true
 
