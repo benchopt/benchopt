@@ -289,6 +289,9 @@ def run(config_file=None, **kwargs):
             solver_names + list(forced_solvers)
         )
 
+        log_path = benchmark.get_log_folder()
+        print(f"Logs are saved in {log_path}")
+
         exit_code, _ = _run_benchmark(
             benchmark, solvers, forced_solvers,
             datasets=datasets, objectives=objectives,

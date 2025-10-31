@@ -12,6 +12,7 @@ from .utils.sys_info import get_sys_info
 from .utils.files import uniquify_results
 from .utils.pdb_helpers import exception_handler
 from .utils.terminal_output import TerminalOutput
+from .utils.terminal_output import redirect_print
 from .parallel_backends import parallel_run
 from .parallel_backends import check_parallel_config
 
@@ -283,10 +284,18 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
             stopping_criterion=stopping_criterion, force=force,
             terminal=terminal, pdb=pdb
         )
+        log_dir = benchmark.get_log_folder()
+        log_file = (
+            str(dataset) + '_' +
+            str(objective) + '_' +
+            str(solver) + ".log"
+        )
+        log_dir = log_dir / log_file
         try:
-            curve, status = run_one_to_cvg_cached(
-                **args_run_one_to_cvg
-            )
+            with redirect_print(log_dir):
+                curve, status = run_one_to_cvg_cached(
+                    **args_run_one_to_cvg
+                )
             run_statistics.extend(curve)
         except FailedRun as e:
             status = e.status
