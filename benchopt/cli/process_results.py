@@ -4,19 +4,14 @@ from pathlib import Path
 
 from benchopt.config import get_setting
 from benchopt.benchmark import Benchmark
-from benchopt.constants import PLOT_KINDS
 from benchopt.cli.completion import complete_benchmarks
 from benchopt.cli.completion import complete_output_files
+from benchopt.cli.completion import complete_plots
 
 process_results = click.Group(
     name='Process results',
     help="Utilities to process benchmark outputs produced by benchopt."
 )
-
-
-def get_plot_kinds(ctx, args, incomplete):
-    kinds = list(PLOT_KINDS)
-    return [k for k in kinds if incomplete in k]
 
 
 @process_results.command(
@@ -31,10 +26,8 @@ def get_plot_kinds(ctx, args, incomplete):
               "folder.")
 @click.option('--kind', '-k', 'kinds',
               multiple=True, show_default=True, type=str,
-              help="Specify the type of figure to plot:\n\n* " +
-              "\n\n* ".join([f"``{name}``: {func.__doc__.splitlines()[0]}"
-                             for name, func in PLOT_KINDS.items()]),
-              shell_complete=get_plot_kinds)
+              shell_complete=complete_plots,
+              help="Specify the type of figure to plot")
 @click.option('--display/--no-display', default=True,
               help="Whether or not to display the plot on the screen. "
               "Default is True.")

@@ -3,7 +3,6 @@ import inspect
 from html import escape
 from pathlib import Path
 
-from benchopt.constants import PLOT_KINDS
 from benchopt.tests.utils import CaptureCmdOutput
 from benchopt.plotting.generate_html import get_results, render_all_results
 
@@ -133,11 +132,7 @@ def benchopt_run(
         if plot_config is None:
             plot_config = benchmark.get_plot_config()
         if "plots" not in plot_config or plot_config["plots"] is None:
-            plot_config["plots"] = (
-                benchmark.get_default_plot_names() +
-                list(PLOT_KINDS.keys()) +
-                benchmark.get_custom_plot_names()
-            )
+            plot_config["plots"] = benchmark.get_plot_names()
 
         results = get_results(
             [save_file], html_root, benchmark, config=plot_config
