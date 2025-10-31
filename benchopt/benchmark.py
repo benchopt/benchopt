@@ -5,6 +5,7 @@ import warnings
 import importlib
 import itertools
 from pathlib import Path
+from datetime import datetime
 
 from joblib.externals import cloudpickle
 
@@ -77,6 +78,7 @@ class Benchmark:
             no_cache=False,
             allow_meta_from_json=False,
     ):
+        self.separate_logs = False
         self.benchmark_dir = Path(benchmark_dir)
         self.no_cache = no_cache
 
@@ -297,6 +299,21 @@ class Benchmark:
         output_dir = self.benchmark_dir / "outputs"
         output_dir.mkdir(exist_ok=True)
         return output_dir
+
+    def get_log_folder(self):
+        """Get the folder to store the logs of the benchmark.
+
+        If it does not exists, create it.
+        """
+        if hasattr(self, 'log_dir') and self.log_dir is not None:
+            return self.log_dir
+
+        log_dir = self.get_output_folder() / "logs"
+        log_dir.mkdir(exist_ok=True)
+        log_dir = log_dir / datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        log_dir.mkdir(exist_ok=True)
+        self.log_dir = log_dir
+        return log_dir
 
     def get_slurm_folder(self):
         """Get the folder to store the output of the slurm executor."""

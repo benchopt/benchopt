@@ -3,6 +3,7 @@ import shutil
 import ctypes
 import platform
 import sys
+from contextlib import contextmanager
 
 if sys.platform == 'win32':
     sys.stdout.reconfigure(encoding='utf-8')
@@ -61,9 +62,9 @@ def print_normalize(msg, endline=True, verbose=True):
     msg = msg.ljust(line_length + n_colors * 11)
 
     if endline:
-        print(msg)
+        print(msg, file=sys.__stdout__)
     else:
-        print(msg + '\r', end='', flush=True)
+        print(msg + '\r', end='', flush=True, file=sys.__stdout__)
 
 
 class TerminalOutput:
@@ -120,7 +121,7 @@ class TerminalOutput:
             self.show_status(status='skip', objective=objective)
             if reason is not None:
                 indent = ' ' * (2 if objective else 4)
-                print(f'{indent}Reason: {reason}')
+                print(f'{indent}Reason: {reason}', file=sys.__stdout__)
 
     def savefile_status(self, save_file=None):
         if save_file is None:
@@ -164,3 +165,17 @@ class TerminalOutput:
     def debug(self, msg):
         if DEBUG:
             print_normalize(f"{self.solver_tag} [DEBUG] - {msg}")
+
+
+@contextmanager
+def redirect_print(file_path=None):
+    if file_path is None:
+        yield
+        return
+    original_stdout = sys.stdout
+    with open(file_path, 'w') as f:
+        sys.stdout = f
+        try:
+            yield
+        finally:
+            sys.stdout = original_stdout
