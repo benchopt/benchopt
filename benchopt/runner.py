@@ -284,13 +284,17 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
             stopping_criterion=stopping_criterion, force=force,
             terminal=terminal, pdb=pdb
         )
-        log_dir = benchmark.get_log_folder()
-        log_file = (
-            str(dataset) + '_' +
-            str(objective) + '_' +
-            str(solver) + ".log"
-        )
-        log_dir = log_dir / log_file
+
+        if benchmark.separate_logs:
+            log_dir = benchmark.get_log_folder()
+            log_file = (
+                str(dataset) + '_' +
+                str(objective) + '_' +
+                str(solver) + ".log"
+            )
+            log_dir = log_dir / log_file
+        else:
+            log_dir = None
         try:
             with redirect_print(log_dir):
                 curve, status = run_one_to_cvg_cached(

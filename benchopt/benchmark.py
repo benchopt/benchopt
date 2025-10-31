@@ -78,6 +78,7 @@ class Benchmark:
             no_cache=False,
             allow_meta_from_json=False,
     ):
+        self.separate_logs = False
         self.benchmark_dir = Path(benchmark_dir)
         self.no_cache = no_cache
 

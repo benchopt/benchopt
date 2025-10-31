@@ -70,6 +70,7 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
         "env_name",
         "no_cache",
         "output",
+        "separate_logs",
     ]
     return [cli_kwargs[name] for name in return_names]
 
@@ -197,6 +198,9 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               " If not provided, the output will be saved as "
               "<BENCHMARK>/outputs/benchopt_run_<timestamp>.parquet."
               )
+@click.option('--separate-logs', default=False, is_flag=True,
+              help="If set, logs for each run are saved in a separate folder "
+              "under <BENCHMARK>/outputs/logs/")
 def run(config_file=None, **kwargs):
     if config_file is not None:
         with open(config_file, "r") as f:
@@ -208,7 +212,7 @@ def run(config_file=None, **kwargs):
         benchmark, solver_names, forced_solvers, dataset_names,
         objective_filters, max_runs, n_repetitions, timeout, no_timeout,
         collect, plot, display, html, n_jobs, parallel_config, slurm, pdb,
-        do_profile, env_name, no_cache, output
+        do_profile, env_name, no_cache, output, separate_logs
     ) = _get_run_args(kwargs, config)
 
     if env_name == "False":
@@ -289,8 +293,10 @@ def run(config_file=None, **kwargs):
             solver_names + list(forced_solvers)
         )
 
-        log_path = benchmark.get_log_folder()
-        print(f"Logs are saved in {log_path}")
+        benchmark.separate_logs = separate_logs
+        if separate_logs:
+            log_path = benchmark.get_log_folder()
+            print(f"Logs are saved in {log_path}")
 
         exit_code, _ = _run_benchmark(
             benchmark, solvers, forced_solvers,
