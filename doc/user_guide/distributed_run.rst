@@ -29,17 +29,17 @@ Run the following command to install the dependencies of the backend you want to
 
 .. tab-set::
 
-    .. tab-item:: Dask
-
-        .. prompt:: bash $
-
-            pip install benchopt[dask]
-
     .. tab-item:: Submitit
 
         .. prompt:: bash $
 
             pip install benchopt[submitit]
+
+    .. tab-item:: Dask
+
+        .. prompt:: bash $
+
+            pip install benchopt[dask]
 
 
 Using the ``--parallel-config`` option for ``benchopt run``, one can pass a configuration file used to setup the distributed jobs.
