@@ -15,11 +15,16 @@ Reproducing an existing benchmark should be as easy as running
 
 .. prompt:: bash $
 
-   benchopt run . --config ./example_config.yml
+   benchopt run examples/minimal_benchmark
 
-.. figure:: _images/sphx_glr_plot_run_benchmark_001.png
-   :align: center
-   :width: 70 %
+which will produce an interactive HTML report to visualize the results.
+
+.. raw:: html
+
+    <iframe class="benchmark_result"
+         src="auto_examples/html_results/sphx_glr_run_minimal_benchmark_002.html"
+        frameBorder='0' style="position: relative; width: 100%;">
+   </iframe>
 
 There are already many :ref:`available_benchmarks` that have been created using benchopt.
 Learn how to run them and how to construct your own with the following pages!

@@ -1,5 +1,5 @@
 
-.. _benchopt_run_tests:
+.. _tests_definition:
 
 Benchopt Test definition
 ========================

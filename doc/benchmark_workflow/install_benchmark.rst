@@ -26,13 +26,14 @@ Specifying requirements
 To specify how dependencies should be installed, you can use the ``install_cmd`` class attribute.
 This attribute accepts two possible values:
 
-1. ``conda`` (default): Dependencies will be installed using Conda. In this case, you should
+  1. ``conda`` (default): Dependencies will be installed using Conda. In this case, you should
   specify the required dependencies in the ``requirements`` class attribute. Note that
   dependencies to install with ``pip`` are also specified with this option.
 
-2. ``shell``: This option allows you to provide a custom shell script for installing dependencies.
+  2. ``shell``: This option allows you to provide a custom shell script for installing dependencies.
   When using this value, you need to set the ``install_script`` class attribute to the path of your shell script.
   Benchopt will execute this script in the shell and pass the Conda environment directory as an argument.
+
 
 By properly setting these attributes, you ensure that all dependencies are installed
 correctly. This will help users to run your benchmarks without any issues.

@@ -524,7 +524,7 @@ def run_benchmark(benchmark_path, solver_names=None, forced_solvers=(),
 
     parallel_config = check_parallel_config(parallel_config, slurm, n_jobs)
 
-    return _run_benchmark(
+    exit_code, output_file = _run_benchmark(
         benchmark=benchmark,
         solvers=solvers,
         forced_solvers=forced_solvers,
@@ -542,3 +542,6 @@ def run_benchmark(benchmark_path, solver_names=None, forced_solvers=(),
         pdb=pdb,
         output_file=output_file
     )
+    if exit_code != 0:
+        raise RuntimeError("Benchmark failed, check the terminal output.")
+    return output_file
