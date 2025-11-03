@@ -169,7 +169,7 @@ class StoppingCriterion():
         )
 
         self.debug(f"Calling solver {self.solver} with stop val: {stop_val}")
-        self.progress('initialization')
+        self.terminal.start()
         return stop_val
 
     def should_stop(self, stop_val, objective_list):
@@ -266,7 +266,7 @@ class StoppingCriterion():
         if status == 'running':
             stop_val = self.get_next_stop_val(stop_val)
             self.debug(f"Calling with stop val: {stop_val}")
-            self.progress(progress=progress)
+            # self.progress(progress=progress)
 
         return stop, status, stop_val
 

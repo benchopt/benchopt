@@ -15,6 +15,7 @@ from .base import BaseSolver, BaseDataset
 from .utils.dynamic_modules import _load_class_from_module, FailedImport
 from .utils.parametrized_name_mixin import product_param
 
+from .utils.terminal_output import TerminalLogger
 from .utils.terminal_output import colorify
 from .utils.terminal_output import GREEN, YELLOW
 
@@ -680,34 +681,35 @@ class Benchmark:
         all_solvers, solvers_buffer = buffer_iterator(
             _list_parametrized_classes(*solvers)
         )
+        error = None
         for dataset, is_installed in all_datasets:
-            terminal.set(dataset=dataset)
             if not is_installed:
-                terminal.show_status('not installed', dataset=True)
-                continue
-            terminal.display_dataset()
+                error = "Dataset not installed"
             all_objectives = _list_parametrized_classes(
                 *objectives, check_installed=False
             )
             for objective, is_installed in all_objectives:
-                terminal.set(objective=objective)
                 if not is_installed:
-                    terminal.show_status('not installed', objective=True)
-                    continue
-                terminal.display_objective()
+                    error = "Objective not installed"
                 for i_solver, (solver, is_installed) in enumerate(all_solvers):
-                    terminal.set(solver=solver, i_solver=i_solver)
 
                     if not is_installed:
-                        terminal.show_status('not installed')
-                        continue
+                        error = "Solver not installed"
 
                     force = is_matched(
                         str(solver), forced_solvers, default=False
                     )
+
+                    terminal_logger = TerminalLogger(
+                        terminal, str(objective), str(dataset), str(solver)
+                    )
+                    if error is not None:
+                        terminal_logger.stop(error)
+                        continue
+
                     yield dict(
                         dataset=dataset, objective=objective, solver=solver,
-                        force=force, terminal=terminal.clone()
+                        force=force, terminal=terminal_logger
                     )
                 all_solvers = solvers_buffer
 
@@ -980,7 +982,7 @@ def _list_parametrized_classes(*classes, check_installed=True):
             continue
 
         for parameters in _get_used_parameters(klass, params):
-            yield klass.get_instance(**parameters), True
+            yield klass.get_instance(**parameters), True  # TODO set to True
 
 
 def _get_used_parameters(klass, params):

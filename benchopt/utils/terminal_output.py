@@ -1,14 +1,16 @@
 "Helper function for colored terminal outputs"
 import shutil
-import ctypes
-import platform
 import sys
 from contextlib import contextmanager
+from rich.progress import Progress, BarColumn, TextColumn, TimeRemainingColumn
+from rich.console import Console
 
 if sys.platform == 'win32':
     sys.stdout.reconfigure(encoding='utf-8')
 
 from ..config import DEBUG
+
+console = Console()
 
 MIN_LINE_LENGTH = 20
 BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE = range(30, 38)
@@ -67,61 +69,105 @@ def print_normalize(msg, endline=True, verbose=True):
         print(msg + '\r', end='', flush=True, file=sys.__stdout__)
 
 
-class TerminalOutput:
-    def __init__(self, n_repetitions, show_progress):
-        # enable ANSI colors in Windows
-        if platform.system() == "Windows":
-            kernel32 = ctypes.windll.kernel32
-            kernel32.SetConsoleMode(kernel32.GetStdHandle(-11), 7)
+class TerminalLogger:
+    def __init__(self, terminal, objective, dataset, solver):
+        assert isinstance(terminal, TerminalOutput)
+        self.terminal = terminal
+        self.objective = objective
+        self.dataset = dataset
+        self.solver = solver
 
+    @property
+    def key(self):
+        return (self.dataset, self.objective, self.solver)
+
+    def stop(self, status):
+        self.terminal.stop(self.key, status)
+
+    def skip(self, msg):
+        self.terminal.skip(self.key, msg)
+
+    def debug(self, msg):
+        self.terminal.debug(msg)
+
+    def start(self):
+        self.terminal.init_key(self.key)
+
+    def finish(self):
+        self.terminal.increment_key(self.key)
+
+
+class TerminalOutput:
+    def __init__(self, n_repetitions, show_progress=True):
         self.n_repetitions = n_repetitions
         self.show_progress = show_progress
-
-        self.solver = None
-        self.dataset = None
-        self.objective = None
-
         self.rep = 0
         self.verbose = True
 
-    def clone(self):
-        new_terminal = TerminalOutput(self.n_repetitions, self.show_progress)
-        new_terminal.set(
-            solver=self.solver, dataset=self.dataset, objective=self.objective,
-            verbose=self.verbose, rep=self.rep, i_solver=self.i_solver
+        if show_progress:
+            self.progress = Progress(
+                TextColumn("[bold blue]{task.fields[dataset]}[/]"),
+                TextColumn("|"),
+                TextColumn("[cyan]{task.fields[objective]}[/]"),
+                TextColumn("|"),
+                TextColumn("[green]{task.fields[solver]}[/]"),
+                BarColumn(),
+                TextColumn("{task.completed}/{task.total}"),
+                TimeRemainingColumn(),
+            )
+            self.progress.start()
+            self.task_ids = {}  # (dataset, objective, solver) -> task_id
+
+    def init_key(self, keys):
+        dataset, objective, solver = keys
+        if self.show_progress and tuple(keys) not in self.task_ids:
+            task_id = self.progress.add_task(
+                "",
+                total=self.n_repetitions,
+                dataset=dataset,
+                objective=objective,
+                solver=solver,
+            )
+            self.task_ids[tuple(keys)] = task_id
+
+    def increment_key(self, keys):
+        if self.show_progress:
+            task_id = self.task_ids.get(keys)
+            if task_id is not None:
+                self.progress.update(task_id, advance=1)
+
+    def close_progress(self):
+        if self.show_progress:
+            self.progress.stop()
+
+    def stop(self, key, message):
+        dataset, objective, solver = key
+        if not self.show_progress:
+            return
+
+        task_id = self.task_ids.get(tuple(key))
+        if task_id is not None:
+            self.progress.remove_task(task_id)
+
+        console.print(
+            f"[bold red]❌ {dataset} | {objective} | {solver} "
+            f"failed:[/bold red] {message}",
         )
-        return new_terminal
 
-    def set(self, solver=None, dataset=None, objective=None, verbose=None,
-            rep=None, i_solver=None):
+    def skip(self, key, message=None):
+        dataset, objective, solver = key
+        if not self.show_progress:
+            return
 
-        if dataset is not None:
-            self.dataset = dataset
-            self.dataset_tag = f"{dataset}"
+        task_id = self.task_ids.get(tuple(key))
+        if task_id is not None:
+            self.progress.remove_task(task_id)
 
-        if objective is not None:
-            self.objective = objective
-            self.objective_tag = f"  |--{objective}"
+        error_str = f"🚫 {dataset} | {objective} | {solver} skipped"
+        if message is not None:
+            error_str += f": {message}"
 
-        if solver is not None:
-            self.solver = solver
-            self.solver_tag = colorify(f"    |--{solver}:")
-
-        if verbose is not None:
-            self.verbose = verbose
-
-        if rep is not None:
-            self.rep = rep
-
-        if i_solver is not None:
-            self.i_solver = i_solver
-
-    def skip(self, reason=None, objective=False):
-        if self.rep == 0 and (not objective or self.i_solver == 0):
-            self.show_status(status='skip', objective=objective)
-            if reason is not None:
-                indent = ' ' * (2 if objective else 4)
-                print(f'{indent}Reason: {reason}', file=sys.__stdout__)
+        console.print(error_str)
 
     def savefile_status(self, save_file=None):
         if save_file is None:
@@ -137,17 +183,6 @@ class TerminalOutput:
 
     def display_objective(self):
         self._display_name(self.objective_tag)
-
-    def progress(self, progress):
-        """Display progress in the CLI interface."""
-        if self.show_progress:
-            if isinstance(progress, float):
-                progress = f'{progress:6.1%}'
-            print_normalize(
-                f"{self.solver_tag} {progress} "
-                f"({self.rep + 1} / {self.n_repetitions} reps)",
-                endline=False,  verbose=self.verbose
-            )
 
     def show_status(self, status, dataset=False, objective=False):
         if dataset or objective:

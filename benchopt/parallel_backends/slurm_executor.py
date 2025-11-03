@@ -83,7 +83,7 @@ def hashable_pytree(pytree):
 
 
 def run_on_slurm(
-    benchmark, slurm_config, run_one_solver, common_kwargs, all_runs
+    benchmark, slurm_config, run_one_solver, all_runs
 ):
 
     executors = {}
@@ -99,14 +99,13 @@ def run_on_slurm(
                 executor = get_slurm_executor(
                     benchmark,
                     solver_slurm_config,
-                    timeout=common_kwargs["timeout"],
+                    timeout=kwargs["timeout"],
                 )
                 stack.enter_context(executor.batch())
                 executors[executor_config] = executor
 
             future = executors[executor_config].submit(
                 run_one_solver,
-                **common_kwargs,
                 **kwargs,
             )
             tasks.append(future)
