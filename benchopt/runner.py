@@ -357,7 +357,6 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
     """
     exit_code = 0
     terminal = TerminalOutput(n_repetitions, show_progress)
-    terminal.set(verbose=True)
 
     # List all datasets, objective and solvers to run based on the filters
     # provided. Merge the solver_names and forced to run all necessary solvers.
