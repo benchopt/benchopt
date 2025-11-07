@@ -4,6 +4,8 @@ import sys
 from contextlib import contextmanager
 from rich.progress import Progress, BarColumn, TextColumn, TimeRemainingColumn
 from rich.console import Console
+from rich.tree import Tree
+from rich.text import Text
 
 if sys.platform == 'win32':
     sys.stdout.reconfigure(encoding='utf-8')
@@ -104,70 +106,66 @@ class TerminalOutput:
         self.rep = 0
         self.verbose = True
 
-        if show_progress:
-            self.progress = Progress(
-                TextColumn("[bold blue]{task.fields[dataset]}[/]"),
-                TextColumn("|"),
-                TextColumn("[cyan]{task.fields[objective]}[/]"),
-                TextColumn("|"),
-                TextColumn("[green]{task.fields[solver]}[/]"),
-                BarColumn(),
-                TextColumn("{task.completed}/{task.total}"),
-                TimeRemainingColumn(),
-            )
-            self.progress.start()
-            self.task_ids = {}  # (dataset, objective, solver) -> task_id
+        self.structure = {}
 
     def init_key(self, keys):
         dataset, objective, solver = keys
-        if self.show_progress and tuple(keys) not in self.task_ids:
-            task_id = self.progress.add_task(
-                "",
-                total=self.n_repetitions,
-                dataset=dataset,
-                objective=objective,
-                solver=solver,
+
+        # Build nested dict
+        if dataset not in self.structure:
+            self.structure[dataset] = {}
+        if objective not in self.structure[dataset]:
+            self.structure[dataset][objective] = {}
+
+        # Add solver task if not present
+        if solver not in self.structure[dataset][objective]:
+            progress = Progress(
+                TextColumn(f"{solver}"),
+                BarColumn(),
+                TimeRemainingColumn(),
+                TextColumn("{task.completed}/{task.total}")
             )
-            self.task_ids[tuple(keys)] = task_id
+            progress.add_task(
+                "", total=self.n_repetitions
+            )
+            self.structure[dataset][objective][solver] = progress
+
+        if hasattr(self, 'live') and self.show_progress:
+            self.live.update(self.render_tree())
 
     def increment_key(self, keys):
-        if self.show_progress:
-            task_id = self.task_ids.get(keys)
-            if task_id is not None:
-                self.progress.update(task_id, advance=1)
+        dataset, objective, solver = keys
+        if not self.show_progress:
+            return
 
-    def close_progress(self):
-        if self.show_progress:
-            self.progress.stop()
+        if dataset in self.structure:
+            if objective in self.structure[dataset]:
+                if solver in self.structure[dataset][objective]:
+                    self.structure[dataset][objective][solver].advance(0, 1)
 
     def stop(self, key, message):
         dataset, objective, solver = key
         if not self.show_progress:
             return
 
-        task_id = self.task_ids.get(tuple(key))
-        if task_id is not None:
-            self.progress.remove_task(task_id)
-
-        console.print(
-            f"[bold red]❌ {dataset} | {objective} | {solver} "
-            f"failed:[/bold red] {message}",
-        )
+        if dataset in self.structure:
+            if objective in self.structure[dataset]:
+                if solver in self.structure[dataset][objective]:
+                    self.structure[dataset][objective][solver] = (
+                        Text(f"[bold red]❌ {solver} failed[/] {message}")
+                    )
 
     def skip(self, key, message=None):
         dataset, objective, solver = key
         if not self.show_progress:
             return
 
-        task_id = self.task_ids.get(tuple(key))
-        if task_id is not None:
-            self.progress.remove_task(task_id)
-
-        error_str = f"🚫 {dataset} | {objective} | {solver} skipped"
-        if message is not None:
-            error_str += f": {message}"
-
-        console.print(error_str)
+        if dataset in self.structure:
+            if objective in self.structure[dataset]:
+                if solver in self.structure[dataset][objective]:
+                    self.structure[dataset][objective][solver] = (
+                        Text(f"🚫 {solver} skipped")
+                    )
 
     def savefile_status(self, save_file=None):
         if save_file is None:
@@ -200,6 +198,18 @@ class TerminalOutput:
     def debug(self, msg):
         if DEBUG:
             print_normalize(f"{self.solver_tag} [DEBUG] - {msg}")
+
+    def render_tree(self):
+        """Render a rich Tree object with the progress bars attached."""
+        root = Tree("[bold white]Progress Overview[/]")
+        for dataset, objectives in self.structure.items():
+            dataset_node = root.add(f"[bold blue]{dataset}[/]")
+            for objective, solvers in objectives.items():
+                objective_node = dataset_node.add(f"[cyan]{objective}[/]")
+                for solver, renderable in solvers.items():
+                    # Attach progress bar renderable to solver level
+                    objective_node.add(renderable)
+        return root
 
 
 @contextmanager
