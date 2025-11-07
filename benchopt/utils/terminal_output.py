@@ -124,7 +124,7 @@ class TerminalOutput:
         # Add solver task if not present
         if solver not in self.structure[dataset][objective]:
             progress = Progress(
-                TextColumn(f"{solver}"),
+                TextColumn(f"{solver}", markup=False),
                 BarColumn(),
                 TimeRemainingColumn(),
                 TextColumn("{task.completed}/{task.total}")
