@@ -198,7 +198,7 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               " If not provided, the output will be saved as "
               "<BENCHMARK>/outputs/benchopt_run_<timestamp>.parquet."
               )
-@click.option('--separate-logs', default=False, is_flag=True,
+@click.option('--separate-logs', default=True, is_flag=True,
               help="If set, logs for each run are saved in a separate folder "
               "under <BENCHMARK>/outputs/logs/")
 def run(config_file=None, **kwargs):

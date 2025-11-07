@@ -78,15 +78,18 @@ class TerminalLogger:
         self.objective = objective
         self.dataset = dataset
         self.solver = solver
+        self.has_stopped = False
 
     @property
     def key(self):
         return (self.dataset, self.objective, self.solver)
 
     def stop(self, status):
+        self.has_stopped = True
         self.terminal.stop(self.key, status)
 
     def skip(self, msg):
+        self.has_stopped = True
         self.terminal.skip(self.key, msg)
 
     def debug(self, msg):
@@ -96,7 +99,8 @@ class TerminalLogger:
         self.terminal.init_key(self.key)
 
     def finish(self):
-        self.terminal.increment_key(self.key)
+        if not self.has_stopped:
+            self.terminal.increment_key(self.key)
 
 
 class TerminalOutput:
@@ -151,9 +155,10 @@ class TerminalOutput:
         if dataset in self.structure:
             if objective in self.structure[dataset]:
                 if solver in self.structure[dataset][objective]:
-                    self.structure[dataset][objective][solver] = (
-                        Text(f"[bold red]❌ {solver} failed[/] {message}")
-                    )
+                    t = Text()
+                    t.append(f"❌ {solver} failed", style="bold red")
+                    t.append(f" {message}")  # default style
+                    self.structure[dataset][objective][solver] = t
 
     def skip(self, key, message=None):
         dataset, objective, solver = key
@@ -218,9 +223,12 @@ def redirect_print(file_path=None):
         yield
         return
     original_stdout = sys.stdout
+    original_stderr = sys.stderr
     with open(file_path, 'w') as f:
         sys.stdout = f
+        sys.stderr = f  # redirect errors too
         try:
             yield
         finally:
             sys.stdout = original_stdout
+            sys.stderr = original_stderr

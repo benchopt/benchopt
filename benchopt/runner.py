@@ -180,7 +180,7 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
                     with open(meta["final_results"], 'wb') as f:
                         pickle.dump(to_save, f)
         if ctx.status in FAILURE_STATUS:
-            raise FailedRun(ctx.status)
+            terminal.stop(ctx.status)
     terminal.finish()
     return curve, ctx.status
 
