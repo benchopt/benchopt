@@ -6,6 +6,7 @@ from datetime import datetime
 from rich.live import Live
 from joblib import hash
 import copy
+import sys
 
 from .callback import _Callback
 from .benchmark import Benchmark
@@ -13,7 +14,6 @@ from .utils.sys_info import get_sys_info
 from .utils.files import uniquify_results
 from .utils.pdb_helpers import exception_handler
 from .utils.terminal_output import TerminalOutput
-from .utils.terminal_output import redirect_print
 from .parallel_backends import parallel_run
 from .parallel_backends import check_parallel_config
 
@@ -130,59 +130,68 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
             str(meta['objective_name']) + '_' +
             str(meta['solver_name']) + ".log"
         )
+        default_stdout = sys.stdout
+        default_stderr = sys.stderr
+        sys.stdout = open(log_file, 'a')
+        sys.stderr = sys.stdout
     else:
         log_file = None
 
-    with redirect_print(log_file):
-        with exception_handler(terminal, pdb=pdb) as ctx:
-            # The warm-up step called for each repetition bit only run once.
-            solver._warm_up()
+    with exception_handler(terminal, pdb=pdb) as ctx:
+        # The warm-up step called for each repetition bit only run once.
+        solver._warm_up()
 
-            if solver._solver_strategy == "callback":
+        if solver._solver_strategy == "callback":
 
-                # If sampling_strategy is 'callback', only call once to get the
-                # results up to convergence.
-                callback = _Callback(
-                    objective, solver, meta, stopping_criterion
+            # If sampling_strategy is 'callback', only call once to get the
+            # results up to convergence.
+            callback = _Callback(
+                objective, solver, meta, stopping_criterion
+            )
+            solver.pre_run_hook(callback)
+            callback.start()
+            solver.run(callback)
+            curve, ctx.status = callback.get_results()
+        else:
+
+            # Create a Memory object to cache the computations in the
+            # benchmark folder and handle cases where we force the run.
+            run_one_resolution_cached = benchmark.cache(
+                run_one_resolution, force
+            )
+
+            # compute initial value
+            call_args = dict(objective=objective, solver=solver, meta=meta)
+
+            stop = False
+            stop_val = stopping_criterion.init_stop_val()
+            while not stop:
+
+                objective_list = run_one_resolution_cached(
+                    stop_val=stop_val, **call_args
                 )
-                solver.pre_run_hook(callback)
-                callback.start()
-                solver.run(callback)
-                curve, ctx.status = callback.get_results()
-            else:
+                curve.extend(objective_list)
 
-                # Create a Memory object to cache the computations in the
-                # benchmark folder and handle cases where we force the run.
-                run_one_resolution_cached = benchmark.cache(
-                    run_one_resolution, force
+                # Check the stopping criterion and update rho if necessary.
+                stop, ctx.status, stop_val = (
+                    stopping_criterion.should_stop(stop_val, curve)
                 )
 
-                # compute initial value
-                call_args = dict(objective=objective, solver=solver, meta=meta)
-
-                stop = False
-                stop_val = stopping_criterion.init_stop_val()
-                while not stop:
-
-                    objective_list = run_one_resolution_cached(
-                        stop_val=stop_val, **call_args
-                    )
-                    curve.extend(objective_list)
-
-                    # Check the stopping criterion and update rho if necessary.
-                    stop, ctx.status, stop_val = (
-                        stopping_criterion.should_stop(stop_val, curve)
-                    )
-
-            # Only run if save_final_results is defined in the objective.
-            if has_save_final_results and ctx.status not in FAILURE_STATUS:
-                to_save = objective.save_final_results(**solver.get_result())
-                if to_save is not None:
-                    with open(meta["final_results"], 'wb') as f:
-                        pickle.dump(to_save, f)
-        if ctx.status in FAILURE_STATUS:
-            terminal.stop(ctx.status)
+        # Only run if save_final_results is defined in the objective.
+        if has_save_final_results and ctx.status not in FAILURE_STATUS:
+            to_save = objective.save_final_results(**solver.get_result())
+            if to_save is not None:
+                with open(meta["final_results"], 'wb') as f:
+                    pickle.dump(to_save, f)
+    if ctx.status in FAILURE_STATUS:
+        terminal.stop(ctx.status)
     terminal.finish()
+
+    if benchmark.separate_logs:
+        sys.stdout.close()
+        sys.stdout = default_stdout
+        sys.stderr = default_stderr
+
     return curve, ctx.status
 
 
