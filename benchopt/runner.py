@@ -408,7 +408,7 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
         )
         total_cvg_kwargs.extend(cvg_kwargs)
 
-    console = Console(file=terminal.stdout)
+    console = Console(file=sys.__stdout__)
     with Live(
         terminal.render_tree(),
         refresh_per_second=4,

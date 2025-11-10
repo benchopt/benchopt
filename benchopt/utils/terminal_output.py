@@ -109,7 +109,6 @@ class TerminalLogger:
 
 class TerminalOutput:
     def __init__(self, n_repetitions, show_progress=True):
-        self.stdout = sys.__stdout__
         self.n_repetitions = n_repetitions
         self.show_progress = show_progress
         self.rep = 0
