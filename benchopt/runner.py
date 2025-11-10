@@ -185,7 +185,7 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
                     pickle.dump(to_save, f)
     if ctx.status in FAILURE_STATUS:
         terminal.stop(ctx.status)
-    terminal.finish()
+    terminal.finish(ctx.status)
 
     if benchmark.separate_logs:
         sys.stdout.close()

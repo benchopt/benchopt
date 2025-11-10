@@ -100,9 +100,11 @@ class TerminalLogger:
     def start(self):
         self.terminal.init_key(*self.key)
 
-    def finish(self):
+    def finish(self, status):
+        if status == "done":
+            status = None
         if not self.has_stopped:
-            self.terminal.increment_key(self.key)
+            self.terminal.increment_key(self.key, status)
 
 
 class TerminalOutput:
@@ -112,6 +114,7 @@ class TerminalOutput:
         self.show_progress = show_progress
         self.rep = 0
         self.verbose = True
+        self.warnings = {}
 
         self.structure = {}
 
@@ -143,10 +146,13 @@ class TerminalOutput:
         if hasattr(self, 'live') and self.show_progress:
             self.live.update(self.render_tree())
 
-    def increment_key(self, keys):
-        dataset, objective, solver = keys
+    def increment_key(self, key, message=None):
+        dataset, objective, solver = key
         if not self.show_progress:
             return
+
+        if message is not None:
+            self.warnings[key] = message
 
         if dataset in self.structure:
             if objective in self.structure[dataset]:
@@ -154,7 +160,13 @@ class TerminalOutput:
                     self.structure[dataset][objective][solver].advance(0, 1)
                 if self.structure[dataset][objective][solver].finished:
                     t = Text()
-                    t.append(f"✅ {solver} completed", style="bold green")
+                    if key in self.warnings:
+                        t.append(
+                            f"⚠️  {solver} done, {self.warnings[key]}",
+                            style="yellow"
+                        )
+                    else:
+                        t.append(f"✅ {solver} done", style="bold green")
                     self.structure[dataset][objective][solver] = t
 
     def stop(self, key, message):
