@@ -184,34 +184,6 @@ class TerminalOutput:
                         Text(f"🚫 {solver} skipped")
                     )
 
-    def savefile_status(self, save_file=None):
-        if save_file is None:
-            print_normalize(colorify('No output produced.', RED))
-        print_normalize(colorify(f'Saving result in: {save_file}', GREEN))
-
-    def _display_name(self, tag):
-        assert tag is not None, "Should not happened"
-        print_normalize(f"{tag}", verbose=self.verbose)
-
-    def display_dataset(self):
-        self._display_name(self.dataset_tag)
-
-    def display_objective(self):
-        self._display_name(self.objective_tag)
-
-    def show_status(self, status, dataset=False, objective=False):
-        if dataset or objective:
-            assert status in ['not installed', 'skip']
-        tag = (
-            self.dataset_tag if dataset else
-            self.objective_tag if objective else self.solver_tag
-        )
-        assert status in STATUS, (
-            f"status should be in {list(STATUS)}. Got '{status}'"
-        )
-        status = colorify(*STATUS[status])
-        print_normalize(f"{tag} {status}")
-
     def debug(self, msg):
         if DEBUG:
             print_normalize(f"{self.solver_tag} [DEBUG] - {msg}")
