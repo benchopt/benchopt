@@ -7,6 +7,8 @@ from rich.console import Console
 from rich.tree import Tree
 from rich.text import Text
 from rich.markup import escape
+import platform
+import ctypes
 
 if sys.platform == 'win32':
     sys.stdout.reconfigure(encoding='utf-8')
@@ -112,6 +114,11 @@ class TerminalOutput:
         self.verbose = True
 
         self.structure = {}
+
+        # TODO: not sure if this is needed anymore
+        if platform.system() == "Windows":
+            kernel32 = ctypes.windll.kernel32
+            kernel32.SetConsoleMode(kernel32.GetStdHandle(-11), 7)
 
     def init_key(self, keys):
         dataset, objective, solver = keys
