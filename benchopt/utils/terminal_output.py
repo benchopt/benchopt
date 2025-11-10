@@ -99,7 +99,7 @@ class TerminalLogger:
         self.terminal.debug(msg)
 
     def start(self):
-        self.terminal.init_key(self.key)
+        self.terminal.init_key(*self.key)
 
     def finish(self):
         if not self.has_stopped:
@@ -120,9 +120,7 @@ class TerminalOutput:
             kernel32 = ctypes.windll.kernel32
             kernel32.SetConsoleMode(kernel32.GetStdHandle(-11), 7)
 
-    def init_key(self, keys):
-        dataset, objective, solver = keys
-
+    def init_key(self, dataset, objective, solver):
         # Build nested dict
         if dataset not in self.structure:
             self.structure[dataset] = {}
@@ -201,6 +199,11 @@ class TerminalOutput:
                     # Attach progress bar renderable to solver level
                     objective_node.add(renderable)
         return root
+
+    def savefile_status(self, save_file=None):
+        if save_file is None:
+            print_normalize(colorify('No output produced.', RED))
+        print_normalize(colorify(f'Saving result in: {save_file}', GREEN))
 
 
 @contextmanager
