@@ -714,16 +714,6 @@ class Benchmark:
                 all_solvers = solvers_buffer
 
 
-def _check_name_lists(*name_lists):
-    "Normalize name_list to a list of string."
-    res = []
-    for name_list in name_lists:
-        if name_list is None:
-            continue
-        res.extend([str(name) for name in name_list])
-    return res
-
-
 def is_matched(name, include_patterns=None, default=True):
     """Check if a certain name is matched by any pattern in include_patterns.
 

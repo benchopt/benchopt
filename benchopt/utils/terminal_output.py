@@ -6,6 +6,7 @@ from rich.progress import Progress, BarColumn, TextColumn, TimeRemainingColumn
 from rich.console import Console
 from rich.tree import Tree
 from rich.text import Text
+from rich.markup import escape
 
 if sys.platform == 'win32':
     sys.stdout.reconfigure(encoding='utf-8')
@@ -146,6 +147,10 @@ class TerminalOutput:
             if objective in self.structure[dataset]:
                 if solver in self.structure[dataset][objective]:
                     self.structure[dataset][objective][solver].advance(0, 1)
+                if self.structure[dataset][objective][solver].finished:
+                    t = Text()
+                    t.append(f"✅ {solver} completed", style="bold green")
+                    self.structure[dataset][objective][solver] = t
 
     def stop(self, key, message):
         dataset, objective, solver = key
@@ -208,10 +213,12 @@ class TerminalOutput:
         """Render a rich Tree object with the progress bars attached."""
         root = Tree("[bold white]Progress Overview[/]")
         for dataset, objectives in self.structure.items():
-            dataset_node = root.add(f"[bold blue]{dataset}[/]")
+            dataset_node = root.add(f"[bold blue]{escape(dataset)}[/]")
             for objective, solvers in objectives.items():
-                objective_node = dataset_node.add(f"[cyan]{objective}[/]")
-                for solver, renderable in solvers.items():
+                objective_node = dataset_node.add(
+                    f"[cyan]{escape(objective)}[/]"
+                )
+                for renderable in solvers.values():
                     # Attach progress bar renderable to solver level
                     objective_node.add(renderable)
         return root

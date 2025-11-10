@@ -5,6 +5,7 @@ import pickle
 from datetime import datetime
 from rich.live import Live
 from joblib import hash
+import copy
 
 from .callback import _Callback
 from .benchmark import Benchmark
@@ -224,66 +225,78 @@ def get_run_args(
     args_run_one_to_cvg : dict
         The dictionary of arguments to run_one_to_cvg.
     """
-
-    # Set objective and skip if necessary.
-    skip, reason = objective.set_dataset(dataset)
-    if skip:
-        terminal.skip(reason)
-        return []
-
-    # get sampling strategy
-    # for plotting purpose consider 'callback' as 'iteration'
-    sampling_strategy = solver._solver_strategy
-    if sampling_strategy == 'callback':
-        sampling_strategy = 'iteration'
-
-    # get objective description
-    # use `obj_` instead of `objective_` to avoid conflicts with
-    # the name of metrics in Objective.compute
-    obj_description = objective.__doc__ or ""
-
-    if n_repetitions is None:
-        if hasattr(objective, "cv"):
-            n_repetitions = objective.cv.get_n_splits(
-                **getattr(objective, "cv_metadata", {})
-            )
-        else:
-            # we set 1 by default so that the solver run at least once
-            n_repetitions = 1
+    stopping_criterion_timeout = timeout
+    if timeout is not None:
+        stopping_criterion_timeout = timeout / n_repetitions
 
     kwargs_list = []
-
     for rep in range(n_repetitions):
+        rep_solver = copy.deepcopy(solver)
+        rep_objective = copy.deepcopy(objective)
+        rep_dataset = copy.deepcopy(dataset)
 
-        skip, reason = solver._set_objective(objective)
+        # Set objective and skip if necessary.
+        skip, reason = rep_objective.set_dataset(rep_dataset)
+        if skip:
+            terminal.skip(reason)
+            return []
+
+        # get sampling strategy
+        # for plotting purpose consider 'callback' as 'iteration'
+        sampling_strategy = rep_solver._solver_strategy
+        if sampling_strategy == 'callback':
+            sampling_strategy = 'iteration'
+
+        # get objective description
+        # use `obj_` instead of `objective_` to avoid conflicts with
+        # the name of metrics in Objective.compute
+        obj_description = rep_objective.__doc__ or ""
+
+        if n_repetitions is None:
+            if hasattr(rep_objective, "cv"):
+                n_repetitions = rep_objective.cv.get_n_splits(
+                    **getattr(rep_objective, "cv_metadata", {})
+                )
+            else:
+                # we set 1 by default so that the solver run at least once
+                n_repetitions = 1
+
+        skip, reason = rep_solver._set_objective(rep_objective)
         if skip:
             terminal.skip(reason)
             return []
 
         # Get meta
         meta = {
-            'objective_name': str(objective),
+            'objective_name': str(rep_objective),
             'obj_description': obj_description,
-            'solver_name': str(solver),
-            'solver_description': inspect.cleandoc(solver.__doc__ or ""),
-            'dataset_name': str(dataset),
+            'solver_name': str(rep_solver),
+            'solver_description': inspect.cleandoc(rep_solver.__doc__ or ""),
+            'dataset_name': str(rep_dataset),
             'idx_rep': rep,
             'sampling_strategy': sampling_strategy.capitalize(),
-            **{f"p_obj_{k}": v for k, v in objective._parameters.items()},
-            **{f"p_solver_{k}": v for k, v in solver._parameters.items()},
-            **{f"p_dataset_{k}": v for k, v in dataset._parameters.items()},
+            **{f"p_obj_{k}": v for k, v in rep_objective._parameters.items()},
+            **{f"p_solver_{k}": v for k, v in rep_solver._parameters.items()},
+            **{
+                f"p_dataset_{k}": v
+                for k, v in rep_dataset._parameters.items()
+            },
         }
 
-        stopping_criterion = solver._stopping_criterion.get_runner_instance(
-            solver=solver,
-            max_runs=max_runs,
-            timeout=timeout / n_repetitions if timeout is not None else None,
-            terminal=terminal,
+        stopping_criterion = (
+            rep_solver
+            ._stopping_criterion
+            .get_runner_instance(
+                solver=rep_solver,
+                max_runs=max_runs,
+                timeout=stopping_criterion_timeout,
+                terminal=terminal,
+            )
         )
 
         args_run_one_to_cvg = dict(
-            benchmark=benchmark, objective=objective, solver=solver, meta=meta,
-            stopping_criterion=stopping_criterion, force=force,
+            benchmark=benchmark, objective=rep_objective, solver=rep_solver,
+            meta=meta, stopping_criterion=stopping_criterion, force=force,
             terminal=terminal, pdb=pdb
         )
 
@@ -392,6 +405,7 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
             benchmark, run_one_to_cvg_cached, total_cvg_kwargs,
             config=parallel_config, collect=collect
         )
+        live.update(terminal.render_tree())
 
     run_statistics = []
     for res in run_results:
