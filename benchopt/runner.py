@@ -3,7 +3,7 @@ import inspect
 import pickle
 
 from datetime import datetime
-from rich.live import Live
+from rich.live import Live, Console
 from joblib import hash
 import copy
 import sys
@@ -408,7 +408,12 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
         )
         total_cvg_kwargs.extend(cvg_kwargs)
 
-    with Live(terminal.render_tree(), refresh_per_second=4) as live:
+    console = Console(file=terminal.stdout)
+    with Live(
+        terminal.render_tree(),
+        refresh_per_second=4,
+        console=console
+    ) as live:
         terminal.live = live
         run_results = parallel_run(
             benchmark, run_one_to_cvg_cached, total_cvg_kwargs,

@@ -1,7 +1,6 @@
 "Helper function for colored terminal outputs"
 import shutil
 import sys
-from contextlib import contextmanager
 from rich.progress import Progress, BarColumn, TextColumn, TimeRemainingColumn
 from rich.console import Console
 from rich.tree import Tree
@@ -108,6 +107,7 @@ class TerminalLogger:
 
 class TerminalOutput:
     def __init__(self, n_repetitions, show_progress=True):
+        self.stdout = sys.__stdout__
         self.n_repetitions = n_repetitions
         self.show_progress = show_progress
         self.rep = 0
@@ -204,20 +204,3 @@ class TerminalOutput:
         if save_file is None:
             print_normalize(colorify('No output produced.', RED))
         print_normalize(colorify(f'Saving result in: {save_file}', GREEN))
-
-
-@contextmanager
-def redirect_print(file_path=None):
-    if file_path is None:
-        yield
-        return
-    original_stdout = sys.stdout
-    original_stderr = sys.stderr
-    with open(file_path, 'w') as f:
-        sys.stdout = f
-        sys.stderr = f  # redirect errors too
-        try:
-            yield
-        finally:
-            sys.stdout = original_stdout
-            sys.stderr = original_stderr
