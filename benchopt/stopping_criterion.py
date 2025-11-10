@@ -154,19 +154,19 @@ class StoppingCriterion():
 
             stopping_criterion.get_next_stop_val = solver.get_next
 
-        # Store running arguments
-        if timeout is not None:
-            stopping_criterion._deadline = time.time() + timeout
-        else:
-            stopping_criterion._deadline = None
-        stopping_criterion._prev_objective = 1e100
-
         return stopping_criterion
 
     def init_stop_val(self):
         stop_val = (
             INFINITY if self.strategy == 'tolerance' else 0
         )
+
+        # Store running arguments
+        if self.timeout is not None:
+            self._deadline = time.time() + self.timeout
+        else:
+            self._deadline = None
+        self._prev_objective = 1e100
 
         self.debug(f"Calling solver {self.solver} with stop val: {stop_val}")
         self.terminal.start()
