@@ -15,7 +15,6 @@ from .base import BaseSolver, BaseDataset
 from .utils.dynamic_modules import _load_class_from_module, FailedImport
 from .utils.parametrized_name_mixin import product_param
 
-from .utils.terminal_output import TerminalLogger
 from .utils.terminal_output import colorify
 from .utils.terminal_output import GREEN, YELLOW
 
@@ -700,16 +699,16 @@ class Benchmark:
                         str(solver), forced_solvers, default=False
                     )
 
-                    terminal_logger = TerminalLogger(
-                        terminal, str(objective), str(dataset), str(solver)
-                    )
                     if error is not None:
-                        terminal_logger.stop(error)
+                        terminal.skip(
+                            (dataset, objective, solver),
+                            error
+                        )
                         continue
 
                     yield dict(
                         dataset=dataset, objective=objective, solver=solver,
-                        force=force, terminal=terminal_logger
+                        force=force
                     )
                 all_solvers = solvers_buffer
 

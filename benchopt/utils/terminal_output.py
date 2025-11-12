@@ -12,8 +12,6 @@ import ctypes
 if sys.platform == 'win32':
     sys.stdout.reconfigure(encoding='utf-8')
 
-from ..config import DEBUG
-
 console = Console()
 
 MIN_LINE_LENGTH = 20
@@ -73,40 +71,6 @@ def print_normalize(msg, endline=True, verbose=True):
         print(msg + '\r', end='', flush=True, file=sys.__stdout__)
 
 
-class TerminalLogger:
-    def __init__(self, terminal, objective, dataset, solver):
-        assert isinstance(terminal, TerminalOutput)
-        self.terminal = terminal
-        self.objective = objective
-        self.dataset = dataset
-        self.solver = solver
-        self.has_stopped = False
-
-    @property
-    def key(self):
-        return (self.dataset, self.objective, self.solver)
-
-    def stop(self, status):
-        self.has_stopped = True
-        self.terminal.stop(self.key, status)
-
-    def skip(self, msg):
-        self.has_stopped = True
-        self.terminal.skip(self.key, msg)
-
-    def debug(self, msg):
-        self.terminal.debug(msg)
-
-    def start(self):
-        self.terminal.init_key(*self.key)
-
-    def finish(self, status):
-        if status == "done":
-            status = None
-        if not self.has_stopped:
-            self.terminal.increment_key(self.key, status)
-
-
 class TerminalOutput:
     def __init__(self, n_repetitions, show_progress=True):
         self.n_repetitions = n_repetitions
@@ -114,16 +78,29 @@ class TerminalOutput:
         self.rep = 0
         self.verbose = True
         self.warnings = {}
-
         self.structure = {}
+        self.init_keys_set = set()
 
         # TODO: not sure if this is needed anymore
         if platform.system() == "Windows":
             kernel32 = ctypes.windll.kernel32
             kernel32.SetConsoleMode(kernel32.GetStdHandle(-11), 7)
 
-    def init_key(self, dataset, objective, solver):
+    def update(self, key, msg):
+        self.init_key(key)
+
+        if msg == "done":
+            msg = None
+
+        self.increment_key(key, msg)
+
+    def init_key(self, key):
+        if key in self.init_keys_set:
+            return
+        self.init_keys_set.add(key)
+
         # Build nested dict
+        dataset, objective, solver = key
         if dataset not in self.structure:
             self.structure[dataset] = {}
         if objective not in self.structure[dataset]:
@@ -168,34 +145,39 @@ class TerminalOutput:
                         t.append(f"✅ {solver} done", style="bold green")
                     self.structure[dataset][objective][solver] = t
 
+    def find_ongoing_runs(self):
+        keys = []
+        for dataset, objectives in self.structure.items():
+            for objective, solvers in objectives.items():
+                for solver, progress in solvers.items():
+                    if isinstance(progress, Progress):
+                        if not progress.finished:
+                            keys.append((dataset, objective, solver))
+        return keys
+
+    def update_status(self, key, text):
+        if not self.show_progress:
+            return
+
+        self.init_key(key)
+        dataset, objective, solver = key
+        self.structure[dataset][objective][solver] = text
+
     def stop(self, key, message):
-        dataset, objective, solver = key
-        if not self.show_progress:
+        if key is None:
+            keys = self.find_ongoing_runs()
+            for k in keys:
+                self.stop(k, message)
             return
 
-        if dataset in self.structure:
-            if objective in self.structure[dataset]:
-                if solver in self.structure[dataset][objective]:
-                    t = Text()
-                    t.append(f"❌ {solver} failed", style="bold red")
-                    t.append(f" {message}")  # default style
-                    self.structure[dataset][objective][solver] = t
+        t = Text()
+        t.append(f"❌ {key[3]} failed", style="bold red")
+        t.append(f" {message}")  # default style
+        self.update_status(key, t)
 
-    def skip(self, key, message=None):
-        dataset, objective, solver = key
-        if not self.show_progress:
-            return
-
-        if dataset in self.structure:
-            if objective in self.structure[dataset]:
-                if solver in self.structure[dataset][objective]:
-                    self.structure[dataset][objective][solver] = (
-                        Text(f"🚫 {solver} skipped")
-                    )
-
-    def debug(self, msg):
-        if DEBUG:
-            print_normalize(f"{self.solver_tag} [DEBUG] - {msg}")
+    def skip(self, key, message):
+        t = Text(f"🚫 {key[3]} skipped, {message}")
+        self.update_status(key, t)
 
     def render_tree(self):
         """Render a rich Tree object with the progress bars attached."""

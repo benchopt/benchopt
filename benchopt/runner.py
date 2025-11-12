@@ -98,8 +98,6 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
     force : bool
         If force is set to True, ignore the cache and run the computations
         for the solver anyway. Else, use the cache if available.
-    terminal : TerminalOutput or None
-        Object to format string to display the progress of the solver.
     pdb : bool
         It pdb is set to True, open a debugger on error.
 
@@ -137,7 +135,7 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
     else:
         log_file = None
 
-    with exception_handler(terminal, pdb=pdb) as ctx:
+    try:
         # The warm-up step called for each repetition bit only run once.
         solver._warm_up()
 
@@ -151,7 +149,7 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
             solver.pre_run_hook(callback)
             callback.start()
             solver.run(callback)
-            curve, ctx.status = callback.get_results()
+            curve, status = callback.get_results()
         else:
 
             # Create a Memory object to cache the computations in the
@@ -173,26 +171,30 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
                 curve.extend(objective_list)
 
                 # Check the stopping criterion and update rho if necessary.
-                stop, ctx.status, stop_val = (
+                stop, status, stop_val = (
                     stopping_criterion.should_stop(stop_val, curve)
                 )
 
         # Only run if save_final_results is defined in the objective.
-        if has_save_final_results and ctx.status not in FAILURE_STATUS:
+        if has_save_final_results and status not in FAILURE_STATUS:
             to_save = objective.save_final_results(**solver.get_result())
             if to_save is not None:
                 with open(meta["final_results"], 'wb') as f:
                     pickle.dump(to_save, f)
-    if ctx.status in FAILURE_STATUS:
-        terminal.stop(ctx.status)
-    terminal.finish(ctx.status)
+    except Exception:
+        status = "error"
 
     if benchmark.separate_logs:
         sys.stdout.close()
         sys.stdout = default_stdout
         sys.stderr = default_stderr
 
-    return curve, ctx.status
+    key = (
+        meta['dataset_name'],
+        meta['objective_name'],
+        meta['solver_name']
+    )
+    return curve, (key, status)
 
 
 def get_run_args(
@@ -299,7 +301,6 @@ def get_run_args(
                 solver=rep_solver,
                 max_runs=max_runs,
                 timeout=stopping_criterion_timeout,
-                terminal=terminal,
             )
         )
 
@@ -408,6 +409,7 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
         )
         total_cvg_kwargs.extend(cvg_kwargs)
 
+    run_statistics = []
     console = Console(file=sys.__stdout__)
     with Live(
         terminal.render_tree(),
@@ -415,15 +417,23 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
         console=console
     ) as live:
         terminal.live = live
-        run_results = parallel_run(
-            benchmark, run_one_to_cvg_cached, total_cvg_kwargs,
-            config=parallel_config, collect=collect
-        )
-        live.update(terminal.render_tree())
+        with exception_handler(terminal, pdb=pdb):
+            results_generator = parallel_run(
+                benchmark, run_one_to_cvg_cached, total_cvg_kwargs,
+                config=parallel_config, collect=collect
+            )
 
-    run_statistics = []
-    for res in run_results:
-        run_statistics.extend(res[0])
+            for results in results_generator:
+                result = results[0]
+                key, status = results[1]
+                if status in FAILURE_STATUS:
+                    terminal.stop(key, status)
+                    continue
+
+                run_statistics.extend(result)
+                terminal.update(key, status)
+
+        live.update(terminal.render_tree())
 
     import pandas as pd
     df = pd.DataFrame(run_statistics)

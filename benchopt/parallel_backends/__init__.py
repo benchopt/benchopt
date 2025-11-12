@@ -27,18 +27,18 @@ def parallel_run(benchmark, run, all_runs, config, collect=False):
     )
     if backend == 'submitit':
         from .slurm_executor import run_on_slurm
-        results = run_on_slurm(benchmark, config, run, all_runs)
+        results_generator = run_on_slurm(benchmark, config, run, all_runs)
     else:
         if backend == 'dask':
             from .dask_backend import check_dask_config
             config = check_dask_config(config)
         with parallel_config(backend, **config):
-            results = Parallel()(
+            results_generator = Parallel(return_as="generator_unordered")(
                 delayed(run)(**run_kwargs)
                 for run_kwargs in all_runs
             )
 
-    return results
+    return results_generator
 
 
 def check_parallel_config(parallel_config_file, slurm_config_file, n_jobs):

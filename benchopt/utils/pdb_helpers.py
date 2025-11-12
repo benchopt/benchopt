@@ -18,7 +18,7 @@ def exception_handler(terminal, pdb=False):
 
     Parameter
     ---------
-    terminal : TerminalLogger
+    terminal : TerminalOutput
         Object to format string to display the progress of the solver.
     pdb : bool
         If set to True, open a debugger if an error is raised.
@@ -28,13 +28,14 @@ def exception_handler(terminal, pdb=False):
         yield ctx
     except KeyboardInterrupt:
         ctx.status = 'interrupted'
-        terminal.stop('interrupted')
+        terminal.stop(None, 'interrupted')
+        if hasattr(terminal, 'live'):
+            terminal.live.update(terminal.render_tree())
         raise SystemExit(1)
     except BaseException:
         ctx.status = 'error'
 
         if pdb:
-            terminal.stop('error')
             traceback.print_exc()
             # Use ipdb if it is available and default to pdb otherwise.
             try:
@@ -44,7 +45,6 @@ def exception_handler(terminal, pdb=False):
             post_mortem()
 
         if DEBUG:
-            terminal.stop('error')
             raise
         else:
             print()

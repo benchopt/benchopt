@@ -39,7 +39,6 @@ class Solver(BaseSolver):
         The callback implements a stopping mechanism, based on the number of
         iterations, the time and the evoluation of the performances.
         """
-        print(f"{self.X.mean()}")
         while cb():
             self.X_hat = self.X_hat - self.lr * (self.X_hat - self.X)
 
