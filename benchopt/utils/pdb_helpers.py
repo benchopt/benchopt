@@ -3,10 +3,6 @@ import traceback
 from contextlib import contextmanager
 
 
-# Get config values
-from ..config import DEBUG
-
-
 class StatusHandler(object):
     def __init__(self):
         self.status = 'running'
@@ -44,8 +40,5 @@ def exception_handler(terminal, pdb=False):
                 from pdb import post_mortem
             post_mortem()
 
-        if DEBUG:
-            raise
-        else:
-            print()
-            traceback.print_exc()
+        print()
+        traceback.print_exc()

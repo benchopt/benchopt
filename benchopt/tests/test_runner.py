@@ -53,7 +53,7 @@ def test_skip_api(n_jobs):
         with CaptureCmdOutput() as out:
             run([*(
                 f'{benchmark.benchmark_dir} -s test-solver -d test-dataset '
-                f'-j {n_jobs} --no-plot'
+                f'-j {n_jobs} --no-plot --no-separate-logs'
             ).split()], standalone_mode=False)
 
             # Make sure joblib's executor is shutdown, as otherwise the output
@@ -61,14 +61,13 @@ def test_skip_api(n_jobs):
             from joblib.externals.loky import get_reusable_executor
             get_reusable_executor().shutdown(wait=True)
 
-    out.check_output(r"Objective-skip\[should_skip=True\] skip", repetition=1)
-    out.check_output("Reason: Objective#SKIP", repetition=1)
+    out.check_output(r"test-solver\[should_skip=True\] skipped", repetition=2)
+    out.check_output(r"test-solver\[should_skip=False\] skipped", repetition=1)
 
-    out.check_output(r"test-solver\[should_skip=True\]: skip", repetition=1)
-    out.check_output("Reason: Solver#SKIP", repetition=1)
+    out.check_output("Objective#SKIP", repetition=2)
+    out.check_output("Solver#SKIP", repetition=1)
 
-    out.check_output(r"test-solver\[should_skip=False\]: done", repetition=1)
-    out.check_output("Solver#RUN", repetition=1)
+    out.check_output(r"test-solver\[should_skip=False\] done", repetition=1)
 
 
 def _assert_parameters_equal(instance, parameters):

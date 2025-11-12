@@ -109,14 +109,14 @@ class TestRunCmd:
         with temp_benchmark() as bench, CaptureCmdOutput() as out:
             cmd = (
                 f"{bench.benchmark_dir} -r 1 -n 1 -j {n_jobs} --no-plot "
-                "-d test-dataset"
+                "-d test-dataset --no-separate-logs"
             )
             run(cmd.split(), 'benchopt', standalone_mode=False)
 
         out.check_output('test-dataset', repetition=1)
         out.check_output('simulated', repetition=0)
         out.check_output('test-objective', repetition=1)
-        out.check_output('test-solver:', repetition=6)
+        out.check_output('test-solver', repetition=6)
 
         # Make sure the results were saved in a result file
         assert len(out.result_files) == 1, out

@@ -47,6 +47,7 @@ dependencies = [
   "pyyaml",
   "line-profiler",
   "pyarrow",
+  "rich"
 ]
 dynamic = ["version"]
 
@@ -79,7 +80,6 @@ doc = [
 ]
 submitit = [
   "submitit",
-  "rich",
 ]
 dask = [
   "coiled",

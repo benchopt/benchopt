@@ -171,12 +171,12 @@ class TerminalOutput:
             return
 
         t = Text()
-        t.append(f"❌ {key[3]} failed", style="bold red")
+        t.append(f"❌ {key[2]} failed", style="bold red")
         t.append(f" {message}")  # default style
         self.update_status(key, t)
 
     def skip(self, key, message):
-        t = Text(f"🚫 {key[3]} skipped, {message}")
+        t = Text(f"🚫 {key[2]} skipped, {message}")
         self.update_status(key, t)
 
     def render_tree(self):

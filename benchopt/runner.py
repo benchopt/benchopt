@@ -79,7 +79,7 @@ def run_one_resolution(objective, solver, meta, stop_val):
 
 
 def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
-                   force=False, terminal=None, pdb=False):
+                   force=False, pdb=False):
     """Run all repetitions of the solver for a value of stopping criterion.
 
     Parameters
@@ -181,7 +181,8 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
             if to_save is not None:
                 with open(meta["final_results"], 'wb') as f:
                     pickle.dump(to_save, f)
-    except Exception:
+    except Exception as e:
+        print(e)
         status = "error"
 
     if benchmark.separate_logs:
@@ -236,6 +237,9 @@ def get_run_args(
     args_run_one_to_cvg : dict
         The dictionary of arguments to run_one_to_cvg.
     """
+    if n_repetitions is None:
+        n_repetitions = 1
+
     stopping_criterion_timeout = timeout
     if timeout is not None:
         stopping_criterion_timeout = timeout / n_repetitions
@@ -249,7 +253,12 @@ def get_run_args(
         # Set objective and skip if necessary.
         skip, reason = rep_objective.set_dataset(rep_dataset)
         if skip:
-            terminal.skip(reason)
+            key = (
+                str(rep_dataset),
+                str(rep_objective),
+                str(rep_solver)
+            )
+            terminal.skip(key, reason)
             return []
 
         # get sampling strategy
@@ -274,7 +283,12 @@ def get_run_args(
 
         skip, reason = rep_solver._set_objective(rep_objective)
         if skip:
-            terminal.skip(reason)
+            key = (
+                str(rep_dataset),
+                str(rep_objective),
+                str(rep_solver)
+            )
+            terminal.skip(key, reason)
             return []
 
         # Get meta
@@ -307,7 +321,7 @@ def get_run_args(
         args_run_one_to_cvg = dict(
             benchmark=benchmark, objective=rep_objective, solver=rep_solver,
             meta=meta, stopping_criterion=stopping_criterion, force=force,
-            terminal=terminal, pdb=pdb
+            pdb=pdb
         )
 
         kwargs_list.append(args_run_one_to_cvg)
@@ -378,6 +392,9 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
     output_file : Path
         Path to the output file where the results have been saved.
     """
+    if n_repetitions is None:
+        n_repetitions = 1
+
     exit_code = 0
     terminal = TerminalOutput(n_repetitions, show_progress)
 
@@ -389,11 +406,11 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
     )
     common_kwargs = dict(
         benchmark=benchmark, n_repetitions=n_repetitions, max_runs=max_runs,
-        timeout=timeout, pdb=pdb, collect=collect
+        timeout=timeout, pdb=pdb, collect=collect, terminal=terminal
     )
 
     run_one_to_cvg_cached = benchmark.cache(
-        run_one_to_cvg, ignore=['force', 'terminal', 'pdb'], collect=collect
+        run_one_to_cvg, ignore=['force', 'pdb'], collect=collect
     )
     if collect:
         _run_one_to_cvg_cached = run_one_to_cvg_cached

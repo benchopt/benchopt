@@ -262,7 +262,6 @@ class StoppingCriterion():
         if status == 'running':
             stop_val = self.get_next_stop_val(stop_val)
             self.debug(f"Calling with stop val: {stop_val}")
-            # self.progress(progress=progress)
 
         return stop, status, stop_val
 
