@@ -411,8 +411,7 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
     )
 
     run_one_to_cvg_cached = benchmark.cache(
-        run_one_to_cvg, ignore=['force', 'pdb'], collect=collect,
-        check_status=True
+        run_one_to_cvg, ignore=['force', 'pdb'], collect=collect
     )
     if collect:
         _run_one_to_cvg_cached = run_one_to_cvg_cached
