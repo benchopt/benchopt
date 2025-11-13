@@ -1,6 +1,8 @@
 import time
 import math
 
+from .config import DEBUG
+
 # Possible curve sampling strategies
 SAMPLING_STRATEGIES = ['iteration', 'tolerance', 'callback', 'run_once']
 
@@ -289,7 +291,10 @@ class StoppingCriterion():
 
     def debug(self, msg):
         """Helper to print debug messages."""
-        print(f"[DEBUG] {self.solver} - {msg}")
+        if DEBUG:
+            if not hasattr(self, 'solver') or self.solver is None:
+                self.solver = ""
+            print(f"[DEBUG] {self.solver} - {msg}")
 
     def progress(self, msg):
         """Helper to print progress messages."""
