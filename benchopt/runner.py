@@ -7,6 +7,7 @@ from rich.live import Live, Console
 from joblib import hash
 import copy
 import sys
+import traceback
 
 from .callback import _Callback
 from .benchmark import Benchmark
@@ -181,8 +182,8 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
             if to_save is not None:
                 with open(meta["final_results"], 'wb') as f:
                     pickle.dump(to_save, f)
-    except Exception as e:
-        print(e)
+    except Exception:
+        traceback.print_exc()
         status = "error"
 
     if benchmark.separate_logs:

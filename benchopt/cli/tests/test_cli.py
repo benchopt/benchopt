@@ -125,7 +125,8 @@ class TestRunCmd:
         with temp_benchmark() as bench, CaptureCmdOutput() as out:
             cmd = (
                 f"{bench.benchmark_dir} -n 1 --no-plot "
-                f"-d test-dataset --env-name {test_env_name}"
+                f"-d test-dataset --env-name {test_env_name} "
+                f"--no-separate-logs"
             )
             run(cmd.split(), 'benchopt', standalone_mode=False)
 
@@ -134,7 +135,7 @@ class TestRunCmd:
         out.check_output('test-dataset', repetition=2)
         out.check_output('simulated', repetition=0)
         out.check_output('test-objective', repetition=1)
-        out.check_output('test-solver:', repetition=6)
+        out.check_output('test-solver', repetition=6)
 
         # Make sure the results were saved in a result file
         assert len(out.result_files) == 1, out
@@ -144,7 +145,8 @@ class TestRunCmd:
         with temp_benchmark() as bench, CaptureCmdOutput() as out:
             cmd = (
                 f"{bench.benchmark_dir} -r 1 -n 1 --timeout {timeout} "
-                f"--no-plot -d test-dataset --env-name {test_env_name}"
+                f"--no-plot -d test-dataset --env-name {test_env_name} "
+                f"--no-separate-logs"
             )
             run(cmd.split(), 'benchopt', standalone_mode=False)
 
@@ -153,7 +155,7 @@ class TestRunCmd:
         out.check_output('test-dataset', repetition=2)
         out.check_output('simulated', repetition=0)
         out.check_output('test-objective', repetition=1)
-        out.check_output('test-solver:', repetition=6)
+        out.check_output('test-solver', repetition=6)
 
         # Make sure the results were saved in a result file
         assert len(out.result_files) == 1, out
@@ -202,14 +204,14 @@ class TestRunCmd:
         with temp_benchmark() as bench, CaptureCmdOutput() as out:
             cmd = (
                 f"{bench.benchmark_dir} -r 1 -n 1 --no-plot "
-                "-d all -s all -o all"
+                "-d all -s all -o all --no-separate-logs"
             )
             run(cmd.split(), 'benchopt', standalone_mode=False)
 
         out.check_output('test-dataset', repetition=1)
         out.check_output('simulated', repetition=1)
         out.check_output('test-objective', repetition=2)
-        out.check_output('test-solver:', repetition=12)
+        out.check_output('test-solver', repetition=12)
 
         # Make sure the results were saved in a result file
         assert len(out.result_files) == 1, out
@@ -228,7 +230,7 @@ class TestRunCmd:
                 CaptureCmdOutput() as out:
             run(
                 f"{bench.benchmark_dir} -d test-dataset[param1=[2,3]] "
-                "-n 1 --no-plot".split(),
+                "-n 1 --no-plot --no-separate-logs".split(),
                 'benchopt', standalone_mode=False
             )
 
@@ -294,11 +296,11 @@ class TestRunCmd:
         with temp_benchmark(config=config, solvers=solver) as bench:
             with CaptureCmdOutput() as out:
                 run(
-                    f"{bench.benchmark_dir} --no-plot --config "
-                    f"{bench.benchmark_dir / 'config.yml'}".split(),
+                    f"{bench.benchmark_dir} --no-plot --no-separate-logs "
+                    f"--config {bench.benchmark_dir / 'config.yml'}".split(),
                     'benchopt', standalone_mode=False
                 )
-            out.check_output(r'test-solver\[param1=42\]:', repetition=n_reps+1)
+            out.check_output(r'test-solver\[param1=42\]', repetition=n_reps+1)
 
     def test_config_file(self, no_debug_log):
         n_reps = 2
@@ -328,31 +330,31 @@ class TestRunCmd:
         with temp_benchmark(config=config, solvers=solver) as bench:
             with CaptureCmdOutput() as out:
                 run(
-                    f"{bench.benchmark_dir} --no-plot --config "
-                    f"{bench.benchmark_dir / 'config.yml'}".split(),
+                    f"{bench.benchmark_dir} --no-plot --no-separate-logs "
+                    f"--config {bench.benchmark_dir / 'config.yml'}".split(),
                     'benchopt', standalone_mode=False
                 )
 
             out.check_output('test-objective', repetition=1)
             out.check_output('test-dataset', repetition=1)
             out.check_output('simulated', repetition=0)
-            out.check_output(r'test-solver\[param1=42\]:', repetition=n_reps+1)
-            out.check_output(r'test-solver\[param1=0\]:', repetition=0)
+            out.check_output(r'test-solver\[param1=42\]', repetition=n_reps+1)
+            out.check_output(r'test-solver\[param1=0\]', repetition=0)
 
             # test that CLI options take precedence
             with CaptureCmdOutput() as out:
 
                 run(
-                    f"{bench.benchmark_dir} --no-plot --config "
-                    f"{bench.benchmark_dir / 'config.yml'} "
+                    f"{bench.benchmark_dir} --no-plot --no-separate-logs "
+                    f"--config {bench.benchmark_dir / 'config.yml'} "
                     "-s test-solver[param1=27] -r 1".split(),
                     'benchopt', standalone_mode=False)
 
             out.check_output('test-objective', repetition=1)
             out.check_output('test-dataset', repetition=1)
             out.check_output('simulated', repetition=0)
-            out.check_output(r'test-solver\[param1=27\]:', repetition=2)
-            out.check_output(r'test-solver\[param1=42\]:', repetition=0)
+            out.check_output(r'test-solver\[param1=27\]', repetition=2)
+            out.check_output(r'test-solver\[param1=42\]', repetition=0)
 
     @pytest.mark.parametrize('config, msg', [
         ("some_unknown_option: 0", "Invalid config file option"),
@@ -376,7 +378,7 @@ class TestRunCmd:
             # Check that the computation caching is working properly.
             run_cmd = (
                 f"{bench.benchmark_dir} -d test-dataset -s test-solver "
-                f"-n 1 -r {n_rep} --no-plot"
+                f"-n 1 -r {n_rep} --no-plot --no-separate-logs"
             ).split()
 
             # Make a first run that should be put in cache
@@ -385,27 +387,27 @@ class TestRunCmd:
 
             # Check that this run was properly done. If only one is detected,
             # this indicates that the temp_benchmark does not run properly.
-            out.check_output('test-solver:', repetition=5*n_rep+1)
+            out.check_output('test-solver', repetition=5*n_rep+1)
 
             # Now check that the cache is hit when running the benchmark a
             # second time without force
             with CaptureCmdOutput() as out:
                 run(run_cmd, 'benchopt', standalone_mode=False)
 
-            out.check_output('test-solver:', repetition=1)
+            out.check_output('test-solver', repetition=1)
 
             # Check that the cache is also hit when running in parallel
             with CaptureCmdOutput() as out:
                 run(run_cmd + ['-j', 2], 'benchopt', standalone_mode=False)
 
-            out.check_output('test-solver:', repetition=1)
+            out.check_output('test-solver', repetition=1)
 
             # Make sure that -f option forces the re-run for the solver
             run_cmd[3] = '-f'
             with CaptureCmdOutput() as out:
                 run(run_cmd, 'benchopt', standalone_mode=False)
 
-            out.check_output('test-solver:', repetition=5*n_rep+1)
+            out.check_output('test-solver', repetition=5*n_rep+1)
 
     def test_changing_output_name(self):
         with temp_benchmark() as bench, CaptureCmdOutput() as out:
@@ -452,7 +454,7 @@ class TestRunCmd:
             with CaptureCmdOutput() as out:
                 run([str(bench.benchmark_dir),
                     *'-d test-dataset -n 1 -r 1 --no-plot'.split(),
-                    *'-s test-solver'.split()],
+                    *'-s test-solver --no-separate-logs'.split()],
                     'benchopt', standalone_mode=False)
 
             out.check_output('#RUN0', repetition=2)
@@ -462,7 +464,7 @@ class TestRunCmd:
                 run([
                     str(bench.benchmark_dir),
                     *'-d test-dataset -n 1 -r 1 --no-plot --collect'.split(),
-                    *'-s test-solver[param=[0,1]]'.split()
+                    *'-s test-solver[param=[0,1]] --no-separate-logs'.split()
                 ], 'benchopt', standalone_mode=False)
 
             # check that no solver where run

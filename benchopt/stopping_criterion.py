@@ -165,7 +165,8 @@ class StoppingCriterion():
             self._deadline = None
         self._prev_objective = 1e100
 
-        self.debug(f"Calling solver {self.solver} with stop val: {stop_val}")
+        self.debug(f"Calling solver with stop val: {stop_val}")
+        self.progress('initialization')
         return stop_val
 
     def should_stop(self, stop_val, objective_list):
@@ -262,6 +263,7 @@ class StoppingCriterion():
         if status == 'running':
             stop_val = self.get_next_stop_val(stop_val)
             self.debug(f"Calling with stop val: {stop_val}")
+            self.progress(progress)
 
         return stop, status, stop_val
 
@@ -288,6 +290,10 @@ class StoppingCriterion():
     def debug(self, msg):
         """Helper to print debug messages."""
         print(f"[DEBUG] - {msg}")
+
+    def progress(self, msg):
+        """Helper to print progress messages."""
+        print(f"[PROGRESS] {self.solver}: {msg}")
 
     @staticmethod
     def _reconstruct(klass, kwargs, runner_kwargs):

@@ -45,7 +45,7 @@ def test_custom_parameters(no_debug_log):
     with temp_benchmark(solvers=solver) as bench, CaptureCmdOutput() as out:
         run(
             f"{bench.benchmark_dir} -d simulated -s {select_solvers} -n 0 "
-            "--no-plot".split(),
+            "--no-plot --no-separate-logs".split(),
             'benchopt', standalone_mode=False)
 
     out.check_output(r'test-solver\[param1=0', repetition=0)
@@ -73,11 +73,10 @@ def test_solver_warm_up():
 
     with temp_benchmark(solvers=[solver1]) as benchmark:
         with CaptureCmdOutput() as out:
-            run([
-                str(benchmark.benchmark_dir),
-                *'-s solver1 -d test-dataset -n 0 -r 5 --no-plot'.split(),
-            ], standalone_mode=False)
-
+            cmd = str(benchmark.benchmark_dir)
+            cmd += ' -s solver1 -d test-dataset -n 0 -r 5 --no-plot'
+            cmd += ' --no-separate-logs'
+            run(cmd.split(), standalone_mode=False)
         # Make sure warmup is called exactly once
         out.check_output("WARMUP", repetition=1)
 
@@ -103,10 +102,10 @@ def test_solver_pre_run_hook():
 
     with temp_benchmark(solvers=[solver1]) as benchmark:
         with CaptureCmdOutput() as out:
-            run([
-                str(benchmark.benchmark_dir),
-                *'-s solver1 -d test-dataset -n 2 -r 2 --no-plot'.split()
-            ], standalone_mode=False)
+            cmd = str(benchmark.benchmark_dir)
+            cmd += ' -s solver1 -d test-dataset -n 2 -r 2 --no-plot'
+            cmd += ' --no-separate-logs'
+            run(cmd.split(), standalone_mode=False)
         out.check_output("PRERUN 2", repetition=2)
 
 
@@ -168,7 +167,7 @@ def test_solver_return_early_callback(eval_every):
         with CaptureCmdOutput() as out:
             run(
                 f"{bench.benchmark_dir} -d test-dataset -n 10 "
-                "--no-plot".split(),
+                "--no-plot --no-separate-logs".split(),
                 "benchopt", standalone_mode=False
             )
         # Make sure the solver returns early and the last value is only logged
