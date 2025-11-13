@@ -75,7 +75,7 @@ def test_config_solver_with_params(no_debug_log):
                 *f'--config {config_file} --no-separate-logs'.split()
             ], standalone_mode=False)
         out.check_output(r"RUN\(0\)", repetition=1)
-        out.check_output(r"solver1\[param1=None,param2=None\]", repetition=2)
+        out.check_output(r"solver1\[param1=None,param2=None\]:", repetition=2)
 
 
 def test_config_solver_with_params_error(no_debug_log):

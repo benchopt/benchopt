@@ -49,8 +49,8 @@ def test_custom_parameters(no_debug_log):
             'benchopt', standalone_mode=False)
 
     out.check_output(r'test-solver\[param1=0', repetition=0)
-    out.check_output(r'test-solver\[param1=1,param2=9\]', repetition=2)
-    out.check_output(r'test-solver\[param1=2,param2=9\]', repetition=2)
+    out.check_output(r'test-solver\[param1=1,param2=9\]:', repetition=2)
+    out.check_output(r'test-solver\[param1=2,param2=9\]:', repetition=2)
 
 
 def test_solver_warm_up():

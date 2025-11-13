@@ -153,8 +153,8 @@ def test_key_to_monitor_objective(no_debug_log, criterion_class, strategy):
             )
             run(cmd.split(), standalone_mode=False)
 
-    out.check_output('test-solver', 5)
-    out.check_output('test-solver done', 1)
+    out.check_output('test-solver:', 5)
+    out.check_output('test-solver: done', 1)
 
 
 @pytest.mark.parametrize('strategy', SAMPLING_STRATEGIES)

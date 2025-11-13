@@ -446,7 +446,6 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
                 "The result returned by `Solver.get_result` should be a dict "
                 "whose keys are the arguments of `Objective.evaluate_result`. "
                 f"Got {result}."
-
             )
 
         objective_output = self.evaluate_result(**result)

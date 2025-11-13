@@ -61,13 +61,15 @@ def test_skip_api(n_jobs):
             from joblib.externals.loky import get_reusable_executor
             get_reusable_executor().shutdown(wait=True)
 
-    out.check_output(r"test-solver\[should_skip=True\] skipped", repetition=2)
-    out.check_output(r"test-solver\[should_skip=False\] skipped", repetition=1)
+    out.check_output(r"test-solver\[should_skip=True\]: skipped", repetition=2)
+    out.check_output(
+        r"test-solver\[should_skip=False\]: skipped", repetition=1
+    )
 
     out.check_output("Objective#SKIP", repetition=2)
     out.check_output("Solver#SKIP", repetition=1)
 
-    out.check_output(r"test-solver\[should_skip=False\] done", repetition=1)
+    out.check_output(r"test-solver\[should_skip=False\]: done", repetition=1)
 
 
 def _assert_parameters_equal(instance, parameters):
@@ -292,8 +294,8 @@ def test_benchopt_run_script(n_jobs, no_debug_log):
 
     out.check_output('simulated', repetition=1)
     out.check_output('test-objective', repetition=1)
-    out.check_output('test-solver', repetition=4)
-    out.check_output('template_solver', repetition=0)
+    out.check_output('test-solver:', repetition=4)
+    out.check_output('template_solver:', repetition=0)
 
     # Make sure the results were saved in a result file
     assert len(out.result_files) == 1, out.output

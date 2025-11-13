@@ -289,7 +289,7 @@ class StoppingCriterion():
 
     def debug(self, msg):
         """Helper to print debug messages."""
-        print(f"[DEBUG] - {msg}")
+        print(f"[DEBUG] {self.solver} - {msg}")
 
     def progress(self, msg):
         """Helper to print progress messages."""
