@@ -126,12 +126,13 @@ def test_solver_invalid_get_result(strategy):
     """
 
     with temp_benchmark(solvers=solver) as benchmark:
-        with pytest.raises(TypeError, match='get_result` should be a dict '):
-            with CaptureCmdOutput():
-                run([
-                    str(benchmark.benchmark_dir),
-                    *'-s solver1 -d test-dataset -n 0 -r 5 --no-plot'.split()
-                ], standalone_mode=False)
+        with CaptureCmdOutput() as out:
+            with pytest.raises(SystemExit):
+                cmd = str(benchmark.benchmark_dir)
+                cmd += ' -s solver1 -d test-dataset -n 0 -r 5 '
+                cmd += '--no-plot --no-separate-logs'
+                run(cmd.split(), standalone_mode=False)
+        out.check_output('get_result` should be a dict ', repetition=5)
 
 
 @pytest.mark.parametrize('eval_every', [1, 10])
