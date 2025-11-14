@@ -34,9 +34,10 @@ def test_objective_bad_name(no_debug_log):
 
     with temp_benchmark(objective=objective, solvers=MINIMAL_SOLVER) as bench:
         with CaptureCmdOutput(exit=1) as out:
-            run([str(bench.benchmark_dir),
-                *'-s test-solver -d test-dataset -n 1 -r 1 --no-plot'.split()],
-                standalone_mode=False)
+            cmd = str(bench.benchmark_dir)
+            cmd += ' -s test-solver -d test-dataset -n 1 -r 1'
+            cmd += ' --no-plot --no-separate-logs'
+            run(cmd.split(), standalone_mode=False)
 
     out.check_output("ValueError: objective output cannot contain 'name' key")
 
@@ -70,9 +71,10 @@ def test_objective_no_value(no_debug_log):
 
     with temp_benchmark(objective=objective, solvers=solver) as bench:
         with CaptureCmdOutput(exit=1) as out:
-            run([str(bench.benchmark_dir),
-                *'-s test-solver -d test-dataset -n 1 -r 1 --no-plot'
-                .split()], standalone_mode=False)
+            cmd = str(bench.benchmark_dir)
+            cmd += ' -s test-solver -d test-dataset -n 1 -r 1'
+            cmd += ' --no-plot --no-separate-logs'
+            run(cmd.split(), standalone_mode=False)
 
     out.check_output(
         r"Objective.evaluate_result\(\) should contain a key named 'value'"
@@ -85,9 +87,10 @@ def test_objective_no_value(no_debug_log):
     )
     with temp_benchmark(objective=objective, solvers=solver_key) as bench:
         with CaptureCmdOutput(exit=1) as out:
-            run([str(bench.benchmark_dir),
-                *'-s test-solver -d test-dataset -n 1 -r 1 --no-plot'
-                .split()], standalone_mode=False)
+            cmd = str(bench.benchmark_dir)
+            cmd += ' -s test-solver -d test-dataset -n 1 -r 1'
+            cmd += ' --no-plot --no-separate-logs'
+            run(cmd.split(), standalone_mode=False)
 
     out.check_output(
         r"Objective.evaluate_result\(\) should contain a key named 'XXX'"
