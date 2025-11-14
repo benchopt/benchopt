@@ -116,7 +116,7 @@ class TestRunCmd:
         out.check_output('test-dataset', repetition=1)
         out.check_output('simulated', repetition=0)
         out.check_output('test-objective', repetition=1)
-        out.check_output('test-solver', repetition=6)
+        out.check_output('test-solver:', repetition=6)
 
         # Make sure the results were saved in a result file
         assert len(out.result_files) == 1, out
@@ -135,7 +135,7 @@ class TestRunCmd:
         out.check_output('test-dataset', repetition=2)
         out.check_output('simulated', repetition=0)
         out.check_output('test-objective', repetition=1)
-        out.check_output('test-solver', repetition=6)
+        out.check_output('test-solver:', repetition=6)
 
         # Make sure the results were saved in a result file
         assert len(out.result_files) == 1, out
@@ -155,7 +155,7 @@ class TestRunCmd:
         out.check_output('test-dataset', repetition=2)
         out.check_output('simulated', repetition=0)
         out.check_output('test-objective', repetition=1)
-        out.check_output('test-solver', repetition=6)
+        out.check_output('test-solver:', repetition=6)
 
         # Make sure the results were saved in a result file
         assert len(out.result_files) == 1, out
@@ -211,7 +211,7 @@ class TestRunCmd:
         out.check_output('test-dataset', repetition=1)
         out.check_output('simulated', repetition=1)
         out.check_output('test-objective', repetition=2)
-        out.check_output('test-solver', repetition=12)
+        out.check_output('test-solver:', repetition=12)
 
         # Make sure the results were saved in a result file
         assert len(out.result_files) == 1, out
@@ -300,7 +300,7 @@ class TestRunCmd:
                     f"--config {bench.benchmark_dir / 'config.yml'}".split(),
                     'benchopt', standalone_mode=False
                 )
-            out.check_output(r'test-solver\[param1=42\]', repetition=n_reps+1)
+            out.check_output(r'test-solver\[param1=42\]:', repetition=n_reps+1)
 
     def test_config_file(self, no_debug_log):
         n_reps = 2
@@ -338,8 +338,8 @@ class TestRunCmd:
             out.check_output('test-objective', repetition=1)
             out.check_output('test-dataset', repetition=1)
             out.check_output('simulated', repetition=0)
-            out.check_output(r'test-solver\[param1=42\]', repetition=n_reps+1)
-            out.check_output(r'test-solver\[param1=0\]', repetition=0)
+            out.check_output(r'test-solver\[param1=42\]:', repetition=n_reps+1)
+            out.check_output(r'test-solver\[param1=0\]:', repetition=0)
 
             # test that CLI options take precedence
             with CaptureCmdOutput() as out:
@@ -353,8 +353,8 @@ class TestRunCmd:
             out.check_output('test-objective', repetition=1)
             out.check_output('test-dataset', repetition=1)
             out.check_output('simulated', repetition=0)
-            out.check_output(r'test-solver\[param1=27\]', repetition=2)
-            out.check_output(r'test-solver\[param1=42\]', repetition=0)
+            out.check_output(r'test-solver\[param1=27\]:', repetition=2)
+            out.check_output(r'test-solver\[param1=42\]:', repetition=0)
 
     @pytest.mark.parametrize('config, msg', [
         ("some_unknown_option: 0", "Invalid config file option"),
@@ -387,27 +387,27 @@ class TestRunCmd:
 
             # Check that this run was properly done. If only one is detected,
             # this indicates that the temp_benchmark does not run properly.
-            out.check_output('test-solver', repetition=5*n_rep+1)
+            out.check_output('test-solver:', repetition=5*n_rep+1)
 
             # Now check that the cache is hit when running the benchmark a
             # second time without force
             with CaptureCmdOutput() as out:
                 run(run_cmd, 'benchopt', standalone_mode=False)
 
-            out.check_output('test-solver', repetition=1)
+            out.check_output('test-solver:', repetition=1)
 
             # Check that the cache is also hit when running in parallel
             with CaptureCmdOutput() as out:
                 run(run_cmd + ['-j', 2], 'benchopt', standalone_mode=False)
 
-            out.check_output('test-solver', repetition=1)
+            out.check_output('test-solver:', repetition=1)
 
             # Make sure that -f option forces the re-run for the solver
             run_cmd[3] = '-f'
             with CaptureCmdOutput() as out:
                 run(run_cmd, 'benchopt', standalone_mode=False)
 
-            out.check_output('test-solver', repetition=5*n_rep+1)
+            out.check_output('test-solver:', repetition=5*n_rep+1)
 
     def test_changing_output_name(self):
         with temp_benchmark() as bench, CaptureCmdOutput() as out:
@@ -474,7 +474,6 @@ class TestRunCmd:
             # check that the results where collected for the correct solvers
             assert len(out.result_files) == 1, out
             out.check_output(r'done \(not enough run\)', repetition=1)
-            out.check_output('not run yet', repetition=1)
 
     def test_complete_bench(self, bench_completion_cases):  # noqa: F811
 

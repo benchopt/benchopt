@@ -515,13 +515,13 @@ class TestCache:
                 ]
         ) as bench:
             with CaptureCmdOutput() as out:
-                cmd = f"{bench.benchmark_dir}"
-                cmd += "-s test-solver -s test-solver2"
+                cmd = f"{bench.benchmark_dir} "
+                cmd += "-s test-solver -s test-solver2 "
                 cmd += f'--no-plot -r {n_reps} --no-separate-logs'
                 run(cmd.split(), standalone_mode=False)
 
-                cmd = f"{bench.benchmark_dir}"
-                cmd += "-s test-solver2 -s test-solver"
+                cmd = f"{bench.benchmark_dir} "
+                cmd += "-s test-solver2 -s test-solver "
                 cmd += f'--no-plot -r {n_reps} --no-separate-logs'
                 run(cmd.split(), standalone_mode=False)
 

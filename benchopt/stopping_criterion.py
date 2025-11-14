@@ -167,7 +167,7 @@ class StoppingCriterion():
             self._deadline = None
         self._prev_objective = 1e100
 
-        self.debug(f"Calling solver with stop val: {stop_val}")
+        self.debug(f"Calling solver {self.solver} with stop val: {stop_val}")
         self.progress('initialization')
         return stop_val
 

@@ -92,6 +92,9 @@ class TerminalOutput:
         if msg == "done":
             msg = None
 
+        if msg == 'max_runs':
+            msg = 'not enough run'
+
         self.increment_key(key, msg)
 
     def init_key(self, key):
@@ -138,7 +141,7 @@ class TerminalOutput:
                     t = Text()
                     if key in self.warnings:
                         t.append(
-                            f"⚠️  {solver}: done, {self.warnings[key]}",
+                            f"⚠️  {solver}: done ({self.warnings[key]})",
                             style="yellow"
                         )
                     else:
