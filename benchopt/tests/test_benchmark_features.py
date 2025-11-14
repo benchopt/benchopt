@@ -482,7 +482,7 @@ def test_paths_config_key(test_case, n_jobs):
         with CaptureCmdOutput() as out:
             run(
                 f"{bench.benchmark_dir} -s test-solver -d custom_dataset "
-                f"-n 0 -r 1 --no-plot -j {n_jobs}".split(),
+                f"-n 0 -r 1 --no-plot -j {n_jobs} --no-separate-logs".split(),
                 standalone_mode=False
             )
 

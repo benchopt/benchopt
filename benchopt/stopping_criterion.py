@@ -312,7 +312,7 @@ class StoppingCriterion():
             strategy=self.strategy, key_to_monitor=self.key_to_monitor,
             **self.kwargs
         )
-        if getattr(self, 'max_runs', None):
+        if hasattr(self, 'max_runs'):
             runner_kwargs = dict(
                 max_runs=self.max_runs, timeout=self.timeout,
                 solver=self.solver
