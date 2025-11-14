@@ -227,11 +227,12 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         ...
 
     def _warm_up(self):
-        if getattr(self, '_warmup_done', None):
+        cls = self.__class__
+        if getattr(cls, '_warmup_done', False):
             # already warmed up
             return
         self.warm_up()
-        self._warmup_done = True
+        cls._warmup_done = True
 
     def _get_state(self):
         """Return the state of the objective for pickling."""
