@@ -387,7 +387,8 @@ def run(config_file=None, **kwargs):
         rf"{parallel_args}"
         rf"{'--pdb ' if pdb else ''}"
         rf"{'--profile ' if do_profile else ''}"
-        rf"--output {output}"
+        rf"--output {output} "
+        rf"{'--no-separate-logs ' if not separate_logs else ''}"
         .replace('\\', '\\\\')
     )
     exit_code = _run_shell_in_conda_env(

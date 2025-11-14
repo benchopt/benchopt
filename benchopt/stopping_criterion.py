@@ -294,7 +294,7 @@ class StoppingCriterion():
         if DEBUG:
             if not hasattr(self, 'solver') or self.solver is None:
                 self.solver = ""
-            print(f"[DEBUG] {self.solver} - {msg}")
+            print(f"[DEBUG] {self.solver}: {msg}")
 
     def progress(self, msg):
         """Helper to print progress messages."""

@@ -78,10 +78,10 @@ def test_r_solver(test_env_name, no_debug_log):
             env_name=test_env_name, raise_on_not_installed=True
         )
         with CaptureCmdOutput() as out:
-            run([
-                str(bench.benchmark_dir), '-s', 'r_solver', '-n', '1', '-r', 1,
-                '-d', 'simulated', '--no-plot', '--env-name', test_env_name
-            ], 'benchopt', standalone_mode=False)
+            cmd = f"{str(bench.benchmark_dir)} -s r_solver -n 1 -r 1 "
+            cmd += f"-d simulated --no-plot --env-name {test_env_name} "
+            cmd += " --no-separate-logs"
+            run(cmd.split(), 'benchopt', standalone_mode=False)
 
         out.check_output("r_solver:", repetition=3)
 
@@ -140,10 +140,9 @@ def test_julia_solver(test_env_name, no_debug_log):
         )
 
         with CaptureCmdOutput() as out:
-            run([
-                str(bench.benchmark_dir), '-s', 'julia_solver', '-n', '1',
-                '-r', 1, '-d', 'simulated', '--no-plot',
-                '--env-name', test_env_name
-            ], 'benchopt', standalone_mode=False)
+            cmd = f"{str(bench.benchmark_dir)} -s julia_solver -n 1 -r 1 "
+            cmd += f"-d simulated --no-plot --env-name {test_env_name} "
+            cmd += " --no-separate-logs"
+            run(cmd.split(), 'benchopt', standalone_mode=False)
 
         out.check_output("julia_solver:", repetition=3)

@@ -701,7 +701,7 @@ class Benchmark:
 
                     if error is not None:
                         terminal.skip(
-                            (dataset, objective, solver),
+                            (str(dataset), str(objective), str(solver)),
                             error
                         )
                         continue
