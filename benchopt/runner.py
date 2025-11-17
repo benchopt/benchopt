@@ -90,11 +90,16 @@ def run_one_to_cvg(benchmark, objective, solver, meta, timeout, max_runs,
     meta : dict
         Metadata passed to store in Cost results.
         Contains objective, data, dimension.
-    stopping_criterion : StoppingCriterion
-        Object to check if we need to stop a solver.
+    timeout : float
+        The maximum duration in seconds of the solver run.
+    max_runs : int
+        The maximum number of solver runs to perform to estimate the
+        convergence curve.
     force : bool
         If force is set to True, ignore the cache and run the computations
         for the solver anyway. Else, use the cache if available.
+    terminal : TerminalOutput or None
+        Object to format string to display the progress of the solver.
     pdb : bool
         It pdb is set to True, open a debugger on error.
 
@@ -102,6 +107,8 @@ def run_one_to_cvg(benchmark, objective, solver, meta, timeout, max_runs,
     -------
     curve : list of Cost
         The cost obtained for all repetitions.
+    key : tuple of string
+        The key to identify the run in the benchmark results.
     status : 'done' | 'diverged' | 'timeout' | 'max_runs'
         The status on which the solver was stopped.
     """
@@ -178,7 +185,7 @@ def run_one_to_cvg(benchmark, objective, solver, meta, timeout, max_runs,
         meta['objective_name'],
         meta['solver_name']
     )
-    return curve, (key, ctx.status)
+    return curve, key, ctx.status
 
 
 def get_run_args(
@@ -359,7 +366,7 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
     )
 
     run_one_to_cvg_cached = benchmark.cache(
-        run_one_to_cvg, ignore=['force', 'pdb'], collect=collect
+        run_one_to_cvg, ignore=['force', 'pdb', 'terminal'], collect=collect
     )
 
     if collect:
@@ -372,7 +379,9 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
                 kwargs['meta']['objective_name'],
                 kwargs['meta']['solver_name']
             )
-            return res if res is not None else ([], (key, 'not run yet'))
+            if res is not None:
+                return res
+            return ([], key, 'not run yet')
 
     def run_one_to_cvg_final(**kwargs):
         results = None
@@ -384,7 +393,7 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
                 kwargs['meta']['objective_name'],
                 kwargs['meta']['solver_name']
             )
-            results = ([], (key, e.status))
+            results = ([], key, e.status)
         return results
 
     total_cvg_kwargs = []
@@ -402,12 +411,8 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
     )
 
     status_dict = {}
-
-    for results in results_generator:
-        result = results[0]
+    for result, key, status in results_generator:
         run_statistics.extend(result)
-
-        key, status = results[1]
         if key not in status_dict:
             status_dict[key] = status
         elif status_dict[key] == 'done':
