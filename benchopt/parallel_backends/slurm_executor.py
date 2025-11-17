@@ -82,14 +82,14 @@ def hashable_pytree(pytree):
 
 
 def run_on_slurm(
-    benchmark, slurm_config, run_one_solver, all_runs
+    benchmark, slurm_config, run_one_solver, run_kwargs_generator
 ):
 
     executors = {}
     tasks = []
 
     with ExitStack() as stack:
-        for kwargs in all_runs:
+        for kwargs in run_kwargs_generator:
             solver = kwargs.get("solver")
             solver_slurm_config = get_solver_slurm_config(solver, slurm_config)
             executor_config = hashable_pytree(solver_slurm_config)

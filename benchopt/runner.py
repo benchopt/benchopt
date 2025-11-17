@@ -188,7 +188,7 @@ def run_one_to_cvg(benchmark, objective, solver, meta, timeout, max_runs,
     return curve, key, ctx.status
 
 
-def get_run_args(
+def get_solver_kwargs(
     benchmark, dataset, objective, solver, n_repetitions, max_runs,
     timeout=None, force=False, collect=False, terminal=None, pdb=False
 ):
@@ -232,8 +232,6 @@ def get_run_args(
     if skip:
         terminal.skip(reason, objective=True)
         return []
-
-    kwargs_list = []
 
     # get sampling strategy
     # for plotting purpose consider 'callback' as 'iteration'
@@ -283,9 +281,12 @@ def get_run_args(
             terminal=terminal, pdb=pdb,
         )
 
-        kwargs_list.append(args_run_one_to_cvg)
+        yield args_run_one_to_cvg
 
-    return kwargs_list
+
+def get_run_kwargs(common_kwargs, run_kwargs):
+    for kwargs in run_kwargs:
+        yield from get_solver_kwargs(**common_kwargs, **kwargs)
 
 
 def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
@@ -396,17 +397,14 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
             results = ([], key, e.status)
         return results
 
-    total_cvg_kwargs = []
-    for run_kwargs in all_runs:
-        cvg_kwargs = get_run_args(
-            **common_kwargs, **run_kwargs
-        )
-        total_cvg_kwargs.extend(cvg_kwargs)
+    total_cvg_kwargs_generator = get_run_kwargs(
+        common_kwargs, all_runs
+    )
 
     run_statistics = []
 
     results_generator = parallel_run(
-        benchmark, run_one_to_cvg_final, total_cvg_kwargs,
+        benchmark, run_one_to_cvg_final, total_cvg_kwargs_generator,
         config=parallel_config, collect=collect
     )
 
