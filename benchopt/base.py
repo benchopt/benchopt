@@ -62,7 +62,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
             or 'iteration'
         )
 
-    def _set_objective(self, objective):
+    def _set_objective(self, objective, objective_dict=None):
         """Store the objective for hashing/pickling and check its compatibility
 
         Parameters
@@ -80,7 +80,10 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         """
         self._objective = objective
 
-        objective_dict = objective.get_objective()
+        if objective_dict is None:
+            self._objective_dict = objective.get_objective()
+            objective_dict = self._objective_dict
+
         assert objective_dict is not None, (
             "Objective needs to implement `get_objective` that returns "
             "a dictionary to be passed to `set_objective`"
@@ -235,12 +238,16 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
 
     def _get_state(self):
         """Return the state of the objective for pickling."""
-        return dict(objective=getattr(self, '_objective', None))
+        return dict(
+            objective=getattr(self, '_objective', None),
+            objective_dict=getattr(self, '_objective_dict', None)
+        )
 
     def __setstate__(self, state):
+        objective_dict = state['objective_dict']
         objective = state['objective']
         if objective is not None:
-            self._set_objective(objective)
+            self._set_objective(objective, objective_dict)
 
 
 class CommandLineSolver(BaseSolver, ABC):

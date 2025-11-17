@@ -17,7 +17,7 @@ def is_distributed_frontal():
     return _DISTRIBUTED_FRONTAL
 
 
-def parallel_run(benchmark, run, kwargs, all_runs, config, collect=False):
+def parallel_run(benchmark, run, all_runs, config, collect=False):
     config = config or {}
     backend = config.pop('backend', 'loky')
     if collect:  # Collect should not run complicated parallelism
@@ -27,18 +27,18 @@ def parallel_run(benchmark, run, kwargs, all_runs, config, collect=False):
     )
     if backend == 'submitit':
         from .slurm_executor import run_on_slurm
-        results = run_on_slurm(benchmark, config, run, kwargs, all_runs)
+        results_generator = run_on_slurm(benchmark, config, run, all_runs)
     else:
         if backend == 'dask':
             from .dask_backend import check_dask_config
             config = check_dask_config(config)
         with parallel_config(backend, **config):
-            results = Parallel()(
-                delayed(run)(**kwargs, **run_kwargs)
+            results_generator = Parallel(return_as="generator_unordered")(
+                delayed(run)(**run_kwargs)
                 for run_kwargs in all_runs
             )
 
-    return results
+    return results_generator
 
 
 def check_parallel_config(parallel_config_file, slurm_config_file, n_jobs):

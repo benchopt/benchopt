@@ -92,15 +92,10 @@ def test_run_on_slurm(monkeypatch, dummy_slurm_config):
         # Result return as many information about the run as possible
         # Need to output a list for `results`, and benchopt also expect
         # a list from `run_one_solver`
-        def results(self):
+        def result(self):
             func, args, kwargs = self.task
             res = func(*args, **kwargs)
-            res = [
-                {**r, **{f"s_{k}": v for k, v in self.config.items()}}
-                for r in res
-            ]
-
-            return [res]
+            return res
 
     # Fake submit to allow running as on a slurm cluster and
     # get the configuration back

@@ -486,12 +486,12 @@ def test_paths_config_key(test_case, n_jobs):
         expected_home = Path(
             expected_home.format(bench_dir=bench.benchmark_dir.as_posix())
         ).resolve()
-        out.check_output(re.escape(f"HOME:{expected_home}"), repetition=1)
+        out.check_output(re.escape(f"HOME:{expected_home}"), repetition=n_jobs)
 
         expected_path = Path(
             expected_path.format(bench_dir=bench.benchmark_dir.as_posix())
         ).resolve()
-        out.check_output(re.escape(f"PATH:{expected_path}"), repetition=1)
+        out.check_output(re.escape(f"PATH:{expected_path}"), repetition=n_jobs)
 
 
 def test_warm_up():

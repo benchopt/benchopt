@@ -3,7 +3,6 @@ from contextlib import ExitStack
 try:
     import submitit
     from submitit.helpers import as_completed
-    from rich import progress
 except ImportError:
     raise ImportError(
         "To run benchopt with the submitit backend, please install "
@@ -83,7 +82,7 @@ def hashable_pytree(pytree):
 
 
 def run_on_slurm(
-    benchmark, slurm_config, run_one_solver, common_kwargs, all_runs
+    benchmark, slurm_config, run_one_solver, all_runs
 ):
 
     executors = {}
@@ -99,25 +98,23 @@ def run_on_slurm(
                 executor = get_slurm_executor(
                     benchmark,
                     solver_slurm_config,
-                    timeout=common_kwargs["timeout"],
+                    timeout=kwargs["timeout"],
                 )
                 stack.enter_context(executor.batch())
                 executors[executor_config] = executor
 
             future = executors[executor_config].submit(
-                run_one_solver,
-                **common_kwargs,
-                **kwargs,
+                run_one_solver, **kwargs
             )
             tasks.append(future)
 
-    print(f"First job id: {tasks[0].job_id}")
-
-    for t in progress.track(as_completed(tasks), total=len(tasks)):
-        exc = t.exception()
+    # Yield results as jobs finish (unordered)
+    for completed_future in as_completed(tasks):
+        exc = completed_future.exception()
         if exc is not None:
-            for tt in tasks:
-                tt.cancel()
+            # Cancel remaining tasks and raise error
+            for t in tasks:
+                t.cancel()
             raise exc
 
-    return [t.results()[0] for t in tasks]
+        yield completed_future.result()
