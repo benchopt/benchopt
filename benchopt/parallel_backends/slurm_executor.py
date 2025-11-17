@@ -7,7 +7,7 @@ except ImportError:
     raise ImportError(
         "To run benchopt with the submitit backend, please install "
         "the `submitit` package: `pip install benchopt[submitit]` or "
-        "`pip install submitit rich`."
+        "`pip install submitit`."
     )
 
 

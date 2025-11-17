@@ -79,7 +79,6 @@ doc = [
 ]
 submitit = [
   "submitit",
-  "rich",
 ]
 dask = [
   "coiled",
