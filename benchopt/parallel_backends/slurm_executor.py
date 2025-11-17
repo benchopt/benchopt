@@ -109,12 +109,12 @@ def run_on_slurm(
             tasks.append(future)
 
     # Yield results as jobs finish (unordered)
-    for completed_future in as_completed(tasks):
-        exc = completed_future.exception()
+    for t in as_completed(tasks):
+        exc = t.exception()
         if exc is not None:
             # Cancel remaining tasks and raise error
-            for t in tasks:
-                t.cancel()
+            for tt in tasks:
+                tt.cancel()
             raise exc
 
-        yield completed_future.result()
+        yield t.results()[0]
