@@ -148,9 +148,10 @@ class TerminalOutput:
                 endline=False,  verbose=self.verbose
             )
 
-    def show_status(self, status, dataset=False, objective=False):
+    def show_status(self, status, reason=None, dataset=False, objective=False):
         if dataset or objective:
             assert status in ['not installed', 'skip']
+
         tag = (
             self.dataset_tag if dataset else
             self.objective_tag if objective else self.solver_tag
@@ -158,8 +159,12 @@ class TerminalOutput:
         assert status in STATUS, (
             f"status should be in {list(STATUS)}. Got '{status}'"
         )
-        status = colorify(*STATUS[status])
-        print_normalize(f"{tag} {status}")
+        status_print = colorify(*STATUS[status])
+        print_normalize(f"{tag} {status_print}")
+
+        if status == 'skip' and reason is not None:
+            indent = ' ' * (2 if objective else 4)
+            print(f'{indent}Reason: {reason}')
 
     def debug(self, msg):
         if DEBUG:

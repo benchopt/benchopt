@@ -4,6 +4,7 @@ import pickle
 
 from datetime import datetime
 from joblib import hash
+import copy
 
 from .callback import _Callback
 from .benchmark import Benchmark
@@ -121,6 +122,15 @@ def run_one_to_cvg(benchmark, objective, solver, meta, timeout, max_runs,
         terminal=terminal,
     )
 
+    skip, reason = solver._set_objective(objective)
+    if skip:
+        key = (
+            meta['dataset_name'],
+            meta['objective_name'],
+            meta['solver_name']
+        )
+        return [], key, 'skip', reason
+
     # Augment the metadata with final_results if necessary.
     has_save_final_results = (
         objective.save_final_results.__qualname__ !=
@@ -185,7 +195,7 @@ def run_one_to_cvg(benchmark, objective, solver, meta, timeout, max_runs,
         meta['objective_name'],
         meta['solver_name']
     )
-    return curve, key, ctx.status
+    return curve, key, ctx.status, ""
 
 
 def get_solver_kwargs(
@@ -256,10 +266,9 @@ def get_solver_kwargs(
     timeout = timeout / n_repetitions if timeout is not None else None
 
     for rep in range(n_repetitions):
-        skip, reason = solver._set_objective(objective)
-        if skip:
-            terminal.skip(reason)
-            return []
+        objective_rep = copy.copy(objective)
+        objective_rep.repetition = rep
+        solver._objective = objective_rep
 
         # Get meta
         meta = {
@@ -276,8 +285,8 @@ def get_solver_kwargs(
         }
 
         args_run_one_to_cvg = dict(
-            benchmark=benchmark, objective=objective, solver=solver, meta=meta,
-            timeout=timeout, max_runs=max_runs, force=force,
+            benchmark=benchmark, objective=objective_rep, solver=solver,
+            meta=meta, timeout=timeout, max_runs=max_runs, force=force,
             terminal=terminal, pdb=pdb,
         )
 
@@ -382,7 +391,7 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
             )
             if res is not None:
                 return res
-            return ([], key, 'not run yet')
+            return ([], key, 'not run yet', "")
 
     def run_one_to_cvg_final(**kwargs):
         results = None
@@ -394,7 +403,7 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
                 kwargs['meta']['objective_name'],
                 kwargs['meta']['solver_name']
             )
-            results = ([], key, e.status)
+            results = ([], key, e.status, "")
         return results
 
     total_cvg_kwargs_generator = get_run_kwargs(
@@ -409,16 +418,16 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
     )
 
     status_dict = {}
-    for result, key, status in results_generator:
+    for result, key, status, reason in results_generator:
         run_statistics.extend(result)
         if key not in status_dict:
-            status_dict[key] = status
+            status_dict[key] = status, reason
         elif status_dict[key] == 'done':
-            status_dict[key] = status
+            status_dict[key] = status, reason
 
     for key, status in status_dict.items():
         terminal.set(dataset=key[0], objective=key[1], solver=key[2])
-        terminal.show_status(status)
+        terminal.show_status(status[0], reason=status[1])
 
     import pandas as pd
     df = pd.DataFrame(run_statistics)
