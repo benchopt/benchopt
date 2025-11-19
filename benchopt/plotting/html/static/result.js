@@ -893,8 +893,9 @@ const renderLegend = () => {
   const curvesDescription = window.metadata["solvers_description"];
 
   getCurves().forEach(curve => {
-    const color = data(curve).color;
-    const symbolNumber = data(curve).marker;
+    const curve_data = data(curve);
+    const color = curve_data.color;
+    const symbolNumber = curve_data.marker;
 
     let legendItem = createLegendItem(curve, color, symbolNumber);
 
@@ -909,8 +910,8 @@ const renderLegend = () => {
         description: curvesDescription[curve],
       }
     );
-    if (payload === undefined) {
-      legend.appendChild(legendItem);
+    if (payload !== undefined) {
+      legend.appendChild(payload);
     }
   });
 }
@@ -996,7 +997,7 @@ const createLegendItem = (curve, color, symbolNumber) => {
 
 function createSolverDescription(legendItem, { description }) {
   if (description === null || description === undefined || description === "")
-    return;
+    return legendItem;
 
   let descriptionContainer = document.createElement("div");
   descriptionContainer.setAttribute("class", "curve-description-container")

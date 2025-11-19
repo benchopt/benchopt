@@ -44,6 +44,7 @@ jobs:
       # Build docs
       - run:
           name: make html
+          no_output_timeout: 20m
           command: |
             cd doc;
             make html;
