@@ -269,7 +269,7 @@ class TestRunCmd:
         out.check_output(r"def run\(self, n_iter\):", repetition=1)
         out.check_output(r"time.sleep\(0.1\)", repetition=1)
 
-    def test_config_file_single_line(self, no_debug_log):
+    def test_config_file_single_line(self):
         n_reps = 2
         config = f"""
         objective: test-objective
@@ -298,9 +298,12 @@ class TestRunCmd:
                     f"{bench.benchmark_dir / 'config.yml'}".split(),
                     'benchopt', standalone_mode=False
                 )
-            out.check_output(r'test-solver\[param1=42\]:', repetition=n_reps)
+            out.check_output(
+                r'test-solver\[param1=42\]:',
+                repetition=3*n_reps+1
+            )
 
-    def test_config_file(self, no_debug_log):
+    def test_config_file(self):
         n_reps = 2
         config = f"""
         objective:
@@ -336,7 +339,10 @@ class TestRunCmd:
             out.check_output('test-objective', repetition=1)
             out.check_output('test-dataset', repetition=1)
             out.check_output('simulated', repetition=0)
-            out.check_output(r'test-solver\[param1=42\]:', repetition=n_reps+1)
+            out.check_output(
+                r'test-solver\[param1=42\]:',
+                repetition=3*n_reps+1
+            )
             out.check_output(r'test-solver\[param1=0\]:', repetition=0)
 
             # test that CLI options take precedence
@@ -351,7 +357,7 @@ class TestRunCmd:
             out.check_output('test-objective', repetition=1)
             out.check_output('test-dataset', repetition=1)
             out.check_output('simulated', repetition=0)
-            out.check_output(r'test-solver\[param1=27\]:', repetition=2)
+            out.check_output(r'test-solver\[param1=27\]:', repetition=4)
             out.check_output(r'test-solver\[param1=42\]:', repetition=0)
 
     @pytest.mark.parametrize('config, msg', [
