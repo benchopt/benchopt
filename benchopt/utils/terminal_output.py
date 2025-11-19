@@ -45,7 +45,7 @@ def colorify(message, color=BLUE):
     return f"\033[1;{color}m" + message + "\033[0m"
 
 
-def print_normalize(msg, endline=True, verbose=True):
+def print_normalize(msg, endline=False, verbose=True):
     """Format the output to have the length of the terminal."""
     if not verbose:
         return
