@@ -73,7 +73,7 @@ class TerminalOutput:
             kernel32 = ctypes.windll.kernel32
             kernel32.SetConsoleMode(kernel32.GetStdHandle(-11), 7)
 
-        self.n_repetitions = n_repetitions
+        self.n_repetitions = n_repetitions if n_repetitions is not None else 1
         self.show_progress = show_progress
 
         self.solver = None
@@ -137,11 +137,11 @@ class TerminalOutput:
     def display_objective(self):
         self._display_name(self.objective_tag)
 
-    def progress(self, rep):
+    def progress(self, rep, n_reps):
         """Display progress in the CLI interface."""
         if self.show_progress:
             print_normalize(
-                f"{self.solver_tag} {rep} / {self.n_repetitions} reps",
+                f"{self.solver_tag} {rep} / {n_reps} reps",
                 endline=False, verbose=self.verbose
             )
 
