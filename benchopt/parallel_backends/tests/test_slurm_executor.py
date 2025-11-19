@@ -94,12 +94,12 @@ def test_run_on_slurm(monkeypatch, dummy_slurm_config):
         # a list from `run_one_solver`
         def results(self):
             func, args, kwargs = self.task
-            res, key, status, msg = func(*args, **kwargs)
+            res, key, status, msg, n_reps = func(*args, **kwargs)
             res = [
                 {**r, **{f"s_{k}": v for k, v in self.config.items()}}
                 for r in res
             ]
-            return [(res, key, status, msg)]
+            return [(res, key, status, msg, n_reps)]
 
     # Fake submit to allow running as on a slurm cluster and
     # get the configuration back

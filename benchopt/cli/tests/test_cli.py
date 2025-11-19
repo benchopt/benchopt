@@ -298,7 +298,7 @@ class TestRunCmd:
                     f"{bench.benchmark_dir / 'config.yml'}".split(),
                     'benchopt', standalone_mode=False
                 )
-            out.check_output(r'test-solver\[param1=42\]:', repetition=n_reps+1)
+            out.check_output(r'test-solver\[param1=42\]:', repetition=n_reps)
 
     def test_config_file(self, no_debug_log):
         n_reps = 2
@@ -336,7 +336,7 @@ class TestRunCmd:
             out.check_output('test-objective', repetition=1)
             out.check_output('test-dataset', repetition=1)
             out.check_output('simulated', repetition=0)
-            out.check_output(r'test-solver\[param1=42\]:', repetition=n_reps+1)
+            out.check_output(r'test-solver\[param1=42\]:', repetition=n_reps)
             out.check_output(r'test-solver\[param1=0\]:', repetition=0)
 
             # test that CLI options take precedence
@@ -351,7 +351,7 @@ class TestRunCmd:
             out.check_output('test-objective', repetition=1)
             out.check_output('test-dataset', repetition=1)
             out.check_output('simulated', repetition=0)
-            out.check_output(r'test-solver\[param1=27\]:', repetition=2)
+            out.check_output(r'test-solver\[param1=27\]:', repetition=1)
             out.check_output(r'test-solver\[param1=42\]:', repetition=0)
 
     @pytest.mark.parametrize('config, msg', [

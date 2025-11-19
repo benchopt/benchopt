@@ -21,6 +21,6 @@ def test_run_benchopt_module(no_debug_log):
     output.check_output('test-dataset', repetition=1)
     output.check_output('simulated', repetition=0)
     output.check_output('test-objective', repetition=1)
-    output.check_output("test-solver:", repetition=2)
+    output.check_output("test-solver:", repetition=1)
     output.check_output(r'Python-PGD\[step_size=1.5\]:', repetition=0)
     assert len(output.result_files) == 1

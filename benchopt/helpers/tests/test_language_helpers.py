@@ -83,7 +83,7 @@ def test_r_solver(test_env_name, no_debug_log):
                 '-d', 'simulated', '--no-plot', '--env-name', test_env_name
             ], 'benchopt', standalone_mode=False)
 
-        out.check_output("r_solver:", repetition=3)
+        out.check_output("r_solver:", repetition=1)
 
 
 def test_julia_solver(test_env_name, no_debug_log):
@@ -146,4 +146,4 @@ def test_julia_solver(test_env_name, no_debug_log):
                 '--env-name', test_env_name
             ], 'benchopt', standalone_mode=False)
 
-        out.check_output("julia_solver:", repetition=3)
+        out.check_output("julia_solver:", repetition=1)
