@@ -48,6 +48,8 @@ extensions = [
     "sphinx_copybutton",
 ]
 
+autosectionlabel_maxdepth = 1
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
@@ -142,6 +144,7 @@ html_sidebars = {
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
 html_css_files = ["style.css"]
+html_js_files = ["benchopt.js"]
 
 
 # -- Options for HTMLHelp output ------------------------------------------
@@ -218,7 +221,12 @@ sphinx_gallery_conf = {
     'backreferences_dir': 'generated',
     'examples_dirs': '../examples',
     'gallery_dirs': 'auto_examples',
+    'filename_pattern': r'/run_.*\.py',
+    'ignore_pattern': r'.*_benchmark/',
+    'capture_repr': ('_repr_html_', '__repr__'),
+    # 'image_scrapers': ("benchopt.helpers.examples.cli_scraper",),
 }
+
 
 # -- Options for copybutton ---------------------------------------------
 # complete explanation of the regex expression can be found here
@@ -226,3 +234,28 @@ sphinx_gallery_conf = {
 # use.html#using-regexp-prompt-identifiers
 copybutton_prompt_text = r">>> |\.\.\. |\$ |In \[\d*\]: | {2,5}\.\.\.: | {5,8}: "  # noqa
 copybutton_prompt_is_regexp = True
+
+# -- Monkey patching gen_rst.execute_script to add context env vars -------
+# Keep a reference to the original function
+try:
+    from sphinx_gallery import gen_rst
+    from benchopt.helpers.run_examples import SPHINX_GALLERY_CTX
+
+    _original_func = gen_rst.execute_code_block
+
+    def func_with_ctx(*args, **kwargs):
+        """Wrapper that stores the current example file and path iterator."""
+        global current_exc_info
+
+        # Set env vars for use inside example execution
+        script_vars = args[3]
+        SPHINX_GALLERY_CTX["paths"] = script_vars['image_path_iterator']
+        try:
+            return _original_func(*args, **kwargs)
+        finally:
+            pass
+
+    # Apply the patch
+    gen_rst.execute_code_block = func_with_ctx
+except ImportError:
+    raise
