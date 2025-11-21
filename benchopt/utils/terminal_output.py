@@ -82,16 +82,8 @@ class TerminalOutput:
         self.objective = None
 
         self.status = defaultdict(str)
-        self.rep = 0
+        self.rep = defaultdict(int)
         self.verbose = True
-
-    def clone(self):
-        new_terminal = TerminalOutput(self.n_repetitions, self.show_progress)
-        new_terminal.set(
-            solver=self.solver, dataset=self.dataset, objective=self.objective,
-            verbose=self.verbose, rep=self.rep, i_solver=self.i_solver
-        )
-        return new_terminal
 
     def set(self, solver=None, dataset=None, objective=None, verbose=None,
             rep=None, i_solver=None):
@@ -139,17 +131,18 @@ class TerminalOutput:
     def display_objective(self):
         self._display_name(self.objective_tag)
 
-    def increment_rep(self):
-        self.rep += 1
+    def increment_rep(self, key):
+        self.rep[key] += 1
 
-    def progress(self, progress):
+    def progress(self, progress, key):
         """Display progress in the CLI interface."""
         if self.show_progress:
             if isinstance(progress, float):
                 progress = f'{progress:6.1%}'
+            solver_tag = colorify(f"    |--{key[2]}:")
             print_normalize(
-                f"{self.solver_tag} {progress} "
-                f"({self.rep + 1} / {self.n_repetitions} reps)",
+                f"{solver_tag} {progress} "
+                f"({self.rep[key] + 1} / {self.n_repetitions} reps)",
                 endline=False,  verbose=self.verbose
             )
 
@@ -160,6 +153,11 @@ class TerminalOutput:
         key = (self.dataset, self.objective, self.solver)
         if self.status[key] != '':
             return  # status already set
+
+        if status == 'done':
+            self.rep[key] += 1
+            if self.rep[key] < self.n_repetitions:
+                return
 
         self.status[key] = status
         tag = (

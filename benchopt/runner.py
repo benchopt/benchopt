@@ -121,6 +121,9 @@ def run_one_to_cvg(benchmark, objective, solver, meta, timeout, max_runs,
         timeout=timeout,
         terminal=terminal,
     )
+    stopping_criterion.dataset = meta['dataset_name']
+    stopping_criterion.objective = meta['objective_name']
+    stopping_criterion.solver = meta['solver_name']
 
     skip, reason = solver._set_objective(objective)
     if skip:
@@ -195,7 +198,6 @@ def run_one_to_cvg(benchmark, objective, solver, meta, timeout, max_runs,
         meta['objective_name'],
         meta['solver_name']
     )
-    terminal.increment_rep()
     return curve, key, ctx.status, ""
 
 
