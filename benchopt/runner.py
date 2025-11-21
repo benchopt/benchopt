@@ -421,26 +421,13 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
     for result, key, status, reason in results_generator:
         run_statistics.extend(result)
         if key not in status_dict:
-            if status == "done":
-                status_dict[key] = 1
-                terminal.set(dataset=key[0], objective=key[1], solver=key[2])
-                terminal.progress(status_dict[key])
-            else:
-                status_dict[key] = (status, reason)
-                terminal.set(dataset=key[0], objective=key[1], solver=key[2])
-                terminal.show_status(status, reason=reason)
+            status_dict[key] = status, reason
+        elif status_dict[key] == 'done':
+            status_dict[key] = status, reason
 
-        elif status == 'done' and isinstance(status_dict[key], int):
-            status_dict[key] += 1
-            terminal.set(dataset=key[0], objective=key[1], solver=key[2])
-            terminal.progress(status_dict[key])
-            if status_dict[key] == n_repetitions:
-                terminal.show_status('done')
-
-        else:
-            status_dict[key] = (status, reason)
-            terminal.set(dataset=key[0], objective=key[1], solver=key[2])
-            terminal.show_status(status, reason=reason)
+    for key, status in status_dict.items():
+        terminal.set(dataset=key[0], objective=key[1], solver=key[2])
+        terminal.show_status(status[0], reason=status[1])
 
     import pandas as pd
     df = pd.DataFrame(run_statistics)

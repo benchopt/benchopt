@@ -137,12 +137,15 @@ class TerminalOutput:
     def display_objective(self):
         self._display_name(self.objective_tag)
 
-    def progress(self, rep):
+    def progress(self, progress):
         """Display progress in the CLI interface."""
         if self.show_progress:
+            if isinstance(progress, float):
+                progress = f'{progress:6.1%}'
             print_normalize(
-                f"{self.solver_tag} {rep} / {self.n_repetitions} reps",
-                endline=False, verbose=self.verbose
+                f"{self.solver_tag} {progress} "
+                f"({self.rep + 1} / {self.n_repetitions} reps)",
+                endline=False,  verbose=self.verbose
             )
 
     def show_status(self, status, reason=None, dataset=False, objective=False):
