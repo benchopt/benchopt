@@ -195,6 +195,7 @@ def run_one_to_cvg(benchmark, objective, solver, meta, timeout, max_runs,
         meta['objective_name'],
         meta['solver_name']
     )
+    terminal.increment_rep()
     return curve, key, ctx.status, ""
 
 
@@ -283,6 +284,7 @@ def get_solver_kwargs(
             **{f"p_solver_{k}": v for k, v in solver._parameters.items()},
             **{f"p_dataset_{k}": v for k, v in dataset._parameters.items()},
         }
+        terminal.n_repetitions = n_repetitions
 
         args_run_one_to_cvg = dict(
             benchmark=benchmark, objective=objective_rep, solver=solver,
@@ -417,17 +419,10 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
         config=parallel_config, collect=collect
     )
 
-    status_dict = {}
     for result, key, status, reason in results_generator:
         run_statistics.extend(result)
-        if key not in status_dict:
-            status_dict[key] = status, reason
-        elif status_dict[key] == 'done':
-            status_dict[key] = status, reason
-
-    for key, status in status_dict.items():
         terminal.set(dataset=key[0], objective=key[1], solver=key[2])
-        terminal.show_status(status[0], reason=status[1])
+        terminal.show_status(status, reason=reason)
 
     import pandas as pd
     df = pd.DataFrame(run_statistics)

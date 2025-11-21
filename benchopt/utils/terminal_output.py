@@ -3,6 +3,7 @@ import shutil
 import ctypes
 import platform
 import sys
+from collections import defaultdict
 
 if sys.platform == 'win32':
     sys.stdout.reconfigure(encoding='utf-8')
@@ -80,6 +81,7 @@ class TerminalOutput:
         self.dataset = None
         self.objective = None
 
+        self.status = defaultdict(str)
         self.rep = 0
         self.verbose = True
 
@@ -137,6 +139,9 @@ class TerminalOutput:
     def display_objective(self):
         self._display_name(self.objective_tag)
 
+    def increment_rep(self):
+        self.rep += 1
+
     def progress(self, progress):
         """Display progress in the CLI interface."""
         if self.show_progress:
@@ -152,6 +157,11 @@ class TerminalOutput:
         if dataset or objective:
             assert status in ['not installed', 'skip']
 
+        key = (self.dataset, self.objective, self.solver)
+        if self.status[key] != '':
+            return  # status already set
+
+        self.status[key] = status
         tag = (
             self.dataset_tag if dataset else
             self.objective_tag if objective else self.solver_tag
