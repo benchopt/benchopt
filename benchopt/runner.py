@@ -393,10 +393,7 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
             )
             if res is not None:
                 return res
-            return (
-                [], key, 'not run yet', "",
-                kwargs["meta"]["n_repetitions"]
-            )
+            return ([], key, 'not run yet', "")
 
     def run_one_to_cvg_final(**kwargs):
         results = None
@@ -408,7 +405,7 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
                 kwargs['meta']['objective_name'],
                 kwargs['meta']['solver_name']
             )
-            results = ([], key, e.status, "", kwargs["meta"]["n_repetitions"])
+            results = ([], key, e.status, "")
         return results
 
     total_cvg_kwargs_generator = get_run_kwargs(

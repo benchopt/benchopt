@@ -293,7 +293,7 @@ def test_benchopt_run_script(n_jobs, no_debug_log):
 
     out.check_output('simulated', repetition=1)
     out.check_output('test-objective', repetition=1)
-    out.check_output('test-solver:', repetition=1)
+    out.check_output('test-solver:', repetition=4)
     out.check_output('template_solver:', repetition=0)
 
     # Make sure the results were saved in a result file

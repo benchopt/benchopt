@@ -44,7 +44,7 @@ def test_ignore_hidden_files(no_debug_log):
                 'benchopt', standalone_mode=False
             )
         out.check_output("test-dataset", repetition=1)
-        out.check_output("test-solver", repetition=1)
+        out.check_output("test-solver", repetition=3)
 
     solvers = {".hidden_solverdataset_.py": ""}
     with temp_benchmark(solvers=solvers) as bench:
@@ -55,7 +55,7 @@ def test_ignore_hidden_files(no_debug_log):
                 'benchopt', standalone_mode=False
             )
         out.check_output("test-dataset", repetition=1)
-        out.check_output("test-solver", repetition=1)
+        out.check_output("test-solver", repetition=3)
 
 
 def test_benchmark_submodule():
@@ -287,7 +287,7 @@ def test_objective_cv_splitter(no_debug_log):
                 standalone_mode=False)
 
     # test-solver appears one time as it is only run once.
-    out.check_output("test-solver", repetition=4)
+    out.check_output("test-solver", repetition=1)
     out.check_output("RUN#0", repetition=3)
     out.check_output("RUN#1", repetition=2)
     out.check_output("RUN#2", repetition=1)
@@ -304,7 +304,7 @@ def test_objective_cv_splitter(no_debug_log):
                 standalone_mode=False)
 
     # test-solver appears one time as it is only run once.
-    out.check_output("test-solver", repetition=3)
+    out.check_output("test-solver", repetition=1)
     out.check_output("RUN#0", repetition=2)
     out.check_output("RUN#1", repetition=1)
     out.check_output("RUN#2", repetition=0)
@@ -320,7 +320,7 @@ def test_objective_cv_splitter(no_debug_log):
                 standalone_mode=False)
 
     # test-solver appears one time as it is only run once.
-    out.check_output("test-solver", repetition=6)
+    out.check_output("test-solver", repetition=1)
     out.check_output("RUN#0", repetition=7)
     out.check_output("RUN#1", repetition=5)
     out.check_output("RUN#2", repetition=3)
@@ -338,7 +338,7 @@ def test_objective_cv_splitter(no_debug_log):
             ], standalone_mode=False)
 
     # test-solver appears one time as it is only run once.
-    out.check_output("test-solver", repetition=5)
+    out.check_output("test-solver", repetition=1)
     out.check_output("RUN#0", repetition=5)
     out.check_output("RUN#1", repetition=3)
     out.check_output("RUN#2", repetition=2)
