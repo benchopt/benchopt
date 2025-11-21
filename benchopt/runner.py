@@ -1,4 +1,3 @@
-from collections import defaultdict
 import time
 import inspect
 import pickle
@@ -130,7 +129,7 @@ def run_one_to_cvg(benchmark, objective, solver, meta, timeout, max_runs,
             meta['objective_name'],
             meta['solver_name']
         )
-        return [], key, 'skip', reason, meta["n_repetitions"]
+        return [], key, 'skip', reason
 
     # Augment the metadata with final_results if necessary.
     has_save_final_results = (
@@ -196,7 +195,7 @@ def run_one_to_cvg(benchmark, objective, solver, meta, timeout, max_runs,
         meta['objective_name'],
         meta['solver_name']
     )
-    return curve, key, ctx.status, "", meta["n_repetitions"]
+    return curve, key, ctx.status, ""
 
 
 def get_solver_kwargs(
@@ -279,7 +278,6 @@ def get_solver_kwargs(
             'solver_description': inspect.cleandoc(solver.__doc__ or ""),
             'dataset_name': str(dataset),
             'idx_rep': rep,
-            'n_repetitions': n_repetitions,
             'sampling_strategy': sampling_strategy.capitalize(),
             **{f"p_obj_{k}": v for k, v in objective._parameters.items()},
             **{f"p_solver_{k}": v for k, v in solver._parameters.items()},
@@ -419,15 +417,24 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
         config=parallel_config, collect=collect
     )
 
-    status_dict = defaultdict(int)
-    for result, key, status, reason, n_reps in results_generator:
+    status_dict = {}
+    for result, key, status, reason in results_generator:
         run_statistics.extend(result)
+        if key not in status_dict:
+            if status == "done":
+                status_dict[key] = 1
+                terminal.set(dataset=key[0], objective=key[1], solver=key[2])
+                terminal.progress(status_dict[key])
+            else:
+                status_dict[key] = (status, reason)
+                terminal.set(dataset=key[0], objective=key[1], solver=key[2])
+                terminal.show_status(status, reason=reason)
 
-        if status == 'done' and isinstance(status_dict[key], int):
+        elif status == 'done' and isinstance(status_dict[key], int):
             status_dict[key] += 1
             terminal.set(dataset=key[0], objective=key[1], solver=key[2])
-            terminal.progress(status_dict[key], n_reps)
-            if status_dict[key] == n_reps:
+            terminal.progress(status_dict[key])
+            if status_dict[key] == n_repetitions:
                 terminal.show_status('done')
 
         else:
