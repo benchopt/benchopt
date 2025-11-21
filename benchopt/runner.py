@@ -433,7 +433,7 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
             if status_dict[key] == n_reps:
                 terminal.show_status('done')
 
-        elif isinstance(status_dict[key], int):
+        else:
             status_dict[key] = (status, reason)
             terminal.set(dataset=key[0], objective=key[1], solver=key[2])
             terminal.show_status(status, reason=reason)
