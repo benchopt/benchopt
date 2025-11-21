@@ -243,6 +243,11 @@ def get_solver_kwargs(
     # Set objective and skip if necessary.
     skip, reason = objective.set_dataset(dataset)
     if skip:
+        terminal.set(
+            dataset=str(dataset),
+            objective=str(objective),
+            solver=str(solver)
+        )
         terminal.skip(reason, objective=True)
         return []
 

@@ -110,7 +110,8 @@ class TerminalOutput:
             self.i_solver = i_solver
 
     def skip(self, reason=None, objective=False):
-        if self.rep == 0 and (not objective or self.i_solver == 0):
+        key = (self.dataset, self.objective, self.solver)
+        if self.rep[key] == 0 and (not objective or self.i_solver == 0):
             self.show_status(status='skip', objective=objective)
             if reason is not None:
                 indent = ' ' * (2 if objective else 4)
