@@ -227,11 +227,12 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         ...
 
     def _warm_up(self):
-        if getattr(self, '_warmup_done', None):
+        cls = self.__class__
+        if getattr(cls, '_warmup_done', False):
             # already warmed up
             return
         self.warm_up()
-        self._warmup_done = True
+        cls._warmup_done = True
 
     def _get_state(self):
         """Return the state of the objective for pickling."""
@@ -446,7 +447,6 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
                 "The result returned by `Solver.get_result` should be a dict "
                 "whose keys are the arguments of `Objective.evaluate_result`. "
                 f"Got {result}."
-
             )
 
         objective_output = self.evaluate_result(**result)

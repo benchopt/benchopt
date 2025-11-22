@@ -53,7 +53,7 @@ def test_skip_api(n_jobs):
         with CaptureCmdOutput() as out:
             run([*(
                 f'{benchmark.benchmark_dir} -s test-solver -d test-dataset '
-                f'-j {n_jobs} --no-plot'
+                f'-j {n_jobs} --no-plot --no-separate-logs'
             ).split()], standalone_mode=False)
 
             # Make sure joblib's executor is shutdown, as otherwise the output
@@ -61,14 +61,15 @@ def test_skip_api(n_jobs):
             from joblib.externals.loky import get_reusable_executor
             get_reusable_executor().shutdown(wait=True)
 
-    out.check_output(r"Objective-skip\[should_skip=True\] skip", repetition=1)
-    out.check_output("Reason: Objective#SKIP", repetition=1)
+    out.check_output(r"test-solver\[should_skip=True\]: skipped", repetition=2)
+    out.check_output(
+        r"test-solver\[should_skip=False\]: skipped", repetition=1
+    )
 
-    out.check_output(r"test-solver\[should_skip=True\]: skip", repetition=1)
-    out.check_output("Reason: Solver#SKIP", repetition=1)
+    out.check_output("Objective#SKIP", repetition=2)
+    out.check_output("Solver#SKIP", repetition=1)
 
     out.check_output(r"test-solver\[should_skip=False\]: done", repetition=1)
-    out.check_output("Solver#RUN", repetition=1)
 
 
 def _assert_parameters_equal(instance, parameters):
@@ -453,8 +454,9 @@ class TestCache:
         ) as bench:
             with CaptureCmdOutput() as out:
                 for it in range(3):
-                    run(f"{bench.benchmark_dir} --no-plot -r {n_reps}".split(),
-                        standalone_mode=False)
+                    cmd = f"{bench.benchmark_dir}"
+                    cmd += f" --no-plot -r {n_reps} --no-separate-logs"
+                    run(cmd.split(), standalone_mode=False)
 
         # Check that the run are only call once per repetition, but not cached
         # when using multiple repetitions
@@ -468,8 +470,10 @@ class TestCache:
         ) as bench:
             with CaptureCmdOutput() as out:
                 for it in range(3):
-                    run(f"{bench.benchmark_dir} --no-plot -r {n_reps} "
-                        "--no-cache".split(), standalone_mode=False)
+                    cmd = f"{bench.benchmark_dir}"
+                    cmd += f" --no-plot --no-cache -r {n_reps}"
+                    cmd += ' --no-separate-logs'
+                    run(cmd.split(), standalone_mode=False)
 
         # Check that the run is not cached when using --no-cache
         out.check_output("#RUN_SOLVER", repetition=n_reps * 3)
@@ -492,8 +496,10 @@ class TestCache:
                             datasets=self.dataset) as bench:
             with CaptureCmdOutput() as out:
                 for it in range(3):
-                    run(f"{bench.benchmark_dir} --no-plot -r 1 -n 1".split(),
-                        standalone_mode=False)
+                    cmd = f"{bench.benchmark_dir}"
+                    cmd += " --no-plot -r 1 -n 1"
+                    cmd += ' --no-separate-logs'
+                    run(cmd.split(), standalone_mode=False)
 
         # error message should be displayed twice
         out.check_output("ValueError: Failing solver.", repetition=3)
@@ -509,14 +515,15 @@ class TestCache:
                 ]
         ) as bench:
             with CaptureCmdOutput() as out:
-                run([str(bench.benchmark_dir),
-                     *"-s test-solver -s test-solver2 "
-                     f'--no-plot -r {n_reps}'.split()],
-                    standalone_mode=False)
-                run([str(bench.benchmark_dir),
-                     *"-s test-solver2 -s test-solver "
-                    f'--no-plot -r {n_reps}'.split()],
-                    standalone_mode=False)
+                cmd = f"{bench.benchmark_dir} "
+                cmd += "-s test-solver -s test-solver2 "
+                cmd += f'--no-plot -r {n_reps} --no-separate-logs'
+                run(cmd.split(), standalone_mode=False)
+
+                cmd = f"{bench.benchmark_dir} "
+                cmd += "-s test-solver2 -s test-solver "
+                cmd += f'--no-plot -r {n_reps} --no-separate-logs'
+                run(cmd.split(), standalone_mode=False)
 
         # Check that the run are only call once per repetition, but not cached
         # when using multiple repetitions
@@ -530,8 +537,9 @@ class TestCache:
                 solvers=self.solver,
         ) as bench:
             with CaptureCmdOutput() as out:
-                run(f"{bench.benchmark_dir} --no-plot -r {n_reps}".split(),
-                    standalone_mode=False)
+                cmd = f"{bench.benchmark_dir}"
+                cmd += f' --no-plot -r {n_reps} --no-separate-logs'
+                run(cmd.split(), standalone_mode=False)
                 # Modify the solver, to make the cache invalid
                 solver_file = bench.benchmark_dir / 'solvers' / 'solver_0.py'
                 modified_solver = inspect.cleandoc(self.solver.replace(
@@ -540,8 +548,9 @@ class TestCache:
                 assert solver_file.exists()
                 solver_file.write_text(inspect.cleandoc(modified_solver))
 
-                run(f"{bench.benchmark_dir} --no-plot -r {n_reps} -j2".split(),
-                    standalone_mode=False)
+                cmd = f"{bench.benchmark_dir}"
+                cmd += f' --no-plot -r {n_reps} --no-separate-logs -j2'
+                run(cmd.split(), standalone_mode=False)
 
         # Check that the 2nd run is not cached and the cache is invalidated.
         out.check_output("#RUN_SOLVER_MODIFIED", repetition=n_reps)

@@ -1,13 +1,18 @@
 "Helper function for colored terminal outputs"
 import shutil
-import ctypes
-import platform
 import sys
+from rich.progress import Progress, BarColumn, TextColumn, TimeRemainingColumn
+from rich.console import Console
+from rich.tree import Tree
+from rich.text import Text
+from rich.markup import escape
+import platform
+import ctypes
 
 if sys.platform == 'win32':
     sys.stdout.reconfigure(encoding='utf-8')
 
-from ..config import DEBUG
+console = Console()
 
 MIN_LINE_LENGTH = 20
 BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE = range(30, 38)
@@ -61,106 +66,137 @@ def print_normalize(msg, endline=True, verbose=True):
     msg = msg.ljust(line_length + n_colors * 11)
 
     if endline:
-        print(msg)
+        print(msg, file=sys.__stdout__)
     else:
-        print(msg + '\r', end='', flush=True)
+        print(msg + '\r', end='', flush=True, file=sys.__stdout__)
 
 
 class TerminalOutput:
-    def __init__(self, n_repetitions, show_progress):
-        # enable ANSI colors in Windows
+    def __init__(self, n_repetitions, show_progress=True):
+        self.n_repetitions = n_repetitions
+        self.show_progress = show_progress
+        self.rep = 0
+        self.verbose = True
+        self.warnings = {}
+        self.structure = {}
+        self.init_keys_set = set()
+
+        # TODO: not sure if this is needed anymore
         if platform.system() == "Windows":
             kernel32 = ctypes.windll.kernel32
             kernel32.SetConsoleMode(kernel32.GetStdHandle(-11), 7)
 
-        self.n_repetitions = n_repetitions
-        self.show_progress = show_progress
+    def update(self, key, msg):
+        self.init_key(key)
 
-        self.solver = None
-        self.dataset = None
-        self.objective = None
+        if msg == "done":
+            msg = None
 
-        self.rep = 0
-        self.verbose = True
+        if msg == 'max_runs':
+            msg = 'not enough run'
 
-    def clone(self):
-        new_terminal = TerminalOutput(self.n_repetitions, self.show_progress)
-        new_terminal.set(
-            solver=self.solver, dataset=self.dataset, objective=self.objective,
-            verbose=self.verbose, rep=self.rep, i_solver=self.i_solver
-        )
-        return new_terminal
+        self.increment_key(key, msg)
 
-    def set(self, solver=None, dataset=None, objective=None, verbose=None,
-            rep=None, i_solver=None):
+    def init_key(self, key):
+        if key in self.init_keys_set:
+            return
+        self.init_keys_set.add(key)
 
-        if dataset is not None:
-            self.dataset = dataset
-            self.dataset_tag = f"{dataset}"
+        # Build nested dict
+        dataset, objective, solver = key
+        if dataset not in self.structure:
+            self.structure[dataset] = {}
+        if objective not in self.structure[dataset]:
+            self.structure[dataset][objective] = {}
 
-        if objective is not None:
-            self.objective = objective
-            self.objective_tag = f"  |--{objective}"
+        # Add solver task if not present
+        if solver not in self.structure[dataset][objective]:
+            progress = Progress(
+                TextColumn(f"{solver}", markup=False),
+                BarColumn(),
+                TimeRemainingColumn(),
+                TextColumn("{task.completed}/{task.total}")
+            )
+            progress.add_task(
+                "", total=self.n_repetitions
+            )
+            self.structure[dataset][objective][solver] = progress
 
-        if solver is not None:
-            self.solver = solver
-            self.solver_tag = colorify(f"    |--{solver}:")
+        if hasattr(self, 'live') and self.show_progress:
+            self.live.update(self.render_tree())
 
-        if verbose is not None:
-            self.verbose = verbose
+    def increment_key(self, key, message=None):
+        dataset, objective, solver = key
+        if not self.show_progress:
+            return
 
-        if rep is not None:
-            self.rep = rep
+        if message is not None:
+            self.warnings[key] = message
 
-        if i_solver is not None:
-            self.i_solver = i_solver
+        if dataset in self.structure:
+            if objective in self.structure[dataset]:
+                if solver in self.structure[dataset][objective]:
+                    self.structure[dataset][objective][solver].advance(0, 1)
+                if self.structure[dataset][objective][solver].finished:
+                    t = Text()
+                    if key in self.warnings:
+                        t.append(
+                            f"⚠️  {solver}: done ({self.warnings[key]})",
+                            style="yellow"
+                        )
+                    else:
+                        t.append(f"✅ {solver}: done", style="bold green")
+                    self.structure[dataset][objective][solver] = t
 
-    def skip(self, reason=None, objective=False):
-        if self.rep == 0 and (not objective or self.i_solver == 0):
-            self.show_status(status='skip', objective=objective)
-            if reason is not None:
-                indent = ' ' * (2 if objective else 4)
-                print(f'{indent}Reason: {reason}')
+    def find_ongoing_runs(self):
+        keys = []
+        for dataset, objectives in self.structure.items():
+            for objective, solvers in objectives.items():
+                for solver, progress in solvers.items():
+                    if isinstance(progress, Progress):
+                        if not progress.finished:
+                            keys.append((dataset, objective, solver))
+        return keys
+
+    def update_status(self, key, text):
+        if not self.show_progress:
+            return
+
+        self.init_key(key)
+        dataset, objective, solver = key
+        self.structure[dataset][objective][solver] = text
+
+    def stop(self, key, message):
+        if key is None:
+            keys = self.find_ongoing_runs()
+            for k in keys:
+                self.stop(k, message)
+            return
+
+        t = Text()
+        t.append(f"❌ {key[2]}: failed", style="bold red")
+        t.append(f" {message}")  # default style
+        self.update_status(key, t)
+
+    def skip(self, key, message):
+        t = Text(f"🚫 {key[2]}: skipped, {message}")
+        self.update_status(key, t)
+
+    def render_tree(self):
+        """Render a rich Tree object with the progress bars attached."""
+        root = Tree("[bold white]Progress Overview[/]")
+        for dataset, objectives in self.structure.items():
+            dataset_node = root.add(f"[bold blue]{escape(dataset)}[/]")
+            for objective, solvers in objectives.items():
+                objective_node = dataset_node.add(
+                    f"[cyan]{escape(objective)}[/]"
+                )
+                for renderable in solvers.values():
+                    # Attach progress bar renderable to solver level
+                    objective_node.add(renderable)
+        return root
 
     def savefile_status(self, save_file=None):
         if save_file is None:
             print_normalize(colorify('No output produced.', RED))
         print_normalize(colorify(f'Saving result in: {save_file}', GREEN))
-
-    def _display_name(self, tag):
-        assert tag is not None, "Should not happened"
-        print_normalize(f"{tag}", verbose=self.verbose)
-
-    def display_dataset(self):
-        self._display_name(self.dataset_tag)
-
-    def display_objective(self):
-        self._display_name(self.objective_tag)
-
-    def progress(self, progress):
-        """Display progress in the CLI interface."""
-        if self.show_progress:
-            if isinstance(progress, float):
-                progress = f'{progress:6.1%}'
-            print_normalize(
-                f"{self.solver_tag} {progress} "
-                f"({self.rep + 1} / {self.n_repetitions} reps)",
-                endline=False,  verbose=self.verbose
-            )
-
-    def show_status(self, status, dataset=False, objective=False):
-        if dataset or objective:
-            assert status in ['not installed', 'skip']
-        tag = (
-            self.dataset_tag if dataset else
-            self.objective_tag if objective else self.solver_tag
-        )
-        assert status in STATUS, (
-            f"status should be in {list(STATUS)}. Got '{status}'"
-        )
-        status = colorify(*STATUS[status])
-        print_normalize(f"{tag} {status}")
-
-    def debug(self, msg):
-        if DEBUG:
-            print_normalize(f"{self.solver_tag} [DEBUG] - {msg}")

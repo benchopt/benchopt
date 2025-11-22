@@ -14,7 +14,7 @@ def test_run_benchopt_module(no_debug_log):
     with temp_benchmark() as tmp_dir:
         output = check_output([
             sys.executable, "-m", "benchopt", "run", tmp_dir.benchmark_dir,
-            "-d", "test-dataset", '-n', "0", "--no-plot"
+            "-d", "test-dataset", '-n', "0", "--no-plot", "--no-separate-logs"
         ],).decode("utf-8")
         output = BenchoptCmdOutputProcessor(output)
 

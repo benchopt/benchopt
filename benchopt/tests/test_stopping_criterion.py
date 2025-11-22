@@ -146,11 +146,14 @@ def test_key_to_monitor_objective(no_debug_log, criterion_class, strategy):
 
     with temp_benchmark(objective=objective, solvers=[solver]) as benchmark:
         with CaptureCmdOutput() as out:
-            run([str(benchmark.benchmark_dir),
-                *'-s test-solver -d test-dataset -n 10 -r 1 --no-display'
-                .split()], standalone_mode=False)
+            cmd = (
+                str(benchmark.benchmark_dir) +
+                " -s test-solver -d test-dataset -n 10 -r 1 " +
+                "--no-display --no-separate-logs"
+            )
+            run(cmd.split(), standalone_mode=False)
 
-    out.check_output('test-solver', 5)
+    out.check_output('test-solver:', 5)
     out.check_output('test-solver: done', 1)
 
 

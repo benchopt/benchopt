@@ -5,6 +5,7 @@ import warnings
 import importlib
 import itertools
 from pathlib import Path
+from datetime import datetime
 
 from joblib.externals import cloudpickle
 
@@ -77,6 +78,7 @@ class Benchmark:
             no_cache=False,
             allow_meta_from_json=False,
     ):
+        self.separate_logs = False
         self.benchmark_dir = Path(benchmark_dir)
         self.no_cache = no_cache
 
@@ -297,6 +299,21 @@ class Benchmark:
         output_dir = self.benchmark_dir / "outputs"
         output_dir.mkdir(exist_ok=True)
         return output_dir
+
+    def get_log_folder(self):
+        """Get the folder to store the logs of the benchmark.
+
+        If it does not exists, create it.
+        """
+        if hasattr(self, 'log_dir') and self.log_dir is not None:
+            return self.log_dir
+
+        log_dir = self.get_output_folder() / "logs"
+        log_dir.mkdir(exist_ok=True)
+        log_dir = log_dir / datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        log_dir.mkdir(exist_ok=True)
+        self.log_dir = log_dir
+        return log_dir
 
     def get_slurm_folder(self):
         """Get the folder to store the output of the slurm executor."""
@@ -663,46 +680,37 @@ class Benchmark:
         all_solvers, solvers_buffer = buffer_iterator(
             _list_parametrized_classes(*solvers)
         )
+        error = None
         for dataset, is_installed in all_datasets:
-            terminal.set(dataset=dataset)
             if not is_installed:
-                terminal.show_status('not installed', dataset=True)
-                continue
-            terminal.display_dataset()
+                error = "Dataset not installed"
             all_objectives = _list_parametrized_classes(
                 *objectives, check_installed=False
             )
             for objective, is_installed in all_objectives:
-                terminal.set(objective=objective)
                 if not is_installed:
-                    terminal.show_status('not installed', objective=True)
-                    continue
-                terminal.display_objective()
+                    error = "Objective not installed"
                 for i_solver, (solver, is_installed) in enumerate(all_solvers):
-                    terminal.set(solver=solver, i_solver=i_solver)
 
                     if not is_installed:
-                        terminal.show_status('not installed')
-                        continue
+                        error = "Solver not installed"
 
                     force = is_matched(
                         str(solver), forced_solvers, default=False
                     )
+
+                    if error is not None:
+                        terminal.skip(
+                            (str(dataset), str(objective), str(solver)),
+                            error
+                        )
+                        continue
+
                     yield dict(
                         dataset=dataset, objective=objective, solver=solver,
-                        force=force, terminal=terminal.clone()
+                        force=force
                     )
                 all_solvers = solvers_buffer
-
-
-def _check_name_lists(*name_lists):
-    "Normalize name_list to a list of string."
-    res = []
-    for name_list in name_lists:
-        if name_list is None:
-            continue
-        res.extend([str(name) for name in name_list])
-    return res
 
 
 def is_matched(name, include_patterns=None, default=True):
@@ -963,7 +971,7 @@ def _list_parametrized_classes(*classes, check_installed=True):
             continue
 
         for parameters in _get_used_parameters(klass, params):
-            yield klass.get_instance(**parameters), True
+            yield klass.get_instance(**parameters), True  # TODO set to True
 
 
 def _get_used_parameters(klass, params):

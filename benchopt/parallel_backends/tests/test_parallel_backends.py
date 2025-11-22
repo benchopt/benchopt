@@ -55,7 +55,7 @@ def test_backend_not_installed(backend):
     ):
         with temp_benchmark(config={"parallel_config.yml": config}) as bench:
             parallel_config_file = bench.benchmark_dir / "parallel_config.yml"
-            msg = f"pip install benchopt.{backend}."
+            msg = f"pip install benchopt[{backend}]."
             with pytest.raises(ImportError, match=msg):
                 run([
                     str(bench.benchmark_dir),
@@ -77,7 +77,8 @@ def test_backend_collect(backend):
             rm_modules=['parallel_backends', 'submitit', 'distributed', 'dask']
     ):
         with temp_benchmark(config={"parallel_config.yml": config}) as bench:
-            cmd = f"{bench.benchmark_dir} -d test-dataset -n 0 -r 1 --no-plot"
+            cmd = f"{bench.benchmark_dir} -d test-dataset -n 0 -r 1 --no-plot "
+            cmd += "--no-separate-logs"
             parallel_config_file = bench.benchmark_dir / "parallel_config.yml"
             with CaptureCmdOutput() as out:
                 run(cmd.split(), standalone_mode=False)

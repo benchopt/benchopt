@@ -40,7 +40,7 @@ def test_ignore_hidden_files(no_debug_log):
         with CaptureCmdOutput() as out:
             run(
                 f"{bench.benchmark_dir} -d test-dataset -s test-solver "
-                "-n 1 -r 1 --no-plot".split(),
+                "-n 1 -r 1 --no-plot --no-separate-logs".split(),
                 'benchopt', standalone_mode=False
             )
         out.check_output("test-dataset", repetition=1)
@@ -51,7 +51,7 @@ def test_ignore_hidden_files(no_debug_log):
         with CaptureCmdOutput() as out:
             run(
                 f"{bench.benchmark_dir} -d test-dataset -s test-solver "
-                "-n 1 -r 1 --no-plot".split(),
+                "-n 1 -r 1 --no-plot --no-separate-logs".split(),
                 'benchopt', standalone_mode=False
             )
         out.check_output("test-dataset", repetition=1)
@@ -96,7 +96,8 @@ def test_benchopt_min_version():
         def get_one_result(self): return dict(beta=1)
         def get_objective(self): return dict(X=None, y=None, lmbd=None)
     """
-    run_args = "-d test-dataset -f test-solver -n 1 -r 1 --no-plot".split()
+    run_args = "-d test-dataset -f test-solver -n 1 -r 1".split()
+    run_args += " --no-plot --no-separate-logs".split()
 
     with temp_benchmark(objective=objective) as bench:
         with pytest.raises(RuntimeError, match="pip install -U"):
@@ -282,9 +283,10 @@ def test_objective_cv_splitter(no_debug_log):
     ) as benchmark:
         print(list(benchmark.benchmark_dir.glob("datasets/*")))
         with CaptureCmdOutput() as out:
-            run([str(benchmark.benchmark_dir),
-                *('-s test-solver -d test-dataset --no-plot').split()],
-                standalone_mode=False)
+            cmd = f"{benchmark.benchmark_dir}"
+            cmd += " -s test-solver -d test-dataset"
+            cmd += " --no-plot --no-separate-logs"
+            run(cmd.split(), standalone_mode=False)
 
     # test-solver appears one time as it is only run once.
     out.check_output("test-solver", repetition=1)
@@ -299,9 +301,10 @@ def test_objective_cv_splitter(no_debug_log):
             objective=objective, solvers=solver, datasets=dataset
     ) as benchmark:
         with CaptureCmdOutput() as out:
-            run([str(benchmark.benchmark_dir),
-                *('-s test-solver -d test-dataset -r 2 --no-plot').split()],
-                standalone_mode=False)
+            cmd = f"{benchmark.benchmark_dir}"
+            cmd += " -s test-solver -d test-dataset -r 2"
+            cmd += " --no-plot --no-separate-logs"
+            run(cmd.split(), standalone_mode=False)
 
     # test-solver appears one time as it is only run once.
     out.check_output("test-solver", repetition=1)
@@ -315,9 +318,10 @@ def test_objective_cv_splitter(no_debug_log):
             objective=objective, solvers=solver, datasets=dataset
     ) as benchmark:
         with CaptureCmdOutput() as out:
-            run([str(benchmark.benchmark_dir),
-                *('-s test-solver -d test-dataset -r 5 --no-plot').split()],
-                standalone_mode=False)
+            cmd = f"{benchmark.benchmark_dir}"
+            cmd += " -s test-solver -d test-dataset -r 5"
+            cmd += " --no-plot --no-separate-logs"
+            run(cmd.split(), standalone_mode=False)
 
     # test-solver appears one time as it is only run once.
     out.check_output("test-solver", repetition=1)
@@ -332,10 +336,10 @@ def test_objective_cv_splitter(no_debug_log):
             objective=objective, solvers=solver, datasets=dataset
     ) as benchmark:
         with CaptureCmdOutput() as out:
-            run([
-                str(benchmark.benchmark_dir),
-                *('-s test-solver -d test-dataset -j 3 -r 4 --no-plot').split()
-            ], standalone_mode=False)
+            cmd = f"{benchmark.benchmark_dir}"
+            cmd += " -s test-solver -d test-dataset -j 3 -r 4"
+            cmd += " --no-plot --no-separate-logs"
+            run(cmd.split(), standalone_mode=False)
 
     # test-solver appears one time as it is only run once.
     out.check_output("test-solver", repetition=1)
@@ -362,10 +366,10 @@ def test_run_once_iteration(n_iter):
 
     with temp_benchmark(solvers=[solver1]) as benchmark:
         with CaptureCmdOutput() as out:
-            run([
-                str(benchmark.benchmark_dir),
-                *'-s solver1 -d test-dataset -n 0 -r 1 --no-plot'.split()
-            ], standalone_mode=False)
+            cmd = str(benchmark.benchmark_dir)
+            cmd += ' -s solver1 -d test-dataset -n 0 -r 1'
+            cmd += ' --no-plot --no-separate-logs'
+            run(cmd.split(), standalone_mode=False)
         out.check_output(rf"RUNONCE\({n_iter}\)", repetition=1)
 
 
@@ -391,11 +395,10 @@ def test_run_once_callback(n_iter):
 
     with temp_benchmark(solvers=[solver1]) as benchmark:
         with CaptureCmdOutput() as out:
-            run([
-                str(benchmark.benchmark_dir),
-                *'-s solver1 -d test-dataset -n 0 -r 1 --no-plot'.split()
-            ], standalone_mode=False)
-
+            cmd = str(benchmark.benchmark_dir)
+            cmd += ' -s solver1 -d test-dataset -n 0 -r 1'
+            cmd += ' --no-plot --no-separate-logs'
+            run(cmd.split(), standalone_mode=False)
         out.check_output(rf"RUNONCE\({n_iter}\)", repetition=1)
 
 
@@ -479,7 +482,7 @@ def test_paths_config_key(test_case, n_jobs):
         with CaptureCmdOutput() as out:
             run(
                 f"{bench.benchmark_dir} -s test-solver -d custom_dataset "
-                f"-n 0 -r 1 --no-plot -j {n_jobs}".split(),
+                f"-n 0 -r 1 --no-plot -j {n_jobs} --no-separate-logs".split(),
                 standalone_mode=False
             )
 
@@ -516,7 +519,7 @@ def test_warm_up():
         with CaptureCmdOutput() as out:
             run(
                 f"{benchmark.benchmark_dir} -s solver1 -d test-dataset "
-                f"-n 0 -r 5 --no-plot".split(),
+                f"-n 0 -r 5 --no-plot --no-separate-logs".split(),
                 'benchopt', standalone_mode=False)
 
         # Make sure warmup is called exactly once

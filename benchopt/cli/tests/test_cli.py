@@ -109,7 +109,7 @@ class TestRunCmd:
         with temp_benchmark() as bench, CaptureCmdOutput() as out:
             cmd = (
                 f"{bench.benchmark_dir} -r 1 -n 1 -j {n_jobs} --no-plot "
-                "-d test-dataset"
+                "-d test-dataset --no-separate-logs"
             )
             run(cmd.split(), 'benchopt', standalone_mode=False)
 
@@ -125,7 +125,8 @@ class TestRunCmd:
         with temp_benchmark() as bench, CaptureCmdOutput() as out:
             cmd = (
                 f"{bench.benchmark_dir} -n 1 --no-plot "
-                f"-d test-dataset --env-name {test_env_name}"
+                f"-d test-dataset --env-name {test_env_name} "
+                f"--no-separate-logs"
             )
             run(cmd.split(), 'benchopt', standalone_mode=False)
 
@@ -144,7 +145,8 @@ class TestRunCmd:
         with temp_benchmark() as bench, CaptureCmdOutput() as out:
             cmd = (
                 f"{bench.benchmark_dir} -r 1 -n 1 --timeout {timeout} "
-                f"--no-plot -d test-dataset --env-name {test_env_name}"
+                f"--no-plot -d test-dataset --env-name {test_env_name} "
+                f"--no-separate-logs"
             )
             run(cmd.split(), 'benchopt', standalone_mode=False)
 
@@ -202,7 +204,7 @@ class TestRunCmd:
         with temp_benchmark() as bench, CaptureCmdOutput() as out:
             cmd = (
                 f"{bench.benchmark_dir} -r 1 -n 1 --no-plot "
-                "-d all -s all -o all"
+                "-d all -s all -o all --no-separate-logs"
             )
             run(cmd.split(), 'benchopt', standalone_mode=False)
 
@@ -228,7 +230,7 @@ class TestRunCmd:
                 CaptureCmdOutput() as out:
             run(
                 f"{bench.benchmark_dir} -d test-dataset[param1=[2,3]] "
-                "-n 1 --no-plot".split(),
+                "-n 1 --no-plot --no-separate-logs".split(),
                 'benchopt', standalone_mode=False
             )
 
@@ -294,8 +296,8 @@ class TestRunCmd:
         with temp_benchmark(config=config, solvers=solver) as bench:
             with CaptureCmdOutput() as out:
                 run(
-                    f"{bench.benchmark_dir} --no-plot --config "
-                    f"{bench.benchmark_dir / 'config.yml'}".split(),
+                    f"{bench.benchmark_dir} --no-plot --no-separate-logs "
+                    f"--config {bench.benchmark_dir / 'config.yml'}".split(),
                     'benchopt', standalone_mode=False
                 )
             out.check_output(r'test-solver\[param1=42\]:', repetition=n_reps+1)
@@ -328,8 +330,8 @@ class TestRunCmd:
         with temp_benchmark(config=config, solvers=solver) as bench:
             with CaptureCmdOutput() as out:
                 run(
-                    f"{bench.benchmark_dir} --no-plot --config "
-                    f"{bench.benchmark_dir / 'config.yml'}".split(),
+                    f"{bench.benchmark_dir} --no-plot --no-separate-logs "
+                    f"--config {bench.benchmark_dir / 'config.yml'}".split(),
                     'benchopt', standalone_mode=False
                 )
 
@@ -343,8 +345,8 @@ class TestRunCmd:
             with CaptureCmdOutput() as out:
 
                 run(
-                    f"{bench.benchmark_dir} --no-plot --config "
-                    f"{bench.benchmark_dir / 'config.yml'} "
+                    f"{bench.benchmark_dir} --no-plot --no-separate-logs "
+                    f"--config {bench.benchmark_dir / 'config.yml'} "
                     "-s test-solver[param1=27] -r 1".split(),
                     'benchopt', standalone_mode=False)
 
@@ -376,7 +378,7 @@ class TestRunCmd:
             # Check that the computation caching is working properly.
             run_cmd = (
                 f"{bench.benchmark_dir} -d test-dataset -s test-solver "
-                f"-n 1 -r {n_rep} --no-plot"
+                f"-n 1 -r {n_rep} --no-plot --no-separate-logs"
             ).split()
 
             # Make a first run that should be put in cache
@@ -452,7 +454,7 @@ class TestRunCmd:
             with CaptureCmdOutput() as out:
                 run([str(bench.benchmark_dir),
                     *'-d test-dataset -n 1 -r 1 --no-plot'.split(),
-                    *'-s test-solver'.split()],
+                    *'-s test-solver --no-separate-logs'.split()],
                     'benchopt', standalone_mode=False)
 
             out.check_output('#RUN0', repetition=2)
@@ -462,7 +464,7 @@ class TestRunCmd:
                 run([
                     str(bench.benchmark_dir),
                     *'-d test-dataset -n 1 -r 1 --no-plot --collect'.split(),
-                    *'-s test-solver[param=[0,1]]'.split()
+                    *'-s test-solver[param=[0,1]] --no-separate-logs'.split()
                 ], 'benchopt', standalone_mode=False)
 
             # check that no solver where run
@@ -472,7 +474,6 @@ class TestRunCmd:
             # check that the results where collected for the correct solvers
             assert len(out.result_files) == 1, out
             out.check_output(r'done \(not enough run\)', repetition=1)
-            out.check_output('not run yet', repetition=1)
 
     def test_complete_bench(self, bench_completion_cases):  # noqa: F811
 

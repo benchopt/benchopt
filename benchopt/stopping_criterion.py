@@ -1,6 +1,8 @@
 import time
 import math
 
+from .config import DEBUG
+
 # Possible curve sampling strategies
 SAMPLING_STRATEGIES = ['iteration', 'tolerance', 'callback', 'run_once']
 
@@ -77,7 +79,7 @@ class StoppingCriterion():
             else f'objective_{key_to_monitor}'
         )
 
-    def get_runner_instance(self, max_runs=1, timeout=None, terminal=None,
+    def get_runner_instance(self, max_runs=1, timeout=None,
                             solver=None):
         """Copy the stopping criterion and set the parameters that depends on
         how benchopt runner is called.
@@ -89,8 +91,6 @@ class StoppingCriterion():
             the convergence curve.
         timeout : float
             The maximum duration in seconds of the solver run.
-        terminal : TerminalOutput or None
-            Object to format string to display the progress of the solver.
         solver : BaseSolver
             The solver for which this stopping criterion is called. Used to get
             overridden ``sampling_strategy`` and ``get_next``.
@@ -133,7 +133,6 @@ class StoppingCriterion():
         stopping_criterion.rho = RHO
         stopping_criterion.timeout = timeout
         stopping_criterion.max_runs = max_runs
-        stopping_criterion.terminal = terminal
         stopping_criterion.solver = solver
 
         # Override get_next_stop_val if ``get_next`` is implemented for solver.
@@ -154,19 +153,19 @@ class StoppingCriterion():
 
             stopping_criterion.get_next_stop_val = solver.get_next
 
-        # Store running arguments
-        if timeout is not None:
-            stopping_criterion._deadline = time.time() + timeout
-        else:
-            stopping_criterion._deadline = None
-        stopping_criterion._prev_objective = 1e100
-
         return stopping_criterion
 
     def init_stop_val(self):
         stop_val = (
             INFINITY if self.strategy == 'tolerance' else 0
         )
+
+        # Store running arguments
+        if self.timeout is not None:
+            self._deadline = time.time() + self.timeout
+        else:
+            self._deadline = None
+        self._prev_objective = 1e100
 
         self.debug(f"Calling solver {self.solver} with stop val: {stop_val}")
         self.progress('initialization')
@@ -266,7 +265,7 @@ class StoppingCriterion():
         if status == 'running':
             stop_val = self.get_next_stop_val(stop_val)
             self.debug(f"Calling with stop val: {stop_val}")
-            self.progress(progress=progress)
+            self.progress(progress)
 
         return stop, status, stop_val
 
@@ -292,13 +291,14 @@ class StoppingCriterion():
 
     def debug(self, msg):
         """Helper to print debug messages."""
-        if self.terminal is not None:
-            self.terminal.debug(msg)
+        if DEBUG:
+            if not hasattr(self, 'solver') or self.solver is None:
+                self.solver = ""
+            print(f"[DEBUG] {self.solver}: {msg}")
 
-    def progress(self, progress):
+    def progress(self, msg):
         """Helper to print progress messages."""
-        if self.terminal is not None:
-            self.terminal.progress(progress)
+        print(f"[PROGRESS] {self.solver}: {msg}")
 
     @staticmethod
     def _reconstruct(klass, kwargs, runner_kwargs):
@@ -312,10 +312,10 @@ class StoppingCriterion():
             strategy=self.strategy, key_to_monitor=self.key_to_monitor,
             **self.kwargs
         )
-        if getattr(self, 'max_runs', None):
+        if hasattr(self, 'max_runs'):
             runner_kwargs = dict(
                 max_runs=self.max_runs, timeout=self.timeout,
-                terminal=self.terminal, solver=self.solver
+                solver=self.solver
             )
         else:
             runner_kwargs = None
@@ -492,10 +492,10 @@ class SingleRunCriterion(StoppingCriterion):
     def init_stop_val(self):
         return self.stop_val
 
-    def get_runner_instance(self, max_runs=1, timeout=None, terminal=None,
+    def get_runner_instance(self, max_runs=1, timeout=None,
                             solver=None):
 
-        return super().get_runner_instance(1, timeout, terminal, solver)
+        return super().get_runner_instance(1, timeout, solver)
 
     def should_stop(self, stop_val, objective_list):
         return True, 'done', stop_val

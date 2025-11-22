@@ -3,10 +3,6 @@ import traceback
 from contextlib import contextmanager
 
 
-# Get config values
-from ..config import DEBUG
-
-
 class StatusHandler(object):
     def __init__(self):
         self.status = 'running'
@@ -28,13 +24,14 @@ def exception_handler(terminal, pdb=False):
         yield ctx
     except KeyboardInterrupt:
         ctx.status = 'interrupted'
-        terminal.show_status('interrupted')
+        terminal.stop(None, 'interrupted')
+        if hasattr(terminal, 'live'):
+            terminal.live.update(terminal.render_tree())
         raise SystemExit(1)
     except BaseException:
         ctx.status = 'error'
 
         if pdb:
-            terminal.show_status('error')
             traceback.print_exc()
             # Use ipdb if it is available and default to pdb otherwise.
             try:
@@ -43,9 +40,5 @@ def exception_handler(terminal, pdb=False):
                 from pdb import post_mortem
             post_mortem()
 
-        if DEBUG:
-            terminal.show_status('error')
-            raise
-        else:
-            print()
-            traceback.print_exc()
+        print()
+        traceback.print_exc()
