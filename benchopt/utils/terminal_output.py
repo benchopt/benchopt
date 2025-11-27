@@ -3,6 +3,7 @@ import shutil
 import ctypes
 import platform
 import sys
+from collections import defaultdict
 
 if sys.platform == 'win32':
     sys.stdout.reconfigure(encoding='utf-8')
@@ -61,7 +62,7 @@ def print_normalize(msg, endline=True, verbose=True):
     msg = msg.ljust(line_length + n_colors * 11)
 
     if endline:
-        print(msg)
+        print(msg, flush=True)
     else:
         print(msg + '\r', end='', flush=True)
 
@@ -73,23 +74,16 @@ class TerminalOutput:
             kernel32 = ctypes.windll.kernel32
             kernel32.SetConsoleMode(kernel32.GetStdHandle(-11), 7)
 
-        self.n_repetitions = n_repetitions
+        self.n_repetitions = n_repetitions if n_repetitions is not None else 1
         self.show_progress = show_progress
 
         self.solver = None
         self.dataset = None
         self.objective = None
 
-        self.rep = 0
+        self.status = defaultdict(str)
+        self.rep = defaultdict(int)
         self.verbose = True
-
-    def clone(self):
-        new_terminal = TerminalOutput(self.n_repetitions, self.show_progress)
-        new_terminal.set(
-            solver=self.solver, dataset=self.dataset, objective=self.objective,
-            verbose=self.verbose, rep=self.rep, i_solver=self.i_solver
-        )
-        return new_terminal
 
     def set(self, solver=None, dataset=None, objective=None, verbose=None,
             rep=None, i_solver=None):
@@ -116,7 +110,8 @@ class TerminalOutput:
             self.i_solver = i_solver
 
     def skip(self, reason=None, objective=False):
-        if self.rep == 0 and (not objective or self.i_solver == 0):
+        key = (self.dataset, self.objective, self.solver)
+        if self.rep[key] == 0 and (not objective or self.i_solver == 0):
             self.show_status(status='skip', objective=objective)
             if reason is not None:
                 indent = ' ' * (2 if objective else 4)
@@ -137,20 +132,44 @@ class TerminalOutput:
     def display_objective(self):
         self._display_name(self.objective_tag)
 
-    def progress(self, progress):
+    def increment_rep(self, key):
+        self.rep[key] += 1
+
+    def progress(self, progress, rep, key):
         """Display progress in the CLI interface."""
         if self.show_progress:
             if isinstance(progress, float):
                 progress = f'{progress:6.1%}'
+            solver_tag = colorify(f"    |--{key[2]}:")
             print_normalize(
-                f"{self.solver_tag} {progress} "
-                f"({self.rep + 1} / {self.n_repetitions} reps)",
+                f"{solver_tag} {progress} "
+                f"({rep + 1} / {self.n_repetitions} reps)",
                 endline=False,  verbose=self.verbose
             )
 
-    def show_status(self, status, dataset=False, objective=False):
+    def show_status(self, status, reason=None, dataset=False, objective=False):
+        from ..runner import SUCCESS_STATUS
+
         if dataset or objective:
             assert status in ['not installed', 'skip']
+
+        key = (self.dataset, self.objective, self.solver)
+        self.rep[key] += 1
+
+        if status == 'done':
+            if self.rep[key] < self.n_repetitions:
+                return
+            if self.status[key] == "":
+                self.status[key] = status
+        elif status in SUCCESS_STATUS:
+            if self.status[key] == "":
+                self.status[key] = status
+            if self.rep[key] < self.n_repetitions:
+                return
+        else:
+            self.status[key] = status
+
+        status = self.status[key]
         tag = (
             self.dataset_tag if dataset else
             self.objective_tag if objective else self.solver_tag
@@ -158,8 +177,12 @@ class TerminalOutput:
         assert status in STATUS, (
             f"status should be in {list(STATUS)}. Got '{status}'"
         )
-        status = colorify(*STATUS[status])
-        print_normalize(f"{tag} {status}")
+        status_print = colorify(*STATUS[status])
+        print_normalize(f"{tag} {status_print}")
+
+        if status == 'skip' and reason is not None:
+            indent = ' ' * (2 if objective else 4)
+            print(f'{indent}Reason: {reason}')
 
     def debug(self, msg):
         if DEBUG:
