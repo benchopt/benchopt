@@ -124,6 +124,7 @@ def run_one_to_cvg(benchmark, objective, solver, meta, timeout, max_runs,
     stopping_criterion.dataset = meta['dataset_name']
     stopping_criterion.objective = meta['objective_name']
     stopping_criterion.solver = meta['solver_name']
+    stopping_criterion.rep = meta['idx_rep']
 
     skip, reason = solver._set_objective(objective)
     if skip:

@@ -135,7 +135,7 @@ class TerminalOutput:
     def increment_rep(self, key):
         self.rep[key] += 1
 
-    def progress(self, progress, key):
+    def progress(self, progress, rep, key):
         """Display progress in the CLI interface."""
         if self.show_progress:
             if isinstance(progress, float):
@@ -143,7 +143,7 @@ class TerminalOutput:
             solver_tag = colorify(f"    |--{key[2]}:")
             print_normalize(
                 f"{solver_tag} {progress} "
-                f"({self.rep[key] + 1} / {self.n_repetitions} reps)",
+                f"({rep + 1} / {self.n_repetitions} reps)",
                 endline=False,  verbose=self.verbose
             )
 
