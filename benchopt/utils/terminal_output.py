@@ -74,7 +74,7 @@ class TerminalOutput:
             kernel32 = ctypes.windll.kernel32
             kernel32.SetConsoleMode(kernel32.GetStdHandle(-11), 7)
 
-        self.n_repetitions = n_repetitions
+        self.n_repetitions = n_repetitions if n_repetitions is not None else 1
         self.show_progress = show_progress
 
         self.solver = None
@@ -148,19 +148,28 @@ class TerminalOutput:
             )
 
     def show_status(self, status, reason=None, dataset=False, objective=False):
+        from ..runner import SUCCESS_STATUS
+
         if dataset or objective:
             assert status in ['not installed', 'skip']
 
         key = (self.dataset, self.objective, self.solver)
-        if self.status[key] != '':
-            return  # status already set
+        self.rep[key] += 1
 
         if status == 'done':
-            self.rep[key] += 1
             if self.rep[key] < self.n_repetitions:
                 return
+            if self.status[key] == "":
+                self.status[key] = status
+        elif status in SUCCESS_STATUS:
+            if self.status[key] == "":
+                self.status[key] = status
+            if self.rep[key] < self.n_repetitions:
+                return
+        else:
+            self.status[key] = status
 
-        self.status[key] = status
+        status = self.status[key]
         tag = (
             self.dataset_tag if dataset else
             self.objective_tag if objective else self.solver_tag

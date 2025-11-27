@@ -430,7 +430,7 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
     for result, key, status, reason in results_generator:
         run_statistics.extend(result)
         terminal.set(dataset=key[0], objective=key[1], solver=key[2])
-        terminal.show_status(status, reason=reason)
+        terminal.show_status(status=status, reason=reason)
 
     import pandas as pd
     df = pd.DataFrame(run_statistics)
