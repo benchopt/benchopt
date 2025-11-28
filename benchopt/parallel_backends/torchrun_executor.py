@@ -2,6 +2,7 @@ import os
 import subprocess
 import tempfile
 import pickle
+import hashlib
 from pathlib import Path
 from contextlib import ExitStack
 
@@ -137,8 +138,14 @@ def run_on_torchrun(
             
             # Create log file path
             solver_name = run_kwargs.get('solver').name
-            solver_params = '_'.join(f"{k}={v}" for k, v in run_kwargs.items() if k != 'solver')
-            log_file = torchrun_folder / f"{solver_name}_{solver_params}.log"
+            
+            # Use a hash of the parameters to avoid "File name too long" errors
+            params_str = str(sorted(
+                (k, str(v)) for k, v in run_kwargs.items() if k != 'solver'
+            ))
+            params_hash = hashlib.md5(params_str.encode('utf-8')).hexdigest()
+            
+            log_file = torchrun_folder / f"{solver_name}_{params_hash}.log"
             print(f"[TORCHRUN] Log file: {log_file}")
             
             # Build torchrun command
