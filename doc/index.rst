@@ -16,22 +16,27 @@ Reproducing an existing benchmark should be as easy as running
 
 .. tab-set::
 
-   .. tab-item:: Minimal benchmark
+   .. tab-item:: NanoGPT benchmark
+
+      A benchmark comparing various optimizers on training ``NanoGPT`` models.
 
       .. prompt:: bash $
 
-         benchopt run examples/minimal_benchmark
+         git clone https://github.com/benchopt/benchmark_nanogpt.git
+         benchopt run benchmark_nanogpt
 
       which will produce an interactive HTML report to visualize the results.
 
       .. raw:: html
 
          <iframe class="benchmark_result"
-               src="auto_examples/html_results/sphx_glr_run_minimal_benchmark_002.html"
+               src="https://benchopt.github.io/results/benchmark_nanogpt_benchmark_nanogpt_benchopt_run_2025-10-31_13h48m48.html"
             frameBorder='0' style="position: relative; width: 100%;">
          </iframe>
 
    .. tab-item:: Benchmark Bilevel
+
+      A benchmark comparing various algorithms to solve bilevel optimization problems.
 
       .. prompt:: bash $
 
@@ -47,19 +52,20 @@ Reproducing an existing benchmark should be as easy as running
             frameBorder='0' style="position: relative; width: 100%;">
          </iframe>
 
-   .. tab-item:: NanoGPT benchmark
+   .. tab-item:: Minimal benchmark
+
+      A minimal benchmark comparing various solvers on a toy problem.
 
       .. prompt:: bash $
 
-         git clone https://github.com/benchopt/benchmark_nanogpt.git
-         benchopt run benchmark_nanogpt
+         benchopt run examples/minimal_benchmark
 
       which will produce an interactive HTML report to visualize the results.
 
       .. raw:: html
 
          <iframe class="benchmark_result"
-               src="XXX"
+               src="auto_examples/html_results/sphx_glr_run_minimal_benchmark_002.html"
             frameBorder='0' style="position: relative; width: 100%;">
          </iframe>
 
