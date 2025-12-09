@@ -13,18 +13,56 @@ It is implemented in Python but can run algorithms written in many programming l
 
 Reproducing an existing benchmark should be as easy as running
 
-.. prompt:: bash $
 
-   benchopt run examples/minimal_benchmark
+.. tab-set::
 
-which will produce an interactive HTML report to visualize the results.
+   .. tab-item:: Minimal benchmark
 
-.. raw:: html
+      .. prompt:: bash $
 
-    <iframe class="benchmark_result"
-         src="auto_examples/html_results/sphx_glr_run_minimal_benchmark_002.html"
-        frameBorder='0' style="position: relative; width: 100%;">
-   </iframe>
+         benchopt run examples/minimal_benchmark
+
+      which will produce an interactive HTML report to visualize the results.
+
+      .. raw:: html
+
+         <iframe class="benchmark_result"
+               src="auto_examples/html_results/sphx_glr_run_minimal_benchmark_002.html"
+            frameBorder='0' style="position: relative; width: 100%;">
+         </iframe>
+
+   .. tab-item:: Benchmark Bilevel
+
+      .. prompt:: bash $
+
+         git clone https://github.com/benchopt/benchmark_bilevel.git
+         benchopt run benchmark_bilevel
+
+      which will produce an interactive HTML report to visualize the results.
+
+      .. raw:: html
+
+         <iframe class="benchmark_result"
+               src="https://benchopt.github.io/results/benchmark_bilevel_benchmark_bilevel_ijcnn1.html"
+            frameBorder='0' style="position: relative; width: 100%;">
+         </iframe>
+
+   .. tab-item:: NanoGPT benchmark
+
+      .. prompt:: bash $
+
+         git clone https://github.com/benchopt/benchmark_nanogpt.git
+         benchopt run benchmark_nanogpt
+
+      which will produce an interactive HTML report to visualize the results.
+
+      .. raw:: html
+
+         <iframe class="benchmark_result"
+               src="XXX"
+            frameBorder='0' style="position: relative; width: 100%;">
+         </iframe>
+
 
 There are already many :ref:`available_benchmarks` that have been created using benchopt.
 Learn how to run them and how to construct your own with the following pages!
