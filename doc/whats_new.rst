@@ -41,6 +41,12 @@ API
 - Allow to override SLURM config on a per run basis with ``Solver.parameters``
   See :ref:`slurm_override`. By `Geraud Ilinca`_ and `Thomas Moreau`_ (:gh:`848`)
 
+DOC
+---
+
+- Allow to run benchmarks as examples in the documentation.
+  By `Thomas Moreau`_ (:gh:`841`)
+
 FIX
 ---
 
