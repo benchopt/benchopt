@@ -1,6 +1,6 @@
 plot_configs:
   Subopt. (log):
-    kind: objective_curve
+    plot_kind: objective_curve
     scale: loglog
   Runtimes:
-    kind: bar_chart
+    plot_kind: bar_chart
