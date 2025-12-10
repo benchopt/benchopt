@@ -17,6 +17,12 @@ to specify and install requirements for the various components of the benchmarks
   specified in each class, and they can be installed individually by selecting
   the proper component using ``benchopt install -d dataset1 -s solver1``.
 
+- Finally, it is possible to use this command to download necessary files for
+  datasets, prior to running the benchmark. This can be done using the
+  ``--download`` option. This is particularly useful when running the benchmark
+  on a remote server where internet access is not available during the benchmark
+  execution.
+
 
 .. _specify_requirements:
 
