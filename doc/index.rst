@@ -11,12 +11,11 @@ Benchopt is a benchmarking suite tailored for machine learning workflows.
 It is built for simplicity, transparency, and reproducibility.
 It is implemented in Python but can run algorithms written in many programming languages.
 
-Reproducing an existing benchmark should be as easy as running
-
+Reproducing an existing benchmark should be as easy as running the following commands:
 
 .. tab-set::
 
-   .. tab-item:: NanoGPT benchmark
+   .. tab-item:: NanoGPT
 
       A benchmark comparing various optimizers on training ``NanoGPT`` models.
 
@@ -34,7 +33,19 @@ Reproducing an existing benchmark should be as easy as running
             frameBorder='0' style="position: relative; width: 100%;">
          </iframe>
 
-   .. tab-item:: Benchmark Bilevel
+   .. tab-item:: Unsupervised Domain Adaptation
+
+      A benchmark comparing various methods for unsupervised domain adaptation.
+
+      .. prompt:: bash $
+
+         git clone https://github.com/scikit-adaptation/skada-bench.git
+         benchopt run skada-bench --config configs/Simulated.yml --no-plot
+
+      which will produce a parquet file with the results that can be visualized
+      using instruction on the ``README.md`` of the [repository](https://github.com/scikit-adaptation/skada-bench).
+
+   .. tab-item:: Bilevel Optimization
 
       A benchmark comparing various algorithms to solve bilevel optimization problems.
 
@@ -70,6 +81,8 @@ Reproducing an existing benchmark should be as easy as running
          </iframe>
 
 
+These different tabs illustrate the diversity of benchmarks that can be built
+with benchopt, from deep learning optimization to more classical machine learning tasks.
 There are already many :ref:`available_benchmarks` that have been created using benchopt.
 Learn how to run them and how to construct your own with the following pages!
 

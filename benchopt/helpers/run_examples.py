@@ -6,7 +6,8 @@ from pathlib import Path
 from benchopt.tests.utils import CaptureCmdOutput
 from benchopt.plotting.generate_html import get_results, render_all_results
 
-# Used to monkey-patch sphinx-gallery behavior and retrieve a path iterator
+# Used to monkey-patch sphinx-gallery behavior in doc/conf.py and
+# retrieve a path iterator to store the HTML result files.
 SPHINX_GALLERY_CTX = {}
 
 # Output build dir for sphinx-gallery
@@ -14,6 +15,17 @@ BUILD_DIR = Path() / "_build" / "html" / "auto_examples"
 
 
 class HTMLResultPage:
+    """Class to capture a benchmark output in HTML format for Sphinx-gallery.
+
+    Parameters
+    ----------
+    result_html : str
+        HTML content of the benchmark result.
+    output : str
+        Standard output captured during the benchmark run.
+    cmd : str
+        Command used to run the benchmark.
+    """
     def __init__(self, result_html, output, cmd):
         self.max_height = 700
 
@@ -22,6 +34,7 @@ class HTMLResultPage:
         self.result_html = result_html
 
     def merge_lines(self, output):
+        """Merge lines in the output that were overwritten using '\r'."""
         out = []
         cursor = start_line = 0
         for c in output:
@@ -39,6 +52,7 @@ class HTMLResultPage:
         return ''.join(out)
 
     def output_to_html(self, output):
+        """Process the output of the benchopt command to render in sphinx"""
         output = self.merge_lines(output)
         # This allows to correctly display the progress in the example
         from rich.console import Console
@@ -51,6 +65,7 @@ class HTMLResultPage:
         return html
 
     def cmd_to_html(self, cmd):
+        """Convert the command to HTML with syntax highlighting."""
         try:
             from sphinx.highlighting import PygmentsBridge
         except ImportError:
@@ -61,6 +76,17 @@ class HTMLResultPage:
         return html
 
     def _repr_html_(self):
+        """Generate the HTML representation for Sphinx-gallery.
+
+        This is the part that is embeded in the generated documentation.
+        Here we output the output of the command `output_html` as well as
+        the resulting HTML page as an iframe.
+
+        We also add a `pre` block with the command equivalent to the
+        `benchopt_run` function called. This is used to replace the call in
+        sphinx-gallery examples with the command line, to make it easier to
+        reproduce outside of the documentation.
+        """
         src_result_html = f"srcdoc='{escape(self.result_html)}'"
         if "paths" in SPHINX_GALLERY_CTX:
             # Save the result HTML to a file to be loaded in the iframe
@@ -89,7 +115,7 @@ class HTMLResultPage:
 def benchopt_run(
     benchmark_name=None, benchmark_dir=None, n=5, r=1, plot_config=None
 ):
-    """Run a benchmark from benchopt.examples with benchopt.
+    """Run a benchmark and return output compatible with sphinx-gallery.
 
     Parameters
     ----------
@@ -121,6 +147,7 @@ def benchopt_run(
         print(f"Running command:\n{cmd}")
         print("-" * 40)
 
+    # Don't capture output when running the example outside of sphinx build
     with CaptureCmdOutput(debug=not is_sphinx) as out:
         save_file = run_benchmark(
             benchmark_dir, max_runs=n, n_repetitions=r,
