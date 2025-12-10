@@ -5,7 +5,7 @@
 *—Making your ML and optimization benchmarks simple and open—*
 
 
-|Python 3.6+| |PyPI version| |License|
+|Python 3.10+| |PyPI version| |License|
 
 Benchopt is a benchmarking suite tailored for machine learning workflows.
 It is built for simplicity, transparency, and reproducibility.
@@ -43,7 +43,7 @@ Reproducing an existing benchmark should be as easy as running the following com
          benchopt run skada-bench --config configs/Simulated.yml --no-plot
 
       which will produce a parquet file with the results that can be visualized
-      using instruction on the ``README.md`` of the [repository](https://github.com/scikit-adaptation/skada-bench).
+      using instruction on the ``README.md`` of the https://github.com/scikit-adaptation/skada-bench.
 
    .. tab-item:: Bilevel Optimization
 
@@ -158,8 +158,8 @@ Join this endeavor! If you use benchopt in a scientific publication, please cite
    }
 
 
-.. |Python 3.6+| image:: https://img.shields.io/badge/python-3.6%2B-blue
-   :target: https://www.python.org/downloads/release/python-360/
+.. |Python 3.10+| image:: https://img.shields.io/badge/python-3.10%2B-blue
+   :target: https://www.python.org/downloads/release/python-3100/
 .. |License| image:: https://img.shields.io/badge/License-BSD_3--Clause-blue.svg
    :target: https://github.com/benchopt/benchopt/blob/main/LICENSE
 .. |PyPI version| image:: https://badge.fury.io/py/benchopt.svg
