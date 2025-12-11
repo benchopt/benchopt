@@ -236,25 +236,19 @@ copybutton_prompt_text = r">>> |\.\.\. |\$ |In \[\d*\]: | {2,5}\.\.\.: | {5,8}: 
 copybutton_prompt_is_regexp = True
 
 # -- Monkey patching gen_rst.execute_script to add context env vars -------
-try:
-    from sphinx_gallery import gen_rst
-    from benchopt.helpers.run_examples import SPHINX_GALLERY_CTX
+from sphinx_gallery import gen_rst
+from benchopt.helpers.run_examples import SPHINX_GALLERY_CTX
 
-    # Keep a reference to the original function
-    _original_exec_code_block = gen_rst.execute_code_block
+# Keep a reference to the original function
+_original_exec_code_block = gen_rst.execute_code_block
 
-    def exec_code_block_with_ctx(*args, **kwargs):
-        """Wrapper that stores the current example file and path iterator."""
+def exec_code_block_with_ctx(*args, **kwargs):
+    """Wrapper that stores the current example file and path iterator."""
 
-        # Set env vars for use inside example execution
-        script_vars = args[3]
-        SPHINX_GALLERY_CTX["paths"] = script_vars['image_path_iterator']
-        try:
-            return _original_exec_code_block(*args, **kwargs)
-        finally:
-            pass
+    # Set env vars for use inside example execution
+    script_vars = args[3]
+    SPHINX_GALLERY_CTX["paths"] = script_vars['image_path_iterator']
+    return _original_exec_code_block(*args, **kwargs)
 
-    # Apply the patch
-    gen_rst.execute_code_block = exec_code_block_with_ctx
-except ImportError:
-    raise
+# Apply the patch
+gen_rst.execute_code_block = exec_code_block_with_ctx
