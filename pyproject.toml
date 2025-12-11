@@ -96,7 +96,7 @@ dask = [
 include-package-data = true
 
 [tool.setuptools.packages]
-find = {}
+find = { namespaces = false }
 
 [tool.setuptools.package-data]
 "benchopt.plotting" = [
