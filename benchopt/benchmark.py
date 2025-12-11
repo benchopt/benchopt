@@ -449,7 +449,7 @@ class Benchmark:
             options = self.get_setting(param, default_config=default_config)
             if options is not None:
                 config[param] = options
-        return config if config else None
+        return config if config else {}
 
     def get_test_config_file(self):
         """Get the location for the test config file for the benchmark.

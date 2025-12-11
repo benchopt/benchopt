@@ -27,7 +27,7 @@ class HTMLResultPage:
         Command used to run the benchmark.
     """
     def __init__(self, result_html, output, cmd):
-        self.max_height = 700
+
 
         self.cmd, self.cmd_html = cmd, self.cmd_to_html(cmd)
         self.output_html = self.output_to_html(output)
@@ -78,7 +78,7 @@ class HTMLResultPage:
     def _repr_html_(self):
         """Generate the HTML representation for Sphinx-gallery.
 
-        This is the part that is embeded in the generated documentation.
+        This is the part that is embedded in the generated documentation.
         Here we output the output of the command `output_html` as well as
         the resulting HTML page as an iframe.
 

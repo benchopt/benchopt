@@ -18,7 +18,7 @@ window.addEventListener("message", function(event) {
 window.onload = function() {
   for (const cmd of document.querySelectorAll("pre.cmd-equiv")) {
     var code_elem = cmd.parentElement.previousElementSibling;
-    cmd_html = cmd.children[0].children[0].innerHTML;
+    var cmd_html = cmd.children[0].children[0].innerHTML;
     code_elem.firstChild.firstChild.innerHTML = cmd_html;
     cmd.setAttribute("style", "display: none;");
   }

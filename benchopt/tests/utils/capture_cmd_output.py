@@ -71,7 +71,7 @@ class CaptureCmdOutput(object):
             if self.exit == value.args[0]:
                 suppressed = True
             else:
-                raise exc_class(value).with_traceback(traceback)
+                raise value.with_traceback(traceback)
         elif self.exit is not None:
             raise RuntimeError(
                 "The cmd exited without exception but expected exit code "

@@ -3,7 +3,7 @@
 
 This Example demonstrates how to run an existing benchmark with benchopt.
 It uses the `benchopt_run` helper function to run the benchmark, which runs
-programatically the equivalent of the command line interface:
+programmatically the equivalent of the command line interface:
 """
 
 from benchopt.helpers.run_examples import benchopt_run
@@ -36,5 +36,5 @@ benchopt_run('minimal_benchmark', n=30, r=5)
 # Note that for convenience, this can be saved as a view in the configuration
 # of the benchmark. See :ref:`here <plot_configs>` for more details.
 # Here, clicking on ``Subopt. (log)`` in the *Available plots* above the
-# figure will change take you to a view with the right scale, and looking at
+# figure will take you to a view with the right scale, and looking at
 # suboptimality instead of objective value.
