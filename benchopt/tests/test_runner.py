@@ -434,7 +434,7 @@ class TestCache:
         name = "test-solver"
         sampling_strategy = 'run_once'
         def set_objective(self, X, y): pass
-        def run(self, _): print("#RUN_SOLVER")
+        def run(self, _): print("#RUN_SOLVER", flush=True)
         def get_result(self): return dict(beta=1)
     """
 
