@@ -27,11 +27,9 @@ class HTMLResultPage:
         Command used to run the benchmark.
     """
     def __init__(self, result_html, output, cmd):
-
-
-        self.cmd, self.cmd_html = cmd, self.cmd_to_html(cmd)
-        self.output_html = self.output_to_html(output)
         self.result_html = result_html
+        self.output_html = self.output_to_html(output)
+        self.cmd, self.cmd_html = cmd, self.cmd_to_html(cmd)
 
     def merge_lines(self, output):
         """Merge lines in the output that were overwritten using '\r'."""
