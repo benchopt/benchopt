@@ -1,10 +1,11 @@
 <%
     import json
-    benchmark_name = benchmark.replace("benchmark_", "").replace("_", " ")
+    benchmark_name = benchmark.replace("benchmark_", "").replace("_benchmark", "").replace("_", " ")
 %>
 <!DOCTYPE html>
 <html>
     <head>
+        <meta HTTP-EQUIV="Access-Control-Allow-Origin" CONTENT="*">
         <meta charset="utf-8" />
         <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📈</text></svg>">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -481,6 +482,31 @@
         <script type="text/javascript">
             ${static['symbols.js']}
             ${static['result.js']}
+        </script>
+        <script>
+            // Script to communicate the height of this page to parent
+            // when embeding this result in an iframe
+            (function() {
+                function sendHeight() {
+                    try {
+                        if (window.self !== window.top) {
+                            window.parent.postMessage(
+                            { source: "benchopt-result-height", height: document.body.scrollHeight },
+                            "*"
+                            );
+                        }
+                    } catch (e) { /* ignore */ }
+                }
+
+                // Send on load and on resize / content change
+                window.addEventListener("load", sendHeight);
+                window.addEventListener("resize", sendHeight);
+
+                // Optional: observe DOM mutations to detect dynamic content
+                const observer = new MutationObserver(sendHeight);
+                observer.observe(document.body, { childList: true, subtree: true });
+                }
+            )();
         </script>
     </body>
 </html>

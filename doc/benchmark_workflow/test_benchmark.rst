@@ -21,7 +21,7 @@ The tests include:
 - Checking that all solvers have the proper API and can be run on the ``simulated`` dataset.
 - Checking that all solvers can be installed in a fresh environment.
 
-The tests that are run can be found in the :ref:`benchopt_run_tests`.
+The tests that are run can be found in the :ref:`tests_definition`.
 
 By default, if the benchmark has been created using one of our templates (see XXX), the repo contains some github actions that will try to run these tests on each push/pull request, and once a week, to ensure long term maintainability.
 

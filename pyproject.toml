@@ -34,19 +34,23 @@ classifiers = [
 # Inferred from classifiers; adjust if different
 requires-python = ">=3.9"
 dependencies = [
+  # CLI deps
+  "pyyaml",
+  "click>=8.0",
+  "pygithub",
+  # Runner deps
+  "psutil",
+  "line-profiler",
+  "joblib>=1.4",
+  # Results/Plotting deps
+  "mako",
+  "pyarrow",
+  "matplotlib",
+  "plotly>=4.12",
+  # Scientific computing deps
   "numpy",
   "scipy",
   "pandas",
-  "matplotlib",
-  "click>=8.0",
-  "joblib>=1.4",
-  "pygithub",
-  "mako",
-  "psutil",
-  "plotly>=4.12",
-  "pyyaml",
-  "line-profiler",
-  "pyarrow",
 ]
 dynamic = ["version"]
 
@@ -76,6 +80,7 @@ doc = [
   "sphinx-copybutton",
   "pillow",
   "scikit-learn",
+  "rich",
 ]
 submitit = [
   "submitit",
@@ -91,8 +96,7 @@ dask = [
 include-package-data = true
 
 [tool.setuptools.packages]
-find = {}
-
+find = { namespaces = false }
 
 [tool.setuptools.package-data]
 "benchopt.plotting" = [
