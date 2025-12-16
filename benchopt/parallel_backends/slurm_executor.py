@@ -3,12 +3,11 @@ from contextlib import ExitStack
 try:
     import submitit
     from submitit.helpers import as_completed
-    from rich import progress
 except ImportError:
     raise ImportError(
         "To run benchopt with the submitit backend, please install "
         "the `submitit` package: `pip install benchopt[submitit]` or "
-        "`pip install submitit rich`."
+        "`pip install submitit`."
     )
 
 
@@ -83,14 +82,14 @@ def hashable_pytree(pytree):
 
 
 def run_on_slurm(
-    benchmark, slurm_config, run_one_solver, common_kwargs, all_runs
+    benchmark, slurm_config, run_one_solver, run_kwargs_generator
 ):
 
     executors = {}
     tasks = []
 
     with ExitStack() as stack:
-        for kwargs in all_runs:
+        for kwargs in run_kwargs_generator:
             solver = kwargs.get("solver")
             solver_slurm_config = get_solver_slurm_config(solver, slurm_config)
             executor_config = hashable_pytree(solver_slurm_config)
@@ -99,25 +98,23 @@ def run_on_slurm(
                 executor = get_slurm_executor(
                     benchmark,
                     solver_slurm_config,
-                    timeout=common_kwargs["timeout"],
+                    timeout=kwargs["timeout"],
                 )
                 stack.enter_context(executor.batch())
                 executors[executor_config] = executor
 
             future = executors[executor_config].submit(
-                run_one_solver,
-                **common_kwargs,
-                **kwargs,
+                run_one_solver, **kwargs
             )
             tasks.append(future)
 
-    print(f"First job id: {tasks[0].job_id}")
-
-    for t in progress.track(as_completed(tasks), total=len(tasks)):
+    # Yield results as jobs finish (unordered)
+    for t in as_completed(tasks):
         exc = t.exception()
         if exc is not None:
+            # Cancel remaining tasks and raise error
             for tt in tasks:
                 tt.cancel()
             raise exc
 
-    return [t.results()[0] for t in tasks]
+        yield t.results()[0]
