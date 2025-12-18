@@ -34,6 +34,7 @@ const setState = (partialState) => {
 
   renderSidebar();
   renderPlot();
+  renderTable();
   renderLegend();
 }
 
@@ -81,6 +82,8 @@ const renderPlot = () => {
   let div;
   if (isChart('scatter')) {
     div = document.getElementById('scatter_plot_container');
+  } else if (isChart('table')) {
+    return;
   } else {
     div = document.getElementById('plot_container');
   }
@@ -478,7 +481,7 @@ const renderSidebar = () => {
  * Render Scale selector
  */
 const renderScaleSelector = () => {
-  if (isChart('bar_chart')) {
+  if (isChart(['bar_chart', 'table'])) {
     hide(document.querySelectorAll("#scale-form-group"));
   } else {
     show(document.querySelectorAll("#scale-form-group"), 'block');
@@ -865,6 +868,188 @@ const handleCurveDoubleClick = curve => {
 
   hideAllCurvesExcept(curve);
 };
+
+
+/*
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * MANAGE TABLE RENDERING
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
+
+function renderTable() {
+  const plotContainer = document.getElementById("plot_container");
+  const tableContainer = document.getElementById("table_container");
+
+  // 1. Toggle Visibility
+  if (!isChart('table')) {
+    if (plotContainer) show(plotContainer);
+    if (tableContainer) hide(tableContainer);
+    return;
+  }
+
+  if (plotContainer) hide(plotContainer);
+  if (tableContainer) show(tableContainer);
+  if (!tableContainer) return;
+
+  // 2. Clear & Apply Layout to Main Container
+  tableContainer.innerHTML = "";
+
+  // --- LAYOUT FIX ---
+  // display: flex + justify-content: center -> Centers Horizontally
+  // align-items: flex-start -> Aligns to TOP (not vertically centered)
+  tableContainer.style.display = "flex";
+  tableContainer.style.alignItems = "flex-start";
+  tableContainer.style.width = "100%";
+  tableContainer.style.padding = "40px"; // Adds the requested padding
+  tableContainer.style.boxSizing = "border-box";
+  tableContainer.style.backgroundColor = "#f9fafb"; // Light gray bg
+
+  // 3. Fetch Data
+  const plotData = getPlotData();
+  if (!plotData || !plotData.columns || !plotData.data) {
+    tableContainer.innerHTML = `<div style="color: #666;">No data available</div>`;
+    return;
+  }
+
+  const { columns, data: rows } = plotData;
+
+  // --- Build Components ---
+
+  // A. Card Wrapper
+  // We allow width: 100% but cap it at max-width: 1000px so you can see the centering
+  const card = document.createElement("div");
+  card.style.width = "100%";
+  card.style.backgroundColor = "#fff";
+  card.style.borderRadius = "8px";
+  card.style.boxShadow = "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)";
+  card.style.overflow = "hidden"; // Clip corners
+  card.style.border = "1px solid #e5e7eb";
+  card.style.margin = "0 auto";
+
+  // B. Table Element
+  const table = document.createElement("table");
+  table.style.width = "100%";
+  table.style.borderCollapse = "collapse";
+  table.style.textAlign = "left";
+
+  // C. Header
+  const thead = document.createElement("thead");
+  thead.style.backgroundColor = "#f3f4f6";
+  const trHead = document.createElement("tr");
+
+  columns.forEach(headerText => {
+    const th = document.createElement("th");
+    th.innerText = headerText;
+    th.style.padding = "16px 24px";
+    th.style.fontSize = "12px";
+    th.style.fontWeight = "600";
+    th.style.textTransform = "uppercase";
+    th.style.letterSpacing = "0.05em";
+    th.style.color = "#6b7280";
+    th.style.borderBottom = "1px solid #e5e7eb";
+    trHead.appendChild(th);
+  });
+  thead.appendChild(trHead);
+  table.appendChild(thead);
+
+  // D. Body
+  const tbody = document.createElement("tbody");
+
+  rows.forEach((rowData, index) => {
+    const tr = document.createElement("tr");
+    tr.style.backgroundColor = "#fff";
+    tr.style.transition = "background-color 0.15s ease";
+
+    // Hover effect
+    tr.onmouseenter = () => tr.style.backgroundColor = "#f9fafb";
+    tr.onmouseleave = () => tr.style.backgroundColor = "#fff";
+
+    rowData.forEach(cellValue => {
+      const td = document.createElement("td");
+      td.innerHTML = cellValue;
+      td.style.padding = "16px 24px"; // Spacious padding inside cells
+      td.style.fontSize = "14px";
+      td.style.color = "#374151";
+      td.style.borderBottom = (index === rows.length - 1) ? "none" : "1px solid #f3f4f6";
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+
+  // Footer with Export Button
+
+  const footer = document.createElement("div");
+  footer.style.display = "flex";
+  footer.style.justifyContent = "flex-end";
+  footer.style.padding = "16px 24px";
+  footer.style.backgroundColor = "#f9fafb";
+  footer.style.borderTop = "1px solid #e5e7eb";
+
+  const exportButton = document.createElement("button");
+  exportButton.id = "table-export";
+  exportButton.innerText = "Export LaTeX";
+  exportButton.style.padding = "8px 16px";
+  exportButton.style.fontSize = "14px";
+  exportButton.style.color = "#fff";
+  exportButton.style.backgroundColor = "#3b82f6";
+  exportButton.style.border = "none";
+  exportButton.style.borderRadius = "4px";
+  exportButton.style.cursor = "pointer";
+  exportButton.style.transition = "background-color 0.15s ease";
+
+  // Hover effect for button
+  exportButton.onmouseenter = () => exportButton.style.backgroundColor = "#2563eb";
+  exportButton.onmouseleave = () => exportButton.style.backgroundColor = "#3b82f6";
+
+  exportButton.addEventListener('click', () => {
+    exportTable();
+  });
+
+  table.appendChild(tbody);
+  card.appendChild(table);
+  footer.appendChild(exportButton);
+  card.appendChild(footer);
+  tableContainer.appendChild(card);
+}
+
+async function exportTable() {
+  const button = document.getElementById("table-export");
+  const defaultText = button.innerHTML;
+  button.innerHTML = "Copying";
+
+  plotData = getPlotData();
+
+  let value = "\\begin{tabular}{l";
+  value += "c".repeat(plotData.columns.length);
+  value += "}\n";
+  value += "\\hline\n";
+
+  value += plotData.columns[0].replace('_', '\\_');
+  plotData.columns.slice(1).forEach(metric => value += ` & ${metric.replace('_', '\\_')}`);
+
+  value += " \\\\\n";
+  value += "\\hline\n";
+
+  plotData.data.forEach(rowData => {
+    value += rowData[0].toString().replace('_', '\\_');
+    rowData.slice(1).forEach(cell => {
+      value += ` & ${cell.toString().replace('_', '\\_')}`;
+    });
+    value += " \\\\\n";
+  });
+
+  value += "\\hline\n";
+  value += "\\end{tabular}";
+
+  try {
+    await navigator.clipboard.writeText(value);
+    button.innerHTML = "Copied in clipboard!";
+    setTimeout(() => button.innerHTML = defaultText, 2500);
+  } catch (err) {
+    button.innerHTML = "Error!";
+    setTimeout(() => button.innerHTML = defaultText, 2500);
+  }
+}
 
 /*
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
