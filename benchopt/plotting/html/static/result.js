@@ -920,8 +920,6 @@ function renderTable() {
   const card = document.createElement("div");
   card.style.width = "100%";
   card.style.backgroundColor = "#fff";
-  card.style.borderRadius = "8px";
-  card.style.boxShadow = "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)";
   card.style.overflow = "hidden"; // Clip corners
   card.style.border = "1px solid #e5e7eb";
   card.style.margin = "0 auto";
@@ -942,10 +940,9 @@ function renderTable() {
     th.innerText = headerText;
     th.style.padding = "16px 24px";
     th.style.fontSize = "12px";
-    th.style.fontWeight = "600";
+    th.style.fontWeight = "700";
     th.style.textTransform = "uppercase";
     th.style.letterSpacing = "0.05em";
-    th.style.color = "#6b7280";
     th.style.borderBottom = "1px solid #e5e7eb";
     trHead.appendChild(th);
   });
@@ -978,12 +975,14 @@ function renderTable() {
 
   // Footer with Export Button
 
+  const footerWrapper = document.createElement("div");
+  footerWrapper.style.width = "100%";
+  footerWrapper.style.marginLeft = "auto"; // right-align
+
   const footer = document.createElement("div");
   footer.style.display = "flex";
   footer.style.justifyContent = "flex-end";
-  footer.style.padding = "16px 24px";
-  footer.style.backgroundColor = "#f9fafb";
-  footer.style.borderTop = "1px solid #e5e7eb";
+  footer.style.padding = "16px";
 
   const exportButton = document.createElement("button");
   exportButton.id = "table-export";
@@ -1007,9 +1006,11 @@ function renderTable() {
 
   table.appendChild(tbody);
   card.appendChild(table);
-  footer.appendChild(exportButton);
-  card.appendChild(footer);
   tableContainer.appendChild(card);
+
+  footer.appendChild(exportButton);
+  footerWrapper.appendChild(footer);
+  tableContainer.appendChild(footerWrapper);
 }
 
 async function exportTable() {
