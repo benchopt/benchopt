@@ -529,12 +529,14 @@ g.hovertext:has(path + [data-unformatted*="lower fence"])
 #scatter_plot_container {
   aspect-ratio: 4 / 3;
   min-height: 400px;
+  max-height: 80vh; /* Prevent plots from becoming too large on landscape mobile */
 }
 
 @media (min-width: 768px) {
   #scatter_plot_container {
     aspect-ratio: auto;
     min-height: 600px;
+    max-height: none; /* Remove max-height constraint on desktop */
   }
 }
 
@@ -543,11 +545,13 @@ g.hovertext:has(path + [data-unformatted*="lower fence"])
 #plot_container.js-plotly-plot {
   aspect-ratio: 4 / 3;
   min-height: 400px;
+  max-height: 80vh; /* Prevent plots from becoming too large on landscape mobile */
 }
 
 @media (min-width: 768px) {
   #plot_container.js-plotly-plot {
     aspect-ratio: auto;
     min-height: initial;
+    max-height: none; /* Remove max-height constraint on desktop */
   }
 }

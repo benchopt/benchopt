@@ -720,7 +720,7 @@ const getScatterChartLayout = () => {
   let customData = getPlotData();
 
   const layout = {
-    autosize: true,
+    autosize: true,  // Let Plotly handle sizing; CSS controls aspect ratio and min-height
     modebar: {
       orientation: 'v',
     },
