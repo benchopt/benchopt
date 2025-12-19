@@ -551,7 +551,7 @@ g.hovertext:has(path + [data-unformatted*="lower fence"])
 @media (min-width: 768px) {
   #plot_container.js-plotly-plot {
     aspect-ratio: auto;
-    min-height: initial;
+    min-height: 0;
     max-height: none; /* Remove max-height constraint on desktop */
   }
 }

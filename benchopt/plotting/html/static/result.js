@@ -688,7 +688,7 @@ const getBarChartLayout = () => {
 };
 
 const getBoxplotChartLayout = () => {
-  plot_info = getPlotData()
+  const plot_info = getPlotData()
   const layout = {
     autosize: true,
     modebar: {
