@@ -81,8 +81,10 @@ const renderPlot = () => {
   let div;
   if (isChart('scatter')) {
     div = document.getElementById('scatter_plot_container');
+    show(div);
   } else {
     div = document.getElementById('plot_container');
+    hide(document.getElementById('scatter_plot_container'));
   }
   const data = getChartData();
   const layout = getLayout();
