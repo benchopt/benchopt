@@ -523,3 +523,16 @@ g.hovertext:has(path + [data-unformatted*="lower fence"])
 {
     display: none;
 }
+
+/* Fixed aspect ratio for plot containers on mobile devices for better readability */
+#scatter_plot_container {
+  aspect-ratio: 4 / 3;
+  min-height: 400px;
+}
+
+@media (min-width: 768px) {
+  #scatter_plot_container {
+    aspect-ratio: auto;
+    min-height: unset;
+  }
+}

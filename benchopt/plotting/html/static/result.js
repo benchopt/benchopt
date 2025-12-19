@@ -645,7 +645,7 @@ const _getScale = (scale) => {
 const getBarChartLayout = () => {
   let data = getPlotData();
   const layout = {
-    autosize: !isSmallScreen(),
+    autosize: true,
     modebar: {
       orientation: 'v',
     },
@@ -665,8 +665,6 @@ const getBarChartLayout = () => {
   };
 
   if (isSmallScreen()) {
-    layout.width = 900;
-    layout.height = window.screen.availHeight - 200;
     layout.dragmode = false;
   }
 
@@ -692,7 +690,7 @@ const getBarChartLayout = () => {
 const getBoxplotChartLayout = () => {
   plot_info = getPlotData()
   const layout = {
-    autosize: !isSmallScreen(),
+    autosize: true,
     modebar: {
       orientation: 'v',
     },
@@ -711,8 +709,6 @@ const getBoxplotChartLayout = () => {
   };
 
   if (isSmallScreen()) {
-    layout.width = 900;
-    layout.height = window.screen.availHeight - 200;
     layout.dragmode = false;
   }
 
@@ -724,11 +720,10 @@ const getScatterChartLayout = () => {
   let customData = getPlotData();
 
   const layout = {
-    autosize: !isSmallScreen(),
+    autosize: true,
     modebar: {
       orientation: 'v',
     },
-    height: 700,
     showlegend: false,
     legend: {
       title: {
@@ -760,8 +755,6 @@ const getScatterChartLayout = () => {
   };
 
   if (isSmallScreen()) {
-    layout.width = 900;
-    layout.height = window.screen.availHeight - 200;
     layout.dragmode = false;
   }
 
