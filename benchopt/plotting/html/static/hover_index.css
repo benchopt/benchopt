@@ -525,21 +525,29 @@ g.hovertext:has(path + [data-unformatted*="lower fence"])
 }
 
 /* Fixed aspect ratio for plot containers on mobile devices for better readability */
-#scatter_plot_container,
-#plot_container {
+/* scatter_plot_container is used for scatter plots and is always present */
+#scatter_plot_container {
   aspect-ratio: 4 / 3;
   min-height: 400px;
 }
 
 @media (min-width: 768px) {
-  #scatter_plot_container,
-  #plot_container {
-    aspect-ratio: auto;
-    min-height: 0;
-  }
-  
-  /* Give scatter plots a comfortable default height on desktop */
   #scatter_plot_container {
+    aspect-ratio: auto;
     min-height: 600px;
+  }
+}
+
+/* For bar and boxplot charts, apply aspect ratio only when plot_container becomes a plotly plot */
+/* This avoids conflicts with the nested scatter_plot_container */
+#plot_container.js-plotly-plot {
+  aspect-ratio: 4 / 3;
+  min-height: 400px;
+}
+
+@media (min-width: 768px) {
+  #plot_container.js-plotly-plot {
+    aspect-ratio: auto;
+    min-height: initial;
   }
 }
