@@ -526,32 +526,48 @@ g.hovertext:has(path + [data-unformatted*="lower fence"])
 
 /* Fixed aspect ratio for plot containers on mobile devices for better readability */
 /* scatter_plot_container is used for scatter plots and is always present */
-#scatter_plot_container {
-  aspect-ratio: 4 / 3;
-  min-height: 400px;
-  max-height: 80vh; /* Prevent plots from becoming too large on landscape mobile */
+
+/* Mobile portrait: Use taller aspect ratio to fill vertical space */
+@media (max-width: 767px) and (orientation: portrait) {
+  #scatter_plot_container {
+    aspect-ratio: 3 / 4; /* Taller aspect ratio for portrait */
+    min-height: 400px;
+    max-height: 70vh;
+  }
+  
+  #plot_container.js-plotly-plot {
+    aspect-ratio: 3 / 4;
+    min-height: 400px;
+    max-height: 70vh;
+  }
 }
 
+/* Mobile landscape: Use wider aspect ratio */
+@media (max-width: 767px) and (orientation: landscape) {
+  #scatter_plot_container {
+    aspect-ratio: 4 / 3;
+    min-height: 300px;
+    max-height: 80vh; /* Use most of screen height in landscape */
+  }
+  
+  #plot_container.js-plotly-plot {
+    aspect-ratio: 4 / 3;
+    min-height: 300px;
+    max-height: 80vh;
+  }
+}
+
+/* Desktop: Remove aspect ratio constraints for flexibility */
 @media (min-width: 768px) {
   #scatter_plot_container {
     aspect-ratio: auto;
     min-height: 600px;
-    max-height: none; /* Remove max-height constraint on desktop */
+    max-height: none;
   }
-}
-
-/* For bar and boxplot charts, apply aspect ratio only when plot_container becomes a plotly plot */
-/* This avoids conflicts with the nested scatter_plot_container */
-#plot_container.js-plotly-plot {
-  aspect-ratio: 4 / 3;
-  min-height: 400px;
-  max-height: 80vh; /* Prevent plots from becoming too large on landscape mobile */
-}
-
-@media (min-width: 768px) {
+  
   #plot_container.js-plotly-plot {
     aspect-ratio: auto;
     min-height: 0;
-    max-height: none; /* Remove max-height constraint on desktop */
+    max-height: none;
   }
 }
