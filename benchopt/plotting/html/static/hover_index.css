@@ -535,6 +535,11 @@ g.hovertext:has(path + [data-unformatted*="lower fence"])
   #scatter_plot_container,
   #plot_container {
     aspect-ratio: auto;
-    min-height: unset;
+    min-height: 0;
+  }
+  
+  /* Give scatter plots a comfortable default height on desktop */
+  #scatter_plot_container {
+    min-height: 600px;
   }
 }
