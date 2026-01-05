@@ -149,23 +149,26 @@ def test_solver_run(benchmark, solver_class):
     if not dataset_test_parameters:
         dataset_test_parameters = [{}]
     solver_ran_once = False
+    reasons = set()
     for params in dataset_test_parameters:
         params.update(dataset_config)
         dataset = dataset_class.get_instance(**params)
 
         objective.set_dataset(dataset)
-        solver = solver_class.get_instance()
+        solver = solver_class.get_instance(**test_config.get('solver', {}))
         skip, reason = solver._set_objective(objective)
         if skip:
+            reasons.add(reason)
             continue
         solver_ran_once = True
         _test_solver_one_objective(solver, objective)
 
+    reasons = "\n-".join(sorted(reasons))
     assert solver_ran_once, (
         'Solver skipped all test configuration. At least one simulated '
         'dataset and one objective config should be compatible with the '
         'solver, potentially provided through "Solver.test_config" class '
-        'attribute or with `Dataset.test_parameters`.'
+        f'attribute or with `Dataset.test_parameters`. Reasons:\n-{reasons}'
     )
 
 

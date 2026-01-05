@@ -82,10 +82,12 @@ const renderPlot = () => {
   let div;
   if (isChart('scatter')) {
     div = document.getElementById('scatter_plot_container');
+    show(div);
   } else if (isChart('table')) {
     return;
   } else {
     div = document.getElementById('plot_container');
+    hide(document.getElementById('scatter_plot_container'));
   }
   const data = getChartData();
   const layout = getLayout();
@@ -264,7 +266,7 @@ const getScatterData = () => {
       curves.push({
         type: 'scatter',
         mode: 'lines',
-        showlegend: false,
+        legend: false,
         line: {
           width: 0,
           color: curveData.color,
@@ -648,7 +650,7 @@ const _getScale = (scale) => {
 const getBarChartLayout = () => {
   let data = getPlotData();
   const layout = {
-    autosize: !isSmallScreen(),
+    autosize: true,
     modebar: {
       orientation: 'v',
     },
@@ -668,8 +670,6 @@ const getBarChartLayout = () => {
   };
 
   if (isSmallScreen()) {
-    layout.width = 900;
-    layout.height = window.screen.availHeight - 200;
     layout.dragmode = false;
   }
 
@@ -693,9 +693,9 @@ const getBarChartLayout = () => {
 };
 
 const getBoxplotChartLayout = () => {
-  plot_info = getPlotData()
+  const plot_info = getPlotData()
   const layout = {
-    autosize: !isSmallScreen(),
+    autosize: true,
     modebar: {
       orientation: 'v',
     },
@@ -714,8 +714,6 @@ const getBoxplotChartLayout = () => {
   };
 
   if (isSmallScreen()) {
-    layout.width = 900;
-    layout.height = window.screen.availHeight - 200;
     layout.dragmode = false;
   }
 
@@ -727,11 +725,10 @@ const getScatterChartLayout = () => {
   let customData = getPlotData();
 
   const layout = {
-    autosize: !isSmallScreen(),
+    autosize: true,  // Let Plotly handle sizing; CSS controls aspect ratio and min-height
     modebar: {
       orientation: 'v',
     },
-    height: 700,
     showlegend: false,
     legend: {
       title: {
@@ -763,8 +760,6 @@ const getScatterChartLayout = () => {
   };
 
   if (isSmallScreen()) {
-    layout.width = 900;
-    layout.height = window.screen.availHeight - 200;
     layout.dragmode = false;
   }
 
@@ -1079,8 +1074,9 @@ const renderLegend = () => {
   const curvesDescription = window.metadata["solvers_description"];
 
   getCurves().forEach(curve => {
-    const color = data(curve).color;
-    const symbolNumber = data(curve).marker;
+    const curve_data = data(curve);
+    const color = curve_data.color;
+    const symbolNumber = curve_data.marker;
 
     let legendItem = createLegendItem(curve, color, symbolNumber);
 
@@ -1095,8 +1091,8 @@ const renderLegend = () => {
         description: curvesDescription[curve],
       }
     );
-    if (payload === undefined) {
-      legend.appendChild(legendItem);
+    if (payload !== undefined) {
+      legend.appendChild(payload);
     }
   });
 }
@@ -1182,7 +1178,7 @@ const createLegendItem = (curve, color, symbolNumber) => {
 
 function createSolverDescription(legendItem, { description }) {
   if (description === null || description === undefined || description === "")
-    return;
+    return legendItem;
 
   let descriptionContainer = document.createElement("div");
   descriptionContainer.setAttribute("class", "curve-description-container")

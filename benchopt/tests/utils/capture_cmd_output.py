@@ -1,11 +1,10 @@
 import re
-import pytest
 from pathlib import Path
-from contextlib import nullcontext
 
 from joblib.executor import get_memmapping_executor
 
 from benchopt.utils.suppress_std import SuppressStd
+
 
 OUTPUT_FILES_PATTERN = [
     # Run command
@@ -25,10 +24,7 @@ class CaptureCmdOutput(object):
     def __init__(self, delete_result_files=True, exit=None, debug=False):
         self.delete_result_files = delete_result_files
         self.out = SuppressStd(debug=debug)
-        self.exit_ctx = (
-            pytest.raises(SystemExit, match=str(exit)) if exit is not None
-            else nullcontext()
-        )
+        self.exit = exit
 
     @property
     def output(self):
@@ -65,14 +61,22 @@ class CaptureCmdOutput(object):
 
         # Redirect the stdout/stderr fd to temp file
         self.out.__enter__()
-        self.exit_ctx.__enter__()
         return self
 
     def __exit__(self, exc_class, value, traceback):
         self.out.__exit__(None, None, None)
 
-        # Check the exit code raised with SystemExit if needed
-        suppressed = self.exit_ctx.__exit__(exc_class, value, traceback)
+        suppressed = False
+        if exc_class is SystemExit:
+            if self.exit == value.args[0]:
+                suppressed = True
+            else:
+                raise value.with_traceback(traceback)
+        elif self.exit is not None:
+            raise RuntimeError(
+                "The cmd exited without exception but expected exit code "
+                f"{self.exit}."
+            )
 
         self.output_checker = BenchoptCmdOutputProcessor(
             self.out.output, self.delete_result_files
