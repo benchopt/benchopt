@@ -80,20 +80,29 @@ const config_mapping = {
  */
 const renderPlot = () => {
   let div;
-  if (isChart('scatter')) {
-    div = document.getElementById('scatter_plot_container');
-    show(div);
-  } else if (isChart('table')) {
+  let scatter_plot_container = document.getElementById('scatter_plot_container');
+  let plot_container = document.getElementById('plot_container');
+  let table_container = document.getElementById('table_container');
+  if (isChart('table')) {
+    show(table_container);
+    hide(plot_container);
     return;
+  } else if (isChart('scatter')) {
+    hide(table_container);
+    show(plot_container);
+    show(scatter_plot_container);
+    div = scatter_plot_container;
   } else {
-    div = document.getElementById('plot_container');
-    hide(document.getElementById('scatter_plot_container'));
+    hide(table_container);
+    show(plot_container);
+    hide(scatter_plot_container);
+    div = plot_container;
   }
   const data = getChartData();
   const layout = getLayout();
 
-  Plotly.purge(document.getElementById('scatter_plot_container'));
-  Plotly.purge(document.getElementById('plot_container'));
+  Plotly.purge(scatter_plot_container);
+  Plotly.purge(plot_container);
   Plotly.react(div, data, layout);
 };
 
@@ -875,18 +884,8 @@ const handleCurveDoubleClick = curve => {
 let tableFloatPrecision = 4;
 
 function renderTable() {
-  const plotContainer = document.getElementById("plot_container");
   const tableContainer = document.getElementById("table_container");
 
-  // Toggle Visibility
-  if (!isChart('table')) {
-    if (plotContainer) show(plotContainer);
-    if (tableContainer) hide(tableContainer);
-    return;
-  }
-
-  if (plotContainer) hide(plotContainer);
-  if (tableContainer) show(tableContainer);
   if (!tableContainer) return;
 
   // Clear & Apply Layout
@@ -1056,7 +1055,7 @@ function renderTable() {
   tableContainer.appendChild(footerWrapper);
 }
 
-// (The exportTable function remains unchanged as requested, using raw data)
+
 async function exportTable() {
   const button = document.getElementById("table-export");
   const defaultText = button.innerHTML;
