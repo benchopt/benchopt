@@ -810,7 +810,7 @@ const hide = HTMLElements => {
  * @param HTMLElements
  * @param style
  */
-const show = (HTMLElements, style = 'initial') => {
+const show = (HTMLElements, style = '') => {
   if (HTMLElements instanceof Element) {
     HTMLElements = [HTMLElements]
   }
@@ -884,9 +884,9 @@ const handleCurveDoubleClick = curve => {
 let tableFloatPrecision = 4;
 
 function renderTable() {
-  const tableContainer = document.getElementById("table_container");
+  if (!isChart('table')) return;
 
-  if (!tableContainer) return;
+  const tableContainer = document.getElementById("table_container");
 
   // Clear & Apply Layout
   tableContainer.innerHTML = "";
