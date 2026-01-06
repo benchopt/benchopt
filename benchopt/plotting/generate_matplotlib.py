@@ -25,6 +25,8 @@ def get_plot_figure(plot_datas, output_dir):
             fig = get_plot_barchart(plot_data)
         elif plot_data["type"] == "boxplot":
             fig = get_plot_boxplot(plot_data)
+        elif plot_data["type"] == "table":
+            continue
         else:
             raise NotImplementedError(
                 f"Plot type {plot_data['type']} "
