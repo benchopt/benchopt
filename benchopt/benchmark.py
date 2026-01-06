@@ -203,12 +203,14 @@ class Benchmark:
         from .plotting.default_plots import (
             ObjectiveCurvePlot,
             BarChart,
-            BoxPlot
+            BoxPlot,
+            TablePlot
         )
         default_plots = [
             ObjectiveCurvePlot,
             BarChart,
-            BoxPlot
+            BoxPlot,
+            TablePlot
         ]
         custom_plots = self._list_benchmark_classes(BasePlot)
         return default_plots + custom_plots
