@@ -890,17 +890,11 @@ function renderTable() {
 
   // Clear & Apply Layout
   tableContainer.innerHTML = "";
-  tableContainer.style.display = "flex";
-  tableContainer.style.alignItems = "flex-start";
-  tableContainer.style.width = "100%";
-  tableContainer.style.padding = "40px";
-  tableContainer.style.boxSizing = "border-box";
-  tableContainer.style.backgroundColor = "#f9fafb";
 
   // Fetch Data
   const plotData = getPlotData();
   if (!plotData || !plotData.columns || !plotData.data) {
-    tableContainer.innerHTML = `<div style="color: #666;">No data available</div>`;
+    tableContainer.innerHTML = `<div >No data available</div>`;
     return;
   }
 
@@ -908,32 +902,21 @@ function renderTable() {
 
   // Card Wrapper
   const card = document.createElement("div");
-  card.style.width = "100%";
-  card.style.backgroundColor = "#fff";
-  card.style.overflow = "hidden";
-  card.style.border = "1px solid #e5e7eb";
-  card.style.margin = "0 auto";
+  card.className = "w-full bg-white overflow-hidden border border-gray-200 mx-auto";
 
   // Table Element
   const table = document.createElement("table");
-  table.style.width = "100%";
-  table.style.borderCollapse = "collapse";
-  table.style.textAlign = "left";
+  table.className = "w-full border-collapse text-left";
 
   // Header
   const thead = document.createElement("thead");
-  thead.style.backgroundColor = "#f3f4f6";
+  thead.className = "bg-gray-50";
   const trHead = document.createElement("tr");
 
   columns.forEach(headerText => {
     const th = document.createElement("th");
     th.innerText = headerText;
-    th.style.padding = "16px 24px";
-    th.style.fontSize = "12px";
-    th.style.fontWeight = "700";
-    th.style.textTransform = "uppercase";
-    th.style.letterSpacing = "0.05em";
-    th.style.borderBottom = "1px solid #e5e7eb";
+    th.className = "px-4 py-4 text-xs font-bold uppercase tracking-wider border-b border-gray-200";
     trHead.appendChild(th);
   });
   thead.appendChild(trHead);
@@ -944,8 +927,7 @@ function renderTable() {
 
   rows.forEach((rowData, index) => {
     const tr = document.createElement("tr");
-    tr.style.backgroundColor = "#fff";
-    tr.style.transition = "background-color 0.15s ease";
+    tr.className = "bg-white transition-colors duration-150 ease-in-out hover:bg-gray-50";
 
     tr.onmouseenter = () => tr.style.backgroundColor = "#f9fafb";
     tr.onmouseleave = () => tr.style.backgroundColor = "#fff";
@@ -964,10 +946,12 @@ function renderTable() {
         td.innerHTML = cellValue;
       }
 
-      td.style.padding = "16px 24px";
-      td.style.fontSize = "14px";
-      td.style.color = "#374151";
-      td.style.borderBottom = (index === rows.length - 1) ? "none" : "1px solid #f3f4f6";
+      let cellClasses = "px-4 py-4 text-sm text-gray-700";
+      // Handle border logic: border-b for all except last row
+      if (index !== rows.length - 1) {
+        cellClasses += " border-b border-gray-100";
+      }
+      td.className = cellClasses;
       tr.appendChild(td);
     });
     tbody.appendChild(tr);
@@ -975,32 +959,19 @@ function renderTable() {
 
   // Footer with Precision Controls & Export
   const footerWrapper = document.createElement("div");
-  footerWrapper.style.width = "100%";
+  footerWrapper.className = "w-full";
 
   const footer = document.createElement("div");
-  footer.style.display = "flex";
-  footer.style.justifyContent = "space-between";
-  footer.style.alignItems = "center";
-  footer.style.padding = "16px";
+  footer.className = "flex justify-between items-center p-4";
 
   // Precision Controls (Left)
   const precisionContainer = document.createElement("div");
-  precisionContainer.style.display = "flex";
-  precisionContainer.style.alignItems = "center";
-  precisionContainer.style.gap = "8px";
-  precisionContainer.style.fontSize = "14px";
-  precisionContainer.style.color = "#374151";
+  precisionContainer.className = "flex items-center gap-2 text-sm text-gray-700";
 
   const createPrecBtn = (text) => {
     const btn = document.createElement("button");
     btn.innerText = text;
-    btn.style.padding = "4px 12px";
-    btn.style.border = "1px solid #d1d5db";
-    btn.style.backgroundColor = "#fff";
-    btn.style.borderRadius = "4px";
-    btn.style.cursor = "pointer";
-    btn.onmouseenter = () => btn.style.backgroundColor = "#f3f4f6";
-    btn.onmouseleave = () => btn.style.backgroundColor = "#fff";
+    btn.className = "px-3 py-1 border border-gray-300 bg-white rounded cursor-pointer hover:bg-gray-100";
     return btn;
   };
 
@@ -1008,6 +979,7 @@ function renderTable() {
   const btnInc = createPrecBtn("+");
   const labelPrec = document.createElement("span");
   labelPrec.innerText = `Float Precision: ${tableFloatPrecision}`;
+  labelPrec.className = "mx-2 px-4";
 
   btnDec.onclick = () => {
     if (tableFloatPrecision > 0) {
@@ -1029,17 +1001,7 @@ function renderTable() {
   const exportButton = document.createElement("button");
   exportButton.id = "table-export";
   exportButton.innerText = "Export LaTeX";
-  exportButton.style.padding = "8px 16px";
-  exportButton.style.fontSize = "14px";
-  exportButton.style.color = "#fff";
-  exportButton.style.backgroundColor = "#3b82f6";
-  exportButton.style.border = "none";
-  exportButton.style.borderRadius = "4px";
-  exportButton.style.cursor = "pointer";
-  exportButton.style.transition = "background-color 0.15s ease";
-
-  exportButton.onmouseenter = () => exportButton.style.backgroundColor = "#2563eb";
-  exportButton.onmouseleave = () => exportButton.style.backgroundColor = "#3b82f6";
+  exportButton.className = "inline-flex items-center px-4 py-2 space-x-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500";
 
   exportButton.addEventListener('click', () => {
     exportTable();
