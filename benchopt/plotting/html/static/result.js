@@ -887,11 +887,8 @@ function renderTable() {
   if (!isChart('table')) return;
 
   const tableContainer = document.getElementById("table_container");
-
-  // Clear & Apply Layout
   tableContainer.innerHTML = "";
 
-  // Fetch Data
   const plotData = getPlotData();
   if (!plotData || !plotData.columns || !plotData.data) {
     tableContainer.innerHTML = `<div >No data available</div>`;
@@ -936,18 +933,16 @@ function renderTable() {
       const td = document.createElement("td");
 
       if (typeof cellValue === 'number') {
-        // Only apply precision formatting if it is NOT an integer
         if (!Number.isInteger(cellValue)) {
           td.innerText = cellValue.toFixed(tableFloatPrecision);
         } else {
-          td.innerText = cellValue; // integers (e.g., 500, 1, 0) stay as-is
+          td.innerText = cellValue;
         }
       } else {
         td.innerHTML = cellValue;
       }
 
       let cellClasses = "px-4 py-4 text-sm text-gray-700";
-      // Handle border logic: border-b for all except last row
       if (index !== rows.length - 1) {
         cellClasses += " border-b border-gray-100";
       }
