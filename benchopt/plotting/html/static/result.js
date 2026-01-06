@@ -81,8 +81,10 @@ const renderPlot = () => {
   let div;
   if (isChart('scatter')) {
     div = document.getElementById('scatter_plot_container');
+    show(div);
   } else {
     div = document.getElementById('plot_container');
+    hide(document.getElementById('scatter_plot_container'));
   }
   const data = getChartData();
   const layout = getLayout();
@@ -645,7 +647,7 @@ const _getScale = (scale) => {
 const getBarChartLayout = () => {
   let data = getPlotData();
   const layout = {
-    autosize: !isSmallScreen(),
+    autosize: true,
     modebar: {
       orientation: 'v',
     },
@@ -665,8 +667,6 @@ const getBarChartLayout = () => {
   };
 
   if (isSmallScreen()) {
-    layout.width = 900;
-    layout.height = window.screen.availHeight - 200;
     layout.dragmode = false;
   }
 
@@ -690,9 +690,9 @@ const getBarChartLayout = () => {
 };
 
 const getBoxplotChartLayout = () => {
-  plot_info = getPlotData()
+  const plot_info = getPlotData()
   const layout = {
-    autosize: !isSmallScreen(),
+    autosize: true,
     modebar: {
       orientation: 'v',
     },
@@ -711,8 +711,6 @@ const getBoxplotChartLayout = () => {
   };
 
   if (isSmallScreen()) {
-    layout.width = 900;
-    layout.height = window.screen.availHeight - 200;
     layout.dragmode = false;
   }
 
@@ -724,11 +722,10 @@ const getScatterChartLayout = () => {
   let customData = getPlotData();
 
   const layout = {
-    autosize: !isSmallScreen(),
+    autosize: true,  // Let Plotly handle sizing; CSS controls aspect ratio and min-height
     modebar: {
       orientation: 'v',
     },
-    height: 700,
     showlegend: false,
     legend: {
       title: {
@@ -760,8 +757,6 @@ const getScatterChartLayout = () => {
   };
 
   if (isSmallScreen()) {
-    layout.width = 900;
-    layout.height = window.screen.availHeight - 200;
     layout.dragmode = false;
   }
 

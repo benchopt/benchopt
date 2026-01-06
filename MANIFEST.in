@@ -11,7 +11,7 @@ recursive-include benchopt/plotting *.svg
 
 
 # Include doc generation files
-include doc/_static/style.css
+recursive-include doc/_static *
 recursive-include doc/_templates *.html
 recursive-include doc *.py
 recursive-include doc *.rst

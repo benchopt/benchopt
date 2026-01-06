@@ -15,7 +15,7 @@ jobs:
     name: Build package 📦
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       with:
         fetch-depth: 0
     - name: Set up Python
@@ -29,7 +29,7 @@ jobs:
       run: >-
         python -m build --sdist --wheel --outdir dist/ .
     - name: Upload dist artifacts
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@v6
       with:
         name: python-package
         path: dist/*
@@ -56,7 +56,7 @@ jobs:
         intervalSeconds: 30  # check every 30sec
         ref: ${{ github.sha }}
     - name: Download dist artifacts
-      uses: actions/download-artifact@v6
+      uses: actions/download-artifact@v7
       with:
         name: python-package
         path: dist
@@ -84,12 +84,12 @@ jobs:
 
     steps:
     - name: Download all the dists
-      uses: actions/download-artifact@v6
+      uses: actions/download-artifact@v7
       with:
         name: python-package
         path: dist/
     - name: Sign the dists with Sigstore
-      uses: sigstore/gh-action-sigstore-python@v3.1.0
+      uses: sigstore/gh-action-sigstore-python@v3.2.0
       with:
         inputs: >-
           ./dist/*.tar.gz

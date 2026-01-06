@@ -400,14 +400,13 @@ def test_warmup_error(no_debug_log):
     """
 
     with temp_benchmark(solvers=solver) as benchmark:
-        with CaptureCmdOutput() as out:
-            exit_code, _ = run_benchmark(
+        with CaptureCmdOutput() as out, pytest.raises(RuntimeError):
+            run_benchmark(
                 str(benchmark.benchmark_dir),
                 solver_names=["solver1"],
                 dataset_names=["test-dataset"],
                 max_runs=1, n_repetitions=1, n_jobs=1, plot_result=False
             )
-        assert exit_code == 1, "The benchmark should fail"
         out.check_output("RuntimeError: Warmup error", repetition=1)
         out.check_output("UnboundLocalError", repetition=0)
         out.check_output("No output produced.", repetition=1)

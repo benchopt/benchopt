@@ -15,8 +15,8 @@ jobs:
 
             wget -q https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh -O ~/miniconda.sh;
             chmod +x ~/miniconda.sh;
-            # Remove symbolic link from cache
-            rm -rf ~/miniconda/_conda
+            # Remove symlink from cache
+            rm ~/miniconda/_conda || echo "does not exist";
             ~/miniconda.sh -u -b -p ~/miniconda;
             echo "export PATH=~/miniconda/bin:$PATH" >> $BASH_ENV;
 

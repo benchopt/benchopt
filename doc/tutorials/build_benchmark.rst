@@ -57,7 +57,7 @@ Benchopt can be installed simply using ``pip`` by running in a terminal
     pip install -U benchopt
 
 Benchopt and its dependencies are going to be installed, just wait until this is done.
-If you have any issue with the installation, you may have a look at the :ref:`get_started:`.
+If you have any issue with the installation, you may have a look at the :ref:`get_started`.
 
 Installing and running a first benchmark
 ----------------------------------------

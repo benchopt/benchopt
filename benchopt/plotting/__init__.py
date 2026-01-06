@@ -15,21 +15,21 @@ BACKWARD_COMPAT_PLOTS = {
 }
 
 
-def sanitize_options(options):
+def sanitize_config(config):
     """Flatten a pytree into a list."""
-    if isinstance(options, (list, tuple)):
+    if isinstance(config, (list, tuple)):
         # Avoid duplicates while preserving order
         seen = set()
         return [
-            sanitize_options(item) for item in options
+            sanitize_config(item) for item in config
             if item not in seen and not seen.add(item)
         ]
-    elif isinstance(options, dict):
+    elif isinstance(config, dict):
         return {
-            k: sanitize_options(v) for k, v in options.items()
+            k: sanitize_config(v) for k, v in config.items()
         }
     else:
-        return BACKWARD_COMPAT_PLOTS.get(options, options)
+        return BACKWARD_COMPAT_PLOTS.get(config, config)
 
 
 def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
@@ -60,25 +60,21 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
         The matplotlib figures for convergence curve and bar chart
         for each dataset.
     """
-    config = get_metadata(fname)
-    params = ["plots", "plot_configs"]
-    for param in params:
-        options = benchmark.get_setting(param, default_config=config)
-        if options is not None:
-            config[param] = sanitize_options(options)
-
-    update_metadata(fname, config)
+    plot_config = get_metadata(fname)
+    plot_config = benchmark.get_plot_config(default_config=plot_config)
+    plot_config = sanitize_config(plot_config)
+    update_metadata(fname, plot_config)
 
     if kinds is not None and len(kinds) > 0:
-        config["plots"] = kinds
+        plot_config["plots"] = kinds
 
     valid_kinds = benchmark.get_plot_names()
 
-    if "plots" not in config or config["plots"] is None:
-        config["plots"] = valid_kinds
+    if "plots" not in plot_config or plot_config["plots"] is None:
+        plot_config["plots"] = valid_kinds
 
     if html:
-        plot_benchmark_html(fname, benchmark, config, display)
+        plot_benchmark_html(fname, benchmark, plot_config, display)
 
     else:
         # Load the results.
@@ -91,7 +87,7 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
 
         output_dir = benchmark.get_output_folder()
 
-        for kind in config["plots"]:
+        for kind in plot_config["plots"]:
             if kind not in valid_kinds:
                 raise ValueError(
                     f"Invalid plot kind '{kind}'. Available kinds are: "
@@ -101,7 +97,7 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
         figs = []
 
         kind_figs = get_figures(
-            benchmark, df, output_dir, config["plots"]
+            benchmark, df, output_dir, plot_config["plots"]
         )
         figs.extend(kind_figs)
 
