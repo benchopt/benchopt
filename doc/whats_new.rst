@@ -38,7 +38,8 @@ API
 - Implement ``bar_chart`` and ``boxplot`` using the new plotting backend.
   By `Hippolyte Verninas`_ (:gh:`852`)
 
-- Add ``table`` using the new plotting backend.
+- Add possibility to output a table in the HTML interface, with the new
+  plot type ``table`` using the new plotting backend.
   By `Hippolyte Verninas`_ and `Melvine Nargeot`_ (:gh:`866`)
 
 - Allow to override SLURM config on a per run basis with ``Solver.parameters``
