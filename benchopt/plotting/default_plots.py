@@ -40,10 +40,12 @@ class ObjectiveCurvePlot(BasePlot):
 
             if X_axis == "Time":
                 curve_data['q1'] = (
-                    df_filtered.groupby('stop_val')["time"].quantile(.1).values.tolist()
+                    df_filtered.groupby('stop_val')["time"]
+                    .quantile(.1).values.tolist()
                 )
                 curve_data['q9'] = (
-                    df_filtered.groupby('stop_val')["time"].quantile(.9).values.tolist()
+                    df_filtered.groupby('stop_val')["time"]
+                    .quantile(.9).values.tolist()
                 )
 
             plots.append(curve_data)
