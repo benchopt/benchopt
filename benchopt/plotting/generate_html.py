@@ -83,6 +83,7 @@ def get_results(fnames, html_root, benchmark, config=None, copy=False):
             df = df.rename(columns={"data_name": "dataset_name"})
 
         config_ = get_parquet_metadata(fname) if config is None else config
+        # Sanitize the config for comparison with the plot names
         kinds = config_.get('plots', benchmark.get_plot_names())
         kinds = [f"{k.strip().lower().replace(' ', '_')}" for k in kinds]
 
