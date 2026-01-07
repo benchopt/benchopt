@@ -203,11 +203,17 @@ class BoxPlot(BasePlot):
 class TablePlot(BasePlot):
     name = "Table"
     type = "table"
-    dropdown = {}
+    dropdown = {
+        "dataset": ...,
+        "objective": ...,
+    }
 
-    def plot(self, df):
+    def plot(self, df, dataset, objective):
         plots = []
 
+        df = df.query(
+            'dataset_name == @dataset and objective_name == @objective'
+        )
         # Get numeric columns starting with 'objective_'
         df_filtered = df.select_dtypes(include=['number']).columns
         objective_cols = [
@@ -238,7 +244,10 @@ class TablePlot(BasePlot):
             plots.append(solver_res)
         return plots
 
-    def get_metadata(self, df):
+    def get_metadata(self, df, dataset, objective):
+        df = df.query(
+            'dataset_name == @dataset and objective_name == @objective'
+        )
         df_filtered = df.select_dtypes(include=['number']).columns
         objective_cols = [
             col.replace('objective_', '') for col in df_filtered
