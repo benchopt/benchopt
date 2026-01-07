@@ -17,26 +17,19 @@ class ObjectiveCurvePlot(BasePlot):
     }
 
     def plot(self, df, dataset, objective, objective_column, X_axis):
-        df = df[df["dataset_name"] == dataset]
-        df = df[df['objective_name'] == objective]
+        df = df.query(
+            "dataset_name == @dataset and objective_name == @objective"
+        )
 
         plots = []
-        for solver in df['solver_name'].unique():
-            df_filtered = (
-                df[df['solver_name'] == solver]
-                .select_dtypes(include=['number'])
-                .groupby('stop_val')
-            )
-            df_filtered_median = df_filtered.median()
-            if objective_column not in df_filtered_median:
+        for solver, df_filtered in df.groupby('solver_name'):
+            medians = df_filtered.groupby('stop_val').median(numeric_only=True)
+            if objective_column not in medians:
                 continue
-            y = (
-                df_filtered_median[objective_column]
-                .values.tolist()
-            )
-            x = df_filtered_median["time"].values.tolist()
+            y = medians[objective_column].values.tolist()
+            x = medians["time"].values.tolist()
             if X_axis == "Iteration":
-                x = df_filtered_median.index.tolist()
+                x = medians.index.tolist()
 
             curve_data = {
                 "x": x,
@@ -47,10 +40,10 @@ class ObjectiveCurvePlot(BasePlot):
 
             if X_axis == "Time":
                 curve_data['q1'] = (
-                    df_filtered["time"].quantile(.1).values.tolist()
+                    df_filtered.groupby('stop_val')["time"].quantile(.1).values.tolist()
                 )
                 curve_data['q9'] = (
-                    df_filtered["time"].quantile(.9).values.tolist()
+                    df_filtered.groupby('stop_val')["time"].quantile(.9).values.tolist()
                 )
 
             plots.append(curve_data)
@@ -78,20 +71,19 @@ class BarChart(BasePlot):
     }
 
     def plot(self, df, dataset, objective, objective_column):
-        df = df[(df['dataset_name'] == dataset)]
-        df = df[(df['objective_name'] == objective)]
+        df = df.query(
+            "dataset_name == @dataset and objective_name == @objective"
+        )
 
         plots = []
-        for solver in df['solver_name'].unique():
-            df_filtered = (
-                df[(df['solver_name'] == solver)]
-                .select_dtypes(include=['number'])
-            )
+        for solver, df_filtered in df.groupby('solver_name'):
+            df_filtered = df_filtered.select_dtypes(include=['number'])
             if objective_column not in df_filtered:
                 continue
             c_star = df_filtered[objective_column].min() + EPS
             df_tol = df_filtered.groupby('stop_val').filter(
-                lambda x: x[objective_column].max() < c_star)
+                lambda x: x[objective_column].max() < c_star
+            )
 
             if df_tol.empty:
                 text = 'Did not converge'
@@ -170,8 +162,7 @@ class BoxPlot(BasePlot):
         df = df[df['objective_name'] == objective]
 
         plot_data = []
-        for solver in df['solver_name'].unique():
-            df_filtered = df[df['solver_name'] == solver]
+        for solver, df_filtered in df.groupby('solver_name'):
             if X_axis == "Solver":
                 y = _get_boxplot_solver(df_filtered, Y_axis, objective_column)
                 x = [solver]

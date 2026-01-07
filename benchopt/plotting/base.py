@@ -14,6 +14,7 @@ COLORS = COLORS[::2] + COLORS[1::2]
 class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
     _base_class_name = 'Plot'
     label_dict = {}
+    dropdown = {}
 
     @abstractmethod
     def plot(self, df, **kwargs):

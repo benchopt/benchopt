@@ -199,7 +199,7 @@ const getPlotData = () => {
   let dropdowns = getPlotDropdowns();
   let dropdown_values = dropdowns.map(dropdown => state()[dropdown]);
   let data_key = [state().plot_kind, ...dropdown_values].join('_');
-  return window._custom_plots[state().plot_kind][data_key];
+  return window._plots[state().plot_kind][data_key];
 }
 
 
@@ -339,6 +339,10 @@ const setConfig = (config_item) => {
     let update = {};
     // const lims = ['xlim', 'ylim', 'hidden_curves']
     const lims = ['hidden_curves']
+    let kind = state().plot_kind;
+    if ("plot_kind" in config) {
+      kind = config["plot_kind"];
+    }
     for(let key in config){
       const value = config[key];
       if (key in config_mapping) {
@@ -348,8 +352,19 @@ const setConfig = (config_item) => {
         }
       }
       else {
+        // Custom parameters which should be related to the current kind
+        // and the div prefix is 'change_{kind}_'. Ignore otherwise with
+        // a warning in the console.
+        if (!key.startsWith(kind)) {
+          key = kind + "_" + key;
+        }
         div_key = "change_" + key;
-        document.getElementById(div_key).value = value;
+        try {
+          document.getElementById(div_key).value = value;
+        } catch (error) {
+          // Element not found, ignore
+          console.warn("Unknown config parameter: '" + key + "'");
+        }
       }
       update[key] = value;
     }
@@ -517,6 +532,12 @@ const renderSuboptimalRelativeToggle = () => {
 const renderPlotDropdowns = () => {
   hide(document.querySelectorAll(`[id$='-custom-params-container']`));
   show(document.querySelectorAll(`#${state().plot_kind}-custom-params-container`), 'block');
+  // Hide dropdowns with only one option
+  for (let dropdown of document.getElementsByTagName('select')) {
+    if (dropdown.options.length <= 1) {
+      hide(dropdown.parentElement.parentElement);
+    }
+  }
 
 }
 
@@ -549,7 +570,7 @@ const getPlotDropdowns = () => {
   let kind = state().plot_kind;
   let params = [];
   Object.keys(state()).forEach(key => {
-    if (key.includes(kind)) {
+    if (key.startsWith(kind)) {
       params.push(key);
     }
   });
