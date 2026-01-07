@@ -83,14 +83,14 @@
                                 <span class="slider round"></span>
                             </label>
                         </div>
-                        % for custom_kind in result["custom_plot_params"]:
-                            <div id="${custom_kind}-custom-params-container">
-                            % for custom_param in result["custom_plot_params"][custom_kind]:
-                                <div id="${custom_kind}_${custom_param}_form_group" class="mt-8 px-8">
-                                    <label for="change_${custom_kind}_${custom_param}" class="block text-sm font-medium text-white">${custom_param}</label>
+                        % for kind, params in result["plot_params"].items():
+                            <div id="${kind}-custom-params-container">
+                            % for param, options in params.items():
+                                <div id="${kind}_${param}_form_group" class="mt-8 px-8">
+                                    <label for="change_${kind}_${param}" class="block text-sm font-medium text-white">${param}</label>
                                     <div class="mt-1 rounded-md shadow-sm">
-                                        <select id="change_${custom_kind}_${custom_param}" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({${custom_kind}_${custom_param}: this.value})">
-                                            % for option in result["custom_plot_params"][custom_kind][custom_param]:
+                                        <select id="change_${kind}_${param}" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({${kind}_${param}: this.value})">
+                                            % for option in options:
                                                 <option value="${option}">${option}</option>
                                             % endfor
                                         </select>
@@ -230,14 +230,14 @@
                             </div>
                             <div>
                             <div>
-                            % for custom_kind in result["custom_plot_params"]:
-                                <div id="${custom_kind}-custom-params-container">
-                                % for custom_param in result["custom_plot_params"][custom_kind]:
-                                    <div id="${custom_kind}_${custom_param}_form_group" class="mt-8 px-8">
-                                        <label for="change_${custom_kind}_${custom_param}" class="block text-sm font-medium text-white">${custom_param}</label>
+                            % for kind, params in result["plot_params"].items():
+                                <div id="${kind}-custom-params-container">
+                                % for param, options in params.items():
+                                    <div id="${kind}_${param}_form_group" class="mt-8 px-8">
+                                        <label for="change_${kind}_${param}" class="block text-sm font-medium text-white">${param}</label>
                                         <div class="mt-1 rounded-md shadow-sm">
-                                            <select id="change_${custom_kind}_${custom_param}" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({${custom_kind}_${custom_param}: this.value})">
-                                                % for option in result["custom_plot_params"][custom_kind][custom_param]:
+                                            <select id="change_${kind}_${param}" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({${kind}_${param}: this.value})">
+                                                % for option in options:
                                                     <option value="${option}">${option}</option>
                                                 % endfor
                                             </select>
@@ -455,7 +455,7 @@
         </script>
         <!-- Manage plot -->
         <script>
-            window._custom_plots = ${result['json_plots']};
+            window._plots = ${result['json_plots']};
             window.metadata = ${json.dumps(result['metadata'])};
 
             window.addEventListener("load", () => {
@@ -467,9 +467,9 @@
                     'suboptimal_curve': document.getElementById('change_suboptimal').checked,
                     'relative_curve': document.getElementById('change_relative').checked,
                     'hidden_curves': [],
-                    % for custom_kind in result["custom_plot_params"]:
-                        % for custom_param in result["custom_plot_params"][custom_kind]:
-                            '${custom_kind}_${custom_param}': document.getElementById('change_${custom_kind}_${custom_param}').value,
+                    % for kind, params in result["plot_params"].items():
+                        % for param in params:
+                            '${kind}_${param}': document.getElementById('change_${kind}_${param}').value,
                         % endfor
                     % endfor
                 });

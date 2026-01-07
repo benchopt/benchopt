@@ -83,6 +83,9 @@ def get_results(fnames, html_root, benchmark, config=None, copy=False):
             df = df.rename(columns={"data_name": "dataset_name"})
 
         config_ = get_parquet_metadata(fname) if config is None else config
+        # Sanitize the config for comparison with the plot names
+        kinds = config_.get('plots', benchmark.get_plot_names())
+        kinds = [f"{k.strip().lower().replace(' ', '_')}" for k in kinds]
 
         datasets = list(df['dataset_name'].unique())
         sysinfo = get_sysinfo(df)
@@ -106,26 +109,19 @@ def get_results(fnames, html_root, benchmark, config=None, copy=False):
                 k for k in df.columns
                 if k.startswith('objective_') and k != 'objective_name'
             ],
-            kinds=config_.get(
-                'plots',
-                benchmark.get_plot_names()
-            ),
+            kinds=kinds,
             metadata=get_metadata(df, config_.get('plot_configs', {})),
         )
 
-        custom_data, custom_dropdown = benchmark.get_plot_data(
-            df, result['kinds']
-        )
-        custom_data = update_plot_data_style(custom_data, plotly=True)
-        result['json_plots'] = json.dumps(custom_data)
-        result['custom_plot_params'] = custom_dropdown
+        data, dropdown = benchmark.get_plot_data(df, result['kinds'])
+        data = update_plot_data_style(data, plotly=True)
+        result['json_plots'] = json.dumps(data)
+        result['plot_params'] = dropdown
 
         results.append(result)
 
     for result in results:
-        html_file_name = f"{result['fname_short'].replace('.csv', '.html')}"
-        html_file_name = f"{html_file_name.replace('.parquet', '.html')}"
-
+        html_file_name = Path(result['fname_short']).with_suffix('.html').name
         result['page'] = f"{benchmark.name}_{html_file_name}"
 
     return results

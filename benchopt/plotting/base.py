@@ -13,7 +13,8 @@ COLORS = COLORS[::2] + COLORS[1::2]
 
 class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
     _base_class_name = 'Plot'
-    label_dict = {}
+    _label_dict = {}
+    dropdown = {}
 
     @abstractmethod
     def plot(self, df, **kwargs):
@@ -64,8 +65,8 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
             Contains {'color': color, 'marker': index}
         """
 
-        idx = self.label_dict.get(label, len(self.label_dict))
-        self.label_dict[label] = idx
+        idx = self._label_dict.get(label, len(self._label_dict))
+        self._label_dict[label] = idx
 
         color = COLORS[idx % len(COLORS)]
 
