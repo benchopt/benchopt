@@ -7,3 +7,4 @@ Tutorials
 
     build_benchmark
     add_solver
+    add_custom_plot
