@@ -883,6 +883,13 @@ const handleCurveDoubleClick = curve => {
 // Global state for precision
 let tableFloatPrecision = 4;
 
+const valueToFixed = (value) => {
+  if (typeof value === 'number' && !Number.isInteger(value)) {
+    return value.toFixed(tableFloatPrecision);
+  }
+  return value;
+}
+
 function renderTable() {
   if (!isChart('table')) return;
 
@@ -931,16 +938,7 @@ function renderTable() {
 
     rowData.forEach(cellValue => {
       const td = document.createElement("td");
-
-      if (typeof cellValue === 'number') {
-        if (!Number.isInteger(cellValue)) {
-          td.innerText = cellValue.toFixed(tableFloatPrecision);
-        } else {
-          td.innerText = cellValue;
-        }
-      } else {
-        td.innerHTML = cellValue;
-      }
+      td.innerHTML = valueToFixed(cellValue);
 
       let cellClasses = "px-4 py-4 text-sm text-gray-700";
       if (index !== rows.length - 1) {
@@ -1032,9 +1030,9 @@ async function exportTable() {
   value += "\\hline\n";
 
   plotData.data.forEach(rowData => {
-    value += rowData[0].toString().replace('_', '\\_');
+    value += valueToFixed(rowData[0]).toString().replace('_', '\\_');
     rowData.slice(1).forEach(cell => {
-      value += ` & ${cell.toString().replace('_', '\\_')}`;
+      value += ` & ${valueToFixed(cell).toString().replace('_', '\\_')}`;
     });
     value += " \\\\\n";
   });
