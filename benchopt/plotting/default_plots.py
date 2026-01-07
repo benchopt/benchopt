@@ -241,7 +241,8 @@ class TablePlot(BasePlot):
     def get_metadata(self, df):
         df_filtered = df.select_dtypes(include=['number']).columns
         objective_cols = [
-            col for col in df_filtered if col.startswith('objective_')
+            col.replace('objective_', '') for col in df_filtered
+            if col.startswith('objective_')
         ]
         columns = ["solver"] + objective_cols + ["time (s)"]
         return {
