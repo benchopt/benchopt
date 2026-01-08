@@ -162,7 +162,8 @@ Solver Example
 Custom plots can be defined to visualize specific quantities of interest
 during the benchmark. By default, BenchOpt provides some standard plots such as
 the objective curve, box plots and bar plots. However, users can create their own plots
-by defining a class that inherits from :class:`benchopt.BasePlot`.
+by defining a class that inherits from :class:`benchopt.BasePlot`. More information
+about creating custom plots can be found in the :ref:`add_custom_plot` tutorial.
 
 A custom plot must define the following attributes:
   - ``name``: A string representing the name of the plot.
