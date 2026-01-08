@@ -164,12 +164,12 @@ const getBarData = () => {
     // Add times for each convergent bar
     // Check if text is not 'Did not converge'
     if (curveData.text === '') {
-      let nbTimes = curveData.times.length
+      let nbTimes = curveData.y.length
 
       barData.push({
         type: 'scatter',
         x: new Array(nbTimes).fill(curveData.label),
-        y: curveData.times,
+        y: curveData.y,
         marker: {
           color: 'black',
           symbol: 'line-ew-open'
@@ -626,12 +626,22 @@ const isAvailable = () => {
   return !isNotAvailable;
 }
 
+const getMedian = (arr) => {
+  const sorted = [...arr].sort((a, b) => a - b);
+  let median = null;
+  if (sorted.length > 0) {
+    const mid = Math.floor(sorted.length / 2);
+    median = (sorted.length % 2 === 1) ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+  }
+  return median;
+}
+
 const barDataToArrays = () => {
   const colors = [], texts = [], x = [], y = [];
 
   getPlotData().data.forEach(plotData => {
     x.push(plotData.label);
-    y.push(plotData.y);
+    y.push(getMedian(plotData.y));
     colors.push(plotData.text === '' ? plotData.color : NON_CONVERGENT_COLOR);
     texts.push(plotData.text);
   });

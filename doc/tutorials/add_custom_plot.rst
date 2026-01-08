@@ -87,8 +87,7 @@ Bar Chart
 For a bar chart, the :code:`plot` method should return a list of dictionaries, where each dictionary represents a bar.
 The dictionary should contain:
 
-- :code:`y`: The height of the bar (scalar).
-- :code:`times`: A list of times (for error bars).
+- :code:`y`: The list of values for the bar (the median will be the height of the bar).
 - :code:`text`: The text to display on the bar.
 - :code:`label`: The label of the bar.
 
@@ -122,8 +121,8 @@ Box Plot
 For a box plot, the :code:`plot` method should return a list of dictionaries, where each dictionary represents a box.
 Each dictionary should contain:
 
-- :code:`x`: A list of x coordinates (e.g. [0, 1, 2]).
-- :code:`y`: A list of lists, where each inner list contains the values for the corresponding x coordinate.
+- :code:`x`: The x coordinate.
+- :code:`y`: The values of the box for the corresponding x coordinate.
 - :code:`label`: The label of the box.
 
 Optional keys:

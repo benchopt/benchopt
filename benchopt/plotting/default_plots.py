@@ -1,7 +1,4 @@
-import numpy as np
-
 from .base import BasePlot
-
 
 EPS = 1e-8
 
@@ -89,18 +86,15 @@ class BarChart(BasePlot):
 
             if df_tol.empty:
                 text = 'Did not converge'
-                height = df.time.max()
-                times = np.nan
+                times = [df.time.max()]
             else:
                 stop_val = df_tol['stop_val'].min()
                 this_df = df_filtered[df_filtered['stop_val'] == stop_val]
                 text = ''
-                height = this_df['time'].median()
                 times = this_df['time'].tolist()
 
             plots.append({
-                "y": height,
-                "times": times,
+                "y": times,
                 "text": text,
                 "label": solver,
                 "color": self.get_style(solver)["color"]
