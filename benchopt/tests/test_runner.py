@@ -636,7 +636,7 @@ class TestSeed:
         ) as bench:
             with CaptureCmdOutput() as out:
                 cmd_str = f"{bench.benchmark_dir} --no-cache "
-                cmd_str += "--no-plot --seed 0"
+                cmd_str += "--no-plot"
                 run(cmd_str.split(), standalone_mode=False)
 
         parsed_output = out.output.split("\n")
@@ -659,7 +659,7 @@ class TestSeed:
         ) as bench:
             with CaptureCmdOutput() as out:
                 cmd_str = f"{bench.benchmark_dir} --no-cache "
-                cmd_str += "--no-plot --seed 0"
+                cmd_str += "--no-plot"
                 run(cmd_str.split(), standalone_mode=False)
 
         parsed_output = out.output.split("\n")
@@ -686,7 +686,7 @@ class TestSeed:
         ) as bench:
             with CaptureCmdOutput() as out:
                 cmd_str = f"{bench.benchmark_dir} --no-cache "
-                cmd_str += "--no-plot --seed 0"
+                cmd_str += "--no-plot"
                 for it in range(2):
                     run(cmd_str.split(),
                         standalone_mode=False)
@@ -708,7 +708,7 @@ class TestSeed:
         ) as bench:
             with CaptureCmdOutput() as out:
                 cmd_str = f"{bench.benchmark_dir} --no-cache "
-                cmd_str += "--no-plot --seed 0"
+                cmd_str += "--no-plot"
                 for it in range(2):
                     run(cmd_str.split(),
                         standalone_mode=False)
@@ -751,7 +751,7 @@ class TestSeed:
         ) as bench:
             with CaptureCmdOutput() as out:
                 cmd_str = f"{bench.benchmark_dir} --no-cache "
-                cmd_str += "--no-plot --seed 0 -r 2"
+                cmd_str += "--no-plot -r 2"
                 for it in range(2):
                     run(cmd_str.split(),
                         standalone_mode=False)

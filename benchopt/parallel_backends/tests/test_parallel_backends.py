@@ -78,7 +78,7 @@ def test_backend_collect(backend):
     ):
         with temp_benchmark(config={"parallel_config.yml": config}) as bench:
             cmd = f"{bench.benchmark_dir} -d test-dataset -n 0"
-            cmd += " -r 1 --no-plot --seed 0"
+            cmd += " -r 1 --no-plot"
             parallel_config_file = bench.benchmark_dir / "parallel_config.yml"
             with CaptureCmdOutput() as out:
                 run(cmd.split(), standalone_mode=False)

@@ -470,7 +470,6 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
     def set_dataset(self, dataset):
         self._dataset = dataset
         assert self.is_installed(raise_on_not_installed=True)
-
         data = dataset._get_data()
 
         # Check if the dataset is compatible with the objective

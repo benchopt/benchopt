@@ -201,8 +201,8 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
 @click.option('--seed',
               metavar="<seed>", type=int, default=None,
               help="Seed to control the stochasticity of the "
-              "benchmark. If it is not provided, a random seed is generated "
-              "to make the benchmark reproducible.")
+              "benchmark. If it is not provided, an arbitrary seed is "
+              "selected to make the benchmark reproducible.")
 def run(config_file=None, **kwargs):
     if config_file is not None:
         with open(config_file, "r") as f:
@@ -245,11 +245,6 @@ def run(config_file=None, **kwargs):
             except ValueError:  # already under string format
                 import pandas as pd
                 timeout = pd.to_timedelta(timeout).total_seconds()
-
-    # Set a random seed if none is given
-    if seed is None:
-        seed = 0
-        print(f"No seed was specified. Selected global seed: {seed}")
 
     # Create the Benchmark object
     benchmark = Benchmark(benchmark, no_cache=no_cache, seed=seed)

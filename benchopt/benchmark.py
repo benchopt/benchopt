@@ -66,7 +66,7 @@ class Benchmark:
         from the benchmark_meta.json file. This should only be used to generate
         HTML pages with results.
     seed: int | None
-        Random seed for the benchmark. If None, a random seed is chosen.
+        Random seed for the benchmark. If None, an arbitrary seed is chosen.
 
     Attributes
     ----------
@@ -123,7 +123,11 @@ class Benchmark:
         self.name = self.name.replace('.', '-')
 
         # Set the random seed for the benchmark
-        self.seed = seed
+        if seed is None:
+            self.seed = 0
+            print(f"No seed was specified. Selected global seed: {self.seed}")
+        else:
+            self.seed = seed
 
     def set_benchmark_module(self):
         # add PACKAGE_NAME as a module if it exists.
