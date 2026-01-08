@@ -80,7 +80,7 @@ const config_mapping = {
  */
 const renderPlot = () => {
   let div;
-  let scatter_plot_container = document.getElementById('scatter_plot_container');
+  let plot_with_legend_container = document.getElementById('plot_with_legend_container');
   let plot_container = document.getElementById('plot_container');
   let table_container = document.getElementById('table_container');
   if (isChart('table')) {
@@ -90,18 +90,18 @@ const renderPlot = () => {
   } else if (isChart('scatter')) {
     hide(table_container);
     show(plot_container);
-    show(scatter_plot_container);
-    div = scatter_plot_container;
+    show(plot_with_legend_container);
+    div = plot_with_legend_container;
   } else {
     hide(table_container);
     show(plot_container);
-    hide(scatter_plot_container);
+    hide(plot_with_legend_container);
     div = plot_container;
   }
   const data = getChartData();
   const layout = getLayout();
 
-  Plotly.purge(scatter_plot_container);
+  Plotly.purge(plot_with_legend_container);
   Plotly.purge(plot_container);
   Plotly.react(div, data, layout);
 };

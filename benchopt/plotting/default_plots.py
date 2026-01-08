@@ -209,7 +209,7 @@ class TablePlot(BasePlot):
     }
 
     def plot(self, df, dataset, objective):
-        plots = []
+        rows = []
 
         df = df.query(
             'dataset_name == @dataset and objective_name == @objective'
@@ -241,8 +241,8 @@ class TablePlot(BasePlot):
                 .values[-1]
             )
             solver_res.append(final_time)
-            plots.append(solver_res)
-        return plots
+            rows.append(solver_res)
+        return rows
 
     def get_metadata(self, df, dataset, objective):
         df = df.query(
@@ -255,6 +255,6 @@ class TablePlot(BasePlot):
         ]
         columns = ["solver"] + objective_cols + ["time (s)"]
         return {
-            "title": "Comparison of solvers",
+            "title": f"{objective}\nData: {dataset}",
             "columns": columns,
         }
