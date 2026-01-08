@@ -222,20 +222,14 @@ class TablePlot(BasePlot):
 
         for solver, solver_df in df.groupby('solver_name'):
             solver_res = [solver]
-           median_vals = (
+            median_vals = (
                solver_df.groupby('stop_val')
                .median(numeric_only=True).iloc[-1]
-            )[objective_list + ['time']].to_list()
-            solver_res.extend(median_vals)
+            )[objective_cols + ['time']].to_list()
 
-            final_time = float(
-                solver_df.select_dtypes(include=['number'])
-                .groupby('stop_val')
-                .median()['time']
-                .values[-1]
-            )
-            solver_res.append(final_time)
+            solver_res.extend(median_vals)
             rows.append(solver_res)
+
         return rows
 
     def get_metadata(self, df, dataset, objective):
