@@ -452,8 +452,7 @@ class TestCache:
         ) as bench:
             with CaptureCmdOutput() as out:
                 for it in range(3):
-                    run(f"{bench.benchmark_dir} --no-plot "
-                        f"-r {n_reps}".split(),
+                    run(f"{bench.benchmark_dir} --no-plot -r {n_reps}".split(),
                         standalone_mode=False)
 
         # Check that the run are only call once per repetition, but not cached
