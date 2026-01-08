@@ -48,12 +48,14 @@ Scatter Plot
 
 For a scatter plot, the :code:`plot` method should return a list of dictionaries, where each dictionary represents a trace in the plot.
 Each dictionary must contain:
+
 - :code:`x`: A list of x values.
 - :code:`y`: A list of y values.
-- :code:`label`: The label of the trace (usually the solver name).
-- :code:`color`: (Optional) The color of the trace. The helper :code:`self.get_style(label)` can be used to get a consistent style (color and marker) for a given label.
+- :code:`label`: The label of the trace
 
 Optional keys:
+- :code:`color`: The color of the trace.
+- :code:`marker`: The marker style of the trace.
 - :code:`q1`, :code:`q9`: Lists of values for the 10% and 90% quantiles (for shading).
 
 .. code-block:: python
@@ -84,36 +86,49 @@ Bar Chart
 
 For a bar chart, the :code:`plot` method should return a list of dictionaries, where each dictionary represents a bar.
 The dictionary should contain:
+
 - :code:`y`: The height of the bar (scalar).
+- :code:`times`: A list of times (for error bars).
+- :code:`text`: The text to display on the bar.
 - :code:`label`: The label of the bar.
-- :code:`color`: (Optional) The color of the bar.
+
+Optional keys:
+
+- :code:`color`: The color of the bar.
 
 .. code-block:: python
 
     def plot(self, df, dataset, objective, **kwargs):
-        traces = []
+        bars = []
         for solver, df_solver in df.groupby('solver_name'):
-            traces.append({
+            bars.append({
                 "y": df_solver['time'].mean(),
+                "times": df_solver['time'].tolist(),
                 "label": solver,
+                "text": "",
                 "color": self.get_style(solver)['color']
             })
-        return traces
+        return bars
 
     def get_metadata(self, df, dataset, objective, **kwargs):
         return {
-            "title": f"Time to reach tolerance for {dataset}",
+            "title": f"Average times for {objective} on {dataset}",
             "ylabel": "Time [sec]",
         }
 
 Box Plot
 --------
 
-For a box plot, the :code:`plot` method allows visualizing distributions.
-The return dictionary should contain:
-- :code:`x`: A list of x coordinates (e.g. [0, 1, 2] or ["A", "B"]).
+For a box plot, the :code:`plot` method should return a list of dictionaries, where each dictionary represents a box.
+Each dictionary should contain:
+
+- :code:`x`: A list of x coordinates (e.g. [0, 1, 2]).
 - :code:`y`: A list of lists, where each inner list contains the values for the corresponding x coordinate.
-- :code:`label`: The label of the trace.
+- :code:`label`: The label of the box.
+
+Optional keys:
+
+- :code:`color`: The color of the box.
 
 .. code-block:: python
 
@@ -131,7 +146,7 @@ The return dictionary should contain:
 
     def get_metadata(self, df, dataset, objective, **kwargs):
         return {
-            "title": f"Boxplot for {dataset}",
+            "title": f"Boxplot for {objective} on {dataset}",
             "xlabel": "Solver",
             "ylabel": "Objective value",
         }
