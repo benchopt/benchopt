@@ -31,6 +31,9 @@ CLI
 API
 ---
 
+- Add API to control randomness in benchmarks via ``get_seed`` method in base classes.
+  By `Hippolyte Verninas`_ (:gh:`837`)
+
 - Add the possibility of creating custom plots for each benchmark.
   See :ref:`custom_plots` for the documentation.
   By `Hippolyte Verninas`_ (:gh:`842`)

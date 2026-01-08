@@ -7,9 +7,10 @@ from .stopping_criterion import SufficientProgressCriterion
 from .utils.misc import NamedTemporaryFile
 from .utils.dependencies_mixin import DependenciesMixin
 from .utils.parametrized_name_mixin import ParametrizedNameMixin
+from .utils.seed_mixin import SeedMixin
 
 
-class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
+class BaseSolver(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
     """A base class for solver wrappers in Benchopt.
 
     Solvers that derive from this class should implement three methods:
@@ -259,7 +260,7 @@ class CommandLineSolver(BaseSolver, ABC):
         super().__init__(**parameters)
 
 
-class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
+class BaseDataset(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
     """Base class to define a dataset in a benchmark.
 
     Datasets that derive from this class should implement one method:
@@ -293,7 +294,7 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
         return self._data
 
 
-class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
+class BaseObjective(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
     """Base class to define an objective function
 
     Objectives that derive from this class needs to implement four methods:
