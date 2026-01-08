@@ -14,7 +14,7 @@ Structure of a custom plot
 A custom plot is defined as a class inheriting from :class:`benchopt.BasePlot` and implementing:
 
 - :code:`name`: The name of the plot title.
-- :code:`type`: The type of the plot. Supported types are :code:`"scatter"`, :code:`"bar_chart"` and :code:`"boxplot"`.
+- :code:`type`: The type of the plot. Supported types are :code:`"scatter"`, :code:`"bar_chart"`, :code:`"boxplot"` and :code:`"table"`.
 - :code:`dropdown`: A dictionary defining the dropdowns available in the plot. The keys are the names of the dropdowns and the values are the options. If the value is :code:`...`, the options are automatically inferred from the results dataframe.
 - :code:`plot(self, df, **kwargs)`: A method that takes the results dataframe and the dropdown values as arguments, and returns the data to plot.
 - :code:`get_metadata(self, df, **kwargs)`: A method that takes the results dataframe and the dropdown values as arguments, and returns the metadata of the plot (title, labels, etc.).
@@ -25,7 +25,7 @@ A custom plot is defined as a class inheriting from :class:`benchopt.BasePlot` a
 
     class Plot(BasePlot):
         name = "My Custom Plot"
-        type = "scatter"  # or "bar_chart" or "boxplot"
+        type = "scatter"  # or "bar_chart", "boxplot" or "table"
         dropdown = {
             "dataset": ...,         # Automatic options from DataFrame columns
             "objective": ...,
@@ -134,6 +134,27 @@ The return dictionary should contain:
             "title": f"Boxplot for {dataset}",
             "xlabel": "Solver",
             "ylabel": "Objective value",
+        }
+
+Table Plot
+----------
+
+For a table plot, the :code:`plot` method should return a list of lists, where each inner list represents a row in the table.
+The :code:`get_metadata` method must return a dictionary with a :code:`columns` key, containing the list of column names.
+
+.. code-block:: python
+
+    def plot(self, df, dataset, objective, **kwargs):
+        rows = []
+        for solver, df_solver in df.groupby('solver_name'):
+            # Example: table with solver name and mean time
+            rows.append([solver, df_solver['time'].mean()])
+        return rows
+
+    def get_metadata(self, df, dataset, objective, **kwargs):
+        return {
+            "title": f"Summary for {dataset}",
+            "columns": ["Solver", "Mean Time [sec]"],
         }
 
 Metadata and Dropdowns
