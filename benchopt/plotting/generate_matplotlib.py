@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from .helpers import update_plot_data_style
+import warnings
 
 
 def get_figures(benchmark, df, output_dir, kinds):
@@ -25,6 +26,13 @@ def get_plot_figure(plot_datas, output_dir):
             fig = get_plot_barchart(plot_data)
         elif plot_data["type"] == "boxplot":
             fig = get_plot_boxplot(plot_data)
+        elif plot_data["type"] == "table":
+            warnings.warn(
+                f"Plot '{key}' (type 'table') cannot be "
+                f"rendered with matplotlib; skipping.",
+                UserWarning
+            )
+            continue
         else:
             raise NotImplementedError(
                 f"Plot type {plot_data['type']} "

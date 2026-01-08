@@ -525,16 +525,16 @@ g.hovertext:has(path + [data-unformatted*="lower fence"])
 }
 
 /* Fixed aspect ratio for plot containers on mobile devices for better readability */
-/* scatter_plot_container is used for scatter plots and is always present */
+/* plot_with_legend_container is used for scatter plots and is always present */
 
 /* Mobile portrait: Use taller aspect ratio to fill vertical space */
 @media (max-width: 767px) and (orientation: portrait) {
-  #scatter_plot_container {
+  #plot_with_legend_container {
     aspect-ratio: 3 / 4; /* Taller aspect ratio for portrait */
     min-height: 400px;
     max-height: 70vh;
   }
-  
+
   #plot_container.js-plotly-plot {
     aspect-ratio: 3 / 4;
     min-height: 400px;
@@ -544,12 +544,12 @@ g.hovertext:has(path + [data-unformatted*="lower fence"])
 
 /* Mobile landscape: Use wider aspect ratio */
 @media (max-width: 767px) and (orientation: landscape) {
-  #scatter_plot_container {
+  #plot_with_legend_container {
     aspect-ratio: 4 / 3;
     min-height: 300px;
     max-height: 80vh; /* Use most of screen height in landscape */
   }
-  
+
   #plot_container.js-plotly-plot {
     aspect-ratio: 4 / 3;
     min-height: 300px;
@@ -559,12 +559,12 @@ g.hovertext:has(path + [data-unformatted*="lower fence"])
 
 /* Desktop: Remove aspect ratio constraints for flexibility */
 @media (min-width: 768px) {
-  #scatter_plot_container {
+  #plot_with_legend_container {
     aspect-ratio: auto;
     min-height: 600px;
     max-height: none;
   }
-  
+
   #plot_container.js-plotly-plot {
     aspect-ratio: auto;
     min-height: 0;
