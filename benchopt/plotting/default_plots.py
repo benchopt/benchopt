@@ -191,3 +191,51 @@ class BoxPlot(BasePlot):
             "xlabel": X_axis,
             "ylabel": Y_axis,
         }
+
+
+class TablePlot(BasePlot):
+    name = "Table"
+    type = "table"
+    dropdown = {
+        "dataset": ...,
+        "objective": ...,
+    }
+
+    def plot(self, df, dataset, objective):
+        rows = []
+
+        df = df.query(
+            'dataset_name == @dataset and objective_name == @objective'
+        )
+        # Get numeric columns starting with 'objective_'
+        objective_cols = [
+            col for col in df.select_dtypes(include=['number']).columns
+            if col.startswith('objective_')
+        ]
+
+        for solver, solver_df in df.groupby('solver_name'):
+            solver_res = [solver]
+            median_vals = (
+               solver_df.groupby('stop_val')
+               .median(numeric_only=True).iloc[-1]
+            )[objective_cols + ['time']].to_list()
+
+            solver_res.extend(median_vals)
+            rows.append(solver_res)
+
+        return rows
+
+    def get_metadata(self, df, dataset, objective):
+        df = df.query(
+            'dataset_name == @dataset and objective_name == @objective'
+        )
+        df_filtered = df.select_dtypes(include=['number']).columns
+        objective_cols = [
+            col.replace('objective_', '') for col in df_filtered
+            if col.startswith('objective_')
+        ]
+        columns = ["solver"] + objective_cols + ["time (s)"]
+        return {
+            "title": f"{objective}\nData: {dataset}",
+            "columns": columns,
+        }

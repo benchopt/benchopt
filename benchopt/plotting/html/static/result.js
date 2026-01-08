@@ -33,7 +33,11 @@ const setState = (partialState) => {
   window._state = {...state(), ...partialState};
 
   renderSidebar();
-  renderPlot();
+  if (isChart('table')) {
+    renderTable();
+  } else {
+    renderPlot();
+  }
   renderLegend();
 }
 
@@ -79,18 +83,24 @@ const config_mapping = {
  */
 const renderPlot = () => {
   let div;
+  let plot_with_legend_container = document.getElementById('plot_with_legend_container');
+  let plot_container = document.getElementById('plot_container');
+
+  hide(document.getElementById('table_container'));
   if (isChart('scatter')) {
-    div = document.getElementById('scatter_plot_container');
-    show(div);
+    show(plot_container);
+    show(plot_with_legend_container);
+    div = plot_with_legend_container;
   } else {
-    div = document.getElementById('plot_container');
-    hide(document.getElementById('scatter_plot_container'));
+    show(plot_container);
+    hide(plot_with_legend_container);
+    div = plot_container;
   }
   const data = getChartData();
   const layout = getLayout();
 
-  Plotly.purge(document.getElementById('scatter_plot_container'));
-  Plotly.purge(document.getElementById('plot_container'));
+  Plotly.purge(plot_with_legend_container);
+  Plotly.purge(plot_container);
   Plotly.react(div, data, layout);
 };
 
@@ -263,7 +273,7 @@ const getScatterData = () => {
       curves.push({
         type: 'scatter',
         mode: 'lines',
-        showlegend: false,
+        legend: false,
         line: {
           width: 0,
           color: curveData.color,
@@ -495,7 +505,7 @@ const renderSidebar = () => {
  * Render Scale selector
  */
 const renderScaleSelector = () => {
-  if (isChart('bar_chart')) {
+  if (isChart(['bar_chart', 'table'])) {
     hide(document.querySelectorAll("#scale-form-group"));
   } else {
     show(document.querySelectorAll("#scale-form-group"), 'block');
@@ -819,7 +829,7 @@ const hide = HTMLElements => {
  * @param HTMLElements
  * @param style
  */
-const show = (HTMLElements, style = 'initial') => {
+const show = (HTMLElements, style = '') => {
   if (HTMLElements instanceof Element) {
     HTMLElements = [HTMLElements]
   }
@@ -881,6 +891,185 @@ const handleCurveDoubleClick = curve => {
 
   hideAllCurvesExcept(curve);
 };
+
+
+/*
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * MANAGE TABLE RENDERING
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
+
+// Global state for precision
+let tableFloatPrecision = 4;
+
+const valueToFixed = (value) => {
+  if (typeof value === 'number' && !Number.isInteger(value)) {
+    return value.toFixed(tableFloatPrecision);
+  }
+  return value;
+}
+
+function renderTable() {
+
+  let table_container = document.getElementById('table_container');
+  hide(document.getElementById('plot_container'));
+  show(table_container);
+
+  table_container.innerHTML = "";
+
+  const plotData = getPlotData();
+  if (!plotData || !plotData.columns || !plotData.data) {
+    table_container.innerHTML = `<div >No data available</div>`;
+    return;
+  }
+
+  const { columns, data: rows } = plotData;
+
+  // Card Wrapper
+  const card = document.createElement("div");
+  card.className = "w-full bg-white overflow-hidden border border-gray-200 mx-auto";
+
+  // Table Element
+  const table = document.createElement("table");
+  table.className = "w-full border-collapse text-left";
+
+  // Header
+  const thead = document.createElement("thead");
+  thead.className = "bg-gray-50";
+  const trHead = document.createElement("tr");
+
+  columns.forEach(headerText => {
+    const th = document.createElement("th");
+    th.innerText = headerText;
+    th.className = "px-4 py-4 text-xs font-bold uppercase tracking-wider border-b border-gray-200";
+    trHead.appendChild(th);
+  });
+  thead.appendChild(trHead);
+  table.appendChild(thead);
+
+  // Body
+  const tbody = document.createElement("tbody");
+
+  rows.forEach((rowData, index) => {
+    const tr = document.createElement("tr");
+    tr.className = "bg-white transition-colors duration-150 ease-in-out hover:bg-gray-50";
+
+    tr.onmouseenter = () => tr.style.backgroundColor = "#f9fafb";
+    tr.onmouseleave = () => tr.style.backgroundColor = "#fff";
+
+    rowData.forEach(cellValue => {
+      const td = document.createElement("td");
+      td.innerHTML = valueToFixed(cellValue);
+
+      let cellClasses = "px-4 py-4 text-sm text-gray-700";
+      if (index !== rows.length - 1) {
+        cellClasses += " border-b border-gray-100";
+      }
+      td.className = cellClasses;
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+
+  // Footer with Precision Controls & Export
+  const footerWrapper = document.createElement("div");
+  footerWrapper.className = "w-full";
+
+  const footer = document.createElement("div");
+  footer.className = "flex justify-between items-center p-4";
+
+  // Precision Controls (Left)
+  const precisionContainer = document.createElement("div");
+  precisionContainer.className = "flex items-center gap-2 text-sm text-gray-700";
+
+  const createPrecBtn = (text) => {
+    const btn = document.createElement("button");
+    btn.innerText = text;
+    btn.className = "px-3 py-1 border border-gray-300 bg-white rounded cursor-pointer hover:bg-gray-100";
+    return btn;
+  };
+
+  const btnDec = createPrecBtn("-");
+  const btnInc = createPrecBtn("+");
+  const labelPrec = document.createElement("span");
+  labelPrec.innerText = `Float Precision: ${tableFloatPrecision}`;
+  labelPrec.className = "mx-2 px-4";
+
+  btnDec.onclick = () => {
+    if (tableFloatPrecision > 0) {
+      tableFloatPrecision--;
+      renderTable();
+    }
+  };
+
+  btnInc.onclick = () => {
+    tableFloatPrecision++;
+    renderTable();
+  };
+
+  precisionContainer.appendChild(btnDec);
+  precisionContainer.appendChild(labelPrec);
+  precisionContainer.appendChild(btnInc);
+
+  // Export Button (Right)
+  const exportButton = document.createElement("button");
+  exportButton.id = "table-export";
+  exportButton.innerText = "Export LaTeX";
+  exportButton.className = "inline-flex items-center px-4 py-2 space-x-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500";
+
+  exportButton.addEventListener('click', () => {
+    exportTable();
+  });
+
+  table.appendChild(tbody);
+  card.appendChild(table);
+  table_container.appendChild(card);
+
+  footer.appendChild(precisionContainer);
+  footer.appendChild(exportButton);
+  footerWrapper.appendChild(footer);
+  table_container.appendChild(footerWrapper);
+}
+
+
+async function exportTable() {
+  const button = document.getElementById("table-export");
+  const defaultText = button.innerHTML;
+  button.innerHTML = "Copying";
+
+  const plotData = getPlotData();
+
+  let value = "\\begin{tabular}{l";
+  value += "c".repeat(plotData.columns.length);
+  value += "}\n";
+  value += "\\hline\n";
+
+  value += plotData.columns[0].replace('_', '\\_');
+  plotData.columns.slice(1).forEach(metric => value += ` & ${metric.replace('_', '\\_')}`);
+
+  value += " \\\\\n";
+  value += "\\hline\n";
+
+  plotData.data.forEach(rowData => {
+    value += valueToFixed(rowData[0]).toString().replace('_', '\\_');
+    rowData.slice(1).forEach(cell => {
+      value += ` & ${valueToFixed(cell).toString().replace('_', '\\_')}`;
+    });
+    value += " \\\\\n";
+  });
+
+  value += "\\hline\n";
+  value += "\\end{tabular}";
+
+  try {
+    await navigator.clipboard.writeText(value);
+    button.innerHTML = "Copied in clipboard!";
+    setTimeout(() => button.innerHTML = defaultText, 2500);
+  } catch (err) {
+    button.innerHTML = "Error!";
+    setTimeout(() => button.innerHTML = defaultText, 2500);
+  }
+}
 
 /*
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
