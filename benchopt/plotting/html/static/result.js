@@ -33,8 +33,11 @@ const setState = (partialState) => {
   window._state = {...state(), ...partialState};
 
   renderSidebar();
-  renderPlot();
-  renderTable();
+  if (isChart('table')) {
+    renderTable();
+  } else {
+    renderPlot();
+  }
   renderLegend();
 }
 
@@ -82,18 +85,13 @@ const renderPlot = () => {
   let div;
   let plot_with_legend_container = document.getElementById('plot_with_legend_container');
   let plot_container = document.getElementById('plot_container');
-  let table_container = document.getElementById('table_container');
-  if (isChart('table')) {
-    show(table_container);
-    hide(plot_container);
-    return;
-  } else if (isChart('scatter')) {
-    hide(table_container);
+
+  hide(document.getElementById('table_container'));
+  if (isChart('scatter')) {
     show(plot_container);
     show(plot_with_legend_container);
     div = plot_with_legend_container;
   } else {
-    hide(table_container);
     show(plot_container);
     hide(plot_with_legend_container);
     div = plot_container;
@@ -891,14 +889,16 @@ const valueToFixed = (value) => {
 }
 
 function renderTable() {
-  if (!isChart('table')) return;
 
-  const tableContainer = document.getElementById("table_container");
-  tableContainer.innerHTML = "";
+  let table_container = document.getElementById('table_container');
+  hide(document.getElementById('plot_container'));
+  show(table_container);
+
+  table_container.innerHTML = "";
 
   const plotData = getPlotData();
   if (!plotData || !plotData.columns || !plotData.data) {
-    tableContainer.innerHTML = `<div >No data available</div>`;
+    table_container.innerHTML = `<div >No data available</div>`;
     return;
   }
 
@@ -1002,12 +1002,12 @@ function renderTable() {
 
   table.appendChild(tbody);
   card.appendChild(table);
-  tableContainer.appendChild(card);
+  table_container.appendChild(card);
 
   footer.appendChild(precisionContainer);
   footer.appendChild(exportButton);
   footerWrapper.appendChild(footer);
-  tableContainer.appendChild(footerWrapper);
+  table_container.appendChild(footerWrapper);
 }
 
 
