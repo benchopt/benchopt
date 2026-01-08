@@ -288,7 +288,7 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
         "Wrapper to make sure the returned results are correctly formated."
 
         # Automatically cache the _data to avoid reloading it.
-        if not hasattr(self, '_data') or self._data is None or self._uses_seed:
+        if not hasattr(self, '_data') or self._data is None:
             self._data = self.get_data()
 
         return self._data

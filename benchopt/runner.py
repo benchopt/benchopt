@@ -270,13 +270,6 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
             # we set 1 by default so that the solver run at least once
             n_repetitions = 1
 
-    # Test if classes use seeding:
-    uses_seed = (
-        objective._uses_seed or
-        dataset._uses_seed or
-        solver._uses_seed
-    )
-
     for rep in range(n_repetitions):
         skip, reason = solver._set_objective(objective)
         if skip:
@@ -287,7 +280,7 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
 
         # Get meta
         meta = {
-            'base_seed': benchmark.seed if uses_seed else "",
+            'base_seed': benchmark.seed,
             'objective_name': str(objective),
             'obj_description': obj_description,
             'solver_name': str(solver),

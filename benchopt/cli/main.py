@@ -2,7 +2,6 @@ import yaml
 import click
 import warnings
 from pathlib import Path
-import random
 
 from benchopt.benchmark import Benchmark
 from benchopt.config import get_setting
@@ -249,8 +248,8 @@ def run(config_file=None, **kwargs):
 
     # Set a random seed if none is given
     if seed is None:
-        seed = random.randint(0, 2**32 - 1)
-        print(f"Selected random seed: {seed}")
+        seed = 0
+        print(f"No seed was specified. Selected global seed: {seed}")
 
     # Create the Benchmark object
     benchmark = Benchmark(benchmark, no_cache=no_cache, seed=seed)
