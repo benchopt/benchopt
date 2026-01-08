@@ -4,14 +4,15 @@ from .runner import run_benchmark
 from .base import BaseSolver
 from .base import BaseDataset
 from .base import BaseObjective
+from .plotting.base import BasePlot
 
 # TODO: remove this import in benchopt 1.8
 # Context to allow safe imports
 from .utils.safe_import import safe_import_context
 
-from .version import version as __version__
+__version__ = "1.8.dev0"
 
 __all__ = [
-    'BaseSolver', 'BaseDataset', 'BaseObjective', 'safe_import_context',
-    'run_benchmark', '__version__',
+    'BaseSolver', 'BaseDataset', 'BaseObjective', 'BasePlot',
+    'safe_import_context', 'run_benchmark', '__version__',
 ]

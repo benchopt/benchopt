@@ -17,7 +17,7 @@ def get_slurm_executor(benchmark, config, timeout=100):
     # benchopt timeout. This value is a trade-off between helping the
     # scheduler (low slurm_time allow for faster accept) and avoiding
     # killing the job too early.
-    if "slurm_time" not in config:
+    if "slurm_time" not in config and timeout is not None:
         # Timeout is in second in benchopt
         config["slurm_time"] = f"00:{int(1.5 * timeout)}"
 
@@ -27,13 +27,47 @@ def get_slurm_executor(benchmark, config, timeout=100):
     return executor
 
 
-def merge_configs(slurm_config, solver):
-    """Merge the slurm config with solver-specific slurm params."""
-    solver_slurm_params = {
-        **slurm_config,
-        **getattr(solver, "slurm_params", {}),
+def harmonize_slurm_config(slurm_cfg):
+    """Harmonize SLURM config for handling equivalent key names problem"""
+    slurm_cfg = {k.removeprefix("slurm_"): v for k, v in slurm_cfg.items()}
+    eq_dict = submitit.SlurmExecutor._equivalence_dict()
+    new_slurm_cfg = {}
+    for k, v in slurm_cfg.items():
+        if k in eq_dict:
+            new_slurm_cfg["slurm_" + eq_dict[k]] = v
+        else:
+            new_slurm_cfg["slurm_" + k] = v
+    return new_slurm_cfg
+
+
+def merge_slurm_configs(*slurm_cfgs):
+    """Merge multiple SLURM config dicts in order, with later dicts overriding
+    earlier ones.
+
+    The keys are harmonized before merging.
+    """
+    slurm_cfg = {}
+    for cfg in slurm_cfgs:
+        cfg = harmonize_slurm_config(cfg)
+        slurm_cfg.update(cfg)
+    return slurm_cfg
+
+
+def get_solver_slurm_config(solver, slurm_bench_cfg):
+    """Generate and merge SLURM configuration for a solver from static,
+    dynamic, and benchmark configs.
+    """
+    static_solver_cfg = getattr(solver, "slurm_params", {})
+    dyn_solver_cfg = {
+        k: v for k, v in solver._parameters.items() if k.startswith("slurm_")
     }
-    return solver_slurm_params
+    solver_cfg = merge_slurm_configs(
+        slurm_bench_cfg,
+        static_solver_cfg,
+        dyn_solver_cfg,
+    )
+
+    return solver_cfg
 
 
 def hashable_pytree(pytree):
@@ -58,7 +92,7 @@ def run_on_slurm(
     with ExitStack() as stack:
         for kwargs in all_runs:
             solver = kwargs.get("solver")
-            solver_slurm_config = merge_configs(slurm_config, solver)
+            solver_slurm_config = get_solver_slurm_config(solver, slurm_config)
             executor_config = hashable_pytree(solver_slurm_config)
 
             if executor_config not in executors:
@@ -86,4 +120,4 @@ def run_on_slurm(
                 tt.cancel()
             raise exc
 
-    return [t.result() for t in tasks]
+    return [t.results()[0] for t in tasks]

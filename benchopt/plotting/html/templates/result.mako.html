@@ -1,10 +1,11 @@
 <%
     import json
-    benchmark_name = benchmark.replace("benchmark_", "").replace("_", " ")
+    benchmark_name = benchmark.replace("benchmark_", "").replace("_benchmark", "").replace("_", " ")
 %>
 <!DOCTYPE html>
 <html>
     <head>
+        <meta HTTP-EQUIV="Access-Control-Allow-Origin" CONTENT="*">
         <meta charset="utf-8" />
         <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📈</text></svg>">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -34,63 +35,23 @@
                             </span>
                         </h1>
                     </div>
+                    <div class="mt-8 px-8">
+                        <label for="plot_kind" class="block text-sm font-medium text-white">Chart type</label>
+                        <div class="mt-1 rounded-md shadow-sm">
+                            <select id="plot_kind" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({plot_kind: this.value, scale: (this.value === 'boxplot' || this.value === 'bar_chart' ? 'linear' : state().scale)})">
+                                % for kind in result['kinds']:
+                                <option value="${kind}">
+                                    ${kind.replace("_", " ").capitalize()}
+                                </option>
+                                %endfor
+                            </select>
+                        </div>
+                    </div>
                     <div class="flex-1 flex flex-col">
-                        <div class="mt-10 px-8">
-                            <label for="dataset_selector" class="block text-sm font-medium text-white">Dataset:</label>
-                            <div class="mt-1 rounded-md shadow-sm">
-                                <select id="dataset_selector" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({dataset: this.value})">
-                                    % for data in result['dataset_names']:
-                                    <option value="${data}">${data}</option>
-                                    %endfor
-                                </select>
-                            </div>
-                        </div>
-                        <div class="mt-8 px-8">
-                            <label for="objective_selector" class="block text-sm font-medium text-white">Objective:</label>
-                            <div class="mt-1 rounded-md shadow-sm">
-                                <select id="objective_selector" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({objective: this.value})">
-                                    % for obj in result['objective_names']:
-                                    <option value="${obj}">${obj}</option>
-                                    %endfor
-                                </select>
-                            </div>
-                        </div>
-                        <div id="objective-column-form-group" class="mt-8 px-8">
-                            <div class="flex flex-row items-center justify-between text-sm font-medium text-white">
-                                <label for="objective_column" class="block">Objective metrics</label>
-                                <!--don't show description unless it is provided -->
-                                % if result['metadata']['obj_description'] != "":
-                                    <span class="objective-description-trigger" style="cursor: pointer;">
-                                        <span style="margin-right: 0.5em;">description</span>
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="objective-description-icon" viewBox="0 0 512 512">
-                                            <path d="M464 256A208 208 0 1 0 48 256a208 208 0 1 0 416 0zM0 256a256 256 0 1 1 512 0A256 256 0 1 1 0 256zm169.8-90.7c7.9-22.3 29.1-37.3 52.8-37.3h58.3c34.9 0 63.1 28.3 63.1 63.1c0 22.6-12.1 43.5-31.7 54.8L280 264.4c-.2 13-10.9 23.6-24 23.6c-13.3 0-24-10.7-24-24V250.5c0-8.6 4.6-16.5 12.1-20.8l44.3-25.4c4.7-2.7 7.6-7.7 7.6-13.1c0-8.4-6.8-15.1-15.1-15.1H222.6c-3.4 0-6.4 2.1-7.5 5.3l-.4 1.2c-4.4 12.5-18.2 19-30.6 14.6s-19-18.2-14.6-30.6l.4-1.2zM224 352a32 32 0 1 1 64 0 32 32 0 1 1 -64 0z"/>
-                                        </svg>
-                                        <div class="objective-description-content">${result['metadata']['obj_description']}</div>
-                                    </span>
-                                % endif
-                            </div>
-                            <div class="mt-1 rounded-md shadow-sm">
-                                <select id="objective_column" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({objective_column: this.value})">
-                                    % for obj_col in result['obj_cols']:
-                                    <option value="${obj_col}">${obj_col}</option>
-                                    %endfor
-                                </select>
-                            </div>
-                        </div>
-                        <div class="mt-8 px-8">
-                            <label for="plot_kind" class="block text-sm font-medium text-white">Chart type</label>
-                            <div class="mt-1 rounded-md shadow-sm">
-                                <select id="plot_kind" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({plot_kind: this.value, scale: (this.value === 'boxplot' || state().plot_kind === 'boxplot' ? 'linear' : state().scale)})">
-                                    % for kind in result['kinds']:
-                                    <option value="${kind}">${kind}</option>
-                                    %endfor
-                                </select>
-                            </div>
-                        </div>
                         <div id="scale-form-group" class="mt-8 px-8">
-                            <label for="change_scaling" class="block text-sm font-medium text-white">Scale</label>
+                            <label for="change_scale" class="block text-sm font-medium text-white">Scale</label>
                             <div class="mt-1 rounded-md shadow-sm">
-                                <select id="change_scaling" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({scale: this.value})">
+                                <select id="change_scale" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({scale: this.value})">
                                     <option value="linear">linear</option>
                                     <!-- Options for other plots -->
                                     <option class="other_plot_option" value="semilog-y">semilog-y</option>
@@ -101,25 +62,6 @@
                                 </select>
                             </div>
                         </div>
-                        <div id="xaxis-type-form-group" class="mt-8 px-8">
-                            <label for="change_xaxis_type" class="block text-sm font-medium text-white">X-axis</label>
-                            <div class="mt-1 rounded-md shadow-sm">
-                                <select id="change_xaxis_type" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({xaxis_type: this.value})">
-                                    <option value="Time" class="hidden">Time</option>
-                                    <option value="Iteration" class="hidden">Iteration</option>
-                                    <option value="Solver" class="hidden">Solver</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div id="yaxis-type-form-group" class="mt-8 px-8">
-                            <label for="change_yaxis_type" class="block text-sm font-medium text-white">Y-axis</label>
-                            <div class="mt-1 rounded-md shadow-sm">
-                                <select id="change_yaxis_type" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({yaxis_type: this.value})">
-                                    <option value="objective_column">Objective metric</option>
-                                    <option value="time">Time</option>
-                                </select>
-                            </div>
-                        </div>
                         <div id="change-shades-form-group" class="flex items-center justify-between mt-8 px-8">
                             <div class="block text-sm font-medium text-white">Quantiles</div>
                             <label class="block switch">
@@ -127,6 +69,36 @@
                                 <span class="slider round"></span>
                             </label>
                         </div>
+                        <div id="change-relative-suboptimal-form-group" class="flex items-center justify-between mt-8 px-8">
+                            <div class="block text-sm font-medium text-white">Suboptimal Curve</div>
+                            <label class="block switch">
+                                <input id="change_suboptimal" type="checkbox" onchange="setState({suboptimal_curve: this.checked})">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                        <div id="change-relative-suboptimal-form-group" class="flex items-center justify-between mt-8 px-8">
+                            <div class="block text-sm font-medium text-white">Relative Curve</div>
+                            <label class="block switch">
+                                <input id="change_relative" type="checkbox" onchange="setState({relative_curve: this.checked})">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                        % for kind, params in result["plot_params"].items():
+                            <div id="${kind}-custom-params-container">
+                            % for param, options in params.items():
+                                <div id="${kind}_${param}_form_group" class="mt-8 px-8">
+                                    <label for="change_${kind}_${param}" class="block text-sm font-medium text-white">${param}</label>
+                                    <div class="mt-1 rounded-md shadow-sm">
+                                        <select id="change_${kind}_${param}" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({${kind}_${param}: this.value})">
+                                            % for option in options:
+                                                <option value="${option}">${option}</option>
+                                            % endfor
+                                        </select>
+                                    </div>
+                                </div>
+                            % endfor
+                            </div>
+                        % endfor
                         <div class="flex items-center justify-between mt-8 px-8">
                             <a href="#" class="w-full inline-flex items-center justify-center px-4 py-2 space-x-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" onclick="return saveView()">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
@@ -212,39 +184,9 @@
                     <div class="hidden" id="mobile-plot-form">
                         <div class="px-2 pt-2 pb-3 space-y-4" onchange="setAllViewsToNonActive()">
                             <div class="px-8">
-                                <label for="dataset_selector" class="block text-sm font-medium text-white">Dataset:</label>
-                                <div class="mt-1 rounded-md shadow-sm">
-                                    <select id="dataset_selector" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({dataset: this.value})">
-                                        % for data in result['dataset_names']:
-                                        <option value="${data}">${data}</option>
-                                        %endfor
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="px-8">
-                                <label for="objective_selector" class="block text-sm font-medium text-white">Objective:</label>
-                                <div class="mt-1 rounded-md shadow-sm">
-                                    <select id="objective_selector" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({objective: this.value})">
-                                        % for obj in result['objective_names']:
-                                        <option value="${obj}">${obj}</option>
-                                        %endfor
-                                    </select>
-                                </div>
-                            </div>
-                            <div id="objective-column-form-group" class="px-8">
-                                <label for="objective_column" class="block text-sm font-medium text-white">Objective column</label>
-                                <div class="mt-1 rounded-md shadow-sm">
-                                    <select id="objective_column" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({objective_column: this.value})">
-                                        % for obj_col in result['obj_cols']:
-                                        <option value="${obj_col}">${obj_col}</option>
-                                        %endfor
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="px-8">
                                 <label for="plot_kind" class="block text-sm font-medium text-white">Chart type</label>
                                 <div class="mt-1 rounded-md shadow-sm">
-                                    <select id="plot_kind" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({plot_kind: this.value})">
+                                    <select id="plot_kind" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({plot_kind: this.value, scale: (this.value === 'boxplot' || this.value  === 'bar_chart' ? 'linear' : state().scale)})">
                                         % for kind in result['kinds']:
                                         <option value="${kind}">${kind}</option>
                                         %endfor
@@ -252,9 +194,9 @@
                                 </div>
                             </div>
                             <div id="scale-form-group" class="px-8">
-                                <label for="change_scaling" class="block text-sm font-medium text-white">Scale</label>
+                                <label for="change_scale" class="block text-sm font-medium text-white">Scale</label>
                                 <div class="mt-1 rounded-md shadow-sm">
-                                    <select id="change_scaling" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({scale: this.value})">
+                                    <select id="change_scale" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({scale: this.value})">
                                         <option value="linear">linear</option>
                                         <!-- Options for other plots -->
                                         <option class="other_plot_option" value="semilog-y">semilog-y</option>
@@ -265,25 +207,6 @@
                                     </select>
                                 </div>
                             </div>
-                            <div id="xaxis-type-form-group" class="mt-8 px-8">
-                                <label for="change_xaxis_type_mobile" class="block text-sm font-medium text-white">X-axis</label>
-                                <div class="mt-1 rounded-md shadow-sm">
-                                    <select id="change_xaxis_type_mobile" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({xaxis_type: this.value})">
-                                        <option value="Time" class="hidden">Time</option>
-                                        <option value="Iteration" class="hidden">Iteration</option>
-                                        <option value="Solver" class="hidden">Solver</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div id="yaxis-type-form-group" class="mt-8 px-8">
-                                <label for="change_yaxis_type_mobile" class="block text-sm font-medium text-white">Y-axis</label>
-                                <div class="mt-1 rounded-md shadow-sm">
-                                    <select id="change_yaxis_type_mobile" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({yaxis_type: this.value})">
-                                        <option value="objective_column">Objective metric</option>
-                                        <option value="time">Time</option>
-                                    </select>
-                                </div>
-                            </div>
                             <div id="change-shades-form-group" class="flex items-center justify-between mt-8 px-8">
                                 <div class="block text-sm font-medium text-white">Quantiles</div>
                                 <label class="block switch">
@@ -291,7 +214,39 @@
                                     <span class="slider round"></span>
                                 </label>
                             </div>
-
+                            <div id="change-relative-suboptimal-form-group" class="flex items-center justify-between mt-8 px-8">
+                                <div class="block text-sm font-medium text-white">Suboptimal Curve</div>
+                                <label class="block switch">
+                                    <input id="change_suboptimal" type="checkbox" onchange="setState({suboptimal_curve: this.checked})">
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+                            <div id="change-relative-suboptimal-form-group" class="flex items-center justify-between mt-8 px-8">
+                                <div class="block text-sm font-medium text-white">Relative Curve</div>
+                                <label class="block switch">
+                                    <input id="change_relative" type="checkbox" onchange="setState({relative_curve: this.checked})">
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+                            <div>
+                            <div>
+                            % for kind, params in result["plot_params"].items():
+                                <div id="${kind}-custom-params-container">
+                                % for param, options in params.items():
+                                    <div id="${kind}_${param}_form_group" class="mt-8 px-8">
+                                        <label for="change_${kind}_${param}" class="block text-sm font-medium text-white">${param}</label>
+                                        <div class="mt-1 rounded-md shadow-sm">
+                                            <select id="change_${kind}_${param}" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({${kind}_${param}: this.value})">
+                                                % for option in options:
+                                                    <option value="${option}">${option}</option>
+                                                % endfor
+                                            </select>
+                                        </div>
+                                    </div>
+                                % endfor
+                                </div>
+                            % endfor
+                            </div>
                             <div class="flex items-center justify-between mt-8 px-8">
                                 <a href="#"
                                    class="w-full inline-flex items-center px-4 py-2 space-x-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
@@ -390,12 +345,17 @@
                 </div>
 
                 <!-- Plot -->
-                <div id="unique_plot"></div>
-                <div id="legend_container" class="pb-10 bg-slate-200">
-                    <div class="px-10 mb-4 mt-4 text-base font-medium text-gray-700">
-                        Solvers <span class="text-sm font-medium text-gray-400">(Click on a solver to hide it or double click to hide all the others)</span>
+                <div id="table_container" class="flex flex-col flex-1 gap-4 p-10">
+                </div>
+                <div id="plot_container" class="flex flex-col flex-1">
+                    <div id="plot_with_legend_container" class="flex-1"></div>
+                    <div id="legend_container" class="pb-10 bg-slate-200">
+                        <div class="px-10 mb-4 mt-4 text-base font-medium text-gray-700">
+                            Solvers
+                            <span class="text-sm font-medium text-gray-400">(Click on a solver to hide it or double click to hide all the others)</span>
+                        </div>
+                        <div id="plot_legend" class="px-10 space-r-2"></div>
                     </div>
-                    <div id="plot_legend" class="px-10 space-r-2"></div>
                 </div>
             </div>
         </div>
@@ -497,21 +457,23 @@
         </script>
         <!-- Manage plot -->
         <script>
-            window._data = ${result['json']};
+            window._plots = ${result['json_plots']};
             window.metadata = ${json.dumps(result['metadata'])};
 
             window.addEventListener("load", () => {
                 // Initialize plot state
                 setState({
-                    'dataset': document.getElementById('dataset_selector').value,
-                    'objective': document.getElementById('objective_selector').value,
-                    'objective_column': document.getElementById('objective_column').value,
                     'plot_kind': document.getElementById('plot_kind').value,
-                    'scale': document.getElementById('change_scaling').value,
+                    'scale': document.getElementById('change_scale').value,
                     'with_quantiles': document.getElementById('change_shades').checked,
-                    'xaxis_type':  document.getElementById('change_xaxis_type').value || "Time",
-                    'yaxis_type':  document.getElementById('change_xaxis_type').value || "Time",
-                    'hidden_solvers': []
+                    'suboptimal_curve': document.getElementById('change_suboptimal').checked,
+                    'relative_curve': document.getElementById('change_relative').checked,
+                    'hidden_curves': [],
+                    % for kind, params in result["plot_params"].items():
+                        % for param in params:
+                            '${kind}_${param}': document.getElementById('change_${kind}_${param}').value,
+                        % endfor
+                    % endfor
                 });
                 const plot_configs = document.getElementsByClassName('view');
                 if (plot_configs.length > 0 ){
@@ -522,6 +484,31 @@
         <script type="text/javascript">
             ${static['symbols.js']}
             ${static['result.js']}
+        </script>
+        <script>
+            // Script to communicate the height of this page to parent
+            // when embeding this result in an iframe
+            (function() {
+                function sendHeight() {
+                    try {
+                        if (window.self !== window.top) {
+                            window.parent.postMessage(
+                            { source: "benchopt-result-height", height: document.body.scrollHeight },
+                            "*"
+                            );
+                        }
+                    } catch (e) { /* ignore */ }
+                }
+
+                // Send on load and on resize / content change
+                window.addEventListener("load", sendHeight);
+                window.addEventListener("resize", sendHeight);
+
+                // Optional: observe DOM mutations to detect dynamic content
+                const observer = new MutationObserver(sendHeight);
+                observer.observe(document.body, { childList: true, subtree: true });
+                }
+            )();
         </script>
     </body>
 </html>

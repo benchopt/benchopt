@@ -1,7 +1,4 @@
 include LICENSE
-include setup.py
-include setup.cfg
-include CHANGE.md
 include conftest.py
 include pyproject.toml
 recursive-include benchopt *.py
@@ -14,7 +11,7 @@ recursive-include benchopt/plotting *.svg
 
 
 # Include doc generation files
-include doc/_static/style.css
+recursive-include doc/_static *
 recursive-include doc/_templates *.html
 recursive-include doc *.py
 recursive-include doc *.rst
@@ -23,12 +20,17 @@ recursive-include doc *.inc
 recursive-include doc *.png
 recursive-include doc *.svg
 recursive-include doc Makefile
+exclude doc/sg_execution_times.rst
+prune **/generated
 prune doc/_build
-prune doc/generated
 prune doc/auto_examples
 
 # Include examples
 recursive-include examples *.py
 recursive-include examples *.txt
+prune **/__cache__
 
+prune benchmarks
+exclude RELEASE.md
 exclude .mailmap
+exclude .flake8

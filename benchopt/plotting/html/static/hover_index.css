@@ -389,12 +389,12 @@ input:checked+.slider:before {
 }
 
 /* Description solver when hovered */
-.solver-description-container {
+.curve-description-container {
   position: relative;
   display: inline-flex;
 }
 
-.solver-description-content {
+.curve-description-content {
   display: flex;
   flex-direction: column;
   visibility: hidden;
@@ -419,12 +419,12 @@ input:checked+.slider:before {
 }
 
 /* Show description when hovered */
-.solver-description-container:hover .solver-description-content {
+.curve-description-container:hover .curve-description-content {
   visibility: visible;
 }
 
 /*Arrow at the bottom of the description*/
-.solver-description-container .solver-description-content::after {
+.curve-description-container .curve-description-content::after {
   content: " ";
   position: absolute;
   top: 100%;
@@ -435,12 +435,12 @@ input:checked+.slider:before {
   border-color: rgb(55 65 81) transparent transparent transparent;
 }
 
-.solver-description-title {
+.curve-description-title {
   margin-bottom: 1em;
   font-weight: bolder;
 }
 
-.solver-description-body {
+.curve-description-body {
   max-height: 450px;
   overflow-y: auto;
 }
@@ -522,4 +522,52 @@ g.hovertext:has(path + [data-unformatted*="upper fence"]),
 g.hovertext:has(path + [data-unformatted*="lower fence"])
 {
     display: none;
+}
+
+/* Fixed aspect ratio for plot containers on mobile devices for better readability */
+/* plot_with_legend_container is used for scatter plots and is always present */
+
+/* Mobile portrait: Use taller aspect ratio to fill vertical space */
+@media (max-width: 767px) and (orientation: portrait) {
+  #plot_with_legend_container {
+    aspect-ratio: 3 / 4; /* Taller aspect ratio for portrait */
+    min-height: 400px;
+    max-height: 70vh;
+  }
+
+  #plot_container.js-plotly-plot {
+    aspect-ratio: 3 / 4;
+    min-height: 400px;
+    max-height: 70vh;
+  }
+}
+
+/* Mobile landscape: Use wider aspect ratio */
+@media (max-width: 767px) and (orientation: landscape) {
+  #plot_with_legend_container {
+    aspect-ratio: 4 / 3;
+    min-height: 300px;
+    max-height: 80vh; /* Use most of screen height in landscape */
+  }
+
+  #plot_container.js-plotly-plot {
+    aspect-ratio: 4 / 3;
+    min-height: 300px;
+    max-height: 80vh;
+  }
+}
+
+/* Desktop: Remove aspect ratio constraints for flexibility */
+@media (min-width: 768px) {
+  #plot_with_legend_container {
+    aspect-ratio: auto;
+    min-height: 600px;
+    max-height: none;
+  }
+
+  #plot_container.js-plotly-plot {
+    aspect-ratio: auto;
+    min-height: 0;
+    max-height: none;
+  }
 }

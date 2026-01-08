@@ -9,18 +9,17 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 from benchopt import run_benchmark
 from benchopt.benchmark import Benchmark
-from benchopt.plotting import plot_benchmark, PLOT_KINDS
-from benchopt.plotting.plot_objective_curve import reset_solver_styles_idx
+from benchopt.plotting import plot_benchmark
+from benchopt.plotting.helpers import reset_solver_styles
 
 
 BENCHMARK_PATH = (
     Path().resolve().parent / 'benchmarks' / 'benchmark_logreg_l2'
 )
 
-
 try:
 
-    _, save_file = run_benchmark(
+    save_file = run_benchmark(
         BENCHMARK_PATH,
         solver_names=['sklearn[liblinear]', 'sklearn[newton-cg]', 'lightning'],
         dataset_names=["Simulated[n_features=500,n_samples=200]"],
@@ -37,9 +36,9 @@ except RuntimeError:
         f"{BENCHMARK_PATH.resolve()}"
     )
 
+reset_solver_styles()
 
-kinds = list(PLOT_KINDS.keys())
-reset_solver_styles_idx()
-figs = plot_benchmark(save_file, benchmark=Benchmark(BENCHMARK_PATH),
-                      kinds=kinds, html=False)
+figs = plot_benchmark(
+    save_file, benchmark=Benchmark(BENCHMARK_PATH), html=False
+)
 plt.show()

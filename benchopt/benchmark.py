@@ -203,6 +203,56 @@ class Benchmark:
             class_only=class_only
         )
 
+    def _get_plots_classes(self):
+        "List all available custom plot classes for the benchmark"
+        from .plotting.base import BasePlot
+        from .plotting.default_plots import (
+            ObjectiveCurvePlot,
+            BarChart,
+            BoxPlot,
+            TablePlot
+        )
+        default_plots = [
+            ObjectiveCurvePlot,
+            BarChart,
+            BoxPlot,
+            TablePlot
+        ]
+        custom_plots = self._list_benchmark_classes(BasePlot)
+        return default_plots + custom_plots
+
+    def get_plots(self):
+        return [
+            plot.get_instance()
+            for plot in self._get_plots_classes()
+        ]
+
+    def get_plot_names(self):
+        "List all custom plot names available"
+        return [
+            plot._get_name() for plot in self._get_plots_classes()
+        ]
+
+    def check_plots(self):
+        "Check if the available custom plots have valid definitions"
+        for plot in self.get_plots():
+            plot._check()
+
+    def get_plot_data(self, df, kinds):
+        "Get the data to plot for the benchmark."
+        all_plots = self.get_plots()
+        self.check_plots()
+        all_data = {}
+        all_dropdown = {}
+        for plot in all_plots:
+            plot_name = plot._get_name()
+            if plot_name not in kinds:
+                continue
+            data, dropdown = plot._get_all_plots(df)
+            all_data[plot_name] = data
+            all_dropdown[plot_name] = dropdown
+        return all_data, all_dropdown
+
     def _list_benchmark_classes(self, base_class):
         """Load all classes with the same name from a benchmark's subpackage.
 
@@ -400,6 +450,15 @@ class Benchmark:
             benchmark_name=self.name, default_config=default_config
         )
 
+    def get_plot_config(self, default_config=None):
+        params = ["plots", "plot_configs"]
+        config = {}
+        for param in params:
+            options = self.get_setting(param, default_config=default_config)
+            if options is not None:
+                config[param] = options
+        return config if config else {}
+
     def get_test_config_file(self):
         """Get the location for the test config file for the benchmark.
 
@@ -589,8 +648,8 @@ class Benchmark:
         )
         return 1
 
-    def get_all_runs(self, solvers=None, forced_solvers=None,
-                     datasets=None, objectives=None, terminal=None):
+    def _get_all_runs(self, solvers=None, forced_solvers=None,
+                      datasets=None, objectives=None, terminal=None):
         """Generator with all combinations to run for the benchmark.
 
         Parameters
@@ -820,7 +879,7 @@ def _check_patterns(all_classes, patterns, name_type='dataset',
     """
     # If no patterns is provided or all is provided, return all the classes.
     if (patterns is None or len(patterns) == 0
-            or any(p == 'all' for p, *_ in patterns)):
+            or any(p == 'all' for p in patterns)):
         all_valid_patterns = [(cls, cls.parameters) for cls in all_classes]
         if not class_only:
             return all_valid_patterns

@@ -6,13 +6,10 @@ from pathlib import Path
 from benchopt.utils.parquet import to_parquet
 from benchopt.utils.parquet import get_metadata
 from benchopt.utils.parquet import update_metadata
-
 from benchopt.cli.main import run
 from benchopt.cli.process_results import plot
 from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.utils.misc import NamedTemporaryFile
-
-from benchopt.config import DEFAULT_BENCHMARK_CONFIG
 
 from benchopt.tests.utils import CaptureCmdOutput
 
@@ -54,13 +51,13 @@ def test_metadata_saving():
     dummy_config = {
         'plot_configs': {
             'Init': {
-                'kind': 'suboptimality_curve',
+                'kind': 'objective_curve',
                 'objective_column': 'objective_value',
                 'scale': 'loglog',
                 'ylim': ['5e-11', 100]
             },
             'View 2': {
-                'kind': 'objective_curve',
+                'kind': 'bar_chart',
                 'objective_column': 'objective_mse',
                 'scale': 'semilog-x',
                 'xaxis_type': 'Iteration',
@@ -69,9 +66,7 @@ def test_metadata_saving():
             }
         }, 'plots': [
             'objective_curve',
-           'suboptimality_curve',
-           'relative_suboptimality_curve',
-           'bar_chart'
+            'bar_chart'
         ]
     }
 
@@ -85,11 +80,7 @@ def test_metadata_saving():
             run(run_cmd, 'benchopt', standalone_mode=False)
 
         config = get_metadata(Path(out.result_files[0]))
-        expected_config = {
-            k: v for k, v in DEFAULT_BENCHMARK_CONFIG.items()
-            if k in ['plots', 'plot_configs']
-        }
-        assert config == expected_config
+        assert config == {'plot_configs': {}}
 
         config_file = bench.get_config_file()
         with config_file.open('w') as f:

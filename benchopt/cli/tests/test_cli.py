@@ -6,9 +6,7 @@ import click
 import pytest
 from joblib.memory import _FUNCTION_HASHES
 
-from benchopt.plotting import PLOT_KINDS
 from benchopt.utils.temp_benchmark import temp_benchmark
-
 
 from benchopt.tests.utils import CaptureCmdOutput
 from benchopt.tests.utils import patch_var_env
@@ -198,6 +196,23 @@ class TestRunCmd:
                      "--timeout=0", "--no-timeout"],
                     "benchopt", standalone_mode=False
                 )
+
+    def test_pattern_all(self):
+
+        with temp_benchmark() as bench, CaptureCmdOutput() as out:
+            cmd = (
+                f"{bench.benchmark_dir} -r 1 -n 1 --no-plot "
+                "-d all -s all -o all"
+            )
+            run(cmd.split(), 'benchopt', standalone_mode=False)
+
+        out.check_output('test-dataset', repetition=1)
+        out.check_output('simulated', repetition=1)
+        out.check_output('test-objective', repetition=2)
+        out.check_output('test-solver:', repetition=12)
+
+        # Make sure the results were saved in a result file
+        assert len(out.result_files) == 1, out
 
     def test_custom_parameters(self, no_debug_log):
         dataset = """from benchopt import BaseDataset
@@ -482,11 +497,47 @@ class TestRunCmd:
 
 
 class TestPlotCmd:
+    custom_plot = """
+        from benchopt import BasePlot
+
+        class Plot(BasePlot):
+            name = "custom_plot"
+            type = "scatter"
+            dropdown = {
+                "dataset": ...,  # Will fetch the dataset names from the df
+            }
+
+            def plot(self, df, dataset):
+                df = df[(df['dataset_name'] == dataset)]
+                return [
+                    {
+                        "x": (
+                            df[(df['solver_name'] == solver)]
+                            ["time"].values.tolist()
+                        ),
+                        "y": (
+                            df[(df['solver_name'] == solver)]
+                            ["objective_value"].values.tolist()
+                        ),
+                        "color": [0,0,0,1],
+                        "marker": 0,
+                        "label": solver,
+                    }
+                    for solver in df['solver_name'].unique()
+                ]
+
+            def get_metadata(self, df, dataset):
+                title = f"Custom Plot - {dataset}"
+                return {
+                    "title": title,
+                    "xlabel": "Custom X-axis",
+                    "ylabel": "Custom Y-axis",
+                }"""
 
     @classmethod
     def setup_class(cls):
         "Make sure at least one result file is available"
-        cls.ctx = temp_benchmark()
+        cls.ctx = temp_benchmark(plots=cls.custom_plot)
         cls.bench = cls.ctx.__enter__()
         with CaptureCmdOutput(delete_result_files=False) as out:
             run(
@@ -523,27 +574,55 @@ class TestPlotCmd:
             plot(f"{self.bench.benchmark_dir} -k invalid_kind --html "
                  f"--no-display".split(), 'benchopt', standalone_mode=False)
 
-    @pytest.mark.parametrize('kind', PLOT_KINDS)
-    def test_valid_call(self, kind):
+    @pytest.mark.parametrize(
+        ('kind', 'expected_n_files'),
+        [
+            ("custom_plot", 1),
+            ("objective_curve", 2),
+            ("boxplot", 4),
+            ("bar_chart", 1),
+            (None, 8)  # all kinds
+        ]
+    )
+    def test_valid_call_mpl(self, kind, expected_n_files):
 
         with CaptureCmdOutput() as out:
-            plot(f"{self.bench.benchmark_dir} -f {self.result_file} -k {kind} "
-                 "--no-display --no-html".split(),
-                 'benchopt', standalone_mode=False)
+            cmd = f"{self.bench.benchmark_dir} -f {self.result_file} "
+            cmd += "--no-display --no-html "
+            if kind is not None:
+                cmd += f"--kind {kind}"
+            plot(cmd.split(), 'benchopt', standalone_mode=False)
 
-        assert len(out.result_files) == 1
-        assert kind in out.result_files[0]
-        assert '.pdf' in out.result_files[0]
+        assert len(out.result_files) == expected_n_files
+        for file in out.result_files:
+            if kind is not None:
+                assert kind in file
+            assert '.pdf' in file
 
-    def test_valid_call_html(self):
+    @pytest.mark.parametrize(
+        'kind',
+        ["custom_plot", "objective_curve", "boxplot", "bar_chart", None]
+    )
+    def test_valid_call_html(self, kind):
 
-        with CaptureCmdOutput() as out:
-            plot(f"{self.bench.benchmark_dir} -f {self.result_file} "
-                 "--no-display --html".split(),
-                 'benchopt', standalone_mode=False)
+        with CaptureCmdOutput(delete_result_files=False) as out:
+            cmd = f"{self.bench.benchmark_dir} -f {self.result_file} "
+            cmd += "--no-display --html "
+            if kind is not None:
+                cmd += f"--kind {kind}"
+            plot(cmd.split(), 'benchopt', standalone_mode=False)
 
         assert len(out.result_files) == 2
         assert all('.html' in f for f in out.result_files)
+
+        html_content = Path(out.result_files[0]).read_text()
+        for k in [
+            "custom_plot", "objective_curve", "boxplot", "bar_chart"
+        ]:
+            if kind is None or k == kind:
+                assert f"<option value=\"{k}\"" in html_content
+            else:
+                assert f"<option value=\"{k}\"" not in html_content
 
     def test_complete_bench(self, bench_completion_cases):  # noqa: F811
 

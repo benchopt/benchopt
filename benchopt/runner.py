@@ -292,7 +292,7 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
             'obj_description': obj_description,
             'solver_name': str(solver),
             'solver_description': inspect.cleandoc(solver.__doc__ or ""),
-            'data_name': str(dataset),
+            'dataset_name': str(dataset),
             'idx_rep': rep,
             'sampling_strategy': sampling_strategy.capitalize(),
             **{f"p_obj_{k}": v for k, v in objective._parameters.items()},
@@ -432,7 +432,7 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
 
     # List all datasets, objective and solvers to run based on the filters
     # provided. Merge the solver_names and forced to run all necessary solvers.
-    all_runs = benchmark.get_all_runs(
+    all_runs = benchmark._get_all_runs(
         solvers, forced_solvers, datasets, objectives,
         terminal=terminal
     )
@@ -488,7 +488,7 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
 def run_benchmark(benchmark_path, solver_names=None, forced_solvers=(),
                   dataset_names=None, objective_filters=None, max_runs=10,
                   n_repetitions=1, timeout=None,
-                  n_jobs=1, parallel_config=None, slurm=None,
+                  n_jobs=None, parallel_config=None, slurm=None,
                   plot_result=True, display=True, html=True,  collect=False,
                   show_progress=True, pdb=False, no_cache=False,
                   output_file="None"):
@@ -567,9 +567,9 @@ def run_benchmark(benchmark_path, solver_names=None, forced_solvers=(),
     datasets = benchmark.check_dataset_patterns(dataset_names)
     objectives = benchmark.check_objective_filters(objective_filters)
 
-    parallel_config = check_parallel_config(slurm, None, n_jobs)
+    parallel_config = check_parallel_config(parallel_config, slurm, n_jobs)
 
-    return _run_benchmark(
+    exit_code, output_file = _run_benchmark(
         benchmark=benchmark,
         solvers=solvers,
         forced_solvers=forced_solvers,
@@ -587,3 +587,6 @@ def run_benchmark(benchmark_path, solver_names=None, forced_solvers=(),
         pdb=pdb,
         output_file=output_file
     )
+    if exit_code != 0:
+        raise RuntimeError("Benchmark failed, check the terminal output.")
+    return output_file

@@ -34,7 +34,7 @@ Config File Structure
 
 The config files for benchopt follow the YAML files structure:
 
-.. code-block:: yml
+.. code-block:: yaml
 
     debug: true  # Activate or not debug logs. Default is false.
     conda_cmd: mamba  # Command to use to install packages. Default is conda.
@@ -42,7 +42,7 @@ The config files for benchopt follow the YAML files structure:
 
 For benchmark settings, they are grouped in a section with the same name as the benchmark. For a benchmark named ``benchmark_bench``, the config structure is:
 
-.. code-block:: yml
+.. code-block:: yaml
 
     benchmark_bench:
         plots:

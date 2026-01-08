@@ -5,22 +5,84 @@
 *—Making your ML and optimization benchmarks simple and open—*
 
 
-|Python 3.6+| |PyPI version| |License|
+|Python 3.10+| |PyPI version| |License|
 
 Benchopt is a benchmarking suite tailored for machine learning workflows.
 It is built for simplicity, transparency, and reproducibility.
 It is implemented in Python but can run algorithms written in many programming languages.
 
-Reproducing an existing benchmark should be as easy as running
+Reproducing an existing benchmark should be as easy as running the following commands:
 
-.. prompt:: bash $
+.. tab-set::
 
-   benchopt run . --config ./example_config.yml
+   .. tab-item:: NanoGPT
 
-.. figure:: _images/sphx_glr_plot_run_benchmark_001.png
-   :align: center
-   :width: 70 %
+      A benchmark comparing various optimizers on training ``NanoGPT`` models.
 
+      .. prompt:: bash $
+
+         git clone https://github.com/benchopt/benchmark_nanogpt.git
+         benchopt run benchmark_nanogpt
+
+      which will produce an interactive HTML report to visualize the results.
+
+      .. raw:: html
+
+         <iframe class="benchmark_result"
+               src="https://benchopt.github.io/results/benchmark_nanogpt_benchmark_nanogpt_benchopt_run_2025-10-31_13h48m48.html"
+            frameBorder='0' style="position: relative; width: 100%;">
+         </iframe>
+
+   .. tab-item:: Unsupervised Domain Adaptation
+
+      A benchmark comparing various methods for unsupervised domain adaptation.
+
+      .. prompt:: bash $
+
+         git clone https://github.com/scikit-adaptation/skada-bench.git
+         benchopt run skada-bench --config configs/Simulated.yml --no-plot
+
+      which will produce a parquet file with the results that can be visualized
+      using instruction on the ``README.md`` of the https://github.com/scikit-adaptation/skada-bench.
+
+   .. tab-item:: Bilevel Optimization
+
+      A benchmark comparing various algorithms to solve bilevel optimization problems.
+
+      .. prompt:: bash $
+
+         git clone https://github.com/benchopt/benchmark_bilevel.git
+         benchopt run benchmark_bilevel
+
+      which will produce an interactive HTML report to visualize the results.
+
+      .. raw:: html
+
+         <iframe class="benchmark_result"
+               src="https://benchopt.github.io/results/benchmark_bilevel_benchmark_bilevel_ijcnn1.html"
+            frameBorder='0' style="position: relative; width: 100%;">
+         </iframe>
+
+   .. tab-item:: Minimal benchmark
+
+      A minimal benchmark comparing various solvers on a toy problem.
+
+      .. prompt:: bash $
+
+         benchopt run examples/minimal_benchmark
+
+      which will produce an interactive HTML report to visualize the results.
+
+      .. raw:: html
+
+         <iframe class="benchmark_result"
+               src="auto_examples/html_results/sphx_glr_run_minimal_benchmark_002.html"
+            frameBorder='0' style="position: relative; width: 100%;">
+         </iframe>
+
+
+These different tabs illustrate the diversity of benchmarks that can be built
+with benchopt, from deep learning optimization to more classical machine learning tasks.
 There are already many :ref:`available_benchmarks` that have been created using benchopt.
 Learn how to run them and how to construct your own with the following pages!
 
@@ -96,8 +158,8 @@ Join this endeavor! If you use benchopt in a scientific publication, please cite
    }
 
 
-.. |Python 3.6+| image:: https://img.shields.io/badge/python-3.6%2B-blue
-   :target: https://www.python.org/downloads/release/python-360/
+.. |Python 3.10+| image:: https://img.shields.io/badge/python-3.10%2B-blue
+   :target: https://www.python.org/downloads/release/python-3100/
 .. |License| image:: https://img.shields.io/badge/License-BSD_3--Clause-blue.svg
    :target: https://github.com/benchopt/benchopt/blob/main/LICENSE
 .. |PyPI version| image:: https://badge.fury.io/py/benchopt.svg

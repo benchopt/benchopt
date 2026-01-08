@@ -34,6 +34,26 @@ API
 - Add API to control randomness in benchmarks via ``get_seed`` method in base classes.
   By `Hippolyte Verninas`_ (:gh:`837`)
 
+- Add the possibility of creating custom plots for each benchmark.
+  See :ref:`custom_plots` for the documentation.
+  By `Hippolyte Verninas`_ (:gh:`842`)
+
+- Implement ``bar_chart`` and ``boxplot`` using the new plotting backend.
+  By `Hippolyte Verninas`_ (:gh:`852`)
+
+- Add possibility to output a table in the HTML interface, with the new
+  plot type ``table`` using the new plotting backend.
+  By `Hippolyte Verninas`_ and `Melvine Nargeot`_ (:gh:`866`)
+
+- Allow to override SLURM config on a per run basis with ``Solver.parameters``
+  See :ref:`slurm_override`. By `Geraud Ilinca`_ and `Thomas Moreau`_ (:gh:`848`)
+
+DOC
+---
+
+- Allow to run benchmarks as examples in the documentation.
+  By `Thomas Moreau`_ (:gh:`841`)
+
 FIX
 ---
 

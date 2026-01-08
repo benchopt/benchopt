@@ -17,7 +17,7 @@ as ``benchopt_run_<date>_<time>.parquet`` but a custom name can be given using
 the :option:`--output` option of ``benchopt run``.
 The DataFrame contains the following columns:
 
-- ``objective_name|solver_name|data_name``: the names of the different benchopt
+- ``objective_name|solver_name|dataset_name``: the names of the different benchopt
   components used for this line.
 - ``obj_description|solver_description``: A more verbose description of the
   objective and solver, displayed in the HTML page.
