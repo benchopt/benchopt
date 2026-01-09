@@ -21,6 +21,8 @@ The DataFrame contains the following columns:
   components used for this line.
 - ``obj_description|solver_description``: A more verbose description of the
   objective and solver, displayed in the HTML page.
+- ``file_objective|file_solver|file_dataset``: The filename of the objective,
+  solver, and dataset used for this line.
 - ``p_obj_p``: the value of the objective's parameter ``p``.
 - ``p_solver_p``: the value of the solver's parameter ``p``.
 - ``p_dateset_p``: the value of the dataset's parameter ``p``.

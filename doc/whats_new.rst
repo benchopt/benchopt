@@ -45,6 +45,9 @@ API
 - Allow to override SLURM config on a per run basis with ``Solver.parameters``
   See :ref:`slurm_override`. By `Geraud Ilinca`_ and `Thomas Moreau`_ (:gh:`848`)
 
+- Add filename metadata in the result parquet files for
+  objective, solver, and dataset. By `Thomas Moreau`_ (:gh:`873`)
+
 DOC
 ---
 
