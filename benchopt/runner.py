@@ -266,8 +266,11 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
             'dataset_name': str(dataset),
             'idx_rep': rep,
             'sampling_strategy': sampling_strategy.capitalize(),
+            'file_objective': objective._module_filename.name,
             **{f"p_obj_{k}": v for k, v in objective._parameters.items()},
+            'file_solver': f"solvers/{solver._module_filename.name}",
             **{f"p_solver_{k}": v for k, v in solver._parameters.items()},
+            'file_dataset': f"datasets/{dataset._module_filename.name}",
             **{f"p_dataset_{k}": v for k, v in dataset._parameters.items()},
         }
 
