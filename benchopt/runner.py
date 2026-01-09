@@ -408,6 +408,8 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
         try:
             results = run_one_to_cvg_cached(**kwargs)
         except FailedRun as e:
+            # If the run fails, return an empty result with the failure status
+            # This is done to avoid caching failed runs.
             key = (
                 kwargs['meta']['dataset_name'],
                 kwargs['meta']['objective_name'],
