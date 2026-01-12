@@ -116,7 +116,7 @@ def get_results(fnames, html_root, benchmark, config=None, copy=False):
         data, options = benchmark.get_plot_data(df, result['kinds'])
         data = update_plot_data_style(data, plotly=True)
         result['json_plots'] = json.dumps(data)
-        result['plot_params'] = options
+        result['plot_options'] = options
 
         results.append(result)
 
