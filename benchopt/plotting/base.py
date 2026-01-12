@@ -14,7 +14,7 @@ COLORS = COLORS[::2] + COLORS[1::2]
 class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
     _base_class_name = 'Plot'
     _label_dict = {}
-    dropdown = {}
+    options = {}
 
     @abstractmethod
     def plot(self, df, **kwargs):
@@ -25,7 +25,7 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
         df : pandas.DataFrame
             Full results dataframe for the run.
         **kwargs :
-            Selection parameters that match the plot ``dropdown`` keys
+            Selection parameters that match the plot ``options`` keys
             (e.g. ``dataset``, ``objective``, ``objective_column``).
 
         Returns
@@ -79,7 +79,7 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
 
     def _check(self):
         self._check_type()
-        self._check_dropdown()
+        self._check_options()
 
     def _check_type(self):
         if not hasattr(self, 'type'):
@@ -91,55 +91,55 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
                 f"Got {self.type}."
             )
 
-    def _check_dropdown(self):
-        if not hasattr(self, 'dropdown'):
-            self.dropdown = {}
-        if not isinstance(self.dropdown, dict):
-            raise ValueError("`dropdown` should be a dictionary.")
-        for key, values in self.dropdown.items():
+    def _check_options(self):
+        if not hasattr(self, 'options'):
+            self.options = {}
+        if not isinstance(self.options, dict):
+            raise ValueError("`options` should be a dictionary.")
+        for key, values in self.options.items():
             if values is Ellipsis:
                 continue
             if not isinstance(values, list):
                 raise ValueError(
-                    f"The values of dropdown should be a list or ... . "
+                    f"The values of options should be a list or ... . "
                     f"Got {values} for key {key}."
                 )
 
             if len(values) == 0:
                 raise ValueError(
-                    f"The values of dropdown should be non empty. "
+                    f"The values of options should be non empty. "
                     f"Got {values} for key {key}."
                 )
 
-        keys = set(self.dropdown.keys())
+        keys = set(self.options.keys())
         plot_kwargs = set([
             name for name in inspect.signature(self.plot).parameters
             if name != 'df'
         ])
 
-        # Make sure all dropdown keys are in the plot signature
+        # Make sure all options keys are in the plot signature
         if not keys == plot_kwargs:
             raise ValueError(
-                f"The keys of dropdown {keys} should match the signature of "
+                f"The keys of options {keys} should match the signature of "
                 f"`plot` function, {plot_kwargs}."
             )
 
     def _get_all_plots(self, df):
         # Get all combinations
-        dropdown = {**self.dropdown}
-        for k, v in dropdown.items():
+        options = {**self.options}
+        for k, v in options.items():
             if v is Ellipsis:
                 if k in ["dataset", "solver", "objective"]:
-                    dropdown[k] = df[f'{k}_name'].unique().tolist()
+                    options[k] = df[f'{k}_name'].unique().tolist()
                 elif k == "objective_column":
-                    dropdown["objective_column"] = [
+                    options["objective_column"] = [
                         c for c in df.columns
                         if c.startswith('objective_') and c != 'objective_name'
                     ]
                 else:
-                    dropdown[k] = df[k].unique().tolist()
+                    options[k] = df[k].unique().tolist()
 
-        combinations = product_param(dropdown)
+        combinations = product_param(options)
 
         plots = {}
         for kwargs in combinations:
@@ -152,4 +152,4 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
             key = '_'.join(map(str, key_list))
             plots[key] = data
 
-        return plots, dropdown
+        return plots, options

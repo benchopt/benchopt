@@ -6,7 +6,7 @@ EPS = 1e-8
 class ObjectiveCurvePlot(BasePlot):
     name = "objective_curve"
     type = "scatter"
-    dropdown = {
+    options = {
         "dataset": ...,
         "objective": ...,
         "objective_column": ...,
@@ -63,7 +63,7 @@ class ObjectiveCurvePlot(BasePlot):
 class BarChart(BasePlot):
     name = "bar_chart"
     type = "bar_chart"
-    dropdown = {
+    options = {
         "dataset": ...,
         "objective": ...,
         "objective_column": ...,
@@ -145,7 +145,7 @@ def _get_boxplot_iteration(df, Y_axis, objective_column):
 class BoxPlot(BasePlot):
     name = "boxplot"
     type = "boxplot"
-    dropdown = {
+    options = {
         "dataset": ...,
         "objective": ...,
         "objective_column": ...,
@@ -190,7 +190,7 @@ class BoxPlot(BasePlot):
 class TablePlot(BasePlot):
     name = "Table"
     type = "table"
-    dropdown = {
+    options = {
         "dataset": ...,
         "objective": ...,
     }

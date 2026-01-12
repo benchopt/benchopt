@@ -113,10 +113,10 @@ def get_results(fnames, html_root, benchmark, config=None, copy=False):
             metadata=get_metadata(df, config_.get('plot_configs', {})),
         )
 
-        data, dropdown = benchmark.get_plot_data(df, result['kinds'])
+        data, options = benchmark.get_plot_data(df, result['kinds'])
         data = update_plot_data_style(data, plotly=True)
         result['json_plots'] = json.dumps(data)
-        result['plot_params'] = dropdown
+        result['plot_params'] = options
 
         results.append(result)
 

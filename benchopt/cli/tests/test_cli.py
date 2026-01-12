@@ -503,7 +503,7 @@ class TestPlotCmd:
         class Plot(BasePlot):
             name = "custom_plot"
             type = "scatter"
-            dropdown = {
+            options = {
                 "dataset": ...,  # Will fetch the dataset names from the df
             }
 
