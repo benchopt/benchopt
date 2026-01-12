@@ -55,11 +55,11 @@ def get_plot_scatter(plot_data):
             linewidth=3
         )
 
-        if "q1" in curve_data and "q9" in curve_data:
-            q1 = curve_data["q1"]
-            q9 = curve_data["q9"]
+        if "x_low" in curve_data and "x_high" in curve_data:
+            x_low = curve_data["x_low"]
+            x_high = curve_data["x_high"]
             plt.fill_betweenx(
-                curve_data["y"], q1, q9, color=curve_data["color"],
+                curve_data["y"], x_low, x_high, color=curve_data["color"],
                 alpha=.3
             )
 

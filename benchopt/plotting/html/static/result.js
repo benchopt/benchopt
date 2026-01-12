@@ -232,22 +232,22 @@ const getScatterData = () => {
   getPlotData().data.forEach(curveData => {
     label = curveData.label;
     y = curveData.y;
-    if ("q1" in curveData && "q9" in curveData && state().with_quantiles) {
-      q1 = curveData.q1;
-      q9 = curveData.q9;
+    if ("x_low" in curveData && "x_high" in curveData && state().with_quantiles) {
+      x_low = curveData.x_low;
+      x_high = curveData.x_high;
     }
     if (state().suboptimal_curve) {
       y = y.map(value => value - min_y);
-      if ("q1" in curveData && "q9" in curveData && state().with_quantiles) {
-        q1 = q1.map(value => value - min_y);
-        q9 = q9.map(value => value - min_y);
+      if ("x_low" in curveData && "x_high" in curveData && state().with_quantiles) {
+        x_low = x_low.map(value => value - min_y);
+        x_high = x_high.map(value => value - min_y);
       }
     }
     if (state().relative_curve) {
       y = y.map(value => value / (y[0] - min_y));
-      if ("q1" in curveData && "q9" in curveData && state().with_quantiles) {
-        q1 = q1.map(value => value / (y[0] - min_y));
-        q9 = q9.map(value => value / (y[0] - min_y));
+      if ("x_low" in curveData && "x_high" in curveData && state().with_quantiles) {
+        x_low = x_low.map(value => value / (y[0] - min_y));
+        x_high = x_high.map(value => value / (y[0] - min_y));
       }
     }
     curves.push({
@@ -269,7 +269,7 @@ const getScatterData = () => {
       y: y,
     });
 
-    if ("q1" in curveData && "q9" in curveData && state().with_quantiles) {
+    if ("x_low" in curveData && "x_high" in curveData && state().with_quantiles) {
       curves.push({
         type: 'scatter',
         mode: 'lines',
@@ -281,7 +281,7 @@ const getScatterData = () => {
         legendgroup: label,
         hovertemplate: '(%{x:.1e},%{y:.1e}) <extra></extra>',
         visible: isVisible(label) ? true : 'legendonly',
-        x: q1,
+        x: x_low,
         y: y,
       }, {
         type: 'scatter',
@@ -295,7 +295,7 @@ const getScatterData = () => {
         legendgroup: label,
         hovertemplate: '(%{x:.1e},%{y:.1e}) <extra></extra>',
         visible: isVisible(label) ? true : 'legendonly',
-        x: q9,
+        x: x_high,
         y: y,
       });
     }

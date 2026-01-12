@@ -88,7 +88,8 @@ Optional keys:
 
 - :code:`color`: The color of the trace.
 - :code:`marker`: The marker style of the trace.
-- :code:`q1`, :code:`q9`: Lists of values for the 10% and 90% quantiles (for shading).
+- :code:`x_low`, :code:`x_high`: Lists of values to display uncertainty in the plot.
+  They will be used to display shaded area around the plot.
 
 The metadata dictionary returned by :code:`get_metadata` should contain:
 
@@ -120,8 +121,7 @@ The metadata dictionary returned by :code:`get_metadata` should contain:
         }
 
 .. note::
-   For styling helpers referenced by ``get_style``, see the plotting utilities,
-   :ref:`plotting_utilities`.
+   For styling helpers referenced by ``get_style``, see the :ref:`plotting_utilities`.
 
 
 Bar Chart
@@ -163,8 +163,8 @@ The metadata dictionary returned by :code:`get_metadata` should contain:
         }
 
 .. note::
-   For styling helpers referenced by ``get_style``, see the plotting utilities,
-   :ref:`plotting_utilities`.
+   For styling helpers referenced by ``get_style``, see the :ref:`plotting_utilities`.
+
 
 
 Box Plot
@@ -209,8 +209,8 @@ The metadata dictionary returned by :code:`get_metadata` should contain:
         }
 
 .. note::
-   For styling helpers referenced by ``get_style``, see the plotting utilities,
-   :ref:`plotting_utilities`.
+   For styling helpers referenced by ``get_style``, see the :ref:`plotting_utilities`.
+
 
 
 Table Plot

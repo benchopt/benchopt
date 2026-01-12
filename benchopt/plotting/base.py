@@ -27,13 +27,6 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
         **kwargs :
             Selection parameters that match the plot ``options`` keys
             (e.g. ``dataset``, ``objective``, ``objective_column``).
-
-        Returns
-        -------
-        list of dict
-            List of trace dictionaries. Each trace must include at least
-            ``x``, ``y`` and ``label``, ``color``, ``marker``.
-            Optional keys: , ``q1``, ``q9``.
         """
         ...
 
@@ -51,8 +44,7 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
         Returns
         -------
         dict
-            Metadata dictionary containing at least ``title``, ``xlabel``
-            and ``ylabel``.
+            Metadata dictionary.
         """
         ...
 
