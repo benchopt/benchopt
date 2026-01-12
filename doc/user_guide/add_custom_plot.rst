@@ -64,7 +64,7 @@ A custom plot is defined by a class inheriting from :class:`benchopt.BasePlot` a
 
 
 Plot Options
-----------------------
+------------
 
 The :code:`options` dictionary keys define the arguments passed to
 :code:`plot` and :code:`get_metadata`. Special keys like
@@ -85,11 +85,13 @@ each dictionary represents a trace in the plot. Each dictionary must contain:
 - :code:`label`: The label of the trace
 
 Optional keys:
+
 - :code:`color`: The color of the trace.
 - :code:`marker`: The marker style of the trace.
 - :code:`q1`, :code:`q9`: Lists of values for the 10% and 90% quantiles (for shading).
 
 The metadata dictionary returned by :code:`get_metadata` should contain:
+
 - :code:`title`: The title of the plot.
 - :code:`xlabel`: The label of the x-axis.
 - :code:`ylabel`: The label of the y-axis.
@@ -119,7 +121,7 @@ The metadata dictionary returned by :code:`get_metadata` should contain:
 
 .. note::
    For styling helpers referenced by ``get_style``, see the plotting utilities,
-   :ref:`_plotting_utilities`.
+   :ref:`plotting_utilities`.
 
 
 Bar Chart
@@ -162,7 +164,7 @@ The metadata dictionary returned by :code:`get_metadata` should contain:
 
 .. note::
    For styling helpers referenced by ``get_style``, see the plotting utilities,
-   :ref:`_plotting_utilities`.
+   :ref:`plotting_utilities`.
 
 
 Box Plot
@@ -180,6 +182,7 @@ Optional keys:
 - :code:`color`: The color of the box.
 
 The metadata dictionary returned by :code:`get_metadata` should contain:
+
 - :code:`title`: The title of the plot.
 - :code:`xlabel`: The label of the x-axis.
 - :code:`ylabel`: The label of the y-axis.
@@ -207,7 +210,7 @@ The metadata dictionary returned by :code:`get_metadata` should contain:
 
 .. note::
    For styling helpers referenced by ``get_style``, see the plotting utilities,
-   :ref:`_plotting_utilities`.
+   :ref:`plotting_utilities`.
 
 
 Table Plot
