@@ -29,12 +29,14 @@ A custom plot is defined by a class inheriting from :class:`benchopt.BasePlot` a
   values. If a key :code:`objective/dataset/solver/objective_column` is associated
   with the value :code:`...`, the options are automatically inferred from the
   results DataFrame, as all unique values associated with this key.
-- :code:`plot(self, df, **kwargs)`: A method that takes the results DataFrame and
-  the options values as arguments, and returns the data to plot as a dictionary.
-  The required keys depend on the plot's type, and are detailed bellow for each of them.
-- :code:`get_metadata(self, df, **kwargs)`: A method that takes the results dataframe
-  and the options values as arguments, and returns the metadata of the plot, which is
-  specific to each plot type.
+- :code:`plot(self, df, **kwargs)`: give the data to produce one plot, that is
+  rendered with the plotly or matplotlib backend. The method takes the results DataFrame
+  and the options values as arguments, and returns the plot data. The output
+  depends on the plot's type, and are detailed below for each of them.
+- :code:`get_metadata(self, df, **kwargs)`: Gives global information about the plot, such
+  as the title and axis labels. The method takes the results DataFrame and the options
+  values as arguments, and returns the metadata of the plot, which is specific to each
+  plot type.
 
 .. code-block:: python
 
