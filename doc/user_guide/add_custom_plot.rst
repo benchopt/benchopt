@@ -49,6 +49,8 @@ A custom plot is defined by a class inheriting from :class:`benchopt.BasePlot` a
             "my_parameter": [1, 2], # custom options
         }
 
+        # The inputs args of this method correspond to `df` and
+        # the keys in the `options` dictionary.
         def plot(self, df, dataset, objective, my_parameter):
             # ... process df ...
             return plot_data
