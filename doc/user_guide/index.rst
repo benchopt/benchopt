@@ -16,3 +16,4 @@ User guide
     tweak_datasets
     distributed_run
     tests_definition
+    add_custom_plot
