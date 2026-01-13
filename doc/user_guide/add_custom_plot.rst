@@ -143,7 +143,9 @@ Bar Chart
 ---------
 
 For a bar chart, the :code:`plot` method should return a list of dictionaries,
-where each dictionary represents a bar. The dictionary should contain:
+where each dictionary represents a bar. For each bar, the median value will be
+used to determine its height, while the individual values will be displayed as
+scatter points. The dictionary should contain:
 
 - :code:`y`: The list of values for the bar (the median will be the height of the bar).
 - :code:`label`: The label of the bar.
