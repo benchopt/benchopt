@@ -341,6 +341,7 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
     """
 
     _base_class_name = 'Objective'
+    test_dataset_name = 'simulated'
 
     @abstractmethod
     def set_data(self, **data):

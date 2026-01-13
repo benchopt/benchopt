@@ -96,10 +96,7 @@ def pytest_generate_tests(metafunc):
 
     # Extract the value for the parametrizations
     parametrization = {
-        'dataset_simu': [
-            (benchmark, dataset) for dataset in benchmark.get_datasets()
-            if dataset.name.lower() == 'simulated'
-        ],
+        'dataset_test': [(benchmark, benchmark.get_test_dataset())],
         'dataset_class': [
             (benchmark, dataset) for dataset in benchmark.get_datasets()
         ],

@@ -6,12 +6,12 @@ from benchopt.stopping_criterion import SAMPLING_STRATEGIES
 from benchopt.utils.dynamic_modules import _get_module_from_file
 
 
-def test_benchmark_objective(benchmark, dataset_simu):
+def test_benchmark_objective(benchmark, dataset_test):
     """Check that the objective function and the datasets are well defined."""
     objective_class = benchmark.get_benchmark_objective()
     objective = objective_class.get_instance()
 
-    dataset = dataset_simu.get_instance()
+    dataset = dataset_test.get_instance()
     objective.set_dataset(dataset)
 
     # check that the reported dimension is correct and that the result of
@@ -133,16 +133,7 @@ def test_solver_run(benchmark, solver_class):
     objective_class = benchmark.get_benchmark_objective()
     objective = objective_class.get_instance(**objective_config)
 
-    simulated_dataset = [
-        d for d in benchmark.get_datasets() if d.name.lower() == 'simulated'
-    ]
-
-    assert len(simulated_dataset) == 1, (
-        "All benchmark need to implement a simulated dataset for "
-        "testing purpose. The dataset should have `name='simulated'."
-    )
-
-    dataset_class = simulated_dataset[0]
+    dataset_class = benchmark.get_test_dataset()
     dataset_test_parameters = product_param(getattr(
         dataset_class, 'test_parameters', {}
     ))

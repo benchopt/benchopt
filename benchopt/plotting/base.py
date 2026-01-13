@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from ..utils.dependencies_mixin import DependenciesMixin
 from ..utils.parametrized_name_mixin import ParametrizedNameMixin
 from ..utils.parametrized_name_mixin import product_param
+from ..utils.parametrized_name_mixin import sanitize
 
 CMAP = plt.get_cmap('tab20')
 COLORS = [CMAP(i) for i in range(CMAP.N)]
@@ -75,7 +76,7 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
     @classmethod
     def _get_name(cls):
         """Get a simple name for plot comparison"""
-        return cls.name.replace(" ", "_").lower()
+        return sanitize(cls.name)
 
     def _check(self):
         self._check_type()

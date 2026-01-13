@@ -152,3 +152,21 @@ def product_param(parameters):
     parameter_names = parameters.keys()
     return map(expand, itertools.repeat(parameter_names),
                itertools.product(*parameters.values()))
+
+
+def sanitize(name):
+    """Sanitize a name to be used as an identifier.
+
+    Replace spaces and dashes by underscores and convert to lower case.
+
+    Parameters
+    ----------
+    name: str
+        The name to sanitize
+
+    Returns
+    -------
+    sanitized_str: str
+        The sanitized str.
+    """
+    return name.replace(" ", "_").replace("-", "_").lower()
