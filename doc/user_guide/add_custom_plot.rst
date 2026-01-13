@@ -146,12 +146,12 @@ For a bar chart, the :code:`plot` method should return a list of dictionaries,
 where each dictionary represents a bar. The dictionary should contain:
 
 - :code:`y`: The list of values for the bar (the median will be the height of the bar).
-- :code:`text`: The text to display on the bar.
 - :code:`label`: The label of the bar.
 
 Optional keys:
 
 - :code:`color`: The color of the bar.
+- :code:`text`: The text to display on the bar.
 
 The metadata dictionary returned by :code:`get_metadata` should contain:
 

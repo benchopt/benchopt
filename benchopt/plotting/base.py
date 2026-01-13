@@ -34,8 +34,8 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
         - scatter: list of dict for each trace, requires: 'x', 'y',
                 'label', optional: 'marker', 'color', 'x_low',
                 'x_high'.
-        - bar_chart: list of dict for each bar, requires: 'y', 'text',
-                'label', optional: 'color'.
+        - bar_chart: list of dict for each bar, requires: 'y',
+                'label', optional: 'color', 'text'.
         - boxplot: list of dict for each box, requires: 'x', 'y',
                 'label', optional: 'color'.
         - table: list of list, each inner list is a row of the table.

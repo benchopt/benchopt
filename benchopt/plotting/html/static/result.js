@@ -163,7 +163,8 @@ const getBarData = () => {
   getPlotData().data.forEach(curveData => {
     // Add times for each convergent bar
     // Check if text is not 'Did not converge'
-    if (curveData.text === '') {
+    curveText = curveData.text || ''
+    if (curveText === '') {
       let nbTimes = curveData.y.length
 
       barData.push({
@@ -642,8 +643,9 @@ const barDataToArrays = () => {
   getPlotData().data.forEach(plotData => {
     x.push(plotData.label);
     y.push(getMedian(plotData.y));
-    colors.push(plotData.text === '' ? plotData.color : NON_CONVERGENT_COLOR);
-    texts.push(plotData.text);
+    const plotText = plotData.text || '';
+    colors.push(plotText === '' ? plotData.color : NON_CONVERGENT_COLOR);
+    texts.push(plotText);
   });
 
   return {x, y, colors, texts}
