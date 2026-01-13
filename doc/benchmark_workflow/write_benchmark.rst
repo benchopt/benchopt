@@ -162,28 +162,5 @@ Solver Example
 Custom plots can be defined to visualize specific quantities of interest
 during the benchmark. By default, BenchOpt provides some standard plots such as
 the objective curve, box plots and bar plots. However, users can create their own plots
-by defining a class that inherits from :class:`benchopt.BasePlot`.
-
-A custom plot must define the following attributes:
-  - ``name``: A string representing the name of the plot.
-  - ``type``: A string indicating the type of plot ("scatter", "bar_chart", "boxplot", or "table").
-  - ``dropdown``: A dictionary specifying the dropdown options for the plot. For each dropdown
-    option, provide a list of possible values, or an ellipsis (...) to indicate that the values
-    should be determined dynamically based on the benchmark data, such as the list of datasets.
-
-A custom plot must also implement 2 methods:
-  - ``plot(self, df, **kwargs)``: This method takes a pandas DataFrame ``df`` as input and the keyword
-    arguments from the dropdown menu and returns a list of dictionaries,
-    each representing a plot trace. Each dictionary should contain the necessary information to create the plot
-    (for example, x, y, color, marker, label). Users can also use the self.get_solver_style(solver_name) method to obtain
-    consistent styles for the traces.
-  - ``get_metadata(self, df, **kwargs)``: This method takes a pandas DataFrame ``df`` as input and the keyword
-    arguments from the dropdown menu and returns a dictionary
-    containing metadata for the plot (title, xlabel, and ylabel).
-
-
-Example
-~~~~~~~
-
-.. literalinclude:: ../../benchopt/plotting/default_plots.py
-    :pyobject: ObjectiveCurvePlot
+by defining a class that inherits from :class:`benchopt.BasePlot`. More information
+about creating custom plots can be found in the :ref:`add_custom_plot` guide.

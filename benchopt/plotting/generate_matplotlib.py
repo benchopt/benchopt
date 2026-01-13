@@ -55,11 +55,11 @@ def get_plot_scatter(plot_data):
             linewidth=3
         )
 
-        if "q1" in curve_data and "q9" in curve_data:
-            q1 = curve_data["q1"]
-            q9 = curve_data["q9"]
+        if "x_low" in curve_data and "x_high" in curve_data:
+            x_low = curve_data["x_low"]
+            x_high = curve_data["x_high"]
             plt.fill_betweenx(
-                curve_data["y"], q1, q9, color=curve_data["color"],
+                curve_data["y"], x_low, x_high, color=curve_data["color"],
                 alpha=.3
             )
 
@@ -80,20 +80,18 @@ def get_plot_barchart(plot_data):
     width = 1 / (n_bars + 2)
     colors = []
 
-    height_list = []
-    times_list = []
+    val_list = []
 
     for i, bar_data in enumerate(plot_data["data"]):
         colors.append(bar_data["color"])
-        height_list.append(bar_data["y"])
-        times_list.append(bar_data["times"])
+        val_list.append(bar_data["y"])
 
     ax = fig.gca()
 
     for idx in range(n_bars):
-        no_cv = np.isnan(times_list[idx]).any()
+        no_cv = np.isnan(val_list[idx]).any()
         xi = (idx+1.5)*width
-        height = height_list[idx]
+        height = np.median(val_list[idx])
         edges = colors[idx] if not no_cv else "k"
         ax.bar(
             x=xi, height=height, width=width,
@@ -107,7 +105,7 @@ def get_plot_barchart(plot_data):
             )
         else:
             plt.scatter(
-                np.ones_like(times_list[idx]) * xi, times_list[idx],
+                np.ones_like(val_list[idx]) * xi, val_list[idx],
                 marker='_', color='k', zorder=10
             )
 

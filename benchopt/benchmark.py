@@ -237,15 +237,15 @@ class Benchmark:
         all_plots = self.get_plots()
         self.check_plots()
         all_data = {}
-        all_dropdown = {}
+        all_options = {}
         for plot in all_plots:
             plot_name = plot._get_name()
             if plot_name not in kinds:
                 continue
-            data, dropdown = plot._get_all_plots(df)
+            data, options = plot._get_all_plots(df)
             all_data[plot_name] = data
-            all_dropdown[plot_name] = dropdown
-        return all_data, all_dropdown
+            all_options[plot_name] = options
+        return all_data, all_options
 
     def _list_benchmark_classes(self, base_class):
         """Load all classes with the same name from a benchmark's subpackage.
