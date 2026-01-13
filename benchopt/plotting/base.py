@@ -27,6 +27,21 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
         **kwargs :
             Selection parameters that match the plot ``options`` keys
             (e.g. ``dataset``, ``objective``, ``objective_column``).
+
+        Returns
+        -------
+        The plot data structure, depending on the plot type:
+        - scatter: list of dict for each trace, requires: 'x', 'y',
+                'label', optional: 'marker', 'color', 'x_low',
+                'x_high'.
+        - bar_chart: list of dict for each bar, requires: 'y', 'text',
+                'label', optional: 'color'.
+        - boxplot: list of dict for each box, requires: 'x', 'y',
+                'label', optional: 'color'.
+        - table: list of list, each inner list is a row of the table.
+
+        Please refer to :ref:`add_custom_plot` for a complete description
+        of the plot data.
         """
         ...
 

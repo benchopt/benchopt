@@ -38,6 +38,11 @@ A custom plot is defined by a class inheriting from :class:`benchopt.BasePlot` a
   values as arguments, and returns the metadata of the plot, which is specific to each
   plot type.
 
+The :code:`get_metadata` method allow to change global properties of
+the resulting visualization, and the :code:`plot` method outputs the data
+necessary to render it.
+The visualization is rendered using either the ``plotly`` or ``matplotly`` backend.
+
 .. code-block:: python
 
     from benchopt import BasePlot
@@ -103,17 +108,24 @@ The metadata dictionary returned by :code:`get_metadata` should contain:
 
     def plot(self, df, dataset, objective, my_parameter):
         # Filter the dataframe
-        df = df[df['dataset_name'] == dataset]
+        df = df.query(
+            "dataset_name == @dataset and objective_name == @objective"
+        )
 
-        traces = []
+        plot_traces = []
         for solver, df_solver in df.groupby('solver_name'):
-            traces.append({
-                "x": df_solver['time'].tolist(),
-                "y": df_solver['objective_value'].tolist(),
+            # Compute the median over the repetitions
+            curve = (
+                df_solver.groupby("stop_val")[["time", "'objective_value"]]
+                .median()
+            )
+            plot_traces.append({
+                "x": curve['time'].tolist(),
+                "y": curve['objective_value'].tolist(),
                 "label": solver,
                 **self.get_style(solver)
             })
-        return traces
+        return plot_traces
 
     def get_metadata(self, df, dataset, objective, my_parameter):
         return {
@@ -123,7 +135,8 @@ The metadata dictionary returned by :code:`get_metadata` should contain:
         }
 
 .. note::
-   For styling helpers referenced by ``get_style``, see the :ref:`plotting_utilities`.
+   To help with consistent style accross figures, you can use
+   the helper ``get_style``, as described in :ref:`plotting_utilities`.
 
 
 Bar Chart
@@ -148,10 +161,15 @@ The metadata dictionary returned by :code:`get_metadata` should contain:
 .. code-block:: python
 
     def plot(self, df, dataset, objective, **kwargs):
+        df = df.query(
+            "dataset_name == @dataset and objective_name == @objective"
+        )
         bars = []
         for solver, df_solver in df.groupby('solver_name'):
+            # Select the total runtime for each repetition
+            runtimes = df_solver.groupby("idx_rep")["runtime"].last()
             bars.append({
-                "y": df_solver['time'].tolist(),
+                "y": runtimes.tolist(),
                 "label": solver,
                 "text": "",
                 "color": self.get_style(solver)['color']
@@ -163,10 +181,6 @@ The metadata dictionary returned by :code:`get_metadata` should contain:
             "title": f"Average times for {objective} on {dataset}",
             "ylabel": "Time [sec]",
         }
-
-.. note::
-   For styling helpers referenced by ``get_style``, see the :ref:`plotting_utilities`.
-
 
 
 Box Plot
@@ -192,16 +206,23 @@ The metadata dictionary returned by :code:`get_metadata` should contain:
 .. code-block:: python
 
     def plot(self, df, dataset, objective, **kwargs):
-        traces = []
+        df = df.query(
+            "dataset_name == @dataset and objective_name == @objective"
+        )
+        plot_data = []
         for solver, df_solver in df.groupby('solver_name'):
-            # Example: boxplot of objective values for a single solver
-            traces.append({
+            # Example: boxplot for the final objective values
+            # for each solver
+            final_objective_value = (
+                df_solver.groupby("idx_rep")['objective_value'].last()
+            )
+            plot_data.append({
                 "x": [solver],
-                "y": [df_solver['objective_value'].tolist()],
+                "y": [final_objective_value.tolist()],
                 "label": solver,
                 "color": self.get_style(solver)['color']
             })
-        return traces
+        return plot_data
 
     def get_metadata(self, df, dataset, objective, **kwargs):
         return {
@@ -210,29 +231,27 @@ The metadata dictionary returned by :code:`get_metadata` should contain:
             "ylabel": "Objective value",
         }
 
-.. note::
-   For styling helpers referenced by ``get_style``, see the :ref:`plotting_utilities`.
-
-
 
 Table Plot
 ----------
 
 For a table plot, the :code:`plot` method should return a list of lists,
-where each inner list represents a row in the table. The
-:code:`get_metadata` method must return a dictionary with a
-:code:`columns` key, containing the list of column names.
-
+where each inner list represents a row in the table.
 The metadata dictionary returned by :code:`get_metadata` should contain:
+
 - :code:`title`: The title of the plot.
 - :code:`columns`: A list of column names.
 
 .. code-block:: python
 
     def plot(self, df, dataset, objective, **kwargs):
+        df = df.query(
+            "dataset_name == @dataset and objective_name == @objective"
+        )
         rows = []
         for solver, df_solver in df.groupby('solver_name'):
             # Example: table with solver name and mean time
+            # when using `sampling_strategy = 'run_once'`
             rows.append([solver, df_solver['time'].mean()])
         return rows
 
