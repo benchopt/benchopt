@@ -77,9 +77,7 @@ def _run_shell(script, raise_on_error=None, capture_stdout=True,
     if capture_stdout:
         exit_code, output = subprocess.getstatusoutput(command)
     else:
-        exit_code = subprocess.run(
-            [SHELL, tmp.name],
-        ).returncode
+        exit_code = subprocess.call(command)
         output = ""
     if raise_on_error is not None and exit_code != 0:
         if isinstance(raise_on_error, str):
