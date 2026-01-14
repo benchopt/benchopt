@@ -83,7 +83,7 @@
                                 <span class="slider round"></span>
                             </label>
                         </div>
-                        % for kind, params in result["plot_params"].items():
+                        % for kind, params in result["plot_options"].items():
                             <div id="${kind}-custom-params-container">
                             % for param, options in params.items():
                                 <div id="${kind}_${param}_form_group" class="mt-8 px-8">
@@ -230,7 +230,7 @@
                             </div>
                             <div>
                             <div>
-                            % for kind, params in result["plot_params"].items():
+                            % for kind, params in result["plot_options"].items():
                                 <div id="${kind}-custom-params-container">
                                 % for param, options in params.items():
                                     <div id="${kind}_${param}_form_group" class="mt-8 px-8">
@@ -469,7 +469,7 @@
                     'suboptimal_curve': document.getElementById('change_suboptimal').checked,
                     'relative_curve': document.getElementById('change_relative').checked,
                     'hidden_curves': [],
-                    % for kind, params in result["plot_params"].items():
+                    % for kind, params in result["plot_options"].items():
                         % for param in params:
                             '${kind}_${param}': document.getElementById('change_${kind}_${param}').value,
                         % endfor

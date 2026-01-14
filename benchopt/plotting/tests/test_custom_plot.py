@@ -12,7 +12,7 @@ def test_custom_plot_scatter(no_debug_log):
     class Plot(BasePlot):
         name = "Custom plot 1"
         type = "scatter"
-        dropdown = {}
+        options = {}
 
         def plot(self, df):
             return [
@@ -47,13 +47,13 @@ def test_custom_plot_scatter(no_debug_log):
     [
         ("type = 'scatter'", "", "Plot should have a `type` attribute."),
         ("type = 'scatter'", "type = 'curving'", "Plot type should be one of"),
-        ("dropdown = {}", "dropdown = []",
-         "`dropdown` should be a dictionary"),
-        ("dropdown = {}", "dropdown = {'color': 'blue'}",
-         "The values of dropdown should be a list or ..."),
-        ("dropdown = {}", "dropdown = {'color': []}",
-         "The values of dropdown should be non empty"),
-        ("dropdown = {}", "dropdown = {'color': ['blue']}",
+        ("options = {}", "options = []",
+         "`options` should be a dictionary"),
+        ("options = {}", "options = {'color': 'blue'}",
+         "The values of options should be a list or ..."),
+        ("options = {}", "options = {'color': []}",
+         "The values of options should be non empty"),
+        ("options = {}", "options = {'color': ['blue']}",
          "should match the signature"),
     ]
 )
@@ -63,7 +63,7 @@ def test_custom_plot_errors(no_debug_log, pat, replace, msg):
     class Plot(BasePlot):
         name = 'Custom plot 1'
         type = 'scatter'
-        dropdown = {}
+        options = {}
 
         def plot(self, df):
             return [

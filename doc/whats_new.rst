@@ -36,7 +36,7 @@ API
   By `Thomas Moreau`_ (:gh:`874`)
 
 - Add the possibility of creating custom plots for each benchmark.
-  See :ref:`custom_plots` for the documentation.
+  See :ref:`add_custom_plot` for the documentation.
   By `Hippolyte Verninas`_ (:gh:`842`)
 
 - Implement ``bar_chart`` and ``boxplot`` using the new plotting backend.

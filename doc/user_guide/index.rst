@@ -12,6 +12,7 @@ User guide
     tweak_datasets
     iterative_solvers
     advanced
+    add_custom_plot
     distributed_run
     tests_definition
     API_ref
