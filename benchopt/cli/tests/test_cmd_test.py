@@ -51,8 +51,7 @@ class TestCmdTest:
             def get_result(self): return dict(beta=1)
         """
         with temp_benchmark(solvers=solver) as bench:
-            exit_code = 1 if sys.platform == "win32" else 256
-            with CaptureCmdOutput(exit=exit_code) as out:
+            with CaptureCmdOutput(exit=1) as out:
                 benchopt_test(
                     f"{bench.benchmark_dir} --skip-install".split(),
                     'benchopt', standalone_mode=False
