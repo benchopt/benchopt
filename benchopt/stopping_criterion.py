@@ -237,6 +237,7 @@ class StoppingCriterion():
             self._prev_objective = objective
 
             is_diverging = math.isnan(objective) or delta_objective < -1e5
+            is_flat = delta_objective == 0
 
         # check the different conditions:
         #     diverging / timeout / max_runs / stopping_criterion
@@ -260,15 +261,13 @@ class StoppingCriterion():
 
             # Compute status and notify the runner if the curve is flat.
             status = 'done' if stop else 'running'
-            is_flat = delta_objective == 0
 
         if stop:
-            self.debug(
-                f"Exit with delta_objective = {delta_objective:.2e} and "
-                f"n_eval={n_eval:.1e}."
-            )
-
-        if is_flat:
+            suffix = ""
+            if self.key_to_monitor_ is not None:
+                suffix = f" with delta_objective = {delta_objective:.2e}"
+            self.debug(f"Exit after {n_eval=:.1e}{suffix}.")
+        elif is_flat:
             self.rho *= RHO_INC
             self.debug(f"curve is flat -> increasing rho: {self.rho}")
 
