@@ -494,20 +494,22 @@ def test_paths_config_key(test_case, n_jobs):
         out.check_output(re.escape(f"PATH:{expected_path}"), repetition=1)
 
 
-def test_warm_up():
+@pytest.mark.parametrize("n_runs,n_reps", [(1, 3), (2, 2), (5, 1)])
+def test_warm_up(n_runs, n_reps):
     solver1 = """from benchopt import BaseSolver
     import numpy as np
 
     class Solver(BaseSolver):
         name = 'solver1'
         sampling_strategy = 'iteration'
+        parameters = {'param': [0, 1]}
 
         def set_objective(self, X, y, lmbd): pass
         def run(self, n_iter): pass
         def get_result(self, **data): return {'beta': None}
 
         def warm_up(self):
-            print("WARMUP")
+            print(f"WARMUP#{self.param}")
             self.run_once(1)
 
     """
@@ -516,46 +518,47 @@ def test_warm_up():
         with CaptureCmdOutput() as out:
             run(
                 f"{benchmark.benchmark_dir} -s solver1 -d test-dataset "
-                f"-n 0 -r 5 --no-plot".split(),
+                f"-n {n_runs} -r {n_reps} --no-plot".split(),
                 'benchopt', standalone_mode=False)
-
         # Make sure warmup is called exactly once
-        out.check_output("WARMUP", repetition=1)
+        out.check_output("WARMUP#0", repetition=1)
+        out.check_output("WARMUP#1", repetition=1)
 
 
-def test_pre_run_hook():
+@pytest.mark.parametrize("n_runs,n_reps", [(1, 3), (2, 2), (5, 1)])
+def test_pre_run_hook(n_runs, n_reps):
     solver1 = """from benchopt import BaseSolver
+    from benchopt.stopping_criterion import NoCriterion
     import numpy as np
 
     class Solver(BaseSolver):
         name = 'solver1'
-        sampling_strategy = 'iteration'
+        stopping_criterion = NoCriterion(strategy='iteration')
+        parameters = {'param': [0, 1]}
 
         def set_objective(self, X, y, lmbd): pass
         def get_result(self): return {'beta': None}
 
         def pre_run_hook(self, n_iter):
+            print(f"PRERUNHOOK({n_iter})#{self.param}")
             self._pre_run_hook_n_iter = n_iter
 
         def run(self, n_iter):
             assert self._pre_run_hook_n_iter == n_iter
 
+        def get_next(self, stop_val): return stop_val + 1
     """
 
     with temp_benchmark(solvers=[solver1]) as benchmark:
         with CaptureCmdOutput() as out:
             run(
                 f"{benchmark.benchmark_dir} -s solver1 -d test-dataset "
-                "-n 0 -r 5 --no-plot".split(),
+                f"-n {n_runs} -r {n_reps} --no-plot".split(),
                 standalone_mode=False
             )
 
-        with CaptureCmdOutput() as out:
-            _cmd_test(
-                f"{benchmark.benchmark_dir} -k solver1 --skip-install"
-                " -v".split(),
-                standalone_mode=False
-            )
-
-        # Make sure warmup is called exactly once
-        out.check_output("3 passed, 1 skipped, 5 deselected", repetition=1)
+        for id_run in range(n_runs):
+            for p in [0, 1]:
+                out.check_output(
+                    rf"PRERUNHOOK\({id_run}\)#{p}", repetition=n_reps
+                )
