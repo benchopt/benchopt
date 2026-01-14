@@ -96,12 +96,14 @@ def pytest_generate_tests(metafunc):
 
     # Extract the value for the parametrizations
     parametrization = {
-        'dataset_test': [(benchmark, benchmark.get_test_dataset())],
         'dataset_class': [
             (benchmark, dataset) for dataset in benchmark.get_datasets()
         ],
         'solver_class': [
             (benchmark, solver) for solver in benchmark.get_solvers()
+        ],
+        'objective_class': [
+            (benchmark, benchmark.get_benchmark_objective())
         ]
     }
 
@@ -111,6 +113,7 @@ def pytest_generate_tests(metafunc):
             metafunc.parametrize(
                 ('benchmark', param), values, ids=class_ids
             )
+            break
 
 
 @pytest.fixture

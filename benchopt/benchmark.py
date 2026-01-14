@@ -207,7 +207,11 @@ class Benchmark:
             "`Objective.test_dataset_name` attribute. The dataset should have "
             f"`name='{objective.test_dataset_name}' in the current benchmark."
         )
-        return test_datasets[0]
+        test_class = test_datasets[0]
+        test_params = list(product_param(getattr(
+            test_class, 'test_parameters', {}
+        )))
+        return test_class, test_params
 
     def check_dataset_patterns(self, dataset_patterns, class_only=False):
         "Check that the patterns are valid and return selected configurations."
