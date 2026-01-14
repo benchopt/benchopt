@@ -73,12 +73,12 @@ def _run_shell(script, raise_on_error=None, capture_stdout=True,
     if raise_on_error is True:
         raise_on_error = "{output}"
 
-    command = f'{SHELL} "{tmp.name}"'
-
     if capture_stdout:
-        exit_code, output = subprocess.getstatusoutput(command)
+        exit_code, output = subprocess.getstatusoutput(f'{SHELL} "{tmp.name}"')
     else:
-        exit_code = os.system(command)
+        exit_code = subprocess.run(
+            [SHELL, tmp.name],
+        ).returncode
         output = ""
     if raise_on_error is not None and exit_code != 0:
         if isinstance(raise_on_error, str):
