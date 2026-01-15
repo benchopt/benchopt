@@ -104,12 +104,9 @@ class TestCmdTest:
             def get_objective(self): pass
         """
 
-        n_pass = 1 if error_type is None else 0
+        n_pass = 0 if error_type is not None else 1
         n_fail = 2 if error_type is not None else 0
-        if error_type is None:
-            exit_code = None
-        else:
-            exit_code = 1
+        exit_code = 1 if error_type is not None else None
 
         # Now check that when not set properly, or to otther values, this fails
         dataset_, objective_ = dataset, objective
