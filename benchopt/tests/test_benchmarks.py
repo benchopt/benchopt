@@ -4,7 +4,6 @@ import numpy as np
 from benchopt.stopping_criterion import StoppingCriterion
 from benchopt.stopping_criterion import SAMPLING_STRATEGIES
 from benchopt.utils.dynamic_modules import _get_module_from_file
-from benchopt.stopping_criterion import _inherit_stopping_criterion
 
 
 def test_dataset_class(benchmark, dataset_class):
@@ -141,7 +140,7 @@ def test_solver_stopping_criterion(benchmark, solver_class):
 
     # Make sure to inherit the objective if the stopping criterion
     # is set globally for this benchmark
-    _inherit_stopping_criterion(solver_class, objective)
+    solver_class._inherit_stopping_criterion(objective)
     stopping_criterion = solver_class._stopping_criterion
 
     assert isinstance(stopping_criterion, StoppingCriterion), (

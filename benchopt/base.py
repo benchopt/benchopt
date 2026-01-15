@@ -3,7 +3,6 @@ from abc import ABC, abstractmethod
 from .callback import _Callback
 from .stopping_criterion import SingleRunCriterion
 from .stopping_criterion import SufficientProgressCriterion
-from .stopping_criterion import _inherit_stopping_criterion
 
 from .utils.misc import NamedTemporaryFile
 from .utils.class_property import classproperty
@@ -106,6 +105,23 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
             or 'iteration'
         )
 
+    @classmethod
+    def _inherit_stopping_criterion(cls, objective):
+        """Inherit the stopping criterion from an objective if needed."""
+        # If not set, inherit sampling_strategy and stopping_criterion from
+        # objective so defaults can be specified at the benchmark level.
+        #
+        # Set the class attribute so that it can easily be checked in the
+        # benchmark tests, even when the solver is not importable.
+        if cls.sampling_strategy is None:
+            cls.sampling_strategy = objective.sampling_strategy
+        if (
+            not hasattr(cls, 'stopping_criterion') and
+            hasattr(objective, 'stopping_criterion')
+        ):
+            cls.stopping_criterion = objective.stopping_criterion
+
+
     def _set_objective(self, objective):
         """Store the objective for hashing/pickling and check its compatibility
 
@@ -126,7 +142,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
 
         # If not set, inherit sampling_strategy and stopping_criterion from
         # objective so defaults can be specified at the benchmark level.
-        _inherit_stopping_criterion(self, objective)
+        self._inherit_stopping_criterion(objective)
 
         objective_dict = objective.get_objective()
         assert objective_dict is not None, (

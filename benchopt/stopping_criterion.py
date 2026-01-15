@@ -518,20 +518,3 @@ class NoCriterion(StoppingCriterion):
 
     def check_convergence(self, cost_curve):
         return False, 0
-
-
-def _inherit_stopping_criterion(obj, objective):
-    """Inherit the stopping criterion from an objective if needed."""
-    # If not set, inherit sampling_strategy and stopping_criterion from
-    # objective so defaults can be specified at the benchmark level.
-    #
-    # Set the class attribute so that it can easily be checked in the
-    # benchmark tests, even when the solver is not importable.
-    cls = obj.__class__ if not isinstance(obj, type) else obj
-    if obj.sampling_strategy is None:
-        cls.sampling_strategy = objective.sampling_strategy
-    if (
-        not hasattr(obj, 'stopping_criterion') and
-        hasattr(objective, 'stopping_criterion')
-    ):
-        cls.stopping_criterion = objective.stopping_criterion
