@@ -513,8 +513,5 @@ class NoCriterion(StoppingCriterion):
     """Run the solvers for a number of time fixed by max_iter and timeout.
     """
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
     def check_convergence(self, cost_curve):
         return False, 0
