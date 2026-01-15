@@ -52,6 +52,7 @@ def test_benchmark_objective(benchmark, objective_class):
     dataset_class, test_params = benchmark.get_test_dataset()
     dataset = dataset_class.get_instance(**test_params[0])
 
+    # get one value for the objective, with the test_dataset
     objective.set_dataset(dataset)
     result = objective._get_one_result()
     objective_output = objective(result)
