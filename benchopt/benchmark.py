@@ -205,7 +205,8 @@ class Benchmark:
             "All benchmarks should have one test_dataset. The default is a "
             "simulated dataset, but the name can be tweaked by setting the "
             "`Objective.test_dataset_name` attribute. The dataset should have "
-            f"`name='{objective.test_dataset_name}' in the current benchmark."
+            f"`name='{objective.test_dataset_name}' in the current benchmark. "
+            f"Found possible datasets {test_datasets}."
         )
         test_class = test_datasets[0]
         test_params = list(product_param(getattr(

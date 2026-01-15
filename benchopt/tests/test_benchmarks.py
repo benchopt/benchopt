@@ -56,6 +56,7 @@ def test_benchmark_objective(benchmark, objective_class):
     result = objective._get_one_result()
     objective_output = objective(result)
 
+    # check that the output has proper type and is not empty
     assert isinstance(objective_output, list), (
         "The output of the objective function should be a list of dicts by "
         "design. Please report this issue on benchopt's GitHub."
@@ -131,7 +132,7 @@ def test_solver_install(test_env_name, benchmark, solver_class):
 
 
 def test_solver_stopping_criterion(benchmark, solver_class):
-    # Check that a solver stopping_criterion is compatible with the objective
+    # Check each solver stopping_criterion is compatible with the objective
     objective_class = benchmark.get_benchmark_objective()
     objective = objective_class.get_instance()
 
@@ -143,6 +144,7 @@ def test_solver_stopping_criterion(benchmark, solver_class):
     solver_class._inherit_stopping_criterion(objective)
     stopping_criterion = solver_class._stopping_criterion
 
+    # check that stopping_criterion has the proper type
     assert isinstance(stopping_criterion, StoppingCriterion), (
         "The solver's stopping_criterion should be an instance of "
         "StoppingCriterion."
