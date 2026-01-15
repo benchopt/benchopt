@@ -109,7 +109,7 @@ class TestCmdTest:
         if error_type is None:
             exit_code = None
         else:
-            exit_code = 1 if sys.platform == "win32" else 256
+            exit_code = 1
 
         # Now check that when not set properly, or to otther values, this fails
         dataset_, objective_ = dataset, objective

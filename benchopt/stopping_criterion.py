@@ -527,10 +527,11 @@ def _inherit_stopping_criterion(obj, objective):
     #
     # Set the class attribute so that it can easily be checked in the
     # benchmark tests, even when the solver is not importable.
+    cls = obj.__class__ if not isinstance(obj, type) else obj
     if obj.sampling_strategy is None:
-        obj.__class__.sampling_strategy = objective.sampling_strategy
+        cls.sampling_strategy = objective.sampling_strategy
     if (
         not hasattr(obj, 'stopping_criterion') and
         hasattr(objective, 'stopping_criterion')
     ):
-        obj.__class__.stopping_criterion = objective.stopping_criterion
+        cls.stopping_criterion = objective.stopping_criterion
