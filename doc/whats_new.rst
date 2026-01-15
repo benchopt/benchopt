@@ -31,6 +31,10 @@ CLI
 API
 ---
 
+- Allow to set the default ``sampling_strategy`` and ``stopping_criterion``
+  globally for a benchmark in the ``Objective``.
+  By `Thomas Moreau`_ (:gh:`874`)
+
 - Add the possibility of creating custom plots for each benchmark.
   See :ref:`add_custom_plot` for the documentation.
   By `Hippolyte Verninas`_ (:gh:`842`)
@@ -51,11 +55,18 @@ API
 DOC
 ---
 
+- Improve documentation on how to run a ML benchmark.
+  By `Thomas Moreau`_ (:gh:`874`)
+
 - Allow to run benchmarks as examples in the documentation.
   By `Thomas Moreau`_ (:gh:`841`)
 
 FIX
 ---
+
+- Improve tests for ML benchmarks, by avoiding constraints linked
+  to evaluating iterative solvers.
+  By `Thomas Moreau`_ (:gh:`874`)
 
 - Improve AST parsing when missing attributes in the class.
   By `Thomas Moreau`_ (:gh:`846`)

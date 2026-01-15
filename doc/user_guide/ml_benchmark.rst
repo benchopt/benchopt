@@ -11,6 +11,38 @@ To easily get started with a new ML benchmark, we recommend using the dedicated
 This template provides a simple structure, with the different benchopt's options set to accommodate ML workflows.
 
 
+Disabling performance curves
+----------------------------
+
+Unlike optimization benchmarks where you track convergence over iterations,
+ML benchmarks typically evaluate each solver once to completion. To disable
+performance curve sampling, set ``sampling_strategy = "run_once"`` in your
+``Objective`` class:
+
+.. code-block:: python
+
+    class Objective(BaseObjective):
+        sampling_strategy = "run_once"
+
+        # ...rest of your objective definition
+
+With this setting, each solver's ``run`` method is called exactly once, and
+the ``stop_val`` argument can be ignored. This is the recommended setup for
+benchmarks comparing methods where only the final performance matters.
+
+.. note::
+   You can also set ``sampling_strategy = "run_once"`` on individual ``Solver``
+   classes if only some solvers should run once while others need iterative
+   evaluation.
+
+Note that when using ``sampling_strategy = "run_once"``, ``evaluate_result``
+will be called only once per solver run, and the resulting metrics will be
+stored directly in the benchmark results. It is also possible to different
+evaluation as different lines in the benchmark results by returning multiple
+dictionaries from ``evaluate_result`` as a list. See :ref:`multiple_evaluation`
+for more details.
+
+
 Cross-validation
 ----------------
 

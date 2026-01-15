@@ -3,6 +3,21 @@
 Frequently asked questions (FAQ)
 --------------------------------
 
+.. dropdown:: Can I use benchopt for ML benchmarks (not just optimization)?
+
+    Yes! Despite its name, Benchopt supports both **machine learning** and **optimization** benchmarks.
+    Most features in benchopt are common to both types of benchmarks.
+    The main difference lies in how performance is evaluated:
+
+    - **Optimization benchmarks**: Track iterative solvers' convergence
+      over time and iterations.
+    - **ML benchmarks**: Compare estimators/models on prediction tasks
+      (accuracy, F1, etc.).
+
+    Setting ``sampling_strategy = "run_once"`` for a solver or for the full
+    benchmark allows to only evaluate once to completion.
+    See :ref:`ml_benchmark` for a complete guide, or use our
+    `ML template <https://github.com/benchopt/template_benchmark_ml>`_ to get started quickly.
 
 .. dropdown:: How to add my solver to an existing benchmark?
 

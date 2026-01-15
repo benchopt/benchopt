@@ -98,7 +98,8 @@ def test_key_to_monitor(criterion_class, strategy):
     criterion = criterion_class(strategy=strategy, key_to_monitor=key)
 
     criterion = criterion.get_runner_instance(max_runs=10)
-    assert criterion.key_to_monitor == f"objective_{key}"
+    assert criterion.key_to_monitor == key
+    assert criterion.key_to_monitor_ == f"objective_{key}"
     stop_val = criterion.init_stop_val()
     objective_list = [{'objective_value': np.nan, f"objective_{key}": 1}]
     stop, status, stop_val = criterion.should_stop(stop_val, objective_list)
@@ -198,7 +199,7 @@ def test_stopping_criterion_strategy(no_debug_log, criterion_class, strategy):
         criterion_class = SingleRunCriterion
 
     solver = f"""from benchopt import BaseSolver
-    from benchopt.stopping_criterion import *
+    from benchopt.stopping_criterion import {criterion_class.__name__}
 
     class Solver(BaseSolver):
         name = "test-solver"
@@ -239,7 +240,7 @@ def test_solver_override_strategy(no_debug_log, criterion_class, strategy):
         criterion_class = SingleRunCriterion
 
     solver = f"""from benchopt import BaseSolver
-    from benchopt.stopping_criterion import *
+    from benchopt.stopping_criterion import {criterion_class.__name__}
 
     class Solver(BaseSolver):
         name = "test-solver"
@@ -331,3 +332,58 @@ def test_objective_equals_zero(no_debug_log):
                 standalone_mode=False)
 
     out.check_output('test-solver: done', 1)
+
+
+@pytest.mark.parametrize('strategy', SAMPLING_STRATEGIES)
+def test_global_strategy_override(no_debug_log, strategy):
+
+    objective = MINIMAL_OBJECTIVE.replace(
+        '"0.0.0"', f'"0.0.0"\n        sampling_strategy = "{strategy}"'
+    )
+
+    solver = """from benchopt import BaseSolver
+    class Solver(BaseSolver):
+        name = "test-solver"
+        def set_objective(self): pass
+        def run(self, n_iter): pass
+        def get_result(self): return dict(beta=1)
+    """
+
+    with temp_benchmark(objective=objective, solvers=[solver]) as bench:
+        objective = bench.get_benchmark_objective().get_instance()
+        solver = bench.get_solvers()[0].get_instance()
+        solver._set_objective(objective)
+
+        assert objective.sampling_strategy == strategy
+        assert solver._solver_strategy == strategy
+
+
+@pytest.mark.parametrize('criterion_class', [
+    SufficientDescentCriterion, SufficientProgressCriterion, SingleRunCriterion
+])
+def test_global_criterion_override(no_debug_log, criterion_class):
+
+    objective = MINIMAL_OBJECTIVE.replace(
+        '"0.0.0"',
+        f'"0.0.0"\n        stopping_criterion = {criterion_class.__name__}()'
+    ).replace(
+        "import BaseObjective",
+        "import BaseObjective\n    from benchopt.stopping_criterion import "
+        f"{criterion_class.__name__}"
+    )
+
+    solver = """from benchopt import BaseSolver
+    class Solver(BaseSolver):
+        name = "test-solver"
+        def set_objective(self): pass
+        def run(self, n_iter): pass
+        def get_result(self): return dict(beta=1)
+    """
+
+    with temp_benchmark(objective=objective, solvers=[solver]) as bench:
+        objective = bench.get_benchmark_objective().get_instance()
+        solver = bench.get_solvers()[0].get_instance()
+        solver._set_objective(objective)
+
+        assert isinstance(objective.stopping_criterion, criterion_class)
+        assert isinstance(solver._stopping_criterion, criterion_class)
