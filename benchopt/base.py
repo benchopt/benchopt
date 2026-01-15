@@ -121,7 +121,6 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         ):
             cls.stopping_criterion = objective.stopping_criterion
 
-
     def _set_objective(self, objective):
         """Store the objective for hashing/pickling and check its compatibility
 
