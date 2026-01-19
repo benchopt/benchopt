@@ -50,7 +50,6 @@ def test_import_ctx_name():
 
         err_msg = ("Import contexts should preferably be named import_ctx, "
                    "got import_ctx_wrong_name.")
-        match = "safe_import_context"
         with pytest.warns(UserWarning, match=err_msg):
             _load_class_from_module(
                 bench.benchmark_dir,
