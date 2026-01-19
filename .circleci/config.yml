@@ -98,10 +98,10 @@ jobs:
             git config --global user.email "circle@benchopt.com";
             git config --global user.name "Circle CI";
 
-            if [ "$CIRCLE_BRANCH" == "main" ]; then
-                DEST="dev"
-            elif [ -n "$CIRCLE_TAG" ]; then
+            if [ -n "$CIRCLE_TAG" ]; then
                 DEST="$CIRCLE_TAG"
+            elif [ "$CIRCLE_BRANCH" == "main" ]; then
+                DEST="dev"
             else
                 echo "Should not trigger deploy outside main branch or a tag"
                 exit 1
