@@ -8,8 +8,8 @@ from benchopt.tests.utils import CaptureCmdOutput
 
 
 ##############################################################################
-# Deprecation check for benchopt 1.8
-# XXX: remove in benchopt 1.8
+# Deprecation check for benchopt 1.9
+# XXX: remove in benchopt 1.9
 
 
 def test_deprecated_channel_spec():
@@ -34,34 +34,6 @@ def test_deprecated_channel_spec():
         "dependencies:\n  - pkg1\n  - pkg2\n  - pip\n  - pip:\n    - pkg3"
     )
 
-
-# TODO: remove this test in benchopt 1.8
-def test_deprecated_safe_import_context(no_raise_install):
-    solver = """from benchopt import BaseSolver
-        from benchopt import safe_import_context
-
-        with safe_import_context() as import_ctx:
-            import fake_module
-
-        class Solver(BaseSolver):
-            name = 'test-solver'
-            def set_objective(self, X, y, lmbd): pass
-            def run(self, n_iter): pass
-            def get_result(self): return {'beta': 1}
-    """
-
-    with temp_benchmark(solvers=solver) as bench:
-        with pytest.warns(DeprecationWarning, match="safe_import_context"):
-            with pytest.raises(SystemExit, match='1'):
-                run(
-                    f"{bench.benchmark_dir} -s test-solver -d test-dataset"
-                    " -n 1 -r 1 --no-plot".split(), standalone_mode=False
-                )
-
-
-##############################################################################
-# Deprecation check for benchopt 1.9
-# XXX: remove in benchopt 1.9
 
 def test_slurm_deprecation():
     pytest.importorskip("submitit")

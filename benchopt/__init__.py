@@ -6,11 +6,10 @@ from .base import BaseDataset
 from .base import BaseObjective
 from .plotting.base import BasePlot
 
-# TODO: remove this import in benchopt 1.8
 # Context to allow safe imports
 from .utils.safe_import import safe_import_context
 
-__version__ = "1.8.dev0"
+__version__ = "1.8.0"
 
 __all__ = [
     'BaseSolver', 'BaseDataset', 'BaseObjective', 'BasePlot',

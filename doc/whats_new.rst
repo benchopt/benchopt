@@ -7,8 +7,8 @@ What's new
 
 .. _changes_1_8:
 
-Version 1.8 - in development
-----------------------------
+Version 1.8 - 19/01/2026
+------------------------
 
 CLI
 ---
@@ -22,7 +22,7 @@ CLI
   run with ``dask`` and ``submitit``. See :ref:`parallel_run` for details.
   By `Thomas Moreau`_ (:gh:`673`).
 
-- Deprecate the ``--slurm`` parameter which will be removed in benchopt 1.8.
+- Deprecate the ``--slurm`` parameter which will be removed in benchopt 1.9.
   By `Thomas Moreau`_ (:gh:`673`).
 
 - Improved output formatting for benchmark ``run/install/test``.
@@ -96,8 +96,10 @@ Major change
 
 - Imports in the benchmark are now done without the ``safe_import_context``,
   while keeping the possibility to list solvers and datasets even when a
-  package is not installed. The helper is deprecated and will be removed in
-  benchopt ``1.8``. By `Mathurin Massias`_  and `Thomas Moreau`_ (:gh:`788`)
+  package is not installed. The helper should only be used when a class
+  attribute that should be accessed without install (``name``, ``requirements``)
+  is computed dynamically.
+  By `Mathurin Massias`_  and `Thomas Moreau`_ (:gh:`788`)
 
 CLI
 ---
