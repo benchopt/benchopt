@@ -3,8 +3,8 @@ import inspect
 import pickle
 
 from datetime import datetime
-
 from joblib import hash
+import copy
 
 from .callback import _Callback
 from .benchmark import Benchmark
@@ -76,7 +76,7 @@ def run_one_resolution(objective, solver, meta, stop_val):
     ]
 
 
-def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
+def run_one_to_cvg(benchmark, objective, solver, meta, timeout, max_runs,
                    force=False, terminal=None, pdb=False):
     """Run all repetitions of the solver for a value of stopping criterion.
 
@@ -91,8 +91,11 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
     meta : dict
         Metadata passed to store in Cost results.
         Contains objective, data, dimension.
-    stopping_criterion : StoppingCriterion
-        Object to check if we need to stop a solver.
+    timeout : float
+        The maximum duration in seconds of the solver run.
+    max_runs : int
+        The maximum number of solver runs to perform to estimate the
+        convergence curve.
     force : bool
         If force is set to True, ignore the cache and run the computations
         for the solver anyway. Else, use the cache if available.
@@ -105,10 +108,32 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
     -------
     curve : list of Cost
         The cost obtained for all repetitions.
+    key : tuple of string
+        The key to identify the run in the benchmark results.
     status : 'done' | 'diverged' | 'timeout' | 'max_runs'
         The status on which the solver was stopped.
     """
     curve = []
+
+    stopping_criterion = solver._stopping_criterion.get_runner_instance(
+        solver=solver,
+        max_runs=max_runs,
+        timeout=timeout,
+        terminal=terminal,
+    )
+    stopping_criterion.dataset = meta['dataset_name']
+    stopping_criterion.objective = meta['objective_name']
+    stopping_criterion.solver = meta['solver_name']
+    stopping_criterion.rep = meta['idx_rep']
+
+    skip, reason = solver._set_objective(objective)
+    if skip:
+        key = (
+            meta['dataset_name'],
+            meta['objective_name'],
+            meta['solver_name']
+        )
+        return [], key, 'skip', reason
 
     # Augment the metadata with final_results if necessary.
     has_save_final_results = (
@@ -168,12 +193,19 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
                     pickle.dump(to_save, f)
     if ctx.status in FAILURE_STATUS:
         raise FailedRun(ctx.status)
-    return curve, ctx.status
+
+    key = (
+        meta['dataset_name'],
+        meta['objective_name'],
+        meta['solver_name']
+    )
+    return curve, key, ctx.status, ""
 
 
-def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
-                   max_runs, timeout=None, force=False, collect=False,
-                   terminal=None, pdb=False):
+def get_solver_kwargs(
+    benchmark, dataset, objective, solver, n_repetitions, max_runs,
+    timeout=None, force=False, collect=False, terminal=None, pdb=False
+):
     """Run a benchmark for a given dataset, objective and solver.
 
     Parameters
@@ -206,28 +238,19 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
 
     Returns
     -------
-    run_statistics : list
-        The benchmark results.
+    args_run_one_to_cvg : dict
+        The dictionary of arguments to run_one_to_cvg.
     """
-
-    run_one_to_cvg_cached = benchmark.cache(
-        run_one_to_cvg, ignore=['force', 'terminal', 'pdb'], collect=collect
-    )
-    if collect:
-        _run_one_to_cvg_cached = run_one_to_cvg_cached
-
-        def run_one_to_cvg_cached(**kwargs):
-            res = _run_one_to_cvg_cached(**kwargs)
-            return res if res is not None else ([], 'not run yet')
-
     # Set objective and skip if necessary.
     skip, reason = objective.set_dataset(dataset)
     if skip:
+        terminal.set(
+            dataset=str(dataset),
+            objective=str(objective),
+            solver=str(solver)
+        )
         terminal.skip(reason, objective=True)
         return []
-
-    states = []
-    run_statistics = []
 
     # get sampling strategy
     # for plotting purpose consider 'callback' as 'iteration'
@@ -249,13 +272,12 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
             # we set 1 by default so that the solver run at least once
             n_repetitions = 1
 
-    for rep in range(n_repetitions):
-        skip, reason = solver._set_objective(objective)
-        if skip:
-            terminal.skip(reason)
-            return []
+    timeout = timeout / n_repetitions if timeout is not None else None
 
-        terminal.set(rep=rep)
+    for rep in range(n_repetitions):
+        objective_rep = copy.copy(objective)
+        objective_rep.repetition = rep
+        solver._objective = objective_rep
 
         # Get meta
         meta = {
@@ -273,52 +295,20 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
             'file_dataset': f"datasets/{dataset._module_filename.name}",
             **{f"p_dataset_{k}": v for k, v in dataset._parameters.items()},
         }
-
-        stopping_criterion = solver._stopping_criterion.get_runner_instance(
-            solver=solver,
-            max_runs=max_runs,
-            timeout=timeout / n_repetitions if timeout is not None else None,
-            terminal=terminal,
-        )
+        terminal.n_repetitions = n_repetitions
 
         args_run_one_to_cvg = dict(
-            benchmark=benchmark, objective=objective, solver=solver, meta=meta,
-            stopping_criterion=stopping_criterion, force=force,
-            terminal=terminal, pdb=pdb
+            benchmark=benchmark, objective=objective_rep, solver=solver,
+            meta=meta, timeout=timeout, max_runs=max_runs, force=force,
+            terminal=terminal, pdb=pdb,
         )
-        try:
-            curve, status = run_one_to_cvg_cached(
-                **args_run_one_to_cvg
-            )
-            run_statistics.extend(curve)
-        except FailedRun as e:
-            status = e.status
 
-        # Handle the status for which we do not want to try other repetitions
-        if status not in SUCCESS_STATUS:
-            run_statistics = []
-            break
-        states.append(status)
+        yield args_run_one_to_cvg
 
-    else:
-        if 'max_runs' in states:
-            status = 'max_runs'
-        elif 'timeout' in states:
-            status = 'timeout'
-        else:
-            status = 'done'
 
-    terminal.show_status(status=status)
-    # Make sure to flush so the parallel output is properly display
-    print(end='', flush=True)
-
-    # refresh the solver warm up flag so that warm-up is done again
-    # when calling the solver with another problem/dataset pair.
-    solver._warmup_done = False
-
-    if status == 'interrupted':
-        raise SystemExit(1)
-    return run_statistics
+def get_run_kwargs(common_kwargs, run_kwargs):
+    for kwargs in run_kwargs:
+        yield from get_solver_kwargs(**common_kwargs, **kwargs)
 
 
 def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
@@ -386,7 +376,6 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
     """
     exit_code = 0
     terminal = TerminalOutput(n_repetitions, show_progress)
-    terminal.set(verbose=True)
 
     # List all datasets, objective and solvers to run based on the filters
     # provided. Merge the solver_names and forced to run all necessary solvers.
@@ -399,14 +388,54 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
         timeout=timeout, pdb=pdb, collect=collect
     )
 
-    results = parallel_run(
-        benchmark, run_one_solver, common_kwargs, all_runs,
-        config=parallel_config, collect=collect
+    run_one_to_cvg_cached = benchmark.cache(
+        run_one_to_cvg, ignore=['force', 'pdb', 'terminal'], collect=collect
+    )
+
+    if collect:
+        _run_one_to_cvg_cached = run_one_to_cvg_cached
+
+        def run_one_to_cvg_cached(**kwargs):
+            res = _run_one_to_cvg_cached(**kwargs)
+            key = (
+                kwargs['meta']['dataset_name'],
+                kwargs['meta']['objective_name'],
+                kwargs['meta']['solver_name']
+            )
+            if res is not None:
+                return res
+            return ([], key, 'not run yet', "")
+
+    def run_one_to_cvg_final(**kwargs):
+        results = None
+        try:
+            results = run_one_to_cvg_cached(**kwargs)
+        except FailedRun as e:
+            # If the run fails, return an empty result with the failure status
+            # This is done to avoid caching failed runs.
+            key = (
+                kwargs['meta']['dataset_name'],
+                kwargs['meta']['objective_name'],
+                kwargs['meta']['solver_name']
+            )
+            results = ([], key, e.status, "")
+        return results
+
+    total_cvg_kwargs_generator = get_run_kwargs(
+        common_kwargs, all_runs
     )
 
     run_statistics = []
-    for curve in results:
-        run_statistics.extend(curve)
+
+    results_generator = parallel_run(
+        benchmark, run_one_to_cvg_final, total_cvg_kwargs_generator,
+        config=parallel_config, collect=collect
+    )
+
+    for result, key, status, reason in results_generator:
+        run_statistics.extend(result)
+        terminal.set(dataset=key[0], objective=key[1], solver=key[2])
+        terminal.show_status(status=status, reason=reason)
 
     import pandas as pd
     df = pd.DataFrame(run_statistics)

@@ -230,7 +230,7 @@ def test_objective_cv_splitter(no_debug_log):
         class Splitter():
             def split(self, X, y, groups=None):
                 for i in range(len(np.unique(groups))):
-                    print(f"RUN#{i}")
+                    print(f"RUN#{i}", flush=True)
                     mask = groups == i
                     yield mask, ~mask
 
@@ -263,7 +263,7 @@ def test_objective_cv_splitter(no_debug_log):
         name = "test-solver"
         sampling_strategy = 'run_once'
         def set_objective(self, X_train, y_train): pass
-        def run(self, n_iter): print("OK")
+        def run(self, n_iter): print("OK", flush=True)
         def get_result(self): return dict(beta=1)
     """
 
@@ -287,8 +287,8 @@ def test_objective_cv_splitter(no_debug_log):
 
     # test-solver appears one time as it is only run once.
     out.check_output("test-solver", repetition=1)
-    out.check_output("RUN#0", repetition=1)
-    out.check_output("RUN#1", repetition=1)
+    out.check_output("RUN#0", repetition=3)
+    out.check_output("RUN#1", repetition=2)
     out.check_output("RUN#2", repetition=1)
     out.check_output("RUN#3", repetition=0)
     out.check_output("OK", repetition=3)
@@ -304,7 +304,7 @@ def test_objective_cv_splitter(no_debug_log):
 
     # test-solver appears one time as it is only run once.
     out.check_output("test-solver", repetition=1)
-    out.check_output("RUN#0", repetition=1)
+    out.check_output("RUN#0", repetition=2)
     out.check_output("RUN#1", repetition=1)
     out.check_output("RUN#2", repetition=0)
     out.check_output("RUN#3", repetition=0)
@@ -320,9 +320,9 @@ def test_objective_cv_splitter(no_debug_log):
 
     # test-solver appears one time as it is only run once.
     out.check_output("test-solver", repetition=1)
-    out.check_output("RUN#0", repetition=2)
-    out.check_output("RUN#1", repetition=2)
-    out.check_output("RUN#2", repetition=1)
+    out.check_output("RUN#0", repetition=7)
+    out.check_output("RUN#1", repetition=5)
+    out.check_output("RUN#2", repetition=3)
     out.check_output("RUN#3", repetition=0)
     out.check_output("OK", repetition=5)
 
@@ -338,9 +338,9 @@ def test_objective_cv_splitter(no_debug_log):
 
     # test-solver appears one time as it is only run once.
     out.check_output("test-solver", repetition=1)
-    out.check_output("RUN#0", repetition=2)
-    out.check_output("RUN#1", repetition=1)
-    out.check_output("RUN#2", repetition=1)
+    out.check_output("RUN#0", repetition=5)
+    out.check_output("RUN#1", repetition=3)
+    out.check_output("RUN#2", repetition=2)
     out.check_output("RUN#3", repetition=0)
     out.check_output("OK", repetition=4)
 
@@ -485,12 +485,12 @@ def test_paths_config_key(test_case, n_jobs):
         expected_home = Path(
             expected_home.format(bench_dir=bench.benchmark_dir.as_posix())
         ).resolve()
-        out.check_output(re.escape(f"HOME:{expected_home}"), repetition=1)
+        out.check_output(re.escape(f"HOME:{expected_home}"), repetition=n_jobs)
 
         expected_path = Path(
             expected_path.format(bench_dir=bench.benchmark_dir.as_posix())
         ).resolve()
-        out.check_output(re.escape(f"PATH:{expected_path}"), repetition=1)
+        out.check_output(re.escape(f"PATH:{expected_path}"), repetition=n_jobs)
 
 
 @pytest.mark.parametrize("n_runs,n_reps", [(1, 3), (2, 2), (5, 1)])
