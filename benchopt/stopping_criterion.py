@@ -63,7 +63,9 @@ class StoppingCriterion():
     """
     kwargs = None
 
-    def __init__(self, strategy=None, key_to_monitor=None, minimize=True, **kwargs):
+    def __init__(
+        self, strategy=None, key_to_monitor=None, minimize=True, **kwargs
+    ):
 
         if strategy is not None:
             assert strategy in SAMPLING_STRATEGIES, (
