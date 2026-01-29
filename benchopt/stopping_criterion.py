@@ -30,6 +30,8 @@ COMMON_ARGS_DOC = """
         the callback should be called with the current iterate solution.
     key_to_monitor : str (default: 'objective_value')
         The objective to check for tracking progress.
+    minimize : bool (default: True)
+        Whether the objective is minimized or maximized.
 """
 
 
