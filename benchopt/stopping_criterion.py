@@ -61,7 +61,7 @@ class StoppingCriterion():
     """
     kwargs = None
 
-    def __init__(self, strategy=None, key_to_monitor=None, **kwargs):
+    def __init__(self, strategy=None, key_to_monitor=None, minimize=True, **kwargs):
 
         if strategy is not None:
             assert strategy in SAMPLING_STRATEGIES, (
@@ -72,6 +72,7 @@ class StoppingCriterion():
         self.kwargs = kwargs
         self.strategy = strategy
         self.key_to_monitor = key_to_monitor
+        self.minimize = minimize
         if self.key_to_monitor is not None:
             self.key_to_monitor_ = (
                 key_to_monitor if key_to_monitor.startswith('objective_')
@@ -230,8 +231,12 @@ class StoppingCriterion():
                 )
 
             objective = objective_list[-1][self.key_to_monitor_]
+            if not self.minimize:
+                objective = -objective
             delta_objective = self._prev_objective - objective
             first_objective = objective_list[0][self.key_to_monitor_]
+            if not self.minimize:
+                first_objective = -first_objective
             if first_objective != 0:
                 delta_objective /= abs(first_objective)
             self._prev_objective = objective
@@ -354,7 +359,7 @@ class SufficientDescentCriterion(StoppingCriterion):
     """
 
     def __init__(self, eps=EPS, patience=PATIENCE, strategy=None,
-                 key_to_monitor='value'):
+                 key_to_monitor='value', minimize=True):
         self.eps = eps
         self.patience = patience
 
@@ -363,7 +368,7 @@ class SufficientDescentCriterion(StoppingCriterion):
 
         super().__init__(
             eps=eps, patience=patience, strategy=strategy,
-            key_to_monitor=key_to_monitor
+            key_to_monitor=key_to_monitor, minimize=minimize
         )
 
     def check_convergence(self, objective_list):
@@ -386,6 +391,8 @@ class SufficientDescentCriterion(StoppingCriterion):
         """
         # Compute the current objective
         objective = objective_list[-1][self.key_to_monitor_]
+        if not self.minimize:
+            objective = -objective
         delta_objective = self._objective - objective
         delta_objective /= abs(objective_list[0][self.key_to_monitor_])
         self._objective = objective
@@ -422,7 +429,7 @@ class SufficientProgressCriterion(StoppingCriterion):
     """
 
     def __init__(self, eps=EPS, patience=PATIENCE, strategy=None,
-                 key_to_monitor='value'):
+                 key_to_monitor='value', minimize=True):
         self.eps = eps
         self.patience = patience
 
@@ -431,7 +438,7 @@ class SufficientProgressCriterion(StoppingCriterion):
 
         super().__init__(
             eps=eps, patience=patience, strategy=strategy,
-            key_to_monitor=key_to_monitor
+            key_to_monitor=key_to_monitor, minimize=minimize
         )
 
     def check_convergence(self, objective_list):
@@ -454,6 +461,8 @@ class SufficientProgressCriterion(StoppingCriterion):
         """
         # Compute the current objective and update best value
         objective = objective_list[-1][self.key_to_monitor_]
+        if not self.minimize:
+            objective = -objective
         delta_objective = self._best_objective - objective
         first_objective = objective_list[0][self.key_to_monitor_]
         if first_objective != 0:
