@@ -15,7 +15,9 @@ from benchopt.tests.utils import CaptureCmdOutput
 def test_deprecated_channel_spec():
     with pytest.warns(DeprecationWarning):
         env = get_env_file_from_requirements(["chan:pkg"])
-    assert env == "channels:\n  - chan\ndependencies:\n  - pkg"
+    assert env == (
+        "channels:\n  - chan\n  - conda-forge\ndependencies:\n  - pkg"
+    )
 
     with pytest.warns(DeprecationWarning):
         env = get_env_file_from_requirements(["pip:pkg"])
@@ -30,7 +32,7 @@ def test_deprecated_channel_spec():
     with pytest.warns(DeprecationWarning):
         env = get_env_file_from_requirements(["pkg1", "chan:pkg2", "pip:pkg3"])
     assert env == (
-        "channels:\n  - chan\n"
+        "channels:\n  - chan\n  - conda-forge\n"
         "dependencies:\n  - pkg1\n  - pkg2\n  - pip\n  - pip:\n    - pkg3"
     )
 
