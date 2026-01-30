@@ -134,7 +134,7 @@ class StoppingCriterion():
         # Create a new instance of the class
         stopping_criterion = self.__class__(
             strategy=self.strategy, key_to_monitor=self.key_to_monitor,
-            **self.kwargs,
+            minimize=self.minimize, **self.kwargs,
         )
 
         # Set stopping criterion parameters depending on run parameters
