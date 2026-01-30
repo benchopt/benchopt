@@ -181,20 +181,14 @@ def test_run_on_slurm(monkeypatch, dummy_slurm_config):
     assert (df['s_gres'] == "gpu:1").all()
 
     # If no parameters and no slurm_params, no override of global config
-    p_default = df.loc['solver_no_params']
+    p_default = df.loc['solver_no_params'].fillna("")
     for p in ["nodes", "time", "mem"]:
-        assert (
-            p_default[f"s_{p}"].fillna("") ==
-            parallel_config.get(f"slurm_{p}", "")
-        )
+        assert p_default[f"s_{p}"] == parallel_config.get(f"slurm_{p}", "")
 
     # If slurm_params is set, it is used as a global config
-    p_slurm_params = df.loc["solver_slurm_params"]
+    p_slurm_params = df.loc["solver_slurm_params"].fillna("")
     for p in ["nodes", "time", "mem"]:
-        assert (
-            p_slurm_params[f"s_{p}"].fillna("") ==
-            slurm_params.get(f"slurm_{p}", "")
-        )
+        assert p_slurm_params[f"s_{p}"] == slurm_params.get(f"slurm_{p}", "")
 
     # Check that parameters override works
     all_params = df.query("p_solver_p == 2")
