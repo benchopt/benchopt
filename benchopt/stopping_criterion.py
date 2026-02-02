@@ -400,9 +400,6 @@ class SufficientDescentCriterion(StoppingCriterion):
             objective = -objective
             first_objective = -first_objective
         delta_objective = self._objective - objective
-        norm = abs(objective - first_objective)
-        if norm != 0:
-            delta_objective /= abs(norm)
         self._objective = objective
 
         # Store only the last ``patience`` values for progress
@@ -474,9 +471,6 @@ class SufficientProgressCriterion(StoppingCriterion):
             objective = -objective
             first_objective = -first_objective
         delta_objective = self._best_objective - objective
-        norm = abs(objective - first_objective)
-        if norm != 0:
-            delta_objective /= norm
         self._best_objective = min(
             objective, self._best_objective
         )
