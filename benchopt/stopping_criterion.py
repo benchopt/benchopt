@@ -409,7 +409,7 @@ class SufficientDescentCriterion(StoppingCriterion):
             self._delta_objectives.pop(0)
 
         delta = max(self._delta_objectives)
-        if (-self.eps <= delta <= self.eps):
+        if (delta <= self.eps):
             self.debug(f"Exit with delta_objective = {delta:.2e}.")
             return True, 1
 

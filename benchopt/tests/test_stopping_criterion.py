@@ -395,54 +395,53 @@ def test_global_criterion_override(no_debug_log, criterion_class):
 @pytest.mark.parametrize('criterion_class', [
     SufficientDescentCriterion, SufficientProgressCriterion
 ])
-def test_minimize_flag(criterion_class, strategy):
+@pytest.mark.parametrize('minimize', [True, False])
+@pytest.mark.parametrize('negative', [True, False])
+def test_minimize_flag(criterion_class, strategy, minimize, negative):
     """Check that minimize parameter correctly handles maximization."""
     # Test with minimize=False (Maximize)
-    criterion = criterion_class(strategy=strategy, patience=2, minimize=False)
+    criterion = criterion_class(
+        strategy=strategy, patience=2, minimize=minimize
+    )
     criterion = criterion.get_runner_instance(max_runs=20)
     stop_val = criterion.init_stop_val()
 
-    # Maximizing: 1.0 -> 1.1 -> 1.2 (Improving)
-    # We use positive values starting > 0 to ensure relative checks are stable
     objectives = [1.0, 1.1, 1.2]
+    if negative:
+        objectives = [-val for val in objectives]
 
+    stop = False
     objective_list = []
     for val in objectives:
+        assert not stop, "Should not have stopped yet"
         objective_list.append({'objective_value': val})
         stop, status, stop_val = criterion.should_stop(
             stop_val, objective_list
         )
-        assert not stop
 
-    # Plateau (Should stop)
-    for _ in range(criterion.patience + 2):
-        objective_list.append({'objective_value': 1.2})
-        stop, status, stop_val = criterion.should_stop(
-            stop_val, objective_list
-        )
+    if minimize:
+        assert stop == (not negative), "Minimization stopping failed"
+    else:
+        assert stop == negative, "Maximization stopping failed"
 
-    assert stop, "Did not stop on plateau when maximizing"
 
-    # Test with minimize=True (Default/Minimize)
-    criterion = criterion_class(strategy=strategy, patience=2, minimize=True)
+@pytest.mark.parametrize('strategy', SAMPLING_STRATEGIES)
+@pytest.mark.parametrize('criterion_class', [
+    SufficientDescentCriterion, SufficientProgressCriterion
+])
+@pytest.mark.parametrize('minimize', [True, False])
+def test_minimize_flag_plateau(criterion_class, strategy, minimize):
+    criterion = criterion_class(
+        strategy=strategy, patience=2, minimize=minimize
+    )
     criterion = criterion.get_runner_instance(max_runs=20)
     stop_val = criterion.init_stop_val()
 
-    # Minimizing: 1.0 -> 0.9 -> 0.8 (Improving)
-    objectives = [1.0, 0.9, 0.8]
     objective_list = []
-    for val in objectives:
-        objective_list.append({'objective_value': val})
-        stop, status, stop_val = criterion.should_stop(
-            stop_val, objective_list
-        )
-        assert not stop
-
-    # Plateau
     for _ in range(criterion.patience + 2):
         objective_list.append({'objective_value': 0.8})
         stop, status, stop_val = criterion.should_stop(
             stop_val, objective_list
         )
 
-    assert stop, "Did not stop on plateau when minimizing"
+    assert stop, "Did not stop on plateau"
