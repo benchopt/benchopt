@@ -74,13 +74,12 @@ def get_benchopt_requirement(pytest=False):
     req = str(req).strip('\n')
 
     # Handle URL / local installs properly (PEP 508)
-    if pytest:
-        if "/" in req:
-            req = f"benchopt[test] @ {req}"
-        else:
-            req = req.replace(
-                "benchopt", "benchopt[test]"
-            )
+    if "@" in req:
+        req = req.replace(
+            "benchopt @", f"benchopt{extra} @"
+        )
+    else:
+        req = f'benchopt{extra}=={dist.version}'
 
     return req, False
 
