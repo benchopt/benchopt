@@ -64,9 +64,10 @@ def test_timeout(criterion_class, strategy):
 @pytest.mark.parametrize('criterion_class', [
     SufficientDescentCriterion, SufficientProgressCriterion
 ])
-def test_diverged(criterion_class, strategy):
+@pytest.mark.parametrize('minimize', [True, False])
+def test_diverged(criterion_class, strategy, minimize):
     "Check that the benchmark stops when diverging."
-    criterion = criterion_class(strategy=strategy)
+    criterion = criterion_class(strategy=strategy, minimize=minimize)
 
     criterion = criterion.get_runner_instance(max_runs=100)
     stop_val = criterion.init_stop_val()
@@ -75,7 +76,8 @@ def test_diverged(criterion_class, strategy):
     assert not stop, "Should not have stopped"
     assert status == 'running', "Should  be running"
 
-    objective_list.append({'objective_value': 1e5+2})
+    val = 1e5+2 if minimize else -1e5-2
+    objective_list.append({'objective_value': val})
     stop, status, stop_val = criterion.should_stop(stop_val, objective_list)
     assert stop, "Should have stopped"
     assert status == 'diverged', "Should stop on diverged"
