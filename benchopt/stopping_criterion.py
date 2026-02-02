@@ -238,11 +238,13 @@ class StoppingCriterion():
             if not self.minimize:
                 objective = -objective
             delta_objective = self._prev_objective - objective
-            first_objective = objective_list[0][self.key_to_monitor_]
-            if not self.minimize:
-                first_objective = -first_objective
-            if first_objective != 0:
-                delta_objective /= abs(first_objective)
+            if not hasattr(self, '_max_delta_objective'):
+                self._max_delta_objective = abs(delta_objective)
+            self._max_delta_objective = max(
+                self._max_delta_objective, abs(delta_objective)
+            )
+            if self._max_delta_objective != 0:
+                delta_objective /= self._max_delta_objective
             self._prev_objective = objective
 
             is_diverging = math.isnan(objective) or delta_objective < -1e5
@@ -400,6 +402,13 @@ class SufficientDescentCriterion(StoppingCriterion):
             objective = -objective
             first_objective = -first_objective
         delta_objective = self._objective - objective
+        if not hasattr(self, '_current_max_delta_objective'):
+            self._current_max_delta_objective = abs(delta_objective)
+        self._current_max_delta_objective = max(
+            self._current_max_delta_objective, abs(delta_objective)
+        )
+        if self._current_max_delta_objective != 0:
+            delta_objective /= self._current_max_delta_objective
         self._objective = objective
 
         # Store only the last ``patience`` values for progress
@@ -480,8 +489,14 @@ class SufficientProgressCriterion(StoppingCriterion):
         if len(self._progress) > self.patience:
             self._progress.pop(0)
 
+        if not hasattr(self, '_current_max_delta_objective'):
+            self._current_max_delta_objective = delta_objective
+        self._current_max_delta_objective = max(
+            self._current_max_delta_objective, delta_objective
+        )
+
         delta = max(self._progress)
-        if delta <= self.eps:
+        if delta <= self.eps * self._current_max_delta_objective:
             self.debug(f"Exit with delta = {delta:.2e}.")
             return True, 1
 
