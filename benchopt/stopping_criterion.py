@@ -395,10 +395,14 @@ class SufficientDescentCriterion(StoppingCriterion):
         """
         # Compute the current objective
         objective = objective_list[-1][self.key_to_monitor_]
+        first_objective = objective_list[0][self.key_to_monitor_]
         if not self.minimize:
             objective = -objective
+            first_objective = -first_objective
         delta_objective = self._objective - objective
-        delta_objective /= abs(objective_list[0][self.key_to_monitor_])
+        norm = abs(objective - first_objective)
+        if norm != 0:
+            delta_objective /= abs(norm)
         self._objective = objective
 
         # Store only the last ``patience`` values for progress
@@ -465,12 +469,14 @@ class SufficientProgressCriterion(StoppingCriterion):
         """
         # Compute the current objective and update best value
         objective = objective_list[-1][self.key_to_monitor_]
+        first_objective = objective_list[0][self.key_to_monitor_]
         if not self.minimize:
             objective = -objective
+            first_objective = -first_objective
         delta_objective = self._best_objective - objective
-        first_objective = objective_list[0][self.key_to_monitor_]
-        if first_objective != 0:
-            delta_objective /= abs(first_objective)
+        norm = abs(objective - first_objective)
+        if norm != 0:
+            delta_objective /= norm
         self._best_objective = min(
             objective, self._best_objective
         )
@@ -481,7 +487,7 @@ class SufficientProgressCriterion(StoppingCriterion):
             self._progress.pop(0)
 
         delta = max(self._progress)
-        if delta <= self.eps * self._best_objective:
+        if delta <= self.eps:
             self.debug(f"Exit with delta = {delta:.2e}.")
             return True, 1
 
