@@ -72,7 +72,7 @@ This sampling strategy creates curves by calling ``Solver.run(stop_val)`` severa
 
   .. math::
 
-    \text{stop_val} = \max(\text{stop_val} + 1, \text{int}(\rho * \text{stop_val}))
+    \text{stop\_val} = \max(\text{stop\_val} + 1, \text{int}(\rho * \text{stop\_val}))
 
 - if the solver's ``sampling_strategy`` is ``"tolerance"``, the ``stop_val`` parameter corresponds to the numerical tolerance.
   It decreases geometrically by a factor :math:`\rho=1.5` between each call to ``run``, starting from 1 at the second call.
@@ -81,7 +81,7 @@ This sampling strategy creates curves by calling ``Solver.run(stop_val)`` severa
 
   .. math::
 
-    \text{stop_val} = \min(1, \max(\text{stop_val} / \rho, 10^{-15}))
+    \text{stop\_val} = \min(1, \max(\text{stop\_val} / \rho, 10^{-15}))
 
 
 In both cases, if the objective curve is flat (i.e., the variation of the objective between two points is numerically 0), the geometric rate :math:`\rho` is multiplied by 1.2.
