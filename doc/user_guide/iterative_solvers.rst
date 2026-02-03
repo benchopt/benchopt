@@ -148,8 +148,8 @@ There are four ``StoppingCriterion`` implemented in benchopt:
 
 - ``SingleRunCriterion(stop_val)`` only calls the solver once with the given stop_val. This criterion is designed for methods that converge to a given value, when one aims to benchmark final performance of multiple solvers.
 - ``NoCriterion()`` runs the solver for a fixed number of steps, given by the ``--max-runs`` argument. This criterion deactivate the checks for convergence.
-- ``SufficientDescentCriterion(eps, patience, key_to_monitor)`` considers that the solver has converged when the relative decrease of the objective was less than a tolerance ``eps`` for more than ``patience`` calls to ``check_convergence``. The ``key_to_monitor`` is the key of the objective dictionary to monitor. By default, it is set to ``value``.
-- ``SufficientProgressCriterion(eps, patience, key_to_monitor)`` considers that the solver has converged when the objective has not decreased by more than a tolerance ``eps`` for more than ``patience`` calls to ``check_convergence``. The ``key_to_monitor`` is the key of the objective dictionary to monitor. By default, it is set to ``value``.
+- ``SufficientDescentCriterion(eps, patience, key_to_monitor, minimize)`` considers that the solver has converged when the relative decrease of the objective was less than a tolerance ``eps`` for more than ``patience`` calls to ``check_convergence``. The ``key_to_monitor`` is the key of the objective dictionary to monitor. By default, it is set to ``value``. The ``minimize`` parameter indicates whether the monitored key should be minimized (``True``, default) or maximized (``False``).
+- ``SufficientProgressCriterion(eps, patience, key_to_monitor, minimize)`` considers that the solver has converged when the objective has not decreased by more than a tolerance ``eps`` for more than ``patience`` calls to ``check_convergence``. The ``key_to_monitor`` is the key of the objective dictionary to monitor. By default, it is set to ``value``. The ``minimize`` parameter indicates whether the monitored key should be minimized (``True``, default) or maximized (``False``).
 
 Setting the sampling strategy and stopping criterion globally
 -------------------------------------------------------------
@@ -161,7 +161,7 @@ Both the sampling strategy and stopping criterion can be set globally for all so
     class Objective(BaseObjective):
         sampling_strategy = "callback"  # or "iteration", "tolerance", "run_once"
         stopping_criterion = SufficientProgressCriterion(
-            eps=1e-5, patience=5, key_to_monitor="value"
+            eps=1e-5, patience=5, key_to_monitor="value", minimize=True
         )
 
 This allows to avoid setting these attributes in each solver when the same strategy and criterion should be used for most solvers.
