@@ -67,9 +67,10 @@ class BarChart(BasePlot):
         "dataset": ...,
         "objective": ...,
         "objective_column": ...,
+        "minimize": [True, False],
     }
 
-    def plot(self, df, dataset, objective, objective_column):
+    def plot(self, df, dataset, objective, objective_column, minimize):
         df = df.query(
             "dataset_name == @dataset and objective_name == @objective"
         )
@@ -79,10 +80,16 @@ class BarChart(BasePlot):
             df_filtered = df_filtered.select_dtypes(include=['number'])
             if objective_column not in df_filtered:
                 continue
-            c_star = df_filtered[objective_column].min() + EPS
-            df_tol = df_filtered.groupby('stop_val').filter(
-                lambda x: x[objective_column].max() < c_star
-            )
+            eps = EPS if minimize else -EPS
+            c_star = df_filtered[objective_column].min() + eps
+            if minimize:
+                df_tol = df_filtered.groupby('stop_val').filter(
+                    lambda x: x[objective_column].max() < c_star
+                )
+            else:
+                df_tol = df_filtered.groupby('stop_val').filter(
+                    lambda x: x[objective_column].min() > c_star
+                )
 
             if df_tol.empty:
                 text = 'Did not converge'
@@ -102,7 +109,7 @@ class BarChart(BasePlot):
 
         return plots
 
-    def get_metadata(self, df, dataset, objective, objective_column):
+    def get_metadata(self, df, dataset, objective, objective_column, minimize):
         return {
             "title": f"{objective}\nData: {dataset}",
             "ylabel": "Time [sec]",
