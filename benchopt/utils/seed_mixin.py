@@ -18,7 +18,22 @@ class SeedMixin:
         use_solver, use_repetition
     ):
         if not hasattr(self, "seed_dict"):
-            raise ValueError(f"seed_dict was not initialized for {self}")
+            from benchopt import BaseDataset, BaseObjective, BaseSolver
+            msg = ""
+            if isinstance(self, BaseDataset):
+                msg = "Make sure to call get_seed from the get_data method."
+            elif isinstance(self, BaseObjective):
+                msg = (
+                    "Make sure to call get_seed from the get_objective or "
+                    " set_data methods."
+                )
+            elif isinstance(self, BaseSolver):
+                msg = (
+                    "Make sure to call get_seed from the set_objective method."
+                )
+            raise ValueError(
+                f"seed_dict was not initialized for {self}. {msg}"
+            )
 
         use_keys = {
             "base_seed": True,
