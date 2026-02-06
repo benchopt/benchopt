@@ -384,6 +384,7 @@ def run(config_file=None, **kwargs):
         rf"{parallel_args}"
         rf"{'--pdb ' if pdb else ''}"
         rf"{'--profile ' if do_profile else ''}"
+        rf"{f'--seed {seed}' if seed is not None else ''}"
         rf"--output {output}"
         .replace('\\', '\\\\')
     )

@@ -27,7 +27,7 @@ class FailedRun(RuntimeError):
         self.status = status
 
 
-def seed_run(objective, dataset, solver, repetition, base_seed):
+def _seed_run(objective, dataset, solver, repetition, base_seed):
     seed_dict = {
         "base_seed": str(base_seed),
         "objective": str(objective),
@@ -247,7 +247,7 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
     # the name of metrics in Objective.compute
     obj_description = objective.__doc__ or ""
 
-    seed_run(
+    _seed_run(
             objective=objective,
             dataset=dataset,
             solver=solver,
@@ -321,7 +321,7 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
         states.append(status)
 
         if rep < n_repetitions - 1:
-            seed_run(
+            _seed_run(
                 objective=objective,
                 dataset=dataset,
                 solver=solver,

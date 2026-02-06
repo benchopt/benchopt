@@ -1,3 +1,5 @@
+.. _controlling_randomness:
+
 Controlling randomness in Benchopt
 =================================
 
