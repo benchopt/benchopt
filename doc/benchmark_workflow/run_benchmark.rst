@@ -90,3 +90,42 @@ Here is the content of configuration file ``example_config.yml`` if we were to r
 
     A third, less frequent, option to run a benchmark is using a Python script.
     Check it out on :ref:`advanced usage <run_benchmark_with_py_script>`.
+
+
+.. _run_benchmark_with_py_script:
+
+Run a benchmark using a Python script
+-------------------------------------
+
+Another way to run a benchmark is via a Python script.
+Typical use-cases of that are
+
+- Automating the run of several benchmarks
+- Using ``vscode`` debugger where the python script serves as an entry point to benchopt internals
+
+The following script illustrates running the :ref:`benchmark Lasso <run_with_config_file>`.
+It assumes that the python script is located at the same level as the benchmark folder.
+
+.. code-block:: python
+
+    from benchopt import run_benchmark
+
+
+    # run benchmark
+    run_benchmark(
+        benchmark_path='.',
+        solver_names=[
+            "skglm",
+            "celer",
+            "python-pgd[use_acceleration=True]",
+        ],
+        dataset_names=[
+            "leukemia",
+            "simulated[n_samples=100,n_features=20]"
+        ],
+    )
+
+.. note::
+
+    Learn more about the different parameters supported by ``run_benchmark``
+    function on :ref:`API references <API_ref>`.

@@ -86,6 +86,7 @@ def test_r_solver(test_env_name, no_debug_log):
         out.check_output("r_solver:", repetition=3)
 
 
+@pytest.mark.timeout(300)
 def test_julia_solver(test_env_name, no_debug_log):
     if sys.platform.startswith("win"):
         pytest.skip("Julia's PyCall library fail to install on Windows")

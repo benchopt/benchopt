@@ -64,9 +64,10 @@ def test_timeout(criterion_class, strategy):
 @pytest.mark.parametrize('criterion_class', [
     SufficientDescentCriterion, SufficientProgressCriterion
 ])
-def test_diverged(criterion_class, strategy):
+@pytest.mark.parametrize('minimize', [True, False])
+def test_diverged(criterion_class, strategy, minimize):
     "Check that the benchmark stops when diverging."
-    criterion = criterion_class(strategy=strategy)
+    criterion = criterion_class(strategy=strategy, minimize=minimize)
 
     criterion = criterion.get_runner_instance(max_runs=100)
     stop_val = criterion.init_stop_val()
@@ -75,7 +76,8 @@ def test_diverged(criterion_class, strategy):
     assert not stop, "Should not have stopped"
     assert status == 'running', "Should  be running"
 
-    objective_list.append({'objective_value': 1e5+2})
+    val = 1e5+2 if minimize else -1e5-2
+    objective_list.append({'objective_value': val})
     stop, status, stop_val = criterion.should_stop(stop_val, objective_list)
     assert stop, "Should have stopped"
     assert status == 'diverged', "Should stop on diverged"
@@ -98,7 +100,8 @@ def test_key_to_monitor(criterion_class, strategy):
     criterion = criterion_class(strategy=strategy, key_to_monitor=key)
 
     criterion = criterion.get_runner_instance(max_runs=10)
-    assert criterion.key_to_monitor == f"objective_{key}"
+    assert criterion.key_to_monitor == key
+    assert criterion.key_to_monitor_ == f"objective_{key}"
     stop_val = criterion.init_stop_val()
     objective_list = [{'objective_value': np.nan, f"objective_{key}": 1}]
     stop, status, stop_val = criterion.should_stop(stop_val, objective_list)
@@ -198,7 +201,7 @@ def test_stopping_criterion_strategy(no_debug_log, criterion_class, strategy):
         criterion_class = SingleRunCriterion
 
     solver = f"""from benchopt import BaseSolver
-    from benchopt.stopping_criterion import *
+    from benchopt.stopping_criterion import {criterion_class.__name__}
 
     class Solver(BaseSolver):
         name = "test-solver"
@@ -239,7 +242,7 @@ def test_solver_override_strategy(no_debug_log, criterion_class, strategy):
         criterion_class = SingleRunCriterion
 
     solver = f"""from benchopt import BaseSolver
-    from benchopt.stopping_criterion import *
+    from benchopt.stopping_criterion import {criterion_class.__name__}
 
     class Solver(BaseSolver):
         name = "test-solver"
@@ -331,3 +334,114 @@ def test_objective_equals_zero(no_debug_log):
                 standalone_mode=False)
 
     out.check_output('test-solver: done', 1)
+
+
+@pytest.mark.parametrize('strategy', SAMPLING_STRATEGIES)
+def test_global_strategy_override(no_debug_log, strategy):
+
+    objective = MINIMAL_OBJECTIVE.replace(
+        '"0.0.0"', f'"0.0.0"\n        sampling_strategy = "{strategy}"'
+    )
+
+    solver = """from benchopt import BaseSolver
+    class Solver(BaseSolver):
+        name = "test-solver"
+        def set_objective(self): pass
+        def run(self, n_iter): pass
+        def get_result(self): return dict(beta=1)
+    """
+
+    with temp_benchmark(objective=objective, solvers=[solver]) as bench:
+        objective = bench.get_benchmark_objective().get_instance()
+        solver = bench.get_solvers()[0].get_instance()
+        solver._set_objective(objective)
+
+        assert objective.sampling_strategy == strategy
+        assert solver._solver_strategy == strategy
+
+
+@pytest.mark.parametrize('criterion_class', [
+    SufficientDescentCriterion, SufficientProgressCriterion, SingleRunCriterion
+])
+def test_global_criterion_override(no_debug_log, criterion_class):
+
+    objective = MINIMAL_OBJECTIVE.replace(
+        '"0.0.0"',
+        f'"0.0.0"\n        stopping_criterion = {criterion_class.__name__}()'
+    ).replace(
+        "import BaseObjective",
+        "import BaseObjective\n    from benchopt.stopping_criterion import "
+        f"{criterion_class.__name__}"
+    )
+
+    solver = """from benchopt import BaseSolver
+    class Solver(BaseSolver):
+        name = "test-solver"
+        def set_objective(self): pass
+        def run(self, n_iter): pass
+        def get_result(self): return dict(beta=1)
+    """
+
+    with temp_benchmark(objective=objective, solvers=[solver]) as bench:
+        objective = bench.get_benchmark_objective().get_instance()
+        solver = bench.get_solvers()[0].get_instance()
+        solver._set_objective(objective)
+
+        assert isinstance(objective.stopping_criterion, criterion_class)
+        assert isinstance(solver._stopping_criterion, criterion_class)
+
+
+@pytest.mark.parametrize('strategy', SAMPLING_STRATEGIES)
+@pytest.mark.parametrize('criterion_class', [
+    SufficientDescentCriterion, SufficientProgressCriterion
+])
+@pytest.mark.parametrize('minimize', [True, False])
+@pytest.mark.parametrize('negative', [True, False])
+def test_minimize_flag(criterion_class, strategy, minimize, negative):
+    """Check that minimize parameter correctly handles maximization."""
+    # Test with minimize=False (Maximize)
+    criterion = criterion_class(
+        strategy=strategy, patience=2, minimize=minimize
+    )
+    criterion = criterion.get_runner_instance(max_runs=20)
+    stop_val = criterion.init_stop_val()
+
+    objectives = [1.0, 1.1, 1.2]
+    if negative:
+        objectives = [-val for val in objectives]
+
+    stop = False
+    objective_list = []
+    for val in objectives:
+        assert not stop, "Should not have stopped yet"
+        objective_list.append({'objective_value': val})
+        stop, status, stop_val = criterion.should_stop(
+            stop_val, objective_list
+        )
+
+    if minimize:
+        assert stop == (not negative), "Minimization stopping failed"
+    else:
+        assert stop == negative, "Maximization stopping failed"
+
+
+@pytest.mark.parametrize('strategy', SAMPLING_STRATEGIES)
+@pytest.mark.parametrize('criterion_class', [
+    SufficientDescentCriterion, SufficientProgressCriterion
+])
+@pytest.mark.parametrize('minimize', [True, False])
+def test_minimize_flag_plateau(criterion_class, strategy, minimize):
+    criterion = criterion_class(
+        strategy=strategy, patience=2, minimize=minimize
+    )
+    criterion = criterion.get_runner_instance(max_runs=20)
+    stop_val = criterion.init_stop_val()
+
+    objective_list = []
+    for _ in range(criterion.patience + 2):
+        objective_list.append({'objective_value': 0.8})
+        stop, status, stop_val = criterion.should_stop(
+            stop_val, objective_list
+        )
+
+    assert stop, "Did not stop on plateau"

@@ -7,9 +7,11 @@
 
 |Python 3.10+| |PyPI version| |License|
 
-Benchopt is a benchmarking suite tailored for machine learning workflows.
-It is built for simplicity, transparency, and reproducibility.
-It is implemented in Python but can run algorithms written in many programming languages.
+Benchopt is a benchmarking suite tailored for **machine learning and optimization**.
+It makes it simple to run, publish and replicate benchmarks. The
+command line interface allows running various solvers on benchmark
+problems, providing convergence curves for iterative methods or
+performance comparisons for ML estimators.
 
 Reproducing an existing benchmark should be as easy as running the following commands:
 
@@ -45,24 +47,6 @@ Reproducing an existing benchmark should be as easy as running the following com
       which will produce a parquet file with the results that can be visualized
       using instruction on the ``README.md`` of the https://github.com/scikit-adaptation/skada-bench.
 
-   .. tab-item:: Bilevel Optimization
-
-      A benchmark comparing various algorithms to solve bilevel optimization problems.
-
-      .. prompt:: bash $
-
-         git clone https://github.com/benchopt/benchmark_bilevel.git
-         benchopt run benchmark_bilevel
-
-      which will produce an interactive HTML report to visualize the results.
-
-      .. raw:: html
-
-         <iframe class="benchmark_result"
-               src="https://benchopt.github.io/results/benchmark_bilevel_benchmark_bilevel_ijcnn1.html"
-            frameBorder='0' style="position: relative; width: 100%;">
-         </iframe>
-
    .. tab-item:: Minimal benchmark
 
       A minimal benchmark comparing various solvers on a toy problem.
@@ -82,7 +66,14 @@ Reproducing an existing benchmark should be as easy as running the following com
 
 
 These different tabs illustrate the diversity of benchmarks that can be built
-with benchopt, from deep learning optimization to more classical machine learning tasks.
+with benchopt, from deep learning optimization to more classical machine
+learning tasks.
+
+.. tip::
+   **Want to create a new benchmark with benchopt?** Use our templates to get started:
+   `ML benchmarks <https://github.com/benchopt/template_benchmark_ml>`_ |
+   `Optimization benchmarks <https://github.com/benchopt/template_benchmark>`_
+
 There are already many :ref:`available_benchmarks` that have been created using benchopt.
 Learn how to run them and how to construct your own with the following pages!
 
@@ -103,7 +94,8 @@ Learn how to run them and how to construct your own with the following pages!
 
         :octicon:`tools` **Benchmark workflow**
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-        Write a benchmark from scratch, run it, visualize it, and publish it
+        Write an ML or optimization benchmark from scratch,
+        run it, visualize it, and publish it
 
     .. grid-item-card::
         :link: tutorials

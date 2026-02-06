@@ -163,13 +163,14 @@ const getBarData = () => {
   getPlotData().data.forEach(curveData => {
     // Add times for each convergent bar
     // Check if text is not 'Did not converge'
-    if (curveData.text === '') {
-      let nbTimes = curveData.times.length
+    curveText = curveData.text || ''
+    if (curveText === '') {
+      let nbTimes = curveData.y.length
 
       barData.push({
         type: 'scatter',
         x: new Array(nbTimes).fill(curveData.label),
-        y: curveData.times,
+        y: curveData.y,
         marker: {
           color: 'black',
           symbol: 'line-ew-open'
@@ -232,22 +233,22 @@ const getScatterData = () => {
   getPlotData().data.forEach(curveData => {
     label = curveData.label;
     y = curveData.y;
-    if ("q1" in curveData && "q9" in curveData && state().with_quantiles) {
-      q1 = curveData.q1;
-      q9 = curveData.q9;
+    if ("x_low" in curveData && "x_high" in curveData && state().with_quantiles) {
+      x_low = curveData.x_low;
+      x_high = curveData.x_high;
     }
     if (state().suboptimal_curve) {
       y = y.map(value => value - min_y);
-      if ("q1" in curveData && "q9" in curveData && state().with_quantiles) {
-        q1 = q1.map(value => value - min_y);
-        q9 = q9.map(value => value - min_y);
+      if ("x_low" in curveData && "x_high" in curveData && state().with_quantiles) {
+        x_low = x_low.map(value => value - min_y);
+        x_high = x_high.map(value => value - min_y);
       }
     }
     if (state().relative_curve) {
       y = y.map(value => value / (y[0] - min_y));
-      if ("q1" in curveData && "q9" in curveData && state().with_quantiles) {
-        q1 = q1.map(value => value / (y[0] - min_y));
-        q9 = q9.map(value => value / (y[0] - min_y));
+      if ("x_low" in curveData && "x_high" in curveData && state().with_quantiles) {
+        x_low = x_low.map(value => value / (y[0] - min_y));
+        x_high = x_high.map(value => value / (y[0] - min_y));
       }
     }
     curves.push({
@@ -269,7 +270,7 @@ const getScatterData = () => {
       y: y,
     });
 
-    if ("q1" in curveData && "q9" in curveData && state().with_quantiles) {
+    if ("x_low" in curveData && "x_high" in curveData && state().with_quantiles) {
       curves.push({
         type: 'scatter',
         mode: 'lines',
@@ -281,7 +282,7 @@ const getScatterData = () => {
         legendgroup: label,
         hovertemplate: '(%{x:.1e},%{y:.1e}) <extra></extra>',
         visible: isVisible(label) ? true : 'legendonly',
-        x: q1,
+        x: x_low,
         y: y,
       }, {
         type: 'scatter',
@@ -295,7 +296,7 @@ const getScatterData = () => {
         legendgroup: label,
         hovertemplate: '(%{x:.1e},%{y:.1e}) <extra></extra>',
         visible: isVisible(label) ? true : 'legendonly',
-        x: q9,
+        x: x_high,
         y: y,
       });
     }
@@ -505,13 +506,13 @@ const renderSidebar = () => {
  * Render Scale selector
  */
 const renderScaleSelector = () => {
-  if (isChart(['bar_chart', 'table'])) {
+  if (isChart(['table'])) {
     hide(document.querySelectorAll("#scale-form-group"));
   } else {
     show(document.querySelectorAll("#scale-form-group"), 'block');
   }
 
-  if (isChart('boxplot')) {
+  if (isChart(['boxplot', 'bar_chart'])) {
     hide(document.querySelectorAll(".other_plot_option"));
     show(document.querySelectorAll(".boxplot_option"));
   } else {
@@ -626,14 +627,25 @@ const isAvailable = () => {
   return !isNotAvailable;
 }
 
+const getMedian = (arr) => {
+  const sorted = [...arr].sort((a, b) => a - b);
+  let median = null;
+  if (sorted.length > 0) {
+    const mid = Math.floor(sorted.length / 2);
+    median = (sorted.length % 2 === 1) ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+  }
+  return median;
+}
+
 const barDataToArrays = () => {
   const colors = [], texts = [], x = [], y = [];
 
   getPlotData().data.forEach(plotData => {
     x.push(plotData.label);
-    y.push(plotData.y);
-    colors.push(plotData.text === '' ? plotData.color : NON_CONVERGENT_COLOR);
-    texts.push(plotData.text);
+    y.push(getMedian(plotData.y));
+    const plotText = plotData.text || '';
+    colors.push(plotText === '' ? plotData.color : NON_CONVERGENT_COLOR);
+    texts.push(plotText);
   });
 
   return {x, y, colors, texts}
@@ -650,7 +662,7 @@ const _getScale = (scale) => {
         xaxis: 'log',
         yaxis: 'log',
       };
-    case 'log': // used for boxplot
+    case 'log': // used for boxplot or barchart
       return {
         xaxis: 'log',
         yaxis: 'log',
@@ -683,7 +695,7 @@ const getBarChartLayout = () => {
       orientation: 'v',
     },
     yaxis: {
-      type: 'log',
+      type: getScale().yaxis,
       title: data["ylabel"],
       tickformat: '.1e',
       gridcolor: '#ffffff',

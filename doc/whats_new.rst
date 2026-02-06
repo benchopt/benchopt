@@ -5,10 +5,35 @@ What's new
 
 .. currentmodule:: benchopt
 
+.. _changes_1_9:
+
+Version 1.9 - In development
+----------------------------
+
+API
+---
+
+- Add ``minimize`` param to the stopping criterions to specify if the criterion
+  should be minimized or maximized.
+  By `Hippolyte Verninas`_ (:gh:`878`)
+
+- Add API to control randomness in benchmarks via ``get_seed`` method in base classes.
+  By `Hippolyte Verninas`_ (:gh:`837`)
+
+FIX
+---
+
+- Add ``minimize`` option for the default bar-chart, to allow visualising solvers
+  which are minimizing or maximizing the objective. 
+  By `Hippolyte Verninas`_ (:gh:`881`)
+
+- ``benchopt install`` now uses the ``conda-forge`` channel by default
+  By `Hippolyte Verninas`_ (:gh:`879`)
+
 .. _changes_1_8:
 
-Version 1.8 - in development
-----------------------------
+Version 1.8 - 19/01/2026
+------------------------
 
 CLI
 ---
@@ -22,7 +47,7 @@ CLI
   run with ``dask`` and ``submitit``. See :ref:`parallel_run` for details.
   By `Thomas Moreau`_ (:gh:`673`).
 
-- Deprecate the ``--slurm`` parameter which will be removed in benchopt 1.8.
+- Deprecate the ``--slurm`` parameter which will be removed in benchopt 1.9.
   By `Thomas Moreau`_ (:gh:`673`).
 
 - Improved output formatting for benchmark ``run/install/test``.
@@ -31,11 +56,12 @@ CLI
 API
 ---
 
-- Add API to control randomness in benchmarks via ``get_seed`` method in base classes.
-  By `Hippolyte Verninas`_ (:gh:`837`)
+- Allow to set the default ``sampling_strategy`` and ``stopping_criterion``
+  globally for a benchmark in the ``Objective``.
+  By `Thomas Moreau`_ (:gh:`874`)
 
 - Add the possibility of creating custom plots for each benchmark.
-  See :ref:`custom_plots` for the documentation.
+  See :ref:`add_custom_plot` for the documentation.
   By `Hippolyte Verninas`_ (:gh:`842`)
 
 - Implement ``bar_chart`` and ``boxplot`` using the new plotting backend.
@@ -48,14 +74,24 @@ API
 - Allow to override SLURM config on a per run basis with ``Solver.parameters``
   See :ref:`slurm_override`. By `Geraud Ilinca`_ and `Thomas Moreau`_ (:gh:`848`)
 
+- Add filename metadata in the result parquet files for
+  objective, solver, and dataset. By `Thomas Moreau`_ (:gh:`873`)
+
 DOC
 ---
+
+- Improve documentation on how to run a ML benchmark.
+  By `Thomas Moreau`_ (:gh:`874`)
 
 - Allow to run benchmarks as examples in the documentation.
   By `Thomas Moreau`_ (:gh:`841`)
 
 FIX
 ---
+
+- Improve tests for ML benchmarks, by avoiding constraints linked
+  to evaluating iterative solvers.
+  By `Thomas Moreau`_ (:gh:`874`)
 
 - Improve AST parsing when missing attributes in the class.
   By `Thomas Moreau`_ (:gh:`846`)
@@ -85,8 +121,10 @@ Major change
 
 - Imports in the benchmark are now done without the ``safe_import_context``,
   while keeping the possibility to list solvers and datasets even when a
-  package is not installed. The helper is deprecated and will be removed in
-  benchopt ``1.8``. By `Mathurin Massias`_  and `Thomas Moreau`_ (:gh:`788`)
+  package is not installed. The helper should only be used when a class
+  attribute that should be accessed without install (``name``, ``requirements``)
+  is computed dynamically.
+  By `Mathurin Massias`_  and `Thomas Moreau`_ (:gh:`788`)
 
 CLI
 ---

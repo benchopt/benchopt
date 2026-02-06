@@ -20,14 +20,14 @@ def test_import_ctx():
     """
     with temp_benchmark(solvers=solver) as bench:
         with CaptureCmdOutput() as out:
-            with pytest.warns(DeprecationWarning, match="safe_import_context"):
-                solver = _load_class_from_module(
-                    bench.benchmark_dir,
-                    bench.benchmark_dir / "solvers" / "solver_0.py",
-                    "Solver",
-                )
-                assert not solver.is_installed()
+            solver = _load_class_from_module(
+                bench.benchmark_dir,
+                bench.benchmark_dir / "solvers" / "solver_0.py",
+                "Solver",
+            )
+            assert not solver.is_installed()
             assert solver.requirements == ['invalid_module']
+            assert solver.name == "test_import_ctx"
 
         out.check_output(
             "ModuleNotFoundError: No module named 'invalid_module'",
@@ -50,9 +50,7 @@ def test_import_ctx_name():
 
         err_msg = ("Import contexts should preferably be named import_ctx, "
                    "got import_ctx_wrong_name.")
-        match = "safe_import_context"
-        with pytest.warns(UserWarning, match=err_msg), \
-                pytest.warns(DeprecationWarning, match=match):
+        with pytest.warns(UserWarning, match=err_msg):
             _load_class_from_module(
                 bench.benchmark_dir,
                 bench.benchmark_dir / "solvers" / "solver_0.py",

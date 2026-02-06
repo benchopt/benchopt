@@ -1,7 +1,4 @@
-import numpy as np
-
 from .base import BasePlot
-
 
 EPS = 1e-8
 
@@ -9,7 +6,7 @@ EPS = 1e-8
 class ObjectiveCurvePlot(BasePlot):
     name = "objective_curve"
     type = "scatter"
-    dropdown = {
+    options = {
         "dataset": ...,
         "objective": ...,
         "objective_column": ...,
@@ -39,11 +36,11 @@ class ObjectiveCurvePlot(BasePlot):
             }
 
             if X_axis == "Time":
-                curve_data['q1'] = (
+                curve_data['x_low'] = (
                     df_filtered.groupby('stop_val')["time"]
                     .quantile(.1).values.tolist()
                 )
-                curve_data['q9'] = (
+                curve_data['x_high'] = (
                     df_filtered.groupby('stop_val')["time"]
                     .quantile(.9).values.tolist()
                 )
@@ -66,13 +63,14 @@ class ObjectiveCurvePlot(BasePlot):
 class BarChart(BasePlot):
     name = "bar_chart"
     type = "bar_chart"
-    dropdown = {
+    options = {
         "dataset": ...,
         "objective": ...,
         "objective_column": ...,
+        "minimize": [True, False],
     }
 
-    def plot(self, df, dataset, objective, objective_column):
+    def plot(self, df, dataset, objective, objective_column, minimize):
         df = df.query(
             "dataset_name == @dataset and objective_name == @objective"
         )
@@ -82,25 +80,28 @@ class BarChart(BasePlot):
             df_filtered = df_filtered.select_dtypes(include=['number'])
             if objective_column not in df_filtered:
                 continue
-            c_star = df_filtered[objective_column].min() + EPS
-            df_tol = df_filtered.groupby('stop_val').filter(
-                lambda x: x[objective_column].max() < c_star
-            )
+            eps = EPS if minimize else -EPS
+            c_star = df_filtered[objective_column].min() + eps
+            if minimize:
+                df_tol = df_filtered.groupby('stop_val').filter(
+                    lambda x: x[objective_column].max() < c_star
+                )
+            else:
+                df_tol = df_filtered.groupby('stop_val').filter(
+                    lambda x: x[objective_column].min() > c_star
+                )
 
             if df_tol.empty:
                 text = 'Did not converge'
-                height = df.time.max()
-                times = np.nan
+                times = [df.time.max()]
             else:
                 stop_val = df_tol['stop_val'].min()
                 this_df = df_filtered[df_filtered['stop_val'] == stop_val]
                 text = ''
-                height = this_df['time'].median()
                 times = this_df['time'].tolist()
 
             plots.append({
-                "y": height,
-                "times": times,
+                "y": times,
                 "text": text,
                 "label": solver,
                 "color": self.get_style(solver)["color"]
@@ -108,7 +109,7 @@ class BarChart(BasePlot):
 
         return plots
 
-    def get_metadata(self, df, dataset, objective, objective_column):
+    def get_metadata(self, df, dataset, objective, objective_column, minimize):
         return {
             "title": f"{objective}\nData: {dataset}",
             "ylabel": "Time [sec]",
@@ -151,7 +152,7 @@ def _get_boxplot_iteration(df, Y_axis, objective_column):
 class BoxPlot(BasePlot):
     name = "boxplot"
     type = "boxplot"
-    dropdown = {
+    options = {
         "dataset": ...,
         "objective": ...,
         "objective_column": ...,
@@ -196,7 +197,7 @@ class BoxPlot(BasePlot):
 class TablePlot(BasePlot):
     name = "Table"
     type = "table"
-    dropdown = {
+    options = {
         "dataset": ...,
         "objective": ...,
     }

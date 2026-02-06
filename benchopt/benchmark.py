@@ -13,6 +13,7 @@ from .base import BaseSolver, BaseDataset
 
 from .utils.dynamic_modules import _load_class_from_module, FailedImport
 from .utils.parametrized_name_mixin import product_param
+from .utils.parametrized_name_mixin import sanitize
 
 from .utils.terminal_output import colorify
 from .utils.terminal_output import GREEN, YELLOW
@@ -200,6 +201,29 @@ class Benchmark:
         "List all available dataset names for the benchmark."
         return [d.name for d in self.get_datasets()]
 
+    def get_test_dataset(self):
+        objective = self.get_benchmark_objective()
+        datasets = self.get_datasets()
+        test_datasets = [
+            d for d in datasets
+            if sanitize(d.name) == sanitize(objective.test_dataset_name)
+        ]
+        if len(test_datasets) == 0 and len(datasets) == 1:
+            test_datasets = datasets
+
+        assert len(test_datasets) == 1, (
+            "All benchmarks should have one test_dataset. The default is a "
+            "simulated dataset, but the name can be tweaked by setting the "
+            "`Objective.test_dataset_name` attribute. The dataset should have "
+            f"`name='{objective.test_dataset_name}' in the current benchmark. "
+            f"Found possible datasets {test_datasets}."
+        )
+        test_class = test_datasets[0]
+        test_params = list(product_param(getattr(
+            test_class, 'test_parameters', {}
+        )))
+        return test_class, test_params
+
     def check_dataset_patterns(self, dataset_patterns, class_only=False):
         "Check that the patterns are valid and return selected configurations."
         return _check_patterns(
@@ -247,15 +271,15 @@ class Benchmark:
         all_plots = self.get_plots()
         self.check_plots()
         all_data = {}
-        all_dropdown = {}
+        all_options = {}
         for plot in all_plots:
             plot_name = plot._get_name()
             if plot_name not in kinds:
                 continue
-            data, dropdown = plot._get_all_plots(df)
+            data, options = plot._get_all_plots(df)
             all_data[plot_name] = data
-            all_dropdown[plot_name] = dropdown
-        return all_data, all_dropdown
+            all_options[plot_name] = options
+        return all_data, all_options
 
     def _list_benchmark_classes(self, base_class):
         """Load all classes with the same name from a benchmark's subpackage.

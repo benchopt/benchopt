@@ -2,13 +2,9 @@ name: Release to PyPI 📦
 
 on:
   push:
-    branches:
-      - main
     tags:
       - '**'
-  pull_request:
-    branches:
-      - main
+  workflow_dispatch:
 
 jobs:
   build-package:
@@ -60,12 +56,6 @@ jobs:
       with:
         name: python-package
         path: dist
-    - name: Publish distribution 📦 to TestPyPI
-      if: ${{ steps.wait-for-tests.outputs.conclusion == 'success' }}
-      uses: pypa/gh-action-pypi-publish@release/v1
-      with:
-        repository-url: https://test.pypi.org/legacy/
-
     - name: Publish distribution 📦 to PyPI
       if: ${{ success() && steps.wait-for-tests.outputs.conclusion == 'success' }}
       uses: pypa/gh-action-pypi-publish@release/v1
