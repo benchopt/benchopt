@@ -577,10 +577,10 @@ class TestSeed:
 
     def get_dataset(
         self, name="test-dataset", use_objective=True,
-        use_dataset=True, use_solver=True
+        use_dataset=True, use_solver=True, use_repetition=True
     ):
         seed_args = (
-            f"{use_objective},{use_dataset},{use_solver},use_repetition=True"
+            f"{use_objective},{use_dataset},{use_solver},{use_repetition}"
         )
         return (
             f"""from benchopt import BaseDataset
@@ -776,3 +776,58 @@ class TestSeed:
         assert seeds[0] != seeds[1], (
             "Seeds for different repetitions should not be equal"
         )
+
+    def test_cache(self, no_debug_log):
+        with temp_benchmark(
+            objective=self.get_objective(),
+            solvers=self.get_solver(),
+            datasets=self.get_dataset()
+        ) as bench:
+            with CaptureCmdOutput() as out:
+                for _ in range(2):
+                    cmd_str = f"{bench.benchmark_dir} --seed 0 --no-plot -r 3"
+                    run(cmd_str.split(), standalone_mode=False)
+
+        # Check that the runs are cached when seed is the same
+        out.check_output("#SEED-sol=", repetition=3)
+
+        with temp_benchmark(
+            objective=self.get_objective(),
+            solvers=self.get_solver(),
+            datasets=self.get_dataset()
+        ) as bench:
+            with CaptureCmdOutput() as out:
+                for seed in range(2):
+                    cmd_str = (
+                        f"{bench.benchmark_dir} --seed {seed} --no-plot -r 3"
+                    )
+                    run(cmd_str.split(), standalone_mode=False)
+
+        # Runs should not be cached when seed is different
+        out.check_output("#SEED-sol=", repetition=6)
+
+    def test_cache_dataset(self, no_debug_log):
+        with temp_benchmark(
+            objective=self.get_objective(),
+            solvers=self.get_solver(),
+            datasets=self.get_dataset(use_repetition=False)
+        ) as bench:
+            with CaptureCmdOutput() as out:
+                cmd_str = f"{bench.benchmark_dir} --no-plot -r 3"
+                run(cmd_str.split(), standalone_mode=False)
+
+        # Dataset should be loaded only once when seed is independant of rep
+        out.check_output("#SEED-data=", repetition=1)
+
+        with temp_benchmark(
+            objective=self.get_objective(),
+            solvers=self.get_solver(),
+            datasets=self.get_dataset(use_repetition=True)
+        ) as bench:
+            with CaptureCmdOutput() as out:
+                cmd_str = f"{bench.benchmark_dir} --no-plot -r 3"
+                run(cmd_str.split(), standalone_mode=False)
+
+        # Dataset should be computed for each repetition when seed
+        # is different for each repetition
+        out.check_output("#SEED-data=", repetition=3)
