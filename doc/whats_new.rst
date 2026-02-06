@@ -10,6 +10,11 @@ What's new
 Version 1.9 - In development
 ----------------------------
 
+FIX
+---
+
+- Add ``minimize`` option for the default bar-chart, to allow visualising solvers
+  which are minimizing or maximizing the objective. By `Hippolyte Verninas`_ (:gh:`881`)
 
 .. _changes_1_8:
 
