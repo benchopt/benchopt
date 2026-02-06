@@ -144,6 +144,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         self._inherit_stopping_criterion(objective)
 
         objective_dict = objective.get_objective()
+
         assert objective_dict is not None, (
             "Objective needs to implement `get_objective` that returns "
             "a dictionary to be passed to `set_objective`"
@@ -298,12 +299,10 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
 
     def _get_state(self):
         """Return the state of the objective for pickling."""
-        return dict(objective=getattr(self, '_objective', None))
+        return {}
 
     def __setstate__(self, state):
-        objective = state['objective']
-        if objective is not None:
-            self._set_objective(objective)
+        return
 
 
 class CommandLineSolver(BaseSolver, ABC):
@@ -605,9 +604,13 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
 
     def _get_state(self):
         """Return the state of the objective for pickling."""
-        return dict(dataset=getattr(self, '_dataset', None))
+        return dict(
+            dataset=getattr(self, '_dataset', None),
+            repetition=getattr(self, 'repetition', 0)
+        )
 
     def __setstate__(self, state):
+        self.repetition = state['repetition']
         dataset = state['dataset']
         if dataset is not None:
             self.set_dataset(dataset)
@@ -646,20 +649,19 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
                 "`sklearn.model_selection.BaseCrossValidator` API."
             )
 
-        # In order to cope with n_repetition larger than the number of folds,
-        # cycle through the folds. We don't use itertools.repeat to avoid
-        # having to store the whole generator in memory.
-        if not hasattr(self, "_cv"):
-            metadata = getattr(self, "cv_metadata", {})
+        metadata = getattr(self, "cv_metadata", {})
 
-            def repeat():
-                while True:
-                    for split_indexes in self.cv.split(*arrays, **metadata):
-                        yield split_indexes
-            self._cv = repeat()
+        def repeat():
+            while True:
+                for split_indexes in self.cv.split(*arrays, **metadata):
+                    yield split_indexes
 
+        cv_fold_generator = repeat()
         # Perform the split with default split function if it is not defined by
         # the user.
-        cv_fold = next(self._cv)
+        rep = getattr(self, "repetition", 0)
+        for _ in range(rep + 1):
+            cv_fold = next(cv_fold_generator)
+
         split_ = getattr(self, "split", self._default_split)
         return split_(cv_fold, *arrays)

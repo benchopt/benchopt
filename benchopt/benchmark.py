@@ -725,7 +725,7 @@ class Benchmark:
                     )
                     yield dict(
                         dataset=dataset, objective=objective, solver=solver,
-                        force=force, terminal=terminal.clone()
+                        force=force, terminal=terminal
                     )
                 all_solvers = solvers_buffer
 

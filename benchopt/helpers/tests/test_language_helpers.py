@@ -143,7 +143,7 @@ def test_julia_solver(test_env_name, no_debug_log):
         with CaptureCmdOutput() as out:
             run([
                 str(bench.benchmark_dir), '-s', 'julia_solver', '-n', '1',
-                '-r', 1, '-d', 'simulated', '--no-plot',
+                '-r', 1, '-d', 'simulated', '--no-plot', '--timeout', '500',
                 '--env-name', test_env_name
             ], 'benchopt', standalone_mode=False)
 
