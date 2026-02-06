@@ -17,3 +17,4 @@ User guide
     tests_definition
     API_ref
     CLI_ref
+    controlling_randomness
