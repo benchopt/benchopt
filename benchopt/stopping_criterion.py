@@ -30,6 +30,8 @@ COMMON_ARGS_DOC = """
         the callback should be called with the current iterate solution.
     key_to_monitor : str (default: 'objective_value')
         The objective to check for tracking progress.
+    minimize : bool (default: True)
+        Whether the objective is minimized or maximized.
 """
 
 
@@ -61,7 +63,9 @@ class StoppingCriterion():
     """
     kwargs = None
 
-    def __init__(self, strategy=None, key_to_monitor=None, **kwargs):
+    def __init__(
+        self, strategy=None, key_to_monitor=None, minimize=True, **kwargs
+    ):
 
         if strategy is not None:
             assert strategy in SAMPLING_STRATEGIES, (
@@ -72,6 +76,7 @@ class StoppingCriterion():
         self.kwargs = kwargs
         self.strategy = strategy
         self.key_to_monitor = key_to_monitor
+        self.minimize = minimize
         if self.key_to_monitor is not None:
             self.key_to_monitor_ = (
                 key_to_monitor if key_to_monitor.startswith('objective_')
@@ -129,7 +134,7 @@ class StoppingCriterion():
         # Create a new instance of the class
         stopping_criterion = self.__class__(
             strategy=self.strategy, key_to_monitor=self.key_to_monitor,
-            **self.kwargs,
+            minimize=self.minimize, **self.kwargs,
         )
 
         # Set stopping criterion parameters depending on run parameters
@@ -230,10 +235,9 @@ class StoppingCriterion():
                 )
 
             objective = objective_list[-1][self.key_to_monitor_]
+            if not self.minimize:
+                objective = -objective
             delta_objective = self._prev_objective - objective
-            first_objective = objective_list[0][self.key_to_monitor_]
-            if first_objective != 0:
-                delta_objective /= abs(first_objective)
             self._prev_objective = objective
 
             is_diverging = math.isnan(objective) or delta_objective < -1e5
@@ -354,7 +358,7 @@ class SufficientDescentCriterion(StoppingCriterion):
     """
 
     def __init__(self, eps=EPS, patience=PATIENCE, strategy=None,
-                 key_to_monitor='value'):
+                 key_to_monitor='value', minimize=True):
         self.eps = eps
         self.patience = patience
 
@@ -363,7 +367,7 @@ class SufficientDescentCriterion(StoppingCriterion):
 
         super().__init__(
             eps=eps, patience=patience, strategy=strategy,
-            key_to_monitor=key_to_monitor
+            key_to_monitor=key_to_monitor, minimize=minimize
         )
 
     def check_convergence(self, objective_list):
@@ -386,8 +390,17 @@ class SufficientDescentCriterion(StoppingCriterion):
         """
         # Compute the current objective
         objective = objective_list[-1][self.key_to_monitor_]
+        if not self.minimize:
+            objective = -objective
         delta_objective = self._objective - objective
-        delta_objective /= abs(objective_list[0][self.key_to_monitor_])
+        if self._objective < 1e100:
+            if not hasattr(self, '_current_max_delta_objective'):
+                self._current_max_delta_objective = abs(delta_objective)
+            self._current_max_delta_objective = max(
+                self._current_max_delta_objective, abs(delta_objective)
+            )
+            if self._current_max_delta_objective != 0:
+                delta_objective /= self._current_max_delta_objective
         self._objective = objective
 
         # Store only the last ``patience`` values for progress
@@ -396,7 +409,7 @@ class SufficientDescentCriterion(StoppingCriterion):
             self._delta_objectives.pop(0)
 
         delta = max(self._delta_objectives)
-        if (-self.eps <= delta <= self.eps):
+        if (delta <= self.eps):
             self.debug(f"Exit with delta_objective = {delta:.2e}.")
             return True, 1
 
@@ -422,7 +435,7 @@ class SufficientProgressCriterion(StoppingCriterion):
     """
 
     def __init__(self, eps=EPS, patience=PATIENCE, strategy=None,
-                 key_to_monitor='value'):
+                 key_to_monitor='value', minimize=True):
         self.eps = eps
         self.patience = patience
 
@@ -431,7 +444,7 @@ class SufficientProgressCriterion(StoppingCriterion):
 
         super().__init__(
             eps=eps, patience=patience, strategy=strategy,
-            key_to_monitor=key_to_monitor
+            key_to_monitor=key_to_monitor, minimize=minimize
         )
 
     def check_convergence(self, objective_list):
@@ -454,10 +467,19 @@ class SufficientProgressCriterion(StoppingCriterion):
         """
         # Compute the current objective and update best value
         objective = objective_list[-1][self.key_to_monitor_]
-        delta_objective = self._best_objective - objective
         first_objective = objective_list[0][self.key_to_monitor_]
-        if first_objective != 0:
-            delta_objective /= abs(first_objective)
+        if not self.minimize:
+            objective = -objective
+            first_objective = -first_objective
+        delta_objective = self._best_objective - objective
+
+        if self._best_objective < 1e100:
+            if not hasattr(self, '_current_max_delta_objective'):
+                self._current_max_delta_objective = delta_objective
+            self._current_max_delta_objective = max(
+                self._current_max_delta_objective, delta_objective
+            )
+
         self._best_objective = min(
             objective, self._best_objective
         )
@@ -468,7 +490,10 @@ class SufficientProgressCriterion(StoppingCriterion):
             self._progress.pop(0)
 
         delta = max(self._progress)
-        if delta <= self.eps * self._best_objective:
+        max_delta = 0
+        if hasattr(self, '_current_max_delta_objective'):
+            max_delta = self._current_max_delta_objective
+        if delta <= self.eps * max_delta:
             self.debug(f"Exit with delta = {delta:.2e}.")
             return True, 1
 

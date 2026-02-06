@@ -506,13 +506,13 @@ const renderSidebar = () => {
  * Render Scale selector
  */
 const renderScaleSelector = () => {
-  if (isChart(['bar_chart', 'table'])) {
+  if (isChart(['table'])) {
     hide(document.querySelectorAll("#scale-form-group"));
   } else {
     show(document.querySelectorAll("#scale-form-group"), 'block');
   }
 
-  if (isChart('boxplot')) {
+  if (isChart(['boxplot', 'bar_chart'])) {
     hide(document.querySelectorAll(".other_plot_option"));
     show(document.querySelectorAll(".boxplot_option"));
   } else {
@@ -662,7 +662,7 @@ const _getScale = (scale) => {
         xaxis: 'log',
         yaxis: 'log',
       };
-    case 'log': // used for boxplot
+    case 'log': // used for boxplot or barchart
       return {
         xaxis: 'log',
         yaxis: 'log',
@@ -695,7 +695,7 @@ const getBarChartLayout = () => {
       orientation: 'v',
     },
     yaxis: {
-      type: 'log',
+      type: getScale().yaxis,
       title: data["ylabel"],
       tickformat: '.1e',
       gridcolor: '#ffffff',

@@ -17,6 +17,13 @@ FIX
   By `Hippolyte Verninas`_ (:gh:`879`)
 
 
+API
+---
+
+- Add ``minimize`` param to the stopping criterions to specify if the criterion
+  should be minimized or maximized.
+  By `Hippolyte Verninas`_ (:gh:`878`)
+
 .. _changes_1_8:
 
 Version 1.8 - 19/01/2026
