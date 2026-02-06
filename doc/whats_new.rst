@@ -10,6 +10,13 @@ What's new
 Version 1.9 - In development
 ----------------------------
 
+FIX
+---
+
+- ``benchopt install`` now uses the ``conda-forge`` channel by default
+  By `Hippolyte Verninas`_ (:gh:`879`)
+
+
 API
 ---
 

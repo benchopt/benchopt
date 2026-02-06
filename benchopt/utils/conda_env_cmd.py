@@ -199,7 +199,7 @@ def get_env_file_from_requirements(packages):
         channels = '\n  - '.join(sorted(set(
             pkg.rsplit('::', 1)[0]
             for pkg in conda_packages if '::' in pkg
-        )))
+        ).union({'conda-forge'})))
         channels = f"channels:\n  - {channels}\n" if channels else ""
         conda_packages = '\n  - '.join(sorted(set(
             pkg.rsplit('::', 1)[-1] for pkg in conda_packages
