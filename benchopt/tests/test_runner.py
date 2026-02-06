@@ -550,11 +550,12 @@ class TestSeed:
     """Test the seeding."""
 
     def get_objective(
-        self, name="test-objective", print_seed=False, use_objective=True,
+        self, name="test-objective", use_objective=True,
         use_dataset=True, use_solver=True
     ):
-        seed_args = f"{use_objective},{use_dataset},{use_solver}"
-        print_str = f"print('#SEED=', self.get_seed({seed_args}))"
+        seed_args = (
+            f"{use_objective},{use_dataset},{use_solver},use_repetition=True"
+        )
         return (
             f"""from benchopt import BaseObjective
 
@@ -565,35 +566,43 @@ class TestSeed:
                 def set_data(self, X, y): pass
                 def get_one_result(self): pass
                 def evaluate_result(self, beta):
-                    {print_str if print_seed else ""}
+                    print(
+                        '#SEED-obj=',
+                        self.get_seed({seed_args})
+                    )
                     return dict(value=1)
                 def get_objective(self): return dict(X=0, y=0)
             """
         )
 
     def get_dataset(
-        self, name="test-dataset", print_seed=False, use_objective=True,
+        self, name="test-dataset", use_objective=True,
         use_dataset=True, use_solver=True
     ):
-        seed_args = f"{use_objective},{use_dataset},{use_solver}"
-        print_str = "print('#SEED=',{self.get_seed(" + seed_args + ")})"
+        seed_args = (
+            f"{use_objective},{use_dataset},{use_solver},use_repetition=True"
+        )
         return (
             f"""from benchopt import BaseDataset
 
             class Dataset(BaseDataset):
                 name = "{name}"
                 def get_data(self):
-                    {print_str if print_seed else ""}
+                    print(
+                        '#SEED-data=',
+                        self.get_seed({seed_args})
+                    )
                     return dict(X=0, y=1)
             """
         )
 
     def get_solver(
-        self, name="test-solver", print_seed=False, use_objective=True,
+        self, name="test-solver", use_objective=True,
         use_dataset=True, use_solver=True
     ):
-        seed_args = f"{use_objective},{use_dataset},{use_solver}"
-        print_str = "print('#SEED=',{self.get_seed(" + seed_args + ")})"
+        seed_args = (
+            f"{use_objective},{use_dataset},{use_solver},use_repetition=True"
+        )
         return (
             f"""from benchopt import BaseSolver
 
@@ -602,7 +611,9 @@ class TestSeed:
                 sampling_strategy = 'run_once'
                 def set_objective(self, X, y): pass
                 def run(self, _):
-                    {print_str if print_seed else ""}
+                    print('#SEED-sol=',
+                        self.get_seed({seed_args})
+                    )
                     return
                 def get_result(self): return dict(beta=1)
             """
@@ -626,7 +637,6 @@ class TestSeed:
             ),
             solvers=self.get_solver(
                 name="solver1",
-                print_seed=True,
                 use_objective=use_objective,
                 use_dataset=use_dataset,
                 use_solver=use_solver
@@ -640,7 +650,7 @@ class TestSeed:
 
         parsed_output = out.output.split("\n")
         for s in parsed_output:
-            if s.startswith("#SEED="):
+            if s.startswith("#SEED-sol="):
                 seeds.append(s)
 
         with temp_benchmark(
@@ -649,7 +659,6 @@ class TestSeed:
             ),
             solvers=self.get_solver(
                 name=solver_name,
-                print_seed=True,
                 use_objective=use_objective,
                 use_dataset=use_dataset,
                 use_solver=use_solver
@@ -663,7 +672,7 @@ class TestSeed:
 
         parsed_output = out.output.split("\n")
         for s in parsed_output:
-            if s.startswith("#SEED="):
+            if s.startswith("#SEED-sol="):
                 seeds.append(s)
 
         assert len(seeds) == 2
@@ -679,7 +688,7 @@ class TestSeed:
 
     def test_objective_simple(self, no_debug_log):
         with temp_benchmark(
-            objective=self.get_objective(print_seed=True),
+            objective=self.get_objective(),
             solvers=self.get_solver(),
             datasets=self.get_dataset()
         ) as bench:
@@ -693,7 +702,7 @@ class TestSeed:
         parsed_output = out.output.split("\n")
         seeds = []
         for s in parsed_output:
-            if s.startswith("#SEED="):
+            if s.startswith("#SEED-obj="):
                 seeds.append(s)
 
         assert len(seeds) == 2, f"Found {len(seeds)} seeds instead of 2"
@@ -703,7 +712,7 @@ class TestSeed:
         with temp_benchmark(
             objective=self.get_objective(),
             solvers=self.get_solver(),
-            datasets=self.get_dataset(print_seed=True)
+            datasets=self.get_dataset()
         ) as bench:
             with CaptureCmdOutput() as out:
                 cmd_str = f"{bench.benchmark_dir} --no-cache "
@@ -715,7 +724,7 @@ class TestSeed:
         parsed_output = out.output.split("\n")
         seeds = []
         for s in parsed_output:
-            if s.startswith("#SEED="):
+            if s.startswith("#SEED-data="):
                 seeds.append(s)
 
         assert len(seeds) == 2, f"Found {len(seeds)} seeds instead of 2"
@@ -724,7 +733,7 @@ class TestSeed:
     def test_seed_different(self, no_debug_log):
         with temp_benchmark(
             objective=self.get_objective(),
-            solvers=self.get_solver(print_seed=True),
+            solvers=self.get_solver(),
             datasets=self.get_dataset()
         ) as bench:
             with CaptureCmdOutput() as out:
@@ -736,7 +745,7 @@ class TestSeed:
         parsed_output = out.output.split("\n")
         seeds = []
         for s in parsed_output:
-            if s.startswith("#SEED="):
+            if s.startswith("#SEED-sol="):
                 seeds.append(s)
 
         assert len(seeds) == 2, f"Found {len(seeds)} seeds instead of 2"
@@ -745,7 +754,7 @@ class TestSeed:
     def test_seed_repetition(self, no_debug_log):
         with temp_benchmark(
             objective=self.get_objective(),
-            solvers=self.get_solver(print_seed=True),
+            solvers=self.get_solver(),
             datasets=self.get_dataset()
         ) as bench:
             with CaptureCmdOutput() as out:
@@ -758,7 +767,7 @@ class TestSeed:
         parsed_output = out.output.split("\n")
         seeds = []
         for s in parsed_output:
-            if s.startswith("#SEED="):
+            if s.startswith("#SEED-sol="):
                 seeds.append(s)
 
         assert len(seeds) == 4, f"Found {len(seeds)} seeds instead of 4"

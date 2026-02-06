@@ -45,8 +45,8 @@ class SeedMixin:
         return seed
 
     def get_seed(
-        self, use_objective=True, use_dataset=True,
-        use_solver=True, use_repetition=True,
+        self, use_objective=False, use_dataset=False,
+        use_solver=False, use_repetition=False,
     ):
         """Get the random seed for this solver instance. Setting use_objective,
         use_dataset, use_solver or use_repetition to False will return a seed
