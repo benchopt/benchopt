@@ -73,8 +73,7 @@ class SeedMixin:
             use_solver, use_repetition
         )
 
-        # We save the most restrictive seed parameters to avoid recomputing
-        # the seed if they are not changed.
+        # We save the most restrictive seed parameters for later caching
         for key in self.seed_params:
             self.seed_params[key] = eval(key) or self.seed_params[key]
 
