@@ -554,7 +554,7 @@ class TestSeed:
         use_dataset=True, use_solver=True
     ):
         seed_args = f"{use_objective},{use_dataset},{use_solver}"
-        print_str = "print('#SEED=',{self.get_seed(" + seed_args + ")})"
+        print_str = f"print('#SEED=', self.get_seed({seed_args}))"
         return (
             f"""from benchopt import BaseObjective
 
