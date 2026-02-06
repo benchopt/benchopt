@@ -349,16 +349,15 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
 
     def _get_data(self):
         "Wrapper to make sure the returned results are correctly formated."
-        # We compute the seed with the most restrictive parameters to avoid
-        # having to recompute the seed if these parameters are not changed.
-        seed = self._get_seed(**self.seed_params)
-
         # Automatically cache the _data to avoid reloading it.
         if not hasattr(self, '_data') or self._data is None:
             self._data = self.get_data()
         # We compare to the last seed (computed with the most restrictive
         # parameters) to check if the data should be recomputed.
-        elif self.last_seed is not None and seed != self.last_seed:
+        elif (
+            self.last_seed is not None and
+            self.last_seed != self._get_seed(**self.seed_params)
+        ):
             self._data = self.get_data()
 
         return self._data

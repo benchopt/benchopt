@@ -4,6 +4,7 @@ import hashlib
 class SeedMixin:
     """Mixin class to manage random seed for reproducibility."""
     def __init__(self):
+        super().__init__()
         self.seed_params = {
             "use_objective": False,
             "use_dataset": False,
