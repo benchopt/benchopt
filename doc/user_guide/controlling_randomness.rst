@@ -11,11 +11,11 @@ This page explains how the ``get_seed`` method works and how to use it inside
 Seed helper
 -----------
 
-All benchopt base classes include a seeding mixin which provides a ``get_seed``
+All benchopt base classes provide a ``get_seed``
 method, to derive **a deterministic seed from the chosen experiment axes.**
 
 This function returns an integer seed computed deterministically from the
-benchmark identity and the boolean flags you pass. The seed should then
+benchmark's global seed and the boolean flags you pass. The seed can then
 be used to seed random number generators (*e.g.* ``numpy.random.RandomState``,
 or ``torch.manual_seed``) to obtain deterministic pseudo-random streams.
 
@@ -29,6 +29,11 @@ flag to ``True`` makes the seed vary when this element changes.
 - ``use_dataset``: include the dataset identity.
 - ``use_solver``: include the solver identity.
 - ``use_repetition``: include the repetition index.
+
+The identities of the objective, dataset and solver are derived from their class
+name and their parameters. This means that if you change the parameters of a
+solver, it will be considered as a different solver and the seed will change if
+``use_solver=True``.
 
 By toggling these flags, you choose which experimental axes cause randomness
 to change. By default, the generated seed is different for each combination of
@@ -54,8 +59,9 @@ This produces a unique, reproducible per-run seed.
 When to call get_seed
 ---------------------
 
-Call ``get_seed`` **only during execution** of the benchmark (for example inside
-``get_data``, ``evaluate_result`` or ``run``).
+Call ``get_seed`` **only during execution** of the benchmark, ie. for Solver
+from ``set_objective``, for Dataset from ``get_data``, and for Objective from
+and ``set_data`` and ``get_objective``.
 
 Do **not** call it at import time or during class definition — at that stage,
 the benchmark runner has not yet created the correct runtime context, and the
@@ -76,7 +82,7 @@ We provide an example for custom ``Objective``, however, the same logic applies 
         name = "example"
 
         def get_objective(self):
-            # deterministic seed that depends on objective, dataset, solver,
+            # Get a deterministic seed that depends on objective, dataset, solver,
             # and repetition
             seed = self.get_seed(
                 use_objective=True,
@@ -84,6 +90,8 @@ We provide an example for custom ``Objective``, however, the same logic applies 
                 use_solver=False,
                 use_repetition=True
             )
+
+            # Use the seed to create a random number generator and generate noise.
             rng = np.random.RandomState(seed)
             noise = rng.randn(*beta.shape)
             return dict(X=self.X, aux_noise=noise)
