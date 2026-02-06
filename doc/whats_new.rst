@@ -10,6 +10,12 @@ What's new
 Version 1.9 - In development
 ----------------------------
 
+API
+---
+
+- Add ``minimize`` param to the stopping criterions to specify if the criterion
+  should be minimized or maximized.
+  By `Hippolyte Verninas`_ (:gh:`878`)
 
 .. _changes_1_8:
 
