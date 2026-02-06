@@ -33,11 +33,14 @@ def _seed_run(objective, dataset, solver, repetition, base_seed):
         "objective": str(objective),
         "dataset": str(dataset),
         "solver": str(solver),
-        "repetition": str(repetition)
+        "repetition": str(repetition),
     }
     objective.seed_dict = seed_dict
+    objective.seed_dict["class"] = "objective"
     dataset.seed_dict = seed_dict
+    dataset.seed_dict["class"] = "dataset"
     solver.seed_dict = seed_dict
+    solver.seed_dict["class"] = "solver"
 
 
 ##################################

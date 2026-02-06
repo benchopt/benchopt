@@ -25,7 +25,8 @@ class SeedMixin:
             "objective": use_objective,
             "dataset": use_dataset,
             "solver": use_solver,
-            "repetition": use_repetition
+            "repetition": use_repetition,
+            "class": True
         }
         hash_list = []
         for key in use_keys:
