@@ -24,8 +24,10 @@ jobs:
           command: |
             # remove the cache index
             mamba clean -i -y
-            mamba install python=3.10 r-base rpy2 \
-                          numpy cython -yq
+            mamba install -n benchopt-docs python=3.10 r-base rpy2 numpy cython -yq
+            conda activate benchopt-docs
+            echo "source ~/miniconda/etc/profile.d/conda.sh" >> $BASH_ENV
+            echo "conda activate benchopt-docs" >> $BASH_ENV
             pip install --upgrade "setuptools<58.5"
             pip install --upgrade --progress-bar off -e .[doc]
 
