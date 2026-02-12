@@ -111,11 +111,13 @@ def create_conda_env(
         # Check that the python version is compatible with the one
         # required by the benchmark.
         if benchmark is not None:
-            env_python_version = _run_shell_in_conda_env(
+            _, env_python_version = _run_shell_in_conda_env(
                 "python --version", env_name=env_name,
                 capture_stdout=True, return_output=True
-            ).split()[-1]
-            if str(python_version) != env_python_version:
+            )
+            env_python_version = env_python_version.strip().split()[-1]
+
+            if not env_python_version.startswith(str(python_version)):
                 print()
                 raise RuntimeError(
                     f"The python version in conda env ({env_python_version})"
