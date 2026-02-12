@@ -82,6 +82,8 @@ def create_conda_env(
     # Get a list of all conda envs
     _, existing_conda_envs = list_conda_envs()
 
+    python_version = get_benchmark_python_version(benchmark)
+
     if env_name in existing_conda_envs and not recreate:
         print(
             f"Conda env {env_name} already exists. Checking setup ... ",
@@ -105,13 +107,29 @@ def create_conda_env(
                 "by either using the --recreate option or fixing the version "
                 f"of benchopt in conda env {env_name}."
             )
+
+        # Check that the python version is compatible with the one
+        # required by the benchmark.
+        if benchmark is not None:
+            env_python_version = _run_shell_in_conda_env(
+                "python --version", env_name=env_name,
+                capture_stdout=True, return_output=True
+            ).split()[-1]
+            if str(python_version) != env_python_version:
+                print()
+                raise RuntimeError(
+                    f"The python version in conda env ({env_python_version})"
+                    "is incompatible with the one required by the benchmark "
+                    f"({python_version}). You can correct this by either "
+                    "using the --recreate option or fixing the python "
+                    f"version in conda env {env_name}."
+                )
         print("done")
         return
 
     force = " --force" if recreate else ""
 
     benchopt_requirement, benchopt_editable = get_benchopt_requirement(pytest)
-    python_version = get_benchmark_python_version(benchmark)
 
     benchopt_env = BENCHOPT_ENV.format(
         python_version=python_version,
