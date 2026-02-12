@@ -20,6 +20,7 @@ CONDA_CMD = get_setting('conda_cmd')
 if sys.platform == 'win32' and not CONDA_CMD.lower().startswith('call'):
     CONDA_CMD = f"CALL {CONDA_CMD}"
 
+DEFAULT_PYTHON_VERSION = '3.10'
 
 # Yaml config file for benchopt env.
 BENCHOPT_ENV = """
@@ -27,7 +28,7 @@ channels:
   - conda-forge
   - nodefaults
 dependencies:
-  - python=3.10
+  - python={python_version}
   - numpy
   - cython
   - compilers
@@ -41,12 +42,21 @@ channels:
   - conda-forge
   - nodefaults
 dependencies:
-  - python=3.10
+  - python={python_version}
 """
 
 
+def get_benchmark_python_version(benchmark):
+    if benchmark is None:
+        return DEFAULT_PYTHON_VERSION
+    objective = benchmark.get_benchmark_objective()
+    return getattr(objective, 'python', DEFAULT_PYTHON_VERSION)
+
+
 def create_conda_env(
-        env_name, recreate=False, pytest=False, empty=False, quiet=False):
+    env_name, benchmark=None, recreate=False, pytest=False,
+    empty=False, quiet=False
+):
     """Create a conda env with name env_name and install basic utilities.
 
 
@@ -54,6 +64,9 @@ def create_conda_env(
     ----------
     env_name : str
         The name of the conda env that will be created.
+    benchmark : benchopt.Benchmark (optional)
+        The benchmark is used to get the python version to use in the env.
+        If None, the default python version is used.
     recreate : bool (default: False)
         It the conda env exists and recreate is set to True, it will be
         overwritten with the new env. If it is False, the env will be untouched
@@ -98,13 +111,17 @@ def create_conda_env(
     force = " --force" if recreate else ""
 
     benchopt_requirement, benchopt_editable = get_benchopt_requirement(pytest)
+    python_version = get_benchmark_python_version(benchmark)
 
     benchopt_env = BENCHOPT_ENV.format(
+        python_version=python_version,
         benchopt_requirement=benchopt_requirement
     )
 
     if empty:
-        benchopt_env = EMPTY_ENV
+        benchopt_env = EMPTY_ENV.format(
+            python_version=python_version
+        )
 
     print(f"Creating conda env '{env_name}':... ", end='', flush=True)
     if DEBUG:
