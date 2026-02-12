@@ -101,7 +101,7 @@ def test_julia_solver(test_env_name, no_debug_log):
     class Solver(JuliaSolver):
         name = 'julia_solver'
         requirements = [
-            'https://repo.prefix.dev/julia-forge::julia', 'pip::julia'
+            'julia', 'pip::julia'
         ]
 
         def set_objective(self, X):

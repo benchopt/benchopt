@@ -54,7 +54,7 @@ class JuliaSolver(BaseSolver):
     # Requirements
     install_cmd = 'conda'
     requirements = [
-        'https://repo.prefix.dev/julia-forge::julia', 'pip::julia'
+        'julia', 'pip::julia'
     ]
 
     @classmethod
