@@ -119,9 +119,9 @@ def create_conda_env(
 
             if not env_python_version.startswith(str(python_version)):
                 print()
-                raise RuntimeError(
+                warnings.warn(
                     f"The python version in conda env ({env_python_version}) "
-                    "is incompatible with the one required by the benchmark "
+                    "is different from the one required by the benchmark "
                     f"({python_version}). You can correct this by either "
                     "using the --recreate option or fixing the python "
                     f"version in conda env {env_name}."
