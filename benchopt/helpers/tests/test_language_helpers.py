@@ -90,6 +90,8 @@ def test_r_solver(test_env_name, no_debug_log):
 def test_julia_solver(test_env_name, no_debug_log):
     if sys.platform.startswith("win"):
         pytest.skip("Julia's PyCall library fail to install on Windows")
+    if sys.platform.startswith("darwin"):
+        pytest.skip("Julia's PyCall library fail to install on macOS")
 
     solver = """
     from benchopt.helpers.julia import JuliaSolver
