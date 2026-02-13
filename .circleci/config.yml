@@ -24,7 +24,8 @@ jobs:
           command: |
             # remove the cache index
             mamba clean -i -y
-            mamba install python=3.10 r-base rpy2 cython -yq
+            mamba install python=3.10 r-base rpy2 \
+                          numpy cython -yq
             pip install --upgrade "setuptools<58.5"
             pip install --upgrade --progress-bar off -e .[doc]
 
