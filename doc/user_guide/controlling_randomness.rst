@@ -25,19 +25,19 @@ or ``torch.manual_seed``) to obtain deterministic pseudo-random streams.
 Each argument is a flag which corresponds to an axis of the experiment. Setting the
 flag to ``True`` makes the seed vary when this element changes.
 
-- ``use_objective``: include the objective identity.
-- ``use_dataset``: include the dataset identity.
-- ``use_solver``: include the solver identity.
-- ``use_repetition``: include the repetition index.
+- ``use_objective``: seed changes when the objective vary.
+- ``use_dataset``: seed changes when the dataset vary.
+- ``use_solver``: seed changes when the solver vary.
+- ``use_repetition``: seed changes on each the repetition.
 
-The identities of the objective, dataset and solver are derived from their class
-name and their parameters. This means that if you change the parameters of a
+The objective, dataset and solver are considered to vary when their name
+or parameters change. This means that if you change the parameters of a
 solver, it will be considered as a different solver and the seed will change if
 ``use_solver=True``.
 
 By toggling these flags, you choose which experimental axes cause randomness
-to change. By default, the generated seed is different for each combination of
-``Dataset``, ``Objective``, ``Solver`` and varies across repetition.
+to change. By default, the generated seed is independent from the combination
+of ``Dataset``, ``Objective``, ``Solver`` and across repetitions.
 
 Examples:
 
@@ -50,8 +50,11 @@ Examples:
 How seeding is provided
 -----------------------
 
-The user may provide a **master seed** to the benchmark via the ``--seed`` flag.
-
+The user may provide a **main seed** to the benchmark via the ``--seed`` flag.
+By default, this seed is set to 0, to avoid disrupting caching. This means that
+During the benchmark, Benchopt calls ``set_seed`` to combine the main seed with
+the components selected by the flags (objective, dataset, solver, repetition).
+This produces a unique, reproducible per-run integer seed.
 During the benchmark, Benchopt calls ``set_seed`` to combine the master seed with
 the identities selected by the flags (objective, dataset, solver, repetition).
 This produces a unique, reproducible per-run seed.
