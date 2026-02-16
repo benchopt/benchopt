@@ -154,6 +154,36 @@ def product_param(parameters):
                itertools.product(*parameters.values()))
 
 
+def get_configs(dataset_class, obj_class, solver_class=None):
+    """Merge configuration for dataset, objective and solver with priority.
+
+    Later configurations override earlier ones.
+
+    Returns
+    -------
+    all_configs: dict
+        The merged configuration dictionary with key `dataset`, `objective`,
+        and `solver`.
+    """
+    dataset_params = getattr(dataset_class, 'test_parameters', {})
+    dataset_config = list(product_param(dataset_params))[0].copy()
+
+    objective_config = getattr(obj_class, 'test_config', {}).copy()
+    solver_config = {}
+    if solver_class is not None and hasattr(solver_class, "test_config"):
+        solver_config = solver_class.test_config.copy()
+
+    dataset_config.update(**objective_config.pop('dataset', {}))
+    dataset_config.update(**solver_config.pop('dataset', {}))
+    objective_config.update(**solver_config.pop('objective', {}))
+    all_config = {
+        'dataset': dataset_config,
+        'objective': objective_config,
+        'solver': solver_config,
+    }
+    return all_config
+
+
 def sanitize(name):
     """Sanitize a name to be used as an identifier.
 

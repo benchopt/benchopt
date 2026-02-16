@@ -209,10 +209,7 @@ class Benchmark:
             f"Found possible datasets {test_datasets}."
         )
         test_class = test_datasets[0]
-        test_params = list(product_param(getattr(
-            test_class, 'test_parameters', {}
-        )))
-        return test_class, test_params
+        return test_class
 
     def check_dataset_patterns(self, dataset_patterns, class_only=False):
         "Check that the patterns are valid and return selected configurations."
