@@ -18,7 +18,7 @@ API
   By `Hippolyte Verninas`_ (:gh:`878`)
 
 - Add API to control randomness in benchmarks via ``get_seed`` method in base classes.
-  By `Hippolyte Verninas`_ (:gh:`837`)
+  By `Hippolyte Verninas`_ and `Thomas Moreau`_ (:gh:`837`)
 
 FIX
 ---
