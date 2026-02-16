@@ -355,8 +355,8 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
         # We compare to the last seed (computed with the most restrictive
         # parameters) to check if the data should be recomputed.
         elif (
-            self.last_seed is not None and
-            self.last_seed != self._get_seed(**self.seed_params)
+            self._used_seed is not None and
+            self._used_seed != self._get_seed(**self._seed_params)
         ):
             self._data = self.get_data()
 

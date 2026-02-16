@@ -5,13 +5,16 @@ class SeedMixin:
     """Mixin class to manage random seed for reproducibility."""
     def __init__(self):
         super().__init__()
-        self.seed_params = {
+        # Tracks which components are used for the seed, uses
+        # the most restrictive seed parameters for later caching.
+        self._seed_params = {
             "use_objective": False,
             "use_dataset": False,
             "use_solver": False,
             "use_repetition": False
         }
-        self.last_seed = None
+        # We save the seed using the most restrictive seed parameters
+        self._used_seed = None
 
     def _get_seed(
         self, use_objective, use_dataset,
@@ -67,6 +70,8 @@ class SeedMixin:
         """Get the random seed for this solver instance. Setting use_objective,
         use_dataset, use_solver or use_repetition to False will return a seed
         that is not affected by the corresponding component.
+        The seed is computed by hashing the names of the components and
+        the base seed. The seed is in the range [0, 2**32 - 1].
         """
         seed = self._get_seed(
             use_objective, use_dataset,
@@ -74,9 +79,9 @@ class SeedMixin:
         )
 
         # We save the most restrictive seed parameters for later caching
-        for key in self.seed_params:
-            self.seed_params[key] = eval(key) or self.seed_params[key]
+        for key in self._seed_params:
+            self._seed_params[key] |= locals()[key]
 
-        self.last_seed = self._get_seed(**self.seed_params)
+        self._used_seed = self._get_seed(**self._seed_params)
 
         return seed

@@ -631,49 +631,32 @@ class TestSeed:
     ):
         seeds = []
 
-        with temp_benchmark(
-            objective=self.get_objective(
-                name="obj1",
-            ),
-            solvers=self.get_solver(
-                name="solver1",
-                use_objective=use_objective,
-                use_dataset=use_dataset,
-                use_solver=use_solver
-            ),
-            datasets=self.get_dataset(name="dataset1")
-        ) as bench:
-            with CaptureCmdOutput() as out:
-                cmd_str = f"{bench.benchmark_dir} --no-cache "
-                cmd_str += "--no-plot"
-                run(cmd_str.split(), standalone_mode=False)
+        for o_name, d_name, s_name in [
+            ("objective_1", "dataset_1", "solver_1"),
+            (objective_name, dataset_name, solver_name)
+        ]:
+            # Only check for solver as all classes use the same mixin
+            with temp_benchmark(
+                objective=self.get_objective(
+                    name=o_name,
+                ),
+                solvers=self.get_solver(
+                    name=s_name,
+                    use_objective=use_objective,
+                    use_dataset=use_dataset,
+                    use_solver=use_solver
+                ),
+                datasets=self.get_dataset(name=d_name)
+            ) as bench:
+                with CaptureCmdOutput() as out:
+                    cmd_str = f"{bench.benchmark_dir} --no-cache "
+                    cmd_str += "--no-plot"
+                    run(cmd_str.split(), standalone_mode=False)
 
-        parsed_output = out.output.split("\n")
-        for s in parsed_output:
-            if s.startswith("#SEED-sol="):
-                seeds.append(s)
-
-        with temp_benchmark(
-            objective=self.get_objective(
-                name=objective_name,
-            ),
-            solvers=self.get_solver(
-                name=solver_name,
-                use_objective=use_objective,
-                use_dataset=use_dataset,
-                use_solver=use_solver
-            ),
-            datasets=self.get_dataset(name=dataset_name)
-        ) as bench:
-            with CaptureCmdOutput() as out:
-                cmd_str = f"{bench.benchmark_dir} --no-cache "
-                cmd_str += "--no-plot"
-                run(cmd_str.split(), standalone_mode=False)
-
-        parsed_output = out.output.split("\n")
-        for s in parsed_output:
-            if s.startswith("#SEED-sol="):
-                seeds.append(s)
+            parsed_output = out.output.split("\n")
+            for s in parsed_output:
+                if s.startswith("#SEED-sol="):
+                    seeds.append(s)
 
         assert len(seeds) == 2
 
@@ -706,7 +689,7 @@ class TestSeed:
                 seeds.append(s)
 
         assert len(seeds) == 2, f"Found {len(seeds)} seeds instead of 2"
-        assert seeds[0] == seeds[1], "Seeds are not equal"
+        assert seeds[0] == seeds[1], "Seeds should be equal"
 
     def test_dataset_simple(self, no_debug_log):
         with temp_benchmark(

@@ -10,6 +10,7 @@ User guide
 
     ml_benchmark
     tweak_datasets
+    controlling_randomness
     iterative_solvers
     advanced
     add_custom_plot
@@ -17,4 +18,3 @@ User guide
     tests_definition
     API_ref
     CLI_ref
-    controlling_randomness
