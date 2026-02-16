@@ -57,7 +57,7 @@ the components selected by the flags (objective, dataset, solver, repetition).
 This produces a unique, reproducible per-run integer seed.
 During the benchmark, Benchopt calls ``set_seed`` to combine the main seed with
 the components selected by the flags (objective, dataset, solver, repetition).
-This produces a unique, reproducible per-run seed.
+This produces a unique, reproducible per-run integer seed.
 
 When to call get_seed
 ---------------------
