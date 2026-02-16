@@ -5,6 +5,13 @@ What's new
 
 .. currentmodule:: benchopt
 
+.. _changes_1_9:
+
+Version 1.9 - In development
+----------------------------
+
+
+
 .. _changes_1_8_1:
 
 Version 1.8.1 - 16/02/2026
