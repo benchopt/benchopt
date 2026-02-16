@@ -10,6 +10,7 @@ User guide
 
     ml_benchmark
     tweak_datasets
+    controlling_randomness
     iterative_solvers
     advanced
     add_custom_plot

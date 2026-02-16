@@ -10,7 +10,7 @@ class ParametrizedNameMixin():
     def __init__(self, **parameters):
         """Default init set parameters base on the cls.parameters
         """
-        pass
+        super().__init__()
 
     def save_parameters(self, **parameters):
         _parameters = next(product_param(self.parameters))
