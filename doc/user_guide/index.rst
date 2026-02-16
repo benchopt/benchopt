@@ -12,6 +12,7 @@ User guide
     tweak_datasets
     controlling_randomness
     iterative_solvers
+    config_benchopt
     advanced
     add_custom_plot
     distributed_run
