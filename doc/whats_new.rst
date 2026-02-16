@@ -11,6 +11,32 @@ Version 1.9 - In development
 ----------------------------
 
 
+
+.. _changes_1_8_1:
+
+Version 1.8.1 - 16/02/2026
+--------------------------
+
+API
+---
+
+- Add ``minimize`` param to the stopping criterions to specify if the criterion
+  should be minimized or maximized.
+  By `Hippolyte Verninas`_ (:gh:`878`)
+
+- Add API to control randomness in benchmarks via ``get_seed`` method in base classes.
+  By `Hippolyte Verninas`_ and `Thomas Moreau`_ (:gh:`837`)
+
+FIX
+---
+
+- Add ``minimize`` option for the default bar-chart, to allow visualising solvers
+  which are minimizing or maximizing the objective.
+  By `Hippolyte Verninas`_ (:gh:`881`)
+
+- ``benchopt install`` now uses the ``conda-forge`` channel by default
+  By `Hippolyte Verninas`_ (:gh:`879`)
+
 .. _changes_1_8:
 
 Version 1.8 - 19/01/2026

@@ -7,7 +7,7 @@ In order to make it easy to run a new benchmark, benchopt provides an interface
 to specify and install requirements for the various components of the benchmarks.
 
 - By default, calling ``benchopt install .`` will install the requirements for the
-   benchmark, including all solvers and datasets.
+  benchmark, including all solvers and datasets, using the ``conda-forge`` channel.
 
 - The minimum requirements to run the benchmark are specified in
   ``objective.py``. They can be installed using the command
