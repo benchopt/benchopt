@@ -55,7 +55,7 @@ By default, this seed is set to 0, to avoid disrupting caching. This means that
 During the benchmark, Benchopt calls ``set_seed`` to combine the main seed with
 the components selected by the flags (objective, dataset, solver, repetition).
 This produces a unique, reproducible per-run integer seed.
-During the benchmark, Benchopt calls ``set_seed`` to combine the master seed with
+During the benchmark, Benchopt calls ``set_seed`` to combine the main seed with
 the identities selected by the flags (objective, dataset, solver, repetition).
 This produces a unique, reproducible per-run seed.
 
