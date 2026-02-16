@@ -622,7 +622,7 @@ class TestSeed:
     @pytest.mark.parametrize('use_objective', [True, False])
     @pytest.mark.parametrize('use_dataset', [True, False])
     @pytest.mark.parametrize('use_solver', [True, False])
-    @pytest.mark.parametrize('objective_name', ["obj1", "obj2"])
+    @pytest.mark.parametrize('objective_name', ["objective1", "objective2"])
     @pytest.mark.parametrize('dataset_name', ["dataset1", "dataset2"])
     @pytest.mark.parametrize('solver_name', ["solver1", "solver2"])
     def test_ignore(
@@ -632,7 +632,7 @@ class TestSeed:
         seeds = []
 
         for o_name, d_name, s_name in [
-            ("objective_1", "dataset_1", "solver_1"),
+            ("objective1", "dataset1", "solver1"),
             (objective_name, dataset_name, solver_name)
         ]:
             # Only check for solver as all classes use the same mixin
@@ -661,7 +661,7 @@ class TestSeed:
         assert len(seeds) == 2
 
         if (
-            (objective_name == "obj1" or not use_objective) and
+            (objective_name == "objective1" or not use_objective) and
             (dataset_name == "dataset1" or not use_dataset) and
             (solver_name == "solver1" or not use_solver)
         ):
