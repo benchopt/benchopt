@@ -229,7 +229,8 @@ def test_solver_run(benchmark, solver_class):
             'Solver skipped all test configuration. At least one simulated '
             'dataset and one objective config should be compatible with the '
             'solver, potentially provided through "Solver.test_config" class '
-            f'attribute or with `Dataset.test_parameters`. Reasons:\n-{reasons}'
+            'attribute or with `Dataset.test_parameters`. Reasons:\n'
+            f'-{reasons}'
         )
 
 

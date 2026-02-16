@@ -32,7 +32,9 @@ The test run by ``benchopt test`` will make sure that:
 
 The tests that are run can be found in the :ref:`tests_definition`.
 
-By default, if the benchmark has been created using one of our templates, the repo contains some github actions that will try to run these tests on each push/pull request, and once a week, to ensure long term maintainability.
+By default, if the benchmark has been created using one of our templates, the
+repo contains some github actions that will try to run these tests on each
+push/pull request, and once a week, to ensure long term maintainability.
 
 .. Hint::
 
@@ -54,7 +56,10 @@ run, there are two ways to define appropriate configurations:
 to test the solver. For each solver, at least one of these configurations
 should be compatible (not skipped).
 
-- The solvers can also provide a ``test_config`` class attribute, which is a dictionary with optional keys ``dataset, objective``. The value of these keys should be a dictionary of parameters for the classes ``Dataset`` and ``Objective``, that will be compatible with the given ``Solver``.
+- The solvers can also provide a ``test_config`` class attribute, which is a
+dictionary with optional keys ``dataset, objective``. The value of these keys
+should be a dictionary of parameters for the classes ``Dataset`` and
+``Objective``, that will be compatible with the given ``Solver``.
 
 
 .. _pytest_option:
@@ -68,7 +73,9 @@ the tests are executed and in which environment the installation tests are run.
 
 For this command, there are two layers of options that can be specified: the ``benchopt test`` command is a wrapper around the ``pytest`` command,
 and some options can be passed to ``benchopt test``, while others are passed to
-the underlying ``pytest``. When an option from ``pytest`` is not recognized, and needs to be passed explicitely to the underlying command, it must be separated from the ``benchopt test`` options by a ``--``.
+the underlying ``pytest``. When an option from ``pytest`` is not recognized,
+and needs to be passed explicitely to the underlying command, it must be
+separated from the ``benchopt test`` options by a ``--``.
 
 First, the ``benchopt test`` command accepts a ``--env-name`` flag to specify
 in which conda environment the tests should be run. If it is not provided, the
@@ -76,7 +83,8 @@ test are run in the current environment. If provided, the environment is created
 if it does not exist yet and is also used for the installation tests.
 
 Second, extra arguments can be passed to the underlying ``pytest`` command.
-Classical ``pytest`` options such as ``-k`` to only run tests that match a given expression, or ``-vs`` for  a more verbose output, can be used.
+Classical ``pytest`` options such as ``-k`` to only run tests that match a
+given expression, or ``-vs`` for  a more verbose output, can be used.
 We also provide extra options for the tests that are run in ``benchopt``:
 
 - ``--test-env=TEST_ENV``: This option is used to specify an environment in
@@ -100,9 +108,12 @@ datasets, or solvers that require a GPU.
 In this case, the tests can be configured to be skipped or marked as expected
 to fail (xfailed) for the ``benchopt test`` command.
 This can be done by modifying the ``test_config.py`` file, located in the root
-folder of the benchmark, and adding a function that skip specific configurations.
+folder of the benchmark, and adding a function that skip specific
+configurations.
 
-Implementing a function named ``check_TESTNAME`` with the same argument as the original test, you can then call ``pytest.xfail`` or ``pytest.skip`` to mark the test appropriately.
+Implementing a function named ``check_TESTNAME`` with the same argument as the
+original test, you can then call ``pytest.xfail`` or ``pytest.skip`` to mark
+the test appropriately.
 For instance, in order to skip the test ``test_solver_install`` for the solver
 ``solver1`` which is defined in the benchmark, one can add the following
 function to the ``test_config.py`` file:
