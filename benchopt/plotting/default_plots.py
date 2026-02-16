@@ -80,13 +80,13 @@ class BarChart(BasePlot):
             df_filtered = df_filtered.select_dtypes(include=['number'])
             if objective_column not in df_filtered:
                 continue
-            eps = EPS if minimize else -EPS
-            c_star = df_filtered[objective_column].min() + eps
             if minimize:
+                c_star = df_filtered[objective_column].min() + EPS
                 df_tol = df_filtered.groupby('stop_val').filter(
                     lambda x: x[objective_column].max() < c_star
                 )
             else:
+                c_star = df_filtered[objective_column].max() - EPS
                 df_tol = df_filtered.groupby('stop_val').filter(
                     lambda x: x[objective_column].min() > c_star
                 )
