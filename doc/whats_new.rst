@@ -10,6 +10,13 @@ What's new
 Version 1.9 - In development
 ----------------------------
 
+
+
+.. _changes_1_8_1:
+
+Version 1.8.1 - 16/02/2026
+----------------------------
+
 API
 ---
 
@@ -24,7 +31,7 @@ FIX
 ---
 
 - Add ``minimize`` option for the default bar-chart, to allow visualising solvers
-  which are minimizing or maximizing the objective. 
+  which are minimizing or maximizing the objective.
   By `Hippolyte Verninas`_ (:gh:`881`)
 
 - ``benchopt install`` now uses the ``conda-forge`` channel by default
