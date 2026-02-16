@@ -22,8 +22,8 @@ jobs:
       - run:
           name: Get Python running
           command: |
-            # remove the cache index
             source ~/miniconda/etc/profile.d/conda.sh
+            # remove the cache index
             mamba clean -i -y
             mamba create -n benchopt-docs python=3.10 r-base rpy2 numpy cython -yq
             conda activate benchopt-docs
