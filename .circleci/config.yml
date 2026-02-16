@@ -22,12 +22,16 @@ jobs:
       - run:
           name: Get Python running
           command: |
+            source ~/miniconda/etc/profile.d/conda.sh
             # remove the cache index
             mamba clean -i -y
-            mamba install python=3.10 r-base rpy2 \
-                          numpy cython -yq
+            mamba create -n benchopt-docs python=3.10 r-base rpy2 numpy cython -yq
+            conda activate benchopt-docs
             pip install --upgrade "setuptools<58.5"
             pip install --upgrade --progress-bar off -e .[doc]
+            # Make sure the environment is used in subsequent steps
+            echo "source ~/miniconda/etc/profile.d/conda.sh" >> $BASH_ENV
+            echo "conda activate benchopt-docs" >> $BASH_ENV
 
       - save_cache:
           key: pkgs-cache
@@ -40,6 +44,7 @@ jobs:
           name: Check installation
           command: |
             which python
+            python -c "import numpy; print(numpy.__version__)"
             python -c "import benchopt"
 
       # Build docs
