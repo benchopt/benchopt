@@ -526,7 +526,9 @@ def install(
                 )
 
         # create environment if necessary
-        create_conda_env(env_name, recreate=recreate, quiet=quiet)
+        create_conda_env(
+            env_name, benchmark=benchmark, recreate=recreate, quiet=quiet
+        )
 
     # List solver and datasets classes to install
     if len(dataset_names) == 0 and len(solver_names) > 0:
@@ -582,7 +584,7 @@ def test(benchmark, env_name, pytest_args):
 
     env_option = ''
     if env_name is not None:
-        create_conda_env(env_name, pytest=True)
+        create_conda_env(env_name, benchmark=benchmark, pytest=True)
         if _run_shell_in_conda_env("pytest --version", env_name=env_name) != 0:
             raise ModuleNotFoundError(
                 f"pytest is not installed in conda env {env_name}.\n"

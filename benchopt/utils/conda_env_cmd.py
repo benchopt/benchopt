@@ -20,6 +20,7 @@ CONDA_CMD = get_setting('conda_cmd')
 if sys.platform == 'win32' and not CONDA_CMD.lower().startswith('call'):
     CONDA_CMD = f"CALL {CONDA_CMD}"
 
+DEFAULT_PYTHON_VERSION = '3.10'
 
 # Yaml config file for benchopt env.
 BENCHOPT_ENV = """
@@ -27,7 +28,7 @@ channels:
   - conda-forge
   - nodefaults
 dependencies:
-  - python=3.10
+  - python={python_version}
   - numpy
   - cython
   - compilers
@@ -41,12 +42,21 @@ channels:
   - conda-forge
   - nodefaults
 dependencies:
-  - python=3.10
+  - python={python_version}
 """
 
 
+def get_benchmark_python_version(benchmark):
+    if benchmark is None:
+        return DEFAULT_PYTHON_VERSION
+    objective = benchmark.get_benchmark_objective()
+    return getattr(objective, 'python', DEFAULT_PYTHON_VERSION)
+
+
 def create_conda_env(
-        env_name, recreate=False, pytest=False, empty=False, quiet=False):
+    env_name, benchmark=None, recreate=False, pytest=False,
+    empty=False, quiet=False
+):
     """Create a conda env with name env_name and install basic utilities.
 
 
@@ -54,6 +64,9 @@ def create_conda_env(
     ----------
     env_name : str
         The name of the conda env that will be created.
+    benchmark : benchopt.Benchmark (optional)
+        The benchmark is used to get the python version to use in the env.
+        If None, the default python version is used.
     recreate : bool (default: False)
         It the conda env exists and recreate is set to True, it will be
         overwritten with the new env. If it is False, the env will be untouched
@@ -68,6 +81,8 @@ def create_conda_env(
 
     # Get a list of all conda envs
     _, existing_conda_envs = list_conda_envs()
+
+    python_version = get_benchmark_python_version(benchmark)
 
     if env_name in existing_conda_envs and not recreate:
         print(
@@ -92,6 +107,25 @@ def create_conda_env(
                 "by either using the --recreate option or fixing the version "
                 f"of benchopt in conda env {env_name}."
             )
+
+        # Check that the python version is compatible with the one
+        # required by the benchmark.
+        if benchmark is not None:
+            _, env_python_version = _run_shell_in_conda_env(
+                "python --version", env_name=env_name,
+                capture_stdout=True, return_output=True
+            )
+            env_python_version = env_python_version.strip().split()[-1]
+
+            if not env_python_version.startswith(str(python_version)):
+                print()
+                warnings.warn(
+                    f"The python version in conda env ({env_python_version}) "
+                    "is different from the one required by the benchmark "
+                    f"({python_version}). You can correct this by either "
+                    "using the --recreate option or fixing the python "
+                    f"version in conda env {env_name}."
+                )
         print("done")
         return
 
@@ -100,11 +134,14 @@ def create_conda_env(
     benchopt_requirement, benchopt_editable = get_benchopt_requirement(pytest)
 
     benchopt_env = BENCHOPT_ENV.format(
+        python_version=python_version,
         benchopt_requirement=benchopt_requirement
     )
 
     if empty:
-        benchopt_env = EMPTY_ENV
+        benchopt_env = EMPTY_ENV.format(
+            python_version=python_version
+        )
 
     print(f"Creating conda env '{env_name}':... ", end='', flush=True)
     if DEBUG:
