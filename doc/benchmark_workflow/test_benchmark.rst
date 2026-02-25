@@ -69,8 +69,8 @@ The configurations from the three classes are merged with the following
 priority order, from lowest to highest: ``Dataset.test_config``,
 ``Objective.test_config``, ``Solver.test_config``.
 
-For instance, a solver that requires a specific dataset parameter and a
-specific objective parameter can define:
+For instance, to require a specific dataset parameter, a specific objective
+parameter, and a low number of iteration, one can define:
 
 .. code-block:: python
 
@@ -78,9 +78,22 @@ specific objective parameter can define:
         name = "solver1"
 
         test_config = {
-            'dataset': {'n_samples': 100, 'n_features': 10},
-            'objective': {'fit_intercept': False},
             'max_iter': 100,
+            'objective': {'fit_intercept': False},
+            'dataset': {'n_samples': 100, 'n_features': 10},
+        }
+
+Or to set a dataset ``my_data`` as the test dataset, with particular
+parameters for the whole benchmark:
+
+.. code-block:: python
+
+    class Objective(BaseObjective):
+        name = "my objective"
+        test_dataset = "my_data"
+        test_config = {
+            'reg': 0.9,
+            'dataset': {'debug': True},
         }
 
 Fallback with ``Dataset.test_parameters``
@@ -89,10 +102,10 @@ Fallback with ``Dataset.test_parameters``
 In addition to ``test_config``, the ``Dataset`` class can expose a
 ``test_parameters`` class attribute, which is a dictionary of parameters in
 the same format as ``parameters`` (see :ref:`parametrized`). Unlike
-``test_config``, this is a fallback mechanism: if a solver skips the default
-test configuration, all parameter combinations from ``test_parameters`` will be
-tried in turn, and the test will pass as long as at least one is compatible
-with the solver.
+``test_config``, this is a fallback mechanism only for ``test_solver_run``:
+if a solver skips the default test configuration, the parameter combinations
+from ``test_parameters`` will be tried in turn, and the test will pass as long
+as at least one is compatible with the solver.
 
 .. _pytest_option:
 
