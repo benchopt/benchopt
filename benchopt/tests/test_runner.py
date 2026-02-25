@@ -544,3 +544,273 @@ class TestCache:
 
         # Check that the 2nd run is not cached and the cache is invalidated.
         out.check_output("#RUN_SOLVER_MODIFIED", repetition=n_reps)
+
+
+class TestSeed:
+    """Test the seeding."""
+
+    def get_objective(
+        self, name="test-objective", use_objective=True,
+        use_dataset=True, use_solver=True
+    ):
+        seed_args = (
+            f"{use_objective},{use_dataset},{use_solver},use_repetition=True"
+        )
+        return (
+            f"""from benchopt import BaseObjective
+
+            class Objective(BaseObjective):
+                name = "{name}"
+                min_benchopt_version = "0.0.0"
+
+                def set_data(self, X, y): pass
+                def get_one_result(self): pass
+                def evaluate_result(self, beta):
+                    print(
+                        '#SEED-obj=',
+                        self.get_seed({seed_args})
+                    )
+                    return dict(value=1)
+                def get_objective(self): return dict(X=0, y=0)
+            """
+        )
+
+    def get_dataset(
+        self, name="test-dataset", use_objective=True,
+        use_dataset=True, use_solver=True, use_repetition=True
+    ):
+        seed_args = (
+            f"{use_objective},{use_dataset},{use_solver},{use_repetition}"
+        )
+        return (
+            f"""from benchopt import BaseDataset
+
+            class Dataset(BaseDataset):
+                name = "{name}"
+                def get_data(self):
+                    print(
+                        '#SEED-data=',
+                        self.get_seed({seed_args})
+                    )
+                    return dict(X=0, y=1)
+            """
+        )
+
+    def get_solver(
+        self, name="test-solver", use_objective=True,
+        use_dataset=True, use_solver=True
+    ):
+        seed_args = (
+            f"{use_objective},{use_dataset},{use_solver},use_repetition=True"
+        )
+        return (
+            f"""from benchopt import BaseSolver
+
+            class Solver(BaseSolver):
+                name = "{name}"
+                sampling_strategy = 'run_once'
+                def set_objective(self, X, y): pass
+                def run(self, _):
+                    print('#SEED-sol=',
+                        self.get_seed({seed_args})
+                    )
+                    return
+                def get_result(self): return dict(beta=1)
+            """
+        )
+
+    @pytest.mark.parametrize('use_objective', [True, False])
+    @pytest.mark.parametrize('use_dataset', [True, False])
+    @pytest.mark.parametrize('use_solver', [True, False])
+    @pytest.mark.parametrize('objective_name', ["objective1", "objective2"])
+    @pytest.mark.parametrize('dataset_name', ["dataset1", "dataset2"])
+    @pytest.mark.parametrize('solver_name', ["solver1", "solver2"])
+    def test_ignore(
+        self, no_debug_log, use_objective, use_dataset, use_solver,
+        objective_name, dataset_name, solver_name
+    ):
+        seeds = []
+
+        for o_name, d_name, s_name in [
+            ("objective1", "dataset1", "solver1"),
+            (objective_name, dataset_name, solver_name)
+        ]:
+            # Only check for solver as all classes use the same mixin
+            with temp_benchmark(
+                objective=self.get_objective(
+                    name=o_name,
+                ),
+                solvers=self.get_solver(
+                    name=s_name,
+                    use_objective=use_objective,
+                    use_dataset=use_dataset,
+                    use_solver=use_solver
+                ),
+                datasets=self.get_dataset(name=d_name)
+            ) as bench:
+                with CaptureCmdOutput() as out:
+                    cmd_str = f"{bench.benchmark_dir} --no-cache "
+                    cmd_str += "--no-plot"
+                    run(cmd_str.split(), standalone_mode=False)
+
+            parsed_output = out.output.split("\n")
+            for s in parsed_output:
+                if s.startswith("#SEED-sol="):
+                    seeds.append(s)
+
+        assert len(seeds) == 2
+
+        if (
+            (objective_name == "objective1" or not use_objective) and
+            (dataset_name == "dataset1" or not use_dataset) and
+            (solver_name == "solver1" or not use_solver)
+        ):
+            assert seeds[0] == seeds[1]
+        else:
+            assert seeds[0] != seeds[1]
+
+    def test_objective_simple(self, no_debug_log):
+        with temp_benchmark(
+            objective=self.get_objective(),
+            solvers=self.get_solver(),
+            datasets=self.get_dataset()
+        ) as bench:
+            with CaptureCmdOutput() as out:
+                cmd_str = f"{bench.benchmark_dir} --no-cache "
+                cmd_str += "--no-plot"
+                for it in range(2):
+                    run(cmd_str.split(),
+                        standalone_mode=False)
+
+        parsed_output = out.output.split("\n")
+        seeds = []
+        for s in parsed_output:
+            if s.startswith("#SEED-obj="):
+                seeds.append(s)
+
+        assert len(seeds) == 2, f"Found {len(seeds)} seeds instead of 2"
+        assert seeds[0] == seeds[1], "Seeds should be equal"
+
+    def test_dataset_simple(self, no_debug_log):
+        with temp_benchmark(
+            objective=self.get_objective(),
+            solvers=self.get_solver(),
+            datasets=self.get_dataset()
+        ) as bench:
+            with CaptureCmdOutput() as out:
+                cmd_str = f"{bench.benchmark_dir} --no-cache "
+                cmd_str += "--no-plot"
+                for it in range(2):
+                    run(cmd_str.split(),
+                        standalone_mode=False)
+
+        parsed_output = out.output.split("\n")
+        seeds = []
+        for s in parsed_output:
+            if s.startswith("#SEED-data="):
+                seeds.append(s)
+
+        assert len(seeds) == 2, f"Found {len(seeds)} seeds instead of 2"
+        assert seeds[0] == seeds[1], "Seeds are not equal"
+
+    def test_seed_different(self, no_debug_log):
+        with temp_benchmark(
+            objective=self.get_objective(),
+            solvers=self.get_solver(),
+            datasets=self.get_dataset()
+        ) as bench:
+            with CaptureCmdOutput() as out:
+                cmd_str = f"{bench.benchmark_dir} --no-cache --no-plot "
+                for it in range(2):
+                    run((cmd_str+f"--seed {it}").split(),
+                        standalone_mode=False)
+
+        parsed_output = out.output.split("\n")
+        seeds = []
+        for s in parsed_output:
+            if s.startswith("#SEED-sol="):
+                seeds.append(s)
+
+        assert len(seeds) == 2, f"Found {len(seeds)} seeds instead of 2"
+        assert seeds[0] != seeds[1]
+
+    def test_seed_repetition(self, no_debug_log):
+        with temp_benchmark(
+            objective=self.get_objective(),
+            solvers=self.get_solver(),
+            datasets=self.get_dataset()
+        ) as bench:
+            with CaptureCmdOutput() as out:
+                cmd_str = f"{bench.benchmark_dir} --no-cache "
+                cmd_str += "--no-plot -r 2"
+                for it in range(2):
+                    run(cmd_str.split(),
+                        standalone_mode=False)
+
+        parsed_output = out.output.split("\n")
+        seeds = []
+        for s in parsed_output:
+            if s.startswith("#SEED-sol="):
+                seeds.append(s)
+
+        assert len(seeds) == 4, f"Found {len(seeds)} seeds instead of 4"
+        assert seeds[0] == seeds[2], "Seeds are not equal"
+        assert seeds[1] == seeds[3], "Seeds are not equal"
+        assert seeds[0] != seeds[1], (
+            "Seeds for different repetitions should not be equal"
+        )
+
+    def test_cache(self, no_debug_log):
+        with temp_benchmark(
+            objective=self.get_objective(),
+            solvers=self.get_solver(),
+            datasets=self.get_dataset()
+        ) as bench:
+            with CaptureCmdOutput() as out:
+                for _ in range(2):
+                    cmd_str = f"{bench.benchmark_dir} --seed 0 --no-plot -r 3"
+                    run(cmd_str.split(), standalone_mode=False)
+
+        # Check that the runs are cached when seed is the same
+        out.check_output("#SEED-sol=", repetition=3)
+
+        with temp_benchmark(
+            objective=self.get_objective(),
+            solvers=self.get_solver(),
+            datasets=self.get_dataset()
+        ) as bench:
+            with CaptureCmdOutput() as out:
+                for seed in range(2):
+                    cmd_str = (
+                        f"{bench.benchmark_dir} --seed {seed} --no-plot -r 3"
+                    )
+                    run(cmd_str.split(), standalone_mode=False)
+
+        # Runs should not be cached when seed is different
+        out.check_output("#SEED-sol=", repetition=6)
+
+    def test_cache_dataset(self, no_debug_log):
+        with temp_benchmark(
+            objective=self.get_objective(),
+            solvers=self.get_solver(),
+            datasets=self.get_dataset(use_repetition=False)
+        ) as bench:
+            with CaptureCmdOutput() as out:
+                cmd_str = f"{bench.benchmark_dir} --no-plot -r 3"
+                run(cmd_str.split(), standalone_mode=False)
+
+        # Dataset should be loaded only once when seed is independant of rep
+        out.check_output("#SEED-data=", repetition=1)
+
+        with temp_benchmark(
+            objective=self.get_objective(),
+            solvers=self.get_solver(),
+            datasets=self.get_dataset(use_repetition=True)
+        ) as bench:
+            with CaptureCmdOutput() as out:
+                cmd_str = f"{bench.benchmark_dir} --no-plot -r 3"
+                run(cmd_str.split(), standalone_mode=False)
+
+        # Dataset should be computed for each repetition when seed
+        # is different for each repetition
+        out.check_output("#SEED-data=", repetition=3)
