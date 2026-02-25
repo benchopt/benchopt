@@ -20,7 +20,7 @@ CONDA_CMD = get_setting('conda_cmd')
 if sys.platform == 'win32' and not CONDA_CMD.lower().startswith('call'):
     CONDA_CMD = f"CALL {CONDA_CMD}"
 
-DEFAULT_PYTHON_VERSION = '3.10'
+DEFAULT_PYTHON_VERSION = '3.12'
 
 # Yaml config file for benchopt env.
 BENCHOPT_ENV = """
@@ -50,7 +50,7 @@ def get_benchmark_python_version(benchmark):
     if benchmark is None:
         return DEFAULT_PYTHON_VERSION
     objective = benchmark.get_benchmark_objective()
-    return getattr(objective, 'python', DEFAULT_PYTHON_VERSION)
+    return getattr(objective, 'python_version', DEFAULT_PYTHON_VERSION)
 
 
 def create_conda_env(
