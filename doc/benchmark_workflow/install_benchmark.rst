@@ -60,3 +60,30 @@ channel `pip` and the `conda` installer. The syntax is the following:
   install_cmd = 'conda'  # optional
   requirements = ['pip::pkg']  # pip package `pkg`
 
+
+.. _specify_python_version:
+
+Specifying a Python version
+---------------------------
+
+When benchopt creates a conda environments, it uses Python 3.12 by default.
+If a benchmark requires a specific Python version, it can be declared via
+the ``python_version`` class attribute on the ``Objective``:
+
+.. code-block:: python
+
+    class Objective(BaseObjective):
+        name = "my-benchmark"
+        python_version = "3.11"  # conda env will use Python 3.11
+        ...
+
+When running ``benchopt install --env-name myenv``, benchopt will:
+
+- **Create** the conda env with the requested Python version if it does not
+  exist yet.
+- **Warn** if the env already exists but its Python version does not match the
+  one declared in the objective, so that users can recreate the env with
+  ``--recreate`` if needed.
+
+If ``python_version`` is not set, the default version (3.12) is used.
+
