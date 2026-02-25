@@ -14,4 +14,3 @@ Benchmark workflow
     manage_benchmark_results
     write_benchmark
     test_benchmark
-    config_benchopt

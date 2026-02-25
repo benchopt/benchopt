@@ -123,12 +123,15 @@ class Benchmark:
         # replace dots to avoid issues with `with_suffix``
         self.name = self.name.replace('.', '-')
 
-        # Set the random seed for the benchmark
-        if seed is None:
-            self.seed = 0
-            print(f"No seed was specified. Selected global seed: {self.seed}")
-        else:
-            self.seed = seed
+        self._seed = seed
+
+    @property
+    def seed(self):
+        "Only set the seed if needed in the dataset"
+        if self._seed is None:
+            self._seed = 0
+            print(f"No seed was specified. Selected global seed: {self._seed}")
+        return self._seed
 
     def set_benchmark_module(self):
         # add PACKAGE_NAME as a module if it exists.
@@ -219,10 +222,7 @@ class Benchmark:
             f"Found possible datasets {test_datasets}."
         )
         test_class = test_datasets[0]
-        test_params = list(product_param(getattr(
-            test_class, 'test_parameters', {}
-        )))
-        return test_class, test_params
+        return test_class
 
     def check_dataset_patterns(self, dataset_patterns, class_only=False):
         "Check that the patterns are valid and return selected configurations."
