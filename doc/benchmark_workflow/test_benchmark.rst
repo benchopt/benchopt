@@ -41,26 +41,58 @@ push/pull request, and once a week, to ensure long term maintainability.
     The scheduling of the github action run can be changed in
     ``.github/workflows/main.yml``.
 
-Test for Solver run
-~~~~~~~~~~~~~~~~~~~
+Parameters' configuration for tests
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To ensure our third point, benchopt needs to load at least one small dataset
-that is compatible with each solver. By default, the benchmark will load a
-``Simulated`` dataset, that will be used for testing purposes. The name of this
-test dataset can be changed with the ``Objective.test_dataset`` attribute.
-As some solvers require different datasets and objective settings to be able to
-run, there are two ways to define appropriate configurations:
+By default, the benchmark will load a ``Simulated`` dataset for testing
+purposes. The name of this test dataset can be changed with the
+``Objective.test_dataset`` attribute. However, real datasets may be too large
+to be used in tests, and some solvers or objectives may require specific
+settings — for instance a specific regularization level to be fast, or a
+particular data format only possible with a given dataset.
+To handle these cases, ``benchopt`` provides a ``test_config`` class attribute
+that can be defined on the ``Dataset``, ``Objective``, and ``Solver`` classes.
+Each class can override the parameters used to instantiate any of the
+component classes during testing:
 
-- In the simulated dataset, one can add the class attribute
-``test_parameters``, which stands for a list of parameters that will be tried
-to test the solver. For each solver, at least one of these configurations
-should be compatible (not skipped).
+- ``Dataset.test_config`` directly contains the parameters passed to the
+  ``Dataset`` class.
+- ``Objective.test_config`` directly contains the parameters passed to the
+  ``Objective`` class, with an optional ``dataset`` key whose value is a
+  dictionary of parameters that override those of the dataset.
+- ``Solver.test_config`` directly contains the parameters passed to the
+  ``Solver`` class, with optional ``dataset`` and ``objective`` keys whose
+  values are dictionaries of parameters that override those of the dataset
+  and objective respectively.
 
-- The solvers can also provide a ``test_config`` class attribute, which is a
-dictionary with optional keys ``dataset, objective``. The value of these keys
-should be a dictionary of parameters for the classes ``Dataset`` and
-``Objective``, that will be compatible with the given ``Solver``.
+The configurations from the three classes are merged with the following
+priority order, from lowest to highest: ``Dataset.test_config``,
+``Objective.test_config``, ``Solver.test_config``.
 
+For instance, a solver that requires a specific dataset parameter and a
+specific objective parameter can define:
+
+.. code-block:: python
+
+    class Solver(BaseSolver):
+        name = "solver1"
+
+        test_config = {
+            'dataset': {'n_samples': 100, 'n_features': 10},
+            'objective': {'fit_intercept': False},
+            'max_iter': 100,
+        }
+
+Fallback with ``Dataset.test_parameters``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In addition to ``test_config``, the ``Dataset`` class can expose a
+``test_parameters`` class attribute, which is a dictionary of parameters in
+the same format as ``parameters`` (see :ref:`parametrized`). Unlike
+``test_config``, this is a fallback mechanism: if a solver skips the default
+test configuration, all parameter combinations from ``test_parameters`` will be
+tried in turn, and the test will pass as long as at least one is compatible
+with the solver.
 
 .. _pytest_option:
 
