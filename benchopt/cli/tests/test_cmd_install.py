@@ -390,7 +390,7 @@ class TestInstallCmd:
                         standalone_mode=False)
             out.check_output(success_msg)
 
-    def test_python_version_env_creation(self, no_debug_log):
+    def test_python_version_env_creation(self, no_debug_log, use_env):
         """Tests env creation with specific python version from objective."""
         env_name = f"_benchopt_test_py311_{uuid.uuid4()}"
         try:

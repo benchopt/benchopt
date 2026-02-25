@@ -133,7 +133,13 @@ def no_raise_install(request):
 
 
 @pytest.fixture(scope='session')
-def test_env_name(request):
+def use_env(request):
+    if request.config.getoption("--skip-env"):
+        pytest.skip("Skip creating a test env")
+
+
+@pytest.fixture(scope='session')
+def test_env_name(request, use_env):
     global _TEST_ENV_NAME
 
     if _TEST_ENV_NAME is None:
@@ -180,12 +186,10 @@ def no_pytest(test_env_name):
 
 
 @pytest.fixture(scope='session')
-def empty_env_name(request):
+def empty_env_name(request, use_env):
     global _EMPTY_ENV_NAME
 
     if _EMPTY_ENV_NAME is None:
-        if request.config.getoption("--skip-env"):
-            pytest.skip("Skip creating a test env")
         env_name = f"_benchopt_test_env_{uuid.uuid4()}"
         request.addfinalizer(delete_empty_env)
 
