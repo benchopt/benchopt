@@ -66,21 +66,22 @@ class CaptureCmdOutput(object):
     def __exit__(self, exc_class, value, traceback):
         self.out.__exit__(None, None, None)
 
+        self.output_checker = BenchoptCmdOutputProcessor(
+            self.out.output, self.delete_result_files
+        )
+
         suppressed = False
         if exc_class is SystemExit:
             if self.exit == value.args[0]:
                 suppressed = True
             else:
+                print(self.output)
                 raise value.with_traceback(traceback)
         elif self.exit is not None:
             raise RuntimeError(
                 "The cmd exited without exception but expected exit code "
                 f"{self.exit}."
             )
-
-        self.output_checker = BenchoptCmdOutputProcessor(
-            self.out.output, self.delete_result_files
-        )
 
         # If there was an exception, display the output
         if not suppressed and exc_class is not None:

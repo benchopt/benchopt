@@ -5,7 +5,6 @@ import pytest
 
 from benchopt.utils.temp_benchmark import temp_benchmark
 
-
 from benchopt.tests.utils import CaptureCmdOutput
 from benchopt.utils.shell_cmd import _run_shell_in_conda_env
 
@@ -87,6 +86,7 @@ class TestCmdTest:
                 assert self.debug
                 return dict(my_data=42)
         """
+        # This one should fail if called
         dataset2 = """
         from benchopt import BaseDataset
         class Dataset(BaseDataset):
@@ -129,6 +129,97 @@ class TestCmdTest:
             out.check_output("FAILED", repetition=n_fail)
             if error_type is not None:
                 out.check_output(error_type, repetition=3)
+
+    # Exepected corresponds to solver, objective and dataset p1 respectively.
+    @pytest.mark.parametrize('d_conf, o_conf, s_conf, expected', [
+        (None, None, None, (0, 0, 0)),
+        (1, None, None, (0, 0, 1)),
+        (None, (2, 2), None, (0, 2, 2)),
+        (1, (2, 2), None, (0, 2, 2)),
+        (None, None, (2, 2, None), (2, 2, 0)),
+        (None, (1, 1), (2, 2, None), (2, 2, 1)),
+        (None, None, (2, None, 2), (2, 0, 2)),
+        (3, (1, 1), (2, None, 2), (2, 1, 2)),
+        (None, None, (1, 2, 3), (1, 2, 3)),
+        (3, (3, 3), (1, 2, 3), (1, 2, 3)),
+    ], ids=[
+        'no_test_config', 'dataset_specifies_config',
+        'objective_specifies_dataset', 'objective_overrides_dataset',
+        'solver_specifies_objective', 'solver_overrides_objective',
+        'solver_specifies_dataset', 'solver_override_dataset',
+        'solver_specifies_all', 'solver_overrides_all',
+    ])
+    def test_setting_test_config(self, d_conf, o_conf, s_conf, expected):
+        dataset = """
+        from benchopt import BaseDataset
+        class Dataset(BaseDataset):
+            name = "simulated"
+            parameters = {'p1': [0]}
+            # TEST_CONFIG
+            def get_data(self):
+                print(f"Dataset#{self.p1}")
+                return dict(X=None)
+        """
+        objective = """
+        from benchopt import BaseObjective
+        class Objective(BaseObjective):
+            name = "test-objective"
+            parameters = {'p1': [0]}
+            # TEST_CONFIG
+            def set_data(self, X): print(f"Objective#{self.p1}")
+            def get_one_result(self): return dict(beta=None)
+            def evaluate_result(self, beta): return dict(value=1.0)
+            def get_objective(self):
+                return dict(X=None)
+        """
+        solver = """
+        from benchopt import BaseSolver
+        class Solver(BaseSolver):
+            name = "test-solver"
+            parameters = {'p1': [0]}
+            # TEST_CONFIG
+            def set_objective(self, X): print(f"Solver#{self.p1}")
+            def run(self, _): pass
+            def get_result(self): return dict(beta=None)
+        """
+        # Setup dataset test_config
+        if d_conf is not None:
+            d_conf = {'p1': d_conf}
+            dataset = dataset.replace(
+                '# TEST_CONFIG', f"test_config = {d_conf}"
+            )
+        if o_conf is not None:
+            o_conf = {
+                k: (v if k == "p1" else {'p1': v})
+                for k, v in zip(['p1', 'dataset'], o_conf)
+                if v is not None
+            }
+            objective = objective.replace(
+                '# TEST_CONFIG', f"test_config = {o_conf}"
+            )
+        if s_conf is not None:
+            s_conf = {
+                k: (v if k == "p1" else {'p1': v})
+                for k, v in zip(['p1', 'objective', 'dataset'], s_conf)
+                if v is not None
+            }
+            solver = solver.replace(
+                '# TEST_CONFIG', f"test_config = {s_conf}"
+            )
+        print(dataset)
+        print(objective)
+        print(solver)
+
+        with temp_benchmark(
+            datasets=dataset, objective=objective, solvers=solver
+        ) as bench:
+            with CaptureCmdOutput() as out:
+                benchopt_test(
+                    f"{bench.benchmark_dir} -sk test_solver_run".split(),
+                    'benchopt', standalone_mode=False
+                )
+            for k, v in zip(['Solver', 'Objective', 'Dataset'], expected):
+                out.check_output(f"{k}#{v}", repetition=1)
 
     def test_valid_call_in_env_no_pytest(self, test_env_name, no_pytest):
         with temp_benchmark() as bench:

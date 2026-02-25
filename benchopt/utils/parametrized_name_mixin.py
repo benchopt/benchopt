@@ -167,6 +167,7 @@ def get_configs(dataset_class, obj_class, solver_class=None):
     """
     dataset_params = getattr(dataset_class, 'test_parameters', {})
     dataset_config = list(product_param(dataset_params))[0].copy()
+    dataset_config.update(getattr(dataset_class, 'test_config', {}))
 
     objective_config = getattr(obj_class, 'test_config', {}).copy()
     solver_config = {}
