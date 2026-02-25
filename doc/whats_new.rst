@@ -10,7 +10,18 @@ What's new
 Version 1.9 - In development
 ----------------------------
 
+API
+---
 
+- Allow to specify ``test_config`` in all classes and ``Objective.test_dataset``
+  to tweak the behavior of ``benchopt test``.
+  By `Thomas Moreau`_ (:gh:`889`)
+
+FIX
+---
+
+- Fix failure in ``benchopt test`` when using ``get_seed`` in a class.
+  By `Thomas Moreau`_ (:gh:`889`) 
 
 .. _changes_1_8_1:
 
