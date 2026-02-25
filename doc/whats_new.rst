@@ -10,6 +10,13 @@ What's new
 Version 1.9 - In development
 ----------------------------
 
+API
+---
+
+- Add ``python_version`` attribute to :class:`BaseObjective` to specify the
+  Python version to use when creating a dedicated conda environment with
+  ``benchopt install --env-name``.
+  By `Hippolyte Verninas`_ and `Thomas Moreau`_ (:gh:`885`)
 
 
 .. _changes_1_8_1:
