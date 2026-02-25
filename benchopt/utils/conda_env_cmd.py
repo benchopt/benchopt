@@ -89,7 +89,9 @@ def create_conda_env(
             f"Conda env {env_name} already exists. Checking setup ... ",
             end='', flush=True
         )
-        env_version, editable_install = get_benchopt_version_in_env(env_name)
+        env_info = get_env_info(env_name)
+        env_version = env_info['version']
+        env_is_editable = env_info['is_editable']
         if env_version is None:
             print()
             raise RuntimeError(
@@ -98,7 +100,7 @@ def create_conda_env(
                 "by either using the --recreate option or installing benchopt "
                 f"in conda env {env_name}."
             )
-        if benchopt.__version__ != env_version and not editable_install:
+        if benchopt.__version__ != env_version and not env_is_editable:
             print()
             warnings.warn(
                 f"The local version of benchopt ({benchopt.__version__}) and "
@@ -111,11 +113,7 @@ def create_conda_env(
         # Check that the python version is compatible with the one
         # required by the benchmark.
         if benchmark is not None:
-            _, env_python_version = _run_shell_in_conda_env(
-                "python --version", env_name=env_name,
-                capture_stdout=True, return_output=True
-            )
-            env_python_version = env_python_version.strip().split()[-1]
+            env_python_version = env_info['python_version'].strip().split()[-1]
 
             if not env_python_version.startswith(str(python_version)):
                 print()
@@ -169,7 +167,9 @@ def create_conda_env(
         if empty:
             return
         # Check that the correct version of benchopt is installed in the env
-        env_version, env_editable = get_benchopt_version_in_env(env_name)
+        env_info = get_env_info(env_name)
+        env_version = env_info['version']
+        env_editable = env_info['is_editable']
         error_msg = (
             f"Installed the wrong version of benchopt ({env_version}) in "
             f"conda env. This should be version: {benchopt.__version__}. There"
@@ -186,12 +186,12 @@ def create_conda_env(
             print("done")
 
 
-def get_benchopt_version_in_env(env_name):
+def get_env_info(env_name):
     """Check that the version of benchopt installed in env_name is the same
     as the one running.
     """
     check_benchopt, output = _run_shell_in_conda_env(
-        "benchopt --version --check-editable",
+        "benchopt --check-env",
         env_name=env_name, capture_stdout=True, return_output=True
     )
 
@@ -199,13 +199,9 @@ def get_benchopt_version_in_env(env_name):
         if DEBUG:
             print(output)
         return None, None
-    output = [
-        line for line in output.splitlines()
-        if line.startswith('BENCHOPT_VERSION:')
-    ][0]
-    _, benchopt_version, is_editable = output.split(":")
-
-    return benchopt_version, is_editable == 'True'
+    import json
+    output = json.loads(output)
+    return output
 
 
 def delete_conda_env(env_name):

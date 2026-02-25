@@ -14,7 +14,7 @@ from benchopt.utils.misc import get_benchopt_requirement
 from benchopt.utils.conda_env_cmd import list_conda_envs
 from benchopt.utils.conda_env_cmd import create_conda_env
 from benchopt.utils.shell_cmd import _run_shell_in_conda_env
-from benchopt.utils.conda_env_cmd import get_benchopt_version_in_env
+from benchopt.utils.conda_env_cmd import get_env_info
 from benchopt.utils.profiling import print_stats
 from benchopt.parallel_backends import check_parallel_config
 
@@ -337,8 +337,8 @@ def run(config_file=None, **kwargs):
         )
 
     # check if environment was set up with benchopt
-    benchopt_version, is_editable = get_benchopt_version_in_env(env_name)
-    if benchopt_version is None:
+    env_info = get_env_info(env_name)
+    if env_info['version'] is None:
         raise RuntimeError(
             f"benchopt is not installed in env '{env_name}', "
             "see the command `benchopt install` to setup the environment."
@@ -346,11 +346,11 @@ def run(config_file=None, **kwargs):
     # check against running version
     from benchopt import __version__ as benchopt_version_running
     _, is_editable_running = get_benchopt_requirement()
-    if (benchopt_version_running != benchopt_version and not
-            (is_editable_running and is_editable)):
+    if (benchopt_version_running != env_info['version'] and not
+            (is_editable_running and env_info['is_editable'])):
         warnings.warn(
             f"Benchopt running version ({benchopt_version_running}) "
-            f"and version in env {env_name} ({benchopt_version}) differ")
+            f"and version in env {env_name} ({env_info['version']}) differ")
 
     # run the command in the conda env
     solvers_option = " ".join([f'-s "{s}"' for s in solver_names])
