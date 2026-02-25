@@ -418,8 +418,10 @@ class TestInstallCmd:
         """
         v = test_env_python_version
         if version_spec == "exact":
+            # Test exact version is the current one -> no warning
             version_spec = f"3.{v.split('.')[1]}"
         else:
+            # Current version is in range of the spec -> no warning
             version_spec = f">=3.{int(v.split('.')[1]) - 1}"
         with temp_benchmark(
             objective=_objective_with_python_version(version_spec)
@@ -446,8 +448,10 @@ class TestInstallCmd:
         """Tests warning when the python version constraint is not met."""
         v = test_env_python_version
         if version_spec == "exact":
+            # Test exact version is bellow the current one -> warning
             version_spec = f"3.{int(v.split('.')[1]) - 1}"
         else:
+            # Current version is out of range for the spec -> warning
             version_spec = f">=3.{int(v.split('.')[1]) + 1}"
         with temp_benchmark(
             objective=_objective_with_python_version(version_spec)
