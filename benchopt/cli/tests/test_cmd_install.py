@@ -1,10 +1,14 @@
 import re
+import uuid
+import warnings
 import click
 import pytest
 
 from benchopt.cli.main import install
 from benchopt.tests.utils import CaptureCmdOutput
 from benchopt.utils.temp_benchmark import temp_benchmark
+from benchopt.utils.conda_env_cmd import delete_conda_env
+from benchopt.utils.conda_env_cmd import get_env_info
 
 from benchopt.cli.tests.completion_cases import _test_shell_completion
 from benchopt.cli.tests.completion_cases import (  # noqa: F401
@@ -362,6 +366,83 @@ class TestInstallCmd:
                 install(f"{bench.benchmark_dir} -yf -s solver2 --gpu".split(),
                         standalone_mode=False)
             out.check_output(success_msg)
+
+    def test_python_version_env_creation(self, no_debug_log):
+        """Tests env creation with specific python version from objective."""
+        objective = """from benchopt import BaseObjective
+            class Objective(BaseObjective):
+                name = "test-objective"
+                python_version = "3.11"
+                def set_data(self, X, y): pass
+                def get_one_result(self): return dict(beta=None)
+                def evaluate_result(self, beta): return 1.
+                def get_objective(self): return dict(X=None, y=None, lmbd=None)
+        """
+        env_name = f"_benchopt_test_py311_{uuid.uuid4()}"
+        try:
+            with temp_benchmark(objective=objective) as bench:
+                install(
+                    [str(bench.benchmark_dir), '--env-name', env_name],
+                    'benchopt', standalone_mode=False
+                )
+                env_info = get_env_info(env_name)
+                env_python = env_info['python_version']
+                assert env_python.startswith('3.11'), (
+                    f"Expected python 3.11, got {env_python}"
+                )
+        finally:
+            delete_conda_env(env_name)
+
+    def test_python_version_no_warning_default(
+            self, test_env_name, no_debug_log
+    ):
+        """Tests no python-version warning is raised when versions match."""
+        env_info = get_env_info(test_env_name)
+        env_python = env_info['python_version']
+        if not env_python.startswith('3.12'):
+            pytest.skip("Test requires env with python version 3.12")
+        with temp_benchmark() as bench:
+            with warnings.catch_warnings(record=True) as caught:
+                warnings.simplefilter("always")
+                install(
+                    [str(bench.benchmark_dir), '--env-name', test_env_name],
+                    'benchopt', standalone_mode=False
+                )
+            python_warns = [
+                w for w in caught if "python version" in str(w.message)
+            ]
+            assert len(python_warns) == 0, (
+                f"Unexpected python version warning: {python_warns}"
+            )
+
+    def test_python_version_mismatch_warning(
+            self, test_env_name, no_debug_log
+    ):
+        """Tests warning when python version mismatches env."""
+
+        env_info = get_env_info(test_env_name)
+        env_python = env_info['python_version'].strip().split()[-1]
+        if env_python.startswith('3.11'):
+            pytest.skip(
+                "Test requires env with python version different from 3.11"
+            )
+        objective = """from benchopt import BaseObjective
+            class Objective(BaseObjective):
+                name = "test-objective"
+                python_version = "3.11"
+                def set_data(self, X, y): pass
+                def get_one_result(self): return dict(beta=None)
+                def evaluate_result(self, beta): return 1.
+                def get_objective(self): return dict(X=None, y=None, lmbd=None)
+        """
+        with temp_benchmark(objective=objective) as bench:
+            with pytest.warns(
+                UserWarning, match="python version in conda env"
+            ):
+                install(
+                    [str(bench.benchmark_dir), '--env-name', test_env_name],
+                    'benchopt', standalone_mode=False
+                )
 
     def test_complete_bench(self, bench_completion_cases):  # noqa: F811
 
