@@ -127,6 +127,7 @@ class Benchmark:
 
     @property
     def seed(self):
+        "Only set the seed if needed in the dataset"
         if self._seed is None:
             self._seed = 0
             print(f"No seed was specified. Selected global seed: {self._seed}")
