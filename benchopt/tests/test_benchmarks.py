@@ -6,6 +6,7 @@ from benchopt.stopping_criterion import SAMPLING_STRATEGIES
 from benchopt.utils.dynamic_modules import _get_module_from_file
 from benchopt.utils.parametrized_name_mixin import product_param
 from benchopt.utils.parametrized_name_mixin import get_configs
+from benchopt.runner import _seed_run
 
 
 def test_dataset_class(benchmark, dataset_class):
@@ -18,11 +19,10 @@ def test_dataset_class(benchmark, dataset_class):
 
     # Ensure that the dataset exposes a `get_data` function
     # that is callable
-    dataset = dataset_class.get_instance()
-    assert hasattr(dataset, 'get_data'), (
+    assert hasattr(dataset_class, 'get_data'), (
         "All dataset should implement get_data"
     )
-    assert callable(dataset.get_data), (
+    assert callable(dataset_class.get_data), (
         "dataset.get_data should be a callable"
     )
 
@@ -39,6 +39,9 @@ def test_dataset_get_data(benchmark, dataset_class):
         dataset_class, 'test_parameters', {}
     )))
     dataset = dataset_class.get_instance(**test_params[0])
+    _seed_run(
+        objective=None, dataset=dataset, solver=None, repetition=0, base_seed=0
+    )
 
     data = dataset._get_data()
     assert isinstance(data, (tuple, dict)), (
@@ -56,9 +59,14 @@ def test_benchmark_objective(benchmark, objective_class):
     dataset_class = benchmark.get_test_dataset()
     configs = get_configs(dataset_class, objective_class)
     dataset = dataset_class.get_instance(**configs['dataset'])
+    objective = objective_class.get_instance(**configs['objective'])
+
+    _seed_run(
+        objective=objective, dataset=dataset, solver=None,
+        repetition=0, base_seed=0
+    )
 
     # get one value for the objective, with the test_dataset
-    objective = objective_class.get_instance(**configs['objective'])
     objective.set_dataset(dataset)
     result = objective._get_one_result()
     objective_output = objective(result)
@@ -167,6 +175,11 @@ def test_solver_stopping_criterion(benchmark, solver_class):
             "'objective_'."
         )
 
+        _seed_run(
+            objective=objective, dataset=dataset, solver=None,
+            repetition=0, base_seed=0
+        )
+
         objective.set_dataset(dataset)
         result = objective._get_one_result()
         objective_output = objective(result)[0]
@@ -198,6 +211,11 @@ def test_solver_run(benchmark, solver_class):
     objective = objective_class.get_instance(**configs['objective'])
     dataset = dataset_class.get_instance(**configs['dataset'])
     solver = solver_class.get_instance(**configs['solver'])
+
+    _seed_run(
+        objective=objective, dataset=dataset, solver=solver,
+        repetition=0, base_seed=0
+    )
 
     def run_solver(dataset):
         objective.set_dataset(dataset)

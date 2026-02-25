@@ -35,12 +35,10 @@ def _seed_run(objective, dataset, solver, repetition, base_seed):
         "solver": str(solver),
         "repetition": str(repetition),
     }
-    objective.seed_dict = seed_dict
-    objective.seed_dict["class"] = "objective"
-    dataset.seed_dict = seed_dict
-    dataset.seed_dict["class"] = "dataset"
-    solver.seed_dict = seed_dict
-    solver.seed_dict["class"] = "solver"
+    for klass in [objective, dataset, solver]:
+        if klass is not None:
+            klass.seed_dict = seed_dict
+            klass.seed_dict["class"] = klass.__class__.__name__.lower()
 
 
 ##################################
@@ -251,12 +249,12 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
     obj_description = objective.__doc__ or ""
 
     _seed_run(
-            objective=objective,
-            dataset=dataset,
-            solver=solver,
-            repetition=0,
-            base_seed=benchmark.seed
-        )
+        objective=objective,
+        dataset=dataset,
+        solver=solver,
+        repetition=0,
+        base_seed=benchmark.seed
+    )
 
     # Set objective and skip if necessary.
     skip, reason = objective.set_dataset(dataset)
