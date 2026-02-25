@@ -18,6 +18,29 @@ from benchopt.cli.tests.completion_cases import (  # noqa: F401
 )
 
 
+def _objective_with_python_version(python_version):
+    """Return objective source code declaring a given python_version."""
+    return f"""from benchopt import BaseObjective
+        class Objective(BaseObjective):
+            name = "test-objective"
+            python_version = "{python_version}"
+            def set_data(self, X, y): pass
+            def get_one_result(self): return dict(beta=None)
+            def evaluate_result(self, beta): return 1.
+            def get_objective(self): return dict(X=None, y=None, lmbd=None)
+    """
+
+
+@pytest.fixture(scope='session')
+def test_env_python_version(test_env_name):
+    """Full Python version string of the test conda env (e.g. '3.12.1').
+
+    Fetched once per session so tests share a single get_env_info call.
+    """
+    env_info = get_env_info(test_env_name)
+    return env_info['python_version']
+
+
 class TestInstallCmd:
 
     @pytest.mark.parametrize('invalid_benchmark, match', [
@@ -369,43 +392,43 @@ class TestInstallCmd:
 
     def test_python_version_env_creation(self, no_debug_log):
         """Tests env creation with specific python version from objective."""
-        objective = """from benchopt import BaseObjective
-            class Objective(BaseObjective):
-                name = "test-objective"
-                python_version = "3.11"
-                def set_data(self, X, y): pass
-                def get_one_result(self): return dict(beta=None)
-                def evaluate_result(self, beta): return 1.
-                def get_objective(self): return dict(X=None, y=None, lmbd=None)
-        """
         env_name = f"_benchopt_test_py311_{uuid.uuid4()}"
         try:
-            with temp_benchmark(objective=objective) as bench:
+            with temp_benchmark(
+                objective=_objective_with_python_version("3.11")
+            ) as bench:
                 install(
-                    [str(bench.benchmark_dir), '--env-name', env_name],
+                    [str(bench.benchmark_dir), '--env-name', env_name,
+                     "--minimal"],
                     'benchopt', standalone_mode=False
                 )
-                env_info = get_env_info(env_name)
-                env_python = env_info['python_version']
+                env_python = get_env_info(env_name)['python_version']
                 assert env_python.startswith('3.11'), (
                     f"Expected python 3.11, got {env_python}"
                 )
         finally:
             delete_conda_env(env_name)
 
-    def test_python_version_no_warning_default(
-            self, test_env_name, no_debug_log
+    @pytest.mark.parametrize("version_spec", ["exact", "specifier"])
+    def test_python_version_no_warning(
+            self, test_env_name, test_env_python_version, no_debug_log,
+            version_spec
     ):
-        """Tests no python-version warning is raised when versions match."""
-        env_info = get_env_info(test_env_name)
-        env_python = env_info['python_version']
-        if not env_python.startswith('3.12'):
-            pytest.skip("Test requires env with python version 3.12")
-        with temp_benchmark() as bench:
+        """Tests no python-version warning when the version constraint is met.
+        """
+        v = test_env_python_version
+        if version_spec == "exact":
+            version_spec = f"3.{v.split('.')[1]}"
+        else:
+            version_spec = f">=3.{int(v.split('.')[1]) - 1}"
+        with temp_benchmark(
+            objective=_objective_with_python_version(version_spec)
+        ) as bench:
             with warnings.catch_warnings(record=True) as caught:
                 warnings.simplefilter("always")
                 install(
-                    [str(bench.benchmark_dir), '--env-name', test_env_name],
+                    [str(bench.benchmark_dir), '--env-name', test_env_name,
+                     "--minimal"],
                     'benchopt', standalone_mode=False
                 )
             python_warns = [
@@ -415,32 +438,24 @@ class TestInstallCmd:
                 f"Unexpected python version warning: {python_warns}"
             )
 
+    @pytest.mark.parametrize("version_spec", ["exact", "specifier"])
     def test_python_version_mismatch_warning(
-            self, test_env_name, no_debug_log
+            self, test_env_name, test_env_python_version, no_debug_log,
+            version_spec
     ):
-        """Tests warning when python version mismatches env."""
-
-        env_info = get_env_info(test_env_name)
-        env_python = env_info['python_version'].strip().split()[-1]
-        if env_python.startswith('3.11'):
-            pytest.skip(
-                "Test requires env with python version different from 3.11"
-            )
-        objective = """from benchopt import BaseObjective
-            class Objective(BaseObjective):
-                name = "test-objective"
-                python_version = "3.11"
-                def set_data(self, X, y): pass
-                def get_one_result(self): return dict(beta=None)
-                def evaluate_result(self, beta): return 1.
-                def get_objective(self): return dict(X=None, y=None, lmbd=None)
-        """
-        with temp_benchmark(objective=objective) as bench:
-            with pytest.warns(
-                UserWarning, match="python version in conda env"
-            ):
+        """Tests warning when the python version constraint is not met."""
+        v = test_env_python_version
+        if version_spec == "exact":
+            version_spec = f"3.{int(v.split('.')[1]) - 1}"
+        else:
+            version_spec = f">=3.{int(v.split('.')[1]) + 1}"
+        with temp_benchmark(
+            objective=_objective_with_python_version(version_spec)
+        ) as bench:
+            with pytest.warns(UserWarning, match="python version in conda"):
                 install(
-                    [str(bench.benchmark_dir), '--env-name', test_env_name],
+                    [str(bench.benchmark_dir), '--env-name', test_env_name,
+                     "--minimal"],
                     'benchopt', standalone_mode=False
                 )
 
