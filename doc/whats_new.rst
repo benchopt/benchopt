@@ -15,7 +15,8 @@ API
 
 - Add ``python_version`` attribute to :class:`BaseObjective` to specify the
   Python version to use when creating a dedicated conda environment with
-  ``benchopt install --env-name``.
+  ``benchopt install --env-name``. Both an exact minor version (e.g. ``"3.11"``)
+  and a PEP-440 specifier (e.g. ``">=3.11"``) are accepted.
   By `Hippolyte Verninas`_ and `Thomas Moreau`_ (:gh:`885`)
 
 

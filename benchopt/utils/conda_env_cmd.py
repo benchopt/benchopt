@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 import warnings
 from pathlib import Path
@@ -28,7 +29,7 @@ channels:
   - conda-forge
   - nodefaults
 dependencies:
-  - python={python_version}
+  - {python_spec}
   - numpy
   - cython
   - compilers
@@ -42,8 +43,34 @@ channels:
   - conda-forge
   - nodefaults
 dependencies:
-  - python={python_version}
+  - {python_spec}
 """
+
+
+def _python_version_conda_spec(version):
+    """Convert a python_version attribute to a conda dependency string.
+
+    Plain versions (e.g. '3.12') are mapped to the exact-minor-version
+    conda syntax ``python=3.12``.  Version specifiers (e.g. '>=3.12') are
+    prepended with ``python`` and passed through as-is (``python>=3.12``).
+    """
+    if re.match(r'^[><=!]', str(version)):
+        return f"python{version}"
+    return f"python={version}"
+
+
+def _python_version_satisfies(env_version, required):
+    """Return True if *env_version* satisfies *required*.
+
+    *required* may be a plain version string (e.g. '3.12') or a PEP-440
+    specifier (e.g. '>=3.12').  Plain versions are checked with a simple
+    ``startswith`` so that '3.12' matches '3.12.1', '3.12.7', etc.
+    Specifiers are checked with :class:`packaging.specifiers.SpecifierSet`.
+    """
+    if re.match(r'^[><=!]', str(required)):
+        from packaging.specifiers import SpecifierSet
+        return env_version in SpecifierSet(required)
+    return env_version.startswith(str(required))
 
 
 def get_benchmark_python_version(benchmark):
@@ -115,7 +142,8 @@ def create_conda_env(
         if benchmark is not None:
             env_python_version = env_info['python_version'].strip().split()[-1]
 
-            if not env_python_version.startswith(str(python_version)):
+            if not _python_version_satisfies(env_python_version,
+                                             python_version):
                 print()
                 warnings.warn(
                     f"The python version in conda env ({env_python_version}) "
@@ -131,14 +159,15 @@ def create_conda_env(
 
     benchopt_requirement, benchopt_editable = get_benchopt_requirement(pytest)
 
+    python_spec = _python_version_conda_spec(python_version)
     benchopt_env = BENCHOPT_ENV.format(
-        python_version=python_version,
+        python_spec=python_spec,
         benchopt_requirement=benchopt_requirement
     )
 
     if empty:
         benchopt_env = EMPTY_ENV.format(
-            python_version=python_version
+            python_spec=python_spec
         )
 
     print(f"Creating conda env '{env_name}':... ", end='', flush=True)
