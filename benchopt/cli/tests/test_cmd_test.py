@@ -134,20 +134,22 @@ class TestCmdTest:
     @pytest.mark.parametrize('d_conf, o_conf, s_conf, expected', [
         (None, None, None, (0, 0, 0)),
         (1, None, None, (0, 0, 1)),
-        (None, (2, 2), None, (0, 2, 2)),
+        (None, (1, 1), None, (0, 1, 1)),
         (1, (2, 2), None, (0, 2, 2)),
-        (None, None, (2, 2, None), (2, 2, 0)),
-        (None, (1, 1), (2, 2, None), (2, 2, 1)),
-        (None, None, (2, None, 2), (2, 0, 2)),
-        (3, (1, 1), (2, None, 2), (2, 1, 2)),
-        (None, None, (1, 2, 3), (1, 2, 3)),
-        (3, (3, 3), (1, 2, 3), (1, 2, 3)),
+        (None, None, (1, 1, None), (1, 1, 0)),
+        (None, (2, 2), (1, 1, None), (1, 1, 2)),
+        (None, None, (1, None, 1), (1, 0, 1)),
+        (3, (2, 2), (1, None, 1), (1, 2, 1)),
+        (None, None, (1, 1, 1), (1, 1, 1)),
+        (3, (2, 2), (1, 1, 1), (1, 1, 1)),
+        (3, (2, None), (1, None, None), (1, 2, 3)),
     ], ids=[
         'no_test_config', 'dataset_specifies_config',
         'objective_specifies_dataset', 'objective_overrides_dataset',
         'solver_specifies_objective', 'solver_overrides_objective',
         'solver_specifies_dataset', 'solver_override_dataset',
         'solver_specifies_all', 'solver_overrides_all',
+        'all_specifies_config',
     ])
     def test_setting_test_config(self, d_conf, o_conf, s_conf, expected):
         dataset = """
@@ -218,8 +220,8 @@ class TestCmdTest:
                     f"{bench.benchmark_dir} -sk test_solver_run".split(),
                     'benchopt', standalone_mode=False
                 )
-            for k, v in zip(['Solver', 'Objective', 'Dataset'], expected):
-                out.check_output(f"{k}#{v}", repetition=1)
+        for k, v in zip(['Solver', 'Objective', 'Dataset'], expected):
+            out.check_output(f"{k}#{v}", repetition=1)
 
     def test_interaction_with_run_seeding(self):
         # non-regression for benchopt/benchopt#890, where the seeding was not

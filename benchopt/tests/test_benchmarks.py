@@ -35,10 +35,10 @@ def test_dataset_get_data(benchmark, dataset_class):
     if not dataset_class.is_installed():
         pytest.skip("Dataset is not installed")
 
-    test_params = list(product_param(getattr(
-        dataset_class, 'test_parameters', {}
-    )))
-    dataset = dataset_class.get_instance(**test_params[0])
+    # Instanciate dataset taking into account the test_config
+    configs = get_configs(dataset_class)
+    dataset = dataset_class.get_instance(**configs['dataset'])
+
     _seed_run(
         objective=None, dataset=dataset, solver=None, repetition=0, base_seed=0
     )
@@ -56,6 +56,8 @@ def test_dataset_get_data(benchmark, dataset_class):
 def test_benchmark_objective(benchmark, objective_class):
     # check that the result of the objective function is compatible with
     # benchopt, does not contain `objective_name` and is not empty.
+
+    # Instanciate dataset and objective, taking into account the test_config
     dataset_class = benchmark.get_test_dataset()
     configs = get_configs(dataset_class, objective_class)
     dataset = dataset_class.get_instance(**configs['dataset'])
@@ -149,7 +151,7 @@ def test_solver_install(test_env_name, benchmark, solver_class):
 def test_solver_stopping_criterion(benchmark, solver_class):
     # Check each solver stopping_criterion is compatible with the objective
 
-    # Instanciate dataset and objective
+    # Instanciate dataset and objective, taking into account the test_config
     objective_class = benchmark.get_benchmark_objective()
     dataset_class = benchmark.get_test_dataset()
     configs = get_configs(dataset_class, objective_class, solver_class)
@@ -204,6 +206,7 @@ def test_solver_run(benchmark, solver_class):
     if not solver_class.is_installed():
         pytest.skip("Solver is not installed")
 
+    # Instanciate dataset and objective, taking into account the test_config
     dataset_class = benchmark.get_test_dataset()
     objective_class = benchmark.get_benchmark_objective()
     configs = get_configs(dataset_class, objective_class, solver_class)
