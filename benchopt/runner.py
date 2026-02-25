@@ -37,8 +37,10 @@ def _seed_run(objective, dataset, solver, repetition, base_seed):
     }
     for klass in [objective, dataset, solver]:
         if klass is not None:
-            klass.seed_dict = seed_dict
-            klass.seed_dict["class"] = klass.__class__.__name__.lower()
+            klass.seed_dict = {
+                **seed_dict,  # Copy to avoid border effects
+                "class": klass.__class__.__name__.lower()
+            }
 
 
 ##################################

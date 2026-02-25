@@ -221,6 +221,27 @@ class TestCmdTest:
             for k, v in zip(['Solver', 'Objective', 'Dataset'], expected):
                 out.check_output(f"{k}#{v}", repetition=1)
 
+    def test_interaction_with_run_seeding(self):
+        # non-regression for benchopt/benchopt#890, where the seeding was not
+        # properly initialized for the test commands.
+        dataset = """
+        from benchopt import BaseDataset
+        class Dataset(BaseDataset):
+            name = "simulated"
+            def get_data(self):
+                print(self.__class__.__name__.lower())
+                seed = self.get_seed()
+                print(f"Dataset#seed={seed}")
+                return dict(X=None, y=None)
+        """
+        with temp_benchmark(datasets=dataset) as bench:
+            with CaptureCmdOutput() as out:
+                benchopt_test(
+                    f"{bench.benchmark_dir} -s --skip-install".split(),
+                    'benchopt', standalone_mode=False
+                )
+            out.check_output("Dataset#seed=123370572", repetition=4)
+
     def test_valid_call_in_env_no_pytest(self, test_env_name, no_pytest):
         with temp_benchmark() as bench:
             msg = f"pytest is not installed in conda env {test_env_name}"

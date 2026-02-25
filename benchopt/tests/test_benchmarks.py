@@ -177,7 +177,7 @@ def test_solver_stopping_criterion(benchmark, solver_class):
 
         _seed_run(
             objective=objective, dataset=dataset, solver=None,
-            repetition=0, base_seed=0
+            repetition=0, base_seed=benchmark.seed
         )
 
         objective.set_dataset(dataset)
@@ -214,7 +214,7 @@ def test_solver_run(benchmark, solver_class):
 
     _seed_run(
         objective=objective, dataset=dataset, solver=solver,
-        repetition=0, base_seed=0
+        repetition=0, base_seed=benchmark.seed
     )
 
     def run_solver(dataset):

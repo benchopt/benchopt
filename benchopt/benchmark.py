@@ -123,12 +123,14 @@ class Benchmark:
         # replace dots to avoid issues with `with_suffix``
         self.name = self.name.replace('.', '-')
 
-        # Set the random seed for the benchmark
-        if seed is None:
-            self.seed = 0
-            print(f"No seed was specified. Selected global seed: {self.seed}")
-        else:
-            self.seed = seed
+        self._seed = seed
+
+    @property
+    def seed(self):
+        if self._seed is None:
+            self._seed = 0
+            print(f"No seed was specified. Selected global seed: {self._seed}")
+        return self._seed
 
     def set_benchmark_module(self):
         # add PACKAGE_NAME as a module if it exists.
