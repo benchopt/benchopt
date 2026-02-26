@@ -390,7 +390,7 @@ class TestInstallCmd:
                         standalone_mode=False)
             out.check_output(success_msg)
 
-    def test_python_version_env_creation(self, no_debug_log, use_env):
+    def test_python_version_env_creation(self, use_env):
         """Tests env creation with specific python version from objective."""
         env_name = f"_benchopt_test_py311_{uuid.uuid4()}"
         try:
@@ -409,10 +409,9 @@ class TestInstallCmd:
         finally:
             delete_conda_env(env_name)
 
-    @pytest.mark.parametrize("version_spec", ["exact", "specifier"])
+    @pytest.mark.parametrize("version_spec", ["exact", ">=specifier"])
     def test_python_version_no_warning(
-            self, test_env_name, test_env_python_version, no_debug_log,
-            version_spec
+            self, test_env_name, test_env_python_version, version_spec
     ):
         """Tests no python-version warning when the version constraint is met.
         """
@@ -440,10 +439,9 @@ class TestInstallCmd:
                 f"Unexpected python version warning: {python_warns}"
             )
 
-    @pytest.mark.parametrize("version_spec", ["exact", "specifier"])
+    @pytest.mark.parametrize("version_spec", ["exact", ">=specifier"])
     def test_python_version_mismatch_warning(
-            self, test_env_name, test_env_python_version, no_debug_log,
-            version_spec
+            self, test_env_name, test_env_python_version, version_spec
     ):
         """Tests warning when the python version constraint is not met."""
         v = test_env_python_version

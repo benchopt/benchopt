@@ -183,7 +183,8 @@ def create_conda_env(
         if not quiet:
             print()
         _run_shell(
-            f"{CONDA_CMD} env create -yn{force} {env_name} -f {env_yaml.name}",
+            f"{CONDA_CMD} env create -vv -yn{force} {env_name} "
+            f"-f {env_yaml.name}",
             capture_stdout=quiet, raise_on_error=True
         )
         # the channels priorities cannot be set through the yaml file,
