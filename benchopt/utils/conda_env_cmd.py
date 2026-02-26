@@ -227,7 +227,7 @@ def get_env_info(env_name):
     if check_benchopt != 0:
         if DEBUG:
             print(output)
-        return None, None
+        return dict(version=None, is_editable=False, python_version=None)
     import json
     output = json.loads(output)
     return output
