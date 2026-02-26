@@ -50,7 +50,7 @@ dependencies:
 def _python_version_conda_spec(version):
     """Convert a python_version attribute to a conda dependency string.
 
-    Plain versions (e.g. '3.12') are mapped to conda syntax ``python=3.12``. 
+    Plain versions (e.g. '3.12') are mapped to conda syntax ``python=3.12``.
     Version specifiers (e.g. '>=3.12') are prepended with ``python``.
     """
     if re.match(r'^[><=!]', str(version)):
