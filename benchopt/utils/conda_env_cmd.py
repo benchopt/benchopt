@@ -50,9 +50,8 @@ dependencies:
 def _python_version_conda_spec(version):
     """Convert a python_version attribute to a conda dependency string.
 
-    Plain versions (e.g. '3.12') are mapped to the exact-minor-version
-    conda syntax ``python=3.12``.  Version specifiers (e.g. '>=3.12') are
-    prepended with ``python`` and passed through as-is (``python>=3.12``).
+    Plain versions (e.g. '3.12') are mapped to conda syntax ``python=3.12``. 
+    Version specifiers (e.g. '>=3.12') are prepended with ``python``.
     """
     if re.match(r'^[><=!]', str(version)):
         return f"python{version}"
@@ -60,12 +59,10 @@ def _python_version_conda_spec(version):
 
 
 def _python_version_satisfies(env_version, required):
-    """Return True if *env_version* satisfies *required*.
+    """Check if `env_version` satisfies `required`.
 
-    *required* may be a plain version string (e.g. '3.12') or a PEP-440
-    specifier (e.g. '>=3.12').  Plain versions are checked with a simple
-    ``startswith`` so that '3.12' matches '3.12.1', '3.12.7', etc.
-    Specifiers are checked with :class:`packaging.specifiers.SpecifierSet`.
+    `required` may be an exact version string ('3.12') or
+    a specifier ('>=3.12').
     """
     if re.match(r'^[><=!]', str(required)):
         from packaging.specifiers import SpecifierSet
@@ -184,8 +181,7 @@ def create_conda_env(
         if not quiet:
             print()
         _run_shell(
-            f"{CONDA_CMD} env create -yn{force} {env_name} "
-            f"-f {env_yaml.name}",
+            f"{CONDA_CMD} env create -yn{force} {env_name} -f {env_yaml.name}",
             capture_stdout=quiet, raise_on_error=True
         )
         # the channels priorities cannot be set through the yaml file,
