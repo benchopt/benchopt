@@ -1,3 +1,4 @@
+import sys
 import click
 
 from benchopt import __version__
@@ -16,18 +17,25 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.command(name='benchopt', cls=click.CommandCollection, sources=SOURCES,
                context_settings=CONTEXT_SETTINGS, invoke_without_command=True)
 @click.option('--version', '-v', is_flag=True, help='Print version')
-@click.option('--check-editable', is_flag=True,
+@click.option('--check-env', is_flag=True,
               help='Output more info for version checking, and format as: '
               'BENCHOPT_VERSION:<version>:<is_editable>.')
 @click.pass_context
-def benchopt(ctx, version=False, check_editable=False):
+def benchopt(ctx, version=False, check_env=False):
     """Command line interface to benchopt"""
     if version:
         output = __version__
-        if check_editable:
-            _, is_editable = get_benchopt_requirement()
-            output = f"BENCHOPT_VERSION:{output}:{is_editable}"
         print(output)
+        raise SystemExit(0)
+    if check_env:
+        _, is_editable = get_benchopt_requirement()
+        output = {
+            'version': __version__,
+            'is_editable': is_editable,
+            'python_version': sys.version.split()[0]
+        }
+        import json
+        json.dump(output, sys.stdout)
         raise SystemExit(0)
     if ctx.invoked_subcommand is None:
         print(benchopt.get_help(ctx))

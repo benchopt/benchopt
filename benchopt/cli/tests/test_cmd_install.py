@@ -1,10 +1,14 @@
 import re
+import uuid
+import warnings
 import click
 import pytest
 
 from benchopt.cli.main import install
 from benchopt.tests.utils import CaptureCmdOutput
 from benchopt.utils.temp_benchmark import temp_benchmark
+from benchopt.utils.conda_env_cmd import delete_conda_env
+from benchopt.utils.conda_env_cmd import get_env_info
 
 from benchopt.cli.tests.completion_cases import _test_shell_completion
 from benchopt.cli.tests.completion_cases import (  # noqa: F401
@@ -12,6 +16,29 @@ from benchopt.cli.tests.completion_cases import (  # noqa: F401
     solver_completion_cases,
     dataset_completion_cases
 )
+
+
+def _objective_with_python_version(python_version):
+    """Return objective source code declaring a given python_version."""
+    return f"""from benchopt import BaseObjective
+        class Objective(BaseObjective):
+            name = "test-objective"
+            python_version = "{python_version}"
+            def set_data(self, X, y): pass
+            def get_one_result(self): return dict(beta=None)
+            def evaluate_result(self, beta): return 1.
+            def get_objective(self): return dict(X=None, y=None, lmbd=None)
+    """
+
+
+@pytest.fixture(scope='session')
+def test_env_python_version(test_env_name):
+    """Full Python version string of the test conda env (e.g. '3.12.1').
+
+    Fetched once per session so tests share a single get_env_info call.
+    """
+    env_info = get_env_info(test_env_name)
+    return env_info['python_version']
 
 
 class TestInstallCmd:
@@ -362,6 +389,77 @@ class TestInstallCmd:
                 install(f"{bench.benchmark_dir} -yf -s solver2 --gpu".split(),
                         standalone_mode=False)
             out.check_output(success_msg)
+
+    def test_python_version_env_creation(self, use_env):
+        """Tests env creation with specific python version from objective."""
+        env_name = f"_benchopt_test_py311_{uuid.uuid4()}"
+        try:
+            with temp_benchmark(
+                objective=_objective_with_python_version("3.11")
+            ) as bench:
+                install(
+                    [str(bench.benchmark_dir), '--env-name', env_name,
+                     "--minimal"],
+                    'benchopt', standalone_mode=False
+                )
+                env_python = get_env_info(env_name)['python_version']
+                assert env_python.startswith('3.11'), (
+                    f"Expected python 3.11, got {env_python}"
+                )
+        finally:
+            delete_conda_env(env_name)
+
+    @pytest.mark.parametrize("version_spec", ["exact", ">=specifier"])
+    def test_python_version_no_warning(
+            self, test_env_name, test_env_python_version, version_spec
+    ):
+        """Tests no python-version warning when the version constraint is met.
+        """
+        v = test_env_python_version
+        if version_spec == "exact":
+            # Test exact version is the current one -> no warning
+            version_spec = f"3.{v.split('.')[1]}"
+        else:
+            # Current version is in range of the spec -> no warning
+            version_spec = f">=3.{int(v.split('.')[1]) - 1}"
+        with temp_benchmark(
+            objective=_objective_with_python_version(version_spec)
+        ) as bench:
+            with warnings.catch_warnings(record=True) as caught:
+                warnings.simplefilter("always")
+                install(
+                    [str(bench.benchmark_dir), '--env-name', test_env_name,
+                     "--minimal"],
+                    'benchopt', standalone_mode=False
+                )
+            python_warns = [
+                w for w in caught if "python version" in str(w.message)
+            ]
+            assert len(python_warns) == 0, (
+                f"Unexpected python version warning: {python_warns}"
+            )
+
+    @pytest.mark.parametrize("version_spec", ["exact", ">=specifier"])
+    def test_python_version_mismatch_warning(
+            self, test_env_name, test_env_python_version, version_spec
+    ):
+        """Tests warning when the python version constraint is not met."""
+        v = test_env_python_version
+        if version_spec == "exact":
+            # Test exact version is bellow the current one -> warning
+            version_spec = f"3.{int(v.split('.')[1]) - 1}"
+        else:
+            # Current version is out of range for the spec -> warning
+            version_spec = f">=3.{int(v.split('.')[1]) + 1}"
+        with temp_benchmark(
+            objective=_objective_with_python_version(version_spec)
+        ) as bench:
+            with pytest.warns(UserWarning, match="python version in conda"):
+                install(
+                    [str(bench.benchmark_dir), '--env-name', test_env_name,
+                     "--minimal"],
+                    'benchopt', standalone_mode=False
+                )
 
     def test_complete_bench(self, bench_completion_cases):  # noqa: F811
 
