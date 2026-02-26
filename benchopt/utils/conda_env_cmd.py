@@ -231,7 +231,7 @@ def get_env_info(env_name):
             print(output)
         return dict(version=None, is_editable=False, python_version=None)
     import json
-    output = json.loads(output)
+    output = json.loads(output.strip().splitlines()[-1])
     return output
 
 
