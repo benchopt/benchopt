@@ -162,7 +162,8 @@ def create_conda_env(
     python_spec = _python_version_conda_spec(python_version)
     benchopt_env = BENCHOPT_ENV.format(
         python_spec=python_spec,
-        benchopt_requirement=benchopt_requirement
+        # Encode the path as a posix path to avoid issues with backslashes
+        benchopt_requirement=benchopt_requirement.replace("\\", "/")
     )
 
     if empty:
@@ -183,7 +184,7 @@ def create_conda_env(
         if not quiet:
             print()
         _run_shell(
-            f"{CONDA_CMD} env create -vv -yn{force} {env_name} "
+            f"{CONDA_CMD} env create -yn{force} {env_name} "
             f"-f {env_yaml.name}",
             capture_stdout=quiet, raise_on_error=True
         )
