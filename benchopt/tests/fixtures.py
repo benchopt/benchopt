@@ -55,7 +55,6 @@ def pytest_configure(config):
         _TEST_BENCHMARK = Benchmark(benchmark_path)
     else:
         ctx = temp_benchmark()
-
         _TEST_BENCHMARK = ctx.__enter__()
         config._ctx = ctx
 
@@ -159,7 +158,9 @@ def test_env_name(request, bench, use_env):
 
         _TEST_ENV_NAME = env_name
 
-        create_conda_env(_TEST_ENV_NAME, recreate=recreate, pytest=True)
+        create_conda_env(
+            env_name, benchmark=bench, recreate=recreate, pytest=True
+        )
         bench.get_benchmark_objective().install(env_name=env_name)
 
     return _TEST_ENV_NAME
