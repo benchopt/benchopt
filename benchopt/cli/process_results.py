@@ -66,6 +66,26 @@ def plot(benchmark, filename=None, kinds=('suboptimality_curve',),
 
 
 @process_results.command(
+    help="Merge multiple result files from a benchmark."
+)
+@click.argument('benchmark', default=Path.cwd(), type=click.Path(exists=True),
+                shell_complete=complete_benchmarks)
+@click.option('--filenames', '-f', type=str, multiple=True,
+              shell_complete=complete_output_files,
+              help="Specify the files to merge in the benchmark. If it is "
+              "not specified, take all files in the benchmark output folder.")
+def merge(benchmark, filenames=None):
+
+    # Get the result files
+    benchmark = Benchmark(benchmark)
+    result_filenames = benchmark.get_result_files(filenames)
+
+    # Merge the results.
+    from benchopt.results.process import merge_results
+    merge_results(result_filenames, benchmark)
+
+
+@process_results.command(
     help="Publish the result from a previously run benchmark.\n\n"
     "See the :ref:`publish_benchmark` documentation for more info on how "
     "to use this command."

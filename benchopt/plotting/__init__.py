@@ -2,8 +2,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # helpers to manage metadata in the parquet files
-from ..utils.parquet import get_metadata
-from ..utils.parquet import update_metadata
+from ..results.parquet import get_metadata
+from ..results.parquet import update_metadata
 
 from .generate_html import plot_benchmark_html
 from .generate_matplotlib import get_figures

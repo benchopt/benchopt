@@ -6,7 +6,7 @@ from datetime import datetime
 import pandas as pd
 from mako.template import Template
 
-from ..utils.parquet import get_metadata as get_parquet_metadata
+from ..results.parquet import get_metadata as get_parquet_metadata
 
 from benchopt.benchmark import Benchmark
 from .helpers import update_plot_data_style
