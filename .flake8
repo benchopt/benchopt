@@ -1,2 +1,2 @@
 [flake8]
-exclude = benchmarks,__cache__,doc/
+exclude = benchmarks,__cache__,doc/,communication_materials/
