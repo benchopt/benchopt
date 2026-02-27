@@ -159,7 +159,7 @@ def test_env_name(request, bench, use_env):
 
         _TEST_ENV_NAME = env_name
 
-        create_conda_env(_TEST_ENV_NAME, recreate=recreate)
+        create_conda_env(_TEST_ENV_NAME, recreate=recreate, pytest=True)
         bench.get_benchmark_objective().install(env_name=env_name)
 
     return _TEST_ENV_NAME

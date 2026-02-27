@@ -591,12 +591,6 @@ def test(benchmark, env_name, recreate, pytest_args):
         create_conda_env(
             env_name, benchmark=benchmark, pytest=True, recreate=recreate
         )
-        if _run_shell_in_conda_env("pytest --version", env_name=env_name) != 0:
-            raise ModuleNotFoundError(
-                f"pytest is not installed in conda env {env_name}.\n"
-                f"Please run `conda install -n {env_name} pytest` to test the "
-                "benchmark in this environment."
-            )
         # Ensure that minimal benchmark dependencies are installed in
         # the test environment.
         objective = benchmark.get_benchmark_objective()

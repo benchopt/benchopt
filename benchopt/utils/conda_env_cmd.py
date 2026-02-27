@@ -134,6 +134,13 @@ def create_conda_env(
                 f"of benchopt in conda env {env_name}."
             )
 
+        if pytest and env_info["pytest_version"] is None:
+            raise ModuleNotFoundError(
+                f"pytest is not installed in conda env {env_name}.\n"
+                f"Please run `conda install -n {env_name} pytest` to test the "
+                "benchmark in this environment."
+            )
+
         # Check that the python version is compatible with the one
         # required by the benchmark.
         if benchmark is not None:
