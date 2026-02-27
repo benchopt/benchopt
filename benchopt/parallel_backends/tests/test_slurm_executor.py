@@ -3,6 +3,7 @@ import pytest
 from benchopt.runner import run_benchmark
 from benchopt.tests.utils import CaptureCmdOutput
 from benchopt.utils.temp_benchmark import temp_benchmark
+from benchopt.results import read_results
 
 submitit = pytest.importorskip("submitit")
 
@@ -172,8 +173,7 @@ def test_run_on_slurm(monkeypatch, dummy_slurm_config):
             )
 
         # Get the results
-        import pandas as pd
-        df = pd.read_parquet(out.result_files[0]).set_index("solver_name")
+        df = read_results(out.result_files[0]).set_index("solver_name")
 
     assert len(df) == 6
 

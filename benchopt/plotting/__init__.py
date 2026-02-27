@@ -2,6 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # helpers to manage metadata in the parquet files
+from ..results import read_results
 from ..results.parquet import get_metadata
 from ..results.parquet import update_metadata
 
@@ -78,12 +79,7 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
 
     else:
         # Load the results.
-        if fname.suffix == '.parquet':
-            df = pd.read_parquet(fname)
-        else:
-            df = pd.read_csv(fname)
-        if "data_name" in df.columns:
-            df = df.rename(columns={"data_name": "dataset_name"})
+        df = read_results(fname)
 
         output_dir = benchmark.get_output_folder()
 

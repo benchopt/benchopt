@@ -6,6 +6,7 @@ from datetime import datetime
 import pandas as pd
 from mako.template import Template
 
+from ..results import read_results
 from ..results.parquet import get_metadata as get_parquet_metadata
 
 from benchopt.benchmark import Benchmark
@@ -74,13 +75,7 @@ def get_results(fnames, html_root, benchmark, config=None, copy=False):
 
     for fname in fnames:
         print(f"Processing {fname}")
-
-        if fname.suffix == '.parquet':
-            df = pd.read_parquet(fname)
-        else:
-            df = pd.read_csv(fname)
-        if "data_name" in df.columns:
-            df = df.rename(columns={"data_name": "dataset_name"})
+        df = read_results(fname)
 
         config_ = get_parquet_metadata(fname) if config is None else config
         # Sanitize the config for comparison with the plot names

@@ -1,6 +1,5 @@
-import pandas as pd
-
 from benchopt.cli.main import run
+from benchopt.results import read_results
 from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.tests.utils import CaptureCmdOutput
 
@@ -166,7 +165,7 @@ def test_objective_multiple_points(no_debug_log):
             run([str(bench.benchmark_dir),
                 *'-s test-solver -d test-dataset -n 1 -r 2 --no-plot'
                 .split()], standalone_mode=False)
-        df = pd.read_parquet(out.result_files[0])
+        df = read_results(out.result_files[0])
 
     assert len(df) == 6
     assert df['objective_value'].unique().tolist() == [0, 1, 2]

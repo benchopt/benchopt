@@ -1,7 +1,6 @@
-import pandas as pd
-
-from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.runner import run_benchmark
+from benchopt.results import read_results
+from benchopt.utils.temp_benchmark import temp_benchmark
 
 
 def test_filename_in_parquet():
@@ -37,7 +36,7 @@ def test_filename_in_parquet():
         assert output_file.exists()
         assert output_file.suffix == '.parquet'
 
-        df = pd.read_parquet(output_file)
+        df = read_results(output_file)
         file_objective = df['file_objective'].unique()
         assert set(file_objective) == {"objective.py"}
 

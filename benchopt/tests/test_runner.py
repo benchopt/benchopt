@@ -1,15 +1,15 @@
 import pytest
 import inspect
-import pandas as pd
 
 from benchopt import BaseDataset
+from benchopt.cli.main import run
+from benchopt.results import read_results
 from benchopt.benchmark import _check_patterns
 from benchopt.benchmark import _extract_options
 from benchopt.benchmark import _extract_parameters
 from benchopt.benchmark import _list_parametrized_classes
 from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.tests.utils import CaptureCmdOutput
-from benchopt.cli.main import run
 
 
 @pytest.mark.parametrize('n_jobs', [1, 2, 4])
@@ -359,7 +359,7 @@ def test_prefix_with_same_parameters():
             max_runs=1, n_repetitions=1, n_jobs=1, plot_result=False
         )
 
-        df = pd.read_parquet(benchmark.get_result_file())
+        df = read_results(benchmark.get_result_file())
 
         assert "p_solver_seed" in df.columns
         assert "p_solver_type" in df.columns
