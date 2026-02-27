@@ -162,6 +162,7 @@ def create_conda_env(
     )
 
     if recreate and env_name in existing_conda_envs:
+        assert env_name != "base", "Cannot recreate base"
         print(
             f"Recreate is used, removing conda env '{env_name}'... ",
             end='', flush=True
