@@ -152,8 +152,6 @@ def create_conda_env(
         print("done")
         return
 
-    force = " --force" if recreate else ""
-
     benchopt_requirement, benchopt_editable = get_benchopt_requirement(pytest)
 
     python_spec = _python_version_conda_spec(python_version)
@@ -163,6 +161,14 @@ def create_conda_env(
         benchopt_requirement=benchopt_requirement.replace("\\", "/")
     )
 
+    if recreate and env_name in existing_conda_envs:
+        print(
+            f"Recreate is used, removing conda env '{env_name}'... ",
+            end='', flush=True
+        )
+        delete_conda_env(env_name)
+        print("done")
+
     if empty:
         benchopt_env = EMPTY_ENV.format(
             python_spec=python_spec
@@ -170,7 +176,7 @@ def create_conda_env(
 
     print(f"Creating conda env '{env_name}':... ", end='', flush=True)
     if DEBUG:
-        print(f"\nconda env config:\n{'-' * 40}{benchopt_env}{'-' * 40}")
+        print(f"\nconda env config:\n{'-' * 60}\n{benchopt_env}\n{'-' * 60}")
     env_yaml = NamedTemporaryFile(
         mode="w+", prefix='conda_env_', suffix='.yml'
     )
@@ -181,7 +187,7 @@ def create_conda_env(
         if not quiet:
             print()
         _run_shell(
-            f"{CONDA_CMD} env create -yn{force} {env_name} -f {env_yaml.name}",
+            f"{CONDA_CMD} env create -yn {env_name} -f {env_yaml.name}",
             capture_stdout=quiet, raise_on_error=True
         )
         # the channels priorities cannot be set through the yaml file,
@@ -277,14 +283,14 @@ def get_env_file_from_requirements(packages):
     return env
 
 
-def install_in_conda_env(*packages, env_name=None, force=False, quiet=False):
+def install_in_conda_env(*packages, env_name=None, quiet=False):
     """Install the packages with conda in the given environment"""
     if len(packages) == 0:
         return
 
     env = get_env_file_from_requirements(packages)
     if DEBUG:
-        print(f"\ninstalling env packages:\n{'-' * 40}{env}{'-' * 40}")
+        print(f"\ninstalling env packages:\n{'-' * 60}\n{env}\n{'-' * 60}")
 
     # If installing in the current env, get its name.
     if env_name is None:

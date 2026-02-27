@@ -123,8 +123,7 @@ class DependenciesMixin:
                 if install_cmd_ == "conda":
                     if hasattr(cls, "requirements"):
                         install_in_conda_env(*cls.requirements,
-                                             env_name=env_name,
-                                             force=force)
+                                             env_name=env_name)
                     else:
                         # get details of class
                         cls_type = cls.__base__.__name__.replace("Base", "")

@@ -586,8 +586,7 @@ class Benchmark:
         print(f"Installing required packages for:\n{list_install}\n...",
               end='', flush=True)
         install_in_conda_env(
-            *list(set(conda_reqs)), env_name=env_name, force=force,
-            quiet=quiet
+            *list(set(conda_reqs)), env_name=env_name, quiet=quiet
         )
         for install_script in shell_install_scripts:
             shell_install_in_conda_env(
