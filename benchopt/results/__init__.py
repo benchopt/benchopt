@@ -22,8 +22,13 @@ def read_results(path):
 
     if path.suffix == '.parquet':
         df = pd.read_parquet(path)
-    else:
+    elif path.suffix == '.csv':
         df = pd.read_csv(path)
+    else:
+        raise ValueError(
+            f"Unsupported file format: {path.suffix}. "
+            "Only .parquet and .csv files are supported."
+        )
     if "data_name" in df.columns:
         df = df.rename(columns={"data_name": "dataset_name"})
     return df
