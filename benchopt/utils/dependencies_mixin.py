@@ -88,7 +88,7 @@ class DependenciesMixin:
 
         # Get the current benchmark directory
         exit_code, output = _run_shell_in_conda_env(
-            f"benchopt check-install {cls.benchmark_dir} "
+            f"benchopt check-install {cls._benchmark_dir} "
             f"{cls._module_filename} {cls._base_class_name}",
             env_name=env_name, return_output=True,
             raise_on_error=raise_on_not_installed,
