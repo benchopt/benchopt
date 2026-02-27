@@ -61,13 +61,15 @@ class Benchmark:
         Folder containing the benchmark. The folder should at least
         contain an `objective.py` file defining the `Objective`
         function for the benchmark.
+    seed: int | None
+        Random seed for the benchmark. If None, an arbitrary seed is chosen.
+    no_cache : bool (default: False)
+        If set to True, the benchmark will not use caching.
     allow_meta_from_json : bool
         If set to True, allow the object to be instanciated even when
         objective.py cannot be found. In this case, the metadata are retrieved
         from the benchmark_meta.json file. This should only be used to generate
         HTML pages with results.
-    seed: int | None
-        Random seed for the benchmark. If None, an arbitrary seed is chosen.
 
     Attributes
     ----------
@@ -77,9 +79,9 @@ class Benchmark:
 
     def __init__(
             self, benchmark_dir,
+            seed=None,
             no_cache=False,
             allow_meta_from_json=False,
-            seed=None,
     ):
         self.benchmark_dir = Path(benchmark_dir)
         self.no_cache = no_cache
@@ -586,8 +588,7 @@ class Benchmark:
         print(f"Installing required packages for:\n{list_install}\n...",
               end='', flush=True)
         install_in_conda_env(
-            *list(set(conda_reqs)), env_name=env_name, force=force,
-            quiet=quiet
+            *list(set(conda_reqs)), env_name=env_name, quiet=quiet
         )
         for install_script in shell_install_scripts:
             shell_install_in_conda_env(

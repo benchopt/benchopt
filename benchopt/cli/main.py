@@ -567,8 +567,12 @@ def install(
               shell_complete=complete_conda_envs,
               help='Environment to run the test in. If it is not provided '
               'a temporary one is created for the test.')
+@click.option('--recreate', is_flag=True,
+              help="If this flag is set, start with a fresh conda "
+              "environment. It can only be used combined with option "
+              "`--env-name`.")
 @click.argument('pytest_args', nargs=-1, type=click.UNPROCESSED)
-def test(benchmark, env_name, pytest_args):
+def test(benchmark, env_name, recreate, pytest_args):
 
     benchmark = Benchmark(benchmark)
 
@@ -584,16 +588,13 @@ def test(benchmark, env_name, pytest_args):
 
     env_option = ''
     if env_name is not None:
-        create_conda_env(env_name, benchmark=benchmark, pytest=True)
-        if _run_shell_in_conda_env("pytest --version", env_name=env_name) != 0:
-            raise ModuleNotFoundError(
-                f"pytest is not installed in conda env {env_name}.\n"
-                f"Please run `conda install -n {env_name} pytest` to test the "
-                "benchmark in this environment."
-            )
+        create_conda_env(
+            env_name, benchmark=benchmark, pytest=True, recreate=recreate
+        )
+        # Ensure that minimal benchmark dependencies are installed in
+        # the test environment.
         objective = benchmark.get_benchmark_objective()
-        if not objective.is_installed():
-            objective.install(env_name=env_name)
+        objective.install(env_name=env_name)
         env_option = f'--test-env {env_name}'
 
     _bench_test_file = _bench_test_module / "test_benchmarks.py"

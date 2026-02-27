@@ -58,9 +58,12 @@ class JuliaSolver(BaseSolver):
     ]
 
     @classmethod
-    def is_installed(cls, env_name=None, raise_on_not_installed=None):
+    def is_installed(
+            cls, env_name=None, raise_on_not_installed=None, quiet=False
+    ):
         success = super().is_installed(
-            env_name=env_name, raise_on_not_installed=raise_on_not_installed
+            env_name=env_name, raise_on_not_installed=raise_on_not_installed,
+            quiet=quiet
         )
 
         # If julia is installed, check that the package dependencies are also

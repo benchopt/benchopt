@@ -28,6 +28,7 @@ class DependenciesMixin:
     #           with import_shell_cmd.
     install_cmd = "conda"
 
+    _error_output = None
     _error_displayed = False
 
     @classproperty
@@ -76,22 +77,28 @@ class DependenciesMixin:
                 if not cls._error_displayed and not quiet:
                     traceback.print_exception(exc_type, value, tb)
                     cls._error_displayed = True
+                elif quiet:
+                    cls._error_output = traceback.format_exception(
+                        exc_type, value, tb
+                    )
                 return False
 
             # Import worked in the current environment, no need to check
             return True
 
         # Get the current benchmark directory
-        from benchopt.benchmark import get_running_benchmark
-        benchmark_dir = get_running_benchmark().benchmark_dir
-        return (
-            _run_shell_in_conda_env(
-                f"benchopt check-install {benchmark_dir} "
-                f"{cls._module_filename} {cls._base_class_name}",
-                env_name=env_name,
-                raise_on_error=raise_on_not_installed,
-            ) == 0
+        exit_code, output = _run_shell_in_conda_env(
+            f"benchopt check-install {cls._benchmark_dir} "
+            f"{cls._module_filename} {cls._base_class_name}",
+            env_name=env_name, return_output=True,
+            raise_on_error=raise_on_not_installed,
         )
+        if exit_code != 0:
+            if not quiet:
+                print(output)
+            else:
+                cls._error_output = output
+        return exit_code == 0
 
     @classmethod
     def install(cls, env_name=None, force=False):
@@ -123,8 +130,7 @@ class DependenciesMixin:
                 if install_cmd_ == "conda":
                     if hasattr(cls, "requirements"):
                         install_in_conda_env(*cls.requirements,
-                                             env_name=env_name,
-                                             force=force)
+                                             env_name=env_name)
                     else:
                         # get details of class
                         cls_type = cls.__base__.__name__.replace("Base", "")
@@ -141,6 +147,9 @@ class DependenciesMixin:
                             "in conda channel `chan`\n"
                             "   requirements = ['pip::pkg'] "
                             "# pip package `pkg`"
+                        ) from (
+                            ImportError(cls._error_output)
+                            if cls._error_output else None
                         )
                 elif install_cmd_ == "shell":
                     install_file = (

@@ -1,4 +1,5 @@
 import os
+import sys
 import uuid
 import pytest
 
@@ -64,6 +65,11 @@ def pytest_unconfigure(config):
     if hasattr(config, "_ctx"):
         config._ctx.__exit__(None, None, None)
         del config._ctx
+
+
+@pytest.fixture(scope='session')
+def bench():
+    return _TEST_BENCHMARK
 
 
 def pytest_collection_modifyitems(config, items):
@@ -139,7 +145,7 @@ def use_env(request):
 
 
 @pytest.fixture(scope='session')
-def test_env_name(request, use_env):
+def test_env_name(request, bench, use_env):
     global _TEST_ENV_NAME
 
     if _TEST_ENV_NAME is None:
@@ -153,9 +159,47 @@ def test_env_name(request, use_env):
 
         _TEST_ENV_NAME = env_name
 
-        create_conda_env(_TEST_ENV_NAME, recreate=recreate)
+        create_conda_env(
+            env_name, benchmark=bench, recreate=recreate, pytest=True
+        )
+        bench.get_benchmark_objective().install(env_name=env_name)
+        # Flush the output to avoid issues with pytest capturing
+        # the output later on and failing tests because of it.
+        # Make sure to flush stdout and stderr
+        print(flush=True)
+        print(flush=True, file=sys.stderr)
 
     return _TEST_ENV_NAME
+
+
+@pytest.fixture(scope='session')
+def empty_env_name(request, use_env):
+    global _EMPTY_ENV_NAME
+
+    if _EMPTY_ENV_NAME is None:
+        env_name = f"_benchopt_test_env_{uuid.uuid4()}"
+        _EMPTY_ENV_NAME = env_name
+
+        request.addfinalizer(delete_empty_env)
+        create_conda_env(env_name, empty=True)
+
+    return _EMPTY_ENV_NAME
+
+
+def delete_test_env():
+    global _TEST_ENV_NAME
+
+    if _TEST_ENV_NAME is not None:
+        delete_conda_env(_TEST_ENV_NAME)
+        _TEST_ENV_NAME = None
+
+
+def delete_empty_env():
+    global _EMPTY_ENV_NAME
+
+    if _EMPTY_ENV_NAME is not None:
+        delete_conda_env(_EMPTY_ENV_NAME)
+        _EMPTY_ENV_NAME = None
 
 
 @pytest.fixture(scope='function')
@@ -183,34 +227,3 @@ def no_pytest(test_env_name):
             return_output=True
         )
         assert exitcode == 0, output
-
-
-@pytest.fixture(scope='session')
-def empty_env_name(request, use_env):
-    global _EMPTY_ENV_NAME
-
-    if _EMPTY_ENV_NAME is None:
-        env_name = f"_benchopt_test_env_{uuid.uuid4()}"
-        request.addfinalizer(delete_empty_env)
-
-        _EMPTY_ENV_NAME = env_name
-
-        create_conda_env(_EMPTY_ENV_NAME, empty=True)
-
-    return _EMPTY_ENV_NAME
-
-
-def delete_test_env():
-    global _TEST_ENV_NAME
-
-    if _TEST_ENV_NAME is not None:
-        delete_conda_env(_TEST_ENV_NAME)
-        _TEST_ENV_NAME = None
-
-
-def delete_empty_env():
-    global _EMPTY_ENV_NAME
-
-    if _EMPTY_ENV_NAME is not None:
-        delete_conda_env(_EMPTY_ENV_NAME)
-        _EMPTY_ENV_NAME = None
