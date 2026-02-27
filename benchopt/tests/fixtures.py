@@ -162,6 +162,11 @@ def test_env_name(request, bench, use_env):
             env_name, benchmark=bench, recreate=recreate, pytest=True
         )
         bench.get_benchmark_objective().install(env_name=env_name)
+        # Flush the output to avoid issues with pytest capturing
+        # the output later on and failing tests because of it.
+        # Make sure to flush stdout and stderr
+        print(flush=True)
+        print(flush=True, file=sys.stderr)
 
     return _TEST_ENV_NAME
 
