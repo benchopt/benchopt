@@ -5,7 +5,7 @@ from joblib import Parallel, delayed
 
 _DISTRIBUTED_FRONTAL = False
 
-DISTRIBUTED_BACKENDS = ('loky', 'dask', 'submitit')
+DISTRIBUTED_BACKENDS = ('loky', 'dask', 'submitit', 'torchrun')
 
 
 def set_distributed_frontal():
@@ -28,6 +28,9 @@ def parallel_run(benchmark, run, kwargs, all_runs, config, collect=False):
     if backend == 'submitit':
         from .slurm_executor import run_on_slurm
         results = run_on_slurm(benchmark, config, run, kwargs, all_runs)
+    elif backend == 'torchrun':
+        from .torchrun_executor import run_on_torchrun
+        results = run_on_torchrun(benchmark, config, run, kwargs, all_runs)
     else:
         if backend == 'dask':
             from .dask_backend import check_dask_config
@@ -86,7 +89,7 @@ def check_parallel_config(parallel_config_file, slurm_config_file, n_jobs):
     )
 
     backend = parallel_config['backend']
-    if backend in ('dask', 'submitit'):
+    if backend in ('dask', 'submitit', 'torchrun'):
         print(f"Distributed run with backend: {backend}")
         set_distributed_frontal()
 
