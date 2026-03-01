@@ -346,9 +346,10 @@ class Benchmark:
 
         Parameters
         ----------
-        filename : str | list of str | None
+        filename : str | None
             Select a specific file from the benchmark. If None, this will
             select the most recent result file in the benchmark output folder.
+            If 'all', will select all files in the output folder.
         """
         # List all result files
         output_folder = self.get_output_folder()
