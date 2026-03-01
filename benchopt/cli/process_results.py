@@ -72,33 +72,61 @@ def plot(benchmark, filename=None, kinds=('suboptimality_curve',),
 )
 @click.argument('benchmark', default=Path.cwd(), type=click.Path(exists=True),
                 shell_complete=complete_benchmarks)
+@click.option('--hub', type=str, default="github", show_default=True,
+              help="Hub to publish the result on. Currently only 'github' and "
+              "'huggingface' are supported.")
 @click.option('--token', '-t', type=str, default=None,
-              help="Github token to access the result repo.")
+              help="Github/HF token to access the result repo.")
 @click.option('--filename', '-f', type=str, default=None,
               shell_complete=complete_output_files,
               help="Specify the file to publish in the benchmark. If it is "
               "not specified, take the latest one in the benchmark output "
               "folder.")
-def publish(benchmark, token=None, filename=None):
-
-    if token is None:
-        token = get_setting('github_token')
-    if token is None:
-        raise RuntimeError(
-            "Could not find the token value to connect to GitHub.\n\n"
-            "Please go to https://github.com/settings/tokens to generate a "
-            "personal token $TOKEN.\nThen, either provide it with option `-t` "
-            "or put it in a config file ./benchopt.yml\nunder section "
-            "[benchopt] as `github_token = $TOKEN`."
-        )
+def publish(benchmark, hub="github", token=None, filename=None):
 
     # Get the result file
     benchmark = Benchmark(benchmark)
     result_filename = benchmark.get_result_file(filename)
 
-    # Publish the result.
-    from benchopt.utils.github import publish_result_file
-    publish_result_file(benchmark, result_filename, token)
+    if hub == "github":
+        if token is None:
+            token = get_setting('github_token')
+        if token is None:
+            raise RuntimeError(
+                "Could not find the token value to connect to GitHub.\n\n"
+                "Please go to https://github.com/settings/tokens to generate a "
+                "personal token $TOKEN.\nThen, either provide it with option `-t` "
+                "or put it in a config file ./benchopt.yml\nunder section "
+                "[benchopt] as `github_token = $TOKEN`."
+            )
+
+        # Publish the result.
+        from benchopt.utils.github import publish_result_file
+        publish_result_file(benchmark, result_filename, token)
+    elif hub == "huggingface":
+        if token is None:
+            token = get_setting('huggingface_token')
+
+        from huggingface_hub import login
+        from huggingface_hub import HfApi, Repository
+        if token is not None:
+            login(token=token)  # check that the token is valid
+        try:
+            HfApi().whoami()
+        except EnvironmentError:
+            raise EnvironmentError(
+                "Client could not connect to HuggingFace Hub. Please either "
+                "provide a valid token with option `-t` or use "
+                "`huggingface-cli login` to authenticate."
+            )
+        local_path = Path(benchmark.benchmark_dir) / "results_hf"
+        repo = Repository(
+            local_path, repo_type="dataset", clone_from="deepinv/benchmarks"
+        )
+
+        # Publish the result.
+        from benchopt.utils.huggingface import publish_result_file
+        publish_result_file(benchmark, result_filename, token)
 
 
 @process_results.command(

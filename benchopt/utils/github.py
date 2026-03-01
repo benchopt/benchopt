@@ -1,7 +1,13 @@
 import json
 from pathlib import Path
-from github import Github
-from github import GithubException
+try:
+    from github import Github
+    from github import GithubException
+except ImportError as e:
+    raise ImportError(
+        "The github package is required to use the publish_result_file "
+        "function. You can install it with `pip install PyGithub`."
+    ) from e
 
 BENCHOPT_RESULT_REPO = 'benchopt/results'
 
