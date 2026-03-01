@@ -359,7 +359,7 @@ def test_prefix_with_same_parameters():
             max_runs=1, n_repetitions=1, n_jobs=1, plot_result=False
         )
 
-        df = read_results(benchmark.get_result_file())
+        df = read_results(benchmark.get_result_files()[0])
 
         assert "p_solver_seed" in df.columns
         assert "p_solver_type" in df.columns

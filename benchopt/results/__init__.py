@@ -34,6 +34,11 @@ def read_results(path):
         )
     if "data_name" in df.columns:
         df = df.rename(columns={"data_name": "dataset_name"})
+    if "run_date" not in df.columns:
+        df["run_date"] = (
+            pd.to_datetime(path.stat().st_ctime, unit='s')
+            .isoformat()
+        )
     return df
 
 
@@ -51,6 +56,10 @@ def save_results(df, path):
         Path to the parquet file to write.
     """
     terminal = TerminalOutput()
+
+    # tag the run with a date if it does not already exist.abs
+    if "run_date" not in df.columns:
+        df["run_date"] = pd.Timestamp.now().isoformat()
 
     path = Path(path)
     if path.suffix == "":

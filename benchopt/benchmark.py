@@ -341,15 +341,20 @@ class Benchmark:
         slurm_dir = self.benchmark_dir / SLURM_JOB_NAME
         return slurm_dir
 
-    def get_result_file(self, filename=None):
-        """Get a result file from the benchmark.
+    def get_result_files(self, filenames=None):
+        """Get result files from the benchmark.
 
         Parameters
         ----------
-        filename : str | None
+        filenames : list[str] | str | None
             Select a specific file from the benchmark. If None, this will
             select the most recent result file in the benchmark output folder.
             If 'all', will select all files in the output folder.
+
+        Returns
+        -------
+        result_files : list[Path]
+            List of result files matching the given names.
         """
         # List all result files
         output_folder = self.get_output_folder()
@@ -359,13 +364,27 @@ class Benchmark:
         all_result_files = sorted(
             all_result_files, key=lambda t: t.stat().st_mtime
         )
+        if len(all_result_files) == 0:
+            raise RuntimeError(
+                "Could not find any Parquet nor "
+                f"CSV result files in {output_folder}."
+            )
+        if filenames == "all":
+            return all_result_files
+        if filenames is None:
+            return all_result_files[-1:]
 
-        if filename is not None and filename != 'all':
-            result_path = (output_folder / filename)
-            result_filename = result_path.with_suffix('.parquet')
+        # Now select specific files based on the given name.
+        if isinstance(filenames, str):
+            filenames = [filenames]
+
+        result_files = []
+        for filename in filenames:
+            filename = Path(filename)
+            result_filename = filename.with_suffix('.parquet')
 
             if not result_filename.exists():
-                result_filename = result_path.with_suffix('.csv')
+                result_filename = filename.with_suffix('.csv')
 
             if not result_filename.exists():
                 if Path(filename).exists():
@@ -378,30 +397,10 @@ class Benchmark:
                         f"Could not find result file {filename}. Available "
                         f"result files are:\n- {all_result_files}"
                     )
-        else:
-            if len(all_result_files) == 0:
-                raise RuntimeError(
-                    "Could not find any Parquet nor "
-                    f"CSV result files in {output_folder}."
-                )
-            result_filename = all_result_files[-1]
-            if filename == 'all':
-                result_filename = all_result_files
+            else:
+                result_files.append(result_filename)
 
-        if isinstance(result_filename, list):
-            is_csv_file = any(fname.suffix == ".csv"
-                              for fname in result_filename)
-        else:
-            is_csv_file = result_filename.suffix == ".csv"
-
-        if is_csv_file:
-            print(colorify(
-                "WARNING: CSV files are deprecated."
-                "Please use Parquet files instead.",
-                YELLOW
-            ))
-
-        return result_filename
+        return result_files
 
     #####################################################
     # Caching mechanism

@@ -12,7 +12,7 @@ def merge_results(result_filenames, overwrite=False):
         List of parquet files to merge.
     """
     dfs = [read_results(f) for f in result_filenames]
-    df = pd.concat(dfs, ignore_index=True)
+    df = pd.concat(dfs, ignore_index=True).sort_values("run_date")
     if overwrite:
         # Consider that the files can contain multiple times the same
         # configuration, and only keep the last one. This is useful when

@@ -449,7 +449,7 @@ def plot_benchmark_html_all(patterns=(), benchmark_paths=(), root=None,
         print(f'Rendering benchmark: {benchmark}')
         result_files = list(filter(
             lambda path: any(path.match(p) for p in patterns),
-            benchmark.get_result_file('all')
+            benchmark.get_result_files('all')
         ))
         # Store the number of rendered results so we can easily generate the
         # index page with the number of available result files.

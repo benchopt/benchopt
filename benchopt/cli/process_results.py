@@ -57,7 +57,7 @@ def plot(benchmark, filename=None, kinds=('suboptimality_curve',),
 
     # Get the result file
     benchmark = Benchmark(benchmark)
-    result_filename = benchmark.get_result_file(filename)
+    result_filename = benchmark.get_result_files(filename)[0]
 
     # Plot the results.
     from benchopt.plotting import plot_benchmark
@@ -94,7 +94,7 @@ def merge(benchmark, filenames=None, overwrite=False, output=None):
         benchmark = Path()
     if benchmark is not None:
         benchmark = Benchmark(benchmark)
-        result_filenames = benchmark.get_result_file(filenames)
+        result_filenames = benchmark.get_result_files(filenames)
     else:
         result_filenames = [Path(f) for f in filenames]
 
@@ -139,7 +139,7 @@ def publish(benchmark, token=None, filename=None):
 
     # Get the result file
     benchmark = Benchmark(benchmark)
-    result_filename = benchmark.get_result_file(filename)
+    result_filename = benchmark.get_result_files(filename)[0]
 
     # Publish the result.
     from benchopt.utils.github import publish_result_file
