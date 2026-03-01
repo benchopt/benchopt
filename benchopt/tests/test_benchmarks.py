@@ -328,5 +328,10 @@ def check_test(request):
     if check_func is not None:
         requires = inspect.signature(check_func).parameters
         check_func(
-            **{f: request.getfixturevalue(f) for f in requires}
+            **{
+                f: request.getfixturevalue(
+                    f"{f}_class" if f in ['dataset', 'solver', 'objective']
+                    else f
+                ) for f in requires
+            }
         )

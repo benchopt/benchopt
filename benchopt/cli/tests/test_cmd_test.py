@@ -340,51 +340,36 @@ class TestCmdTest:
                 )
             out.check_output(f"- Installing.*in '{test_env_name}'")
 
-    def test_skip_test(self):
-        test_config = """import pytest
+    @pytest.mark.parametrize('test_name, arg, n_test', [
+        ("test_dataset_get_data", "dataset_class", 2),
+        ("test_dataset_get_data", "dataset", 2),
+        ("test_solver_run", "solver_class", 1),
+        ("test_solver_run", "solver", 1),
+    ])
+    @pytest.mark.parametrize('action', ['skip', 'xfail'])
+    def test_check_test(self, no_debug_log, action, test_name, arg, n_test):
+        test_config = f"""import pytest
 
-        def check_test_dataset_get_data(benchmark, dataset):
-            if dataset.name == "test-dataset":
-                pytest.skip("skip for TEST")
+        def check_{test_name}(benchmark, {arg}):
+            pytest.{action}("skip for TEST")
         """
 
         with temp_benchmark(
             extra_files={'test_config.py': test_config}
         ) as bench, CaptureCmdOutput() as out:
             benchopt_test(
-                f"{bench.benchmark_dir} -k dataset_get_data".split(),
+                f"{bench.benchmark_dir} -k {test_name}".split(),
                 'benchopt', standalone_mode=False
             )
 
         out.check_output("test session starts", repetition=1)
-        out.check_output("test_dataset_get_data", repetition=2)
-        out.check_output("test_solver", repetition=0)
-        out.check_output("PASSED", repetition=1)
-        out.check_output("SKIPPED", repetition=1)
-
-    def test_xfail_test(self):
-        test_config = """import pytest
-
-        def check_test_solver_run(benchmark, solver):
-            pytest.xfail("xfail for TEST")
-        """
-        with temp_benchmark(
-            extra_files={'test_config.py': test_config}
-        ) as bench, CaptureCmdOutput() as out:
-            benchopt_test(
-                [str(bench.benchmark_dir), "-k", "test_solver_run"],
-                'benchopt', standalone_mode=False
-            )
-
-        out.check_output("test session starts", repetition=1)
-        out.check_output(r"test_solver_run\[", repetition=1)
-        out.check_output("test_dataset_get_data", repetition=0)
-        out.check_output("XFAIL", repetition=1)
+        out.check_output(test_name, repetition=n_test)
+        out.check_output(action.upper(), repetition=n_test)
 
     def test_deprecated_check_test_solver(self):
         test_config = """import pytest
 
-        def check_test_solver(benchmark, solver):
+        def check_test_solver(benchmark, solver_class):
             pytest.xfail("xfail for TEST")
         """
         with temp_benchmark(
