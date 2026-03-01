@@ -1,4 +1,5 @@
 import pytest
+import inspect
 import numpy as np
 from itertools import islice
 
@@ -323,16 +324,12 @@ def check_test(request):
             )
             pytest.warns(DeprecationWarning, match=warn_msg)
     if check_func is not None:
-        try:
-            check_func(
-                benchmark,
-                *[
-                    request.getfixturevalue(f) for f in request.fixturenames
-                    if f not in [
-                        'check_test', 'benchmark', 'request', 'test_env_name'
-                    ]
-                ]
-            )
-        except TypeError:
-            # Backward compatibility for benchmarks before benchopt 1.7.1
-            check_func(request.getfixturevalue('solver_class'))
+        requires = inspect.signature(check_func).parameters
+        check_func(
+            **{
+                f: request.getfixturevalue(
+                    f"{f}_class" if f in ['dataset', 'solver', 'objective']
+                    else f
+                ) for f in requires
+            }
+        )
