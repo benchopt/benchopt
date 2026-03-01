@@ -323,8 +323,6 @@ def check_test(request):
                 "benchopt 1.7.1. Please rename it to `check_test_solver_run`."
             )
             pytest.warns(DeprecationWarning, match=warn_msg)
-            check_func(request.getfixturevalue('solver_class'))
-            return
     if check_func is not None:
         requires = inspect.signature(check_func).parameters
         check_func(
