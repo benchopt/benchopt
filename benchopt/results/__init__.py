@@ -1,6 +1,7 @@
 import pandas as pd
 from pathlib import Path
 
+from .files_utils import uniquify_fname
 from ..utils.terminal_output import TerminalOutput
 
 
@@ -54,6 +55,7 @@ def save_results(df, path):
     path = Path(path)
     if path.suffix == "":
         path = path.with_suffix(".parquet")
+    path = uniquify_fname(path)
     if path.suffix == '.parquet':
         try:
             df.to_parquet(path, index=False)

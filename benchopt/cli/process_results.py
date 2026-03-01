@@ -4,7 +4,6 @@ from pathlib import Path
 
 from benchopt.config import get_setting
 from benchopt.benchmark import Benchmark
-from benchopt.results import save_results
 from benchopt.cli.completion import complete_benchmarks
 from benchopt.cli.completion import complete_output_files
 from benchopt.cli.completion import complete_plots
@@ -105,6 +104,7 @@ def merge(benchmark, filenames=None, overwrite=False, output=None):
         output = Path(output)
 
     # Merge the results.
+    from benchopt.results import save_results
     from benchopt.results.process import merge_results
     df = merge_results(result_filenames, overwrite=overwrite)
     save_results(df, output)

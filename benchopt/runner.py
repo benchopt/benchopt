@@ -9,7 +9,6 @@ from joblib import hash
 from .callback import _Callback
 from .benchmark import Benchmark
 from .utils.sys_info import get_sys_info
-from .utils.files import uniquify_fname
 from .utils.pdb_helpers import exception_handler
 from .utils.terminal_output import TerminalOutput
 from .parallel_backends import parallel_run
@@ -460,11 +459,8 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
     output_dir = benchmark.get_output_folder()
     if output_file == "None":
         timestamp = datetime.now().strftime('%Y-%m-%d_%Hh%Mm%S')
-        output_file = output_dir / f'benchopt_run_{timestamp}.parquet'
-    else:
-        output_file = output_dir / f"{output_file}.parquet"
-        output_file = uniquify_fname(output_file)
-    output_file = save_results(df, output_file)
+        output_file = f'benchopt_run_{timestamp}.parquet'
+    output_file = save_results(df, output_dir / output_file)
 
     if plot_result:
         try:
