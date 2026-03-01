@@ -56,7 +56,3 @@ class TestCmdMerge:
             assert s_val0[0] == run_date_2[0]
             if expected_runs == 1:
                 assert df["run_date"].iloc[0] == run_date_2
-
-
-
-
