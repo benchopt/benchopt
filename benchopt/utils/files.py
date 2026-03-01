@@ -13,7 +13,7 @@ def rm_folder(folder):
     folder.rmdir()
 
 
-def uniquify_results(file_path):
+def uniquify_fname(file_path):
     "Add a number to filename if it already exists."
     if file_path.exists():
         parent = file_path.parent

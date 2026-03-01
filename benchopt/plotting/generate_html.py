@@ -74,7 +74,7 @@ def get_results(fnames, html_root, benchmark, config=None, copy=False):
     out_dir = html_root / OUTPUTS
 
     for fname in fnames:
-        print(f"Processing {fname}")
+        print(f"\r   Processing {fname}", end="", flush=True)
         df = read_results(fname)
 
         config_ = get_parquet_metadata(fname) if config is None else config
@@ -114,6 +114,7 @@ def get_results(fnames, html_root, benchmark, config=None, copy=False):
         result['plot_options'] = options
 
         results.append(result)
+    print()
 
     for result in results:
         html_file_name = Path(result['fname_short']).with_suffix('.html').name
@@ -354,8 +355,10 @@ def plot_benchmark_html(
     html_home = html_home.relative_to(html_root)
 
     # Create the figures and render the page as a html.
+    print("Rendering benchmark results...")
     results = get_results(fnames, html_root, benchmark, config, copy=copy)
     htmls = render_all_results(results, benchmark, home=html_home)
+    print("done")
 
     # Save the resulting page in the HTML folder
     for result, html in zip(results, htmls):
@@ -372,11 +375,10 @@ def plot_benchmark_html(
 
     # Fetch run list from the benchmark and update the benchmark front page.
     rendered = render_benchmark(run_list, benchmark, home=html_home)
-    print(f"Writing {benchmark.name} results to {bench_index}")
+    print(f"Writing {benchmark.name} index to {bench_index}")
     with open(bench_index, "w", encoding="utf-8") as f:
         f.write(rendered)
 
-    print("Rendering benchmark results...")
     # Display the file in the default browser
     if display:
         result_filename = (html_root / results[-1]['page']).absolute()

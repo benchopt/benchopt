@@ -344,7 +344,7 @@ class Benchmark:
 
         Parameters
         ----------
-        filename : str
+        filename : str | list of str | None
             Select a specific file from the benchmark. If None, this will
             select the most recent result file in the benchmark output folder.
         """
