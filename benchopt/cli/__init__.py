@@ -29,10 +29,15 @@ def benchopt(ctx, version=False, check_env=False):
         raise SystemExit(0)
     if check_env:
         _, is_editable = get_benchopt_requirement()
+        try:
+            from pytest import __version__ as pytest_version
+        except ImportError:
+            pytest_version = None
         output = {
             'version': __version__,
             'is_editable': is_editable,
-            'python_version': sys.version.split()[0]
+            'python_version': sys.version.split()[0],
+            'pytest_version': pytest_version
         }
         import json
         json.dump(output, sys.stdout)

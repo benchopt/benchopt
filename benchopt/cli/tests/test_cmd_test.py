@@ -316,6 +316,30 @@ class TestCmdTest:
                    'benchopt', standalone_mode=False
                 )
 
+    def test_valid_call_in_env_no_minimal(
+            self, test_env_name, uninstall_dummy_package
+    ):
+        objective = """from benchopt import BaseObjective
+        import dummy_package
+        class Objective(BaseObjective):
+            name = "test-objective"
+            requirements = [
+                'pip::git+https://github.com/tommoral/dummy_package'
+            ]
+            def set_data(self, X, y): pass
+            def get_one_result(self): return dict(beta=1)
+            def evaluate_result(self, beta): return dict(value=1.0)
+            def get_objective(self): return dict(X=None, y=None, lmbd=0)
+        """
+        with temp_benchmark(objective=objective) as bench:
+            with CaptureCmdOutput(debug=True) as out:
+                benchopt_test(
+                   f"{bench.benchmark_dir} --env-name {test_env_name} "
+                   "--skip-env".split(),
+                   'benchopt', standalone_mode=False
+                )
+            out.check_output(f"- Installing.*in '{test_env_name}'")
+
     def test_skip_test(self):
         test_config = """import pytest
 

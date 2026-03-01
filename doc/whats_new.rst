@@ -18,7 +18,7 @@ API
   ``benchopt install --env-name``. Both an exact minor version (e.g. ``"3.11"``)
   and a PEP-440 specifier (e.g. ``">=3.11"``) are accepted.
   By `Hippolyte Verninas`_ and `Thomas Moreau`_ (:gh:`885`)
-  
+
 - Allow to specify ``test_config`` in all classes, and ``Objective.test_dataset``
   to tweak the behavior of ``benchopt test``.
   By `Thomas Moreau`_ (:gh:`889`)
@@ -27,7 +27,10 @@ FIX
 ---
 
 - Fix failure in ``benchopt test`` when using ``get_seed`` in a class.
-  By `Thomas Moreau`_ (:gh:`889`) 
+  By `Thomas Moreau`_ (:gh:`889`)
+
+- Fix conda env creation and ``--recreate`` option, ot include minimal reqs.
+  By `Thomas Moreau`_ (:gh:`891`)
 
 .. _changes_1_8_1:
 
