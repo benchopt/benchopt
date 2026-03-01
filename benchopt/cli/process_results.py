@@ -77,8 +77,8 @@ def plot(benchmark, filename=None, kinds=('suboptimality_curve',),
               "not specified, take all files in the benchmark output folder.")
 @click.option('--overwrite', is_flag=True,
               help="If this flag is set, when merging files, consider that "
-              "they can contain multiple times the same configuration, and only "
-              "keep the last one. This is useful when merging files from "
+              "they can contain multiple times the same configuration, and "
+              "only keep the last one. This is useful when merging files from "
               "multiple runs where we add new methods but don't want to lose "
               "the results of the already existing methods.")
 @click.option('--output', '-o', type=str, default="merged_results.parquet",
