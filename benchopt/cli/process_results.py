@@ -57,12 +57,57 @@ def plot(benchmark, filename=None, kinds=('suboptimality_curve',),
 
     # Get the result file
     benchmark = Benchmark(benchmark)
-    result_filename = benchmark.get_result_file(filename)
+    result_filename = benchmark.get_result_files(filename)[0]
 
     # Plot the results.
     from benchopt.plotting import plot_benchmark
     plot_benchmark(result_filename, benchmark, kinds=kinds, display=display,
                    plotly=plotly, html=html)
+
+
+@process_results.command(
+    help="Merge multiple result files from a benchmark."
+)
+@click.argument('benchmark', default=None, type=click.Path(exists=True),
+                required=False, shell_complete=complete_benchmarks)
+@click.option('--filenames', '-f', type=str, multiple=True,
+              shell_complete=complete_output_files,
+              help="Specify the files to merge in the benchmark. If it is "
+              "not specified, take all files in the benchmark output folder.")
+@click.option('--overwrite', is_flag=True,
+              help="If this flag is set, when merging files, consider that "
+              "they can contain multiple times the same configuration, and "
+              "only keep the last one. This is useful when merging files from "
+              "multiple runs where we add new methods but don't want to lose "
+              "the results of the already existing methods.")
+@click.option('--output', '-o', type=str, default="merged_results.parquet",
+              help="Specify the name of the output file. If not specified, "
+              "the merged results will be saved in a file named "
+              "`merged_results.parquet` in the benchmark output folder.")
+def merge(benchmark, filenames=None, overwrite=False, output=None):
+
+    if len(filenames) == 0:
+        filenames = "all"
+
+    # Get the result files
+    if benchmark is None and (Path() / "objective.py").exists():
+        benchmark = Path()
+    if benchmark is not None:
+        benchmark = Benchmark(benchmark)
+        result_filenames = benchmark.get_result_files(filenames)
+    else:
+        result_filenames = [Path(f) for f in filenames]
+
+    if benchmark is not None:
+        output = benchmark.get_output_folder() / output
+    else:
+        output = Path(output)
+
+    # Merge the results.
+    from benchopt.results import save_results
+    from benchopt.results.process import merge_results
+    df = merge_results(result_filenames, overwrite=overwrite)
+    save_results(df, output)
 
 
 @process_results.command(
@@ -94,7 +139,7 @@ def publish(benchmark, token=None, filename=None):
 
     # Get the result file
     benchmark = Benchmark(benchmark)
-    result_filename = benchmark.get_result_file(filename)
+    result_filename = benchmark.get_result_files(filename)[0]
 
     # Publish the result.
     from benchopt.utils.github import publish_result_file
