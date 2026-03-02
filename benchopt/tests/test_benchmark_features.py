@@ -4,6 +4,7 @@ import pytest
 from pathlib import Path
 
 from benchopt.cli.main import run
+from benchopt.results import read_results
 from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.utils.dynamic_modules import _load_class_from_module
 
@@ -207,7 +208,6 @@ def test_objective_save_final_results(no_debug_log):
 
     """
 
-    import pandas as pd
     import pickle
 
     with temp_benchmark(objective=save_final) as benchmark:
@@ -216,7 +216,7 @@ def test_objective_save_final_results(no_debug_log):
                 str(benchmark.benchmark_dir),
                 *('-s test-solver -d test-dataset -n 1 -r 1 --no-plot').split()
             ],  standalone_mode=False)
-        data = pd.read_parquet(out.result_files[0])
+        data = read_results(out.result_files[0])
         with open(data.loc[0, "final_results"], "rb") as final_result_file:
             final_results = pickle.load(final_result_file)
     assert final_results == "test_value"

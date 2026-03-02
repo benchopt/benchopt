@@ -10,6 +10,13 @@ What's new
 Version 1.9 - In development
 ----------------------------
 
+CLI
+---
+
+- Add ``benchopt merge`` to merge results from multiple benchopt runs.
+  See :ref:`merge_results` for more details.
+  By `Thomas Moreau`_ (:gh:`892`)
+
 API
 ---
 
@@ -29,7 +36,7 @@ FIX
 - Fix failure in ``benchopt test`` when using ``get_seed`` in a class.
   By `Thomas Moreau`_ (:gh:`889`)
 
-- Fix conda env creation and ``--recreate`` option, ot include minimal reqs.
+- Fix conda env creation and ``--recreate`` option, to include minimal reqs.
   By `Thomas Moreau`_ (:gh:`891`)
 
 .. _changes_1_8_1:

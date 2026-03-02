@@ -10,8 +10,8 @@ from collections.abc import Iterable
 from benchopt.config import set_setting
 from benchopt.config import get_setting
 from benchopt.benchmark import Benchmark
-from benchopt.utils.files import rm_folder
 from benchopt.utils.sys_info import get_sys_info
+from benchopt.results.files_utils import rm_folder
 from benchopt.cli.completion import complete_benchmarks
 from benchopt.cli.completion import complete_conda_envs
 from benchopt.cli.completion import complete_datasets

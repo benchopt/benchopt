@@ -9,11 +9,11 @@ from joblib import hash
 from .callback import _Callback
 from .benchmark import Benchmark
 from .utils.sys_info import get_sys_info
-from .utils.files import uniquify_results
 from .utils.pdb_helpers import exception_handler
 from .utils.terminal_output import TerminalOutput
 from .parallel_backends import parallel_run
 from .parallel_backends import check_parallel_config
+from .results import save_results
 
 
 FAILURE_STATUS = ['diverged', 'error', 'interrupted']
@@ -459,19 +459,8 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
     output_dir = benchmark.get_output_folder()
     if output_file == "None":
         timestamp = datetime.now().strftime('%Y-%m-%d_%Hh%Mm%S')
-        output_file = output_dir / f'benchopt_run_{timestamp}.parquet'
-    else:
-        output_file = output_dir / f"{output_file}.parquet"
-        output_file = uniquify_results(output_file)
-    try:
-        df.to_parquet(output_file)
-    except Exception:
-        # Failed to save the results as a parquet file, falling back
-        # to csv. This can be due to mixed types columns or missing
-        # dependencies.
-        output_file = output_file.with_suffix(".csv")
-        df.to_csv(output_file)
-    terminal.savefile_status(save_file=output_file)
+        output_file = f'benchopt_run_{timestamp}.parquet'
+    output_file = save_results(df, output_dir / output_file)
 
     if plot_result:
         try:

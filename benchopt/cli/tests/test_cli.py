@@ -407,11 +407,13 @@ class TestRunCmd:
 
             out.check_output('test-solver:', repetition=5*n_rep+1)
 
-    def test_changing_output_name(self):
+    @pytest.mark.parametrize('ext', ["default", "parquet", "csv"])
+    def test_changing_output_name(self, ext):
+        ext = "" if ext == "default" else f".{ext}"
         with temp_benchmark() as bench, CaptureCmdOutput() as out:
             command = (
                 f"{bench.benchmark_dir} -d test-dataset  -n 1 --no-plot "
-                "--output unique_name".split()
+                f"--output unique_name{ext}".split()
             )
             run(command, 'benchopt', standalone_mode=False)
             with pytest.warns(UserWarning, match="already exists"):
@@ -419,6 +421,11 @@ class TestRunCmd:
 
         names = [Path(result_file).stem for result_file in out.result_files]
         assert names[0] == 'unique_name' and names[1] == 'unique_name_1', out
+        expected_ext = ext if ext else '.parquet'
+
+        # Ensure the extension has the right type and can be properly loaded
+        exts = [Path(result_file).suffix for result_file in out.result_files]
+        assert exts[0] == expected_ext and exts[1] == expected_ext, out
 
     def test_handle_class_init_error(self):
         # dataset with a wrong param name

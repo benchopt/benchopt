@@ -23,9 +23,9 @@ The DataFrame contains the following columns:
   objective and solver, displayed in the HTML page.
 - ``file_objective|file_solver|file_dataset``: The filename of the objective,
   solver, and dataset used for this line.
-- ``p_obj_p``: the value of the objective's parameter ``p``.
-- ``p_solver_p``: the value of the solver's parameter ``p``.
-- ``p_dateset_p``: the value of the dataset's parameter ``p``.
+- ``p_obj_{p}``: the value of the objective's parameter ``p``.
+- ``p_solver_{p}``: the value of the solver's parameter ``p``.
+- ``p_dataset_{p}``: the value of the dataset's parameter ``p``.
 - ``time``: the time taken to run the solver until this point of the performance curve.
 - ``stop_val``: the number of iterations or the tolerance reached by the solver.
 - ``idx_rep``: If multiple repetitions are run for each solver with ``--n-rep``,
@@ -33,11 +33,11 @@ The DataFrame contains the following columns:
 - ``sampling_strategy``: The sampling strategy used to generate the performance
   curve of this solver. This allow to adapt the plot in the HTML depending on
   each solver.
-- ``objective_k``: The value associated to the key ``k`` in the
+- ``objective_{k}``: The value associated to the key ``k`` in the
   ``Objective.evaluate_result`` dictionary.
 
 The remaining columns are informations about the system used to run the
-benchmark, with keys ``{'env_OMP_NUM_THREADS', 'platform', 'platform-architecture', 'platform-release', 'platform-version', 'system-cpus', 'system-processor', 'system-ram (GB)', 'version-cuda', 'version-numpy', 'version-scipy', 'benchmark-git-tag'}``.
+benchmark, with keys ``{'env_OMP_NUM_THREADS', 'platform', 'platform-architecture', 'platform-release', 'platform-version', 'system-cpus', 'system-processor', 'system-ram (GB)', 'version-cuda', 'version-numpy', 'version-scipy', 'benchmark-git-tag', 'run_date'}``.
 
 
 .. _collect_results:
@@ -50,6 +50,30 @@ When the benchmark is run in parallel, the results that have already been
 computed can be collected using the :option:`--collect` option with
 ``benchopt run``. Adding this option with the same command line will
 produce a parquet file with all the results that have been computed so far.
+
+
+.. _merge_results:
+
+Merge results from multiple runs
+--------------------------------
+
+Multiple runs of the same benchmark can be merged together using the
+``benchopt merge`` command. This allows to collect multiple runs, or to
+aggregate results from different users. By default, the merged results contain
+all lines from the different result files, with no additional processing.
+
+The resulting file is stored in the benchmark directory with the name
+``merged_results.parquet``. The name can be changed using the :option:`--output` option of the ``benchopt merge`` command.
+
+It is also possible to specify the ``--overwrite`` option to only keep one line
+per ``objective_name``, ``solver_name``, ``dataset_name``, and
+``idx_repetition``. In this case, only the line from the most recent run will
+be kept for each evaluation.
+
+Note that the run date is included in the result file in the ``run_date``
+columm. If it is not present in the original result file, benchopt uses
+the file creation date as a proxy for the run date. This allows to easily
+identify the most recent line when using the ``--overwrite`` option.
 
 
 Clean benchmark results

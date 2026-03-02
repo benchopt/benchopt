@@ -3,9 +3,9 @@ import json
 import pandas as pd
 from pathlib import Path
 
-from benchopt.utils.parquet import to_parquet
-from benchopt.utils.parquet import get_metadata
-from benchopt.utils.parquet import update_metadata
+from benchopt.results.parquet import to_parquet
+from benchopt.results.parquet import get_metadata
+from benchopt.results.parquet import update_metadata
 from benchopt.cli.main import run
 from benchopt.cli.process_results import plot
 from benchopt.utils.temp_benchmark import temp_benchmark
