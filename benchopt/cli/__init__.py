@@ -3,14 +3,14 @@ import click
 
 from benchopt import __version__
 
-from benchopt.cli.main import main
-from benchopt.cli.helpers import helpers
-from benchopt.cli.process_results import process_results
+from benchopt.cli.main import main as _main
+from benchopt.cli.helpers import helpers as _helpers
+from benchopt.cli.process_results import process_results as _process_results
 
 from benchopt.utils.misc import get_benchopt_requirement
 
 
-SOURCES = [main, process_results, helpers]
+SOURCES = [_main, _process_results, _helpers]
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
 
