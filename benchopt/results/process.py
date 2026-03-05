@@ -3,7 +3,7 @@ import pandas as pd
 from . import read_results
 
 
-def merge_results(result_filenames, overwrite=False):
+def merge_results(result_filenames, keep="last"):
     """Merge parquet files containing results of a benchmark.
 
     Parameters
@@ -11,9 +11,11 @@ def merge_results(result_filenames, overwrite=False):
     result_filenames: list of str | Path
         List of parquet files to merge.
     """
+    assert keep in ("last", "all"), "keep must be either 'last' or 'all'"
+
     dfs = [read_results(f) for f in result_filenames]
     df = pd.concat(dfs, ignore_index=True).sort_values("run_date")
-    if overwrite:
+    if keep == "last":
         # Consider that the files can contain multiple times the same
         # configuration, and only keep the last one. This is useful when
         # merging files from multiple runs where we add new methods but don't

@@ -25,6 +25,7 @@ DEFAULT_GLOBAL_CONFIG = {
     'debug': False,
     'raise_install_error': False,
     'github_token': None,
+    'huggingface_token': None,
     'data_dir': './data/',
     'conda_cmd': 'conda' if sys.platform != 'win32' else 'call conda',
     'shell': os.environ.get('SHELL', DEFAULT_SHELL),
@@ -37,6 +38,7 @@ DEFAULT_GLOBAL_CONFIG = {
   install fails.
 * ``github_token``, *str*: token to publish results on ``benchopt/results``
   via github.
+* ``huggingface_token``, *str*: token to publish results on Hugging Face.
 * ``conda_cmd``, *str*: can be used to give the path to ``conda`` if it is
   not directly installed on ``$PATH``. This can also be used to use ``mamba``
   to install benchmarks instead of conda. See :ref:`config_mamba`.

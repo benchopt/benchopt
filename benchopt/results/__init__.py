@@ -42,7 +42,7 @@ def read_results(path):
     return df
 
 
-def save_results(df, path):
+def save_results(df, path, uniquify=True):
     """Save a DataFrame in a fila at the given path.
 
     This function detect the format automatically based on the extension
@@ -54,6 +54,9 @@ def save_results(df, path):
         DataFrame containing the results of the benchmark.
     path: str | Path
         Path to the parquet file to write.
+    uniquify: bool, default=True
+        If True, if the file already exists, add a suffix to the filename to
+        avoid overwriting it. Else, overwrite the file if it already exists.
     """
     terminal = TerminalOutput()
 
@@ -64,7 +67,8 @@ def save_results(df, path):
     path = Path(path)
     if path.suffix == "":
         path = path.with_suffix(".parquet")
-    path = uniquify_fname(path)
+    if uniquify:
+        path = uniquify_fname(path)
     if path.suffix == '.parquet':
         try:
             df.to_parquet(path, index=False)

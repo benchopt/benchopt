@@ -65,15 +65,15 @@ all lines from the different result files, with no additional processing.
 The resulting file is stored in the benchmark directory with the name
 ``merged_results.parquet``. The name can be changed using the :option:`--output` option of the ``benchopt merge`` command.
 
-It is also possible to specify the ``--overwrite`` option to only keep one line
-per ``objective_name``, ``solver_name``, ``dataset_name``, and
-``idx_repetition``. In this case, only the line from the most recent run will
-be kept for each evaluation.
+It is also possible to specify the ``--keep`` option whether to only keep
+``'all'`` lines, or to keep only the ``'last'`` line per ``objective_name``,
+``solver_name``, ``dataset_name``, and ``idx_repetition``. In this case, only
+the line from the most recent run will be kept for each evaluation.
 
 Note that the run date is included in the result file in the ``run_date``
 columm. If it is not present in the original result file, benchopt uses
 the file creation date as a proxy for the run date. This allows to easily
-identify the most recent line when using the ``--overwrite`` option.
+identify the most recent line when using the ``--keep 'last'`` option.
 
 
 Clean benchmark results
