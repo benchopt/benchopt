@@ -28,7 +28,8 @@ class TestCmdMerge:
             with CaptureCmdOutput(delete_result_files=False) as out_merge:
                 merge(
                     f"{bench.benchmark_dir} -f {out.result_files[0]} -f"
-                    f"{out.result_files[1]} --output merged_results.parquet"
+                    f"{out.result_files[1]} --output merged_results.parquet "
+                    "--keep all"
                     .split(), standalone_mode=False,
                 )
             assert len(out_merge.result_files) == 1
@@ -43,7 +44,7 @@ class TestCmdMerge:
                 merge(
                     f"{bench.benchmark_dir} -f {out.result_files[0]} -f"
                     f"{out.result_files[1]} --output merged_results_1.parquet "
-                    "--overwrite"
+                    "--keep last"
                     .split(), standalone_mode=False,
                 )
             df = read_results(out_merge.result_files[0])

@@ -73,7 +73,7 @@ class TestCmdPublish:
 class TestCmdPublishHuggingFace(TestCmdPublish):
     """Tests for `benchopt publish --hub huggingface`."""
 
-    def setup(self):
+    def setup_class(cls):
         pytest.importorskip(
             "huggingface_hub",
             reason="huggingface_hub is required for testing publish on HF."
@@ -186,7 +186,7 @@ class TestCmdPublishHuggingFace(TestCmdPublish):
             mock_api = MagicMock()
             mock_hf_api_cls.return_value = mock_api
             mock_api.repo_info.side_effect = RepositoryNotFoundError(
-                "Repository Not Found"
+                "Repository Not Found", response=MagicMock(status_code=404)
             )
             # New repo -> no existing file
             mock_hf_download.side_effect = EntryNotFoundError("File not found")
@@ -209,7 +209,7 @@ class TestCmdPublishHuggingFace(TestCmdPublish):
 class TestCmdPublishGitHub(TestCmdPublish):
     """Tests for `benchopt publish --hub github` (default hub)."""
 
-    def setup(self):
+    def setup_class(cls):
         pytest.importorskip(
             "github",
             reason="PyGithub is required for testing publish on GitHub."

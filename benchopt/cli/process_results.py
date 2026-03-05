@@ -75,11 +75,12 @@ def plot(benchmark, filename=None, kinds=('suboptimality_curve',),
               help="Specify the files to merge in the benchmark. If it is "
               "not specified, take all files in the benchmark output folder.")
 @click.option('--keep', type=click.Choice(['all', 'last']), default='last',
-              help="If this flag is set, when merging files, consider that "
-              "they can contain multiple times the same configuration, and "
-              "only keep the last one. This is useful when merging files from "
-              "multiple runs where we add new methods but don't want to lose "
-              "the results of the already existing methods.")
+              help="When merged files contain multiple times the same "
+              "configuration, ``--keep`` controls whether to keep all the "
+              "lines or only keep the last result per configuration. "
+              "This is typically useful when merging files from multiple runs "
+              "where we add new methods but don't want to duplicate the "
+              "results of the already existing methods.")
 @click.option('--output', '-o', type=str, default="merged_results",
               help="Specify the name of the output file. If not specified, "
               "the merged results will be saved in a file named "
