@@ -50,29 +50,24 @@ class TestCmdPublish:
             )
 
     @pytest.mark.parametrize("hub", ["github", "huggingface"])
-    def test_missing_hub_package(self, hub):
+    def test_missing_hub_package(self, monkeypatch, hub):
         """ImportError with helpful message when the hub package is missing."""
         if hub == "github":
-            pkg, hub_module = "github", GH_MODULE
+            hub_module, hub_dep = GH_MODULE, "github"
         else:
-            pkg, hub_module = "huggingface_hub", HF_MODULE
-        err_match = f"{pkg} package is required"
+            hub_module, hub_dep = HF_MODULE, "huggingface_hub"
+        err_match = f"{hub_dep} package is required"
         with temp_benchmark() as bench:
             self._make_result_file(bench)
             # Remove the cached hub module so Python re-executes its top-level
-            # import, then block the underlying package so that import fails.
-            saved_hub = sys.modules.pop(hub_module, None)
-            try:
-                with patch.dict('sys.modules', {pkg: None}):
-                    with pytest.raises(ImportError, match=err_match):
-                        publish(
-                            [str(bench.benchmark_dir), "--hub", hub,
-                             "-t", "token"],
-                            standalone_mode=False,
-                        )
-            finally:
-                if saved_hub is not None:
-                    sys.modules[hub_module] = saved_hub
+            # import, then block the underlying dep so that import fails.
+            monkeypatch.delitem(sys.modules, hub_module, raising=False)
+            monkeypatch.setitem(sys.modules, hub_dep, None)
+            with pytest.raises(ImportError, match=err_match):
+                publish(
+                    [str(bench.benchmark_dir), "--hub", hub, "-t", "token"],
+                    standalone_mode=False,
+                )
 
 
 class TestCmdPublishHuggingFace(TestCmdPublish):
@@ -84,21 +79,19 @@ class TestCmdPublishHuggingFace(TestCmdPublish):
             reason="huggingface_hub is required for testing publish on HF."
         )
 
-    @pytest.mark.parametrize(
-        "token", [None, "invalid-token"], ids=["no_token", "invalid_token"]
-    )
+    @pytest.mark.parametrize("token", ["no_token", "invalid_token"])
     @patch(f"{HF_MODULE}.HfApi")
     def test_publish_auth_error(self, mock_hf_api_cls, token):
         """An auth error (missing or invalid token) propagates uncaught."""
 
-        if token is None:
+        if token == "no_token":
             from huggingface_hub.errors import LocalTokenNotFoundError as error
             err_msg = "Could not find the token"
-            token_opt = []
+            token_opt = ()
         else:
             from requests.exceptions import HTTPError as error
-            err_msg = "Invalid token invalid-token"
-            token_opt = ["-t", token]
+            err_msg = "Invalid token invalid_token"
+            token_opt = ("-t", token)
 
         with temp_benchmark() as bench:
             self._make_result_file(bench)
