@@ -17,6 +17,12 @@ CLI
   See :ref:`merge_results` for more details.
   By `Thomas Moreau`_ (:gh:`892`)
 
+- Add ``--hub`` option to ``benchopt publish`` to allow publishing results
+  to `Hugging Face <https://huggingface.co/>`_ in addition to GitHub.
+  Results are merged with any existing ones in the HF dataset repo.
+  See :ref:`publish_benchmark` for more details.
+  By `Thomas Moreau`_
+
 API
 ---
 

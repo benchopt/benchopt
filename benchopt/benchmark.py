@@ -6,7 +6,11 @@ import importlib
 import itertools
 from pathlib import Path
 
-from joblib.externals import cloudpickle
+try:
+    # compat with joblib version < 1.6
+    from joblib.externals import cloudpickle
+except ImportError:
+    import cloudpickle
 
 from .config import get_setting
 from .base import BaseSolver, BaseDataset

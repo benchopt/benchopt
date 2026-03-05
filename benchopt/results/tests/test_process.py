@@ -24,11 +24,11 @@ def test_merge_results(n_rep, n_it):
         result_files = out.result_files + out2.result_files
         assert len(result_files) == 2
 
-        df = merge_results(result_files)
+        df = merge_results(result_files, keep="all")
         # n_rep runs, n_it + 1 entries.
         # 1 dataset for first run, 2 datasets for second run
         assert len(df) == n_rep * (1 + n_it) * (1 + 2)
 
-        df = merge_results(result_files, overwrite=True)
-        # with overwrite, first run dataset is overritten by second run
+        df = merge_results(result_files, keep="last")
+        # with keep="last", first run dataset is overritten by second run
         assert len(df) == n_rep * (1 + n_it) * 2
