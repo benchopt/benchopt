@@ -25,7 +25,7 @@ DEFAULT_GLOBAL_CONFIG = {
     'debug': False,
     'raise_install_error': False,
     'github_token': None,
-    'huggingface_token': None,
+    'hf_token': None,
     'data_dir': './data/',
     'conda_cmd': 'conda' if sys.platform != 'win32' else 'call conda',
     'shell': os.environ.get('SHELL', DEFAULT_SHELL),
@@ -38,7 +38,7 @@ DEFAULT_GLOBAL_CONFIG = {
   install fails.
 * ``github_token``, *str*: token to publish results on ``benchopt/results``
   via github.
-* ``huggingface_token``, *str*: token to publish results on Hugging Face.
+* ``hf_token``, *str*: token to publish results on Hugging Face.
 * ``conda_cmd``, *str*: can be used to give the path to ``conda`` if it is
   not directly installed on ``$PATH``. This can also be used to use ``mamba``
   to install benchmarks instead of conda. See :ref:`config_mamba`.
@@ -54,7 +54,8 @@ DEFAULT_BENCHMARK_CONFIG = {
     "plots": None,
     "plot_configs": {},
     "data_home": "",
-    "data_paths": {}
+    "data_paths": {},
+    "hf_repo": None,
 }
 
 """
@@ -131,6 +132,12 @@ DEFAULT_BENCHMARK_CONFIG = {
     # The "path" variable now contains "path/to/data/home/path/to/my/file.npz"
 
   If no paths are provided, the default path used is ``your_benchmark/data``
+
+* ``hf_repo``, *str*: Hugging Face dataset repo id, e.g.
+  'my-org/benchopt-results', used to publish results files on Hugging Face
+  using ``benchopt publish --hub huggingface``. If not specified, users can
+  still publish on HF using the ``--repo`` option but this allows to set a
+  default repo for the benchmark.
 """
 
 

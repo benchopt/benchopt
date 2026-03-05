@@ -168,9 +168,9 @@ def publish(benchmark, filename=None, hub="github", token=None, repo=None,
         publish_result_file(benchmark, result_filename, token)
     elif hub == "huggingface":
         if token is None:
-            token = get_setting('huggingface_token')
+            token = get_setting('hf_token')
         if repo is None:
-            repo = benchmark.get_setting('huggingface_repo')
+            repo = benchmark.get_setting('hf_repo')
 
         # Publish the result.
         from benchopt.results.hugging_face import publish_result_file
