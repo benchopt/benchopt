@@ -75,7 +75,6 @@ class TestCmdPublish:
                     sys.modules[hub_module] = saved_hub
 
 
-
 class TestCmdPublishHuggingFace(TestCmdPublish):
     """Tests for `benchopt publish --hub huggingface`."""
 
