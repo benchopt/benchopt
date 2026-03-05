@@ -5,8 +5,8 @@ try:
     from github import GithubException
 except ImportError as e:
     raise ImportError(
-        "The github package is required to use the publish_result_file "
-        "function. You can install it with `pip install PyGithub`."
+        "The github package is required to publish results to Github."
+        "\n\nInstall it with: pip install PyGithub"
     ) from e
 
 BENCHOPT_RESULT_REPO = 'benchopt/results'
@@ -24,12 +24,10 @@ def get_file_content(repo, branch, git_path):
 def publish_result_file(benchmark, file_path, token):
     "Upload a result file to github for a given benchmark."
 
-    # Get file to upload and content
+    # Get file to upload and content.
+    # Checks in publish ensures that the file already exists,
+    # so we can safely open it here.
     file_to_upload = Path(file_path)
-    if not file_to_upload.exists():
-        raise FileNotFoundError(
-            f"Could not upload file {file_to_upload}."
-        )
 
     file_mode = "r" if file_to_upload.suffix == ".csv" else "rb"
 
