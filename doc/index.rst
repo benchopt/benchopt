@@ -2,7 +2,7 @@
 ``Benchopt``
 =============
 
-*—Making your ML and optimization benchmarks simple and open—*
+*—A framework for reproducible, comparable benchmarks—*
 
 
 |Python 3.10+| |PyPI version| |License|
