@@ -2,7 +2,7 @@
    :width: 350
    :align: center
 
-*—Making your ML and optimization benchmarks simple and open—*
+*—A framework for reproducible, comparable benchmarks—*
 
 ----
 
