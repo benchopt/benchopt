@@ -1,7 +1,7 @@
 .. _controlling_randomness:
 
 Controlling randomness in Benchopt
-=================================
+==================================
 
 Benchopt provides a mechanism to control randomness across runs, solvers,
 datasets and repetitions, by producing deterministic and reproducible seeds.

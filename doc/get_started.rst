@@ -4,11 +4,17 @@ Get started
 ===========
 
 .. dropdown:: Installation
+   :class-container: has-folded-summary
 
-   .. dropdown-tagline::
+   .. container:: folded-summary
 
-        Create an isolated environment and install benchopt in minutes.
-        Use the stable release by default, or switch to pre-release builds.
+        Benchopt can be installed in minutes with pip.
+
+        .. prompt:: bash $
+
+            pip install benchopt
+
+        To gain access to all features, in particular to install the requirements of community benchmarks, we recommend installing benchopt in a dedicated conda environment.
 
    The recommended way to use benchopt is within a conda environment to fully benefit from all its features.
    Hence, start by creating a dedicated conda environment and then activate it.
@@ -28,11 +34,19 @@ Get started
    This will install the command line tool to run and process the benchmark.
 
 .. dropdown:: Run an existing benchmark
+   :class-container: has-folded-summary
 
-   .. dropdown-tagline::
+   .. container:: folded-summary
 
-        Clone a community benchmark and install solver/dataset requirements.
-        Run one command to compare methods and open the interactive dashboard.
+      To run an existing benchmark, you need to get the code, for instance by cloning a repository, and then use benchopt to install the requirements and run the benchmark.
+
+      .. prompt:: bash $
+
+        git clone https://github.com/benchopt/template_benchmark_ml.git
+        benchopt install template_benchmark_ml
+        benchopt run template_benchmark_ml
+
+      This will generate a dashboard with the results of the benchmark.
 
    Let's get the first steps with benchopt by comparing some solvers of the
    `Lasso problem <https://en.wikipedia.org/wiki/Lasso_(statistics)>`_ on the
@@ -73,16 +87,17 @@ Get started
 
 
 .. dropdown:: Create your own benchmark
+   :class-container: has-folded-summary
 
-   .. dropdown-tagline::
+   .. container:: folded-summary
 
-      Build your own benchmark by specifying:
+    Build your own benchmark by specifying:
 
-      - ``Dataset``: specifies how to load data,
-      - ``Objective``: defines the evaluation metrics,
-      - ``Solver``: implements the method to evaluate.
+    - ``Dataset``: specifies how to load data,
+    - ``Objective``: defines the evaluation metrics,
+    - ``Solver``: implements the method to evaluate.
 
-      This same workflow can be reused for ML, optimization, or infrastructure.
+    This same workflow can be reused for ML, optimization, or infrastructure.
 
    A benchopt benchmark has three ingredients: a **dataset**, an **objective** (your metric), and one or more **solvers** (your methods).
    Each is a single Python file. Here is the minimal structure:

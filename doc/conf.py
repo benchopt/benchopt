@@ -44,7 +44,6 @@ extensions = [
     "sphinx.ext.autosectionlabel",
     "numpydoc",
     "sphinx_design",
-    "dropdown_tagline",  # custom ext, see ./sphinxext/dropdown_tagline.py
     "gh_substitutions",  # custom ext, see ./sphinxext/gh_substitutions.py
     "sphinx_copybutton",
 ]

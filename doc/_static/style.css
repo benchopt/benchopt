@@ -72,8 +72,6 @@ html[data-theme="light"] {
     --pst-color-secondary-bg: #F8FAFC;
     --sg-background-color: #e4dfdf;
     --sg-text-color: #171421;
-    --dropdown-tagline-bg: #eaf1fb;
-    --dropdown-tagline-color: #2b3d55;
 }
 
 /* Dark theme overrides */
@@ -88,8 +86,6 @@ html[data-theme="dark"] {
     --pst-color-secondary-bg: #171421;
     --sg-background-color: #2e2e2e;
     --sg-text-color: #D0CFCC;
-    --dropdown-tagline-bg: #3a4a63;
-    --dropdown-tagline-color: #d6e2f2;
 }
 
 /* Inline code styling */
@@ -106,30 +102,56 @@ code.literal {
     padding: .8em;
 }
 
-/* Dropdown taglines from rst :tagline: option: show only when collapsed */
-.sd-dropdown .sd-summary-title .sd-dropdown-tagline {
-    display: block;
-    margin-top: .45rem;
-    margin-left: .25rem;
-    padding: .42rem .7rem;
-    border-radius: 8px;
-    background-color: var(--dropdown-tagline-bg);
-    color: var(--dropdown-tagline-color);
-    font-size: .92em;
-    font-weight: 400;
-    line-height: 1.4;
-    opacity: .98;
-}
-
-.sd-dropdown .sd-summary-title .sd-dropdown-tagline .sd-dropdown-tagline-line {
-    display: block;
-}
-
-.sd-dropdown .sd-summary-title .sd-dropdown-tagline .sd-dropdown-tagline-line + .sd-dropdown-tagline-line {
-    margin-top: .12rem;
-}
-
-.sd-dropdown[open] .sd-summary-title .sd-dropdown-tagline {
+/* Folded dropdown summaries for get_started. */
+details.sd-dropdown.has-folded-summary .folded-summary {
     display: none;
+}
+
+details.sd-dropdown.has-folded-summary .folded-summary.folded-summary-in-header {
+    display: block;
+    margin: .2rem .8rem .75rem .8rem;
+    padding: .5rem .75rem;
+    border-radius: 8px;
+    background-color: var(--pst-color-inline-code-background);
+    color: var(--pst-color-text-base);
+    font-size: .95em;
+    line-height: 1.4;
+}
+
+details.sd-dropdown.has-folded-summary .folded-summary p {
+    margin: 0;
+}
+
+details.sd-dropdown.has-folded-summary .folded-summary p + p {
+    margin-top: .35rem;
+}
+
+details.sd-dropdown.has-folded-summary[open] .folded-summary.folded-summary-in-header {
+    display: none;
+}
+
+/* Open dropdown body styled as a boxed panel matching folded summary tone. */
+details.sd-dropdown.has-folded-summary[open] > .sd-summary-content {
+    margin: .25rem .8rem .8rem .8rem;
+    padding: .75rem .9rem;
+    border-radius: 8px;
+}
+
+html[data-theme="light"] details.sd-dropdown.has-folded-summary[open] > .sd-summary-content {
+    background-color: #eef4fc;
+}
+
+html[data-theme="dark"] details.sd-dropdown.has-folded-summary[open] > .sd-summary-content {
+    background-color: #31435c;
+}
+
+html[data-theme="light"] details.sd-dropdown.has-folded-summary .folded-summary.folded-summary-in-header {
+    background-color: #dbe8f8;
+    color: #1f344d;
+}
+
+html[data-theme="dark"] details.sd-dropdown.has-folded-summary .folded-summary.folded-summary-in-header {
+    background-color: #3a4a63;
+    color: #d6e2f2;
 }
 
