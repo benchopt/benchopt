@@ -108,9 +108,8 @@ details.sd-dropdown.has-folded-summary .folded-summary {
     margin: .8rem .8rem .75rem .8rem;
     padding: .5rem .75rem;
     border-radius: 8px;
-    background-color: var(--pst-color-inline-code-background);
-    color: var(--pst-color-text-base);
     font-size: .95em;
+    font-weight: var(--bs-body-font-weight);
     line-height: 1.4;
 }
 
