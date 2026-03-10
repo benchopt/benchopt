@@ -132,17 +132,19 @@ details.sd-dropdown.has-folded-summary[open] .folded-summary.folded-summary-in-h
 
 /* Open dropdown body styled as a boxed panel matching folded summary tone. */
 details.sd-dropdown.has-folded-summary[open] > .sd-summary-content {
-    margin: .25rem .8rem .8rem .8rem;
+    margin: .45rem 1rem 1rem 1rem;
     padding: .75rem .9rem;
     border-radius: 8px;
 }
 
 html[data-theme="light"] details.sd-dropdown.has-folded-summary[open] > .sd-summary-content {
-    background-color: #eef4fc;
+    background-color: rgba(219, 232, 248, 0.82);
+    border: 1px solid rgba(108, 137, 173, 0.35);
 }
 
 html[data-theme="dark"] details.sd-dropdown.has-folded-summary[open] > .sd-summary-content {
-    background-color: #31435c;
+    background-color: rgba(58, 74, 99, 0.78);
+    border: 1px solid rgba(118, 147, 182, 0.28);
 }
 
 html[data-theme="light"] details.sd-dropdown.has-folded-summary .folded-summary.folded-summary-in-header {
