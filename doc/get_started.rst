@@ -143,10 +143,8 @@ Get started
                      )
                      # This dict can be changed to have dataloader instead
                      return dict(
-                         X_train=X_train,
-                         y_train=y_train,
-                         X_test=X_test,
-                         y_test=y_test,
+                         X_train=X_train, y_train=y_train,
+                         X_test=X_test, y_test=y_test,
                      )
 
          **objective.py**: defines the evaluation metric(s) to compare methods.
