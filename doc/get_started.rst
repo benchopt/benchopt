@@ -287,81 +287,81 @@ Get started
 
          .. code-block:: python
 
-             from benchopt import BaseObjective
+            from benchopt import BaseObjective
+            import time
 
-             class Objective(BaseObjective):
-                 name = "Dataloader throughput"
-                 sampling_strategy = "run_once"
+            class Objective(BaseObjective):
+                name = "Dataloader throughput"
+                sampling_strategy = "run_once"
 
-                 def set_data(self, data_size, batch_size):
-                     self.data_size = data_size
-                     self.batch_size = batch_size
+                parameters = {"batch_size": [64, 256]}
 
-                 def get_objective(self):
-                     return dict(data_size=self.data_size, batch_size=self.batch_size)
+                def set_data(self, data):
+                    self.data = data
 
-                 def evaluate_result(self, n_samples, elapsed):
-                     samples_per_second = n_samples / elapsed if elapsed > 0 else 0.0
-                     return dict(
-                         samples_per_second=samples_per_second,
-                         elapsed=elapsed,
-                     )
+                def get_objective(self):
+                    return dict(data=self.data, batch_size=self.batch_size)
 
-                 def get_one_result(self):
-                     return dict(n_samples=self.data_size, elapsed=1.0)
+                def evaluate_result(self, dataloader):
+                    n_samples, t0 = 0, time.perf_counter()
+                    for batch in dataloader:
+                        n_samples += len(batch)
+
+                    runtime = time.perf_counter() - t0
+                    samples_per_second = n_samples / runtime
+                    return dict(
+                        samples_per_second=samples_per_second,
+                        runtime=runtime,
+                    )
+
+                def get_one_result(self):
+                    return dict(dataloader=data)
+
 
          **datasets/my_dataset.py**
 
          .. code-block:: python
 
              from benchopt import BaseDataset
+             import numpy as np
 
              class Dataset(BaseDataset):
                  name = "My dataset"
                  parameters = {
                      "data_size": [100_000],
-                     "batch_size": [256],
                  }
 
                  def get_data(self):
-                     return dict(
-                         data_size=self.data_size,
-                         batch_size=self.batch_size,
-                     )
+                     return dict(data=np.zeros((self.data_size, 100)))
 
          **solvers/my_solver.py**
 
          .. code-block:: python
 
              from benchopt import BaseSolver
-             import time
+             import torch
 
              class Solver(BaseSolver):
-                 name = "Python generator loader"
+                 name = "Pytorch dataloader"
 
-                 def set_objective(self, data_size, batch_size):
-                     self.data_size = data_size
-                     self.batch_size = batch_size
+                 def set_objective(self, data, batch_size):
+                     self.data = torch.utils.data.TensorDataset(
+                         torch.from_numpy(data)
+                     )
+                     self.dataloader = torch.utils.data.DataLoader(
+                         self.data, batch_size=batch_size
+                     )
 
                  def run(self, _):
-                     start = time.perf_counter()
-                     n_samples = 0
-
-                     # Simulate iterating over batches produced by a dataloader.
-                     for i in range(0, self.data_size, self.batch_size):
-                         batch_end = min(i + self.batch_size, self.data_size)
-                         n_samples += batch_end - i
-
-                     elapsed = time.perf_counter() - start
-                     self.result = dict(n_samples=n_samples, elapsed=elapsed)
+                    pass
 
                  def get_result(self):
-                     return self.result
+                     return dict(dataloader=self.dataloader)
 
          With benchopt, you also get:
 
          - Repeated, scriptable measurements from the same command-line workflow.
-         - Easy parameter sweeps (for example ``batch_size``) and side-by-side comparisons.
+         - Easy parameter sweeps (for example ``batch_size``, ``num_workers``) and side-by-side comparisons.
          - Caching of generated data and benchmark outputs to avoid unnecessary reruns.
 
    Then run your benchmark with:

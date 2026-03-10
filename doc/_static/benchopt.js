@@ -23,15 +23,14 @@ window.addEventListener("load", function() {
     cmd.setAttribute("style", "display: none;");
   }
 
-  // Show folded summaries inside dropdown headers.
+  // Move folded summary on div outside the dropdown content.
   for (const dd of document.querySelectorAll("details.sd-dropdown.has-folded-summary")) {
     const bodySummary = dd.querySelector(":scope > .sd-summary-content .folded-summary");
     const summaryText = dd.querySelector(":scope > .sd-summary-title .sd-summary-text");
     if (!bodySummary || !summaryText) {
       continue;
     }
-    const cloned = bodySummary.cloneNode(true);
-    cloned.classList.add("folded-summary-in-header");
-    summaryText.appendChild(cloned);
+    summaryText.appendChild(bodySummary);
+    bodySummary.classList.add("folded-summary");
   }
 });
