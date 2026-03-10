@@ -215,15 +215,15 @@ def uninstall_dummy_package(test_env_name):
 
 @pytest.fixture(scope='function')
 def no_pytest(test_env_name):
-    cmd = "which pytest\npip uninstall -qqy pytest"
+    cmd = "pip uninstall -qqy pytest"
 
-    exitcode = _run_shell_in_conda_env(cmd, env_name=test_env_name)
+    # Uninstall pytest in the test env to test the behavior when pytest is not
+    # installed.
+    _run_shell_in_conda_env(cmd, env_name=test_env_name)
     yield
-    # If pytest was not installed before, exit code is 1 so do not reinstall
-    # otherwise, reinstall it
-    if exitcode == 0:
-        exitcode, output = _run_shell_in_conda_env(
-            "pip install -q pytest", env_name=test_env_name,
-            return_output=True
-        )
-        assert exitcode == 0, output
+    # reinstall pytest in the test_env
+    exitcode, output = _run_shell_in_conda_env(
+        "pip install -q pytest", env_name=test_env_name,
+        return_output=True
+    )
+    assert exitcode == 0, output

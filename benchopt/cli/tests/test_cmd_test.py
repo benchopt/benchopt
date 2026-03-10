@@ -268,9 +268,6 @@ class TestCmdTest:
             solver = solver.replace(
                 '# TEST_CONFIG', f"test_config = {s_conf}"
             )
-        print(dataset)
-        print(objective)
-        print(solver)
 
         with temp_benchmark(
             datasets=dataset, objective=objective, solvers=solver
@@ -291,7 +288,6 @@ class TestCmdTest:
         class Dataset(BaseDataset):
             name = "simulated"
             def get_data(self):
-                print(self.__class__.__name__.lower())
                 seed = self.get_seed()
                 print(f"Dataset#seed={seed}")
                 return dict(X=None, y=None)
