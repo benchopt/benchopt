@@ -45,6 +45,9 @@ FIX
 - Fix conda env creation and ``--recreate`` option, to include minimal reqs.
   By `Thomas Moreau`_ (:gh:`891`)
 
+- Fix display in boxplot to show variance correctly.
+  By `Thomas Moreau`_ (:gh:`898`)
+
 .. _changes_1_8_1:
 
 Version 1.8.1 - 16/02/2026
