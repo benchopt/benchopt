@@ -116,37 +116,20 @@ class BarChart(BasePlot):
         }
 
 
-def _get_boxplot_solver(df, Y_axis, objective_column):
-    if Y_axis == "Time":
-        return [
-            df.groupby('idx_rep')[['time', 'stop_val']]
-            .apply(lambda x: (
-                x['time']
-                .loc[x['stop_val'] == x['stop_val'].max()]
-            ))
-            .transpose()[0].tolist()
-        ]
-    else:
-        return [
-            df.groupby('idx_rep')[['stop_val', objective_column]]
-            .apply(lambda x: (
-                x[objective_column]
-                .loc[x['stop_val'] == x['stop_val'].max()]
-            ))
-            .transpose()[0].tolist()
-        ]
+def _get_boxplot_solver(df, objective_column):
+    return [
+        df.groupby('idx_rep')[['stop_val', objective_column]]
+        .apply(lambda x: (
+            x[objective_column]
+            .loc[x['stop_val'] == x['stop_val'].max()].item()
+        )).tolist()
+    ]
 
 
-def _get_boxplot_iteration(df, Y_axis, objective_column):
-    max_iteration = df['idx_rep'].value_counts().max()
-    data = [[] for i in range(max_iteration)]
-    if Y_axis == "Time":
-        objective_column = 'time'
-    for i in range(max_iteration):
-        temp_data = df.query('idx_rep == @i')[objective_column].tolist()
-        for k in range(len(temp_data)):
-            data[k].append(temp_data[k])
-    return data
+def _get_boxplot_iteration(df, objective_column):
+    return df.groupby('stop_val')[objective_column].apply(
+        lambda x: x.tolist()
+    ).tolist()
 
 
 class BoxPlot(BasePlot):
@@ -164,15 +147,16 @@ class BoxPlot(BasePlot):
         df = df[df['dataset_name'] == dataset]
         df = df[df['objective_name'] == objective]
 
+        if Y_axis == "Time":
+            objective_column = 'time'
+
         plot_data = []
         for solver, df_filtered in df.groupby('solver_name'):
             if X_axis == "Solver":
-                y = _get_boxplot_solver(df_filtered, Y_axis, objective_column)
+                y = _get_boxplot_solver(df_filtered, objective_column)
                 x = [solver]
             else:
-                y = _get_boxplot_iteration(
-                    df_filtered, Y_axis, objective_column
-                )
+                y = _get_boxplot_iteration(df_filtered, objective_column)
                 x = list(range(len(y)))
 
             plot_data.append({

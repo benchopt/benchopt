@@ -12,7 +12,7 @@ from benchopt.cli.tests.completion_cases import (  # noqa: F401
     bench_completion_cases
 )
 
-N_REP = [2, 4]
+N_REP = [1, 2, 4]
 
 
 class TestPlotCmd:
@@ -59,18 +59,17 @@ class TestPlotCmd:
         cls.ctx = temp_benchmark(plots=cls.custom_plot)
         cls.bench = cls.ctx.__enter__()
         with CaptureCmdOutput(delete_result_files=False) as out:
-            for n_rep in (1, *N_REP):
+            for n_rep in N_REP:
                 run(
-                    f"{cls.bench.benchmark_dir} -d test-dataset -n 2 -r 3 "
-                    f"--no-plot --output rep{n_rep}".split(),
+                    f"{cls.bench.benchmark_dir} -d test-dataset -r {n_rep} "
+                    f"-n 2 --no-plot --output rep{n_rep}".split(),
                     'benchopt', standalone_mode=False
                 )
-        assert len(out.result_files) == 1 + len(N_REP), out
+        assert len(out.result_files) == len(N_REP), out
         cls.result_files = {
             Path(f).stem: Path(f).resolve().relative_to(Path().resolve())
             for f in out.result_files
         }
-        print(cls.result_files)
         cls.result_file = str(cls.result_files['rep1'])
 
     @classmethod
@@ -155,7 +154,7 @@ class TestPlotCmd:
 
         res_file = self.result_files[f"rep{n_rep}"]
 
-        with CaptureCmdOutput() as out:
+        with CaptureCmdOutput(debug=True) as out:
             plot(
                 f"{self.bench.benchmark_dir} -f {res_file} "
                 "--no-display --no-html --kind boxplot".split(),
