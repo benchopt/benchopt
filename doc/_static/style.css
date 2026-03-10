@@ -101,3 +101,18 @@ code.literal {
 .sphx-glr-script-out .highlight pre{
     padding: .8em;
 }
+
+/* Dropdown taglines from rst :tagline: option: show only when collapsed */
+.sd-dropdown .sd-summary-title .sd-dropdown-tagline {
+    display: block;
+    margin-top: .15rem;
+    font-size: .82em;
+    font-weight: 400;
+    line-height: 1.25;
+    opacity: .75;
+}
+
+.sd-dropdown[open] .sd-summary-title .sd-dropdown-tagline {
+    display: none;
+}
+
