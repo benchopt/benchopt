@@ -72,6 +72,8 @@ html[data-theme="light"] {
     --pst-color-secondary-bg: #F8FAFC;
     --sg-background-color: #e4dfdf;
     --sg-text-color: #171421;
+    --dropdown-tagline-bg: #eaf1fb;
+    --dropdown-tagline-color: #2b3d55;
 }
 
 /* Dark theme overrides */
@@ -86,6 +88,8 @@ html[data-theme="dark"] {
     --pst-color-secondary-bg: #171421;
     --sg-background-color: #2e2e2e;
     --sg-text-color: #D0CFCC;
+    --dropdown-tagline-bg: #3a4a63;
+    --dropdown-tagline-color: #d6e2f2;
 }
 
 /* Inline code styling */
@@ -105,11 +109,24 @@ code.literal {
 /* Dropdown taglines from rst :tagline: option: show only when collapsed */
 .sd-dropdown .sd-summary-title .sd-dropdown-tagline {
     display: block;
-    margin-top: .15rem;
-    font-size: .82em;
+    margin-top: .45rem;
+    margin-left: .25rem;
+    padding: .42rem .7rem;
+    border-radius: 8px;
+    background-color: var(--dropdown-tagline-bg);
+    color: var(--dropdown-tagline-color);
+    font-size: .92em;
     font-weight: 400;
-    line-height: 1.25;
-    opacity: .75;
+    line-height: 1.4;
+    opacity: .98;
+}
+
+.sd-dropdown .sd-summary-title .sd-dropdown-tagline .sd-dropdown-tagline-line {
+    display: block;
+}
+
+.sd-dropdown .sd-summary-title .sd-dropdown-tagline .sd-dropdown-tagline-line + .sd-dropdown-tagline-line {
+    margin-top: .12rem;
 }
 
 .sd-dropdown[open] .sd-summary-title .sd-dropdown-tagline {

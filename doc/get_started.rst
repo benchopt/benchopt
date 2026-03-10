@@ -4,7 +4,11 @@ Get started
 ===========
 
 .. dropdown:: Installation
-   :tagline: Quick setup with conda and pip
+
+   .. dropdown-tagline::
+
+        Create an isolated environment and install benchopt in minutes.
+        Use the stable release by default, or switch to pre-release builds.
 
    The recommended way to use benchopt is within a conda environment to fully benefit from all its features.
    Hence, start by creating a dedicated conda environment and then activate it.
@@ -24,7 +28,11 @@ Get started
    This will install the command line tool to run and process the benchmark.
 
 .. dropdown:: Run an existing benchmark
-   :tagline: Run a community benchmark in minutes
+
+   .. dropdown-tagline::
+
+        Clone a community benchmark and install solver/dataset requirements.
+        Run one command to compare methods and open the interactive dashboard.
 
    Let's get the first steps with benchopt by comparing some solvers of the
    `Lasso problem <https://en.wikipedia.org/wiki/Lasso_(statistics)>`_ on the
@@ -65,7 +73,16 @@ Get started
 
 
 .. dropdown:: Create your own benchmark
-   :tagline: Build your own dataset/objective/solver benchmark
+
+   .. dropdown-tagline::
+
+      Build your own benchmark by specifying:
+
+      - ``Dataset``: specifies how to load data,
+      - ``Objective``: defines the evaluation metrics,
+      - ``Solver``: implements the method to evaluate.
+
+      This same workflow can be reused for ML, optimization, or infrastructure.
 
    A benchopt benchmark has three ingredients: a **dataset**, an **objective** (your metric), and one or more **solvers** (your methods).
    Each is a single Python file. Here is the minimal structure:
@@ -90,7 +107,7 @@ Get started
          You have a dataset, a score, and methods to compare.
          This is the simplest case: each solver runs once to completion.
 
-         **datasets/my_dataset.py**
+         **datasets/my_dataset.py**: specifies how to load data, and potentially split it into training and test sets.
 
          .. code-block:: python
 
@@ -117,7 +134,7 @@ Get started
                          y_test=y_test,
                      )
 
-         **objective.py**
+         **objective.py**: defines the evaluation metric(s) to compare methods.
 
          .. code-block:: python
 
@@ -143,7 +160,7 @@ Get started
                          model=DummyClassifier().fit(self.X_train, self.y_train)
                      )
 
-         **solvers/my_solver.py**
+         **solvers/my_solver.py**: implements the method to evaluate.
 
          .. code-block:: python
 
