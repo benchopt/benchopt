@@ -8,7 +8,7 @@ Get started
 
    .. container:: folded-summary
 
-        Benchopt can be installed in minutes with pip.
+        Benchopt can be installed directly with pip.
 
         .. prompt:: bash $
 
@@ -99,7 +99,7 @@ Get started
 
     This same workflow can be reused for ML, optimization, or infrastructure.
 
-   A benchopt benchmark has three ingredients: a **dataset**, an **objective** (your metric), and one or more **solvers** (your methods).
+   A benchopt benchmark has three ingredients: an **objective** (your metric or evaluation protocol), one or more **datasets**, and one or more **solvers** (the evaluated methods).
    Each is a single Python file. Here is the minimal structure:
 
    .. code-block:: none
@@ -113,7 +113,8 @@ Get started
 
    The tabs below show minimal examples for three common use cases.
    Once you are ready to go further, the :ref:`benchmark_workflow` section covers
-   advanced features such as parameter sweeps, cross-validation, and convergence tracking.
+   advanced features such as parallelization, seed control, cross-validation,
+   or convergence tracking.
 
    .. tab-set::
 
@@ -141,7 +142,7 @@ Get started
                      X_train, X_test, y_train, y_test = train_test_split(
                          X, y, test_size=0.2, random_state=0
                      )
-                     # This dict can be changed to have dataloader instead
+                     # This dict's keys can be changed, e.g. to have dataloader instead
                      return dict(
                          X_train=X_train, y_train=y_train,
                          X_test=X_test, y_test=y_test,
@@ -168,6 +169,7 @@ Get started
                      return dict(test_score=model.score(self.X_test, self.y_test))
 
                  def get_one_result(self):
+                     # for testing purpose, declare the minimal result to eval
                      from sklearn.dummy import DummyClassifier
                      return dict(
                          model=DummyClassifier().fit(self.X_train, self.y_train)
@@ -274,6 +276,9 @@ Get started
          - Cached datasets and validated solver/objective interfaces.
          - Automatic result aggregation and interactive plotting dashboards.
 
+         Note that ``benchopt`` also define callbacks evaluate convergence curve at once.
+         See :ref:`callback` for more details.
+
       .. tab-item:: Infrastructure benchmark
 
          Benchopt is not limited to ML or optimization. You can benchmark
@@ -362,7 +367,7 @@ Get started
          - Easy parameter sweeps (for example ``batch_size``, ``num_workers``) and side-by-side comparisons.
          - Caching of generated data and benchmark outputs to avoid unnecessary reruns.
 
-   Then run your benchmark with:
+   Once the benchmark is created, you can run it with:
 
    .. prompt:: bash $
 
