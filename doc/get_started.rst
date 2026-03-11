@@ -319,6 +319,7 @@ Get started
                     )
 
                 def get_one_result(self):
+                     # for testing purpose, declare the minimal result to eval
                     return dict(dataloader=self.data)
 
 
