@@ -115,7 +115,8 @@ Get started
 
    The tabs below show minimal examples for three common use cases.
    Once you are ready to go further, the :ref:`benchmark_workflow`
-   section covers advanced features such as parallelization,
+   section covers advanced features such as
+   :ref:`parallelization <parallel_run>`,
    :ref:`seed control <controlling_randomness>`,
    :ref:`cross-validation <cross-validation>`, or
    :ref:`convergence tracking <iterative_solvers>` depending on your use case.
@@ -381,9 +382,10 @@ Get started
 
    .. note::
 
-       The examples above are intentionally minimal. The full :ref:`template_benchmark_ml`
-       shows additional features such as parameter sweeps, cross-validation splits,
-       and dataset configuration -- all optional, but useful as your benchmark grows.
+       The examples above are intentionally minimal. The full `Template benchmark ML <https://github.com/benchopt/template_benchmark_ml>`__
+       shows additional features such as parameter sweeps, cross-validation
+       splits, and dataset configuration -- all optional, but useful as your
+       benchmark grows.
 
 
 What's next?
