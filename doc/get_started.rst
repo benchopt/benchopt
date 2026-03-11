@@ -318,7 +318,7 @@ Get started
                     )
 
                 def get_one_result(self):
-                    return dict(dataloader=data)
+                    return dict(dataloader=self.data)
 
 
          **datasets/my_dataset.py**
