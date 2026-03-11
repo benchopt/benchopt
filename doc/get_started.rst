@@ -276,7 +276,7 @@ Get started
          - Cached datasets and validated solver/objective interfaces.
          - Automatic result aggregation and interactive plotting dashboards.
 
-         Note that ``benchopt`` also define callbacks evaluate convergence curve at once.
+         Note that ``benchopt`` also defines callbacks evaluate convergence curve at once.
          See :ref:`callback` for more details.
 
       .. tab-item:: Infrastructure benchmark
