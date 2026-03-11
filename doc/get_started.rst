@@ -14,9 +14,9 @@ Get started
 
             pip install benchopt
 
-        To gain access to all features, in particular to install the requirements of community benchmarks, we recommend installing benchopt in a dedicated conda environment.
+        To gain access to certain features, in particular to install the requirements of community benchmarks, ``benchopt`` needs to be installed in a ``conda`` environment.
 
-   The recommended way to use benchopt is within a conda environment to fully benefit from all its features.
+   The recommended way to use benchopt is within a ``conda`` environment to fully benefit from all its features.
    Hence, start by creating a dedicated conda environment and then activate it.
 
    .. prompt:: bash $
@@ -47,6 +47,9 @@ Get started
         benchopt run template_benchmark_ml
 
       This will generate a dashboard with the results of the benchmark.
+
+      Note that ``benchopt install`` will only work if ``benchopt`` is
+      installed in a ``conda`` environment.
 
    Let's get the first steps with benchopt by comparing some solvers of the
    `Lasso problem <https://en.wikipedia.org/wiki/Lasso_(statistics)>`_ on the
