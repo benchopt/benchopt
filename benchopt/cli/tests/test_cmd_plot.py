@@ -74,7 +74,7 @@ class TestPlotCmd:
 
     @classmethod
     def teardown_class(cls):
-        "Make sure at least one result file is available"
+        "Clean up the temp benchmark directory."
         cls.ctx.__exit__(None, None, None)
 
     def test_plot_invalid_file(self):

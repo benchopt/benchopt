@@ -3,9 +3,9 @@
 Frequently asked questions (FAQ)
 --------------------------------
 
-.. dropdown:: Can I use benchopt for ML benchmarks (not just optimization)?
+.. dropdown:: Is benchopt only for optimization? (No!)
 
-    Yes! Despite its name, Benchopt supports both **machine learning** and **optimization** benchmarks.
+    No! Despite its name, Benchopt supports both **machine learning**, **optimization** and **infrastructure** benchmarks.
     Most features in benchopt are common to both types of benchmarks.
     The main difference lies in how performance is evaluated:
 

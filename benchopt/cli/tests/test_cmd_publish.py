@@ -14,17 +14,18 @@ HF_MODULE = "benchopt.results.hugging_face"
 REPO_ID = "my-org/benchopt-results"
 
 
-class TestCmdPublish:
-    """Tests for `benchopt publish --hub huggingface`."""
+def _make_result_file(bench):
+    """Run the temp benchmark once and return the result file path."""
+    with CaptureCmdOutput(delete_result_files=False) as out:
+        run(
+            f"{bench.benchmark_dir} -d test-dataset --no-plot -n 1"
+            .split(), "benchopt", standalone_mode=False,
+        )
+    return Path(out.result_files[0])
 
-    def _make_result_file(self, bench):
-        """Run the temp benchmark once and return the result file path."""
-        with CaptureCmdOutput(delete_result_files=False) as out:
-            run(
-                f"{bench.benchmark_dir} -d test-dataset --no-plot -n 1"
-                .split(), "benchopt", standalone_mode=False,
-            )
-        return Path(out.result_files[0])
+
+class TestCmdPublish:
+    """Tests for `benchopt publish`, regardless of the hub used."""
 
     @pytest.mark.parametrize("hub", ["github", "huggingface"])
     def test_no_file(self, hub):
@@ -43,7 +44,7 @@ class TestCmdPublish:
         with temp_benchmark() as bench, pytest.raises(
                 FileNotFoundError, match="Could not find result file"
         ):
-            self._make_result_file(bench)
+            _make_result_file(bench)
             publish(
                 [str(bench.benchmark_dir), "--hub", hub, "-f", "bad.csv"],
                 standalone_mode=False,
@@ -58,7 +59,7 @@ class TestCmdPublish:
             hub_module, hub_dep = HF_MODULE, "huggingface_hub"
         err_match = f"{hub_dep} package is required"
         with temp_benchmark() as bench:
-            self._make_result_file(bench)
+            _make_result_file(bench)
             # Remove the cached hub module so Python re-executes its top-level
             # import, then block the underlying dep so that import fails.
             monkeypatch.delitem(sys.modules, hub_module, raising=False)
@@ -70,7 +71,7 @@ class TestCmdPublish:
                 )
 
 
-class TestCmdPublishHuggingFace(TestCmdPublish):
+class TestCmdPublishHuggingFace:
     """Tests for `benchopt publish --hub huggingface`."""
 
     def setup_class(cls):
@@ -94,7 +95,7 @@ class TestCmdPublishHuggingFace(TestCmdPublish):
             token_opt = ("-t", token)
 
         with temp_benchmark() as bench:
-            self._make_result_file(bench)
+            _make_result_file(bench)
 
             mock_api = MagicMock()
             mock_hf_api_cls.return_value = mock_api
@@ -120,7 +121,7 @@ class TestCmdPublishHuggingFace(TestCmdPublish):
         from huggingface_hub.utils import EntryNotFoundError
 
         with temp_benchmark() as bench:
-            self._make_result_file(bench)
+            _make_result_file(bench)
 
             mock_api = MagicMock()
             mock_hf_api_cls.return_value = mock_api
@@ -148,7 +149,7 @@ class TestCmdPublishHuggingFace(TestCmdPublish):
     ):
         """Repo and file exist: results are merged then re-uploaded."""
         with temp_benchmark() as bench:
-            result_file = self._make_result_file(bench)
+            result_file = _make_result_file(bench)
 
             mock_api = MagicMock()
             mock_hf_api_cls.return_value = mock_api
@@ -181,7 +182,7 @@ class TestCmdPublishHuggingFace(TestCmdPublish):
         )
 
         with temp_benchmark() as bench:
-            self._make_result_file(bench)
+            _make_result_file(bench)
 
             mock_api = MagicMock()
             mock_hf_api_cls.return_value = mock_api
@@ -206,7 +207,7 @@ class TestCmdPublishHuggingFace(TestCmdPublish):
         out.check_output("not found, creating")
 
 
-class TestCmdPublishGitHub(TestCmdPublish):
+class TestCmdPublishGitHub:
     """Tests for `benchopt publish --hub github` (default hub)."""
 
     def setup_class(cls):
@@ -240,7 +241,7 @@ class TestCmdPublishGitHub(TestCmdPublish):
         """No token raises RuntimeError."""
 
         with temp_benchmark() as bench:
-            self._make_result_file(bench)
+            _make_result_file(bench)
 
             # Ensure get_setting also returns None so no token is found
             with pytest.raises(RuntimeError, match="Could not find the token"):
@@ -256,7 +257,7 @@ class TestCmdPublishGitHub(TestCmdPublish):
         from github import GithubException
 
         with temp_benchmark() as bench:
-            self._make_result_file(bench)
+            _make_result_file(bench)
             mock_g = MagicMock()
             mock_Github.return_value = mock_g
             mock_g.get_user.side_effect = GithubException(
@@ -279,7 +280,7 @@ class TestCmdPublishGitHub(TestCmdPublish):
         from github import GithubException
 
         with temp_benchmark() as bench:
-            self._make_result_file(bench)
+            _make_result_file(bench)
 
             _, mock_origin, mock_fork = self._setup_github_mock(mock_Github)
             # Branch doesn't exist -> create it from origin's default branch
@@ -315,7 +316,7 @@ class TestCmdPublishGitHub(TestCmdPublish):
     def test_publish_file_already_uploaded(self, mock_Github):
         """File exists with identical content: publish is a no-op."""
         with temp_benchmark() as bench:
-            result_file = self._make_result_file(bench)
+            result_file = _make_result_file(bench)
             file_content = result_file.read_bytes()
 
             _, mock_origin, mock_fork = self._setup_github_mock(mock_Github)
@@ -343,7 +344,7 @@ class TestCmdPublishGitHub(TestCmdPublish):
         from github import GithubException
 
         with temp_benchmark() as bench:
-            self._make_result_file(bench)
+            _make_result_file(bench)
 
             _, mock_origin, mock_fork = self._setup_github_mock(mock_Github)
             mock_contents = MagicMock()
