@@ -245,6 +245,7 @@ Get started
                      return dict(value=0.5 * np.dot(residual, residual))
 
                  def get_one_result(self):
+                     # for testing purpose, declare the minimal result to eval
                      return dict(x=np.zeros(self.A.shape[1]))
 
          **solvers/my_solver.py**
