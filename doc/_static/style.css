@@ -101,3 +101,52 @@ code.literal {
 .sphx-glr-script-out .highlight pre{
     padding: .8em;
 }
+
+/* Folded dropdown summaries for get_started. */
+details.sd-dropdown.has-folded-summary .folded-summary {
+    display: block;
+    margin: .8rem .8rem .75rem .8rem;
+    padding: .5rem .75rem;
+    border-radius: 8px;
+    font-size: .95em;
+    font-weight: var(--bs-body-font-weight);
+    line-height: 1.4;
+}
+
+details.sd-dropdown.has-folded-summary .folded-summary p {
+    margin: 0;
+}
+
+details.sd-dropdown.has-folded-summary .folded-summary p + p {
+    margin-top: .35rem;
+}
+
+details.sd-dropdown.has-folded-summary[open] .folded-summary {
+    display: none;
+}
+
+/* Open dropdown body styled as a boxed panel matching folded summary tone. */
+details.sd-dropdown.has-folded-summary[open] > .sd-summary-content {
+    padding: .75rem .9rem;
+}
+
+html[data-theme="light"] details.sd-dropdown.has-folded-summary[open] > .sd-summary-content {
+    background-color: #eceff4;
+    border: 1px solid #d0d6df;
+}
+
+html[data-theme="dark"] details.sd-dropdown.has-folded-summary[open] > .sd-summary-content {
+    background-color: #2f3440;
+    border: 1px solid #454d5c;
+}
+
+html[data-theme="light"] details.sd-dropdown.has-folded-summary .folded-summary {
+    background-color: #dbe8f8;
+    color: #1f344d;
+}
+
+html[data-theme="dark"] details.sd-dropdown.has-folded-summary .folded-summary {
+    background-color: #3a4a63;
+    color: #d6e2f2;
+}
+

@@ -42,6 +42,7 @@ evaluation as different lines in the benchmark results by returning multiple
 dictionaries from ``evaluate_result`` as a list. See :ref:`multiple_evaluation`
 for more details.
 
+.. _cross-validation:
 
 Cross-validation
 ----------------

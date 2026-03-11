@@ -36,6 +36,12 @@ API
   to tweak the behavior of ``benchopt test``.
   By `Thomas Moreau`_ (:gh:`889`)
 
+DOC
+---
+
+- Improve documentation on how to get started with benchopt.
+  See :ref:`get_started`. By `Thomas Moreau`_ (:gh:`899`)
+
 FIX
 ---
 
@@ -47,6 +53,7 @@ FIX
 
 - Fix display in boxplot to show variance correctly.
   By `Thomas Moreau`_ (:gh:`898`)
+
 
 .. _changes_1_8_1:
 
@@ -60,7 +67,8 @@ API
   should be minimized or maximized.
   By `Hippolyte Verninas`_ (:gh:`878`)
 
-- Add API to control randomness in benchmarks via ``get_seed`` method in base classes.
+- Add API to control randomness in benchmarks via ``get_seed`` method in
+  base classes. See :ref:`controlling_randomness` for more details.
   By `Hippolyte Verninas`_ and `Thomas Moreau`_ (:gh:`837`)
 
 FIX
