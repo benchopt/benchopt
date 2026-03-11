@@ -114,7 +114,7 @@ Get started
    The tabs below show minimal examples for three common use cases.
    Once you are ready to go further, the :ref:`benchmark_workflow` section covers
    advanced features such as parallelization, seed control, cross-validation,
-   or convergence tracking.
+   or convergence tracking depending on your use case.
 
    .. tab-set::
 
