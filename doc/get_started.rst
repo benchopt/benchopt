@@ -99,7 +99,9 @@ Get started
 
     This same workflow can be reused for ML, optimization, or infrastructure.
 
-   A benchopt benchmark has three ingredients: an **objective** (your metric or evaluation protocol), one or more **datasets**, and one or more **solvers** (the evaluated methods).
+   A benchopt benchmark has three ingredients: one or more **datasets**,
+   an **objective** (your metric or evaluation protocol), and one or more
+   **solvers** (the evaluated methods).
    Each is a single Python file. Here is the minimal structure:
 
    .. code-block:: none
@@ -112,16 +114,19 @@ Get started
            └── my_solver.py
 
    The tabs below show minimal examples for three common use cases.
-   Once you are ready to go further, the :ref:`benchmark_workflow` section covers
-   advanced features such as parallelization, seed control, cross-validation,
-   or convergence tracking depending on your use case.
+   Once you are ready to go further, the :ref:`benchmark_workflow`
+   section covers advanced features such as parallelization,
+   :ref:`seed control <controlling_randomness>`,
+   :ref:`cross-validation <cross-validation>`, or
+   :ref:`convergence tracking <iterative_solvers>` depending on your use case.
 
    .. tab-set::
 
       .. tab-item:: ML benchmark
 
-         You have a dataset, a score, and methods to compare.
-         This is the simplest case: each solver runs once to completion.
+         You have a dataset, a metric, and methods to compare.
+         This is the simplest case: each solver runs once to completion
+         and is evaluated with a given metric.
 
          **datasets/my_dataset.py**: specifies how to load data, and potentially split it into training and test sets.
 
@@ -287,6 +292,22 @@ Get started
          or serving latency. Here is an example that measures dataloader
          throughput.
 
+         **datasets/my_dataset.py**
+
+         .. code-block:: python
+
+             from benchopt import BaseDataset
+             import numpy as np
+
+             class Dataset(BaseDataset):
+                 name = "My dataset"
+                 parameters = {
+                     "data_size": [100_000],
+                 }
+
+                 def get_data(self):
+                     return dict(data=np.zeros((self.data_size, 100)))
+
          **objective.py**
 
          .. code-block:: python
@@ -321,23 +342,6 @@ Get started
                 def get_one_result(self):
                      # for testing purpose, declare the minimal result to eval
                     return dict(dataloader=self.data)
-
-
-         **datasets/my_dataset.py**
-
-         .. code-block:: python
-
-             from benchopt import BaseDataset
-             import numpy as np
-
-             class Dataset(BaseDataset):
-                 name = "My dataset"
-                 parameters = {
-                     "data_size": [100_000],
-                 }
-
-                 def get_data(self):
-                     return dict(data=np.zeros((self.data_size, 100)))
 
          **solvers/my_solver.py**
 
