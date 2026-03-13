@@ -272,6 +272,7 @@ def run_one_solver(benchmark, dataset, objective, solver, n_repetitions,
         else:
             # we set 1 by default so that the solver run at least once
             n_repetitions = 1
+        terminal.n_repetitions = n_repetitions
 
     for rep in range(n_repetitions):
         skip, reason = solver._set_objective(objective)
