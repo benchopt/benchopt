@@ -484,8 +484,12 @@ def run_benchmark(benchmark_path, solver_names=None, forced_solvers=(),
 
     Parameters
     ----------
-    benchmark : benchopt.Benchmark object
-        Object to represent the benchmark.
+    benchmark_path : str | Path | Benchmark
+        Path to the benchmark directory, **or** an already-constructed
+        :class:`~benchopt.Benchmark` instance (e.g. from
+        :func:`benchopt.mini.get_benchmark`).  When a ``Benchmark`` instance
+        is passed directly, ``no_cache`` is ignored (use the instance's own
+        setting).
     solver_names : list | None
         List of solver names to include in the benchmark. If None
         all solvers available are run.
@@ -546,7 +550,10 @@ def run_benchmark(benchmark_path, solver_names=None, forced_solvers=(),
     output_file : Path
         Path to the output file where the results have been saved.
     """
-    benchmark = Benchmark(benchmark_path, no_cache=no_cache)
+    if isinstance(benchmark_path, Benchmark):
+        benchmark = benchmark_path
+    else:
+        benchmark = Benchmark(benchmark_path, no_cache=no_cache)
     if solver_names is None:
         solver_names = []
     solvers = benchmark.check_solver_patterns(
