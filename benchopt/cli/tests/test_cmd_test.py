@@ -42,12 +42,10 @@ class TestCmdTest:
 
     def test_valid_call_fail(self):
         solver = """
-        from benchopt import BaseSolver
-        class Solver(BaseSolver):
+        from benchopt.utils.temp_benchmark import TempSolver
+        class Solver(TempSolver):
             name = "failing-solver"
-            def set_objective(self, X, y, lmbd): pass
             def run(self, _): raise ValueError("Intentional Error")
-            def get_result(self): return dict(beta=1)
         """
         with temp_benchmark(solvers=solver) as bench:
             with CaptureCmdOutput(exit=1) as out:
@@ -84,7 +82,7 @@ class TestCmdTest:
             test_parameters = {'p': [True]}
             def get_data(self):
                 assert self.p
-                return dict(X=None)
+                return dict(X=None, y=None)
         """
         # This one should fail if called
         dataset2 = """
@@ -94,14 +92,10 @@ class TestCmdTest:
             def get_data(self): return dict(no_data=0)
         """
         objective = """
-        from benchopt import BaseObjective
-        class Objective(BaseObjective):
+        from benchopt.utils.temp_benchmark import TempObjective
+        class Objective(TempObjective):
             name = "test obj"
             test_dataset_name = "my_test_data"
-            def set_data(self, X): None
-            def evaluate_result(self, beta): return {'value': 1}
-            def get_one_result(self): return dict(beta=1)
-            def get_objective(self): pass
         """
 
         n_pass = 0 if error_type is not None else 1
@@ -143,8 +137,8 @@ class TestCmdTest:
             self, params, exit_code, n_data
     ):
         dataset = """
-        from benchopt import BaseDataset
-        class Dataset(BaseDataset):
+        from benchopt.utils.temp_benchmark import TempDataset
+        class Dataset(TempDataset):
             name = "my_test_data"
             parameters = {'p': [False]}
             test_parameters = {'p': #TEST_PARAMS}
@@ -153,24 +147,20 @@ class TestCmdTest:
                 return dict(p=self.p)
         """.replace("#TEST_PARAMS", str(params))
         objective = """
-        from benchopt import BaseObjective
-        class Objective(BaseObjective):
+        from benchopt.utils.temp_benchmark import TempObjective
+        class Objective(TempObjective):
             name = "test obj"
             def set_data(self, p): self.p = p
-            def evaluate_result(self, beta): return {'value': 1}
-            def get_one_result(self): return dict(beta=1)
             def get_objective(self): return dict(p=self.p)
         """
         solver = """
-        from benchopt import BaseSolver
-        class Solver(BaseSolver):
+        from benchopt.utils.temp_benchmark import TempSolver
+        class Solver(TempSolver):
             name = "test solver"
             def skip(self, p):
                 if p > 0: return True, "skip for p > 0"
                 return False, None
             def set_objective(self, p): self.p = p
-            def run(self, _): pass
-            def get_result(self): return dict(beta=1)
         """
 
         with temp_benchmark(
@@ -223,26 +213,20 @@ class TestCmdTest:
                 return dict(X=None)
         """
         objective = """
-        from benchopt import BaseObjective
-        class Objective(BaseObjective):
+        from benchopt.utils.temp_benchmark import TempObjective
+        class Objective(TempObjective):
             name = "test-objective"
             parameters = {'p': [0]}
             # TEST_CONFIG
             def set_data(self, X): print(f"Objective#{self.p}")
-            def get_one_result(self): return dict(beta=None)
-            def evaluate_result(self, beta): return dict(value=1.0)
-            def get_objective(self):
-                return dict(X=None)
         """
         solver = """
-        from benchopt import BaseSolver
-        class Solver(BaseSolver):
+        from benchopt.utils.temp_benchmark import TempSolver
+        class Solver(TempSolver):
             name = "test-solver"
             parameters = {'p': [0]}
             # TEST_CONFIG
-            def set_objective(self, X): print(f"Solver#{self.p}")
-            def run(self, _): pass
-            def get_result(self): return dict(beta=None)
+            def run(self, _): print(f"Solver#{self.p}")
         """
         # Setup dataset test_config
         if d_conf is not None:
@@ -315,17 +299,12 @@ class TestCmdTest:
     def test_valid_call_in_env_no_minimal(
             self, test_env_name, uninstall_dummy_package
     ):
-        objective = """from benchopt import BaseObjective
+        objective = """from benchopt.utils.temp_benchmark import TempObjective
         import dummy_package
-        class Objective(BaseObjective):
-            name = "test-objective"
+        class Objective(TempObjective):
             requirements = [
                 'pip::git+https://github.com/tommoral/dummy_package'
             ]
-            def set_data(self, X, y): pass
-            def get_one_result(self): return dict(beta=1)
-            def evaluate_result(self, beta): return dict(value=1.0)
-            def get_objective(self): return dict(X=None, y=None, lmbd=0)
         """
         with temp_benchmark(objective=objective) as bench:
             with CaptureCmdOutput(debug=True) as out:
