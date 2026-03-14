@@ -120,12 +120,14 @@ class TestRunCmd:
     def test_n_rep_display(self, cv):
         objective = f"""
         from benchopt.utils.temp_benchmark import TempObjective
+
+         class Splitter():  
+              def get_n_splits(self, groups): return 2
+
         class Objective(TempObjective):
-            def set_data(self, X, y):
-                super().set_data(X, y)
+            def set_data(self, **data):
                 if {cv}:
-                    from sklearn.model_selection import KFold
-                    self.cv = KFold(n_splits=2)
+                    self.cv = Splitter()
         """
         n_rep = 2 if cv else 1
 
