@@ -146,9 +146,6 @@ def test_ast_failures_dont_block_run(params, no_raise_install):
 
     class Solver(TempSolver):
         {params}
-        def set_objective(self, X, y, lmbd): pass
-        def run(self, _): pass
-        def get_result(self): return dict(beta=1)
     """
 
     invalid_component = params.splitlines()[-1].split("=")[0].strip()

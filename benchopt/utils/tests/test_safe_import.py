@@ -40,10 +40,8 @@ def test_import_ctx_name():
     with safe_import_context() as import_ctx_wrong_name:
         import numpy as np
 
-
     class Solver(TempSolver):
         name = "test_import_ctx"
-
     """
     with temp_benchmark(solvers=solver) as bench:
 
