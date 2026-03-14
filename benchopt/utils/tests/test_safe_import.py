@@ -7,16 +7,14 @@ from benchopt.tests.utils import CaptureCmdOutput
 
 def test_import_ctx():
     solver = """
-    from benchopt import BaseSolver, safe_import_context
+    from benchopt.utils.temp_benchmark import TempSolver
+    from benchopt import safe_import_context
     with safe_import_context() as import_ctx:
         import invalid_module
 
-    class Solver(BaseSolver):
+    class Solver(TempSolver):
         name = "test_import_ctx"
         requirements = ['invalid_module']
-        def set_objective(self, X, y, lmbd): pass
-        def run(self, n_iter): pass
-        def get_result(self): return dict(beta=1)
     """
     with temp_benchmark(solvers=solver) as bench:
         with CaptureCmdOutput() as out:
@@ -37,12 +35,13 @@ def test_import_ctx():
 
 def test_import_ctx_name():
     solver = """
-    from benchopt import BaseSolver, safe_import_context
+    from benchopt.utils.temp_benchmark import TempSolver
+    from benchopt import safe_import_context
     with safe_import_context() as import_ctx_wrong_name:
         import numpy as np
 
 
-    class Solver(BaseSolver):
+    class Solver(TempSolver):
         name = "test_import_ctx"
 
     """

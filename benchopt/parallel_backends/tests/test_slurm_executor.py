@@ -52,18 +52,15 @@ def test_get_slurm_executor(dummy_slurm_config):
 def test_merge_configs(dummy_slurm_config):
     # Test with solver overrides
     solver = """
-    from benchopt import BaseSolver
+    from benchopt.utils.temp_benchmark import TempSolver
 
-    class Solver(BaseSolver):
+    class Solver(TempSolver):
         name = "dummy"
         slurm_params = {
             "slurm_time": "00:01",
             "slurm_nodes": 2,
             "slurm_mem": "1234MB",
         }
-        def set_objective(self, **kwargs): pass
-        def run(self, _): pass
-        def get_result(self): return dict(beta=1)
     """
 
     with mocked_slurm(), temp_benchmark(solvers=solver) as bench:
@@ -130,15 +127,12 @@ def test_run_on_slurm(monkeypatch, dummy_slurm_config):
     my_params_str = f"parameters = {my_params}"
 
     solver = """
-        from benchopt import BaseSolver
+        from benchopt.utils.temp_benchmark import TempSolver
 
-        class Solver(BaseSolver):
+        class Solver(TempSolver):
             name = "{name}"
             {parameters}
             {slurm_params}
-            def set_objective(self, **kwargs): pass
-            def run(self, _): pass
-            def get_result(self): return dict(beta=1)
     """
     solvers = [
         solver.format(name='solver_no_params', parameters="", slurm_params=""),

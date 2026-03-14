@@ -10,18 +10,6 @@ from benchopt.stopping_criterion import SingleRunCriterion
 from benchopt.stopping_criterion import SufficientDescentCriterion
 from benchopt.stopping_criterion import SufficientProgressCriterion
 
-MINIMAL_OBJECTIVE = """from benchopt import BaseObjective
-
-    class Objective(BaseObjective):
-        name = "stopping_criterion"
-        min_benchopt_version = "0.0.0"
-
-        def set_data(self, X, y): self.X, self.y = X, y
-        def get_objective(self): return {}
-        def get_one_result(self): return dict(beta=0)
-        def evaluate_result(self, beta): return dict(value=1)
-"""
-
 
 @pytest.mark.parametrize('strategy', SAMPLING_STRATEGIES)
 @pytest.mark.parametrize('criterion_class', [
@@ -122,29 +110,20 @@ def test_key_to_monitor_objective(no_debug_log, criterion_class, strategy):
     "Check that the criterion tracks the right objective key."
     key = 'test_key'
 
-    objective = f"""from benchopt import BaseObjective
+    objective = f"""from benchopt.utils.temp_benchmark import TempObjective
 
-        class Objective(BaseObjective):
-            name = "test_obj"
-            min_benchopt_version = "0.0.0"
-
-            def set_data(self, X, y): pass
-            def get_one_result(self): pass
+        class Objective(TempObjective):
             def evaluate_result(self, beta): return dict({key}=1)
-            def get_objective(self): return dict(X=0, y=0)
     """
 
-    solver = f"""from benchopt import BaseSolver
+    solver = f"""from benchopt.utils.temp_benchmark import TempSolver
     from benchopt.stopping_criterion import *
 
-    class Solver(BaseSolver):
+    class Solver(TempSolver):
         name = "test-solver"
         stopping_criterion = {criterion_class.__name__}(
             key_to_monitor='{key}'
         )
-        def set_objective(self, X, y): pass
-        def run(self, n_iter): pass
-        def get_result(self): return dict(beta=1)
     """
 
     with temp_benchmark(objective=objective, solvers=[solver]) as benchmark:
@@ -160,12 +139,11 @@ def test_key_to_monitor_objective(no_debug_log, criterion_class, strategy):
 @pytest.mark.parametrize('strategy', SAMPLING_STRATEGIES)
 def test_solver_strategy(no_debug_log, strategy):
 
-    solver = f"""from benchopt import BaseSolver
+    solver = f"""from benchopt.utils.temp_benchmark import TempSolver
 
-    class Solver(BaseSolver):
+    class Solver(TempSolver):
         name = "test-solver"
         sampling_strategy = "{strategy}"
-        def set_objective(self): pass
         def run(self, n_iter):
             assert self._solver_strategy == "{strategy}", self._solver_strategy
             if self._solver_strategy in "iteration":
@@ -177,14 +155,9 @@ def test_solver_strategy(no_debug_log, strategy):
             elif self._solver_strategy in "callback":
                 assert callable(n_iter)
                 while n_iter(): pass
-
-        def get_result(self): return dict(beta=1)
     """
 
-    with temp_benchmark(
-            objective=MINIMAL_OBJECTIVE,
-            solvers=[solver]
-    ) as benchmark:
+    with temp_benchmark(solvers=[solver]) as benchmark:
         with CaptureCmdOutput():
             run([str(benchmark.benchmark_dir),
                 *('-s test-solver -d test-dataset --no-plot -n 0').split()],
@@ -200,13 +173,12 @@ def test_stopping_criterion_strategy(no_debug_log, criterion_class, strategy):
     if strategy == "run_once":
         criterion_class = SingleRunCriterion
 
-    solver = f"""from benchopt import BaseSolver
+    solver = f"""from benchopt.utils.temp_benchmark import TempSolver
     from benchopt.stopping_criterion import {criterion_class.__name__}
 
-    class Solver(BaseSolver):
+    class Solver(TempSolver):
         name = "test-solver"
         stopping_criterion = {criterion_class.__name__}(strategy="{strategy}")
-        def set_objective(self): pass
         def run(self, n_iter):
             assert self._solver_strategy == "{strategy}", self._solver_strategy
             if self._solver_strategy in "iteration":
@@ -218,14 +190,9 @@ def test_stopping_criterion_strategy(no_debug_log, criterion_class, strategy):
             elif self._solver_strategy in "callback":
                 assert callable(n_iter)
                 while n_iter(): pass
-
-        def get_result(self): return dict(beta=1)
     """
 
-    with temp_benchmark(
-            objective=MINIMAL_OBJECTIVE,
-            solvers=[solver]
-    ) as benchmark:
+    with temp_benchmark(solvers=[solver]) as benchmark:
         with CaptureCmdOutput():
             run([str(benchmark.benchmark_dir),
                 *('-s test-solver -d test-dataset --no-plot -n 0').split()],
@@ -241,14 +208,13 @@ def test_solver_override_strategy(no_debug_log, criterion_class, strategy):
     if strategy == "run_once":
         criterion_class = SingleRunCriterion
 
-    solver = f"""from benchopt import BaseSolver
+    solver = f"""from benchopt.utils.temp_benchmark import TempSolver
     from benchopt.stopping_criterion import {criterion_class.__name__}
 
-    class Solver(BaseSolver):
+    class Solver(TempSolver):
         name = "test-solver"
         sampling_strategy = "{strategy}"
         stopping_criterion = {criterion_class.__name__}()
-        def set_objective(self): pass
         def run(self, n_iter):
             assert self._solver_strategy == "{strategy}", self._solver_strategy
             if self._solver_strategy in "iteration":
@@ -260,14 +226,9 @@ def test_solver_override_strategy(no_debug_log, criterion_class, strategy):
             elif self._solver_strategy in "callback":
                 assert callable(n_iter)
                 while n_iter(): pass
-
-        def get_result(self): return dict(beta=1)
     """
 
-    with temp_benchmark(
-            objective=MINIMAL_OBJECTIVE,
-            solvers=[solver]
-    ) as benchmark:
+    with temp_benchmark(solvers=[solver]) as benchmark:
         with CaptureCmdOutput():
             run([str(benchmark.benchmark_dir),
                 *('-s test-solver -d test-dataset --no-plot -n 0').split()],
@@ -276,22 +237,16 @@ def test_solver_override_strategy(no_debug_log, criterion_class, strategy):
 
 def test_dual_strategy(no_debug_log):
 
-    solver = """from benchopt import BaseSolver
+    solver = """from benchopt.utils.temp_benchmark import TempSolver
     from benchopt.stopping_criterion import SufficientDescentCriterion
 
-    class Solver(BaseSolver):
+    class Solver(TempSolver):
         name = "test-solver"
         sampling_strategy = "iteration"
         stopping_criterion = SufficientDescentCriterion(strategy='tolerance')
-        def set_objective(self): pass
-        def run(self, n_iter): pass
-        def get_result(self): return dict(beta=1)
     """
 
-    with temp_benchmark(
-            objective=MINIMAL_OBJECTIVE,
-            solvers=[solver]
-    ) as benchmark:
+    with temp_benchmark(solvers=[solver]) as benchmark:
         with pytest.raises(AssertionError, match="Only set it once."):
             with CaptureCmdOutput():
                 run([str(benchmark.benchmark_dir),
@@ -301,32 +256,23 @@ def test_dual_strategy(no_debug_log):
 
 def test_objective_equals_zero(no_debug_log):
 
-    objective = """from benchopt import BaseObjective
+    objective = """from benchopt.utils.temp_benchmark import TempObjective
 
-        class Objective(BaseObjective):
+        class Objective(TempObjective):
             name = "test_obj"
-            min_benchopt_version = "0.0.0"
-
-            def set_data(self, X, y): pass
-            def get_one_result(self): pass
             def evaluate_result(self, beta): return dict(value=0)
-            def get_objective(self): return dict(X=0, y=0)
     """
 
-    solver = """from benchopt import BaseSolver
+    solver = """from benchopt.utils.temp_benchmark import TempSolver
     from benchopt.stopping_criterion import SufficientDescentCriterion
 
-    class Solver(BaseSolver):
+    class Solver(TempSolver):
         name = "test-solver"
         stopping_criterion = SufficientDescentCriterion()
-        def set_objective(self, X, y): pass
-        def run(self, n_iter): pass
-        def get_result(self): return dict(beta=1)
     """
 
     with temp_benchmark(
-            objective=objective,
-            solvers=[solver]
+            objective=objective, solvers=[solver]
     ) as benchmark:
         with CaptureCmdOutput() as out:
             run([str(benchmark.benchmark_dir),
@@ -339,19 +285,14 @@ def test_objective_equals_zero(no_debug_log):
 @pytest.mark.parametrize('strategy', SAMPLING_STRATEGIES)
 def test_global_strategy_override(no_debug_log, strategy):
 
-    objective = MINIMAL_OBJECTIVE.replace(
-        '"0.0.0"', f'"0.0.0"\n        sampling_strategy = "{strategy}"'
-    )
+    objective = f"""from benchopt.utils.temp_benchmark import TempObjective
 
-    solver = """from benchopt import BaseSolver
-    class Solver(BaseSolver):
-        name = "test-solver"
-        def set_objective(self): pass
-        def run(self, n_iter): pass
-        def get_result(self): return dict(beta=1)
+    class Objective(TempObjective):
+        name = "test_obj"
+        sampling_strategy = "{strategy}"
     """
 
-    with temp_benchmark(objective=objective, solvers=[solver]) as bench:
+    with temp_benchmark(objective=objective) as bench:
         objective = bench.get_benchmark_objective().get_instance()
         solver = bench.get_solvers()[0].get_instance()
         solver._set_objective(objective)
@@ -365,24 +306,15 @@ def test_global_strategy_override(no_debug_log, strategy):
 ])
 def test_global_criterion_override(no_debug_log, criterion_class):
 
-    objective = MINIMAL_OBJECTIVE.replace(
-        '"0.0.0"',
-        f'"0.0.0"\n        stopping_criterion = {criterion_class.__name__}()'
-    ).replace(
-        "import BaseObjective",
-        "import BaseObjective\n    from benchopt.stopping_criterion import "
-        f"{criterion_class.__name__}"
-    )
+    objective = f"""from benchopt.utils.temp_benchmark import TempObjective
+    from benchopt.stopping_criterion import {criterion_class.__name__}
 
-    solver = """from benchopt import BaseSolver
-    class Solver(BaseSolver):
-        name = "test-solver"
-        def set_objective(self): pass
-        def run(self, n_iter): pass
-        def get_result(self): return dict(beta=1)
+    class Objective(TempObjective):
+        name = "test_obj"
+        stopping_criterion = {criterion_class.__name__}()
     """
 
-    with temp_benchmark(objective=objective, solvers=[solver]) as bench:
+    with temp_benchmark(objective=objective) as bench:
         objective = bench.get_benchmark_objective().get_instance()
         solver = bench.get_solvers()[0].get_instance()
         solver._set_objective(objective)

@@ -210,7 +210,7 @@ class TestCmdTest:
             # TEST_CONFIG
             def get_data(self):
                 print(f"Dataset#{self.p}")
-                return dict(X=None)
+                return dict(data=None)
         """
         objective = """
         from benchopt.utils.temp_benchmark import TempObjective
@@ -218,7 +218,7 @@ class TestCmdTest:
             name = "test-objective"
             parameters = {'p': [0]}
             # TEST_CONFIG
-            def set_data(self, X): print(f"Objective#{self.p}")
+            def set_data(self, data): print(f"Objective#{self.p}")
         """
         solver = """
         from benchopt.utils.temp_benchmark import TempSolver

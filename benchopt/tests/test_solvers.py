@@ -84,15 +84,11 @@ def test_solver_warm_up():
 
 def test_solver_pre_run_hook():
 
-    solver1 = """from benchopt import BaseSolver
+    solver1 = """from benchopt.utils.temp_benchmark import TempSolver
     import numpy as np
 
-    class Solver(BaseSolver):
+    class Solver(TempSolver):
         name = 'solver1'
-        sampling_strategy = 'iteration'
-
-        def set_objective(self, X, y, lmbd): pass
-        def get_result(self): return dict(beta=None)
 
         def pre_run_hook(self, n_iter):
             self._pre_run_hook_n_iter = n_iter
@@ -113,12 +109,11 @@ def test_solver_pre_run_hook():
 @pytest.mark.parametrize('strategy', SAMPLING_STRATEGIES)
 def test_solver_invalid_get_result(strategy):
 
-    solver = f"""from benchopt import BaseSolver
+    solver = f"""from benchopt.utils.temp_benchmark import TempSolver
 
-        class Solver(BaseSolver):
+        class Solver(TempSolver):
             name = 'solver1'
             sampling_strategy = '{strategy}'
-            def set_objective(self, X, y, lmbd): pass
             def run(self, n_iter_or_cb):
                 if callable(n_iter_or_cb):
                     while n_iter_or_cb():
@@ -138,30 +133,26 @@ def test_solver_invalid_get_result(strategy):
 @pytest.mark.parametrize('eval_every', [1, 10])
 def test_solver_return_early_callback(eval_every):
 
-    solver = f"""from benchopt import BaseSolver
+    solver = f"""from benchopt.utils.temp_benchmark import TempSolver
     from benchopt.stopping_criterion import NoCriterion
 
-    class Solver(BaseSolver):
+    class Solver(TempSolver):
         name = 'test-solver'
         sampling_strategy = 'callback'
         stopping_criterion = NoCriterion()
         def get_next(self, stop_val): return stop_val + {eval_every}
-        def set_objective(self, X, y, lmbd): pass
         def run(self, cb):
             for i in range(3):
                 self.val = i
                 cb()
         def get_result(self): return {{'val': self.val}}
     """
-    objective = """from benchopt import BaseObjective
-    class Objective(BaseObjective):
+    objective = """from benchopt.utils.temp_benchmark import TempObjective
+    class Objective(TempObjective):
         name = "test-objective"
-        def set_data(self, X, y): pass
         def evaluate_result(self, val):
             print(f"EVAL#{val}")
             return 1
-        def get_one_result(self): pass
-        def get_objective(self): return dict(X=None, y=None, lmbd=None)
     """
 
     with temp_benchmark(solvers=solver, objective=objective) as bench:
