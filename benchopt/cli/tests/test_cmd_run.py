@@ -512,4 +512,3 @@ class TestRunCmdConfig:
                     'benchopt', standalone_mode=False
                 )
             out.check_output(r'test-solver\[param1=42\]:', repetition=n_reps+1)
-
