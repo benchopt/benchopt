@@ -121,7 +121,7 @@ class TestRunCmd:
         objective = f"""
         from benchopt.utils.temp_benchmark import TempObjective
 
-         class Splitter():  
+         class Splitter():
               def get_n_splits(self, groups): return 2
 
         class Objective(TempObjective):
