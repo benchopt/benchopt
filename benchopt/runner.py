@@ -477,7 +477,7 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
 def run_benchmark(benchmark_path, solver_names=None, forced_solvers=(),
                   dataset_names=None, objective_filters=None, max_runs=10,
                   n_repetitions=1, timeout=None,
-                  n_jobs=None, parallel_config=None, slurm=None,
+                  n_jobs=None, parallel_config=None,
                   plot_result=True, display=True, html=True,  collect=False,
                   show_progress=True, pdb=False, no_cache=False,
                   output_file="None"):
@@ -512,9 +512,6 @@ def run_benchmark(benchmark_path, solver_names=None, forced_solvers=(),
         If not None, launch the job in parallel. The provided config serves to
         set up parallelism using ``joblib.parallel_backend`` or ``submitit``.
         See :ref:`parallel_run` for detailed description.
-    slurm : Path | None, (_Deprecated_)
-        If not None, launch the job on a slurm cluster using the file to get
-        the cluster config parameters.
     plot_result : bool
         If set to True (default), generate the result plot and save them in
         the benchmark directory.
@@ -556,7 +553,7 @@ def run_benchmark(benchmark_path, solver_names=None, forced_solvers=(),
     datasets = benchmark.check_dataset_patterns(dataset_names)
     objectives = benchmark.check_objective_filters(objective_filters)
 
-    parallel_config = check_parallel_config(parallel_config, slurm, n_jobs)
+    parallel_config = check_parallel_config(parallel_config, n_jobs)
 
     exit_code, output_file = _run_benchmark(
         benchmark=benchmark,

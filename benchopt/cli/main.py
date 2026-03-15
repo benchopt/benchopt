@@ -64,7 +64,6 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
         "html",
         "n_jobs",
         "parallel_config",
-        "slurm",  # XXX: remove in benchopt 1.9
         "pdb",
         "profile",
         "env_name",
@@ -149,11 +148,6 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               metavar="<int>", default=None, show_default=True, type=int,
               help="Maximal number of workers to run the benchmark in "
               "parallel.")
-@click.option("--slurm",
-              metavar="<slurm_config.yml>", default=None,
-              help="(_Deprecated_) Run the computation using submitit on a "
-              "SLURM cluster. The YAML file provided as an argument is used "
-              "to setup the SLURM job. See :ref:`slurm_backend`.")
 @click.option("--parallel-config",
               metavar="<parallel_config.yml>", default=None,
               help="Run in parallel with the specified backend configuration. "
@@ -213,7 +207,7 @@ def run(config_file=None, **kwargs):
     (
         benchmark, solver_names, forced_solvers, dataset_names,
         objective_filters, max_runs, n_repetitions, timeout, no_timeout,
-        collect, plot, display, html, n_jobs, parallel_config, slurm, pdb,
+        collect, plot, display, html, n_jobs, parallel_config, pdb,
         do_profile, env_name, no_cache, output, seed
     ) = _get_run_args(kwargs, config)
 
@@ -273,8 +267,7 @@ def run(config_file=None, **kwargs):
             use_profile()  # needs to be called before validate_solver_patterns
 
         # Get the config for parallel runs
-        # XXX: remove slurm in benchopt 1.9
-        parallel_config = check_parallel_config(parallel_config, slurm, n_jobs)
+        parallel_config = check_parallel_config(parallel_config, n_jobs)
 
         print("Loading objective, datasets and solvers...", end='', flush=True)
         # Check that the objective is installed or raise an error
@@ -365,8 +358,6 @@ def run(config_file=None, **kwargs):
     parallel_args = ""
     if n_jobs:
         parallel_args += f"--n-jobs {n_jobs} "
-    if slurm:  # XXX: remove in benchopt 1.9
-        parallel_args += rf"--slurm {slurm} "
     if parallel_config:
         parallel_args += rf"--parallel-config {parallel_config} "
     cmd = (

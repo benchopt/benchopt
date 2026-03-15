@@ -7,8 +7,8 @@ What's new
 
 .. _changes_1_9:
 
-Version 1.9 - In development
-----------------------------
+Version 1.9 - 15/03/2026
+------------------------
 
 CLI
 ---
@@ -22,6 +22,11 @@ CLI
   Results are merged with any existing ones in the HF dataset repo.
   See :ref:`publish_benchmark` for more details.
   By `Thomas Moreau`_
+
+- Remove deprecated ``--slurm`` option in ``benchopt run``. SLURM runs should
+  now be setup with the parallel backend system. See :ref:`parallel_run` for
+  more details.
+  By `Thomas Moreau`_ (:gh:`902`, :gh:`673`)
 
 API
 ---
@@ -55,7 +60,7 @@ FIX
   By `Thomas Moreau`_ (:gh:`898`)
 
 - Fix display for `n_repetitions=None` correctly render.
-  By `Thomas Moreau`_ (:gh:`901`) 
+  By `Thomas Moreau`_ (:gh:`901`)
 
 .. _changes_1_8_1:
 
