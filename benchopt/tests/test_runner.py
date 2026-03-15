@@ -15,9 +15,9 @@ from benchopt.tests.utils import CaptureCmdOutput
 @pytest.mark.parametrize('n_jobs', [1, 2, 4])
 def test_skip_api(n_jobs):
 
-    objective = """from benchopt import BaseObjective
+    objective = """from benchopt.utils.temp_benchmark import TempObjective
 
-        class Objective(BaseObjective):
+        class Objective(TempObjective):
             name = "Objective-skip"
             parameters = dict(should_skip=[True, False])
 
@@ -25,28 +25,21 @@ def test_skip_api(n_jobs):
                 if self.should_skip:
                     return True, "Objective#SKIP"
                 return False, None
-
-            def set_data(self, X, y): self.X, self.y = X, y
-            def get_objective(self): return dict(X=1)
-            def get_one_result(self): return dict(beta=0)
-            def evaluate_result(self, beta): return dict(value=1)
     """
 
-    solver = """from benchopt import BaseSolver
+    solver = """from benchopt.utils.temp_benchmark import TempSolver
 
-    class Solver(BaseSolver):
+    class Solver(TempSolver):
         name = "test-solver"
         sampling_strategy = 'run_once'
         parameters = dict(should_skip=[True, False])
+        def run(self, n_iter): print("Solver#RUN")
 
-        def skip(self, X):
+        def skip(self, **obj):
             if self.should_skip:
                 return True, "Solver#SKIP"
             return False, None
 
-        def set_objective(self, X): pass
-        def run(self, n_iter): print("Solver#RUN")
-        def get_result(self): return dict(beta=1)
     """
 
     with temp_benchmark(objective=objective, solvers=[solver]) as benchmark:
@@ -303,15 +296,12 @@ def test_benchopt_run_script(n_jobs, no_debug_log):
 def test_prefix_with_same_parameters():
     from benchopt import run_benchmark
 
-    solver1 = """from benchopt import BaseSolver
+    solver1 = """from benchopt.utils.temp_benchmark import TempSolver
 
-        class Solver(BaseSolver):
+        class Solver(TempSolver):
             name = "solver1"
             sampling_strategy = 'iteration'
             parameters = dict(seed=[3, 27])
-            def set_objective(self, X, y): pass
-            def run(self, n_iter): pass
-            def get_result(self): return dict(beta=1)
     """
 
     # Different name and extra parameter
@@ -320,13 +310,11 @@ def test_prefix_with_same_parameters():
         .replace('seed=[3, 27]', 'seed=[2, 28], type=["s"]')
     )
 
-    dataset1 = """from benchopt import BaseDataset
+    dataset1 = """from benchopt.utils.temp_benchmark import TempDataset
 
-        class Dataset(BaseDataset):
+        class Dataset(TempDataset):
             name = "dataset1"
             parameters = dict(seed=[3, 27])
-            def get_data(self):
-                return dict(X=0, y=1)
     """
 
     # Different name and extra parameter
@@ -335,17 +323,11 @@ def test_prefix_with_same_parameters():
         .replace('seed=[3, 27]', 'seed=[2, 28], type=["d"]')
     )
 
-    objective = """from benchopt import BaseObjective
+    objective = """from benchopt.utils.temp_benchmark import TempObjective
 
-        class Objective(BaseObjective):
+        class Objective(TempObjective):
             name = "test_obj"
-            min_benchopt_version = "0.0.0"
-
             parameters = dict(test_p=[4])
-            def set_data(self, X, y): pass
-            def get_one_result(self): pass
-            def evaluate_result(self, beta): return dict(value=1)
-            def get_objective(self): return dict(X=0, y=0)
     """
 
     with temp_benchmark(solvers=[solver1, solver2],
@@ -388,15 +370,12 @@ def test_warmup_error(no_debug_log):
     # Non-regression test for benchopt/benchopt#808
     from benchopt import run_benchmark
 
-    solver = """from benchopt import BaseSolver
+    solver = """from benchopt.utils.temp_benchmark import TempSolver
 
-        class Solver(BaseSolver):
+        class Solver(TempSolver):
             name = "solver1"
             sampling_strategy = 'iteration'
             def warm_up(self): raise RuntimeError("Warmup error")
-            def set_objective(self, X, y, lmbd): pass
-            def run(self, n_iter): pass
-            def get_result(self): return dict(beta=1)
     """
 
     with temp_benchmark(solvers=solver) as benchmark:
@@ -415,40 +394,24 @@ def test_warmup_error(no_debug_log):
 class TestCache:
     """Test the cache of the benchmark."""
 
-    objective = """from benchopt import BaseObjective
+    solver = """from benchopt.utils.temp_benchmark import TempSolver
 
-        class Objective(BaseObjective):
-            name = "test_obj"
-            min_benchopt_version = "0.0.0"
-
-            def set_data(self, X, y): pass
-            def get_one_result(self): pass
-            def evaluate_result(self, beta): return dict(value=1)
-            def get_objective(self): return dict(X=0, y=0)
-    """
-
-    solver = """from benchopt import BaseSolver
-
-    class Solver(BaseSolver):
+    class Solver(TempSolver):
         name = "test-solver"
         sampling_strategy = 'run_once'
-        def set_objective(self, X, y): pass
         def run(self, _): print("#RUN_SOLVER")
-        def get_result(self): return dict(beta=1)
     """
 
-    dataset = """from benchopt import BaseDataset
+    dataset = """from benchopt.utils.temp_benchmark import TempDataset
 
-    class Dataset(BaseDataset):
+    class Dataset(TempDataset):
         name = "test-dataset"
-        def get_data(self): return dict(X=0, y=1)
     """
 
     @pytest.mark.parametrize('n_reps', [1, 4])
     def test_cache(self, no_debug_log, n_reps):
         with temp_benchmark(
-                objective=self.objective, solvers=self.solver,
-                datasets=self.dataset
+                solvers=self.solver, datasets=self.dataset
         ) as bench:
             with CaptureCmdOutput() as out:
                 for it in range(3):
@@ -462,8 +425,7 @@ class TestCache:
     @pytest.mark.parametrize('n_reps', [1, 4])
     def test_no_cache(self, no_debug_log, n_reps):
         with temp_benchmark(
-                objective=self.objective, solvers=self.solver,
-                datasets=self.dataset
+                solvers=self.solver, datasets=self.dataset
         ) as bench:
             with CaptureCmdOutput() as out:
                 for it in range(3):
@@ -475,19 +437,15 @@ class TestCache:
 
     def test_no_error_caching(self, no_debug_log):
 
-        solver_fail = """from benchopt import BaseSolver
+        solver_fail = """from benchopt.utils.temp_benchmark import TempSolver
 
-        class Solver(BaseSolver):
+        class Solver(TempSolver):
             name = "failing-solver"
-            sampling_strategy = 'iteration'
-            def set_objective(self, X, y): pass
             def run(self, n_iter):
                 raise ValueError('Failing solver.')
-            def get_result(self): return dict(beta=1)
         """
 
-        with temp_benchmark(objective=self.objective,
-                            solvers=[self.solver, solver_fail],
+        with temp_benchmark(solvers=[self.solver, solver_fail],
                             datasets=self.dataset) as bench:
             with CaptureCmdOutput() as out:
                 for it in range(3):
@@ -500,7 +458,7 @@ class TestCache:
     @pytest.mark.parametrize('n_reps', [1, 4])
     def test_cache_order(self, no_debug_log, n_reps):
         with temp_benchmark(
-                objective=self.objective, datasets=self.dataset,
+                datasets=self.dataset,
                 solvers=[
                     self.solver,
                     self.solver.replace("test-solver", "test-solver2")
@@ -525,8 +483,7 @@ class TestCache:
     @pytest.mark.parametrize('n_reps', [1, 4])
     def test_cache_invalid(self, no_debug_log, n_reps):
         with temp_benchmark(
-                objective=self.objective, datasets=self.dataset,
-                solvers=self.solver,
+                datasets=self.dataset, solvers=self.solver,
         ) as bench:
             with CaptureCmdOutput() as out:
                 run(f"{bench.benchmark_dir} --no-plot -r {n_reps}".split(),
@@ -557,21 +514,17 @@ class TestSeed:
             f"{use_objective},{use_dataset},{use_solver},use_repetition=True"
         )
         return (
-            f"""from benchopt import BaseObjective
+            f"""from benchopt.utils.temp_benchmark import TempObjective
 
-            class Objective(BaseObjective):
+            class Objective(TempObjective):
                 name = "{name}"
-                min_benchopt_version = "0.0.0"
 
-                def set_data(self, X, y): pass
-                def get_one_result(self): pass
                 def evaluate_result(self, beta):
                     print(
                         '#SEED-obj=',
                         self.get_seed({seed_args})
                     )
                     return dict(value=1)
-                def get_objective(self): return dict(X=0, y=0)
             """
         )
 
@@ -604,18 +557,16 @@ class TestSeed:
             f"{use_objective},{use_dataset},{use_solver},use_repetition=True"
         )
         return (
-            f"""from benchopt import BaseSolver
+            f"""from benchopt.utils.temp_benchmark import TempSolver
 
-            class Solver(BaseSolver):
+            class Solver(TempSolver):
                 name = "{name}"
                 sampling_strategy = 'run_once'
-                def set_objective(self, X, y): pass
                 def run(self, _):
                     print('#SEED-sol=',
                         self.get_seed({seed_args})
                     )
                     return
-                def get_result(self): return dict(beta=1)
             """
         )
 

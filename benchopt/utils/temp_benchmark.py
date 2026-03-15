@@ -19,6 +19,7 @@ class Objective(BaseObjective):
     def get_objective(self): return dict(X=None, y=None, lmbd=None)
 """
 
+
 IDX_BENCHMARK = 0
 
 DEFAULT_DATASETS = {
@@ -45,6 +46,23 @@ DEFAULT_SOLVERS = {
             def get_result(self): return dict(beta=None)
     """
 }
+
+# Create classes DefaultObjective, DefaultDataset and DefaultSolver
+# in the global scope, so that they can be used to override specific parts
+# easily when creating temporary benchmarks. These classes are not meant to be
+# used directly, but to be subclassed in test.
+exec(
+    inspect.cleandoc(DEFAULT_OBJECTIVE)
+    .replace("Objective(", "TempObjective(")
+)
+exec(
+    inspect.cleandoc(DEFAULT_DATASETS['test_dataset.py'])
+    .replace("Dataset(", "TempDataset(")
+)
+exec(
+    inspect.cleandoc(DEFAULT_SOLVERS['test_solver.py'])
+    .replace("Solver(", "TempSolver(")
+)
 
 
 @contextlib.contextmanager

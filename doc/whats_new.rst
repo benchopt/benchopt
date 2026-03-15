@@ -54,6 +54,8 @@ FIX
 - Fix display in boxplot to show variance correctly.
   By `Thomas Moreau`_ (:gh:`898`)
 
+- Fix display for `n_repetitions=None` correctly render.
+  By `Thomas Moreau`_ (:gh:`901`) 
 
 .. _changes_1_8_1:
 

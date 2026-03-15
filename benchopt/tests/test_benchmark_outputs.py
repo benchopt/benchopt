@@ -4,22 +4,17 @@ from benchopt.utils.temp_benchmark import temp_benchmark
 
 
 def test_filename_in_parquet():
-    solver_file = """from benchopt import BaseSolver
-    class Solver(BaseSolver):
+    solver_file = """from benchopt.utils.temp_benchmark import TempSolver
+    class Solver(TempSolver):
         name = "{name}"
-        sampling_strategy = 'run_once'
-        def set_objective(self, X, y, lmbd): pass
-        def run(self, n_iter): pass
-        def get_result(self): return dict(beta=1)
     """
     solvers = {
         'test_solver.py': solver_file.format(name='test-solver'),
         'another_solver.py': solver_file.format(name='another-solver'),
     }
-    dataset_file = """from benchopt import BaseDataset
-    class Dataset(BaseDataset):
+    dataset_file = """from benchopt.utils.temp_benchmark import TempDataset
+    class Dataset(TempDataset):
         name = "{name}"
-        def get_data(self): return dict(X=1, y=1)
     """
     datasets = {
         'test_dataset.py': dataset_file.format(name='test-dataset'),
@@ -31,6 +26,7 @@ def test_filename_in_parquet():
             str(bench.benchmark_dir),
             output_file='results.parquet',
             plot_result=False,
+            max_runs=0,
         )
 
         assert output_file.exists()

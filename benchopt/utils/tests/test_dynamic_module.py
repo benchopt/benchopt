@@ -18,14 +18,12 @@ def test_pickling_dynamic_module():
     # that the dynamic benchmark_utils module can be retrieved in the process.
 
     solver = """
-    from benchopt import BaseSolver
+    from benchopt.utils.temp_benchmark import TempSolver
     from benchmark_utils.test1 import func1
 
-    class Solver(BaseSolver):
+    class Solver(TempSolver):
         name = "test-solver"
-        def set_objective(self, X, y, reg): self.X, self.y = X, y
         def run(self, _): func1()
-        def get_result(self): return dict(beta=1)
     """
 
     with temp_benchmark(
@@ -105,15 +103,12 @@ def test_ast_replacement(params):
     # is correctly stored in the class.
 
     solver = f"""
-    from benchopt import BaseSolver
+    from benchopt.utils.temp_benchmark import TempSolver
     failure
 
-    class Solver(BaseSolver):
+    class Solver(TempSolver):
         name = 'my-solver'
         {params}
-        def set_objective(self, X, y, lmbd): pass
-        def run(self, _): pass
-        def get_result(self): return dict(beta=1)
     """
 
     component = params.split('=')[0].strip()
@@ -146,14 +141,11 @@ def test_ast_replacement(params):
 ])
 def test_ast_failures_dont_block_run(params, no_raise_install):
     solver = f"""
-    from benchopt import BaseSolver
+    from benchopt.utils.temp_benchmark import TempSolver
     failure
 
-    class Solver(BaseSolver):
+    class Solver(TempSolver):
         {params}
-        def set_objective(self, X, y, lmbd): pass
-        def run(self, _): pass
-        def get_result(self): return dict(beta=1)
     """
 
     invalid_component = params.splitlines()[-1].split("=")[0].strip()

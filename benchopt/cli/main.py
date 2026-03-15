@@ -294,7 +294,6 @@ def run(config_file=None, **kwargs):
         solvers = benchmark.check_solver_patterns(
             solver_names + list(forced_solvers)
         )
-
         exit_code, _ = _run_benchmark(
             benchmark, solvers, forced_solvers,
             datasets=datasets, objectives=objectives,

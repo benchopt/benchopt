@@ -143,6 +143,7 @@ class StoppingCriterion():
         stopping_criterion.max_runs = max_runs
         stopping_criterion.terminal = terminal
         stopping_criterion.solver = solver
+        stopping_criterion.n_eval = 0
 
         # Override get_next_stop_val if ``get_next`` is implemented for solver.
         if hasattr(solver, 'get_next'):
@@ -217,7 +218,7 @@ class StoppingCriterion():
         #   it contains the initial evaluation.
         # - compute the delta_objective if the stopping_criterion monitors a
         #   given key, for debugging and stalled progress.
-        n_eval = len(objective_list) - 1
+        n_eval = self.n_eval
 
         if self.key_to_monitor_ is not None:
             # Compatibility with the objective
@@ -265,6 +266,7 @@ class StoppingCriterion():
 
             # Compute status and notify the runner if the curve is flat.
             status = 'done' if stop else 'running'
+            self.n_eval += 1
 
         if stop:
             suffix = ""
