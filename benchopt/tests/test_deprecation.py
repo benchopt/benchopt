@@ -8,8 +8,8 @@ from benchopt.tests.utils import CaptureCmdOutput
 
 
 ##############################################################################
-# Deprecation check for benchopt 1.9
-# XXX: remove in benchopt 1.9
+# Deprecation check for benchopt 2.0
+# XXX: remove in benchopt 2.0
 
 
 def test_deprecated_channel_spec():
@@ -36,29 +36,3 @@ def test_deprecated_channel_spec():
         "dependencies:\n  - pkg1\n  - pkg2\n  - pip\n  - pip:\n    - pkg3"
     )
 
-
-def test_slurm_deprecation():
-    pytest.importorskip("submitit")
-
-    slurm_config = """
-    timeout_min: 1
-    """
-
-    with temp_benchmark(config={'slurm.yml': slurm_config}) as bench:
-        slurm_config_file = bench.benchmark_dir / "slurm.yml"
-        with CaptureCmdOutput():
-            msg = "Cannot use both `--slurm` and `--parallel-backend`."
-            with pytest.raises(AssertionError, match=msg):
-                run(
-                    f"{bench.benchmark_dir} -d test-dataset -n 0 -r 5 "
-                    f"--no-plot --slurm {slurm_config_file} "
-                    f"--parallel-config {slurm_config_file}".split(),
-                    standalone_mode=False)
-
-        with CaptureCmdOutput():
-            msg = "`--slurm` is deprecated, use `--parallel-backend` instead."
-            with pytest.warns(DeprecationWarning, match=msg):
-                run(
-                    f"{bench.benchmark_dir} -d test-dataset -n 0 -r 5 "
-                    f"--no-plot --slurm {slurm_config_file}".split(),
-                    standalone_mode=False)

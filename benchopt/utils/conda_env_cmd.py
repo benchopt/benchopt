@@ -258,7 +258,7 @@ def get_env_file_from_requirements(packages):
     This detects the packages that need to be installed with pip and also
     the additional channels for conda packages.
     """
-    # TODO: remove with benchopt 1.9
+    # TODO: remove with benchopt 2.0
     # If ":" is present but not "::", warn that this is legacy syntax.
     has_legacy_colon = any(":" in pkg and "::" not in pkg for pkg in packages)
     if has_legacy_colon:
