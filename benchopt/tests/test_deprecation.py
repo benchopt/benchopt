@@ -1,10 +1,6 @@
 import pytest
 
-from benchopt.cli.main import run
-from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.utils.conda_env_cmd import get_env_file_from_requirements
-
-from benchopt.tests.utils import CaptureCmdOutput
 
 
 ##############################################################################
@@ -35,4 +31,3 @@ def test_deprecated_channel_spec():
         "channels:\n  - chan\n  - conda-forge\n"
         "dependencies:\n  - pkg1\n  - pkg2\n  - pip\n  - pip:\n    - pkg3"
     )
-
