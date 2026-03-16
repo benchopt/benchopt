@@ -204,6 +204,7 @@ def test_submitit_backend_grouped(monkeypatch):
 
 def test_invalid_parallel_config():
     from benchopt.parallel_backends import check_parallel_config
+
     with pytest.raises(AssertionError, match="group_by"):
         check_parallel_config(
             {"backend": "submitit", "group_by": "invalid"}, None
@@ -211,4 +212,29 @@ def test_invalid_parallel_config():
     with pytest.raises(AssertionError, match="batch_n_jobs"):
         check_parallel_config(
             {"backend": "submitit", "batch_n_jobs": 0}, None
+        )
+    with pytest.raises(
+        AssertionError, match="only supported with the submitit backend"
+    ):
+        check_parallel_config(
+            {"backend": "dask", "group_by": "dataset"}, None
+        )
+    with pytest.raises(
+        AssertionError, match="only supported with the submitit backend"
+    ):
+        check_parallel_config(
+            {"backend": "loky", "batch_n_jobs": 2}, None
+        )
+    with pytest.raises(AssertionError, match="requires `group_by`"):
+        check_parallel_config(
+            {"backend": "submitit", "batch_n_jobs": 2}, None
+        )
+    with pytest.raises(AssertionError, match="positive integer"):
+        check_parallel_config(
+            {
+                "backend": "submitit",
+                "group_by": "dataset",
+                "batch_n_jobs": True,
+            },
+            None,
         )
