@@ -1,4 +1,7 @@
+from collections import defaultdict
 from contextlib import ExitStack
+
+from joblib import Parallel, delayed
 
 try:
     import submitit
@@ -82,39 +85,64 @@ def hashable_pytree(pytree):
         return pytree
 
 
+def _job_slurm_config(kwargs, slurm_config):
+    """Resolve the SLURM config for a single run kwargs entry."""
+    solver = kwargs.get("solver")
+    if solver is None:
+        return slurm_config
+    return get_solver_slurm_config(solver, slurm_config)
+
+
+def _run_batch(run_one_solver, common_kwargs, batch_kwargs, n_jobs=1):
+    """Run multiple solver configurations in a single SLURM job."""
+    if n_jobs == 1:
+        return [run_one_solver(**common_kwargs, **kw) for kw in batch_kwargs]
+    return Parallel(n_jobs=n_jobs)(
+        delayed(run_one_solver)(**common_kwargs, **kw)
+        for kw in batch_kwargs
+    )
+
+
+def _group_runs(all_runs, slurm_config, group_by):
+    """Group runs sharing the same `group_by` key and slurm config."""
+    if group_by is None:
+        return [[kw] for kw in all_runs]
+    groups = defaultdict(list)
+    for kwargs in all_runs:
+        cfg = hashable_pytree(_job_slurm_config(kwargs, slurm_config))
+        groups[(str(kwargs[group_by]), cfg)].append(kwargs)
+    return list(groups.values())
+
+
 def run_on_slurm(
-    benchmark, slurm_config, run_one_solver, common_kwargs, all_runs
+    benchmark, slurm_config, run_one_solver, common_kwargs, all_runs,
+    group_by=None, batch_n_jobs=1
 ):
+
+    run_groups = _group_runs(all_runs, slurm_config, group_by)
 
     executors = {}
     tasks = []
-
     with ExitStack() as stack:
-        for kwargs in all_runs:
-            solver = kwargs.get("solver")
-            if solver is not None:
-                job_slurm_config = get_solver_slurm_config(
-                    solver, slurm_config
-                )
-            else:
-                job_slurm_config = slurm_config
+        for run_group in run_groups:
+            job_slurm_config = _job_slurm_config(run_group[0], slurm_config)
             executor_config = hashable_pytree(job_slurm_config)
 
             if executor_config not in executors:
                 executor = get_slurm_executor(
-                    benchmark,
-                    job_slurm_config,
+                    benchmark, job_slurm_config,
                     timeout=common_kwargs.get("timeout"),
                 )
                 stack.enter_context(executor.batch())
                 executors[executor_config] = executor
 
-            future = executors[executor_config].submit(
-                run_one_solver,
-                **common_kwargs,
-                **kwargs,
-            )
-            tasks.append(future)
+            tasks.append(executors[executor_config].submit(
+                _run_batch,
+                run_one_solver=run_one_solver,
+                common_kwargs=common_kwargs,
+                batch_kwargs=run_group,
+                n_jobs=batch_n_jobs,
+            ))
 
     print(f"First job id: {tasks[0].job_id}")
 
@@ -125,4 +153,4 @@ def run_on_slurm(
                 tt.cancel()
             raise exc
 
-    return [t.results()[0] for t in tasks]
+    return [r for t in tasks for r in t.results()[0]]

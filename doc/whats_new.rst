@@ -13,6 +13,11 @@ In development
 CLI
 ~~~
 
+- Add ``group_by`` and ``batch_n_jobs`` options to the submitit parallel
+  backend to group multiple runs into single SLURM jobs with optional inner
+  parallelism. See :ref:`slurm_grouping` for details. By `Bruno Aristimunha`_
+  (:gh:`903`)
+
 - Add ``benchopt prepare`` command to prepare the benchmark's dataset
   before launching them. Also deprecate the ``--download`` option in
   ``benchopt install``, replaced by ``--prepare``. By `Thomas Moreau`_ (:gh:`912`)
@@ -76,6 +81,14 @@ FIX
   By `Thomas Moreau`_ (:gh:`931`)
 
 .. _changes_1_9:
+
+FIX
+---
+
+- Fix quantile display with suboptimality and relative plots.
+  Also fix median computation for objective curve, to ensure the same
+  number of points for all solvers even when one stops earlier.
+  By `Thomas Moreau`_ (:gh:`904`)
 
 Version 1.9 - 15/03/2026
 ------------------------
