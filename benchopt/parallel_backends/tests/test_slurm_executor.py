@@ -67,7 +67,12 @@ def _patch_submitit_submit(monkeypatch):
 
     def submit(self, func, *args, **kwargs):
         submissions.append(
-            dict(func=func, args=args, kwargs=kwargs, config=self._executor.parameters)
+            dict(
+                func=func,
+                args=args,
+                kwargs=kwargs,
+                config=self._executor.parameters,
+            )
         )
         return MockedTask((func, args, kwargs), self._executor.parameters)
 
