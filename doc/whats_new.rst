@@ -5,6 +5,18 @@ What's new
 
 .. currentmodule:: benchopt
 
+.. _changes_1_10:
+
+Version 1.10 - development
+---------------------------
+
+CLI
+---
+
+- Add ``group_by`` and ``batch_n_jobs`` options to the submitit parallel
+  backend to group multiple runs into single SLURM jobs with optional inner
+  parallelism. See :ref:`slurm_grouping` for details.
+
 .. _changes_1_9:
 
 Version 1.9 - 15/03/2026

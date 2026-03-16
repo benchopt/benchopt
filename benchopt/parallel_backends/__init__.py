@@ -19,6 +19,8 @@ def is_distributed_frontal():
 def parallel_run(benchmark, run, kwargs, all_runs, config, collect=False):
     config = config or {}
     backend = config.pop('backend', 'loky')
+    group_by = config.pop('group_by', None)
+    batch_n_jobs = config.pop('batch_n_jobs', 1)
     if collect:  # Collect should not run complicated parallelism
         backend = 'loky'
     assert backend in DISTRIBUTED_BACKENDS, (
@@ -26,7 +28,10 @@ def parallel_run(benchmark, run, kwargs, all_runs, config, collect=False):
     )
     if backend == 'submitit':
         from .slurm_executor import run_on_slurm
-        results = run_on_slurm(benchmark, config, run, kwargs, all_runs)
+        results = run_on_slurm(
+            benchmark, config, run, kwargs, all_runs,
+            group_by=group_by, batch_n_jobs=batch_n_jobs,
+        )
     else:
         if backend == 'dask':
             from .dask_backend import check_dask_config
@@ -75,6 +80,17 @@ def check_parallel_config(parallel_config_file, n_jobs):
     assert 'backend' in parallel_config, (
         "Could not find `backend` specification in parallel_config file. "
         "Please specify it. See :ref:`parallel_run` for detailed description."
+    )
+
+    group_by = parallel_config.get('group_by')
+    if group_by is not None:
+        assert group_by in ('dataset', 'solver', 'objective'), (
+            f"`group_by` must be 'dataset', 'solver', or 'objective'. "
+            f"Got '{group_by}'."
+        )
+    batch_n_jobs = parallel_config.get('batch_n_jobs', 1)
+    assert isinstance(batch_n_jobs, int) and batch_n_jobs >= 1, (
+        f"`batch_n_jobs` must be a positive integer. Got {batch_n_jobs}."
     )
 
     backend = parallel_config['backend']
