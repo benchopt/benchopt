@@ -3,6 +3,8 @@ import shutil
 import webbrowser
 from pathlib import Path
 from datetime import datetime
+from urllib.parse import quote
+
 import pandas as pd
 from mako.template import Template
 
@@ -94,7 +96,7 @@ def get_results(fnames, html_root, benchmark, config=None, copy=False):
 
         # Generate figures
         result = dict(
-            fname=fname,
+            fname=str(fname),
             fname_short=fname.name,
             datasets=datasets,
             sysinfo=sysinfo,
@@ -118,7 +120,7 @@ def get_results(fnames, html_root, benchmark, config=None, copy=False):
 
     for result in results:
         html_file_name = Path(result['fname_short']).with_suffix('.html').name
-        result['page'] = f"{benchmark.name}_{html_file_name}"
+        result['page'] = quote(f"{benchmark.name}_{html_file_name}")
 
     return results
 
@@ -287,7 +289,7 @@ def render_all_results(results, benchmark, home='index.html'):
             strict_undefined=True
         ).render(
             result=result,
-            benchmark=benchmark.name,
+            benchmark=benchmark,
             static=STATIC, home=home
         )
         htmls.append(html)
@@ -352,7 +354,7 @@ def plot_benchmark_html(
         copy = True
 
     # Make the link relative
-    html_home = html_home.relative_to(html_root)
+    html_home = quote(str(html_home.relative_to(html_root)))
 
     # Create the figures and render the page as a html.
     print("Rendering benchmark results...")
@@ -382,7 +384,7 @@ def plot_benchmark_html(
     # Display the file in the default browser
     if display:
         result_filename = (html_root / results[-1]['page']).absolute()
-        webbrowser.open_new_tab('file://' + str(result_filename))
+        webbrowser.open_new_tab('file://' + quote(str(result_filename)))
 
 
 def plot_benchmark_html_all(patterns=(), benchmark_paths=(), root=None,
