@@ -16,7 +16,8 @@ class ObjectiveCurvePlot(BasePlot):
     def plot(self, df, dataset, objective, objective_column, X_axis):
         plots = []
         # If the column is not numeric, exit early
-        if df[objective_column].dtype == 'O':
+        from pandas.api.types import is_numeric_dtype
+        if not is_numeric_dtype(df[objective_column]):
             return plots
 
         df = df.query(
