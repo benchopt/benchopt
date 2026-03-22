@@ -1,3 +1,6 @@
+Using different coding languages with benchopt
+==============================================
+
 Benchopt supports different types of solvers:
 
 - :ref:`python_solvers`
