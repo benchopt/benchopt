@@ -113,6 +113,7 @@ Learn how to run them and how to construct your own with the following pages!
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         Full documentation of benchopt API and CLI
 
+.. _faq:
 
 .. Frequently Asked Questions (FAQ) subsection
 .. include:: faq.rst

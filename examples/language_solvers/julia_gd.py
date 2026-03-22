@@ -22,14 +22,16 @@ class Solver(JuliaSolver):
         'https://repo.prefix.dev/julia-forge::julia', 'pip::julia'
     ]
 
-    def set_objective(self, X, y, lmbd):
-        self.X, self.y, self.lmbd = X, y, lmbd
+    parameters = {'lr': [1e-3, 1e-2]}
+
+    def set_objective(self, X):
+        self.X = X
 
         jl = get_jl_interpreter()
-        self.solve_lasso = jl.include(JULIA_SOLVER_FILE)
+        self.gd = jl.include(JULIA_SOLVER_FILE)
 
     def run(self, n_iter):
-        self.beta = self.solve_lasso(self.X, self.y, self.lmbd, n_iter)
+        self.X_hat = self.gd(self.X, self.lr, n_iter)
 
     def get_result(self):
-        return {'beta': self.beta.ravel()}
+        return {'X_hat': self.X_hat}

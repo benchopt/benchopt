@@ -1,5 +1,5 @@
-Using different coding languages with benchopt
-==============================================
+Using different programming languages with benchopt
+===================================================
 
 Benchopt supports different types of solvers:
 

@@ -10,6 +10,13 @@ What's new
 In development
 --------------
 
+DOC
+~~~
+
+- Improve documentation on benchmark extension and using benchopt
+  with various programming languages. see :ref:`solver_languages` and :ref:`extend_benchmark` for more details.
+  By `Thomas Moreau`_ (:gh:`899`)
+
 FIX
 ~~~
 

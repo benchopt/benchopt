@@ -3,7 +3,6 @@ from pathlib import Path
 from benchopt import BaseSolver
 
 import numpy as np
-from scipy.sparse import issparse
 
 # Import helpers from rpy2 and benchopt.helpers.r_lang
 from benchopt.helpers.r_lang import import_func_from_r_file, converter_ctx
@@ -20,22 +19,19 @@ class Solver(BaseSolver):
     requirements = ['r-base', 'rpy2']
     sampling_strategy = 'iteration'
 
-    def skip(self, X, y, lmbd):
-        if issparse(X):
-            return True, "does not support sparse X"
-        return False, None
+    parameters = {'lr': [1e-3, 1e-2]}
 
     def set_objective(self, X, y, lmbd):
         self.X, self.y, self.lmbd = X, y, lmbd
         robjects = import_func_from_r_file(R_FILE)
-        self.r_pgd = robjects.r['proximal_gradient_descent']
+        self.r_gd = robjects.r['gradient_descent']
 
     def run(self, n_iter):
         with converter_ctx():
-            coefs = self.r_pgd(
-                self.X, self.y[:, None], self.lmbd, n_iter=n_iter
+            coefs = self.r_gd(
+                self.X, self.lr, n_iter=n_iter
             )
-            self.w = np.asarray(coefs)
+            self.X_hat = np.asarray(coefs)
 
     def get_result(self):
-        return {'beta': self.w.flatten()}
+        return {'X_hat': self.X_hat}
