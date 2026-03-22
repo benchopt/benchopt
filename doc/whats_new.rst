@@ -7,6 +7,14 @@ What's new
 
 .. _changes_1_9:
 
+FIX
+---
+
+- Fix quantile display with suboptimality and relative plots.
+  Also fix median computation for objective curve, to ensure the same
+  number of points for all solvers even when one stops earlier.
+  By `Thomas Moreau`_ (:gh:`904`)
+
 Version 1.9 - 15/03/2026
 ------------------------
 
