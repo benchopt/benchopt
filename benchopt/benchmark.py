@@ -98,7 +98,10 @@ class Benchmark:
         # in `benchmark_meta.json`.
         try:
             objective = self.get_benchmark_objective()
-            self.pretty_name = objective.name
+            self.pretty_name = (
+                objective.name.replace("benchmark_", "")
+                .replace("_benchmark", "").replace("_", " ")
+            )
             self.url = getattr(objective, "url", None)
             self.min_version = getattr(objective, 'min_benchopt_version', None)
         except RuntimeError:
@@ -130,6 +133,12 @@ class Benchmark:
         self.name = self.name.replace('.', '-')
 
         self._seed = seed
+
+    @property
+    def safe_name(self):
+        "Get a safe name for the benchmark, to use in file names."
+        from urllib.parse import quote
+        return quote(self.name.replace(" ", "_").replace("/", "_"))
 
     @property
     def seed(self):

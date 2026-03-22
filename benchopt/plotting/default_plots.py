@@ -14,36 +14,51 @@ class ObjectiveCurvePlot(BasePlot):
     }
 
     def plot(self, df, dataset, objective, objective_column, X_axis):
+        plots = []
+        # If the column is not numeric, exit early
+        from pandas.api.types import is_numeric_dtype
+        if not is_numeric_dtype(df[objective_column]):
+            return plots
+
         df = df.query(
             "dataset_name == @dataset and objective_name == @objective"
         )
 
-        plots = []
         for solver, df_filtered in df.groupby('solver_name'):
-            medians = df_filtered.groupby('stop_val').median(numeric_only=True)
-            if objective_column not in medians:
-                continue
-            y = medians[objective_column].values.tolist()
-            x = medians["time"].values.tolist()
+
+            # Make sure that median value is computed with all runs.
+            df_fill = (
+                df_filtered.pivot_table(
+                    index='stop_val',
+                    columns='idx_rep',
+                    values=[objective_column],
+                    # should only have one value of each config
+                    aggfunc="last"
+                ).ffill()
+                .unstack()
+            )
+
+            y = df_fill.groupby('stop_val').median(numeric_only=True)
             if X_axis == "Iteration":
-                x = medians.index.tolist()
+                x = y.index
+            else:
+                x = df_filtered.groupby('stop_val')['time'].median()
 
             curve_data = {
-                "x": x,
-                "y": y,
+                "x": x.tolist(),
+                "y": y.tolist(),
                 "label": solver,
                 **self.get_style(solver)
             }
 
             if X_axis == "Time":
-                curve_data['x_low'] = (
-                    df_filtered.groupby('stop_val')["time"]
-                    .quantile(.1).values.tolist()
+                # Compute the quantiles for runtime
+                q = (
+                    df_filtered.groupby('stop_val')['time'].quantile([.2, .8])
+                    .unstack()
                 )
-                curve_data['x_high'] = (
-                    df_filtered.groupby('stop_val')["time"]
-                    .quantile(.9).values.tolist()
-                )
+                curve_data['x_low'] = q[.2].tolist()
+                curve_data['x_high'] = q[.8].tolist()
 
             plots.append(curve_data)
 
