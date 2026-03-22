@@ -1,4 +1,4 @@
-.. _add_solver:
+.. _tuto_add_solver:
 
 Add a solver to an existing benchmark
 =====================================
