@@ -220,7 +220,7 @@ In this case, we can use the ``run_once`` sampling strategy.
 
 
 .. note::
-    The :ref:`Performance curves page <performance_curves>` provides a complete guide on the way benchopt constructs performance curves, and on the different sampling strategies.
+    The :ref:`Iterative solvers page <iterative_solvers>` provides a complete guide on the way benchopt constructs performance curves, and on the different sampling strategies.
 
 Getting the solver's results
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~

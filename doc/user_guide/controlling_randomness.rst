@@ -19,8 +19,10 @@ benchmark's global seed and the boolean flags you pass. The seed can then
 be used to seed random number generators (*e.g.* ``numpy.random.RandomState``,
 or ``torch.manual_seed``) to obtain deterministic pseudo-random streams.
 
-``get_seed(use_objective=True, use_dataset=True,
-           use_solver=True, use_repetition=True)``
+.. code-block:: python
+
+     seed = self.get_seed(use_objective=True, use_dataset=True,
+                           use_solver=True, use_repetition=True)
 
 Each argument is a flag which corresponds to an axis of the experiment. Setting the
 flag to ``True`` makes the seed vary when this element changes.
