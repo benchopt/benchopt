@@ -6,13 +6,25 @@ It uses the `benchopt_run` helper function to run the benchmark, which runs
 programmatically the equivalent of the command line interface:
 """
 
+from benchopt.helpers.run_examples import ExampleBenchmark
 from benchopt.helpers.run_examples import benchopt_run
+
+# %%
+# We will use the minimal benchmark defined in the ``examples`` folder, which
+# considers a simple MSE reconstruction problem on synthetic data with a
+# Gradient Descent solver implemented in Python:
+
+benchmark = ExampleBenchmark(
+    benchmark="minimal_benchmark",
+    ignore=["custom_plot.py", "example_config.yml"]
+)
+benchmark
 
 # %%
 # To run the benchmark, just execute:
 #
 
-benchopt_run('minimal_benchmark', n=20, r=2)
+benchopt_run(benchmark.benchmark_dir, n=20, r=2)
 
 # %%
 # This runs the benchmark named ``minimal_benchmark`` located in the
@@ -24,7 +36,7 @@ benchopt_run('minimal_benchmark', n=20, r=2)
 #
 # To get a more precise curve, you can increase ``n`` and ``r``:
 
-benchopt_run('minimal_benchmark', n=30, r=5)
+benchopt_run(benchmark.benchmark_dir, n=30, r=5)
 
 # %%
 # Here, the display is not ideal because both solvers reach convergence very

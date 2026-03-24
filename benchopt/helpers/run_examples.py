@@ -1,7 +1,10 @@
 import io
+import re
 import inspect
+import weakref
 from html import escape
 from pathlib import Path
+from uuid import uuid4
 
 from benchopt.tests.utils import CaptureCmdOutput
 from benchopt.plotting.generate_html import get_results, render_all_results
@@ -12,6 +15,36 @@ SPHINX_GALLERY_CTX = {}
 
 # Output build dir for sphinx-gallery
 BUILD_DIR = Path() / "_build" / "html" / "auto_examples"
+
+EXT_TO_LANGUAGE = {
+    ".py": "python",
+    ".jl": "julia",
+    ".r": "r",
+    ".yml": "yaml",
+    ".yaml": "yaml",
+    ".rst": "rst",
+}
+
+
+def _code_to_html(code, language=None, filename=None):
+    if language is None and filename is not None:
+        language = EXT_TO_LANGUAGE.get(
+            Path(filename).suffix, "text"
+        )
+    try:
+        from sphinx.highlighting import PygmentsBridge
+    except ImportError:
+        highlighted = f"<pre>{escape(inspect.cleandoc(code))}</pre>"
+    else:
+        highlighted = PygmentsBridge("html", "sphinx").highlight_block(
+            inspect.cleandoc(code), language
+        )
+    return highlighted
+
+
+def _html_to_replace_code_cell(html):
+    "Replace the code block in sphinx-gallery examples with custom HTML"
+    return f'<pre class="code-cell-equiv">{html}</pre>'
 
 
 class HTMLResultPage:
@@ -29,7 +62,8 @@ class HTMLResultPage:
     def __init__(self, result_html, output, cmd):
         self.result_html = result_html
         self.output_html = self.output_to_html(output)
-        self.cmd, self.cmd_html = cmd, self.cmd_to_html(cmd)
+        self.cmd = cmd
+        self.cmd_html = _code_to_html(f"$ {cmd}", language="console")
 
     def merge_lines(self, output):
         """Merge lines in the output that were overwritten using '\r'."""
@@ -62,17 +96,6 @@ class HTMLResultPage:
         )
         return html
 
-    def cmd_to_html(self, cmd):
-        """Convert the command to HTML with syntax highlighting."""
-        try:
-            from sphinx.highlighting import PygmentsBridge
-        except ImportError:
-            return f"$ {cmd}"
-
-        bridge = PygmentsBridge('html', 'sphinx')
-        html = bridge.highlight_block(f"$ {cmd}", 'console')
-        return html
-
     def _repr_html_(self):
         """Generate the HTML representation for Sphinx-gallery.
 
@@ -101,7 +124,7 @@ class HTMLResultPage:
             html_path.write_text(self.result_html, encoding='utf-8')
 
         return inspect.cleandoc(f"""
-            <pre class="cmd-equiv"> {self.cmd_html}</pre>
+            {_html_to_replace_code_cell(self.cmd_html)}
             <div class="sphx-glr-script-out highlight-none notranslate">
                 <div class="highlight">{self.output_html}</div>
             </div>
@@ -110,16 +133,232 @@ class HTMLResultPage:
         """)
 
 
-def benchopt_run(
-    benchmark_name=None, benchmark_dir=None, n=5, r=1, plot_config=None
-):
+class HTMLBenchmarkDisplay:
+    """Helper class to display a benchmark in Sphinx-gallery.
+
+    This class is used to create a temporary benchmark from given component
+    strings, and display it as HTML tabs in the documentation. It also allows
+    to run the benchmark and capture the output in a format compatible with
+    Sphinx-gallery.
+    """
+
+    def __init__(self, files, action=None):
+        self.action = action
+        self.files = []
+        for key in files:
+            if key != "objective" and len(files[key]) > 0:
+                self.files.extend(
+                    (f"{key}/{fn}" if key != "extra_files" else fn, content)
+                    for fn, content in files[key].items()
+                )
+            elif key == "objective":
+                self.files.append((f"{key}.py", files[key]))
+        # files.extend(sorted(self.extra_files.items()))
+
+    def _repr_html_(self):
+        tabs_id = f"example-benchmark-{uuid4().hex}"
+        if len(self.files) == 0:
+            return "<pre>No benchmark files.</pre>"
+
+        items = []
+        for idx, (label, content) in enumerate(self.files):
+            input_id = f"{tabs_id}-{idx}"
+            checked = 'checked="checked"' if idx == 0 else ""
+            items.append(
+                f"<input {checked} id='{input_id}' "
+                f"name='{tabs_id}' type='radio'>"
+                f"<label for='{input_id}'>{escape(label)}</label>"
+                "<div class='sd-tab-content'>"
+                f"{_code_to_html(content, filename=label)}</div>"
+            )
+
+        action = "" if self.action is None else f"<p>{self.action}</p><br/>"
+        return _html_to_replace_code_cell(inspect.cleandoc(f"""
+            <div class='display_example_benchmark'>
+                {action}
+                <div class='sd-tab-set'>
+                    {"\n".join(items)}
+                </div>
+            </div>"
+        """))
+
+
+class ExampleBenchmark:
+    """Temporary benchmark helper tailored for documentation examples.
+
+    This helper relies on :func:`benchopt.utils.temp_benchmark.temp_benchmark`
+    underneath, but exposes a higher-level API suited for tutorial examples:
+
+    - render benchmark files as compact HTML tabs;
+    - create a benchmark either from explicit component strings or from an
+      existing benchmark directory;
+    - update the objective or add datasets/solvers incrementally;
+    - run the benchmark and display the results with :func:`benchopt_run`.
+    """
+
+    def __init__(
+        self,
+        benchmark=None,
+        objective=None,
+        datasets=None,
+        solvers=None,
+        plots=None,
+        extra_files=None,
+        ignore=(),
+    ):
+        loaded = {}
+        if benchmark is not None:
+            loaded = self._load_existing_benchmark(benchmark)
+            for key in loaded:
+                loaded[key] = {
+                    fname: content for fname, content in loaded[key].items()
+                    if fname not in ignore
+                } if key != "objective" else loaded[key]
+
+        self.files = {}
+        if objective is not None:
+            self.files["objective"] = objective
+        elif "objective" in loaded:
+            self.files["objective"] = loaded["objective"]
+        self.files.update({
+            "datasets": {
+                **loaded.get("datasets", {}),
+                **self._to_component_dict(datasets),
+            },
+            "solvers": {
+                **loaded.get("solvers", {}),
+                **self._to_component_dict(solvers),
+            },
+            "plots": {
+                **loaded.get("plots", {}),
+                **self._to_component_dict(plots),
+            },
+            "extra_files": {
+                **loaded.get("extra_files", {}),
+                **self._to_component_dict(extra_files),
+            },
+        })
+
+        from benchopt.utils.temp_benchmark import temp_benchmark
+
+        self._temp_benchmark_cm = temp_benchmark(
+            **self.files, no_default=True,
+        )
+        self._bench = self._temp_benchmark_cm.__enter__()
+        self._finalizer = weakref.finalize(
+            self, self._temp_benchmark_cm.__exit__, None, None, None
+        )
+
+    @property
+    def benchmark_dir(self):
+        return self._bench.benchmark_dir
+
+    def close(self):
+        """Release the temporary benchmark directory."""
+        if self._finalizer.alive:
+            self._finalizer()
+
+    def _repr_html_(self):
+        return HTMLBenchmarkDisplay(self.files)._repr_html_()
+
+    def update(self, objective=None, datasets=None, solvers=None,
+               plots=None, extra_files=None):
+        """Update the benchmark files and return a display object."""
+        files = {
+            "datasets": self._to_component_dict(datasets),
+            "solvers": self._to_component_dict(solvers),
+            "plots": self._to_component_dict(plots),
+            "extra_files": self._to_component_dict(extra_files),
+        }
+        if objective is not None:
+            files["objective"] = objective
+            self.files["objective"] = objective
+            self._write_file(self.benchmark_dir / "objective.py", objective)
+
+        for key in ["datasets", "solvers", "plots"]:
+            self.files[key].update(files[key])
+            for fname, content in files[key].items():
+                self._write_file(self.benchmark_dir / key / fname, content)
+
+        self.files["extra_files"].update(files["extra_files"])
+        for fname, content in files["extra_files"].items():
+            self._write_file(self.benchmark_dir / fname, content)
+
+        return HTMLBenchmarkDisplay(
+            files, action="We now update the following files:"
+        )
+
+    def _load_existing_benchmark(self, benchmark):
+        benchmark_dir = Path(benchmark)
+        if not benchmark_dir.exists():
+            # If the path does not exist, try to find it in the examples folder
+            benchmark_dir = (
+                Path(__file__).parents[2] / "examples" / benchmark
+            )
+        if not benchmark_dir.exists():
+            raise ValueError(
+                f"Could not find benchmark at {benchmark} or "
+                f"{benchmark_dir}"
+            )
+
+        objective = (benchmark_dir / "objective.py").read_text(
+            encoding="utf-8"
+        )
+        datasets = self._read_component_dir(benchmark_dir / "datasets")
+        solvers = self._read_component_dir(benchmark_dir / "solvers")
+        plots = self._read_component_dir(benchmark_dir / "plots")
+        extra_files = {
+            file_path.relative_to(benchmark_dir).as_posix():
+                file_path.read_text(encoding="utf-8")
+            for file_path in benchmark_dir.rglob("*.yml")
+        }
+
+        return dict(
+            objective=objective,
+            datasets=datasets,
+            solvers=solvers,
+            plots=plots,
+            extra_files=extra_files,
+        )
+
+    def _read_component_dir(self, directory):
+        return {
+            file_path.name: file_path.read_text(encoding="utf-8")
+            for file_path in sorted(directory.glob("*.py"))
+            if file_path.name != "__init__.py"
+        }
+
+    def _to_component_dict(self, value):
+        if value is None:
+            return {}
+        if isinstance(value, str):
+            value = [value]
+        if isinstance(value, list):
+            return {self._name_from_content(c): c for c in value}
+        return dict(value)
+
+    @staticmethod
+    def _name_from_content(content):
+        match = re.search(
+            r'^\s*name\s*=\s*["\'](\w[^"\']*)["\']', content, re.MULTILINE
+        )
+        if match:
+            name = re.sub(r'[^a-z0-9]+', '_', match.group(1).lower()).strip('_')
+            return f"{name}.py"
+        raise ValueError(
+            f"Could not extract name from content:\n{content[:200]}"
+        )
+
+    def _write_file(self, path, content):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(inspect.cleandoc(content), encoding="utf-8")
+
+
+def benchopt_run(benchmark_dir=None, n=5, r=1, plot_config=None):
     """Run a benchmark and return output compatible with sphinx-gallery.
 
     Parameters
     ----------
-    benchmark_name : str
-        Name of the benchmark to run. Must be one of the benchmarks in
-        `examples`.
     benchmark_dir : str or Path, optional
         Path to the benchmark to run. This is used instead of `benchmark_name`
         if provided.
@@ -133,10 +372,6 @@ def benchopt_run(
     from benchopt.benchmark import Benchmark
 
     is_sphinx = "paths" in SPHINX_GALLERY_CTX
-    if benchmark_dir is None:
-        import inspect
-        example_dir = Path(inspect.stack()[1].filename).parent
-        benchmark_dir = (example_dir / benchmark_name).resolve()
 
     benchmark = Benchmark(benchmark_dir)
     cmd = f"benchopt run {benchmark.name} -n {n} -r {r}"

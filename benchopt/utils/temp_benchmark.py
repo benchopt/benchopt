@@ -68,7 +68,8 @@ exec(
 @contextlib.contextmanager
 def temp_benchmark(
         objective=None, datasets=None, solvers=None, plots=None,
-        config=None, benchmark_utils=None, extra_files=None
+        config=None, benchmark_utils=None, extra_files=None,
+        no_default=False
 ):
     """Create Benchmark in a temporary folder, for test purposes.
 
@@ -95,6 +96,11 @@ def temp_benchmark(
     extra_files: dict(fname->str) | None (default=None)
         Additional files to be added to the benchmark directory. If None,
         no extra files are created.
+    no_default: bool (default=False)
+        If True, the default dataset/solver files are not created,
+        and only the ones passed as arguments are created. If False, the
+        default files are created and can be overridden by passing files with
+        the same name in the `datasets` and `solvers` arguments.
     """
     if objective is None:
         objective = DEFAULT_OBJECTIVE
@@ -110,15 +116,17 @@ def temp_benchmark(
     if isinstance(plots, str):
         plots = [plots]
 
+    default_solver = {} if no_default else DEFAULT_SOLVERS
     if isinstance(solvers, list):
         solvers = {f"solver_{idx}.py": s for idx, s in enumerate(solvers)}
     else:
-        solvers = {**DEFAULT_SOLVERS, **solvers}
+        solvers = {**default_solver, **solvers}
 
+    default_dataset = {} if no_default else DEFAULT_DATASETS
     if isinstance(datasets, list):
         datasets = {f"dataset_{idx}.py": d for idx, d in enumerate(datasets)}
     else:
-        datasets = {**DEFAULT_DATASETS, **datasets}
+        datasets = {**default_dataset, **datasets}
 
     if isinstance(plots, list):
         plots = {f"plot_{idx}.py": p for idx, p in enumerate(plots)}

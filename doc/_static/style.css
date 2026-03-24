@@ -88,6 +88,10 @@ html[data-theme="dark"] {
     --sg-text-color: #D0CFCC;
 }
 
+html[data-theme="dark"] .highlight .nn{
+    color: #f0883e;
+}
+
 /* Inline code styling */
 
 code.literal {

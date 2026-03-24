@@ -1,3 +1,5 @@
+.. _solver_languages:
+
 Using different programming languages with benchopt
 ===================================================
 
@@ -32,11 +34,11 @@ A ``.R`` file that contains the solver and a ``.py`` file that knows how to
 call the R solver using `Rpy2 <https://pypi.org/project/rpy2/>`_. Only the
 extensions should differ between the two files. Here is the Python file:
 
-.. literalinclude:: ../../examples/language_solvers/r_pgd.py
+.. literalinclude:: ../../examples/language_solvers/r_gd.py
 
 It uses the R code in:
 
-.. literalinclude:: ../../examples/language_solvers/r_pgd.R
+.. literalinclude:: ../../examples/language_solvers/r_gd.R
     :language: R
 
 .. _julia_solvers:
@@ -50,11 +52,11 @@ call the Julia solver using `PyJulia <https://pypi.org/project/julia/>`_.
 Only the extensions should differ between the two files.
 Here is the Python file:
 
-.. literalinclude:: ../../examples/language_solvers/julia_pgd.py
+.. literalinclude:: ../../examples/language_solvers/julia_gd.py
 
 It uses the Julia code in:
 
-.. literalinclude:: ../../examples/language_solvers/julia_pgd.jl
+.. literalinclude:: ../../examples/language_solvers/julia_gd.jl
     :language: julia
 
 .. admonition:: Installing Julia dependencies
