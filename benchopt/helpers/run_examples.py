@@ -173,11 +173,12 @@ class HTMLBenchmarkDisplay:
             )
 
         action = "" if self.action is None else f"<p>{self.action}</p><br/>"
+        tabs = "\n".join(items)
         return _html_to_replace_code_cell(inspect.cleandoc(f"""
             <div class='display_example_benchmark'>
                 {action}
                 <div class='sd-tab-set'>
-                    {"\n".join(items)}
+                    {tabs}
                 </div>
             </div>"
         """))
