@@ -343,7 +343,8 @@ class ExampleBenchmark:
             r'^\s*name\s*=\s*["\'](\w[^"\']*)["\']', content, re.MULTILINE
         )
         if match:
-            name = re.sub(r'[^a-z0-9]+', '_', match.group(1).lower()).strip('_')
+            name = re.sub(r'[^a-z0-9]+', '_', match.group(1).lower())
+            name = name.strip('_')
             return f"{name}.py"
         raise ValueError(
             f"Could not extract name from content:\n{content[:200]}"
