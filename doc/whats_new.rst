@@ -14,8 +14,10 @@ DOC
 ~~~
 
 - Improve documentation on benchmark extension and using benchopt
-  with various programming languages. see :ref:`solver_languages` and :ref:`extend_benchmark` for more details.
-  By `Thomas Moreau`_ (:gh:`899`)
+  with various programming languages. see :ref:`solver_languages`
+  and :ref:`extend_benchmark` for more details. Also introduce
+  helpers to display and modify temporary benchmarks in examples.
+  By `Thomas Moreau`_ (:gh:`905`)
 
 FIX
 ~~~
