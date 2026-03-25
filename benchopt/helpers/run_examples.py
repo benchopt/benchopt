@@ -8,12 +8,18 @@ from uuid import uuid4
 
 from benchopt.tests.utils import CaptureCmdOutput
 
-# Used to monkey-patch sphinx-gallery behavior in doc/conf.py and
-# retrieve a path iterator to store the HTML result files.
-# Output build dir for sphinx-gallery
+# Shared state used by doc/conf.py to communicate sphinx-gallery context.
+#
+# Keys used in this module:
+# - "paths": iterator of sphinx-gallery generated image paths used to derive
+#   deterministic HTML output locations.
+# - "build_dir": root output folder where generated HTML files are stored.
 SPHINX_GALLERY_CTX = {
     'build_dir': Path() / "_build" / "html" / "auto_examples"
 }
+
+# Absolute path to the repository examples folder.
+EXAMPLES_ROOT = Path(__file__).parents[2] / "examples"
 
 
 EXT_TO_LANGUAGE = {
@@ -47,26 +53,29 @@ def _html_to_replace_code_cell(html):
     return f'<pre class="code-cell-equiv">{html}</pre>'
 
 
-class HTMLResultPage:
-    """Class to capture a benchmark output in HTML format for Sphinx-gallery.
+class HTMLCmdOutput:
+    """Helper to display the output of a benchopt command in sphinx gallery.
+
+    It replaces the cell calling the command with the actual command, display
+    the console output, and embed the HTML result in the page.
 
     Parameters
     ----------
-    result_html : str
-        HTML content of the benchmark result.
-    output : str
-        Standard output captured during the benchmark run.
     cmd : str
-        Command used to run the benchmark.
+        Command called in the CLI.
+    output : str | None
+        Standard output captured during the command call.
+    result_html : str or None
+        HTML content output by the command, or None when the command did
+        not generate an HTML page.
     """
-    def __init__(self, result_html, output, cmd):
-        self.result_html = result_html
-        self.output_html = self.output_to_html(output)
-        self.cmd = cmd
+    def __init__(self, cmd, output, result_html):
         self.cmd_html = _code_to_html(f"$ {cmd}", language="console")
+        self.output_html = self.output_to_html(output)
+        self.result_html = result_html
 
     def merge_lines(self, output):
-        """Merge lines in the output that were overwritten using '\r'."""
+        "Merge lines in the output that were overwritten using '\r'."
         out = []
         cursor = start_line = 0
         for c in output:
@@ -84,17 +93,49 @@ class HTMLResultPage:
         return ''.join(out)
 
     def output_to_html(self, output):
-        """Process the output of the benchopt command to render in sphinx"""
+        "Process the output of the benchopt command to render in sphinx"
+        if output is None:
+            return ""
         output = self.merge_lines(output)
         # This allows to correctly display the progress in the example
         from rich.console import Console
         from rich.text import Text
         console = Console(file=io.StringIO(), record=True, width=78)
         console.print(Text.from_ansi(output))
-        html = console.export_html(
+        output_html = console.export_html(
             inline_styles=True, code_format="<pre>{code}</pre>"
         )
-        return html
+        return f"""
+            <div class="sphx-glr-script-out highlight-none notranslate">
+                <div class="highlight">{output_html}</div>
+            </div>
+        """
+
+    def embed_result_html(self):
+        if self.result_html is None:
+            return ""
+        src_result_html = f"srcdoc='{escape(self.result_html)}'"
+        if "paths" in SPHINX_GALLERY_CTX:
+            # Save the result HTML to a file to be loaded in the iframe
+            # for the doc
+            html_path = next(SPHINX_GALLERY_CTX["paths"])
+            html_path = Path(
+                html_path.replace("images", "html_results")
+            ).with_suffix('.html').resolve()
+            html_path = html_path.relative_to(
+                Path("auto_examples").resolve()
+            )
+            src_result_html = f"src='{html_path}'"
+
+            html_path = SPHINX_GALLERY_CTX["build_dir"] / html_path
+            html_path.parent.mkdir(parents=True, exist_ok=True)
+            html_path.write_text(self.result_html, encoding='utf-8')
+
+        return f"""
+            <iframe class='benchmark_result' {src_result_html}
+                    frameBorder='0' style='position: relative; width: 100%;'>
+            </iframe>
+        """
 
     def _repr_html_(self):
         """Generate the HTML representation for Sphinx-gallery.
@@ -108,47 +149,21 @@ class HTMLResultPage:
         sphinx-gallery examples with the command line, to make it easier to
         reproduce outside of the documentation.
         """
-        iframe = ""
-        if self.result_html is not None:
-            src_result_html = f"srcdoc='{escape(self.result_html)}'"
-            if "paths" in SPHINX_GALLERY_CTX:
-                # Save the result HTML to a file to be loaded in the iframe
-                # for the doc
-                html_path = next(SPHINX_GALLERY_CTX["paths"])
-                html_path = Path(
-                    html_path.replace("images", "html_results")
-                ).with_suffix('.html').resolve()
-                html_path = html_path.relative_to(
-                    Path("auto_examples").resolve()
-                )
-                src_result_html = f"src='{html_path}'"
-
-                html_path = SPHINX_GALLERY_CTX["build_dir"] / html_path
-                html_path.parent.mkdir(parents=True, exist_ok=True)
-                html_path.write_text(self.result_html, encoding='utf-8')
-
-            iframe = (
-                f"<iframe class='benchmark_result' {src_result_html} "
-                f"frameBorder='0' style='position: relative; width: 100%;'>"
-                f"</iframe>"
-            )
+        embeded_result = self.embed_result_html()
 
         return inspect.cleandoc(f"""
             {_html_to_replace_code_cell(self.cmd_html)}
-            <div class="sphx-glr-script-out highlight-none notranslate">
-                <div class="highlight">{self.output_html}</div>
-            </div>
-            {iframe}
+            {self.output_html}
+            {embeded_result}
         """)
 
 
 class HTMLBenchmarkDisplay:
     """Helper class to display a benchmark in Sphinx-gallery.
 
-    This class is used to create a temporary benchmark from given component
-    strings, and display it as HTML tabs in the documentation. It also allows
-    to run the benchmark and capture the output in a format compatible with
-    Sphinx-gallery.
+    This class is used to display a benchmark in an example in the doc from a
+    given dictionary of filename and content. The display appears as multiple
+    tabs in the doc.
     """
 
     def __init__(self, files, action=None):
@@ -377,9 +392,11 @@ class ExampleBenchmark:
 def get_example_file():
     """Get the name of the example file.
 
-    This only works if the function is called in benchopt_cli, itself called
-    in the example file.
-    Sanity check use the hypothesis that all example files have name `run_*.py`
+    This only works when called from ``benchopt_cli`` itself called by an
+    example script.
+
+    The target output folder is derived from example names ``run_*.py`` by
+    replacing the prefix with ``output_``.
     """
     import sys
     file = sys._getframe(2).f_globals['__file__']
@@ -395,24 +412,37 @@ def benchopt_cli(cmd):
 
     This is a general-purpose helper that invokes any ``benchopt`` command
     (``run``, ``plot``, ``install``, …), captures its console output, detects
-    any HTML result file it produces, and returns an :class:`HTMLResultPage`
+    any HTML result file it produces, and returns an :class:`HTMLCmdOutput`
     that can be embedded in Sphinx-gallery examples.
 
     In the rendered documentation the helper call is replaced by the
     equivalent shell command, making examples easy to reproduce from the
     command line.
 
+    Outside sphinx-gallery builds, this helper has side effects:
+
+    - it may create an ``output_*.`` folder next to the ``run_*.py``
+        example script when that caller can be detected;
+    - it copies produced result files into that folder;
+    - it prints the command and separators to stdout.
+
     Parameters
     ----------
     cmd : str
-        The benchopt command to run. Examples::
+        Benchopt command arguments as a shell-like string (without the
+        ``benchopt`` executable prefix). Examples::
 
             "run path/to/benchmark -n 5 -r 1"
             "install path/to/benchmark -s solver1"
 
+        In sphinx-gallery builds, this helper automatically appends:
+
+            - ``--no-display`` for ``run`` commands;
+            - ``--yes`` for ``install`` commands.
+
     Returns
     -------
-    HTMLResultPage
+    HTMLCmdOutput
         An object whose ``_repr_html_`` renders the command, its console
         output, and any HTML result file produced — compatible with
         Sphinx-gallery.
@@ -420,7 +450,7 @@ def benchopt_cli(cmd):
     import shlex
     from benchopt.cli import benchopt as benchopt_cli
 
-    # Normalise: accept a string or a list; strip optional leading "benchopt"
+    # Parse command arguments from a shell-like string.
     cmd_parts = shlex.split(cmd.strip())
     cmd_str = f"benchopt {' '.join(cmd_parts)}"
 
@@ -464,4 +494,4 @@ def benchopt_cli(cmd):
     if not is_sphinx:
         print("-" * 40)
 
-    return HTMLResultPage(result_html, capture.output, cmd_str)
+    return HTMLCmdOutput(cmd_str, capture.output, result_html)

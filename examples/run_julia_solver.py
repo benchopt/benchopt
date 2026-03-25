@@ -26,6 +26,7 @@ At the end, we run the benchmark and display the comparison.
 # programmatically call the CLI.
 from benchopt.helpers.run_examples import ExampleBenchmark
 from benchopt.helpers.run_examples import benchopt_cli
+from benchopt.helpers.run_examples import EXAMPLES_ROOT
 
 
 # %%
@@ -47,55 +48,9 @@ benchmark
 # The Julia code is defined in a separate file ``julia_gd.jl``, that is loaded
 # and called from the Python solver.
 
-JULIA_SOLVER_PY = """
-    from pathlib import Path
-
-    from benchopt.helpers.julia import JuliaSolver
-    from benchopt.helpers.julia import get_jl_interpreter
-
-
-    JULIA_SOLVER_FILE = str(Path(__file__).with_suffix('.jl'))
-
-
-    class Solver(JuliaSolver):
-        name = "Julia-GD"
-        sampling_strategy = "iteration"
-        parameters = {"lr": [1e-3, 1e-2]}
-        requirements = [
-            "https://repo.prefix.dev/julia-forge::julia",
-            "pip::julia",
-        ]
-
-        def set_objective(self, X):
-            self.X = X
-            jl = get_jl_interpreter()
-            self.julia_gd = jl.include(JULIA_SOLVER_FILE)
-
-        def warm_up(self):
-            # Make sure we don't account for the Julia loading time in the
-            # first iteration of the benchmark.
-            self.julia_gd(self.X, self.lr, 20)
-
-        def run(self, n_iter):
-            # Here we cannot call a python callback, so we call iteratively
-            # the solver with a growing number of iterations.
-            self.X_hat = self.julia_gd(self.X, self.lr, n_iter)
-
-        def get_result(self):
-            return dict(X_hat=self.X_hat)
-"""
-
-
-JULIA_SOLVER_JL = """
-    function gradient_descent(X, lr, n_iter)
-        X_hat = zeros(size(X))
-        for _ in 1:n_iter
-            grad = X_hat - X
-            X_hat -= lr * grad
-        end
-        return X_hat
-    end
-"""
+JULIA_SOLVER = EXAMPLES_ROOT / "language_solvers" / "julia_gd.py"
+JULIA_SOLVER_PY = JULIA_SOLVER.read_text(encoding="utf-8")
+JULIA_SOLVER_JL = JULIA_SOLVER.with_suffix(".jl").read_text(encoding="utf-8")
 
 benchmark.update(
     solvers={"julia_gd.py": JULIA_SOLVER_PY, "julia_gd.jl": JULIA_SOLVER_JL},
