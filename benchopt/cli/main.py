@@ -472,6 +472,7 @@ def install(
 
     # Get a list of all conda envs
     default_conda_env, conda_envs = list_conda_envs()
+    env_need_confirm = False
 
     # check if any current conda environment
     if default_conda_env is None:
@@ -491,13 +492,8 @@ def install(
             msg = "Cannot recreate conda env without using options " + \
                 "'-e/--env' or '--env-name'."
             raise RuntimeError(msg)
-
-        # ask for user confirmation to install in current conda env
         if not confirm:
-            click.confirm(
-                f"Install in the current env '{default_conda_env}'?",
-                abort=True
-            )
+            env_need_confirm = default_conda_env
 
     else:
         # If env_name is True, the flag `--env` has been used. Create a conda
@@ -539,7 +535,7 @@ def install(
     exit_code = benchmark.install_all_requirements(
         include_solvers=solvers, include_datasets=datasets,
         minimal=minimal, env_name=env_name, force=force, quiet=quiet,
-        download=download, gpu=gpu,
+        download=download, gpu=gpu, env_need_confirm=env_need_confirm
     )
     if exit_code != 0:
         raise SystemExit(exit_code)

@@ -171,6 +171,7 @@ Join this endeavor! If you use benchopt in a scientific publication, please cite
    benchmark_workflow/index
    tutorials/index
    user_guide/index
+   auto_examples/index
 
    available_benchmarks
    contrib

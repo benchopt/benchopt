@@ -34,10 +34,10 @@ def _code_to_html(code, language=None, filename=None):
     try:
         from sphinx.highlighting import PygmentsBridge
     except ImportError:
-        highlighted = f"<pre>{escape(inspect.cleandoc(code))}</pre>"
+        highlighted = f"<pre>{escape(code)}</pre>"
     else:
         highlighted = PygmentsBridge("html", "sphinx").highlight_block(
-            inspect.cleandoc(code), language
+            code, language
         )
     return highlighted
 
@@ -108,28 +108,37 @@ class HTMLResultPage:
         sphinx-gallery examples with the command line, to make it easier to
         reproduce outside of the documentation.
         """
-        src_result_html = f"srcdoc='{escape(self.result_html)}'"
-        if "paths" in SPHINX_GALLERY_CTX:
-            # Save the result HTML to a file to be loaded in the iframe
-            # for the doc
-            html_path = next(SPHINX_GALLERY_CTX["paths"])
-            html_path = Path(
-                html_path.replace("images", "html_results")
-            ).with_suffix('.html')
-            html_path = html_path.relative_to(Path("auto_examples").resolve())
-            src_result_html = f"src='{html_path}'"
+        iframe = ""
+        if self.result_html is not None:
+            src_result_html = f"srcdoc='{escape(self.result_html)}'"
+            if "paths" in SPHINX_GALLERY_CTX:
+                # Save the result HTML to a file to be loaded in the iframe
+                # for the doc
+                html_path = next(SPHINX_GALLERY_CTX["paths"])
+                html_path = Path(
+                    html_path.replace("images", "html_results")
+                ).with_suffix('.html')
+                html_path = html_path.relative_to(
+                    Path("auto_examples").resolve()
+                )
+                src_result_html = f"src='{html_path}'"
 
-            html_path = BUILD_DIR / html_path
-            html_path.parent.mkdir(parents=True, exist_ok=True)
-            html_path.write_text(self.result_html, encoding='utf-8')
+                html_path = BUILD_DIR / html_path
+                html_path.parent.mkdir(parents=True, exist_ok=True)
+                html_path.write_text(self.result_html, encoding='utf-8')
+
+            iframe = (
+                f"<iframe class='benchmark_result' {src_result_html} "
+                f"frameBorder='0' style='position: relative; width: 100%;'>"
+                f"</iframe>"
+            )
 
         return inspect.cleandoc(f"""
             {_html_to_replace_code_cell(self.cmd_html)}
             <div class="sphx-glr-script-out highlight-none notranslate">
                 <div class="highlight">{self.output_html}</div>
             </div>
-            <iframe class="benchmark_result" {src_result_html} frameBorder='0'
-                    style="position: relative; width: 100%;"></iframe>
+            {iframe}
         """)
 
 
@@ -199,7 +208,8 @@ class ExampleBenchmark:
 
     def __init__(
         self,
-        benchmark=None,
+        name=None,
+        base=None,
         objective=None,
         datasets=None,
         solvers=None,
@@ -207,9 +217,10 @@ class ExampleBenchmark:
         extra_files=None,
         ignore=(),
     ):
+        self.name = name
         loaded = {}
-        if benchmark is not None:
-            loaded = self._load_existing_benchmark(benchmark)
+        if base is not None:
+            loaded = self._load_existing_benchmark(base)
             for key in loaded:
                 loaded[key] = {
                     fname: content for fname, content in loaded[key].items()
@@ -243,11 +254,14 @@ class ExampleBenchmark:
         from benchopt.utils.temp_benchmark import temp_benchmark
 
         self._temp_benchmark_cm = temp_benchmark(
-            **self.files, no_default=True,
+            **self.files, no_default=True, name=self.name
         )
         self._bench = self._temp_benchmark_cm.__enter__()
         self._finalizer = weakref.finalize(
             self, self._temp_benchmark_cm.__exit__, None, None, None
+        )
+        self._bench.benchmark_dir = self._bench.benchmark_dir.relative_to(
+            Path.cwd()
         )
 
     @property
@@ -310,7 +324,8 @@ class ExampleBenchmark:
         plots = self._read_component_dir(benchmark_dir / "plots")
         extra_files = {
             file_path.relative_to(benchmark_dir).as_posix():
-                file_path.read_text(encoding="utf-8")
+                f"#loaded from {file_path}\n"
+                + file_path.read_text(encoding="utf-8")
             for file_path in benchmark_dir.rglob("*.yml")
         }
 
@@ -335,8 +350,11 @@ class ExampleBenchmark:
         if isinstance(value, str):
             value = [value]
         if isinstance(value, list):
-            return {self._name_from_content(c): c for c in value}
-        return dict(value)
+            value = {self._name_from_content(c): c for c in value}
+        return {
+            fname: inspect.cleandoc(content)
+            for fname, content in value.items()
+        }
 
     @staticmethod
     def _name_from_content(content):
@@ -353,7 +371,23 @@ class ExampleBenchmark:
 
     def _write_file(self, path, content):
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(inspect.cleandoc(content), encoding="utf-8")
+        path.write_text(content, encoding="utf-8")
+
+
+def get_example_file():
+    """Get the name of the example file.
+
+    This only works if the function is called in benchopt_cli, itself called
+    in the example file.
+    Sanity check use the hypothesis that all example files have name `run_*.py`
+    """
+    import sys
+    file = sys._getframe(2).f_globals['__file__']
+    if file is None or not file.endswith(".py") or "run_" not in file:
+        return None
+    file = Path(file)
+    file = file.parent / file.name.replace("run_", "output_")
+    return file.with_suffix("")
 
 
 def benchopt_run(benchmark_dir=None, n=5, r=1, plot_config=None):
@@ -404,3 +438,94 @@ def benchopt_run(benchmark_dir=None, n=5, r=1, plot_config=None):
         print("-" * 40)
 
     return HTMLResultPage(html, out.output, cmd)
+
+
+def benchopt_cli(cmd):
+    """Run any benchopt CLI command and return output for sphinx-gallery.
+
+    This is a general-purpose helper that invokes any ``benchopt`` command
+    (``run``, ``plot``, ``install``, …), captures its console output, detects
+    any HTML result file it produces, and returns an :class:`HTMLResultPage`
+    that can be embedded in Sphinx-gallery examples.
+
+    In the rendered documentation the helper call is replaced by the
+    equivalent shell command, making examples easy to reproduce from the
+    command line.
+
+    Parameters
+    ----------
+    cmd : str or list of str
+        The benchopt command to run.  The leading ``benchopt`` prefix is
+        optional.  Examples::
+
+            "benchopt run path/to/benchmark -n 5 -r 1"
+            "run path/to/benchmark -n 5 -r 1"
+            ["run", str(benchmark.benchmark_dir), "-n", "5", "-r", "1"]
+
+    benchmark_name : str, optional
+        Name of the benchmark to run. This is used to replace the temporary
+        directory name in the command line, to make it more readable in
+        the documentation.
+
+    Returns
+    -------
+    HTMLResultPage
+        An object whose ``_repr_html_`` renders the command, its console
+        output, and any HTML result file produced — compatible with
+        Sphinx-gallery.
+    """
+    import shlex
+    from benchopt.cli import benchopt as benchopt_cli
+
+    # Normalise: accept a string or a list; strip optional leading "benchopt"
+    if isinstance(cmd, str):
+        cmd_parts = shlex.split(cmd.strip())
+    else:
+        cmd_parts = [str(c) for c in cmd]
+    if cmd_parts and cmd_parts[0] == 'benchopt':
+        cmd_parts = cmd_parts[1:]
+    cmd_str = f"benchopt {' '.join(cmd_parts)}"
+
+    is_sphinx = "paths" in SPHINX_GALLERY_CTX
+
+    extra_options = {
+        "install": {"yes": None} if is_sphinx else {},
+        "run": {"no-display": None} if is_sphinx else {},
+    }
+
+    cli_cmd = cmd_parts[0]
+    for key, val in extra_options.get(cli_cmd, {}).items():
+        if f"--{key}" not in cmd_parts:
+            cmd_parts.append(f"--{key}")
+            if val:
+                cmd_parts.append(val)
+
+    output_dir = None
+    if not is_sphinx:
+        print(f"Running command:\n$ {cmd_str}")
+        print("-" * 40)
+        output_dir = get_example_file()
+        if output_dir is not None:
+            output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Keep result files so we can read them before deciding to delete them.
+    with CaptureCmdOutput(
+        debug=not is_sphinx, delete_result_files=False
+    ) as capture:
+        benchopt_cli(cmd_parts, standalone_mode=False)
+
+    # Find the first HTML file reported in the captured output and read it.
+    result_html = None
+    for f in capture.result_files:
+        fpath = Path(f)
+        # fetch the HTML result for display in the doc
+        if fpath.suffix == '.html' and fpath.exists() and result_html is None:
+            result_html = fpath.read_text(encoding='utf-8')
+        # copy all files to the output dir if requested
+        if output_dir is not None and not is_sphinx:
+            (output_dir / fpath.name).write_bytes(fpath.read_bytes())
+
+    if not is_sphinx:
+        print("-" * 40)
+
+    return HTMLResultPage(result_html, capture.output, cmd_str)

@@ -521,7 +521,7 @@ class Benchmark:
     def install_all_requirements(self, include_solvers, include_datasets,
                                  minimal=False, env_name=None,
                                  force=False, quiet=False, download=False,
-                                 gpu=False):
+                                 gpu=False, env_need_confirm=True):
         """Install all classes that are required for the run.
 
         Parameters
@@ -544,6 +544,9 @@ class Benchmark:
         gpu : bool (default: False)
             If True and the requirements of a class are a dict, install
             requirements["gpu"] instead of requirements["cpu"].
+        env_need_confirm : bool (default: False)
+            If not False, this should be the name of the current conda env,
+            and it will asks for user confirmation before installing packages.
         """
         # Collect all classes matching one of the patterns
         print("Collecting packages:")
@@ -597,6 +600,14 @@ class Benchmark:
                     self.download_all_data(include_datasets, env_name, quiet)
                 )
             return exit_code
+
+        # ask for user confirmation to install in current conda env
+        # Only ask for confirmation if we are trying to install something.
+        if env_name is None and env_need_confirm:
+            click.confirm(
+                f"Install in the current env '{env_need_confirm}'?",
+                abort=True
+            )
 
         print(f"Installing required packages for:\n{list_install}\n...",
               end='', flush=True)

@@ -15,7 +15,7 @@ from benchopt.helpers.run_examples import benchopt_run
 # Gradient Descent solver implemented in Python:
 
 benchmark = ExampleBenchmark(
-    benchmark="minimal_benchmark",
+    base="minimal_benchmark", name="minimal_benchmark",
     ignore=["custom_plot.py", "example_config.yml"]
 )
 benchmark

@@ -69,7 +69,7 @@ exec(
 def temp_benchmark(
         objective=None, datasets=None, solvers=None, plots=None,
         config=None, benchmark_utils=None, extra_files=None,
-        no_default=False
+        name=None, no_default=False
 ):
     """Create Benchmark in a temporary folder, for test purposes.
 
@@ -96,6 +96,8 @@ def temp_benchmark(
     extra_files: dict(fname->str) | None (default=None)
         Additional files to be added to the benchmark directory. If None,
         no extra files are created.
+    name: str | None (default=None)
+        Name of the benchmark. If None, a name is generated as ``bench_#``.
     no_default: bool (default=False)
         If True, the default dataset/solver files are not created,
         and only the ones passed as arguments are created. If False, the
@@ -135,10 +137,13 @@ def temp_benchmark(
     idx = IDX_BENCHMARK
     IDX_BENCHMARK += 1
 
+    if name is None:
+        name = f"bench_{idx}"
+
     with tempfile.TemporaryDirectory(
-            prefix="temp_benchmarks", suffix="", dir="."
+            prefix="temp_benchmark_", suffix="", dir="."
     ) as tempdir:
-        temp_path = Path(tempdir) / f"bench_{idx}"
+        temp_path = Path(tempdir) / name
         temp_path.mkdir()
         (temp_path / "solvers").mkdir()
         (temp_path / "datasets").mkdir()
