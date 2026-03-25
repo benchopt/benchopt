@@ -6,7 +6,7 @@ from pathlib import Path
 
 from benchopt.helpers.run_examples import (
     ExampleBenchmark,
-    HTMLResultPage,
+    HTMLCmdOutput,
     benchopt_cli,
     SPHINX_GALLERY_CTX
 )
@@ -34,7 +34,7 @@ def test_run_example_benchmark(no_debug_log, monkeypatch):
         with temp_benchmark() as bench:
             output = benchopt_cli(f"run {bench.benchmark_dir} -n 2 -r 3")
 
-        assert isinstance(output, HTMLResultPage)
+        assert isinstance(output, HTMLCmdOutput)
 
         # Check that the command is correctly emulated
         assert bench.benchmark_dir.stem in output.cmd, output.cmd
@@ -145,7 +145,7 @@ def test_example_benchmark_run(no_debug_log, monkeypatch):
         m.setattr(webbrowser, "open", lambda *x: open_call.append(x))
 
         output = benchopt_cli(f"run {benchmark.benchmark_dir} -n 2 -r 1")
-        assert isinstance(output, HTMLResultPage)
+        assert isinstance(output, HTMLCmdOutput)
         assert benchmark.benchmark_dir.stem in output.cmd
 
         # check that the display was correctly called

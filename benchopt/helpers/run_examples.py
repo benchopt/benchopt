@@ -70,6 +70,7 @@ class HTMLCmdOutput:
         not generate an HTML page.
     """
     def __init__(self, cmd, output, result_html):
+        self.cmd = cmd
         self.cmd_html = _code_to_html(f"$ {cmd}", language="console")
         self.output_html = self.output_to_html(output)
         self.result_html = result_html
@@ -149,12 +150,11 @@ class HTMLCmdOutput:
         sphinx-gallery examples with the command line, to make it easier to
         reproduce outside of the documentation.
         """
-        embeded_result = self.embed_result_html()
 
         return inspect.cleandoc(f"""
             {_html_to_replace_code_cell(self.cmd_html)}
             {self.output_html}
-            {embeded_result}
+            {self.embed_result_html()}
         """)
 
 
@@ -184,6 +184,7 @@ class HTMLBenchmarkDisplay:
         if len(self.files) == 0:
             return "<pre>No benchmark files.</pre>"
 
+        # create one tab per file in the `files` mapping.
         items = []
         for idx, (label, content) in enumerate(self.files):
             input_id = f"{tabs_id}-{idx}"
@@ -196,6 +197,8 @@ class HTMLBenchmarkDisplay:
                 f"{_code_to_html(content, filename=label)}</div>"
             )
 
+        # Merge them and add the action if provided. The action is a text that
+        # describes the change that was made to the benchmark files.
         action = "" if self.action is None else f"<p>{self.action}</p><br/>"
         tabs = "\n".join(items)
         return _html_to_replace_code_cell(inspect.cleandoc(f"""
@@ -219,6 +222,22 @@ class ExampleBenchmark:
       existing benchmark directory;
     - update the objective or add datasets/solvers incrementally;
     - run the benchmark and display the results with :func:`benchopt_cli`.
+
+    It has a ``name`` and ` ``benchmark_dir`` attribute. The benchmark_dir is
+    a temporary folder ``temp_benchmark_XXXX/name`.
+
+    ``base`` corresponds to an existing benchmark, from which all files which
+    do not match ``ignore`` are copied. ``base`` can either be a direct path
+    to a benchmark folder, or the name of a benchmark folder in
+    the example folder.
+
+    The extra args (``objective, datasets, solvers, plots, extra_files``)
+    provide mapping between file name and content as string, which are added to
+    the benchmark, overriding existing ones if necessary.
+
+    The resulting benchmark can then be updated through the ``update`` method,
+    which accepts component mappings for ``objective, datasets, solvers, plots,
+     extra_files``.
     """
 
     def __init__(
@@ -288,9 +307,6 @@ class ExampleBenchmark:
         if self._finalizer.alive:
             self._finalizer()
 
-    def _repr_html_(self):
-        return HTMLBenchmarkDisplay(self.files)._repr_html_()
-
     def update(self, objective=None, datasets=None, solvers=None,
                plots=None, extra_files=None):
         """Update the benchmark files and return a display object."""
@@ -318,13 +334,14 @@ class ExampleBenchmark:
             files, action="We now update the following files:"
         )
 
+    def _repr_html_(self):
+        return HTMLBenchmarkDisplay(self.files)._repr_html_()
+
     def _load_existing_benchmark(self, benchmark):
         benchmark_dir = Path(benchmark)
         if not benchmark_dir.exists():
             # If the path does not exist, try to find it in the examples folder
-            benchmark_dir = (
-                Path(__file__).parents[2] / "examples" / benchmark
-            )
+            benchmark_dir = EXAMPLES_ROOT / benchmark
         if not benchmark_dir.exists():
             raise ValueError(
                 f"Could not find benchmark at {benchmark} or "

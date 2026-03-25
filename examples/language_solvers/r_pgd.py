@@ -21,8 +21,8 @@ class Solver(BaseSolver):
 
     parameters = {'lr': [1e-3, 1e-2]}
 
-    def set_objective(self, X, y, lmbd):
-        self.X, self.y, self.lmbd = X, y, lmbd
+    def set_objective(self, X):
+        self.X = X
         robjects = import_func_from_r_file(R_FILE)
         self.r_gd = robjects.r['gradient_descent']
 
