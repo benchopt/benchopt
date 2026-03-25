@@ -4,7 +4,7 @@ import pytest
 from benchopt.helpers.run_examples import (
     ExampleBenchmark,
     HTMLResultPage,
-    benchopt_run,
+    benchopt_cli,
 )
 
 from benchopt.utils.temp_benchmark import temp_benchmark
@@ -15,7 +15,7 @@ def test_run_example_benchmark(no_debug_log):
     pytest.importorskip("rich")
 
     with temp_benchmark() as bench:
-        output = benchopt_run(benchmark_dir=bench.benchmark_dir, n=2, r=3)
+        output = benchopt_cli(f"run {bench.benchmark_dir} -n 2 -r 3")
 
     assert isinstance(output, HTMLResultPage)
 
@@ -118,9 +118,7 @@ def test_example_benchmark_run(no_debug_log):
         solvers={"python_gd.py": solver},
     )
     try:
-        output = benchopt_run(
-            benchmark_dir=benchmark.benchmark_dir, n=2, r=1
-        )
+        output = benchopt_cli(f"run {benchmark.benchmark_dir} -n 2 -r 1")
         assert isinstance(output, HTMLResultPage)
         assert benchmark.benchmark_dir.stem in output.cmd
     finally:

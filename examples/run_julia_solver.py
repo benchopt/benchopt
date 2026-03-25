@@ -1,8 +1,8 @@
 r"""Create and run a Julia solver benchmark
 =======================================
 
-This example shows how to create a tiny benchmark from scratch and add a
-solver implemented in Julia.
+This example shows how to add a Julia solver in a simple benchmark using
+benchopt's helpers to call Julia code from Python.
 
 The benchmark objective is a simple reconstruction task:
 
@@ -22,7 +22,8 @@ We define:
 At the end, we run the benchmark and display the comparison.
 """
 
-# Import example benchmark helpers
+# Import example helpers to define the benchmark and
+# programmatically call the CLI.
 from benchopt.helpers.run_examples import ExampleBenchmark
 from benchopt.helpers.run_examples import benchopt_cli
 

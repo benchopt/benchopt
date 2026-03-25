@@ -7,7 +7,6 @@ from pathlib import Path
 from uuid import uuid4
 
 from benchopt.tests.utils import CaptureCmdOutput
-from benchopt.plotting.generate_html import get_results, render_all_results
 
 # Used to monkey-patch sphinx-gallery behavior in doc/conf.py and
 # retrieve a path iterator to store the HTML result files.
@@ -104,7 +103,7 @@ class HTMLResultPage:
         the resulting HTML page as an iframe.
 
         We also add a `pre` block with the command equivalent to the
-        `benchopt_run` function called. This is used to replace the call in
+        helper function called. This is used to replace the call in
         sphinx-gallery examples with the command line, to make it easier to
         reproduce outside of the documentation.
         """
@@ -203,7 +202,7 @@ class ExampleBenchmark:
     - create a benchmark either from explicit component strings or from an
       existing benchmark directory;
     - update the objective or add datasets/solvers incrementally;
-    - run the benchmark and display the results with :func:`benchopt_run`.
+    - run the benchmark and display the results with :func:`benchopt_cli`.
     """
 
     def __init__(
@@ -390,56 +389,6 @@ def get_example_file():
     return file.with_suffix("")
 
 
-def benchopt_run(benchmark_dir=None, n=5, r=1, plot_config=None):
-    """Run a benchmark and return output compatible with sphinx-gallery.
-
-    Parameters
-    ----------
-    benchmark_dir : str or Path, optional
-        Path to the benchmark to run. This is used instead of `benchmark_name`
-        if provided.
-    n : int, default=5
-        Maximal number of iterations used for iterative solvers.
-    r : int, default=1
-        Number of times to repeat each experiment.
-    """
-
-    from benchopt.runner import run_benchmark
-    from benchopt.benchmark import Benchmark
-
-    is_sphinx = "paths" in SPHINX_GALLERY_CTX
-
-    benchmark = Benchmark(benchmark_dir)
-    cmd = f"benchopt run {benchmark.name} -n {n} -r {r}"
-
-    if not is_sphinx:
-        print(f"Running command:\n{cmd}")
-        print("-" * 40)
-
-    # Don't capture output when running the example outside of sphinx build
-    with CaptureCmdOutput(debug=not is_sphinx) as out:
-        save_file = run_benchmark(
-            benchmark_dir, max_runs=n, n_repetitions=r,
-            plot_result=False, no_cache=True
-        )
-
-        # plot the results to generate the HTML
-        html_root = Path('.')
-        if plot_config is None:
-            plot_config = benchmark.get_plot_config()
-        if "plots" not in plot_config or plot_config["plots"] is None:
-            plot_config["plots"] = benchmark.get_plot_names()
-
-        results = get_results(
-            [save_file], html_root, benchmark, config=plot_config
-        )
-        html = render_all_results(results, benchmark, home='#')[0]
-    if not is_sphinx:
-        print("-" * 40)
-
-    return HTMLResultPage(html, out.output, cmd)
-
-
 def benchopt_cli(cmd):
     """Run any benchopt CLI command and return output for sphinx-gallery.
 
@@ -461,11 +410,6 @@ def benchopt_cli(cmd):
             "benchopt run path/to/benchmark -n 5 -r 1"
             "run path/to/benchmark -n 5 -r 1"
             ["run", str(benchmark.benchmark_dir), "-n", "5", "-r", "1"]
-
-    benchmark_name : str, optional
-        Name of the benchmark to run. This is used to replace the temporary
-        directory name in the command line, to make it more readable in
-        the documentation.
 
     Returns
     -------
