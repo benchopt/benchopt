@@ -215,10 +215,9 @@ class TablePlot(BasePlot):
 
         for solver, solver_df in df.groupby('solver_name'):
             solver_res = [solver]
-            median_vals = (
-               solver_df.groupby('stop_val')
-               .median(numeric_only=True).iloc[-1]
-            )[objective_cols + ['time']].to_list()
+            median_vals = solver_df.groupby('stop_val').median(numeric_only=True).iloc[-1]
+            cols = objective_cols + ['time', 'cpu_usage_avg', 'cpu_usage_max', 'ram_max_mb']
+            median_vals = median_vals[cols].to_list()
 
             solver_res.extend(median_vals)
             rows.append(solver_res)
@@ -234,7 +233,7 @@ class TablePlot(BasePlot):
             col.replace('objective_', '') for col in df_filtered
             if col.startswith('objective_')
         ]
-        columns = ["solver"] + objective_cols + ["time (s)"]
+        columns = ["solver"] + objective_cols + ["time (s)", 'Mean CPU (%)', 'Max CPU (%)', 'Max RAM (MB)']
         return {
             "title": f"{objective}\nData: {dataset}",
             "columns": columns,
