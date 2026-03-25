@@ -61,7 +61,7 @@ def test_example_benchmark_tabs_and_mutation():
 
 
 def test_example_benchmark_from_existing_benchmark():
-    benchmark = ExampleBenchmark(benchmark="minimal_benchmark")
+    benchmark = ExampleBenchmark(base="minimal_benchmark")
     try:
         html = benchmark._repr_html_()
         assert "objective.py" in html

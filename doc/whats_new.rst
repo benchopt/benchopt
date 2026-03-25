@@ -13,11 +13,13 @@ In development
 DOC
 ~~~
 
-- Improve documentation on benchmark extension and using benchopt
+- Improve documentation on extenging a benchmark and on using benchopt
   with various programming languages. see :ref:`solver_languages`
-  and :ref:`extend_benchmark` for more details. Also introduce
-  helpers to display and modify temporary benchmarks in examples.
+  and :ref:`extend_benchmark` for more details.
   By `Thomas Moreau`_ (:gh:`905`)
+
+- Add a gallery of examples for ``benchopt``, with easy to explore
+  benchmark definition. By `Thomas Moreau`_ (:gh:`905`)
 
 FIX
 ~~~

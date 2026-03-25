@@ -261,9 +261,7 @@ class ExampleBenchmark:
             self, self._temp_benchmark_cm.__exit__, None, None, None
         )
         self._bench.benchmark_dir = (
-            self._bench.benchmark_dir.resolve().relative_to(
-                Path.cwd(), walk_up=True
-            )
+            self._bench.benchmark_dir.resolve().relative_to(Path.cwd())
         )
 
     @property
