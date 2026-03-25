@@ -4,7 +4,7 @@ r"""Create and run a Julia solver benchmark
 This example shows how to add a Julia solver in a simple benchmark using
 benchopt's helpers to call Julia code from Python.
 
-The benchmark objective is a simple reconstruction task:
+The benchmark objective is a simple minimization task:
 
 .. math::
 
@@ -101,7 +101,7 @@ benchmark.update(
     solvers={"julia_gd.py": JULIA_SOLVER_PY, "julia_gd.jl": JULIA_SOLVER_JL},
 )
 
-#%%
+# %%
 # In order to load the Julia interpreter, we use ``get_jl_interpreter``. This
 # function returns a ``Julia`` object from ``PyJulia``, that can be used to
 # interact with Julia. In particular, we can use the ``include`` method to load

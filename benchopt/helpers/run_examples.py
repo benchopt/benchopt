@@ -10,10 +10,11 @@ from benchopt.tests.utils import CaptureCmdOutput
 
 # Used to monkey-patch sphinx-gallery behavior in doc/conf.py and
 # retrieve a path iterator to store the HTML result files.
-SPHINX_GALLERY_CTX = {}
-
 # Output build dir for sphinx-gallery
-BUILD_DIR = Path() / "_build" / "html" / "auto_examples"
+SPHINX_GALLERY_CTX = {
+    'build_dir': Path() / "_build" / "html" / "auto_examples"
+}
+
 
 EXT_TO_LANGUAGE = {
     ".py": "python",
@@ -116,13 +117,13 @@ class HTMLResultPage:
                 html_path = next(SPHINX_GALLERY_CTX["paths"])
                 html_path = Path(
                     html_path.replace("images", "html_results")
-                ).with_suffix('.html')
+                ).with_suffix('.html').resolve()
                 html_path = html_path.relative_to(
                     Path("auto_examples").resolve()
                 )
                 src_result_html = f"src='{html_path}'"
 
-                html_path = BUILD_DIR / html_path
+                html_path = SPHINX_GALLERY_CTX["build_dir"] / html_path
                 html_path.parent.mkdir(parents=True, exist_ok=True)
                 html_path.write_text(self.result_html, encoding='utf-8')
 
@@ -403,13 +404,11 @@ def benchopt_cli(cmd):
 
     Parameters
     ----------
-    cmd : str or list of str
-        The benchopt command to run.  The leading ``benchopt`` prefix is
-        optional.  Examples::
+    cmd : str
+        The benchopt command to run. Examples::
 
-            "benchopt run path/to/benchmark -n 5 -r 1"
             "run path/to/benchmark -n 5 -r 1"
-            ["run", str(benchmark.benchmark_dir), "-n", "5", "-r", "1"]
+            "install path/to/benchmark -s solver1"
 
     Returns
     -------
@@ -422,27 +421,20 @@ def benchopt_cli(cmd):
     from benchopt.cli import benchopt as benchopt_cli
 
     # Normalise: accept a string or a list; strip optional leading "benchopt"
-    if isinstance(cmd, str):
-        cmd_parts = shlex.split(cmd.strip())
-    else:
-        cmd_parts = [str(c) for c in cmd]
-    if cmd_parts and cmd_parts[0] == 'benchopt':
-        cmd_parts = cmd_parts[1:]
+    cmd_parts = shlex.split(cmd.strip())
     cmd_str = f"benchopt {' '.join(cmd_parts)}"
 
     is_sphinx = "paths" in SPHINX_GALLERY_CTX
 
-    extra_options = {
-        "install": {"yes": None} if is_sphinx else {},
-        "run": {"no-display": None} if is_sphinx else {},
+    extra_flags = {
+        "install": ["--yes"] if is_sphinx else [],
+        "run": ["--no-display"] if is_sphinx else [],
     }
 
     cli_cmd = cmd_parts[0]
-    for key, val in extra_options.get(cli_cmd, {}).items():
-        if f"--{key}" not in cmd_parts:
-            cmd_parts.append(f"--{key}")
-            if val:
-                cmd_parts.append(val)
+    for flag in extra_flags.get(cli_cmd, []):
+        if flag not in cmd_parts:
+            cmd_parts.append(flag)
 
     output_dir = None
     if not is_sphinx:
