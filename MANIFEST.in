@@ -30,6 +30,7 @@ recursive-include examples *.py
 recursive-include examples *.txt
 recursive-include examples *.jl
 recursive-include examples *.R
+recursive-include examples *.rst
 prune **/__cache__
 
 prune benchmarks
