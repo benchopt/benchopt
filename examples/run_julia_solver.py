@@ -39,8 +39,22 @@ benchmark = ExampleBenchmark(
 benchmark
 
 # %%
-# Then add the Julia solver. The helper updates the temporary benchmark and
-# displays the resulting files as tabs, including the Julia source file.
+# We can now add solver in Julia with the same algorithm.
+# To do this, we create a new file ``julia_gd.py`` that defines a solver based
+# on the ``JuliaSolver`` class. This class provides helpers to call Julia code
+# from Python, and to define the dependencies of the solver.
+# The Julia code is defined in a separate file ``julia_gd.jl``, that is loaded
+# and called from the Python solver.
+#
+# In order to load the Julia interpreter, we use ``get_jl_interpreter``. This
+# function returns a ``Julia`` object from ``PyJulia``, that can be used to
+# interact with Julia. In particular, we can use the ``include`` method to load
+# a Julia file and retrieve the functions defined in it as attributes of the
+# returned object.
+#
+# Note that the Julia solver cannot call a Python callback to report
+# intermediate results, so we call iteratively the Julia solver with a growing
+# number of iterations to be able to report the curve of the convergence.
 
 JULIA_SOLVER_PY = """
     from pathlib import Path
