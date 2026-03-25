@@ -45,16 +45,6 @@ benchmark
 # from Python, and to define the dependencies of the solver.
 # The Julia code is defined in a separate file ``julia_gd.jl``, that is loaded
 # and called from the Python solver.
-#
-# In order to load the Julia interpreter, we use ``get_jl_interpreter``. This
-# function returns a ``Julia`` object from ``PyJulia``, that can be used to
-# interact with Julia. In particular, we can use the ``include`` method to load
-# a Julia file and retrieve the functions defined in it as attributes of the
-# returned object.
-#
-# Note that the Julia solver cannot call a Python callback to report
-# intermediate results, so we call iteratively the Julia solver with a growing
-# number of iterations to be able to report the curve of the convergence.
 
 JULIA_SOLVER_PY = """
     from pathlib import Path
@@ -110,10 +100,22 @@ benchmark.update(
     solvers={"julia_gd.py": JULIA_SOLVER_PY, "julia_gd.jl": JULIA_SOLVER_JL},
 )
 
+#%%
+# In order to load the Julia interpreter, we use ``get_jl_interpreter``. This
+# function returns a ``Julia`` object from ``PyJulia``, that can be used to
+# interact with Julia. In particular, we can use the ``include`` method to load
+# a Julia file and retrieve the functions defined in it as attributes of the
+# returned object.
+#
+# Note that the Julia solver cannot call a Python callback to report
+# intermediate results, so we call iteratively the Julia solver with a growing
+# number of iterations to be able to report the curve of the convergence.
+
 # %%
-# To be able to run this benchmark, we use ``benchopt install`` to install our
-# new solver dependencies. If Julia is not available in your environment,
-# this command will use ``conda`` to install it.
+# To be able to run this benchmark, we need to install its dependencies. We can
+# do this with ``benchopt install``, using with the ``-s`` option which allow
+# to select only this solver if multiple solvers are present. If Julia is not
+# available in your environment, this command will use ``conda`` to install it.
 
 benchopt_cli(f"install {benchmark.benchmark_dir} -s julia-gd")
 
