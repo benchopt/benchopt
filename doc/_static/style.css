@@ -88,6 +88,11 @@ html[data-theme="dark"] {
     --sg-text-color: #D0CFCC;
 }
 
+/* tweak pygment module color */
+html[data-theme="dark"] .highlight .nn{
+    color: #f0883e;
+}
+
 /* Inline code styling */
 
 code.literal {

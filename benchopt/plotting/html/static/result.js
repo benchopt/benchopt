@@ -239,17 +239,9 @@ const getScatterData = () => {
     }
     if (state().suboptimal_curve) {
       y = y.map(value => value - min_y);
-      if ("x_low" in curveData && "x_high" in curveData && state().with_quantiles) {
-        x_low = x_low.map(value => value - min_y);
-        x_high = x_high.map(value => value - min_y);
-      }
     }
     if (state().relative_curve) {
       y = y.map(value => value / (y[0] - min_y));
-      if ("x_low" in curveData && "x_high" in curveData && state().with_quantiles) {
-        x_low = x_low.map(value => value / (y[0] - min_y));
-        x_high = x_high.map(value => value / (y[0] - min_y));
-      }
     }
     curves.push({
       type: 'scatter',
@@ -545,6 +537,10 @@ const renderPlotDropdowns = () => {
   show(document.querySelectorAll(`#${state().plot_kind}-custom-params-container`), 'block');
   // Hide dropdowns with only one option
   for (let dropdown of document.getElementsByTagName('select')) {
+    // Keep view selectors visible in the config container.
+    if (dropdown.closest('#config_container')) {
+      continue;
+    }
     if (dropdown.options.length <= 1) {
       hide(dropdown.parentElement.parentElement);
     }

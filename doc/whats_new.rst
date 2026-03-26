@@ -5,17 +5,38 @@ What's new
 
 .. currentmodule:: benchopt
 
-.. _changes_1_10:
+.. _dev:
 
-Version 1.10 - development
----------------------------
+In development
+--------------
+
 
 CLI
 ---
 
 - Add ``group_by`` and ``batch_n_jobs`` options to the submitit parallel
   backend to group multiple runs into single SLURM jobs with optional inner
-  parallelism. See :ref:`slurm_grouping` for details.
+  parallelism. See :ref:`slurm_grouping` for details. By `Bruno Aristimunha`_ (gh:`903`)
+
+
+DOC
+~~~
+
+- Improve documentation on extenging a benchmark and on using benchopt
+  with various programming languages. see :ref:`solver_languages`
+  and :ref:`extend_benchmark` for more details.
+  By `Thomas Moreau`_ (:gh:`905`)
+
+- Add a gallery of examples for ``benchopt``, with easy to explore
+  benchmark definition. By `Thomas Moreau`_ (:gh:`905`)
+
+FIX
+~~~
+
+- Fix quantile display with suboptimality and relative plots.
+  Also fix median computation for objective curve, to ensure the same
+  number of points for all solvers even when one stops earlier.
+  By `Thomas Moreau`_ (:gh:`904`)
 
 .. _changes_1_9:
 
@@ -23,7 +44,7 @@ Version 1.9 - 15/03/2026
 ------------------------
 
 CLI
----
+~~~
 
 - Add ``benchopt merge`` to merge results from multiple benchopt runs.
   See :ref:`merge_results` for more details.
@@ -41,7 +62,7 @@ CLI
   By `Thomas Moreau`_ (:gh:`902`, :gh:`673`)
 
 API
----
+~~~
 
 - Add ``python_version`` attribute to :class:`BaseObjective` to specify the
   Python version to use when creating a dedicated conda environment with
@@ -54,13 +75,13 @@ API
   By `Thomas Moreau`_ (:gh:`889`)
 
 DOC
----
+~~~
 
 - Improve documentation on how to get started with benchopt.
   See :ref:`get_started`. By `Thomas Moreau`_ (:gh:`899`)
 
 FIX
----
+~~~
 
 - Fix failure in ``benchopt test`` when using ``get_seed`` in a class.
   By `Thomas Moreau`_ (:gh:`889`)
@@ -80,7 +101,7 @@ Version 1.8.1 - 16/02/2026
 --------------------------
 
 API
----
+~~~
 
 - Add ``minimize`` param to the stopping criterions to specify if the criterion
   should be minimized or maximized.
@@ -91,7 +112,7 @@ API
   By `Hippolyte Verninas`_ and `Thomas Moreau`_ (:gh:`837`)
 
 FIX
----
+~~~
 
 - Add ``minimize`` option for the default bar-chart, to allow visualising solvers
   which are minimizing or maximizing the objective.
@@ -106,7 +127,7 @@ Version 1.8 - 19/01/2026
 ------------------------
 
 CLI
----
+~~~
 
 - Allow skipping any tests in ``benchopt test`` with configuration in
   ``test_conf.py``, by defining a function ``check_TEST_NAME``, which
@@ -124,7 +145,7 @@ CLI
   By `Thomas Moreau`_ (:gh:`847`).
 
 API
----
+~~~
 
 - Allow to set the default ``sampling_strategy`` and ``stopping_criterion``
   globally for a benchmark in the ``Objective``.
@@ -148,7 +169,7 @@ API
   objective, solver, and dataset. By `Thomas Moreau`_ (:gh:`873`)
 
 DOC
----
+~~~
 
 - Improve documentation on how to run a ML benchmark.
   By `Thomas Moreau`_ (:gh:`874`)
@@ -157,7 +178,7 @@ DOC
   By `Thomas Moreau`_ (:gh:`841`)
 
 FIX
----
+~~~
 
 - Improve tests for ML benchmarks, by avoiding constraints linked
   to evaluating iterative solvers.
@@ -184,7 +205,7 @@ Version 1.7 - 18/09/2025
 ------------------------
 
 Major change
-------------
+~~~~~~~~~~~~
 
 - Benchopt is now supported on Windows!! \\o/
   By `Wassim Mazouz`_, `Mathurin Massias`_ and `Thomas Moreau`_ (:gh:`717`)
@@ -197,7 +218,7 @@ Major change
   By `Mathurin Massias`_  and `Thomas Moreau`_ (:gh:`788`)
 
 CLI
----
+~~~
 
 - Add ``--no-cache`` option to ``benchopt run``, to disable caching.
   By `Thomas Moreau`_ (:gh:`800`)
@@ -209,7 +230,7 @@ CLI
   running in various environment and debugging. By `Rémi Flamary`_ (:gh:`685`)
 
 API
----
+~~~
 
 - Add ``slurm_params`` attribute to ``Solver`` to allow overriding the
   default SLURM config. By `Pierre-Louis Barbarant`_ (:gh:`805`)
@@ -232,7 +253,7 @@ API
   By `Thomas Moreau`_ (:gh:`778`).
 
 FIX
----
+~~~
 
 - Display for boxplot in the ``result.js`` was broken.
   By `Thomas Moreau`_ (:gh:`757`)

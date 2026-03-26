@@ -6,6 +6,11 @@ from benchopt.utils.suppress_std import SuppressStd
 from benchopt.utils.shell_cmd import _run_shell_in_conda_env
 
 import julia
+if julia.core.which("julia") is None:
+    raise ImportError(
+        "Julia is not installed in the environment. "
+        "Please install it to use Julia solvers."
+    )
 
 
 # Singleton to get the julia interpreter only once

@@ -12,5 +12,6 @@ Benchmark workflow
     run_benchmark
     visualize_benchmark
     manage_benchmark_results
+    extend_benchmark
     write_benchmark
     test_benchmark
