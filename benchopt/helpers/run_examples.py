@@ -467,11 +467,14 @@ def benchopt_cli(cmd):
         output, and any HTML result file produced — compatible with
         Sphinx-gallery.
     """
+    import os
     import shlex
     from benchopt.cli import benchopt as benchopt_cli
 
     # Parse command arguments from a shell-like string.
-    cmd_parts = shlex.split(cmd.strip())
+    # On Windows, keep backslashes in paths (e.g. temp dirs) by using
+    # non-posix parsing.
+    cmd_parts = shlex.split(cmd.strip(), posix=(os.name != "nt"))
     cmd_str = f"benchopt {' '.join(cmd_parts)}"
 
     is_sphinx = "paths" in SPHINX_GALLERY_CTX
