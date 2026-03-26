@@ -16,10 +16,10 @@ window.addEventListener("message", function(event) {
 
 // Replace all command code blocks by their equivalent CLI call on page load
 window.addEventListener("load", function() {
-  for (const cmd of document.querySelectorAll("pre.cmd-equiv")) {
+  for (const cmd of document.querySelectorAll("pre.code-cell-equiv")) {
     var code_elem = cmd.parentElement.previousElementSibling;
-    var cmd_html = cmd.children[0].children[0].innerHTML;
-    code_elem.firstChild.firstChild.innerHTML = cmd_html;
+    var cmd_html = cmd.children[0].innerHTML;
+    code_elem.firstChild.innerHTML = cmd_html;
     cmd.setAttribute("style", "display: none;");
   }
 

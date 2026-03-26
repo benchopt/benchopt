@@ -25,9 +25,8 @@ jobs:
             source ~/miniconda/etc/profile.d/conda.sh
             # remove the cache index
             mamba clean -i -y
-            mamba create -n benchopt-docs python=3.10 r-base rpy2 numpy cython -yq
+            mamba create -n benchopt-docs python=3.12 -yq
             conda activate benchopt-docs
-            pip install --upgrade "setuptools<58.5"
             pip install --upgrade --progress-bar off -e .[doc]
             # Make sure the environment is used in subsequent steps
             echo "source ~/miniconda/etc/profile.d/conda.sh" >> $BASH_ENV
@@ -49,7 +48,7 @@ jobs:
 
       # Build docs
       - run:
-          name: make html
+          name: Make html
           no_output_timeout: 20m
           command: |
             cd doc;
@@ -65,7 +64,7 @@ jobs:
             - html
 
       - run:
-          name: make result
+          name: Make result
           command: |
             pip install -U numba
             benchopt run examples/minimal_benchmark -r 5 -n 25 --output benchmark-result

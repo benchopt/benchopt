@@ -10,6 +10,7 @@ __pycache__
 /doc/**/generated
 /doc/sg_execution_times.rst
 /examples/benchmark_*
+/examples/output_*
 .coverage
 
 # Output files

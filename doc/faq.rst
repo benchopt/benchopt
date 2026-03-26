@@ -1,5 +1,3 @@
-.. _faq:
-
 Frequently asked questions (FAQ)
 --------------------------------
 
@@ -21,7 +19,7 @@ Frequently asked questions (FAQ)
 
 .. dropdown:: How to add my solver to an existing benchmark?
 
-    Visit the :ref:`add_solver` tutorial for a step-by-step procedure to add a solver to an existing benchmark.
+    Visit the :ref:`tuto_add_solver` tutorial for a step-by-step procedure to add a solver to an existing benchmark.
 
 
 .. dropdown:: How can I write a benchmark?
@@ -39,7 +37,7 @@ Frequently asked questions (FAQ)
     can be set on a per solver basis.
     It is also possible to set various stopping criterions to decide when to
     stop growing the computational budget, to avoid wasting resources.
-    Visit the :ref:`performance_curves` page for more details.
+    Visit the :ref:`iterative_solvers` page for more details.
 
 
 .. dropdown:: How can I reuse code in a benchmark?
