@@ -13,9 +13,6 @@ from benchopt.helpers.run_examples import (
 
 from benchopt.utils.temp_benchmark import temp_benchmark
 
-# Skip this module is rich is not installed
-pytest.importorskip("rich")
-
 
 def test_run_example_benchmark(no_debug_log, monkeypatch):
     """Test that an example benchmark runs end-to-end."""

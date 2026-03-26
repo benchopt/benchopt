@@ -99,8 +99,11 @@ class HTMLCmdOutput:
             return ""
         output = self.merge_lines(output)
         # This allows to correctly display the progress in the example
-        from rich.console import Console
-        from rich.text import Text
+        try:
+            from rich.console import Console
+            from rich.text import Text
+        except ImportError:
+            return f"<pre>{escape(output)}</pre>"
         console = Console(file=io.StringIO(), record=True, width=78)
         console.print(Text.from_ansi(output))
         output_html = console.export_html(
