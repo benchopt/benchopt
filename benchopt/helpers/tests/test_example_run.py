@@ -13,10 +13,12 @@ from benchopt.helpers.run_examples import (
 
 from benchopt.utils.temp_benchmark import temp_benchmark
 
+# Skip this module is rich is not installed
+pytest.importorskip("rich")
+
 
 def test_run_example_benchmark(no_debug_log, monkeypatch):
     """Test that an example benchmark runs end-to-end."""
-    pytest.importorskip("rich")
 
     with monkeypatch.context() as m, tempfile.TemporaryDirectory() as tmp_dir:
         tmp_dir = Path(tmp_dir)
@@ -95,7 +97,6 @@ def test_example_benchmark_from_existing_benchmark():
 
 
 def test_example_benchmark_run(no_debug_log, monkeypatch):
-    pytest.importorskip("rich")
 
     objective = """
     import numpy as np
