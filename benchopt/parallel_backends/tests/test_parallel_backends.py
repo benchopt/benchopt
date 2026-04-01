@@ -158,3 +158,83 @@ def test_submitit_backend(monkeypatch):
             ], standalone_mode=False)
 
     out.check_output("Distributed run with backend: submitit", repetition=1)
+
+
+def test_submitit_backend_grouped(monkeypatch):
+    pytest.importorskip("submitit")
+    monkeypatch.setattr(
+        "submitit.helpers.as_completed.__defaults__", (None, 0.1)
+    )
+
+    parallel_config = """backend: submitit
+    group_by: dataset
+    batch_n_jobs: 1
+    """
+    solver1 = """from benchopt.utils.temp_benchmark import TempSolver
+    import numpy as np
+
+    class Solver(TempSolver):
+        name = "solver1"
+        def get_result(self):
+            return {"beta": 1}
+    """
+    solver2 = """from benchopt.utils.temp_benchmark import TempSolver
+    import numpy as np
+
+    class Solver(TempSolver):
+        name = "solver2"
+        def get_result(self):
+            return {"beta": 1}
+    """
+
+    with temp_benchmark(
+            solvers=[solver1, solver2],
+            config={"parallel_config.yml": parallel_config}
+    ) as benchmark:
+        parallel_config_file = benchmark.benchmark_dir / "parallel_config.yml"
+        with CaptureCmdOutput() as out:
+            run([
+                str(benchmark.benchmark_dir),
+                *"-s solver1 -s solver2 -d test-dataset -n 0 -r 1 --no-plot "
+                f"--parallel-config {parallel_config_file}".split()
+            ], standalone_mode=False)
+
+    out.check_output("Distributed run with backend: submitit", repetition=1)
+
+
+def test_invalid_parallel_config():
+    from benchopt.parallel_backends import check_parallel_config
+
+    with pytest.raises(AssertionError, match="group_by"):
+        check_parallel_config(
+            {"backend": "submitit", "group_by": "invalid"}, None
+        )
+    with pytest.raises(AssertionError, match="batch_n_jobs"):
+        check_parallel_config(
+            {"backend": "submitit", "batch_n_jobs": 0}, None
+        )
+    with pytest.raises(
+        AssertionError, match="only supported with the submitit backend"
+    ):
+        check_parallel_config(
+            {"backend": "dask", "group_by": "dataset"}, None
+        )
+    with pytest.raises(
+        AssertionError, match="only supported with the submitit backend"
+    ):
+        check_parallel_config(
+            {"backend": "loky", "batch_n_jobs": 2}, None
+        )
+    with pytest.raises(AssertionError, match="requires `group_by`"):
+        check_parallel_config(
+            {"backend": "submitit", "batch_n_jobs": 2}, None
+        )
+    with pytest.raises(AssertionError, match="positive integer"):
+        check_parallel_config(
+            {
+                "backend": "submitit",
+                "group_by": "dataset",
+                "batch_n_jobs": True,
+            },
+            None,
+        )

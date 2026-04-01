@@ -10,6 +10,15 @@ What's new
 In development
 --------------
 
+
+CLI
+---
+
+- Add ``group_by`` and ``batch_n_jobs`` options to the submitit parallel
+  backend to group multiple runs into single SLURM jobs with optional inner
+  parallelism. See :ref:`slurm_grouping` for details. By `Bruno Aristimunha`_ (gh:`903`)
+
+
 DOC
 ~~~
 
