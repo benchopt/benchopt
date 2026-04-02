@@ -9,6 +9,7 @@ from benchopt.config import parse_value
 from benchopt.config import DEFAULT_GLOBAL_CONFIG
 from benchopt.config import get_global_config_file
 from benchopt.config import set_setting, get_setting
+from benchopt.config import _check_settings
 
 
 @contextmanager
@@ -86,7 +87,10 @@ def test_config_file_permission_no_warning():
         assert str(global_config_file) == str(config_file)
 
 
-@pytest.mark.parametrize("setting_key", DEFAULT_GLOBAL_CONFIG)
+@pytest.mark.parametrize("setting_key", [
+    k for k in DEFAULT_GLOBAL_CONFIG
+    if k not in ["_g_config_check", "_bench_config_check"]
+])
 def test_config_file_set(setting_key):
     with temp_config_file():
         default_value = DEFAULT_GLOBAL_CONFIG[setting_key]
@@ -124,3 +128,59 @@ def test_config_file_set_error():
     with temp_config_file():
         with pytest.raises(SystemExit):
             set_setting('invalid_key', None)
+
+
+@pytest.fixture(autouse=True)
+def reset_config_validation_flags():
+    DEFAULT_GLOBAL_CONFIG["_g_config_check"] = False
+    DEFAULT_GLOBAL_CONFIG["_bench_config_check"] = False
+
+    old_env = {
+        k: v for k, v in os.environ.items()
+        if k.startswith("BENCHOPT_") and k != "BENCHOPT_CONFIG"
+    }
+    for k in old_env:
+        del os.environ[k]
+    yield
+    DEFAULT_GLOBAL_CONFIG["_g_config_check"] = False
+    DEFAULT_GLOBAL_CONFIG["_bench_config_check"] = False
+    os.environ.update(old_env)
+
+
+def test_global_config_invalid_key_warns_once():
+    with temp_config_file() as config_file:
+        config_file.write_text("invalid_key: true\n")
+
+        with pytest.warns(UserWarning, match="invalid_key is set"):
+            _check_settings()
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            _check_settings()
+
+
+def test_global_config_invalid_benchmark_section_type_warns():
+    with temp_config_file() as config_file:
+        config_file.write_text("my_benchmark: 1\n")
+
+        with pytest.warns(UserWarning, match="my_benchmark is set"):
+            _check_settings()
+
+
+def test_global_config_invalid_benchmark_option_warns():
+    with temp_config_file() as config_file:
+        config_file.write_text(
+            "my_benchmark:\n"
+            "  invalid_bench_key: true\n"
+        )
+
+        with pytest.warns(UserWarning, match="invalid_bench_key is set"):
+            _check_settings()
+
+
+def test_benchmark_config_invalid_key_warns(tmp_path):
+    config_file = tmp_path / "config.yml"
+    config_file.write_text("invalid_bench_key: true\n")
+
+    with pytest.warns(UserWarning, match="invalid_bench_key is set"):
+        _check_settings(config_file=config_file, benchmark_name="dummy")

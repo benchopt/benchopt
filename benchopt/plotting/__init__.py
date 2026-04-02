@@ -62,8 +62,8 @@ def check_view(name, view, plots):
     mismatched_options = set(view.keys()) - all_options
     if mismatched_options:
         warnings.warn(
-            f"View '{name}' has options {mismatched_options} which are "
-            f"not known for plot_kind {kind}. Valid options are:\n-"
+            f"View '{name}' has invalid options {mismatched_options} for "
+            f"plot_kind {kind}. Valid options are:\n-"
             + "\n-".join(all_options)
         )
 

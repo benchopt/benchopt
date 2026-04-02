@@ -211,8 +211,8 @@ def _check_settings(config_file=None, benchmark_name=None):
 
         for var in os.environ:
             if var.startswith("BENCHOPT_"):
-                key = var.replace("BENCHOPT_")
-                if key not in DEFAULT_GLOBAL_CONFIG:
+                key = var.replace("BENCHOPT_", "").lower()
+                if key not in DEFAULT_GLOBAL_CONFIG and key != "config":
                     warnings.warn(
                         f"{key} is set in {global_config_file} but is not a "
                         "valid config option for benchopt. Options are:\n-"
