@@ -31,6 +31,8 @@ DEFAULT_GLOBAL_CONFIG = {
     'shell': os.environ.get('SHELL', DEFAULT_SHELL),
     'cache': None,
     'default_timeout': 100,
+    '_g_config_check': False,
+    '_bench_config_check': False,
 }
 """
 * ``debug``: If set to true, enable debug logs.
@@ -53,11 +55,10 @@ DEFAULT_GLOBAL_CONFIG = {
 DEFAULT_BENCHMARK_CONFIG = {
     "plots": None,
     "plot_configs": {},
-    "data_home": "",
+    "data_home": None,
     "data_paths": {},
     "hf_repo": None,
 }
-
 """
 * ``plots``, *list*: Select the plots to display for the benchmark. Should be
   valid plot kinds. The list can simply be one item by line, with each item
@@ -172,7 +173,67 @@ def get_global_config_file():
     return config_file
 
 
+def _check_bench_config(config, config_file_id):
+    for k in config:
+        if k not in DEFAULT_BENCHMARK_CONFIG:
+            warnings.warn(
+                f"{k} is set in {config_file_id} but is not a valid config "
+                "option for benchopt's benchmark. Valid options are:\n-"
+                + "\n-".join(DEFAULT_BENCHMARK_CONFIG)
+            )
+
+
+def _check_settings(config_file=None, benchmark_name=None):
+    if config_file is None:
+        if DEFAULT_GLOBAL_CONFIG["_g_config_check"]:
+            return
+
+        global_config_file = get_global_config_file()
+
+        # Load the config from the yaml file if the file exists.
+        if global_config_file.exists():
+            with open(global_config_file, "r") as f:
+                config = yaml.safe_load(f) or {}
+            for key in config:
+                if key not in DEFAULT_GLOBAL_CONFIG:
+                    bench_config = config[key]
+                    if not isinstance(bench_config, dict):
+                        warnings.warn(
+                            f"{key} is set in {global_config_file} but is not "
+                            "a valid option for benchopt. Options are:\n-"
+                            + "\n-".join(DEFAULT_GLOBAL_CONFIG)
+                        )
+                        continue
+                    else:
+                        _check_bench_config(
+                            bench_config, f"{global_config_file}[{key}]"
+                        )
+
+        for var in os.environ:
+            if var.startswith("BENCHOPT_"):
+                key = var.replace("BENCHOPT_")
+                if key not in DEFAULT_GLOBAL_CONFIG:
+                    warnings.warn(
+                        f"{key} is set in {global_config_file} but is not a "
+                        "valid config option for benchopt. Options are:\n-"
+                        + "\n-".join(DEFAULT_GLOBAL_CONFIG)
+                    )
+
+        DEFAULT_GLOBAL_CONFIG["_g_config_check"] = True
+        return
+
+    if DEFAULT_GLOBAL_CONFIG["_bench_config_check"]:
+        return
+    if config_file.exists():
+        with open(config_file, "r") as f:
+            config = yaml.safe_load(f) or {}
+        _check_bench_config(config, config_file)
+
+
 def set_setting(name, value, config_file=None, benchmark_name=None):
+
+    _check_settings(config_file, benchmark_name)
+
     if config_file is None:
         config_file = get_global_config_file()
 
@@ -230,6 +291,8 @@ def get_setting(name, config_file=None, benchmark_name=None,
         Extra default values, typically used to pass configs saved in the
         results parquet files.
     """
+    # check that the settings are correctly set
+    _check_settings(config_file, benchmark_name)
 
     if config_file is None:
         config_file = get_global_config_file()
@@ -282,23 +345,23 @@ def get_data_path(key: str = None):
     benchmark = get_running_benchmark()
 
     data_home = benchmark.get_setting("data_home")
-
-    if data_home == "":
+    # Expand env var and user home to make config easier to share.
+    data_home = os.path.expandvars(data_home)
+    if data_home is None:
         data_home = benchmark.benchmark_dir / "data"
-
-    path = Path(data_home)
+    data_home = Path(data_home).expanduser()
 
     if key is not None:
         data_paths = benchmark.get_setting("data_paths")
 
         if key in data_paths and data_paths[key] is not None:
-            data_path = Path(data_paths[key])
-            if data_path.is_absolute():
-                path = data_path
-            else:
-                path = path / data_path
+            # Expand env var and user home to make config easier to share.
+            data_path = Path(os.path.expandvars(data_paths[key])).expanduser()
+            # If it is not absolute, append it to data_home
+            if not data_path.is_absolute():
+                data_path = data_home / data_path
         else:
-            path = path / key
+            path = data_home / key
 
     return path.resolve()
 
