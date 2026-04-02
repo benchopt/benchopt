@@ -10,6 +10,7 @@ from benchopt.config import DEFAULT_GLOBAL_CONFIG
 from benchopt.config import DEFAULT_BENCHMARK_CONFIG
 from benchopt.config import get_global_config_file
 from benchopt.config import set_setting, get_setting
+from benchopt.config import get_data_path
 from benchopt.config import _check_settings
 
 
@@ -216,3 +217,22 @@ def test_benchmark_config_invalid_key_warns(tmp_path):
 
     with pytest.warns(UserWarning, match="invalid_bench_key is set"):
         _check_settings(config_file=config_file, benchmark_name="dummy")
+
+@pytest.mark.parametrize("pattern", ["~/test/", "$HOME/test/"])
+@pytest.mark.parametrize("option", ["data_home", "dataset"])
+def test_path_expansion_in_config(monkeypatch, option, pattern):
+    """Test path expansion in config (~ and $ENV_VAR)."""
+
+    with monkeypatch.context() as m, temp_config_file() as config_file:
+        from benchopt.benchmark import _RUNNING_BENCHMARK
+        m.setattr(_RUNNING_BENCHMARK, "get_config_file", lambda: config_file)
+        m.setitem(os.environ, "HOME", "/path/to/home/")
+
+        if option == "data_home":
+            config = f"""data_home: {pattern}\n"""
+        else:
+            config = f"""data_paths:\n  dataset: {pattern}/dataset/\n"""
+        config_file.write_text(config)
+        path = get_data_path("dataset")
+
+        assert path == Path("/path/to/home/test/dataset/")

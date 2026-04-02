@@ -349,10 +349,10 @@ def get_data_path(key: str = None):
 
     data_home = benchmark.get_setting("data_home")
     # Expand env var and user home to make config easier to share.
-    data_home = os.path.expandvars(data_home)
     if data_home is None:
         data_home = benchmark.benchmark_dir / "data"
-    data_home = Path(data_home).expanduser()
+    else:
+        data_home = Path(os.path.expandvars(data_home)).expanduser()
 
     if key is not None:
         data_paths = benchmark.get_setting("data_paths")
@@ -364,9 +364,11 @@ def get_data_path(key: str = None):
             if not data_path.is_absolute():
                 data_path = data_home / data_path
         else:
-            path = data_home / key
+            data_path = data_home / key
+    else:
+        data_path = data_home
 
-    return path.resolve()
+    return data_path.resolve()
 
 
 def parse_value(value, default_value):
