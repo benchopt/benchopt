@@ -218,6 +218,7 @@ def test_benchmark_config_invalid_key_warns(tmp_path):
     with pytest.warns(UserWarning, match="invalid_bench_key is set"):
         _check_settings(config_file=config_file, benchmark_name="dummy")
 
+
 @pytest.mark.parametrize("pattern", ["~/test/", "$HOME/test/"])
 @pytest.mark.parametrize("option", ["data_home", "dataset"])
 def test_path_expansion_in_config(monkeypatch, option, pattern):
