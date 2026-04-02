@@ -16,8 +16,8 @@ BACKWARD_COMPAT_PLOTS = {
 }
 
 ALL_PLOT_OPTIONS = [
-    "scale", "with_quantiles", "suboptimal_curve", "relative_curve",
-    "hidden_curves", "plot_kind"
+    "plot_kind", "scale", "with_quantiles", "suboptimal_curve",
+    "relative_curve", "hidden_curves",
 ]
 
 

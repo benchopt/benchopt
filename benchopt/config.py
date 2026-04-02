@@ -76,10 +76,15 @@ DEFAULT_BENCHMARK_CONFIG = {
 
 * ``plot_configs``, *dict*: list of saved views that can be easily display for
   the plot. Each view corresponds to a name, with specified values to select
-  either:
+  one options for the plots. Common options for all plot kinds include:
 
-    ``dataset``,  ``objective``, ``objective_column``, ``kind``, ``scale``,
-    ``with_quantiles``, ``xaxis_type``, ``xlim``, ``ylim``
+    ``plot_kind``, ``scale``, ``with_quantiles``, ``suboptimal_curve``,
+    ``relative_curve``, ``hidden_curves``.
+
+  Other options are specific to the plot kind and defined as the options in
+  the plot definition, prefixed with the plot kind. Typically, when the plot
+  kind ``my-kind`` includes an option ``dataset``, the view should specify it
+  ``my-view_dataset: my_dataset``.
 
   Values that are not specified by the view are left as is when setting the
   view in the interface. An example of views is:
@@ -88,18 +93,16 @@ DEFAULT_BENCHMARK_CONFIG = {
 
     plot_configs:
       linear_objective:
-          kind: objective_curve
-          ylim: [0.0, 1.0]
+          plot_kind: objective_curve
           scale: linear
       view2:
-          objective_column: objective_score_train
-          kind: suboptimality_curve
-          ylim: [1e-10, 1.0]
+          plot_kind: boxplot
+          boxplot_objective_column: objective_score_train
           scale: loglog
 
   These views can be easily created from the interactive HTML page, by hitting
   the ``Save as view`` button in the plot controls and downloading eiher the
-  new HTML file to save them or the config file in th erepo of the benchmark,
+  new HTML file to save them or the config file in the benchmark's repo,
   so that these saved views are embeded in the next plot results automatically.
 
 * ``data_home``, *str*: Allows users to define a home path where the function
