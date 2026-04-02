@@ -35,6 +35,10 @@ DEFAULT_GLOBAL_CONFIG = {
     '_bench_config_check': False,
 }
 """
+These are the config options available globally for benchopt, that can be set
+in the global config file. These options are then accessible in the
+benchmark's code via the ``get_setting()`` function. The available options are:
+
 * ``debug``: If set to true, enable debug logs.
 * ``raise_install_error``, *boolean*: If set to true, raise error when
   install fails.
@@ -60,6 +64,11 @@ DEFAULT_BENCHMARK_CONFIG = {
     "hf_repo": None,
 }
 """
+These are the config options available for each benchmark, that can be set in
+the benchmark's ``config.yml`` file or in the global config file under the
+benchmark's name. These options are then accessible in the benchmark's code via
+the ``get_setting()`` function. The available options are:
+
 * ``plots``, *list*: Select the plots to display for the benchmark. Should be
   valid plot kinds. The list can simply be one item by line, with each item
   indented, as:
@@ -107,6 +116,7 @@ DEFAULT_BENCHMARK_CONFIG = {
 
 * ``data_home``, *str*: Allows users to define a home path where the function
   ``get_data_path()`` search data files defined in ``data_paths``.
+  If no paths are provided, the default path used is ``your_benchmark/data``
 
 * ``data_paths``, *dict*: Allows users to store some data files in custom
   locations. If you are writing your own benchmark, you can use this
@@ -122,7 +132,7 @@ DEFAULT_BENCHMARK_CONFIG = {
     data_home: path/to/data/home
 
     data_paths:
-        my_data_file: path/to/my/file.npz
+        my_data: path/to/my/file.npz
 
   In your benchmark's datasets, you can use the ``get_data_path()``
   to retrieve the paths:
@@ -131,11 +141,13 @@ DEFAULT_BENCHMARK_CONFIG = {
 
     from benchopt.config import get_data_path
 
-    path = get_data_path('my_data_file')
+    path = get_data_path('my_data')
 
     # The "path" variable now contains "path/to/data/home/path/to/my/file.npz"
 
-  If no paths are provided, the default path used is ``your_benchmark/data``
+  If no paths are provided, the default path used is ``{data_home}/my_data``.
+  Note that the ``data_home`` can be set to a custom path, or default to
+  ``your_benchmark/data``.
 
 * ``hf_repo``, *str*: Hugging Face dataset repo id, e.g.
   'my-org/benchopt-results', used to publish results files on Hugging Face
