@@ -7,13 +7,37 @@ from contextlib import contextmanager
 
 from benchopt.config import parse_value
 from benchopt.config import DEFAULT_GLOBAL_CONFIG
+from benchopt.config import DEFAULT_BENCHMARK_CONFIG
 from benchopt.config import get_global_config_file
 from benchopt.config import set_setting, get_setting
 from benchopt.config import _check_settings
 
 
+@pytest.fixture(autouse=True)
+def reset_config_validation_flags():
+    # Fixture to make sure that the config validation is run in each
+    # configuration test, by resetting the flags that prevent skipping
+    # the checks. Also makes sure that any BENCHOPT environment variables
+    # are cleared before each test and restored after.
+    DEFAULT_GLOBAL_CONFIG["_g_config_check"] = False
+    DEFAULT_GLOBAL_CONFIG["_bench_config_check"] = False
+
+    old_env = {
+        k: v for k, v in os.environ.items()
+        if k.startswith("BENCHOPT_") and k != "BENCHOPT_CONFIG"
+    }
+    for k in old_env:
+        del os.environ[k]
+    yield
+    DEFAULT_GLOBAL_CONFIG["_g_config_check"] = False
+    DEFAULT_GLOBAL_CONFIG["_bench_config_check"] = False
+    os.environ.update(old_env)
+
+
 @contextmanager
 def temp_config_file(permission='600'):
+    # Set a temporary global config file for benchopt with the specified
+    # permission.
     permission = int(f"100{permission}", base=8)
     config_file = Path(Path() / 'test_config_file.yml')
     if sys.platform != 'win32':
@@ -92,7 +116,8 @@ def test_config_file_permission_no_warning():
     if k not in ["_g_config_check", "_bench_config_check"]
 ])
 def test_config_file_set(setting_key):
-    with temp_config_file():
+    with temp_config_file(), warnings.catch_warnings():
+        warnings.simplefilter("error")
         default_value = DEFAULT_GLOBAL_CONFIG[setting_key]
         default_value = parse_value(os.environ.get(
             f"BENCHOPT_{setting_key.upper()}", default_value
@@ -130,23 +155,6 @@ def test_config_file_set_error():
             set_setting('invalid_key', None)
 
 
-@pytest.fixture(autouse=True)
-def reset_config_validation_flags():
-    DEFAULT_GLOBAL_CONFIG["_g_config_check"] = False
-    DEFAULT_GLOBAL_CONFIG["_bench_config_check"] = False
-
-    old_env = {
-        k: v for k, v in os.environ.items()
-        if k.startswith("BENCHOPT_") and k != "BENCHOPT_CONFIG"
-    }
-    for k in old_env:
-        del os.environ[k]
-    yield
-    DEFAULT_GLOBAL_CONFIG["_g_config_check"] = False
-    DEFAULT_GLOBAL_CONFIG["_bench_config_check"] = False
-    os.environ.update(old_env)
-
-
 def test_global_config_invalid_key_warns_once():
     with temp_config_file() as config_file:
         config_file.write_text("invalid_key: true\n")
@@ -176,6 +184,30 @@ def test_global_config_invalid_benchmark_option_warns():
 
         with pytest.warns(UserWarning, match="invalid_bench_key is set"):
             _check_settings()
+
+
+@pytest.mark.parametrize("option", DEFAULT_BENCHMARK_CONFIG.keys())
+def test_global_config_valid_benchmark_option_no_warns(option):
+    with temp_config_file() as config_file, warnings.catch_warnings():
+        warnings.simplefilter("error")
+        config_file.write_text(
+            "my_benchmark:\n"
+            f"  {option}: true\n"
+        )
+
+        _check_settings()
+
+
+def test_global_config_invalid_env_variable_warns():
+    with temp_config_file() as config_file:
+        config_file.write_text("debug: false\n")
+
+        os.environ["BENCHOPT_NOT_A_SETTING"] = "1"
+        try:
+            with pytest.warns(UserWarning, match="not_a_setting is set"):
+                _check_settings()
+        finally:
+            del os.environ["BENCHOPT_NOT_A_SETTING"]
 
 
 def test_benchmark_config_invalid_key_warns(tmp_path):

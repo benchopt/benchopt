@@ -37,7 +37,7 @@ from benchopt.tests.utils import CaptureCmdOutput
     ],
     ids=["no_plot_kind", "invalid_plot_kind", "invalid_plot_options"]
 )
-def test_plot_config_view_validation_warnings(no_debug_log, config, expected_warning):
+def test_plot_config_view_validation_warnings(config, expected_warning):
     with temp_benchmark(config=config) as bench:
         with CaptureCmdOutput() as out:
             with pytest.warns(UserWarning, match=expected_warning):
@@ -49,7 +49,7 @@ def test_plot_config_view_validation_warnings(no_debug_log, config, expected_war
         out.check_output("Rendering benchmark results", repetition=1)
 
 
-def test_plot_benchmark_invalid_kind_raises(no_debug_log):
+def test_plot_benchmark_invalid_kind_raises():
     config = """
     plots:
       - not_a_plot_kind

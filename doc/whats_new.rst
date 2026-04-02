@@ -10,6 +10,12 @@ What's new
 In development
 --------------
 
+API
+~~~
+
+- Add validation step on config options, to avoid silent failure when
+  setting the wrong option. By `Thomas Moreau`_ (:gh:`910`)
+
 DOC
 ~~~
 
