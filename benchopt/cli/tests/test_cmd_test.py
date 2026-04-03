@@ -67,15 +67,15 @@ class TestCmdTest:
         with temp_benchmark(config=config) as bench:
             with CaptureCmdOutput(exit=1) as out:
                 benchopt_test(
-                    f"{bench.benchmark_dir} --skip-install "
+                    f"{bench.benchmark_dir} --skip-install -rN "
                     "-k test_benchmark_config_validity".split(),
                     'benchopt', standalone_mode=False
                 )
 
         out.check_output("test session starts", repetition=1)
-        out.check_output("FAILED", repetition=2)
-        out.check_output("Invalid benchmark config.yml detected", repetition=3)
-        out.check_output(f"invalid_bench_key.* in {bench.get_config_file()}")
+        out.check_output("FAILED", repetition=1)
+        out.check_output("Invalid benchmark config.yml detected", repetition=2)
+        out.check_output("invalid_bench_key .*config.yml", repetition=1)
 
     @pytest.mark.parametrize('t, pat, pat_new, error_type', [
         ("data", "", "", None),

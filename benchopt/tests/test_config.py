@@ -117,37 +117,39 @@ def test_config_file_permission_no_warning():
     if k not in ["_g_config_check", "_bench_config_check"]
 ])
 def test_config_file_set(setting_key):
-    with temp_config_file(), warnings.catch_warnings():
-        warnings.simplefilter("error")
-        default_value = DEFAULT_GLOBAL_CONFIG[setting_key]
-        default_value = parse_value(os.environ.get(
-            f"BENCHOPT_{setting_key.upper()}", default_value
-        ), default_value)
-        assert get_setting(setting_key) == default_value
+    with temp_config_file():
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            default_value = DEFAULT_GLOBAL_CONFIG[setting_key]
+            default_value = parse_value(os.environ.get(
+                f"BENCHOPT_{setting_key.upper()}", default_value
+            ), default_value)
+            assert get_setting(setting_key) == default_value
 
-        # pick arbitrary new and env values for this configuration parameter
-        if isinstance(default_value, (bool, str)) or default_value is None:
-            set_value = parse_value('True', default_value)
-            env_value = parse_value('False', default_value)
-        else:
-            set_value = parse_value(2 * default_value + 1, default_value)
-            env_value = parse_value(2 * default_value - 1, default_value)
+            # pick arbitrary new and env values for this configuration
+            if isinstance(default_value, (bool, str)) or default_value is None:
+                set_value = parse_value('True', default_value)
+                env_value = parse_value('False', default_value)
+            else:
+                set_value = parse_value(2 * default_value + 1, default_value)
+                env_value = parse_value(2 * default_value - 1, default_value)
 
-        set_setting(setting_key, set_value)
+            set_setting(setting_key, set_value)
 
-        # Make sure the value is correctly set and retrieved
-        try:
-            # If the env var is not set, we should get the set value
-            old_value = os.environ.pop(f"BENCHOPT_{setting_key.upper()}", None)
-            assert get_setting(setting_key) == set_value
+            # Make sure the value is correctly set and retrieved
+            try:
+                # If the env var is not set, we should get the set value
+                KEY = f"BENCHOPT_{setting_key.upper()}"
+                old_value = os.environ.pop(KEY, None)
+                assert get_setting(setting_key) == set_value
 
-            # Otherwise, we get the env value
-            os.environ[f"BENCHOPT_{setting_key.upper()}"] = str(env_value)
-            assert get_setting(setting_key) == env_value
-            del os.environ[f"BENCHOPT_{setting_key.upper()}"]
-        finally:
-            if old_value is not None:
-                os.environ[f"BENCHOPT_{setting_key.upper()}"] = old_value
+                # Otherwise, we get the env value
+                os.environ[KEY] = str(env_value)
+                assert get_setting(setting_key) == env_value
+                del os.environ[KEY]
+            finally:
+                if old_value is not None:
+                    os.environ[KEY] = old_value
 
 
 def test_config_file_set_error():
