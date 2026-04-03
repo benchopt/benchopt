@@ -36,7 +36,9 @@ def reset_config_validation_flags():
 
 
 @contextmanager
-def temp_config_file(permission='600'):
+def temp_config_file(permission=None):
+    if permission is None:
+        permission = '600' if sys.platform != 'win32' else '666'
     # Set a temporary global config file for benchopt with the specified
     # permission.
     permission = int(f"100{permission}", base=8)
