@@ -92,7 +92,7 @@ class TestPlotCmd:
     def test_plot_html_ignore_kind(self):
 
         with pytest.warns(UserWarning, match=r"Cannot specify '--kind'"):
-            plot(f"{self.bench.benchmark_dir} -k invalid_kind --html "
+            plot(f"{self.bench.benchmark_dir} -k boxplot --html "
                  f"--no-display".split(), 'benchopt', standalone_mode=False)
 
     @pytest.mark.parametrize(
