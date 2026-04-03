@@ -100,9 +100,10 @@ def test_objective_nonnumeric_values(no_debug_log):
             def evaluate_result(self, beta):
                 return dict(value=1, test_obj={})
     """
+    msg = "Failed to save results in parquet"
 
     with temp_benchmark(objective=objective) as bench:
-        with CaptureCmdOutput() as out:
+        with CaptureCmdOutput() as out, pytest.warns(UserWarning, match=msg):
             run(
                 f"{bench.benchmark_dir} -d test-dataset -n 1 --no-plot"
                 .split(), standalone_mode=False
@@ -114,7 +115,7 @@ def test_objective_nonnumeric_values(no_debug_log):
         "test_obj={}", "test_obj={'a':0, 'b': 1.0, 'c': '', 'd': {}}"
     )
     with temp_benchmark(objective=objective) as bench:
-        with CaptureCmdOutput() as out:
+        with CaptureCmdOutput() as out, pytest.warns(UserWarning, match=msg):
             run(
                 f"{bench.benchmark_dir} -d test-dataset -n 1 --no-plot"
                 .split(), standalone_mode=False

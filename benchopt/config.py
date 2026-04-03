@@ -31,6 +31,7 @@ DEFAULT_GLOBAL_CONFIG = {
     'shell': os.environ.get('SHELL', DEFAULT_SHELL),
     'cache': None,
     'default_timeout': 100,
+    'warn_nonunique_files': True,
     '_g_config_check': False,
     '_bench_config_check': False,
 }
@@ -54,6 +55,11 @@ benchmark's code via the ``get_setting()`` function. The available options are:
   should be stored. By default, the cache files are stored in the benchmark
   directory, under the folder __cache__. Setting this configuration would
   results in having the cache for benchmark `B1` stored in `${cache}/B1/`.
+* ``default_timeout``, *int*: default timeout in seconds for the benchmark
+  runs. Default is 100 seconds.
+* ``warn_nonunique_files``, *bool*: If set to True, raise a warning when a
+  results file is about to be overwritten because a file with the same name
+  already exists. Mostly useful to deactivate this warning in tests.
 """
 
 DEFAULT_BENCHMARK_CONFIG = {

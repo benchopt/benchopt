@@ -224,6 +224,10 @@ def test_benchmark_config_invalid_key_warns(tmp_path):
 def test_path_expansion_in_config(monkeypatch, option, pattern):
     """Test path expansion in config (~ and $ENV_VAR)."""
 
+    if sys.platform == "win32":
+        # On Windows, use the correct env variable syntax
+        pattern = pattern.replace("$HOME", "%HOME%")
+
     with monkeypatch.context() as m, temp_config_file() as config_file:
         from benchopt.benchmark import _RUNNING_BENCHMARK
         m.setattr(_RUNNING_BENCHMARK, "get_config_file", lambda: config_file)
@@ -236,4 +240,4 @@ def test_path_expansion_in_config(monkeypatch, option, pattern):
         config_file.write_text(config)
         path = get_data_path("dataset")
 
-        assert path == Path("/path/to/home/test/dataset/")
+        assert path == Path.home() / "test" / "dataset"
