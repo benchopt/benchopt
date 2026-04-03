@@ -423,8 +423,11 @@ def run(config_file=None, **kwargs):
               help="YAML configuration file containing benchmark options, "
               "whose solvers and datasets will be installed.")
 @click.option('--download', is_flag=True,
-              help="If this flag is set, call `Dataset.get_data` for all "
-              "datasets, to make sure the data are present on the system.")
+              help="Deprecated. Use --prepare instead.",
+              hidden=True)
+@click.option('--prepare', is_flag=True,
+              help="If this flag is set, call `Dataset.prepare()` for all "
+              "datasets after installation to ensure data are ready.")
 @click.option('--env', '-e', 'env_name',
               flag_value='True', type=str, default='False',
               help="Install all requirements in a dedicated "
@@ -455,7 +458,7 @@ def run(config_file=None, **kwargs):
 def install(
         benchmark, minimal, solver_names, dataset_names, config_file=None,
         force=False, recreate=False, env_name='False', confirm=False,
-        quiet=False, download=False, gpu=False):
+        quiet=False, download=False, prepare=False, gpu=False):
 
     if config_file is not None:
         with open(config_file, "r") as f:
@@ -535,7 +538,8 @@ def install(
     exit_code = benchmark.install_all_requirements(
         include_solvers=solvers, include_datasets=datasets,
         minimal=minimal, env_name=env_name, force=force, quiet=quiet,
-        download=download, gpu=gpu, env_need_confirm=env_need_confirm
+        download=download, prepare=prepare, gpu=gpu,
+        env_need_confirm=env_need_confirm
     )
     if exit_code != 0:
         raise SystemExit(exit_code)

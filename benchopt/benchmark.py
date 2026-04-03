@@ -5,6 +5,7 @@ import warnings
 import importlib
 import itertools
 from pathlib import Path
+from traceback import format_exc
 
 try:
     # compat with joblib version < 1.6
@@ -521,7 +522,8 @@ class Benchmark:
     def install_all_requirements(self, include_solvers, include_datasets,
                                  minimal=False, env_name=None,
                                  force=False, quiet=False, download=False,
-                                 gpu=False, env_need_confirm=True):
+                                 prepare=False, gpu=False,
+                                 env_need_confirm=True):
         """Install all classes that are required for the run.
 
         Parameters
@@ -540,7 +542,10 @@ class Benchmark:
         quiet : bool (default: False)
             If True, silences the output of install commands.
         download : bool (default: False)
-            If True, make sure the data are downloaded on the computer.
+            Deprecated. Use *prepare* instead.
+        prepare : bool (default: False)
+            If True, call ``Dataset.prepare()`` for all datasets after
+            installing requirements.
         gpu : bool (default: False)
             If True and the requirements of a class are a dict, install
             requirements["gpu"] instead of requirements["cpu"].
@@ -548,6 +553,14 @@ class Benchmark:
             If not False, this should be the name of the current conda env,
             and it will asks for user confirmation before installing packages.
         """
+        if download:
+            warnings.warn(
+                "The --download flag is deprecated. Use --prepare with "
+                "'benchopt install' or use 'benchopt prepare'.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            prepare = True
         # Collect all classes matching one of the patterns
         print("Collecting packages:")
         exit_code = 0
@@ -594,10 +607,10 @@ class Benchmark:
         if len(list_install) == 0:
             exit_code = self.check_missing(missings)
             print("No new requirements installed")
-            if download:
+            if prepare:
                 exit_code = max(
                     exit_code,
-                    self.download_all_data(include_datasets, env_name, quiet)
+                    self.prepare_all_data(include_datasets, force=force)
                 )
             return exit_code
 
@@ -648,10 +661,10 @@ class Benchmark:
             )
             print(colorify(f" done (missing deps: {not_installed})", YELLOW))
 
-        if download:
+        if prepare:
             exit_code = max(
                 exit_code,
-                self.download_all_data(include_datasets, env_name, quiet)
+                self.prepare_all_data(include_datasets, force=force)
             )
         return exit_code
 
@@ -663,6 +676,69 @@ class Benchmark:
         return _run_shell_in_conda_env(
             cmd, env_name=env_name, raise_on_error=True, capture_stdout=False
         )
+
+    def prepare_all_data(self, datasets, force=False):
+        """Prepare all specified datasets using their ``prepare()`` method.
+
+        For each dataset class, parameterizations that only differ on
+        ``prepare_cache_ignore`` parameters are collapsed into a single
+        preparation job. Results are cached via the benchmark cache so that
+        repeated calls are no-ops unless *force* is True.
+
+        If a dataset does not override ``prepare()``, this falls back to
+        calling ``get_data()`` for backward compatibility.
+
+        Parameters
+        ----------
+        datasets : list of BaseDataset subclasses
+            Dataset classes to prepare.
+        force : bool, default False
+            If True, bypass the cache and re-run preparation unconditionally.
+
+        Returns
+        -------
+        exit_code : int
+            0 if all preparations succeeded, 1 if any failed.
+        """
+        if len(datasets) == 0:
+            return 0
+
+        cached_prepare = self.cache(
+            BaseDataset._prepare, force=force, ignore=["ignored_params"]
+        )
+
+        n_total = 0
+        n_failed = 0
+        for dataset_cls in datasets:
+            for effective, ignored in dataset_cls.get_prepare_params():
+                n_total += 1
+                dataset_repr = dataset_cls._get_parametrized_name(
+                    **{**effective, **ignored}
+                )
+                print(f"Preparing {dataset_repr} ...", end=' ', flush=True)
+                try:
+                    cached_prepare(
+                        dataset_cls=dataset_cls,
+                        dataset_params=effective,
+                        ignored_params=ignored,
+                    )
+                    print("done")
+                except Exception:
+                    print("FAILED")
+                    warnings.warn(
+                        f"Preparation of {dataset_repr} failed:\n"
+                        + format_exc()
+                    )
+                    n_failed += 1
+
+        if n_failed:
+            print(
+                f"Summary: {n_total - n_failed}/{n_total} datasets ready, "
+                f"{n_failed} failed."
+            )
+            return 1
+        print(f"Summary: {n_total}/{n_total} datasets ready.")
+        return 0
 
     def check_missing(self, missings):
         # Check that classes not importable, with no requirements, only depends

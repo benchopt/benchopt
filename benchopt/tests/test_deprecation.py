@@ -1,6 +1,7 @@
 import pytest
 
 from benchopt.utils.conda_env_cmd import get_env_file_from_requirements
+from benchopt.utils.temp_benchmark import temp_benchmark
 
 
 ##############################################################################
@@ -31,3 +32,17 @@ def test_deprecated_channel_spec():
         "channels:\n  - chan\n  - conda-forge\n"
         "dependencies:\n  - pkg1\n  - pkg2\n  - pip\n  - pip:\n    - pkg3"
     )
+
+
+# XXX: remove in benchopt 2.0
+def test_deprecated_download_flag():
+    """--download is a deprecated alias of --prepare."""
+    with temp_benchmark() as bench:
+        datasets = bench.get_datasets()
+        with pytest.warns(DeprecationWarning, match="--download.*deprecated"):
+            bench.install_all_requirements(
+                include_solvers=[],
+                include_datasets=datasets,
+                download=True,
+                env_need_confirm=False,
+            )
