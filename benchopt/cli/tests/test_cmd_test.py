@@ -73,8 +73,8 @@ class TestCmdTest:
                 )
 
         out.check_output("test session starts", repetition=1)
-        out.check_output("FAILED", repetition=1)
-        out.check_output("Invalid benchmark config.yml detected", repetition=1)
+        out.check_output("FAILED", repetition=2)
+        out.check_output("Invalid benchmark config.yml detected", repetition=3)
         out.check_output("invalid_bench_key is set", repetition=1)
 
     @pytest.mark.parametrize('t, pat, pat_new, error_type', [

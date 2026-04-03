@@ -104,14 +104,14 @@ def test_benchmark_config_validity(benchmark):
         benchmark.get_setting("plots")
 
     if caught:
-        details = "\n".join(f"- {w.message}" for w in caught)
+        details = "\n".join(f"{w.message}" for w in caught)
         config_file = benchmark.get_config_file()
         pytest.fail(
             "Invalid benchmark config.yml detected while running "
             "benchopt test.\n"
             f"Benchmark config file: {config_file}\n"
             "Please update config.yml to only use valid benchmark options.\n"
-            f"Reported issue(s):\n{details}"
+            f"Reported issue(s):\n\n{details}"
         )
 
 

@@ -121,6 +121,11 @@ def pytest_generate_tests(metafunc):
                 ('benchmark', param), values, ids=class_ids
             )
             break
+    else:
+        if "benchmark" in metafunc.fixturenames:
+            metafunc.parametrize(
+                'benchmark', [benchmark], ids=[benchmark.name]
+            )
 
 
 @pytest.fixture
