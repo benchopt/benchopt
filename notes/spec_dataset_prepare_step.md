@@ -1,5 +1,40 @@
 # Specification: Dataset Preparation Step Enhancement
 
+## Implementation Status
+
+### Done
+- [x] `BaseDataset.prepare()` no-op method + `prepare_cache_ignore` class attribute
+- [x] `BaseDataset._prepare()` staticmethod (picklable, used through `benchmark.cache`)
+- [x] `ParametrizedNameMixin.get_prepare_params()` — deduplication logic, reusable for solvers
+- [x] `Benchmark.prepare_all_data(datasets, force=False)` with joblib caching
+- [x] `benchopt install --prepare` flag (Phase 3 step: `--download` deprecated, hidden, warns)
+- [x] `test_deprecated_download_flag` in `test_deprecation.py` (XXX: remove in benchopt 2.0)
+
+### Remaining
+
+#### Phase 2 — CLI `benchopt prepare` command
+- [x] Add `benchopt prepare` command in `benchopt/cli/main.py`
+  - options: `-d/--dataset`, `--config`, `--force`, `-e/--env`, `--env-name`
+  - (parallelism options `-j` / `--parallel-config` deferred to Phase 4)
+
+#### Phase 3 — Tests
+- [ ] Unit test: `prepare()` no-op (default) falls back to `get_data()`
+- [ ] Unit test: custom `prepare()` override is called instead of `get_data()`
+- [ ] Unit test: `prepare_cache_ignore` deduplication in `get_prepare_params()`
+  - tuple of names → fewer jobs
+  - `"all"` → exactly one job per class
+- [ ] Unit test: `prepare_all_data()` caching (second call hits cache)
+- [ ] Unit test: `prepare_all_data()` with `force=True` bypasses cache
+- [ ] Unit test: `prepare_all_data()` failure handling (returns exit code 1, warns)
+- [ ] Integration test: `benchopt prepare` CLI end-to-end
+
+#### Phase 4 — Parallelization
+- [ ] Wire `check_parallel_config` + `parallel_run` into `prepare_all_data()`
+- [ ] Add `-j` / `--parallel-config` options to `benchopt prepare` CLI
+- [ ] Integration test: parallel preparation (loky backend)
+
+---
+
 ## Overview
 Add a dedicated `prepare()` step to the `BaseDataset` class to enable efficient, cacheable, and parallelizable dataset preparation. This replaces the current `--download` flag mechanism with a more flexible and robust approach suitable for parallel execution.
 

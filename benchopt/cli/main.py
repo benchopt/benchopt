@@ -386,6 +386,70 @@ def run(config_file=None, **kwargs):
 
 
 @main.command(
+    help="Prepare datasets for a benchmark by running Dataset.prepare().",
+    epilog="To install the required packages for a benchmark, "
+    "see the command `benchopt install`."
+)
+@click.argument('benchmark', default=Path.cwd(), type=click.Path(exists=True),
+                shell_complete=complete_benchmarks)
+@click.option('--dataset', '-d', 'dataset_names',
+              metavar="<dataset_name>", multiple=True, type=str,
+              help="Prepare <dataset_name>. By default, all datasets are "
+              "prepared. When `-d` is used, only listed datasets are "
+              "prepared. Note that <dataset_name> can include parameters "
+              "with the syntax `dataset[parameter=value]`. "
+              "To prepare multiple datasets, use multiple `-d` options. "
+              "To prepare all datasets, use -d 'all' option.",
+              shell_complete=complete_datasets)
+@click.option('--config', 'config_file', default=None,
+              shell_complete=complete_config_files,
+              help="YAML configuration file containing benchmark options. "
+              "The `dataset` key is used to select which datasets to prepare.")
+@click.option('--force',
+              is_flag=True,
+              help="If this flag is set, re-run preparation even if the "
+              "result is already cached.")
+@click.option('--env', '-e', 'env_name',
+              flag_value='True', type=str, default='False',
+              help="Run preparation in a dedicated conda environment "
+              "for the benchmark. "
+              "The environment is named 'benchopt_<BENCHMARK>'.")
+@click.option('--env-name', 'env_name',
+              metavar="<env_name>", type=str, default='False',
+              shell_complete=complete_conda_envs,
+              help="Run preparation in the conda environment "
+              "named <env_name>.")
+def prepare(benchmark, dataset_names, config_file=None,
+            force=False, env_name='False'):
+
+    if config_file is not None:
+        with open(config_file, "r") as f:
+            config = yaml.safe_load(f)
+        if not dataset_names:
+            dataset_names = config.get("dataset", tuple())
+
+    benchmark = Benchmark(benchmark)
+
+    # Resolve env name (same logic as install)
+    if env_name == 'False':
+        env_name = None
+    elif env_name == 'True':
+        env_name = f"benchopt_{benchmark.name}"
+    else:
+        if len(env_name) == 0:
+            raise RuntimeError("Empty environment name.")
+
+    datasets = benchmark.check_dataset_patterns(
+        dataset_names, class_only=True
+    )
+
+    print(f"Preparing datasets for benchmark '{benchmark.name}'")
+    exit_code = benchmark.prepare_all_data(datasets, force=force)
+    if exit_code != 0:
+        raise SystemExit(exit_code)
+
+
+@main.command(
     help="Install the requirements (solvers/datasets) for a benchmark."
 )
 @click.argument('benchmark', default=Path.cwd(), type=click.Path(exists=True),
