@@ -1,15 +1,16 @@
-"""Configure plot views in a benchmark
-===================================
+"""Configure views in a benchmark's visuzalization
+===============================================
 
-This example shows how to configure plots in a benchmark, with ``config.yml``,
-and custom plots.
+This example shows how to configure views in a benchmark visualization,
+with ``config.yml`` and custom plots.
 """
 
+# Import example helpers to define benchmarks and run benchopt in this example
 from benchopt.helpers.run_examples import ExampleBenchmark
 from benchopt.helpers.run_examples import benchopt_cli
 
 # %%
-# Start with a minimal benchmark, with one objective, one dataset and
+# Start with a minimal benchmark, including an objective, one dataset and
 # one solver. This benchmark has no ``config.yml`` file specifying plotting
 # options.
 
@@ -20,19 +21,32 @@ benchmark = ExampleBenchmark(
 benchmark
 
 # %%
-# Run the benchmark to generate results.
+# Run the benchmark to generate results. This will display a first HTML page
+# based on benchopt's default plotting configuration.
 
-benchopt_cli(f"run {benchmark.benchmark_dir} -n 20 -r 2")
+benchopt_cli(
+    f"run {benchmark.benchmark_dir} -n 40 -r 2 -s gd[lr=[1e-1,3e-2,1e-2,3e-3]]"
+)
 
 # %%
-# Define two simple saved views in ``config.yml``. The first one is a log-log
-# plot, showing the objective curve, while the second one is a bar chart
-# showing the runtime of each solver.
+# The default plots are generated from the results, showing the evolution of
+# the first key of the objective against time. Options in the ``Change plot>``
+# menu or the side bar allow to change this plot, changing the objective key,
+# the x-axis or scale, or the type of plot. However, these options are reset
+# when reloading the page. The concept of ``views`` allows to save specific
+# configurations of the plot, that can be easily loaded.
 #
 # In practice, you can create these interactively from the HTML result using
 # the ``Save as view`` button once you have a view that is representative of
 # your benchmark, then hit the ``Configs`` button in the Download area and
-# save the file as a new ``config.yml`` in your benchmark.
+# save the file as a new ``config.yml`` in your benchmark. You can also
+# directly write the ``config.yml`` file, as shown below.
+#
+# Here, we define two simple views in ``config.yml``. The first one is a
+# log-log evolution plot, showing the objective curve as a function of time,
+# while the second one is a bar chart showing the runtime of each solver.
+# Part of the plot parameters can be left free, and will be kept as they are
+# when hitting activating the view.
 
 benchmark.update(extra_files={
     "config.yml": '''
@@ -46,9 +60,10 @@ benchmark.update(extra_files={
 })
 
 # %%
-# Re-generate the HTML report from the latest results using ``benchopt plot``.
-# The resulting HTML page now loads the first of the two views automatically,
-# and the two views are available as options in the to of the page.
+# To re-generate the HTML report from the latest results, call
+# ``benchopt plot``. This will override the existing HTML page, which now has
+# two views available in ``Available plot view`` at the top of the page, and
+# the first view automatically loaded.
 
 benchopt_cli(f"plot {benchmark.benchmark_dir}")
 
@@ -108,7 +123,7 @@ benchmark.update(extra_files={
     plot_configs:
       Sensitivity lr:
         plot_kind: custom_objective_time
-        scale: linear
+        scale: loglog
       Subopt. (log):
         plot_kind: objective_curve
         scale: loglog
@@ -118,6 +133,8 @@ benchmark.update(extra_files={
 })
 
 # %%
-# Now running `benchopt plot` again gives
+# Now running `benchopt plot` again will update the HTML page with the new plot
+# option and the new view, showing the sensitivity of the final objective value
+# to the selection of the learning rate.
 
 benchopt_cli(f"plot {benchmark.benchmark_dir}")
