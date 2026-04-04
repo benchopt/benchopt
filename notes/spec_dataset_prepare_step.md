@@ -18,15 +18,15 @@
   - (parallelism options `-j` / `--parallel-config` deferred to Phase 4)
 
 #### Phase 3 — Tests
-- [ ] Unit test: `prepare()` no-op (default) falls back to `get_data()`
-- [ ] Unit test: custom `prepare()` override is called instead of `get_data()`
-- [ ] Unit test: `prepare_cache_ignore` deduplication in `get_prepare_params()`
+- [x] Unit test: `prepare()` no-op (default) falls back to `get_data()`
+- [x] Unit test: custom `prepare()` override is called instead of `get_data()`
+- [x] Unit test: `prepare_cache_ignore` deduplication in `get_prepare_params()`
   - tuple of names → fewer jobs
   - `"all"` → exactly one job per class
-- [ ] Unit test: `prepare_all_data()` caching (second call hits cache)
-- [ ] Unit test: `prepare_all_data()` with `force=True` bypasses cache
-- [ ] Unit test: `prepare_all_data()` failure handling (returns exit code 1, warns)
-- [ ] Integration test: `benchopt prepare` CLI end-to-end
+- [x] Unit test: `prepare_all_data()` caching (second call hits cache)
+- [x] Unit test: `prepare_all_data()` with `force=True` bypasses cache
+- [x] Unit test: `prepare_all_data()` failure handling (returns exit code 1, warns)
+- [x] Integration test: `benchopt prepare` CLI end-to-end
 
 #### Phase 4 — Parallelization
 - [ ] Wire `check_parallel_config` + `parallel_run` into `prepare_all_data()`

@@ -399,16 +399,20 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
         return self._data
 
     @staticmethod
-    def _prepare(dataset_cls, dataset_params, ignored_params):
+    def _prepare(benchmark_dir, cls_info, dataset_params, ignored_params):
         """Prepare a single dataset instance; used through ``Benchmark.cache``.
 
-        This is a staticmethod so it is picklable for joblib/cloudpickle and
-        can be wrapped by ``benchmark.cache(..., ignore=["ignored_params"])``.
+        All arguments are plain Python scalars, tuples, or dicts so that
+        joblib can hash and pickle them reliably regardless of whether the
+        dataset class was loaded from a dynamic/temporary module.
 
         Parameters
         ----------
-        dataset_cls : type
-            A ``BaseDataset`` subclass.
+        benchmark_dir : str
+            Path to the benchmark root directory.
+        cls_info : tuple of str
+            ``(module_filename, base_class_name, file_hash)`` as produced by
+            :meth:`ParametrizedNameMixin._get_mixin_args`.
         dataset_params : dict
             Parameters that affect preparation (included in cache key).
         ignored_params : dict
@@ -420,6 +424,11 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
         bool
             Always True on success.
         """
+        from benchopt.utils.dynamic_modules import _reconstruct_class
+        from benchopt.benchmark import Benchmark
+
+        Benchmark(benchmark_dir)
+        dataset_cls = _reconstruct_class(benchmark_dir, *cls_info)
         all_params = {**dataset_params, **ignored_params}
         dataset = dataset_cls.get_instance(**all_params)
         if type(dataset).prepare is not BaseDataset.prepare:

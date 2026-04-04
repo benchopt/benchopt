@@ -707,9 +707,15 @@ class Benchmark:
             BaseDataset._prepare, force=force, ignore=["ignored_params"]
         )
 
+        benchmark_dir = str(self.benchmark_dir)
         n_total = 0
         n_failed = 0
         for dataset_cls in datasets:
+            cls_info = (
+                str(dataset_cls._module_filename),
+                dataset_cls._base_class_name,
+                dataset_cls._file_hash,
+            )
             for effective, ignored in dataset_cls.get_prepare_params():
                 n_total += 1
                 dataset_repr = dataset_cls._get_parametrized_name(
@@ -718,7 +724,8 @@ class Benchmark:
                 print(f"Preparing {dataset_repr} ...", end=' ', flush=True)
                 try:
                     cached_prepare(
-                        dataset_cls=dataset_cls,
+                        benchmark_dir=benchmark_dir,
+                        cls_info=cls_info,
                         dataset_params=effective,
                         ignored_params=ignored,
                     )
