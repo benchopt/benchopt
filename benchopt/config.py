@@ -181,7 +181,8 @@ def get_global_config_file():
 
     # check that the global config file is only accessible to current user as
     # it stores critical information such as the github token.
-    if (config_file.exists()
+    # On Windows, chmod does not support Unix permission bits, so skip.
+    if (sys.platform != 'win32' and config_file.exists()
             and config_file.stat().st_mode != GLOBAL_CONFIG_FILE_MODE):
         mode = oct(config_file.stat().st_mode)[5:]
         expected_mode = oct(GLOBAL_CONFIG_FILE_MODE)[5:]
