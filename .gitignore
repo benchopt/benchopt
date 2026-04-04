@@ -42,3 +42,6 @@ benchopt/version.py
 .DS_Store
 coverage.xml
 TODOs.md
+
+# Git worktrees
+worktrees/

@@ -36,9 +36,7 @@ def reset_config_validation_flags():
 
 
 @contextmanager
-def temp_config_file(permission=None):
-    if permission is None:
-        permission = '600' if sys.platform != 'win32' else '666'
+def temp_config_file(permission='600'):
     # Set a temporary global config file for benchopt with the specified
     # permission.
     permission = int(f"100{permission}", base=8)
@@ -47,7 +45,7 @@ def temp_config_file(permission=None):
         config_file.touch(mode=permission, exist_ok=False)
     else:
         config_file.touch(exist_ok=False)
-        if permission == 0o600:
+        if permission == '600':
             os.chmod(config_file, 0o600)
         else:
             os.chmod(config_file, 0o666)
@@ -238,9 +236,9 @@ def test_path_expansion_in_config(monkeypatch, option, pattern):
         m.setitem(os.environ, "HOME", "/path/to/home/")
 
         if option == "data_home":
-            config = f"""data_home: {pattern}\n"""
+            config = f"""data_home: '{pattern}'\n"""
         else:
-            config = f"""data_paths:\n  dataset: {pattern}/dataset/\n"""
+            config = f"""data_paths:\n  dataset: '{pattern}/dataset/'\n"""
         config_file.write_text(config)
         path = get_data_path("dataset")
 
