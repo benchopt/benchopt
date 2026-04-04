@@ -15,7 +15,7 @@ from benchopt.helpers.run_examples import benchopt_cli
 
 benchmark = ExampleBenchmark(
     base="minimal_benchmark", name="minimal_benchmark",
-    ignore=["custom_plot.py", "example_config.yml"]
+    ignore=["custom_plot.py", "example_config.yml", "config.yml"]
 )
 benchmark
 
