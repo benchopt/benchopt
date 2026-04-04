@@ -11,7 +11,7 @@ if %errorlevel% neq 0 exit /b %errorlevel%
 call conda activate "%CONDA_ENV%"
 if %errorlevel% neq 0 exit /b %errorlevel%
 
-set TEST_CMD=python -m pytest -vs --durations=20 --test-env "%CONDA_ENV%" benchopt/tests/test_config.py
+set TEST_CMD=python -m pytest -vs --durations=20 --test-env "%CONDA_ENV%"
 
 REM Un-comment when debugging the CI
 REM set TEST_CMD=%TEST_CMD% --skip-install
