@@ -117,4 +117,7 @@ benchmark.update(extra_files={
     '''
 })
 
+# %%
+# Now running `benchopt plot` again gives
+
 benchopt_cli(f"plot {benchmark.benchmark_dir}")
