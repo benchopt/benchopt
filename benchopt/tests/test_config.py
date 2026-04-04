@@ -227,7 +227,8 @@ def test_path_expansion_in_config(monkeypatch, option, pattern):
         path = get_data_path("dataset")
 
         expected_path = Path.home() / "test" / "dataset"
-        if sys.platform == "win32":
+        if sys.platform == "win32" and "HOME" in pattern:
             expected_path = Path(os.environ["HOME"]) / "test" / "dataset"
+            expected_path = expected_path.resolve()
 
         assert path == expected_path
