@@ -39,10 +39,10 @@ def reset_config_validation_flags():
 def temp_config_file(permission='600'):
     # Set a temporary global config file for benchopt with the specified
     # permission.
-    permission = int(f"100{permission}", base=8)
     config_file = Path(Path() / 'test_config_file.yml')
     if sys.platform != 'win32':
-        config_file.touch(mode=permission, exist_ok=False)
+        permission_mode = int(f"100{permission}", base=8)
+        config_file.touch(mode=permission_mode, exist_ok=False)
     else:
         config_file.touch(exist_ok=False)
         if permission == '600':
