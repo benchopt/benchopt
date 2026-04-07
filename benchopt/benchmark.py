@@ -703,37 +703,22 @@ class Benchmark:
         if len(datasets) == 0:
             return 0
 
-        cached_prepare = self.cache(
-            BaseDataset._prepare, force=force, ignore=["ignored_params"]
-        )
+        cached_prepare = self.cache(BaseDataset._prepare, force=force)
 
-        benchmark_dir = str(self.benchmark_dir)
         n_total = 0
         n_failed = 0
         for dataset_cls in datasets:
-            cls_info = (
-                str(dataset_cls._module_filename),
-                dataset_cls._base_class_name,
-                dataset_cls._file_hash,
-            )
-            for effective, ignored in dataset_cls.get_prepare_params():
+            for effective in dataset_cls.get_prepare_params():
                 n_total += 1
-                dataset_repr = dataset_cls._get_parametrized_name(
-                    **{**effective, **ignored}
-                )
-                print(f"Preparing {dataset_repr} ...", end=' ', flush=True)
+                dataset = dataset_cls.get_instance(**effective)
+                print(f"Preparing {dataset} ...", end=' ', flush=True)
                 try:
-                    cached_prepare(
-                        benchmark_dir=benchmark_dir,
-                        cls_info=cls_info,
-                        dataset_params=effective,
-                        ignored_params=ignored,
-                    )
+                    cached_prepare(dataset=dataset)
                     print("done")
                 except Exception:
                     print("FAILED")
                     warnings.warn(
-                        f"Preparation of {dataset_repr} failed:\n"
+                        f"Preparation of {dataset} failed:\n"
                         + format_exc()
                     )
                     n_failed += 1

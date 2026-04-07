@@ -399,45 +399,15 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
         return self._data
 
     @staticmethod
-    def _prepare(benchmark_dir, cls_info, dataset_params, ignored_params):
-        """Prepare a single dataset instance; used through ``Benchmark.cache``.
-
-        All arguments are plain Python scalars, tuples, or dicts so that
-        joblib can hash and pickle them reliably regardless of whether the
-        dataset class was loaded from a dynamic/temporary module.
-
-        Parameters
-        ----------
-        benchmark_dir : str
-            Path to the benchmark root directory.
-        cls_info : tuple of str
-            ``(module_filename, base_class_name, file_hash)`` as produced by
-            :meth:`ParametrizedNameMixin._get_mixin_args`.
-        dataset_params : dict
-            Parameters that affect preparation (included in cache key).
-        ignored_params : dict
-            Parameters that do not affect preparation (excluded from cache key
-            via ``ignore=["ignored_params"]`` in ``benchmark.cache()``).
-
-        Returns
-        -------
-        bool
-            Always True on success.
+    def _prepare(dataset):
+        """Prepare a single dataset instance.
         """
-        from benchopt.utils.dynamic_modules import _reconstruct_class
-        from benchopt.benchmark import Benchmark
-
-        Benchmark(benchmark_dir)
-        dataset_cls = _reconstruct_class(benchmark_dir, *cls_info)
-        all_params = {**dataset_params, **ignored_params}
-        dataset = dataset_cls.get_instance(**all_params)
         if type(dataset).prepare is not BaseDataset.prepare:
             dataset.prepare()
         else:
             # Backward-compat: fall back to get_data() when prepare() is not
             # overridden, preserving the old --download behaviour.
             dataset.get_data()
-        return True
 
 
 class BaseObjective(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):

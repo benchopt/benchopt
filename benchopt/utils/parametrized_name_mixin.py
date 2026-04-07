@@ -87,20 +87,13 @@ class ParametrizedNameMixin():
         ------
         effective_params : dict
             Parameters that do affect preparation (used as cache key).
-        ignored_params : dict
-            Parameters that do not affect preparation (excluded from cache
-            key, but still used for instantiation).
         """
         cache_ignore = getattr(cls, 'prepare_cache_ignore', ())
         seen_keys = set()
         for params in product_param(cls.parameters):
             if cache_ignore == "all":
-                ignored, effective = dict(params), {}
+                effective = {}
             else:
-                ignored = {
-                    k: v for k, v in params.items()
-                    if k in cache_ignore
-                }
                 effective = {
                     k: v for k, v in params.items()
                     if k not in cache_ignore
@@ -109,7 +102,7 @@ class ParametrizedNameMixin():
             if key in seen_keys:
                 continue
             seen_keys.add(key)
-            yield effective, ignored
+            yield effective
 
     @classmethod
     def _get_parametrized_name(cls, **parameters):

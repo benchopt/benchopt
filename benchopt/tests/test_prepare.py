@@ -1,15 +1,3 @@
-"""Tests for the BaseDataset.prepare() step.
-
-Covers:
-- prepare() no-op default falls back to get_data()
-- custom prepare() override is called instead of get_data()
-- prepare_cache_ignore deduplication in get_prepare_params()
-- prepare_all_data() caching (second call hits cache, not function)
-- prepare_all_data() with force=True bypasses cache
-- prepare_all_data() failure handling (returns exit code 1, emits warning)
-- `benchopt prepare` CLI end-to-end
-"""
-import warnings
 import pytest
 
 from benchopt.base import BaseDataset
@@ -113,11 +101,11 @@ class TestBaseDatasetPrepare:
 class TestGetPrepareParams:
 
     def test_no_params_yields_one_empty(self):
-        """Dataset with no parameters yields exactly one (empty, empty) pair."""
+        """Dataset with no parameters yields exactly one empty dict."""
         with temp_benchmark() as bench:
             cls = bench.get_datasets()[0]
             result = list(cls.get_prepare_params())
-        assert result == [({}, {})]
+        assert result == [{}]
 
     def test_params_no_ignore_yields_all(self):
         """Without cache_ignore, all parameter combos are independent."""
@@ -129,8 +117,7 @@ class TestGetPrepareParams:
             result = list(cls.get_prepare_params())
         # 2 x 2 = 4 combinations, all effective
         assert len(result) == 4
-        for effective, ignored in result:
-            assert ignored == {}
+        for effective in result:
             assert set(effective.keys()) == {"a", "b"}
 
     def test_cache_ignore_deduplicates(self):
@@ -144,9 +131,8 @@ class TestGetPrepareParams:
             result = list(cls.get_prepare_params())
         # Only 2 unique effective combos (one per value of 'n')
         assert len(result) == 2
-        for effective, ignored in result:
+        for effective in result:
             assert "seed" not in effective
-            assert "seed" in ignored
             assert "n" in effective
 
     def test_cache_ignore_all_yields_one(self):
@@ -159,9 +145,8 @@ class TestGetPrepareParams:
             cls = bench.get_datasets()[0]
             result = list(cls.get_prepare_params())
         assert len(result) == 1
-        effective, ignored = result[0]
+        effective = result[0]
         assert effective == {}
-        assert set(ignored.keys()) == {"n", "seed"}
 
 
 # ---------------------------------------------------------------------------
