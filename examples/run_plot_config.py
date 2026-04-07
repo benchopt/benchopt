@@ -1,8 +1,8 @@
 """Configure views in a benchmark's visuzalization
 ===============================================
 
-This example shows how to configure views in a benchmark visualization,
-with ``config.yml`` and custom plots.
+This example shows how to configure views in a benchmark visualization
+with ``config.yml`` and how to add custom plots to your benchmark.
 """
 
 # Import example helpers to define benchmarks and run benchopt in this example
@@ -45,8 +45,8 @@ benchopt_cli(
 # Here, we define two simple views in ``config.yml``. The first one is a
 # log-log evolution plot, showing the objective curve as a function of time,
 # while the second one is a bar chart showing the runtime of each solver.
-# Part of the plot parameters can be left free, and will be kept as they are
-# when hitting activating the view.
+# When defining a view, part of the plotting parameters can be left free.
+# They will be kept as they are when activating the view.
 
 benchmark.update(extra_files={
     "config.yml": '''
@@ -69,7 +69,7 @@ benchopt_cli(f"plot {benchmark.benchmark_dir}")
 
 # %%
 # In some cases, the default plots are not suitable to visualize the results.
-# With ``benchopt``, it is possible to define custom plots that integrate
+# With ``benchopt``. It is possible to define custom plots that integrate
 # seamlessly with the HTML interface. Here, we define a custom plot that shows
 # the final objective value achieved by each solver against the runtime,
 # with colors defined by the value of the learning rate used by the solver.

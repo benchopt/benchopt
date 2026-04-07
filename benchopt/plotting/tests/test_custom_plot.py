@@ -33,9 +33,8 @@ CUSTOM_PLOT = """from benchopt import BasePlot
 
 
 def test_custom_plot_scatter(no_debug_log):
-    plot = CUSTOM_PLOT
 
-    with temp_benchmark(plots=plot) as bench:
+    with temp_benchmark(plots=CUSTOM_PLOT) as bench:
         with CaptureCmdOutput() as out:
             run([str(bench.benchmark_dir),
                  *'-n 1 -r 1 --no-display'

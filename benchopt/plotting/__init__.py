@@ -53,18 +53,15 @@ def _check_view(name, view, plots):
         return
     else:
         plot = next(plot for plot in plots if plot._get_name() == kind)
-        all_options += [
-            f"{kind}_{p}" if p != "plot_kind" else p
-            for p in plot.options.keys()
-        ]
+        all_options += [f"{kind}_{p}" for p in plot.options]
 
     all_options = set(all_options)
-    mismatched_options = set(view.keys()) - all_options
+    mismatched_options = set(view) - all_options
     if mismatched_options:
         warnings.warn(
             f"View '{name}' has invalid options {mismatched_options} for "
             f"plot_kind {kind}. Valid options are:\n-"
-            + "\n-".join(all_options)
+            + "\n-".join(sorted(all_options))
         )
 
 

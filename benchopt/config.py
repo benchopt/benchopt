@@ -37,10 +37,10 @@ DEFAULT_GLOBAL_CONFIG = {
 }
 """
 These are the config options available globally for benchopt, that can be set
-in the global config file. These options are then accessible in the
-benchmark's code via the ``get_setting()`` function. The available options are:
+in the global config file. These options change benchopt's behavior, in
+particular for logging, warnings and errors. The available options are:
 
-* ``debug``: If set to true, enable debug logs.
+* ``debug``, **bool**: If set to true, enable debug logs.
 * ``raise_install_error``, *boolean*: If set to true, raise error when
   install fails.
 * ``github_token``, *str*: token to publish results on ``benchopt/results``
@@ -72,8 +72,8 @@ DEFAULT_BENCHMARK_CONFIG = {
 """
 These are the config options available for each benchmark, that can be set in
 the benchmark's ``config.yml`` file or in the global config file under the
-benchmark's name. These options are then accessible in the benchmark's code via
-the ``get_setting()`` function. The available options are:
+benchmark's name. These options change the behavior of one benchmark,
+in particular the visualization or cache directory. The available options are:
 
 * ``plots``, *list*: Select the plots to display for the benchmark. Should be
   valid plot kinds. The list can simply be one item by line, with each item
@@ -196,6 +196,7 @@ def get_global_config_file():
 
 
 def _check_bench_config(config, config_file_id):
+    """Check the config of a benchmark."""
     for k in config:
         if k not in DEFAULT_BENCHMARK_CONFIG:
             warnings.warn(
@@ -206,7 +207,9 @@ def _check_bench_config(config, config_file_id):
 
 
 def _check_settings(config_file=None, benchmark_name=None):
+    """Check a config, either global or for one benchmark."""
     if config_file is None:
+        # only check the global config once
         if DEFAULT_GLOBAL_CONFIG["_g_config_check"]:
             return
 
@@ -219,18 +222,20 @@ def _check_settings(config_file=None, benchmark_name=None):
             for key in config:
                 if key not in DEFAULT_GLOBAL_CONFIG:
                     bench_config = config[key]
-                    if not isinstance(bench_config, dict):
+                    if isinstance(bench_config, dict):
+                        # If this is a dict, check for benchmark config
+                        _check_bench_config(
+                            bench_config, f"{global_config_file}[{key}]"
+                        )
+                    else:
+                        # otherwise, warn for unknown config option
                         warnings.warn(
                             f"{key} is set in {global_config_file} but is not "
                             "a valid option for benchopt. Options are:\n-"
                             + "\n-".join(DEFAULT_GLOBAL_CONFIG)
                         )
-                        continue
-                    else:
-                        _check_bench_config(
-                            bench_config, f"{global_config_file}[{key}]"
-                        )
 
+        # Check for option set with environment variables
         for var in os.environ:
             if var.startswith("BENCHOPT_"):
                 key = var.replace("BENCHOPT_", "").lower()
