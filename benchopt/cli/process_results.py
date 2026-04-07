@@ -54,6 +54,7 @@ def plot(benchmark, filename=None, kinds=('suboptimality_curve',),
     if html and len(kinds) > 0:
         warnings.warn("Cannot specify '--kind' for HTML plot, this options "
                       "will be ignored.")
+        kinds = []
 
     # Get the result file
     benchmark = Benchmark(benchmark)

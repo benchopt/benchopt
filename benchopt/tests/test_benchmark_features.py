@@ -372,7 +372,7 @@ def test_run_once_callback(n_iter):
 
 @pytest.mark.parametrize("test_case", [
     "no_config", "without_data_home_abs", "with_data_home_abs",
-    "without_data_home_rel", "with_data_home_rel"
+    "without_data_home_rel", "with_data_home_rel",
 ])
 @pytest.mark.parametrize("n_jobs", [1, 2])
 def test_paths_config_key(test_case, n_jobs):

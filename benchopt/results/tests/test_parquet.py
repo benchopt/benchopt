@@ -51,18 +51,15 @@ def test_metadata_saving():
     dummy_config = {
         'plot_configs': {
             'Init': {
-                'kind': 'objective_curve',
-                'objective_column': 'objective_value',
+                'plot_kind': 'objective_curve',
+                'objective_curve_objective_column': 'objective_value',
                 'scale': 'loglog',
-                'ylim': ['5e-11', 100]
+                'objective_curve_X_axis': 'Iteration',
             },
             'View 2': {
-                'kind': 'bar_chart',
-                'objective_column': 'objective_mse',
+                'plot_kind': 'bar_chart',
+                'bar_chart_objective_column': 'objective_mse',
                 'scale': 'semilog-x',
-                'xaxis_type': 'Iteration',
-                'xlim': [1, 120],
-                'ylim': ['5e1', '3.8e2']
             }
         }, 'plots': [
             'objective_curve',
@@ -73,7 +70,7 @@ def test_metadata_saving():
     with temp_benchmark() as bench:
         # Check that the computation caching is working properly.
         run_cmd = (
-            f"{bench.benchmark_dir} -d test-dataset -n 1 -r {1} --no-display"
+            f"{bench.benchmark_dir} -d test-dataset -n 1 -r 1 --no-display"
         ).split()
 
         with CaptureCmdOutput(delete_result_files=False) as out:

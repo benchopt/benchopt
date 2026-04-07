@@ -482,6 +482,7 @@ def benchopt_cli(cmd):
     extra_flags = {
         "install": ["--yes"] if is_sphinx else [],
         "run": ["--no-display"] if is_sphinx else [],
+        "plot": ["--no-display"] if is_sphinx else [],
     }
 
     cli_cmd = cmd_parts[0]
