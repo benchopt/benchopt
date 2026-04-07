@@ -76,7 +76,7 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
         idx = self._label_dict.get(label, len(self._label_dict))
         self._label_dict[label] = idx
 
-        color = COLORS[idx % len(COLORS)]
+        color = tuple(COLORS[idx % len(COLORS)])
 
         return {'color': color, 'marker': idx}
 

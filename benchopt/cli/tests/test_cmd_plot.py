@@ -1,6 +1,8 @@
 import pytest
 from pathlib import Path
+import matplotlib.pyplot as plt
 from unittest.mock import patch
+from contextlib import nullcontext
 
 from benchopt.cli.main import run
 from benchopt.cli.process_results import plot
@@ -77,6 +79,9 @@ class TestPlotCmd:
         "Clean up the temp benchmark directory."
         cls.ctx.__exit__(None, None, None)
 
+    def setup_method(self):
+        plt.close('all')
+
     def test_plot_invalid_file(self):
 
         with pytest.raises(FileNotFoundError, match=r"invalid_file"):
@@ -92,7 +97,7 @@ class TestPlotCmd:
     def test_plot_html_ignore_kind(self):
 
         with pytest.warns(UserWarning, match=r"Cannot specify '--kind'"):
-            plot(f"{self.bench.benchmark_dir} -k invalid_kind --html "
+            plot(f"{self.bench.benchmark_dir} -k boxplot --html "
                  f"--no-display".split(), 'benchopt', standalone_mode=False)
 
     @pytest.mark.parametrize(
@@ -106,13 +111,17 @@ class TestPlotCmd:
         ]
     )
     def test_valid_call_mpl(self, kind, expected_n_files):
+        ctx = nullcontext() if kind is not None else pytest.warns(
+            UserWarning, match="Plot 'table_test-dataset_test-objective'"
+        )
 
         with CaptureCmdOutput() as out:
             cmd = f"{self.bench.benchmark_dir} -f {self.result_file} "
             cmd += "--no-display --no-html "
             if kind is not None:
                 cmd += f"--kind {kind}"
-            plot(cmd.split(), 'benchopt', standalone_mode=False)
+            with ctx:
+                plot(cmd.split(), 'benchopt', standalone_mode=False)
 
         assert len(out.result_files) == expected_n_files
         for file in out.result_files:
@@ -120,17 +129,11 @@ class TestPlotCmd:
                 assert kind in file
             assert '.pdf' in file
 
-    @pytest.mark.parametrize(
-        'kind',
-        ["custom_plot", "objective_curve", "boxplot", "bar_chart", None]
-    )
-    def test_valid_call_html(self, kind):
+    def test_valid_call_html(self):
 
         with CaptureCmdOutput(delete_result_files=False) as out:
             cmd = f"{self.bench.benchmark_dir} -f {self.result_file} "
-            cmd += "--no-display --html "
-            if kind is not None:
-                cmd += f"--kind {kind}"
+            cmd += "--no-display --html"
             plot(cmd.split(), 'benchopt', standalone_mode=False)
 
         assert len(out.result_files) == 2
@@ -140,10 +143,7 @@ class TestPlotCmd:
         for k in [
             "custom_plot", "objective_curve", "boxplot", "bar_chart"
         ]:
-            if kind is None or k == kind:
-                assert f"<option value=\"{k}\"" in html_content
-            else:
-                assert f"<option value=\"{k}\"" not in html_content
+            assert f"<option value=\"{k}\"" in html_content
 
     @pytest.mark.parametrize("n_rep", N_REP)
     @patch("benchopt.plotting.generate_matplotlib.get_plot_boxplot")

@@ -329,7 +329,7 @@ class TestRunCmd:
             out.check_output('test-solver:', repetition=5*n_rep+1)
 
     @pytest.mark.parametrize('ext', ["default", "parquet", "csv"])
-    def test_changing_output_name(self, ext):
+    def test_changing_output_name(self, ext, warn_override):
         ext = "" if ext == "default" else f".{ext}"
         with temp_benchmark() as bench, CaptureCmdOutput() as out:
             command = (

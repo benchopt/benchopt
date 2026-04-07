@@ -373,9 +373,6 @@ const setConfig = (config_item) => {
     }
 
     setState(update);
-
-    // update the plot
-    renderPlot();
   }
 };
 
@@ -592,7 +589,8 @@ const isChart = chart => {
   }
 
   let plot_kind = state().plot_kind;
-  if (!["bar_chart", "boxplot"].includes(plot_kind)) {
+  // If the plot kind is not a default one, check the type of the custom plot in the data.
+  if (!["bar_chart", "boxplot", "table", "scatter"].includes(plot_kind)) {
     let custom_data = getPlotData();
     plot_kind = custom_data.type;
   }

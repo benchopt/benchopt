@@ -1,5 +1,6 @@
 import warnings
 from pathlib import Path
+from benchopt.config import get_setting
 
 
 def rm_folder(folder):
@@ -23,9 +24,10 @@ def uniquify_fname(file_path):
         while (parent / f"{stem}_{i}{suffix}").exists():
             i += 1
         alternative = parent / f"{stem}_{i}{suffix}"
-        warnings.warn(
-            f"{file_path} already exists. Saving results to {alternative}"
-        )
+        if get_setting("warn_nonunique_files"):
+            warnings.warn(
+                f"{file_path} already exists. Saving results to {alternative}"
+            )
         return alternative
     else:
         return file_path
