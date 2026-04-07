@@ -146,12 +146,12 @@ def test_config_file_set_error():
 @pytest.mark.parametrize(
     "config, msg", [
         ("invalid_key: true\n", "invalid_key is set"),
-        (my_benchmark: 1\n", "my_benchmark is set"),
+        ("my_benchmark: 1\n", "my_benchmark is set"),
         ("my_benchmark:\n  invalid_bench_key: true\n",
          "invalid_bench_key is set"),
     ],  ids=['invalid_key', 'invalid_bench', 'invalid_key_in_bench']
 )
-def test_global_config_validation():
+def test_global_config_validation(config, msg):
     with temp_config_file() as config_file:
         config_file.write_text(config)
 
@@ -161,7 +161,6 @@ def test_global_config_validation():
         with warnings.catch_warnings():
             warnings.simplefilter("error")
             _check_settings()
-
 
 
 @pytest.mark.parametrize("option", DEFAULT_BENCHMARK_CONFIG.keys())

@@ -72,8 +72,9 @@ DEFAULT_BENCHMARK_CONFIG = {
 """
 These are the config options available for each benchmark, that can be set in
 the benchmark's ``config.yml`` file or in the global config file under the
-benchmark's name. These options change the behavior of one benchmark,
-in particular the visualization or cache directory. The available options are:
+benchmark's name. These options change the behavior of benchopt for one
+benchmark. It can be used to configure the visualization or the data directory.
+The available options are:
 
 * ``plots``, *list*: Select the plots to display for the benchmark. Should be
   valid plot kinds. The list can simply be one item by line, with each item

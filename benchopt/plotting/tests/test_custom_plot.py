@@ -9,7 +9,7 @@ CUSTOM_PLOT = """from benchopt import BasePlot
 
     class Plot(BasePlot):
         name = "Custom plot 1"
-        type = 'scatter'
+        type = "scatter"
         options = {}
 
         def plot(self, df):
@@ -46,8 +46,8 @@ def test_custom_plot_scatter(no_debug_log):
 @pytest.mark.parametrize(
     "pat, replace, msg",
     [
-        ("type = 'scatter'", "", "Plot should have a `type` attribute."),
-        ("type = 'scatter'", "type = 'curving'", "Plot type should be one of"),
+        ("type = \"scatter\"", "", "Plot should have a `type` attribute."),
+        ("type = \"scatter\"", "type = \"curving\"", "Plot type should be "),
         ("options = {}", "options = []",
          "`options` should be a dictionary"),
         ("options = {}", "options = {'color': 'blue'}",
@@ -56,6 +56,11 @@ def test_custom_plot_scatter(no_debug_log):
          "The values of options should be non empty"),
         ("options = {}", "options = {'color': ['blue']}",
          "should match the signature"),
+    ],
+    ids=[
+        "no-type", "invalid-type", "options-not-dict",
+        "options-values-not-list", "options-values-empty",
+        "options-values-not-matching"
     ]
 )
 def test_custom_plot_errors(no_debug_log, pat, replace, msg):
