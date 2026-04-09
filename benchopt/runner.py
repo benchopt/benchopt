@@ -1,10 +1,12 @@
 import time
 import inspect
 import pickle
+import threading
 
 from datetime import datetime
 
 from joblib import hash
+import psutil
 
 from .callback import _Callback
 from .benchmark import Benchmark
@@ -43,6 +45,80 @@ def _seed_run(objective, dataset, solver, repetition, base_seed):
             }
 
 
+class _ResourceMonitor:
+    def __init__(self, interval=0.1):
+        self.interval = interval
+        try:
+            self._process = psutil.Process()
+        except Exception:
+            self._process = None
+        self._stop_event = threading.Event()
+        self._thread = None
+        self._cpu_sum = 0.0
+        self._num_samples = 0
+        self._max_cpu = 0.0
+        self._max_rss = self._process.memory_info().rss if self._process else 0
+        self._enabled = self._process is not None
+
+    def start(self):
+        if not self._enabled:
+            return
+        self._process.cpu_percent(interval=None)
+        self._thread = threading.Thread(target=self._track, daemon=True)
+        self._thread.start()
+
+    def _track(self):
+        if not self._enabled:
+            return
+        while not self._stop_event.is_set():
+            cpu = self._process.cpu_percent(interval=self.interval)
+            rss = self._process.memory_info().rss
+            self._cpu_sum += cpu
+            self._num_samples += 1
+            if cpu > self._max_cpu:
+                self._max_cpu = cpu
+            if rss > self._max_rss:
+                self._max_rss = rss
+
+    def stop(self):
+        if not self._enabled or self._thread is None:
+            return
+        self._stop_event.set()
+        self._thread.join()
+        if self._num_samples == 0:
+            self._record_snapshot()
+        self._thread = None
+
+    def _record_snapshot(self):
+        if not self._enabled:
+            return
+        cpu = self._process.cpu_percent(interval=None)
+        rss = self._process.memory_info().rss
+        self._cpu_sum += cpu
+        self._num_samples += 1
+        if cpu > self._max_cpu:
+            self._max_cpu = cpu
+        if rss > self._max_rss:
+            self._max_rss = rss
+
+    def to_dict(self):
+        if not self._enabled:
+            return {
+                'cpu_usage_avg': None,
+                'cpu_usage_max': None,
+                'ram_max_mb': None
+            }
+        avg_cpu = (
+            self._cpu_sum / self._num_samples if self._num_samples else 0.0
+        )
+        cpu_cores = psutil.cpu_count()
+        return {
+            'cpu_usage_avg': avg_cpu / cpu_cores,
+            'cpu_usage_max': self._max_cpu / cpu_cores,
+            'ram_max_mb': self._max_rss / (1024 ** 2),
+        }
+
+
 ##################################
 # Time one run of a solver
 ##################################
@@ -77,17 +153,30 @@ def run_one_resolution(objective, solver, meta, stop_val):
         )
 
     solver.pre_run_hook(stop_val)
+    monitor = _ResourceMonitor()
+    monitor.start()
     t_start = time.perf_counter()
-    solver.run(stop_val)
+    try:
+        solver.run(stop_val)
+    finally:
+        monitor.stop()
     delta_t = time.perf_counter() - t_start
     result = solver.get_result()
     objective_list = objective(result)
+    resource_usage = monitor.to_dict()
 
     # Add system info in results
     info = get_sys_info()
 
     return [
-        dict(**meta, stop_val=stop_val, time=delta_t, **objective_dict, **info)
+        dict(
+            **meta,
+            stop_val=stop_val,
+            time=delta_t,
+            **resource_usage,
+            **objective_dict,
+            **info
+        )
         for objective_dict in objective_list
     ]
 
@@ -149,9 +238,14 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
                 objective, solver, meta, stopping_criterion
             )
             solver.pre_run_hook(callback)
+            ressource_monitor = _ResourceMonitor()
+            ressource_monitor.start()
             callback.start()
             solver.run(callback)
+            ressource_monitor.stop()
+            resource_usage = ressource_monitor.to_dict()
             curve, ctx.status = callback.get_results()
+            curve = [x | resource_usage for x in curve]
         else:
 
             # Create a Memory object to cache the computations in the benchmark
