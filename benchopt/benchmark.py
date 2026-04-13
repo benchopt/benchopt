@@ -5,7 +5,7 @@ import warnings
 import importlib
 import itertools
 from pathlib import Path
-from traceback import format_exc
+from traceback import print_exc
 
 try:
     # compat with joblib version < 1.6
@@ -717,10 +717,7 @@ class Benchmark:
                     print("done")
                 except Exception:
                     print("FAILED")
-                    warnings.warn(
-                        f"Preparation of {dataset} failed:\n"
-                        + format_exc()
-                    )
+                    print_exc()
                     n_failed += 1
 
         if n_failed:
