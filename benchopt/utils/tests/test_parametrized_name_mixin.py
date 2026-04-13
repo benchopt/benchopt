@@ -1,4 +1,7 @@
+from joblib import Parallel, delayed
+
 from benchopt.utils.temp_benchmark import temp_benchmark
+from benchopt.utils.parametrized_name_mixin import product_param
 
 
 DATASET = """from benchopt import BaseDataset
@@ -65,3 +68,86 @@ def test_repr_with_parameter_template():
         cls = bench.get_datasets()[0]
         instance = cls.get_instance(n=1000, seed=42)
     assert repr(instance) == "test-dataset[n=1000]"
+
+
+def test_get_instance_saves_params_with_custom_init():
+    # get_instance saves parameters even when __init__ is overridden.
+    dataset = """from benchopt import BaseDataset
+        class Dataset(BaseDataset):
+            name = "test-dataset"
+            parameters = {'n': [1000, 10000], 'seed': [0, 1]}
+            def __init__(self, n=1000, seed=0):
+                self.n = n
+                self.seed = seed
+            def get_data(self): return dict(X=None, y=None)
+    """
+    with temp_benchmark(datasets=dataset) as bench:
+        cls = bench.get_datasets()[0]
+        instance = cls.get_instance(n=10000, seed=1)
+    assert instance._parameters == {'n': 10000, 'seed': 1}
+    assert repr(instance) == "test-dataset[n=10000,seed=1]"
+
+
+def test_product_param_cartesian_product():
+    # product_param yields the cartesian product of all parameter lists.
+    result = list(product_param({'a': [1, 2], 'b': [10, 20, 30]}))
+    assert result == [
+        {'a': 1, 'b': 10},
+        {'a': 1, 'b': 20},
+        {'a': 1, 'b': 30},
+        {'a': 2, 'b': 10},
+        {'a': 2, 'b': 20},
+        {'a': 2, 'b': 30},
+    ]
+
+
+def test_product_param_multi_key():
+    # Comma-separated keys allow paired parameters to vary together.
+    result = list(product_param({'a, b': [(1, 10), (2, 20)]}))
+    assert result == [{'a': 1, 'b': 10}, {'a': 2, 'b': 20}]
+
+
+def test_product_param_mixed():
+    # Comma-separated keys allow paired parameters to vary together.
+    result = list(product_param({
+        'a, b': [(1, 10), (2, 20)],
+        'c': [100, 200],
+    }))
+    assert result == [
+        {'a': 1, 'b': 10, 'c': 100},
+        {'a': 1, 'b': 10, 'c': 200},
+        {'a': 2, 'b': 20, 'c': 100},
+        {'a': 2, 'b': 20, 'c': 200}
+    ]
+
+
+def test_pickling_preserves_parameters():
+    # Instances can be pickled by joblib and reconstructed with intact
+    # parameters (uses __reduce__ -> _load_instance -> _get_mixin_args).
+    with temp_benchmark(datasets=DATASET) as bench:
+        cls = bench.get_datasets()[0]
+        instance = cls.get_instance(n=1000, seed=1)
+        reprs = Parallel(n_jobs=2)(
+            delayed(repr)(instance) for _ in range(2)
+        )
+    assert reprs == ["test-dataset[n=1000,seed=1]"] * 2
+
+
+def test_pickling_does_not_carry_data():
+    # Calling _get_data() caches data on the instance as `_data`, but this
+    # should not appear in the pickle: the reconstructed instance must be
+    # clean so that workers load fresh data rather than inheriting a
+    # potentially large cached payload from the parent process.
+    dataset = DATASET.replace("# IGNORE", "")
+    with temp_benchmark(datasets=dataset) as bench:
+        cls = bench.get_datasets()[0]
+        instance = cls.get_instance(n=1000, seed=1)
+        # Populate the in-process cache
+        instance._get_data()
+        assert hasattr(instance, '_data')
+
+        has_data = Parallel(n_jobs=2)(
+            delayed(hasattr)(instance, '_data') for _ in range(2)
+        )
+    # Workers reconstruct via _load_instance, which does not carry _data
+    assert has_data == [False, False]

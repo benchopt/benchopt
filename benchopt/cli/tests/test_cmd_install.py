@@ -108,35 +108,42 @@ class TestInstallCmd:
             # Check that the default 'install_cmd' is 'conda'
             assert getattr(solver_instance, "install_cmd", None) == "conda"
 
-    def test_download_data(self):
+    @pytest.mark.parametrize(
+        "has_prepare", [True, False], ids=["with_prepare", "no_prepare"]
+    )
+    def test_prepare_data(self, has_prepare):
 
         # solver with missing dependency specified
-        dataset = """from benchopt import BaseDataset
+        dataset = f"""from benchopt import BaseDataset
 
             class Dataset(BaseDataset):
                 name = 'test_dataset'
-                def get_data(self): print("LOAD DATA")
+                {'def prepare(self): print("#PREPARE")' if has_prepare else ''}
+                def get_data(self): print("#GET_DATA")
         """
+        msg = "#PREPARE" if has_prepare else "#GET_DATA"
         dataset2 = dataset.replace("dataset", "dataset2")
         with temp_benchmark(datasets=[dataset, dataset2]) as benchmark:
             with CaptureCmdOutput() as out:
                 install([
                     *f'{benchmark.benchmark_dir} -d test_dataset '
-                    '-y --download'.split()
+                    '-y --prepare'.split()
                 ], 'benchopt', standalone_mode=False)
 
-            out.check_output("LOAD DATA", repetition=1)
-            out.check_output("Loading data:", repetition=1)
+            out.check_output(msg, repetition=1)
+            out.check_output("Preparing test_dataset", repetition=1)
+            out.check_output("Preparing test_dataset2", repetition=0)
 
-        # Check it works with 2 datasets
+            # Check multiple datasets - test_dataset is cached from above,
+            # so only test_dataset2 actually runs get_data().
             with CaptureCmdOutput() as out:
                 install([
-                    *f'{benchmark.benchmark_dir} -y --download '
+                    *f'{benchmark.benchmark_dir} -y --prepare '
                     '-d test_dataset -d test_dataset2'.split()
                 ], 'benchopt', standalone_mode=False)
 
-            out.check_output("LOAD DATA", repetition=2)
-            out.check_output("Loading data:", repetition=1)
+            out.check_output(msg, repetition=1)
+            out.check_output("Preparing", repetition=2)
 
     def test_existing_empty_env(self, empty_env_name):
         msg = (
