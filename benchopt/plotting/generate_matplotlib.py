@@ -143,6 +143,7 @@ def get_plot_boxplot(plot_data):
             positions=positions,
             label=data["label"],
             patch_artist=True,
+            showfliers=False,
         )
 
         color = data["color"]
@@ -155,13 +156,20 @@ def get_plot_boxplot(plot_data):
             whisker.set(color=color, linewidth=1)
         for cap in boxplot["caps"]:
             cap.set(color=color, linewidth=1)
-        for flier in boxplot["fliers"]:
-            flier.set(color=color)
 
     ax.set_xticks(range(len(all_labels)), all_labels, rotation=45)
     ax.set_title(plot_data["title"])
     ax.set_ylabel(plot_data["ylabel"])
-    ax.legend()
+
+    # Plot unique labels in the legend
+    handles, labels = ax.get_legend_handles_labels()
+    unique = {}
+    for handle, label in zip(handles, labels):
+        if label and label not in unique:
+            unique[label] = handle
+    if unique:
+        ax.legend(unique.values(), unique.keys())
+
     fig.tight_layout()
 
     return fig
