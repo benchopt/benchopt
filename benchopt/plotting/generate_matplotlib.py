@@ -125,6 +125,7 @@ def get_plot_barchart(plot_data):
 
 def get_plot_boxplot(plot_data):
     fig = plt.figure()
+    ax = fig.gca()
 
     # collect the union of all labels (x tick names)
     all_labels = []
@@ -140,7 +141,7 @@ def get_plot_boxplot(plot_data):
         boxplot = plt.boxplot(
             data["y"],
             positions=positions,
-            widths=0.6,           # you can keep this fixed
+            label=data["label"],
             patch_artist=True,
         )
 
@@ -152,11 +153,15 @@ def get_plot_boxplot(plot_data):
             median.set(color=color, linewidth=1)
         for whisker in boxplot["whiskers"]:
             whisker.set(color=color, linewidth=1)
+        for cap in boxplot["caps"]:
+            cap.set(color=color, linewidth=1)
         for flier in boxplot["fliers"]:
             flier.set(color=color)
 
-    plt.xticks(range(len(all_labels)), all_labels, rotation=45)
-    plt.title(plot_data["title"])
-    plt.ylabel(plot_data["ylabel"])
+    ax.set_xticks(range(len(all_labels)), all_labels, rotation=45)
+    ax.set_title(plot_data["title"])
+    ax.set_ylabel(plot_data["ylabel"])
+    ax.legend()
+    fig.tight_layout()
 
     return fig
