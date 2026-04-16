@@ -1,7 +1,6 @@
 import pandas as pd
 
-from . import read_results
-
+from . import read_results,save_results
 
 def merge_results(result_filenames, keep="last"):
     """Merge parquet files containing results of a benchmark.
@@ -27,3 +26,21 @@ def merge_results(result_filenames, keep="last"):
             ], keep="last"
         )
     return df
+
+def merge(result_filenames, keep='last', output=None):
+    """Merge parquet files containing results of a benchmark and returns the path of the new parquet file.
+    
+    Parameters
+    ----------
+    result_filenames: list of str | Path
+        List of parquet files to merge
+    keep: str
+        Must be "last" or "all". When merged files contain multiple times the same configuration, controls whether to keep all the lines or only keep the last result per configuration.
+    output: str | Path
+        Path of the new parquet file
+    """
+    # Merge the results.
+    df = merge_results(result_filenames, keep=keep)
+    result_path = save_results(df, output)
+    return result_path
+
