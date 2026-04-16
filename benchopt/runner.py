@@ -257,17 +257,6 @@ def get_solver_kwargs(
     args_run_one_to_cvg : dict
         The dictionary of arguments to run_one_to_cvg.
     """
-    # Set objective and skip if necessary.
-    skip, reason = objective.set_dataset(dataset)
-    if skip:
-        terminal.set(
-            dataset=str(dataset),
-            objective=str(objective),
-            solver=str(solver)
-        )
-        terminal.skip(reason, objective=True)
-        return []
-
     # get sampling strategy
     # for plotting purpose consider 'callback' as 'iteration'
     sampling_strategy = solver._solver_strategy
@@ -328,20 +317,19 @@ def get_solver_kwargs(
         }
         terminal.n_repetitions = n_repetitions
 
-        if rep < n_repetitions - 1:
-            _seed_run(
-                objective=objective,
-                dataset=dataset,
-                solver=solver,
-                repetition=rep+1,
-                base_seed=benchmark.seed
-            )
+        _seed_run(
+            objective=objective_rep,
+            dataset=dataset,
+            solver=solver,
+            repetition=rep,
+            base_seed=benchmark.seed
+        )
 
-            # Set objective and skip if necessary.
-            skip, reason = objective.set_dataset(dataset)
-            if skip:
-                terminal.skip(reason, objective=True)
-                continue
+        # Set objective and skip if necessary.
+        skip, reason = objective_rep.set_dataset(dataset)
+        if skip:
+            terminal.skip(reason, objective=True)
+            continue
 
         args_run_one_to_cvg = dict(
             benchmark=benchmark, objective=objective_rep, solver=solver,
