@@ -1,5 +1,4 @@
 import yaml
-import warnings
 from joblib import parallel_config
 from joblib import Parallel, delayed
 
@@ -43,28 +42,24 @@ def parallel_run(benchmark, run, run_kwargs_generator, config, collect=False):
     return results_generator
 
 
-def check_parallel_config(parallel_config_file, slurm_config_file, n_jobs):
+def check_parallel_config(parallel_config_file, n_jobs):
     """Returns the parallelism config information for the run.
 
     If nothing is provided, default to `loky` backend with n_jobs=1.
 
     Parameters
     ----------
+    parallel_config_file: str or dict or None
+        Path to the parallel config YAML file, or a dict containing the config
+        information. If None, defaults to None.
+    n_jobs: int or None
+        Number of parallel jobs to run. If None, defaults to None.
+
+    Returns
+    -------
+    parallel_config: dict
+        The parallel config information for the run.
     """
-    # XXX: remove in benchopt 1.8
-    if slurm_config_file is not None:
-        assert parallel_config_file is None, (
-            "Cannot use both `--slurm` and `--parallel-backend`. Only use the "
-            "latter as the former is deprecated."
-        )
-        warnings.warn(
-            "`--slurm` is deprecated, use `--parallel-backend` instead. "
-            "The config files are similar but the new one should include the "
-            "extra argument `backend : submitit` to select the submitit "
-            "backend. This will cause an error starting benchopt 1.8.",
-            DeprecationWarning
-        )
-        parallel_config_file = slurm_config_file
 
     # Load parallel config from config file. If None is provided,
     # default to joblib backend ('loky').
@@ -74,9 +69,6 @@ def check_parallel_config(parallel_config_file, slurm_config_file, n_jobs):
                 parallel_config = yaml.safe_load(f)
         else:
             parallel_config = parallel_config_file
-        # XXX: remove in benchopt 1.8
-        if slurm_config_file is not None:
-            parallel_config['backend'] = "submitit"
         if n_jobs is not None:
             parallel_config['n_jobs'] = n_jobs
     else:

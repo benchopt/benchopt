@@ -73,16 +73,13 @@ def get_benchopt_requirement(pytest=False):
             return f'-e {dist.location}{extra}', True
     req = str(req).strip('\n')
 
-    if pytest:
-        # Add pytest as a dependency of the env
-        if "/" in req:
-            # If it is a local path or an URL, we need to add the egg
-            req = f"{req}#egg=benchopt[test]"
-        else:
-            # else simply add the test extra
-            req = req.replace(
-                "benchopt", "benchopt[test]"
-            )
+    # Handle URL / local installs properly (PEP 508)
+    if "@" in req:
+        req = req.replace(
+            "benchopt @", f"benchopt{extra} @"
+        )
+    else:
+        req = f'benchopt{extra}=={dist.version}'
 
     return req, False
 

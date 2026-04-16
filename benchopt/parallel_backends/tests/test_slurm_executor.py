@@ -3,6 +3,7 @@ import pytest
 from benchopt.runner import run_benchmark
 from benchopt.tests.utils import CaptureCmdOutput
 from benchopt.utils.temp_benchmark import temp_benchmark
+from benchopt.results import read_results
 
 submitit = pytest.importorskip("submitit")
 
@@ -51,18 +52,15 @@ def test_get_slurm_executor(dummy_slurm_config):
 def test_merge_configs(dummy_slurm_config):
     # Test with solver overrides
     solver = """
-    from benchopt import BaseSolver
+    from benchopt.utils.temp_benchmark import TempSolver
 
-    class Solver(BaseSolver):
+    class Solver(TempSolver):
         name = "dummy"
         slurm_params = {
             "slurm_time": "00:01",
             "slurm_nodes": 2,
             "slurm_mem": "1234MB",
         }
-        def set_objective(self, **kwargs): pass
-        def run(self, _): pass
-        def get_result(self): return dict(beta=1)
     """
 
     with mocked_slurm(), temp_benchmark(solvers=solver) as bench:
@@ -128,15 +126,12 @@ def test_run_on_slurm(monkeypatch, dummy_slurm_config):
     my_params_str = f"parameters = {my_params}"
 
     solver = """
-        from benchopt import BaseSolver
+        from benchopt.utils.temp_benchmark import TempSolver
 
-        class Solver(BaseSolver):
+        class Solver(TempSolver):
             name = "{name}"
             {parameters}
             {slurm_params}
-            def set_objective(self, **kwargs): pass
-            def run(self, _): pass
-            def get_result(self): return dict(beta=1)
     """
     solvers = [
         solver.format(name='solver_no_params', parameters="", slurm_params=""),
@@ -171,8 +166,7 @@ def test_run_on_slurm(monkeypatch, dummy_slurm_config):
             )
 
         # Get the results
-        import pandas as pd
-        df = pd.read_parquet(out.result_files[0]).set_index("solver_name")
+        df = read_results(out.result_files[0]).set_index("solver_name")
 
     assert len(df) == 6
 
@@ -180,14 +174,14 @@ def test_run_on_slurm(monkeypatch, dummy_slurm_config):
     assert (df['s_gres'] == "gpu:1").all()
 
     # If no parameters and no slurm_params, no override of global config
-    p_default = df.loc['solver_no_params']
+    p_default = df.loc['solver_no_params'].fillna("")
     for p in ["nodes", "time", "mem"]:
-        assert p_default[f"s_{p}"] == parallel_config.get(f"slurm_{p}", None)
+        assert p_default[f"s_{p}"] == parallel_config.get(f"slurm_{p}", "")
 
     # If slurm_params is set, it is used as a global config
-    p_slurm_params = df.loc["solver_slurm_params"]
+    p_slurm_params = df.loc["solver_slurm_params"].fillna("")
     for p in ["nodes", "time", "mem"]:
-        assert p_slurm_params[f"s_{p}"] == slurm_params.get(f"slurm_{p}", None)
+        assert p_slurm_params[f"s_{p}"] == slurm_params.get(f"slurm_{p}", "")
 
     # Check that parameters override works
     all_params = df.query("p_solver_p == 2")

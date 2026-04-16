@@ -46,9 +46,10 @@ For benchmark settings, they are grouped in a section with the same name as the 
 
     benchmark_bench:
         plots:
-            - suboptimality_curve
-            - bar_chart
             - objective_curve
+            - bar_chart
+            - boxplot
+            - table
         data_paths:
             imagenet: /path/to/imagenet
 

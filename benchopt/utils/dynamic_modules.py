@@ -8,7 +8,11 @@ import warnings
 import importlib
 from pathlib import Path
 
-from joblib.externals import cloudpickle
+try:
+    # compat with older joblib version prior to 1.6
+    from joblib.externals import cloudpickle
+except ImportError:
+    import cloudpickle
 
 from .dependencies_mixin import DependenciesMixin
 from .safe_import import safe_import_context

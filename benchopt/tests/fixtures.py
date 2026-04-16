@@ -1,4 +1,5 @@
 import os
+import sys
 import uuid
 import pytest
 
@@ -10,6 +11,7 @@ from benchopt.utils.shell_cmd import _run_shell_in_conda_env
 
 os.environ['BENCHOPT_DEBUG'] = '1'
 os.environ['BENCHOPT_RAISE_INSTALL_ERROR'] = '1'
+os.environ['BENCHOPT_WARN_NONUNIQUE_FILES'] = '0'
 
 _TEST_ENV_NAME = None
 _EMPTY_ENV_NAME = None
@@ -66,6 +68,11 @@ def pytest_unconfigure(config):
         del config._ctx
 
 
+@pytest.fixture(scope='session')
+def bench():
+    return _TEST_BENCHMARK
+
+
 def pytest_collection_modifyitems(config, items):
     if not config.getoption("--skip-install"):
         return
@@ -96,15 +103,14 @@ def pytest_generate_tests(metafunc):
 
     # Extract the value for the parametrizations
     parametrization = {
-        'dataset_simu': [
-            (benchmark, dataset) for dataset in benchmark.get_datasets()
-            if dataset.name.lower() == 'simulated'
-        ],
         'dataset_class': [
             (benchmark, dataset) for dataset in benchmark.get_datasets()
         ],
         'solver_class': [
             (benchmark, solver) for solver in benchmark.get_solvers()
+        ],
+        'objective_class': [
+            (benchmark, benchmark.get_benchmark_objective())
         ]
     }
 
@@ -113,6 +119,12 @@ def pytest_generate_tests(metafunc):
         if param in metafunc.fixturenames:
             metafunc.parametrize(
                 ('benchmark', param), values, ids=class_ids
+            )
+            break
+    else:
+        if "benchmark" in metafunc.fixturenames:
+            metafunc.parametrize(
+                'benchmark', [benchmark], ids=[benchmark.name]
             )
 
 
@@ -132,8 +144,22 @@ def no_raise_install(request):
     os.environ["BENCHOPT_RAISE_INSTALL_ERROR"] = "1"
 
 
+@pytest.fixture
+def warn_override(request):
+    """Deactivate the raise install error for a test."""
+    os.environ["BENCHOPT_WARN_NONUNIQUE_FILES"] = "1"
+    yield
+    os.environ["BENCHOPT_WARN_NONUNIQUE_FILES"] = "0"
+
+
 @pytest.fixture(scope='session')
-def test_env_name(request):
+def use_env(request):
+    if request.config.getoption("--skip-env"):
+        pytest.skip("Skip creating a test env")
+
+
+@pytest.fixture(scope='session')
+def test_env_name(request, bench, use_env):
     global _TEST_ENV_NAME
 
     if _TEST_ENV_NAME is None:
@@ -147,51 +173,29 @@ def test_env_name(request):
 
         _TEST_ENV_NAME = env_name
 
-        create_conda_env(_TEST_ENV_NAME, recreate=recreate)
+        create_conda_env(
+            env_name, benchmark=bench, recreate=recreate, pytest=True
+        )
+        bench.get_benchmark_objective().install(env_name=env_name)
+        # Flush the output to avoid issues with pytest capturing
+        # the output later on and failing tests because of it.
+        # Make sure to flush stdout and stderr
+        print(flush=True)
+        print(flush=True, file=sys.stderr)
 
     return _TEST_ENV_NAME
 
 
-@pytest.fixture(scope='function')
-def uninstall_dummy_package(test_env_name):
-    _run_shell_in_conda_env(
-        "pip uninstall -qqy dummy_package", env_name=test_env_name
-    )
-    yield
-    _run_shell_in_conda_env(
-        "pip uninstall -qqy dummy_package", env_name=test_env_name
-    )
-
-
-@pytest.fixture(scope='function')
-def no_pytest(test_env_name):
-    cmd = "which pytest\npip uninstall -qqy pytest"
-
-    exitcode = _run_shell_in_conda_env(cmd, env_name=test_env_name)
-    yield
-    # If pytest was not installed before, exit code is 1 so do not reinstall
-    # otherwise, reinstall it
-    if exitcode == 0:
-        exitcode, output = _run_shell_in_conda_env(
-            "pip install -q pytest", env_name=test_env_name,
-            return_output=True
-        )
-        assert exitcode == 0, output
-
-
 @pytest.fixture(scope='session')
-def empty_env_name(request):
+def empty_env_name(request, use_env):
     global _EMPTY_ENV_NAME
 
     if _EMPTY_ENV_NAME is None:
-        if request.config.getoption("--skip-env"):
-            pytest.skip("Skip creating a test env")
         env_name = f"_benchopt_test_env_{uuid.uuid4()}"
-        request.addfinalizer(delete_empty_env)
-
         _EMPTY_ENV_NAME = env_name
 
-        create_conda_env(_EMPTY_ENV_NAME, empty=True)
+        request.addfinalizer(delete_empty_env)
+        create_conda_env(env_name, empty=True)
 
     return _EMPTY_ENV_NAME
 
@@ -210,3 +214,30 @@ def delete_empty_env():
     if _EMPTY_ENV_NAME is not None:
         delete_conda_env(_EMPTY_ENV_NAME)
         _EMPTY_ENV_NAME = None
+
+
+@pytest.fixture(scope='function')
+def uninstall_dummy_package(test_env_name):
+    _run_shell_in_conda_env(
+        "pip uninstall -qqy dummy_package", env_name=test_env_name
+    )
+    yield
+    _run_shell_in_conda_env(
+        "pip uninstall -qqy dummy_package", env_name=test_env_name
+    )
+
+
+@pytest.fixture(scope='function')
+def no_pytest(test_env_name):
+    cmd = "pip uninstall -qqy pytest"
+
+    # Uninstall pytest in the test env to test the behavior when pytest is not
+    # installed.
+    _run_shell_in_conda_env(cmd, env_name=test_env_name)
+    yield
+    # reinstall pytest in the test_env
+    exitcode, output = _run_shell_in_conda_env(
+        "pip install -q pytest", env_name=test_env_name,
+        return_output=True
+    )
+    assert exitcode == 0, output

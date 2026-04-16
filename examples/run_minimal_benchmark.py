@@ -1,18 +1,40 @@
 """Running an existing benchmark
 =============================
 
-This Example demonstrates how to run an existing benchmark with benchopt.
-It uses the `benchopt_run` helper function to run the benchmark, which runs
-programmatically the equivalent of the command line interface:
+This example demonstrates how to run an existing benchmark with benchopt.
 """
 
-from benchopt.helpers.run_examples import benchopt_run
+# Import example helpers to define the benchmark and
+# programmatically call the CLI.
+from benchopt.helpers.run_examples import ExampleBenchmark
+from benchopt.helpers.run_examples import benchopt_cli
+
+# %%
+# We will use the minimal benchmark defined in the ``examples`` folder.
+# The benchmark objective is a simple minimization task:
+#
+# .. math::
+#
+#     \min_{\hat{X}} \; \mathrm{MSE}(X, \hat{X})
+#
+# We define:
+#
+# - an ``Objective`` that evaluates MSE between ``X`` and ``X_hat``;
+# - a ``Dataset`` that generates a random matrix ``X``;
+# - a ``Solver`` that minimizes this objective with gradient descent. It is
+#   parametrized with parameter ``lr`` for the step size.
+
+benchmark = ExampleBenchmark(
+    base="minimal_benchmark", name="minimal_benchmark",
+    ignore=["custom_plot.py", "example_config.yml"]
+)
+benchmark
 
 # %%
 # To run the benchmark, just execute:
 #
 
-benchopt_run('minimal_benchmark', n=20, r=2)
+benchopt_cli(f"run {benchmark.benchmark_dir} -n 20 -r 2")
 
 # %%
 # This runs the benchmark named ``minimal_benchmark`` located in the
@@ -24,7 +46,7 @@ benchopt_run('minimal_benchmark', n=20, r=2)
 #
 # To get a more precise curve, you can increase ``n`` and ``r``:
 
-benchopt_run('minimal_benchmark', n=30, r=5)
+benchopt_cli(f"run {benchmark.benchmark_dir} -n 30 -r 5")
 
 # %%
 # Here, the display is not ideal because both solvers reach convergence very

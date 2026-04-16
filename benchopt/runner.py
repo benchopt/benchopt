@@ -9,11 +9,11 @@ import copy
 from .callback import _Callback
 from .benchmark import Benchmark
 from .utils.sys_info import get_sys_info
-from .utils.files import uniquify_results
 from .utils.pdb_helpers import exception_handler
 from .utils.terminal_output import TerminalOutput
 from .parallel_backends import parallel_run
 from .parallel_backends import check_parallel_config
+from .results import save_results
 
 
 FAILURE_STATUS = ['diverged', 'error', 'interrupted']
@@ -25,6 +25,22 @@ class FailedRun(RuntimeError):
     def __init__(self, status):
         super().__init__()
         self.status = status
+
+
+def _seed_run(objective, dataset, solver, repetition, base_seed):
+    seed_dict = {
+        "base_seed": str(base_seed),
+        "objective": str(objective),
+        "dataset": str(dataset),
+        "solver": str(solver),
+        "repetition": str(repetition),
+    }
+    for klass in [objective, dataset, solver]:
+        if klass is not None:
+            klass.seed_dict = {
+                **seed_dict,  # Copy to avoid border effects
+                "class": klass.__class__.__name__.lower()
+            }
 
 
 ##################################
@@ -263,6 +279,20 @@ def get_solver_kwargs(
     # the name of metrics in Objective.compute
     obj_description = objective.__doc__ or ""
 
+    _seed_run(
+        objective=objective,
+        dataset=dataset,
+        solver=solver,
+        repetition=0,
+        base_seed=benchmark.seed
+    )
+
+    # Set objective and skip if necessary.
+    skip, reason = objective.set_dataset(dataset)
+    if skip:
+        terminal.skip(reason, objective=True)
+        return []
+
     if n_repetitions is None:
         if hasattr(objective, "cv"):
             n_repetitions = objective.cv.get_n_splits(
@@ -281,6 +311,7 @@ def get_solver_kwargs(
 
         # Get meta
         meta = {
+            'base_seed': benchmark.seed,
             'objective_name': str(objective),
             'obj_description': obj_description,
             'solver_name': str(solver),
@@ -288,11 +319,29 @@ def get_solver_kwargs(
             'dataset_name': str(dataset),
             'idx_rep': rep,
             'sampling_strategy': sampling_strategy.capitalize(),
+            'file_objective': objective._module_filename.name,
             **{f"p_obj_{k}": v for k, v in objective._parameters.items()},
+            'file_solver': f"solvers/{solver._module_filename.name}",
             **{f"p_solver_{k}": v for k, v in solver._parameters.items()},
+            'file_dataset': f"datasets/{dataset._module_filename.name}",
             **{f"p_dataset_{k}": v for k, v in dataset._parameters.items()},
         }
         terminal.n_repetitions = n_repetitions
+
+        if rep < n_repetitions - 1:
+            _seed_run(
+                objective=objective,
+                dataset=dataset,
+                solver=solver,
+                repetition=rep+1,
+                base_seed=benchmark.seed
+            )
+
+            # Set objective and skip if necessary.
+            skip, reason = objective.set_dataset(dataset)
+            if skip:
+                terminal.skip(reason, objective=True)
+                continue
 
         args_run_one_to_cvg = dict(
             benchmark=benchmark, objective=objective_rep, solver=solver,
@@ -444,19 +493,8 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
     output_dir = benchmark.get_output_folder()
     if output_file == "None":
         timestamp = datetime.now().strftime('%Y-%m-%d_%Hh%Mm%S')
-        output_file = output_dir / f'benchopt_run_{timestamp}.parquet'
-    else:
-        output_file = output_dir / f"{output_file}.parquet"
-        output_file = uniquify_results(output_file)
-    try:
-        df.to_parquet(output_file)
-    except Exception:
-        # Failed to save the results as a parquet file, falling back
-        # to csv. This can be due to mixed types columns or missing
-        # dependencies.
-        output_file = output_file.with_suffix(".csv")
-        df.to_csv(output_file)
-    terminal.savefile_status(save_file=output_file)
+        output_file = f'benchopt_run_{timestamp}.parquet'
+    output_file = save_results(df, output_dir / output_file)
 
     if plot_result:
         try:
@@ -472,7 +510,7 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
 def run_benchmark(benchmark_path, solver_names=None, forced_solvers=(),
                   dataset_names=None, objective_filters=None, max_runs=10,
                   n_repetitions=1, timeout=None,
-                  n_jobs=None, parallel_config=None, slurm=None,
+                  n_jobs=None, parallel_config=None,
                   plot_result=True, display=True, html=True,  collect=False,
                   show_progress=True, pdb=False, no_cache=False,
                   output_file="None"):
@@ -507,9 +545,6 @@ def run_benchmark(benchmark_path, solver_names=None, forced_solvers=(),
         If not None, launch the job in parallel. The provided config serves to
         set up parallelism using ``joblib.parallel_backend`` or ``submitit``.
         See :ref:`parallel_run` for detailed description.
-    slurm : Path | None, (_Deprecated_)
-        If not None, launch the job on a slurm cluster using the file to get
-        the cluster config parameters.
     plot_result : bool
         If set to True (default), generate the result plot and save them in
         the benchmark directory.
@@ -551,7 +586,7 @@ def run_benchmark(benchmark_path, solver_names=None, forced_solvers=(),
     datasets = benchmark.check_dataset_patterns(dataset_names)
     objectives = benchmark.check_objective_filters(objective_filters)
 
-    parallel_config = check_parallel_config(parallel_config, slurm, n_jobs)
+    parallel_config = check_parallel_config(parallel_config, n_jobs)
 
     exit_code, output_file = _run_benchmark(
         benchmark=benchmark,

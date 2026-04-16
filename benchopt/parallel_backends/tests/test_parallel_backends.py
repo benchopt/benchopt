@@ -15,31 +15,19 @@ def test_missing_backend():
     parallel_config = """
     param1: 1
     """
-    solver1 = """from benchopt import BaseSolver
-    import numpy as np
-
-    class Solver(BaseSolver):
-        name = "solver1"
-        sampling_strategy = "iteration"
-        def set_objective(self, X, y, lmbd): self.n_features = X.shape[1]
-        def run(self, n_iter): pass
-        def get_result(self):
-            return {"beta": np.zeros(self.n_features)}
-    """
 
     with temp_benchmark(
-            solvers=[solver1],
             config={"parallel_config.yml": parallel_config}
     ) as benchmark:
         parallel_config_file = benchmark.benchmark_dir / "parallel_config.yml"
         with CaptureCmdOutput():
             msg = "Could not find `backend` specification "
             with pytest.raises(AssertionError, match=msg):
-                run([
-                    str(benchmark.benchmark_dir),
-                    *"-s solver1 -d test-dataset -n 0 -r 1 --no-plot "
-                    f"--parallel-config {parallel_config_file}".split()
-                ], standalone_mode=False)
+                run(
+                    f"{benchmark.benchmark_dir} -d test-dataset --no-plot "
+                    f"--parallel-config {parallel_config_file} -n 0".split(),
+                    standalone_mode=False
+                )
 
 
 @pytest.mark.parametrize("backend", ["submitit", "dask"])
@@ -98,14 +86,11 @@ def test_dask_backend():
     dask_name: {client_name}
     dask_n_workers: {n_workers}
     """
-    solver1 = """from benchopt import BaseSolver
+    solver1 = """from benchopt.utils.temp_benchmark import TempSolver
     import numpy as np
 
-    class Solver(BaseSolver):
+    class Solver(TempSolver):
         name = "solver1"
-        sampling_strategy = "iteration"
-        def set_objective(self, X, y, lmbd): pass
-        def run(self, n_iter): pass
         def get_result(self):
             from distributed import get_client
             client = get_client()
@@ -148,15 +133,12 @@ def test_submitit_backend(monkeypatch):
     )
 
     parallel_config = "backend: submitit"
-    solver1 = """from benchopt import BaseSolver
+    solver1 = """from benchopt.utils.temp_benchmark import TempSolver
     import submitit
     import numpy as np
 
-    class Solver(BaseSolver):
+    class Solver(TempSolver):
         name = "solver1"
-        sampling_strategy = "iteration"
-        def set_objective(self, X, y, lmbd): pass
-        def run(self, n_iter): pass
         def get_result(self):
             # This will fail if not run in a submitit worker
             job_env = submitit.JobEnvironment()

@@ -3,10 +3,13 @@ import shutil
 import webbrowser
 from pathlib import Path
 from datetime import datetime
+from urllib.parse import quote
+
 import pandas as pd
 from mako.template import Template
 
-from ..utils.parquet import get_metadata as get_parquet_metadata
+from ..results import read_results
+from ..results.parquet import get_metadata as get_parquet_metadata
 
 from benchopt.benchmark import Benchmark
 from .helpers import update_plot_data_style
@@ -73,16 +76,13 @@ def get_results(fnames, html_root, benchmark, config=None, copy=False):
     out_dir = html_root / OUTPUTS
 
     for fname in fnames:
-        print(f"Processing {fname}")
-
-        if fname.suffix == '.parquet':
-            df = pd.read_parquet(fname)
-        else:
-            df = pd.read_csv(fname)
-        if "data_name" in df.columns:
-            df = df.rename(columns={"data_name": "dataset_name"})
+        print(f"\r   Processing {fname}", end="", flush=True)
+        df = read_results(fname)
 
         config_ = get_parquet_metadata(fname) if config is None else config
+        # Sanitize the config for comparison with the plot names
+        kinds = config_.get('plots', benchmark.get_plot_names())
+        kinds = [f"{k.strip().lower().replace(' ', '_')}" for k in kinds]
 
         datasets = list(df['dataset_name'].unique())
         sysinfo = get_sysinfo(df)
@@ -96,7 +96,7 @@ def get_results(fnames, html_root, benchmark, config=None, copy=False):
 
         # Generate figures
         result = dict(
-            fname=fname,
+            fname=str(fname),
             fname_short=fname.name,
             datasets=datasets,
             sysinfo=sysinfo,
@@ -106,27 +106,21 @@ def get_results(fnames, html_root, benchmark, config=None, copy=False):
                 k for k in df.columns
                 if k.startswith('objective_') and k != 'objective_name'
             ],
-            kinds=config_.get(
-                'plots',
-                benchmark.get_plot_names()
-            ),
+            kinds=kinds,
             metadata=get_metadata(df, config_.get('plot_configs', {})),
         )
 
-        custom_data, custom_dropdown = benchmark.get_plot_data(
-            df, result['kinds']
-        )
-        custom_data = update_plot_data_style(custom_data, plotly=True)
-        result['json_plots'] = json.dumps(custom_data)
-        result['custom_plot_params'] = custom_dropdown
+        data, options = benchmark.get_plot_data(df, result['kinds'])
+        data = update_plot_data_style(data, plotly=True)
+        result['json_plots'] = json.dumps(data)
+        result['plot_options'] = options
 
         results.append(result)
+    print()
 
     for result in results:
-        html_file_name = f"{result['fname_short'].replace('.csv', '.html')}"
-        html_file_name = f"{html_file_name.replace('.parquet', '.html')}"
-
-        result['page'] = f"{benchmark.name}_{html_file_name}"
+        html_file_name = Path(result['fname_short']).with_suffix('.html').name
+        result['page'] = quote(f"{benchmark.name}_{html_file_name}")
 
     return results
 
@@ -295,7 +289,7 @@ def render_all_results(results, benchmark, home='index.html'):
             strict_undefined=True
         ).render(
             result=result,
-            benchmark=benchmark.name,
+            benchmark=benchmark,
             static=STATIC, home=home
         )
         htmls.append(html)
@@ -360,11 +354,13 @@ def plot_benchmark_html(
         copy = True
 
     # Make the link relative
-    html_home = html_home.relative_to(html_root)
+    html_home = quote(str(html_home.relative_to(html_root)))
 
     # Create the figures and render the page as a html.
+    print("Rendering benchmark results...")
     results = get_results(fnames, html_root, benchmark, config, copy=copy)
     htmls = render_all_results(results, benchmark, home=html_home)
+    print("done")
 
     # Save the resulting page in the HTML folder
     for result, html in zip(results, htmls):
@@ -381,15 +377,14 @@ def plot_benchmark_html(
 
     # Fetch run list from the benchmark and update the benchmark front page.
     rendered = render_benchmark(run_list, benchmark, home=html_home)
-    print(f"Writing {benchmark.name} results to {bench_index}")
+    print(f"Writing {benchmark.name} index to {bench_index}")
     with open(bench_index, "w", encoding="utf-8") as f:
         f.write(rendered)
 
-    print("Rendering benchmark results...")
     # Display the file in the default browser
     if display:
         result_filename = (html_root / results[-1]['page']).absolute()
-        webbrowser.open_new_tab('file://' + str(result_filename))
+        webbrowser.open_new_tab('file://' + quote(str(result_filename)))
 
 
 def plot_benchmark_html_all(patterns=(), benchmark_paths=(), root=None,
@@ -456,7 +451,7 @@ def plot_benchmark_html_all(patterns=(), benchmark_paths=(), root=None,
         print(f'Rendering benchmark: {benchmark}')
         result_files = list(filter(
             lambda path: any(path.match(p) for p in patterns),
-            benchmark.get_result_file('all')
+            benchmark.get_result_files('all')
         ))
         # Store the number of rendered results so we can easily generate the
         # index page with the number of available result files.

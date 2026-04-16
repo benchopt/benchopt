@@ -33,7 +33,11 @@ const setState = (partialState) => {
   window._state = {...state(), ...partialState};
 
   renderSidebar();
-  renderPlot();
+  if (isChart('table')) {
+    renderTable();
+  } else {
+    renderPlot();
+  }
   renderLegend();
 }
 
@@ -79,18 +83,24 @@ const config_mapping = {
  */
 const renderPlot = () => {
   let div;
+  let plot_with_legend_container = document.getElementById('plot_with_legend_container');
+  let plot_container = document.getElementById('plot_container');
+
+  hide(document.getElementById('table_container'));
   if (isChart('scatter')) {
-    div = document.getElementById('scatter_plot_container');
-    show(div);
+    show(plot_container);
+    show(plot_with_legend_container);
+    div = plot_with_legend_container;
   } else {
-    div = document.getElementById('plot_container');
-    hide(document.getElementById('scatter_plot_container'));
+    show(plot_container);
+    hide(plot_with_legend_container);
+    div = plot_container;
   }
   const data = getChartData();
   const layout = getLayout();
 
-  Plotly.purge(document.getElementById('scatter_plot_container'));
-  Plotly.purge(document.getElementById('plot_container'));
+  Plotly.purge(plot_with_legend_container);
+  Plotly.purge(plot_container);
   Plotly.react(div, data, layout);
 };
 
@@ -153,13 +163,14 @@ const getBarData = () => {
   getPlotData().data.forEach(curveData => {
     // Add times for each convergent bar
     // Check if text is not 'Did not converge'
-    if (curveData.text === '') {
-      let nbTimes = curveData.times.length
+    curveText = curveData.text || ''
+    if (curveText === '') {
+      let nbTimes = curveData.y.length
 
       barData.push({
         type: 'scatter',
         x: new Array(nbTimes).fill(curveData.label),
-        y: curveData.times,
+        y: curveData.y,
         marker: {
           color: 'black',
           symbol: 'line-ew-open'
@@ -199,7 +210,7 @@ const getPlotData = () => {
   let dropdowns = getPlotDropdowns();
   let dropdown_values = dropdowns.map(dropdown => state()[dropdown]);
   let data_key = [state().plot_kind, ...dropdown_values].join('_');
-  return window._custom_plots[state().plot_kind][data_key];
+  return window._plots[state().plot_kind][data_key];
 }
 
 
@@ -222,23 +233,15 @@ const getScatterData = () => {
   getPlotData().data.forEach(curveData => {
     label = curveData.label;
     y = curveData.y;
-    if ("q1" in curveData && "q9" in curveData && state().with_quantiles) {
-      q1 = curveData.q1;
-      q9 = curveData.q9;
+    if ("x_low" in curveData && "x_high" in curveData && state().with_quantiles) {
+      x_low = curveData.x_low;
+      x_high = curveData.x_high;
     }
     if (state().suboptimal_curve) {
       y = y.map(value => value - min_y);
-      if ("q1" in curveData && "q9" in curveData && state().with_quantiles) {
-        q1 = q1.map(value => value - min_y);
-        q9 = q9.map(value => value - min_y);
-      }
     }
     if (state().relative_curve) {
       y = y.map(value => value / (y[0] - min_y));
-      if ("q1" in curveData && "q9" in curveData && state().with_quantiles) {
-        q1 = q1.map(value => value / (y[0] - min_y));
-        q9 = q9.map(value => value / (y[0] - min_y));
-      }
     }
     curves.push({
       type: 'scatter',
@@ -259,11 +262,11 @@ const getScatterData = () => {
       y: y,
     });
 
-    if ("q1" in curveData && "q9" in curveData && state().with_quantiles) {
+    if ("x_low" in curveData && "x_high" in curveData && state().with_quantiles) {
       curves.push({
         type: 'scatter',
         mode: 'lines',
-        showlegend: false,
+        legend: false,
         line: {
           width: 0,
           color: curveData.color,
@@ -271,7 +274,7 @@ const getScatterData = () => {
         legendgroup: label,
         hovertemplate: '(%{x:.1e},%{y:.1e}) <extra></extra>',
         visible: isVisible(label) ? true : 'legendonly',
-        x: q1,
+        x: x_low,
         y: y,
       }, {
         type: 'scatter',
@@ -285,7 +288,7 @@ const getScatterData = () => {
         legendgroup: label,
         hovertemplate: '(%{x:.1e},%{y:.1e}) <extra></extra>',
         visible: isVisible(label) ? true : 'legendonly',
-        x: q9,
+        x: x_high,
         y: y,
       });
     }
@@ -339,6 +342,10 @@ const setConfig = (config_item) => {
     let update = {};
     // const lims = ['xlim', 'ylim', 'hidden_curves']
     const lims = ['hidden_curves']
+    let kind = state().plot_kind;
+    if ("plot_kind" in config) {
+      kind = config["plot_kind"];
+    }
     for(let key in config){
       const value = config[key];
       if (key in config_mapping) {
@@ -348,16 +355,24 @@ const setConfig = (config_item) => {
         }
       }
       else {
+        // Custom parameters which should be related to the current kind
+        // and the div prefix is 'change_{kind}_'. Ignore otherwise with
+        // a warning in the console.
+        if (!key.startsWith(kind)) {
+          key = kind + "_" + key;
+        }
         div_key = "change_" + key;
-        document.getElementById(div_key).value = value;
+        try {
+          document.getElementById(div_key).value = value;
+        } catch (error) {
+          // Element not found, ignore
+          console.warn("Unknown config parameter: '" + key + "'");
+        }
       }
       update[key] = value;
     }
 
     setState(update);
-
-    // update the plot
-    renderPlot();
   }
 };
 
@@ -480,13 +495,13 @@ const renderSidebar = () => {
  * Render Scale selector
  */
 const renderScaleSelector = () => {
-  if (isChart('bar_chart')) {
+  if (isChart(['table'])) {
     hide(document.querySelectorAll("#scale-form-group"));
   } else {
     show(document.querySelectorAll("#scale-form-group"), 'block');
   }
 
-  if (isChart('boxplot')) {
+  if (isChart(['boxplot', 'bar_chart'])) {
     hide(document.querySelectorAll(".other_plot_option"));
     show(document.querySelectorAll(".boxplot_option"));
   } else {
@@ -517,6 +532,16 @@ const renderSuboptimalRelativeToggle = () => {
 const renderPlotDropdowns = () => {
   hide(document.querySelectorAll(`[id$='-custom-params-container']`));
   show(document.querySelectorAll(`#${state().plot_kind}-custom-params-container`), 'block');
+  // Hide dropdowns with only one option
+  for (let dropdown of document.getElementsByTagName('select')) {
+    // Keep view selectors visible in the config container.
+    if (dropdown.closest('#config_container')) {
+      continue;
+    }
+    if (dropdown.options.length <= 1) {
+      hide(dropdown.parentElement.parentElement);
+    }
+  }
 
 }
 
@@ -549,7 +574,7 @@ const getPlotDropdowns = () => {
   let kind = state().plot_kind;
   let params = [];
   Object.keys(state()).forEach(key => {
-    if (key.includes(kind)) {
+    if (key.startsWith(kind)) {
       params.push(key);
     }
   });
@@ -564,7 +589,8 @@ const isChart = chart => {
   }
 
   let plot_kind = state().plot_kind;
-  if (!["bar_chart", "boxplot"].includes(plot_kind)) {
+  // If the plot kind is not a default one, check the type of the custom plot in the data.
+  if (!["bar_chart", "boxplot", "table", "scatter"].includes(plot_kind)) {
     let custom_data = getPlotData();
     plot_kind = custom_data.type;
   }
@@ -595,14 +621,25 @@ const isAvailable = () => {
   return !isNotAvailable;
 }
 
+const getMedian = (arr) => {
+  const sorted = [...arr].sort((a, b) => a - b);
+  let median = null;
+  if (sorted.length > 0) {
+    const mid = Math.floor(sorted.length / 2);
+    median = (sorted.length % 2 === 1) ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+  }
+  return median;
+}
+
 const barDataToArrays = () => {
   const colors = [], texts = [], x = [], y = [];
 
   getPlotData().data.forEach(plotData => {
     x.push(plotData.label);
-    y.push(plotData.y);
-    colors.push(plotData.text === '' ? plotData.color : NON_CONVERGENT_COLOR);
-    texts.push(plotData.text);
+    y.push(getMedian(plotData.y));
+    const plotText = plotData.text || '';
+    colors.push(plotText === '' ? plotData.color : NON_CONVERGENT_COLOR);
+    texts.push(plotText);
   });
 
   return {x, y, colors, texts}
@@ -619,7 +656,7 @@ const _getScale = (scale) => {
         xaxis: 'log',
         yaxis: 'log',
       };
-    case 'log': // used for boxplot
+    case 'log': // used for boxplot or barchart
       return {
         xaxis: 'log',
         yaxis: 'log',
@@ -652,7 +689,7 @@ const getBarChartLayout = () => {
       orientation: 'v',
     },
     yaxis: {
-      type: 'log',
+      type: getScale().yaxis,
       title: data["ylabel"],
       tickformat: '.1e',
       gridcolor: '#ffffff',
@@ -798,7 +835,7 @@ const hide = HTMLElements => {
  * @param HTMLElements
  * @param style
  */
-const show = (HTMLElements, style = 'initial') => {
+const show = (HTMLElements, style = '') => {
   if (HTMLElements instanceof Element) {
     HTMLElements = [HTMLElements]
   }
@@ -860,6 +897,185 @@ const handleCurveDoubleClick = curve => {
 
   hideAllCurvesExcept(curve);
 };
+
+
+/*
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * MANAGE TABLE RENDERING
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
+
+// Global state for precision
+let tableFloatPrecision = 4;
+
+const valueToFixed = (value) => {
+  if (typeof value === 'number' && !Number.isInteger(value)) {
+    return value.toFixed(tableFloatPrecision);
+  }
+  return value;
+}
+
+function renderTable() {
+
+  let table_container = document.getElementById('table_container');
+  hide(document.getElementById('plot_container'));
+  show(table_container);
+
+  table_container.innerHTML = "";
+
+  const plotData = getPlotData();
+  if (!plotData || !plotData.columns || !plotData.data) {
+    table_container.innerHTML = `<div >No data available</div>`;
+    return;
+  }
+
+  const { columns, data: rows } = plotData;
+
+  // Card Wrapper
+  const card = document.createElement("div");
+  card.className = "w-full bg-white overflow-hidden border border-gray-200 mx-auto";
+
+  // Table Element
+  const table = document.createElement("table");
+  table.className = "w-full border-collapse text-left";
+
+  // Header
+  const thead = document.createElement("thead");
+  thead.className = "bg-gray-50";
+  const trHead = document.createElement("tr");
+
+  columns.forEach(headerText => {
+    const th = document.createElement("th");
+    th.innerText = headerText;
+    th.className = "px-4 py-4 text-xs font-bold uppercase tracking-wider border-b border-gray-200";
+    trHead.appendChild(th);
+  });
+  thead.appendChild(trHead);
+  table.appendChild(thead);
+
+  // Body
+  const tbody = document.createElement("tbody");
+
+  rows.forEach((rowData, index) => {
+    const tr = document.createElement("tr");
+    tr.className = "bg-white transition-colors duration-150 ease-in-out hover:bg-gray-50";
+
+    tr.onmouseenter = () => tr.style.backgroundColor = "#f9fafb";
+    tr.onmouseleave = () => tr.style.backgroundColor = "#fff";
+
+    rowData.forEach(cellValue => {
+      const td = document.createElement("td");
+      td.innerHTML = valueToFixed(cellValue);
+
+      let cellClasses = "px-4 py-4 text-sm text-gray-700";
+      if (index !== rows.length - 1) {
+        cellClasses += " border-b border-gray-100";
+      }
+      td.className = cellClasses;
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+
+  // Footer with Precision Controls & Export
+  const footerWrapper = document.createElement("div");
+  footerWrapper.className = "w-full";
+
+  const footer = document.createElement("div");
+  footer.className = "flex justify-between items-center p-4";
+
+  // Precision Controls (Left)
+  const precisionContainer = document.createElement("div");
+  precisionContainer.className = "flex items-center gap-2 text-sm text-gray-700";
+
+  const createPrecBtn = (text) => {
+    const btn = document.createElement("button");
+    btn.innerText = text;
+    btn.className = "px-3 py-1 border border-gray-300 bg-white rounded cursor-pointer hover:bg-gray-100";
+    return btn;
+  };
+
+  const btnDec = createPrecBtn("-");
+  const btnInc = createPrecBtn("+");
+  const labelPrec = document.createElement("span");
+  labelPrec.innerText = `Float Precision: ${tableFloatPrecision}`;
+  labelPrec.className = "mx-2 px-4";
+
+  btnDec.onclick = () => {
+    if (tableFloatPrecision > 0) {
+      tableFloatPrecision--;
+      renderTable();
+    }
+  };
+
+  btnInc.onclick = () => {
+    tableFloatPrecision++;
+    renderTable();
+  };
+
+  precisionContainer.appendChild(btnDec);
+  precisionContainer.appendChild(labelPrec);
+  precisionContainer.appendChild(btnInc);
+
+  // Export Button (Right)
+  const exportButton = document.createElement("button");
+  exportButton.id = "table-export";
+  exportButton.innerText = "Export LaTeX";
+  exportButton.className = "inline-flex items-center px-4 py-2 space-x-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500";
+
+  exportButton.addEventListener('click', () => {
+    exportTable();
+  });
+
+  table.appendChild(tbody);
+  card.appendChild(table);
+  table_container.appendChild(card);
+
+  footer.appendChild(precisionContainer);
+  footer.appendChild(exportButton);
+  footerWrapper.appendChild(footer);
+  table_container.appendChild(footerWrapper);
+}
+
+
+async function exportTable() {
+  const button = document.getElementById("table-export");
+  const defaultText = button.innerHTML;
+  button.innerHTML = "Copying";
+
+  const plotData = getPlotData();
+
+  let value = "\\begin{tabular}{l";
+  value += "c".repeat(plotData.columns.length);
+  value += "}\n";
+  value += "\\hline\n";
+
+  value += plotData.columns[0].replace('_', '\\_');
+  plotData.columns.slice(1).forEach(metric => value += ` & ${metric.replace('_', '\\_')}`);
+
+  value += " \\\\\n";
+  value += "\\hline\n";
+
+  plotData.data.forEach(rowData => {
+    value += valueToFixed(rowData[0]).toString().replace('_', '\\_');
+    rowData.slice(1).forEach(cell => {
+      value += ` & ${valueToFixed(cell).toString().replace('_', '\\_')}`;
+    });
+    value += " \\\\\n";
+  });
+
+  value += "\\hline\n";
+  value += "\\end{tabular}";
+
+  try {
+    await navigator.clipboard.writeText(value);
+    button.innerHTML = "Copied in clipboard!";
+    setTimeout(() => button.innerHTML = defaultText, 2500);
+  } catch (err) {
+    button.innerHTML = "Error!";
+    setTimeout(() => button.innerHTML = defaultText, 2500);
+  }
+}
 
 /*
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

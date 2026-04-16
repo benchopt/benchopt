@@ -1,6 +1,5 @@
 <%
     import json
-    benchmark_name = benchmark.replace("benchmark_", "").replace("_benchmark", "").replace("_", " ")
 %>
 <!DOCTYPE html>
 <html>
@@ -13,7 +12,7 @@
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300&display=swap" rel="stylesheet">
 
-        <title>Result on ${benchmark_name} benchmark</title>
+        <title>Result on ${benchmark.pretty_name}</title>
 
         <style>
             ${static['utilities.css']}
@@ -83,14 +82,14 @@
                                 <span class="slider round"></span>
                             </label>
                         </div>
-                        % for custom_kind in result["custom_plot_params"]:
-                            <div id="${custom_kind}-custom-params-container">
-                            % for custom_param in result["custom_plot_params"][custom_kind]:
-                                <div id="${custom_kind}_${custom_param}_form_group" class="mt-8 px-8">
-                                    <label for="change_${custom_kind}_${custom_param}" class="block text-sm font-medium text-white">${custom_param}</label>
+                        % for kind, params in result["plot_options"].items():
+                            <div id="${kind}-custom-params-container">
+                            % for param, options in params.items():
+                                <div id="${kind}_${param}_form_group" class="mt-8 px-8">
+                                    <label for="change_${kind}_${param}" class="block text-sm font-medium text-white">${param}</label>
                                     <div class="mt-1 rounded-md shadow-sm">
-                                        <select id="change_${custom_kind}_${custom_param}" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({${custom_kind}_${custom_param}: this.value})">
-                                            % for option in result["custom_plot_params"][custom_kind][custom_param]:
+                                        <select id="change_${kind}_${param}" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({${kind}_${param}: this.value})">
+                                            % for option in options:
                                                 <option value="${option}">${option}</option>
                                             % endfor
                                         </select>
@@ -230,14 +229,14 @@
                             </div>
                             <div>
                             <div>
-                            % for custom_kind in result["custom_plot_params"]:
-                                <div id="${custom_kind}-custom-params-container">
-                                % for custom_param in result["custom_plot_params"][custom_kind]:
-                                    <div id="${custom_kind}_${custom_param}_form_group" class="mt-8 px-8">
-                                        <label for="change_${custom_kind}_${custom_param}" class="block text-sm font-medium text-white">${custom_param}</label>
+                            % for kind, params in result["plot_options"].items():
+                                <div id="${kind}-custom-params-container">
+                                % for param, options in params.items():
+                                    <div id="${kind}_${param}_form_group" class="mt-8 px-8">
+                                        <label for="change_${kind}_${param}" class="block text-sm font-medium text-white">${param}</label>
                                         <div class="mt-1 rounded-md shadow-sm">
-                                            <select id="change_${custom_kind}_${custom_param}" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({${custom_kind}_${custom_param}: this.value})">
-                                                % for option in result["custom_plot_params"][custom_kind][custom_param]:
+                                            <select id="change_${kind}_${param}" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({${kind}_${param}: this.value})">
+                                                % for option in options:
                                                     <option value="${option}">${option}</option>
                                                 % endfor
                                             </select>
@@ -264,7 +263,7 @@
                 <!-- Page heading -->
                 <div class="px-4 pt-4 pb-1 md:py-4 lg:flex lg:items-center lg:justify-between">
                     <div class="flex-1 min-w-0">
-                        <h2 class="w-full text-center lg:text-left text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">Result on ${benchmark_name} benchmark</h2>
+                        <h2 class="w-full text-center lg:text-left text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">Result on ${benchmark.pretty_name}</h2>
                         <div class="mt-1 flex flex-wrap justify-center lg:justify-start sm:mt-0">
                             % for name, val in result['sysinfo']['main'].items():
                             % if val != "":
@@ -345,8 +344,10 @@
                 </div>
 
                 <!-- Plot -->
+                <div id="table_container" class="flex flex-col flex-1 gap-4 p-10">
+                </div>
                 <div id="plot_container" class="flex flex-col flex-1">
-                    <div id="scatter_plot_container" class="flex-1"></div>
+                    <div id="plot_with_legend_container" class="flex-1"></div>
                     <div id="legend_container" class="pb-10 bg-slate-200">
                         <div class="px-10 mb-4 mt-4 text-base font-medium text-gray-700">
                             Solvers
@@ -455,7 +456,7 @@
         </script>
         <!-- Manage plot -->
         <script>
-            window._custom_plots = ${result['json_plots']};
+            window._plots = ${result['json_plots']};
             window.metadata = ${json.dumps(result['metadata'])};
 
             window.addEventListener("load", () => {
@@ -467,9 +468,9 @@
                     'suboptimal_curve': document.getElementById('change_suboptimal').checked,
                     'relative_curve': document.getElementById('change_relative').checked,
                     'hidden_curves': [],
-                    % for custom_kind in result["custom_plot_params"]:
-                        % for custom_param in result["custom_plot_params"][custom_kind]:
-                            '${custom_kind}_${custom_param}': document.getElementById('change_${custom_kind}_${custom_param}').value,
+                    % for kind, params in result["plot_options"].items():
+                        % for param in params:
+                            '${kind}_${param}': document.getElementById('change_${kind}_${param}').value,
                         % endfor
                     % endfor
                 });

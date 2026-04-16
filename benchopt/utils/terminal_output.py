@@ -68,7 +68,7 @@ def print_normalize(msg, endline=True, verbose=True):
 
 
 class TerminalOutput:
-    def __init__(self, n_repetitions, show_progress):
+    def __init__(self, n_repetitions=None, show_progress=None):
         # enable ANSI colors in Windows
         if platform.system() == "Windows":
             kernel32 = ctypes.windll.kernel32

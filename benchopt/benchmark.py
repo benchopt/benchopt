@@ -6,13 +6,18 @@ import importlib
 import itertools
 from pathlib import Path
 
-from joblib.externals import cloudpickle
+try:
+    # compat with joblib version < 1.6
+    from joblib.externals import cloudpickle
+except ImportError:
+    import cloudpickle
 
 from .config import get_setting
 from .base import BaseSolver, BaseDataset
 
 from .utils.dynamic_modules import _load_class_from_module, FailedImport
 from .utils.parametrized_name_mixin import product_param
+from .utils.parametrized_name_mixin import sanitize
 
 from .utils.terminal_output import colorify
 from .utils.terminal_output import GREEN, YELLOW
@@ -60,6 +65,10 @@ class Benchmark:
         Folder containing the benchmark. The folder should at least
         contain an `objective.py` file defining the `Objective`
         function for the benchmark.
+    seed: int | None
+        Random seed for the benchmark. If None, an arbitrary seed is chosen.
+    no_cache : bool (default: False)
+        If set to True, the benchmark will not use caching.
     allow_meta_from_json : bool
         If set to True, allow the object to be instanciated even when
         objective.py cannot be found. In this case, the metadata are retrieved
@@ -74,6 +83,7 @@ class Benchmark:
 
     def __init__(
             self, benchmark_dir,
+            seed=None,
             no_cache=False,
             allow_meta_from_json=False,
     ):
@@ -88,7 +98,10 @@ class Benchmark:
         # in `benchmark_meta.json`.
         try:
             objective = self.get_benchmark_objective()
-            self.pretty_name = objective.name
+            self.pretty_name = (
+                objective.name.replace("benchmark_", "")
+                .replace("_benchmark", "").replace("_", " ")
+            )
             self.url = getattr(objective, "url", None)
             self.min_version = getattr(objective, 'min_benchopt_version', None)
         except RuntimeError:
@@ -118,6 +131,22 @@ class Benchmark:
             self.name = Path(self.url).name
         # replace dots to avoid issues with `with_suffix``
         self.name = self.name.replace('.', '-')
+
+        self._seed = seed
+
+    @property
+    def safe_name(self):
+        "Get a safe name for the benchmark, to use in file names."
+        from urllib.parse import quote
+        return quote(self.name.replace(" ", "_").replace("/", "_"))
+
+    @property
+    def seed(self):
+        "Only set the seed if needed in the dataset"
+        if self._seed is None:
+            self._seed = 0
+            print(f"No seed was specified. Selected global seed: {self._seed}")
+        return self._seed
 
     def set_benchmark_module(self):
         # add PACKAGE_NAME as a module if it exists.
@@ -190,6 +219,26 @@ class Benchmark:
         "List all available dataset names for the benchmark."
         return [d.name for d in self.get_datasets()]
 
+    def get_test_dataset(self):
+        objective = self.get_benchmark_objective()
+        datasets = self.get_datasets()
+        test_datasets = [
+            d for d in datasets
+            if sanitize(d.name) == sanitize(objective.test_dataset_name)
+        ]
+        if len(test_datasets) == 0 and len(datasets) == 1:
+            test_datasets = datasets
+
+        assert len(test_datasets) == 1, (
+            "All benchmarks should have one test_dataset. The default is a "
+            "simulated dataset, but the name can be tweaked by setting the "
+            "`Objective.test_dataset_name` attribute. The dataset should have "
+            f"`name='{objective.test_dataset_name}' in the current benchmark. "
+            f"Found possible datasets {test_datasets}."
+        )
+        test_class = test_datasets[0]
+        return test_class
+
     def check_dataset_patterns(self, dataset_patterns, class_only=False):
         "Check that the patterns are valid and return selected configurations."
         return _check_patterns(
@@ -203,12 +252,14 @@ class Benchmark:
         from .plotting.default_plots import (
             ObjectiveCurvePlot,
             BarChart,
-            BoxPlot
+            BoxPlot,
+            TablePlot
         )
         default_plots = [
             ObjectiveCurvePlot,
             BarChart,
-            BoxPlot
+            BoxPlot,
+            TablePlot
         ]
         custom_plots = self._list_benchmark_classes(BasePlot)
         return default_plots + custom_plots
@@ -235,15 +286,15 @@ class Benchmark:
         all_plots = self.get_plots()
         self.check_plots()
         all_data = {}
-        all_dropdown = {}
+        all_options = {}
         for plot in all_plots:
             plot_name = plot._get_name()
             if plot_name not in kinds:
                 continue
-            data, dropdown = plot._get_all_plots(df)
+            data, options = plot._get_all_plots(df)
             all_data[plot_name] = data
-            all_dropdown[plot_name] = dropdown
-        return all_data, all_dropdown
+            all_options[plot_name] = options
+        return all_data, all_options
 
     def _list_benchmark_classes(self, base_class):
         """Load all classes with the same name from a benchmark's subpackage.
@@ -303,14 +354,20 @@ class Benchmark:
         slurm_dir = self.benchmark_dir / SLURM_JOB_NAME
         return slurm_dir
 
-    def get_result_file(self, filename=None):
-        """Get a result file from the benchmark.
+    def get_result_files(self, filenames=None):
+        """Get result files from the benchmark.
 
         Parameters
         ----------
-        filename : str
+        filenames : list[str] | str | None
             Select a specific file from the benchmark. If None, this will
             select the most recent result file in the benchmark output folder.
+            If 'all', will select all files in the output folder.
+
+        Returns
+        -------
+        result_files : list[Path]
+            List of result files matching the given names.
         """
         # List all result files
         output_folder = self.get_output_folder()
@@ -320,13 +377,27 @@ class Benchmark:
         all_result_files = sorted(
             all_result_files, key=lambda t: t.stat().st_mtime
         )
+        if len(all_result_files) == 0:
+            raise RuntimeError(
+                "Could not find any Parquet nor "
+                f"CSV result files in {output_folder}."
+            )
+        if filenames == "all":
+            return all_result_files
+        if filenames is None:
+            return all_result_files[-1:]
 
-        if filename is not None and filename != 'all':
-            result_path = (output_folder / filename)
-            result_filename = result_path.with_suffix('.parquet')
+        # Now select specific files based on the given name.
+        if isinstance(filenames, str):
+            filenames = [filenames]
+
+        result_files = []
+        for filename in filenames:
+            filename = Path(filename)
+            result_filename = filename.with_suffix('.parquet')
 
             if not result_filename.exists():
-                result_filename = result_path.with_suffix('.csv')
+                result_filename = filename.with_suffix('.csv')
 
             if not result_filename.exists():
                 if Path(filename).exists():
@@ -339,30 +410,10 @@ class Benchmark:
                         f"Could not find result file {filename}. Available "
                         f"result files are:\n- {all_result_files}"
                     )
-        else:
-            if len(all_result_files) == 0:
-                raise RuntimeError(
-                    "Could not find any Parquet nor "
-                    f"CSV result files in {output_folder}."
-                )
-            result_filename = all_result_files[-1]
-            if filename == 'all':
-                result_filename = all_result_files
+            else:
+                result_files.append(result_filename)
 
-        if isinstance(result_filename, list):
-            is_csv_file = any(fname.suffix == ".csv"
-                              for fname in result_filename)
-        else:
-            is_csv_file = result_filename.suffix == ".csv"
-
-        if is_csv_file:
-            print(colorify(
-                "WARNING: CSV files are deprecated."
-                "Please use Parquet files instead.",
-                YELLOW
-            ))
-
-        return result_filename
+        return result_files
 
     #####################################################
     # Caching mechanism
@@ -470,7 +521,7 @@ class Benchmark:
     def install_all_requirements(self, include_solvers, include_datasets,
                                  minimal=False, env_name=None,
                                  force=False, quiet=False, download=False,
-                                 gpu=False):
+                                 gpu=False, env_need_confirm=True):
         """Install all classes that are required for the run.
 
         Parameters
@@ -493,6 +544,9 @@ class Benchmark:
         gpu : bool (default: False)
             If True and the requirements of a class are a dict, install
             requirements["gpu"] instead of requirements["cpu"].
+        env_need_confirm : bool (default: False)
+            If not False, this should be the name of the current conda env,
+            and it will asks for user confirmation before installing packages.
         """
         # Collect all classes matching one of the patterns
         print("Collecting packages:")
@@ -547,11 +601,18 @@ class Benchmark:
                 )
             return exit_code
 
+        # ask for user confirmation to install in current conda env
+        # Only ask for confirmation if we are trying to install something.
+        if env_name is None and env_need_confirm:
+            click.confirm(
+                f"Install in the current env '{env_need_confirm}'?",
+                abort=True
+            )
+
         print(f"Installing required packages for:\n{list_install}\n...",
               end='', flush=True)
         install_in_conda_env(
-            *list(set(conda_reqs)), env_name=env_name, force=force,
-            quiet=quiet
+            *list(set(conda_reqs)), env_name=env_name, quiet=quiet
         )
         for install_script in shell_install_scripts:
             shell_install_in_conda_env(

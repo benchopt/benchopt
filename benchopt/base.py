@@ -5,11 +5,13 @@ from .stopping_criterion import SingleRunCriterion
 from .stopping_criterion import SufficientProgressCriterion
 
 from .utils.misc import NamedTemporaryFile
+from .utils.class_property import classproperty
 from .utils.dependencies_mixin import DependenciesMixin
 from .utils.parametrized_name_mixin import ParametrizedNameMixin
+from .utils.seed_mixin import SeedMixin
 
 
-class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
+class BaseSolver(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
     """A base class for solver wrappers in Benchopt.
 
     Solvers that derive from this class should implement three methods:
@@ -21,7 +23,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
       in a file for command line solvers to reduce the impact of dumping the
       data to the disk in the benchmark.
 
-    - ``run(self, n_iter/tolerance)``: performs the computation for the
+    - ``run(self, n_iter/tolerance/cb)``: performs the computation for the
       previously given objective function, after a call to ``set_objective``.
       This method is the one timed in the benchmark and should not perform any
       operation unrelated to the optimization procedure.
@@ -29,38 +31,96 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
     - ``get_result(self)``: returns all parameters of interest, as a dict.
       The output is passed to ``Objective.evaluate_result``.
 
-    Note that four ``sampling_strategy`` can be used to construct the benchmark
-    curve:
+    Optionaly, the ``Solver`` can implement the following methods to change its
+    behavior:
 
-    - ``'iteration'``: call the run method with max_iter number increasing
-      logarithmically to get more an more precise points.
-    - ``'tolerance'``: call the run method with tolerance decreasing
-      logarithmically to get more and more precise points.
-    - ``'callback'``: a callable that should be called after each iteration or
-      epoch. This callable periodically calls the objective's `compute`
-      and returns False when the solver should stop.
-    - ``'run_once'``: call the run method once to get a single point. This is
-      typically used for ML benchmarks.
+    - ``skip(self, **objective_parameters)``: decide if the solver is
+      compatible with the given objective. Its inputs are the same as
+      ``set_objective``, and it should return a tuple ``(skip, reason)`` where
+      ``skip`` is a boolean indicating whether the solver should be skipped for
+      this configuration, and ``reason`` is a string used to explain why in the
+      CLI output. If ``skip`` is False, ``reason`` should be None.
+
+    - ``get_next(stop_val)``: Return the next iteration where the result will
+      be evaluated. This is only necessary when `sampling_strategy` is set to
+      'iteration' or 'tolerance' and the default logarithmic spacing is not
+      desired.
+
+    - ``warm_up()``: User specified warm up step, called once before the runs.
+      The time it takes to run this function is not taken into account. The
+      function ``Solver.run_once`` can be used here for solvers that require
+      jit compilation.
+
+    - ``pre_run_hook(stop_val)``: Hook to run pre-run operations, that are not
+      timed in the benchmark. This is mostly necessary to cache stop_val
+      dependent computations, for instance in ``jax`` with different number of
+      iterations in a for loop.
+
+    The ``Solver`` class also defines class attributes to specify how the
+    benchmark curve should be sampled:
+
+    - ``sampling_strategy``: defines how the benchmark curve should be sampled.
+      It should be one of the following strings: 'iteration', 'tolerance',
+      'callback' or 'run_once':
+
+        - ``'iteration'``: call the run method with max_iter number increasing
+          logarithmically to get more an more precise points.
+        - ``'tolerance'``: call the run method with tolerance decreasing
+          logarithmically to get more and more precise points.
+        - ``'callback'``: a callable that should be called after each iteration
+          or epoch. This callable periodically runs
+          ``Objective.evaluate_result`` and returns False when the solver
+          should stop.
+        - ``'run_once'``: call the run method once to get a single point. This
+          is typically used for ML benchmarks.
+
+    - ``stopping_criterion``: an instance of ``StoppingCriterion`` that defines
+      when the solver should stop. If not set, a default stopping criterion is
+      used depending on the ``sampling_strategy``.
+      See :ref:`stopping_criterion` for available options.
+
+    Note that default values for these attributes can be set at the
+    ``Objective`` level so that all solvers in a benchmark share the same
+    default behavior. Typically, for ML benchmarks, all solvers can be run only
+    once by setting ``sampling_strategy = 'run_once'`` in the benchmark's
+    ``Objective``. More details on how the curves are sampled can be found in
+    the :ref:`iterative_solvers` user guide.
     """
 
     _base_class_name = 'Solver'
     sampling_strategy = None
 
-    @property
-    def _stopping_criterion(self):
-        if hasattr(self, 'stopping_criterion'):
-            return self.stopping_criterion
-        if self.sampling_strategy == 'run_once':
+    @classproperty
+    def _stopping_criterion(cls):
+        if hasattr(cls, 'stopping_criterion'):
+            return cls.stopping_criterion
+        if cls.sampling_strategy == 'run_once':
             return SingleRunCriterion()
-        return SufficientProgressCriterion(strategy=self.sampling_strategy)
+        return SufficientProgressCriterion(strategy=cls.sampling_strategy)
 
-    @property
-    def _solver_strategy(self):
-        """Change stop_strategy and stopping_strategy to sampling_strategy."""
+    @classproperty
+    def _solver_strategy(cls):
+        """Get the effective solver strategy."""
         return (
-            self._stopping_criterion.strategy or self.sampling_strategy
+            cls._stopping_criterion.strategy or cls.sampling_strategy
             or 'iteration'
         )
+
+    @classmethod
+    def _inherit_stopping_criterion(cls, objective):
+        """Inherit the stopping criterion from an objective if needed."""
+        # If not set, inherit sampling_strategy and stopping_criterion from
+        # objective so defaults can be specified at the benchmark level.
+        #
+        # Set the class attribute so that it can easily be checked in the
+        # benchmark tests, even when the solver is not importable.
+        if cls.sampling_strategy is None:
+            cls.sampling_strategy = objective.sampling_strategy
+        if (
+            not hasattr(cls, 'stopping_criterion') and
+            hasattr(objective, 'stopping_criterion')
+        ):
+            cls.stopping_criterion = objective.stopping_criterion
 
     def _set_objective(self, objective):
         """Store the objective for hashing/pickling and check its compatibility
@@ -79,6 +139,10 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
             If skip is False, the reason should be None.
         """
         self._objective = objective
+
+        # If not set, inherit sampling_strategy and stopping_criterion from
+        # objective so defaults can be specified at the benchmark level.
+        self._inherit_stopping_criterion(objective)
 
         objective_dict = objective.get_objective()
 
@@ -258,7 +322,7 @@ class CommandLineSolver(BaseSolver, ABC):
         super().__init__(**parameters)
 
 
-class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
+class BaseDataset(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
     """Base class to define a dataset in a benchmark.
 
     Datasets that derive from this class should implement one method:
@@ -284,28 +348,34 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
 
     def _get_data(self):
         "Wrapper to make sure the returned results are correctly formated."
-
         # Automatically cache the _data to avoid reloading it.
         if not hasattr(self, '_data') or self._data is None:
+            self._data = self.get_data()
+        # We compare to the last seed (computed with the most restrictive
+        # parameters) to check if the data should be recomputed.
+        elif (
+            self._used_seed is not None and
+            self._used_seed != self._get_seed(**self._seed_params)
+        ):
             self._data = self.get_data()
 
         return self._data
 
 
-class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
+class BaseObjective(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
     """Base class to define an objective function
 
     Objectives that derive from this class needs to implement four methods:
 
-    - `set_data(**data)`: stores the info from a given dataset to be able to
+    - ``set_data(**data)``: stores the info from a given dataset to be able to
       compute the objective value on these data.
 
-    - `get_objective()`: exports the data from the dataset and the parameters
+    - ``get_objective()``: exports the data from the dataset and the parameters
       from the objective function as a dictionary that will be passed as
       parameters of the solver's `set_objective` method in order to specify the
       objective function of the benchmark.
 
-    - `evaluate_result(**result)`: evaluate the metrics on the results of a
+    - ``evaluate_result(**result)``: evaluate the metrics on the results of a
       solver. Its arguments should correspond to the key of the dictionary
       returned by `Solver.get_result` and it can return a scalar value,
       a dictionary or a list of dictionaries.
@@ -315,31 +385,40 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
       stored at once instead of running each separately. With a list of
       dictionaries, these metrics can be computed on different objects.
 
-    - `get_one_result()`: return one result for which the objective can be
+    - ``get_one_result()``: return one result for which the objective can be
       evaluated. This should be a dictionary where the keys correspond to the
       keyword arguments of `evaluate_result`.
 
-    Optionally, the `Solver` can implement the following methods to change its
-    behavior:
+    Optionally, the `Objective` can implement the following methods to change
+    its behavior:
 
-    - `save_final_results(**result)`: Return the data to be saved from the
+    - ``save_final_results(**result)``: Return the data to be saved from the
        results of the solver. It will be saved as a `.pkl` file in the
        `output/results` folder, and link to the benchmark results.
-
-    - `get_next(stop_val)`: Return the next iteration where the result will be
-      evaluated.
 
     This class is also used to specify information about the benchmark.
     In particular, it should have the following class attributes:
 
-    - `name`: a name for the benchmark, that will be used to display results.
-    - `url`: the url of the original benchmark repository.
-    - `requirements`: the minimal requirements to be able to run the benchmark.
-    - `min_benchopt_version`: the minimal version of benchopt required to run
+    - ``name``: a name for the benchmark, that will be used to display results.
+    - ``url``: the url of the original benchmark repository.
+    - ``requirements``: the minimal requirements to be able to run the
+       benchmark.
+    - ``min_benchopt_version``: the minimal version of benchopt required to run
       this benchmark.
+
+    Some extra configurations can be set through optional class attributes:
+
+    - ``test_dataset_name``: the name of the dataset to use for testing.
+    - ``stopping_criterion``: the default stopping criterion to use for
+      this benchmark.
+    - ``sampling_strategy``: the default sampling strategy to use for this
+      benchmark.
     """
 
     _base_class_name = 'Objective'
+    test_dataset_name = 'simulated'
+
+    sampling_strategy = None
 
     @abstractmethod
     def set_data(self, **data):

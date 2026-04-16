@@ -1,34 +1,15 @@
 import pytest
+import inspect
 import numpy as np
+import warnings
+from itertools import islice
 
-from benchopt.utils import product_param
+from benchopt.stopping_criterion import StoppingCriterion
 from benchopt.stopping_criterion import SAMPLING_STRATEGIES
 from benchopt.utils.dynamic_modules import _get_module_from_file
-
-
-def test_benchmark_objective(benchmark, dataset_simu):
-    """Check that the objective function and the datasets are well defined."""
-    objective_class = benchmark.get_benchmark_objective()
-    objective = objective_class.get_instance()
-
-    dataset = dataset_simu.get_instance()
-    objective.set_dataset(dataset)
-
-    # check that the reported dimension is correct and that the result of
-    # the objective function is a dictionary containing a scalar value for
-    # `objective_value`.
-    result = objective._get_one_result()
-    objective_dict = objective(result)[0]
-
-    assert 'objective_value' in objective_dict, (
-        "When the output of objective is a dict, it should at least "
-        "contain a value associated to `objective_value` which will be "
-        "used to detect the convergence of the algorithm."
-    )
-    assert np.isscalar(objective_dict['objective_value']), (
-        "The output of the objective function should be a scalar, or a "
-        "dict containing a scalar associated to `objective_value`."
-    )
+from benchopt.utils.parametrized_name_mixin import product_param
+from benchopt.utils.parametrized_name_mixin import get_configs
+from benchopt.runner import _seed_run
 
 
 def test_dataset_class(benchmark, dataset_class):
@@ -41,11 +22,10 @@ def test_dataset_class(benchmark, dataset_class):
 
     # Ensure that the dataset exposes a `get_data` function
     # that is callable
-    dataset = dataset_class.get_instance()
-    assert hasattr(dataset, 'get_data'), (
+    assert hasattr(dataset_class, 'get_data'), (
         "All dataset should implement get_data"
     )
-    assert callable(dataset.get_data), (
+    assert callable(dataset_class.get_data), (
         "dataset.get_data should be a callable"
     )
 
@@ -58,7 +38,14 @@ def test_dataset_get_data(benchmark, dataset_class):
     if not dataset_class.is_installed():
         pytest.skip("Dataset is not installed")
 
-    dataset = dataset_class.get_instance()
+    # instanciate dataset taking into account the test_config
+    configs = get_configs(dataset_class)
+    dataset = dataset_class.get_instance(**configs['dataset'])
+
+    # ensure classes calling `get_seed` work properly
+    _seed_run(
+        objective=None, dataset=dataset, solver=None, repetition=0, base_seed=0
+    )
 
     data = dataset._get_data()
     assert isinstance(data, (tuple, dict)), (
@@ -70,6 +57,64 @@ def test_dataset_get_data(benchmark, dataset_class):
     )
 
 
+def test_benchmark_objective(benchmark, objective_class):
+    # check that the result of the objective function is compatible with
+    # benchopt, does not contain `objective_name` and is not empty.
+
+    # instanciate dataset and objective, taking into account the test_config
+    dataset_class = benchmark.get_test_dataset()
+    configs = get_configs(dataset_class, objective_class)
+    dataset = dataset_class.get_instance(**configs['dataset'])
+    objective = objective_class.get_instance(**configs['objective'])
+
+    # ensure classes calling `get_seed` work properly
+    _seed_run(
+        objective=objective, dataset=dataset, solver=None,
+        repetition=0, base_seed=0
+    )
+
+    # get one value for the objective, with the test_dataset
+    objective.set_dataset(dataset)
+    result = objective._get_one_result()
+    objective_output = objective(result)
+
+    # check that the output has proper type and is not empty
+    assert isinstance(objective_output, list), (
+        "The output of the objective function should be a list of dicts by "
+        "design. Please report this issue on benchopt's GitHub."
+    )
+    objective_output = objective_output[0]
+    assert isinstance(objective_output, dict), (
+        "The output of the objective function should be a dict by design. "
+        "Please report this issue on benchopt's GitHub."
+    )
+    assert "objective_name" not in objective_output, (
+        "`name` is a reserved key in the objective output dict. "
+        "Please remove it from the output of the objective function."
+    )
+    assert len(objective_output) > 0, (
+        "The output of the objective function should not be an empty dict."
+    )
+
+
+def test_benchmark_config_validity(benchmark):
+    """Check benchmark config.yml only uses valid benchmark options."""
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always", UserWarning)
+        benchmark.get_setting("plots")
+
+    if caught:
+        details = "\n".join(f"{w.message}" for w in caught)
+        config_file = benchmark.get_config_file()
+        pytest.fail(
+            "Invalid benchmark config.yml detected while running "
+            "benchopt test.\n"
+            f"Benchmark config file: {config_file}\n"
+            "Please update config.yml to only use valid benchmark options.\n"
+            f"Reported issue(s):\n\n{details}"
+        )
+
+
 def test_solver_class(benchmark, solver_class):
     """Check that all installed solver_class respects the public API"""
 
@@ -79,10 +124,17 @@ def test_solver_class(benchmark, solver_class):
         "The solver's name should be a string"
     )
 
-    # Check that the solver_class uses a valid stopping_strategy
-    if hasattr(solver_class, 'stopping_strategy'):
-        msg = f"stopping_strategy should be in {SAMPLING_STRATEGIES}."
-        assert solver_class.stopping_strategy in SAMPLING_STRATEGIES, msg
+    # Check that the solver_class uses a valid sampling_strategy
+    if solver_class.sampling_strategy is not None:
+        msg = f"sampling_strategy should be in {SAMPLING_STRATEGIES}."
+        assert solver_class.sampling_strategy in SAMPLING_STRATEGIES, msg
+
+    # Check that the solver_class uses a valid stopping criterion
+    if hasattr(solver_class, 'stopping_criterion'):
+        assert isinstance(solver_class.stopping_criterion, StoppingCriterion), (  # noqa E501
+            "stopping_criterion should be an instance of StoppingCriterion. "
+            f"Got '{solver_class.stopping_criterion}'"
+        )
 
     # Check that the solver_class uses a valid callable to override get_next.
     if hasattr(solver_class, 'get_next'):
@@ -119,6 +171,58 @@ def test_solver_install(test_env_name, benchmark, solver_class):
     )
 
 
+def test_solver_stopping_criterion(benchmark, solver_class):
+    # Check each solver stopping_criterion is compatible with the objective
+
+    # instanciate dataset and objective, taking into account the test_config
+    objective_class = benchmark.get_benchmark_objective()
+    dataset_class = benchmark.get_test_dataset()
+    configs = get_configs(dataset_class, objective_class, solver_class)
+    dataset = dataset_class.get_instance(**configs['dataset'])
+    objective = objective_class.get_instance(**configs['objective'])
+
+    # Make sure to inherit the objective if the stopping criterion
+    # is set globally for this benchmark
+    solver_class._inherit_stopping_criterion(objective)
+    stopping_criterion = solver_class._stopping_criterion
+
+    # check that stopping_criterion has the proper type
+    assert isinstance(stopping_criterion, StoppingCriterion), (
+        "The solver's stopping_criterion should be an instance of "
+        "StoppingCriterion."
+    )
+
+    # Check that if a key_to_monitor is specified, the objective returns it
+    if stopping_criterion.key_to_monitor is not None:
+        key = stopping_criterion.key_to_monitor_
+        assert key.startswith('objective_'), (
+            "The solver's stopping_criterion key_to_monitor should start with "
+            "'objective_'."
+        )
+
+        # ensure classes calling `get_seed` work properly
+        _seed_run(
+            objective=objective, dataset=dataset, solver=None,
+            repetition=0, base_seed=benchmark.seed
+        )
+
+        objective.set_dataset(dataset)
+        result = objective._get_one_result()
+        objective_output = objective(result)[0]
+
+        requested_key = stopping_criterion.key_to_monitor
+        available_keys = list(objective_output.keys())
+        if not requested_key.startswith('objective_'):
+            available_keys = [
+                k.replace('objective_', '') for k in available_keys
+            ]
+        assert key in objective_output, (
+            f"The solver's stopping_criterion monitors {requested_key}, but "
+            "the objective does not return this key. Available keys are "
+            f"{available_keys}."
+        )
+
+
 def test_solver_run(benchmark, solver_class):
     # Check that a solver run with at least one configuration of a simulated
     # dataset.
@@ -126,50 +230,56 @@ def test_solver_run(benchmark, solver_class):
     if not solver_class.is_installed():
         pytest.skip("Solver is not installed")
 
-    test_config = getattr(solver_class, "test_config", {})
-    objective_config = test_config.get('objective', {})
-    dataset_config = test_config.get('dataset', {})
-
+    # instanciate dataset and objective, taking into account the test_config
+    dataset_class = benchmark.get_test_dataset()
     objective_class = benchmark.get_benchmark_objective()
-    objective = objective_class.get_instance(**objective_config)
+    configs = get_configs(dataset_class, objective_class, solver_class)
 
-    simulated_dataset = [
-        d for d in benchmark.get_datasets() if d.name.lower() == 'simulated'
-    ]
+    objective = objective_class.get_instance(**configs['objective'])
+    dataset = dataset_class.get_instance(**configs['dataset'])
+    solver = solver_class.get_instance(**configs['solver'])
 
-    assert len(simulated_dataset) == 1, (
-        "All benchmark need to implement a simulated dataset for "
-        "testing purpose. The dataset should have `name='simulated'."
+    # ensure classes calling `get_seed` work properly
+    _seed_run(
+        objective=objective, dataset=dataset, solver=solver,
+        repetition=0, base_seed=benchmark.seed
     )
 
-    dataset_class = simulated_dataset[0]
-    dataset_test_parameters = product_param(getattr(
-        dataset_class, 'test_parameters', {}
-    ))
-    if not dataset_test_parameters:
-        dataset_test_parameters = [{}]
-    solver_ran_once = False
+    def run_solver(dataset):
+        objective.set_dataset(dataset)
+        skip, reason = solver._set_objective(objective)
+        if not skip:
+            _test_solver_one_objective(solver, objective)
+        return skip, reason
+
+    # return as soon as one configuration is compatible with the solver
+    skip, reason = run_solver(dataset)
+    if not skip:
+        return
+
+    # fallback to testing all configurations if the first one is not compatible
+    test_parameters = islice(product_param(
+        getattr(dataset_class, 'test_parameters', [{}])
+    ), 1, None)
+
     reasons = set()
-    for params in dataset_test_parameters:
-        params.update(dataset_config)
+    for params in test_parameters:
+        params = {**configs['dataset'], **params}
         dataset = dataset_class.get_instance(**params)
 
-        objective.set_dataset(dataset)
-        solver = solver_class.get_instance(**test_config.get('solver', {}))
-        skip, reason = solver._set_objective(objective)
-        if skip:
-            reasons.add(reason)
-            continue
-        solver_ran_once = True
-        _test_solver_one_objective(solver, objective)
-
-    reasons = "\n-".join(sorted(reasons))
-    assert solver_ran_once, (
-        'Solver skipped all test configuration. At least one simulated '
-        'dataset and one objective config should be compatible with the '
-        'solver, potentially provided through "Solver.test_config" class '
-        f'attribute or with `Dataset.test_parameters`. Reasons:\n-{reasons}'
-    )
+        skip, reason = run_solver(dataset)
+        if not skip:
+            # Stop after the first solver that is run
+            break
+    else:
+        reasons = "\n-".join(sorted(reasons))
+        raise ValueError(
+            'Solver skipped all test configuration. At least one simulated '
+            'dataset and one objective config should be compatible with the '
+            'solver, potentially provided through "Solver.test_config" class '
+            'attribute or with `Dataset.test_parameters`. Reasons:\n'
+            f'-{reasons}'
+        )
 
 
 def _test_solver_one_objective(solver, objective):
@@ -233,16 +343,12 @@ def check_test(request):
             )
             pytest.warns(DeprecationWarning, match=warn_msg)
     if check_func is not None:
-        try:
-            check_func(
-                benchmark,
-                *[
-                    request.getfixturevalue(f) for f in request.fixturenames
-                    if f not in [
-                        'check_test', 'benchmark', 'request', 'test_env_name'
-                    ]
-                ]
-            )
-        except TypeError:
-            # Backward compatibility for benchmarks before benchopt 1.7.1
-            check_func(request.getfixturevalue('solver_class'))
+        requires = inspect.signature(check_func).parameters
+        check_func(
+            **{
+                f: request.getfixturevalue(
+                    f"{f}_class" if f in ['dataset', 'solver', 'objective']
+                    else f
+                ) for f in requires
+            }
+        )

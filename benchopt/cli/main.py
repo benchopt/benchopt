@@ -14,7 +14,7 @@ from benchopt.utils.misc import get_benchopt_requirement
 from benchopt.utils.conda_env_cmd import list_conda_envs
 from benchopt.utils.conda_env_cmd import create_conda_env
 from benchopt.utils.shell_cmd import _run_shell_in_conda_env
-from benchopt.utils.conda_env_cmd import get_benchopt_version_in_env
+from benchopt.utils.conda_env_cmd import get_env_info
 from benchopt.utils.profiling import print_stats
 from benchopt.parallel_backends import check_parallel_config
 
@@ -64,12 +64,12 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
         "html",
         "n_jobs",
         "parallel_config",
-        "slurm",  # XXX: remove in benchopt 1.9
         "pdb",
         "profile",
         "env_name",
         "no_cache",
         "output",
+        "seed",
     ]
     return [cli_kwargs[name] for name in return_names]
 
@@ -148,11 +148,6 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               metavar="<int>", default=None, show_default=True, type=int,
               help="Maximal number of workers to run the benchmark in "
               "parallel.")
-@click.option("--slurm",
-              metavar="<slurm_config.yml>", default=None,
-              help="(_Deprecated_) Run the computation using submitit on a "
-              "SLURM cluster. The YAML file provided as an argument is used "
-              "to setup the SLURM job. See :ref:`slurm_backend`.")
 @click.option("--parallel-config",
               metavar="<parallel_config.yml>", default=None,
               help="Run in parallel with the specified backend configuration. "
@@ -197,6 +192,11 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               " If not provided, the output will be saved as "
               "<BENCHMARK>/outputs/benchopt_run_<timestamp>.parquet."
               )
+@click.option('--seed',
+              metavar="<seed>", type=int, default=None,
+              help="Seed to control the stochasticity of the "
+              "benchmark. If it is not provided, an arbitrary seed is "
+              "selected to make the benchmark reproducible.")
 def run(config_file=None, **kwargs):
     if config_file is not None:
         with open(config_file, "r") as f:
@@ -207,8 +207,8 @@ def run(config_file=None, **kwargs):
     (
         benchmark, solver_names, forced_solvers, dataset_names,
         objective_filters, max_runs, n_repetitions, timeout, no_timeout,
-        collect, plot, display, html, n_jobs, parallel_config, slurm, pdb,
-        do_profile, env_name, no_cache, output
+        collect, plot, display, html, n_jobs, parallel_config, pdb,
+        do_profile, env_name, no_cache, output, seed
     ) = _get_run_args(kwargs, config)
 
     if env_name == "False":
@@ -241,7 +241,7 @@ def run(config_file=None, **kwargs):
                 timeout = pd.to_timedelta(timeout).total_seconds()
 
     # Create the Benchmark object
-    benchmark = Benchmark(benchmark, no_cache=no_cache)
+    benchmark = Benchmark(benchmark, no_cache=no_cache, seed=seed)
 
     # Check if the benchmark is compatible with the current benchopt version
     if benchmark.min_version is not None:
@@ -267,8 +267,7 @@ def run(config_file=None, **kwargs):
             use_profile()  # needs to be called before validate_solver_patterns
 
         # Get the config for parallel runs
-        # XXX: remove slurm in benchopt 1.9
-        parallel_config = check_parallel_config(parallel_config, slurm, n_jobs)
+        parallel_config = check_parallel_config(parallel_config, n_jobs)
 
         print("Loading objective, datasets and solvers...", end='', flush=True)
         # Check that the objective is installed or raise an error
@@ -288,7 +287,6 @@ def run(config_file=None, **kwargs):
         solvers = benchmark.check_solver_patterns(
             solver_names + list(forced_solvers)
         )
-
         exit_code, _ = _run_benchmark(
             benchmark, solvers, forced_solvers,
             datasets=datasets, objectives=objectives,
@@ -337,8 +335,8 @@ def run(config_file=None, **kwargs):
         )
 
     # check if environment was set up with benchopt
-    benchopt_version, is_editable = get_benchopt_version_in_env(env_name)
-    if benchopt_version is None:
+    env_info = get_env_info(env_name)
+    if env_info['version'] is None:
         raise RuntimeError(
             f"benchopt is not installed in env '{env_name}', "
             "see the command `benchopt install` to setup the environment."
@@ -346,11 +344,11 @@ def run(config_file=None, **kwargs):
     # check against running version
     from benchopt import __version__ as benchopt_version_running
     _, is_editable_running = get_benchopt_requirement()
-    if (benchopt_version_running != benchopt_version and not
-            (is_editable_running and is_editable)):
+    if (benchopt_version_running != env_info['version'] and not
+            (is_editable_running and env_info['is_editable'])):
         warnings.warn(
             f"Benchopt running version ({benchopt_version_running}) "
-            f"and version in env {env_name} ({benchopt_version}) differ")
+            f"and version in env {env_name} ({env_info['version']}) differ")
 
     # run the command in the conda env
     solvers_option = " ".join([f'-s "{s}"' for s in solver_names])
@@ -360,8 +358,6 @@ def run(config_file=None, **kwargs):
     parallel_args = ""
     if n_jobs:
         parallel_args += f"--n-jobs {n_jobs} "
-    if slurm:  # XXX: remove in benchopt 1.9
-        parallel_args += rf"--slurm {slurm} "
     if parallel_config:
         parallel_args += rf"--parallel-config {parallel_config} "
     cmd = (
@@ -378,6 +374,7 @@ def run(config_file=None, **kwargs):
         rf"{parallel_args}"
         rf"{'--pdb ' if pdb else ''}"
         rf"{'--profile ' if do_profile else ''}"
+        rf"{f'--seed {seed}' if seed is not None else ''}"
         rf"--output {output}"
         .replace('\\', '\\\\')
     )
@@ -475,6 +472,7 @@ def install(
 
     # Get a list of all conda envs
     default_conda_env, conda_envs = list_conda_envs()
+    env_need_confirm = False
 
     # check if any current conda environment
     if default_conda_env is None:
@@ -494,13 +492,8 @@ def install(
             msg = "Cannot recreate conda env without using options " + \
                 "'-e/--env' or '--env-name'."
             raise RuntimeError(msg)
-
-        # ask for user confirmation to install in current conda env
         if not confirm:
-            click.confirm(
-                f"Install in the current env '{default_conda_env}'?",
-                abort=True
-            )
+            env_need_confirm = default_conda_env
 
     else:
         # If env_name is True, the flag `--env` has been used. Create a conda
@@ -519,7 +512,9 @@ def install(
                 )
 
         # create environment if necessary
-        create_conda_env(env_name, recreate=recreate, quiet=quiet)
+        create_conda_env(
+            env_name, benchmark=benchmark, recreate=recreate, quiet=quiet
+        )
 
     # List solver and datasets classes to install
     if len(dataset_names) == 0 and len(solver_names) > 0:
@@ -540,7 +535,7 @@ def install(
     exit_code = benchmark.install_all_requirements(
         include_solvers=solvers, include_datasets=datasets,
         minimal=minimal, env_name=env_name, force=force, quiet=quiet,
-        download=download, gpu=gpu,
+        download=download, gpu=gpu, env_need_confirm=env_need_confirm
     )
     if exit_code != 0:
         raise SystemExit(exit_code)
@@ -558,8 +553,12 @@ def install(
               shell_complete=complete_conda_envs,
               help='Environment to run the test in. If it is not provided '
               'a temporary one is created for the test.')
+@click.option('--recreate', is_flag=True,
+              help="If this flag is set, start with a fresh conda "
+              "environment. It can only be used combined with option "
+              "`--env-name`.")
 @click.argument('pytest_args', nargs=-1, type=click.UNPROCESSED)
-def test(benchmark, env_name, pytest_args):
+def test(benchmark, env_name, recreate, pytest_args):
 
     benchmark = Benchmark(benchmark)
 
@@ -575,16 +574,13 @@ def test(benchmark, env_name, pytest_args):
 
     env_option = ''
     if env_name is not None:
-        create_conda_env(env_name, pytest=True)
-        if _run_shell_in_conda_env("pytest --version", env_name=env_name) != 0:
-            raise ModuleNotFoundError(
-                f"pytest is not installed in conda env {env_name}.\n"
-                f"Please run `conda install -n {env_name} pytest` to test the "
-                "benchmark in this environment."
-            )
+        create_conda_env(
+            env_name, benchmark=benchmark, pytest=True, recreate=recreate
+        )
+        # Ensure that minimal benchmark dependencies are installed in
+        # the test environment.
         objective = benchmark.get_benchmark_objective()
-        if not objective.is_installed():
-            objective.install(env_name=env_name)
+        objective.install(env_name=env_name)
         env_option = f'--test-env {env_name}'
 
     _bench_test_file = _bench_test_module / "test_benchmarks.py"
