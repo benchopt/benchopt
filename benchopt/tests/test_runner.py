@@ -399,7 +399,7 @@ class TestCache:
     class Solver(TempSolver):
         name = "test-solver"
         sampling_strategy = 'run_once'
-        def run(self, _): print("#RUN_SOLVER")
+        def run(self, _): print("#RUN_SOLVER", flush=True)
     """
 
     dataset = """from benchopt.utils.temp_benchmark import TempDataset
