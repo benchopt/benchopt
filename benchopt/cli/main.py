@@ -586,7 +586,7 @@ def test(benchmark, env_name, recreate, pytest_args):
     _bench_test_file = _bench_test_module / "test_benchmarks.py"
 
     cmd = (
-        f'pytest {pytest_args} {_bench_test_file} '
+        f'python -m pytest {pytest_args} {_bench_test_file} '
         f'--benchmark {benchmark.benchmark_dir} {env_option} '
         # Make sure to not modify sys.path to add test file from current env
         # in sub conda env as there might be different python versions.

@@ -658,7 +658,7 @@ class Benchmark:
     def download_all_data(self, datasets, env_name, quiet):
         if len(datasets) == 0:
             return 0
-        cmd = f"benchopt check-data {self.benchmark_dir} -d "
+        cmd = f"python -m benchopt check-data {self.benchmark_dir} -d "
         cmd += " -d ".join(d.name for d in datasets)
         return _run_shell_in_conda_env(
             cmd, env_name=env_name, raise_on_error=True, capture_stdout=False
