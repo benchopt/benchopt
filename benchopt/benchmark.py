@@ -1,4 +1,3 @@
-import re
 import sys
 import click
 import warnings
@@ -16,9 +15,11 @@ except ImportError:
 from .config import get_setting
 from .base import BaseSolver, BaseDataset
 
-from .utils.dynamic_modules import _load_class_from_module, FailedImport
-from .utils.parametrized_name_mixin import product_param
+from .utils.dynamic_modules import _load_class_from_module
 from .utils.parametrized_name_mixin import sanitize
+from .utils.parametrized_name_mixin import _get_used_parameters
+from .utils.parametrized_name_mixin import is_matched
+from .utils.parametrized_name_mixin import _check_patterns
 
 from .utils.terminal_output import colorify
 from .utils.terminal_output import GREEN, YELLOW
@@ -48,8 +49,6 @@ MISSING_DEPS_MSG = (
     "   requirements = ['chan::pkg'] # package `pkg` in conda channel `chan`\n"
     "   requirements = ['pip::pkg'] # PyPi package `pkg`"
 )
-
-SUBSTITUTIONS = {"*": ".*"}
 
 
 def get_running_benchmark():
@@ -707,18 +706,22 @@ class Benchmark:
 
         n_total = 0
         n_failed = 0
-        for dataset_cls in datasets:
-            for effective in dataset_cls.get_prepare_params():
-                n_total += 1
-                dataset = dataset_cls.get_instance(**effective)
-                print(f"Preparing {dataset} ...", end=' ', flush=True)
-                try:
-                    cached_prepare(dataset=dataset)
-                    print("done")
-                except Exception:
-                    print("FAILED")
-                    print_exc()
-                    n_failed += 1
+        for dataset, is_install in _list_parametrized_classes(
+                *datasets, prepare=True
+        ):
+            n_total += 1
+            if not is_install:
+                print(f"Dataset {dataset} is not installed, "
+                      "skipping preparation.")
+                continue
+            print(f"Preparing {dataset} ...", end=' ', flush=True)
+            try:
+                cached_prepare(dataset=dataset)
+                print("done")
+            except Exception:
+                print("FAILED")
+                print_exc()
+                n_failed += 1
 
         if n_failed:
             print(
@@ -830,265 +833,7 @@ class Benchmark:
                 all_solvers = solvers_buffer
 
 
-def _check_name_lists(*name_lists):
-    "Normalize name_list to a list of string."
-    res = []
-    for name_list in name_lists:
-        if name_list is None:
-            continue
-        res.extend([str(name) for name in name_list])
-    return res
-
-
-def is_matched(name, include_patterns=None, default=True):
-    """Check if a certain name is matched by any pattern in include_patterns.
-
-    When include_patterns is None or [], always return `default`.
-    """
-    if include_patterns is None or len(include_patterns) == 0:
-        return default
-    name = str(name)
-    name = _extract_options(name)[0]
-    for p in include_patterns:
-        p = _extract_options(p)[0]
-        for old, new in SUBSTITUTIONS.items():
-            p = p.replace(old, new)
-        if re.match(f"^{p}$", name, flags=re.IGNORECASE) is not None:
-            return True
-    return False
-
-
-def _extract_options(name):
-    """Remove options indicated within '[]' from a name.
-
-    Parameters
-    ----------
-    name : str
-        Input name.
-
-    Returns
-    -------
-    basename : str
-        Name without options.
-    args : list
-        List of unnamed options.
-    kwargs : dict()
-        Dictionary with options.
-
-    Examples
-    --------
-    >>> _extract_options("foo")  # "foo", [], dict()
-    >>> _extract_options("foo[bar=2]")  # "foo", [], dict(bar=2)
-    >>> _extract_options("foo[baz]")  # "foo", ["baz"], dict()
-    """
-    if name.count("[") != name.count("]"):
-        raise ValueError(f"Invalid name (missing bracket): {name}")
-
-    basename = "".join(re.split(r"\[.*\]", name))
-    matches = re.findall(r"\[.*\]", name)
-
-    if len(matches) == 0:
-        return basename, [], {}
-    elif len(matches) > 1:
-        raise ValueError(f"Invalid name (multiple brackets): {name}")
-    else:
-        match = matches[0]
-        match = match[1:-1]  # remove brackets
-
-        result = _extract_parameters(match)
-        if isinstance(result, dict):
-            return basename, [], result
-        elif isinstance(result, list):
-            return basename, result, {}
-        else:
-            raise ValueError(
-                f"Impossible. Please report this bug.\n"
-                f"_extract_parameters returned '{result}'"
-            )
-
-
-def _extract_parameters(string):
-    """Extract parameters from a string.
-
-    If the string contains a "=", returns a dict, otherwise returns a list.
-
-    Examples
-    --------
-    >>> _extract_parameters("foo")  # ["foo"]
-    >>> _extract_parameters("foo, 42, True")  # ["foo", 42, True]
-    >>> _extract_parameters("foo=bar")  # {"foo": "bar"}
-    >>> _extract_parameters("foo=[bar, baz]")  # {"foo": ["bar", "baz"]}
-    >>> _extract_parameters("foo=1, baz=True")  # {"foo": 1, "baz": True}
-    >>> _extract_parameters("'foo, bar'=[(0, 1),(1, 0)]")
-    >>> # {"foo, bar": [(0, 1),(1, 0)]}
-    """
-    import ast
-    original = string
-
-    # First, replace some expressions with their hashes, to avoid modification:
-    # - quoted names
-    all_matches = re.findall(r"'[^'\"]*'", string)
-    all_matches += re.findall(r'"[^\'"]*"', string)
-    # - numbers of the form "1e-3" (but not names like "foo1e3")
-    all_matches += re.findall(
-        r"(?<![a-zA-Z0-9_])[+-]?[0-9]+[.]?[0-9]*[eE][-+]?[0-9]+", string)
-    for match in all_matches:
-        string = string.replace(match, str(hash(match)))
-
-    # Second, add quotes to all variable names (foo -> 'foo').
-    # Accepts dots, dashes and slashes within names.
-    string = re.sub(r"[a-zA-Z/\\][a-zA-Z0-9._\-/\\]*", r"'\g<0>'", string)
-
-    # double all backslashes for ast eval
-    string = re.sub(r"\\", r"\\\\", string)
-
-    # Third, change back the hashes to their original names.
-    for match in all_matches:
-        string = string.replace(str(hash(match)), match)
-
-    # Prepare the sequence for AST parsing.
-    # Sequences with "=" are made into a dict expression {'foo': 'bar'}.
-    # Sequences without "=" are made into a list expression ['foo', 'bar'].
-    if "=" in string:
-        string = "{" + string.replace("=", ":") + "}"
-    else:
-        string = "[" + string + "]"
-
-    # Remove quotes for python language tokens
-    for token in ["True", "False", "None"]:
-        string = string.replace(f'"{token}"', token)
-        string = string.replace(f"'{token}'", token)
-
-    # Evaluate the string.
-    try:
-        return ast.literal_eval(string)
-    except (ValueError, SyntaxError):
-        raise ValueError(f"Invalid name '{original}', evaluated as {string}.")
-
-
-def _check_patterns(all_classes, patterns, name_type='dataset',
-                    class_only=False):
-    """Check the patterns and return a list of selected classes and params.
-
-    Raise an error if a pattern does not match any dataset name,
-    or if a parameter does not appear as a class parameter.
-
-    Parameters
-    ----------
-    all_classes: list of ParametrizedNameMixin
-        The possible classes to select from.
-    patterns: list of str | dict
-        List of patterns to select the classes. These patterns can be either:
-            - str with the class name and parameters values:
-                "cls_name[params1=[...],params2=...]"
-            - dict with keys as cls_name and a dictionary of parameter values.
-                {'cls_name': dict(params1=[...], params2=[])}
-    name_type: str
-        Used to raise sensible error depending on the type of classes which
-        are selected.
-    class_only: bool
-        Only return the classes that are matched, without a list of parameters.
-
-    Returns
-    -------
-    selected_classes: list of (ParametrizedNameMixin, parameters dict)
-        A list with 2-tuple containing the selected class and a dictionary
-        with selected parameters for this class.
-    """
-    # If no patterns is provided or all is provided, return all the classes.
-    if (patterns is None or len(patterns) == 0
-            or any(p == 'all' for p in patterns)):
-        all_valid_patterns = [(cls, cls.parameters) for cls in all_classes]
-        if not class_only:
-            return all_valid_patterns
-        return set(cls for cls, _ in all_valid_patterns)
-
-    # Patterns can be either str or dict. Convert everything to 3-tuple with
-    # (cls_name, args, kwargs). cls_name and kwargs correspond to class and
-    # parameters selector. args is used to allow passing directly a list when
-    # the class have only one parameter.
-    def preprocess_patterns(pattern):
-        if isinstance(pattern, str):
-            return [_extract_options(pattern)]
-        if isinstance(pattern, dict):
-            return [
-                (name, options, {}) if isinstance(options, list)
-                else (name, [], options)
-                for name, options in pattern.items()]
-        raise TypeError()
-    patterns = [p for q in patterns for p in preprocess_patterns(q)]
-
-    # Check that each provided pattern matches at least one dataset and pair
-    # the matching class with the selector.
-    matched, invalid_patterns = [], []
-    for p, args, kwargs in patterns:
-        matched_cls = [
-            (cls, (args, kwargs))
-            for cls in all_classes
-            if is_matched(cls.name, [p])
-        ]
-        if len(matched_cls) == 0:
-            invalid_patterns.append(p)
-        matched.extend([
-            (cls, p) if not isinstance(cls, FailedImport) else (cls, ([], {}))
-            for cls, p in matched_cls
-        ])
-
-    # If some patterns did not matched any class, raise an error
-    if len(invalid_patterns) > 0:
-        all_names = '- ' + '\n- '.join(cls.name for cls in all_classes)
-        raise click.BadParameter(
-            f"Patterns {invalid_patterns} did not match any {name_type}.\n"
-            f"Available {name_type}s are:\n{all_names}"
-        )
-
-    # Check that the parameters are well formated:
-    # - not ambiguous nor duplicated
-    # - parameters correspond to existing one for a given class.
-    all_valid_patterns = []
-    for cls, (args, kwargs) in matched:
-        param_names = [p.strip() for k in cls.parameters for p in k.split(',')]
-        if len(args) != 0:
-            if len(param_names) > 1:
-                raise ValueError(
-                    f"Ambiguous positional parameter for {cls.name}."
-                )
-            elif len(kwargs) > 0:
-                raise ValueError(
-                    f"Both positional and keyword parameters for {cls.name}."
-                )
-            elif len(param_names) == 0:
-                raise ValueError(
-                    f"Positional parameter provided for {cls.name} which has"
-                    " no parameter."
-                )
-            # Use the single parameter name for this class.
-            kwargs = {param_names[0]: args}
-        else:
-            bad_params = [
-                p.strip() for k in kwargs for p in k.split(',')
-                if p.strip() not in param_names
-            ]
-            if len(bad_params) > 0:
-                msg = "Possible parameters are:\n- " + "\n- ".join(param_names)
-                if len(param_names) == 0:
-                    msg = f"This {name_type} has no parameters."
-                bad_params = ', '.join(f"'{p}'" for p in bad_params)
-                raise ValueError(
-                    f"Unknown parameter {bad_params} for {name_type} "
-                    f"{cls.name}.\n{msg}"
-                )
-        params = cls.parameters.copy()
-        params.update(kwargs)
-        all_valid_patterns.append((cls, params))
-
-    if not class_only:
-        return all_valid_patterns
-
-    return set(cls for cls, _ in all_valid_patterns)
-
-
-def _list_parametrized_classes(*classes, check_installed=True):
+def _list_parametrized_classes(*classes, check_installed=True, prepare=False):
     """Generator with class instances for all selected parameters."""
     for klass, params in classes:
         if (check_installed and not klass.is_installed(
@@ -1097,37 +842,16 @@ def _list_parametrized_classes(*classes, check_installed=True):
             yield klass.name, False
             continue
 
-        for parameters in _get_used_parameters(klass, params):
-            yield klass.get_instance(**parameters), True
+        # Quick check to avoid doing the product when ignoring all parameters.
+        ignore = (
+            getattr(klass, 'prepare_cache_ignore', None) if prepare else None
+        )
+        if ignore == "all":
+            yield klass.get_instance(), True
+        else:
 
-
-def _get_used_parameters(klass, params):
-    """Get the list of parameters to use in the class."""
-    # Make sure that all parameters are passed as iterables.
-    params = {
-        key: (val if isinstance(val, (list, tuple)) else [val])
-        for key, val in params.items()
-    }
-
-    # Use product_param to get all combinations of parameters.
-    # Then, update the default parameters (klass.parameters) with the
-    # parameters extracted from filter names.
-    used_parameters = []
-    for update in product_param(params):
-        for default in product_param(klass.parameters):
-            default = default.copy()  # avoid modifying the original
-
-            # check that all parameters are defined in klass.parameters
-            for key in update:
-                if key not in default:
-                    raise ValueError(
-                        f"Unknown parameter '{key}', parameter must be in "
-                        f"{list(default.keys())}")
-
-            default.update(update)
-            if default not in used_parameters:  # avoid duplicates
-                used_parameters.append(default)
-                yield default
+            for params in _get_used_parameters(klass, params, ignore=ignore):
+                yield klass.get_instance(**params), True
 
 
 def buffer_iterator(it):

@@ -34,7 +34,6 @@ def test_deprecated_channel_spec():
     )
 
 
-# XXX: remove in benchopt 2.0
 def test_deprecated_download_flag():
     """--download is a deprecated alias of --prepare."""
     with temp_benchmark() as bench:

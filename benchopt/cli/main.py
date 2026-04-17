@@ -439,9 +439,7 @@ def prepare(benchmark, dataset_names, config_file=None,
         if len(env_name) == 0:
             raise RuntimeError("Empty environment name.")
 
-    datasets = benchmark.check_dataset_patterns(
-        dataset_names, class_only=True
-    )
+    datasets = benchmark.check_dataset_patterns(dataset_names)
 
     print(f"Preparing datasets for benchmark '{benchmark.name}'")
     exit_code = benchmark.prepare_all_data(datasets, force=force)
@@ -532,7 +530,7 @@ def install(
         if not solver_names:
             solver_names = config.get("solver", tuple())
             forced_solvers = config.get("force-solver", tuple())
-            solver_names = list(set(solver_names).union(set(forced_solvers)))
+            solver_names = list(solver_names) + list(forced_solvers)
 
     # Instantiate the benchmark
     benchmark = Benchmark(benchmark)
