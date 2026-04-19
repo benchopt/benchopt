@@ -1,5 +1,6 @@
 import io
 import re
+import sys
 import inspect
 import weakref
 from html import escape
@@ -332,6 +333,16 @@ class ExampleBenchmark:
         self.files["extra_files"].update(files["extra_files"])
         for fname, content in files["extra_files"].items():
             self._write_file(self.benchmark_dir / fname, content)
+
+        # Force reloading all the component files on the next benchopt
+        # command call, to make sure the changes are taken into account.
+        # XXX: this should be factorized with the logic from temp_benchmark.
+        to_del = [
+            m for m in sys.modules
+            if "benchmark_utils" in m or "benchopt_benchmarks" in m
+        ]
+        for m in to_del:
+            sys.modules.pop(m)
 
         return HTMLBenchmarkDisplay(
             files, action="We now update the following files:"
