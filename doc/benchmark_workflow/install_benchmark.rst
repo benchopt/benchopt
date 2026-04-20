@@ -17,11 +17,40 @@ to specify and install requirements for the various components of the benchmarks
   specified in each class, and they can be installed individually by selecting
   the proper component using ``benchopt install -d dataset1 -s solver1``.
 
-- Finally, it is possible to use this command to download necessary files for
-  datasets, prior to running the benchmark. This can be done using the
-  ``--download`` option. This is particularly useful when running the benchmark
-  on a remote server where internet access is not available during the benchmark
-  execution.
+- Finally, it is possible to prepare the datasets prior to running the
+  benchmark.  See :ref:`prepare_datasets` below for details.
+
+
+.. _prepare_datasets:
+
+Preparing datasets
+------------------
+
+Benchopt separates **data preparation** (heavy one-time work: downloads,
+extraction, pre-processing) from **data loading** (fast, per-run work done
+by ``get_data()``).
+
+Preparation is triggered by the dedicated command::
+
+    $ benchopt prepare path/to/benchmark
+
+Benchopt calls the ``prepare()`` method of every dataset (see
+:ref:`write_benchmark` for how to implement it) and caches the result with
+`joblib`, so re-running the command is a no-op when nothing has changed.
+Use ``--force`` to bypass the cache and re-run preparation unconditionally.
+
+Preparation can also be triggered right after installing the benchmark
+dependencies with the ``--prepare`` flag::
+
+    $ benchopt install path/to/benchmark --prepare
+
+This is convenient in CI pipelines or when setting up a benchmark on a
+remote server where internet access may not be available at run time.
+
+.. note::
+
+    The ``--download`` option of ``benchopt install`` is deprecated in
+    favour of ``benchopt install --prepare``.
 
 
 .. _specify_requirements:
