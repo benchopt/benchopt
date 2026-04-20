@@ -596,9 +596,7 @@ def install(
     if len(dataset_names) == 0 and len(solver_names) > 0:
         datasets = []
     else:
-        datasets = benchmark.check_dataset_patterns(
-            dataset_names, class_only=True
-        )
+        datasets = benchmark.check_dataset_patterns(dataset_names)
     if len(solver_names) == 0 and len(dataset_names) > 0:
         solvers = []
     else:

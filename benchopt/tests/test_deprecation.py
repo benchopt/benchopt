@@ -37,7 +37,7 @@ def test_deprecated_channel_spec():
 def test_deprecated_download_flag():
     """--download is a deprecated alias of --prepare."""
     with temp_benchmark() as bench:
-        datasets = bench.get_datasets()
+        datasets = [(d, {}) for d in bench.get_datasets()]
         with pytest.warns(DeprecationWarning, match="--download.*deprecated"):
             bench.install_all_requirements(
                 include_solvers=[],

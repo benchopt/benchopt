@@ -401,7 +401,7 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
 
     @staticmethod
     def _prepare(dataset):
-        """Cacheable preparation function; called through ``benchmark.cache``."""
+        """Preparation function, to map to prepare or get_data."""
         if type(dataset).prepare is not BaseDataset.prepare:
             dataset.prepare()
         else:

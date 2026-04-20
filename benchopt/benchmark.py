@@ -4,7 +4,6 @@ import warnings
 import importlib
 import itertools
 from pathlib import Path
-from traceback import print_exc
 
 try:
     # compat with joblib version < 1.6
@@ -578,7 +577,9 @@ class Benchmark:
 
         if len(shell_install_scripts) > 0 or len(conda_reqs) > 0:
             check_installs += [objective]
-        to_install = itertools.chain(include_datasets, include_solvers)
+        to_install = itertools.chain(
+            set(cls for cls, _ in include_datasets), include_solvers
+        )
 
         if not minimal:
             for klass in to_install:

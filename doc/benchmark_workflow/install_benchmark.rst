@@ -47,6 +47,11 @@ dependencies with the ``--prepare`` flag::
 This is convenient in CI pipelines or when setting up a benchmark on a
 remote server where internet access may not be available at run time.
 
+.. note::
+
+    The ``--download`` option of ``benchopt install`` is deprecated in
+    favour of ``benchopt install --prepare``.
+
 Preparation can also be parallelised across datasets using the same options as
 :ref:`benchopt run <parallel_run>`:
 
@@ -60,11 +65,6 @@ Preparation can also be parallelised across datasets using the same options as
 
 See :ref:`parallel_run` for how to write a ``parallel_config.yml`` and for the
 full list of supported backends.
-
-.. note::
-
-    The ``--download`` option of ``benchopt install`` is deprecated in
-    favour of ``benchopt install --prepare``.
 
 
 .. _specify_requirements:
