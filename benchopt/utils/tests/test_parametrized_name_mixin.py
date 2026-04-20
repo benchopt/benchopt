@@ -159,13 +159,13 @@ class TestGetUsedParameters:
 class TestCheckPatterns:
 
     class _DatasetTwoParams(BaseDataset):
-        """Used to test the selection of datasets by keyword parameters."""
+        """Datasets selection with keyword parameters."""
         name = "Test-Dataset"
         parameters = {'n_samples': [10, 11], 'n_features': [20, 21]}
         def get_data(self): pass
 
     class _DatasetOneParam(BaseDataset):
-        """Used to test the selection of dataset with a positional parameter."""
+        """Dataset selection dataset with positional parameter."""
         name = "Test-Dataset"
         parameters = {'n_samples': [10, 11]}
         def get_data(self): pass
@@ -214,7 +214,9 @@ class TestCheckPatterns:
         assert_eq(results[1][0], dict(n_samples=42, n_features=19))
 
         # get grid over two parameter (n_samples, n_features)
-        results = filt_(["Test-Dataset[n_samples=[41,42], n_features=[19, 20]]"])
+        results = filt_([
+            "Test-Dataset[n_samples=[41,42], n_features=[19, 20]]"
+        ])
         assert len(results) == 4
         assert_eq(results[0][0], dict(n_samples=41, n_features=19))
         assert_eq(results[1][0], dict(n_samples=41, n_features=20))
