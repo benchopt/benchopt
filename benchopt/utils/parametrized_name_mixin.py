@@ -401,6 +401,9 @@ def _check_patterns(all_classes, patterns, name_type='dataset',
     """
     from .dynamic_modules import FailedImport
 
+    if not isinstance(patterns, (list, tuple)):
+        patterns = [patterns]
+
     # If no patterns is provided or all is provided, return all the classes.
     if (patterns is None or len(patterns) == 0
             or any(p == 'all' for p in patterns)):

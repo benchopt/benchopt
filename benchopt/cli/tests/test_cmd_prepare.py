@@ -104,6 +104,22 @@ class TestPrepareCmd:
             out.check_output(r"#PREPARED\(1, 0\)", repetition=1)
             out.check_output(r"#PREPARED\(2, 0\)", repetition=1)
 
+            f = bench.benchmark_dir / "prep_config.yml"
+            f.write_text(
+                "dataset:\n  dataset:\n    n: [3, 4]\n"
+                "    seed: [42, 124, 23]\n"
+            )
+            with CaptureCmdOutput() as out:
+                prepare_cmd(
+                    [str(bench.benchmark_dir), "--config", str(f)],
+                    'benchopt', standalone_mode=False
+                )
+            # 2 values of n x 3 values of seed = 6 combos, but seed is ignored
+            # -> only 2 unique effective combos -> prepare() called twice
+            out.check_output("#PREPARED", repetition=2)
+            out.check_output(r"#PREPARED\(3, 0\)", repetition=1)
+            out.check_output(r"#PREPARED\(4, 0\)", repetition=1)
+
     @pytest.mark.parametrize('n_jobs', [1, 2])
     def test_valid_call(self, n_jobs):
         """Parallel prepare runs the preparation in parallel."""

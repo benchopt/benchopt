@@ -92,13 +92,18 @@ def run_on_slurm(
     with ExitStack() as stack:
         for kwargs in all_runs:
             solver = kwargs.get("solver")
-            solver_slurm_config = get_solver_slurm_config(solver, slurm_config)
-            executor_config = hashable_pytree(solver_slurm_config)
+            if solver is not None:
+                job_slurm_config = get_solver_slurm_config(
+                    solver, slurm_config
+                )
+            else:
+                job_slurm_config = slurm_config
+            executor_config = hashable_pytree(job_slurm_config)
 
             if executor_config not in executors:
                 executor = get_slurm_executor(
                     benchmark,
-                    solver_slurm_config,
+                    job_slurm_config,
                     timeout=common_kwargs["timeout"],
                 )
                 stack.enter_context(executor.batch())
