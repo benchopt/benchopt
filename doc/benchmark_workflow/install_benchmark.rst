@@ -47,6 +47,20 @@ dependencies with the ``--prepare`` flag::
 This is convenient in CI pipelines or when setting up a benchmark on a
 remote server where internet access may not be available at run time.
 
+Preparation can also be parallelised across datasets using the same options as
+:ref:`benchopt run <parallel_run>`:
+
+.. code-block:: bash
+
+    # Prepare all datasets on 8 local workers
+    benchopt prepare path/to/benchmark -j 8
+
+    # Prepare using a distributed backend (Dask, SLURM via submitit, …)
+    benchopt prepare path/to/benchmark --parallel-config slurm_config.yml
+
+See :ref:`parallel_run` for how to write a ``parallel_config.yml`` and for the
+full list of supported backends.
+
 .. note::
 
     The ``--download`` option of ``benchopt install`` is deprecated in

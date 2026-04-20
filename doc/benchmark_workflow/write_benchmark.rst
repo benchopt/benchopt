@@ -207,7 +207,9 @@ in ``prepare_cache_ignore`` to avoid redundant work:
             ...
 
 Preparation is triggered via ``benchopt prepare``; see
-:ref:`prepare_datasets` for the CLI details.  For a worked example
+:ref:`prepare_datasets` for the CLI details, including how to run preparation
+in parallel with ``-j`` or ``--parallel-config`` (same interface as
+:ref:`benchopt run <parallel_run>`).  For a worked example
 showing the caching behaviour and ``prepare_cache_ignore``, see
 :ref:`sphx_glr_auto_examples_run_benchopt_prepare.py`.
 
