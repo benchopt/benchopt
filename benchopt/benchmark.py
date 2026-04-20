@@ -13,7 +13,7 @@ except ImportError:
     import cloudpickle
 
 from .config import get_setting
-from .base import BaseSolver, BaseDataset
+from .base import BaseSolver, BaseDataset, _prepare_one
 
 from .utils.dynamic_modules import _load_class_from_module
 from .utils.parametrized_name_mixin import sanitize
@@ -30,6 +30,7 @@ from .utils.shell_cmd import _run_shell_in_conda_env
 
 # Get config values
 from .config import RAISE_INSTALL_ERROR
+from .parallel_backends import parallel_run
 
 
 # Global variable to access the benchmark currently running globally
@@ -676,7 +677,7 @@ class Benchmark:
             cmd, env_name=env_name, raise_on_error=True, capture_stdout=False
         )
 
-    def prepare_all_data(self, datasets, force=False):
+    def prepare_all_data(self, datasets, force=False, parallel_config=None):
         """Prepare all specified datasets using their ``prepare()`` method.
 
         For each dataset class, parameterizations that only differ on
@@ -693,6 +694,10 @@ class Benchmark:
             Dataset classes to prepare.
         force : bool, default False
             If True, bypass the cache and re-run preparation unconditionally.
+        parallel_config : dict or None
+            Backend configuration as produced by
+            ``check_parallel_config(parallel_config_file, n_jobs)``.
+            If None, preparation runs sequentially.
 
         Returns
         -------
@@ -702,27 +707,33 @@ class Benchmark:
         if len(datasets) == 0:
             return 0
 
-        cached_prepare = self.cache(BaseDataset._prepare, force=force)
+        all_datasets = list(_list_parametrized_classes(
+            *datasets, prepare=True
+        ))
 
-        n_total = 0
-        n_failed = 0
-        for dataset, is_install in _list_parametrized_classes(
-                *datasets, prepare=True
-        ):
-            n_total += 1
+        # Handle not-installed datasets sequentially before parallelising
+        n_total = len(all_datasets)
+        to_prepare = []
+        for dataset, is_install in all_datasets:
             if not is_install:
                 print(f"Dataset {dataset} is not installed, "
                       "skipping preparation.")
-                continue
-            print(f"Preparing {dataset} ...", end=' ', flush=True)
-            try:
-                cached_prepare(dataset=dataset)
-                print("done")
-            except Exception:
-                print("FAILED")
-                print_exc()
-                n_failed += 1
+                n_total -= 1
+            else:
+                to_prepare.append(dict(dataset=dataset))
 
+        if not to_prepare:
+            print("Summary: 0/0 datasets ready.")
+            return 0
+
+        results = parallel_run(
+            self, _prepare_one,
+            kwargs=dict(benchmark=self, force=force),
+            all_runs=to_prepare,
+            config=parallel_config,
+        )
+
+        n_failed = sum(1 for _, err in results if err is not None)
         if n_failed:
             print(
                 f"Summary: {n_total - n_failed}/{n_total} datasets ready, "

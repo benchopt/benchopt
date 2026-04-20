@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from traceback import print_exc
 
 from .callback import _Callback
 from .stopping_criterion import SingleRunCriterion
@@ -400,14 +401,36 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
 
     @staticmethod
     def _prepare(dataset):
-        """Prepare a single dataset instance.
-        """
+        """Cacheable preparation function; called through ``benchmark.cache``."""
         if type(dataset).prepare is not BaseDataset.prepare:
             dataset.prepare()
         else:
             # Backward-compat: fall back to get_data() when prepare() is not
             # overridden, preserving the old --download behaviour.
             dataset.get_data()
+
+
+def _prepare_one(benchmark, dataset, force=False):
+    """Prepare one dataset instance; used as the unit of work in parallel_run.
+
+    Analogous to ``run_one_solver`` in ``runner.py``.
+
+    Returns a ``(dataset_name, error)`` tuple where *error* is ``None`` on
+    success or the caught exception on failure.
+    """
+    exc = None
+    cached_prepare = benchmark.cache(BaseDataset._prepare, force=force)
+    print(f"Preparing {dataset} ...", end=' ', flush=True)
+    try:
+        cached_prepare(dataset=dataset)
+        print("done")
+    except Exception as e:
+        print("FAILED")
+        print_exc()
+        exc = e
+    finally:
+        print(end='', flush=True)
+        return (str(dataset), exc)
 
 
 class BaseObjective(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):

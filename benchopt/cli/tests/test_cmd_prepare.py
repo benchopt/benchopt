@@ -13,7 +13,7 @@ class TestPrepareCmd:
     dataset = """from benchopt import BaseDataset
             class Dataset(BaseDataset):
                 name = "dataset"
-                def prepare(self): print("#PREPRARED")
+                def prepare(self): print("#PREPARED")
                 def get_data(self): print("#GET_DATA")
         """
 
@@ -41,7 +41,7 @@ class TestPrepareCmd:
 
         ds_b = (
             self.dataset.replace('dataset', 'dataset-filtered')
-            .replace('#PREPRARED', '#SKIPPED')
+            .replace('#PREPARED', '#SKIPPED')
         )
         with temp_benchmark(datasets=[self.dataset, ds_b]) as bench:
             with CaptureCmdOutput() as out:
@@ -49,14 +49,14 @@ class TestPrepareCmd:
                     f"{bench.benchmark_dir} -d dataset".split(),
                     'benchopt', standalone_mode=False
                 )
-            out.check_output("#PREPRARED", repetition=1)
+            out.check_output("#PREPARED", repetition=1)
             out.check_output("#GET_DATA", repetition=0)
             out.check_output("#SKIPPED", repetition=0)
 
     def test_default_fallback_calls_get_data(self):
         """Without a custom prepare(), get_data() is called as fallback."""
         dataset = self.dataset.replace(
-            "def prepare(self): print(\"#PREPRARED\")", ""
+            "def prepare(self): print(\"#PREPARED\")", ""
         )
         with temp_benchmark(datasets=dataset) as bench:
             with CaptureCmdOutput() as out:
@@ -78,7 +78,7 @@ class TestPrepareCmd:
                     [str(bench.benchmark_dir)],
                     'benchopt', standalone_mode=False
                 )
-            out.check_output("#PREPRARED", repetition=1)
+            out.check_output("#PREPARED", repetition=1)
 
     def test_cache_ignore_deduplicates(self):
         """prepare_cache_ignore collapses correctly ignore params."""
@@ -88,7 +88,7 @@ class TestPrepareCmd:
                 parameters = {'n': [1, 2], 'seed': [0, 1, 2]}
                 prepare_cache_ignore = ('seed',)
                 def prepare(self): print(
-                    f"#PREPRARED({self.n}, {self.seed})"
+                    f"#PREPARED({self.n}, {self.seed})"
                 )
                 def get_data(self): return dict(X=None, y=None)
         """
@@ -100,28 +100,54 @@ class TestPrepareCmd:
                 )
             # 2 values of n x 3 values of seed = 6 combos, but seed is ignored
             # -> only 2 unique effective combos -> prepare() called twice
-            out.check_output("#PREPRARED", repetition=2)
-            out.check_output(r"#PREPRARED\(1, 0\)", repetition=1)
-            out.check_output(r"#PREPRARED\(2, 0\)", repetition=1)
+            out.check_output("#PREPARED", repetition=2)
+            out.check_output(r"#PREPARED\(1, 0\)", repetition=1)
+            out.check_output(r"#PREPARED\(2, 0\)", repetition=1)
 
-    def test_failure_exits_nonzero_and_warns(self):
-        """Failed prepare() exits with code 1 and prints the traceback."""
-        dataset = self.dataset.replace(
-            'print("#PREPRARED")',
-            'raise RuntimeError("preparation failed")'
-        )
-        with temp_benchmark(datasets=dataset) as bench:
-            with CaptureCmdOutput(exit=1) as out:
+    @pytest.mark.parametrize('n_jobs', [1, 2])
+    def test_valid_call(self, n_jobs):
+        """Parallel prepare runs the preparation in parallel."""
+        datasets = [
+            self.dataset,
+            self.dataset.replace('dataset', 'dataset-b')
+            .replace('#PREPARED', '#B_PREPARED'),
+        ]
+        with temp_benchmark(datasets=datasets) as bench:
+            with CaptureCmdOutput() as out:
                 prepare_cmd(
-                    [str(bench.benchmark_dir)],
+                    f"{bench.benchmark_dir} -j {n_jobs}".split(),
                     'benchopt', standalone_mode=False
                 )
-        out.check_output("preparation failed")
+            # Both datasets must appear in progress output
+            out.check_output("Preparing dataset ")
+            out.check_output("Preparing dataset-b ")
+            out.check_output("#PREPARED", repetition=1)
+            out.check_output("#B_PREPARED", repetition=1)
+            out.check_output("Summary: 2/2 datasets ready.")
+
+    @pytest.mark.parametrize('n_jobs', [1, 2])
+    def test_failure_dont_block_others(self, n_jobs):
+        """Failed prepare() exits with code 1 and prints the traceback."""
+        datasets = [
+            self.dataset.replace(
+                'print("#PREPARED")',
+                'raise RuntimeError("failure info")'
+            ).replace('dataset', 'invalid'),
+            self.dataset,
+        ]
+        with temp_benchmark(datasets=datasets) as bench:
+            with CaptureCmdOutput(exit=1) as out:
+                prepare_cmd(
+                    [str(bench.benchmark_dir), "-j", str(n_jobs)],
+                    'benchopt', standalone_mode=False
+                )
+        out.check_output("failure info")
+        out.check_output("FAILED")
+        out.check_output("#PREPARED", repetition=1)
+        out.check_output("1/2 datasets ready", repetition=1)
 
     def test_force_flag(self, tmp_path):
         """--force re-runs preparation even when cached."""
-        counter_file = tmp_path / "count.txt"
-        counter_file.write_text("0")
         with temp_benchmark(datasets=self.dataset) as bench:
             with CaptureCmdOutput() as out:
                 prepare_cmd(
@@ -132,4 +158,4 @@ class TestPrepareCmd:
                     f"{bench.benchmark_dir} --force".split(),
                     'benchopt', standalone_mode=False
                 )
-            out.check_output("#PREPRARED", repetition=2)
+            out.check_output("#PREPARED", repetition=2)

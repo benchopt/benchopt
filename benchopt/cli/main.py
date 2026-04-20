@@ -409,6 +409,14 @@ def run(config_file=None, **kwargs):
               is_flag=True,
               help="If this flag is set, re-run preparation even if the "
               "result is already cached.")
+@click.option('--n-jobs', '-j',
+              metavar="<int>", default=None, type=int,
+              help="Maximal number of workers to prepare the datasets in "
+              "parallel.")
+@click.option('--parallel-config',
+              metavar="<parallel_config.yml>", default=None,
+              help="Run in parallel with the specified backend configuration. "
+              "Same interface as `benchopt run --parallel-config`.")
 @click.option('--env', '-e', 'env_name',
               flag_value='True', type=str, default='False',
               help="Run preparation in a dedicated conda environment "
@@ -420,7 +428,7 @@ def run(config_file=None, **kwargs):
               help="Run preparation in the conda environment "
               "named <env_name>.")
 def prepare(benchmark, dataset_names, config_file=None,
-            force=False, env_name='False'):
+            force=False, n_jobs=None, parallel_config=None, env_name='False'):
 
     if config_file is not None:
         with open(config_file, "r") as f:
@@ -441,8 +449,11 @@ def prepare(benchmark, dataset_names, config_file=None,
 
     datasets = benchmark.check_dataset_patterns(dataset_names)
 
+    parallel_config = check_parallel_config(parallel_config, n_jobs)
     print(f"Preparing datasets for benchmark '{benchmark.name}'")
-    exit_code = benchmark.prepare_all_data(datasets, force=force)
+    exit_code = benchmark.prepare_all_data(
+        datasets, force=force, parallel_config=parallel_config
+    )
     if exit_code != 0:
         raise SystemExit(exit_code)
 
