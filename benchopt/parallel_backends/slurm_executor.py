@@ -104,7 +104,7 @@ def run_on_slurm(
                 executor = get_slurm_executor(
                     benchmark,
                     job_slurm_config,
-                    timeout=common_kwargs["timeout"],
+                    timeout=common_kwargs.get("timeout"),
                 )
                 stack.enter_context(executor.batch())
                 executors[executor_config] = executor
