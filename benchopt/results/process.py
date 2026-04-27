@@ -30,8 +30,7 @@ def merge_results(result_filenames, keep="last"):
 
 
 def merge(result_filenames, keep='last', output=None):
-    """Merge parquet files containing results of a benchmark
-    and returns the path of the new parquet file.
+    """Merge result files of a benchmark
 
     Parameters
     ----------
