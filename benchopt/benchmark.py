@@ -82,10 +82,10 @@ class Benchmark:
         Caching mechanism for the benchmark.
     """
 
-    def __new__(cls, benchmark, *args, **kwargs):
+    def __new__(cls, benchmark_dir, *args, **kwargs):
         # if already a Benchmark, act as a no-op
-        if isinstance(benchmark, cls):
-            return benchmark
+        if isinstance(benchmark_dir, cls):
+            return benchmark_dir
         return super().__new__(cls)
 
     def __init__(
