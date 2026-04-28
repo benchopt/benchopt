@@ -213,7 +213,6 @@ def test_objective_cv_splitter(no_debug_log):
         sampling_strategy = 'run_once'
         def set_objective(self, X_train, y_train): pass
         def run(self, n_iter): print("OK", flush=True)
-        def get_result(self): return dict(beta=1)
     """
 
     dataset = """from benchopt import BaseDataset
