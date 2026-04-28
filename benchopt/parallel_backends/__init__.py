@@ -65,6 +65,12 @@ def check_parallel_config(parallel_config_file, n_jobs):
         if not isinstance(parallel_config_file, dict):
             with open(parallel_config_file, "r") as f:
                 parallel_config = yaml.safe_load(f)
+            if "slurm_time" in parallel_config and isinstance(parallel_config["slurm_time"], int):
+                # Yaml converts time to int, we need to convert it
+                # back to as slurm interprets int to minutes.
+                parallel_config['slurm_time'] = (
+                    f"00:{parallel_config['slurm_time']}"
+                )
         else:
             parallel_config = parallel_config_file
         if n_jobs is not None:
