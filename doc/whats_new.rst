@@ -16,6 +16,9 @@ API
 - Add validation step on config options, to avoid silent failure when
   setting the wrong option. By `Thomas Moreau`_ (:gh:`910`)
 
+- Add an API function for merging benchmark result files, similar to
+  the ``benchopt merge`` command. By `Damien Lesens`_ (:gh:`916`)
+
 DOC
 ~~~
 
