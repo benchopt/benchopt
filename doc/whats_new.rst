@@ -27,6 +27,9 @@ API
   for a dataset. This method is cached, and some parameters of the class can
   be ignored for caching by specifying them in ``prepare_cache_ignore``.
   By `Thomas Moreau`_ (:gh:`912`)
+  
+- Add an API function for merging benchmark result files, similar to
+  the ``benchopt merge`` command. By `Damien Lesens`_ (:gh:`916`)
 
 DOC
 ~~~

@@ -146,3 +146,4 @@ Benchopt utils
    plotting.plot_benchmark
    datasets.simulated.make_correlated_data
    utils.profile
+   results.process.merge
