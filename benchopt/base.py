@@ -298,15 +298,6 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
         self.warm_up()
         self._warmup_done = True
 
-    def _get_state(self):
-        """Return the state of the objective for pickling."""
-        return dict(objective=getattr(self, '_objective', None))
-
-    def __setstate__(self, state):
-        objective = state['objective']
-        if objective is not None:
-            self._set_objective(objective)
-
 
 class CommandLineSolver(BaseSolver, ABC):
     """A base class for solvers that are called through command lines
