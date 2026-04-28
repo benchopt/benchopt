@@ -139,7 +139,7 @@ class TestGetUsedParameters:
         class _Cls:
             parameters = {'n': [1000, 10000], 'seed': [0, 1, 2]}
 
-        with pytest.raises(ValueError, match="Unknown parameters \['invalid'"):
+        with pytest.raises(ValueError, match=r"Unknown parameters.*'invalid'"):
             list(_get_used_parameters(_Cls, {'invalid': [0]}))
 
     def test_ignore_deduplicates(self):
