@@ -172,9 +172,9 @@ def _get_used_parameters(klass, params, ignore=()):
             keys_unknown = set(update) - set(default)
             if keys_unknown:
                 raise ValueError(
-                    f"Unknown parameters {list(keys_unknown)}, parameters must be in "
-                    f"{list(default.keys())}"
-                ) 
+                    f"Unknown parameters {list(keys_unknown)}, parameters "
+                    f"must be in {list(default.keys())}"
+                )
 
             default.update(update)
             if default not in used_parameters:  # avoid duplicates
