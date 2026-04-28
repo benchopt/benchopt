@@ -10,12 +10,24 @@ What's new
 In development
 --------------
 
+CLI
+~~~
+
+- Add ``benchopt prepare`` command to prepare the benchmark's dataset
+  before launching them. Also deprecate the ``--download`` option in
+  ``benchopt install``, replaced by ``--prepare``. By `Thomas Moreau`_ (:gh:`912`)
+
 API
 ~~~
 
 - Add validation step on config options, to avoid silent failure when
   setting the wrong option. By `Thomas Moreau`_ (:gh:`910`)
 
+- Add ``prepare`` method to ``Dataset`` to allow specifying preparation steps
+  for a dataset. This method is cached, and some parameters of the class can
+  be ignored for caching by specifying them in ``prepare_cache_ignore``.
+  By `Thomas Moreau`_ (:gh:`912`)
+  
 - Add an API function for merging benchmark result files, similar to
   the ``benchopt merge`` command. By `Damien Lesens`_ (:gh:`916`)
 

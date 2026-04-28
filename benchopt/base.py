@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from traceback import print_exc
 
 from .callback import _Callback
 from .stopping_criterion import SingleRunCriterion
@@ -331,9 +332,45 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
     - ``get_data()``: retrieves/simulates the data contained in this data set
       and returns a dictionary containing the data. This dictionary is passed
       as arguments of the objective's method ``set_data``.
+
+    Optionally, datasets can implement:
+
+    - ``prepare()``: performs expensive one-time preparation (downloads,
+      extraction, preprocessing) that is cached and separated from loading.
+
+    Class attributes
+    ----------------
+    prepare_cache_ignore : tuple of str or "all"
+        Parameter names that do not affect the output of ``prepare()``.
+        These are excluded from the prepare cache key and from job
+        deduplication when running preparation in parallel.
+        Use the special value ``"all"`` to ignore every parameter (i.e.
+        preparation runs at most once per dataset class regardless of
+        parameterization).
     """
 
     _base_class_name = 'Dataset'
+
+    prepare_cache_ignore = ()
+
+    def prepare(self):
+        """Prepare the dataset for use (optional).
+
+        This method is called before benchmark runs to perform expensive
+        one-time operations such as downloading data, extracting archives,
+        or pre-processing. It is cached so that repeated calls with the
+        same parameters are no-ops.
+
+        Notes
+        -----
+        - Defaults to a no-op; datasets without a custom ``prepare()`` fall
+          back to calling ``get_data()`` for backward compatibility.
+        - Should be idempotent: calling it multiple times must be safe.
+        - Parameters listed in ``prepare_cache_ignore`` do not affect the
+          cache key. Use ``prepare_cache_ignore = "all"`` to ignore every
+          parameter.
+        """
+        pass
 
     @abstractmethod
     def get_data(self):
@@ -361,6 +398,39 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
             self._data = self.get_data()
 
         return self._data
+
+    @staticmethod
+    def _prepare(dataset):
+        """Preparation function, to map to prepare or get_data."""
+        if type(dataset).prepare is not BaseDataset.prepare:
+            dataset.prepare()
+        else:
+            # Backward-compat: fall back to get_data() when prepare() is not
+            # overridden, preserving the old --download behaviour.
+            dataset.get_data()
+
+
+def _prepare_one(benchmark, dataset, force=False):
+    """Prepare one dataset instance; used as the unit of work in parallel_run.
+
+    Analogous to ``run_one_solver`` in ``runner.py``.
+
+    Returns a ``(dataset_name, error)`` tuple where *error* is ``None`` on
+    success or the caught exception on failure.
+    """
+    exc = None
+    cached_prepare = benchmark.cache(BaseDataset._prepare, force=force)
+    print(f"Preparing {dataset} ...", end=' ', flush=True)
+    try:
+        cached_prepare(dataset=dataset)
+        print("done")
+    except Exception as e:
+        print("FAILED")
+        print_exc()
+        exc = e
+    finally:
+        print(end='', flush=True)
+        return (str(dataset), exc)
 
 
 class BaseObjective(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
