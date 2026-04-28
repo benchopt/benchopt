@@ -2,6 +2,7 @@ import pytest
 
 
 from benchopt.cli.main import run
+from benchopt.parallel_backends import check_parallel_config
 from benchopt.utils.temp_benchmark import temp_benchmark
 
 from benchopt.tests.utils import CaptureCmdOutput, patch_import
@@ -28,6 +29,29 @@ def test_missing_backend():
                     f"--parallel-config {parallel_config_file} -n 0".split(),
                     standalone_mode=False
                 )
+
+
+@pytest.mark.parametrize(
+    "yaml_slurm_time, expected_slurm_time",
+    [
+        ("10:00:00", "10:00:00"),
+        ("10:30", "00:10:30"),
+        ("00:10:30", "00:10:30"),
+        ("1-00:30:01", "1-00:30:01"),
+    ],
+)
+def test_check_parallel_config_yaml_slurm_time_parsing(
+    tmp_path, yaml_slurm_time, expected_slurm_time
+):
+    parallel_config_file = tmp_path / "parallel_config.yml"
+    parallel_config_file.write_text(
+        "backend: submitit\n"
+        f"slurm_time: {yaml_slurm_time}\n"
+    )
+
+    cfg = check_parallel_config(parallel_config_file, n_jobs=None)
+
+    assert cfg["slurm_time"] == expected_slurm_time
 
 
 @pytest.mark.parametrize("backend", ["submitit", "dask"])
