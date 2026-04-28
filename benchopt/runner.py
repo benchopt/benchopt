@@ -137,19 +137,17 @@ def run_one_to_cvg(benchmark, objective, solver, meta, timeout, max_runs,
         timeout=timeout,
         terminal=terminal,
     )
-    stopping_criterion.dataset = meta['dataset_name']
-    stopping_criterion.objective = meta['objective_name']
-    stopping_criterion.solver = meta['solver_name']
+    run_key = (
+        meta['dataset_name'],
+        meta['objective_name'],
+        meta['solver_name']
+    )
+    stopping_criterion.run_key = run_key
     stopping_criterion.rep = meta['idx_rep']
 
     skip, reason = solver._set_objective(objective)
     if skip:
-        key = (
-            meta['dataset_name'],
-            meta['objective_name'],
-            meta['solver_name']
-        )
-        return [], key, 'skip', reason
+        return [], run_key, 'skip', reason
 
     # Augment the metadata with final_results if necessary.
     has_save_final_results = (
@@ -210,12 +208,7 @@ def run_one_to_cvg(benchmark, objective, solver, meta, timeout, max_runs,
     if ctx.status in FAILURE_STATUS:
         raise FailedRun(ctx.status)
 
-    key = (
-        meta['dataset_name'],
-        meta['objective_name'],
-        meta['solver_name']
-    )
-    return curve, key, ctx.status, ""
+    return curve, run_key, ctx.status, ""
 
 
 def get_solver_kwargs(
