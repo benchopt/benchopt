@@ -1,8 +1,10 @@
 import os
 import re
+import pickle
 import pytest
 from pathlib import Path
 
+from benchopt.benchmark import Benchmark
 from benchopt.cli.main import run
 from benchopt.results import read_results
 from benchopt.utils.temp_benchmark import temp_benchmark
@@ -81,6 +83,20 @@ def test_benchmark_submodule():
                 str(bench.benchmark_dir),
                 *"-s test-solver -d test-dataset".split()
             ], 'benchopt', standalone_mode=False)
+
+
+def test_benchmark_constructor_noop_on_benchmark_instance():
+    with temp_benchmark() as bench:
+        same_bench = Benchmark(bench)
+
+    assert same_bench is bench
+
+
+def test_benchmark_pickle_roundtrip():
+    with temp_benchmark() as bench:
+        restored_bench = pickle.loads(pickle.dumps(bench))
+
+    assert isinstance(restored_bench, Benchmark)
 
 
 def test_benchopt_min_version():

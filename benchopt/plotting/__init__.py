@@ -9,6 +9,8 @@ from ..results.parquet import update_metadata
 from .generate_html import plot_benchmark_html
 from .generate_matplotlib import get_figures
 
+from ..benchmark import Benchmark
+
 
 BACKWARD_COMPAT_PLOTS = {
     "suboptimality_curve": "objective_curve",
@@ -73,7 +75,7 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
     ----------
     fname : str
         Name of the file in which the results are saved.
-    benchmark : benchopt.Benchmark object
+    benchmark : str or Path-like or benchopt.Benchmark object
         Object to represent the benchmark.
     kinds : list of str or None
         List of the plots that will be generated. If None are provided, use the
@@ -93,6 +95,7 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
         The matplotlib figures for convergence curve and bar chart
         for each dataset.
     """
+    benchmark = Benchmark(benchmark)
     plot_config = get_metadata(fname)
     plot_config = benchmark.get_plot_config(default_config=plot_config)
     plot_config = _sanitize_config(plot_config)

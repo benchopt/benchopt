@@ -61,10 +61,11 @@ class Benchmark:
 
     Parameters
     ----------
-    benchmark_dir : str or Path-like
+    benchmark_dir : str or Path-like or Benchmark object
         Folder containing the benchmark. The folder should at least
         contain an `objective.py` file defining the `Objective`
         function for the benchmark.
+        If a Benchmark object act as a no-op.
     seed: int | None
         Random seed for the benchmark. If None, an arbitrary seed is chosen.
     no_cache : bool (default: False)
@@ -81,12 +82,21 @@ class Benchmark:
         Caching mechanism for the benchmark.
     """
 
+    def __new__(cls, benchmark_dir=None, **kwargs):
+        # if already a Benchmark, act as a no-op
+        if isinstance(benchmark_dir, cls):
+            return benchmark_dir
+        return super().__new__(cls)
+
     def __init__(
             self, benchmark_dir,
             seed=None,
             no_cache=False,
             allow_meta_from_json=False,
     ):
+        if isinstance(benchmark_dir, self.__class__):
+            return
+
         self.benchmark_dir = Path(benchmark_dir)
         self.no_cache = no_cache
 
