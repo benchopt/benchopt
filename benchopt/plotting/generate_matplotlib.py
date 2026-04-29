@@ -142,8 +142,9 @@ def get_plot_boxplot(plot_data):
             data["y"],
             positions=positions,
             label=data["label"],
+            widths=plot_data.get("box_width", 0.6),
             patch_artist=True,
-            showfliers=False,
+            showfliers=plot_data.get("showfliers", False)
         )
 
         color = data["color"]
