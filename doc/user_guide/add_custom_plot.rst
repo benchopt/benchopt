@@ -197,6 +197,8 @@ The metadata dictionary returned by :code:`get_metadata` should contain:
 - :code:`ylabel`: The label of the y-axis.
 - :code:`box_width` (optional, default=0.6): The width of the boxes.
 - :code:`showfliers` (optional, default=False): Whether to show fliers in the boxplot.
+  Fliers are points that are outside the whiskers of the boxplot, which represent
+  outliers in the data.
 
 .. code-block:: python
 
