@@ -65,6 +65,17 @@ def check_parallel_config(parallel_config_file, n_jobs):
         if not isinstance(parallel_config_file, dict):
             with open(parallel_config_file, "r") as f:
                 parallel_config = yaml.safe_load(f)
+            if ("slurm_time" in parallel_config
+                    and isinstance(parallel_config["slurm_time"], int)):
+                # YAML may parse unquoted sexagesimal times (e.g. 10:30) as
+                # integer seconds. Convert back to HH:MM:SS, because submitit
+                # interprets raw int values as minutes.
+                total_seconds = parallel_config["slurm_time"]
+                hours, rem_seconds = divmod(total_seconds, 3600)
+                minutes, seconds = divmod(rem_seconds, 60)
+                parallel_config['slurm_time'] = (
+                    f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+                )
         else:
             parallel_config = parallel_config_file
         if n_jobs is not None:
