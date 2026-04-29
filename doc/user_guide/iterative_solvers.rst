@@ -7,21 +7,13 @@ Evaluating an iterative method
    **For ML benchmarks without iterative evaluation:** If you are benchmarking
    machine learning methods where each solver runs once to completion (e.g.,
    comparing scikit-learn estimators), you can skip performance curves entirely
-   by setting ``sampling_strategy = "run_once"`` in your ``Solver`` class.
+   by setting ``sampling_strategy = "run_once"`` in your ``Objective`` class.
    See :ref:`ml_benchmark` for more details on setting up ML benchmarks.
 
    .. code-block:: python
 
-      class Solver(BaseSolver):
+      class Objective(BaseObjective):
           sampling_strategy = "run_once"
-
-          def run(self, _):
-              # Your solver code here
-              pass
-
-    Note that this option can also be set globally for all solvers by setting
-    the ``Objective.sampling_strategy`` class attribute to ``"run_once"`` in
-    your ``Objective`` class.
 
 Performance curves are primarily useful for **iterative optimization methods**,
 where you want to track how the objective value evolves as computational budget

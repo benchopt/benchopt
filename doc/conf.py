@@ -124,8 +124,8 @@ html_theme_options = {
     "repository_url": "https://github.com/benchopt/benchopt",
     "home_page_in_toc": True,
     # for a complete list of themes refer to https://pygments.org/styles/
-    "pygment_light_style": "colorful",
-    "pygment_dark_style": "github-dark",
+    "pygments_light_style": "colorful",
+    "pygments_dark_style": "github-dark",
 }
 
 html_sidebars = {

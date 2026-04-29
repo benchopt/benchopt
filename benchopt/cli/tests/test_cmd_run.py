@@ -116,6 +116,31 @@ class TestRunCmd:
         # Make sure the results were saved in a result file
         assert len(out.result_files) == 1, out
 
+    @pytest.mark.parametrize('cv', [True, False])
+    def test_n_rep_display(self, cv):
+        objective = f"""
+        from benchopt.utils.temp_benchmark import TempObjective
+
+        class Splitter():
+            def get_n_splits(self): return 2
+
+        class Objective(TempObjective):
+            def set_data(self, **data):
+                if {cv}:
+                    self.cv = Splitter()
+        """
+        n_rep = 2 if cv else 1
+
+        # Check that the number of repetitions is displayed correctly
+        with temp_benchmark(objective=objective) as bench, \
+                CaptureCmdOutput() as out:
+            run(
+                f"{bench.benchmark_dir} -d test-dataset -n 1 --no-plot"
+                .split(), standalone_mode=False,
+            )
+        out.check_output(rf'\(1 / {n_rep} reps\)')
+        out.check_output(r'\(1 / None reps\)', repetition=0)
+
     def test_valid_call_in_env(self, test_env_name):
         with temp_benchmark() as bench, CaptureCmdOutput() as out:
             cmd = (
@@ -236,18 +261,16 @@ class TestRunCmd:
     def test_profiling(self, test_env_name, no_debug_log):
         # Run this test in a subprocess as calling the profiler in the same
         # process breaks the coverage collection.
-        solver = """from benchopt import BaseSolver
+        solver = """from benchopt.utils.temp_benchmark import TempSolver
         from benchopt.utils.profiling import profile
 
-        class Solver(BaseSolver):
-            name = 'test-solver'
-            def set_objective(self, X, y, lmbd): pass
+        class Solver(TempSolver):
+            name = "test-solver"
             @profile
             def run(self, n_iter):
                 import time
                 print("RUN")
                 time.sleep(0.1)
-            def get_result(self): return dict(beta=None)
         """
         with temp_benchmark(solvers=solver) as bench, \
                 CaptureCmdOutput() as out:
@@ -263,103 +286,6 @@ class TestRunCmd:
         ]), repetition=1)
         out.check_output(r"def run\(self, n_iter\):", repetition=1)
         out.check_output(r"time.sleep\(0.1\)", repetition=1)
-
-    def test_config_file_single_line(self, no_debug_log):
-        n_reps = 2
-        config = f"""
-        objective: test-objective
-        dataset: test-dataset
-        solver: test-solver[param1=42]
-        n-repetitions: {n_reps}
-        max-runs: 0
-        """
-
-        solver = """from benchopt import BaseSolver
-
-        class Solver(BaseSolver):
-            name = "test-solver"
-            parameters = {'param1':[0]}
-            strategy = "run_once"
-
-            def set_objective(self, X, y, lmbd): pass
-            def run(self, _): print(f"Solver#RUN#{self.param1}")
-            def get_result(self): return dict(beta=1)
-        """
-
-        with temp_benchmark(config=config, solvers=solver) as bench:
-            with CaptureCmdOutput() as out:
-                run(
-                    f"{bench.benchmark_dir} --no-plot --config "
-                    f"{bench.benchmark_dir / 'config.yml'}".split(),
-                    'benchopt', standalone_mode=False
-                )
-            out.check_output(r'test-solver\[param1=42\]:', repetition=n_reps+1)
-
-    def test_config_file(self, no_debug_log):
-        n_reps = 2
-        config = f"""
-        objective:
-          - test-objective
-        dataset:
-          - test-dataset
-        solver:
-          - test-solver[param1=42]
-        n-repetitions: {n_reps}
-        max-runs: 0
-        """
-
-        solver = """from benchopt import BaseSolver
-
-        class Solver(BaseSolver):
-            name = "test-solver"
-            parameters = {'param1':[0]}
-            strategy = "run_once"
-
-            def set_objective(self, X, y, lmbd): pass
-            def run(self, _): print(f"Solver#RUN#{self.param1}")
-            def get_result(self): return dict(beta=1)
-        """
-
-        with temp_benchmark(config=config, solvers=solver) as bench:
-            with CaptureCmdOutput() as out:
-                run(
-                    f"{bench.benchmark_dir} --no-plot --config "
-                    f"{bench.benchmark_dir / 'config.yml'}".split(),
-                    'benchopt', standalone_mode=False
-                )
-
-            out.check_output('test-objective', repetition=1)
-            out.check_output('test-dataset', repetition=1)
-            out.check_output('simulated', repetition=0)
-            out.check_output(r'test-solver\[param1=42\]:', repetition=n_reps+1)
-            out.check_output(r'test-solver\[param1=0\]:', repetition=0)
-
-            # test that CLI options take precedence
-            with CaptureCmdOutput() as out:
-
-                run(
-                    f"{bench.benchmark_dir} --no-plot --config "
-                    f"{bench.benchmark_dir / 'config.yml'} "
-                    "-s test-solver[param1=27] -r 1".split(),
-                    'benchopt', standalone_mode=False)
-
-            out.check_output('test-objective', repetition=1)
-            out.check_output('test-dataset', repetition=1)
-            out.check_output('simulated', repetition=0)
-            out.check_output(r'test-solver\[param1=27\]:', repetition=2)
-            out.check_output(r'test-solver\[param1=42\]:', repetition=0)
-
-    @pytest.mark.parametrize('config, msg', [
-        ("some_unknown_option: 0", "Invalid config file option"),
-        ("solver: [",  "expected the node content"),
-    ], ids=['invalid_option', 'invalid_syntax'])
-    def test_invalid_config_file(self, config, msg):
-
-        with temp_benchmark(config=config) as bench:
-            with pytest.raises(Exception, match=msg):
-                run(f'{bench.benchmark_dir} --config '
-                    f'{bench.benchmark_dir / "config.yml"}'.split(),
-                    'benchopt', standalone_mode=False)
 
     @pytest.mark.parametrize('n_rep', [1, 2, 4])
     def test_caching(self, n_rep):
@@ -403,7 +329,7 @@ class TestRunCmd:
             out.check_output('test-solver:', repetition=5*n_rep+1)
 
     @pytest.mark.parametrize('ext', ["default", "parquet", "csv"])
-    def test_changing_output_name(self, ext):
+    def test_changing_output_name(self, ext, warn_override):
         ext = "" if ext == "default" else f".{ext}"
         with temp_benchmark() as bench, CaptureCmdOutput() as out:
             command = (
@@ -424,12 +350,11 @@ class TestRunCmd:
 
     def test_handle_class_init_error(self):
         # dataset with a wrong param name
-        dataset = """from benchopt import BaseDataset
-            class Dataset(BaseDataset):
+        dataset = """from benchopt.utils.temp_benchmark import TempDataset
+            class Dataset(TempDataset):
                 name = 'buggy-dataset'
                 parameters = {'wrong_param_name': [1]}
-                def __init__(self, param=1.): pass
-                def get_data(self): return dict()
+                def __init__(self, param=1): pass
         """
         with temp_benchmark(datasets=dataset) as bench:
             run_cmd = f"{bench.benchmark_dir} -n 1 --no-plot".split()
@@ -439,15 +364,12 @@ class TestRunCmd:
                 run(run_cmd, 'benchopt', standalone_mode=False)
 
     def test_result_collection(self, no_debug_log):
-        solver = """
-            from benchopt import BaseSolver
+        solver = """from benchopt.utils.temp_benchmark import TempSolver
 
-            class Solver(BaseSolver):
-                name = 'test-solver'
+            class Solver(TempSolver):
+                name = "test-solver"
                 parameters = {'param': [0]}
-                def set_objective(self, X, y, lmbd): pass
                 def run(self, n_iter): print(f'#RUN{self.param}')
-                def get_result(self): return dict(beta=None)
             """
 
         with temp_benchmark(solvers=[solver]) as bench:
@@ -496,3 +418,99 @@ class TestRunCmd:
         _test_shell_completion(
             run, [str(benchmark_dir), '-d'], dataset_completion_cases
         )
+
+
+class TestRunCmdConfig:
+
+    @pytest.mark.parametrize('config, msg', [
+        ("some_unknown_option: 0", "Invalid config file option"),
+        ("solver: [",  "expected the node content"),
+    ], ids=['invalid_option', 'invalid_syntax'])
+    def test_invalid_config_file(self, config, msg):
+
+        with temp_benchmark(config=config) as bench:
+            with pytest.raises(Exception, match=msg):
+                run(f'{bench.benchmark_dir} --config '
+                    f'{bench.benchmark_dir / "config.yml"}'.split(),
+                    'benchopt', standalone_mode=False)
+
+    def test_config_file(self, no_debug_log):
+        n_reps = 2
+        config = f"""
+        objective:
+          - test-objective
+        dataset:
+          - test-dataset
+        solver:
+          - test-solver[param1=42]
+        n-repetitions: {n_reps}
+        max-runs: 0
+        """
+
+        solver = """from benchopt.utils.temp_benchmark import TempSolver
+
+        class Solver(TempSolver):
+            name = "test-solver"
+            parameters = {'param1':[0]}
+            strategy = "run_once"
+
+            def run(self, _): print(f"Solver#RUN#{self.param1}")
+        """
+
+        with temp_benchmark(config=config, solvers=solver) as bench:
+            with CaptureCmdOutput() as out:
+                run(
+                    f"{bench.benchmark_dir} --no-plot --config "
+                    f"{bench.benchmark_dir / 'config.yml'}".split(),
+                    'benchopt', standalone_mode=False
+                )
+
+            out.check_output('test-objective', repetition=1)
+            out.check_output('test-dataset', repetition=1)
+            out.check_output('simulated', repetition=0)
+            out.check_output(r'test-solver\[param1=42\]:', repetition=n_reps+1)
+            out.check_output(r'test-solver\[param1=0\]:', repetition=0)
+
+            # test that CLI options take precedence
+            with CaptureCmdOutput() as out:
+
+                run(
+                    f"{bench.benchmark_dir} --no-plot --config "
+                    f"{bench.benchmark_dir / 'config.yml'} "
+                    "-s test-solver[param1=27] -r 1".split(),
+                    'benchopt', standalone_mode=False)
+
+            out.check_output('test-objective', repetition=1)
+            out.check_output('test-dataset', repetition=1)
+            out.check_output('simulated', repetition=0)
+            out.check_output(r'test-solver\[param1=27\]:', repetition=2)
+            out.check_output(r'test-solver\[param1=42\]:', repetition=0)
+            out.check_output(r'test-solver\[param1=0\]:', repetition=0)
+
+    def test_config_file_single_line(self, no_debug_log):
+        n_reps = 2
+        config = f"""
+        objective: test-objective
+        dataset: test-dataset
+        solver: test-solver[param1=42]
+        n-repetitions: {n_reps}
+        max-runs: 0
+        """
+
+        solver = """from benchopt.utils.temp_benchmark import TempSolver
+
+        class Solver(TempSolver):
+            name = "test-solver"
+            parameters = {'param1':[0]}
+            strategy = "run_once"
+            def run(self, _): print(f"Solver#RUN#{self.param1}")
+        """
+
+        with temp_benchmark(config=config, solvers=solver) as bench:
+            with CaptureCmdOutput() as out:
+                run(
+                    f"{bench.benchmark_dir} --no-plot --config "
+                    f"{bench.benchmark_dir / 'config.yml'}".split(),
+                    'benchopt', standalone_mode=False
+                )
+            out.check_output(r'test-solver\[param1=42\]:', repetition=n_reps+1)

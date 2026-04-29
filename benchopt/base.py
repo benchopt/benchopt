@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from traceback import print_exc
 
 from .callback import _Callback
 from .stopping_criterion import SingleRunCriterion
@@ -62,10 +63,11 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
     - ``sampling_strategy``: defines how the benchmark curve should be sampled.
       It should be one of the following strings: 'iteration', 'tolerance',
       'callback' or 'run_once':
+
         - ``'iteration'``: call the run method with max_iter number increasing
-        logarithmically to get more an more precise points.
+          logarithmically to get more an more precise points.
         - ``'tolerance'``: call the run method with tolerance decreasing
-        logarithmically to get more and more precise points.
+          logarithmically to get more and more precise points.
         - ``'callback'``: a callable that should be called after each iteration
           or epoch. This callable periodically runs
           ``Objective.evaluate_result`` and returns False when the solver
@@ -83,8 +85,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
     default behavior. Typically, for ML benchmarks, all solvers can be run only
     once by setting ``sampling_strategy = 'run_once'`` in the benchmark's
     ``Objective``. More details on how the curves are sampled can be found in
-    the :ref:`performance_curves` user guide.
-
+    the :ref:`iterative_solvers` user guide.
     """
 
     _base_class_name = 'Solver'
@@ -331,9 +332,45 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
     - ``get_data()``: retrieves/simulates the data contained in this data set
       and returns a dictionary containing the data. This dictionary is passed
       as arguments of the objective's method ``set_data``.
+
+    Optionally, datasets can implement:
+
+    - ``prepare()``: performs expensive one-time preparation (downloads,
+      extraction, preprocessing) that is cached and separated from loading.
+
+    Class attributes
+    ----------------
+    prepare_cache_ignore : tuple of str or "all"
+        Parameter names that do not affect the output of ``prepare()``.
+        These are excluded from the prepare cache key and from job
+        deduplication when running preparation in parallel.
+        Use the special value ``"all"`` to ignore every parameter (i.e.
+        preparation runs at most once per dataset class regardless of
+        parameterization).
     """
 
     _base_class_name = 'Dataset'
+
+    prepare_cache_ignore = ()
+
+    def prepare(self):
+        """Prepare the dataset for use (optional).
+
+        This method is called before benchmark runs to perform expensive
+        one-time operations such as downloading data, extracting archives,
+        or pre-processing. It is cached so that repeated calls with the
+        same parameters are no-ops.
+
+        Notes
+        -----
+        - Defaults to a no-op; datasets without a custom ``prepare()`` fall
+          back to calling ``get_data()`` for backward compatibility.
+        - Should be idempotent: calling it multiple times must be safe.
+        - Parameters listed in ``prepare_cache_ignore`` do not affect the
+          cache key. Use ``prepare_cache_ignore = "all"`` to ignore every
+          parameter.
+        """
+        pass
 
     @abstractmethod
     def get_data(self):
@@ -362,21 +399,54 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
 
         return self._data
 
+    @staticmethod
+    def _prepare(dataset):
+        """Preparation function, to map to prepare or get_data."""
+        if type(dataset).prepare is not BaseDataset.prepare:
+            dataset.prepare()
+        else:
+            # Backward-compat: fall back to get_data() when prepare() is not
+            # overridden, preserving the old --download behaviour.
+            dataset.get_data()
+
+
+def _prepare_one(benchmark, dataset, force=False):
+    """Prepare one dataset instance; used as the unit of work in parallel_run.
+
+    Analogous to ``run_one_solver`` in ``runner.py``.
+
+    Returns a ``(dataset_name, error)`` tuple where *error* is ``None`` on
+    success or the caught exception on failure.
+    """
+    exc = None
+    cached_prepare = benchmark.cache(BaseDataset._prepare, force=force)
+    print(f"Preparing {dataset} ...", end=' ', flush=True)
+    try:
+        cached_prepare(dataset=dataset)
+        print("done")
+    except Exception as e:
+        print("FAILED")
+        print_exc()
+        exc = e
+    finally:
+        print(end='', flush=True)
+        return (str(dataset), exc)
+
 
 class BaseObjective(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
     """Base class to define an objective function
 
     Objectives that derive from this class needs to implement four methods:
 
-    - `set_data(**data)`: stores the info from a given dataset to be able to
+    - ``set_data(**data)``: stores the info from a given dataset to be able to
       compute the objective value on these data.
 
-    - `get_objective()`: exports the data from the dataset and the parameters
+    - ``get_objective()``: exports the data from the dataset and the parameters
       from the objective function as a dictionary that will be passed as
       parameters of the solver's `set_objective` method in order to specify the
       objective function of the benchmark.
 
-    - `evaluate_result(**result)`: evaluate the metrics on the results of a
+    - ``evaluate_result(**result)``: evaluate the metrics on the results of a
       solver. Its arguments should correspond to the key of the dictionary
       returned by `Solver.get_result` and it can return a scalar value,
       a dictionary or a list of dictionaries.
@@ -386,31 +456,33 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
       stored at once instead of running each separately. With a list of
       dictionaries, these metrics can be computed on different objects.
 
-    - `get_one_result()`: return one result for which the objective can be
+    - ``get_one_result()``: return one result for which the objective can be
       evaluated. This should be a dictionary where the keys correspond to the
       keyword arguments of `evaluate_result`.
 
     Optionally, the `Objective` can implement the following methods to change
     its behavior:
 
-    - `save_final_results(**result)`: Return the data to be saved from the
+    - ``save_final_results(**result)``: Return the data to be saved from the
        results of the solver. It will be saved as a `.pkl` file in the
        `output/results` folder, and link to the benchmark results.
 
     This class is also used to specify information about the benchmark.
     In particular, it should have the following class attributes:
 
-    - `name`: a name for the benchmark, that will be used to display results.
-    - `url`: the url of the original benchmark repository.
-    - `requirements`: the minimal requirements to be able to run the benchmark.
-    - `min_benchopt_version`: the minimal version of benchopt required to run
+    - ``name``: a name for the benchmark, that will be used to display results.
+    - ``url``: the url of the original benchmark repository.
+    - ``requirements``: the minimal requirements to be able to run the
+       benchmark.
+    - ``min_benchopt_version``: the minimal version of benchopt required to run
       this benchmark.
 
     Some extra configurations can be set through optional class attributes:
-    - `test_dataset_name`: the name of the dataset to use for testing.
-    - `stopping_criterion`: the default stopping criterion to use for
+
+    - ``test_dataset_name``: the name of the dataset to use for testing.
+    - ``stopping_criterion``: the default stopping criterion to use for
       this benchmark.
-    - `sampling_strategy`: the default sampling strategy to use for this
+    - ``sampling_strategy``: the default sampling strategy to use for this
       benchmark.
     """
 

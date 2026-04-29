@@ -11,6 +11,7 @@ from benchopt.utils.shell_cmd import _run_shell_in_conda_env
 
 os.environ['BENCHOPT_DEBUG'] = '1'
 os.environ['BENCHOPT_RAISE_INSTALL_ERROR'] = '1'
+os.environ['BENCHOPT_WARN_NONUNIQUE_FILES'] = '0'
 
 _TEST_ENV_NAME = None
 _EMPTY_ENV_NAME = None
@@ -120,6 +121,11 @@ def pytest_generate_tests(metafunc):
                 ('benchmark', param), values, ids=class_ids
             )
             break
+    else:
+        if "benchmark" in metafunc.fixturenames:
+            metafunc.parametrize(
+                'benchmark', [benchmark], ids=[benchmark.name]
+            )
 
 
 @pytest.fixture
@@ -136,6 +142,14 @@ def no_raise_install(request):
     os.environ["BENCHOPT_RAISE_INSTALL_ERROR"] = "0"
     yield
     os.environ["BENCHOPT_RAISE_INSTALL_ERROR"] = "1"
+
+
+@pytest.fixture
+def warn_override(request):
+    """Deactivate the raise install error for a test."""
+    os.environ["BENCHOPT_WARN_NONUNIQUE_FILES"] = "1"
+    yield
+    os.environ["BENCHOPT_WARN_NONUNIQUE_FILES"] = "0"
 
 
 @pytest.fixture(scope='session')

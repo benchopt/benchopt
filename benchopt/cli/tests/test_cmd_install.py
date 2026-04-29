@@ -20,14 +20,10 @@ from benchopt.cli.tests.completion_cases import (  # noqa: F401
 
 def _objective_with_python_version(python_version):
     """Return objective source code declaring a given python_version."""
-    return f"""from benchopt import BaseObjective
-        class Objective(BaseObjective):
+    return f"""from benchopt.utils.temp_benchmark import TempObjective
+        class Objective(TempObjective):
             name = "test-objective"
             python_version = "{python_version}"
-            def set_data(self, X, y): pass
-            def get_one_result(self): return dict(beta=None)
-            def evaluate_result(self, beta): return 1.
-            def get_objective(self): return dict(X=None, y=None, lmbd=None)
     """
 
 
@@ -78,14 +74,11 @@ class TestInstallCmd:
         # Solver with an invalid install command
         invalid_solver = """
         import fake_module
-        from benchopt import BaseSolver
+        from benchopt.utils.temp_benchmark import TempSolver
 
-        class Solver(BaseSolver):
+        class Solver(TempSolver):
             name = "invalid-solver"
             install_cmd = "invalid_command"
-            def set_objective(self, X, y, lmbd): pass
-            def run(self, n_iter): pass
-            def get_result(self): return dict(beta=1)
         """
 
         with temp_benchmark(solvers=invalid_solver) as bench:
@@ -99,14 +92,11 @@ class TestInstallCmd:
         # Solver class without the install_cmd attribute
         # Checks if conda is used by default.
         solver_noinstall = """
-        from benchopt import BaseSolver
+        from benchopt.utils.temp_benchmark import TempSolver
 
-        class Solver(BaseSolver):
+        class Solver(TempSolver):
             name = "solver-no-install-cmd"
             requirements = []
-            def set_objective(self, X, y, lmbd): pass
-            def run(self, n_iter): pass
-            def get_result(self): return dict(beta=1)
         """
 
         with temp_benchmark(solvers=[solver_noinstall]) as benchmark:
@@ -118,35 +108,42 @@ class TestInstallCmd:
             # Check that the default 'install_cmd' is 'conda'
             assert getattr(solver_instance, "install_cmd", None) == "conda"
 
-    def test_download_data(self):
+    @pytest.mark.parametrize(
+        "has_prepare", [True, False], ids=["with_prepare", "no_prepare"]
+    )
+    def test_prepare_data(self, has_prepare):
 
         # solver with missing dependency specified
-        dataset = """from benchopt import BaseDataset
+        dataset = f"""from benchopt import BaseDataset
 
             class Dataset(BaseDataset):
                 name = 'test_dataset'
-                def get_data(self): print("LOAD DATA")
+                {'def prepare(self): print("#PREPARE")' if has_prepare else ''}
+                def get_data(self): print("#GET_DATA")
         """
+        msg = "#PREPARE" if has_prepare else "#GET_DATA"
         dataset2 = dataset.replace("dataset", "dataset2")
         with temp_benchmark(datasets=[dataset, dataset2]) as benchmark:
             with CaptureCmdOutput() as out:
                 install([
                     *f'{benchmark.benchmark_dir} -d test_dataset '
-                    '-y --download'.split()
+                    '-y --prepare'.split()
                 ], 'benchopt', standalone_mode=False)
 
-            out.check_output("LOAD DATA", repetition=1)
-            out.check_output("Loading data:", repetition=1)
+            out.check_output(msg, repetition=1)
+            out.check_output("Preparing test_dataset", repetition=1)
+            out.check_output("Preparing test_dataset2", repetition=0)
 
-        # Check it works with 2 datasets
+            # Check multiple datasets - test_dataset is cached from above,
+            # so only test_dataset2 actually runs get_data().
             with CaptureCmdOutput() as out:
                 install([
-                    *f'{benchmark.benchmark_dir} -y --download '
+                    *f'{benchmark.benchmark_dir} -y --prepare '
                     '-d test_dataset -d test_dataset2'.split()
                 ], 'benchopt', standalone_mode=False)
 
-            out.check_output("LOAD DATA", repetition=2)
-            out.check_output("Loading data:", repetition=1)
+            out.check_output(msg, repetition=1)
+            out.check_output("Preparing", repetition=2)
 
     def test_existing_empty_env(self, empty_env_name):
         msg = (
@@ -178,20 +175,16 @@ class TestInstallCmd:
     ):
 
         objective = """
-            from benchopt import BaseObjective
+            from benchopt.utils.temp_benchmark import TempObjective
 
             import dummy_package
 
-            class Objective(BaseObjective):
+            class Objective(TempObjective):
                 name = "requires_dummy"
                 install_cmd = 'conda'
                 requirements = [
                     'pip::git+https://github.com/tommoral/dummy_package'
                 ]
-                def set_data(self): pass
-                def evaluate_result(self, beta): pass
-                def get_one_result(self): pass
-                def get_objective(self): pass
         """
 
         with temp_benchmark(objective=objective) as bench:
@@ -210,16 +203,12 @@ class TestInstallCmd:
     def test_error_with_missing_requirements(self):
 
         # solver with missing dependency specified
-        missing_deps_cls = """from benchopt import Base{Cls}
-            import invalid_module
+        missing_deps_cls = """import invalid_module
+            from benchopt.utils.temp_benchmark import Temp{Cls}
 
-            class {Cls}(Base{Cls}):
+            class {Cls}(Temp{Cls}):
                 name = 'buggy-class'
                 install_cmd = 'conda'
-                def get_data(self): pass
-                def set_objective(self): pass
-                def run(self): pass
-                def get_result(self): pass
         """
 
         dataset = missing_deps_cls.format(Cls='Dataset')
@@ -247,37 +236,29 @@ class TestInstallCmd:
     ):
         objective = """
             import dummy_package
-            from benchopt import BaseObjective
+            from benchopt.utils.temp_benchmark import TempObjective
 
-            class Objective(BaseObjective):
+            class Objective(TempObjective):
                 name = "requires_dummy"
                 requirements = [
                     'pip::git+https://github.com/tommoral/dummy_package'
                 ]
-                def set_data(self): pass
-                def evaluate_result(self, beta): pass
-                def get_one_result(self): pass
-                def get_objective(self): pass
         """
 
-        solver = """from benchopt import BaseSolver
+        solver = """from benchopt.utils.temp_benchmark import TempSolver
             import fake_benchopt_package
 
-            class Solver(BaseSolver):
+            class Solver(TempSolver):
                 name = 'solver1'
                 requirements = ["fake_benchopt_package"] # raise if installed
-                def set_objective(self, X, y, lmbd): pass
-                def run(self, n_iter): pass
-                def get_result(self): pass
         """
 
-        dataset = """from benchopt import BaseDataset
+        dataset = """from benchopt.utils.temp_benchmark import TempDataset
             import fake_benchopt_package
 
-            class Dataset(BaseDataset):
+            class Dataset(TempDataset):
                 name = 'dataset1'
                 requirements = ["fake_benchopt_package"] # raise if installed
-                def get_data(): pass
         """
 
         # Install should succeed because of --minimal option that does
@@ -297,30 +278,23 @@ class TestInstallCmd:
             self, test_env_name, uninstall_dummy_package
     ):
 
-        objective = """
-            import dummy_package
-            from benchopt import BaseObjective
+        objective = """import dummy_package
+            from benchopt.utils.temp_benchmark import TempObjective
 
-            class Objective(BaseObjective):
+            class Objective(TempObjective):
                 name = "requires_dummy"
                 install_cmd = 'conda'
                 requirements = [
                     'pip::git+https://github.com/tommoral/dummy_package'
                 ]
-                def set_data(self): pass
-                def evaluate_result(self, beta): pass
-                def get_one_result(self): pass
-                def get_objective(self): pass
         """
 
         # solver with missing dependency specified
-        missing_deps_dataset = """
-            import dummy_package
-            from benchopt import BaseDataset
+        missing_deps_dataset = """import dummy_package
+            from benchopt.utils.temp_benchmark import TempDataset
 
-            class Dataset(BaseDataset):
+            class Dataset(TempDataset):
                 name = 'test-dataset'
-                def get_data(self): pass
         """
 
         with temp_benchmark(
@@ -338,36 +312,22 @@ class TestInstallCmd:
 
     def test_gpu_flag(self, no_debug_log):
 
-        objective = """from benchopt import BaseObjective
+        solver1 = """from benchopt.utils.temp_benchmark import TempSolver
 
-            class Objective(BaseObjective):
-                name = "test_obj"
-                min_benchopt_version = "0.0.0"
-
-                def set_data(self, X, y): pass
-                def get_one_result(self): pass
-                def evaluate_result(self, beta): return dict(value=1)
-                def get_objective(self): return dict(X=0, y=0)
-        """
-
-        solver1 = """from benchopt import BaseSolver
-
-        class Solver(BaseSolver):
+        class Solver(TempSolver):
             name = "solver1"
             requirements = {"wrong_key": 1, "cpu": []}
         """
 
-        solver2 = """from benchopt import BaseSolver
+        solver2 = """from benchopt.utils.temp_benchmark import TempSolver
 
-        class Solver(BaseSolver):
+        class Solver(TempSolver):
             name = "solver2"
             requirements = {"gpu": [], "cpu": ["unknown_implausible_pkg"]}
             sampling_strategy = 'iteration'
         """
 
-        with temp_benchmark(
-                objective=objective, solvers=[solver1, solver2],
-        ) as bench:
+        with temp_benchmark(solvers=[solver1, solver2]) as bench:
             err = ("keys should be `cpu` and `gpu`, got ['wrong_key', 'cpu']")
             with CaptureCmdOutput():
                 with pytest.raises(ValueError, match=re.escape(err)):

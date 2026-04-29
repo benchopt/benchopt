@@ -9,13 +9,13 @@ User guide
     :maxdepth: 1
 
     ml_benchmark
-    tweak_datasets
     controlling_randomness
     iterative_solvers
+    solver_languages
     config_benchopt
-    advanced
     add_custom_plot
     distributed_run
     tests_definition
+    advanced
     API_ref
     CLI_ref

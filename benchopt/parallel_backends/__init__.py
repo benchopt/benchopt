@@ -1,5 +1,4 @@
 import yaml
-import warnings
 from joblib import parallel_config
 from joblib import Parallel, delayed
 
@@ -41,28 +40,24 @@ def parallel_run(benchmark, run, kwargs, all_runs, config, collect=False):
     return results
 
 
-def check_parallel_config(parallel_config_file, slurm_config_file, n_jobs):
+def check_parallel_config(parallel_config_file, n_jobs):
     """Returns the parallelism config information for the run.
 
     If nothing is provided, default to `loky` backend with n_jobs=1.
 
     Parameters
     ----------
+    parallel_config_file: str or dict or None
+        Path to the parallel config YAML file, or a dict containing the config
+        information. If None, defaults to None.
+    n_jobs: int or None
+        Number of parallel jobs to run. If None, defaults to None.
+
+    Returns
+    -------
+    parallel_config: dict
+        The parallel config information for the run.
     """
-    # XXX: remove in benchopt 1.9
-    if slurm_config_file is not None:
-        assert parallel_config_file is None, (
-            "Cannot use both `--slurm` and `--parallel-backend`. Only use the "
-            "latter as the former is deprecated."
-        )
-        warnings.warn(
-            "`--slurm` is deprecated, use `--parallel-backend` instead. "
-            "The config files are similar but the new one should include the "
-            "extra argument `backend : submitit` to select the submitit "
-            "backend. This will cause an error starting benchopt 1.9.",
-            DeprecationWarning
-        )
-        parallel_config_file = slurm_config_file
 
     # Load parallel config from config file. If None is provided,
     # default to joblib backend ('loky').
@@ -70,11 +65,19 @@ def check_parallel_config(parallel_config_file, slurm_config_file, n_jobs):
         if not isinstance(parallel_config_file, dict):
             with open(parallel_config_file, "r") as f:
                 parallel_config = yaml.safe_load(f)
+            if ("slurm_time" in parallel_config
+                    and isinstance(parallel_config["slurm_time"], int)):
+                # YAML may parse unquoted sexagesimal times (e.g. 10:30) as
+                # integer seconds. Convert back to HH:MM:SS, because submitit
+                # interprets raw int values as minutes.
+                total_seconds = parallel_config["slurm_time"]
+                hours, rem_seconds = divmod(total_seconds, 3600)
+                minutes, seconds = divmod(rem_seconds, 60)
+                parallel_config['slurm_time'] = (
+                    f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+                )
         else:
             parallel_config = parallel_config_file
-        # XXX: remove in benchopt 1.9
-        if slurm_config_file is not None:
-            parallel_config['backend'] = "submitit"
         if n_jobs is not None:
             parallel_config['n_jobs'] = n_jobs
     else:

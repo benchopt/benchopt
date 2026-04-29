@@ -51,3 +51,5 @@
 .. _Geraud Ilinca: https://www.linkedin.com/in/geraud-ilinca
 
 .. _Hippolyte Verninas: https://www.linkedin.com/in/hippolyte-verninas
+
+.. _Damien Lesens: https://damienlesens.github.io/

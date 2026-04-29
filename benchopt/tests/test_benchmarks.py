@@ -1,6 +1,7 @@
 import pytest
 import inspect
 import numpy as np
+import warnings
 from itertools import islice
 
 from benchopt.stopping_criterion import StoppingCriterion
@@ -94,6 +95,24 @@ def test_benchmark_objective(benchmark, objective_class):
     assert len(objective_output) > 0, (
         "The output of the objective function should not be an empty dict."
     )
+
+
+def test_benchmark_config_validity(benchmark):
+    """Check benchmark config.yml only uses valid benchmark options."""
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always", UserWarning)
+        benchmark.get_setting("plots")
+
+    if caught:
+        details = "\n".join(f"{w.message}" for w in caught)
+        config_file = benchmark.get_config_file()
+        pytest.fail(
+            "Invalid benchmark config.yml detected while running "
+            "benchopt test.\n"
+            f"Benchmark config file: {config_file}\n"
+            "Please update config.yml to only use valid benchmark options.\n"
+            f"Reported issue(s):\n\n{details}"
+        )
 
 
 def test_solver_class(benchmark, solver_class):

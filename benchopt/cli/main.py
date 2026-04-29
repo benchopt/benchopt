@@ -64,7 +64,6 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
         "html",
         "n_jobs",
         "parallel_config",
-        "slurm",  # XXX: remove in benchopt 1.9
         "pdb",
         "profile",
         "env_name",
@@ -149,11 +148,6 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               metavar="<int>", default=None, show_default=True, type=int,
               help="Maximal number of workers to run the benchmark in "
               "parallel.")
-@click.option("--slurm",
-              metavar="<slurm_config.yml>", default=None,
-              help="(_Deprecated_) Run the computation using submitit on a "
-              "SLURM cluster. The YAML file provided as an argument is used "
-              "to setup the SLURM job. See :ref:`slurm_backend`.")
 @click.option("--parallel-config",
               metavar="<parallel_config.yml>", default=None,
               help="Run in parallel with the specified backend configuration. "
@@ -213,7 +207,7 @@ def run(config_file=None, **kwargs):
     (
         benchmark, solver_names, forced_solvers, dataset_names,
         objective_filters, max_runs, n_repetitions, timeout, no_timeout,
-        collect, plot, display, html, n_jobs, parallel_config, slurm, pdb,
+        collect, plot, display, html, n_jobs, parallel_config, pdb,
         do_profile, env_name, no_cache, output, seed
     ) = _get_run_args(kwargs, config)
 
@@ -273,8 +267,7 @@ def run(config_file=None, **kwargs):
             use_profile()  # needs to be called before validate_solver_patterns
 
         # Get the config for parallel runs
-        # XXX: remove slurm in benchopt 1.9
-        parallel_config = check_parallel_config(parallel_config, slurm, n_jobs)
+        parallel_config = check_parallel_config(parallel_config, n_jobs)
 
         print("Loading objective, datasets and solvers...", end='', flush=True)
         # Check that the objective is installed or raise an error
@@ -294,7 +287,6 @@ def run(config_file=None, **kwargs):
         solvers = benchmark.check_solver_patterns(
             solver_names + list(forced_solvers)
         )
-
         exit_code, _ = _run_benchmark(
             benchmark, solvers, forced_solvers,
             datasets=datasets, objectives=objectives,
@@ -366,8 +358,6 @@ def run(config_file=None, **kwargs):
     parallel_args = ""
     if n_jobs:
         parallel_args += f"--n-jobs {n_jobs} "
-    if slurm:  # XXX: remove in benchopt 1.9
-        parallel_args += rf"--slurm {slurm} "
     if parallel_config:
         parallel_args += rf"--parallel-config {parallel_config} "
     cmd = (
@@ -390,6 +380,79 @@ def run(config_file=None, **kwargs):
     )
     exit_code = _run_shell_in_conda_env(
         cmd, env_name=env_name, capture_stdout=False
+    )
+    if exit_code != 0:
+        raise SystemExit(exit_code)
+
+
+@main.command(
+    help="Prepare datasets for a benchmark by running Dataset.prepare().",
+    epilog="To install the required packages for a benchmark, "
+    "see the command `benchopt install`."
+)
+@click.argument('benchmark', default=Path.cwd(), type=click.Path(exists=True),
+                shell_complete=complete_benchmarks)
+@click.option('--dataset', '-d', 'dataset_names',
+              metavar="<dataset_name>", multiple=True, type=str,
+              help="Prepare <dataset_name>. By default, all datasets are "
+              "prepared. When `-d` is used, only listed datasets are "
+              "prepared. Note that <dataset_name> can include parameters "
+              "with the syntax `dataset[parameter=value]`. "
+              "To prepare multiple datasets, use multiple `-d` options. "
+              "To prepare all datasets, use -d 'all' option.",
+              shell_complete=complete_datasets)
+@click.option('--config', 'config_file', default=None,
+              shell_complete=complete_config_files,
+              help="YAML configuration file containing benchmark options. "
+              "The `dataset` key is used to select which datasets to prepare.")
+@click.option('--force',
+              is_flag=True,
+              help="If this flag is set, re-run preparation even if the "
+              "result is already cached.")
+@click.option('--n-jobs', '-j',
+              metavar="<int>", default=None, type=int,
+              help="Maximal number of workers to prepare the datasets in "
+              "parallel.")
+@click.option('--parallel-config',
+              metavar="<parallel_config.yml>", default=None,
+              help="Run in parallel with the specified backend configuration. "
+              "Same interface as `benchopt run --parallel-config`.")
+@click.option('--env', '-e', 'env_name',
+              flag_value='True', type=str, default='False',
+              help="Run preparation in a dedicated conda environment "
+              "for the benchmark. "
+              "The environment is named 'benchopt_<BENCHMARK>'.")
+@click.option('--env-name', 'env_name',
+              metavar="<env_name>", type=str, default='False',
+              shell_complete=complete_conda_envs,
+              help="Run preparation in the conda environment "
+              "named <env_name>.")
+def prepare(benchmark, dataset_names, config_file=None,
+            force=False, n_jobs=None, parallel_config=None, env_name='False'):
+
+    if config_file is not None:
+        with open(config_file, "r") as f:
+            config = yaml.safe_load(f)
+        if not dataset_names:
+            dataset_names = config.get("dataset", tuple())
+
+    benchmark = Benchmark(benchmark)
+
+    # Resolve env name (same logic as install)
+    if env_name == 'False':
+        env_name = None
+    elif env_name == 'True':
+        env_name = f"benchopt_{benchmark.name}"
+    else:
+        if len(env_name) == 0:
+            raise RuntimeError("Empty environment name.")
+
+    datasets = benchmark.check_dataset_patterns(dataset_names)
+
+    parallel_config = check_parallel_config(parallel_config, n_jobs)
+    print(f"Preparing datasets for benchmark '{benchmark.name}'")
+    exit_code = benchmark.prepare_all_data(
+        datasets, force=force, parallel_config=parallel_config
     )
     if exit_code != 0:
         raise SystemExit(exit_code)
@@ -433,8 +496,11 @@ def run(config_file=None, **kwargs):
               help="YAML configuration file containing benchmark options, "
               "whose solvers and datasets will be installed.")
 @click.option('--download', is_flag=True,
-              help="If this flag is set, call `Dataset.get_data` for all "
-              "datasets, to make sure the data are present on the system.")
+              help="Deprecated. Use --prepare instead.",
+              hidden=True)
+@click.option('--prepare', is_flag=True,
+              help="If this flag is set, call `Dataset.prepare()` for all "
+              "datasets after installation to ensure data are ready.")
 @click.option('--env', '-e', 'env_name',
               flag_value='True', type=str, default='False',
               help="Install all requirements in a dedicated "
@@ -465,7 +531,7 @@ def run(config_file=None, **kwargs):
 def install(
         benchmark, minimal, solver_names, dataset_names, config_file=None,
         force=False, recreate=False, env_name='False', confirm=False,
-        quiet=False, download=False, gpu=False):
+        quiet=False, download=False, prepare=False, gpu=False):
 
     if config_file is not None:
         with open(config_file, "r") as f:
@@ -475,13 +541,14 @@ def install(
         if not solver_names:
             solver_names = config.get("solver", tuple())
             forced_solvers = config.get("force-solver", tuple())
-            solver_names = list(set(solver_names).union(set(forced_solvers)))
+            solver_names = list(solver_names) + list(forced_solvers)
 
     # Instantiate the benchmark
     benchmark = Benchmark(benchmark)
 
     # Get a list of all conda envs
     default_conda_env, conda_envs = list_conda_envs()
+    env_need_confirm = False
 
     # check if any current conda environment
     if default_conda_env is None:
@@ -501,13 +568,8 @@ def install(
             msg = "Cannot recreate conda env without using options " + \
                 "'-e/--env' or '--env-name'."
             raise RuntimeError(msg)
-
-        # ask for user confirmation to install in current conda env
         if not confirm:
-            click.confirm(
-                f"Install in the current env '{default_conda_env}'?",
-                abort=True
-            )
+            env_need_confirm = default_conda_env
 
     else:
         # If env_name is True, the flag `--env` has been used. Create a conda
@@ -534,9 +596,7 @@ def install(
     if len(dataset_names) == 0 and len(solver_names) > 0:
         datasets = []
     else:
-        datasets = benchmark.check_dataset_patterns(
-            dataset_names, class_only=True
-        )
+        datasets = benchmark.check_dataset_patterns(dataset_names)
     if len(solver_names) == 0 and len(dataset_names) > 0:
         solvers = []
     else:
@@ -549,7 +609,8 @@ def install(
     exit_code = benchmark.install_all_requirements(
         include_solvers=solvers, include_datasets=datasets,
         minimal=minimal, env_name=env_name, force=force, quiet=quiet,
-        download=download, gpu=gpu,
+        download=download, prepare=prepare, gpu=gpu,
+        env_need_confirm=env_need_confirm
     )
     if exit_code != 0:
         raise SystemExit(exit_code)

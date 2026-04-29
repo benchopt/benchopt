@@ -265,6 +265,7 @@ The metadata dictionary returned by :code:`get_metadata` should contain:
 
 
 .. _plotting_utilities:
+
 Plotting Utilities
 ------------------
 
