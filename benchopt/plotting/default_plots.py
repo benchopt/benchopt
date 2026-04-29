@@ -1,5 +1,3 @@
-import pandas as pd
-
 from .base import BasePlot
 
 EPS = 1e-8
