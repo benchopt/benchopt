@@ -167,6 +167,9 @@ class BoxPlot(BasePlot):
 
         plot_data = []
         for solver, df_filtered in df.groupby('solver_name'):
+            df_filtered = df_filtered.select_dtypes(include=['number'])
+            if objective_column not in df_filtered:
+                continue
             if X_axis == "Solver":
                 y = _get_boxplot_solver(df_filtered, objective_column)
                 x = [solver]
