@@ -195,10 +195,11 @@ The metadata dictionary returned by :code:`get_metadata` should contain:
 - :code:`title`: The title of the plot.
 - :code:`xlabel`: The label of the x-axis.
 - :code:`ylabel`: The label of the y-axis.
-- :code:`box_width` (optional, default=0.6): The width of the boxes.
+- :code:`box_width` (optional, default=0.6): The width of the boxes, only affects
+  the matplotlib backend, not the html page.
 - :code:`showfliers` (optional, default=False): Whether to show fliers in the boxplot.
   Fliers are points that are outside the whiskers of the boxplot, which represent
-  outliers in the data.
+  outliers in the data. This only affects the matplotlib backend, not the html page.
 
 .. code-block:: python
 
