@@ -90,12 +90,9 @@ each dictionary represents a trace in the plot. Each dictionary must contain:
 - :code:`x`: A list of x values.
 - :code:`y`: A list of y values.
 - :code:`label`: The label of the trace
-
-Optional keys:
-
-- :code:`color`: The color of the trace.
-- :code:`marker`: The marker style of the trace.
-- :code:`x_low`, :code:`x_high`: Lists of values to display uncertainty in the plot.
+- :code:`color` (optional): The color of the trace.
+- :code:`marker` (optional): The marker style of the trace.
+- :code:`x_low`, :code:`x_high` (optional): Lists of values to display uncertainty in the plot.
   They will be used to display shaded area around the plot.
 
 The metadata dictionary returned by :code:`get_metadata` should contain:
@@ -149,11 +146,8 @@ scatter points. The dictionary should contain:
 
 - :code:`y`: The list of values for the bar (the median will be the height of the bar).
 - :code:`label`: The label of the bar.
-
-Optional keys:
-
-- :code:`color`: The color of the bar.
-- :code:`text`: The text to display on the bar.
+- :code:`color` (optional): The color of the bar.
+- :code:`text` (optional): The text to display on the bar.
 
 The metadata dictionary returned by :code:`get_metadata` should contain:
 
@@ -194,16 +188,15 @@ where each dictionary represents a box. Each dictionary should contain:
 - :code:`x`: The x coordinate.
 - :code:`y`: The values of the box for the corresponding x coordinate.
 - :code:`label`: The label of the box.
-
-Optional keys:
-
-- :code:`color`: The color of the box.
+- :code:`color` (optional): The color of the box.
 
 The metadata dictionary returned by :code:`get_metadata` should contain:
 
 - :code:`title`: The title of the plot.
 - :code:`xlabel`: The label of the x-axis.
 - :code:`ylabel`: The label of the y-axis.
+- :code:`box_width` (optional, default=0.6): The width of the boxes.
+- :code:`showfliers` (optional, default=False): Whether to show fliers in the boxplot.
 
 .. code-block:: python
 
