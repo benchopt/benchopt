@@ -33,6 +33,13 @@ def get_plot_figure(plot_datas, output_dir):
                 UserWarning
             )
             continue
+        elif plot_data["type"] == "image":
+            warnings.warn(
+                f"Plot '{key}' (type 'image') cannot be "
+                f"rendered with matplotlib; skipping.",
+                UserWarning
+            )
+            continue
         else:
             raise NotImplementedError(
                 f"Plot type {plot_data['type']} "

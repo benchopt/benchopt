@@ -35,6 +35,8 @@ const setState = (partialState) => {
   renderSidebar();
   if (isChart('table')) {
     renderTable();
+  } else if (isChart('image')) {
+    renderImages();
   } else {
     renderPlot();
   }
@@ -495,7 +497,7 @@ const renderSidebar = () => {
  * Render Scale selector
  */
 const renderScaleSelector = () => {
-  if (isChart(['table'])) {
+  if (isChart(['table', 'image'])) {
     hide(document.querySelectorAll("#scale-form-group"));
   } else {
     show(document.querySelectorAll("#scale-form-group"), 'block');
@@ -898,6 +900,67 @@ const handleCurveDoubleClick = curve => {
   hideAllCurvesExcept(curve);
 };
 
+
+/*
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * MANAGE IMAGE RENDERING
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
+
+const renderImages = () => {
+  let image_container = document.getElementById('image_container');
+  hide(document.getElementById('plot_container'));
+  hide(document.getElementById('table_container'));
+  show(image_container);
+
+  image_container.innerHTML = '';
+
+  const plotData = getPlotData();
+  if (!plotData || !plotData.data || plotData.data.length === 0) {
+    image_container.innerHTML = '<div>No image data available</div>';
+    return;
+  }
+
+  // Title
+  if (plotData.title) {
+    const titleEl = document.createElement('h2');
+    titleEl.className = 'text-xl font-bold text-gray-800 mb-6';
+    titleEl.innerText = plotData.title;
+    image_container.appendChild(titleEl);
+  }
+
+  const ncols = plotData.ncols || Math.min(plotData.data.length, 3);
+  const grid = document.createElement('div');
+  grid.className = `grid gap-6`;
+  grid.style.gridTemplateColumns = `repeat(${ncols}, minmax(0, 1fr))`;
+
+  plotData.data.forEach(imgData => {
+    const card = document.createElement('div');
+    card.className = 'bg-white rounded-lg shadow overflow-hidden border border-gray-200';
+
+    const img = document.createElement('img');
+    img.src = imgData.src;
+    img.alt = imgData.caption || imgData.label || '';
+    img.className = 'w-full object-contain';
+    card.appendChild(img);
+
+    const labelEl = document.createElement('div');
+    labelEl.className = 'px-4 py-2 text-sm font-medium text-gray-700 border-t border-gray-100';
+    labelEl.innerText = imgData.label || '';
+    card.appendChild(labelEl);
+
+    if (imgData.caption && imgData.caption !== imgData.label) {
+      const captionEl = document.createElement('div');
+      captionEl.className = 'px-4 pb-3 text-xs text-gray-500';
+      captionEl.innerText = imgData.caption;
+      card.appendChild(captionEl);
+    }
+
+    grid.appendChild(card);
+  });
+
+  image_container.appendChild(grid);
+};
 
 /*
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
