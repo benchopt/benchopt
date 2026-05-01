@@ -5,10 +5,11 @@ This example demonstrates the ``image`` plot type, which allows
 benchmark authors to display solver outputs as a visual gallery inside
 the benchopt HTML result page.
 
-The benchmark solves a toy 2-D signal denoising problem. Each solver
-stores its intermediate iterates, and the custom ``reconstruction``
-plot class encodes the final reconstruction of every solver as a
-base64 PNG embedded directly in the HTML page.
+The benchmark solves a toy 2-D signal denoising problem.
+``save_final_results`` saves the final solver output as an image file on disk
+for each solver run. The custom ``reconstruction`` plot class then loads
+those paths from the ``final_results`` column of the DataFrame and sets up
+a grid of images with captions showing the solver name and MSE.
 """
 
 from benchopt.helpers.run_examples import ExampleBenchmark
@@ -37,7 +38,15 @@ OBJECTIVE = """
             return dict(X_noisy=self.X_noisy)
 
         def evaluate_result(self, X_hat):
-            return dict(value=float(np.mean((self.X_true - X_hat) ** 2)))
+            return dict(
+                value=float(np.mean((self.X_true - X_hat) ** 2)),
+                frame=X_hat,
+                reference=self.X_true,
+                noisy=self.X_noisy,
+            )
+
+        def save_final_results(self, X_hat):
+            return dict(reference=self.X_true, noisy=self.X_noisy)
 
         def get_one_result(self):
             return dict(X_hat=self.X_noisy)
@@ -49,7 +58,7 @@ DATASET = """
 
     class Dataset(BaseDataset):
         name = "simulated"
-        parameters = {"n": [32], "noise_std": [0.3], "random_state": [42]}
+        parameters = {"n": [32, 128], "noise_std": [0.3], "random_state": [42]}
 
         def get_data(self):
             rng = np.random.default_rng(self.random_state)
@@ -61,23 +70,22 @@ DATASET = """
             return dict(X_true=X_true, X_noisy=X_noisy)
 """
 
-SOLVER_GAUSSIAN = """
+SOLVER_MEDIAN = """
     from benchopt import BaseSolver
-    import numpy as np
 
     class Solver(BaseSolver):
-        name = "gaussian_filter"
+        name = "median_filter"
         sampling_strategy = "callback"
-        parameters = {"sigma": [0.5, 1.5]}
+        parameters = {"size": [3, 5]}
 
         def set_objective(self, X_noisy):
             self.X_noisy = X_noisy
 
         def run(self, cb):
-            from scipy.ndimage import gaussian_filter
+            from scipy.ndimage import median_filter
             self.X_hat = self.X_noisy.copy()
             while cb():
-                self.X_hat = gaussian_filter(self.X_hat, sigma=self.sigma)
+                self.X_hat = median_filter(self.X_hat, size=self.size)
 
         def get_result(self):
             return dict(X_hat=self.X_hat)
@@ -90,41 +98,32 @@ SOLVER_TV = """
     class Solver(BaseSolver):
         name = "tv_denoise"
         sampling_strategy = "callback"
-        parameters = {"lam": [0.05, 0.15]}
+        parameters = {"lam": [0.1, 0.5]}
 
         def set_objective(self, X_noisy):
             self.X_noisy = X_noisy
 
         def run(self, cb):
-            # Proximal gradient step for isotropic TV denoising
-            # min_X 0.5*||X - X_noisy||^2 + lam*TV(X)
-            # via forward-backward on the dual (Chambolle 2004)
             n = self.X_noisy.shape[0]
-            # dual variables
             p = np.zeros((n, n, 2))
             self.X_hat = self.X_noisy.copy()
-            self.iterates = [self.X_hat.copy()]
-            tau = 0.24  # step size < 1/(2*lam) for stability
+            tau = 0.24
             while cb():
-                # gradient of X w.r.t. dual
                 div_p = np.zeros_like(self.X_hat)
                 div_p[:-1, :] += p[:-1, :, 0]
                 div_p[1:, :]  -= p[:-1, :, 0]
                 div_p[:, :-1] += p[:, :-1, 1]
                 div_p[:, 1:]  -= p[:, :-1, 1]
                 X_upd = self.X_noisy + self.lam * div_p
-                # gradient of X_upd
                 grad = np.zeros((n, n, 2))
                 grad[:-1, :, 0] = X_upd[1:, :] - X_upd[:-1, :]
                 grad[:, :-1, 1] = X_upd[:, 1:] - X_upd[:, :-1]
-                # dual step + projection
                 p_new = p - tau * grad
                 norms = np.maximum(
                     1.0,
                     np.sqrt((p_new ** 2).sum(axis=2, keepdims=True))
                 )
                 p = p_new / norms
-                # primal update
                 div_p = np.zeros_like(self.X_hat)
                 div_p[:-1, :] += p[:-1, :, 0]
                 div_p[1:, :]  -= p[:-1, :, 0]
@@ -136,6 +135,7 @@ SOLVER_TV = """
             return dict(X_hat=self.X_hat)
 """
 
+
 # %%
 # The ``image`` plot type
 # -----------------------
@@ -144,85 +144,21 @@ SOLVER_TV = """
 # return from ``plot()`` a list of dicts, each with at least:
 #
 # - ``"src"`` — a base64 ``data:image/png;base64,...`` URI (or any URL);
-# - ``"label"`` — displayed below the image card.
+# - ``"label"`` — text displayed below the image.
 #
 # ``get_metadata()`` may return ``"ncols"`` to control the grid layout.
 #
-# The plot reconstructs the dataset deterministically (same fixed seed) and
-# re-applies each solver's algorithm using the parameters extracted from the
-# solver name. This is the standard pattern: image plots generate visuals from
-# the scalar benchmark results, not from serialised arrays.
+# ``evaluate_result`` returns ``frame=X_hat`` alongside the scalar ``value``.
+# The framework detects non-primitive values, pickles them with a sentinel
+# prefix, and stores them as binary columns in the parquet file.  On read,
+# they are automatically restored to numpy arrays — no helper needed.
+# The plot collects all per-iteration frames from the ``objective_frame``
+# column and passes the list to the ``"image"`` key; the framework converts
+# a list of arrays to an animated GIF automatically.
 
 PLOT = """
-    import base64
-    import io
-    import re
-
-    import matplotlib
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
     import numpy as np
-    from scipy.ndimage import gaussian_filter
-
     from benchopt import BasePlot
-
-
-    def _make_dataset(n=32, noise_std=0.3, seed=42):
-        # Reproduce the simulated dataset deterministically.
-        rng = np.random.default_rng(seed)
-        coords = np.arange(n)
-        X_true = (
-            (coords[:, None] // 4 + coords[None, :] // 4) % 2
-        ).astype(float)
-        return X_true, X_true + rng.normal(0, noise_std, X_true.shape)
-
-
-    def _apply_solver(solver_name, X_noisy, n_steps=20):
-        # Re-run the solver for n_steps and return the denoised image.
-        X = X_noisy.copy()
-        sigma_m = re.search(r"sigma=([0-9.]+)", solver_name)
-        lam_m = re.search(r"lam=([0-9.]+)", solver_name)
-        if sigma_m:
-            sigma = float(sigma_m.group(1))
-            for _ in range(n_steps):
-                X = gaussian_filter(X, sigma=sigma)
-        elif lam_m:
-            lam = float(lam_m.group(1))
-            n = X.shape[0]
-            p = np.zeros((n, n, 2))
-            tau = 0.24
-            for _ in range(n_steps):
-                div_p = np.zeros_like(X)
-                div_p[:-1] += p[:-1, :, 0]; div_p[1:] -= p[:-1, :, 0]
-                div_p[:, :-1] += p[:, :-1, 1]; div_p[:, 1:] -= p[:, :-1, 1]
-                X_upd = X_noisy + lam * div_p
-                grad = np.zeros((n, n, 2))
-                grad[:-1, :, 0] = X_upd[1:] - X_upd[:-1]
-                grad[:, :-1, 1] = X_upd[:, 1:] - X_upd[:, :-1]
-                p_new = p - tau * grad
-                p = p_new / np.maximum(1.0, np.sqrt(
-                    (p_new ** 2).sum(axis=2, keepdims=True)
-                ))
-                div_p = np.zeros_like(X)
-                div_p[:-1] += p[:-1, :, 0]; div_p[1:] -= p[:-1, :, 0]
-                div_p[:, :-1] += p[:, :-1, 1]; div_p[:, 1:] -= p[:, :-1, 1]
-                X = X_noisy + lam * div_p
-        return X
-
-
-    def _to_png(arr):
-        fig, ax = plt.subplots(figsize=(3, 3))
-        ax.imshow(np.clip(arr, 0, 1), cmap="gray", interpolation="nearest")
-        ax.axis("off")
-        fig.tight_layout(pad=0)
-        buf = io.BytesIO()
-        fig.savefig(buf, format="png", dpi=80, bbox_inches="tight")
-        plt.close(fig)
-        buf.seek(0)
-        return "data:image/png;base64," + base64.b64encode(
-            buf.read()
-        ).decode("ascii")
-
 
     class Plot(BasePlot):
         name = "reconstruction"
@@ -233,19 +169,22 @@ PLOT = """
             df = df.query(
                 "dataset_name == @dataset and objective_name == @objective"
             )
-            X_true, X_noisy = _make_dataset()
-            # Add the noisy input as a reference card
-            images = [{"src": _to_png(X_noisy), "label": "noisy input",
-                        "caption": f"MSE={np.mean((X_true-X_noisy)**2):.4f}"}]
+            # Reference and noisy are constant across rows; grab from first row.
+            first = df.iloc[0]
+            ref = first["objective_reference"]
+            noisy = first["objective_noisy"]
+            mse_noisy = float(np.mean((ref - noisy) ** 2))
+            images = [
+                {"image": ref, "label": "Reference"},
+                {"image": noisy,
+                 "label": f"Noisy input\\nMSE={mse_noisy:.4f}"},
+            ]
             for solver_name, sdf in df.groupby("solver_name"):
-                mse = sdf[sdf["stop_val"] == sdf["stop_val"].max()][
-                    "objective_value"
-                ].iloc[0]
-                X_hat = _apply_solver(solver_name, X_noisy)
+                frames = sdf.sort_values("stop_val")["objective_frame"].tolist()
+                last_mse = sdf.loc[sdf["stop_val"].idxmax(), "objective_value"]
                 images.append({
-                    "src": _to_png(X_hat),
-                    "label": solver_name,
-                    "caption": f"MSE={mse:.4f}",
+                    "image": frames,  # list of arrays → animated GIF
+                    "label": f"{solver_name}\\nMSE={last_mse:.4f}",
                 })
             return images
 
@@ -259,6 +198,15 @@ PLOT = """
             }
 """
 
+CONFIG = """
+plots:
+- reconstruction
+- objective_curve
+- bar_chart
+- boxplot
+- table
+"""
+
 # %%
 # Instantiate and display the benchmark
 # -------------------------------------
@@ -268,10 +216,11 @@ benchmark = ExampleBenchmark(
     objective=OBJECTIVE,
     datasets={"simulated.py": DATASET},
     solvers={
-        "gaussian_filter.py": SOLVER_GAUSSIAN,
         "tv_denoise.py": SOLVER_TV,
+        "median_filter.py": SOLVER_MEDIAN,
     },
     plots={"reconstruction.py": PLOT},
+    extra_files={"config.yml": CONFIG},
 )
 benchmark
 
@@ -288,7 +237,8 @@ benchopt_cli(
 # %%
 # In the resulting HTML page, select **reconstruction** in the *Chart type*
 # dropdown to see the image grid. Each card shows the final denoised image
-# produced by that solver configuration, with its MSE and number of steps.
+# produced by that solver configuration alongside its MSE.
 #
-# The image data is embedded as base64-encoded PNGs directly in the HTML
-# file, so the page is fully self-contained.
+# The images were saved to disk by ``evaluate_result`` during the run and
+# are read back by the plot class. They are embedded as base64-encoded PNGs
+# directly in the HTML file, so the page is fully self-contained.

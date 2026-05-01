@@ -932,28 +932,29 @@ const renderImages = () => {
   const ncols = plotData.ncols || Math.min(plotData.data.length, 3);
   const grid = document.createElement('div');
   grid.className = `grid gap-6`;
-  grid.style.gridTemplateColumns = `repeat(${ncols}, minmax(0, 1fr))`;
+  grid.style.gridTemplateColumns = `repeat(${ncols}, minmax(240px, 1fr))`;
 
   plotData.data.forEach(imgData => {
     const card = document.createElement('div');
-    card.className = 'bg-white rounded-lg shadow overflow-hidden border border-gray-200';
+    card.className = 'bg-white rounded-lg shadow border border-gray-200 p-2 flex flex-col gap-2';
+
+    const imgWrapper = document.createElement('div');
+    imgWrapper.className = 'bg-gray-50 flex items-center justify-center';
+    imgWrapper.style.aspectRatio = '1 / 1';
 
     const img = document.createElement('img');
     img.src = imgData.src;
-    img.alt = imgData.caption || imgData.label || '';
-    img.className = 'w-full object-contain';
-    card.appendChild(img);
+    img.alt = imgData.label || '';
+    img.className = 'block w-full h-full object-contain';
+    img.style.imageRendering = 'pixelated';
+    imgWrapper.appendChild(img);
+    card.appendChild(imgWrapper);
 
-    const labelEl = document.createElement('div');
-    labelEl.className = 'px-4 py-2 text-sm font-medium text-gray-700 border-t border-gray-100';
-    labelEl.innerText = imgData.label || '';
-    card.appendChild(labelEl);
-
-    if (imgData.caption && imgData.caption !== imgData.label) {
-      const captionEl = document.createElement('div');
-      captionEl.className = 'px-4 pb-3 text-xs text-gray-500';
-      captionEl.innerText = imgData.caption;
-      card.appendChild(captionEl);
+    if (imgData.label) {
+      const labelEl = document.createElement('div');
+      labelEl.className = 'text-sm text-center text-gray-700';
+      labelEl.innerText = imgData.label;
+      card.appendChild(labelEl);
     }
 
     grid.appendChild(card);

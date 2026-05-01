@@ -1,6 +1,8 @@
 import pandas as pd
 from pathlib import Path
 
+from .parquet import to_parquet, unpack, PICKLE_PREFIX, ST_PREFIX
+
 from .files_utils import uniquify_fname
 from ..utils.terminal_output import TerminalOutput
 
@@ -39,6 +41,16 @@ def read_results(path):
             pd.to_datetime(path.stat().st_ctime, unit='s')
             .isoformat()
         )
+    # Auto-unpack objective columns that were packed at write time.
+    _PREFIXES = (PICKLE_PREFIX, ST_PREFIX)
+    for col in df.columns:
+        if df[col].dtype == object:
+            data = df[col].dropna()
+            first = data.iloc[0] if not data.empty else None
+            if isinstance(first, bytes) and first.startswith(_PREFIXES):
+                df[col] = df[col].map(
+                    lambda v: v if v is None else unpack(v)
+                )
     return df
 
 
@@ -71,7 +83,7 @@ def save_results(df, path, uniquify=True):
         path = uniquify_fname(path)
     if path.suffix == '.parquet':
         try:
-            df.to_parquet(path, index=False)
+            to_parquet(df, path)
             terminal.savefile_status(path)
             return path
         except Exception:
