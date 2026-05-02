@@ -169,7 +169,7 @@ PLOT = """
             df = df.query(
                 "dataset_name == @dataset and objective_name == @objective"
             )
-            # Reference and noisy come from final_results (last row per solver).
+            # Get reference and noisy from final_results (only stored once)
             final = df["final_results"].dropna().iloc[0]
             ref = final["reference"]
             noisy = final["noisy"]
@@ -180,7 +180,9 @@ PLOT = """
                  "label": f"Noisy input\\nMSE={mse_noisy:.4f}"},
             ]
             for solver_name, sdf in df.groupby("solver_name"):
-                frames = sdf.sort_values("stop_val")["objective_frame"].tolist()
+                frames = (
+                    sdf.sort_values("stop_val")["objective_frame"].tolist()
+                )
                 last_mse = sdf.loc[sdf["stop_val"].idxmax(), "objective_value"]
                 images.append({
                     "image": frames,  # list of arrays → animated GIF
@@ -194,7 +196,7 @@ PLOT = """
             )["solver_name"].unique())
             return {
                 "title": f"{objective} — Data: {dataset}",
-                "ncols": min(n + 2, 4),  # +2 for the noisy reference and the noisy input
+                "ncols": min(n + 2, 4),  # +2 for reference and noisy input
             }
 """
 
