@@ -43,7 +43,7 @@ def update_plot_data_style(plot_data, plotly=True):
                 title = title.replace('\n', '<br />')
                 custom_data[plot_name][key]["title"] = title
 
-                # Convert image arrays to base64 data URIs for JSON embedding.
+                # Convert image arrays to base64 data URIs for HTML embedding.
                 if custom_data[plot_name][key].get("type") == "image":
                     for item in custom_data[plot_name][key]["data"]:
                         image = item.get("image")
