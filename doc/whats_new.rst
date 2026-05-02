@@ -31,6 +31,16 @@ API
 - Add an API function for merging benchmark result files, similar to
   the ``benchopt merge`` command. By `Damien Lesens`_ (:gh:`916`)
 
+- Add ``'image'`` plot type to display images and per-iteration frame
+  animations (as animated GIFs) in the HTML result page. Return a list of
+  dicts with ``"image"`` (a NumPy array or a list of arrays) and an optional
+  ``"label"`` key from :meth:`BasePlot.plot`.
+  By `Thomas Moreau`_ (:gh:`923`)
+
+- Non-primitive objective values (NumPy arrays, etc.) can now be serialized
+  into the parquet result file using ``safetensors`` and safe pickler.
+  By `Thomas Moreau`_ (:gh:`923`)
+
 DOC
 ~~~
 
@@ -75,16 +85,6 @@ CLI
 
 API
 ~~~
-
-- Add ``'image'`` plot type to display images and per-iteration frame
-  animations (as animated GIFs) in the HTML result page. Return a list of
-  dicts with ``"image"`` (a NumPy array or a list of arrays) and an optional
-  ``"label"`` key from :meth:`BasePlot.plot`.
-  By `Thomas Moreau`_
-
-- Non-primitive objective values (NumPy arrays, etc.) can now be serialized
-  into the parquet result file using ``safetensors`` and safe pickler.
-  By `Thomas Moreau`_
 
 - Add ``python_version`` attribute to :class:`BaseObjective` to specify the
   Python version to use when creating a dedicated conda environment with
