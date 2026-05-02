@@ -1,9 +1,6 @@
 from abc import ABC, abstractmethod
-import base64
-import io
 import inspect
 import matplotlib.pyplot as plt
-import numpy as np
 
 from ..utils.dependencies_mixin import DependenciesMixin
 from ..utils.parametrized_name_mixin import ParametrizedNameMixin
@@ -13,36 +10,6 @@ from ..utils.parametrized_name_mixin import sanitize
 CMAP = plt.get_cmap('tab20')
 COLORS = [CMAP(i) for i in range(CMAP.N)]
 COLORS = COLORS[::2] + COLORS[1::2]
-
-
-def _array_to_png_src(arr):
-    """Convert a 2-D numpy array to a base64 PNG data URI via Pillow."""
-    from PIL import Image
-    arr = np.clip(arr, 0, 1)
-    img = Image.fromarray((arr * 255).astype(np.uint8), mode='L')
-    buf = io.BytesIO()
-    img.save(buf, format='PNG')
-    buf.seek(0)
-    return (
-        'data:image/png;base64,' + base64.b64encode(buf.read()).decode('ascii')
-    )
-
-
-def _arrays_to_gif_src(frames, fps=5):
-    """Convert a list of 2-D numpy arrays to a base64 animated GIF data URI."""
-    from PIL import Image
-    imgs = []
-    for f in frames:
-        arr = np.clip(f, 0, 1)
-        arr = (arr * 255).astype(np.uint8)
-        imgs.append(Image.fromarray(arr, mode='L'))
-    buf = io.BytesIO()
-    imgs[0].save(
-        buf, format='GIF', save_all=True, append_images=imgs[1:],
-        duration=int(1000 / fps), loop=0,
-    )
-    buf.seek(0)
-    return 'data:image/gif;base64,' + base64.b64encode(buf.read()).decode('ascii')
 
 
 class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
@@ -73,8 +40,8 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
         - boxplot: list of dict for each box, requires: 'x', 'y',
                 'label', optional: 'color'.
         - table: list of list, each inner list is a row of the table.
-        - image: list of dict for each image, requires: 'src' (base64
-                data URI or URL), optional: 'label'.
+        - image: list of dict for each image, requires: 'image',
+                optional: 'label'.
 
         Please refer to :ref:`add_custom_plot` for a complete description
         of the plot data.
@@ -188,22 +155,7 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
         for kwargs in combinations:
             data = self.get_metadata(df, **kwargs)
             data["type"] = self.type
-            plot_result = self.plot(df, **kwargs)
-            if self.type == 'image':
-                for item in plot_result:
-                    # Accept 'image' as an alias for 'src'
-                    if 'image' in item:
-                        item['src'] = item.pop('image')
-                    src = item.get('src')
-                    if isinstance(src, np.ndarray):
-                        item['src'] = _array_to_png_src(src)
-                    elif (
-                        isinstance(src, list)
-                        and src
-                        and isinstance(src[0], np.ndarray)
-                    ):
-                        item['src'] = _arrays_to_gif_src(src)
-            data["data"] = plot_result
+            data["data"] = self.plot(df, **kwargs)
             key_list = (
                 [self._get_name()] + list(kwargs.values())
             )

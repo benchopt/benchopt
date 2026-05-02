@@ -6,10 +6,11 @@ benchmark authors to display solver outputs as a visual gallery inside
 the benchopt HTML result page.
 
 The benchmark solves a toy 2-D signal denoising problem.
-``save_final_results`` saves the final solver output as an image file on disk
-for each solver run. The custom ``reconstruction`` plot class then loads
-those paths from the ``final_results`` column of the DataFrame and sets up
-a grid of images with captions showing the solver name and MSE.
+``evaluate_result`` returns per-iteration frames (``frame=X_hat``) and
+``save_final_results`` stores the reference and noisy images once per run.
+The custom ``reconstruction`` plot class reads those arrays directly from the
+result DataFrame and renders an image grid with per-solver animated GIFs
+and captions showing the solver name and MSE.
 """
 
 from benchopt.helpers.run_examples import ExampleBenchmark
@@ -41,8 +42,6 @@ OBJECTIVE = """
             return dict(
                 value=float(np.mean((self.X_true - X_hat) ** 2)),
                 frame=X_hat,
-                reference=self.X_true,
-                noisy=self.X_noisy,
             )
 
         def save_final_results(self, X_hat):
@@ -143,18 +142,19 @@ SOLVER_TV = """
 # A custom :class:`~benchopt.BasePlot` subclass with ``type = "image"`` must
 # return from ``plot()`` a list of dicts, each with at least:
 #
-# - ``"src"`` — a base64 ``data:image/png;base64,...`` URI (or any URL);
-# - ``"label"`` — text displayed below the image.
+# - ``"image"`` — a 2-D NumPy array (PNG) or a list of arrays (animated GIF);
+# - ``"label"`` — text displayed below the image card.
 #
 # ``get_metadata()`` may return ``"ncols"`` to control the grid layout.
 #
 # ``evaluate_result`` returns ``frame=X_hat`` alongside the scalar ``value``.
-# The framework detects non-primitive values, pickles them with a sentinel
-# prefix, and stores them as binary columns in the parquet file.  On read,
-# they are automatically restored to numpy arrays — no helper needed.
+# Non-primitive values are serialized inline into the parquet result file and
+# restored automatically on read, so they appear as normal DataFrame columns.
 # The plot collects all per-iteration frames from the ``objective_frame``
 # column and passes the list to the ``"image"`` key; the framework converts
 # a list of arrays to an animated GIF automatically.
+# ``save_final_results`` stores the reference and noisy images once; the plot
+# reads them from the ``final_results`` column.
 
 PLOT = """
     import numpy as np
@@ -169,10 +169,10 @@ PLOT = """
             df = df.query(
                 "dataset_name == @dataset and objective_name == @objective"
             )
-            # Reference and noisy are constant across rows; grab from first row.
-            first = df.iloc[0]
-            ref = first["objective_reference"]
-            noisy = first["objective_noisy"]
+            # Reference and noisy come from final_results (last row per solver).
+            final = df["final_results"].dropna().iloc[0]
+            ref = final["reference"]
+            noisy = final["noisy"]
             mse_noisy = float(np.mean((ref - noisy) ** 2))
             images = [
                 {"image": ref, "label": "Reference"},
@@ -194,7 +194,7 @@ PLOT = """
             )["solver_name"].unique())
             return {
                 "title": f"{objective} — Data: {dataset}",
-                "ncols": min(n + 1, 4),  # +1 for the noisy reference
+                "ncols": min(n + 2, 4),  # +2 for the noisy reference and the noisy input
             }
 """
 
@@ -236,9 +236,8 @@ benchopt_cli(
 
 # %%
 # In the resulting HTML page, select **reconstruction** in the *Chart type*
-# dropdown to see the image grid. Each card shows the final denoised image
-# produced by that solver configuration alongside its MSE.
-#
-# The images were saved to disk by ``evaluate_result`` during the run and
-# are read back by the plot class. They are embedded as base64-encoded PNGs
-# directly in the HTML file, so the page is fully self-contained.
+# dropdown to see the image grid. Each card shows an animated GIF of the
+# solver iterating toward its final denoised image, alongside its MSE.
+# Reference and noisy images are shown for comparison.
+# All arrays are embedded as base64-encoded data URIs directly in the HTML
+# file, so the page is fully self-contained.

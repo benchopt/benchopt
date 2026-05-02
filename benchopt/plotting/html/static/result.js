@@ -943,7 +943,7 @@ const renderImages = () => {
     imgWrapper.style.aspectRatio = '1 / 1';
 
     const img = document.createElement('img');
-    img.src = imgData.src;
+    img.src = imgData.image;
     img.alt = imgData.label || '';
     img.className = 'block w-full h-full object-contain';
     img.style.imageRendering = 'pixelated';

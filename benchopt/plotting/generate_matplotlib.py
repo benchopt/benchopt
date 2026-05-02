@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
+from .image_utils import _is_array
 from .helpers import update_plot_data_style
 import warnings
 
@@ -34,12 +35,7 @@ def get_plot_figure(plot_datas, output_dir):
             )
             continue
         elif plot_data["type"] == "image":
-            warnings.warn(
-                f"Plot '{key}' (type 'image') cannot be "
-                f"rendered with matplotlib; skipping.",
-                UserWarning
-            )
-            continue
+            fig = get_plot_image(plot_data)
         else:
             raise NotImplementedError(
                 f"Plot type {plot_data['type']} "
@@ -179,4 +175,39 @@ def get_plot_boxplot(plot_data):
 
     fig.tight_layout()
 
+    return fig
+
+
+def get_plot_image(plot_data):
+    images = plot_data["data"]
+    n = len(images)
+    ncols = plot_data.get("ncols", min(n, 3))
+    nrows = max(1, (n + ncols - 1) // ncols)
+
+    fig, axes = plt.subplots(nrows, ncols, figsize=(4 * ncols, 4 * nrows),
+                             squeeze=False)
+
+    for idx, item in enumerate(images):
+        ax = axes[idx // ncols][idx % ncols]
+        image = item.get("image")
+        # List of frames (animated sequence) → use last frame
+        if isinstance(image, list) and image and _is_array(image[0]):
+            arr = np.asarray(image[-1])
+        elif _is_array(image):
+            arr = np.asarray(image)
+        else:
+            arr = None
+        if arr is not None:
+            arr = np.clip(arr, 0, 1)
+            cmap = "gray" if arr.ndim == 2 else None
+            ax.imshow(arr, cmap=cmap, vmin=0, vmax=1)
+        ax.set_title(item.get("label", ""), fontsize=10)
+        ax.axis("off")
+
+    # Hide unused axes
+    for idx in range(n, nrows * ncols):
+        axes[idx // ncols][idx % ncols].axis("off")
+
+    fig.suptitle(plot_data.get("title", ""), fontsize=14)
+    fig.tight_layout()
     return fig

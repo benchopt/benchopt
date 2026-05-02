@@ -154,7 +154,7 @@ def update_metadata(path, metadata):
     new_metadata = {
         **table.schema.metadata
     }
-    metadata_ = json.loads(new_metadata.get(JSON_KEY, b"{}").decode("utf-8")) or {}
+    metadata_ = json.loads(new_metadata.get(JSON_KEY, b"{}").decode("utf-8"))
     metadata_.update(metadata)
     new_metadata[JSON_KEY] = json.dumps(metadata_).encode("utf-8")
     table = table.replace_schema_metadata(new_metadata)
