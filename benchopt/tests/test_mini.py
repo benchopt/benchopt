@@ -37,6 +37,7 @@ def gd_solver(n_iter, X, lr):
 # Solver with a call counter for caching tests (module-level list is mutable).
 _cached_solver_calls: list = []
 
+
 @solver(name="Counted solver", lr=[1e-1])
 def counted_solver(n_iter, X, lr):
     _cached_solver_calls.append(1)
@@ -173,7 +174,7 @@ def test_run_benchmark_parallel():
 
 
 def test_run_benchmark_caching():
-    """Second run on the same MiniBenchmark reuses the cache (solver not called)."""
+    """Second run on the same MiniBenchmark reuses the cache."""
     _cached_solver_calls.clear()
 
     bench = get_benchmark(
