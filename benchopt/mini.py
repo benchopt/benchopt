@@ -30,6 +30,7 @@ import inspect
 import tempfile
 from pathlib import Path
 
+import yaml
 import benchopt.benchmark as _bm_module
 from .base import BaseSolver, BaseDataset, BaseObjective
 from .benchmark import Benchmark
@@ -44,14 +45,30 @@ _MINI_SOLVERS: list = []
 _MINI_OBJECTIVES: list = []
 
 
+def _mini_load_instance(module_name, qualname, parameters):
+    """Reconstruct a mini-benchmark class instance in a worker process.
+
+    This is the ``__reduce__`` callable for all generated classes.  It
+    imports the user's module (which re-runs the decorators and registers
+    the classes) then calls ``get_instance`` on the class found at
+    ``module.qualname``.
+    """
+    import importlib
+    mod = importlib.import_module(module_name)
+    cls = getattr(mod, qualname)
+    return cls.get_instance(**parameters)
+
+
 def _set_class_module_info(klass, fn):
     """Attach _module_filename / _file_hash to a dynamically generated class.
 
     These attributes are expected by DependenciesMixin (is_installed) and
     by ParametrizedNameMixin (_get_mixin_args for pickling).
 
-    The class is also registered under ``benchopt.mini.<klass.__name__>`` so
-    that joblib's pickle-based hasher can find it by its qualified name.
+    The class is made picklable by routing its ``__module__`` and
+    ``__qualname__`` to the calling module, where the decorator stored it
+    under the original function name.  Joblib worker processes reimport that
+    module and find the class via ``module.<fn_name>``.
     """
     try:
         src_file = Path(inspect.getfile(fn)).resolve()
@@ -62,10 +79,68 @@ def _set_class_module_info(klass, fn):
     # _benchmark_dir is only needed for conda-env checks (not used in-process)
     klass._benchmark_dir = src_file.parent
 
-    # Make the class importable as benchopt.mini.<name> so that pickle /
-    # joblib hashing can find it via its __module__.__qualname__ path.
-    klass.__module__ = "benchopt.mini"
-    sys.modules["benchopt.mini"].__dict__[klass.__name__] = klass
+    # Point pickle at the calling module + the name the decorator stored the
+    # class under (= fn.__name__).  Worker processes import that module and
+    # resolve ``module.<fn_name>`` to find the class.
+    klass.__module__ = fn.__module__
+    klass.__qualname__ = fn.__name__
+
+    # Override __reduce__ so instances serialise via _mini_load_instance
+    # instead of the default ParametrizedNameMixin._load_instance, which
+    # requires a directory-based Benchmark to reconstruct.
+    def __reduce__(self):
+        return (
+            _mini_load_instance,
+            (type(self).__module__, type(self).__qualname__, self._parameters),
+            self._get_state(),
+        )
+    klass.__reduce__ = __reduce__
+
+
+# ---------------------------------------------------------------------------
+# Metaclass that makes the generated class itself callable as the original fn
+# ---------------------------------------------------------------------------
+
+class _CallableFnMeta(type(BaseDataset)):
+    """Metaclass that makes a generated class callable like the original fn.
+
+    Calling the class without ``_instantiate=True`` forwards the call
+    directly to ``_fn``, bypassing the benchopt API entirely::
+
+        result = my_solver(X_train, X_test, y_train, C=1.0)  # calls fn
+        result = my_solver(X_train=…, X_test=…, y_train=…, C=1.0)  # also ok
+
+    Internal benchopt instantiation goes through ``get_instance``, which is
+    overridden here to pass ``_instantiate=True``, routing ``__call__`` to
+    normal object construction instead.
+    """
+
+    def __init__(cls, name, bases, namespace):
+        super().__init__(name, bases, namespace)
+
+        @classmethod
+        def get_instance(klass, **parameters):
+            try:
+                obj = klass(_instantiate=True, **parameters)
+                obj.save_parameters(**parameters)
+            except Exception as exception:
+                cls_type = klass.__bases__[0].__name__.replace("Base", "")
+                cls_name = klass.name
+                exception.args = (
+                    f'Error when initializing {cls_type}: "{cls_name}". '
+                    f'{". ".join(str(a) for a in exception.args)}',
+                )
+                raise
+            return obj
+
+        # Inject into the class dict so it shadows
+        # ParametrizedNameMixin.get_instance
+        cls.get_instance = get_instance
+
+    def __call__(cls, *args, _instantiate=False, **kwargs):
+        if _instantiate:
+            return super().__call__(**kwargs)
+        return cls._fn(*args, **kwargs)
 
 
 # ---------------------------------------------------------------------------
@@ -95,9 +170,10 @@ def dataset(**params):
             for k, v in params.items()
         }
 
-        class Dataset(BaseDataset):
+        class Dataset(BaseDataset, metaclass=_CallableFnMeta):
             name = fn_name
             parameters = _params
+            _fn = staticmethod(fn)
 
             def get_data(self):
                 return fn(**self._parameters)
@@ -143,10 +219,11 @@ def solver(name, **params):
         }
         _name = name
 
-        class Solver(BaseSolver):
+        class Solver(BaseSolver, metaclass=_CallableFnMeta):
             name = _name
             parameters = _params
             sampling_strategy = "run_once"
+            _fn = staticmethod(fn)
 
             def set_objective(self, **objective_dict):
                 self._objective_dict = objective_dict
@@ -191,23 +268,46 @@ def objective(name):
     def decorator(fn):
         sig = inspect.signature(fn)
         result_param_names = list(sig.parameters.keys())
+        # Parameters in the evaluate signature that come from the dataset
+        # (rather than from the solver) are kept in the objective and NOT
+        # forwarded to the solver via get_objective().  Which keys belong to
+        # the dataset is only known at runtime, so we compute the split
+        # lazily inside the methods below.
+        _evaluate_params = frozenset(result_param_names)
         _name = name
 
-        class Objective(BaseObjective):
+        class Objective(BaseObjective, metaclass=_CallableFnMeta):
             name = _name
             parameters = {}
+            _fn = staticmethod(fn)
 
             def set_data(self, **data):
                 self._data = data
 
             def get_objective(self):
-                return dict(self._data)
+                # Send to the solver only dataset keys that are NOT
+                # consumed by evaluate_result (those stay in the objective).
+                return {
+                    k: v for k, v in self._data.items()
+                    if k not in _evaluate_params
+                }
 
             def evaluate_result(self, **result):
-                return fn(**result)
+                # Merge objective-owned data (dataset keys that appear in
+                # the evaluate signature) with the solver result.
+                obj_data = {
+                    k: v for k, v in getattr(self, "_data", {}).items()
+                    if k in _evaluate_params
+                }
+                return fn(**obj_data, **result)
 
             def get_one_result(self):
-                return {k: None for k in result_param_names}
+                # Solver-produced keys = evaluate params NOT in the dataset.
+                data_keys = frozenset(getattr(self, "_data", {}).keys())
+                return {
+                    k: None for k in result_param_names
+                    if k not in data_keys
+                }
 
         Objective.__name__ = f"Objective_{_name}"
         Objective.__qualname__ = Objective.__name__
@@ -245,6 +345,8 @@ class MiniBenchmark(Benchmark):
         dataset_classes,
         seed=None,
         no_cache=False,
+        config=None,
+        run_config=None,
     ):
         # Bypass Benchmark.__init__ entirely — no directory scanning needed.
         self._objective_cls = objective_cls
@@ -257,6 +359,16 @@ class MiniBenchmark(Benchmark):
         self.no_cache = no_cache
         self._seed = seed
 
+        # Write an optional config.yml into the temp directory so that
+        # Benchmark.get_setting() can find it.
+        if config is not None:
+            cfg_path = self.benchmark_dir / "config.yml"
+            if isinstance(config, dict):
+                cfg_path.write_text(yaml.dump(config), encoding="utf-8")
+            else:
+                import shutil
+                shutil.copy(str(config), str(cfg_path))
+
         # Register as the running benchmark (required by ParametrizedNameMixin
         # and other internals that call get_running_benchmark()).
         _bm_module._RUNNING_BENCHMARK = self
@@ -265,6 +377,9 @@ class MiniBenchmark(Benchmark):
         self.url = None
         self.name = f"mini_{objective_cls.name}".replace(" ", "_")
         self.min_version = None
+
+        # run_config stores default kwargs forwarded to run_benchmark.
+        self.run_config = dict(run_config) if run_config else {}
 
     # ------------------------------------------------------------------
     # Override Benchmark methods that scan the filesystem
@@ -313,7 +428,7 @@ class MiniBenchmark(Benchmark):
 # get_benchmark
 # ---------------------------------------------------------------------------
 
-def get_benchmark(seed=None, no_cache=False):
+def get_benchmark(seed=None, no_cache=False, config=None, run_config=None):
     """Collect all decorated classes from the calling module and build a
     :class:`MiniBenchmark`.
 
@@ -326,6 +441,22 @@ def get_benchmark(seed=None, no_cache=False):
         Random seed forwarded to :class:`MiniBenchmark`.
     no_cache : bool
         Disable caching.
+    config : dict | str | Path | None
+        Optional benchmark configuration.  Either a ``dict`` that will be
+        serialised as ``config.yml`` inside the temporary benchmark
+        directory, or a path to an existing YAML file that will be copied
+        there.  The config follows the same format as the ``config.yml``
+        used by regular benchmarks (e.g. ``plot_configs`` key for named
+        plot views).
+    run_config : dict | None
+        Default keyword arguments forwarded to
+        :func:`~benchopt.runner.run_benchmark` when running this benchmark.
+        Accepted keys include ``solver_names``, ``dataset_names``,
+        ``max_runs``, ``n_repetitions``, ``timeout``, etc.  These are
+        stored as ``bench.run_config`` and can be unpacked at call time::
+
+            bench = get_benchmark(run_config={"solver_names": ["Logistic*"]})
+            run_benchmark(bench, **bench.run_config)
 
     Returns
     -------
@@ -364,4 +495,6 @@ def get_benchmark(seed=None, no_cache=False):
         dataset_classes=datasets,
         seed=seed,
         no_cache=no_cache,
+        config=config,
+        run_config=run_config,
     )

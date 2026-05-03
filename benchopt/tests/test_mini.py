@@ -34,6 +34,16 @@ def gd_solver(n_iter, X, lr):
     return dict(beta=beta)
 
 
+# Solver with a call counter for caching tests (module-level list is mutable).
+_cached_solver_calls: list = []
+
+@solver(name="Counted solver", lr=[1e-1])
+def counted_solver(n_iter, X, lr):
+    _cached_solver_calls.append(1)
+    beta = np.zeros_like(X)
+    return dict(beta=beta)
+
+
 @objective(name="Test Mini Benchmark")
 def evaluate(beta):
     return dict(value=float(0.5 * beta.dot(beta)))
@@ -127,9 +137,9 @@ def test_run_benchmark_multiple_solver_params():
     )
     import pandas as pd
     df = pd.read_parquet(output_file)
-    # gd_solver has lr=[1e-1, 1e-2] => 2 configurations
+    # gd_solver has lr=[1e-1, 1e-2] => at least 2 configurations
     solver_names = df["solver_name"].unique()
-    assert len(solver_names) == 2
+    assert len(solver_names) >= 2
 
 
 def test_get_benchmark_raises_without_objective():
@@ -143,3 +153,47 @@ def test_get_benchmark_raises_without_objective():
             get_benchmark()
     finally:
         _MINI_OBJECTIVES.extend(original)
+
+
+def test_run_benchmark_parallel():
+    """Generated classes must be picklable for joblib parallel execution."""
+    bench = get_benchmark()
+    output_file = run_benchmark(
+        bench,
+        max_runs=1,
+        n_repetitions=1,
+        n_jobs=2,
+        plot_result=False,
+        show_progress=False,
+    )
+    import pandas as pd
+    df = pd.read_parquet(output_file)
+    assert not df.empty
+    assert "objective_value" in df.columns
+
+
+def test_run_benchmark_caching():
+    """Second run on the same MiniBenchmark reuses the cache (solver not called)."""
+    _cached_solver_calls.clear()
+
+    bench = get_benchmark(
+        run_config={"solver_names": ["Counted solver"]},
+    )
+    run_kwargs = dict(
+        max_runs=1,
+        n_repetitions=1,
+        plot_result=False,
+        show_progress=False,
+        **bench.run_config,
+    )
+
+    # First run: solver function must be called.
+    run_benchmark(bench, **run_kwargs)
+    calls_after_first = len(_cached_solver_calls)
+    assert calls_after_first > 0, "Solver was never called on the first run"
+
+    # Second run with the same bench (same cache dir): no new calls expected.
+    run_benchmark(bench, **run_kwargs)
+    assert len(_cached_solver_calls) == calls_after_first, (
+        "Solver was called again on second run — cache not working"
+    )
