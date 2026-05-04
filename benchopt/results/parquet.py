@@ -1,6 +1,7 @@
 import io
 import json
 import pickle
+import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 
@@ -107,7 +108,10 @@ def to_parquet(df, path, metadata=None):
     df = df.copy()
     binary_cols = []
     _PREFIXES = (_PKL_PREFIX, _ST_PREFIX)
-    for col in df.select_dtypes(include=['object', 'str']).columns:
+    # Backwards compatibility: starting with pandas 3.0, not passing 'str'
+    # raises a warning.
+    incl = ["object", "str"] if pd.__version__ > "3" else ["object"]
+    for col in df.select_dtypes(include=incl).columns:
         df[col] = df[col].map(pack)
         non_null = df[col].dropna()
         if not non_null.empty and any(
