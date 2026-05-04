@@ -231,7 +231,6 @@ benchmark
 # -----------------
 #
 # We use a small ``-n`` and ``-r`` to keep the runtime short.
-
 benchopt_cli(
     f"run {benchmark.benchmark_dir} -n 5 -r 1"
 )
