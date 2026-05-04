@@ -924,7 +924,7 @@ const renderImages = () => {
   // Title
   if (plotData.title) {
     const titleEl = document.createElement('h2');
-    titleEl.className = 'text-xl font-bold text-gray-800 mb-6';
+    titleEl.className = 'text-xl text-center text-gray-800 mb-6';
     titleEl.innerText = plotData.title;
     image_container.appendChild(titleEl);
   }
