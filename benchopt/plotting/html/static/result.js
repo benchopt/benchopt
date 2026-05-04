@@ -33,15 +33,24 @@ const setState = (partialState) => {
   window._state = {...state(), ...partialState};
 
   renderSidebar();
-  if (isChart('table')) {
+
+  /**
+   * Hide all containers for the different plots
+   */
+  ["table", "image", "plot", "plot_with_legend", "legend"].forEach(key => {
+    let container = document.getElementById(`${key}_container`);
+    hide(container);
+  });
+
+  if  (isChart('table')) {
     renderTable();
   } else if (isChart('image')) {
     renderImages();
   } else {
     renderPlot();
   }
-  renderLegend();
-}
+
+};
 
 /**
  * Retrieve the state object from window._state
@@ -84,25 +93,24 @@ const config_mapping = {
  * Create/Update the plot.
  */
 const renderPlot = () => {
-  let div;
-  let plot_with_legend_container = document.getElementById('plot_with_legend_container');
+
+  // Show and purge the container
   let plot_container = document.getElementById('plot_container');
-
-  hide(document.getElementById('table_container'));
-  if (isChart('scatter')) {
-    show(plot_container);
-    show(plot_with_legend_container);
-    div = plot_with_legend_container;
-  } else {
-    show(plot_container);
-    hide(plot_with_legend_container);
-    div = plot_container;
-  }
-  const data = getChartData();
-  const layout = getLayout();
-
+  let plot_with_legend_container = document.getElementById('plot_with_legend_container');
   Plotly.purge(plot_with_legend_container);
   Plotly.purge(plot_container);
+  show(plot_container);
+
+  let div = plot_container;
+  if (isChart('scatter')) {
+    show(plot_with_legend_container);
+    div = plot_with_legend_container;
+    renderLegend();
+  }
+
+  // Render the plot with PlotlyJS
+  const data = getChartData();
+  const layout = getLayout();
   Plotly.react(div, data, layout);
 };
 
@@ -908,12 +916,11 @@ const handleCurveDoubleClick = curve => {
  */
 
 const renderImages = () => {
-  let image_container = document.getElementById('image_container');
-  hide(document.getElementById('plot_container'));
-  hide(document.getElementById('table_container'));
-  show(image_container);
 
+  // Show and purge the container
+  let image_container = document.getElementById('image_container');
   image_container.innerHTML = '';
+  show(image_container);
 
   const plotData = getPlotData();
   if (!plotData || !plotData.data || plotData.data.length === 0) {
@@ -981,10 +988,9 @@ const valueToFixed = (value) => {
 
 function renderTable() {
 
+  // Show and purge the container
   let table_container = document.getElementById('table_container');
-  hide(document.getElementById('plot_container'));
   show(table_container);
-
   table_container.innerHTML = "";
 
   const plotData = getPlotData();
@@ -1154,15 +1160,9 @@ async function exportTable() {
  * Creates the legend at the bottom of the plot.
  */
 const renderLegend = () => {
-  const legendContainer = document.getElementById('legend_container')
-  if (!isChart('scatter')) {
-    hide(legendContainer);
-    return;
-  } else {
-    show(legendContainer);
-  }
 
   const legend = document.getElementById('plot_legend');
+  show(legend);
 
   legend.innerHTML = '';
   const curvesDescription = window.metadata["solvers_description"];

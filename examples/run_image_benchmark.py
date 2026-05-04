@@ -6,11 +6,10 @@ benchmark authors to display solver outputs as a visual gallery inside
 the benchopt HTML result page.
 
 The benchmark solves a toy 2-D signal denoising problem.
-``evaluate_result`` returns per-iteration frames (``frame=X_hat``) and
-``save_final_results`` stores the reference and noisy images once per run.
-The custom ``reconstruction`` plot class reads those arrays directly from the
-result DataFrame and renders an image grid with per-solver animated GIFs
-and captions showing the solver name and MSE.
+We use the iterative methods to solve the problem and store intermediate
+results for each solvers. We then define a custom plot that reads those
+intermediate results and renders an animated GIF showing the solver iterating,
+as well as the initial noisy image and the reference image for comparison.
 """
 
 from benchopt.helpers.run_examples import ExampleBenchmark
@@ -20,9 +19,14 @@ from benchopt.helpers.run_examples import benchopt_cli
 # Benchmark components
 # --------------------
 #
-# We define each component (objective, dataset, solvers, custom plot) as an
-# inline string and pass them to :class:`ExampleBenchmark`.  This mirrors the
-# pattern used elsewhere in the examples folder.
+# We define each component (objective, dataset, solvers, custom plot) of the
+# benchmarkas:
+#
+# - The ``Dataset`` simulates a noisy checkerboard image.
+# - The ``Objective`` evaluate results by computing the MSE, and storing the
+#   intermediate reconstructions.
+# - The ``Solver`` implement two simple iterative denoising methods: a median
+#   filter and a total variation denoising method.
 
 OBJECTIVE = """
     from benchopt import BaseObjective
@@ -40,7 +44,7 @@ OBJECTIVE = """
 
         def evaluate_result(self, X_hat):
             return dict(
-                value=float(np.mean((self.X_true - X_hat) ** 2)),
+                mse=float(np.mean((self.X_true - X_hat) ** 2)),
                 frame=X_hat,
             )
 
@@ -71,11 +75,15 @@ DATASET = """
 
 SOLVER_MEDIAN = """
     from benchopt import BaseSolver
+    from benchopt.stopping_criterion import SufficientProgressCriterion
 
     class Solver(BaseSolver):
         name = "median_filter"
-        sampling_strategy = "callback"
         parameters = {"size": [3, 5]}
+
+        stopping_criterion = SufficientProgressCriterion(
+            key_to_monitor = "mse", strategy="callback"
+        )
 
         def set_objective(self, X_noisy):
             self.X_noisy = X_noisy
@@ -92,12 +100,16 @@ SOLVER_MEDIAN = """
 
 SOLVER_TV = """
     from benchopt import BaseSolver
+    from benchopt.stopping_criterion import SufficientProgressCriterion
     import numpy as np
 
     class Solver(BaseSolver):
         name = "tv_denoise"
-        sampling_strategy = "callback"
         parameters = {"lam": [0.1, 0.5]}
+
+        stopping_criterion = SufficientProgressCriterion(
+            key_to_monitor = "mse", strategy="callback"
+        )
 
         def set_objective(self, X_noisy):
             self.X_noisy = X_noisy
@@ -134,6 +146,17 @@ SOLVER_TV = """
             return dict(X_hat=self.X_hat)
 """
 
+benchmark = ExampleBenchmark(
+    name="image_denoising",
+    objective=OBJECTIVE,
+    datasets={"simulated.py": DATASET},
+    solvers={
+        "tv_denoise.py": SOLVER_TV,
+        "median_filter.py": SOLVER_MEDIAN,
+    }
+)
+benchmark
+
 
 # %%
 # The ``image`` plot type
@@ -147,14 +170,24 @@ SOLVER_TV = """
 #
 # ``get_metadata()`` may return ``"ncols"`` to control the grid layout.
 #
-# ``evaluate_result`` returns ``frame=X_hat`` alongside the scalar ``value``.
-# Non-primitive values are serialized inline into the parquet result file and
-# restored automatically on read, so they appear as normal DataFrame columns.
-# The plot collects all per-iteration frames from the ``objective_frame``
-# column and passes the list to the ``"image"`` key; the framework converts
-# a list of arrays to an animated GIF automatically.
-# ``save_final_results`` stores the reference and noisy images once; the plot
-# reads them from the ``final_results`` column.
+# Here, ``evaluate_result`` stores ``frame=X_hat`` alongside the scalar
+# ``mse``. The plot collects all per-iteration frames from the
+# ``objective_frame`` column and passes the list to the ``"image"`` key;
+# benchopt plotting API converts this list of arrays to an animated GIF
+# automatically.
+#
+# ``save_final_results`` stores the reference and noisy images only once;
+# so the plot reads them from the ``final_results`` column to retrieve the
+# reference and noisy images.
+
+CONFIG = """
+plots:
+- reconstruction
+- objective_curve
+- bar_chart
+- boxplot
+- table
+"""
 
 PLOT = """
     import numpy as np
@@ -183,7 +216,7 @@ PLOT = """
                 frames = (
                     sdf.sort_values("stop_val")["objective_frame"].tolist()
                 )
-                last_mse = sdf.loc[sdf["stop_val"].idxmax(), "objective_value"]
+                last_mse = sdf.loc[sdf["stop_val"].idxmax(), "objective_mse"]
                 images.append({
                     "image": frames,  # list of arrays → animated GIF
                     "label": f"{solver_name}\\nMSE={last_mse:.4f}",
@@ -200,45 +233,28 @@ PLOT = """
             }
 """
 
-CONFIG = """
-plots:
-- reconstruction
-- objective_curve
-- bar_chart
-- boxplot
-- table
-"""
-
-# %%
-# Instantiate and display the benchmark
-# -------------------------------------
-
-benchmark = ExampleBenchmark(
-    name="image_denoising",
-    objective=OBJECTIVE,
-    datasets={"simulated.py": DATASET},
-    solvers={
-        "tv_denoise.py": SOLVER_TV,
-        "median_filter.py": SOLVER_MEDIAN,
-    },
+benchmark.update(
     plots={"reconstruction.py": PLOT},
     extra_files={"config.yml": CONFIG},
 )
-benchmark
 
 # %%
 # Run the benchmark
 # -----------------
 #
-# We use a small ``-n`` and ``-r`` to keep the runtime short.
+# We run the benchmark using ``benchopt`` CLI with a small ``-n`` and ``-r``
+# to keep the runtime short.
+
 benchopt_cli(
     f"run {benchmark.benchmark_dir} -n 5 -r 1"
 )
 
 # %%
-# In the resulting HTML page, select **reconstruction** in the *Chart type*
-# dropdown to see the image grid. Each card shows an animated GIF of the
-# solver iterating toward its final denoised image, alongside its MSE.
-# Reference and noisy images are shown for comparison.
+# In the resulting HTML page, the selected **reconstruction** in the
+# *Chart type* dropdown shows the image grid. Each card shows an animated GIF
+# of the solver iterating toward its final denoised image, alongside its final
+# MSE.
+#
+# Reference and noisy images are shown as static images for comparison.
 # All arrays are embedded as base64-encoded data URIs directly in the HTML
 # file, so the page is fully self-contained.

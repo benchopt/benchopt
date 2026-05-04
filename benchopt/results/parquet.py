@@ -107,7 +107,7 @@ def to_parquet(df, path, metadata=None):
     df = df.copy()
     binary_cols = []
     _PREFIXES = (_PKL_PREFIX, _ST_PREFIX)
-    for col in df.select_dtypes(include='object').columns:
+    for col in df.select_dtypes(include='object', exclude=['str']).columns:
         df[col] = df[col].map(pack)
         non_null = df[col].dropna()
         if not non_null.empty and any(
