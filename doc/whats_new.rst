@@ -52,6 +52,9 @@ DOC
 - Add a gallery of examples for ``benchopt``, with easy to explore
   benchmark definition. By `Thomas Moreau`_ (:gh:`905`)
 
+- Make it possible to download the benchmark examples as a zip file from
+  the example gallery. By `Thomas Moreau`_ (:gh:`927`)
+
 FIX
 ~~~
 
