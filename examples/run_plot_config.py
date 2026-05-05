@@ -6,6 +6,7 @@ with ``config.yml`` and how to add custom plots to your benchmark.
 """
 
 # Import example helpers to define benchmarks and run benchopt in this example
+# sphinx_gallery_thumbnail_number = -1
 from benchopt.helpers.run_examples import ExampleBenchmark
 from benchopt.helpers.run_examples import benchopt_cli
 
@@ -138,3 +139,11 @@ benchmark.update(extra_files={
 # to the selection of the learning rate.
 
 benchopt_cli(f"plot {benchmark.benchmark_dir}")
+
+# %%
+# Note that you can also generate custom plot as pdf using the ``--no-html``
+# option:
+
+benchopt_cli(
+    f"plot {benchmark.benchmark_dir} -k custom_objective_time --no-html"
+)
