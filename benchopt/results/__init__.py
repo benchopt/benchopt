@@ -82,17 +82,9 @@ def save_results(df, path, uniquify=True):
     if uniquify:
         path = uniquify_fname(path)
     if path.suffix == '.parquet':
-        try:
-            to_parquet(df, path)
-            terminal.savefile_status(path)
-            return path
-        except Exception:
-            import warnings
-            warnings.warn(
-                f"Failed to save results in parquet format at {path}. "
-                "Falling back to csv format."
-            )
-            path = path.with_suffix('.csv')
+        to_parquet(df, path)
+        terminal.savefile_status(path)
+        return path
     if path.suffix == '.csv':
         df.to_csv(path, index=False)
         terminal.savefile_status(path)

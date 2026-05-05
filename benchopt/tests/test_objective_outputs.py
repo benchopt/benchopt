@@ -89,47 +89,32 @@ def test_objective_no_value(no_debug_log):
         out.check_output("done")
 
 
-def test_objective_nonnumeric_values(no_debug_log):
+@pytest.mark.parametrize("nonnumeric", [
+    "d=dict(test_acc=0, b='dsf', c=[0, 1, 2])",
+    "frame=np.zeros((4, 4))",
+    "l=[dict(a=0), dict(c=1)]"
+], ids=["dict", "np.array", "list[dict]"])
+def test_objective_nonnumeric_values(no_debug_log, nonnumeric):
     # Non-primitive objective values (dicts, numpy arrays) are serialized
-    # inline into the parquet file via pack()/unpack(). No warning should be
-    # raised and the result file should be a parquet, not a CSV fallback.
+    # inline into the parquet file via pack()/unpack().
 
-    objective = """from benchopt.utils.temp_benchmark import TempObjective
-
-        class Objective(TempObjective):
-            name = "test_obj"
-            def evaluate_result(self, beta):
-                return dict(value=1, test_obj={'a': 0, 'b': 1.0, 'c': ''})
-    """
-
-    import warnings
-    with temp_benchmark(objective=objective) as bench:
-        with CaptureCmdOutput(delete_result_files=False) as out:
-            with warnings.catch_warnings():
-                warnings.simplefilter("error", UserWarning)
-                run(
-                    f"{bench.benchmark_dir} -d test-dataset -n 1 --no-plot"
-                    .split(), standalone_mode=False
-                )
-        assert out.result_files[0].endswith('.parquet')
-
-    objective = """from benchopt.utils.temp_benchmark import TempObjective
+    objective = f"""from benchopt.utils.temp_benchmark import TempObjective
         import numpy as np
 
         class Objective(TempObjective):
             name = "test_obj"
             def evaluate_result(self, beta):
-                return dict(value=1, frame=np.zeros((4, 4)))
+                return dict(
+                    value=1, {nonnumeric}
+                )
     """
 
     with temp_benchmark(objective=objective) as bench:
         with CaptureCmdOutput(delete_result_files=False) as out:
-            with warnings.catch_warnings():
-                warnings.simplefilter("error", UserWarning)
-                run(
-                    f"{bench.benchmark_dir} -d test-dataset -n 1 --no-plot"
-                    .split(), standalone_mode=False
-                )
+            run(
+                f"{bench.benchmark_dir} -d test-dataset -n 1 --no-plot"
+                .split(), standalone_mode=False
+            )
         assert out.result_files[0].endswith('.parquet')
 
 
