@@ -1175,8 +1175,9 @@ async function exportTable() {
  */
 const renderLegend = () => {
 
+  const container = document.getElementById('legend_container');
   const legend = document.getElementById('plot_legend');
-  show(legend);
+  show(container);
 
   legend.innerHTML = '';
   const curvesDescription = window.metadata["solvers_description"];
