@@ -15,7 +15,7 @@ MARKERS_STR = {v: i for i, v in MARKERS.items()}
 
 
 def reset_solver_styles():
-    BasePlot.label_dict.clear()
+    BasePlot._label_dict.clear()
 
 
 def get_plot_id(benchmark, df):
