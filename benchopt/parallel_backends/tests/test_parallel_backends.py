@@ -115,12 +115,11 @@ def test_dask_backend():
 
     class Solver(TempSolver):
         name = "solver1"
-        def get_result(self):
+        def run(self, _):
             from distributed import get_client
             client = get_client()
             assert "Client-worker" in client.id, client.id
             print(client.id)
-            return {"beta": 1}
     """
 
     with temp_benchmark(

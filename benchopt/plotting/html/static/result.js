@@ -33,13 +33,24 @@ const setState = (partialState) => {
   window._state = {...state(), ...partialState};
 
   renderSidebar();
-  if (isChart('table')) {
+
+  /**
+   * Hide all containers for the different plots
+   */
+  ["table", "image", "plot", "plot_with_legend", "legend"].forEach(key => {
+    let container = document.getElementById(`${key}_container`);
+    hide(container);
+  });
+
+  if  (isChart('table')) {
     renderTable();
+  } else if (isChart('image')) {
+    renderImages();
   } else {
     renderPlot();
   }
-  renderLegend();
-}
+
+};
 
 /**
  * Retrieve the state object from window._state
@@ -82,25 +93,24 @@ const config_mapping = {
  * Create/Update the plot.
  */
 const renderPlot = () => {
-  let div;
-  let plot_with_legend_container = document.getElementById('plot_with_legend_container');
+
+  // Show and purge the container
   let plot_container = document.getElementById('plot_container');
-
-  hide(document.getElementById('table_container'));
-  if (isChart('scatter')) {
-    show(plot_container);
-    show(plot_with_legend_container);
-    div = plot_with_legend_container;
-  } else {
-    show(plot_container);
-    hide(plot_with_legend_container);
-    div = plot_container;
-  }
-  const data = getChartData();
-  const layout = getLayout();
-
+  let plot_with_legend_container = document.getElementById('plot_with_legend_container');
   Plotly.purge(plot_with_legend_container);
   Plotly.purge(plot_container);
+  show(plot_container);
+
+  let div = plot_container;
+  if (isChart('scatter')) {
+    show(plot_with_legend_container);
+    div = plot_with_legend_container;
+    renderLegend();
+  }
+
+  // Render the plot with PlotlyJS
+  const data = getChartData();
+  const layout = getLayout();
   Plotly.react(div, data, layout);
 };
 
@@ -495,7 +505,7 @@ const renderSidebar = () => {
  * Render Scale selector
  */
 const renderScaleSelector = () => {
-  if (isChart(['table'])) {
+  if (isChart(['table', 'image'])) {
     hide(document.querySelectorAll("#scale-form-group"));
   } else {
     show(document.querySelectorAll("#scale-form-group"), 'block');
@@ -901,6 +911,81 @@ const handleCurveDoubleClick = curve => {
 
 /*
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * MANAGE IMAGE RENDERING
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
+
+const renderImages = () => {
+
+  // Show and purge the container
+  let image_container = document.getElementById('image_container');
+  image_container.innerHTML = '';
+  show(image_container);
+
+  const plotData = getPlotData();
+  if (!plotData || !plotData.data || plotData.data.length === 0) {
+    image_container.innerHTML = '<div>No image data available</div>';
+    return;
+  }
+
+  // Title
+  if (plotData.title) {
+    const titleEl = document.createElement('h2');
+    titleEl.className = 'text-xl text-center text-gray-800 mb-6';
+    titleEl.innerText = plotData.title;
+    image_container.appendChild(titleEl);
+  }
+
+  const ncols = plotData.ncols || Math.min(plotData.data.length, 3);
+  const grid = document.createElement('div');
+  grid.className = `grid gap-6`;
+  grid.style.gridTemplateColumns = `repeat(${ncols}, minmax(0, 1fr))`;
+
+  plotData.data.forEach(imgData => {
+    const card = document.createElement('div');
+
+    if (imgData.image === null) {
+      // Empty invisible block for grid alignment
+      grid.appendChild(card);
+      return;
+    }
+
+    card.className = 'bg-white rounded-lg shadow border border-gray-200 p-2 flex flex-col gap-2';
+
+    const imgWrapper = document.createElement('div');
+    imgWrapper.className = 'bg-gray-50 flex items-center justify-center';
+    imgWrapper.style.aspectRatio = '1 / 1';
+
+    if (imgData.image === '__incompatible__') {
+      const msg = document.createElement('span');
+      msg.className = 'text-sm text-gray-500 italic';
+      msg.innerText = 'Incompatible image';
+      imgWrapper.appendChild(msg);
+    } else {
+      const img = document.createElement('img');
+      img.src = imgData.image;
+      img.alt = imgData.label || '';
+      img.className = 'block w-full h-full object-contain';
+      img.style.imageRendering = 'pixelated';
+      imgWrapper.appendChild(img);
+    }
+    card.appendChild(imgWrapper);
+
+    if (imgData.label) {
+      const labelEl = document.createElement('div');
+      labelEl.className = 'text-sm text-center text-gray-700';
+      labelEl.innerText = imgData.label;
+      card.appendChild(labelEl);
+    }
+
+    grid.appendChild(card);
+  });
+
+  image_container.appendChild(grid);
+};
+
+/*
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * MANAGE TABLE RENDERING
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
@@ -917,10 +1002,9 @@ const valueToFixed = (value) => {
 
 function renderTable() {
 
+  // Show and purge the container
   let table_container = document.getElementById('table_container');
-  hide(document.getElementById('plot_container'));
   show(table_container);
-
   table_container.innerHTML = "";
 
   const plotData = getPlotData();
@@ -1090,15 +1174,9 @@ async function exportTable() {
  * Creates the legend at the bottom of the plot.
  */
 const renderLegend = () => {
-  const legendContainer = document.getElementById('legend_container')
-  if (!isChart('scatter')) {
-    hide(legendContainer);
-    return;
-  } else {
-    show(legendContainer);
-  }
 
   const legend = document.getElementById('plot_legend');
+  show(legend);
 
   legend.innerHTML = '';
   const curvesDescription = window.metadata["solvers_description"];

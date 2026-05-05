@@ -1,10 +1,6 @@
 import time
 import inspect
-import pickle
-
 from datetime import datetime
-
-from joblib import hash
 
 from .callback import _Callback
 from .benchmark import Benchmark
@@ -126,17 +122,6 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
     """
     curve = []
 
-    # Augment the metadata with final_results if necessary.
-    has_save_final_results = (
-        objective.save_final_results.__qualname__ !=
-        "BaseObjective.save_final_results"
-    )
-    if has_save_final_results:
-        final_results = benchmark.get_output_folder() / 'final_results'
-        final_results /= f"{hash(meta)}.pkl"
-        final_results.parent.mkdir(exist_ok=True, parents=True)
-        meta["final_results"] = str(final_results)
-
     with exception_handler(terminal, pdb=pdb) as ctx:
         # The warm-up step called for each repetition bit only run once.
         solver._warm_up()
@@ -176,12 +161,12 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
                 stop, ctx.status, stop_val = stopping_criterion.should_stop(
                     stop_val, curve
                 )
-        # Only run if save_final_results is defined in the objective.
-        if has_save_final_results and ctx.status not in FAILURE_STATUS:
+
+        # Save final results if the run did not fail.
+        if ctx.status not in FAILURE_STATUS:
             to_save = objective.save_final_results(**solver.get_result())
             if to_save is not None:
-                with open(meta["final_results"], 'wb') as f:
-                    pickle.dump(to_save, f)
+                curve[-1]["final_results"] = to_save
     if ctx.status in FAILURE_STATUS:
         raise FailedRun(ctx.status)
     return curve, ctx.status

@@ -27,9 +27,19 @@ API
   for a dataset. This method is cached, and some parameters of the class can
   be ignored for caching by specifying them in ``prepare_cache_ignore``.
   By `Thomas Moreau`_ (:gh:`912`)
-  
+
 - Add an API function for merging benchmark result files, similar to
   the ``benchopt merge`` command. By `Damien Lesens`_ (:gh:`916`)
+
+- Add ``'image'`` plot type to display images and per-iteration frame
+  animations (as animated GIFs) in the HTML result page. Return a list of
+  dicts with ``"image"`` (a NumPy array or a list of arrays) and an optional
+  ``"label"`` key from :meth:`BasePlot.plot`.
+  By `Thomas Moreau`_ (:gh:`923`)
+
+- Non-primitive objective values (NumPy arrays, etc.) can now be serialized
+  into the parquet result file using ``safetensors`` and safe pickler.
+  By `Thomas Moreau`_ (:gh:`923`)
 
 DOC
 ~~~

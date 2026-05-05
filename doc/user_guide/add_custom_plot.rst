@@ -21,7 +21,7 @@ A custom plot is defined by a class inheriting from :class:`benchopt.BasePlot` a
   select this plot in config files for your benchmark.
 - :code:`type`: The type of the plot, which defines how the output of `plot`
   will be rendered. Supported types are :code:`"scatter"`, :code:`"bar_chart"`,
-  :code:`"boxplot"` and :code:`"table"`.
+  :code:`"boxplot"`, :code:`"table"` and :code:`"image"`.
 - :code:`options`: A dictionary defining the different options available for the
   plot. Typically, this can be used to have different plots depending on dataset's
   or objective's parameters, or to display customization options. The keys in the
@@ -49,7 +49,7 @@ The visualization is rendered using either the ``plotly`` or ``matplotly`` backe
 
     class Plot(BasePlot):
         name = "My Custom Plot"
-        type = "scatter"  # or "bar_chart", "boxplot" or "table"
+        type = "scatter"  # or "bar_chart", "boxplot", "table" or "image"
         options = {
             "dataset": ...,         # Automatic options from DataFrame columns
             "objective": ...,
@@ -258,6 +258,37 @@ The metadata dictionary returned by :code:`get_metadata` should contain:
             "title": f"Summary for {dataset}",
             "columns": ["Solver", "Mean Time [sec]"],
         }
+
+
+Image Plot
+----------
+
+For an image plot, the :code:`plot` method should return a list of dictionaries,
+where each dictionary represents one image card displayed in a grid.
+Each dictionary must contain:
+
+- :code:`image`: Either an image-compatible array (rendered as a PNG)
+  or a list of image-compatible arrays (rendered as an animated GIF showing
+  per-iteration progress). A pre-computed base64 data URI or URL are also
+  accepted. If set to ``None``, this will create an empty image, which can
+  be used for alignment purposes.
+
+Optional keys:
+
+- :code:`label`: Text displayed below the image card.
+
+Arrays are expected to have values in ``[0, 1]`` and are converted automatically
+using Pillow, so no manual encoding is needed.
+
+The metadata dictionary returned by :code:`get_metadata` should contain:
+
+- :code:`title`: The title displayed above the grid.
+- :code:`ncols`: Number of columns in the grid (default: min(n_images, 3)).
+
+.. note::
+   In the HTML result page, animated GIFs are rendered when a list of arrays
+   is provided. In the matplotlib backend, each image card is shown as a
+   static subplot using the last frame for animated sequences.
 
 
 .. _plotting_utilities:

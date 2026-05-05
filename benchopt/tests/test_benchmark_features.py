@@ -322,8 +322,6 @@ def test_objective_save_final_results(no_debug_log):
             return "test_value"
     """
 
-    import pickle
-
     with temp_benchmark(objective=save_final) as benchmark:
         with CaptureCmdOutput(delete_result_files=False) as out:
             run([
@@ -331,8 +329,9 @@ def test_objective_save_final_results(no_debug_log):
                 *('-s test-solver -d test-dataset -n 1 -r 1 --no-plot').split()
             ],  standalone_mode=False)
         data = read_results(out.result_files[0])
-        with open(data.loc[0, "final_results"], "rb") as final_result_file:
-            final_results = pickle.load(final_result_file)
+        # final_results is stored inline in the parquet file; only the last
+        # row of each solver's convergence curve carries a non-null value.
+        final_results = data["final_results"].dropna().iloc[0]
     assert final_results == "test_value"
 
 

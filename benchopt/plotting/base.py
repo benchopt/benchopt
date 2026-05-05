@@ -40,6 +40,8 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
         - boxplot: list of dict for each box, requires: 'x', 'y',
                 'label', optional: 'color'.
         - table: list of list, each inner list is a row of the table.
+        - image: list of dict for each image, requires: 'image',
+                optional: 'label'.
 
         Please refer to :ref:`add_custom_plot` for a complete description
         of the plot data.
@@ -92,7 +94,7 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
     def _check_type(self):
         if not hasattr(self, 'type'):
             raise ValueError("Plot should have a `type` attribute.")
-        supported_types = ['scatter', 'bar_chart', 'boxplot', 'table']
+        supported_types = ['scatter', 'bar_chart', 'boxplot', 'table', 'image']
         if self.type not in supported_types:
             raise ValueError(
                 f"Plot type should be one of {' '.join(supported_types)}. "

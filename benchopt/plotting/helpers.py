@@ -1,8 +1,11 @@
+import traceback
 from hashlib import md5
+
 import matplotlib.pyplot as plt
 import matplotlib
 
 from .base import BasePlot
+from .image_utils import _is_array, _array_to_png_src, _arrays_to_gif_src
 
 CMAP = plt.get_cmap('tab20')
 COLORS = [CMAP(i) for i in range(CMAP.N)]
@@ -41,6 +44,26 @@ def update_plot_data_style(plot_data, plotly=True):
                 title = custom_data[plot_name][key]["title"]
                 title = title.replace('\n', '<br />')
                 custom_data[plot_name][key]["title"] = title
+
+                # Convert image arrays to base64 data URIs for HTML embedding.
+                if custom_data[plot_name][key].get("type") == "image":
+                    for item in custom_data[plot_name][key]["data"]:
+                        image = item.get("image")
+                        try:
+                            if isinstance(image, list) and image and _is_array(
+                                    image[0]):
+                                item["image"] = _arrays_to_gif_src(image)
+                            elif _is_array(image):
+                                item["image"] = _array_to_png_src(image)
+                            elif image is None:
+                                item["image"] = None
+                            else:
+                                raise ValueError(
+                                    f"Incompatible image data: {type(image)}"
+                                )
+                        except Exception:
+                            traceback.print_exc()
+                            item["image"] = "__incompatible__"
 
             data = custom_data[plot_name][key]["data"]
             for idx in range(len(data)):
