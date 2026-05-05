@@ -223,8 +223,7 @@ PLOT = """
                 {"image": "skdjf",  # noisy,
                  "label": f"Invalid\\nMSE={mse_noisy:.4f}"},
                 # Returning None insert an empty slot for alignment
-                {"image": None,  # noisy,
-                 "label": f"Noisy input\\nMSE={mse_noisy:.4f}"},
+                {"image": None},
             ]
             for solver_name, sdf in df.groupby("solver_name"):
                 frames = (

@@ -84,3 +84,11 @@ benchopt_cli(f"run {benchmark.benchmark_dir} -n 20 -r 4")
 # Here, you see that the Julia solver is faster than the Python one.
 # You also notice that the first iteration seems to take much longer than the
 # other, hinting to a loading time for the solver.
+
+# sphinx_gallery_thumbnail_number = -1
+# sphinx_gallery_start_ignore
+# Generate thumbnail for the sphinx gallery
+benchopt_cli(
+    f"plot {benchmark.benchmark_dir} --no-html --kind objective_curve"
+)
+# sphinx_gallery_end_ignore
