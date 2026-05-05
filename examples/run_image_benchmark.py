@@ -10,8 +10,12 @@ We use the iterative methods to solve the problem and store intermediate
 results for each solvers. We then define a custom plot that reads those
 intermediate results and renders an animated GIF showing the solver iterating,
 as well as the initial noisy image and the reference image for comparison.
+
+First, we import example helpers to define the benchmark and run it in this
+example.
 """
 
+# sphinx_gallery_thumbnail_number = -1
 from benchopt.helpers.run_examples import ExampleBenchmark
 from benchopt.helpers.run_examples import benchopt_cli
 
@@ -165,8 +169,11 @@ benchmark
 # A custom :class:`~benchopt.BasePlot` subclass with ``type = "image"`` must
 # return from ``plot()`` a list of dicts, each with at least:
 #
-# - ``"image"`` — a 2-D NumPy array (PNG) or a list of arrays (animated GIF);
+# - ``"image"`` — a 2D/3D NumPy array or a list of arrays (animated GIF);
 # - ``"label"`` — text displayed below the image card.
+#
+# Note that if image type is not compatible with Pillow (not an array or list
+# of arrays),
 #
 # ``get_metadata()`` may return ``"ncols"`` to control the grid layout.
 #
@@ -210,6 +217,13 @@ PLOT = """
             images = [
                 {"image": ref, "label": "Reference"},
                 {"image": noisy,
+                 "label": f"Noisy input\\nMSE={mse_noisy:.4f}"},
+                # Image should be a 2D array. If incompatible, it will appear
+                # with a message in the plot.
+                {"image": "skdjf",  # noisy,
+                 "label": f"Invalid\\nMSE={mse_noisy:.4f}"},
+                # Returning None insert an empty slot for alignment
+                {"image": None,  # noisy,
                  "label": f"Noisy input\\nMSE={mse_noisy:.4f}"},
             ]
             for solver_name, sdf in df.groupby("solver_name"):
@@ -258,3 +272,10 @@ benchopt_cli(
 # Reference and noisy images are shown as static images for comparison.
 # All arrays are embedded as base64-encoded data URIs directly in the HTML
 # file, so the page is fully self-contained.
+#
+# Note that you can also generate the plot as a static image with ``--no-html``
+# option, generating a pdf file in the output directory of the benchmark.
+
+benchopt_cli(
+    f"plot {benchmark.benchmark_dir} --no-html --kind reconstruction"
+)

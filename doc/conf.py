@@ -224,7 +224,7 @@ sphinx_gallery_conf = {
     'filename_pattern': r'/run_.*\.py',
     'ignore_pattern': r'.*_benchmark/',
     'capture_repr': ('_repr_html_', '__repr__'),
-    # 'image_scrapers': ("benchopt.helpers.examples.cli_scraper",),
+    'remove_config_comments': True,
 }
 
 

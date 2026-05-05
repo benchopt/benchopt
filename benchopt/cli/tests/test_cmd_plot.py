@@ -75,7 +75,13 @@ class TestPlotCmd:
                     {
                         "image": [np.random.rand(10, 10) for _ in range(2)],
                         "label": "Test GIF"
-                    }
+                    },
+                    {
+                        "image": np.random.rand(10, 10, 10),
+                        "label": "No Image"
+                    },
+                    {"image": None, "label": "No Image"},
+                    {"image": "not_an_array", "label": "Bad Image"},
                 ]
 
             def get_metadata(self, df, dataset):
@@ -175,6 +181,9 @@ class TestPlotCmd:
             "image_plot"
         ]:
             assert f"<option value=\"{k}\"" in html_content
+
+        assert '"__incompatible__"' in html_content
+        assert '"image": null' in html_content
 
     @pytest.mark.parametrize("n_rep", N_REP)
     @patch("benchopt.plotting.generate_matplotlib.get_plot_boxplot")

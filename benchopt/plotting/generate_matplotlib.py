@@ -1,9 +1,11 @@
+import warnings
+import traceback
+
 import matplotlib.pyplot as plt
 import numpy as np
 
 from .image_utils import _is_array
 from .helpers import update_plot_data_style
-import warnings
 
 
 def get_figures(benchmark, df, output_dir, kinds):
@@ -189,6 +191,9 @@ def get_plot_image(plot_data):
 
     for idx, item in enumerate(images):
         ax = axes[idx // ncols][idx % ncols]
+        ax.set_title(item.get("label", ""), fontsize=10)
+        ax.axis("off")
+
         image = item.get("image")
         # List of frames (animated sequence) → use last frame
         if isinstance(image, list) and image and _is_array(image[0]):
@@ -197,12 +202,24 @@ def get_plot_image(plot_data):
             arr = np.asarray(image)
         else:
             arr = None
-        if arr is not None:
-            arr = np.clip(arr, 0, 1)
-            cmap = "gray" if arr.ndim == 2 else None
-            ax.imshow(arr, cmap=cmap, vmin=0, vmax=1)
-        ax.set_title(item.get("label", ""), fontsize=10)
-        ax.axis("off")
+        try:
+            if arr is not None:
+                arr = np.clip(arr, 0, 1)
+                cmap = "gray" if arr.ndim == 2 else None
+                ax.imshow(arr, cmap=cmap, vmin=0, vmax=1)
+            elif image is None:
+                ax.set_title("")  # Hide everything if no image provided
+            else:
+                raise ValueError(f"Incompatible image data: {type(image)}")
+        except Exception:
+            label = item.get("label", "No label").split("\n")[0]
+            print(f"\n\nError rendering image '{label}':\n")
+            traceback.print_exc()
+            ax.text(
+                0.5, 0.5, "Incompatible image data",
+                ha="center", va="center", fontsize=12
+            )
+            print('-' * 30 + "\n")
 
     # Hide unused axes
     for idx in range(n, nrows * ncols):

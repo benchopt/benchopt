@@ -62,8 +62,10 @@ def plot(benchmark, filename=None, kinds=('suboptimality_curve',),
 
     # Plot the results.
     from benchopt.plotting import plot_benchmark
-    plot_benchmark(result_filename, benchmark, kinds=kinds, display=display,
-                   plotly=plotly, html=html)
+    return plot_benchmark(
+        result_filename, benchmark, kinds=kinds, display=display,
+        plotly=plotly, html=html
+    )
 
 
 @process_results.command(

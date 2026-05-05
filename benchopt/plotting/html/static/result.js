@@ -943,18 +943,32 @@ const renderImages = () => {
 
   plotData.data.forEach(imgData => {
     const card = document.createElement('div');
+
+    if (imgData.image === null) {
+      // Empty invisible block for grid alignment
+      grid.appendChild(card);
+      return;
+    }
+
     card.className = 'bg-white rounded-lg shadow border border-gray-200 p-2 flex flex-col gap-2';
 
     const imgWrapper = document.createElement('div');
     imgWrapper.className = 'bg-gray-50 flex items-center justify-center';
     imgWrapper.style.aspectRatio = '1 / 1';
 
-    const img = document.createElement('img');
-    img.src = imgData.image;
-    img.alt = imgData.label || '';
-    img.className = 'block w-full h-full object-contain';
-    img.style.imageRendering = 'pixelated';
-    imgWrapper.appendChild(img);
+    if (imgData.image === '__incompatible__') {
+      const msg = document.createElement('span');
+      msg.className = 'text-sm text-gray-500 italic';
+      msg.innerText = 'Incompatible image';
+      imgWrapper.appendChild(msg);
+    } else {
+      const img = document.createElement('img');
+      img.src = imgData.image;
+      img.alt = imgData.label || '';
+      img.className = 'block w-full h-full object-contain';
+      img.style.imageRendering = 'pixelated';
+      imgWrapper.appendChild(img);
+    }
     card.appendChild(imgWrapper);
 
     if (imgData.label) {
