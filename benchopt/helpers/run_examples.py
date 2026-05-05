@@ -376,10 +376,12 @@ class ExampleBenchmark:
 
     def _repr_html_(self):
         return HTMLBenchmarkDisplay(
-            self._files_to_list(self.files), bench=self
+            self._files_to_list(), bench=self
         )._repr_html_()
 
-    def _files_to_list(self, files):
+    def _files_to_list(self, files=None):
+        if files is None:
+            files = self.files
         file_list = []
         for key in files:
             if key == "objective":
@@ -398,7 +400,7 @@ class ExampleBenchmark:
         buf = io.BytesIO()
         with zipfile.ZipFile(buf, mode='w',
                              compression=zipfile.ZIP_DEFLATED) as zf:
-            for label, content in self._zip_files:
+            for label, content in self._files_to_list():
                 zf.writestr(f"{label}", content)
         zip_b64 = base64.b64encode(buf.getvalue()).decode('ascii')
         return f"data:application/zip;base64,{zip_b64}"
