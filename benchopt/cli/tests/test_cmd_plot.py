@@ -182,6 +182,7 @@ class TestPlotCmd:
         ]:
             assert f"<option value=\"{k}\"" in html_content
 
+        # check image plot gracefully handle errors/null block
         assert '"__incompatible__"' in html_content
         assert '"image": null' in html_content
 

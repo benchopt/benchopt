@@ -939,7 +939,7 @@ const renderImages = () => {
   const ncols = plotData.ncols || Math.min(plotData.data.length, 3);
   const grid = document.createElement('div');
   grid.className = `grid gap-6`;
-  grid.style.gridTemplateColumns = `repeat(${ncols}, minmax(240px, 1fr))`;
+  grid.style.gridTemplateColumns = `repeat(${ncols}, minmax(0, 1fr))`;
 
   plotData.data.forEach(imgData => {
     const card = document.createElement('div');

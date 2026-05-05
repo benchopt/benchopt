@@ -271,17 +271,18 @@ For an image plot, the :code:`plot` method should return a list of dictionaries,
 where each dictionary represents one image card displayed in a grid.
 Each dictionary must contain:
 
-- :code:`image`: Either a 2-D NumPy array (rendered as a PNG)
-  or a list of 2-D NumPy arrays (rendered as an animated GIF showing
+- :code:`image`: Either an image-compatible array (rendered as a PNG)
+  or a list of image-compatible arrays (rendered as an animated GIF showing
   per-iteration progress). A pre-computed base64 data URI or URL are also
-  accepted.
+  accepted. If set to ``None``, this will create an empty image, which can
+  be used for alignment purposes.
 
 Optional keys:
 
 - :code:`label`: Text displayed below the image card.
 
 Arrays are expected to have values in ``[0, 1]`` and are converted automatically
-— no manual encoding is needed.
+using Pillow, so no manual encoding is needed.
 
 The metadata dictionary returned by :code:`get_metadata` should contain:
 
