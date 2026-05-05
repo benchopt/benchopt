@@ -1,8 +1,10 @@
 import io
 import re
 import sys
+import base64
 import inspect
 import weakref
+import zipfile
 from html import escape
 from pathlib import Path
 from uuid import uuid4
@@ -170,18 +172,10 @@ class HTMLBenchmarkDisplay:
     tabs in the doc.
     """
 
-    def __init__(self, files, action=None):
+    def __init__(self, files, bench, action=None):
         self.action = action
-        self.files = []
-        for key in files:
-            if key != "objective" and len(files[key]) > 0:
-                self.files.extend(
-                    (f"{key}/{fn}" if key != "extra_files" else fn, content)
-                    for fn, content in files[key].items()
-                )
-            elif key == "objective":
-                self.files.append((f"{key}.py", files[key]))
-        # files.extend(sorted(self.extra_files.items()))
+        self.files = files
+        self.bench = bench
 
     def _repr_html_(self):
         tabs_id = f"example-benchmark-{uuid4().hex}"
@@ -205,10 +199,40 @@ class HTMLBenchmarkDisplay:
         # describes the change that was made to the benchmark files.
         action = "" if self.action is None else f"<p>{self.action}</p><br/>"
         tabs = "\n".join(items)
+
+        # Add a download button to the tabs, which download the current state
+        # of the benchmark files as a zip file
+        zip_name = (
+            f"{self.bench.name}.zip" if self.bench.name else "benchmark.zip"
+        )
+        zip_uri = self.bench._zip_uri
+        # A <label> without `for` is a direct child of .sd-tab-set, so
+        # sphinx-design's `.sd-tab-set > label` CSS applies automatically —
+        # no style duplication needed. onclick triggers a native download.
+        # The following div (flex-basis:100%) acts as a line-break, pushing
+        # the file-tab labels onto a second flex row.
+        onclick = (
+            f"var a=document.createElement('a');"
+            f"a.href='{zip_uri}';"
+            f"a.download='{escape(zip_name)}';"
+            "document.body.appendChild(a);a.click();"
+            "document.body.removeChild(a);"
+        )
+        # A <label> without `for` inherits .sd-tab-set > label CSS (order:0).
+        # margin-left:auto pushes it to the far right of the first row.
+        # The following div (order:0, flex-basis:100%) acts as a line-break so
+        # all file-tab labels (also order:0) flow onto a second row.
+        # (order:1 would place the div after ALL labels — after the break.)
+        download_tab = (
+            f"<label onclick=\"{onclick}\">&#x2B07; Download</label>"
+            "<div style='order:0;flex-basis:100%;height:0;overflow:hidden'>"
+            "</div>"
+        )
         return _html_to_replace_code_cell(inspect.cleandoc(f"""
             <div class='display_example_benchmark'>
                 {action}
                 <div class='sd-tab-set'>
+                    {download_tab}
                     {tabs}
                 </div>
             </div>"
@@ -345,11 +369,39 @@ class ExampleBenchmark:
             sys.modules.pop(m)
 
         return HTMLBenchmarkDisplay(
-            files, action="We now update the following files:"
+            self._files_to_list(files),
+            action="We now update the following files:",
+            bench=self
         )
 
     def _repr_html_(self):
-        return HTMLBenchmarkDisplay(self.files)._repr_html_()
+        return HTMLBenchmarkDisplay(
+            self._files_to_list(self.files), bench=self
+        )._repr_html_()
+
+    def _files_to_list(self, files):
+        file_list = []
+        for key in files:
+            if key == "objective":
+                if files[key]:
+                    file_list.append(("objective.py", files[key]))
+            elif files[key]:
+                file_list.extend(
+                    (f"{key}/{fn}" if key != "extra_files" else fn, content)
+                    for fn, content in files[key].items()
+                )
+        return file_list
+
+    @property
+    def _zip_uri(self):
+        """Build a base64 data URI for a zip of the benchmark files."""
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, mode='w',
+                             compression=zipfile.ZIP_DEFLATED) as zf:
+            for label, content in self._zip_files:
+                zf.writestr(f"{label}", content)
+        zip_b64 = base64.b64encode(buf.getvalue()).decode('ascii')
+        return f"data:application/zip;base64,{zip_b64}"
 
     def _load_existing_benchmark(self, benchmark):
         benchmark_dir = Path(benchmark)
