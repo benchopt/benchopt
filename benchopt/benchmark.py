@@ -144,6 +144,9 @@ class Benchmark:
 
         self._seed = seed
 
+    def __repr__(self):
+        return f"Benchmark(name={self.name}, url={self.url})"
+
     @property
     def safe_name(self):
         "Get a safe name for the benchmark, to use in file names."

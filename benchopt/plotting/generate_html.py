@@ -12,6 +12,7 @@ from ..results import read_results
 from ..results.parquet import get_metadata as get_parquet_metadata
 
 from benchopt.benchmark import Benchmark
+from .helpers import reset_solver_styles
 from .helpers import update_plot_data_style
 
 ROOT = Path(__file__).parent / "html"
@@ -461,6 +462,8 @@ def plot_benchmark_html_all(patterns=(), benchmark_paths=(), root=None,
                 result_files, benchmark, config=None, display=False,
                 html_home=index_filename
             )
+
+        reset_solver_styles()
 
     # Create an index that lists all benchmarks.
     rendered = render_index(benchmarks)
