@@ -1,5 +1,9 @@
+import warnings
+
+import pandas as pd
+
 from benchopt.runner import run_benchmark
-from benchopt.results import read_results
+from benchopt.results import read_results, save_results
 from benchopt.utils.temp_benchmark import temp_benchmark
 
 
@@ -43,3 +47,28 @@ def test_filename_in_parquet():
         dataset_files = df['file_dataset'].unique()
         assert set(dataset_files) == {"datasets/test_dataset.py",
                                       "datasets/simulated.py"}
+
+
+def test_save_results_suffix(tmp_path):
+    df = pd.DataFrame({"a": [1, 2], "b": [3, 4]})
+    out_path = tmp_path / "results.xyz"
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        saved = save_results(df, out_path, uniquify=False)
+
+    assert saved.suffix == ".parquet"
+    assert saved.exists()
+    assert any(
+        "Unsupported file format" in str(w.message) for w in caught
+    )
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        saved = save_results(df, out_path.with_suffix(""), uniquify=False)
+
+    assert saved.suffix == ".parquet"
+    assert saved.exists()
+    assert all(
+        "Unsupported file format" not in str(w.message) for w in caught
+    )

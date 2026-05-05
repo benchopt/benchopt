@@ -60,6 +60,9 @@ FIX
   number of points for all solvers even when one stops earlier.
   By `Thomas Moreau`_ (:gh:`904`)
 
+- When passing un-supported extension to ``--output``, benchopt now fallback
+  to parquet and raise a warning instead of an error. By `Thomas Moreau`_ (:gh:`926`)
+
 .. _changes_1_9:
 
 Version 1.9 - 15/03/2026

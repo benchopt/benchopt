@@ -1,3 +1,5 @@
+import warnings
+
 import pandas as pd
 from pathlib import Path
 
@@ -77,22 +79,20 @@ def save_results(df, path, uniquify=True):
         df["run_date"] = pd.Timestamp.now().isoformat()
 
     path = Path(path)
-    if path.suffix == "":
+    if path.suffix not in [".parquet", ".csv"]:
+        if path.suffix != "":
+            warnings.warn(
+                f"Unsupported file format: {path.suffix}. "
+                "Only .parquet and .csv files are supported. "
+                "Defaulting to parquet."
+            )
         path = path.with_suffix(".parquet")
     if uniquify:
         path = uniquify_fname(path)
     if path.suffix == '.parquet':
-        try:
-            to_parquet(df, path)
-            terminal.savefile_status(path)
-            return path
-        except Exception:
-            import warnings
-            warnings.warn(
-                f"Failed to save results in parquet format at {path}. "
-                "Falling back to csv format."
-            )
-            path = path.with_suffix('.csv')
+        to_parquet(df, path)
+        terminal.savefile_status(path)
+        return path
     if path.suffix == '.csv':
         df.to_csv(path, index=False)
         terminal.savefile_status(path)
