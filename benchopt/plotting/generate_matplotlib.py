@@ -73,7 +73,7 @@ def get_plot_scatter(plot_data):
     plt.xlabel(plot_data["xlabel"], fontsize=14)
     plt.ylabel(plot_data["ylabel"], fontsize=14)
     plt.title(plot_data["title"], fontsize=14)
-    plt.grid(plot_data.get("grid", True), which="both", ls="--", lw=0.5)
+    plt.grid(plot_data.get("grid", True), axis="both", ls="--", lw=0.5)
     plt.tight_layout()
 
     return fig
@@ -124,7 +124,7 @@ def get_plot_barchart(plot_data):
     ax.set_xlim(0, 1)
     ax.set_ylabel(plot_data["ylabel"])
     ax.set_title(plot_data["title"], fontsize=12)
-    plt.grid(plot_data.get("grid", True), which="y", ls="--", lw=0.5)
+    plt.grid(plot_data.get("grid", True), axis="y", ls="--", lw=0.5)
     fig.tight_layout()
 
     return fig
@@ -168,7 +168,7 @@ def get_plot_boxplot(plot_data):
     ax.set_xticks(range(len(all_labels)), all_labels, rotation=45)
     ax.set_title(plot_data["title"])
     ax.set_ylabel(plot_data["ylabel"])
-    plt.grid(plot_data.get("grid", True), which="y", ls="--", lw=0.5)
+    plt.grid(plot_data.get("grid", True), axis="y", ls="--", lw=0.5)
 
     # Plot unique labels in the legend
     handles, labels = ax.get_legend_handles_labels()
