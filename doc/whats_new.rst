@@ -66,6 +66,9 @@ FIX
 - When passing un-supported extension to ``--output``, benchopt now fallback
   to parquet and raise a warning instead of an error. By `Thomas Moreau`_ (:gh:`926`)
 
+- Fix ``save_last_result`` behavior when using cache results.
+  By `Thomas Moreau`_ (:gh:`931`)
+
 .. _changes_1_9:
 
 Version 1.9 - 15/03/2026
