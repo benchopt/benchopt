@@ -15,7 +15,8 @@ def _array_to_png_src(arr):
     from PIL import Image
     arr = np.asarray(arr)
     arr = np.clip(arr, 0, 1)
-    img = Image.fromarray((arr * 255).astype(np.uint8), mode='L')
+    mode = 'L' if arr.ndim == 2 else 'RGB'
+    img = Image.fromarray((arr * 255).astype(np.uint8), mode=mode)
     buf = io.BytesIO()
     img.save(buf, format='PNG')
     buf.seek(0)
@@ -32,7 +33,8 @@ def _arrays_to_gif_src(frames, fps=5):
         arr = np.asarray(f)
         arr = np.clip(arr, 0, 1)
         arr = (arr * 255).astype(np.uint8)
-        imgs.append(Image.fromarray(arr, mode='L'))
+        mode = 'L' if arr.ndim == 2 else 'RGB'
+        imgs.append(Image.fromarray(arr, mode=mode))
     buf = io.BytesIO()
     imgs[0].save(
         buf, format='GIF', save_all=True, append_images=imgs[1:],
