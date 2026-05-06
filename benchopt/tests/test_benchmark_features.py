@@ -335,6 +335,61 @@ def test_objective_save_final_results(no_debug_log):
     assert final_results == "test_value"
 
 
+@pytest.mark.parametrize("sampling_strategy", ['run_once', 'iteration'])
+def test_save_final_results_with_caching(no_debug_log, sampling_strategy):
+    """Non-regression: save_final_results must work when results are cached.
+
+    When get_result() depends on the solver state, calling solver.get_result()
+    after a cache hit (solver not re-run) raises an AttributeError. The fix
+    stores last_result directly from run_one_resolution's return value.
+    For run_once solvers, caching is disabled entirely to avoid the same issue.
+    """
+    save_final = """
+    from benchopt.utils.temp_benchmark import TempObjective
+
+    class Objective(TempObjective):
+        def save_final_results(self, beta):
+            return beta
+    """
+
+    solver_code = f"""
+    from benchopt.utils.temp_benchmark import TempSolver
+    import numpy as np
+
+    class Solver(TempSolver):
+        name = "stateful-solver"
+        sampling_strategy = '{sampling_strategy}'
+
+        def run(self, stop_val):
+            # Store state that get_result() depends on.
+            self.result = np.random.rand(10)
+
+        def get_result(self):
+            # Raises AttributeError if run() was never called in this session.
+            return dict(beta=self.result)
+    """
+
+    common_args = [
+        '-s', 'stateful-solver', '-d', 'test-dataset',
+        '-n', '5', '--no-plot'
+    ]
+
+    with temp_benchmark(objective=save_final, solvers=[solver_code]) as bench:
+        # First run fills the cache.
+        with CaptureCmdOutput():
+            run([str(bench.benchmark_dir), "-r", 2] + common_args,
+                standalone_mode=False)
+        # Second run should use cached results but still call
+        # save_final_results correctly (was broken before the fix).
+        with CaptureCmdOutput(delete_result_files=False) as out:
+            run([str(bench.benchmark_dir), "-r", 3] + common_args,
+                standalone_mode=False)
+        data = read_results(out.result_files[0])
+        final_results = data["final_results"].dropna()
+    # save_final_results must have been called and returned a non-null value.
+    assert len(final_results) >= 1
+
+
 @pytest.mark.parametrize("n_iter", [1, 2, 5])
 def test_run_once_iteration(n_iter):
 
