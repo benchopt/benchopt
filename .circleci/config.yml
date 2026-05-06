@@ -2,7 +2,7 @@ version: 2
 jobs:
   build_docs:
     docker:
-      - image: cimg/python:3.10-browsers
+      - image: cimg/base:current
     steps:
       - checkout
       - restore_cache:
@@ -76,7 +76,7 @@ jobs:
 
   deploy:
     docker:
-      - image: cimg/python:3.10-browsers
+      - image: cimg/base:current
     steps:
       - attach_workspace:
           at: /tmp/build
