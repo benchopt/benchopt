@@ -35,5 +35,6 @@ prune **/__cache__
 
 prune benchmarks
 exclude RELEASE.md
+exclude CLAUDE.md
 exclude .mailmap
 exclude .flake8

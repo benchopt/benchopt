@@ -45,3 +45,6 @@ TODOs.md
 
 # Git worktrees
 worktrees/
+
+# Agent space for temp files
+agent_space/
