@@ -85,7 +85,7 @@ def run_one_resolution(objective, solver, meta, stop_val):
     return [
         dict(**meta, stop_val=stop_val, time=delta_t, **objective_dict, **info)
         for objective_dict in objective_list
-    ]
+    ], result
 
 
 def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
@@ -136,14 +136,19 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
             solver.pre_run_hook(callback)
             callback.start()
             solver.run(callback)
-            curve, ctx.status = callback.get_results()
+            curve, ctx.status, last_result = callback.get_results()
         else:
 
             # Create a Memory object to cache the computations in the benchmark
             # folder and handle cases where we force the run.
-            run_one_resolution_cached = benchmark.cache(
-                run_one_resolution, force
-            )
+            # Skip caching if the sampling strategy is 'run_once' since there
+            # the call to this function is a single call to run_one_resolution.
+            if solver._solver_strategy != "run_once":
+                run_one_resolution_cached = benchmark.cache(
+                    run_one_resolution, force,
+                )
+            else:
+                run_one_resolution_cached = run_one_resolution
 
             # compute initial value
             call_args = dict(objective=objective, solver=solver, meta=meta)
@@ -152,7 +157,7 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
             stop_val = stopping_criterion.init_stop_val()
             while not stop:
 
-                objective_list = run_one_resolution_cached(
+                objective_list, last_result = run_one_resolution_cached(
                     stop_val=stop_val, **call_args
                 )
                 curve.extend(objective_list)
@@ -164,7 +169,7 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
 
         # Save final results if the run did not fail.
         if ctx.status not in FAILURE_STATUS:
-            to_save = objective.save_final_results(**solver.get_result())
+            to_save = objective.save_final_results(**last_result)
             if to_save is not None:
                 curve[-1]["final_results"] = to_save
     if ctx.status in FAILURE_STATUS:

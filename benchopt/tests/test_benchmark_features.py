@@ -379,6 +379,7 @@ def test_save_final_results_with_caching(no_debug_log, sampling_strategy):
         with CaptureCmdOutput():
             run([str(bench.benchmark_dir), "-r", 2] + common_args,
                 standalone_mode=False)
+
         # Second run should use cached results but still call
         # save_final_results correctly (was broken before the fix).
         with CaptureCmdOutput(delete_result_files=False) as out:
