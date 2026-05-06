@@ -2,7 +2,7 @@ version: 2
 jobs:
   build_docs:
     docker:
-      - image: cimg/python:3.12-browsers
+      - image: cimg/base:current
     steps:
       - checkout
       - restore_cache:
@@ -31,8 +31,6 @@ jobs:
             # Make sure the environment is used in subsequent steps
             echo "source ~/miniconda/etc/profile.d/conda.sh" >> $BASH_ENV
             echo "conda activate benchopt-docs" >> $BASH_ENV
-            # rpy2 loads libR.so + libicui18n.so.78 from the conda env, not system ones
-            echo 'export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH' >> $BASH_ENV
 
       - save_cache:
           key: pkgs-cache
@@ -78,7 +76,7 @@ jobs:
 
   deploy:
     docker:
-      - image: cimg/python:3.12-browsers
+      - image: cimg/base:current
     steps:
       - attach_workspace:
           at: /tmp/build
