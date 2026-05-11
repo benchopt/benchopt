@@ -41,6 +41,9 @@ API
   into the parquet result file using ``safetensors`` and safe pickler.
   By `Thomas Moreau`_ (:gh:`923`)
 
+- New metadata plot options to control the display when using the matplotlib backend.
+  By `Hippolyte Verninas`_ (:gh:`920` & :gh:`928`)
+
 DOC
 ~~~
 
@@ -62,6 +65,9 @@ FIX
   Also fix median computation for objective curve, to ensure the same
   number of points for all solvers even when one stops earlier.
   By `Thomas Moreau`_ (:gh:`904`)
+
+- Fix boxplot displays when encountering NaN values, and improved the matplotlib
+  backend to display the boxplots. By `Hippolyte Verninas`_ (:gh:`921` & :gh:`913`)
 
 - When passing un-supported extension to ``--output``, benchopt now fallback
   to parquet and raise a warning instead of an error. By `Thomas Moreau`_ (:gh:`926`)
