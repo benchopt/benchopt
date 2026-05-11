@@ -79,11 +79,12 @@ def get_plot_scatter(plot_data):
                 alpha=.3
             )
 
-    if plot_data["scale"] == "semilog-x":
+    plot_scale = plot_data.get("scale", "loglog")
+    if plot_scale == "semilog-x":
         plt.xscale("log")
-    elif plot_data["scale"] == "semilog-y":
+    elif plot_scale == "semilog-y":
         plt.yscale("log")
-    elif plot_data["scale"] == "loglog":
+    elif plot_scale == "loglog":
         plt.xscale("log")
         plt.yscale("log")
 
