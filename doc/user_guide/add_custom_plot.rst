@@ -92,14 +92,19 @@ each dictionary represents a trace in the plot. Each dictionary must contain:
 - :code:`label`: The label of the trace
 - :code:`color` (optional): The color of the trace.
 - :code:`marker` (optional): The marker style of the trace.
-- :code:`x_low`, :code:`x_high` (optional): Lists of values to display uncertainty in the plot.
+- :code:`y_low`, :code:`y_high` (optional): Lists of values to display uncertainty in the plot.
   They will be used to display shaded area around the plot.
+- :code:`x_low`, :code:`x_high` (optional): Lists of values to display uncertainty in the plot.
+  They will be used to display shaded area around the plot. You can use either y_low/y_high or
+  x_low/x_high, but not both.
 
 The metadata dictionary returned by :code:`get_metadata` should contain:
 
 - :code:`title`: The title of the plot.
 - :code:`xlabel`: The label of the x-axis.
 - :code:`ylabel`: The label of the y-axis.
+- :code:`scale` (optional, default="loglog"): The scale of the axes in the matplotlib backend,
+  can be either "linear", "semilog-x", "semilog-y" or "loglog".
 
 .. code-block:: python
 
