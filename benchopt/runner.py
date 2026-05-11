@@ -141,14 +141,13 @@ def run_one_to_cvg(benchmark, objective, solver, meta, stopping_criterion,
 
             # Create a Memory object to cache the computations in the benchmark
             # folder and handle cases where we force the run.
-            # Skip caching if the sampling strategy is 'run_once' since there
+            # TODO: Skip caching if the sampling strategy is 'run_once' since
             # the call to this function is a single call to run_one_resolution.
-            if solver._solver_strategy != "run_once":
-                run_one_resolution_cached = benchmark.cache(
-                    run_one_resolution, force,
-                )
-            else:
-                run_one_resolution_cached = run_one_resolution
+            # this needs to be done once stopping criterion does not depend on
+            # the terminal anymore.
+            run_one_resolution_cached = benchmark.cache(
+                run_one_resolution, force,
+            )
 
             # compute initial value
             call_args = dict(objective=objective, solver=solver, meta=meta)
