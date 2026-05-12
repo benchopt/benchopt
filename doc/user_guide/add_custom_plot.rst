@@ -103,6 +103,8 @@ The metadata dictionary returned by :code:`get_metadata` should contain:
 - :code:`title`: The title of the plot.
 - :code:`xlabel`: The label of the x-axis.
 - :code:`ylabel`: The label of the y-axis.
+- :code:`grid` (optional, default=True): Whether to show grid lines in the plot.
+  This only affects the matplotlib backend, not the html page.
 - :code:`scale` (optional, default="loglog"): The scale of the axes in the matplotlib backend,
   can be either "linear", "semilog-x", "semilog-y" or "loglog".
 
@@ -158,6 +160,8 @@ The metadata dictionary returned by :code:`get_metadata` should contain:
 
 - :code:`title`: The title of the plot.
 - :code:`ylabel`: The label of the y-axis.
+- :code:`grid` (optional, default=True): Whether to show grid lines on the y-axis in the plot.
+  This only affects the matplotlib backend, not the html page.
 
 .. code-block:: python
 
@@ -200,6 +204,8 @@ The metadata dictionary returned by :code:`get_metadata` should contain:
 - :code:`title`: The title of the plot.
 - :code:`xlabel`: The label of the x-axis.
 - :code:`ylabel`: The label of the y-axis.
+- :code:`grid` (optional, default=True): Whether to show grid lines on the y-axis in the plot.
+  This only affects the matplotlib backend, not the html page.
 - :code:`box_width` (optional, default=0.6): The width of the boxes, only affects
   the matplotlib backend, not the html page.
 - :code:`showfliers` (optional, default=False): Whether to show fliers in the boxplot.

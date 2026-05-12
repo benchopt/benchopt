@@ -231,8 +231,7 @@ class TestCache:
 
         class Solver(TempSolver):
             name = "failing-solver"
-            def run(self, n_iter):
-                raise ValueError('Failing solver.')
+            def run(self, _): raise ValueError('Failing solver.')
         """
 
         with temp_benchmark(solvers=[self.solver, solver_fail],
@@ -269,6 +268,25 @@ class TestCache:
         # when using multiple repetitions
         out.check_output("#RUN_SOLVER", repetition=n_reps)
         out.check_output("#RUN_2SOLVER", repetition=n_reps)
+
+    def test_caching_with_max_runs(self, no_debug_log):
+
+        solver = """from benchopt.utils.temp_benchmark import TempSolver
+
+        class Solver(TempSolver):
+            sampling_strategy = 'iteration'
+            def run(self, n_iter): print(f"#RUN:{n_iter}")
+        """
+
+        with temp_benchmark(solvers=solver, datasets=self.dataset) as bench:
+            with CaptureCmdOutput() as out:
+                for it in range(3):
+                    run(f"{bench.benchmark_dir} --no-plot -n {it}".split(),
+                        standalone_mode=False)
+
+        # error message should be displayed twice
+        for it in range(3):
+            out.check_output(f"#RUN:{it}", repetition=1)
 
     @pytest.mark.parametrize('n_reps', [1, 4])
     def test_cache_invalid(self, no_debug_log, n_reps):
