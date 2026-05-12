@@ -30,7 +30,19 @@ const NON_CONVERGENT_COLOR = 'rgba(0.8627, 0.8627, 0.8627)'
  * @param {Object} partialState
  */
 const setState = (partialState) => {
+  const plotKindChanged = (
+    "plot_kind" in partialState && partialState.plot_kind !== window._state?.plot_kind
+  );
+
   window._state = {...state(), ...partialState};
+
+  // When changing chart type, apply the default scale defined by the plot data
+  if (plotKindChanged) {
+    const plotData = getPlotData();
+    if (plotData && "scale" in plotData) {
+      window._state.scale = plotData.scale;
+    }
+  }
 
   renderSidebar();
 
