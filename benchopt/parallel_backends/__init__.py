@@ -19,6 +19,8 @@ def is_distributed_frontal():
 def parallel_run(benchmark, run, kwargs, all_runs, config, collect=False):
     config = config or {}
     backend = config.pop('backend', 'loky')
+    group_by = config.pop('group_by', None)
+    batch_n_jobs = config.pop('batch_n_jobs', 1)
     if collect:  # Collect should not run complicated parallelism
         backend = 'loky'
     assert backend in DISTRIBUTED_BACKENDS, (
@@ -26,7 +28,10 @@ def parallel_run(benchmark, run, kwargs, all_runs, config, collect=False):
     )
     if backend == 'submitit':
         from .slurm_executor import run_on_slurm
-        results = run_on_slurm(benchmark, config, run, kwargs, all_runs)
+        results = run_on_slurm(
+            benchmark, config, run, kwargs, all_runs,
+            group_by=group_by, batch_n_jobs=batch_n_jobs,
+        )
     else:
         if backend == 'dask':
             from .dask_backend import check_dask_config
@@ -89,6 +94,28 @@ def check_parallel_config(parallel_config_file, n_jobs):
     )
 
     backend = parallel_config['backend']
+    group_by = parallel_config.get('group_by')
+    batch_n_jobs = parallel_config.get('batch_n_jobs', 1)
+    if group_by is not None or 'batch_n_jobs' in parallel_config:
+        assert backend == 'submitit', (
+            "`group_by` and `batch_n_jobs` are only supported with the "
+            "submitit backend."
+        )
+    if group_by is not None:
+        assert group_by in ('dataset', 'solver', 'objective'), (
+            f"`group_by` must be 'dataset', 'solver', or 'objective'. "
+            f"Got '{group_by}'."
+        )
+    if 'batch_n_jobs' in parallel_config:
+        assert group_by is not None, (
+            "`batch_n_jobs` requires `group_by` with the submitit backend."
+        )
+    # exclude bool: True/False are ints in Python but never a valid value here
+    assert (
+        isinstance(batch_n_jobs, int) and not isinstance(batch_n_jobs, bool)
+        and batch_n_jobs >= 1
+    ), f"`batch_n_jobs` must be a positive integer. Got {batch_n_jobs}."
+
     if backend in ('dask', 'submitit'):
         print(f"Distributed run with backend: {backend}")
         set_distributed_frontal()
