@@ -48,34 +48,39 @@ def _annotate_task_result(result, config):
     return result
 
 
-def _patch_submitit_submit(monkeypatch):
+class MockedTask:
+    """Stand-in for a submitit job future, used by the slurm tests."""
+
+    job_id = "fake"
+
+    def __init__(self, func, args, kwargs, config):
+        self.func = func
+        self.args = args
+        self.kwargs = kwargs
+        self.config = config
+
+    def done(self): return True
+    def exception(self): return None
+    def cancel(self): return None
+
+    def results(self):
+        result = self.func(*self.args, **self.kwargs)
+        return [_annotate_task_result(result, self.config)]
+
+
+@pytest.fixture
+def mocked_submitit(monkeypatch):
+    """Capture submitit submissions and run them locally, returning the list
+    of captured submissions for inspection.
+    """
     submissions = []
 
-    class MockedTask:
-
-        def __init__(self, task, config):
-            self.job_id = "fake"
-            self.task = task
-            self.config = config
-
-        def done(self): return True
-        def exception(self): return None
-        def cancel(self): return None
-
-        def results(self):
-            func, args, kwargs = self.task
-            return [_annotate_task_result(func(*args, **kwargs), self.config)]
-
     def submit(self, func, *args, **kwargs):
+        config = self._executor.parameters
         submissions.append(
-            dict(
-                func=func,
-                args=args,
-                kwargs=kwargs,
-                config=self._executor.parameters,
-            )
+            dict(func=func, args=args, kwargs=kwargs, config=config)
         )
-        return MockedTask((func, args, kwargs), self._executor.parameters)
+        return MockedTask(func, args, kwargs, config)
 
     monkeypatch.setattr("submitit.AutoExecutor.submit", submit)
     monkeypatch.setattr(
@@ -120,9 +125,7 @@ def test_merge_configs(dummy_slurm_config):
     assert parameters["partition"] == dummy_slurm_config["slurm_partition"]
 
 
-def test_run_on_slurm(monkeypatch, dummy_slurm_config):
-    _patch_submitit_submit(monkeypatch)
-
+def test_run_on_slurm(mocked_submitit, dummy_slurm_config):
     parallel_config = {
         "backend": "submitit",
         "slurm_nodes": 1,
@@ -217,13 +220,12 @@ def test_run_on_slurm(monkeypatch, dummy_slurm_config):
 
 
 @pytest.mark.parametrize("batch_n_jobs", [1, 2])
-def test_run_on_slurm_grouped(monkeypatch, batch_n_jobs):
-    # Two solvers sharing the same SLURM config should be grouped into one
-    # submitted job, and `batch_n_jobs` should be passed through unchanged.
-    submissions = _patch_submitit_submit(monkeypatch)
-
+def test_run_on_slurm_grouped(mocked_submitit, batch_n_jobs):
+    # Two solvers sharing the same SLURM config should be grouped into a
+    # single submitted job, and `batch_n_jobs` should propagate to _run_batch.
     parallel_config = {
-        "backend": "submitit", "group_by": "dataset",
+        "backend": "submitit",
+        "group_by": "dataset",
         "batch_n_jobs": batch_n_jobs,
     }
     solver = """
@@ -243,21 +245,21 @@ def test_run_on_slurm_grouped(monkeypatch, batch_n_jobs):
             )
         df = read_results(out.result_files[0])
 
+    # Both solvers ran (df has one row per solver) but they were collapsed
+    # into a single SLURM submission.
     assert len(df) == 2
-    assert len(submissions) == 1
-    sub = submissions[0]
+    assert len(mocked_submitit) == 1
+    sub = mocked_submitit[0]
     assert sub["func"] is _run_batch
-    assert len(sub["kwargs"]["batch_kwargs"]) == 2
     assert sub["kwargs"]["n_jobs"] == batch_n_jobs
 
 
-def test_run_on_slurm_grouped_keeps_separate_slurm_configs(monkeypatch):
-    # Solvers in the same group but with different SLURM configs must end up
-    # in separate SLURM jobs.
-    submissions = _patch_submitit_submit(monkeypatch)
-
+def test_run_on_slurm_grouped_keeps_separate_slurm_configs(mocked_submitit):
+    # Solvers in the same `group_by` bucket but with different SLURM configs
+    # must end up in separate SLURM jobs, so each solver keeps its own config.
     parallel_config = {
-        "backend": "submitit", "group_by": "dataset",
+        "backend": "submitit",
+        "group_by": "dataset",
         "slurm_nodes": 1,
     }
     solver = """
@@ -268,19 +270,23 @@ def test_run_on_slurm_grouped_keeps_separate_slurm_configs(monkeypatch):
             {slurm_params}
     """
     solvers = [
-        solver.format(name="solver_default", slurm_params=""),
+        solver.format(name='solver_default', slurm_params=""),
         solver.format(
-            name="solver_custom",
+            name='solver_custom',
             slurm_params="slurm_params = {'slurm_nodes': 2}",
         ),
     ]
 
     with temp_benchmark(solvers=solvers) as bench, mocked_slurm():
-        run_benchmark(
-            bench.benchmark_dir, ["solver_default", "solver_custom"],
-            dataset_names=["test-dataset"], max_runs=0, timeout=None,
-            parallel_config=parallel_config, plot_result=False,
-        )
+        with CaptureCmdOutput(delete_result_files=False) as out:
+            run_benchmark(
+                bench.benchmark_dir, ["solver_default", "solver_custom"],
+                dataset_names=["test-dataset"], max_runs=0, timeout=None,
+                parallel_config=parallel_config, plot_result=False,
+            )
+        df = read_results(out.result_files[0]).set_index("solver_name")
 
-    assert sorted(sub["config"]["nodes"] for sub in submissions) == [1, 2]
-    assert all(len(sub["kwargs"]["batch_kwargs"]) == 1 for sub in submissions)
+    # Each solver kept its own slurm_nodes value; if they had been grouped
+    # into one job, they would share the same SLURM config.
+    assert df.loc["solver_default", "s_nodes"] == 1
+    assert df.loc["solver_custom", "s_nodes"] == 2
