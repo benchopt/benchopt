@@ -44,6 +44,9 @@ API
 - New metadata plot options to control the display when using the matplotlib backend.
   By `Hippolyte Verninas`_ (:gh:`920` & :gh:`928`)
 
+- Repetitions are now parallelised by default when submitting runs with a parallel backend.
+  By `Hippolyte Verninas`_ and `Thomas Moreau`_ (:gh:`860`)
+
 DOC
 ~~~
 
