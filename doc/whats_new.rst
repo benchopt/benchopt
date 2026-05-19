@@ -44,6 +44,9 @@ API
 - New metadata plot options to control the display when using the matplotlib backend.
   By `Hippolyte Verninas`_ (:gh:`920` & :gh:`928`)
 
+- Add ``Download PDF`` button in the HTML interface to download the current plot as a PDF file.
+  By `Jad Yehya`_ (:gh:`777`)
+
 DOC
 ~~~
 
