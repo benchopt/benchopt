@@ -1,6 +1,5 @@
 import time
 from datetime import datetime
-from joblib import hash
 
 from .callback import _Callback
 from .benchmark import Benchmark
