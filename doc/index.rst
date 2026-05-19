@@ -2,24 +2,77 @@
 ``Benchopt``
 =============
 
-*—Making your ML and optimization benchmarks simple and open—*
+*—A framework for reproducible, comparable benchmarks—*
 
 
-|Python 3.6+| |PyPI version| |License|
+|Python 3.10+| |PyPI version| |License|
 
-Benchopt is a benchmarking suite tailored for machine learning workflows.
-It is built for simplicity, transparency, and reproducibility.
-It is implemented in Python but can run algorithms written in many programming languages.
+Benchopt is a benchmarking suite tailored for **machine learning and optimization**.
+It makes it simple to run, publish and replicate benchmarks. The
+command line interface allows running various solvers on benchmark
+problems, providing convergence curves for iterative methods or
+performance comparisons for ML estimators.
 
-Reproducing an existing benchmark should be as easy as running
+Reproducing an existing benchmark should be as easy as running the following commands:
 
-.. prompt:: bash $
+.. tab-set::
 
-   benchopt run . --config ./example_config.yml
+   .. tab-item:: NanoGPT
 
-.. figure:: https://benchopt.github.io/_images/sphx_glr_plot_run_benchmark_001.png
-   :align: center
-   :width: 70 %
+      A benchmark comparing various optimizers on training ``NanoGPT`` models.
+
+      .. prompt:: bash $
+
+         git clone https://github.com/benchopt/benchmark_nanogpt.git
+         benchopt run benchmark_nanogpt
+
+      which will produce an interactive HTML report to visualize the results.
+
+      .. raw:: html
+
+         <iframe class="benchmark_result"
+               src="https://benchopt.github.io/results/benchmark_nanogpt_benchmark_nanogpt_benchopt_run_2025-10-31_13h48m48.html"
+            frameBorder='0' style="position: relative; width: 100%;">
+         </iframe>
+
+   .. tab-item:: Unsupervised Domain Adaptation
+
+      A benchmark comparing various methods for unsupervised domain adaptation.
+
+      .. prompt:: bash $
+
+         git clone https://github.com/scikit-adaptation/skada-bench.git
+         benchopt run skada-bench --config configs/Simulated.yml --no-plot
+
+      which will produce a parquet file with the results that can be visualized
+      using instruction on the ``README.md`` of the https://github.com/scikit-adaptation/skada-bench.
+
+   .. tab-item:: Minimal benchmark
+
+      A minimal benchmark comparing various solvers on a toy problem.
+
+      .. prompt:: bash $
+
+         benchopt run examples/minimal_benchmark
+
+      which will produce an interactive HTML report to visualize the results.
+
+      .. raw:: html
+
+         <iframe class="benchmark_result"
+               src="auto_examples/html_results/sphx_glr_run_minimal_benchmark_002.html"
+            frameBorder='0' style="position: relative; width: 100%;">
+         </iframe>
+
+
+These different tabs illustrate the diversity of benchmarks that can be built
+with benchopt, from deep learning optimization to more classical machine
+learning tasks.
+
+.. tip::
+   **Want to create a new benchmark with benchopt?** Use our templates to get started:
+   `ML benchmarks <https://github.com/benchopt/template_benchmark_ml>`_ |
+   `Optimization benchmarks <https://github.com/benchopt/template_benchmark>`_
 
 There are already many :ref:`available_benchmarks` that have been created using benchopt.
 Learn how to run them and how to construct your own with the following pages!
@@ -41,7 +94,8 @@ Learn how to run them and how to construct your own with the following pages!
 
         :octicon:`tools` **Benchmark workflow**
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-        Write a benchmark from scratch, run it, visualize it, and publish it
+        Write an ML or optimization benchmark from scratch,
+        run it, visualize it, and publish it
 
     .. grid-item-card::
         :link: tutorials
@@ -59,6 +113,7 @@ Learn how to run them and how to construct your own with the following pages!
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         Full documentation of benchopt API and CLI
 
+.. _faq:
 
 .. Frequently Asked Questions (FAQ) subsection
 .. include:: faq.rst
@@ -96,8 +151,8 @@ Join this endeavor! If you use benchopt in a scientific publication, please cite
    }
 
 
-.. |Python 3.6+| image:: https://img.shields.io/badge/python-3.6%2B-blue
-   :target: https://www.python.org/downloads/release/python-360/
+.. |Python 3.10+| image:: https://img.shields.io/badge/python-3.10%2B-blue
+   :target: https://www.python.org/downloads/release/python-3100/
 .. |License| image:: https://img.shields.io/badge/License-BSD_3--Clause-blue.svg
    :target: https://github.com/benchopt/benchopt/blob/main/LICENSE
 .. |PyPI version| image:: https://badge.fury.io/py/benchopt.svg
@@ -116,6 +171,7 @@ Join this endeavor! If you use benchopt in a scientific publication, please cite
    benchmark_workflow/index
    tutorials/index
    user_guide/index
+   auto_examples/index
 
    available_benchmarks
    contrib

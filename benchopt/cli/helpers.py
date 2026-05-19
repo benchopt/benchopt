@@ -10,8 +10,8 @@ from collections.abc import Iterable
 from benchopt.config import set_setting
 from benchopt.config import get_setting
 from benchopt.benchmark import Benchmark
-from benchopt.utils.files import rm_folder
 from benchopt.utils.sys_info import get_sys_info
+from benchopt.results.files_utils import rm_folder
 from benchopt.cli.completion import complete_benchmarks
 from benchopt.cli.completion import complete_conda_envs
 from benchopt.cli.completion import complete_datasets
@@ -368,7 +368,7 @@ def sys_info():
 
 @helpers.group(
     help="Configuration helper for benchopt. The configuration of benchopt "
-    "is detailed in :ref:`config_doc`.",
+    "is detailed in :ref:`config_benchopt`.",
     invoke_without_command=True
 )
 @click.option('--benchmark', '-b', metavar='<benchmark>',
@@ -463,7 +463,7 @@ def check_install(benchmark, module_filename, base_class_name):
 
     # Get class to check
     klass = _load_class_from_module(
-        module_filename, base_class_name, benchmark.benchmark_dir
+         benchmark.benchmark_dir, module_filename, base_class_name
     )
     klass.is_installed(raise_on_not_installed=True)
 

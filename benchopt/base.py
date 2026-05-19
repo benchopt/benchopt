@@ -1,18 +1,18 @@
 from abc import ABC, abstractmethod
+from traceback import print_exc
 
 from .callback import _Callback
 from .stopping_criterion import SingleRunCriterion
 from .stopping_criterion import SufficientProgressCriterion
 
-from .utils.safe_import import set_benchmark_module
-from .utils.dynamic_modules import get_file_hash
-from .utils.dynamic_modules import _reconstruct_class
 from .utils.misc import NamedTemporaryFile
+from .utils.class_property import classproperty
 from .utils.dependencies_mixin import DependenciesMixin
 from .utils.parametrized_name_mixin import ParametrizedNameMixin
+from .utils.seed_mixin import SeedMixin
 
 
-class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
+class BaseSolver(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
     """A base class for solver wrappers in Benchopt.
 
     Solvers that derive from this class should implement three methods:
@@ -24,7 +24,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
       in a file for command line solvers to reduce the impact of dumping the
       data to the disk in the benchmark.
 
-    - ``run(self, n_iter/tolerance)``: performs the computation for the
+    - ``run(self, n_iter/tolerance/cb)``: performs the computation for the
       previously given objective function, after a call to ``set_objective``.
       This method is the one timed in the benchmark and should not perform any
       operation unrelated to the optimization procedure.
@@ -32,40 +32,98 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
     - ``get_result(self)``: returns all parameters of interest, as a dict.
       The output is passed to ``Objective.evaluate_result``.
 
-    Note that four ``sampling_strategy`` can be used to construct the benchmark
-    curve:
+    Optionaly, the ``Solver`` can implement the following methods to change its
+    behavior:
 
-    - ``'iteration'``: call the run method with max_iter number increasing
-      logarithmically to get more an more precise points.
-    - ``'tolerance'``: call the run method with tolerance decreasing
-      logarithmically to get more and more precise points.
-    - ``'callback'``: a callable that should be called after each iteration or
-      epoch. This callable periodically calls the objective's `compute`
-      and returns False when the solver should stop.
-    - ``'run_once'``: call the run method once to get a single point. This is
-      typically used for ML benchmarks.
+    - ``skip(self, **objective_parameters)``: decide if the solver is
+      compatible with the given objective. Its inputs are the same as
+      ``set_objective``, and it should return a tuple ``(skip, reason)`` where
+      ``skip`` is a boolean indicating whether the solver should be skipped for
+      this configuration, and ``reason`` is a string used to explain why in the
+      CLI output. If ``skip`` is False, ``reason`` should be None.
+
+    - ``get_next(stop_val)``: Return the next iteration where the result will
+      be evaluated. This is only necessary when `sampling_strategy` is set to
+      'iteration' or 'tolerance' and the default logarithmic spacing is not
+      desired.
+
+    - ``warm_up()``: User specified warm up step, called once before the runs.
+      The time it takes to run this function is not taken into account. The
+      function ``Solver.run_once`` can be used here for solvers that require
+      jit compilation.
+
+    - ``pre_run_hook(stop_val)``: Hook to run pre-run operations, that are not
+      timed in the benchmark. This is mostly necessary to cache stop_val
+      dependent computations, for instance in ``jax`` with different number of
+      iterations in a for loop.
+
+    The ``Solver`` class also defines class attributes to specify how the
+    benchmark curve should be sampled:
+
+    - ``sampling_strategy``: defines how the benchmark curve should be sampled.
+      It should be one of the following strings: 'iteration', 'tolerance',
+      'callback' or 'run_once':
+
+        - ``'iteration'``: call the run method with max_iter number increasing
+          logarithmically to get more an more precise points.
+        - ``'tolerance'``: call the run method with tolerance decreasing
+          logarithmically to get more and more precise points.
+        - ``'callback'``: a callable that should be called after each iteration
+          or epoch. This callable periodically runs
+          ``Objective.evaluate_result`` and returns False when the solver
+          should stop.
+        - ``'run_once'``: call the run method once to get a single point. This
+          is typically used for ML benchmarks.
+
+    - ``stopping_criterion``: an instance of ``StoppingCriterion`` that defines
+      when the solver should stop. If not set, a default stopping criterion is
+      used depending on the ``sampling_strategy``.
+      See :ref:`stopping_criterion` for available options.
+
+    Note that default values for these attributes can be set at the
+    ``Objective`` level so that all solvers in a benchmark share the same
+    default behavior. Typically, for ML benchmarks, all solvers can be run only
+    once by setting ``sampling_strategy = 'run_once'`` in the benchmark's
+    ``Objective``. More details on how the curves are sampled can be found in
+    the :ref:`iterative_solvers` user guide.
     """
 
     _base_class_name = 'Solver'
     sampling_strategy = None
 
-    @property
-    def _stopping_criterion(self):
-        if hasattr(self, 'stopping_criterion'):
-            return self.stopping_criterion
-        if self.sampling_strategy == 'run_once':
+    @classproperty
+    def _stopping_criterion(cls):
+        if hasattr(cls, 'stopping_criterion'):
+            return cls.stopping_criterion
+        if cls.sampling_strategy == 'run_once':
             return SingleRunCriterion()
-        return SufficientProgressCriterion(strategy=self.sampling_strategy)
+        return SufficientProgressCriterion(strategy=cls.sampling_strategy)
 
-    @property
-    def _solver_strategy(self):
-        """Change stop_strategy and stopping_strategy to sampling_strategy."""
+    @classproperty
+    def _solver_strategy(cls):
+        """Get the effective solver strategy."""
         return (
-            self._stopping_criterion.strategy or self.sampling_strategy
+            cls._stopping_criterion.strategy or cls.sampling_strategy
             or 'iteration'
         )
 
-    def _set_objective(self, objective, output=None):
+    @classmethod
+    def _inherit_stopping_criterion(cls, objective):
+        """Inherit the stopping criterion from an objective if needed."""
+        # If not set, inherit sampling_strategy and stopping_criterion from
+        # objective so defaults can be specified at the benchmark level.
+        #
+        # Set the class attribute so that it can easily be checked in the
+        # benchmark tests, even when the solver is not importable.
+        if cls.sampling_strategy is None:
+            cls.sampling_strategy = objective.sampling_strategy
+        if (
+            not hasattr(cls, 'stopping_criterion') and
+            hasattr(objective, 'stopping_criterion')
+        ):
+            cls.stopping_criterion = objective.stopping_criterion
+
+    def _set_objective(self, objective):
         """Store the objective for hashing/pickling and check its compatibility
 
         Parameters
@@ -82,7 +140,10 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
             If skip is False, the reason should be None.
         """
         self._objective = objective
-        self._output = output
+
+        # If not set, inherit sampling_strategy and stopping_criterion from
+        # objective so defaults can be specified at the benchmark level.
+        self._inherit_stopping_criterion(objective)
 
         objective_dict = objective.get_objective()
         assert objective_dict is not None, (
@@ -92,13 +153,10 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
 
         # Check if the objective is compatible with the solver
         skip, reason = self.skip(**objective_dict)
-        if skip:
-            if self._output:
-                self._output.skip(reason)
-            return True
+        if not skip:
+            self.set_objective(**objective_dict)
 
-        self.set_objective(**objective_dict)
-        return False
+        return skip, reason
 
     @abstractmethod
     def set_objective(self, **objective_dict):
@@ -206,16 +264,13 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
             the solver on an easy to solve problem.
         """
 
-        if hasattr(self, '_output') and self._output is not None:
-            self._output.progress('caching warmup times.')
-
         if self._solver_strategy == "callback":
             stopping_criterion = (
                 SingleRunCriterion(stop_val=stop_val)
                 .get_runner_instance(solver=self)
             )
             run_once_cb = _Callback(
-                lambda x: {'objective_value': 1},
+                lambda x: [{'objective_value': 1}],
                 solver=self,
                 meta={},
                 stopping_criterion=stopping_criterion
@@ -243,26 +298,14 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, ABC):
         self.warm_up()
         self._warmup_done = True
 
-    @staticmethod
-    def _reconstruct(module_filename, parameters, objective, output,
-                     pickled_module_hash=None, benchmark_dir=None):
-        set_benchmark_module(benchmark_dir)
-        Solver = _reconstruct_class(
-            module_filename, 'Solver', benchmark_dir, pickled_module_hash,
-        )
-        obj = Solver.get_instance(**parameters)
-        if objective is not None:
-            obj._set_objective(objective, output=output)
-        return obj
+    def _get_state(self):
+        """Return the state of the objective for pickling."""
+        return dict(objective=getattr(self, '_objective', None))
 
-    def __reduce__(self):
-        module_hash = get_file_hash(self._module_filename)
-        objective = getattr(self, '_objective', None)
-        output = getattr(self, '_output', None)
-        return self._reconstruct, (
-            self._module_filename, self._parameters, objective, output,
-            module_hash, str(self._import_ctx._benchmark_dir)
-        )
+    def __setstate__(self, state):
+        objective = state['objective']
+        if objective is not None:
+            self._set_objective(objective)
 
 
 class CommandLineSolver(BaseSolver, ABC):
@@ -281,7 +324,7 @@ class CommandLineSolver(BaseSolver, ABC):
         super().__init__(**parameters)
 
 
-class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
+class BaseDataset(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
     """Base class to define a dataset in a benchmark.
 
     Datasets that derive from this class should implement one method:
@@ -289,9 +332,45 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
     - ``get_data()``: retrieves/simulates the data contained in this data set
       and returns a dictionary containing the data. This dictionary is passed
       as arguments of the objective's method ``set_data``.
+
+    Optionally, datasets can implement:
+
+    - ``prepare()``: performs expensive one-time preparation (downloads,
+      extraction, preprocessing) that is cached and separated from loading.
+
+    Class attributes
+    ----------------
+    prepare_cache_ignore : tuple of str or "all"
+        Parameter names that do not affect the output of ``prepare()``.
+        These are excluded from the prepare cache key and from job
+        deduplication when running preparation in parallel.
+        Use the special value ``"all"`` to ignore every parameter (i.e.
+        preparation runs at most once per dataset class regardless of
+        parameterization).
     """
 
     _base_class_name = 'Dataset'
+
+    prepare_cache_ignore = ()
+
+    def prepare(self):
+        """Prepare the dataset for use (optional).
+
+        This method is called before benchmark runs to perform expensive
+        one-time operations such as downloading data, extracting archives,
+        or pre-processing. It is cached so that repeated calls with the
+        same parameters are no-ops.
+
+        Notes
+        -----
+        - Defaults to a no-op; datasets without a custom ``prepare()`` fall
+          back to calling ``get_data()`` for backward compatibility.
+        - Should be idempotent: calling it multiple times must be safe.
+        - Parameters listed in ``prepare_cache_ignore`` do not affect the
+          cache key. Use ``prepare_cache_ignore = "all"`` to ignore every
+          parameter.
+        """
+        pass
 
     @abstractmethod
     def get_data(self):
@@ -307,79 +386,110 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, ABC):
 
     def _get_data(self):
         "Wrapper to make sure the returned results are correctly formated."
-
-        # Automatically cache the _data to avoid reloading it.s
+        # Automatically cache the _data to avoid reloading it.
         if not hasattr(self, '_data') or self._data is None:
+            self._data = self.get_data()
+        # We compare to the last seed (computed with the most restrictive
+        # parameters) to check if the data should be recomputed.
+        elif (
+            self._used_seed is not None and
+            self._used_seed != self._get_seed(**self._seed_params)
+        ):
             self._data = self.get_data()
 
         return self._data
 
-    # Reduce the pickling and hashing burden by only pickling class parameters.
     @staticmethod
-    def _reconstruct(module_filename, pickled_module_hash, parameters,
-                     benchmark_dir):
-        set_benchmark_module(benchmark_dir)
-        Dataset = _reconstruct_class(
-            module_filename, 'Dataset', benchmark_dir, pickled_module_hash,
-        )
-        obj = Dataset.get_instance(**parameters)
-        return obj
-
-    def __reduce__(self):
-        module_hash = get_file_hash(self._module_filename)
-        return self._reconstruct, (
-            self._module_filename, module_hash, self._parameters,
-            str(self._import_ctx._benchmark_dir)
-        )
+    def _prepare(dataset):
+        """Preparation function, to map to prepare or get_data."""
+        if type(dataset).prepare is not BaseDataset.prepare:
+            dataset.prepare()
+        else:
+            # Backward-compat: fall back to get_data() when prepare() is not
+            # overridden, preserving the old --download behaviour.
+            dataset.get_data()
 
 
-class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
+def _prepare_one(benchmark, dataset, force=False):
+    """Prepare one dataset instance; used as the unit of work in parallel_run.
+
+    Analogous to ``run_one_solver`` in ``runner.py``.
+
+    Returns a ``(dataset_name, error)`` tuple where *error* is ``None`` on
+    success or the caught exception on failure.
+    """
+    exc = None
+    cached_prepare = benchmark.cache(BaseDataset._prepare, force=force)
+    print(f"Preparing {dataset} ...", end=' ', flush=True)
+    try:
+        cached_prepare(dataset=dataset)
+        print("done")
+    except Exception as e:
+        print("FAILED")
+        print_exc()
+        exc = e
+    finally:
+        print(end='', flush=True)
+        return (str(dataset), exc)
+
+
+class BaseObjective(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
     """Base class to define an objective function
 
     Objectives that derive from this class needs to implement four methods:
 
-    - `set_data(**data)`: stores the info from a given dataset to be able to
+    - ``set_data(**data)``: stores the info from a given dataset to be able to
       compute the objective value on these data.
 
-    - `get_objective()`: exports the data from the dataset and the parameters
+    - ``get_objective()``: exports the data from the dataset and the parameters
       from the objective function as a dictionary that will be passed as
       parameters of the solver's `set_objective` method in order to specify the
       objective function of the benchmark.
 
-    - `evaluate_result(**result)`: evaluate the metrics on the results of a
+    - ``evaluate_result(**result)``: evaluate the metrics on the results of a
       solver. Its arguments should correspond to the key of the dictionary
-      returned by `Solver.get_result` and it can return a scalar value or
-      a dictionary.
+      returned by `Solver.get_result` and it can return a scalar value,
+      a dictionary or a list of dictionaries.
       If it returns a dictionary, it should at least contain a key
       `value` associated to a scalar value which will be used to
       detect convergence. With a dictionary, multiple metric values can be
-      stored at once instead of running each separately.
+      stored at once instead of running each separately. With a list of
+      dictionaries, these metrics can be computed on different objects.
 
-    - `get_one_result()`: return one result for which the objective can be
+    - ``get_one_result()``: return one result for which the objective can be
       evaluated. This should be a dictionary where the keys correspond to the
       keyword arguments of `evaluate_result`.
 
-    Optionally, the `Solver` can implement the following methods to change its
-    behavior:
+    Optionally, the `Objective` can implement the following methods to change
+    its behavior:
 
-    - `save_final_results(**result)`: Return the data to be saved from the
+    - ``save_final_results(**result)``: Return the data to be saved from the
        results of the solver. It will be saved as a `.pkl` file in the
        `output/results` folder, and link to the benchmark results.
-
-    - `get_next(stop_val)`: Return the next iteration where the result will be
-      evaluated.
 
     This class is also used to specify information about the benchmark.
     In particular, it should have the following class attributes:
 
-    - `name`: a name for the benchmark, that will be used to display results.
-    - `url`: the url of the original benchmark repository.
-    - `requirements`: the minimal requirements to be able to run the benchmark.
-    - `min_benchopt_version`: the minimal version of benchopt required to run
+    - ``name``: a name for the benchmark, that will be used to display results.
+    - ``url``: the url of the original benchmark repository.
+    - ``requirements``: the minimal requirements to be able to run the
+       benchmark.
+    - ``min_benchopt_version``: the minimal version of benchopt required to run
       this benchmark.
+
+    Some extra configurations can be set through optional class attributes:
+
+    - ``test_dataset_name``: the name of the dataset to use for testing.
+    - ``stopping_criterion``: the default stopping criterion to use for
+      this benchmark.
+    - ``sampling_strategy``: the default sampling strategy to use for this
+      benchmark.
     """
 
     _base_class_name = 'Objective'
+    test_dataset_name = 'simulated'
+
+    sampling_strategy = None
 
     @abstractmethod
     def set_data(self, **data):
@@ -420,7 +530,7 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
 
         Returns
         -------
-        objective_value : float or dict {'name': float}
+        objective_value : float or dict {str: float} or list of dict
             The value(s) of the objective function. If a dictionary is
             returned, it should at least contain a key `value` associated to a
             scalar value which will be used to detect convergence. With a
@@ -443,6 +553,38 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
         """
         pass
 
+    def format_objective_dict(self, objective_dict):
+        """Format the output of Objective.evaluate_results.
+
+        This will prefix all keys in the dictionary with `objective_`
+        to make the objective part of the results clear.
+
+        Parameters
+        ----------
+        objective_dict: dict
+            The output of the objective function, which should be a dictionary
+            not containing the key 'name'.
+
+        Returns
+        -------
+        objective_dict : dict
+            The formatted objective to include in the DataFrame.
+        """
+
+        if not isinstance(objective_dict, dict):
+            raise ValueError(
+                "The output of Objective.evaluate_result should be either a "
+                "single dictionary or a list of dictionaries. Note that these "
+                "dictionaries cannot contain a key 'name'"
+            )
+        elif 'name' in objective_dict:
+            raise ValueError(
+                "objective output cannot contain 'name' key"
+            )
+        return {
+            f'objective_{k}': v for k, v in objective_dict.items()
+        }
+
     def __call__(self, result):
         """Used to call the evaluation of the objective.
 
@@ -456,28 +598,26 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
 
             )
 
-        objective_dict = self.evaluate_result(**result)
+        objective_output = self.evaluate_result(**result)
 
-        if not isinstance(objective_dict, dict):
-            objective_dict = {'value': objective_dict}
+        if not isinstance(objective_output, (dict, list)):
+            objective_list = [{'value': objective_output}]
+        elif isinstance(objective_output, dict):
+            objective_list = [objective_output]
+        else:
+            objective_list = objective_output
 
-        if 'name' in objective_dict:
-            raise ValueError(
-                "objective output cannot be called 'name'."
-            )
+        objective_list = [
+            self.format_objective_dict(d) for d in objective_list
+        ]
 
-        # To make the objective part clear in the results, we prefix all
-        # keys with `objective_`.
-        objective_dict = {
-            f'objective_{k}': v for k, v in objective_dict.items()
-        }
-
-        return objective_dict
+        return objective_list
 
     # Save the dataset object used to get the objective data so we can avoid
     # hashing the data directly.
     def set_dataset(self, dataset):
         self._dataset = dataset
+        assert self.is_installed(raise_on_not_installed=True)
         data = dataset._get_data()
 
         # Check if the dataset is compatible with the objective
@@ -542,26 +682,14 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, ABC):
         self.get_objective()
         return self.get_one_result()
 
-    # Reduce the pickling and hashing burden by only pickling class parameters.
-    @staticmethod
-    def _reconstruct(module_filename, pickled_module_hash, parameters,
-                     dataset, benchmark_dir):
-        set_benchmark_module(benchmark_dir)
-        Objective = _reconstruct_class(
-            module_filename, 'Objective', benchmark_dir, pickled_module_hash,
-        )
-        obj = Objective.get_instance(**parameters)
-        if dataset is not None:
-            obj.set_dataset(dataset)
-        return obj
+    def _get_state(self):
+        """Return the state of the objective for pickling."""
+        return dict(dataset=getattr(self, '_dataset', None))
 
-    def __reduce__(self):
-        module_hash = get_file_hash(self._module_filename)
-        dataset = getattr(self, '_dataset', None)
-        return self._reconstruct, (
-            self._module_filename, module_hash, self._parameters, dataset,
-            str(self._import_ctx._benchmark_dir)
-        )
+    def __setstate__(self, state):
+        dataset = state['dataset']
+        if dataset is not None:
+            self.set_dataset(dataset)
 
     def _default_split(self, cv_fold, *arrays):
         train_index, test_index = cv_fold

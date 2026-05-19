@@ -19,9 +19,6 @@ ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 # the i18n builder cannot share the environment and doctrees with the others
 I18NSPHINXOPTS  = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 
-BENCH_LOGREG_PATH = ../benchmarks/benchmark_logreg_l2
-BENCH_LASSO_PATH = ../benchmarks/benchmark_lasso
-
 .PHONY: help
 help:
 	@echo "Please use \`make <target>' where <target> is one of"
@@ -48,25 +45,13 @@ clean:
 	rm -rf generated/*
 	rm -rf modules/*
 
-sync_git:
-	if [ ! -d   $(BENCH_LOGREG_PATH) ] ; then \
-	    git clone https://github.com/benchopt/benchmark_logreg_l2 $(BENCH_LOGREG_PATH) ; \
-	else \
-	    (cd $(BENCH_LOGREG_PATH); git pull) \
-	fi
-	if [ ! -d   $(BENCH_LASSO_PATH) ] ; then \
-	    git clone https://github.com/benchopt/benchmark_lasso $(BENCH_LASSO_PATH) ; \
-	else \
-	    (cd $(BENCH_LASSO_PATH); git pull) \
-	fi
-
 html-noplot:
 	$(SPHINXBUILD) -D plot_gallery=0 -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
 
 .PHONY: html
-html: sync_git
+html: 
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
@@ -145,23 +130,3 @@ coverage:
 	$(SPHINXBUILD) -b coverage $(ALLSPHINXOPTS) $(BUILDDIR)/coverage
 	@echo "Testing of coverage in the sources finished, look at the " \
 		  "results in $(BUILDDIR)/coverage/python.txt."
-
-.PHONY: install
-install:
-	rm -rf _build/doctrees _build/benchopt.github.io
-	# first clone the benchopt/benchopt.github.io repo because it may ask
-	# for password and we don't want to delay this long build in
-	# the middle of it
-	# --no-checkout just fetches the root folder without content
-	# --depth 1 is a speed optimization since we don't need the
-	# history prior to the last commit
-	git clone --no-checkout --depth 1 https://github.com/benchopt/benchopt.github.io.git _build/benchopt.github.io
-	touch _build/benchopt.github.io/.nojekyll
-	make html
-	cd _build/ && \
-	cp -r html/* benchopt.github.io && \
-	cd benchopt.github.io && \
-	git add * && \
-	git add .nojekyll && \
-	git commit -a -m 'Make install' && \
-	git push

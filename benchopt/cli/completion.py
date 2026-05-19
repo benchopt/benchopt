@@ -2,7 +2,7 @@ from pathlib import Path
 
 
 from benchopt.benchmark import Benchmark
-from benchopt.utils.safe_import import skip_import
+from benchopt.utils.dynamic_modules import skip_import
 from benchopt.utils.conda_env_cmd import list_conda_envs
 
 
@@ -72,6 +72,16 @@ def complete_datasets(ctx, param, incomplete):
         return []
     datasets = [d.lower() for d in benchmark.get_dataset_names()]
     return propose_from_list(datasets, incomplete.lower())
+
+
+def complete_plots(ctx, param, incomplete):
+    "Auto-completion for plots."
+    skip_import()
+    benchmark = find_benchmark_in_args(ctx.args)
+    if benchmark is None:
+        return []
+    plots = [p.lower() for p in benchmark.get_plot_names()]
+    return propose_from_list(plots, incomplete.lower())
 
 
 def complete_output_files(ctx, param, incomplete):
