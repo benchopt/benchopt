@@ -199,7 +199,7 @@ def test_objective_cv_splitter(no_debug_log):
         class Splitter():
             def split(self, X, y, groups=None):
                 for i in range(len(np.unique(groups))):
-                    print(f"RUN#{i}", flush=True)
+                    print(f"RUN#{i}")
                     mask = groups == i
                     yield mask, ~mask
 
@@ -228,7 +228,7 @@ def test_objective_cv_splitter(no_debug_log):
         name = "test-solver"
         sampling_strategy = 'run_once'
         def set_objective(self, X_train, y_train): pass
-        def run(self, n_iter): print("OK", flush=True)
+        def run(self, n_iter): print("OK")
     """
 
     dataset = """from benchopt import BaseDataset

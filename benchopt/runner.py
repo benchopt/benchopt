@@ -181,6 +181,9 @@ def run_one_to_cvg(benchmark, objective, solver, meta, timeout, max_runs,
     if ctx.status in FAILURE_STATUS:
         raise FailedRun(ctx.status)
 
+    # Make sure to flush so the parallel output is properly display
+    print(end='', flush=True)
+
     return curve, run_key, ctx.status, ""
 
 
