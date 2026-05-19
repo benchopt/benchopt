@@ -10,7 +10,7 @@ There are two configuration levels. The first level is the global config for the
 
 To get the BenchOpt global config file used by the benchopt command, you can run ``benchopt config``. Using the option ``--benchmark,-b <benchmark>`` allows to display the config file for a specific benchmark. See :ref:`config_file` for more details on how the config file path is resolved.
 
-The structure of the files follows the Yaml files structure and is described in :ref:`config_structure`. The available settings are listed in :ref:`config_settings`.
+The structure of the files follows the Yaml files structure and is described in :ref:`config_structure`. The available settings are listed in :ref:`benchopt_config_settings` for global settings and :ref:`benchmark_config_settings` for benchmark-specific settings.
 
 The value of each setting can be accessed with the CLI using ``benchopt config [-b <benchmark>] get <name>``. Similarly, the setting value can be set using ``benchopt config [-b <benchmark>] set <name> <value>``.
 
@@ -56,30 +56,51 @@ For benchmark settings, they are grouped in a section with the same name as the 
 Note that specific benchmark config can also be set into the config file of the benchmark, located in the benchmark folder. The global config file is used as a fallback if the benchmark config file does not exist.
 
 
-.. _config_settings:
+.. _benchopt_config_settings:
 
-Config Settings
----------------
+Benchopt config settings
+------------------------
 
-This section lists the available settings.
-
-
-**Global settings**
+This section lists the available global settings for a benchopt.
 
 .. autodata:: benchopt.config.DEFAULT_GLOBAL_CONFIG
-
-
-
-**Benchmark settings**
-
-.. autodata:: benchopt.config.DEFAULT_BENCHMARK_CONFIG
-
 
 .. _config_mamba:
 
 Using ``mamba`` to install packages
------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 When many packages need to be installed, ``conda`` can be slow or even fail to resolve the dependency graph. Using ``mamba`` can speed up this process and make it more reliable.
 
 To use ``mamba`` instead of ``conda`` when installing benchmark requirements, it is necessary to have ``mamba`` installed in the ``base`` conda environment, *e.g.* using ``conda install -n base mamba``. Then, benchopt can be configured to use this command instead of ``conda`` by either configuring the CLI using ``benchopt config set conda_cmd mamba`` or setting the environment variable ``BENCHOPT_CONDA_CMD=mamba``.
+
+
+Benchmark config settings
+-------------------------
+
+This section lists the available settings for a benchmark configuration.
+
+.. autodata:: benchopt.config.DEFAULT_BENCHMARK_CONFIG
+
+
+.. _data_paths:
+
+Customising data file paths
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If a benchmark exposes configurable data paths, you can set them in the
+benchmark config file using the ``data_home`` and ``data_paths`` keys.
+``data_home`` sets a base directory; each entry in ``data_paths`` is
+resolved relative to it (default: the benchmark directory).
+
+.. code-block:: yaml
+
+    data_home: /path/to/data_home/folder
+    data_paths:
+        the_key: /path/to/the/file.ext
+
+With this config, the benchmark will retrieve the file located at
+``/path/to/data_home/folder/path/to/the/file.ext``.
+
+To know which keys a benchmark exposes, refer to its documentation.
+See :ref:`dataset_data_paths` for how benchmark makers expose these paths.

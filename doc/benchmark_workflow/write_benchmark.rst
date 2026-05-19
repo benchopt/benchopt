@@ -164,3 +164,79 @@ during the benchmark. By default, BenchOpt provides some standard plots such as
 the objective curve, box plots and bar plots. However, users can create their own plots
 by defining a class that inherits from :class:`benchopt.BasePlot`. More information
 about creating custom plots can be found in the :ref:`add_custom_plot` guide.
+
+
+Optional methods
+================
+
+The following methods are not required but can be defined to extend the
+default behaviour of each component.
+
+.. _dataset_optional_methods:
+
+Dataset
+-------
+
+.. _dataset_prepare:
+
+Data preparation: ``prepare()`` and ``prepare_cache_ignore``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For datasets that require heavy one-time work (downloading archives,
+extracting files, pre-processing, …), define a ``prepare()`` method.
+Benchopt caches its result with `joblib` so it is called at most once per
+unique parameter combination — ``get_data()`` then handles fast per-run
+loading from the prepared artefacts.
+
+When a parameter does not affect preparation (e.g. a random seed), list it
+in ``prepare_cache_ignore`` to avoid redundant work:
+
+.. code-block:: python
+
+    class Dataset(BaseDataset):
+        name = 'my-dataset'
+        parameters = {'n_samples': [100, 1000], 'seed': [0, 1, 2]}
+        prepare_cache_ignore = ('seed',)  # 2 prepare() calls instead of 6
+
+        def prepare(self):
+            # download / extract / pre-process once per n_samples value
+            ...
+
+        def get_data(self):
+            # fast loading from prepared artefacts
+            ...
+
+Preparation is triggered via ``benchopt prepare``; see
+:ref:`prepare_datasets` for the CLI details, including how to run preparation
+in parallel with ``-j`` or ``--parallel-config`` (same interface as
+:ref:`benchopt run <parallel_run>`).  For a worked example
+showing the caching behaviour and ``prepare_cache_ignore``, see
+:ref:`sphx_glr_auto_examples_run_benchopt_prepare.py`.
+
+.. _dataset_data_paths:
+
+Customisable data paths: ``config.get_data_path()``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can let benchmark users point to their own copies of data files by
+calling :func:`benchopt.config.get_data_path` inside ``get_data()``:
+
+.. code-block:: python
+
+    from benchopt import config
+
+    class Dataset(BaseDataset):
+
+        def get_data(self):
+            path = config.get_data_path(key="the_key_name")
+            ...
+
+The user then sets the path in their benchmark config file:
+
+.. code-block:: yaml
+
+    data_paths:
+        the_key_name: path/to/file.ext
+
+The variable ``path`` will contain ``{benchmark_dir}/path/to/file.ext``.
+See :ref:`data_paths` for the user-facing configuration details.

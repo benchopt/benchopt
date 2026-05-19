@@ -314,9 +314,9 @@ class StoppingCriterion():
         if self.terminal is not None:
             self.terminal.progress(progress, self.run_key)
 
-    @staticmethod
-    def _reconstruct(klass, kwargs, runner_kwargs):
-        criterion = klass(**kwargs)
+    @classmethod
+    def _reconstruct(cls, kwargs, runner_kwargs):
+        criterion = cls(**kwargs)
         if runner_kwargs:
             return criterion.get_runner_instance(**runner_kwargs)
         return criterion

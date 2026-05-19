@@ -10,11 +10,39 @@ What's new
 In development
 --------------
 
+CLI
+~~~
+
+- Add ``benchopt prepare`` command to prepare the benchmark's dataset
+  before launching them. Also deprecate the ``--download`` option in
+  ``benchopt install``, replaced by ``--prepare``. By `Thomas Moreau`_ (:gh:`912`)
+
 API
 ~~~
 
 - Add validation step on config options, to avoid silent failure when
   setting the wrong option. By `Thomas Moreau`_ (:gh:`910`)
+
+- Add ``prepare`` method to ``Dataset`` to allow specifying preparation steps
+  for a dataset. This method is cached, and some parameters of the class can
+  be ignored for caching by specifying them in ``prepare_cache_ignore``.
+  By `Thomas Moreau`_ (:gh:`912`)
+
+- Add an API function for merging benchmark result files, similar to
+  the ``benchopt merge`` command. By `Damien Lesens`_ (:gh:`916`)
+
+- Add ``'image'`` plot type to display images and per-iteration frame
+  animations (as animated GIFs) in the HTML result page. Return a list of
+  dicts with ``"image"`` (a NumPy array or a list of arrays) and an optional
+  ``"label"`` key from :meth:`BasePlot.plot`.
+  By `Thomas Moreau`_ (:gh:`923`)
+
+- Non-primitive objective values (NumPy arrays, etc.) can now be serialized
+  into the parquet result file using ``safetensors`` and safe pickler.
+  By `Thomas Moreau`_ (:gh:`923`)
+
+- New metadata plot options to control the display when using the matplotlib backend.
+  By `Hippolyte Verninas`_ (:gh:`920` & :gh:`928`)
 
 DOC
 ~~~
@@ -27,6 +55,9 @@ DOC
 - Add a gallery of examples for ``benchopt``, with easy to explore
   benchmark definition. By `Thomas Moreau`_ (:gh:`905`)
 
+- Make it possible to download the benchmark examples as a zip file from
+  the example gallery. By `Thomas Moreau`_ (:gh:`927`)
+
 FIX
 ~~~
 
@@ -34,6 +65,15 @@ FIX
   Also fix median computation for objective curve, to ensure the same
   number of points for all solvers even when one stops earlier.
   By `Thomas Moreau`_ (:gh:`904`)
+
+- Fix boxplot displays when encountering NaN values, and improved the matplotlib
+  backend to display the boxplots. By `Hippolyte Verninas`_ (:gh:`921` & :gh:`913`)
+
+- When passing un-supported extension to ``--output``, benchopt now fallback
+  to parquet and raise a warning instead of an error. By `Thomas Moreau`_ (:gh:`926`)
+
+- Fix ``save_last_result`` behavior when using cache results.
+  By `Thomas Moreau`_ (:gh:`931`)
 
 .. _changes_1_9:
 

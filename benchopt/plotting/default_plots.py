@@ -136,7 +136,10 @@ def _get_boxplot_solver(df, objective_column):
         df.groupby('idx_rep')[['stop_val', objective_column]]
         .apply(lambda x: (
             x[objective_column]
-            .loc[x['stop_val'] == x['stop_val'].max()].item()
+            # In some old versions of benchopt, idx_rep might not be correctly
+            # set, so the max stop_val might be present multiple time.
+            # Average in this case to avoid having multiple points.
+            .loc[x['stop_val'] == x['stop_val'].max()].mean()
         )).tolist()
     ]
 
@@ -167,6 +170,9 @@ class BoxPlot(BasePlot):
 
         plot_data = []
         for solver, df_filtered in df.groupby('solver_name'):
+            df_filtered = df_filtered.select_dtypes(include=['number'])
+            if objective_column not in df_filtered:
+                continue
             if X_axis == "Solver":
                 y = _get_boxplot_solver(df_filtered, objective_column)
                 x = [solver]

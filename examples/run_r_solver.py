@@ -71,3 +71,11 @@ benchopt_cli(f"run {benchmark.benchmark_dir} -n 20 -r 4")
 # %%
 # Here, you should see that the R solver and Python solver obtain similar
 # convergence profiles, with runtime differences depending on your setup.
+
+# sphinx_gallery_thumbnail_number = -1
+# sphinx_gallery_start_ignore
+# Generate thumbnail for the sphinx gallery
+benchopt_cli(
+    f"plot {benchmark.benchmark_dir} --no-html --kind objective_curve"
+)
+# sphinx_gallery_end_ignore

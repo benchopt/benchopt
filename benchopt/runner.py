@@ -1,7 +1,5 @@
 import time
 import inspect
-import pickle
-
 from datetime import datetime
 from joblib import hash
 import copy
@@ -89,7 +87,7 @@ def run_one_resolution(objective, solver, meta, stop_val):
     return [
         dict(**meta, stop_val=stop_val, time=delta_t, **objective_dict, **info)
         for objective_dict in objective_list
-    ]
+    ], result
 
 
 def run_one_to_cvg(benchmark, objective, solver, meta, timeout, max_runs,
@@ -174,13 +172,17 @@ def run_one_to_cvg(benchmark, objective, solver, meta, timeout, max_runs,
             solver.pre_run_hook(callback)
             callback.start()
             solver.run(callback)
-            curve, ctx.status = callback.get_results()
+            curve, ctx.status, last_result = callback.get_results()
         else:
 
             # Create a Memory object to cache the computations in the benchmark
             # folder and handle cases where we force the run.
+            # TODO: Skip caching if the sampling strategy is 'run_once' since
+            # the call to this function is a single call to run_one_resolution.
+            # this needs to be done once stopping criterion does not depend on
+            # the terminal anymore.
             run_one_resolution_cached = benchmark.cache(
-                run_one_resolution, force
+                run_one_resolution, force,
             )
 
             # compute initial value
@@ -190,7 +192,7 @@ def run_one_to_cvg(benchmark, objective, solver, meta, timeout, max_runs,
             stop_val = stopping_criterion.init_stop_val()
             while not stop:
 
-                objective_list = run_one_resolution_cached(
+                objective_list, last_result = run_one_resolution_cached(
                     stop_val=stop_val, **call_args
                 )
                 curve.extend(objective_list)
@@ -199,12 +201,12 @@ def run_one_to_cvg(benchmark, objective, solver, meta, timeout, max_runs,
                 stop, ctx.status, stop_val = stopping_criterion.should_stop(
                     stop_val, curve
                 )
-        # Only run if save_final_results is defined in the objective.
-        if has_save_final_results and ctx.status not in FAILURE_STATUS:
-            to_save = objective.save_final_results(**solver.get_result())
+
+        # Save final results if the run did not fail.
+        if ctx.status not in FAILURE_STATUS:
+            to_save = objective.save_final_results(**last_result)
             if to_save is not None:
-                with open(meta["final_results"], 'wb') as f:
-                    pickle.dump(to_save, f)
+                curve[-1]["final_results"] = to_save
     if ctx.status in FAILURE_STATUS:
         raise FailedRun(ctx.status)
 

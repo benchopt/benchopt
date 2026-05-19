@@ -55,10 +55,45 @@ class TestPlotCmd:
                     "ylabel": "Custom Y-axis",
                 }"""
 
+    image_plot = """
+        import numpy as np
+        from benchopt import BasePlot
+
+        class Plot(BasePlot):
+            name = "image_plot"
+            type = "image"
+            options = {
+                "dataset": ...,
+            }
+
+            def plot(self, df, dataset):
+                return [
+                    {
+                        "image": np.random.rand(10, 10),
+                        "label": "Test Image"
+                    },
+                    {
+                        "image": [np.random.rand(10, 10) for _ in range(2)],
+                        "label": "Test GIF"
+                    },
+                    {
+                        "image": np.random.rand(10, 10, 10),
+                        "label": "No Image"
+                    },
+                    {"image": None, "label": "No Image"},
+                    {"image": "not_an_array", "label": "Bad Image"},
+                ]
+
+            def get_metadata(self, df, dataset):
+                return {
+                    "title": f"Image Plot - {dataset}",
+                    "ncols": 2,
+                }"""
+
     @classmethod
     def setup_class(cls):
         "Make sure at least one result file is available"
-        cls.ctx = temp_benchmark(plots=cls.custom_plot)
+        cls.ctx = temp_benchmark(plots=[cls.custom_plot, cls.image_plot])
         cls.bench = cls.ctx.__enter__()
         with CaptureCmdOutput(delete_result_files=False) as out:
             for n_rep in N_REP:
@@ -107,7 +142,8 @@ class TestPlotCmd:
             ("objective_curve", 2),
             ("boxplot", 4),
             ("bar_chart", 2),
-            (None, 9)  # all kinds
+            ("image_plot", 1),
+            (None, 10)  # all kinds
         ]
     )
     def test_valid_call_mpl(self, kind, expected_n_files):
@@ -141,9 +177,14 @@ class TestPlotCmd:
 
         html_content = Path(out.result_files[0]).read_text()
         for k in [
-            "custom_plot", "objective_curve", "boxplot", "bar_chart"
+            "custom_plot", "objective_curve", "boxplot", "bar_chart",
+            "image_plot"
         ]:
             assert f"<option value=\"{k}\"" in html_content
+
+        # check image plot gracefully handle errors/null block
+        assert '"__incompatible__"' in html_content
+        assert '"image": null' in html_content
 
     @pytest.mark.parametrize("n_rep", N_REP)
     @patch("benchopt.plotting.generate_matplotlib.get_plot_boxplot")

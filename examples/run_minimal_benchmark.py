@@ -6,6 +6,7 @@ This example demonstrates how to run an existing benchmark with benchopt.
 
 # Import example helpers to define the benchmark and
 # programmatically call the CLI.
+# sphinx_gallery_thumbnail_number = -1
 from benchopt.helpers.run_examples import ExampleBenchmark
 from benchopt.helpers.run_examples import benchopt_cli
 
@@ -60,3 +61,14 @@ benchopt_cli(f"run {benchmark.benchmark_dir} -n 30 -r 5")
 # Here, clicking on ``Subopt. (log)`` in the *Available plots* above the
 # figure will take you to a view with the right scale, and looking at
 # suboptimality instead of objective value.
+#
+# Once the benchmark has be run, you can also generate pdf figures using the
+# ``benchopt plot`` command with ``--no-html`` option:
+
+benchopt_cli(
+    f"plot {benchmark.benchmark_dir} -k objective_curve --no-html"
+)
+
+# %%
+# See :ref:`here <add_custom_plot>` for more details on how to customize
+# the plots and define your own visualization.
