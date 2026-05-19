@@ -130,17 +130,6 @@ def run_one_to_cvg(benchmark, objective, solver, meta, timeout, max_runs,
     if skip:
         return [], run_key, 'skip', reason
 
-    # Augment the metadata with final_results if necessary.
-    has_save_final_results = (
-        objective.save_final_results.__qualname__ !=
-        "BaseObjective.save_final_results"
-    )
-    if has_save_final_results:
-        final_results = benchmark.get_output_folder() / 'final_results'
-        final_results /= f"{hash(meta)}.pkl"
-        final_results.parent.mkdir(exist_ok=True, parents=True)
-        meta["final_results"] = str(final_results)
-
     with exception_handler(terminal, pdb=pdb) as ctx:
         # The warm-up step called for each repetition bit only run once.
         solver._warm_up()
