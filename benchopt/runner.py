@@ -259,24 +259,9 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
         run_one_to_cvg, ignore=['force', 'pdb', 'terminal'], collect=collect
     )
 
-    if collect:
-        _run_one_to_cvg_cached = run_one_to_cvg_cached
-
-        def run_one_to_cvg_cached(**kwargs):
-            res = _run_one_to_cvg_cached(**kwargs)
-            key = (
-                kwargs['meta']['dataset_name'],
-                kwargs['meta']['objective_name'],
-                kwargs['meta']['solver_name']
-            )
-            if res is not None:
-                return res
-            return ([], key, 'not run yet', "")
-
     def run_one_to_cvg_final(**kwargs):
-        results = None
         try:
-            results = run_one_to_cvg_cached(**kwargs)
+            return run_one_to_cvg_cached(**kwargs)
         except FailedRun as e:
             # If the run fails, return an empty result with the failure status
             # This is done to avoid caching failed runs.
@@ -285,8 +270,7 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
                 kwargs['meta']['objective_name'],
                 kwargs['meta']['solver_name']
             )
-            results = ([], key, e.status, "")
-        return results
+            return ([], key, e.status, "")
 
     total_cvg_kwargs_generator = generate_run_kwargs(
         benchmark, solvers=solvers, forced_solvers=forced_solvers,

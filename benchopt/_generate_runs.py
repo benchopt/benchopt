@@ -5,6 +5,7 @@ from .utils.parametrized_name_mixin import is_matched
 
 
 def _seed_run(objective, dataset, solver, repetition, base_seed):
+    """Set the information necessary to compute seeds for a given run."""
     seed_dict = {
         "base_seed": str(base_seed),
         "objective": str(objective),
@@ -173,7 +174,6 @@ def get_solver_kwargs(
             # we set 1 by default so that the solver run at least once
             n_repetitions = 1
 
-    timeout = timeout / n_repetitions if timeout is not None else None
     terminal.n_repetitions = n_repetitions
 
     for rep in range(n_repetitions):
@@ -206,11 +206,8 @@ def get_solver_kwargs(
             base_seed=benchmark.seed
         )
 
-        # Set objective and skip if necessary.
-        skip, reason = objective_rep.set_dataset(dataset)
-        if skip:
-            terminal.skip(reason, objective=True)
-            continue
+        # Set dataset in objective for the repetition.
+        objective_rep.set_dataset(dataset)
 
         args_run_one_to_cvg = dict(
             benchmark=benchmark, objective=objective_rep, solver=solver,
