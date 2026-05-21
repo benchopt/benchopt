@@ -477,7 +477,12 @@ class Benchmark:
                 )
                 if func_cached.check_call_in_cache(**kwargs):
                     return func_cached(**kwargs)
-                return None
+                key = (
+                    kwargs['meta']['dataset_name'],
+                    kwargs['meta']['objective_name'],
+                    kwargs['meta']['solver_name']
+                )
+                return ([], key, 'not run yet', "")
         else:
             def _func_cached(**kwargs):
                 if kwargs.get('force', False):
