@@ -47,6 +47,9 @@ API
 - Repetitions are now parallelised by default when submitting runs with a parallel backend.
   By `Hippolyte Verninas`_ and `Thomas Moreau`_ (:gh:`860`)
 
+- Add ``Download PDF`` button in the HTML interface to download the current plot as a PDF file.
+  By `Jad Yehya`_ (:gh:`777`)
+
 DOC
 ~~~
 

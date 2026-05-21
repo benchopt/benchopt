@@ -529,6 +529,35 @@ const exportHTML = () => {
   return downloadBlob(blob, location.pathname.split("/").pop());
 };
 
+const exportPDF = () => {
+  const plot = document.getElementById('unique_plot');
+  const width = plot.layout.width || plot.clientWidth;
+  const height = plot.layout.height || plot.clientHeight;
+  const filename = state().objective + '_' + state().dataset + '_'
+    + state().objective_column + '_' + state().plot_kind;
+
+  // Plotly gives the figure as an SVG string, then convert it to a real
+  // vector PDF via svg2pdf.js + jsPDF.
+  Plotly.toImage(plot, {format: 'svg', width: width, height: height})
+    .then(dataUrl => {
+      const svgString = decodeURIComponent(dataUrl.split(',')[1]);
+      const svgDoc = new DOMParser().parseFromString(svgString, 'image/svg+xml');
+      const svgElement = svgDoc.documentElement;
+
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({
+        orientation: width >= height ? 'landscape' : 'portrait',
+        unit: 'pt',
+        format: [width, height],
+      });
+
+      return pdf.svg(svgElement, {width: width, height: height})
+        .then(() => pdf.save(filename + '.pdf'));
+    });
+
+  return false;
+};
+
 /*
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * LEFT SIDEBAR MANAGEMENT
