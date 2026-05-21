@@ -9,7 +9,7 @@ from benchopt.stopping_criterion import SAMPLING_STRATEGIES
 from benchopt.utils.dynamic_modules import _get_module_from_file
 from benchopt.utils.parametrized_name_mixin import product_param
 from benchopt.utils.parametrized_name_mixin import get_configs
-from benchopt.runner import _seed_run
+from benchopt._generate_runs import _seed_run
 
 
 def test_dataset_class(benchmark, dataset_class):

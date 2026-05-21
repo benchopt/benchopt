@@ -17,7 +17,6 @@ from .base import BaseSolver, BaseDataset, _prepare_one
 from .utils.dynamic_modules import _load_class_from_module
 from .utils.parametrized_name_mixin import sanitize
 from .utils.parametrized_name_mixin import _get_used_parameters
-from .utils.parametrized_name_mixin import is_matched
 from .utils.parametrized_name_mixin import _check_patterns
 
 from .utils.terminal_output import colorify
@@ -478,7 +477,12 @@ class Benchmark:
                 )
                 if func_cached.check_call_in_cache(**kwargs):
                     return func_cached(**kwargs)
-                return None
+                key = (
+                    kwargs['meta']['dataset_name'],
+                    kwargs['meta']['objective_name'],
+                    kwargs['meta']['solver_name']
+                )
+                return ([], key, 'not run yet', "")
         else:
             def _func_cached(**kwargs):
                 if kwargs.get('force', False):
@@ -685,7 +689,7 @@ class Benchmark:
     def download_all_data(self, datasets, env_name, quiet):
         if len(datasets) == 0:
             return 0
-        cmd = f"benchopt check-data {self.benchmark_dir} -d "
+        cmd = f"python -m benchopt check-data {self.benchmark_dir} -d "
         cmd += " -d ".join(d.name for d in datasets)
         return _run_shell_in_conda_env(
             cmd, env_name=env_name, raise_on_error=True, capture_stdout=False
@@ -734,7 +738,11 @@ class Benchmark:
                       "skipping preparation.")
                 n_total -= 1
             else:
-                to_prepare.append(dict(dataset=dataset))
+                to_prepare.append(dict(
+                    benchmark=self,
+                    dataset=dataset,
+                    force=force
+                ))
 
         if not to_prepare:
             print("Summary: 0/0 datasets ready.")
@@ -742,8 +750,7 @@ class Benchmark:
 
         results = parallel_run(
             self, _prepare_one,
-            kwargs=dict(benchmark=self, force=force),
-            all_runs=to_prepare,
+            run_kwargs_generator=to_prepare,
             config=parallel_config,
         )
 
@@ -794,69 +801,6 @@ class Benchmark:
         )
         return 1
 
-    def _get_all_runs(self, solvers=None, forced_solvers=None,
-                      datasets=None, objectives=None, terminal=None):
-        """Generator with all combinations to run for the benchmark.
-
-        Parameters
-        ----------
-        solvers : list | None
-            List of solvers to include in the benchmark. If None
-            all solvers available are run.
-        forced_solvers : list | None
-            List of solvers to include in the benchmark and for
-            which one forces recomputation.
-        datasets : list | None
-            List of datasets to include. If None all available
-            datasets are used.
-        objectives : list | None
-            Filters to select specific objective parameters. If None,
-            all objective parameters are tested
-        terminal : TerminalOutput or None
-            Object to format string to display the terminal.
-
-        Yields
-        ------
-        dataset : BaseDataset instance
-        objective : BaseObjective instance
-        solver : BaseSolver instance
-        force : bool
-        """
-        all_datasets = _list_parametrized_classes(*datasets)
-        all_solvers, solvers_buffer = buffer_iterator(
-            _list_parametrized_classes(*solvers)
-        )
-        for dataset, is_installed in all_datasets:
-            terminal.set(dataset=dataset)
-            if not is_installed:
-                terminal.show_status('not installed', dataset=True)
-                continue
-            terminal.display_dataset()
-            all_objectives = _list_parametrized_classes(
-                *objectives, check_installed=False
-            )
-            for objective, is_installed in all_objectives:
-                terminal.set(objective=objective)
-                if not is_installed:
-                    terminal.show_status('not installed', objective=True)
-                    continue
-                terminal.display_objective()
-                for i_solver, (solver, is_installed) in enumerate(all_solvers):
-                    terminal.set(solver=solver, i_solver=i_solver)
-
-                    if not is_installed:
-                        terminal.show_status('not installed')
-                        continue
-
-                    force = is_matched(
-                        str(solver), forced_solvers, default=False
-                    )
-                    yield dict(
-                        dataset=dataset, objective=objective, solver=solver,
-                        force=force, terminal=terminal.clone()
-                    )
-                all_solvers = solvers_buffer
-
 
 def _list_parametrized_classes(*classes, check_installed=True, prepare=False):
     """Generator with class instances for all selected parameters."""
@@ -877,15 +821,3 @@ def _list_parametrized_classes(*classes, check_installed=True, prepare=False):
 
             for params in _get_used_parameters(klass, params, ignore=ignore):
                 yield klass.get_instance(**params), True
-
-
-def buffer_iterator(it):
-    """Buffer the output of an iterator to repeat it without recomputing."""
-    buffer = []
-
-    def buffered_it(buffer):
-        for val in it:
-            buffer.append(val)
-            yield val
-
-    return buffered_it(buffer), buffer
