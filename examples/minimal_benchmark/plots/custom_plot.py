@@ -41,4 +41,5 @@ class Plot(BasePlot):
             "title": title,
             "xlabel": "Custom X-axis",
             "ylabel": "Custom Y-axis",
+            "scale": "linear"
         }

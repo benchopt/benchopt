@@ -41,8 +41,8 @@ API
   into the parquet result file using ``safetensors`` and safe pickler.
   By `Thomas Moreau`_ (:gh:`923`)
 
-- New metadata plot options to control the display when using the matplotlib backend.
-  By `Hippolyte Verninas`_ (:gh:`920` & :gh:`928`)
+- New metadata plot options.
+  By `Hippolyte Verninas`_ (:gh:`920`, :gh:`928` & :gh:`932`)
 
 DOC
 ~~~

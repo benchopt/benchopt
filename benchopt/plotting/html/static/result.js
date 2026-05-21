@@ -30,7 +30,19 @@ const NON_CONVERGENT_COLOR = 'rgba(0.8627, 0.8627, 0.8627)'
  * @param {Object} partialState
  */
 const setState = (partialState) => {
+  const plotKindChanged = (
+    "plot_kind" in partialState && partialState.plot_kind !== window._state?.plot_kind
+  );
+
   window._state = {...state(), ...partialState};
+
+  // When changing chart type, apply the default scale defined by the plot data
+  if (plotKindChanged) {
+    const plotData = getPlotData();
+    if (plotData && "scale" in plotData) {
+      window._state.scale = plotData.scale;
+    }
+  }
 
   renderSidebar();
 
@@ -243,7 +255,11 @@ const getScatterData = () => {
   getPlotData().data.forEach(curveData => {
     label = curveData.label;
     y = curveData.y;
-    if ("x_low" in curveData && "x_high" in curveData && state().with_quantiles) {
+    if ("y_low" in curveData && "y_high" in curveData && state().with_quantiles) {
+      y_low = curveData.y_low;
+      y_high = curveData.y_high;
+    }
+    else if ("x_low" in curveData && "x_high" in curveData && state().with_quantiles) {
       x_low = curveData.x_low;
       x_high = curveData.x_high;
     }
@@ -272,7 +288,38 @@ const getScatterData = () => {
       y: y,
     });
 
-    if ("x_low" in curveData && "x_high" in curveData && state().with_quantiles) {
+
+    if ("y_low" in curveData && "y_high" in curveData && state().with_quantiles) {
+      curves.push({
+        type: 'scatter',
+        mode: 'lines',
+        legend: false,
+        line: {
+          width: 0,
+          color: curveData.color,
+        },
+        legendgroup: label,
+        hovertemplate: '(%{x:.1e},%{y:.1e}) <extra></extra>',
+        visible: isVisible(label) ? true : 'legendonly',
+        x: curveData.x,
+        y: y_low,
+      }, {
+        type: 'scatter',
+        mode: 'lines',
+        showlegend: false,
+        fill: 'tonextx',
+        line: {
+          width: 0,
+          color: curveData.color,
+        },
+        legendgroup: label,
+        hovertemplate: '(%{x:.1e},%{y:.1e}) <extra></extra>',
+        visible: isVisible(label) ? true : 'legendonly',
+        x: curveData.x,
+        y: y_high,
+      });
+    }
+    else if ("x_low" in curveData && "x_high" in curveData && state().with_quantiles) {
       curves.push({
         type: 'scatter',
         mode: 'lines',
