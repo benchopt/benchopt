@@ -534,7 +534,7 @@ def benchopt_cli(cmd):
     """
     import os
     import shlex
-    from benchopt.cli import benchopt as benchopt_cli
+    from benchopt.cli import benchopt as cli
 
     # Parse command arguments from a shell-like string.
     # On Windows, keep backslashes in paths (e.g. temp dirs) by using
@@ -567,7 +567,7 @@ def benchopt_cli(cmd):
     with CaptureCmdOutput(
         debug=not is_sphinx, delete_result_files=False
     ) as capture:
-        benchopt_cli(cmd_parts, standalone_mode=False)
+        cli(cmd_parts, standalone_mode=False)
 
     # Find the first HTML file reported in the captured output and read it.
     result_html = None
