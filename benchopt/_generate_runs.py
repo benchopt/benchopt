@@ -174,11 +174,11 @@ def get_solver_kwargs(
             n_repetitions = 1
 
     timeout = timeout / n_repetitions if timeout is not None else None
+    terminal.n_repetitions = n_repetitions
 
     for rep in range(n_repetitions):
         objective_rep = copy.copy(objective)
-        objective_rep.repetition = rep
-        solver._objective = objective_rep
+        objective_rep._repetition = rep
 
         # Get meta
         meta = {
@@ -197,7 +197,6 @@ def get_solver_kwargs(
             'file_dataset': f"datasets/{dataset._module_filename.name}",
             **{f"p_dataset_{k}": v for k, v in dataset._parameters.items()},
         }
-        terminal.n_repetitions = n_repetitions
 
         _seed_run(
             objective=objective_rep,

@@ -86,7 +86,7 @@ class TerminalOutput:
         self.verbose = True
 
     def set(self, solver=None, dataset=None, objective=None, verbose=None,
-            rep=None, i_solver=None):
+            i_solver=None):
 
         if dataset is not None:
             self.dataset = dataset
@@ -102,9 +102,6 @@ class TerminalOutput:
 
         if verbose is not None:
             self.verbose = verbose
-
-        if rep is not None:
-            self.rep = rep
 
         if i_solver is not None:
             self.i_solver = i_solver

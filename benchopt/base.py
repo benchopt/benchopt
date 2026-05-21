@@ -678,11 +678,11 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
         """Return the state of the objective for pickling."""
         return dict(
             dataset=getattr(self, '_dataset', None),
-            repetition=getattr(self, 'repetition', 0)
+            repetition=getattr(self, '_repetition', 0)
         )
 
     def __setstate__(self, state):
-        self.repetition = state['repetition']
+        self._repetition = state['repetition']
         dataset = state['dataset']
         if dataset is not None:
             self.set_dataset(dataset)
@@ -731,7 +731,7 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
         cv_fold_generator = repeat()
         # Perform the split with default split function if it is not defined by
         # the user.
-        rep = getattr(self, "repetition", 0)
+        rep = getattr(self, "_repetition", 0)
         for _ in range(rep + 1):
             cv_fold = next(cv_fold_generator)
 

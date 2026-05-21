@@ -174,15 +174,17 @@ def run_one_to_cvg(benchmark, objective, solver, meta, timeout, max_runs,
                 )
 
         # Save final results if the run did not fail.
-        if ctx.status not in FAILURE_STATUS:
-            to_save = objective.save_final_results(**last_result)
-            if to_save is not None:
-                curve[-1]["final_results"] = to_save
-    if ctx.status in FAILURE_STATUS:
-        raise FailedRun(ctx.status)
+        to_save = objective.save_final_results(**last_result)
+        if to_save is not None:
+            curve[-1]["final_results"] = to_save
 
     # Make sure to flush so the parallel output is properly display
     print(end='', flush=True)
+
+    # Avoid caching failed runs by raising an exception in this case,
+    # and catching it in the monitoring loop.
+    if ctx.status in FAILURE_STATUS:
+        raise FailedRun(ctx.status)
 
     return curve, run_key, ctx.status, ""
 
@@ -299,11 +301,17 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
         benchmark, run_one_to_cvg_final, total_cvg_kwargs_generator,
         config=parallel_config, collect=collect
     )
-
-    for result, key, status, reason in results_generator:
-        run_statistics.extend(result)
-        terminal.set(dataset=key[0], objective=key[1], solver=key[2])
-        terminal.show_status(status=status, reason=reason)
+    try:
+        for result, key, status, reason in results_generator:
+            run_statistics.extend(result)
+            terminal.set(dataset=key[0], objective=key[1], solver=key[2])
+            terminal.show_status(status=status, reason=reason)
+            if status == 'interrupted':
+                raise SystemExit(1)
+    except KeyboardInterrupt:
+        print(end='', flush=True)
+        terminal.show_status('interrupted')
+        raise
 
     import pandas as pd
     df = pd.DataFrame(run_statistics)
