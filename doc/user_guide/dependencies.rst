@@ -1,71 +1,11 @@
-.. _install_benchmark:
+.. _managing_dependencies:
 
-Install a benchmark
+Managing dependencies
 ======================
 
-In order to make it easy to run a new benchmark, benchopt provides an interface
-to specify and install requirements for the various components of the benchmarks.
-
-- By default, calling ``benchopt install .`` will install the requirements for the
-  benchmark, including all solvers and datasets, using the ``conda-forge`` channel.
-
-- The minimum requirements to run the benchmark are specified in
-  ``objective.py``. They can be installed using the command
-  ``benchopt install --minimal``.
-
-- The requirements that are specific to each ``Dataset/Solver`` can be
-  specified in each class, and they can be installed individually by selecting
-  the proper component using ``benchopt install -d dataset1 -s solver1``.
-
-- Finally, it is possible to prepare the datasets prior to running the
-  benchmark.  See :ref:`prepare_datasets` below for details.
-
-
-.. _prepare_datasets:
-
-Preparing datasets
-------------------
-
-Benchopt separates **data preparation** (heavy one-time work: downloads,
-extraction, pre-processing) from **data loading** (fast, per-run work done
-by ``get_data()``).
-
-Preparation is triggered by the dedicated command::
-
-    $ benchopt prepare path/to/benchmark
-
-Benchopt calls the ``prepare()`` method of every dataset (see
-:ref:`write_benchmark` for how to implement it) and caches the result with
-`joblib`, so re-running the command is a no-op when nothing has changed.
-Use ``--force`` to bypass the cache and re-run preparation unconditionally.
-
-Preparation can also be triggered right after installing the benchmark
-dependencies with the ``--prepare`` flag::
-
-    $ benchopt install path/to/benchmark --prepare
-
-This is convenient in CI pipelines or when setting up a benchmark on a
-remote server where internet access may not be available at run time.
-
-.. note::
-
-    The ``--download`` option of ``benchopt install`` is deprecated in
-    favour of ``benchopt install --prepare``.
-
-Preparation can also be parallelised across datasets using the same options as
-:ref:`benchopt run <parallel_run>`:
-
-.. code-block:: bash
-
-    # Prepare all datasets on 8 local workers
-    benchopt prepare path/to/benchmark -j 8
-
-    # Prepare using a distributed backend (Dask, SLURM via submitit, …)
-    benchopt prepare path/to/benchmark --parallel-config slurm_config.yml
-
-See :ref:`parallel_run` for how to write a ``parallel_config.yml`` and for the
-full list of supported backends.
-
+Benchopt uses conda environments to isolate each benchmark's dependencies.
+This page explains how to declare what each component needs and how to
+control the Python version of the environment.
 
 .. _specify_requirements:
 
@@ -133,4 +73,3 @@ When running ``benchopt install --env-name myenv``, benchopt will:
   env with ``--recreate`` if needed.
 
 If ``python_version`` is not set, the default version (3.12) is used.
-

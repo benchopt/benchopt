@@ -52,7 +52,7 @@ DOC
 
 - Improve documentation on extenging a benchmark and on using benchopt
   with various programming languages. see :ref:`solver_languages`
-  and :ref:`extend_benchmark` for more details.
+  and :ref:`write_benchmark` for more details.
   By `Thomas Moreau`_ (:gh:`905`)
 
 - Add a gallery of examples for ``benchopt``, with easy to explore

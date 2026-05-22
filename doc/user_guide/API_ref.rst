@@ -102,36 +102,51 @@ expressed in the run configuration file described in
 
 .. _benchopt_hooks:
 
-Benchopt run hooks
-~~~~~~~~~~~~~~~~~~
+Optional methods and hooks
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-``benchopt.BaseSolver`` exposes several hooks that can be implemented to customize the behavior of a solver run:
+All benchmark classes expose optional methods to customise the workflow.
+Full signatures are in the :ref:`API reference <api>`.
 
-- :func:`benchopt.BaseObjective.skip`: hook to allow skipping configurations of
-  objective. It is executed before ``set_data`` to skip if the current
-  objective is not compatible with the dataset. It takes in the same arguments
-  that are passed to ``set_data``.
+**BaseDataset**
 
-- :func:`benchopt.BaseSolver.skip`: hook to allow skipping configurations of
-  solver. It is executed right before ``set_objective`` to skip a solver
-  if it is not compatible with objective and/or dataset parameters. It
-  takes in the same arguments that are passed to ``set_objective``.
-  Refer to :ref:`Advanced usage <skipping_solver>` for an example.
+- :func:`benchopt.BaseDataset.prepare`: expensive one-time preparation
+  (downloads, extraction, preprocessing) cached by joblib. List parameter
+  names that do not affect preparation in ``prepare_cache_ignore`` to avoid
+  redundant runs. Triggered via :ref:`benchopt prepare <prepare_datasets>`.
 
-- :func:`benchopt.BaseSolver.get_next`: hook called repeatedly after ``run``
-  to change the sampling points for a given solver. It is called with the
-  previous ``stop_val`` (i.e. tolerance or number of iterations), and returns
-  the value for the next run. Refer to :ref:`Advanced usage <sampling_strategy>`
+**BaseObjective**
+
+- :func:`benchopt.BaseObjective.skip`: called before ``set_data`` to skip
+  dataset/objective combinations that are incompatible. Takes the same
+  arguments as ``set_data``.
+
+- :func:`benchopt.BaseObjective.get_one_result`: returns a dummy result dict
+  used by ``benchopt test`` to validate metric computation. Optional — if not
+  implemented, the test-time metric validation step is silently skipped.
+
+- :func:`benchopt.BaseObjective.save_final_results`: called after the last
+  run for each solver to persist artefacts (models, arrays, …) as a ``.pkl``
+  file alongside the parquet results.
+
+**BaseSolver**
+
+- :func:`benchopt.BaseSolver.skip`: called before ``set_objective`` to skip
+  solver/objective combinations that are incompatible. Takes the same arguments
+  as ``set_objective``. Refer to :ref:`Advanced usage <skipping_solver>` for an
+  example.
+
+- :func:`benchopt.BaseSolver.warm_up`: called once before timed runs. Use
+  ``Solver.run_once()`` here to absorb JIT compilation costs without
+  impacting timings.
+
+- :func:`benchopt.BaseSolver.pre_run_hook`: called before each ``run`` with
+  the same ``stop_val``; useful for JAX precompilation over varying iteration
+  counts.
+
+- :func:`benchopt.BaseSolver.get_next`: overrides the default logarithmic
+  ``stop_val`` schedule. Refer to :ref:`Advanced usage <sampling_strategy>`
   for an example.
-
-- :func:`benchopt.BaseSolver.warm_up`: hook called once before the solver runs.
-  It is typically used to cache jit compilation of solver while not accounting
-  for the time needed in the timings.
-
-- :func:`benchopt.BaseSolver.pre_run_hook`: hook called before each call to
-  ``run``, with the same argument. Allows to skip certain computation that
-  cannot be cached globally, such as precompilation with different number of
-  iterations in for jitted ``jax`` functions.
 
 
 
