@@ -1,10 +1,10 @@
 .. _authoring:
 
-Authoring benchmarks
-====================
+Creating benchmarks
+===================
 
 How to write the components of a benchmark: datasets, objectives, solvers,
-and visualization.
+and visualization, with various helpers to enhance your benchmarks.
 
 .. toctree::
     :maxdepth: 1
