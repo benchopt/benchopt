@@ -18,6 +18,11 @@ window.addEventListener("message", function(event) {
 window.addEventListener("load", function() {
   for (const cmd of document.querySelectorAll("pre.code-cell-equiv")) {
     var code_elem = cmd.parentElement.previousElementSibling;
+    if (!code_elem.className.includes("highlight")){
+      // Case where the output figure is above the command
+      code_elem = code_elem.previousElementSibling;
+    }
+
     var cmd_html = cmd.children[0].innerHTML;
     code_elem.firstChild.innerHTML = cmd_html;
     cmd.setAttribute("style", "display: none;");
