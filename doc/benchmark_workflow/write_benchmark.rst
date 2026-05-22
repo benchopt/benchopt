@@ -184,7 +184,7 @@ Optional features
   extraction, preprocessing), cached by joblib.
   See :ref:`prepare_datasets` for details and usage.
 - **Custom data paths**: expose configurable file paths to benchmark users via
-  :func:`benchopt.config.get_data_path`. See :ref:`dataset_data_paths` for
+  :func:`benchopt.config.get_data_path`. See :ref:`data_paths` for
   details.
 
 .. _objective:

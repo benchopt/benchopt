@@ -106,7 +106,6 @@ Optional methods and hooks
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 All benchmark classes expose optional methods to customise the workflow.
-Full signatures are in the :ref:`API reference <api>`.
 
 **BaseDataset**
 

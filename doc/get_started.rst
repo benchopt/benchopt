@@ -17,6 +17,11 @@ Installation
 Run an existing benchmark
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
+   When running a benchmark, benchopt automatically detects all solvers and datasets defined in the repository, with their grid of parameters, and runs all combinations. This produces a result file that can be visualized with the interactive dashboard.
+
+   The core of benchopt is thus to provide a simple interface to the part of
+   the benchmark that is duplicated across all benchmarks: the loop that runs all methods on all datasets! With extra features as a bonus: caching, parallelism, reproducibility, and more.
+
    To run an existing benchmark, clone the repository, install its
    requirements, and run it:
 
@@ -26,8 +31,6 @@ Run an existing benchmark
       benchopt install template_benchmark_ml  # only works in conda env
       benchopt run template_benchmark_ml
 
-   This produces an interactive HTML dashboard with the results.
-
    See :ref:`run_benchmark` for a full walkthrough including CLI options,
    configuration files, and caching.
 
@@ -35,14 +38,31 @@ Run an existing benchmark
 Create your own benchmark
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-   A benchopt benchmark has three ingredients:
+   A benchmark is a folder with three types of components, each a Python file:
 
-   - ``Dataset``: specifies how to load data,
-   - ``Objective``: defines the evaluation metrics,
-   - ``Solver``: implements the method to evaluate.
+   .. code-block:: none
 
-   This same structure works for ML, optimization, or infrastructure benchmarks.
-   See :ref:`write_benchmark` for complete examples and all available options.
+      my_benchmark/
+      ├── objective.py
+      ├── datasets/
+      │   └── my_dataset.py
+      └── solvers/
+          └── my_solver.py
+
+   - :ref:`Dataset <datasets>` — loads or generates data.
+   - :ref:`Objective <objective>` — defines what is measured; ``evaluate_result()``
+     computes your metrics (accuracy, loss, throughput, …).
+   - :ref:`Solver <solvers>` — the method under evaluation; only ``run()`` is timed.
+
+   This structure is intentionally general: creating a benchmark is mostly a matter
+   of deciding which concept in your problem maps to which class — what counts as
+   "data", what counts as "performance", and what counts as "a method". The same
+   three-file layout works for ML training, numerical optimization, data loading
+   pipelines, or any other computational task you want to compare fairly.
+
+   All three share the same class attributes: ``name``, ``requirements``,
+   ``parameters`` (for automatic grid sweeps), and ``get_seed()`` for
+   reproducibility. See :ref:`write_benchmark` for complete examples.
 
 
 Key features

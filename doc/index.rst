@@ -12,7 +12,7 @@ You bring **datasets**, **metrics**, and the **methods** to compare —
 Benchopt provides the loop that connects them and runs reproducible comparisons
 at scale. Out of the box:
 
-* **Scale experiments:** run in parallel locally or on HPC clusters, with native SLURM support.
+* **Scale experiments:** loop over grid of parameters, run in parallel locally or on HPC clusters, with native SLURM support.
 * **Save time:** cache results to avoid recomputing unchanged runs.
 * **Trust comparisons:** control randomness with seeds and stable protocols.
 * **Integrate broadly:** use implementations from Python, R, Julia, or binaries.
@@ -181,10 +181,8 @@ Join this endeavor! If you use benchopt in a scientific publication, please cite
 
    get_started
    benchmark_workflow/index
-   tutorials/index
    user_guide/index
    auto_examples/index
-
    available_benchmarks
    contrib
    whats_new
