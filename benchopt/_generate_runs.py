@@ -160,7 +160,7 @@ def get_solver_kwargs(
     )
 
     # Set objective and skip if necessary.
-    skip, reason = objective.set_dataset(dataset)
+    skip, reason = objective._set_dataset(dataset)
     if skip:
         terminal.skip(reason, objective=True)
         return []
@@ -207,7 +207,7 @@ def get_solver_kwargs(
         )
 
         # Set dataset in objective for the repetition.
-        objective_rep.set_dataset(dataset)
+        objective_rep._set_dataset(dataset)
 
         args_run_one_to_cvg = dict(
             benchmark=benchmark, objective=objective_rep, solver=solver,

@@ -8,7 +8,7 @@ Evaluating an iterative method
    machine learning methods where each solver runs once to completion (e.g.,
    comparing scikit-learn estimators), you can skip performance curves entirely
    by setting ``sampling_strategy = "run_once"`` in your ``Objective`` class.
-   See :ref:`ml_benchmark` for more details on setting up ML benchmarks.
+   See :ref:`write_benchmark` for more details on setting up ML benchmarks.
 
    .. code-block:: python
 
@@ -47,7 +47,7 @@ For benchmarks where solvers run to completion without intermediate evaluation
 The solver's ``run`` method is called exactly once, and no convergence curve
 is generated. This is ideal for comparing final performance of different methods.
 
-See :ref:`ml_benchmark` for a complete guide on setting up ML benchmarks.
+See :ref:`write_benchmark` for a complete guide on setting up ML benchmarks.
 
 
 1. Using iterations or tolerance

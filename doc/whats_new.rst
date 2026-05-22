@@ -47,13 +47,17 @@ API
 - Repetitions are now parallelised by default when submitting runs with a parallel backend.
   By `Hippolyte Verninas`_ and `Thomas Moreau`_ (:gh:`860`)
 
+- Make `get_one_result` optional, to make it easier to have a first working
+  benchmark without having to implement it.
+  By `Thomas Moreau`_ (:gh:`933`)
+
 DOC
 ~~~
 
 - Improve documentation on extenging a benchmark and on using benchopt
   with various programming languages. see :ref:`solver_languages`
-  and :ref:`extend_benchmark` for more details.
-  By `Thomas Moreau`_ (:gh:`905`)
+  and :ref:`write_benchmark` for more details.
+  By `Thomas Moreau`_ (:gh:`905`, :gh:`933`)
 
 - Add a gallery of examples for ``benchopt``, with easy to explore
   benchmark definition. By `Thomas Moreau`_ (:gh:`905`)

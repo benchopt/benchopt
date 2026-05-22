@@ -7,11 +7,70 @@
 
 |Python 3.10+| |PyPI version| |License|
 
-Benchopt is a benchmarking suite tailored for **machine learning and optimization**.
-It makes it simple to run, publish and replicate benchmarks. The
-command line interface allows running various solvers on benchmark
-problems, providing convergence curves for iterative methods or
-performance comparisons for ML estimators.
+Benchopt is a benchmarking framework for **machine learning and optimization**.
+You bring **datasets**, **metrics**, and the **methods** to compare —
+Benchopt provides the loop that connects them and runs reproducible comparisons
+at scale. Out of the box:
+
+* **Scale experiments:** loop over grid of parameters, run in parallel locally or on HPC clusters, with native SLURM support.
+* **Save time:** cache results to avoid recomputing unchanged runs.
+* **Trust comparisons:** control randomness with seeds and stable protocols.
+* **Integrate broadly:** use implementations from Python, R, Julia, or binaries.
+* **Share outcomes:** merge and publish results from multiple runs, with easy interactive visualization.
+* **Maintain and Extend:** modular design to easily add new datasets, solvers, and metrics, and CI tools to test them.
+
+Learn how to construct and run a benchmark with the following pages!
+
+.. grid:: 2
+    :gutter: 1
+
+    .. grid-item-card::
+        :link: get_started
+        :link-type: ref
+
+        :octicon:`rocket` **Get started**
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        Install benchopt, run an existing benchmark, and write your own
+        with minimal working examples
+
+    .. grid-item-card::
+        :link: benchmark_workflow
+        :link-type: ref
+
+        :octicon:`tools` **Benchmark workflow**
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        Write an ML or optimization benchmark from scratch,
+        run it, visualize it, and publish it
+
+    .. grid-item-card::
+        :link: user_guide
+        :link-type: ref
+
+        :octicon:`book` **User guide**
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        Full documentation of benchopt API and CLI
+
+    .. grid-item-card::
+        :link: general_examples
+        :link-type: ref
+
+        :octicon:`mortar-board` **Examples**
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        Gallery of use-cases crafted by the benchopt community
+
+.. tip::
+   **Want to create a new benchmark with benchopt?** Use our templates to get started:
+   `ML benchmarks <https://github.com/benchopt/template_benchmark_ml>`_ |
+   `Optimization benchmarks <https://github.com/benchopt/template_benchmark>`_
+
+
+.. _faq:
+
+.. Frequently Asked Questions (FAQ) subsection
+.. include:: faq.rst
+
+Example benchmarks
+------------------
 
 Reproducing an existing benchmark should be as easy as running the following commands:
 
@@ -69,54 +128,7 @@ These different tabs illustrate the diversity of benchmarks that can be built
 with benchopt, from deep learning optimization to more classical machine
 learning tasks.
 
-.. tip::
-   **Want to create a new benchmark with benchopt?** Use our templates to get started:
-   `ML benchmarks <https://github.com/benchopt/template_benchmark_ml>`_ |
-   `Optimization benchmarks <https://github.com/benchopt/template_benchmark>`_
-
 There are already many :ref:`available_benchmarks` that have been created using benchopt.
-Learn how to run them and how to construct your own with the following pages!
-
-.. grid:: 2
-    :gutter: 1
-
-    .. grid-item-card::
-        :link: get_started
-        :link-type: ref
-
-        :octicon:`rocket` **Get started**
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-        Install benchopt and run your first benchmark
-
-    .. grid-item-card::
-        :link: benchmark_workflow
-        :link-type: ref
-
-        :octicon:`tools` **Benchmark workflow**
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-        Write an ML or optimization benchmark from scratch,
-        run it, visualize it, and publish it
-
-    .. grid-item-card::
-        :link: tutorials
-        :link-type: ref
-
-        :octicon:`mortar-board` **Tutorials**
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-        Gallery of use-cases crafted by the benchopt community
-
-    .. grid-item-card::
-        :link: user_guide
-        :link-type: ref
-
-        :octicon:`book` **User guide**
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-        Full documentation of benchopt API and CLI
-
-.. _faq:
-
-.. Frequently Asked Questions (FAQ) subsection
-.. include:: faq.rst
 
 
 Join the community
@@ -169,10 +181,8 @@ Join this endeavor! If you use benchopt in a scientific publication, please cite
 
    get_started
    benchmark_workflow/index
-   tutorials/index
    user_guide/index
    auto_examples/index
-
    available_benchmarks
    contrib
    whats_new
