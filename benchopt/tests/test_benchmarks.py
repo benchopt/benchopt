@@ -74,8 +74,12 @@ def test_benchmark_objective(benchmark, objective_class):
     )
 
     # get one value for the objective, with the test_dataset
-    objective.set_dataset(dataset)
+    objective._set_dataset(dataset)
     result = objective._get_one_result()
+    if result is None:
+        pytest.skip(
+            "Objective needs to implement get_one_result to be tested."
+        )
     objective_output = objective(result)
 
     # check that the output has proper type and is not empty
@@ -206,8 +210,10 @@ def test_solver_stopping_criterion(benchmark, solver_class):
             repetition=0, base_seed=benchmark.seed
         )
 
-        objective.set_dataset(dataset)
+        objective._set_dataset(dataset)
         result = objective._get_one_result()
+        if result is None:
+            return
         objective_output = objective(result)[0]
 
         requested_key = stopping_criterion.key_to_monitor
@@ -246,7 +252,7 @@ def test_solver_run(benchmark, solver_class):
     )
 
     def run_solver(dataset):
-        objective.set_dataset(dataset)
+        objective._set_dataset(dataset)
         skip, reason = solver._set_objective(objective)
         if not skip:
             _test_solver_one_objective(solver, objective)

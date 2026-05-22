@@ -348,19 +348,24 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
     def prepare(self):
         """Prepare the dataset for use (optional).
 
-        This method is called before benchmark runs to perform expensive
-        one-time operations such as downloading data, extracting archives,
-        or pre-processing. It is cached so that repeated calls with the
-        same parameters are no-ops.
+        Called before benchmark runs to perform expensive one-time operations
+        such as downloading data, extracting archives, or pre-processing.
+        Benchopt caches the result with joblib so that repeated calls with the
+        same parameters are no-ops. Triggered via ``benchopt prepare``.
 
         Notes
         -----
         - Defaults to a no-op; datasets without a custom ``prepare()`` fall
           back to calling ``get_data()`` for backward compatibility.
         - Should be idempotent: calling it multiple times must be safe.
-        - Parameters listed in ``prepare_cache_ignore`` do not affect the
-          cache key. Use ``prepare_cache_ignore = "all"`` to ignore every
-          parameter.
+        - Parameters listed in ``prepare_cache_ignore`` are excluded from the
+          cache key. Use ``prepare_cache_ignore = "all"`` to cache at most
+          once per dataset class regardless of parameterization, or list
+          specific names to ignore (e.g. a random seed)::
+
+              class Dataset(BaseDataset):
+                  parameters = {'n_samples': [100, 1000], 'seed': [0, 1, 2]}
+                  prepare_cache_ignore = ('seed',)  # 2 calls instead of 6
         """
         pass
 
@@ -428,7 +433,7 @@ def _prepare_one(benchmark, dataset, force=False):
 class BaseObjective(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
     """Base class to define an objective function
 
-    Objectives that derive from this class needs to implement four methods:
+    Objectives that derive from this class needs to implement three methods:
 
     - ``set_data(**data)``: stores the info from a given dataset to be able to
       compute the objective value on these data.
@@ -448,16 +453,17 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
       stored at once instead of running each separately. With a list of
       dictionaries, these metrics can be computed on different objects.
 
-    - ``get_one_result()``: return one result for which the objective can be
-      evaluated. This should be a dictionary where the keys correspond to the
-      keyword arguments of `evaluate_result`.
-
     Optionally, the `Objective` can implement the following methods to change
     its behavior:
 
-    - ``save_final_results(**result)``: Return the data to be saved from the
-       results of the solver. It will be saved as a `.pkl` file in the
-       `output/results` folder, and link to the benchmark results.
+    - ``get_one_result()``: return one dummy result compatible with
+      ``evaluate_result``. Used by ``benchopt test`` to validate metric
+      computation. If not implemented, ``benchopt run`` works normally but
+      the test-time metric validation step is silently skipped.
+
+    - ``save_final_results(**result)``: persist artefacts (trained models,
+      arrays, …) from the final solver run as a ``.pkl`` file alongside the
+      parquet results.
 
     This class is also used to specify information about the benchmark.
     In particular, it should have the following class attributes:
@@ -532,20 +538,27 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
         pass
 
     def save_final_results(self, **solver_result):
-        """Save the final results of the solver.
+        """Optionally save artefacts from the final solver run.
+
+        Called once after the last benchmark run for each solver
+        configuration. Use this to persist heavy objects (trained models,
+        arrays, …) that are too large to include in the main results file.
 
         Parameters
         ----------
-        solver_result : dict
-            All values needed to compute the objective metrics. This dictionary
-            is retrieved by calling ``solver_result = Solver.get_result()``.
+        **solver_result : dict
+            The dictionary returned by ``Solver.get_result()`` for the final
+            run. Keys match the keyword arguments of ``evaluate_result``.
+
         Returns
         -------
-        dict of values to save
+        dict
+            Objects to save. Serialised with pickle and stored alongside the
+            parquet results file; the path is recorded in the results.
         """
         pass
 
-    def format_objective_dict(self, objective_dict):
+    def _format_objective_dict(self, objective_dict):
         """Format the output of Objective.evaluate_results.
 
         This will prefix all keys in the dictionary with `objective_`
@@ -600,14 +613,14 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
             objective_list = objective_output
 
         objective_list = [
-            self.format_objective_dict(d) for d in objective_list
+            self._format_objective_dict(d) for d in objective_list
         ]
 
         return objective_list
 
     # Save the dataset object used to get the objective data so we can avoid
     # hashing the data directly.
-    def set_dataset(self, dataset):
+    def _set_dataset(self, dataset):
         self._dataset = dataset
         assert self.is_installed(raise_on_not_installed=True)
         data = dataset._get_data()
@@ -657,16 +670,24 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
         """
         return False, None
 
-    @abstractmethod
     def get_one_result(self):
         """Return one result for which the objective can be evaluated.
 
-        This method is mainly for testing purposes, to check that the method
-        `Objective.compute` can be called and that it returns a compatible
-        type for benchopt. The returned object will be passed to
-        ``Objective.compute``.
+        This method is used by ``benchopt test`` to check that the benchmark
+        components are compatible without running the full benchmark.
+        It should return a dictionary whose keys match the keyword arguments
+        of ``Objective.evaluate_result()``.
+
+        This method is **optional**: ``benchopt run`` works normally without
+        it, but ``benchopt test`` will skip the objective validation step when
+        it is not implemented.
+
+        Returns
+        -------
+        result : dict
+            A dummy result compatible with ``Objective.evaluate_result()``.
         """
-        ...
+        return None
 
     def _get_one_result(self):
         # Make sure the splits with CV are created before calling
@@ -685,7 +706,7 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
         self._repetition = state['repetition']
         dataset = state['dataset']
         if dataset is not None:
-            self.set_dataset(dataset)
+            self._set_dataset(dataset)
 
     def _default_split(self, cv_fold, *arrays):
         train_index, test_index = cv_fold
@@ -717,7 +738,7 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
         if not hasattr(self, "cv"):
             raise ValueError(
                 "To use `Objective.get_split`, Objective must define a cv "
-                "attribute in `Objective.set_dataset`. It should follow the "
+                "attribute in `Objective.set_data`. It should follow the "
                 "`sklearn.model_selection.BaseCrossValidator` API."
             )
 

@@ -103,4 +103,18 @@ With this config, the benchmark will retrieve the file located at
 ``/path/to/data_home/folder/path/to/the/file.ext``.
 
 To know which keys a benchmark exposes, refer to its documentation.
-See :ref:`dataset_data_paths` for how benchmark makers expose these paths.
+
+.. _dataset_data_paths:
+
+Benchmark makers expose keys by calling :func:`benchopt.config.get_data_path`
+inside ``get_data()``:
+
+.. code-block:: python
+
+    from benchopt import config
+
+    class Dataset(BaseDataset):
+
+        def get_data(self):
+            path = config.get_data_path(key="the_key_name")
+            ...
