@@ -11,6 +11,7 @@ JSON_KEY = b"_meta_json"
 # Two distinct prefixes let unpack() route to the right deserializer.
 _ST_PREFIX = b"\x00benchopt-st\x00"    # safetensors-encoded tensor
 _PKL_PREFIX = b"\x00benchopt-pkl\x00"  # pickle-encoded fallback
+_PREFIXES = (_PKL_PREFIX, _ST_PREFIX)
 
 # Types that parquet can store natively — passed through unchanged.
 _PARQUET_PRIMITIVES = (bool, int, float, str, bytes, type(None))
@@ -54,14 +55,18 @@ class _SafeUnpickler(pickle.Unpickler):
         return super().find_class(module, name)
 
 
-def pack(value):
+def pack(value, force=False):
     """Serialize *value* for storage in a parquet binary column.
 
     - Parquet primitives (bool, int, float, str, bytes, None) pass through.
     - Anything safetensors can handle is encoded with it (numpy, torch, jax…).
     - Everything else is pickled.
     """
-    if isinstance(value, _PARQUET_PRIMITIVES):
+    if (isinstance(value, bytes) and value.startswith(_PREFIXES)) or (
+            not force and isinstance(value, _PARQUET_PRIMITIVES)
+    ):
+        return value
+    if isinstance(value, type(None)):
         return value
     try:
         from safetensors import serialize
@@ -107,18 +112,25 @@ def to_parquet(df, path, metadata=None):
     # try to infer int64 or another primitive type from the other rows.
     df = df.copy()
     binary_cols = []
-    _PREFIXES = (_PKL_PREFIX, _ST_PREFIX)
     # Backwards compatibility: starting with pandas 3.0, not passing 'str'
     # raises a warning.
     incl = ["object", "str"] if pd.__version__ > "3" else ["object"]
     for col in df.select_dtypes(include=incl).columns:
         df[col] = df[col].map(pack)
         non_null = df[col].dropna()
-        if not non_null.empty and any(
-            isinstance(v, bytes) and v.startswith(_PREFIXES)
-            for v in non_null
+        if non_null.empty:
+            continue
+        types = {type(v) for v in non_null}
+        if bytes in types and any(
+            v.startswith(_PREFIXES) for v in non_null if isinstance(v, bytes)
         ):
+            # If any row is serialized, make sure all rows are also serialized
+            df[col] = df[col].apply(pack, force=True)
             binary_cols.append(col)
+        elif len(types) > 1:
+            # Mixed primitive types (e.g. int + str): cast to str so pyarrow
+            # gets a uniform string column. NaN entries are preserved as null.
+            df[col] = df[col].where(df[col].isna(), df[col].astype(str))
 
     arrays = {}
     for col in binary_cols:
