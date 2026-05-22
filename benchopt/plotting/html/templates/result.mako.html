@@ -85,12 +85,20 @@
                         % for kind, params in result["plot_options"].items():
                             <div id="${kind}-custom-params-container">
                             % for param, options in params.items():
+                                <%
+                                    if param == 'dataset':
+                                        _short_map = result.get('short_labels', {}).get('datasets', {})
+                                    elif param == 'objective':
+                                        _short_map = result.get('short_labels', {}).get('objectives', {})
+                                    else:
+                                        _short_map = {}
+                                %>
                                 <div id="${kind}_${param}_form_group" class="mt-8 px-8">
                                     <label for="change_${kind}_${param}" class="block text-sm font-medium text-white">${param}</label>
                                     <div class="mt-1 rounded-md shadow-sm">
                                         <select id="change_${kind}_${param}" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({${kind}_${param}: this.value})">
                                             % for option in options:
-                                                <option value="${option}">${option}</option>
+                                                <option value="${option}" title="${option}">${_short_map.get(option, option)}</option>
                                             % endfor
                                         </select>
                                     </div>
@@ -232,12 +240,20 @@
                             % for kind, params in result["plot_options"].items():
                                 <div id="${kind}-custom-params-container">
                                 % for param, options in params.items():
+                                    <%
+                                        if param == 'dataset':
+                                            _short_map = result.get('short_labels', {}).get('datasets', {})
+                                        elif param == 'objective':
+                                            _short_map = result.get('short_labels', {}).get('objectives', {})
+                                        else:
+                                            _short_map = {}
+                                    %>
                                     <div id="${kind}_${param}_form_group" class="mt-8 px-8">
                                         <label for="change_${kind}_${param}" class="block text-sm font-medium text-white">${param}</label>
                                         <div class="mt-1 rounded-md shadow-sm">
                                             <select id="change_${kind}_${param}" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({${kind}_${param}: this.value})">
                                                 % for option in options:
-                                                    <option value="${option}">${option}</option>
+                                                    <option value="${option}" title="${option}">${_short_map.get(option, option)}</option>
                                                 % endfor
                                             </select>
                                         </div>
@@ -460,6 +476,7 @@
         <script>
             window._plots = ${result['json_plots']};
             window.metadata = ${json.dumps(result['metadata'])};
+            window._short_labels = ${json.dumps(result.get('short_labels', {}))};
 
             window.addEventListener("load", () => {
                 // Initialize plot state

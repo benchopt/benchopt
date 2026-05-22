@@ -54,11 +54,13 @@ def get_plot_figure(plot_datas, output_dir):
 def get_plot_scatter(plot_data):
     fig = plt.figure()
     for curve_data in plot_data["data"]:
+        # Use short_label when available (full label is in full_label field).
+        display_label = curve_data.get("short_label", curve_data["label"])
         plt.plot(
             curve_data["x"], curve_data["y"],
             color=curve_data["color"],
             marker=curve_data["marker"],
-            label=curve_data["label"],
+            label=display_label,
             linewidth=3
         )
 
@@ -137,7 +139,7 @@ def get_plot_barchart(plot_data):
 
     ax.set_xticks([(i+1.5)*width for i in range(n_bars)])
     ax.set_xticklabels(
-        [data["label"] for data in plot_data["data"]],
+        [d.get("short_label", d["label"]) for d in plot_data["data"]],
         rotation=60
     )
     ax.set_yscale('log')
@@ -164,11 +166,12 @@ def get_plot_boxplot(plot_data):
     for data in plot_data["data"]:
         # all datasets with the same label stack on the *exact* same x
         positions = [all_labels.index(x) for x in data["x"]]
+        display_label = data.get("short_label", data["label"])
 
         boxplot = plt.boxplot(
             data["y"],
             positions=positions,
-            label=data["label"],
+            label=display_label,
             widths=plot_data.get("box_width", 0.6),
             patch_artist=True,
             showfliers=plot_data.get("showfliers", False)

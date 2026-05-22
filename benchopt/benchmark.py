@@ -18,6 +18,7 @@ from .utils.dynamic_modules import _load_class_from_module
 from .utils.parametrized_name_mixin import sanitize
 from .utils.parametrized_name_mixin import _get_used_parameters
 from .utils.parametrized_name_mixin import _check_patterns
+from .utils.short_labels import compute_short_labels, add_short_labels
 
 from .utils.terminal_output import colorify
 from .utils.terminal_output import GREEN, YELLOW
@@ -306,6 +307,24 @@ class Benchmark:
             data, options = plot._get_all_plots(df)
             all_data[plot_name] = data
             all_options[plot_name] = options
+
+        # Compute short labels when the benchmark config enables them.
+        use_short = get_setting('short_labels', benchmark=self.benchmark_dir)
+        if use_short:
+            solver_short = compute_short_labels(df['solver_name'].unique())
+            add_short_labels(all_data, solver_short)
+            # Compute short labels for datasets and objectives and expose
+            # them separately so that the HTML template can use them.
+            all_data['_short_labels'] = {
+                'solvers': solver_short,
+                'datasets': compute_short_labels(
+                    df['dataset_name'].unique()
+                ),
+                'objectives': compute_short_labels(
+                    df['objective_name'].unique()
+                ),
+            }
+
         return all_data, all_options
 
     def _list_benchmark_classes(self, base_class):

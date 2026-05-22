@@ -2,6 +2,42 @@ const NON_CONVERGENT_COLOR = 'rgba(0.8627, 0.8627, 0.8627)'
 
 /*
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * SHORT LABEL HELPERS
+ *
+ * When short_labels are enabled (via the benchmark config),
+ * each curve trace carries a `short_label` (display) and a
+ * `full_label` (identity / tooltip).  These helpers centralise
+ * the lookup so all rendering code can call them consistently.
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
+
+/**
+ * Return the display label for a curve (short if available).
+ *
+ * @param {String} full_name  The curve's identity key (full solver name).
+ * @returns {String}
+ */
+const getDisplayLabel = (full_name) => {
+  const curveData = data(full_name);
+  if (curveData && curveData.short_label) return curveData.short_label;
+  return full_name;
+};
+
+/**
+ * Return the display label for a dataset / objective name.
+ * Falls back to the full name when no short-label map is available.
+ *
+ * @param {String} full_name
+ * @param {'datasets'|'objectives'|'solvers'} kind
+ * @returns {String}
+ */
+const getShortLabel = (full_name, kind = 'solvers') => {
+  const map = (window._short_labels || {})[kind] || {};
+  return map[full_name] || full_name;
+};
+
+/*
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * STATE MANAGEMENT
  *
  * The state represent the plot state. It's an object
@@ -191,7 +227,7 @@ const getBarData = () => {
 
       barData.push({
         type: 'scatter',
-        x: new Array(nbTimes).fill(curveData.label),
+        x: new Array(nbTimes).fill(curveData.short_label || curveData.label),
         y: curveData.y,
         marker: {
           color: 'black',
@@ -213,9 +249,13 @@ const getBoxplotData = () => {
 
   getPlotData().data.forEach(plotData => {
     plotData.x.forEach((label, i) => {
+      // When X_axis == "Solver" each x entry is a solver name; use short label.
+      const displayX = (typeof label === 'string')
+        ? (getShortLabel(label, 'solvers') || label)
+        : label;
       boxplotData.push({
         y: plotData.y[i],
-        name: label,
+        name: displayX,
         type: 'box',
         line: {color: plotData.color},
         fillcolor: plotData.color,
@@ -254,6 +294,7 @@ const getScatterData = () => {
 
   getPlotData().data.forEach(curveData => {
     label = curveData.label;
+    const displayLabel = curveData.short_label || label;
     y = curveData.y;
     if ("y_low" in curveData && "y_high" in curveData && state().with_quantiles) {
       y_low = curveData.y_low;
@@ -271,7 +312,7 @@ const getScatterData = () => {
     }
     curves.push({
       type: 'scatter',
-      name: label,
+      name: displayLabel,
       mode: 'lines+markers',
       line: {
         color: curveData.color,
@@ -282,7 +323,7 @@ const getScatterData = () => {
         color: curveData.color,
       },
       legendgroup: label,
-      hovertemplate: label + ' <br> (%{x:.1e},%{y:.1e}) <extra></extra>',
+      hovertemplate: displayLabel + ' <br> (%{x:.1e},%{y:.1e}) <extra></extra>',
       visible: isVisible(label) ? true : 'legendonly',
       x: curveData.x,
       y: y,
@@ -692,7 +733,7 @@ const barDataToArrays = () => {
   const colors = [], texts = [], x = [], y = [];
 
   getPlotData().data.forEach(plotData => {
-    x.push(plotData.label);
+    x.push(plotData.short_label || plotData.label);
     y.push(getMedian(plotData.y));
     const plotText = plotData.text || '';
     colors.push(plotText === '' ? plotData.color : NON_CONVERGENT_COLOR);
@@ -912,7 +953,10 @@ const getCurveFromEvent = event => {
   const target = event.currentTarget;
 
   for (let i = 0; i < target.children.length; i++) {
-    if (target.children[i].className === 'curve') {
+    if (target.children[i].className.includes('curve')) {
+      // Prefer the data-curve attribute (full name) when available.
+      const attr = target.children[i].getAttribute('data-curve');
+      if (attr) return attr;
       return target.children[i].firstChild.nodeValue;
     }
   }
@@ -1308,11 +1352,41 @@ const createLegendItem = (curve, color, symbolNumber) => {
     }
   });
 
-  // Create the HTML text node for the curve name in the legend
+  // Create the HTML text node for the curve name in the legend.
+  // Use short_label for display; keep the full name in a foldable <details>.
+  const curveTraceData = data(curve);
+  const shortLabel = (curveTraceData && curveTraceData.short_label) || curve;
+  const fullLabel  = (curveTraceData && curveTraceData.full_label)  || curve;
+  const isShortened = shortLabel !== fullLabel;
+
   const textContainer = document.createElement('div');
   textContainer.style.marginLeft = '0.5rem';
+  textContainer.style.flex = '1';
   textContainer.className = 'curve';
-  textContainer.appendChild(document.createTextNode(curve));
+  // Store the full name as a data attribute so getCurveFromEvent can always
+  // retrieve the identity key regardless of what text is displayed.
+  textContainer.setAttribute('data-curve', curve);
+  textContainer.appendChild(document.createTextNode(shortLabel));
+
+  // When the label was shortened, append a foldable <details> element that
+  // shows the full parametrized name on demand without cluttering the legend.
+  if (isShortened) {
+    const details = document.createElement('details');
+    details.style.fontSize = '0.75rem';
+    details.style.color = '#6b7280';  // Tailwind text-gray-500
+    details.style.marginTop = '0.1rem';
+    // Stop click propagation so expanding/collapsing does not toggle visibility.
+    details.addEventListener('click', e => e.stopPropagation());
+    const summary = document.createElement('summary');
+    summary.textContent = 'full name';
+    summary.style.cursor = 'pointer';
+    const fullNameSpan = document.createElement('span');
+    fullNameSpan.textContent = fullLabel;
+    fullNameSpan.style.userSelect = 'text';
+    details.appendChild(summary);
+    details.appendChild(fullNameSpan);
+    textContainer.appendChild(details);
+  }
 
   // Create the horizontal bar in the legend to represent the curve
   const hBar = document.createElement('div');
