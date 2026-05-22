@@ -135,6 +135,24 @@ def test_to_parquet_roundtrip_mixed_column(tmp_path):
     )
 
 
+def test_to_parquet_mixed_int_str_column(tmp_path):
+    """A column mixing int and str values (e.g. a param like 'auto'/128)
+    must survive a parquet round-trip, with values cast to str."""
+    df = pd.DataFrame({
+        "solver_name": ["s1", "s2", "s3", "s4"],
+        "param": [float("nan"), 128, "auto", float("nan")],
+        "p2": [[1], "auto", None, None]
+    })
+    path = tmp_path / "results.parquet"
+    to_parquet(df, path)
+
+    df2 = pd.read_parquet(path)
+    assert df2["param"].iloc[0] is None or pd.isna(df2["param"].iloc[0])
+    assert df2["param"].iloc[1] == "128"
+    assert df2["param"].iloc[2] == "auto"
+    assert df2["param"].iloc[3] is None or pd.isna(df2["param"].iloc[3])
+
+
 def test_to_parquet_metadata_roundtrip(tmp_path):
     """Metadata dict is preserved through to_parquet."""
     import pyarrow.parquet as pq
