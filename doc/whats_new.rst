@@ -39,7 +39,7 @@ API
 
 - Non-primitive objective values (NumPy arrays, etc.) can now be serialized
   into the parquet result file using ``safetensors`` and safe pickler.
-  By `Thomas Moreau`_ (:gh:`923`)
+  By `Thomas Moreau`_ (:gh:`923`, :gh:`934`)
 
 - New metadata plot options.
   By `Hippolyte Verninas`_ (:gh:`920`, :gh:`928` & :gh:`932`)
