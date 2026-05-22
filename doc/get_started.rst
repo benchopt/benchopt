@@ -49,20 +49,26 @@ Create your own benchmark
       └── solvers/
           └── my_solver.py
 
+    Each file defines a component of the benchmark, that are then automatically discovered and linked with benchopt:
+
    - :ref:`Dataset <datasets>` — loads or generates data.
-   - :ref:`Objective <objective>` — defines what is measured; ``evaluate_result()``
-     computes your metrics (accuracy, loss, throughput, …).
-   - :ref:`Solver <solvers>` — the method under evaluation; only ``run()`` is timed.
+   - :ref:`Objective <objective>` — defines what is measured;
+     ``evaluate_result()`` computes your metrics (accuracy, loss, throughput,
+     …).
+   - :ref:`Solver <solvers>` — the method under evaluation, train a model or
+     solve an optimization problem.
 
-   This structure is intentionally general: creating a benchmark is mostly a matter
-   of deciding which concept in your problem maps to which class — what counts as
-   "data", what counts as "performance", and what counts as "a method". The same
-   three-file layout works for ML training, numerical optimization, data loading
-   pipelines, or any other computational task you want to compare fairly.
+   This structure is intentionally general: creating a benchmark is mostly a
+   matter of deciding which concept in your problem maps to which class — what
+   counts as "data", what counts as "performance", and what counts as
+   "a method". Benchopt then handles the rest, including running all
+   combinations, aggregating results, and providing a dashboard to visualize
+   them, with enhanced features to make your life easier!
 
-   All three share the same class attributes: ``name``, ``requirements``,
-   ``parameters`` (for automatic grid sweeps), and ``get_seed()`` for
-   reproducibility. See :ref:`write_benchmark` for complete examples.
+   See :ref:`write_benchmark` for complete guide on how to write a benchmark,
+   or use one of our templates to get started quickly:
+   `ML benchmarks <https://github.com/benchopt/template_benchmark_ml>`_ |
+   `Optimization benchmarks <https://github.com/benchopt/template_benchmark>`_.
 
 
 Key features

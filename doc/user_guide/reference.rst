@@ -1,5 +1,3 @@
-.. _reference:
-
 Reference
 =========
 

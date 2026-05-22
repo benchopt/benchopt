@@ -1,5 +1,4 @@
-.. _ml_benchmark:
-.. _cross-validation:
+.. _cross-val:
 
 Cross-validation
 ================

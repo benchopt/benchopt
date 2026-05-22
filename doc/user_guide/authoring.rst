@@ -9,9 +9,9 @@ and visualization.
 .. toctree::
     :maxdepth: 1
 
-    ml_benchmark
+    class_customization
+    add_custom_plot
     controlling_randomness
+    ml_benchmark
     iterative_solvers
     solver_languages
-    dependencies
-    add_custom_plot
