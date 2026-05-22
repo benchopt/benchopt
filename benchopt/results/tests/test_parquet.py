@@ -8,6 +8,7 @@ import pytest
 import yaml
 from pathlib import Path
 
+from benchopt.results import read_results
 from benchopt.results.parquet import (
     JSON_KEY,
     _PKL_PREFIX,
@@ -133,6 +134,27 @@ def test_to_parquet_roundtrip_mixed_column(tmp_path):
         isinstance(df2["result"].iloc[1], float)
         and np.isnan(df2["result"].iloc[1])
     )
+
+
+def test_to_parquet_mixed_columns(tmp_path):
+    """A column mixing types (e.g. a param like 'auto'/128, [1]/str/None)
+    must survive a parquet round-trip, with value cast to str
+    for mixted primitive types."""
+    df = pd.DataFrame({
+        "solver_name": ["s1", "s2", "s3"],
+        "p1": [float("nan"), 128, "auto"],
+        "p2": [[1], "auto", None]
+    })
+    path = tmp_path / "results.parquet"
+    to_parquet(df, path)
+
+    df2 = read_results(path)
+    assert df2["p1"].iloc[0] is None or pd.isna(df2["p1"].iloc[0])
+    assert df2["p1"].iloc[1] == "128"
+    assert df2["p1"].iloc[2] == "auto"
+    assert df2["p2"].iloc[0] == [1]
+    assert df2["p2"].iloc[1] == "auto"
+    assert df2["p2"].iloc[2] is None or pd.isna(df2["p2"].iloc[2])
 
 
 def test_to_parquet_metadata_roundtrip(tmp_path):
