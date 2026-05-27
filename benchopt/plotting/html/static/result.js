@@ -1,4 +1,4 @@
-const NON_CONVERGENT_COLOR = 'rgba(0.8627, 0.8627, 0.8627)'
+const UNDEFINED_COLOR = 'rgba(0.8627, 0.8627, 0.8627)'
 
 /*
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -202,7 +202,7 @@ const getLayout = () => {
 const getBarData = () => {
   if (!isAvailable()) return [{type:'bar'}];
 
-  const {x, y, colors, texts} = barDataToArrays()
+  const {x, y, color, texts} = barDataToArrays();
 
   // Add bars
   const barData = [{
@@ -210,7 +210,7 @@ const getBarData = () => {
     x: x,
     y: y,
     marker: {
-      color: colors,
+      color: color,
     },
     text: texts,
     textposition: 'inside',
@@ -219,12 +219,9 @@ const getBarData = () => {
   }];
 
   getPlotData().data.forEach(curveData => {
-    // Add times for each convergent bar
-    // Check if text is not 'Did not converge'
-    curveText = curveData.text || ''
-    if (curveText === '') {
-      let nbTimes = curveData.y.length
-
+    // Add times for each convergent bar if mulitple values
+    let nbTimes = curveData.y.length;
+    if (nbTimes > 1) {
       barData.push({
         type: 'scatter',
         x: new Array(nbTimes).fill(curveData.short_label || curveData.label),
@@ -251,7 +248,7 @@ const getBoxplotData = () => {
     plotData.x.forEach((label, i) => {
       // When X_axis == "Solver" each x entry is a solver name; use short label.
       const displayX = (typeof label === 'string')
-        ? (getShortLabel(label, 'solvers') || label)
+        ? (state().short_labels ? (getShortLabel(label, 'solvers') || label) : label)
         : label;
       boxplotData.push({
         y: plotData.y[i],
@@ -294,7 +291,7 @@ const getScatterData = () => {
 
   getPlotData().data.forEach(curveData => {
     label = curveData.label;
-    const displayLabel = curveData.short_label || label;
+    const displayLabel = state().short_labels ? (curveData.short_label || label) : label;
     y = curveData.y;
     if ("y_low" in curveData && "y_high" in curveData && state().with_quantiles) {
       y_low = curveData.y_low;
@@ -590,6 +587,70 @@ const renderSidebar = () => {
 }
 
 /**
+ * Build an HTML params table string from a {param: value} object.
+ */
+const buildParamsTable = (params) => {
+  const entries = Object.entries(params);
+  if (entries.length === 0) return '';
+  const rows = entries
+    .map(([k, v]) => `<tr><td style="padding-right:0.5rem;font-weight:600;white-space:nowrap">${k}</td><td style="word-break:break-all">${v}</td></tr>`)
+    .join('');
+  return `<table>${rows}</table>`;
+};
+
+/** Show the shared params tooltip near the cursor. */
+const showParamsTooltip = (event, params) => {
+  const html = buildParamsTable(params);
+  if (!html) return;
+  const tip = document.getElementById('params-tooltip');
+  tip.innerHTML = html;
+  tip.style.display = 'block';
+  _moveParamsTooltip(event);
+};
+
+/** Show params tooltip for a dataset/objective selector icon. */
+const showEntityParamsTooltip = (event, paramType, stateKey) => {
+  const sl = window._short_labels || {};
+  const lookup = paramType === 'dataset' ? (sl.dataset_params || {}) : (sl.objective_params || {});
+  const currentValue = state()[stateKey];
+  showParamsTooltip(event, currentValue ? (lookup[currentValue] || {}) : {});
+};
+
+/** Hide the shared params tooltip. */
+const hideParamsTooltip = () => {
+  document.getElementById('params-tooltip').style.display = 'none';
+};
+
+const _moveParamsTooltip = (event) => {
+  const tip = document.getElementById('params-tooltip');
+  if (!tip || tip.style.display === 'none') return;
+  tip.style.left = (event.clientX + 14) + 'px';
+  tip.style.top  = (event.clientY - tip.offsetHeight - 8) + 'px';
+};
+
+document.addEventListener('mousemove', _moveParamsTooltip);
+
+/**
+ * Update the params info boxes below dataset/objective selectors.
+ */
+const renderParamsInfoBoxes = () => {
+  const sl = window._short_labels || {};
+  const paramsLookup = {
+    dataset: sl.dataset_params || {},
+    objective: sl.objective_params || {},
+  };
+  document.querySelectorAll('.params-info-box').forEach(box => {
+    const paramType = box.dataset.paramType;
+    const stateKey  = box.dataset.stateKey;
+    if (!paramType || !stateKey) return;
+    const currentValue = state()[stateKey];
+    if (!currentValue) { box.innerHTML = ''; return; }
+    const params = (paramsLookup[paramType] || {})[currentValue] || {};
+    box.innerHTML = buildParamsTable(params);
+  });
+};
+
+/**
  * Render Scale selector
  */
 const renderScaleSelector = () => {
@@ -650,6 +711,7 @@ const mapSelectorsToState = () => {
   document.getElementById('change_shades').checked = currentState.with_quantiles;
   document.getElementById('change_suboptimal').checked = currentState.suboptimal_curve;
   document.getElementById('change_relative').checked = currentState.relative_curve;
+  document.getElementById('change_short_labels').checked = currentState.short_labels;
 };
 
 /*
@@ -736,11 +798,11 @@ const barDataToArrays = () => {
     x.push(plotData.short_label || plotData.label);
     y.push(getMedian(plotData.y));
     const plotText = plotData.text || '';
-    colors.push(plotText === '' ? plotData.color : NON_CONVERGENT_COLOR);
+    colors.push(plotData.color || UNDEFINED_COLOR);
     texts.push(plotText);
   });
 
-  return {x, y, colors, texts}
+  return {x, y, color: colors, texts}
 }
 
 const getScale = () => {
@@ -795,6 +857,7 @@ const getBarChartLayout = () => {
     xaxis: {
       tickangle: -60,
       ticktext: Array(data.data.map(d => d.label)),
+      categoryorder: 'trace',
     },
     showlegend: false,
     title: data["title"],
@@ -1357,35 +1420,31 @@ const createLegendItem = (curve, color, symbolNumber) => {
   const curveTraceData = data(curve);
   const shortLabel = (curveTraceData && curveTraceData.short_label) || curve;
   const fullLabel  = (curveTraceData && curveTraceData.full_label)  || curve;
-  const isShortened = shortLabel !== fullLabel;
+  const useShort   = state().short_labels;
+  const displayLabel = useShort ? shortLabel : fullLabel;
+  const isShortened  = shortLabel !== fullLabel;
 
   const textContainer = document.createElement('div');
   textContainer.style.marginLeft = '0.5rem';
   textContainer.style.flex = '1';
   textContainer.className = 'curve';
-  // Store the full name as a data attribute so getCurveFromEvent can always
-  // retrieve the identity key regardless of what text is displayed.
   textContainer.setAttribute('data-curve', curve);
-  textContainer.appendChild(document.createTextNode(shortLabel));
+  textContainer.appendChild(document.createTextNode(displayLabel));
 
-  // When the label was shortened, append a foldable <details> element that
-  // shows the full parametrized name on demand without cluttering the legend.
-  if (isShortened) {
-    const details = document.createElement('details');
-    details.style.fontSize = '0.75rem';
-    details.style.color = '#6b7280';  // Tailwind text-gray-500
-    details.style.marginTop = '0.1rem';
-    // Stop click propagation so expanding/collapsing does not toggle visibility.
-    details.addEventListener('click', e => e.stopPropagation());
-    const summary = document.createElement('summary');
-    summary.textContent = 'full name';
-    summary.style.cursor = 'pointer';
-    const fullNameSpan = document.createElement('span');
-    fullNameSpan.textContent = fullLabel;
-    fullNameSpan.style.userSelect = 'text';
-    details.appendChild(summary);
-    details.appendChild(fullNameSpan);
-    textContainer.appendChild(details);
+  // When showing short labels, append a hover icon that shows all params.
+  if (useShort && isShortened) {
+    const solverParams = ((window._short_labels || {}).solver_params || {})[curve] || {};
+    if (Object.keys(solverParams).length > 0) {
+      const icon = document.createElement('span');
+      icon.textContent = ' ⓘ';
+      icon.style.cursor = 'help';
+      icon.style.color = '#9ca3af';
+      icon.style.fontSize = '0.75rem';
+      icon.style.userSelect = 'none';
+      icon.addEventListener('mouseenter', (e) => showParamsTooltip(e, solverParams));
+      icon.addEventListener('mouseleave', hideParamsTooltip);
+      textContainer.appendChild(icon);
+    }
   }
 
   // Create the horizontal bar in the legend to represent the curve

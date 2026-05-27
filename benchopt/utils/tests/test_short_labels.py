@@ -4,6 +4,7 @@ import pytest
 from benchopt.utils.short_labels import (
     parse_parametrized_name,
     compute_short_labels,
+    compute_params_info,
     is_shortened,
     add_short_labels,
 )
@@ -42,10 +43,11 @@ def test_parse_brackets_in_value():
 # compute_short_labels
 # ---------------------------------------------------------------------------
 
-def test_single_name_unchanged():
+def test_single_name_returns_base():
+    # Single instance: base name only (params don't aid disambiguation).
     names = ["Solver[alpha=0.1,n_iter=100]"]
     short = compute_short_labels(names)
-    assert short["Solver[alpha=0.1,n_iter=100]"] == "Solver[alpha=0.1,n_iter=100]"
+    assert short["Solver[alpha=0.1,n_iter=100]"] == "Solver"
 
 
 def test_varying_param_only():
@@ -99,8 +101,8 @@ def test_mixed_solver_types():
     # Within SolverA group only alpha varies
     assert short["SolverA[alpha=0.1,n_iter=100]"] == "SolverA[alpha=0.1]"
     assert short["SolverA[alpha=0.5,n_iter=100]"] == "SolverA[alpha=0.5]"
-    # SolverB has only one instance – keep full name
-    assert short["SolverB[alpha=0.1]"] == "SolverB[alpha=0.1]"
+    # SolverB has only one instance – show base name only
+    assert short["SolverB[alpha=0.1]"] == "SolverB"
 
 
 # ---------------------------------------------------------------------------
@@ -118,7 +120,8 @@ def test_is_shortened_true():
 
 def test_is_shortened_false_single():
     short = compute_short_labels(["OnlySolver[p=1]"])
-    assert not is_shortened(short)
+    # base name "OnlySolver" != full name "OnlySolver[p=1]" → is_shortened=True
+    assert is_shortened(short)
 
 
 # ---------------------------------------------------------------------------
@@ -160,4 +163,22 @@ def test_add_short_labels_no_change_when_single():
     add_short_labels(plot_data, short_map)
 
     traces = plot_data["objective_curve"]["key1"]["data"]
-    assert traces[0]["full_label"] == traces[0]["short_label"]
+    assert traces[0]["full_label"] == "OnlySolver[p=1,q=2]"
+    assert traces[0]["short_label"] == "OnlySolver"  # base name only
+
+
+# ---------------------------------------------------------------------------
+# compute_params_info
+# ---------------------------------------------------------------------------
+
+def test_compute_params_info_basic():
+    names = ["Solver[alpha=0.1,n_iter=100]", "Solver[alpha=0.5,n_iter=100]"]
+    info = compute_params_info(names)
+    assert info["Solver[alpha=0.1,n_iter=100]"] == {"alpha": "0.1", "n_iter": "100"}
+    assert info["Solver[alpha=0.5,n_iter=100]"] == {"alpha": "0.5", "n_iter": "100"}
+
+
+def test_compute_params_info_no_params():
+    info = compute_params_info(["SolverA", "SolverB"])
+    assert info["SolverA"] == {}
+    assert info["SolverB"] == {}

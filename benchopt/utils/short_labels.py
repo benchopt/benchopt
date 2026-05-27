@@ -8,59 +8,30 @@ When many configurations exist but only a few parameters vary across runs,
 the full names can be very verbose.  This module provides helpers to produce
 *short labels* that only include the parameters that actually differ across
 the set of names being compared, together with a tooltip-friendly full label.
-
-The feature can be disabled per-benchmark by setting ``short_labels: false``
-in the benchmark's ``benchopt.yml`` configuration file.
 """
-import re
 from collections import defaultdict
+
+from .parametrized_name_mixin import _extract_options
 
 
 # ---------------------------------------------------------------------------
 # Name parsing
 # ---------------------------------------------------------------------------
 
-_PARAM_RE = re.compile(r'^(.+?)\[(.+)\]$', re.DOTALL)
 
 
 def parse_parametrized_name(name):
     """Split a parametrized name into its base name and parameter dict.
 
-    Parameters
-    ----------
-    name : str
-        A name of the form ``"BaseName[p1=v1,p2=v2]"`` or simply
-        ``"BaseName"`` (no parameters).
+    Thin wrapper around :func:`_extract_options` kept for backward compat.
 
     Returns
     -------
     base : str
-        The class name without parameters.
-    params : dict[str, str]
-        Ordered mapping of parameter name → string value.
-        Empty dict when the name has no ``[…]`` suffix.
-
-    Examples
-    --------
-    >>> parse_parametrized_name("LASSO[alpha=0.1,n_iter=100]")
-    ('LASSO', {'alpha': '0.1', 'n_iter': '100'})
-    >>> parse_parametrized_name("LASSO")
-    ('LASSO', {})
+    params : dict[str, str]  (values converted to str)
     """
-    m = _PARAM_RE.match(name)
-    if m is None:
-        return name, {}
-    base = m.group(1)
-    params_str = m.group(2)
-    params = {}
-    for token in params_str.split(','):
-        if '=' in token:
-            k, v = token.split('=', 1)
-            params[k.strip()] = v.strip()
-        else:
-            # Malformed token – store as-is under an empty key to avoid loss.
-            params[token.strip()] = ''
-    return base, params
+    base, _args, kwargs = _extract_options(str(name))
+    return base, {k: str(v) for k, v in kwargs.items()}
 
 
 def _format_name(base, params):
@@ -112,8 +83,12 @@ def compute_short_labels(names):
         'OtherSolver[alpha=0.1]':       'OtherSolver[alpha=0.1]',
     }
     """
-    names = list(names)
-    parsed = {name: parse_parametrized_name(name) for name in names}
+    names = list(map(str, names))
+    # Use _extract_options for robust AST-aware parsing of complex values.
+    parsed = {}
+    for name in names:
+        base, _args, kwargs = _extract_options(name)
+        parsed[name] = (base, kwargs)  # kwargs values are Python objects
 
     # Group by base name
     by_base = defaultdict(list)
@@ -123,9 +98,10 @@ def compute_short_labels(names):
     short_map = {}
     for base, group in by_base.items():
         if len(group) == 1:
-            # Single instance – keep the full name to preserve context.
-            name, _ = group[0]
-            short_map[name] = name
+            # Single instance – only the base name is needed for identification;
+            # showing all params adds noise without aiding disambiguation.
+            name, params = group[0]
+            short_map[name] = base
             continue
 
         # Find which parameter keys exist across this group.
@@ -142,7 +118,7 @@ def compute_short_labels(names):
         _MISSING = object()
         varying_keys = [
             k for k in all_keys
-            if len({params.get(k, _MISSING) for _, params in group}) > 1
+            if len({str(params.get(k, _MISSING)) for _, params in group}) > 1
         ]
 
         for name, params in group:
@@ -151,7 +127,7 @@ def compute_short_labels(names):
                 short_map[name] = base
             else:
                 short_params = {
-                    k: params[k] for k in varying_keys if k in params
+                    k: str(params[k]) for k in varying_keys if k in params
                 }
                 short_map[name] = _format_name(base, short_params)
 
@@ -161,6 +137,28 @@ def compute_short_labels(names):
 def is_shortened(short_map):
     """Return True if any label in *short_map* was actually shortened."""
     return any(short != full for full, short in short_map.items())
+
+
+def compute_params_info(names):
+    """Return ``{full_name: {param: str_value}}`` parsed from *names*.
+
+    Uses :func:`_extract_options` for robust AST-aware parsing so that
+    complex values (lists, dicts, tuples) are handled correctly.
+
+    Parameters
+    ----------
+    names : sequence of str
+
+    Returns
+    -------
+    params_info : dict[str, dict[str, str]]
+    """
+    result = {}
+    for name in names:
+        name_str = str(name)
+        base, _args, kwargs = _extract_options(name_str)
+        result[name_str] = {k: str(v) for k, v in kwargs.items()}
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -193,6 +191,9 @@ def add_short_labels(plot_data, solver_short_map):
     for plot_name, plot_keys in plot_data.items():
         for key, plot_entry in plot_keys.items():
             for trace in plot_entry.get('data', []):
+                # TablePlot rows are lists [solver_name, val, ...]; skip them.
+                if not isinstance(trace, dict):
+                    continue
                 full = trace.get('label')
                 if full is not None:
                     trace['full_label'] = full
