@@ -22,9 +22,7 @@ from .utils.parametrized_name_mixin import _check_patterns
 from .utils.terminal_output import colorify
 from .utils.terminal_output import GREEN, YELLOW
 
-from .utils.conda_env_cmd import install_in_conda_env
-from .utils.conda_env_cmd import shell_install_in_conda_env
-from .utils.shell_cmd import _run_shell_in_conda_env
+from .utils.env_management import get_backend
 
 # Get config values
 from .config import RAISE_INSTALL_ERROR
@@ -642,11 +640,12 @@ class Benchmark:
 
         print(f"Installing required packages for:\n{list_install}\n...",
               end='', flush=True)
-        install_in_conda_env(
+        backend = get_backend()
+        backend.install_packages(
             *list(set(conda_reqs)), env_name=env_name, quiet=quiet
         )
         for install_script in shell_install_scripts:
-            shell_install_in_conda_env(
+            backend.install_shell_script(
                 install_script, env_name=env_name, quiet=quiet
             )
         for hooks in post_install_hooks:
@@ -691,7 +690,7 @@ class Benchmark:
             return 0
         cmd = f"python -m benchopt check-data {self.benchmark_dir} -d "
         cmd += " -d ".join(d.name for d in datasets)
-        return _run_shell_in_conda_env(
+        return get_backend().run_in_env(
             cmd, env_name=env_name, raise_on_error=True, capture_stdout=False
         )
 

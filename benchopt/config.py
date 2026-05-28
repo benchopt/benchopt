@@ -32,6 +32,7 @@ DEFAULT_GLOBAL_CONFIG = {
     'cache': None,
     'default_timeout': 100,
     'warn_nonunique_files': True,
+    'env_backend': '',
     '_g_config_check': False,
     '_bench_config_check': False,
 }
@@ -60,6 +61,9 @@ particular for logging, warnings and errors. The available options are:
 * ``warn_nonunique_files``, *bool*: If set to True, raise a warning when a
   results file is about to be overwritten because a file with the same name
   already exists. Mostly useful to deactivate this warning in tests.
+* ``env_backend``, *str*: Default backend for ``benchopt install``. One of
+  ``conda``, ``uv`` or ``requirements``. When empty, the backend is
+  auto-detected from the active shell env, falling back to ``conda``.
 """
 
 DEFAULT_BENCHMARK_CONFIG = {

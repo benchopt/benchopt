@@ -98,67 +98,15 @@ def _run_shell(script, raise_on_error=None, capture_stdout=True,
 
 def _run_shell_in_conda_env(script, env_name=None, raise_on_error=None,
                             capture_stdout=True, return_output=False):
-    """Run a script in a given conda env
+    """Deprecated back-compat shim.
 
-    Parameters
-    ----------
-    script: str
-        Script to run
-    env_name: str
-        Name of the environment to run the script in.
-    raise_on_error: str or None
-        If raise_on_error is not None, raise a RuntimeError with the given
-        message if the command's exit code is non-zero.
-        Else, just return the exit code.
-    capture_stdout: bool
-        If set to True, capture the stdout of the subprocess. Else, it is
-        printed in the main process stdout.
-    return_output: bool
-        If set to True, return the stdout of the subprocess. It needs to be
-        used with capture_stdout=True.
-
-    Returns
-    -------
-    exit_code: int
-        Exit code of the script.
-    output: str
-        If return_output=True, return the output of the command as a str.
+    Use :func:`benchopt.utils.env_management.conda._run_shell_in_conda_env`
+    or call ``get_backend().run_in_env(...)`` instead.
     """
-    if env_name not in [None, "False"]:
-        # first line to use conda activate in bash script
-        # Add necessary calls to make the script run in conda env.
-        if IS_CMD:
-            # Windows specific handling
-            script = (
-                # Make sure R_HOME is unset in Windows to avoid conflicts
-                'SET "R_HOME="\n'
-
-                # Activate the conda environment using `CALL`
-                # to make sure it affects the current session
-                f'CALL conda activate "{env_name}"\n\n'
-
-                # Run the actual script
-                f'{script}'
-            )
-        else:
-            script = (
-                # Make sure R_HOME is never passed down to subprocesses in
-                # different conda env as it might lead
-                # to trying to load packages
-                # from the wrong R-environment.
-                '# Setup conda\nunset R_HOME\n'
-
-                # Run hook to setup conda and activate the env.
-                # first line to use conda activate in bash script
-                # see https://github.com/conda/conda/issues/7980
-                f'eval "$(conda shell.bash hook)"\n'
-                f'conda activate "{env_name}"\n\n'
-
-                # Run the actual script
-                f'# Run script\n{script}'
-            )
-
-    return _run_shell(
-        script, raise_on_error=raise_on_error,
-        capture_stdout=capture_stdout, return_output=return_output
+    from .env_management.conda import (
+        _run_shell_in_conda_env as _impl,
+    )
+    return _impl(
+        script, env_name=env_name, raise_on_error=raise_on_error,
+        capture_stdout=capture_stdout, return_output=return_output,
     )

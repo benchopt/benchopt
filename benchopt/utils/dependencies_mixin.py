@@ -3,11 +3,9 @@ import traceback
 from ..config import RAISE_INSTALL_ERROR
 
 from .class_property import classproperty
-from .shell_cmd import _run_shell_in_conda_env
-from .conda_env_cmd import install_in_conda_env
-from .conda_env_cmd import shell_install_in_conda_env
+from .env_management import get_backend
 
-from .terminal_output import colorify, RED, BLUE, GREEN, TICK, CROSS
+from .terminal_output import colorify, RED, BLUE, GREEN, YELLOW, TICK, CROSS
 RED_CROSS = colorify(CROSS, RED)
 GREEN_TICK = colorify(TICK, GREEN)
 
@@ -87,7 +85,7 @@ class DependenciesMixin:
             return True
 
         # Get the current benchmark directory
-        exit_code, output = _run_shell_in_conda_env(
+        exit_code, output = get_backend().run_in_env(
             f"benchopt check-install {cls._benchmark_dir} "
             f"{cls._module_filename} {cls._base_class_name}",
             env_name=env_name, return_output=True,
@@ -129,8 +127,9 @@ class DependenciesMixin:
                 cls._pre_install_hook(env_name=env_name)
                 if install_cmd_ == "conda":
                     if hasattr(cls, "requirements"):
-                        install_in_conda_env(*cls.requirements,
-                                             env_name=env_name)
+                        get_backend().install_packages(
+                            *cls.requirements, env_name=env_name
+                        )
                     else:
                         # get details of class
                         cls_type = cls.__base__.__name__.replace("Base", "")
@@ -156,7 +155,9 @@ class DependenciesMixin:
                         cls._module_filename.parents[1] / "install_scripts"
                         / cls.install_script
                     )
-                    shell_install_in_conda_env(install_file, env_name=env_name)
+                    get_backend().install_shell_script(
+                        install_file, env_name=env_name
+                    )
                 cls._post_install_hook(env_name=env_name)
 
             except Exception as exception:
@@ -234,6 +235,21 @@ class DependenciesMixin:
                             "If `requirements` is a dict, its keys should be "
                             f"`cpu` and `gpu`, got {list(conda_reqs.keys())}"
                         )
+
+                # Skip-with-warn: if the active backend cannot install
+                # any of the requirements (e.g. `chan::pkg` under uv),
+                # treat the class like one with a missing dependency.
+                backend = get_backend()
+                unsupported = [
+                    r for r in conda_reqs if not backend.can_install(r)
+                ]
+                if unsupported:
+                    print(colorify(
+                        f"skipped (backend {backend.name!r} cannot install"
+                        f" {unsupported})", YELLOW
+                    ))
+                    return [], [], [], cls
+
                 if not is_installed and len(conda_reqs) == 0:
                     missing_deps = cls
             post_install_hooks = [cls._post_install_hook]

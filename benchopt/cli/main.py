@@ -15,6 +15,9 @@ from benchopt.utils.conda_env_cmd import list_conda_envs
 from benchopt.utils.conda_env_cmd import create_conda_env
 from benchopt.utils.shell_cmd import _run_shell_in_conda_env
 from benchopt.utils.conda_env_cmd import get_env_info
+from benchopt.utils.env_management import (
+    BACKENDS, get_backend, resolve_backend_name, set_active_backend,
+)
 from benchopt.utils.profiling import print_stats
 from benchopt.parallel_backends import check_parallel_config
 
@@ -528,10 +531,26 @@ def prepare(benchmark, dataset_names, config_file=None,
               help="Use this flag to install requirements['gpu'] for solvers "
                    "and datasets that have different requirements for GPU and "
                    "CPU.")
+@click.option('--backend', 'backend_name', type=str, default=None,
+              metavar="<backend>",
+              help="Env-management backend to use. Currently registered: "
+                   "see ``BENCHOPT_ENV_BACKEND``. Default: auto-detected "
+                   "from the active env, falling back to 'conda'.")
 def install(
         benchmark, minimal, solver_names, dataset_names, config_file=None,
         force=False, recreate=False, env_name='False', confirm=False,
-        quiet=False, download=False, prepare=False, gpu=False):
+        quiet=False, download=False, prepare=False, gpu=False,
+        backend_name=None):
+
+    # Resolve the active backend for this invocation
+    backend_name = resolve_backend_name(backend_name)
+    if backend_name not in BACKENDS:
+        raise click.BadParameter(
+            f"Unknown backend {backend_name!r}. "
+            f"Available: {sorted(BACKENDS)}"
+        )
+    set_active_backend(backend_name)
+    backend = get_backend()
 
     if config_file is not None:
         with open(config_file, "r") as f:
@@ -546,15 +565,14 @@ def install(
     # Instantiate the benchmark
     benchmark = Benchmark(benchmark)
 
-    # Get a list of all conda envs
-    default_conda_env, conda_envs = list_conda_envs()
+    # Look up the active env and verify it is compatible with the backend
+    default_env, _envs = backend.list_envs()
     env_need_confirm = False
 
-    # check if any current conda environment
-    if default_conda_env is None:
+    if not backend.is_active_env_compatible():
         raise RuntimeError(
-            "No conda environment is activated. "
-            "You should be in a conda environment to use "
+            f"No environment compatible with backend {backend_name!r} is "
+            "activated. You should be in a compatible environment to use "
             "'benchopt install'."
         )
 
@@ -569,11 +587,11 @@ def install(
                 "'-e/--env' or '--env-name'."
             raise RuntimeError(msg)
         if not confirm:
-            env_need_confirm = default_conda_env
+            env_need_confirm = default_env
 
     else:
-        # If env_name is True, the flag `--env` has been used. Create a conda
-        # env specific to the benchmark. Else, use the <env_name> value.
+        # If env_name is True, the flag `--env` has been used. Create a
+        # dedicated env for the benchmark. Else, use the <env_name> value.
         if env_name == 'True':
             env_name = f"benchopt_{benchmark.name}"
         else:
@@ -581,14 +599,14 @@ def install(
             # (to avoid empty name like `--env-name ""`)
             if len(env_name) == 0:
                 raise RuntimeError("Empty environment name.")
-            # avoid recreating 'base' conda env`
+            # avoid recreating the 'base' env
             if env_name == 'base' and recreate:
                 raise RuntimeError(
-                    "Impossible to recreate 'base' conda environment."
+                    "Impossible to recreate 'base' environment."
                 )
 
         # create environment if necessary
-        create_conda_env(
+        backend.create_env(
             env_name, benchmark=benchmark, recreate=recreate, quiet=quiet
         )
 
