@@ -111,23 +111,23 @@ def run_one_to_cvg(benchmark, objective, solver, meta, timeout, max_runs,
     """
     curve = []
 
-    stopping_criterion = solver._stopping_criterion.get_runner_instance(
-        solver=solver,
-        max_runs=max_runs,
-        timeout=timeout,
-        terminal=terminal,
-    )
     run_key = (
         meta['dataset_name'],
         meta['objective_name'],
         meta['solver_name']
     )
-    stopping_criterion.run_key = run_key
-    stopping_criterion.rep = meta['idx_rep']
 
     skip, reason = solver._set_objective(objective)
     if skip:
         return [], run_key, 'skip', reason
+
+    stopping_criterion = solver._stopping_criterion.get_runner_instance(
+        solver=solver,
+        max_runs=max_runs,
+        timeout=timeout,
+        terminal=terminal,
+        run_key=run_key,
+    )
 
     with exception_handler(terminal, pdb=pdb) as ctx:
         # The warm-up step called for each repetition bit only run once.
