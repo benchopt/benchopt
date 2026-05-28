@@ -19,6 +19,7 @@ from .python_version import (
     _python_version_satisfies,
 )
 from .conda import CondaBackend
+from .uv import UvBackend
 
 __all__ = [
     "EnvBackend",
@@ -28,6 +29,7 @@ __all__ = [
     "reset_active_backend",
     "resolve_backend_name",
     "CondaBackend",
+    "UvBackend",
     "DEFAULT_PYTHON_VERSION",
     "get_benchmark_python_version",
     "_python_version_satisfies",

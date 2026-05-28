@@ -33,6 +33,7 @@ DEFAULT_GLOBAL_CONFIG = {
     'default_timeout': 100,
     'warn_nonunique_files': True,
     'env_backend': '',
+    'uv_envs_dir': '',
     '_g_config_check': False,
     '_bench_config_check': False,
 }
@@ -64,6 +65,9 @@ particular for logging, warnings and errors. The available options are:
 * ``env_backend``, *str*: Default backend for ``benchopt install``. One of
   ``conda``, ``uv`` or ``requirements``. When empty, the backend is
   auto-detected from the active shell env, falling back to ``conda``.
+* ``uv_envs_dir``, *str*: Directory under which the ``uv`` backend looks
+  up bare env names. When empty, defaults to
+  ``$XDG_DATA_HOME/benchopt/envs`` (or ``~/.local/share/benchopt/envs``).
 """
 
 DEFAULT_BENCHMARK_CONFIG = {
