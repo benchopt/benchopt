@@ -327,7 +327,7 @@ def test_global_sampling_strategy(no_debug_log):
     # non-regression test that soler inherits the sampling strategy from
     # the objective. If not, this will fail as it will exptect a 'value' key
 
-    objective = f"""from benchopt.utils.temp_benchmark import TempObjective
+    objective = """from benchopt.utils.temp_benchmark import TempObjective
 
     class Objective(TempObjective):
         name = "test_obj"
