@@ -323,6 +323,23 @@ def test_global_criterion_override(no_debug_log, criterion_class):
         assert isinstance(solver._stopping_criterion, criterion_class)
 
 
+def test_global_sampling_strategy(no_debug_log):
+    # non-regression test that soler inherits the sampling strategy from
+    # the objective. If not, this will fail as it will exptect a 'value' key
+
+    objective = f"""from benchopt.utils.temp_benchmark import TempObjective
+
+    class Objective(TempObjective):
+        name = "test_obj"
+        sampling_strategy = "run_once"
+        def evaluate_result(self, **kwargs): return dict(test=1)
+    """
+
+    with temp_benchmark(objective=objective) as bench:
+        run(f'{bench.benchmark_dir} -s test-solver -d test-dataset -n 1 '
+            "--no-plot".split(), standalone_mode=False)
+
+
 @pytest.mark.parametrize('strategy', SAMPLING_STRATEGIES)
 @pytest.mark.parametrize('criterion_class', [
     SufficientDescentCriterion, SufficientProgressCriterion
