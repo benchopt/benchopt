@@ -111,7 +111,6 @@ choice set:
        def get_parameter_choices(cls, name):
            if name == "dataset_name":
                return ["m4_weekly", "m4_daily", ...]  # all valid values
-           return super().get_parameter_choices(name)
 
 Once declared, the choices enable two things:
 
