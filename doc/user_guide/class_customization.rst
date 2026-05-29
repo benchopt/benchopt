@@ -129,11 +129,6 @@ Once declared, the choices enable two things:
 - **Discovering the values** through ``benchopt info -v``, which lists them
   (with a total count) alongside the default grid.
 
-.. note::
-
-   ``get_parameter_choices`` is strict opt-in. Existing classes are
-   unaffected, and ``=all`` is only available for parameters that declare a
-   value set. It is not supported for grouped (comma-separated) parameters.
 .. _managing_dependencies:
 
 Managing dependencies
