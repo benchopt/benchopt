@@ -288,7 +288,7 @@ class TestCheckPatterns:
 
 
 class TestParameterChoices:
-    """Tests for `param=all` expansion via `get_parameter_choices`."""
+    """Tests for `param=all` expansion via `get_all_parameter_values`."""
 
     class _DatasetChoices(BaseDataset):
         """Dataset declaring an enumerable value set via the hook."""
@@ -296,17 +296,17 @@ class TestParameterChoices:
         parameters = {'param': ['a']}
 
         @classmethod
-        def get_parameter_choices(cls, name):
-            if name == 'dataset_name':
+        def get_all_parameter_values(cls, name):
+            if name == 'param':
                 return ['a', 'b', 'c']
-            return super().get_parameter_choices(name)
+            return super().get_all_parameter_values(name)
 
         def get_data(self): pass
 
     class _DatasetNoChoices(BaseDataset):
         """Dataset that does not opt in to the choices hook."""
         name = "Test-Dataset"
-        parameters = {'dataset_name': ['a']}
+        parameters = {'param': ['a']}
         def get_data(self): pass
 
     class _DatasetCoupled(BaseDataset):
@@ -322,28 +322,30 @@ class TestParameterChoices:
     def test_single_all(self):
         # `param=all` expands to the full set of declared choices.
         params = self._params(
-            self._DatasetChoices, "Test-Dataset[dataset_name=all]")
-        assert params['dataset_name'] == ['a', 'b', 'c']
+            self._DatasetChoices, "Test-Dataset[param=all]")
+        assert params['param'] == ['a', 'b', 'c']
 
     def test_list_with_all(self):
         # Explicit values are kept first, then the remaining choices, deduped.
         params = self._params(
-            self._DatasetChoices, "Test-Dataset[dataset_name=[c, all]]")
-        assert params['dataset_name'] == ['c', 'a', 'b']
+            self._DatasetChoices, "Test-Dataset[param=[c, all]]")
+        assert params['param'] == ['c', 'a', 'b']
 
     def test_no_all_unchanged(self):
         # Values without `all` are passed through untouched.
         params = self._params(
-            self._DatasetChoices, "Test-Dataset[dataset_name=b]")
-        assert params['dataset_name'] == 'b'
+            self._DatasetChoices, "Test-Dataset[param=b]")
+        assert params['param'] == 'b'
 
-    def test_missing_hook_raises(self):
-        # `param=all` on a class that does not declare choices errors out.
-        with pytest.raises(
-                click.BadParameter,
+    def test_missing_hook_warns(self):
+        # `param=all` on a class that does not declare choices warns and keeps
+        # 'all' as a literal value rather than failing.
+        with pytest.warns(
+                UserWarning,
                 match="does not declare an enumerable value set"):
-            self._params(
-                self._DatasetNoChoices, "Test-Dataset[dataset_name=all]")
+            params = self._params(
+                self._DatasetNoChoices, "Test-Dataset[param=all]")
+        assert params['param'] == 'all'
 
     def test_coupled_all_raises(self):
         # `all` on a coupled parameter is ambiguous and rejected.
@@ -351,6 +353,16 @@ class TestParameterChoices:
                 click.BadParameter,
                 match="not supported for coupled parameters"):
             self._params(self._DatasetCoupled, "Test-Dataset['a, b'=all]")
+
+    def test_coupled_nested_all_raises(self):
+        # `all` nested inside a coupled parameter's tuples is also rejected,
+        # rather than being silently treated as the literal value 'all'.
+        with pytest.raises(
+                click.BadParameter,
+                match="not supported for coupled parameters"):
+            self._params(
+                self._DatasetCoupled,
+                "Test-Dataset['a, b'=[(1, 10), (2, all)]]")
 
 
 class TestParametrizedNameMixin:

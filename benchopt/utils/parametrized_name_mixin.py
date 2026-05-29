@@ -1,5 +1,6 @@
 import re
 import ast
+import warnings
 import itertools
 from abc import abstractmethod
 
@@ -378,12 +379,23 @@ def is_matched(name, include_patterns=None, default=True):
     return False
 
 
+def _contains_all(value):
+    """Return True if the literal ``'all'`` appears anywhere in ``value``.
+
+    Recurses into lists and tuples so that ``'all'`` nested inside the value
+    of a coupled parameter (e.g. ``[(0, 1), (1, 'all')]``) is detected.
+    """
+    if isinstance(value, (list, tuple)):
+        return any(_contains_all(v) for v in value)
+    return value == 'all'
+
+
 def _expand_all(cls, kwargs, name_type):
-    """Expand ``'all'`` parameter values using ``get_parameter_choices``.
+    """Expand ``'all'`` parameter values using ``get_all_parameter_values``.
 
     For each parameter whose selected value(s) contain the literal
     ``'all'``, replace ``'all'`` with the full set of valid values declared
-    by ``cls.get_parameter_choices(name)``. Any explicit values passed
+    by ``cls.get_all_parameter_values(name)``. Any explicit values passed
     alongside ``'all'`` (e.g. ``[v1, 'all', v2]``) are preserved and
     de-duplicated against the declared choices, keeping a stable order
     (explicit values first, then declared choices not already listed).
@@ -392,7 +404,7 @@ def _expand_all(cls, kwargs, name_type):
     ----------
     cls : ParametrizedNameMixin
         The class whose parameters are being expanded. Its
-        ``get_parameter_choices`` classmethod declares the valid universe.
+        ``get_all_parameter_values`` classmethod declares the valid universe.
     kwargs : dict
         Mapping of parameter name to selected value(s), as extracted from a
         CLI pattern. Values may be a single value or a list.
@@ -407,33 +419,54 @@ def _expand_all(cls, kwargs, name_type):
         choices. Parameters that do not contain ``'all'`` are passed through
         unchanged.
 
+    Warns
+    -----
+    UserWarning
+        If a parameter requests ``'all'`` but ``cls.get_all_parameter_values``
+        returns ``None`` for it (i.e. the class did not opt in by declaring an
+        enumerable value set). In that case ``'all'`` is kept as a literal
+        value. Implementing the hook disables the warning.
+
     Raises
     ------
     click.BadParameter
-        If a parameter requests ``'all'`` but ``cls.get_parameter_choices``
-        returns ``None`` for it (i.e. the class did not opt in by declaring
-        an enumerable value set), or if ``'all'`` is used on a coupled
-        (comma-joined) parameter, for which expansion is ambiguous.
+        If ``'all'`` appears anywhere in the values of a coupled
+        (comma-joined) parameter, for which expansion is not possible.
     """
     expanded = {}
     for key, val in kwargs.items():
+        # For coupled (comma-joined) parameters, values must stay fixed tuples
+        # that vary together, so 'all' cannot be expanded. Reject it wherever
+        # it appears -- including nested inside the value tuples -- rather than
+        # silently treating it as the literal value 'all'.
+        if ',' in key:
+            if _contains_all(val):
+                raise click.BadParameter(
+                    f"'all' is not supported for coupled parameters "
+                    f"'{key}' of {name_type} '{cls.name}'."
+                )
+            expanded[key] = val
+            continue
         vals = val if isinstance(val, list) else [val]
         if 'all' not in vals:
             expanded[key] = val
             continue
-        if ',' in key:
-            raise click.BadParameter(
-                f"'all' is not supported for coupled parameters "
-                f"'{key}' of {name_type} '{cls.name}'."
-            )
-        choices = cls.get_parameter_choices(key)
+        choices = cls.get_all_parameter_values(key)
         if choices is None:
-            raise click.BadParameter(
+            # The class did not opt in by declaring an enumerable value set,
+            # so 'all' cannot be expanded. Warn instead of failing, and keep
+            # 'all' as a literal value. Implementing get_all_parameter_values
+            # to return the values disables this warning (and enables `=all`).
+            warnings.warn(
                 f"Parameter '{key}' of {name_type} '{cls.name}' does not "
-                f"declare an enumerable value set. Override "
-                f"{cls.__name__}.get_parameter_choices('{key}') to enable "
-                f"'{key}=all'."
+                f"declare an enumerable value set, so '{key}=all' is used as "
+                f"a literal value. Override "
+                f"{cls.__name__}.get_all_parameter_values('{key}') to enable "
+                f"'{key}=all'.",
+                UserWarning,
             )
+            expanded[key] = val
+            continue
         # merge explicit values with the full set, de-duplicated, order-stable
         merged = [v for v in vals if v != 'all'] + [
             c for c in choices if c not in vals
@@ -559,9 +592,9 @@ def _check_patterns(all_classes, patterns, name_type='dataset',
                     f"Unknown parameter {bad_params} for {name_type} "
                     f"{cls.name}.\n{msg}"
                 )
-    params = cls.parameters.copy()
-    params.update(kwargs)
-    params = _expand_all(cls, params, name_type)
+        params = cls.parameters.copy()
+        params.update(kwargs)
+        params = _expand_all(cls, params, name_type)
         all_valid_patterns.append((cls, params))
 
     if not class_only:

@@ -267,11 +267,11 @@ def print_info(cls_name_list, cls_list, env_name=None, verbose=False):
                     values = ', '.join(map(str, value))
                     print(f"    {param}: {values}")
                     # If the class declares an enumerable universe of valid
-                    # values for this parameter (via get_parameter_choices),
+                    # values for this parameter (via get_all_parameter_values),
                     # list them too. This is the set expanded by `param=all`.
                     choices = None
-                    if hasattr(cls, 'get_parameter_choices'):
-                        choices = cls.get_parameter_choices(param)
+                    if hasattr(cls, 'get_all_parameter_values'):
+                        choices = cls.get_all_parameter_values(param)
                     if choices is not None:
                         print(f"        valid values: "
                               f"{_format_choices(choices)}")

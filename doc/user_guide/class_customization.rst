@@ -97,7 +97,7 @@ the *full set of valid values* a parameter can take, which may be much larger
 sub-datasets through a single parameter.
 
 To declare this full set, override the optional classmethod
-``get_parameter_choices``. It returns the list of valid values for a given
+``get_all_parameter_values``. It returns the list of valid values for a given
 parameter, or ``None`` (the default) when the parameter has no enumerable
 choice set:
 
@@ -108,7 +108,7 @@ choice set:
        parameters = {"dataset_name": ["m4_weekly"]}  # small default grid
 
        @classmethod
-       def get_parameter_choices(cls, name):
+       def get_all_parameter_values(cls, name):
            if name == "dataset_name":
                return ["m4_weekly", "m4_daily", ...]  # all valid values
 
@@ -121,10 +121,11 @@ Once declared, the choices enable two things:
      benchopt run . -d "GiftEval[dataset_name=all]"
 
   This expands ``dataset_name`` to every value returned by
-  ``get_parameter_choices``. Explicit values can be mixed in, e.g.
+  ``get_all_parameter_values``. Explicit values can be mixed in, e.g.
   ``dataset_name=[m4_weekly, all]``; they are merged and de-duplicated.
   Using ``=all`` on a parameter whose class does not override the hook
-  raises an error pointing you at ``get_parameter_choices``.
+  emits a warning and keeps ``'all'`` as a literal value; implementing
+  ``get_all_parameter_values`` enables the expansion and silences the warning.
 
 - **Discovering the values** through ``benchopt info -v``, which lists them
   (with a total count) alongside the default grid.
