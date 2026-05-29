@@ -147,6 +147,51 @@ def test_is_active_env_compatible_is_true():
 
 
 # ---------------------------------------------------------------------------
+# verifies_install / record_class_origin hooks
+# ---------------------------------------------------------------------------
+
+def test_verifies_install_is_false():
+    # The export-only backend has no env to verify against.
+    assert RequirementsBackend().verifies_install() is False
+
+
+def test_conda_backend_verifies_install_is_true():
+    # Sanity: the default conda backend still asks for verification.
+    from benchopt.utils.env_management import CondaBackend
+    assert CondaBackend().verifies_install() is True
+
+
+def test_record_class_origin_attributes_manual_entries(tmp_path):
+    out = tmp_path / "requirements.txt"
+    RequirementsBackend.configure_output(output_path=str(out))
+    backend = RequirementsBackend()
+    backend.record_class_origin(
+        "my-solver",
+        ["pytorch::pytorch", "pip::numpy"],
+        [],
+    )
+    backend.install_packages("pytorch::pytorch", "pip::numpy")
+    content = out.read_text()
+    # The manual section attributes the channel dep to its origin class.
+    assert "from my-solver" in content
+    # Pip-installable entries appear in the main list.
+    assert "numpy" in content
+
+
+def test_record_class_origin_attributes_shell_scripts(tmp_path):
+    out = tmp_path / "requirements.txt"
+    RequirementsBackend.configure_output(output_path=str(out))
+    backend = RequirementsBackend()
+    script = tmp_path / "install_radio.sh"
+    script.write_text("#!/bin/bash\n")
+    backend.record_class_origin("radio-solver", [], [script])
+    backend.install_shell_script(script)
+    content = out.read_text()
+    assert "from radio-solver" in content
+    assert "install_radio.sh" in content
+
+
+# ---------------------------------------------------------------------------
 # configure_output resets accumulators
 # ---------------------------------------------------------------------------
 

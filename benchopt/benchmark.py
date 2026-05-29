@@ -579,10 +579,14 @@ class Benchmark:
         print("Collecting packages:")
         exit_code = 0
 
+        backend = get_backend()
         check_installs, missings = [], []
         objective = self.get_benchmark_objective()
         conda_reqs, shell_install_scripts, post_install_hooks, missing_deps = (
             objective.collect(env_name=env_name, force=force)
+        )
+        backend.record_class_origin(
+            objective.name, conda_reqs, shell_install_scripts
         )
         if missing_deps:
             raise AttributeError(
@@ -601,6 +605,7 @@ class Benchmark:
                 reqs, scripts, hooks, missing = (
                     klass.collect(env_name=env_name, force=force, gpu=gpu)
                 )
+                backend.record_class_origin(klass.name, reqs, scripts)
                 # If a class is not importable but has no requirements,
                 # it might be because the requirements are specified
                 # as global ones in the Objective. We keep track of them
@@ -640,7 +645,6 @@ class Benchmark:
 
         print(f"Installing required packages for:\n{list_install}\n...",
               end='', flush=True)
-        backend = get_backend()
         backend.install_packages(
             *list(set(conda_reqs)), env_name=env_name, quiet=quiet
         )
@@ -651,6 +655,16 @@ class Benchmark:
         for hooks in post_install_hooks:
             hooks(env_name=env_name)
         print(colorify(' done', GREEN))
+
+        # Export-only backends (requirements) don't actually modify an
+        # env, so post-install verification is meaningless. Skip it.
+        if not backend.verifies_install():
+            if prepare:
+                exit_code = max(
+                    exit_code,
+                    self.prepare_all_data(include_datasets, force=force)
+                )
+            return exit_code
 
         # Check install for all classes that needed extra requirements
         print('- Checking installed packages...', end='', flush=True)

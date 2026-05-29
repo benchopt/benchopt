@@ -129,7 +129,9 @@ def test_requirements_backend_writes_pip_lines(tmp_path):
 
 
 def test_requirements_backend_records_channel_deps_as_manual(tmp_path):
-    """Channel-prefixed entries land in the manual-steps section."""
+    """Channel-prefixed entries land in the manual-steps section,
+    annotated with the class that declared them. The post-install
+    verification block must not fire (no env to verify against)."""
     solver = """
     from benchopt.utils.temp_benchmark import TempSolver
 
@@ -139,7 +141,7 @@ def test_requirements_backend_records_channel_deps_as_manual(tmp_path):
     """
     out = tmp_path / "out.txt"
     with temp_benchmark(solvers=solver) as bench:
-        with CaptureCmdOutput():
+        with CaptureCmdOutput() as captured:
             install(
                 f"{bench.benchmark_dir} -s chan-solver -f "
                 f"--backend requirements --output {out}".split(),
@@ -148,6 +150,10 @@ def test_requirements_backend_records_channel_deps_as_manual(tmp_path):
     content = out.read_text()
     assert "Manual steps" in content
     assert "pytorch" in content
+    # The manual entry is attributed to its origin class.
+    assert "from chan-solver" in content
+    # No post-install verification fires for the export-only backend.
+    captured.check_output("Checking installed packages", repetition=0)
 
 
 def test_requirements_backend_rejects_env_name():

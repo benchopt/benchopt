@@ -98,6 +98,38 @@ class EnvBackend(ABC):
         """Run ``script`` inside ``env_name`` and return its exit code
         (and optionally its output)."""
 
+    # ------------------------------------------------------------------
+    # Optional hooks (sensible defaults; only some backends override)
+    # ------------------------------------------------------------------
+    def verifies_install(self):
+        """Return True if ``install_all_requirements`` should run the
+        post-install verification loop (call ``cls.is_installed`` on each
+        installed class). Backends that do not actually modify an
+        environment — like ``requirements`` — return False.
+        """
+        return True
+
+    def record_class_origin(self, klass_name, requirements, shell_scripts):
+        """Hook called once per class while
+        ``install_all_requirements`` collects requirements.
+
+        Backends that need to attribute each requirement / install script
+        back to the class that declared it (notably the ``requirements``
+        backend, which annotates the manual-steps section of the export
+        file) override this. The default is a no-op so conda / uv stay
+        unchanged.
+
+        Parameters
+        ----------
+        klass_name : str
+            Display name of the class (Solver / Dataset / Objective).
+        requirements : list of str
+            ``requirements`` entries the class declared.
+        shell_scripts : list of pathlib.Path
+            Shell install scripts the class declared.
+        """
+        pass
+
 
 def resolve_backend_name(cli_value=None):
     """Resolve which backend to use, in order:
