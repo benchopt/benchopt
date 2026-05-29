@@ -665,6 +665,25 @@ def install(
         download=download, prepare=prepare, gpu=gpu,
         env_need_confirm=env_need_confirm
     )
+
+    # For export-only backends, surface the produced file(s) the same way
+    # `benchopt run` / `benchopt plot` do for their outputs.
+    if backend_name == "requirements":
+        from benchopt.utils.env_management.requirements import (
+            RequirementsBackend,
+        )
+        from benchopt.utils.terminal_output import colorify, GREEN
+        print(colorify(
+            f"Saving requirements in: {RequirementsBackend.output_path}",
+            GREEN,
+        ))
+        if RequirementsBackend.manual_output_path:
+            print(colorify(
+                "Saving manual install steps in: "
+                f"{RequirementsBackend.manual_output_path}",
+                GREEN,
+            ))
+
     if exit_code != 0:
         raise SystemExit(exit_code)
 

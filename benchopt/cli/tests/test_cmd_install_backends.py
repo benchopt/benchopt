@@ -126,6 +126,8 @@ def test_requirements_backend_writes_pip_lines(tmp_path):
     # The pip:: prefix must be stripped in the output.
     assert "pip::" not in content
     out_.check_output(f"Installing '{bench.name}' requirements")
+    # The end-of-run message mirrors `benchopt run` / `benchopt plot`.
+    out_.check_output(f"Saving requirements in: {out}")
 
 
 def test_requirements_backend_records_channel_deps_as_manual(tmp_path):
