@@ -18,6 +18,7 @@ CLI
   the new opt-in ``get_parameter_choices`` classmethod, and are also listed
   by ``benchopt info -v``. By `Eduardo Montesuma`_
 
+.. _1_9_1:
 Version 1.9.1 -- 28/05/2026
 ---------------------------
 
