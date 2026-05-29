@@ -293,7 +293,7 @@ class TestParameterChoices:
     class _DatasetChoices(BaseDataset):
         """Dataset declaring an enumerable value set via the hook."""
         name = "Test-Dataset"
-        parameters = {'dataset_name': ['a']}
+        parameters = {'param': ['a']}
 
         @classmethod
         def get_parameter_choices(cls, name):
