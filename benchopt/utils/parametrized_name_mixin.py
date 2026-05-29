@@ -400,6 +400,11 @@ def _expand_all(cls, kwargs, name_type):
     de-duplicated against the declared choices, keeping a stable order
     (explicit values first, then declared choices not already listed).
 
+    A class can instead declare that ``'all'`` is a legitimate literal value
+    for a parameter (rather than the expansion token) by returning ``'all'``
+    from ``get_all_parameter_values(name)``. In that case ``'all'`` is kept
+    as-is, without expansion or warning.
+
     Parameters
     ----------
     cls : ParametrizedNameMixin
@@ -425,7 +430,8 @@ def _expand_all(cls, kwargs, name_type):
         If a parameter requests ``'all'`` but ``cls.get_all_parameter_values``
         returns ``None`` for it (i.e. the class did not opt in by declaring an
         enumerable value set). In that case ``'all'`` is kept as a literal
-        value. Implementing the hook disables the warning.
+        value. Implementing the hook to return the values (or ``'all'``)
+        disables the warning.
 
     Raises
     ------
@@ -452,17 +458,25 @@ def _expand_all(cls, kwargs, name_type):
             expanded[key] = val
             continue
         choices = cls.get_all_parameter_values(key)
+        if choices == 'all':
+            # The class declares that 'all' is a legitimate literal value for
+            # this parameter (rather than the expansion token). Keep it as-is,
+            # without expanding or warning.
+            expanded[key] = val
+            continue
         if choices is None:
             # The class did not opt in by declaring an enumerable value set,
             # so 'all' cannot be expanded. Warn instead of failing, and keep
             # 'all' as a literal value. Implementing get_all_parameter_values
-            # to return the values disables this warning (and enables `=all`).
+            # to return the values enables expansion; returning 'all' marks it
+            # as a literal value and silences this warning.
             warnings.warn(
                 f"Parameter '{key}' of {name_type} '{cls.name}' does not "
                 f"declare an enumerable value set, so '{key}=all' is used as "
                 f"a literal value. Override "
-                f"{cls.__name__}.get_all_parameter_values('{key}') to enable "
-                f"'{key}=all'.",
+                f"{cls.__name__}.get_all_parameter_values('{key}') to return "
+                f"the valid values (to enable '{key}=all') or 'all' (to keep "
+                f"'all' as a literal value and silence this warning).",
                 UserWarning,
             )
             expanded[key] = val

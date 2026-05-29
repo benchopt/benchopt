@@ -124,8 +124,10 @@ Once declared, the choices enable two things:
   ``get_all_parameter_values``. Explicit values can be mixed in, e.g.
   ``dataset_name=[m4_weekly, all]``; they are merged and de-duplicated.
   Using ``=all`` on a parameter whose class does not override the hook
-  emits a warning and keeps ``'all'`` as a literal value; implementing
-  ``get_all_parameter_values`` enables the expansion and silences the warning.
+  emits a warning and keeps ``'all'`` as a literal value. Implementing
+  ``get_all_parameter_values`` to return the valid values enables the
+  expansion; implementing it as a no-op that returns ``'all'`` for that
+  parameter silences the warning and keeps ``'all'`` as a literal value.
 
 - **Discovering the values** through ``benchopt info -v``, which lists them
   (with a total count) alongside the default grid.

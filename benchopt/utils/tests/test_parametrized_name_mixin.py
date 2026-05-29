@@ -1,5 +1,6 @@
 import click
 import pytest
+import warnings
 from joblib import Parallel, delayed
 
 from benchopt import BaseDataset
@@ -297,30 +298,30 @@ class TestParameterChoices:
     @pytest.mark.parametrize("pattern, expected", [
         ("Test-Dataset[param=all]", ['a', 'b', 'c']),
         ("Test-Dataset[param=[c, all]]", ['c', 'a', 'b']),
-        ("Test-Dataset[param=b]", ['b']),
+        ("Test-Dataset[param=b]", 'b'),
     ], ids=["all", "all with other values", "specific value"])
     def test_expand_all(self, pattern, expected):
-
-        class _DatasetChoices(BaseDataset):
-            """Dataset declaring an enumerable value set via the hook."""
+        # `param=all` expands to the declared set; explicit values are kept
+        # first and merged with the remaining choices; values without `all`
+        # are passed through unchanged.
+        class _Dataset(BaseDataset):
             name = "Test-Dataset"
             parameters = {'param': ['a']}
 
             @classmethod
-            def get_all_parameter_values(cls, name): return ['a', 'b', 'c']
+            def get_all_parameter_values(cls, name):
+                if name == 'param':
+                    return ['a', 'b', 'c']
+                return super().get_all_parameter_values(name)
 
-        def get_data(self): pass
+            def get_data(self): pass
 
-        # `param=all` expands to the full set of declared choices.
-        params = self._params(_DatasetChoices, pattern)
-        assert params['param'] == expected
+        assert self._params(_Dataset, pattern)['param'] == expected
 
     def test_missing_hook_warns(self):
         # `param=all` on a class that does not declare choices warns and keeps
         # 'all' as a literal value rather than failing.
-
-        class _DatasetNoChoices(BaseDataset):
-            """Dataset that does not opt in to the choices hook."""
+        class _Dataset(BaseDataset):
             name = "Test-Dataset"
             parameters = {'param': ['a']}
             def get_data(self): pass
@@ -328,17 +329,36 @@ class TestParameterChoices:
         with pytest.warns(
                 UserWarning,
                 match="does not declare an enumerable value set"):
-            params = self._params(_DatasetNoChoices, "Test-Dataset[param=all]")
+            params = self._params(_Dataset, "Test-Dataset[param=all]")
+        assert params['param'] == 'all'
+
+    def test_literal_all_no_warning(self):
+        # Returning 'all' from the hook marks it as a literal value: 'all' is
+        # kept as-is, with no expansion and no warning.
+        class _Dataset(BaseDataset):
+            name = "Test-Dataset"
+            parameters = {'param': ['a']}
+
+            @classmethod
+            def get_all_parameter_values(cls, name):
+                if name == 'param':
+                    return 'all'
+                return super().get_all_parameter_values(name)
+
+            def get_data(self): pass
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            params = self._params(_Dataset, "Test-Dataset[param=all]")
         assert params['param'] == 'all'
 
     @pytest.mark.parametrize("pattern", [
         "Test-Dataset['p1, p2'=all]",
         "Test-Dataset['p1, p2'=[(1, 10), (2, all)]]",
-    ])
+    ], ids=["top-level", "nested"])
     def test_coupled_all_raises(self, pattern):
-        # `all` on a coupled parameter is ambiguous and rejected.
-        class _DatasetCoupled(BaseDataset):
-            """Dataset with coupled (comma-joined) parameters."""
+        # `all` on a coupled parameter (top-level or nested) is rejected.
+        class _Dataset(BaseDataset):
             name = "Test-Dataset"
             parameters = {'p1, p2': [(1, 10)]}
             def get_data(self): pass
@@ -346,7 +366,7 @@ class TestParameterChoices:
         with pytest.raises(
                 click.BadParameter,
                 match="not supported for coupled parameters"):
-            self._params(_DatasetCoupled, pattern)
+            self._params(_Dataset, pattern)
 
 
 class TestParametrizedNameMixin:
