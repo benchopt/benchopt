@@ -239,8 +239,11 @@ class UvBackend(EnvBackend):
         # both for plain versions (3.12) and ranges (>=3.12).
         py_arg = str(python_version) or DEFAULT_PYTHON_VERSION
         try:
+            # ``--seed`` installs pip in the venv. benchopt's
+            # ``get_benchopt_requirement`` imports pip internals to detect
+            # editable installs, so we need it available inside the env.
             _run_shell(
-                f'"{uv}" venv --python "{py_arg}" "{env_path}"',
+                f'"{uv}" venv --seed --python "{py_arg}" "{env_path}"',
                 capture_stdout=quiet, raise_on_error=True,
             )
             if empty:

@@ -238,7 +238,9 @@ class DependenciesMixin:
 
                 # Skip-with-warn: if the active backend cannot install
                 # any of the requirements (e.g. `chan::pkg` under uv),
-                # treat the class like one with a missing dependency.
+                # drop the class from this install run. The class will
+                # still be reported as not-installed by the post-install
+                # verification loop, surfacing the warning to the user.
                 backend = get_backend()
                 unsupported = [
                     r for r in conda_reqs if not backend.can_install(r)
@@ -248,7 +250,7 @@ class DependenciesMixin:
                         f"skipped (backend {backend.name!r} cannot install"
                         f" {unsupported})", YELLOW
                     ))
-                    return [], [], [], cls
+                    return [], [], [], None
 
                 if not is_installed and len(conda_reqs) == 0:
                     missing_deps = cls

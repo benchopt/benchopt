@@ -773,7 +773,16 @@ class Benchmark:
         # Format the list of classes missing requirements.
         cls_types = {'Solver': [], 'Dataset': []}
         for klass in missings:
-            cls_type = klass.__base__.__name__.replace("Base", "")
+            # Walk the MRO until we find a Base* ancestor — handles user
+            # classes that subclass TempSolver/TempDataset (tests) as well
+            # as direct Base* subclasses.
+            cls_type = ""
+            for ancestor in klass.__mro__:
+                if ancestor.__name__.startswith("Base"):
+                    cls_type = ancestor.__name__.replace("Base", "")
+                    break
+            if cls_type not in cls_types:
+                continue
             try:
                 # Check for invalid install_cmd
                 hasattr(klass, "install_cmd")
