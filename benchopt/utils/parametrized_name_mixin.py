@@ -25,7 +25,7 @@ class ParametrizedNameMixin():
                 setattr(self, k, v)
 
     @classmethod
-    def get_parameter_choices(cls, name):
+    def get_all_parameter_values(cls, name):
         """Return all valid values for parameter `name`, or None when not
         enumerable. Distinct from `cls.parameters[name]`, which only drives
         the default sweep grid."""
