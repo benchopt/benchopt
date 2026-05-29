@@ -165,11 +165,14 @@ def use_env(request):
 
 @pytest.fixture(scope='session')
 def test_env_name(request, bench, use_env):
+    import shutil
     global _TEST_ENV_NAME
 
     if _TEST_ENV_NAME is None:
         if request.config.getoption("--skip-env"):
             pytest.skip("Skip creating a test env")
+        if shutil.which("conda") is None:
+            pytest.skip("conda is not installed on PATH")
         env_name = request.config.getoption("--test-env")
         recreate = request.config.getoption("--recreate")
         if env_name is None:
@@ -193,9 +196,12 @@ def test_env_name(request, bench, use_env):
 
 @pytest.fixture(scope='session')
 def empty_env_name(request, use_env):
+    import shutil
     global _EMPTY_ENV_NAME
 
     if _EMPTY_ENV_NAME is None:
+        if shutil.which("conda") is None:
+            pytest.skip("conda is not installed on PATH")
         env_name = f"_benchopt_test_env_{uuid.uuid4()}"
         _EMPTY_ENV_NAME = env_name
 

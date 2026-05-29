@@ -23,12 +23,16 @@ requires_uv = pytest.mark.skipif(
     shutil.which("uv") is None,
     reason="uv is not installed on PATH",
 )
+requires_conda = pytest.mark.skipif(
+    shutil.which("conda") is None,
+    reason="conda is not installed on PATH",
+)
 
 # Standard parametrize value for cross-backend tests.
 backends = pytest.mark.parametrize(
     "backend_test_env",
     [
-        "conda",
+        pytest.param("conda", marks=requires_conda),
         pytest.param("uv", marks=requires_uv),
     ],
     indirect=True,

@@ -126,6 +126,56 @@ jobs:
       - name: Run benchopt run without conda
         run: benchopt run examples/minimal_benchmark -r 1 -n 10 --no-plot
 
+  test_uv_no_conda:
+    name: Test uv backend without conda
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            version_python: "3.12"
+    env:
+      VERSION_PYTHON: ${{ matrix.version_python }}
+
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.VERSION_PYTHON }}
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install benchopt and test deps (no conda)
+        run: pip install -e ".[test]"
+
+      - name: Verify no conda is on PATH
+        run: |
+          which conda && exit 1 || echo "conda not installed, OK"
+
+      - name: Run backend unit tests
+        run: |
+          pytest -v --timeout=120 \
+            benchopt/utils/tests/test_env_backend.py \
+            benchopt/utils/tests/test_uv_backend.py \
+            benchopt/utils/tests/test_requirements_backend.py
+
+      - name: Run parametrized install tests (uv param only, conda skips)
+        run: |
+          pytest -v --timeout=600 --skip-env \
+            benchopt/cli/tests/test_cmd_install_backends.py
+
+      - name: Smoke test - install minimal_benchmark via uv backend
+        run: |
+          benchopt install examples/minimal_benchmark -f \
+            --backend uv --env-name /tmp/_benchopt_ci_uv -q
+
+      - name: Smoke test - export requirements.txt
+        run: |
+          benchopt install examples/minimal_benchmark -f \
+            --backend requirements --output /tmp/req.txt
+          cat /tmp/req.txt
+
   test_no_pytest:
     name: Test benchopt test without pytest installed
     runs-on: ubuntu-latest
@@ -176,16 +226,19 @@ jobs:
 
   report_test:
     if: ${{ always() }}
-    needs: [test_benchopt, test_no_conda]
+    needs: [test_benchopt, test_no_conda, test_uv_no_conda]
     runs-on: ubuntu-latest
     env:
       TEST_BENCHOPT: ${{ needs.test_benchopt.result }}
       TEST_NO_CONDA: ${{ needs.test_no_conda.result }}
+      TEST_UV_NO_CONDA: ${{ needs.test_uv_no_conda.result }}
 
     steps:
       - name: "Gather test results."
         run: |
-          if [[ $TEST_BENCHOPT == 'success' && $TEST_NO_CONDA == 'success' ]]; then
+          if [[ $TEST_BENCHOPT == 'success' \
+                && $TEST_NO_CONDA == 'success' \
+                && $TEST_UV_NO_CONDA == 'success' ]]; then
             exit 0;
           else
             exit 1;

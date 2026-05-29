@@ -600,25 +600,27 @@ def install(
             python_version=python_version,
         )
 
-    # Look up the active env and verify it is compatible with the backend
+    # Look up the active env. The compatibility check only matters when
+    # installing into the current env — if the user passes --env or
+    # --env-name the backend creates / uses that env, no active env
+    # required.
     default_env, _envs = backend.list_envs()
     env_need_confirm = False
-
-    if not backend.is_active_env_compatible():
-        raise RuntimeError(
-            f"No environment compatible with backend {backend_name!r} is "
-            "activated. You should be in a compatible environment to use "
-            "'benchopt install'."
-        )
 
     print(f"Installing '{benchmark.name}' requirements")
     # If env_name is False (default), installation in the current environment.
     if env_name == 'False':
+        if not backend.is_active_env_compatible():
+            raise RuntimeError(
+                f"No environment compatible with backend "
+                f"{backend_name!r} is activated. Either activate one or "
+                "pass --env / --env-name to create a dedicated env."
+            )
         env_name = None
         # incompatible with the 'recreate' flag to avoid messing with the
         # user environment
         if recreate:
-            msg = "Cannot recreate conda env without using options " + \
+            msg = "Cannot recreate the env without using options " + \
                 "'-e/--env' or '--env-name'."
             raise RuntimeError(msg)
         if not confirm:
