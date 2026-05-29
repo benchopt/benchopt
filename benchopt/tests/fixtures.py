@@ -114,12 +114,38 @@ def pytest_generate_tests(metafunc):
         ]
     }
 
+    # Tests that exercise the dataset code paths run once per dataset name
+    # declared in the relevant ``test_config`` (per solver / per objective).
+    # We expand the parametrize values to include the dataset name as a
+    # third element when the test uses the ``test_dataset_name`` fixture.
+    if 'test_dataset_name' in metafunc.fixturenames:
+        if 'solver_class' in metafunc.fixturenames:
+            parametrization['solver_class'] = [
+                (benchmark, solver, name)
+                for solver in benchmark.get_solvers()
+                for name in benchmark.get_test_dataset_names(
+                    solver_class=solver
+                )
+            ]
+        elif 'objective_class' in metafunc.fixturenames:
+            objective = benchmark.get_benchmark_objective()
+            parametrization['objective_class'] = [
+                (benchmark, objective, name)
+                for name in benchmark.get_test_dataset_names()
+            ]
+
     # Parametrize the tests
     for param, values in parametrization.items():
         if param in metafunc.fixturenames:
-            metafunc.parametrize(
-                ('benchmark', param), values, ids=class_ids
-            )
+            if values and len(values[0]) == 3:
+                metafunc.parametrize(
+                    ('benchmark', param, 'test_dataset_name'),
+                    values, ids=class_ids
+                )
+            else:
+                metafunc.parametrize(
+                    ('benchmark', param), values, ids=class_ids
+                )
             break
     else:
         if "benchmark" in metafunc.fixturenames:

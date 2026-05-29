@@ -232,8 +232,15 @@ def get_configs(dataset_class, obj_class=None, solver_class=None):
     if solver_class is not None and hasattr(solver_class, "test_config"):
         solver_config = solver_class.test_config.copy()
 
-    dataset_config.update(**objective_config.pop('dataset', {}))
-    dataset_config.update(**solver_config.pop('dataset', {}))
+    # ``name`` inside ``dataset`` selects the test dataset class (handled by
+    # ``Benchmark.get_test_dataset``); it is not a dataset parameter, so drop
+    # it before merging into the dataset kwargs.
+    obj_ds = objective_config.pop('dataset', {})
+    obj_ds.pop('name', None)
+    solver_ds = solver_config.pop('dataset', {})
+    solver_ds.pop('name', None)
+    dataset_config.update(**obj_ds)
+    dataset_config.update(**solver_ds)
     objective_config.update(**solver_config.pop('objective', {}))
     all_config = {
         'dataset': dataset_config,

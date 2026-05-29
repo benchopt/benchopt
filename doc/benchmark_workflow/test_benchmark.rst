@@ -44,26 +44,40 @@ push/pull request, and once a week, to ensure long term maintainability.
 Parameters' configuration for tests
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-By default, the benchmark will load a ``Simulated`` dataset for testing
-purposes. The name of this test dataset can be changed with the
-``Objective.test_dataset`` attribute. However, real datasets may be too large
-to be used in tests, and some solvers or objectives may require specific
-settings — for instance a specific regularization level to be fast, or a
-particular data format only possible with a given dataset.
-To handle these cases, ``benchopt`` provides a ``test_config`` class attribute
-that can be defined on the ``Dataset``, ``Objective``, and ``Solver`` classes.
-Each class can override the parameters used to instantiate any of the
-component classes during testing:
+The test bed used for ``test_solver_run`` and ``test_benchmark_objective``
+is controlled by a ``test_config`` class attribute that can be defined on
+the ``Dataset``, ``Objective``, and ``Solver`` classes. Each class can
+override the parameters used to instantiate any of the component classes
+during testing, and the ``dataset`` entry of ``test_config`` can select
+which dataset class is used:
 
 - ``Dataset.test_config`` directly contains the parameters passed to the
   ``Dataset`` class.
 - ``Objective.test_config`` directly contains the parameters passed to the
   ``Objective`` class, with an optional ``dataset`` key whose value is a
-  dictionary of parameters that override those of the dataset.
+  dictionary of parameters that override those of the dataset. A special
+  ``name`` entry inside that ``dataset`` dictionary selects which dataset
+  class is used for testing — and it may be a list of names, in which case
+  ``test_benchmark_objective`` is run once per name (useful for objectives
+  whose code path differs across datasets, e.g. forecasting vs.
+  classification).
 - ``Solver.test_config`` directly contains the parameters passed to the
   ``Solver`` class, with optional ``dataset`` and ``objective`` keys whose
   values are dictionaries of parameters that override those of the dataset
-  and objective respectively.
+  and objective respectively. As with ``Objective.test_config``, a ``name``
+  entry inside ``dataset`` (string or list) selects which dataset(s) are
+  used to test this particular solver — necessary for benchmarks that ship
+  multiple datasets covering different tasks, when a solver only supports
+  a subset of them.
+
+If none of these is set, the benchmark falls back to a ``Simulated`` test
+dataset; the legacy ``Objective.test_dataset_name`` attribute is still
+honored for backward compatibility. This default suits most benchmarks, but
+real datasets may be too large to be used in tests, and some solvers or
+objectives may require specific settings — for instance a specific
+regularization level to be fast, or a particular data format only possible
+with a given dataset. The ``test_config`` attributes above are the way to
+encode these constraints.
 
 The configurations from the three classes are merged with the following
 priority order, from lowest to highest: ``Dataset.test_config``,
@@ -90,10 +104,21 @@ parameters for the whole benchmark:
 
     class Objective(BaseObjective):
         name = "my objective"
-        test_dataset = "my_data"
         test_config = {
             'reg': 0.9,
-            'dataset': {'debug': True},
+            'dataset': {'name': 'my_data', 'debug': True},
+        }
+
+For a multi-task benchmark, a solver that only supports a subset of the
+datasets can declare which one(s) to test against:
+
+.. code-block:: python
+
+    class Solver(BaseSolver):
+        name = "classifier1"
+
+        test_config = {
+            'dataset': {'name': 'ucr'},  # or ['ucr', 'ucr-multivariate']
         }
 
 Fallback with ``Dataset.test_parameters``

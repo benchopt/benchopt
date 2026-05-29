@@ -1,3 +1,4 @@
+import os
 import re
 from pathlib import Path
 
@@ -59,12 +60,26 @@ class CaptureCmdOutput(object):
         e = get_memmapping_executor(2)
         e.shutdown()
 
+        # Force a wide virtual terminal so pytest doesn't truncate the
+        # ``FAILED ...`` / ``PASSED ...`` lines in the short summary. With
+        # stdout redirected, pytest cannot query the real tty width and
+        # falls back to ``COLUMNS`` (default 80), which truncates long
+        # parametrize ids and breaks ``check_output(...)`` repetition
+        # counts in tests.
+        self._prev_columns = os.environ.get("COLUMNS")
+        os.environ["COLUMNS"] = "1000"
+
         # Redirect the stdout/stderr fd to temp file
         self.out.__enter__()
         return self
 
     def __exit__(self, exc_class, value, traceback):
         self.out.__exit__(None, None, None)
+
+        if self._prev_columns is None:
+            os.environ.pop("COLUMNS", None)
+        else:
+            os.environ["COLUMNS"] = self._prev_columns
 
         self.output_checker = BenchoptCmdOutputProcessor(
             self.out.output, self.delete_result_files

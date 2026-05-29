@@ -57,12 +57,14 @@ def test_dataset_get_data(benchmark, dataset_class):
     )
 
 
-def test_benchmark_objective(benchmark, objective_class):
+def test_benchmark_objective(benchmark, objective_class, test_dataset_name):
     # check that the result of the objective function is compatible with
     # benchopt, does not contain `objective_name` and is not empty.
 
-    # instanciate dataset and objective, taking into account the test_config
-    dataset_class = benchmark.get_test_dataset()
+    # instanciate dataset and objective, taking into account the test_config.
+    # The objective can run on multiple test datasets via
+    # ``Objective.test_config['dataset']['name'] = [...]``.
+    dataset_class = benchmark.get_test_dataset(name=test_dataset_name)
     configs = get_configs(dataset_class, objective_class)
     dataset = dataset_class.get_instance(**configs['dataset'])
     objective = objective_class.get_instance(**configs['objective'])
@@ -229,15 +231,18 @@ def test_solver_stopping_criterion(benchmark, solver_class):
         )
 
 
-def test_solver_run(benchmark, solver_class):
+def test_solver_run(benchmark, solver_class, test_dataset_name):
     # Check that a solver run with at least one configuration of a simulated
     # dataset.
 
     if not solver_class.is_installed():
         pytest.skip("Solver is not installed")
 
-    # instanciate dataset and objective, taking into account the test_config
-    dataset_class = benchmark.get_test_dataset()
+    # instanciate dataset and objective, taking into account the test_config.
+    # The solver can pick its own test dataset(s) via
+    # ``Solver.test_config['dataset']['name'] = '...'`` or a list — this
+    # test is parametrized once per resolved name.
+    dataset_class = benchmark.get_test_dataset(name=test_dataset_name)
     objective_class = benchmark.get_benchmark_objective()
     configs = get_configs(dataset_class, objective_class, solver_class)
 
@@ -265,7 +270,7 @@ def test_solver_run(benchmark, solver_class):
 
     # fallback to testing all configurations if the first one is not compatible
     test_parameters = islice(product_param(
-        getattr(dataset_class, 'test_parameters', [{}])
+        getattr(dataset_class, 'test_parameters', {})
     ), 1, None)
 
     reasons = set()

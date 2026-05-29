@@ -282,6 +282,84 @@ class TestCmdTest:
         for k, v in zip(['Solver', 'Objective', 'Dataset'], expected):
             out.check_output(f"{k}#{v}", repetition=1)
 
+    @pytest.mark.parametrize('source, value, expected', [
+        ('objective', "'data_a'", ['data_a']),
+        ('objective', "['data_a', 'data_b']", ['data_a', 'data_b']),
+        ('solver', "'data_b'", ['data_b']),
+        ('solver', "['data_a', 'data_b']", ['data_a', 'data_b']),
+    ], ids=[
+        'objective_str', 'objective_list',
+        'solver_str', 'solver_list',
+    ])
+    def test_test_config_dataset_name(self, source, value, expected):
+        # ``Solver``/``Objective`` can pick the test dataset via
+        # ``test_config['dataset']['name']``, accepting either a string or
+        # a list. A list parametrizes the test once per name.
+        dataset_a = """from benchopt import BaseDataset
+        class Dataset(BaseDataset):
+            name = "data_a"
+            def get_data(self):
+                print("Selected#data_a")
+                return dict(X=None, y=None)
+        """
+        dataset_b = """from benchopt import BaseDataset
+        class Dataset(BaseDataset):
+            name = "data_b"
+            def get_data(self):
+                print("Selected#data_b")
+                return dict(X=None, y=None)
+        """
+        objective = """from benchopt.utils.temp_benchmark import TempObjective
+        class Objective(TempObjective):
+            name = "test-objective"
+            test_dataset_name = "data_a"
+            # TEST_CONFIG
+        """
+        solver = """from benchopt.utils.temp_benchmark import TempSolver
+        class Solver(TempSolver):
+            name = "test-solver"
+            # TEST_CONFIG
+        """
+        cfg = f"test_config = {{'dataset': {{'name': {value}}}}}"
+        if source == 'objective':
+            objective = objective.replace('# TEST_CONFIG', cfg)
+        else:
+            solver = solver.replace('# TEST_CONFIG', cfg)
+
+        with temp_benchmark(
+            datasets=[dataset_a, dataset_b], objective=objective,
+            solvers=solver,
+        ) as bench:
+            with CaptureCmdOutput() as out:
+                benchopt_test(
+                    f"{bench.benchmark_dir} --skip-install "
+                    "-sk test_solver_run".split(),
+                    'benchopt', standalone_mode=False
+                )
+        for name in expected:
+            out.check_output(f"Selected#{name}", repetition=1)
+
+    def test_solver_skip_without_test_parameters_no_crash(self):
+        # Non-regression: when a solver skips the default test config and
+        # the dataset has no ``test_parameters``, ``test_solver_run`` should
+        # raise a clean "Solver skipped all test configuration" error
+        # rather than crashing with AttributeError on the malformed default
+        # used by the fallback path.
+        solver = """from benchopt.utils.temp_benchmark import TempSolver
+        class Solver(TempSolver):
+            name = "always-skip-solver"
+            def skip(self, **kwargs): return True, "incompatible by design"
+        """
+        with temp_benchmark(solvers=solver) as bench:
+            with CaptureCmdOutput(exit=1) as out:
+                benchopt_test(
+                    f"{bench.benchmark_dir} --skip-install "
+                    "-k test_solver_run".split(),
+                    'benchopt', standalone_mode=False
+                )
+        out.check_output("Solver skipped all test configuration")
+        out.check_output("AttributeError", repetition=0)
+
     def test_interaction_with_run_seeding(self):
         # non-regression for benchopt/benchopt#890, where the seeding was not
         # properly initialized for the test commands.
