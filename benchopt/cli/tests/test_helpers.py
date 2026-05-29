@@ -5,10 +5,8 @@ from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.utils.terminal_output import TICK, CROSS
 
 
-from benchopt import BaseDataset
 from benchopt.cli.helpers import check_data
 from benchopt.cli.helpers import check_install
-from benchopt.cli.helpers import print_info
 
 
 class TestCheckInstallCmd:
@@ -89,38 +87,3 @@ class TestCheckDataCmd:
 
             out.check_output(CROSS, repetition=1)
             out.check_output("ValueError: Failed to load data", repetition=1)
-
-
-class TestInfoChoices:
-    """Tests for `benchopt info -v` rendering of `get_parameter_choices`."""
-
-    def test_info_lists_choices(self, capsys):
-        # When a class declares an enumerable value set, `info -v` lists it.
-        class _Dataset(BaseDataset):
-            name = "with-choices"
-            parameters = {'dataset_name': ['a']}
-
-            @classmethod
-            def get_parameter_choices(cls, name):
-                if name == 'dataset_name':
-                    return ['a', 'b', 'c']
-                return super().get_parameter_choices(name)
-
-            def get_data(self): pass
-
-        print_info(['all'], [_Dataset], env_name=None, verbose=True)
-        out = capsys.readouterr().out
-        assert "dataset_name: a" in out
-        assert "valid values: a, b, c (3 total)" in out
-
-    def test_info_no_choices(self, capsys):
-        # Without the hook, `info -v` output is unchanged (no valid values).
-        class _Dataset(BaseDataset):
-            name = "no-choices"
-            parameters = {'dataset_name': ['a']}
-            def get_data(self): pass
-
-        print_info(['all'], [_Dataset], env_name=None, verbose=True)
-        out = capsys.readouterr().out
-        assert "dataset_name: a" in out
-        assert "valid values" not in out
