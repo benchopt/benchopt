@@ -6,7 +6,7 @@
 
 ----
 
-|Test Status| |codecov| |Documentation| |Python 3.6+| |install-per-months| |discord| |SWH|
+|Test Status| |codecov| |Documentation| |Python 3.10+| |install-per-months| |discord| |SWH|
 
 ``Benchopt`` is a benchmarking suite tailored for machine learning workflows.
 It is built for simplicity, transparency, and reproducibility.
@@ -203,8 +203,8 @@ Available benchmarks
 
 .. |Test Status| image:: https://github.com/benchopt/benchopt/actions/workflows/test.yml/badge.svg
    :target: https://github.com/benchopt/benchopt/actions/workflows/test.yml
-.. |Python 3.6+| image:: https://img.shields.io/badge/python-3.6%2B-blue
-   :target: https://www.python.org/downloads/release/python-360/
+.. |Python 3.10+| image:: https://img.shields.io/badge/python-3.10%2B-blue
+   :target: https://www.python.org/downloads/release/python-3100/
 .. |Documentation| image:: https://img.shields.io/badge/documentation-latest-blue
    :target: https://benchopt.github.io
 .. |codecov| image:: https://codecov.io/gh/benchopt/benchopt/branch/main/graph/badge.svg
