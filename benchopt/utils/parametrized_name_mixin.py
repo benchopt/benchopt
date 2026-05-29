@@ -25,6 +25,13 @@ class ParametrizedNameMixin():
                 setattr(self, k, v)
 
     @classmethod
+    def get_parameter_choices(cls, name):
+        """Return all valid values for parameter `name`, or None when not
+        enumerable. Distinct from `cls.parameters[name]`, which only drives
+        the default sweep grid."""
+        return None  # Default opt-out
+
+    @classmethod
     def get_instance(cls, **parameters):
         """Helper function to instantiate an object and save its parameters.
 
@@ -371,6 +378,70 @@ def is_matched(name, include_patterns=None, default=True):
     return False
 
 
+def _expand_all(cls, kwargs, name_type):
+    """Expand ``'all'`` parameter values using ``get_parameter_choices``.
+
+    For each parameter whose selected value(s) contain the literal
+    ``'all'``, replace ``'all'`` with the full set of valid values declared
+    by ``cls.get_parameter_choices(name)``. Any explicit values passed
+    alongside ``'all'`` (e.g. ``[v1, 'all', v2]``) are preserved and
+    de-duplicated against the declared choices, keeping a stable order
+    (explicit values first, then declared choices not already listed).
+
+    Parameters
+    ----------
+    cls : ParametrizedNameMixin
+        The class whose parameters are being expanded. Its
+        ``get_parameter_choices`` classmethod declares the valid universe.
+    kwargs : dict
+        Mapping of parameter name to selected value(s), as extracted from a
+        CLI pattern. Values may be a single value or a list.
+    name_type : str
+        Type of the class (``'dataset'``, ``'solver'``, ...), used only to
+        build a sensible error message.
+
+    Returns
+    -------
+    expanded : dict
+        Copy of ``kwargs`` with every ``'all'`` replaced by the declared
+        choices. Parameters that do not contain ``'all'`` are passed through
+        unchanged.
+
+    Raises
+    ------
+    click.BadParameter
+        If a parameter requests ``'all'`` but ``cls.get_parameter_choices``
+        returns ``None`` for it (i.e. the class did not opt in by declaring
+        an enumerable value set), or if ``'all'`` is used on a coupled
+        (comma-joined) parameter, for which expansion is ambiguous.
+    """
+    expanded = {}
+    for key, val in kwargs.items():
+        vals = val if isinstance(val, list) else [val]
+        if 'all' not in vals:
+            expanded[key] = val
+            continue
+        if ',' in key:
+            raise click.BadParameter(
+                f"'all' is not supported for coupled parameters "
+                f"'{key}' of {name_type} '{cls.name}'."
+            )
+        choices = cls.get_parameter_choices(key)
+        if choices is None:
+            raise click.BadParameter(
+                f"Parameter '{key}' of {name_type} '{cls.name}' does not "
+                f"declare an enumerable value set. Override "
+                f"{cls.__name__}.get_parameter_choices('{key}') to enable "
+                f"'{key}=all'."
+            )
+        # merge explicit values with the full set, de-duplicated, order-stable
+        merged = [v for v in vals if v != 'all'] + [
+            c for c in choices if c not in vals
+        ]
+        expanded[key] = merged
+    return expanded
+
+
 def _check_patterns(all_classes, patterns, name_type='dataset',
                     class_only=False):
     """Check the patterns and return a list of selected classes and params.
@@ -488,6 +559,7 @@ def _check_patterns(all_classes, patterns, name_type='dataset',
                     f"Unknown parameter {bad_params} for {name_type} "
                     f"{cls.name}.\n{msg}"
                 )
+        kwargs = _expand_all(cls, kwargs, name_type)
         params = cls.parameters.copy()
         params.update(kwargs)
         all_valid_patterns.append((cls, params))

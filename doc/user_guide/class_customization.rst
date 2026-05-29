@@ -84,6 +84,58 @@ For more complex experiment definitions, the same parameter overrides can be
 expressed in the run configuration file described in
 :ref:`Run a benchmark <run_benchmark>`.
 
+.. _parameter_choices:
+
+Declaring the full set of valid values
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The ``parameters`` dictionary defines the *default sweep grid*: the
+combinations that run when no override is passed. It is deliberately kept
+small so that ``benchopt run`` stays fast by default. This is distinct from
+the *full set of valid values* a parameter can take, which may be much larger
+-- for instance, a dataset class that wraps a collection of named
+sub-datasets through a single parameter.
+
+To declare this full set, override the optional classmethod
+``get_parameter_choices``. It returns the list of valid values for a given
+parameter, or ``None`` (the default) when the parameter has no enumerable
+choice set:
+
+.. code-block:: python
+
+   class Dataset(BaseDataset):
+       name = "GiftEval"
+       parameters = {"dataset_name": ["m4_weekly"]}  # small default grid
+
+       @classmethod
+       def get_parameter_choices(cls, name):
+           if name == "dataset_name":
+               return ["m4_weekly", "m4_daily", ...]  # all valid values
+           return super().get_parameter_choices(name)
+
+Once declared, the choices enable two things:
+
+- **Sweeping all values** with the ``=all`` shorthand on the command line:
+
+  .. prompt:: bash $
+
+     benchopt run . -d "GiftEval[dataset_name=all]"
+
+  This expands ``dataset_name`` to every value returned by
+  ``get_parameter_choices``. Explicit values can be mixed in, e.g.
+  ``dataset_name=[m4_weekly, all]``; they are merged and de-duplicated.
+  Using ``=all`` on a parameter whose class does not override the hook
+  raises an error pointing you at ``get_parameter_choices``.
+
+- **Discovering the values** through ``benchopt info -v``, which lists them
+  (with a total count) alongside the default grid.
+
+.. note::
+
+   ``get_parameter_choices`` is strict opt-in. Existing classes are
+   unaffected, and ``=all`` is only available for parameters that declare a
+   value set. It is not supported for grouped (comma-separated) parameters.
+
 .. _managing_dependencies:
 
 Managing dependencies

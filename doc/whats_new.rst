@@ -7,6 +7,17 @@ What's new
 
 .. _dev:
 
+Version 1.10.0 -- in development
+--------------------------------
+
+CLI
+~~~
+
+- Add ``param=all`` shorthand to sweep every valid value of a parameter,
+  e.g. ``-d "Foo[x=all]"``. The valid values are declared per class through
+  the new opt-in ``get_parameter_choices`` classmethod, and are also listed
+  by ``benchopt info -v``. By `Eduardo Montesuma`_
+
 Version 1.9.1 -- 28/05/2026
 ---------------------------
 
