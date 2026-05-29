@@ -559,9 +559,9 @@ def _check_patterns(all_classes, patterns, name_type='dataset',
                     f"Unknown parameter {bad_params} for {name_type} "
                     f"{cls.name}.\n{msg}"
                 )
-        kwargs = _expand_all(cls, kwargs, name_type)
-        params = cls.parameters.copy()
-        params.update(kwargs)
+    params = cls.parameters.copy()
+    params.update(kwargs)
+    params = _expand_all(cls, params, name_type)
         all_valid_patterns.append((cls, params))
 
     if not class_only:
