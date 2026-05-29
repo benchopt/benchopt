@@ -643,9 +643,13 @@ def install(
                 )
 
         # create environment if necessary
-        backend.create_env(
+        fresh = backend.create_env(
             env_name, benchmark=benchmark, recreate=recreate, quiet=quiet
         )
+        # In a fresh env nothing is installed yet, so skip the per-class
+        # is_installed checks (collect / install short-circuit on force).
+        if fresh:
+            force = True
 
     # List solver and datasets classes to install
     if len(dataset_names) == 0 and len(solver_names) > 0:

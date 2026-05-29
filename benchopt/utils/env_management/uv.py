@@ -210,7 +210,7 @@ class UvBackend(EnvBackend):
                         f"({python_version}). Use --recreate."
                     )
             print("done")
-            return
+            return False
 
         if recreate and env_path.exists():
             # Defensive guards: never delete the active venv, never go
@@ -249,7 +249,7 @@ class UvBackend(EnvBackend):
             if empty:
                 if quiet:
                     print("done")
-                return
+                return True
 
             benchopt_req, _ = get_benchopt_requirement(pytest)
             benchopt_req = benchopt_req.replace("\\", "/")
@@ -264,6 +264,7 @@ class UvBackend(EnvBackend):
 
         if quiet:
             print("done")
+        return True
 
     def delete_env(self, env_name):
         env_path = self.env_path(env_name)

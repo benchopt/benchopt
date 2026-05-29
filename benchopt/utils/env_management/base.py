@@ -61,7 +61,16 @@ class EnvBackend(ABC):
     @abstractmethod
     def create_env(self, env_name, *, benchmark=None, recreate=False,
                    pytest=False, empty=False, quiet=False):
-        """Create the environment ``env_name`` (or ensure it exists)."""
+        """Create the environment ``env_name`` (or ensure it exists).
+
+        Returns
+        -------
+        fresh : bool
+            ``True`` if the env was freshly created (or recreated via
+            ``recreate=True``), ``False`` if an existing env was reused.
+            Callers use this to skip per-class ``is_installed`` checks
+            when nothing can be already installed.
+        """
 
     @abstractmethod
     def delete_env(self, env_name):

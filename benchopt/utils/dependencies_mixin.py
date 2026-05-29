@@ -115,9 +115,17 @@ class DependenciesMixin:
         is_installed: bool
             True if the class is correctly installed in the environment.
         """
-        # Check that install_cmd is valid and if the cls is installed
+        # Check that install_cmd is valid and if the cls is installed.
+        # When force=True targets a specific env (env_name is not None,
+        # typically just-created), skip the is_installed check which
+        # would spawn a per-class subprocess to confirm nothing is
+        # installed yet. For env_name=None the check is in-process and
+        # essentially free, so always run it.
         install_cmd_ = cls.install_cmd_
-        is_installed = cls.is_installed(env_name=env_name, quiet=True)
+        if force and env_name is not None:
+            is_installed = False
+        else:
+            is_installed = cls.is_installed(env_name=env_name, quiet=True)
 
         env_suffix = f" in '{env_name}'" if env_name else ""
         if force or not is_installed:
@@ -204,12 +212,20 @@ class DependenciesMixin:
             print(f"failed to get requirements {RED_CROSS}\n{exc}")
             return [], [], [], cls
 
-        # Check that install_cmd is valid and if the cls is installed
+        # Check that install_cmd is valid and if the cls is installed.
+        # When force=True targets a specific env (typically just-created),
+        # skip the per-class is_installed check — it would spawn a
+        # subprocess to confirm nothing is installed yet. For
+        # env_name=None the check is in-process and essentially free,
+        # so always run it.
         try:
             install_cmd_ = cls.install_cmd_
         except Exception as exc:
             return fail_fast(exc)
-        is_installed = cls.is_installed(env_name=env_name, quiet=True)
+        if force and env_name is not None:
+            is_installed = False
+        else:
+            is_installed = cls.is_installed(env_name=env_name, quiet=True)
 
         missing_deps = None
         conda_reqs, shell_install_scripts, post_install_hooks = [], [], []
@@ -252,7 +268,13 @@ class DependenciesMixin:
                     ))
                     return [], [], [], None
 
-                if not is_installed and len(conda_reqs) == 0:
+                # The "no requirements declared" heuristic only fires
+                # when we have a real is_installed answer. When we
+                # short-circuited the check (force=True targeting a
+                # specific env), defer the diagnostic to post-install
+                # verification.
+                if (not force and not is_installed
+                        and len(conda_reqs) == 0):
                     missing_deps = cls
             post_install_hooks = [cls._post_install_hook]
             print("collected", GREEN_TICK)

@@ -456,10 +456,13 @@ class CondaBackend(EnvBackend):
 
     def create_env(self, env_name, *, benchmark=None, recreate=False,
                    pytest=False, empty=False, quiet=False):
+        _, existing = list_conda_envs()
+        fresh = env_name not in existing or recreate
         create_conda_env(
             env_name, benchmark=benchmark, recreate=recreate, pytest=pytest,
             empty=empty, quiet=quiet
         )
+        return fresh
 
     def delete_env(self, env_name):
         delete_conda_env(env_name)
