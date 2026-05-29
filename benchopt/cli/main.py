@@ -536,11 +536,19 @@ def prepare(benchmark, dataset_names, config_file=None,
               help="Env-management backend to use. Currently registered: "
                    "see ``BENCHOPT_ENV_BACKEND``. Default: auto-detected "
                    "from the active env, falling back to 'conda'.")
+@click.option('--output', 'output_path', type=str, default=None,
+              metavar="<path>",
+              help="Output file for the 'requirements' backend. "
+                   "Default: <benchmark>/requirements.txt.")
+@click.option('--manual-output', 'manual_output_path', type=str, default=None,
+              metavar="<path>",
+              help="Optional output file for manual install steps under the "
+                   "'requirements' backend. Default: appended to --output.")
 def install(
         benchmark, minimal, solver_names, dataset_names, config_file=None,
         force=False, recreate=False, env_name='False', confirm=False,
         quiet=False, download=False, prepare=False, gpu=False,
-        backend_name=None):
+        backend_name=None, output_path=None, manual_output_path=None):
 
     # Resolve the active backend for this invocation
     backend_name = resolve_backend_name(backend_name)
@@ -564,6 +572,33 @@ def install(
 
     # Instantiate the benchmark
     benchmark = Benchmark(benchmark)
+
+    # The 'requirements' backend exports to a file rather than touching
+    # an env. Reject env-related flags and pin the output destination
+    # before the install pipeline runs.
+    if backend_name == "requirements":
+        if env_name not in ("False",):
+            raise click.BadParameter(
+                "The 'requirements' backend does not create environments; "
+                "drop --env / --env-name."
+            )
+        from benchopt.utils.env_management.requirements import (
+            RequirementsBackend,
+        )
+        default_output = str(
+            (benchmark.benchmark_dir / "requirements.txt").resolve()
+        )
+        try:
+            objective = benchmark.get_benchmark_objective()
+            python_version = getattr(objective, "python_version", None)
+        except Exception:
+            python_version = None
+        RequirementsBackend.configure_output(
+            output_path=output_path or default_output,
+            manual_output_path=manual_output_path,
+            benchmark_name=benchmark.name,
+            python_version=python_version,
+        )
 
     # Look up the active env and verify it is compatible with the backend
     default_env, _envs = backend.list_envs()

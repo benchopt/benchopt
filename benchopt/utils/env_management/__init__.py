@@ -20,6 +20,7 @@ from .python_version import (
 )
 from .conda import CondaBackend
 from .uv import UvBackend
+from .requirements import RequirementsBackend
 
 __all__ = [
     "EnvBackend",
@@ -30,6 +31,7 @@ __all__ = [
     "resolve_backend_name",
     "CondaBackend",
     "UvBackend",
+    "RequirementsBackend",
     "DEFAULT_PYTHON_VERSION",
     "get_benchmark_python_version",
     "_python_version_satisfies",

@@ -11,6 +11,7 @@ reuse for both backends.
 """
 import shutil
 
+import click
 import pytest
 
 from benchopt.cli.main import install
@@ -96,6 +97,70 @@ def test_uv_skips_class_with_channel_requirement(test_uv_env_path):
         )
     out.check_output("backend 'uv' cannot install")
     out.check_output("pytorch::pytorch")
+
+
+# ---------------------------------------------------------------------------
+# Requirements backend: end-to-end CLI exercises
+# ---------------------------------------------------------------------------
+
+def test_requirements_backend_writes_pip_lines(tmp_path):
+    """End-to-end: ``benchopt install --backend requirements`` writes the
+    pip-installable requirements of every solver / dataset to the
+    configured output file."""
+    solver = """
+    from benchopt.utils.temp_benchmark import TempSolver
+
+    class Solver(TempSolver):
+        name = "pip-solver"
+        requirements = ['pip::scikit-learn']
+    """
+    out = tmp_path / "out.txt"
+    with temp_benchmark(solvers=solver) as bench, CaptureCmdOutput() as out_:
+        install(
+            f"{bench.benchmark_dir} -s pip-solver -f "
+            f"--backend requirements --output {out}".split(),
+            'benchopt', standalone_mode=False,
+        )
+    content = out.read_text()
+    assert "scikit-learn" in content
+    # The pip:: prefix must be stripped in the output.
+    assert "pip::" not in content
+    out_.check_output(f"Installing '{bench.name}' requirements")
+
+
+def test_requirements_backend_records_channel_deps_as_manual(tmp_path):
+    """Channel-prefixed entries land in the manual-steps section."""
+    solver = """
+    from benchopt.utils.temp_benchmark import TempSolver
+
+    class Solver(TempSolver):
+        name = "chan-solver"
+        requirements = ['pytorch::pytorch']
+    """
+    out = tmp_path / "out.txt"
+    with temp_benchmark(solvers=solver) as bench:
+        with CaptureCmdOutput():
+            install(
+                f"{bench.benchmark_dir} -s chan-solver -f "
+                f"--backend requirements --output {out}".split(),
+                'benchopt', standalone_mode=False,
+            )
+    content = out.read_text()
+    assert "Manual steps" in content
+    assert "pytorch" in content
+
+
+def test_requirements_backend_rejects_env_name():
+    """``--env-name`` is meaningless under the requirements backend and
+    must be rejected at the CLI layer."""
+    with temp_benchmark() as bench:
+        with pytest.raises(click.BadParameter,
+                           match="does not create environments"):
+            install(
+                f"{bench.benchmark_dir} --backend requirements "
+                "--env-name some_env".split(),
+                'benchopt', standalone_mode=False,
+            )
 
 
 @requires_uv
