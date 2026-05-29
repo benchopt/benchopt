@@ -290,79 +290,63 @@ class TestCheckPatterns:
 class TestParameterChoices:
     """Tests for `param=all` expansion via `get_all_parameter_values`."""
 
-    class _DatasetChoices(BaseDataset):
-        """Dataset declaring an enumerable value set via the hook."""
-        name = "Test-Dataset"
-        parameters = {'param': ['a']}
-
-        @classmethod
-        def get_all_parameter_values(cls, name):
-            if name == 'param':
-                return ['a', 'b', 'c']
-            return super().get_all_parameter_values(name)
-
-        def get_data(self): pass
-
-    class _DatasetNoChoices(BaseDataset):
-        """Dataset that does not opt in to the choices hook."""
-        name = "Test-Dataset"
-        parameters = {'param': ['a']}
-        def get_data(self): pass
-
-    class _DatasetCoupled(BaseDataset):
-        """Dataset with coupled (comma-joined) parameters."""
-        name = "Test-Dataset"
-        parameters = {'a, b': [(1, 10)]}
-        def get_data(self): pass
-
     def _params(self, cls, pattern):
         (_, params), = _check_patterns([cls], [pattern])
         return params
 
-    def test_single_all(self):
+    @pytest.mark.parametrize("pattern, expected", [
+        ("Test-Dataset[param=all]", ['a', 'b', 'c']),
+        ("Test-Dataset[param=[c, all]]", ['c', 'a', 'b']),
+        ("Test-Dataset[param=b]", ['b']),
+    ], ids=["all", "all with other values", "specific value"])
+    def test_expand_all(self, pattern, expected):
+
+        class _DatasetChoices(BaseDataset):
+            """Dataset declaring an enumerable value set via the hook."""
+            name = "Test-Dataset"
+            parameters = {'param': ['a']}
+
+            @classmethod
+            def get_all_parameter_values(cls, name): return ['a', 'b', 'c']
+
+        def get_data(self): pass
+
         # `param=all` expands to the full set of declared choices.
-        params = self._params(
-            self._DatasetChoices, "Test-Dataset[param=all]")
-        assert params['param'] == ['a', 'b', 'c']
-
-    def test_list_with_all(self):
-        # Explicit values are kept first, then the remaining choices, deduped.
-        params = self._params(
-            self._DatasetChoices, "Test-Dataset[param=[c, all]]")
-        assert params['param'] == ['c', 'a', 'b']
-
-    def test_no_all_unchanged(self):
-        # Values without `all` are passed through untouched.
-        params = self._params(
-            self._DatasetChoices, "Test-Dataset[param=b]")
-        assert params['param'] == 'b'
+        params = self._params(_DatasetChoices, pattern)
+        assert params['param'] == expected
 
     def test_missing_hook_warns(self):
         # `param=all` on a class that does not declare choices warns and keeps
         # 'all' as a literal value rather than failing.
+
+        class _DatasetNoChoices(BaseDataset):
+            """Dataset that does not opt in to the choices hook."""
+            name = "Test-Dataset"
+            parameters = {'param': ['a']}
+            def get_data(self): pass
+
         with pytest.warns(
                 UserWarning,
                 match="does not declare an enumerable value set"):
-            params = self._params(
-                self._DatasetNoChoices, "Test-Dataset[param=all]")
+            params = self._params(_DatasetNoChoices, "Test-Dataset[param=all]")
         assert params['param'] == 'all'
 
-    def test_coupled_all_raises(self):
+    @pytest.mark.parametrize("pattern", [
+        "Test-Dataset['p1, p2'=all]",
+        "Test-Dataset['p1, p2'=[(1, 10), (2, all)]]",
+    ])
+    def test_coupled_all_raises(self, pattern):
         # `all` on a coupled parameter is ambiguous and rejected.
-        with pytest.raises(
-                click.BadParameter,
-                match="not supported for coupled parameters"):
-            self._params(self._DatasetCoupled, "Test-Dataset['a, b'=all]")
+        class _DatasetCoupled(BaseDataset):
+            """Dataset with coupled (comma-joined) parameters."""
+            name = "Test-Dataset"
+            parameters = {'p1, p2': [(1, 10)]}
+            def get_data(self): pass
 
-    def test_coupled_nested_all_raises(self):
-        # `all` nested inside a coupled parameter's tuples is also rejected,
-        # rather than being silently treated as the literal value 'all'.
         with pytest.raises(
                 click.BadParameter,
                 match="not supported for coupled parameters"):
-            self._params(
-                self._DatasetCoupled,
-                "Test-Dataset['a, b'=[(1, 10), (2, all)]]")
+            self._params(_DatasetCoupled, pattern)
 
 
 class TestParametrizedNameMixin:
