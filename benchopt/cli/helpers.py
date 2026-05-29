@@ -445,27 +445,40 @@ def get(ctx, name):
 # Private sub-commands - not part of the public CLI
 # These are helpers used in the other commands.
 
+CHECK_INSTALL_MARKER = "BENCHOPT_CHECK_INSTALL"
+
+
 @helpers.command(
-    help="Check that a given solver or dataset is correctly installed.\n\n"
-    "The class to be checked is specified with the absolute path of the file "
-    "in which it is defined MODULE_FILENAME and the name of the base "
-    "class BASE_CLASS_NAME.",
+    help="Check that one or more solvers / datasets are correctly "
+    "installed.\n\n"
+    "Each CLASS_REF is ``<module_filename>@<base_class_name>``. Emits a "
+    "single JSON line (prefixed with ``BENCHOPT_CHECK_INSTALL``) mapping "
+    "each ref to True/False. Exits non-zero when at least one class is "
+    "not installed so single-class callers can react on the exit code.",
     hidden=True
 )
 @click.argument('benchmark', default=Path.cwd(), type=click.Path(exists=True),
                 shell_complete=complete_benchmarks)
-@click.argument('module_filename', nargs=1, type=Path)
-@click.argument('base_class_name', nargs=1, type=str)
-def check_install(benchmark, module_filename, base_class_name):
-
-    # benchmark
+@click.argument('class_refs', nargs=-1, type=str)
+def check_install(benchmark, class_refs):
     benchmark = Benchmark(benchmark)
-
-    # Get class to check
-    klass = _load_class_from_module(
-         benchmark.benchmark_dir, module_filename, base_class_name
-    )
-    klass.is_installed(raise_on_not_installed=True)
+    results = {}
+    any_failed = False
+    for ref in class_refs:
+        module_filename, _, base_class_name = ref.rpartition('@')
+        try:
+            klass = _load_class_from_module(
+                benchmark.benchmark_dir, module_filename, base_class_name
+            )
+            installed = bool(klass.is_installed(quiet=True))
+        except Exception:
+            installed = False
+        results[ref] = installed
+        if not installed:
+            any_failed = True
+    print(f"{CHECK_INSTALL_MARKER} " + json.dumps(results))
+    if any_failed:
+        raise SystemExit(1)
 
 
 @helpers.command(

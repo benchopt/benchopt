@@ -84,10 +84,12 @@ class DependenciesMixin:
             # Import worked in the current environment, no need to check
             return True
 
-        # Get the current benchmark directory
+        # Get the current benchmark directory. ``check-install`` always
+        # emits a JSON dict (even for a single class) and exits non-zero
+        # when at least one class is not installed.
+        ref = f"{cls._module_filename}@{cls._base_class_name}"
         exit_code, output = get_backend().run_in_env(
-            f"benchopt check-install {cls._benchmark_dir} "
-            f"{cls._module_filename} {cls._base_class_name}",
+            f"benchopt check-install {cls._benchmark_dir} {ref}",
             env_name=env_name, return_output=True,
             raise_on_error=raise_on_not_installed,
         )
@@ -183,7 +185,8 @@ class DependenciesMixin:
         return is_installed
 
     @classmethod
-    def collect(cls, env_name=None, force=False, gpu=False):
+    def collect(cls, env_name=None, force=False, gpu=False,
+                is_installed_cache=None):
         """Collect info for global installation of all classes in an env.
 
         Parameters
@@ -193,6 +196,11 @@ class DependenciesMixin:
             None, tries to install it in the current environment.
         force : boolean (default: False)
             If set to True, forces reinstallation when using conda.
+        is_installed_cache : dict or None (default: None)
+            Pre-computed ``{cls: is_installed}`` map populated by
+            :meth:`Benchmark.check_classes_installed`. When provided,
+            avoids spawning one ``benchopt check-install`` subprocess
+            per class.
 
         Returns
         -------
@@ -215,15 +223,17 @@ class DependenciesMixin:
         # Check that install_cmd is valid and if the cls is installed.
         # When force=True targets a specific env (typically just-created),
         # skip the per-class is_installed check — it would spawn a
-        # subprocess to confirm nothing is installed yet. For
-        # env_name=None the check is in-process and essentially free,
-        # so always run it.
+        # subprocess to confirm nothing is installed yet. Otherwise
+        # prefer the pre-computed cache (one batched subprocess) if the
+        # caller provided one; fall back to a per-class check.
         try:
             install_cmd_ = cls.install_cmd_
         except Exception as exc:
             return fail_fast(exc)
         if force and env_name is not None:
             is_installed = False
+        elif is_installed_cache is not None and cls in is_installed_cache:
+            is_installed = is_installed_cache[cls]
         else:
             is_installed = cls.is_installed(env_name=env_name, quiet=True)
 

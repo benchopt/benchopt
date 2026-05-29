@@ -533,6 +533,56 @@ class Benchmark:
     # Install and run helpers
     #####################################################
 
+    def check_classes_installed(self, klasses, env_name):
+        """Batched ``is_installed`` check via a single subprocess.
+
+        Returns a dict mapping each class to its installed bool. When
+        ``env_name`` is None the check runs in-process (cheap) so we
+        fall back to the per-class API. When ``env_name`` is set, one
+        ``benchopt check-install`` invocation handles all classes,
+        paying the Python-startup cost once.
+        """
+        if not klasses:
+            return {}
+
+        klasses = list(klasses)
+        if env_name is None:
+            return {
+                cls: cls.is_installed(env_name=None, quiet=True)
+                for cls in klasses
+            }
+
+        import json as _json
+        from benchopt.cli.helpers import CHECK_INSTALL_MARKER
+        refs = [
+            f"{cls._module_filename}@{cls._base_class_name}"
+            for cls in klasses
+        ]
+        cmd = (
+            f"benchopt check-install {self.benchmark_dir} "
+            + " ".join(refs)
+        )
+        # Exit code may be non-zero (means "something failed"), but we
+        # still want the JSON dict — ask the backend not to raise.
+        from .utils.env_management import get_backend
+        _, output = get_backend().run_in_env(
+            cmd, env_name=env_name, return_output=True,
+            raise_on_error=False,
+        )
+        # Locate the JSON line (other prints during import are tolerated).
+        results_json = None
+        for line in output.strip().splitlines():
+            if line.startswith(CHECK_INSTALL_MARKER):
+                results_json = line[len(CHECK_INSTALL_MARKER):].strip()
+                break
+        if results_json is None:
+            # Subprocess didn't produce its marker — treat all classes as
+            # not installed so the caller surfaces a clear error.
+            return {cls: False for cls in klasses}
+        results = _json.loads(results_json)
+        return {cls: results.get(ref, False)
+                for cls, ref in zip(klasses, refs)}
+
     def install_all_requirements(self, include_solvers, include_datasets,
                                  minimal=False, env_name=None,
                                  force=False, quiet=False, download=False,
@@ -582,8 +632,27 @@ class Benchmark:
         backend = get_backend()
         check_installs, missings = [], []
         objective = self.get_benchmark_objective()
+
+        # Pre-compute is_installed for every class in one subprocess so
+        # we don't pay the Python-startup cost per class. ``collect``
+        # then reuses the cached result instead of re-spawning.
+        to_install_klasses = list(itertools.chain(
+            [objective],
+            (cls for cls, _ in include_datasets) if not minimal else (),
+            include_solvers if not minimal else (),
+        ))
+        if force and env_name is not None:
+            preinstall_cache = {cls: False for cls in to_install_klasses}
+        else:
+            preinstall_cache = self.check_classes_installed(
+                to_install_klasses, env_name=env_name,
+            )
+
         conda_reqs, shell_install_scripts, post_install_hooks, missing_deps = (
-            objective.collect(env_name=env_name, force=force)
+            objective.collect(
+                env_name=env_name, force=force,
+                is_installed_cache=preinstall_cache,
+            )
         )
         backend.record_class_origin(
             objective.name, conda_reqs, shell_install_scripts
@@ -603,7 +672,10 @@ class Benchmark:
         if not minimal:
             for klass in to_install:
                 reqs, scripts, hooks, missing = (
-                    klass.collect(env_name=env_name, force=force, gpu=gpu)
+                    klass.collect(
+                        env_name=env_name, force=force, gpu=gpu,
+                        is_installed_cache=preinstall_cache,
+                    )
                 )
                 backend.record_class_origin(klass.name, reqs, scripts)
                 # If a class is not importable but has no requirements,
@@ -666,11 +738,15 @@ class Benchmark:
                 )
             return exit_code
 
-        # Check install for all classes that needed extra requirements
+        # Check install for all classes that needed extra requirements.
+        # Use a single subprocess call (one python startup) instead of
+        # one per class — major speedup when many classes are checked.
         print('- Checking installed packages...', end='', flush=True)
         not_installed = set()
-        for klass in set(check_installs + missings):
-            cls_success = klass.is_installed(env_name=env_name)
+        install_results = self.check_classes_installed(
+            set(check_installs + missings), env_name=env_name,
+        )
+        for klass, cls_success in install_results.items():
             if cls_success and klass in missings:
                 # This class only depends on global requirements
                 missings.remove(klass)
