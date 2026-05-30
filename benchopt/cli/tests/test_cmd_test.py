@@ -302,13 +302,7 @@ class TestCmdTest:
                 print("Selected#data_a")
                 return dict(X=None, y=None)
         """
-        dataset_b = """from benchopt import BaseDataset
-        class Dataset(BaseDataset):
-            name = "data_b"
-            def get_data(self):
-                print("Selected#data_b")
-                return dict(X=None, y=None)
-        """
+        dataset_b = dataset_a.replace("data_a", "data_b")
         objective = """from benchopt.utils.temp_benchmark import TempObjective
         class Objective(TempObjective):
             name = "test-objective"
