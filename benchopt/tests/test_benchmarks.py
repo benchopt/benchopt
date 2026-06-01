@@ -2,7 +2,6 @@ import pytest
 import inspect
 import numpy as np
 import warnings
-from itertools import islice
 
 from benchopt.stopping_criterion import StoppingCriterion
 from benchopt.stopping_criterion import SAMPLING_STRATEGIES
@@ -57,13 +56,14 @@ def test_dataset_get_data(benchmark, dataset_class):
     )
 
 
-def test_benchmark_objective(benchmark, objective_class, test_dataset_name):
+def test_benchmark_objective(benchmark, test_dataset_name):
     # check that the result of the objective function is compatible with
     # benchopt, does not contain `objective_name` and is not empty.
 
     # instanciate dataset and objective, taking into account the test_config.
     # The objective can run on multiple test datasets via
     # ``Objective.test_config['dataset']['name'] = [...]``.
+    objective_class = benchmark.get_benchmark_objective()
     dataset_class = benchmark.get_test_dataset(name=test_dataset_name)
     configs = get_configs(dataset_class, objective_class)
     dataset = dataset_class.get_instance(**configs['dataset'])
@@ -177,14 +177,17 @@ def test_solver_install(test_env_name, benchmark, solver_class):
     )
 
 
-def test_solver_stopping_criterion(benchmark, solver_class):
+def test_solver_stopping_criterion(benchmark, solver_class, test_dataset_name):
     # Check each solver stopping_criterion is compatible with the objective
 
-    # instanciate dataset and objective, taking into account the test_config
+    # instanciate dataset and objective, taking into account the test_config.
+    # The solver can pick its own test dataset(s) via
+    # ``Solver.test_config['dataset']['name'] = '...'`` or a list — this
+    # test is parametrized once per resolved name.
+    dataset_class = benchmark.get_test_dataset(name=test_dataset_name)
     objective_class = benchmark.get_benchmark_objective()
-    dataset_class = benchmark.get_test_dataset()
     configs = get_configs(dataset_class, objective_class, solver_class)
-    dataset = dataset_class.get_instance(**configs['dataset'])
+
     objective = objective_class.get_instance(**configs['objective'])
 
     # Make sure to inherit the objective if the stopping criterion
@@ -207,6 +210,7 @@ def test_solver_stopping_criterion(benchmark, solver_class):
         )
 
         # ensure classes calling `get_seed` work properly
+        dataset = dataset_class.get_instance(**configs['dataset'])
         _seed_run(
             objective=objective, dataset=dataset, solver=None,
             repetition=0, base_seed=benchmark.seed
@@ -231,66 +235,41 @@ def test_solver_stopping_criterion(benchmark, solver_class):
         )
 
 
-def test_solver_run(benchmark, solver_class, test_dataset_name):
-    # Check that a solver run with at least one configuration of a simulated
-    # dataset.
-
-    if not solver_class.is_installed():
-        pytest.skip("Solver is not installed")
-
-    # instanciate dataset and objective, taking into account the test_config.
-    # The solver can pick its own test dataset(s) via
-    # ``Solver.test_config['dataset']['name'] = '...'`` or a list — this
-    # test is parametrized once per resolved name.
+def test_solver_run(
+        benchmark, solver_class, test_dataset_name, require_solver_installed
+):
+    # Check that the solver runs on at least one ``test_parameters`` config
+    # of the resolved test dataset. If every config is incompatible, skip —
+    # the session-finish hook flags solvers whose every variant is skipped.
     dataset_class = benchmark.get_test_dataset(name=test_dataset_name)
     objective_class = benchmark.get_benchmark_objective()
     configs = get_configs(dataset_class, objective_class, solver_class)
 
     objective = objective_class.get_instance(**configs['objective'])
-    dataset = dataset_class.get_instance(**configs['dataset'])
     solver = solver_class.get_instance(**configs['solver'])
 
-    # ensure classes calling `get_seed` work properly
-    _seed_run(
-        objective=objective, dataset=dataset, solver=solver,
-        repetition=0, base_seed=benchmark.seed
-    )
-
-    def run_solver(dataset):
+    reasons = []
+    for params in product_param(
+            getattr(dataset_class, 'test_parameters', {})
+    ):
+        dataset = dataset_class.get_instance(
+            **{**configs['dataset'], **params}
+        )
+        _seed_run(
+            objective=objective, dataset=dataset, solver=solver,
+            repetition=0, base_seed=benchmark.seed
+        )
         objective._set_dataset(dataset)
         skip, reason = solver._set_objective(objective)
         if not skip:
             _test_solver_one_objective(solver, objective)
-        return skip, reason
+            return
+        reasons.append(reason)
 
-    # return as soon as one configuration is compatible with the solver
-    skip, reason = run_solver(dataset)
-    if not skip:
-        return
-
-    # fallback to testing all configurations if the first one is not compatible
-    test_parameters = islice(product_param(
-        getattr(dataset_class, 'test_parameters', {})
-    ), 1, None)
-
-    reasons = set()
-    for params in test_parameters:
-        params = {**configs['dataset'], **params}
-        dataset = dataset_class.get_instance(**params)
-
-        skip, reason = run_solver(dataset)
-        if not skip:
-            # Stop after the first solver that is run
-            break
-    else:
-        reasons = "\n-".join(sorted(reasons))
-        raise ValueError(
-            'Solver skipped all test configuration. At least one simulated '
-            'dataset and one objective config should be compatible with the '
-            'solver, potentially provided through "Solver.test_config" class '
-            'attribute or with `Dataset.test_parameters`. Reasons:\n'
-            f'-{reasons}'
-        )
+    reasons = sorted(set(reasons))
+    if len(reasons) == 1:
+        pytest.skip(reasons[0])
+    pytest.skip("No compatible config: " + "; ".join(reasons))
 
 
 def _test_solver_one_objective(solver, objective):
