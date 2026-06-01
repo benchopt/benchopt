@@ -43,7 +43,7 @@ class TestCmdTest:
         # Default temp benchmark has at least one passing ``test_solver_run``
         # variant, so the all-skipped error must not appear.
         out.check_output(
-            "Every test_solver_run variant was skipped", repetition=0
+            "Skipped every test_solver_run variants", repetition=0
         )
 
     def test_valid_call_fail(self):
@@ -200,7 +200,7 @@ class TestCmdTest:
             out.check_output("test session starts", repetition=1)
             out.check_output("Dataset#", repetition=n_data)
             if exit_code is not None:
-                out.check_output("Every test_solver_run variant was skipped")
+                out.check_output("Skipped every test_solver_run variants")
                 out.check_output("skip for p > 0")
 
     # Exepected corresponds to solver, objective and dataset p respectively.
@@ -355,7 +355,7 @@ class TestCmdTest:
                     "-k test_solver_run".split(),
                     'benchopt', standalone_mode=False
                 )
-        out.check_output("Every test_solver_run variant was skipped")
+        out.check_output("Skipped every test_solver_run variants")
         out.check_output("incompatible by design")
         out.check_output("AttributeError", repetition=0)
 
@@ -468,7 +468,7 @@ class TestCmdTest:
                 'benchopt', standalone_mode=False
             )
         out.check_output(
-            "Every test_solver_run variant was skipped", repetition=0
+            "Skipped every test_solver_run variants", repetition=0
         )
         out.check_output("Solver is not installed", repetition=1)
 
@@ -489,7 +489,7 @@ class TestCmdTest:
                 f"{bench.benchmark_dir} --skip-install".split(),
                 'benchopt', standalone_mode=False
             )
-        out.check_output("Every test_solver_run variant was skipped")
+        out.check_output("Skipped every test_solver_run variants")
         out.check_output("skip-solver")
         out.check_output("incompatible")
 
