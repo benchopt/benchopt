@@ -329,11 +329,11 @@ class TestCmdTest:
             datasets=[dataset_a, dataset_b], objective=objective,
             solvers=solver,
         ) as bench, CaptureCmdOutput() as out:
-                benchopt_test(
-                    f"{bench.benchmark_dir} --skip-install "
-                    "-sk test_solver_run".split(),
-                    'benchopt', standalone_mode=False
-                )
+            benchopt_test(
+                f"{bench.benchmark_dir} --skip-install "
+                "-sk test_solver_run".split(),
+                'benchopt', standalone_mode=False
+            )
         for name in expected:
             out.check_output(f"Selected#{name}", repetition=1)
 
