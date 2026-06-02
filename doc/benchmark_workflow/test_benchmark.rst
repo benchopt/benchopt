@@ -26,7 +26,7 @@ The test run by ``benchopt test`` will make sure that:
 - all datasets have a valid API and can be loaded.
 - the objective has a valid API and can be computed
   with a simple dataset and the result returned by ``get_one_result``.
-- all solvers have the proper API and can be run on a simple
+- all solvers have a valid API and can be run on a simple
   configuration.
 - all solvers can be installed in a fresh environment.
 - the benchmark's ``config.yml`` is valid.
@@ -56,20 +56,17 @@ the benchmark's datasets and solvers where applicable) is:
 - ``test_benchmark_config_validity`` — the benchmark's ``config.yml``
   only uses valid options.
 - ``test_solver_class[<solver>]`` — the solver class exposes the
-  expected public API (``name``, ``sampling_strategy``,
-  ``stopping_criterion``, optional ``get_next``).
+  expected public API (``name``, optional ``sampling_strategy``,
+  ``stopping_criterion``, or ``get_next``).
 - ``test_solver_install_api[<solver>]`` — the solver declares a known
   install command (``None``, ``'conda'`` or ``'shell'``).
 - ``test_solver_install[<solver>]`` — the solver installs cleanly in a
   fresh conda environment (skipped under ``--skip-install``).
 - ``test_solver_stopping_criterion[<solver>-<test_dataset>]`` — the solver's
-  ``stopping_criterion`` is compatible with the objective.
+  ``stopping_criterion`` is compatible with the objective (only useful for
+  iterative evaluation benchmark).
 - ``test_solver_run[<solver>-<test_dataset>]`` — the solver runs on at least
-  one configuration of the resolved test dataset. If every variant ends
-  up skipped (other than because the solver is not installed),
-  ``benchopt test`` synthesises a ``FAILED test_solver_run[<solver>]``
-  entry summarising the tested datasets and skip reasons, so coverage
-  gaps surface clearly in CI.
+  one configuration of the resolved test datasets.
 
 The full definition of the tests that are run can be found in the
 :ref:`tests_definition`.
@@ -102,20 +99,11 @@ which dataset class is used:
 - ``Solver.test_config`` directly contains the parameters passed to the
   ``Solver`` class, with optional ``dataset`` and ``objective`` keys whose
   values are dictionaries of parameters that override those of the dataset
-  and objective respectively. As with ``Objective.test_config``, a ``name``
-  entry inside ``dataset`` (string or list) selects which dataset(s) are
-  used to test this particular solver — necessary for benchmarks that ship
-  multiple datasets covering different tasks, when a solver only supports
-  a subset of them.
-
-If none of these is set, the benchmark falls back to a ``Simulated`` test
-dataset; the legacy ``Objective.test_dataset_name`` attribute is still
-honored for backward compatibility. This default suits most benchmarks, but
-real datasets may be too large to be used in tests, and some solvers or
-objectives may require specific settings — for instance a specific
-regularization level to be fast, or a particular data format only possible
-with a given dataset. The ``test_config`` attributes above are the way to
-encode these constraints.
+  and objective respectively. A ``name`` parameter in ``dataset`` behaves
+  similarly to the one in  ``Objective.test_config``.
+If none of these is set, the benchmark falls back to ``Objective.test_dataset_name``,
+which in turn default to ``Simulated``. Configuring such ``test_dataset`` is
+necessary to allow testing the benchmark automatically.
 
 The configurations from the three classes are merged with the following
 priority order, from lowest to highest: ``Dataset.test_config``,
@@ -156,10 +144,10 @@ datasets can declare which one(s) to test against:
         name = "classifier1"
 
         test_config = {
-            'dataset': {'name': 'ucr'},  # or ['ucr', 'ucr-multivariate']
+            'dataset': {'name': 'data1'},  # or ['data_a', 'data_b']
         }
 
-Note that configuring an empty list of test datasets raises a clear
+Note that configuring an empty list of test datasets raises a
 ``ValueError`` at collection time.
 
 Fallback with ``Dataset.test_parameters``
