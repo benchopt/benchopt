@@ -18,10 +18,9 @@ _TEST_ENV_NAME = None
 _EMPTY_ENV_NAME = None
 _TEST_BENCHMARK = None
 
-# Track ``test_solver_run`` outcomes per solver. When every parametrize
-# variant skipped and the solver *is* installed, the solver has effectively
-# no coverage (typically every dataset config was incompatible) — flag it.
-_SOLVER_RUN_OUTCOMES = defaultdict(list)  # solver name -> [(outcome, ...)]
+# Track ``test_solver_run`` outcomes per solver to check that at least one
+# config runs for each solver.
+_SOLVER_RUN_OUTCOMES = defaultdict(list)
 
 
 def class_ids(p):
@@ -81,8 +80,7 @@ def benchmark():
 
 @pytest.fixture
 def require_solver_installed(solver_class):
-    # Skips in setup so uninstalled-solver runs do not reach the call-phase
-    # tracker used by the end-of-session "all variants skipped" check.
+    # Skips a test if the solver class is not installed.
     if not solver_class.is_installed():
         pytest.skip("Solver is not installed")
 
@@ -90,13 +88,15 @@ def require_solver_installed(solver_class):
 def pytest_collection_modifyitems(config, items):
     if not config.getoption("--skip-install"):
         return
-    skip_install = pytest.mark.skip(reason="Skipping install in this run")
+    skip_install = pytest.mark.skip(reason="Skipping installs in this run")
     for item in items:
         if "requires_install" in item.keywords:
             item.add_marker(skip_install)
 
 
-def _skip_reason(report):
+def _get_skip_reason(report):
+    if not report.skipped:
+        return ""
     if isinstance(report.longrepr, tuple) and len(report.longrepr) >= 3:
         return str(report.longrepr[2])
     return ""
@@ -109,24 +109,21 @@ def pytest_runtest_makereport(item, call):
     outcome = yield
     if item.originalname != 'test_solver_run':
         return
-    callspec = getattr(item, 'callspec', None)
-    if callspec is None:
-        return
-    solver = callspec.params.get('solver_class')
-    if solver is None:
-        return
+
     report = outcome.get_result()
     # Only record call-phase outcomes — setup-phase skips come from markers
     # or fixture opt-outs, which are not coverage gaps.
     if report.when == 'call':
-        reason = _skip_reason(report) if report.skipped else ""
-        dataset_name = callspec.params.get('test_dataset_name')
+        reason = _get_skip_reason(report)
+        solver = item.funcargs.get('solver_class')
+        dataset_name = item.funcargs.get('test_dataset_name')
         _SOLVER_RUN_OUTCOMES[solver.name].append(
             (report.outcome, dataset_name, reason)
         )
 
 
 def pytest_sessionfinish(session, exitstatus):
+    # Check which solvers were flag for being skipped for all configuration
     flagged = sorted(
         (solver, sorted({tuple(r) for _, *r in entries}))
         for solver, entries in _SOLVER_RUN_OUTCOMES.items()
@@ -139,18 +136,12 @@ def pytest_sessionfinish(session, exitstatus):
     if reporter is None:
         return
 
-    # Synthesize a failed TestReport for each flagged solver so CI tools
-    # see a real ``FAILED test_solver_run[<solver>]`` entry rather than a
-    # green summary paired with a mysterious exit code.
+    # Synthesize a failed TestReport for each flagged solver
     from _pytest.reports import TestReport
-    # Recover the nodeid/fspath template from any collected
-    # ``test_solver_run`` item — same across all solvers.
     template = next(
         (i for i in session.items if i.originalname == 'test_solver_run'),
         None,
     )
-    if template is None:
-        return
     nodeid_base = template.nodeid.split('[', 1)[0]
     fspath = template.location[0]
     for solver, reasons in flagged:
@@ -244,7 +235,7 @@ def _raise_no_test_dataset(solver):
         "Set `Objective.test_dataset_name` (legacy), "
         "`Objective.test_config['dataset']['name']`, or "
         "`Solver.test_config['dataset']['name']` to one or more dataset "
-        "names."
+        "names. Default to 'simulated' dataset if it exists."
     )
 
 

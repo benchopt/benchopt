@@ -232,17 +232,15 @@ class Benchmark:
         return [d.name for d in self.get_datasets()]
 
     def get_test_dataset(self, name=None, solver_class=None):
-        """Return the test dataset class.
+        """Return the benchmark test dataset, or the one linked to the solver.
 
         Parameters
         ----------
         name : str or None
-            Explicit dataset name to look up. When ``None``, falls back to
-            the first name returned by :meth:`get_test_dataset_names`.
+            Explicit dataset name to for direct override.
         solver_class : Solver or None
-            Solver context, used only when ``name`` is ``None`` to honor a
-            per-solver override declared via
-            ``Solver.test_config['dataset']['name']``.
+            Solver context, used to retrieve test_dataset['name'] when
+            the dataset is not given explicitly.
         """
         if name is None:
             name = self.get_test_dataset_names(solver_class=solver_class)[0]

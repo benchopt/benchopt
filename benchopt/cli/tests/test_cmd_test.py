@@ -434,6 +434,12 @@ class TestCmdTest:
         out.check_output("test session starts", repetition=1)
         out.check_output(test_name, repetition=n_test)
         out.check_output(action.upper(), repetition=n_test)
+        # Skips emitted from a user-provided ``check_TESTNAME`` hook happen
+        # during fixture setup, so they must not trigger the per-solver
+        # all-skipped failure path.
+        out.check_output(
+            "Every test_solver_run variant was skipped", repetition=0
+        )
 
     def test_deprecated_check_test_solver(self):
         test_config = """import pytest
