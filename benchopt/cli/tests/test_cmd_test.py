@@ -40,6 +40,12 @@ class TestCmdTest:
         out.check_output("FAILED", repetition=0)
         out.check_output("SKIPPED", repetition=1)
 
+        # Default temp benchmark has at least one passing ``test_solver_run``
+        # variant, so the all-skipped error must not appear.
+        out.check_output(
+            "Skipped every test_solver_run variants", repetition=0
+        )
+
     def test_valid_call_fail(self):
         solver = """
         from benchopt.utils.temp_benchmark import TempSolver
@@ -193,10 +199,9 @@ class TestCmdTest:
 
             out.check_output("test session starts", repetition=1)
             out.check_output("Dataset#", repetition=n_data)
-            n_rep = 0 if exit_code is None else 3
-            out.check_output(
-                "Solver skipped all test configuration.", repetition=n_rep
-            )
+            if exit_code is not None:
+                out.check_output("Skipped every test_solver_run variants")
+                out.check_output("skip for p > 0")
 
     # Exepected corresponds to solver, objective and dataset p respectively.
     @pytest.mark.parametrize('d_conf, o_conf, s_conf, expected', [
@@ -282,6 +287,77 @@ class TestCmdTest:
         for k, v in zip(['Solver', 'Objective', 'Dataset'], expected):
             out.check_output(f"{k}#{v}", repetition=1)
 
+    @pytest.mark.parametrize('source, value, expected', [
+        ('objective', "'data_a'", ['data_a']),
+        ('objective', "['data_a', 'data_b']", ['data_a', 'data_b']),
+        ('solver', "'data_b'", ['data_b']),
+        ('solver', "['data_a', 'data_b']", ['data_a', 'data_b']),
+    ], ids=[
+        'objective_str', 'objective_list',
+        'solver_str', 'solver_list',
+    ])
+    def test_test_config_dataset_name(self, source, value, expected):
+        # ``Solver``/``Objective`` can pick the test dataset via
+        # ``test_config['dataset']['name']``, accepting either a string or
+        # a list. A list parametrizes the test once per name.
+        dataset_a = """from benchopt import BaseDataset
+        class Dataset(BaseDataset):
+            name = "data_a"
+            def get_data(self):
+                print("Selected#data_a")
+                return dict(X=None, y=None)
+        """
+        dataset_b = dataset_a.replace("data_a", "data_b")
+        objective = """from benchopt.utils.temp_benchmark import TempObjective
+        class Objective(TempObjective):
+            name = "test-objective"
+            test_dataset_name = "data_a"
+            # TEST_CONFIG
+        """
+        solver = """from benchopt.utils.temp_benchmark import TempSolver
+        class Solver(TempSolver):
+            name = "test-solver"
+            # TEST_CONFIG
+        """
+        cfg = f"test_config = {{'dataset': {{'name': {value}}}}}"
+        if source == 'objective':
+            objective = objective.replace('# TEST_CONFIG', cfg)
+        else:
+            solver = solver.replace('# TEST_CONFIG', cfg)
+
+        with temp_benchmark(
+            datasets=[dataset_a, dataset_b], objective=objective,
+            solvers=solver,
+        ) as bench, CaptureCmdOutput() as out:
+            benchopt_test(
+                f"{bench.benchmark_dir} --skip-install "
+                "-sk test_solver_run".split(),
+                'benchopt', standalone_mode=False
+            )
+        for name in expected:
+            out.check_output(f"Selected#{name}", repetition=1)
+
+    def test_solver_skip_without_test_parameters_no_crash(self):
+        # Non-regression: when a solver skips the default test config and
+        # the dataset has no ``test_parameters``, ``test_solver_run`` should
+        # skip cleanly and the session-finish hook should flag the solver,
+        # rather than crashing on the malformed default config.
+        solver = """from benchopt.utils.temp_benchmark import TempSolver
+        class Solver(TempSolver):
+            name = "always-skip-solver"
+            def skip(self, **kwargs): return True, "incompatible by design"
+        """
+        with temp_benchmark(solvers=solver) as bench:
+            with CaptureCmdOutput(exit=1) as out:
+                benchopt_test(
+                    f"{bench.benchmark_dir} --skip-install "
+                    "-k test_solver_run".split(),
+                    'benchopt', standalone_mode=False
+                )
+        out.check_output("Skipped every test_solver_run variants")
+        out.check_output("incompatible by design")
+        out.check_output("AttributeError", repetition=0)
+
     def test_interaction_with_run_seeding(self):
         # non-regression for benchopt/benchopt#890, where the seeding was not
         # properly initialized for the test commands.
@@ -358,6 +434,12 @@ class TestCmdTest:
         out.check_output("test session starts", repetition=1)
         out.check_output(test_name, repetition=n_test)
         out.check_output(action.upper(), repetition=n_test)
+        # Skips emitted from a user-provided ``check_TESTNAME`` hook happen
+        # during fixture setup, so they must not trigger the per-solver
+        # all-skipped failure path.
+        out.check_output(
+            "Every test_solver_run variant was skipped", repetition=0
+        )
 
     def test_deprecated_check_test_solver(self):
         test_config = """import pytest
@@ -373,6 +455,48 @@ class TestCmdTest:
                 'benchopt', standalone_mode=False
             )
         out.check_output("XFAIL", repetition=1)
+
+    def test_all_skipped_error_absent_uninstalled_solver(self):
+        # An uninstalled solver legitimately skips every ``test_solver_run``
+        # variant with "Solver is not installed"; this is the only expected
+        # reason and must not trigger the all-skipped error.
+        solver = """from benchopt.utils.temp_benchmark import TempSolver
+        class Solver(TempSolver):
+            name = "uninstalled-solver"
+            @classmethod
+            def is_installed(cls, **kwargs): return False
+        """
+        with temp_benchmark(solvers=solver) as bench, \
+                CaptureCmdOutput() as out:
+            benchopt_test(
+                f"{bench.benchmark_dir} --skip-install".split(),
+                'benchopt', standalone_mode=False
+            )
+        out.check_output(
+            "Skipped every test_solver_run variants", repetition=0
+        )
+        out.check_output("Solver is not installed", repetition=1)
+
+    def test_all_skipped_error_on_unexpected_skip(self):
+        # When every ``test_solver_run`` variant skips for a reason other
+        # than "Solver is not installed", the session is flagged and exits 1.
+        solver = """from benchopt.utils.temp_benchmark import TempSolver
+        import pytest
+        class Solver(TempSolver):
+            name = "skip-solver"
+            @classmethod
+            def skip(cls, **kwargs): pytest.skip("incompatible")
+        """
+        with temp_benchmark(
+                solvers=solver
+        ) as bench, CaptureCmdOutput(exit=1) as out:
+            benchopt_test(
+                f"{bench.benchmark_dir} --skip-install".split(),
+                'benchopt', standalone_mode=False
+            )
+        out.check_output("Skipped every test_solver_run variants")
+        out.check_output("skip-solver")
+        out.check_output("incompatible")
 
     def test_complete_bench(self, bench_completion_cases):  # noqa: F811
 
