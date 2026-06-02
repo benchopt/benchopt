@@ -44,7 +44,7 @@ Tests reference
 ~~~~~~~~~~~~~~~
 
 The full set of pytest checks run by ``benchopt test`` (parametrized over
-the benchmark's datasets and solvers where applicable):
+the benchmark's datasets and solvers where applicable) is:
 
 - ``test_dataset_class[<dataset>]`` — the dataset class exposes the
   expected public API (``name``, callable ``get_data``).
