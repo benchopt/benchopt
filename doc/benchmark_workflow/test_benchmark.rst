@@ -23,8 +23,8 @@ Basic philosophy
 
 The test run by ``benchopt test`` will make sure that:
 
-- all datasets have the proper API and can be loaded.
-- the objective have the proper API and can be computed
+- all datasets have a valid API and can be loaded.
+- the objective has a valid API and can be computed
   with a simple dataset and the result returned by ``get_one_result``.
 - all solvers have the proper API and can be run on a simple
   configuration.

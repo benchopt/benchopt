@@ -328,8 +328,7 @@ class TestCmdTest:
         with temp_benchmark(
             datasets=[dataset_a, dataset_b], objective=objective,
             solvers=solver,
-        ) as bench:
-            with CaptureCmdOutput() as out:
+        ) as bench, CaptureCmdOutput() as out:
                 benchopt_test(
                     f"{bench.benchmark_dir} --skip-install "
                     "-sk test_solver_run".split(),
