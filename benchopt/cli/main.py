@@ -649,13 +649,7 @@ def test(benchmark, env_name, recreate, pytest_args):
 
     env_option = ''
     if env_name is not None:
-        create_conda_env(
-            env_name, benchmark=benchmark, pytest=True, recreate=recreate
-        )
-        # Ensure that minimal benchmark dependencies are installed in
-        # the test environment.
-        objective = benchmark.get_benchmark_objective()
-        objective.install(env_name=env_name)
+        benchmark.create_test_env(env_name, recreate=recreate)
         env_option = f'--test-env {env_name}'
 
     _bench_test_file = _bench_test_module / "test_benchmarks.py"
