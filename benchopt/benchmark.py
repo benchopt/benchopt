@@ -262,6 +262,9 @@ class Benchmark:
             f"Found possible datasets {test_datasets}."
         )
         test_class = test_datasets[0]
+        if not test_class.is_installed():
+            import pytest
+            pytest.skip(f"Test dataset {name!r} is not installed")
         return test_class
 
     def get_test_dataset_names(self, solver_class=None):

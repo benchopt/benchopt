@@ -287,7 +287,22 @@ def test_env_name(request, benchmark, use_env):
         create_conda_env(
             env_name, benchmark=benchmark, recreate=recreate, pytest=True
         )
-        benchmark.get_benchmark_objective().install(env_name=env_name)
+
+        # Install the objective + required test datasets.
+        test_dataset_names = set(benchmark.get_test_dataset_names())
+        for solver_class in benchmark.get_solvers():
+            test_dataset_names.update(
+                benchmark.get_test_dataset_names(solver_class=solver_class)
+            )
+        benchmark.install_all_requirements(
+            include_solvers=[],
+            include_datasets=benchmark.check_dataset_patterns(
+                sorted(test_dataset_names)
+            ),
+            env_name=env_name,
+            env_need_confirm=False,
+        )
+
         # Flush the output to avoid issues with pytest capturing
         # the output later on and failing tests because of it.
         # Make sure to flush stdout and stderr
