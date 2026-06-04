@@ -19,6 +19,9 @@ TST
   raise a clear error when no test dataset is configured.
   By `Thomas Moreau`_ (:gh:`942`)
 
+- Add ``test_dataset_install`` test to check install of datasets and
+  make sure to install test_datasets when creating a test env.
+  By `Thomas Moreau`_ (:gh:`944`)
 
 .. _changes_1_9_1:
 
