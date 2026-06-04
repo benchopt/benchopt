@@ -411,10 +411,10 @@ class TestCmdTest:
                    "--skip-env".split(),
                    'benchopt', standalone_mode=False
                 )
-            out.check_output(f"- Installing.*in '{test_env_name}'")
+            out.check_output("Installing required packages.*\n- objective")
 
     def test_valid_call_in_env_dataset_requirements(
-            self, test_env_name, uninstall_dummy_package, no_debug_log
+            self, test_env_name, uninstall_dummy_package
     ):
         # Check that launching tests in a conda env install dataset reqs
         dataset = """from benchopt.utils.temp_benchmark import TempDataset
@@ -438,14 +438,12 @@ class TestCmdTest:
                 "--skip-env".split(),
                 'benchopt', standalone_mode=False,
             )
-            assert bench.get_test_dataset(
-                name="reqs-dataset"
-            ).is_installed(
+            assert bench.check_dataset_patterns(
+                "reqs-dataset", class_only=True
+            ).pop().is_installed(
                 env_name=test_env_name, raise_on_not_installed=True,
             )
-        out.check_output(
-            "Installing required packages for:\n.*- reqs-dataset"
-        )
+        out.check_output("Installing required packages.*\n- reqs-dataset")
 
     @pytest.mark.parametrize('test_name, arg, n_test', [
         ("test_dataset_get_data", "dataset_class", 2),
