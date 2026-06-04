@@ -38,7 +38,9 @@ class TestCmdTest:
         out.check_output("test session starts", repetition=1)
         out.check_output("PASSED")
         out.check_output("FAILED", repetition=0)
-        out.check_output("SKIPPED", repetition=1)
+
+        # Skip install tests (one per solver/dataset ->3)..
+        out.check_output("SKIPPED", repetition=3)
 
         # Default temp benchmark has at least one passing ``test_solver_run``
         # variant, so the all-skipped error must not appear.
@@ -63,7 +65,8 @@ class TestCmdTest:
         out.check_output("test session starts", repetition=1)
         out.check_output("PASSED")
         out.check_output("FAILED", repetition=2)
-        out.check_output("SKIPPED", repetition=1)
+        # Skip install tests (one per solver/dataset ->3).
+        out.check_output("SKIPPED", repetition=3)
 
     def test_invalid_benchmark_config_is_detected(self):
         config = """
@@ -390,9 +393,10 @@ class TestCmdTest:
                    'benchopt', standalone_mode=False
                 )
 
-    def test_valid_call_in_env_no_minimal(
+    def test_valid_call_in_env_minimal_requirements(
             self, test_env_name, uninstall_dummy_package
     ):
+        # Check that launching the tests in a conda env install minimal reqs
         objective = """from benchopt.utils.temp_benchmark import TempObjective
         import dummy_package
         class Objective(TempObjective):
@@ -407,7 +411,39 @@ class TestCmdTest:
                    "--skip-env".split(),
                    'benchopt', standalone_mode=False
                 )
-            out.check_output(f"- Installing.*in '{test_env_name}'")
+            out.check_output("Installing required packages.*\n- objective")
+
+    def test_valid_call_in_env_dataset_requirements(
+            self, test_env_name, uninstall_dummy_package
+    ):
+        # Check that launching tests in a conda env install dataset reqs
+        dataset = """from benchopt.utils.temp_benchmark import TempDataset
+        import dummy_package
+        class Dataset(TempDataset):
+            name = "reqs-dataset"
+            install_cmd = 'conda'
+            requirements = [
+                'pip::git+https://github.com/tommoral/dummy_package'
+            ]
+        """
+        objective = """from benchopt.utils.temp_benchmark import TempObjective
+        class Objective(TempObjective):
+            test_dataset_name = "reqs-dataset"
+        """
+        with temp_benchmark(
+                datasets=dataset, objective=objective,
+        ) as bench, CaptureCmdOutput(debug=True) as out:
+            benchopt_test(
+                f"{bench.benchmark_dir} --env-name {test_env_name} "
+                "--skip-env".split(),
+                'benchopt', standalone_mode=False,
+            )
+            assert bench.check_dataset_patterns(
+                "reqs-dataset", class_only=True
+            ).pop().is_installed(
+                env_name=test_env_name, raise_on_not_installed=True,
+            )
+        out.check_output("Installing required packages.*\n- reqs-dataset")
 
     @pytest.mark.parametrize('test_name, arg, n_test', [
         ("test_dataset_get_data", "dataset_class", 2),
@@ -497,6 +533,30 @@ class TestCmdTest:
         out.check_output("Skipped every test_solver_run variants")
         out.check_output("skip-solver")
         out.check_output("incompatible")
+
+    def test_test_dataset_not_installed_skip_message(self):
+        # Check that the correct error message is displayed when the test
+        # dataset is not installed.
+        dataset = """from benchopt.utils.temp_benchmark import TempDataset
+        class Dataset(TempDataset):
+            name = "my-test-dataset"
+            @classmethod
+            def is_installed(cls, **kwargs): return False
+        """
+        objective = """from benchopt.utils.temp_benchmark import TempObjective
+        class Objective(TempObjective):
+            name = "test obj"
+            test_dataset_name = "my-test-dataset"
+        """
+        with temp_benchmark(
+                datasets=dataset, objective=objective
+        ) as bench, CaptureCmdOutput(exit=1) as out:
+            benchopt_test(
+                f"{bench.benchmark_dir} --skip-install".split(),
+                'benchopt', standalone_mode=False
+            )
+        out.check_output("Test dataset 'my-test-dataset' is not installed")
+        out.check_output("Skipped every test_solver_run variants")
 
     def test_complete_bench(self, bench_completion_cases):  # noqa: F811
 

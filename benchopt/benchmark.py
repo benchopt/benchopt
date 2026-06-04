@@ -262,6 +262,9 @@ class Benchmark:
             f"Found possible datasets {test_datasets}."
         )
         test_class = test_datasets[0]
+        if not test_class.is_installed():
+            import pytest
+            pytest.skip(f"Test dataset {name!r} is not installed")
         return test_class
 
     def get_test_dataset_names(self, solver_class=None):
@@ -726,6 +729,27 @@ class Benchmark:
                 self.prepare_all_data(include_datasets, force=force)
             )
         return exit_code
+
+    def create_test_env(self, env_name, recreate=False):
+        from .utils.conda_env_cmd import create_conda_env
+        create_conda_env(
+            env_name, benchmark=self, recreate=recreate, pytest=True
+        )
+
+        # Install the objective + required test datasets.
+        test_dataset_names = set(self.get_test_dataset_names())
+        for solver_class in self.get_solvers():
+            test_dataset_names.update(
+                self.get_test_dataset_names(solver_class=solver_class)
+            )
+        self.install_all_requirements(
+            include_solvers=[],
+            include_datasets=self.check_dataset_patterns(
+                sorted(test_dataset_names)
+            ),
+            env_name=env_name,
+            env_need_confirm=False,
+        )
 
     def download_all_data(self, datasets, env_name, quiet):
         if len(datasets) == 0:

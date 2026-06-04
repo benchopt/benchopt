@@ -48,6 +48,8 @@ the benchmark's datasets and solvers where applicable) is:
 
 - ``test_dataset_class[<dataset>]`` — the dataset class exposes the
   expected public API (``name``, callable ``get_data``).
+- ``test_dataset_install[<dataset>]`` — the dataset installs cleanly in a
+  fresh conda environment (skipped under ``--skip-install``).
 - ``test_dataset_get_data[<dataset>]`` — each installed dataset's
   ``get_data`` returns a dictionary, as expected by the objective.
 - ``test_benchmark_objective[<test_dataset>]`` — the objective instantiates

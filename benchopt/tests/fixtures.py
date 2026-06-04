@@ -284,10 +284,8 @@ def test_env_name(request, benchmark, use_env):
 
         _TEST_ENV_NAME = env_name
 
-        create_conda_env(
-            env_name, benchmark=benchmark, recreate=recreate, pytest=True
-        )
-        benchmark.get_benchmark_objective().install(env_name=env_name)
+        benchmark.create_test_env(env_name, recreate=recreate)
+
         # Flush the output to avoid issues with pytest capturing
         # the output later on and failing tests because of it.
         # Make sure to flush stdout and stderr

@@ -28,6 +28,20 @@ def test_dataset_class(benchmark, dataset_class):
     )
 
 
+@pytest.mark.requires_install
+def test_dataset_install(test_env_name, benchmark, dataset_class):
+
+    # Make sure that the current benchmark is correctly set
+    from benchopt.benchmark import Benchmark
+    benchmark = Benchmark(benchmark.benchmark_dir)
+
+    # assert that install works when forced to reinstalls
+    dataset_class.install(env_name=test_env_name)
+    dataset_class.is_installed(
+        env_name=test_env_name, raise_on_not_installed=True
+    )
+
+
 def test_dataset_get_data(benchmark, dataset_class):
     """Check that all installed dataset_class.get_data return the right result
     """
