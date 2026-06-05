@@ -413,6 +413,20 @@ class TestCmdTest:
                 )
             out.check_output("Installing required packages.*\n- objective")
 
+    def test_invalid_test_dataset_name(self, test_env_name):
+        # Check that launching the tests in a conda env install minimal reqs
+        objective = """from benchopt.utils.temp_benchmark import TempObjective
+        class Objective(TempObjective):
+            test_dataset_name = "invalid-dataset"
+        """
+        with temp_benchmark(objective=objective) as bench:
+            with pytest.raises(ValueError, match="Bad test dataset names:.*'invalid-dataset'"):
+                benchopt_test(
+                   f"{bench.benchmark_dir} --env-name {test_env_name} "
+                   "--skip-env".split(),
+                   'benchopt', standalone_mode=False
+                )
+
     def test_valid_call_in_env_dataset_requirements(
             self, test_env_name, uninstall_dummy_package
     ):
