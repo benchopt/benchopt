@@ -419,8 +419,9 @@ class TestCmdTest:
         class Objective(TempObjective):
             test_dataset_name = "invalid-dataset"
         """
+        msg = "Bad test dataset names:.*'invalid-dataset'"
         with temp_benchmark(objective=objective) as bench:
-            with pytest.raises(ValueError, match="Bad test dataset names:.*'invalid-dataset'"):
+            with pytest.raises(ValueError, match=msg):
                 benchopt_test(
                    f"{bench.benchmark_dir} --env-name {test_env_name} "
                    "--skip-env".split(),
