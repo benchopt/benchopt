@@ -748,7 +748,7 @@ class Benchmark:
             )
         except click.BadParameter as e:
             # If a test dataset name is invalid, raise a comprehensible error
-            raise ValueError(f"Bad test dataset name: {e.args[0]}")
+            raise ValueError(f"Bad test dataset names: {e.args[0]}")
         self.install_all_requirements(
             include_solvers=[],
             include_datasets=test_datasets,

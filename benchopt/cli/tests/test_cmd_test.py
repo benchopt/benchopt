@@ -427,8 +427,9 @@ class TestCmdTest:
                    'benchopt', standalone_mode=False
                 )
 
+    @pytest.mark.parametrize('set_name', ['test_dataset_name', 'test_config'])
     def test_valid_call_in_env_dataset_requirements(
-            self, test_env_name, uninstall_dummy_package
+            self, test_env_name, uninstall_dummy_package, set_name
     ):
         # Check that launching tests in a conda env install dataset reqs
         dataset = """from benchopt.utils.temp_benchmark import TempDataset
@@ -440,12 +441,21 @@ class TestCmdTest:
                 'pip::git+https://github.com/tommoral/dummy_package'
             ]
         """
-        objective = """from benchopt.utils.temp_benchmark import TempObjective
+        dataset_name = (
+            "test_dataset_name = 'reqs-dataset'"
+            if set_name == 'test_dataset_name' else
+            "test_config = {'dataset': {'name': 'reqs-dataset'}}"
+        )
+
+        objective = f"""from benchopt.utils.temp_benchmark import TempObjective
         # Non-regression: even when objective is not installed, the test
         # dataset requirements should be installed.
+        import dummy_package
 
         class Objective(TempObjective):
-            test_dataset_name = "reqs-dataset"
+            {dataset_name}
+            # Need a requirement to avoid error on collect
+            requirements = [""]
         """
         with temp_benchmark(
                 datasets=dataset, objective=objective,
@@ -460,7 +470,7 @@ class TestCmdTest:
             ).pop().is_installed(
                 env_name=test_env_name, raise_on_not_installed=True,
             )
-        out.check_output("Installing required packages.*\n- reqs-dataset")
+        out.check_output("Installing required packages.*\n.*\n- reqs-dataset")
 
     @pytest.mark.parametrize('test_name, arg, n_test', [
         ("test_dataset_get_data", "dataset_class", 2),

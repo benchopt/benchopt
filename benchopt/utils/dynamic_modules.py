@@ -244,7 +244,8 @@ def _set_cls_attr_from_ast(module_file, cls_name, ctx):
     ctx['_base_class_name'] = cls_name
 
     ctx['name'], ctx['install_cmd'], ctx['requirements'] = None, "conda", []
-    ctx['test_dataset_name'], ctx['test_config'] = None, {}
+    # Required to retrieve the test dataset name when creating a test env
+    ctx['test_dataset_name'], ctx['test_config'] = 'simulated', {}
     for node in cls.body:
         if isinstance(node, ast.Assign):
             for target in node.targets:
