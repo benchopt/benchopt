@@ -456,7 +456,7 @@ class TestCmdTest:
         class Objective(TempObjective):
             {dataset_name}
             # Need a requirement to avoid error on collect
-            requirements = [""]
+            requirements = ["numpy"]
         """
         with temp_benchmark(
                 datasets=dataset, objective=objective,
