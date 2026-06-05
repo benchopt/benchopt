@@ -742,11 +742,16 @@ class Benchmark:
             test_dataset_names.update(
                 self.get_test_dataset_names(solver_class=solver_class)
             )
+        try:
+            test_datasets = self.check_dataset_patterns(
+                sorted(test_dataset_names)
+            )
+        except click.BadParameter as e:
+            # If a test dataset name is invalid, raise a comprehensible error
+            raise ValueError(f"Bad test dataset names: {e.args[0]}")
         self.install_all_requirements(
             include_solvers=[],
-            include_datasets=self.check_dataset_patterns(
-                sorted(test_dataset_names)
-            ),
+            include_datasets=test_datasets,
             env_name=env_name,
             env_need_confirm=False,
         )
