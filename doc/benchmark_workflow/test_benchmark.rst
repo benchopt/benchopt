@@ -23,14 +23,13 @@ Basic philosophy
 
 The test run by ``benchopt test`` will make sure that:
 
-- Checking that all datasets have the proper API and can be loaded.
-- Checking that the objective have the proper API and can be computed
+- all datasets have a valid API and can be loaded.
+- the objective has a valid API and can be computed
   with a simple dataset and the result returned by ``get_one_result``.
-- Checking that all solvers have the proper API and can be run on a simple
+- all solvers have a valid API and can be run on a simple
   configuration.
-- Checking that all solvers can be installed in a fresh environment.
-
-The tests that are run can be found in the :ref:`tests_definition`.
+- all solvers can be installed in a fresh environment.
+- the benchmark's ``config.yml`` is valid.
 
 By default, if the benchmark has been created using one of our templates, the
 repo contains some github actions that will try to run these tests on each
@@ -41,29 +40,72 @@ push/pull request, and once a week, to ensure long term maintainability.
     The scheduling of the github action run can be changed in
     ``.github/workflows/main.yml``.
 
+Tests reference
+~~~~~~~~~~~~~~~
+
+The full set of pytest checks run by ``benchopt test`` (parametrized over
+the benchmark's datasets and solvers where applicable) is:
+
+- ``test_dataset_class[<dataset>]`` — the dataset class exposes the
+  expected public API (``name``, callable ``get_data``).
+- ``test_dataset_install[<dataset>]`` — the dataset installs cleanly in a
+  fresh conda environment (skipped under ``--skip-install``).
+- ``test_dataset_get_data[<dataset>]`` — each installed dataset's
+  ``get_data`` returns a dictionary, as expected by the objective.
+- ``test_benchmark_objective[<test_dataset>]`` — the objective instantiates
+  on the resolved test dataset and the output of ``Objective.__call__``
+  on ``get_one_result`` has the expected schema.
+- ``test_benchmark_config_validity`` — the benchmark's ``config.yml``
+  only uses valid options.
+- ``test_solver_class[<solver>]`` — the solver class exposes the
+  expected public API (``name``, optional ``sampling_strategy``,
+  ``stopping_criterion``, or ``get_next``).
+- ``test_solver_install_api[<solver>]`` — the solver declares a known
+  install command (``None``, ``'conda'`` or ``'shell'``).
+- ``test_solver_install[<solver>]`` — the solver installs cleanly in a
+  fresh conda environment (skipped under ``--skip-install``).
+- ``test_solver_stopping_criterion[<solver>-<test_dataset>]`` — the solver's
+  ``stopping_criterion`` is compatible with the objective (only useful for
+  iterative evaluation benchmark).
+- ``test_solver_run[<solver>-<test_dataset>]`` — the solver runs on at least
+  one configuration of the resolved test datasets.
+
+The full definition of the tests that are run can be found in the
+:ref:`tests_definition`.
+
+Note that several of these tests are parametrized over the benchmark's datasets
+and solvers, and that the test parameters used for all components, as well as
+the ``test_dataset(s)`` used for testing the objective and solver runs can be
+configured (see below).
+
 Parameters' configuration for tests
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-By default, the benchmark will load a ``Simulated`` dataset for testing
-purposes. The name of this test dataset can be changed with the
-``Objective.test_dataset`` attribute. However, real datasets may be too large
-to be used in tests, and some solvers or objectives may require specific
-settings — for instance a specific regularization level to be fast, or a
-particular data format only possible with a given dataset.
-To handle these cases, ``benchopt`` provides a ``test_config`` class attribute
-that can be defined on the ``Dataset``, ``Objective``, and ``Solver`` classes.
-Each class can override the parameters used to instantiate any of the
-component classes during testing:
+The test bed used for ``test_solver_run`` and ``test_benchmark_objective``
+is controlled by a ``test_config`` class attribute that can be defined on
+the ``Dataset``, ``Objective``, and ``Solver`` classes. Each class can
+override the parameters used to instantiate any of the component classes
+during testing, and the ``dataset`` entry of ``test_config`` can select
+which dataset class is used:
 
 - ``Dataset.test_config`` directly contains the parameters passed to the
   ``Dataset`` class.
 - ``Objective.test_config`` directly contains the parameters passed to the
   ``Objective`` class, with an optional ``dataset`` key whose value is a
-  dictionary of parameters that override those of the dataset.
+  dictionary of parameters that override those of the dataset. A special
+  ``name`` entry inside that ``dataset`` dictionary selects which dataset
+  class is used for testing — and it may be a list of names, in which case
+  ``test_benchmark_objective`` is run once per name (useful for objectives
+  whose code path differs across datasets, e.g. forecasting vs.
+  classification).
 - ``Solver.test_config`` directly contains the parameters passed to the
   ``Solver`` class, with optional ``dataset`` and ``objective`` keys whose
   values are dictionaries of parameters that override those of the dataset
-  and objective respectively.
+  and objective respectively. A ``name`` parameter in ``dataset`` behaves
+  similarly to the one in  ``Objective.test_config``.
+If none of these is set, the benchmark falls back to ``Objective.test_dataset_name``,
+which in turn default to ``Simulated``. Configuring such ``test_dataset`` is
+necessary to allow testing the benchmark automatically.
 
 The configurations from the three classes are merged with the following
 priority order, from lowest to highest: ``Dataset.test_config``,
@@ -90,11 +132,25 @@ parameters for the whole benchmark:
 
     class Objective(BaseObjective):
         name = "my objective"
-        test_dataset = "my_data"
         test_config = {
             'reg': 0.9,
-            'dataset': {'debug': True},
+            'dataset': {'name': 'my_data', 'debug': True},
         }
+
+For a multi-task benchmark, a solver that only supports a subset of the
+datasets can declare which one(s) to test against:
+
+.. code-block:: python
+
+    class Solver(BaseSolver):
+        name = "classifier1"
+
+        test_config = {
+            'dataset': {'name': 'data1'},  # or ['data_a', 'data_b']
+        }
+
+Note that configuring an empty list of test datasets raises a
+``ValueError`` at collection time.
 
 Fallback with ``Dataset.test_parameters``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -394,6 +394,11 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
         ):
             self._data = self.get_data()
 
+        if not isinstance(self._data, dict):
+            raise ValueError(
+                "The `get_data` method of the dataset should return a "
+                f"dictionary containing the data. Got {self._data}."
+            )
         return self._data
 
     @staticmethod

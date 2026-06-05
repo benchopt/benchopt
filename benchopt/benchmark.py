@@ -229,25 +229,69 @@ class Benchmark:
         "List all available dataset names for the benchmark."
         return [d.name for d in self.get_datasets()]
 
-    def get_test_dataset(self):
-        objective = self.get_benchmark_objective()
+    def get_test_dataset(self, name=None, solver_class=None):
+        """Return the benchmark test dataset, or the one linked to the solver.
+
+        Parameters
+        ----------
+        name : str or None
+            Explicit dataset name to for direct override.
+        solver_class : Solver or None
+            Solver context, used to retrieve test_dataset['name'] when
+            the dataset is not given explicitly.
+        """
+        if name is None:
+            name = self.get_test_dataset_names(solver_class=solver_class)[0]
+
         datasets = self.get_datasets()
         test_datasets = [
-            d for d in datasets
-            if sanitize(d.name) == sanitize(objective.test_dataset_name)
+            d for d in datasets if sanitize(d.name) == sanitize(name)
         ]
         if len(test_datasets) == 0 and len(datasets) == 1:
             test_datasets = datasets
 
         assert len(test_datasets) == 1, (
             "All benchmarks should have one test_dataset. The default is a "
-            "simulated dataset, but the name can be tweaked by setting the "
-            "`Objective.test_dataset_name` attribute. The dataset should have "
-            f"`name='{objective.test_dataset_name}' in the current benchmark. "
+            "simulated dataset, but the name can be tweaked by setting "
+            "`Objective.test_config['dataset']['name']` (or the legacy "
+            "`Objective.test_dataset_name`) or per-solver via "
+            "`Solver.test_config['dataset']['name']`. The dataset should "
+            f"have `name='{name}' in the current benchmark. "
             f"Found possible datasets {test_datasets}."
         )
         test_class = test_datasets[0]
+        if not test_class.is_installed():
+            import pytest
+            pytest.skip(f"Test dataset {name!r} is not installed")
         return test_class
+
+    def get_test_dataset_names(self, solver_class=None):
+        """Resolve the list of test dataset names for the given context.
+
+        Names come from (in increasing priority):
+
+          1. ``Objective.test_dataset_name`` (legacy default).
+          2. ``Objective.test_config['dataset']['name']`` (str or list).
+          3. ``Solver.test_config['dataset']['name']`` (str or list) when
+             ``solver_class`` is provided.
+
+        Returns
+        -------
+        list[str]
+            One or more dataset names to exercise for this test context.
+        """
+        objective = self.get_benchmark_objective()
+        names = [objective.test_dataset_name]
+
+        for component in (objective, solver_class):
+            if component is None:
+                continue
+            ds_cfg = getattr(component, 'test_config', {}).get('dataset', {})
+            name = ds_cfg.get('name')
+            if name is None:
+                continue
+            names = [name] if isinstance(name, str) else list(name)
+        return names
 
     def check_dataset_patterns(self, dataset_patterns, class_only=False):
         "Check that the patterns are valid and return selected configurations."
@@ -774,6 +818,32 @@ class Benchmark:
                 self.prepare_all_data(include_datasets, force=force)
             )
         return exit_code
+
+    def create_test_env(self, env_name, recreate=False):
+        from .utils.conda_env_cmd import create_conda_env
+        create_conda_env(
+            env_name, benchmark=self, recreate=recreate, pytest=True
+        )
+
+        # Install the objective + required test datasets.
+        test_dataset_names = set(self.get_test_dataset_names())
+        for solver_class in self.get_solvers():
+            test_dataset_names.update(
+                self.get_test_dataset_names(solver_class=solver_class)
+            )
+        try:
+            test_datasets = self.check_dataset_patterns(
+                sorted(test_dataset_names)
+            )
+        except click.BadParameter as e:
+            # If a test dataset name is invalid, raise a comprehensible error
+            raise ValueError(f"Bad test dataset names: {e.args[0]}")
+        self.install_all_requirements(
+            include_solvers=[],
+            include_datasets=test_datasets,
+            env_name=env_name,
+            env_need_confirm=False,
+        )
 
     def download_all_data(self, datasets, env_name, quiet):
         if len(datasets) == 0:

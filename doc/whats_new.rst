@@ -7,6 +7,24 @@ What's new
 
 .. _dev:
 
+Version 1.10.0 -- In development
+--------------------------------
+
+TST
+~~~
+
+- Improve test configuration for multi-task benchmarks:
+  ``test_config['dataset']['name']`` now accepts a list of dataset names.
+  Also flag solvers whose every ``test_solver_run`` variant was skipped, and
+  raise a clear error when no test dataset is configured.
+  By `Thomas Moreau`_ (:gh:`942`)
+
+- Add ``test_dataset_install`` test to check install of datasets and
+  make sure to install test_datasets when creating a test env.
+  By `Thomas Moreau`_ (:gh:`944`)
+
+.. _changes_1_9_1:
+
 Version 1.9.1 -- 28/05/2026
 ---------------------------
 
