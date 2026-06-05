@@ -293,7 +293,6 @@ class Benchmark:
             if name is None:
                 continue
             names = [name] if isinstance(name, str) else list(name)
-        print(names)
         return names
 
     def check_dataset_patterns(self, dataset_patterns, class_only=False):

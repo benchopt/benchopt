@@ -427,6 +427,9 @@ class TestCmdTest:
             ]
         """
         objective = """from benchopt.utils.temp_benchmark import TempObjective
+        # Non-regression: even when objective is not installed, the test
+        # dataset requirements should be installed.
+
         class Objective(TempObjective):
             test_dataset_name = "reqs-dataset"
         """

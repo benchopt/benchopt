@@ -118,7 +118,7 @@ def _load_class_from_module(benchmark_dir, module_filename, class_name):
                     metaclass=FailedImport):
             "Object for the class list that raises error if used."
 
-            exc = e
+            _exc = e
             _error_displayed = False
             _set_cls_attr_from_ast(module_filename, class_name, locals())
             cls_name = class_name
@@ -134,7 +134,7 @@ def _load_class_from_module(benchmark_dir, module_filename, class_name):
                     )
                 if not SKIP_IMPORT:
                     if raise_on_not_installed:
-                        raise cls.exc
+                        raise cls._exc
                     if not cls._error_displayed and not quiet:
                         print(
                             f"Failed to import {class_name} from "
@@ -223,11 +223,11 @@ def _set_cls_attr_from_ast(module_file, cls_name, ctx):
     cls_list = [node for node in module.body if isinstance(node, ast.ClassDef)
                 and node.name == cls_name]
     if not cls_list:
-        exc = ValueError(
+        _exc = ValueError(
             f"Could not find {cls_name} in module {module_file}."
         )
-        exc.__cause__ = ctx['exc']
-        ctx['exc'] = exc
+        _exc.__cause__ = ctx['_exc']
+        ctx['_exc'] = _exc
         ctx['name'] = name
         return
     cls = cls_list[0]
@@ -242,22 +242,24 @@ def _set_cls_attr_from_ast(module_file, cls_name, ctx):
     ]
 
     ctx['_base_class_name'] = cls_name
+
     ctx['name'], ctx['install_cmd'], ctx['requirements'] = None, "conda", []
+    ctx['test_dataset_name'], ctx['test_config'] = None, {}
     for node in cls.body:
         if isinstance(node, ast.Assign):
             for target in node.targets:
-                if target.id in ["name", "requirements", "install_cmd"]:
+                if target.id in ctx:
                     try:
                         ctx[target.id] = ast.literal_eval(node.value)
                     except Exception:
                         if target.id == "name":
-                            exc = ValueError(
+                            _exc = ValueError(
                                 f"Could not evaluate the name of the class "
                                 f"{cls_name} in module {module_file}.\n"
                                 f"The name should be a string literal."
                             )
-                            exc.__cause__ = ctx['exc']
-                            ctx['exc'] = exc
+                            _exc.__cause__ = ctx['_exc']
+                            ctx['_exc'] = _exc
                             ctx['name'] = name
                         else:
                             msg = (
