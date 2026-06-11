@@ -13,34 +13,55 @@ class TestCheckInstallCmd:
     def test_solver_installed(self):
         with temp_benchmark() as bench:
             solver = bench.benchmark_dir / 'solvers' / 'test_solver.py'
+            ref = f"{solver.resolve()}@Solver"
             with pytest.raises(SystemExit, match='0'):
-                check_install([
-                    str(bench.benchmark_dir), str(solver.resolve()), 'Solver'
-                ], 'benchopt')
+                check_install(
+                    [str(bench.benchmark_dir), ref], 'benchopt'
+                )
 
     def test_solver_does_not_exists(self):
         with temp_benchmark() as bench:
             solver = bench.benchmark_dir / 'solvers' / 'invalid.py'
-            with pytest.raises(FileNotFoundError, match='invalid.py'):
-                check_install([
-                    str(bench.benchmark_dir), str(solver.resolve()), 'Solver'
-                ], 'benchopt')
+            ref = f"{solver.resolve()}@Solver"
+            # Missing module is reported as ``not installed`` so the
+            # batched CLI exits non-zero, not with FileNotFoundError.
+            with pytest.raises(SystemExit, match='1'):
+                check_install(
+                    [str(bench.benchmark_dir), ref], 'benchopt'
+                )
 
     def test_dataset_installed(self):
         with temp_benchmark() as bench:
             dataset = bench.benchmark_dir / 'datasets' / 'simulated.py'
+            ref = f"{dataset.resolve()}@Dataset"
             with pytest.raises(SystemExit, match='0'):
-                check_install([
-                    str(bench.benchmark_dir), str(dataset.resolve()), 'Dataset'
-                ], 'benchopt')
+                check_install(
+                    [str(bench.benchmark_dir), ref], 'benchopt'
+                )
 
     def test_dataset_does_not_exists(self):
         with temp_benchmark() as bench:
             dataset = bench.benchmark_dir / 'datasets' / 'invalid.py'
-            with pytest.raises(FileNotFoundError, match='invalid.py'):
-                check_install([
-                    str(bench.benchmark_dir), str(dataset.resolve()), 'Dataset'
-                ], 'benchopt')
+            ref = f"{dataset.resolve()}@Dataset"
+            with pytest.raises(SystemExit, match='1'):
+                check_install(
+                    [str(bench.benchmark_dir), ref], 'benchopt'
+                )
+
+    def test_batch_mixed_results(self):
+        with temp_benchmark() as bench:
+            solver = bench.benchmark_dir / 'solvers' / 'test_solver.py'
+            missing = bench.benchmark_dir / 'solvers' / 'invalid.py'
+            refs = [
+                f"{solver.resolve()}@Solver",
+                f"{missing.resolve()}@Solver",
+            ]
+            with CaptureCmdOutput() as captured:
+                with pytest.raises(SystemExit, match='1'):
+                    check_install(
+                        [str(bench.benchmark_dir), *refs], 'benchopt'
+                    )
+            captured.check_output("BENCHOPT_CHECK_INSTALL")
 
 
 class TestCheckDataCmd:

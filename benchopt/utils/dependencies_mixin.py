@@ -3,11 +3,9 @@ import traceback
 from ..config import RAISE_INSTALL_ERROR
 
 from .class_property import classproperty
-from .shell_cmd import _run_shell_in_conda_env
-from .conda_env_cmd import install_in_conda_env
-from .conda_env_cmd import shell_install_in_conda_env
+from .env_management import get_backend
 
-from .terminal_output import colorify, RED, BLUE, GREEN, TICK, CROSS
+from .terminal_output import colorify, RED, BLUE, GREEN, YELLOW, TICK, CROSS
 RED_CROSS = colorify(CROSS, RED)
 GREEN_TICK = colorify(TICK, GREEN)
 
@@ -86,10 +84,12 @@ class DependenciesMixin:
             # Import worked in the current environment, no need to check
             return True
 
-        # Get the current benchmark directory
-        exit_code, output = _run_shell_in_conda_env(
-            f"benchopt check-install {cls._benchmark_dir} "
-            f"{cls._module_filename} {cls._base_class_name}",
+        # Get the current benchmark directory. ``check-install`` always
+        # emits a JSON dict (even for a single class) and exits non-zero
+        # when at least one class is not installed.
+        ref = f"{cls._module_filename}@{cls._base_class_name}"
+        exit_code, output = get_backend().run_in_env(
+            f"benchopt check-install {cls._benchmark_dir} {ref}",
             env_name=env_name, return_output=True,
             raise_on_error=raise_on_not_installed,
         )
@@ -117,9 +117,17 @@ class DependenciesMixin:
         is_installed: bool
             True if the class is correctly installed in the environment.
         """
-        # Check that install_cmd is valid and if the cls is installed
+        # Check that install_cmd is valid and if the cls is installed.
+        # When force=True targets a specific env (env_name is not None,
+        # typically just-created), skip the is_installed check which
+        # would spawn a per-class subprocess to confirm nothing is
+        # installed yet. For env_name=None the check is in-process and
+        # essentially free, so always run it.
         install_cmd_ = cls.install_cmd_
-        is_installed = cls.is_installed(env_name=env_name, quiet=True)
+        if force and env_name is not None:
+            is_installed = False
+        else:
+            is_installed = cls.is_installed(env_name=env_name, quiet=True)
 
         env_suffix = f" in '{env_name}'" if env_name else ""
         if force or not is_installed:
@@ -129,8 +137,9 @@ class DependenciesMixin:
                 cls._pre_install_hook(env_name=env_name)
                 if install_cmd_ == "conda":
                     if hasattr(cls, "requirements"):
-                        install_in_conda_env(*cls.requirements,
-                                             env_name=env_name)
+                        get_backend().install_packages(
+                            *cls.requirements, env_name=env_name
+                        )
                     else:
                         # get details of class
                         cls_type = cls.__base__.__name__.replace("Base", "")
@@ -156,7 +165,9 @@ class DependenciesMixin:
                         cls._module_filename.parents[1] / "install_scripts"
                         / cls.install_script
                     )
-                    shell_install_in_conda_env(install_file, env_name=env_name)
+                    get_backend().install_shell_script(
+                        install_file, env_name=env_name
+                    )
                 cls._post_install_hook(env_name=env_name)
 
             except Exception as exception:
@@ -174,7 +185,8 @@ class DependenciesMixin:
         return is_installed
 
     @classmethod
-    def collect(cls, env_name=None, force=False, gpu=False):
+    def collect(cls, env_name=None, force=False, gpu=False,
+                is_installed_cache=None):
         """Collect info for global installation of all classes in an env.
 
         Parameters
@@ -184,6 +196,11 @@ class DependenciesMixin:
             None, tries to install it in the current environment.
         force : boolean (default: False)
             If set to True, forces reinstallation when using conda.
+        is_installed_cache : dict or None (default: None)
+            Pre-computed ``{cls: is_installed}`` map populated by
+            :meth:`Benchmark.check_classes_installed`. When provided,
+            avoids spawning one ``benchopt check-install`` subprocess
+            per class.
 
         Returns
         -------
@@ -203,12 +220,22 @@ class DependenciesMixin:
             print(f"failed to get requirements {RED_CROSS}\n{exc}")
             return [], [], [], cls
 
-        # Check that install_cmd is valid and if the cls is installed
+        # Check that install_cmd is valid and if the cls is installed.
+        # When force=True targets a specific env (typically just-created),
+        # skip the per-class is_installed check — it would spawn a
+        # subprocess to confirm nothing is installed yet. Otherwise
+        # prefer the pre-computed cache (one batched subprocess) if the
+        # caller provided one; fall back to a per-class check.
         try:
             install_cmd_ = cls.install_cmd_
         except Exception as exc:
             return fail_fast(exc)
-        is_installed = cls.is_installed(env_name=env_name, quiet=True)
+        if force and env_name is not None:
+            is_installed = False
+        elif is_installed_cache is not None and cls in is_installed_cache:
+            is_installed = is_installed_cache[cls]
+        else:
+            is_installed = cls.is_installed(env_name=env_name, quiet=True)
 
         missing_deps = None
         conda_reqs, shell_install_scripts, post_install_hooks = [], [], []
@@ -234,7 +261,30 @@ class DependenciesMixin:
                             "If `requirements` is a dict, its keys should be "
                             f"`cpu` and `gpu`, got {list(conda_reqs.keys())}"
                         )
-                if not is_installed and len(conda_reqs) == 0:
+
+                # Skip-with-warn: if the active backend cannot install
+                # any of the requirements (e.g. `chan::pkg` under uv),
+                # drop the class from this install run. The class will
+                # still be reported as not-installed by the post-install
+                # verification loop, surfacing the warning to the user.
+                backend = get_backend()
+                unsupported = [
+                    r for r in conda_reqs if not backend.can_install(r)
+                ]
+                if unsupported:
+                    print(colorify(
+                        f"skipped (backend {backend.name!r} cannot install"
+                        f" {unsupported})", YELLOW
+                    ))
+                    return [], [], [], None
+
+                # The "no requirements declared" heuristic only fires
+                # when we have a real is_installed answer. When we
+                # short-circuited the check (force=True targeting a
+                # specific env), defer the diagnostic to post-install
+                # verification.
+                if (not force and not is_installed
+                        and len(conda_reqs) == 0):
                     missing_deps = cls
             post_install_hooks = [cls._post_install_hook]
             print("collected", GREEN_TICK)

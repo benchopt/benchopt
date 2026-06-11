@@ -2,6 +2,7 @@ import os
 import sys
 import uuid
 import pytest
+import shutil
 from collections import defaultdict
 
 from benchopt.benchmark import Benchmark
@@ -9,6 +10,7 @@ from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.utils.conda_env_cmd import create_conda_env
 from benchopt.utils.conda_env_cmd import delete_conda_env
 from benchopt.utils.shell_cmd import _run_shell_in_conda_env
+from benchopt.utils.env_management import UvBackend
 
 os.environ['BENCHOPT_DEBUG'] = '1'
 os.environ['BENCHOPT_RAISE_INSTALL_ERROR'] = '1'
@@ -16,6 +18,7 @@ os.environ['BENCHOPT_WARN_NONUNIQUE_FILES'] = '0'
 
 _TEST_ENV_NAME = None
 _EMPTY_ENV_NAME = None
+_TEST_UV_ENV_PATH = None
 _TEST_BENCHMARK = None
 
 # Track ``test_solver_run`` outcomes per solver to check that at least one
@@ -40,6 +43,9 @@ def pytest_addoption(parser):
                      help="skip tests which requires creating a conda env.")
     parser.addoption("--test-env", type=str, default=None,
                      help="Use a given env to test the solvers' install.")
+    parser.addoption("--test-uv-env", type=str, default=None,
+                     help="Use a given uv venv (path or bare name under the "
+                          "uv envs dir) to test the uv backend.")
     parser.addoption("--recreate", action="store_true",
                      help="Recreate the environment if it already exists.")
     parser.addoption("--benchmark", type=str, default=None,
@@ -276,6 +282,8 @@ def test_env_name(request, benchmark, use_env):
     if _TEST_ENV_NAME is None:
         if request.config.getoption("--skip-env"):
             pytest.skip("Skip creating a test env")
+        if shutil.which("conda") is None:
+            pytest.skip("conda is not installed on PATH")
         env_name = request.config.getoption("--test-env")
         recreate = request.config.getoption("--recreate")
         if env_name is None:
@@ -300,6 +308,8 @@ def empty_env_name(request, use_env):
     global _EMPTY_ENV_NAME
 
     if _EMPTY_ENV_NAME is None:
+        if shutil.which("conda") is None:
+            pytest.skip("conda is not installed on PATH")
         env_name = f"_benchopt_test_env_{uuid.uuid4()}"
         _EMPTY_ENV_NAME = env_name
 
@@ -323,6 +333,73 @@ def delete_empty_env():
     if _EMPTY_ENV_NAME is not None:
         delete_conda_env(_EMPTY_ENV_NAME)
         _EMPTY_ENV_NAME = None
+
+
+@pytest.fixture(scope='session')
+def test_uv_env_path(request, bench, use_env):
+    """Session-scoped uv venv with benchopt installed editable.
+
+    Honors ``--test-uv-env`` to reuse an existing venv across pytest runs
+    (in which case finalization does not delete it).
+    """
+    global _TEST_UV_ENV_PATH
+
+    from benchopt.utils.env_management import (
+        reset_active_backend, set_active_backend,
+    )
+    if _TEST_UV_ENV_PATH is None:
+        if shutil.which("uv") is None:
+            pytest.skip("uv is not installed on PATH")
+        provided = request.config.getoption("--test-uv-env")
+        if provided is None:
+            env_name = f"_benchopt_test_uv_env_{uuid.uuid4()}"
+            request.addfinalizer(delete_uv_test_env)
+        else:
+            env_name = provided
+        _TEST_UV_ENV_PATH = env_name
+
+        backend = UvBackend()
+        backend.create_env(env_name, benchmark=bench, pytest=True)
+        # The bench objective install must use the uv backend too,
+        # otherwise the conda default would try to activate a uv venv.
+        set_active_backend("uv")
+        try:
+            bench.get_benchmark_objective().install(env_name=env_name)
+        finally:
+            reset_active_backend()
+        print(flush=True)
+        print(flush=True, file=sys.stderr)
+
+    return _TEST_UV_ENV_PATH
+
+
+def delete_uv_test_env():
+    global _TEST_UV_ENV_PATH
+
+    if _TEST_UV_ENV_PATH is not None:
+        UvBackend().delete_env(_TEST_UV_ENV_PATH)
+        _TEST_UV_ENV_PATH = None
+
+
+@pytest.fixture
+def backend_test_env(request):
+    """Yield ``(backend_name, env_name)`` for a parametrized test.
+
+    Use as an indirect parametrize value: ``"conda"`` or ``"uv"``.
+    """
+    backend = request.param
+    if backend == "conda":
+        env_name = request.getfixturevalue("test_env_name")
+    elif backend == "uv":
+        env_name = request.getfixturevalue("test_uv_env_path")
+    else:
+        pytest.skip(f"unknown backend {backend!r}")
+    from benchopt.utils.env_management import (
+        reset_active_backend, set_active_backend,
+    )
+    set_active_backend(backend)
+    yield backend, env_name
+    reset_active_backend()
 
 
 @pytest.fixture(scope='function')
