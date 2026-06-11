@@ -159,7 +159,7 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               help="Launch a debugger if there is an error. This will launch "
               "ipdb if it is installed and default to pdb otherwise.")
 @click.option('--profile',
-              flag_value='True', default=False,
+              is_flag=True,
               help="Will do line profiling on all functions with @profile "
                    "decorator. Requires the line-profiler package. "
                    "The profile decorator needs to be imported "
