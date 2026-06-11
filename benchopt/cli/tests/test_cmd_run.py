@@ -258,7 +258,7 @@ class TestRunCmd:
         out.check_output('GET_DATA#2,1', repetition=1)
         out.check_output('GET_DATA#3,', repetition=2)
 
-    def test_profiling(self, test_env_name, no_debug_log):
+    def test_profiling(self, no_debug_log):
         # Run this test in a subprocess as calling the profiler in the same
         # process breaks the coverage collection.
         solver = """from benchopt.utils.temp_benchmark import TempSolver
@@ -275,8 +275,7 @@ class TestRunCmd:
         with temp_benchmark(solvers=solver) as bench, \
                 CaptureCmdOutput() as out:
             run(
-                f"{bench.benchmark_dir} --env-name {test_env_name} "
-                "-s test-solver -n 1 -r 1 --profile --no-plot".split(),
+                f"{bench.benchmark_dir} -n 1 -r 1 --profile --no-plot".split(),
                 'benchopt', standalone_mode=False
             )
         out.check_output('using profiling', repetition=1)
@@ -286,6 +285,15 @@ class TestRunCmd:
         ]), repetition=1)
         out.check_output(r"def run\(self, n_iter\):", repetition=1)
         out.check_output(r"time.sleep\(0.1\)", repetition=1)
+
+        # Check that profile is only activated when the option is specified
+        with temp_benchmark(solvers=solver) as bench, \
+                CaptureCmdOutput() as out:
+            run(
+                f"{bench.benchmark_dir} -n 1 -r 1 --no-plot".split(),
+                'benchopt', standalone_mode=False
+            )
+        out.check_output('using profiling', repetition=0)
 
     @pytest.mark.parametrize('n_rep', [1, 2, 4])
     def test_caching(self, n_rep):
