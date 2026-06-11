@@ -23,6 +23,13 @@ TST
   make sure to install test_datasets when creating a test env.
   By `Thomas Moreau`_ (:gh:`944`)
 
+
+FIX
+~~~
+
+- Fix ``--profile`` parsing that was resulting in always activated profile.
+  By `Thomas Moreau`_ (:gh:`950`)
+
 .. _changes_1_9_1:
 
 Version 1.9.1 -- 28/05/2026
