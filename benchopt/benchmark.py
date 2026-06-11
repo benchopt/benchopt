@@ -293,6 +293,9 @@ class Benchmark:
             if name is None:
                 continue
             names = [name] if isinstance(name, str) else list(name)
+        if names == [None]:
+            datasets = self.get_dataset_names()
+            names = datasets if len(datasets) == 1 else ['simulated']
         return names
 
     def check_dataset_patterns(self, dataset_patterns, class_only=False):
@@ -621,6 +624,12 @@ class Benchmark:
                 stacklevel=2,
             )
             prepare = True
+
+        if env_name is not None:
+            # Don't import actual modules when parsing dependencies in an env
+            from .utils.dynamic_modules import skip_import
+            skip_import()
+
         # Collect all classes matching one of the patterns
         print("Collecting packages:")
         exit_code = 0
@@ -735,6 +744,11 @@ class Benchmark:
         create_conda_env(
             env_name, benchmark=self, recreate=recreate, pytest=True
         )
+
+        if env_name is not None:
+            # Don't import actual modules when parsing dependencies in an env
+            from .utils.dynamic_modules import skip_import
+            skip_import()
 
         # Install the objective + required test datasets.
         test_dataset_names = set(self.get_test_dataset_names())

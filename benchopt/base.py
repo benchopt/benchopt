@@ -490,7 +490,7 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
     """
 
     _base_class_name = 'Objective'
-    test_dataset_name = 'simulated'
+    test_dataset_name = None
 
     sampling_strategy = None
 
