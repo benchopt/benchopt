@@ -23,12 +23,15 @@ TST
   make sure to install test_datasets when creating a test env.
   By `Thomas Moreau`_ (:gh:`944`)
 
-
 FIX
 ~~~
 
 - Fix ``--profile`` parsing that was resulting in always activated profile.
   By `Thomas Moreau`_ (:gh:`950`)
+
+- Fix error reporting when ``Solver.set_objective`` fails, which was
+  preventing the run to finish normally.
+  By `Thomas Moreau`_ (:gh:`949`)
 
 .. _changes_1_9_1:
 

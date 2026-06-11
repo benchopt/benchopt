@@ -167,3 +167,29 @@ def test_solver_return_early_callback(eval_every):
         out.check_output("EVAL#0", repetition=1)
         out.check_output("EVAL#2", repetition=1)
         out.check_output("EVAL#3", repetition=0)
+
+
+def test_solver_setup_error(no_debug_log):
+
+    solver_fail = """from benchopt.utils.temp_benchmark import TempSolver
+
+    class Solver(TempSolver):
+        name = 'fail-solver'
+        def set_objective(self, X, y, lmbd):
+            raise ValueError("Setup error")
+    """
+    solver = """from benchopt.utils.temp_benchmark import TempSolver
+    class Solver(TempSolver):
+        name = 'test-solver'
+    """
+    with temp_benchmark(solvers=[solver_fail, solver]) as bench:
+        with CaptureCmdOutput() as out:
+            run(
+                f"{bench.benchmark_dir} -d simulated -n 0 "
+                "--no-plot".split(),
+                'benchopt', standalone_mode=False
+            )
+        out.check_output("ValueError: Setup error", repetition=1)
+        out.check_output("fail-solver: error", repetition=1)
+        out.check_output("test-solver: done", repetition=1)
+        print(out.output)
