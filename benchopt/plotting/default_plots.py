@@ -206,6 +206,13 @@ class TablePlot(BasePlot):
         "dataset": ...,
         "objective": ...,
     }
+    # Default column ordering of the table in the html report.
+    # ``default_order_column`` is the column to sort on (a column name or a
+    # 0-based index) and ``default_order_ascending`` is the sort direction.
+    # When ``default_order_column`` is ``None``, the table is sorted on its
+    # first column in increasing order.
+    default_order_column = None
+    default_order_ascending = True
 
     def plot(self, df, dataset, objective):
         rows = []
@@ -241,7 +248,11 @@ class TablePlot(BasePlot):
             if col.startswith('objective_')
         ]
         columns = ["solver"] + objective_cols + ["time (s)"]
-        return {
+        metadata = {
             "title": f"{objective}\nData: {dataset}",
             "columns": columns,
+            "default_order_ascending": self.default_order_ascending,
         }
+        if self.default_order_column is not None:
+            metadata["default_order_column"] = self.default_order_column
+        return metadata

@@ -10,6 +10,16 @@ What's new
 Version 1.10.0 -- In development
 --------------------------------
 
+API
+~~~
+
+- Allow ordering the html report table by any column. Each column header can
+  be clicked to sort on that column, with a toggleable arrow to switch between
+  increasing and decreasing order. The default ordering can be set through the
+  ``default_order_column`` and ``default_order_ascending`` metadata of a custom
+  table plot.
+  By `Hippolyte Verninas`_
+
 TST
 ~~~
 

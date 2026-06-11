@@ -1040,11 +1040,53 @@ const renderImages = () => {
 // Global state for precision
 let tableFloatPrecision = 4;
 
+// Global state for the column ordering of the table. It is keyed by the
+// table identity so that the sorting is reset when switching to another
+// table, but kept when only re-rendering (e.g. on precision change).
+let tableSortState = null;
+
 const valueToFixed = (value) => {
   if (typeof value === 'number' && !Number.isInteger(value)) {
     return value.toFixed(tableFloatPrecision);
   }
   return value;
+}
+
+/**
+ * Compare two cell values, handling both numbers and strings.
+ */
+const compareCells = (a, b) => {
+  if (typeof a === 'number' && typeof b === 'number') {
+    return a - b;
+  }
+  return String(a).localeCompare(String(b));
+}
+
+/**
+ * Initialize/refresh the table sort state for the given table data.
+ *
+ * The default ordering can be customized through the `default_order_column`
+ * (a column name or index) and `default_order_ascending` metadata keys. When
+ * absent, the table is sorted on its first column in increasing order.
+ */
+const getTableSortState = (plotData, sortKey) => {
+  if (tableSortState && tableSortState.key === sortKey) {
+    return tableSortState;
+  }
+
+  let column = 0;
+  const orderColumn = plotData.default_order_column;
+  if (typeof orderColumn === 'string') {
+    const idx = plotData.columns.indexOf(orderColumn);
+    column = idx >= 0 ? idx : 0;
+  } else if (typeof orderColumn === 'number') {
+    column = orderColumn;
+  }
+
+  const ascending = plotData.default_order_ascending !== false;
+
+  tableSortState = { key: sortKey, column, ascending };
+  return tableSortState;
 }
 
 function renderTable() {
@@ -1062,6 +1104,14 @@ function renderTable() {
 
   const { columns, data: rows } = plotData;
 
+  // Resolve the current column ordering and sort a copy of the rows.
+  const sortKey = [state().plot_kind, ...columns].join('|');
+  const sortState = getTableSortState(plotData, sortKey);
+  const sortedRows = [...rows].sort((a, b) => {
+    const cmp = compareCells(a[sortState.column], b[sortState.column]);
+    return sortState.ascending ? cmp : -cmp;
+  });
+
   // Card Wrapper
   const card = document.createElement("div");
   card.className = "w-full bg-white overflow-hidden border border-gray-200 mx-auto";
@@ -1075,10 +1125,37 @@ function renderTable() {
   thead.className = "bg-gray-50";
   const trHead = document.createElement("tr");
 
-  columns.forEach(headerText => {
+  columns.forEach((headerText, colIndex) => {
     const th = document.createElement("th");
-    th.innerText = headerText;
-    th.className = "px-4 py-4 text-xs font-bold uppercase tracking-wider border-b border-gray-200";
+    th.className = "px-4 py-4 text-xs font-bold uppercase tracking-wider border-b border-gray-200 cursor-pointer select-none hover:bg-gray-100";
+    th.title = "Click to sort";
+
+    const label = document.createElement("span");
+    label.innerText = headerText;
+    th.appendChild(label);
+
+    // Sorting arrow: highlighted for the active column, faded otherwise.
+    const arrow = document.createElement("span");
+    arrow.className = "ml-1 inline-block";
+    if (sortState.column === colIndex) {
+      arrow.innerText = sortState.ascending ? "▲" : "▼";
+    } else {
+      arrow.innerText = "↕";
+      arrow.classList.add("text-gray-300");
+    }
+    th.appendChild(arrow);
+
+    th.onclick = () => {
+      if (sortState.column === colIndex) {
+        // Toggle direction when re-clicking the active column.
+        sortState.ascending = !sortState.ascending;
+      } else {
+        sortState.column = colIndex;
+        sortState.ascending = true;
+      }
+      renderTable();
+    };
+
     trHead.appendChild(th);
   });
   thead.appendChild(trHead);
@@ -1087,7 +1164,7 @@ function renderTable() {
   // Body
   const tbody = document.createElement("tbody");
 
-  rows.forEach((rowData, index) => {
+  sortedRows.forEach((rowData, index) => {
     const tr = document.createElement("tr");
     tr.className = "bg-white transition-colors duration-150 ease-in-out hover:bg-gray-50";
 
@@ -1099,7 +1176,7 @@ function renderTable() {
       td.innerHTML = valueToFixed(cellValue);
 
       let cellClasses = "px-4 py-4 text-sm text-gray-700";
-      if (index !== rows.length - 1) {
+      if (index !== sortedRows.length - 1) {
         cellClasses += " border-b border-gray-100";
       }
       td.className = cellClasses;
@@ -1187,7 +1264,15 @@ async function exportTable() {
   value += " \\\\\n";
   value += "\\hline\n";
 
-  plotData.data.forEach(rowData => {
+  // Export the rows in the order currently displayed in the table.
+  const sortKey = [state().plot_kind, ...plotData.columns].join('|');
+  const sortState = getTableSortState(plotData, sortKey);
+  const sortedRows = [...plotData.data].sort((a, b) => {
+    const cmp = compareCells(a[sortState.column], b[sortState.column]);
+    return sortState.ascending ? cmp : -cmp;
+  });
+
+  sortedRows.forEach(rowData => {
     value += valueToFixed(rowData[0]).toString().replace('_', '\\_');
     rowData.slice(1).forEach(cell => {
       value += ` & ${valueToFixed(cell).toString().replace('_', '\\_')}`;
