@@ -9,7 +9,6 @@ from benchopt.tests.utils import CaptureCmdOutput
 from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.utils.conda_env_cmd import delete_conda_env
 from benchopt.utils.conda_env_cmd import get_env_info
-from benchopt.utils.dynamic_modules import _unskip_import
 
 from benchopt.cli.tests.completion_cases import _test_shell_completion
 from benchopt.cli.tests.completion_cases import (  # noqa: F401
@@ -40,12 +39,6 @@ def test_env_python_version(test_env_name):
 
 
 class TestInstallCmd:
-
-    def teardown_method(self):
-        # When installing in a conda env, the benchmark's classes don't need
-        # to be imported and imports are skipped. Reset this to avoid border
-        # effects between tests.
-        _unskip_import()
 
     @pytest.mark.parametrize('invalid_benchmark, match', [
         ('invalid_benchmark', "Path 'invalid_benchmark' does not exist."),
