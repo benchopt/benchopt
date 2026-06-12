@@ -15,7 +15,7 @@ API
 
 - Add an ``ablation`` block in run configuration files to run a baseline and
   one-at-a-time parameter deviations instead of the full cartesian product.
-  By `Hippolyte Verninas`_
+  By `Hippolyte Verninas`_ (:gh:`954`)
 
 TST
 ~~~
