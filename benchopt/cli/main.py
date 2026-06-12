@@ -587,35 +587,35 @@ def install(
                     "Impossible to recreate 'base' conda environment."
                 )
 
-        # Don't import actual modules when parsing dependencies in an env
-        from ..utils.dynamic_modules import skip_import
-        skip_import()
+    # Don't import modules when parsing dependencies for another env.
+    from ..utils.dynamic_modules import skip_import_ctx
+    with skip_import_ctx(env_name is not None):
+        if env_name is not None:
+            # create environment if necessary
+            create_conda_env(
+                env_name, benchmark=benchmark, recreate=recreate, quiet=quiet
+            )
 
-        # create environment if necessary
-        create_conda_env(
-            env_name, benchmark=benchmark, recreate=recreate, quiet=quiet
+        # List solver and datasets classes to install
+        if len(dataset_names) == 0 and len(solver_names) > 0:
+            datasets = []
+        else:
+            datasets = benchmark.check_dataset_patterns(dataset_names)
+        if len(solver_names) == 0 and len(dataset_names) > 0:
+            solvers = []
+        else:
+            solvers = benchmark.check_solver_patterns(
+                solver_names, class_only=True
+            )
+
+        # install requirements
+        print("# Install", flush=True)
+        exit_code = benchmark.install_all_requirements(
+            include_solvers=solvers, include_datasets=datasets,
+            minimal=minimal, env_name=env_name, force=force, quiet=quiet,
+            download=download, prepare=prepare, gpu=gpu,
+            env_need_confirm=env_need_confirm
         )
-
-    # List solver and datasets classes to install
-    if len(dataset_names) == 0 and len(solver_names) > 0:
-        datasets = []
-    else:
-        datasets = benchmark.check_dataset_patterns(dataset_names)
-    if len(solver_names) == 0 and len(dataset_names) > 0:
-        solvers = []
-    else:
-        solvers = benchmark.check_solver_patterns(
-            solver_names, class_only=True
-        )
-
-    # install requirements
-    print("# Install", flush=True)
-    exit_code = benchmark.install_all_requirements(
-        include_solvers=solvers, include_datasets=datasets,
-        minimal=minimal, env_name=env_name, force=force, quiet=quiet,
-        download=download, prepare=prepare, gpu=gpu,
-        env_need_confirm=env_need_confirm
-    )
     if exit_code != 0:
         raise SystemExit(exit_code)
 

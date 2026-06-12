@@ -740,29 +740,22 @@ class Benchmark:
             env_name, benchmark=self, recreate=recreate, pytest=True
         )
 
-        if env_name is not None:
-            # Don't import actual modules when parsing dependencies in an env
-            from .utils.dynamic_modules import skip_import
-            skip_import()
-
-        # Install the objective + required test datasets.
-        test_dataset_names = set(self.get_test_dataset_names())
-        for solver_class in self.get_solvers():
-            test_dataset_names.update(
-                self.get_test_dataset_names(solver_class=solver_class)
-            )
-        try:
-            test_datasets = self.check_dataset_patterns(
-                sorted(test_dataset_names)
-            )
-        except click.BadParameter as e:
-            # If a test dataset name is invalid, raise a comprehensible error
-            raise ValueError(f"Bad test dataset names: {e.args[0]}")
-
-        if env_name is not None:
-            # Avoid border effects setting global variables
-            from .utils.dynamic_modules import _unskip_import
-            _unskip_import()
+        # Don't import modules when parsing dependencies for another env.
+        from .utils.dynamic_modules import skip_import_ctx
+        with skip_import_ctx(env_name is not None):
+            # Install the objective + required test datasets.
+            test_dataset_names = set(self.get_test_dataset_names())
+            for solver_class in self.get_solvers():
+                test_dataset_names.update(
+                    self.get_test_dataset_names(solver_class=solver_class)
+                )
+            try:
+                test_datasets = self.check_dataset_patterns(
+                    sorted(test_dataset_names)
+                )
+            except click.BadParameter as e:
+                # If a test dataset name is invalid, raise a comprehensible error
+                raise ValueError(f"Bad test dataset names: {e.args[0]}")
 
         self.install_all_requirements(
             include_solvers=[],

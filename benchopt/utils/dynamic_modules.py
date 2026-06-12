@@ -8,6 +8,7 @@ import hashlib
 import warnings
 import importlib
 from pathlib import Path
+from contextlib import contextmanager
 
 try:
     # compat with older joblib version prior to 1.6
@@ -33,6 +34,17 @@ def _unskip_import():
     """Helper to reenable imports in tests."""
     global SKIP_IMPORT
     SKIP_IMPORT = False
+
+
+@contextmanager
+def skip_import_ctx(skip=True):
+    """Context manager: parse class metadata from AST instead of importing."""
+    if skip:
+        skip_import()
+    try:
+        yield
+    finally:
+        _unskip_import()
 
 
 class FailedImport(ABCMeta):
