@@ -13,12 +13,11 @@ Version 1.10.0 -- In development
 API
 ~~~
 
-- Allow ordering the html report table by any column. Each column header can
-  be clicked to sort on that column, with a toggleable arrow to switch between
-  increasing and decreasing order. The default ordering can be set through the
-  ``default_order_column`` and ``default_order_ascending`` metadata of a custom
-  table plot.
-  By `Hippolyte Verninas`_
+- Improve the html report table, now rendered with `Grid.js
+  <https://gridjs.io/>`_: rows can be ordered by any column by clicking on its
+  header (with a toggleable arrow for increasing/decreasing order), a search
+  bar filters the rows, and each column can be shown or hidden.
+  By `Hippolyte Verninas`_ (:gh:`953`)
 
 TST
 ~~~

@@ -1040,10 +1040,15 @@ const renderImages = () => {
 // Global state for precision
 let tableFloatPrecision = 4;
 
-// Global state for the column ordering of the table. It is keyed by the
-// table identity so that the sorting is reset when switching to another
-// table, but kept when only re-rendering (e.g. on precision change).
-let tableSortState = null;
+// Grid.js instance for the table plot, keyed by the table identity so that
+// switching to another table rebuilds the grid (and resets its sorting),
+// while re-rendering the same table (e.g. on precision change) keeps the
+// user's current sorting.
+let tableGrid = null;
+let tableGridKey = null;
+
+// Columns of the current table hidden through the column toggles.
+let tableHiddenColumns = new Set();
 
 const valueToFixed = (value) => {
   if (typeof value === 'number' && !Number.isInteger(value)) {
@@ -1054,26 +1059,25 @@ const valueToFixed = (value) => {
 
 /**
  * Compare two cell values, handling both numbers and strings.
+ *
+ * The result must be -1/0/1, not a difference: Grid.js combines comparator
+ * results with a bitwise OR, which truncates fractional values to 0 and
+ * would make all close numbers compare as equal.
  */
 const compareCells = (a, b) => {
   if (typeof a === 'number' && typeof b === 'number') {
-    return a - b;
+    return a > b ? 1 : a < b ? -1 : 0;
   }
   return String(a).localeCompare(String(b));
 }
 
 /**
- * Initialize/refresh the table sort state for the given table data.
- *
- * The default ordering can be customized through the `default_order_column`
- * (a column name or index) and `default_order_ascending` metadata keys. When
- * absent, the table is sorted on its first column in increasing order.
+ * Sort the rows according to the `default_order_column` (a column name or
+ * index) and `default_order_ascending` metadata keys. When absent, the rows
+ * are sorted on the first column in increasing order. Grid.js then handles
+ * the interactive sorting from this initial order.
  */
-const getTableSortState = (plotData, sortKey) => {
-  if (tableSortState && tableSortState.key === sortKey) {
-    return tableSortState;
-  }
-
+const applyDefaultOrder = (plotData) => {
   let column = 0;
   const orderColumn = plotData.default_order_column;
   if (typeof orderColumn === 'string') {
@@ -1082,107 +1086,112 @@ const getTableSortState = (plotData, sortKey) => {
   } else if (typeof orderColumn === 'number') {
     column = orderColumn;
   }
-
   const ascending = plotData.default_order_ascending !== false;
 
-  tableSortState = { key: sortKey, column, ascending };
-  return tableSortState;
+  return [...plotData.data].sort((a, b) => {
+    const cmp = compareCells(a[column], b[column]);
+    return ascending ? cmp : -cmp;
+  });
 }
 
 function renderTable() {
 
-  // Show and purge the container
   let table_container = document.getElementById('table_container');
   show(table_container);
-  table_container.innerHTML = "";
 
   const plotData = getPlotData();
   if (!plotData || !plotData.columns || !plotData.data) {
-    table_container.innerHTML = `<div >No data available</div>`;
+    table_container.innerHTML = "<div>No data available</div>";
+    tableGrid = null;
+    tableGridKey = null;
     return;
   }
 
-  const { columns, data: rows } = plotData;
+  const gridKey = [state().plot_kind, ...plotData.columns].join('|');
+  if (tableGrid && tableGridKey === gridKey) {
+    // Same table: refresh in place (e.g. after a precision change), keeping
+    // the current sorting. The formatters read the global precision.
+    document.getElementById('table-precision-label').innerText =
+      `Float Precision: ${tableFloatPrecision}`;
+    tableGrid.forceRender();
+    return;
+  }
 
-  // Resolve the current column ordering and sort a copy of the rows.
-  const sortKey = [state().plot_kind, ...columns].join('|');
-  const sortState = getTableSortState(plotData, sortKey);
-  const sortedRows = [...rows].sort((a, b) => {
-    const cmp = compareCells(a[sortState.column], b[sortState.column]);
-    return sortState.ascending ? cmp : -cmp;
-  });
+  table_container.innerHTML = "";
+  tableHiddenColumns = new Set();
 
-  // Card Wrapper
+  // Grid.js table with sortable columns and a search bar
   const card = document.createElement("div");
-  card.className = "w-full bg-white overflow-hidden border border-gray-200 mx-auto";
+  card.className = "w-full bg-white overflow-hidden mx-auto";
 
-  // Table Element
-  const table = document.createElement("table");
-  table.className = "w-full border-collapse text-left";
+  const buildColumns = () => plotData.columns.map(name => ({
+    name,
+    hidden: tableHiddenColumns.has(name),
+    sort: { compare: compareCells },
+    formatter: (value) => valueToFixed(value),
+  }));
 
-  // Header
-  const thead = document.createElement("thead");
-  thead.className = "bg-gray-50";
-  const trHead = document.createElement("tr");
+  tableGrid = new gridjs.Grid({
+    columns: buildColumns(),
+    data: applyDefaultOrder(plotData),
+    sort: true,
+    search: true,
+  });
+  tableGrid.render(card);
+  tableGridKey = gridKey;
 
-  columns.forEach((headerText, colIndex) => {
-    const th = document.createElement("th");
-    th.className = "px-4 py-4 text-xs font-bold uppercase tracking-wider border-b border-gray-200 cursor-pointer select-none hover:bg-gray-100";
-    th.title = "Click to sort";
+  // Pill-shaped toggles to show/hide each column
+  const columnsContainer = document.createElement("div");
+  columnsContainer.className = "flex items-center flex-wrap px-4 pt-4";
 
-    const label = document.createElement("span");
-    label.innerText = headerText;
-    th.appendChild(label);
+  const columnsLabel = document.createElement("span");
+  columnsLabel.innerText = "Columns:";
+  columnsLabel.className = "mr-4 text-sm font-medium text-gray-700";
+  columnsContainer.appendChild(columnsLabel);
 
-    // Sorting arrow: highlighted for the active column, faded otherwise.
-    const arrow = document.createElement("span");
-    arrow.className = "ml-1 inline-block";
-    if (sortState.column === colIndex) {
-      arrow.innerText = sortState.ascending ? "▲" : "▼";
+  const setPillStyle = (pill, visible, name) => {
+    const base = "inline-flex items-center px-3 py-1 mr-4 mt-1 rounded-full " +
+      "text-sm font-medium cursor-pointer transition-all border ";
+    if (visible) {
+      pill.className = base +
+        "border-transparent bg-blue-600 text-white hover:bg-blue-700";
+      pill.innerText = `✓ ${name}`;
     } else {
-      arrow.innerText = "↕";
-      arrow.classList.add("text-gray-300");
+      pill.className = base +
+        "border-gray-300 bg-white text-gray-500 hover:bg-gray-100";
+      pill.innerText = name;
     }
-    th.appendChild(arrow);
+  };
 
-    th.onclick = () => {
-      if (sortState.column === colIndex) {
-        // Toggle direction when re-clicking the active column.
-        sortState.ascending = !sortState.ascending;
+  plotData.columns.forEach(name => {
+    const label = document.createElement("label");
+
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.checked = true;
+    checkbox.className = "sr-only";
+
+    const pill = document.createElement("span");
+    setPillStyle(pill, true, name);
+    pill.title = "Show/hide column";
+
+    checkbox.onchange = () => {
+      if (checkbox.checked) {
+        tableHiddenColumns.delete(name);
+      } else if (tableHiddenColumns.size === plotData.columns.length - 1) {
+        // Keep at least one column visible
+        checkbox.checked = true;
+        return;
       } else {
-        sortState.column = colIndex;
-        sortState.ascending = true;
+        tableHiddenColumns.add(name);
       }
-      renderTable();
+      setPillStyle(pill, checkbox.checked, name);
+      tableGrid.updateConfig({ columns: buildColumns() }).forceRender();
     };
 
-    trHead.appendChild(th);
-  });
-  thead.appendChild(trHead);
-  table.appendChild(thead);
-
-  // Body
-  const tbody = document.createElement("tbody");
-
-  sortedRows.forEach((rowData, index) => {
-    const tr = document.createElement("tr");
-    tr.className = "bg-white transition-colors duration-150 ease-in-out hover:bg-gray-50";
-
-    tr.onmouseenter = () => tr.style.backgroundColor = "#f9fafb";
-    tr.onmouseleave = () => tr.style.backgroundColor = "#fff";
-
-    rowData.forEach(cellValue => {
-      const td = document.createElement("td");
-      td.innerHTML = valueToFixed(cellValue);
-
-      let cellClasses = "px-4 py-4 text-sm text-gray-700";
-      if (index !== sortedRows.length - 1) {
-        cellClasses += " border-b border-gray-100";
-      }
-      td.className = cellClasses;
-      tr.appendChild(td);
-    });
-    tbody.appendChild(tr);
+    label.appendChild(checkbox);
+    label.appendChild(pill);
+    columnsContainer.appendChild(label);
   });
 
   // Footer with Precision Controls & Export
@@ -1206,6 +1215,7 @@ function renderTable() {
   const btnDec = createPrecBtn("-");
   const btnInc = createPrecBtn("+");
   const labelPrec = document.createElement("span");
+  labelPrec.id = "table-precision-label";
   labelPrec.innerText = `Float Precision: ${tableFloatPrecision}`;
   labelPrec.className = "mx-2 px-4";
 
@@ -1235,12 +1245,11 @@ function renderTable() {
     exportTable();
   });
 
-  table.appendChild(tbody);
-  card.appendChild(table);
   table_container.appendChild(card);
 
   footer.appendChild(precisionContainer);
   footer.appendChild(exportButton);
+  footerWrapper.appendChild(columnsContainer);
   footerWrapper.appendChild(footer);
   table_container.appendChild(footerWrapper);
 }
@@ -1251,31 +1260,32 @@ async function exportTable() {
   const defaultText = button.innerHTML;
   button.innerHTML = "Copying";
 
-  const plotData = getPlotData();
+  // Export the table as displayed in the Grid.js table, so that the LaTeX
+  // output matches the current sorting, search filter, visible columns and
+  // float precision.
+  const displayedColumns = Array.from(
+    document.querySelectorAll('#table_container .gridjs-th-content'),
+    el => el.textContent.trim()
+  );
+  const displayedRows = Array.from(
+    document.querySelectorAll('#table_container .gridjs-table tbody tr')
+  ).map(tr => Array.from(tr.querySelectorAll('td'), td => td.innerText));
 
   let value = "\\begin{tabular}{l";
-  value += "c".repeat(plotData.columns.length);
+  value += "c".repeat(displayedColumns.length);
   value += "}\n";
   value += "\\hline\n";
 
-  value += plotData.columns[0].replace('_', '\\_');
-  plotData.columns.slice(1).forEach(metric => value += ` & ${metric.replace('_', '\\_')}`);
+  value += displayedColumns[0].replace('_', '\\_');
+  displayedColumns.slice(1).forEach(metric => value += ` & ${metric.replace('_', '\\_')}`);
 
   value += " \\\\\n";
   value += "\\hline\n";
 
-  // Export the rows in the order currently displayed in the table.
-  const sortKey = [state().plot_kind, ...plotData.columns].join('|');
-  const sortState = getTableSortState(plotData, sortKey);
-  const sortedRows = [...plotData.data].sort((a, b) => {
-    const cmp = compareCells(a[sortState.column], b[sortState.column]);
-    return sortState.ascending ? cmp : -cmp;
-  });
-
-  sortedRows.forEach(rowData => {
-    value += valueToFixed(rowData[0]).toString().replace('_', '\\_');
+  displayedRows.forEach(rowData => {
+    value += rowData[0].replace('_', '\\_');
     rowData.slice(1).forEach(cell => {
-      value += ` & ${valueToFixed(cell).toString().replace('_', '\\_')}`;
+      value += ` & ${cell.replace('_', '\\_')}`;
     });
     value += " \\\\\n";
   });
