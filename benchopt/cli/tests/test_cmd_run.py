@@ -275,7 +275,7 @@ class TestRunCmd:
         with temp_benchmark(solvers=solver) as bench, \
                 CaptureCmdOutput() as out:
             run(
-                f"{bench.benchmark_dir} -n 1 -r 1 --profile --no-plot"
+                f"{bench.benchmark_dir} -n 1 -r 1 --profile --no-plot "
                 f"--env-name {test_env_name}".split(),
                 'benchopt', standalone_mode=False
             )
