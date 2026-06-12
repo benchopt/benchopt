@@ -146,6 +146,27 @@ Here is the content of configuration file ``example_config.yml`` if we were to r
         - dataset1:
             n_samples, n_features: [[200, 20], [150, 30]]
 
+By default, when several values are given for several parameters, all
+combinations are run (cartesian product). To instead run an ablation study
+(a baseline plus one-at-a-time deviations) wrap the parameters in an
+``ablation`` block:
+
+.. code-block:: yaml
+
+    solver:
+        solver1:
+            ablation:
+                p1: [0.1, 0.01]
+                p2: [0.9, 0.99]
+
+The first value of each parameter defines the baseline. This runs
+``solver1[p1=0.1,p2=0.9]`` (baseline), ``solver1[p1=0.01,p2=0.9]`` and
+``solver1[p1=0.1,p2=0.99]``, instead of the four combinations of the
+cartesian product. Parameters listed outside the ``ablation`` block are
+still expanded as a product with the ablation variants, and joint
+parameters (``'p1, p2'``) vary together in a single variant. This also
+works for the ``dataset`` and ``objective`` sections.
+
 
 .. _run_benchmark_with_py_script:
 

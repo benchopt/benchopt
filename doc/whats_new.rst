@@ -10,6 +10,13 @@ What's new
 Version 1.10.0 -- In development
 --------------------------------
 
+API
+~~~
+
+- Add an ``ablation`` block in run configuration files to run a baseline and
+  one-at-a-time parameter deviations instead of the full cartesian product.
+  By `Hippolyte Verninas`_
+
 TST
 ~~~
 
