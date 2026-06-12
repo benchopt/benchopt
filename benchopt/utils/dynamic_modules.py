@@ -3,6 +3,7 @@
 from abc import ABCMeta
 import ast
 import sys
+import inspect
 import hashlib
 import warnings
 import importlib
@@ -41,7 +42,9 @@ class FailedImport(ABCMeta):
     checked and to have an informative representation.
     """
     def __repr__(cls):
-        return f"<FailedImport: {cls.cls_name}({cls.name})|| Exc: [{cls.exc}]>"
+        return (
+            f"<FailedImport: {cls.cls_name}({cls.name})|| Exc: [{cls._exc}]>"
+        )
 
 
 def _get_module_from_file(module_filename, benchmark_dir=None):
@@ -120,7 +123,7 @@ def _load_class_from_module(benchmark_dir, module_filename, class_name):
 
             _exc = e
             _error_displayed = False
-            _set_cls_attr_from_ast(module_filename, class_name, locals())
+            _set_cls_attr_from_ast(module_filename, base_cls, locals())
             cls_name = class_name
 
             @classmethod
@@ -216,9 +219,10 @@ def _reconstruct_class(
     return _load_class_from_module(benchmark_dir, module_filename, class_name)
 
 
-def _set_cls_attr_from_ast(module_file, cls_name, ctx):
+def _set_cls_attr_from_ast(module_file, base_cls, ctx):
     module = ast.parse(module_file.read_text())
     name = f"{module_file.stem}"
+    cls_name = base_cls._base_class_name
 
     cls_list = [node for node in module.body if isinstance(node, ast.ClassDef)
                 and node.name == cls_name]
@@ -242,10 +246,13 @@ def _set_cls_attr_from_ast(module_file, cls_name, ctx):
     ]
 
     ctx['_base_class_name'] = cls_name
+    ctx.update({
+        p.name: p.object for p in inspect.classify_class_attrs(base_cls)
+        if p.kind == 'data' and not p.name.startswith('_')
+        and p.name not in ['name', 'install_cmd_']
+    })
 
-    ctx['name'], ctx['install_cmd'], ctx['requirements'] = None, "conda", []
-    # Required to retrieve the test dataset name when creating a test env
-    ctx['test_dataset_name'], ctx['test_config'] = None, {}
+    ctx['name'] = None
     for node in cls.body:
         if isinstance(node, ast.Assign):
             for target in node.targets:

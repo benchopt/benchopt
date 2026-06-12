@@ -625,11 +625,6 @@ class Benchmark:
             )
             prepare = True
 
-        if env_name is not None:
-            # Don't import actual modules when parsing dependencies in an env
-            from .utils.dynamic_modules import skip_import
-            skip_import()
-
         # Collect all classes matching one of the patterns
         print("Collecting packages:")
         exit_code = 0
@@ -763,6 +758,12 @@ class Benchmark:
         except click.BadParameter as e:
             # If a test dataset name is invalid, raise a comprehensible error
             raise ValueError(f"Bad test dataset names: {e.args[0]}")
+
+        if env_name is not None:
+            # Avoid border effects setting global variables
+            from .utils.dynamic_modules import _unskip_import
+            _unskip_import()
+
         self.install_all_requirements(
             include_solvers=[],
             include_datasets=test_datasets,
@@ -861,13 +862,13 @@ class Benchmark:
             cls_type = klass.__base__.__name__.replace("Base", "")
             try:
                 # Check for invalid install_cmd
-                hasattr(klass, "install_cmd")
+                klass.install_cmd_
                 # Check for invalid requirements
-                if not hasattr(klass, "requirements"):
+                if klass.requirements is None:
                     reason = "no requirements"
                 else:
                     reason = "incomplete requirements"
-            except ValueError as e:
+            except AttributeError as e:
                 if "install_cmd" in str(e):
                     reason = "invalid install_cmd"
                 else:

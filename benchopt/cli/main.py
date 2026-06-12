@@ -587,6 +587,10 @@ def install(
                     "Impossible to recreate 'base' conda environment."
                 )
 
+        # Don't import actual modules when parsing dependencies in an env
+        from ..utils.dynamic_modules import skip_import
+        skip_import()
+
         # create environment if necessary
         create_conda_env(
             env_name, benchmark=benchmark, recreate=recreate, quiet=quiet
