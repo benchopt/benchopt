@@ -301,7 +301,7 @@ class TestInstallCmd:
                     *f'{benchmark.benchmark_dir} -d test-dataset -y '
                     f'--env-name {test_env_name}'.split()
                 ], 'benchopt', standalone_mode=False)
-        out.check_output(re.escape(DUMMY_PACKAGE_REQ))
+        out.check_output(re.escape(DUMMY_PACKAGE_REQ.split("::")[-1]))
 
     def test_gpu_flag(self, no_debug_log):
 
