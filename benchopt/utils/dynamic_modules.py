@@ -261,7 +261,7 @@ def _set_cls_attr_from_ast(module_file, base_cls, ctx):
                         ctx[target.id] = ast.literal_eval(node.value)
                     except Exception:
                         if target.id == "name":
-                            _exc = ValueError(
+                            _exc = AttributeError(
                                 f"Could not evaluate the name of the class "
                                 f"{cls_name} in module {module_file}.\n"
                                 f"The name should be a string literal."
@@ -277,7 +277,9 @@ def _set_cls_attr_from_ast(module_file, base_cls, ctx):
                                 "If dynamic evaluation is necessary, use "
                                 "`safe_import_context`."
                             )
-                            def raise_err(self, msg=msg): raise ValueError(msg)
+
+                            def raise_err(self, msg=msg):
+                                raise AttributeError(msg)
                             ctx[target.id] = classproperty(raise_err)
         if isinstance(node, ast.FunctionDef):
             if node.name in known_methods:
