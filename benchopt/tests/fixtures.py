@@ -12,7 +12,7 @@ from benchopt.utils.conda_env_cmd import delete_conda_env
 from benchopt.utils.shell_cmd import _run_shell_in_conda_env
 
 _DUMMY_PACKAGE_DIR = pathlib.Path(__file__).parent / "dummy_package"
-DUMMY_PACKAGE_REQ = f"pip::{_DUMMY_PACKAGE_DIR}"
+DUMMY_PACKAGE_REQ = f"pip::{_DUMMY_PACKAGE_DIR.as_posix()}"
 
 os.environ['BENCHOPT_DEBUG'] = '1'
 os.environ['BENCHOPT_RAISE_INSTALL_ERROR'] = '1'
