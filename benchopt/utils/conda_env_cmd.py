@@ -74,7 +74,7 @@ def get_benchmark_python_version(benchmark):
     if benchmark is None:
         return DEFAULT_PYTHON_VERSION
     objective = benchmark.get_benchmark_objective()
-    return getattr(objective, 'python_version', DEFAULT_PYTHON_VERSION)
+    return objective.python_version or DEFAULT_PYTHON_VERSION
 
 
 def create_conda_env(

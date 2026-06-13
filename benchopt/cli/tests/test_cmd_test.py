@@ -14,6 +14,7 @@ from benchopt.cli.tests.completion_cases import _test_shell_completion
 from benchopt.cli.tests.completion_cases import (  # noqa: F401
     bench_completion_cases
 )
+from benchopt.tests.fixtures import DUMMY_PACKAGE_REQ
 
 
 class TestCmdTest:
@@ -397,12 +398,11 @@ class TestCmdTest:
             self, test_env_name, uninstall_dummy_package
     ):
         # Check that launching the tests in a conda env install minimal reqs
-        objective = """from benchopt.utils.temp_benchmark import TempObjective
+        objective = f"""from benchopt.utils.temp_benchmark import TempObjective
         import dummy_package
         class Objective(TempObjective):
-            requirements = [
-                'pip::git+https://github.com/tommoral/dummy_package'
-            ]
+            name = "objective"
+            requirements = ['{DUMMY_PACKAGE_REQ}']
         """
         with temp_benchmark(objective=objective) as bench:
             with CaptureCmdOutput(debug=True) as out:
@@ -417,6 +417,7 @@ class TestCmdTest:
         # Check that launching the tests in a conda env install minimal reqs
         objective = """from benchopt.utils.temp_benchmark import TempObjective
         class Objective(TempObjective):
+            name = "test-objective"
             test_dataset_name = "invalid-dataset"
         """
         msg = "Bad test dataset names:.*'invalid-dataset'"
@@ -433,14 +434,11 @@ class TestCmdTest:
             self, test_env_name, uninstall_dummy_package, set_name
     ):
         # Check that launching tests in a conda env install dataset reqs
-        dataset = """from benchopt.utils.temp_benchmark import TempDataset
+        dataset = f"""from benchopt.utils.temp_benchmark import TempDataset
         import dummy_package
         class Dataset(TempDataset):
             name = "reqs-dataset"
-            install_cmd = 'conda'
-            requirements = [
-                'pip::git+https://github.com/tommoral/dummy_package'
-            ]
+            requirements = ['{DUMMY_PACKAGE_REQ}']
         """
         dataset_name = (
             "test_dataset_name = 'reqs-dataset'"
@@ -454,6 +452,7 @@ class TestCmdTest:
         import dummy_package
 
         class Objective(TempObjective):
+            name = "test-objective"
             {dataset_name}
             # Need a requirement to avoid error on collect
             requirements = ["numpy"]
