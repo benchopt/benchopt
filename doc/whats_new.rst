@@ -10,6 +10,13 @@ What's new
 Version 1.10.0 -- In development
 --------------------------------
 
+API
+~~~
+
+- Custom plot ``options`` values can now be a callable taking the results
+  DataFrame as input and returning the list of possible values for the option.
+  By `Hippolyte Verninas`_ (:gh:`952`)
+
 TST
 ~~~
 
