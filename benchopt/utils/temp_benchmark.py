@@ -151,16 +151,16 @@ def temp_benchmark(
         with open(temp_path / "objective.py", "w", encoding='utf-8') as f:
             f.write(inspect.cleandoc(objective))
         for fname, content in solvers.items():
-            fname = temp_path / "solvers" / fname
+            fname = (temp_path / "solvers" / fname).with_suffix(".py")
             fname.write_text(inspect.cleandoc(content), encoding='utf-8')
 
         for fname, content in datasets.items():
-            fname = temp_path / "datasets" / fname
+            fname = (temp_path / "datasets" / fname).with_suffix(".py")
             fname.write_text(inspect.cleandoc(content), encoding='utf-8')
 
         if plots is not None:
             for fname, content in plots.items():
-                fname = temp_path / "plots" / fname
+                fname = (temp_path / "plots" / fname).with_suffix(".py")
                 fname.write_text(inspect.cleandoc(content), encoding='utf-8')
 
         if config is not None:

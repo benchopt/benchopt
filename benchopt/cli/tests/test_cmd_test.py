@@ -458,7 +458,7 @@ class TestCmdTest:
             requirements = ["numpy"]
         """
         with temp_benchmark(
-                datasets=dataset, objective=objective,
+                datasets={'reqs-dataset': dataset}, objective=objective
         ) as bench, CaptureCmdOutput(debug=True) as out:
             benchopt_test(
                 f"{bench.benchmark_dir} --env-name {test_env_name} "

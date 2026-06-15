@@ -111,8 +111,8 @@ class Benchmark:
                 objective.name.replace("benchmark_", "")
                 .replace("_benchmark", "").replace("_", " ")
             )
-            self.url = getattr(objective, "url", None)
-            self.min_version = getattr(objective, 'min_benchopt_version', None)
+            self.url = objective.url
+            self.min_version = objective.min_benchopt_version
         except RuntimeError:
             if not allow_meta_from_json:
                 raise click.BadParameter(
@@ -288,7 +288,7 @@ class Benchmark:
         for component in (objective, solver_class):
             if component is None:
                 continue
-            ds_cfg = getattr(component, 'test_config', {}).get('dataset', {})
+            ds_cfg = (component.test_config or {}).get('dataset', {})
             name = ds_cfg.get('name')
             if name is None:
                 continue
