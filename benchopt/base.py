@@ -501,6 +501,10 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
     """
     _base_class_name = 'Objective'
 
+    # All class attributes that need to be parsed when we cannot import
+    # the objective must be listed here. name is a special case as it is
+    # defined as a property.
+    url = None
     python_version = None
     min_benchopt_version = None
 

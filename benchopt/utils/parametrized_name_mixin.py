@@ -11,6 +11,9 @@ class ParametrizedNameMixin():
     """
     parameters = {}
 
+    # Parameter config for testing the class
+    test_config = None
+
     def __init__(self, **parameters):
         """Default init set parameters base on the cls.parameters
         """
@@ -225,16 +228,17 @@ def get_configs(dataset_class, obj_class=None, solver_class=None):
     """
 
     # Get the test_config for each class, and resolve the dataset overrides.
-    objective_config = getattr(obj_class, 'test_config', {}).copy()
+    # Handle the case where objective/solver are None with getattr
+    objective_config = (getattr(obj_class, 'test_config', None) or {}).copy()
     obj_ds = objective_config.pop('dataset', {})
-    solver_config = getattr(solver_class, 'test_config', {}).copy()
+    solver_config = (getattr(solver_class, 'test_config', None) or {}).copy()
     solver_ds = solver_config.pop('dataset', {})
 
     # Pop the name from the dataset overrides
     obj_ds.pop('name', None)
     solver_ds.pop('name', None)
 
-    dataset_overrides = getattr(dataset_class, 'test_config', {}).copy()
+    dataset_overrides = (dataset_class.test_config or {}).copy()
     dataset_overrides.update(**obj_ds)
     dataset_overrides.update(**solver_ds)
     objective_config.update(**solver_config.pop('objective', {}))
