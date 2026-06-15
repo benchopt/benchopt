@@ -10,15 +10,46 @@ What's new
 Version 1.10.0 -- in development
 --------------------------------
 
-CLI
+API
 ~~~
 
+- Custom plot ``options`` values can now be a callable taking the results
+  DataFrame as input and returning the list of possible values for the option.
+  By `Hippolyte Verninas`_ (:gh:`952`)
+  
 - Add ``param=all`` shorthand to sweep every valid value of a parameter,
   e.g. ``-d "Foo[x=all]"``. The valid values are declared per class through
   the ``get_all_parameter_values`` classmethod, and are also listed
-  by ``benchopt info -v``. By `Eduardo Montesuma`_
+  by ``benchopt info -v``. By `Eduardo Montesuma`_ (:gh:`941`)
 
-.. _1_9_1:
+TST
+~~~
+
+- Improve test configuration for multi-task benchmarks:
+  ``test_config['dataset']['name']`` now accepts a list of dataset names.
+  Also flag solvers whose every ``test_solver_run`` variant was skipped, and
+  raise a clear error when no test dataset is configured.
+  By `Thomas Moreau`_ (:gh:`942`)
+
+- Add ``test_dataset_install`` test to check install of datasets and
+  make sure to install test_datasets when creating a test env.
+  By `Thomas Moreau`_ (:gh:`944`)
+
+FIX
+~~~
+
+- Fix single dataset benchmark test_dataset_names detection for test env
+  creation. By `Thomas moreau`_ (:gh:`951`)
+
+- Fix ``--profile`` parsing that was resulting in always activated profile.
+  By `Thomas Moreau`_ (:gh:`950`)
+
+- Fix error reporting when ``Solver.set_objective`` fails, which was
+  preventing the run to finish normally.
+  By `Thomas Moreau`_ (:gh:`949`)
+
+.. _changes_1_9_1:
+
 Version 1.9.1 -- 28/05/2026
 ---------------------------
 

@@ -12,6 +12,9 @@ class ParametrizedNameMixin():
     """
     parameters = {}
 
+    # Parameter config for testing the class
+    test_config = None
+
     def __init__(self, **parameters):
         """Default init set parameters base on the cls.parameters
         """
@@ -212,7 +215,10 @@ def product_param(parameters, ignore=None):
         as the product of every items in parameters.
     """
     ignore = set(ignore or [])
-    parameters = {k: v for k, v in parameters.items() if k not in ignore}
+    parameters = {
+        k: (v if isinstance(v, (list, tuple)) else [v])
+        for k, v in parameters.items() if k not in ignore
+    }
     parameter_names = parameters.keys()
     return map(expand, itertools.repeat(parameter_names),
                itertools.product(*parameters.values()))
@@ -221,34 +227,41 @@ def product_param(parameters, ignore=None):
 def get_configs(dataset_class, obj_class=None, solver_class=None):
     """Merge configuration for dataset, objective and solver with priority.
 
-    Later configurations override earlier ones.
-
     Returns
     -------
-    all_configs: dict
-        The merged configuration dictionary with key `dataset`, `objective`,
-        and `solver`.
+    configs: list[dict]
+        A list of fully-resolved test config, expanded with variants from the
+        ``Dataset.test_parameters``. Each entry has keys ``dataset``,
+        ``objective`` and ``solver``.
     """
-    dataset_params = getattr(dataset_class, 'test_parameters', {})
-    dataset_config = list(product_param(dataset_params))[0].copy()
-    dataset_config.update(getattr(dataset_class, 'test_config', {}))
 
-    objective_config = {}
-    if obj_class is not None:
-        objective_config = getattr(obj_class, 'test_config', {}).copy()
-    solver_config = {}
-    if solver_class is not None and hasattr(solver_class, "test_config"):
-        solver_config = solver_class.test_config.copy()
+    # Get the test_config for each class, and resolve the dataset overrides.
+    # Handle the case where objective/solver are None with getattr
+    objective_config = (getattr(obj_class, 'test_config', None) or {}).copy()
+    obj_ds = objective_config.pop('dataset', {})
+    solver_config = (getattr(solver_class, 'test_config', None) or {}).copy()
+    solver_ds = solver_config.pop('dataset', {})
 
-    dataset_config.update(**objective_config.pop('dataset', {}))
-    dataset_config.update(**solver_config.pop('dataset', {}))
+    # Pop the name from the dataset overrides
+    obj_ds.pop('name', None)
+    solver_ds.pop('name', None)
+
+    dataset_overrides = (dataset_class.test_config or {}).copy()
+    dataset_overrides.update(**obj_ds)
+    dataset_overrides.update(**solver_ds)
     objective_config.update(**solver_config.pop('objective', {}))
-    all_config = {
-        'dataset': dataset_config,
-        'objective': objective_config,
-        'solver': solver_config,
-    }
-    return all_config
+
+    test_parameters = getattr(dataset_class, 'test_parameters', {}).copy()
+    test_parameters.update(**dataset_overrides)
+
+    return [
+        {
+            'dataset': {**variant, **dataset_overrides},
+            'objective': objective_config,
+            'solver': solver_config,
+        }
+        for variant in product_param(test_parameters)
+    ]
 
 
 SUBSTITUTIONS = {"*": ".*"}
