@@ -99,7 +99,7 @@ def test_backend_collect(backend):
                     f"{cmd} --collect --parallel-config {parallel_config_file}"
                     .split(), standalone_mode=False
                 )
-    out.check_output("test-solver:", repetition=1)
+            out.check_output("test-solver:", repetition=1)
 
 
 def test_dask_backend():

@@ -475,22 +475,40 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
 
     - ``name``: a name for the benchmark, that will be used to display results.
     - ``url``: the url of the original benchmark repository.
+
+    Some extra configurations can be set through optional class attributes for
+    various cases:
+
+    **Installation:**
+
     - ``requirements``: the minimal requirements to be able to run the
        benchmark.
     - ``min_benchopt_version``: the minimal version of benchopt required to run
       this benchmark.
+    - ``python_version``: a specific version of Python required to run
+      this benchmark.
 
-    Some extra configurations can be set through optional class attributes:
-
+    **Tests:**
     - ``test_dataset_name``: the name of the dataset to use for testing.
+    - ``test_config``: a configuration for the objective and potential datasets
+      to use for testing.
+
+    **Iterative solvers customization:**
     - ``stopping_criterion``: the default stopping criterion to use for
       this benchmark.
     - ``sampling_strategy``: the default sampling strategy to use for this
       benchmark.
     """
-
     _base_class_name = 'Objective'
-    test_dataset_name = 'simulated'
+
+    # All class attributes that need to be parsed when we cannot import
+    # the objective must be listed here. name is a special case as it is
+    # defined as a property.
+    url = None
+    python_version = None
+    min_benchopt_version = None
+
+    test_dataset_name = None
 
     sampling_strategy = None
 

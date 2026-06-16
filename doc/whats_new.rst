@@ -17,6 +17,13 @@ PLOT
   <https://gridjs.io/>`_: sortable by any column, filter by solver name,
   hide/show any columns. By `Hippolyte Verninas`_ (:gh:`953`)
 
+API
+~~~
+
+- Custom plot ``options`` values can now be a callable taking the results
+  DataFrame as input and returning the list of possible values for the option.
+  By `Hippolyte Verninas`_ (:gh:`952`)
+
 TST
 ~~~
 
@@ -32,6 +39,9 @@ TST
 
 FIX
 ~~~
+
+- Fix single dataset benchmark test_dataset_names detection for test env
+  creation. By `Thomas moreau`_ (:gh:`951`)
 
 - Fix ``--profile`` parsing that was resulting in always activated profile.
   By `Thomas Moreau`_ (:gh:`950`)
