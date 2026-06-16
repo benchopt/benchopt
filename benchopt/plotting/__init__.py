@@ -19,7 +19,7 @@ BACKWARD_COMPAT_PLOTS = {
 
 ALL_PLOT_OPTIONS = [
     "plot_kind", "scale", "with_quantiles", "suboptimal_curve",
-    "relative_curve", "hidden_curves",
+    "relative_curve", "hidden_curves", "table_order", "table_hidden_columns",
 ]
 
 

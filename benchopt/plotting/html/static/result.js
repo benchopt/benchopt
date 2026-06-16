@@ -56,10 +56,14 @@ const setState = (partialState) => {
 
   if  (isChart('table')) {
     renderTable();
-  } else if (isChart('image')) {
-    renderImages();
   } else {
-    renderPlot();
+    // Pending table-view settings only apply to tables; drop them otherwise.
+    tablePendingView = null;
+    if (isChart('image')) {
+      renderImages();
+    } else {
+      renderPlot();
+    }
   }
 
 };
@@ -403,7 +407,14 @@ const setConfig = (config_item) => {
     if ("plot_kind" in config) {
       kind = config["plot_kind"];
     }
+    // Table settings are applied by renderTable, not through the state.
+    tablePendingView = ('table_order' in config || 'table_hidden_columns' in config)
+      ? {order: config.table_order ?? null, hidden: config.table_hidden_columns ?? []}
+      : null;
     for(let key in config){
+      if (key === 'table_order' || key === 'table_hidden_columns') {
+        continue;
+      }
       const value = config[key];
       if (key in config_mapping) {
         if (config_mapping[key] !== '') {
@@ -449,6 +460,15 @@ const saveView = () => {
   }
   for (let option of DEFAULT_CONFIG_OPTIONS) {
     config[option] = state()[option];
+  }
+
+  // Persist the table order and hidden columns when viewing a table.
+  if (isChart('table')) {
+    const order = getTableOrder();
+    if (order) {
+      config.table_order = order;
+    }
+    config.table_hidden_columns = [...tableHiddenColumns];
   }
 
   let noViewAvailableElement = document.getElementById('no_view_available');
@@ -512,6 +532,9 @@ const exportConfigs = () => {
       var value = config[key];
       if (key === 'xlim' || key === 'ylim')
         value = "[" + value + "]";
+      else if (value !== null && typeof value === 'object')
+        // Arrays/objects (e.g. table_order, hidden columns): JSON is valid YAML.
+        value = JSON.stringify(value);
       config_yaml += "    " + key + ": " + value + "\n";
     }
   }
@@ -1050,6 +1073,16 @@ let tableGridKey = null;
 // Columns of the current table hidden through the column toggles.
 let tableHiddenColumns = new Set();
 
+// Table settings (order + hidden columns) coming from a saved view, applied
+// once by the next renderTable build then cleared. Kept out of window._state
+// so they don't leak onto other tables shown via the dropdowns.
+let tablePendingView = null;
+
+// Order ({column, ascending}) the current table was built with, used as the
+// fallback when Grid.js reports a neutral sort (e.g. right after loading a
+// view), so re-saving the view keeps that order.
+let tableAppliedOrder = null;
+
 const valueToFixed = (value) => {
   if (typeof value === 'number' && !Number.isInteger(value)) {
     return value.toFixed(tableFloatPrecision);
@@ -1071,13 +1104,20 @@ const compareCells = (a, b) => {
   return String(a).localeCompare(String(b));
 }
 
+const sortRows = (plotData, column, ascending) =>
+  [...plotData.data].sort((a, b) => {
+    const cmp = compareCells(a[column], b[column]);
+    return ascending ? cmp : -cmp;
+  });
+
 /**
- * Sort the rows according to the `default_order_column` (a column name or
- * index) and `default_order_ascending` metadata keys. When absent, the rows
- * are sorted on the first column in increasing order. Grid.js then handles
- * the interactive sorting from this initial order.
+ * Sort the rows for the initial display. A saved view `order`
+ * ({column: <name>, ascending: <bool>}) takes precedence; otherwise the
+ * `default_order_column` (a column name or index) and `default_order_ascending`
+ * metadata keys are used, defaulting to the first column ascending. Grid.js
+ * then handles the interactive sorting from this initial order.
  */
-const applyDefaultOrder = (plotData) => {
+const orderTableData = (plotData, order) => {
   let column = 0;
   const orderColumn = plotData.default_order_column;
   if (typeof orderColumn === 'string') {
@@ -1086,12 +1126,40 @@ const applyDefaultOrder = (plotData) => {
   } else if (typeof orderColumn === 'number') {
     column = orderColumn;
   }
-  const ascending = plotData.default_order_ascending !== false;
+  let ascending = plotData.default_order_ascending !== false;
 
-  return [...plotData.data].sort((a, b) => {
-    const cmp = compareCells(a[column], b[column]);
-    return ascending ? cmp : -cmp;
-  });
+  if (order && order.column != null) {
+    const idx = plotData.columns.indexOf(order.column);
+    if (idx >= 0) {
+      column = idx;
+      ascending = order.ascending !== false;
+    }
+  }
+
+  tableAppliedOrder = {column: plotData.columns[column], ascending};
+  return sortRows(plotData, column, ascending);
+}
+
+/**
+ * Read the current sort (column name + direction) from the Grid.js header, or
+ * null when no column is sorted. Grid.js tags the active sort button with
+ * `gridjs-sort-asc` / `gridjs-sort-desc`.
+ */
+const getTableOrder = () => {
+  for (const th of document.querySelectorAll('#table_container .gridjs-th')) {
+    const btn = th.querySelector('.gridjs-sort');
+    if (!btn) continue;
+    const name = th.querySelector('.gridjs-th-content')?.textContent.trim();
+    if (btn.classList.contains('gridjs-sort-asc')) {
+      return {column: name, ascending: true};
+    }
+    if (btn.classList.contains('gridjs-sort-desc')) {
+      return {column: name, ascending: false};
+    }
+  }
+  // Grid.js reports a neutral sort: fall back to the order the table was built
+  // with (default or restored from a view).
+  return tableAppliedOrder;
 }
 
 function renderTable() {
@@ -1108,7 +1176,7 @@ function renderTable() {
   }
 
   const gridKey = [state().plot_kind, ...plotData.columns].join('|');
-  if (tableGrid && tableGridKey === gridKey) {
+  if (tableGrid && tableGridKey === gridKey && !tablePendingView) {
     // Same table: refresh in place (e.g. after a precision change), keeping
     // the current sorting. The formatters read the global precision.
     document.getElementById('table-precision-label').innerText =
@@ -1118,7 +1186,19 @@ function renderTable() {
   }
 
   table_container.innerHTML = "";
+
+  // Restore the hidden columns / order from a saved view when one is being
+  // loaded, otherwise start fresh with the table's default order.
   tableHiddenColumns = new Set();
+  if (tablePendingView && Array.isArray(tablePendingView.hidden)) {
+    const valid = tablePendingView.hidden.filter(c => plotData.columns.includes(c));
+    // Never hide every column.
+    if (valid.length < plotData.columns.length) {
+      valid.forEach(c => tableHiddenColumns.add(c));
+    }
+  }
+  const orderedData = orderTableData(plotData, tablePendingView && tablePendingView.order);
+  tablePendingView = null;
 
   // Grid.js table with sortable columns and a search bar
   const card = document.createElement("div");
@@ -1133,7 +1213,7 @@ function renderTable() {
 
   tableGrid = new gridjs.Grid({
     columns: buildColumns(),
-    data: applyDefaultOrder(plotData),
+    data: orderedData,
     sort: true,
     search: true,
   });
@@ -1165,14 +1245,15 @@ function renderTable() {
 
   plotData.columns.forEach(name => {
     const label = document.createElement("label");
+    const visible = !tableHiddenColumns.has(name);
 
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
-    checkbox.checked = true;
+    checkbox.checked = visible;
     checkbox.className = "sr-only";
 
     const pill = document.createElement("span");
-    setPillStyle(pill, true, name);
+    setPillStyle(pill, visible, name);
     pill.title = "Show/hide column";
 
     checkbox.onchange = () => {
