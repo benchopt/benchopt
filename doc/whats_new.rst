@@ -10,14 +10,12 @@ What's new
 Version 1.10.0 -- In development
 --------------------------------
 
-API
-~~~
+PLOT
+~~~~
 
 - Improve the html report table, now rendered with `Grid.js
-  <https://gridjs.io/>`_: rows can be ordered by any column by clicking on its
-  header (with a toggleable arrow for increasing/decreasing order), a search
-  bar filters the rows, and each column can be shown or hidden.
-  By `Hippolyte Verninas`_ (:gh:`953`)
+  <https://gridjs.io/>`_: sortable by any column, filter by solver name,
+  hide/show any columns. By `Hippolyte Verninas`_ (:gh:`953`)
 
 TST
 ~~~
