@@ -1,6 +1,17 @@
+import re
 import hashlib
 from pathlib import Path
 from dataclasses import dataclass, replace as dc_replace
+
+
+def _sanitize_path_component(name):
+    """Replace filesystem-unsafe characters in a component name.
+
+    Solver/dataset/objective names may contain parameter values with
+    characters such as '/' that would split a path segment unexpectedly.
+    Replace every run of such characters with '_'.
+    """
+    return re.sub(r'[/\\:*?"<>|]+', '_', name)
 
 
 @dataclass
@@ -54,9 +65,9 @@ class RunContext:
             )
         path = (
             self.run_output_base
-            / self.dataset_name
-            / self.objective_name
-            / self.solver_name
+            / _sanitize_path_component(self.dataset_name)
+            / _sanitize_path_component(self.objective_name)
+            / _sanitize_path_component(self.solver_name)
             / f"rep_{self.repetition}"
         )
         path.mkdir(parents=True, exist_ok=True)

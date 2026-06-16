@@ -577,6 +577,7 @@ class TestSeed:
 
 def test_get_run_output_path():
     import re
+    from pathlib import Path
 
     solver = """from benchopt.utils.temp_benchmark import TempSolver
 
@@ -596,18 +597,59 @@ def test_get_run_output_path():
                 "-r", "2", "--no-plot",
             ], standalone_mode=False)
 
-    # One path printed per (dataset × repetition): 2 datasets × 2 reps
-    out.check_output("OUTPUT_DIR#", repetition=4)
+        # One path printed per (dataset × repetition): 2 datasets × 2 reps
+        out.check_output("OUTPUT_DIR#", repetition=4)
 
-    paths = re.findall(r"OUTPUT_DIR#(.+)", out.output)
+        paths = re.findall(r"OUTPUT_DIR#(.+)", out.output)
 
-    # All paths are unique
-    assert len(set(paths)) == 4
+        # All paths are unique
+        assert len(set(paths)) == 4
 
-    # Paths are scoped by solver name and repetition index
-    for p in paths:
-        assert "test-solver" in p
-        assert "/rep_" in p
+        for p in paths:
+            path = Path(p)
+            # Path must exist and be a real directory
+            assert path.is_dir(), f"{p} is not a directory"
+            # Paths are scoped by solver name and repetition index
+            assert "test-solver" in p
+            assert "/rep_" in p
+
+
+@pytest.mark.parametrize("unsafe_value,safe_in_path", [
+    # slash in a parameter value must not create extra path segments
+    ("/some/path", "_some_path"),
+    # other special characters are also replaced
+    ("val:1", "val_1"),
+])
+def test_get_run_output_path_sanitized(unsafe_value, safe_in_path):
+    """Parameter values with path-unsafe characters must be sanitized."""
+    import re
+    from pathlib import Path
+
+    solver = f"""from benchopt.utils.temp_benchmark import TempSolver
+
+        class Solver(TempSolver):
+            name = "test-solver"
+            sampling_strategy = 'run_once'
+            parameters = {{"tag": ["{unsafe_value}"]}}
+
+            def run(self, _):
+                print(f"OUTPUT_DIR#{{self.get_run_output_path()}}")
+    """
+
+    with temp_benchmark(solvers=[solver]) as benchmark:
+        with CaptureCmdOutput() as out:
+            run([str(benchmark.benchmark_dir), "-d", "test-dataset",
+                 "--no-plot", "--no-cache"], standalone_mode=False)
+
+        paths = re.findall(r"OUTPUT_DIR#(.+)", out.output)
+        assert len(paths) == 1
+        path = Path(paths[0])
+
+        # The directory must exist (no broken path from a raw '/')
+        assert path.is_dir(), f"{paths[0]} is not a directory"
+        # The sanitized form must appear in the path, not the raw unsafe value
+        assert safe_in_path in paths[0]
+        assert unsafe_value not in paths[0]
 
 
 def test_get_run_output_path_raises_outside_run():
