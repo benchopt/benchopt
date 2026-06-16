@@ -9,10 +9,10 @@ from .utils.misc import NamedTemporaryFile
 from .utils.class_property import classproperty
 from .utils.dependencies_mixin import DependenciesMixin
 from .utils.parametrized_name_mixin import ParametrizedNameMixin
-from .utils.seed_mixin import SeedMixin
+from .utils.run_context_mixin import RunContextMixin
 
 
-class BaseSolver(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
+class BaseSolver(ParametrizedNameMixin, DependenciesMixin, RunContextMixin, ABC):
     """A base class for solver wrappers in Benchopt.
 
     Solvers that derive from this class should implement three methods:
@@ -316,7 +316,7 @@ class CommandLineSolver(BaseSolver, ABC):
         super().__init__(**parameters)
 
 
-class BaseDataset(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
+class BaseDataset(ParametrizedNameMixin, DependenciesMixin, RunContextMixin, ABC):
     """Base class to define a dataset in a benchmark.
 
     Datasets that derive from this class should implement one method:
@@ -388,10 +388,7 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
             self._data = self.get_data()
         # We compare to the last seed (computed with the most restrictive
         # parameters) to check if the data should be recomputed.
-        elif (
-            self._used_seed is not None and
-            self._used_seed != self._get_seed(**self._seed_params)
-        ):
+        elif self._used_seed != self._compute_used_seed():
             self._data = self.get_data()
 
         if not isinstance(self._data, dict):
@@ -435,7 +432,7 @@ def _prepare_one(benchmark, dataset, force=False):
         return (str(dataset), exc)
 
 
-class BaseObjective(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
+class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin, ABC):
     """Base class to define an objective function
 
     Objectives that derive from this class needs to implement three methods:

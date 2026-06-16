@@ -573,3 +573,87 @@ class TestSeed:
         # Dataset should be computed for each repetition when seed
         # is different for each repetition
         out.check_output("#SEED-data=", repetition=3)
+
+
+def test_get_run_output_path():
+    import re
+
+    solver = """from benchopt.utils.temp_benchmark import TempSolver
+
+        class Solver(TempSolver):
+            name = "test-solver"
+            sampling_strategy = 'run_once'
+
+            def run(self, _):
+                print(f"OUTPUT_DIR#{self.get_run_output_path()}")
+    """
+
+    with temp_benchmark(solvers=[solver]) as benchmark:
+        with CaptureCmdOutput() as out:
+            run([
+                str(benchmark.benchmark_dir),
+                "-s", "test-solver", "-d", "test-dataset", "-d", "simulated",
+                "-r", "2", "--no-plot",
+            ], standalone_mode=False)
+
+    # One path printed per (dataset × repetition): 2 datasets × 2 reps
+    out.check_output("OUTPUT_DIR#", repetition=4)
+
+    paths = re.findall(r"OUTPUT_DIR#(.+)", out.output)
+
+    # All paths are unique
+    assert len(set(paths)) == 4
+
+    # Paths are scoped by solver name and repetition index
+    for p in paths:
+        assert "test-solver" in p
+        assert "/rep_" in p
+
+
+def test_get_run_output_path_raises_outside_run():
+    from benchopt.utils.temp_benchmark import TempSolver
+
+    solver = TempSolver()
+    with pytest.raises(RuntimeError, match="get_run_output_path"):
+        solver.get_run_output_path()
+
+
+def test_dataset_run_context_in_evaluate_result(no_debug_log, monkeypatch):
+    """Dataset _run_context must be restored in run_one_to_cvg.
+
+    In parallel mode, __getstate__ strips _run_context from the objective's
+    embedded _dataset.  This test simulates that scenario by patching
+    _set_run_context to clear the dataset context after setting it, then
+    verifies that evaluate_result can still call self._dataset.get_seed()
+    because run_one_to_cvg re-attaches the context.
+    """
+    from benchopt.utils.run_context import RunContext
+    original_set_run_context = RunContext.set_run_context
+
+    def strip_dataset_ctx(self, objective, dataset, solver, repetition,
+                          base_seed):
+        ctx = original_set_run_context(
+            self, objective, dataset, solver, repetition, base_seed
+        )
+        # Simulate what __getstate__ does during parallel serialization.
+        dataset._run_context = None
+        return ctx
+
+    monkeypatch.setattr(RunContext, 'set_run_context', strip_dataset_ctx)
+
+    objective = """from benchopt.utils.temp_benchmark import TempObjective
+
+        class Objective(TempObjective):
+            name = "test-objective"
+            sampling_strategy = "run_once"
+            def evaluate_result(self, beta):
+                seed = self._dataset.get_seed()
+                print(f"#DATASET-SEED-IN-EVAL#{seed}")
+                return dict(value=1)
+    """
+    with temp_benchmark(objective=objective) as bench:
+        with CaptureCmdOutput() as out:
+            run([str(bench.benchmark_dir), "-d", "test-dataset",
+                 "--no-plot", "--no-cache"], standalone_mode=False)
+
+    out.check_output("#DATASET-SEED-IN-EVAL#", repetition=1)
