@@ -55,7 +55,9 @@ def test_dataset_get_data(benchmark, dataset_class):
     dataset = dataset_class.get_instance(**config['dataset'])
 
     # ensure classes calling `get_seed` work properly
-    RunContext().set_run_context(None, dataset, None, repetition=0, base_seed=0)
+    RunContext().set_run_context(
+        None, dataset, None, repetition=0, base_seed=0
+    )
 
     data = dataset._get_data()
     assert isinstance(data, (tuple, dict)), (
