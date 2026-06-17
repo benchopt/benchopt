@@ -574,6 +574,37 @@ class TestSeed:
         # is different for each repetition
         out.check_output("#SEED-data=", repetition=3)
 
+    @pytest.mark.parametrize('n_jobs', [1, 2])
+    def test_no_get_seed_no_extra_reload(self, no_debug_log, n_jobs):
+        # Regression: a dataset whose get_data never calls get_seed must not
+        # be reloaded on every run-context update (_used_seed stays None, so
+        # the None != _compute_used_seed() guard must not fire).
+        dataset = """from benchopt import BaseDataset
+
+            class Dataset(BaseDataset):
+                name = "test-dataset"
+                def get_data(self):
+                    print('#DATA-LOAD')
+                    return dict(X=0, y=1)
+        """
+        with temp_benchmark(
+            objective=self.get_objective(),
+            solvers=self.get_solver(),
+            datasets=dataset,
+        ) as bench:
+            with CaptureCmdOutput() as out:
+                run(
+                    f"{bench.benchmark_dir} --no-plot -r 3 -j {n_jobs}"
+                    .split(), standalone_mode=False,
+                )
+
+        # With n_jobs=1, the dataset is loaded once regardless the numbe
+        # of repetitions.
+        # With n_jobs>1, the dataset is loaded once per repetition, plus once
+        # when creating loading the dataset in the main process, so 1 + n_reps.
+        n_match = 1 if n_jobs == 1 else 4
+        out.check_output("#DATA-LOAD", repetition=n_match)
+
 
 def test_get_run_output_path():
     import re

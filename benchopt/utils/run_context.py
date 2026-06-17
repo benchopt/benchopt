@@ -50,7 +50,7 @@ class RunContext:
             "dataset": (use_dataset, self.dataset_name),
             "solver": (use_solver, self.solver_name),
             "repetition": (use_repetition, str(self.repetition)),
-            "class": (True, class_name),
+            "class": (True, class_name.lower()),
         }
         hash_list = [v if use else "*" for use, v in use_flags.values()]
         digest = hashlib.sha256("_".join(hash_list).encode()).hexdigest()

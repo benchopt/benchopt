@@ -390,7 +390,10 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
             self._data = self.get_data()
         # We compare to the last seed (computed with the most restrictive
         # parameters) to check if the data should be recomputed.
-        elif self._used_seed != self._compute_used_seed():
+        elif (
+            self._used_seed is not None
+            and self._used_seed != self._compute_used_seed()
+        ):
             self._data = self.get_data()
 
         if not isinstance(self._data, dict):
