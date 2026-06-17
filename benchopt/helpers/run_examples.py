@@ -583,6 +583,6 @@ def benchopt_cli(cmd):
     if not is_sphinx:
         print("-" * 40)
 
-    # Use the raw output here: HTMLCmdOutput emulates terminal '\r' overwrites
-    # and renders ANSI colors, both of which are stripped from `capture.output`.
+    # Use the raw output as we emulate terminal '\r' overwrites and render
+    # ANSI colors, which are stripped from `capture.output`
     return HTMLCmdOutput(cmd_str, capture.raw_output, result_html)
