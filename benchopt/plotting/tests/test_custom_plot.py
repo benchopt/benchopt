@@ -51,7 +51,7 @@ def test_custom_plot_scatter(no_debug_log):
         ("options = {}", "options = []",
          "`options` should be a dictionary"),
         ("options = {}", "options = {'color': 'blue'}",
-         "The values of options should be a list or ..."),
+         "The values of options should be a list, a callable or ..."),
         ("options = {}", "options = {'color': []}",
          "The values of options should be non empty"),
         ("options = {}", "options = {'color': ['blue']}",
@@ -71,6 +71,59 @@ def test_custom_plot_errors(no_debug_log, pat, replace, msg):
             run(f"{bench.benchmark_dir} -n 1 -r 1 --no-display"
                 .split(), standalone_mode=False)
         out.check_output(msg)
+
+
+CALLABLE_OPTION_PLOT = """from benchopt import BasePlot
+
+    class Plot(BasePlot):
+        name = "Custom plot 1"
+        type = "scatter"
+        options = {
+            "solver": lambda df: df["solver_name"].unique().tolist(),
+        }
+
+        def plot(self, df, solver):
+            return [
+                {
+                    "x": [],
+                    "y": [],
+                    "color": [0, 0, 1, 1],
+                    "marker": 0,
+                    "label": solver,
+                }
+            ]
+
+        def get_metadata(self, df, solver):
+            return {
+                "title": solver,
+                "xlabel": "custom time",
+                "ylabel": "custom objective value",
+            }
+"""
+
+
+def test_custom_plot_callable_option(no_debug_log):
+
+    with temp_benchmark(plots=CALLABLE_OPTION_PLOT) as bench:
+        with CaptureCmdOutput() as out:
+            run([str(bench.benchmark_dir),
+                 *'-n 1 -r 1 --no-display'
+                 .split()], standalone_mode=False)
+
+        out.check_output("Rendering benchmark results", repetition=1)
+
+
+def test_custom_plot_callable_option_not_list(no_debug_log):
+
+    error_plot = CALLABLE_OPTION_PLOT.replace(
+        'lambda df: df["solver_name"].unique().tolist()',
+        'lambda df: "not a list"',
+    )
+    with temp_benchmark(plots=error_plot) as bench:
+        with CaptureCmdOutput(exit=1) as out:
+            run(f"{bench.benchmark_dir} -n 1 -r 1 --no-display"
+                .split(), standalone_mode=False)
+        out.check_output("should return a list")
 
 
 @pytest.mark.parametrize("option", [

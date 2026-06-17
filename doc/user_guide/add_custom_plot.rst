@@ -28,7 +28,9 @@ A custom plot is defined by a class inheriting from :class:`benchopt.BasePlot` a
   dictionary are the names of the options, associated to a list of their possible
   values. If a key :code:`objective/dataset/solver/objective_column` is associated
   with the value :code:`...`, the options are automatically inferred from the
-  results DataFrame, as all unique values associated with this key.
+  results DataFrame, as all unique values associated with this key. A value can
+  also be a callable taking the results DataFrame as input and returning the list
+  of possible values for the option.
 - :code:`plot(self, df, **kwargs)`: give the data to produce one plot, that is
   rendered with the plotly or matplotlib backend. The method takes the results DataFrame
   and the options values as arguments, and returns the plot data. The output
@@ -54,15 +56,17 @@ The visualization is rendered using either the ``plotly`` or ``matplotly`` backe
             "dataset": ...,         # Automatic options from DataFrame columns
             "objective": ...,
             "my_parameter": [1, 2], # custom options
+            # options computed from the results DataFrame
+            "solver": lambda df: df["solver_name"].unique().tolist(),
         }
 
         # The inputs args of this method correspond to `df` and
         # the keys in the `options` dictionary.
-        def plot(self, df, dataset, objective, my_parameter):
+        def plot(self, df, dataset, objective, my_parameter, solver):
             # ... process df ...
             return plot_data
 
-        def get_metadata(self, df, dataset, objective, my_parameter):
+        def get_metadata(self, df, dataset, objective, my_parameter, solver):
             return {
                 "title": f"Plot for {dataset}",
                 "xlabel": "X Label",
@@ -110,7 +114,7 @@ The metadata dictionary returned by :code:`get_metadata` should contain:
 
 .. code-block:: python
 
-    def plot(self, df, dataset, objective, my_parameter):
+    def plot(self, df, dataset, objective, my_parameter, solver):
         # Filter the dataframe
         df = df.query(
             "dataset_name == @dataset and objective_name == @objective"
@@ -131,7 +135,7 @@ The metadata dictionary returned by :code:`get_metadata` should contain:
             })
         return plot_traces
 
-    def get_metadata(self, df, dataset, objective, my_parameter):
+    def get_metadata(self, df, dataset, objective, my_parameter, solver):
         return {
             "title": f"Convergence for {dataset}",
             "xlabel": "Time [sec]",

@@ -17,13 +17,13 @@ So far, ``benchopt`` has been tested with `Python <https://www.python.org/>`_,
 `R <https://www.r-project.org/>`_, `Julia <https://julialang.org/>`_
 and `C/C++ <https://isocpp.org/>`_ (compiled binaries with a command line interface).
 Programs available via `conda <https://docs.conda.io/en/latest/>`_ should be compatible as well.
-See for instance an `example of usage <https://benchopt.github.io/stable/auto_examples/plot_run_benchmark_python_R.html>`_ with ``R``.
+See, for instance, an `example of usage <https://benchopt.github.io/stable/auto_examples/run_r_solver.html>`_ with ``R``.
 
 
 Install
 -------
 
-It is recommended to use ``benchopt`` within a ``conda`` environment to fully-benefit
+It is recommended to use ``benchopt`` within a ``conda`` environment to fully benefit
 from ``benchopt`` Command Line Interface (CLI).
 
 
@@ -197,8 +197,6 @@ Available benchmarks
    * - `Sorted L-One Penalized Estimation (SLOPE) <https://github.com/benchopt/benchmark_slope>`_
      - 
      - |Build Status SLOPE|
-
-
 
 
 .. |Test Status| image:: https://github.com/benchopt/benchopt/actions/workflows/test.yml/badge.svg

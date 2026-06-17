@@ -16,6 +16,7 @@ from benchopt.cli.tests.completion_cases import (  # noqa: F401
     solver_completion_cases,
     dataset_completion_cases
 )
+from benchopt.tests.fixtures import DUMMY_PACKAGE_REQ
 
 
 def _objective_with_python_version(python_version):
@@ -82,7 +83,7 @@ class TestInstallCmd:
         """
 
         with temp_benchmark(solvers=invalid_solver) as bench:
-            with pytest.raises(ValueError, match="is not a valid"):
+            with pytest.raises(AttributeError, match="is not a valid"):
                 install(
                     f"{bench.benchmark_dir} -y -s invalid-solver".split(),
                     standalone_mode=False
@@ -174,7 +175,7 @@ class TestInstallCmd:
         self, test_env_name, uninstall_dummy_package, no_debug_log
     ):
 
-        objective = """
+        objective = f"""
             from benchopt.utils.temp_benchmark import TempObjective
 
             import dummy_package
@@ -182,9 +183,7 @@ class TestInstallCmd:
             class Objective(TempObjective):
                 name = "requires_dummy"
                 install_cmd = 'conda'
-                requirements = [
-                    'pip::git+https://github.com/tommoral/dummy_package'
-                ]
+                requirements = ['{DUMMY_PACKAGE_REQ}']
         """
 
         with temp_benchmark(objective=objective) as bench:
@@ -234,15 +233,13 @@ class TestInstallCmd:
     def test_minimal_installation(
             self, test_env_name, uninstall_dummy_package, no_debug_log
     ):
-        objective = """
+        objective = f"""
             import dummy_package
             from benchopt.utils.temp_benchmark import TempObjective
 
             class Objective(TempObjective):
                 name = "requires_dummy"
-                requirements = [
-                    'pip::git+https://github.com/tommoral/dummy_package'
-                ]
+                requirements = ['{DUMMY_PACKAGE_REQ}']
         """
 
         solver = """from benchopt.utils.temp_benchmark import TempSolver
@@ -278,15 +275,13 @@ class TestInstallCmd:
             self, test_env_name, uninstall_dummy_package
     ):
 
-        objective = """import dummy_package
+        objective = f"""import dummy_package
             from benchopt.utils.temp_benchmark import TempObjective
 
             class Objective(TempObjective):
                 name = "requires_dummy"
                 install_cmd = 'conda'
-                requirements = [
-                    'pip::git+https://github.com/tommoral/dummy_package'
-                ]
+                requirements = ['{DUMMY_PACKAGE_REQ}']
         """
 
         # solver with missing dependency specified
@@ -306,9 +301,7 @@ class TestInstallCmd:
                     *f'{benchmark.benchmark_dir} -d test-dataset -y '
                     f'--env-name {test_env_name}'.split()
                 ], 'benchopt', standalone_mode=False)
-        out.check_output(
-            r"git\+https://github.com/tommoral/dummy_package"
-        )
+        out.check_output(re.escape(DUMMY_PACKAGE_REQ.split("::")[-1]))
 
     def test_gpu_flag(self, no_debug_log):
 

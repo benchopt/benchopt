@@ -111,8 +111,8 @@ class Benchmark:
                 objective.name.replace("benchmark_", "")
                 .replace("_benchmark", "").replace("_", " ")
             )
-            self.url = getattr(objective, "url", None)
-            self.min_version = getattr(objective, 'min_benchopt_version', None)
+            self.url = objective.url
+            self.min_version = objective.min_benchopt_version
         except RuntimeError:
             if not allow_meta_from_json:
                 raise click.BadParameter(
@@ -288,11 +288,14 @@ class Benchmark:
         for component in (objective, solver_class):
             if component is None:
                 continue
-            ds_cfg = getattr(component, 'test_config', {}).get('dataset', {})
+            ds_cfg = (component.test_config or {}).get('dataset', {})
             name = ds_cfg.get('name')
             if name is None:
                 continue
             names = [name] if isinstance(name, str) else list(name)
+        if names == [None]:
+            datasets = self.get_dataset_names()
+            names = datasets if len(datasets) == 1 else ['simulated']
         return names
 
     def check_dataset_patterns(self, dataset_patterns, class_only=False):
@@ -621,6 +624,7 @@ class Benchmark:
                 stacklevel=2,
             )
             prepare = True
+
         # Collect all classes matching one of the patterns
         print("Collecting packages:")
         exit_code = 0
@@ -736,19 +740,24 @@ class Benchmark:
             env_name, benchmark=self, recreate=recreate, pytest=True
         )
 
-        # Install the objective + required test datasets.
-        test_dataset_names = set(self.get_test_dataset_names())
-        for solver_class in self.get_solvers():
-            test_dataset_names.update(
-                self.get_test_dataset_names(solver_class=solver_class)
-            )
-        try:
-            test_datasets = self.check_dataset_patterns(
-                sorted(test_dataset_names)
-            )
-        except click.BadParameter as e:
-            # If a test dataset name is invalid, raise a comprehensible error
-            raise ValueError(f"Bad test dataset names: {e.args[0]}")
+        # Don't import modules when parsing dependencies for another env.
+        from .utils.dynamic_modules import skip_import_ctx
+        with skip_import_ctx(env_name is not None):
+            # Install the objective + required test datasets.
+            test_dataset_names = set(self.get_test_dataset_names())
+            for solver_class in self.get_solvers():
+                test_dataset_names.update(
+                    self.get_test_dataset_names(solver_class=solver_class)
+                )
+            try:
+                test_datasets = self.check_dataset_patterns(
+                    sorted(test_dataset_names)
+                )
+            except click.BadParameter as e:
+                # If a test dataset name is invalid,
+                # raise a comprehensible error
+                raise ValueError(f"Bad test dataset names: {e.args[0]}")
+
         self.install_all_requirements(
             include_solvers=[],
             include_datasets=test_datasets,
@@ -847,13 +856,13 @@ class Benchmark:
             cls_type = klass.__base__.__name__.replace("Base", "")
             try:
                 # Check for invalid install_cmd
-                hasattr(klass, "install_cmd")
+                klass.install_cmd_
                 # Check for invalid requirements
-                if not hasattr(klass, "requirements"):
+                if klass.requirements is None:
                     reason = "no requirements"
                 else:
                     reason = "incomplete requirements"
-            except ValueError as e:
+            except AttributeError as e:
                 if "install_cmd" in str(e):
                     reason = "invalid install_cmd"
                 else:

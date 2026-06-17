@@ -258,7 +258,7 @@ class TestRunCmd:
         out.check_output('GET_DATA#2,1', repetition=1)
         out.check_output('GET_DATA#3,', repetition=2)
 
-    def test_profiling(self, no_debug_log):
+    def test_profiling(self, no_debug_log, test_env_name):
         # Run this test in a subprocess as calling the profiler in the same
         # process breaks the coverage collection.
         solver = """from benchopt.utils.temp_benchmark import TempSolver
@@ -275,7 +275,8 @@ class TestRunCmd:
         with temp_benchmark(solvers=solver) as bench, \
                 CaptureCmdOutput() as out:
             run(
-                f"{bench.benchmark_dir} -n 1 -r 1 --profile --no-plot".split(),
+                f"{bench.benchmark_dir} -n 1 -r 1 --profile --no-plot "
+                f"--env-name {test_env_name}".split(),
                 'benchopt', standalone_mode=False
             )
         out.check_output('using profiling', repetition=1)
