@@ -101,6 +101,8 @@ We provide an example for custom ``Objective``, however, the same logic applies 
             noise = rng.randn(*beta.shape)
             return dict(X=self.X, aux_noise=noise)
 
+.. _run_artifacts:
+
 Saving run artifacts
 --------------------
 
