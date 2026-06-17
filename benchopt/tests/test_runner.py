@@ -612,7 +612,8 @@ def test_get_run_output_path():
             assert path.is_dir(), f"{p} is not a directory"
             # Paths are scoped by solver name and repetition index
             assert "test-solver" in p
-            assert "/rep_" in p
+            # rep folder is the leaf segment
+            assert path.name.startswith("rep_")
 
 
 @pytest.mark.parametrize("unsafe_value,safe_in_path", [
