@@ -192,4 +192,4 @@ def test_solver_setup_error(no_debug_log):
         out.check_output("ValueError: Setup error", repetition=1)
         out.check_output("fail-solver: error", repetition=1)
         out.check_output("test-solver: done", repetition=1)
-        print(out.output)
+        print(out.raw_output)

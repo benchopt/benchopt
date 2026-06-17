@@ -177,7 +177,7 @@ def test_ast_failures_dont_block_run(params, no_raise_install):
                     f"{bench.benchmark_dir} -y {args}".split(),
                     'benchopt', standalone_mode=False
                 )
-            print(out.output)
+            print(out.raw_output)
             if args:
                 out.check_output("No new requirements installed")
             else:

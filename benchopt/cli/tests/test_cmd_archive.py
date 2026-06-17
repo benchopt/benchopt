@@ -93,14 +93,13 @@ class TestArchiveCmd:
         with CaptureCmdOutput(delete_result_files=False) as out:
             archive(f"{self.bench.benchmark_dir} --with-outputs".split(),
                     'benchopt', standalone_mode=False)
-        saved_files = re.findall(r'Results are in (.*\.tar.gz)', out.output)
         try:
             assert len(out.result_files) == 1
             saved_file = out.result_files[0]
             counts = self.count_files_in_archive(saved_file)
         finally:
             # Make sure to clean up all files even when the test fails
-            for f in saved_files:
+            for f in out.result_files:
                 Path(f).unlink()
 
         assert counts["README"] == 1, counts

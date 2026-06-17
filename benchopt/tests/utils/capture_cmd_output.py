@@ -127,7 +127,7 @@ class CaptureCmdOutput(object):
         return suppressed
 
     def check_output(self, pattern, repetition=None):
-        self.output_checker.check_output(pattern, repetition)
+        return self.output_checker.check_output(pattern, repetition)
 
 
 class BenchoptCmdOutputProcessor:
@@ -161,7 +161,12 @@ class BenchoptCmdOutputProcessor:
             file.unlink()
 
     def check_output(self, pattern, repetition=None):
+        """Match `pattern` against the cleaned output and return the matches.
 
+        With a capture group, returns the captured values (like `re.findall`).
+        Asserts the pattern is present, or appears exactly `repetition` times
+        when `repetition` is given.
+        """
         matches = re.findall(pattern, self.output)
 
         if repetition is None:
@@ -173,3 +178,5 @@ class BenchoptCmdOutputProcessor:
                 f"Found {len(matches)} repetitions instead of {repetition} of "
                 f"'{pattern}' in output:\n{self.output}"
             )
+
+        return matches

@@ -80,7 +80,7 @@ def test_benchopt_run_script(n_jobs, no_debug_log):
     out.check_output('template_solver:', repetition=0)
 
     # Make sure the results were saved in a result file
-    assert len(out.result_files) == 1, out.output
+    assert len(out.result_files) == 1, out.raw_output
 
 
 def test_prefix_with_same_parameters():
@@ -412,10 +412,7 @@ class TestSeed:
                     cmd_str += "--no-plot"
                     run(cmd_str.split(), standalone_mode=False)
 
-            parsed_output = out.output.split("\n")
-            for s in parsed_output:
-                if s.startswith("#SEED-sol="):
-                    seeds.append(s)
+            seeds += out.check_output(r"(?m)^#SEED-sol=.*", repetition=1)
 
         assert len(seeds) == 2
 
@@ -441,13 +438,7 @@ class TestSeed:
                     run(cmd_str.split(),
                         standalone_mode=False)
 
-        parsed_output = out.output.split("\n")
-        seeds = []
-        for s in parsed_output:
-            if s.startswith("#SEED-obj="):
-                seeds.append(s)
-
-        assert len(seeds) == 2, f"Found {len(seeds)} seeds instead of 2"
+        seeds = out.check_output(r"(?m)^#SEED-obj=.*", repetition=2)
         assert seeds[0] == seeds[1], "Seeds should be equal"
 
     def test_dataset_simple(self, no_debug_log):
@@ -463,13 +454,7 @@ class TestSeed:
                     run(cmd_str.split(),
                         standalone_mode=False)
 
-        parsed_output = out.output.split("\n")
-        seeds = []
-        for s in parsed_output:
-            if s.startswith("#SEED-data="):
-                seeds.append(s)
-
-        assert len(seeds) == 2, f"Found {len(seeds)} seeds instead of 2"
+        seeds = out.check_output(r"(?m)^#SEED-data=.*", repetition=2)
         assert seeds[0] == seeds[1], "Seeds are not equal"
 
     def test_seed_different(self, no_debug_log):
@@ -484,13 +469,7 @@ class TestSeed:
                     run((cmd_str+f"--seed {it}").split(),
                         standalone_mode=False)
 
-        parsed_output = out.output.split("\n")
-        seeds = []
-        for s in parsed_output:
-            if s.startswith("#SEED-sol="):
-                seeds.append(s)
-
-        assert len(seeds) == 2, f"Found {len(seeds)} seeds instead of 2"
+        seeds = out.check_output(r"(?m)^#SEED-sol=.*", repetition=2)
         assert seeds[0] != seeds[1]
 
     def test_seed_repetition(self, no_debug_log):
@@ -506,13 +485,7 @@ class TestSeed:
                     run(cmd_str.split(),
                         standalone_mode=False)
 
-        parsed_output = out.output.split("\n")
-        seeds = []
-        for s in parsed_output:
-            if s.startswith("#SEED-sol="):
-                seeds.append(s)
-
-        assert len(seeds) == 4, f"Found {len(seeds)} seeds instead of 4"
+        seeds = out.check_output(r"(?m)^#SEED-sol=.*", repetition=4)
         assert seeds[0] == seeds[2], "Seeds are not equal"
         assert seeds[1] == seeds[3], "Seeds are not equal"
         assert seeds[0] != seeds[1], (
@@ -607,7 +580,6 @@ class TestSeed:
 
 
 def test_get_run_output_path():
-    import re
     from pathlib import Path
 
     solver = """from benchopt.utils.temp_benchmark import TempSolver
@@ -629,9 +601,7 @@ def test_get_run_output_path():
             ], standalone_mode=False)
 
         # One path printed per (dataset × repetition): 2 datasets × 2 reps
-        out.check_output("OUTPUT_DIR#", repetition=4)
-
-        paths = re.findall(r"OUTPUT_DIR#(.+)", out.output)
+        paths = out.check_output(r"OUTPUT_DIR#(.+)", repetition=4)
 
         # All paths are unique
         assert len(set(paths)) == 4
@@ -653,7 +623,6 @@ def test_get_run_output_path():
 ])
 def test_get_run_output_path_sanitized(unsafe_value, safe_in_path):
     """Parameter values with path-unsafe characters must be sanitized."""
-    import re
     from pathlib import Path
 
     solver = f"""from benchopt.utils.temp_benchmark import TempSolver
@@ -672,8 +641,7 @@ def test_get_run_output_path_sanitized(unsafe_value, safe_in_path):
             run([str(benchmark.benchmark_dir), "-d", "test-dataset",
                  "--no-plot", "--no-cache"], standalone_mode=False)
 
-        paths = re.findall(r"OUTPUT_DIR#(.+)", out.output)
-        assert len(paths) == 1
+        paths = out.check_output(r"OUTPUT_DIR#(.+)", repetition=1)
         path = Path(paths[0])
 
         # The directory must exist (no broken path from a raw '/')
