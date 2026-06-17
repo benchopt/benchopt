@@ -12,7 +12,8 @@ from .utils.parametrized_name_mixin import ParametrizedNameMixin
 from .utils.run_context_mixin import RunContextMixin
 
 
-class BaseSolver(ParametrizedNameMixin, DependenciesMixin, RunContextMixin, ABC):
+class BaseSolver(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
+                 ABC):
     """A base class for solver wrappers in Benchopt.
 
     Solvers that derive from this class should implement three methods:
@@ -316,7 +317,8 @@ class CommandLineSolver(BaseSolver, ABC):
         super().__init__(**parameters)
 
 
-class BaseDataset(ParametrizedNameMixin, DependenciesMixin, RunContextMixin, ABC):
+class BaseDataset(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
+                  ABC):
     """Base class to define a dataset in a benchmark.
 
     Datasets that derive from this class should implement one method:
@@ -432,7 +434,8 @@ def _prepare_one(benchmark, dataset, force=False):
         return (str(dataset), exc)
 
 
-class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin, ABC):
+class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
+                    ABC):
     """Base class to define an objective function
 
     Objectives that derive from this class needs to implement three methods:

@@ -7,8 +7,8 @@ This example shows two complementary ways to work with images in a benchmark:
    ``evaluate_result`` (or ``run``) to obtain a per-run directory and write any
    file — PNG frames, checkpoints, logs — directly to disk.
 
-2. **Displaying images in the HTML report** with the ``image`` plot type: return
-   array data from ``evaluate_result`` and collect it in a custom
+2. **Displaying images in the HTML report** with the ``image`` plot type:
+   return array data from ``evaluate_result`` and collect it in a custom
    :class:`~benchopt.BasePlot` subclass to render a visual gallery (including
    animated GIFs) without any manual file management.
 
