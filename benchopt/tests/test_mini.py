@@ -27,10 +27,9 @@ def simulated(size, random_state):
 
 
 @solver(name="GD mini", lr=[1e-1, 1e-2])
-def gd_solver(n_iter, X, lr):
+def gd_solver(X, lr):
     beta = np.zeros_like(X)
-    for _ in range(n_iter):
-        beta -= lr * beta
+    beta -= lr * beta
     return dict(beta=beta)
 
 
@@ -39,10 +38,19 @@ _cached_solver_calls: list = []
 
 
 @solver(name="Counted solver", lr=[1e-1])
-def counted_solver(n_iter, X, lr):
+def counted_solver(X, lr):
     _cached_solver_calls.append(1)
     beta = np.zeros_like(X)
     return dict(beta=beta)
+
+
+@solver(name="GD generator", lr=[1e-1])
+def gd_generator(X, lr):
+    # Generator => callback strategy: one objective evaluation per yield.
+    beta = np.ones_like(X)
+    for _ in range(5):
+        beta = beta - lr * beta
+        yield dict(beta=beta)
 
 
 @objective(name="Test Mini Benchmark")
@@ -71,10 +79,10 @@ def test_benchmark_objective_name():
     assert bench.get_benchmark_objective().name == "Test Mini Benchmark"
 
 
-def test_benchmark_solvers_have_run_once_strategy():
-    bench = get_benchmark()
-    for solver_cls in bench.get_solvers():
-        assert solver_cls.sampling_strategy == "run_once"
+def test_solver_sampling_strategy_depends_on_function():
+    # `return`-style solvers run once; generator solvers use the callback.
+    assert gd_solver.sampling_strategy == "run_once"
+    assert gd_generator.sampling_strategy == "callback"
 
 
 def test_dataset_get_data():
@@ -141,6 +149,30 @@ def test_run_benchmark_multiple_solver_params():
     # gd_solver has lr=[1e-1, 1e-2] => at least 2 configurations
     solver_names = df["solver_name"].unique()
     assert len(solver_names) >= 2
+
+
+def test_generator_solver_uses_callback_strategy():
+    assert gd_generator.sampling_strategy == "callback"
+    assert gd_solver.sampling_strategy == "run_once"
+
+
+def test_generator_solver_logs_curve():
+    """A generator solver logs one objective value per iteration."""
+    bench = get_benchmark(run_config={"solver_names": ["GD generator"]})
+    output_file = run_benchmark(
+        bench,
+        max_runs=10,
+        n_repetitions=1,
+        plot_result=False,
+        show_progress=False,
+        **bench.run_config,
+    )
+    import pandas as pd
+    df = pd.read_parquet(output_file)
+    assert not df.empty
+    assert "objective_value" in df.columns
+    # Several iterations => more than the single point a run_once solver gives.
+    assert df["stop_val"].nunique() > 1
 
 
 def test_get_benchmark_raises_without_objective():

@@ -15,7 +15,7 @@ Example
 ...     return dict(X=X)
 >>>
 >>> @solver(name="Solver 1", lr=[1e-2, 1e-3])
-... def solver1(n_iter, X, lr):
+... def solver1(X, lr):
 ...     return dict(beta=sum(X) * lr)
 >>>
 >>> @objective(name="My Benchmark")
@@ -189,14 +189,27 @@ def dataset(**params):
 def solver(name, **params):
     """Register a function as a mini-benchmark solver.
 
-    The decorated function is called inside ``run(n_iter)`` with:
+    The decorated function is called with:
 
-    * ``n_iter`` bound to the stop-value,
     * solver parameters (the decorator kwargs) taken from ``self.<param>``,
     * remaining arguments taken from the objective dict (i.e. the dataset
       data as forwarded by the objective's ``get_objective``).
 
-    The function must return a ``dict`` that will be the solver result.
+    There are two flavours, selected automatically from the function:
+
+    * **return a dict** (``run_once`` strategy): the function is called once
+      and its result is evaluated a single time.
+    * **yield dicts** (``callback`` strategy): the function is a generator
+      that ``yield``s its current result at each iteration; benchopt
+      evaluates the objective on every yielded dict (logging a convergence
+      curve) and stops the generator when the stopping criterion is met::
+
+          @solver(name="GD", lr=1e-2)
+          def gd(X, y, lr):
+              beta = np.zeros(X.shape[1])
+              while True:
+                  beta -= lr * X.T @ (X @ beta - y)
+                  yield dict(beta=beta)
 
     Parameters
     ----------
@@ -218,26 +231,37 @@ def solver(name, **params):
             for k, v in params.items()
         }
         _name = name
+        # A generator solver (one that ``yield``s) logs a metric at every
+        # yield: benchopt evaluates the objective on the yielded dict and
+        # decides when to stop.  A plain ``return`` solver runs once.
+        is_generator = inspect.isgeneratorfunction(fn)
 
         class Solver(BaseSolver, metaclass=_CallableFnMeta):
             name = _name
             parameters = _params
-            sampling_strategy = "run_once"
+            sampling_strategy = "callback" if is_generator else "run_once"
             _fn = staticmethod(fn)
 
             def set_objective(self, **objective_dict):
                 self._objective_dict = objective_dict
 
-            def run(self, n_iter):
+            def run(self, stop_val):
                 call_kwargs = {}
                 for p in fn_param_names:
-                    if p == "n_iter":
-                        call_kwargs["n_iter"] = n_iter
-                    elif p in solver_param_names:
+                    if p in solver_param_names:
                         call_kwargs[p] = self._parameters[p]
                     else:
                         call_kwargs[p] = self._objective_dict[p]
-                self._result = fn(**call_kwargs)
+                if is_generator:
+                    # ``stop_val`` is the benchopt callback. Each yielded
+                    # dict is the current iterate; get_result() exposes it so
+                    # the callback can evaluate the objective on it.
+                    for result in fn(**call_kwargs):
+                        self._result = result
+                        if not stop_val():
+                            break
+                else:
+                    self._result = fn(**call_kwargs)
 
             def get_result(self):
                 return self._result
