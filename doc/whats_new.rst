@@ -17,6 +17,12 @@ API
   DataFrame as input and returning the list of possible values for the option.
   By `Hippolyte Verninas`_ (:gh:`952`)
 
+- Add ``get_run_output_path`` method to all benchmark components (``Dataset``,
+  ``Objective``, ``Solver``). It returns a directory unique to the current
+  (dataset/objective/solver/repetition) run, to save per-run artifacts such as
+  model checkpoints or diagnostic logs. See :ref:`run_artifacts` for usage
+  details. By `Thomas Moreau`_ (:gh:`961`)
+
 TST
 ~~~
 

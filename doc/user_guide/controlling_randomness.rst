@@ -1,7 +1,7 @@
 .. _controlling_randomness:
 
-Controlling randomness in Benchopt
-==================================
+Reproducibility helpers: seeding and run artifacts
+===================================================
 
 Benchopt provides a mechanism to control randomness across runs, solvers,
 datasets and repetitions, by producing deterministic and reproducible seeds.
@@ -100,3 +100,31 @@ We provide an example for custom ``Objective``, however, the same logic applies 
             rng = np.random.RandomState(seed)
             noise = rng.randn(*beta.shape)
             return dict(X=self.X, aux_noise=noise)
+
+.. _run_artifacts:
+
+Saving run artifacts
+--------------------
+
+All benchopt base classes also provide a ``get_run_output_path`` method that
+returns a directory **unique to the current run** (dataset x objective x solver
+x repetition). Use it to save per-run artifacts such as intermediate models,
+diagnostic plots, or convergence logs.
+
+.. code-block:: python
+
+    class Solver(BaseSolver):
+        name = "my-solver"
+
+        def run(self, n_iter):
+            # … training loop …
+            output_dir = self.get_run_output_path()
+            np.save(output_dir / "weights.npy", self.weights)
+
+The directory is created automatically on first call and lives under
+``<benchmark>/outputs/<run_name>/<dataset>/<objective>/<solver>/rep_<k>/``.
+
+Like ``get_seed``, this method is available on ``Dataset``, ``Objective``, and
+``Solver``, and must be called during execution (not at import time or class
+definition). It raises ``RuntimeError`` when called outside of a
+``benchopt run`` invocation (e.g. during ``benchopt test``).

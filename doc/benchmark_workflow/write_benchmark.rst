@@ -83,6 +83,10 @@ All three component classes share the following features:
 - ``get_seed()``: obtain a reproducible seed for stochastic components
   (simulated data, random initialisations, …).
   See :ref:`controlling_randomness`.
+- ``get_run_output_path()``: get a per-run directory to save artifacts
+  (models, plots, logs, …) scoped to the current
+  (dataset x objective x solver x repetition) combination.
+  See :ref:`controlling_randomness`.
 
 
 .. _datasets:

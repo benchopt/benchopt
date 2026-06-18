@@ -122,6 +122,16 @@ class ParametrizedNameMixin():
         return {}
 
     def __reduce__(self):
+        """Control pickling for inter-workers communication and hashing.
+
+        Instances are reconstructed via ``_load_instance(*_get_mixin_args())``
+        and then ``__setstate__(_get_state())`` is called.  Only what
+        ``_get_mixin_args`` and ``_get_state`` return survives the round-trip;
+        any instance attribute not included there is silently dropped.
+
+        To persist extra attributes across pickling, override ``_get_state``
+        (and the matching ``__setstate__``) in the subclass. `.
+        """
         return self._load_instance, self._get_mixin_args(), self._get_state()
 
 
