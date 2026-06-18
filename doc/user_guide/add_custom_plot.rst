@@ -21,14 +21,16 @@ A custom plot is defined by a class inheriting from :class:`benchopt.BasePlot` a
   select this plot in config files for your benchmark.
 - :code:`type`: The type of the plot, which defines how the output of `plot`
   will be rendered. Supported types are :code:`"scatter"`, :code:`"bar_chart"`,
-  :code:`"boxplot"` and :code:`"table"`.
+  :code:`"boxplot"`, :code:`"table"` and :code:`"image"`.
 - :code:`options`: A dictionary defining the different options available for the
   plot. Typically, this can be used to have different plots depending on dataset's
   or objective's parameters, or to display customization options. The keys in the
   dictionary are the names of the options, associated to a list of their possible
   values. If a key :code:`objective/dataset/solver/objective_column` is associated
   with the value :code:`...`, the options are automatically inferred from the
-  results DataFrame, as all unique values associated with this key.
+  results DataFrame, as all unique values associated with this key. A value can
+  also be a callable taking the results DataFrame as input and returning the list
+  of possible values for the option.
 - :code:`plot(self, df, **kwargs)`: give the data to produce one plot, that is
   rendered with the plotly or matplotlib backend. The method takes the results DataFrame
   and the options values as arguments, and returns the plot data. The output
@@ -49,20 +51,22 @@ The visualization is rendered using either the ``plotly`` or ``matplotly`` backe
 
     class Plot(BasePlot):
         name = "My Custom Plot"
-        type = "scatter"  # or "bar_chart", "boxplot" or "table"
+        type = "scatter"  # or "bar_chart", "boxplot", "table" or "image"
         options = {
             "dataset": ...,         # Automatic options from DataFrame columns
             "objective": ...,
             "my_parameter": [1, 2], # custom options
+            # options computed from the results DataFrame
+            "solver": lambda df: df["solver_name"].unique().tolist(),
         }
 
         # The inputs args of this method correspond to `df` and
         # the keys in the `options` dictionary.
-        def plot(self, df, dataset, objective, my_parameter):
+        def plot(self, df, dataset, objective, my_parameter, solver):
             # ... process df ...
             return plot_data
 
-        def get_metadata(self, df, dataset, objective, my_parameter):
+        def get_metadata(self, df, dataset, objective, my_parameter, solver):
             return {
                 "title": f"Plot for {dataset}",
                 "xlabel": "X Label",
@@ -90,23 +94,27 @@ each dictionary represents a trace in the plot. Each dictionary must contain:
 - :code:`x`: A list of x values.
 - :code:`y`: A list of y values.
 - :code:`label`: The label of the trace
-
-Optional keys:
-
-- :code:`color`: The color of the trace.
-- :code:`marker`: The marker style of the trace.
-- :code:`x_low`, :code:`x_high`: Lists of values to display uncertainty in the plot.
+- :code:`color` (optional): The color of the trace.
+- :code:`marker` (optional): The marker style of the trace.
+- :code:`y_low`, :code:`y_high` (optional): Lists of values to display uncertainty in the plot.
   They will be used to display shaded area around the plot.
+- :code:`x_low`, :code:`x_high` (optional): Lists of values to display uncertainty in the plot.
+  They will be used to display shaded area around the plot. You can use either y_low/y_high or
+  x_low/x_high, but not both.
 
 The metadata dictionary returned by :code:`get_metadata` should contain:
 
 - :code:`title`: The title of the plot.
 - :code:`xlabel`: The label of the x-axis.
 - :code:`ylabel`: The label of the y-axis.
+- :code:`grid` (optional, default=True): Whether to show grid lines in the plot.
+  This only affects the matplotlib backend, not the html page.
+- :code:`scale` (optional, default="loglog"): The scale of the axes in the matplotlib backend,
+  can be either "linear", "semilog-x", "semilog-y" or "loglog".
 
 .. code-block:: python
 
-    def plot(self, df, dataset, objective, my_parameter):
+    def plot(self, df, dataset, objective, my_parameter, solver):
         # Filter the dataframe
         df = df.query(
             "dataset_name == @dataset and objective_name == @objective"
@@ -127,7 +135,7 @@ The metadata dictionary returned by :code:`get_metadata` should contain:
             })
         return plot_traces
 
-    def get_metadata(self, df, dataset, objective, my_parameter):
+    def get_metadata(self, df, dataset, objective, my_parameter, solver):
         return {
             "title": f"Convergence for {dataset}",
             "xlabel": "Time [sec]",
@@ -149,16 +157,15 @@ scatter points. The dictionary should contain:
 
 - :code:`y`: The list of values for the bar (the median will be the height of the bar).
 - :code:`label`: The label of the bar.
-
-Optional keys:
-
-- :code:`color`: The color of the bar.
-- :code:`text`: The text to display on the bar.
+- :code:`color` (optional): The color of the bar.
+- :code:`text` (optional): The text to display on the bar.
 
 The metadata dictionary returned by :code:`get_metadata` should contain:
 
 - :code:`title`: The title of the plot.
 - :code:`ylabel`: The label of the y-axis.
+- :code:`grid` (optional, default=True): Whether to show grid lines on the y-axis in the plot.
+  This only affects the matplotlib backend, not the html page.
 
 .. code-block:: python
 
@@ -194,16 +201,20 @@ where each dictionary represents a box. Each dictionary should contain:
 - :code:`x`: The x coordinate.
 - :code:`y`: The values of the box for the corresponding x coordinate.
 - :code:`label`: The label of the box.
-
-Optional keys:
-
-- :code:`color`: The color of the box.
+- :code:`color` (optional): The color of the box.
 
 The metadata dictionary returned by :code:`get_metadata` should contain:
 
 - :code:`title`: The title of the plot.
 - :code:`xlabel`: The label of the x-axis.
 - :code:`ylabel`: The label of the y-axis.
+- :code:`grid` (optional, default=True): Whether to show grid lines on the y-axis in the plot.
+  This only affects the matplotlib backend, not the html page.
+- :code:`box_width` (optional, default=0.6): The width of the boxes, only affects
+  the matplotlib backend, not the html page.
+- :code:`showfliers` (optional, default=False): Whether to show fliers in the boxplot.
+  Fliers are points that are outside the whiskers of the boxplot, which represent
+  outliers in the data. This only affects the matplotlib backend, not the html page.
 
 .. code-block:: python
 
@@ -262,6 +273,37 @@ The metadata dictionary returned by :code:`get_metadata` should contain:
             "title": f"Summary for {dataset}",
             "columns": ["Solver", "Mean Time [sec]"],
         }
+
+
+Image Plot
+----------
+
+For an image plot, the :code:`plot` method should return a list of dictionaries,
+where each dictionary represents one image card displayed in a grid.
+Each dictionary must contain:
+
+- :code:`image`: Either an image-compatible array (rendered as a PNG)
+  or a list of image-compatible arrays (rendered as an animated GIF showing
+  per-iteration progress). A pre-computed base64 data URI or URL are also
+  accepted. If set to ``None``, this will create an empty image, which can
+  be used for alignment purposes.
+
+Optional keys:
+
+- :code:`label`: Text displayed below the image card.
+
+Arrays are expected to have values in ``[0, 1]`` and are converted automatically
+using Pillow, so no manual encoding is needed.
+
+The metadata dictionary returned by :code:`get_metadata` should contain:
+
+- :code:`title`: The title displayed above the grid.
+- :code:`ncols`: Number of columns in the grid (default: min(n_images, 3)).
+
+.. note::
+   In the HTML result page, animated GIFs are rendered when a list of arrays
+   is provided. In the matplotlib backend, each image card is shown as a
+   static subplot using the last frame for animated sequences.
 
 
 .. _plotting_utilities:

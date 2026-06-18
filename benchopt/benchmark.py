@@ -17,7 +17,6 @@ from .base import BaseSolver, BaseDataset, _prepare_one
 from .utils.dynamic_modules import _load_class_from_module
 from .utils.parametrized_name_mixin import sanitize
 from .utils.parametrized_name_mixin import _get_used_parameters
-from .utils.parametrized_name_mixin import is_matched
 from .utils.parametrized_name_mixin import _check_patterns
 
 from .utils.terminal_output import colorify
@@ -112,8 +111,8 @@ class Benchmark:
                 objective.name.replace("benchmark_", "")
                 .replace("_benchmark", "").replace("_", " ")
             )
-            self.url = getattr(objective, "url", None)
-            self.min_version = getattr(objective, 'min_benchopt_version', None)
+            self.url = objective.url
+            self.min_version = objective.min_benchopt_version
         except RuntimeError:
             if not allow_meta_from_json:
                 raise click.BadParameter(
@@ -143,6 +142,9 @@ class Benchmark:
         self.name = self.name.replace('.', '-')
 
         self._seed = seed
+
+    def __repr__(self):
+        return f"Benchmark(name={self.name}, url={self.url})"
 
     @property
     def safe_name(self):
@@ -229,25 +231,72 @@ class Benchmark:
         "List all available dataset names for the benchmark."
         return [d.name for d in self.get_datasets()]
 
-    def get_test_dataset(self):
-        objective = self.get_benchmark_objective()
+    def get_test_dataset(self, name=None, solver_class=None):
+        """Return the benchmark test dataset, or the one linked to the solver.
+
+        Parameters
+        ----------
+        name : str or None
+            Explicit dataset name to for direct override.
+        solver_class : Solver or None
+            Solver context, used to retrieve test_dataset['name'] when
+            the dataset is not given explicitly.
+        """
+        if name is None:
+            name = self.get_test_dataset_names(solver_class=solver_class)[0]
+
         datasets = self.get_datasets()
         test_datasets = [
-            d for d in datasets
-            if sanitize(d.name) == sanitize(objective.test_dataset_name)
+            d for d in datasets if sanitize(d.name) == sanitize(name)
         ]
         if len(test_datasets) == 0 and len(datasets) == 1:
             test_datasets = datasets
 
         assert len(test_datasets) == 1, (
             "All benchmarks should have one test_dataset. The default is a "
-            "simulated dataset, but the name can be tweaked by setting the "
-            "`Objective.test_dataset_name` attribute. The dataset should have "
-            f"`name='{objective.test_dataset_name}' in the current benchmark. "
+            "simulated dataset, but the name can be tweaked by setting "
+            "`Objective.test_config['dataset']['name']` (or the legacy "
+            "`Objective.test_dataset_name`) or per-solver via "
+            "`Solver.test_config['dataset']['name']`. The dataset should "
+            f"have `name='{name}' in the current benchmark. "
             f"Found possible datasets {test_datasets}."
         )
         test_class = test_datasets[0]
+        if not test_class.is_installed():
+            import pytest
+            pytest.skip(f"Test dataset {name!r} is not installed")
         return test_class
+
+    def get_test_dataset_names(self, solver_class=None):
+        """Resolve the list of test dataset names for the given context.
+
+        Names come from (in increasing priority):
+
+          1. ``Objective.test_dataset_name`` (legacy default).
+          2. ``Objective.test_config['dataset']['name']`` (str or list).
+          3. ``Solver.test_config['dataset']['name']`` (str or list) when
+             ``solver_class`` is provided.
+
+        Returns
+        -------
+        list[str]
+            One or more dataset names to exercise for this test context.
+        """
+        objective = self.get_benchmark_objective()
+        names = [objective.test_dataset_name]
+
+        for component in (objective, solver_class):
+            if component is None:
+                continue
+            ds_cfg = (component.test_config or {}).get('dataset', {})
+            name = ds_cfg.get('name')
+            if name is None:
+                continue
+            names = [name] if isinstance(name, str) else list(name)
+        if names == [None]:
+            datasets = self.get_dataset_names()
+            names = datasets if len(datasets) == 1 else ['simulated']
+        return names
 
     def check_dataset_patterns(self, dataset_patterns, class_only=False):
         "Check that the patterns are valid and return selected configurations."
@@ -475,7 +524,12 @@ class Benchmark:
                 )
                 if func_cached.check_call_in_cache(**kwargs):
                     return func_cached(**kwargs)
-                return None
+                key = (
+                    kwargs['meta']['dataset_name'],
+                    kwargs['meta']['objective_name'],
+                    kwargs['meta']['solver_name']
+                )
+                return ([], key, 'not run yet', "")
         else:
             def _func_cached(**kwargs):
                 if kwargs.get('force', False):
@@ -570,6 +624,7 @@ class Benchmark:
                 stacklevel=2,
             )
             prepare = True
+
         # Collect all classes matching one of the patterns
         print("Collecting packages:")
         exit_code = 0
@@ -679,10 +734,41 @@ class Benchmark:
             )
         return exit_code
 
+    def create_test_env(self, env_name, recreate=False):
+        from .utils.conda_env_cmd import create_conda_env
+        create_conda_env(
+            env_name, benchmark=self, recreate=recreate, pytest=True
+        )
+
+        # Don't import modules when parsing dependencies for another env.
+        from .utils.dynamic_modules import skip_import_ctx
+        with skip_import_ctx(env_name is not None):
+            # Install the objective + required test datasets.
+            test_dataset_names = set(self.get_test_dataset_names())
+            for solver_class in self.get_solvers():
+                test_dataset_names.update(
+                    self.get_test_dataset_names(solver_class=solver_class)
+                )
+            try:
+                test_datasets = self.check_dataset_patterns(
+                    sorted(test_dataset_names)
+                )
+            except click.BadParameter as e:
+                # If a test dataset name is invalid,
+                # raise a comprehensible error
+                raise ValueError(f"Bad test dataset names: {e.args[0]}")
+
+        self.install_all_requirements(
+            include_solvers=[],
+            include_datasets=test_datasets,
+            env_name=env_name,
+            env_need_confirm=False,
+        )
+
     def download_all_data(self, datasets, env_name, quiet):
         if len(datasets) == 0:
             return 0
-        cmd = f"benchopt check-data {self.benchmark_dir} -d "
+        cmd = f"python -m benchopt check-data {self.benchmark_dir} -d "
         cmd += " -d ".join(d.name for d in datasets)
         return _run_shell_in_conda_env(
             cmd, env_name=env_name, raise_on_error=True, capture_stdout=False
@@ -731,7 +817,11 @@ class Benchmark:
                       "skipping preparation.")
                 n_total -= 1
             else:
-                to_prepare.append(dict(dataset=dataset))
+                to_prepare.append(dict(
+                    benchmark=self,
+                    dataset=dataset,
+                    force=force
+                ))
 
         if not to_prepare:
             print("Summary: 0/0 datasets ready.")
@@ -739,8 +829,7 @@ class Benchmark:
 
         results = parallel_run(
             self, _prepare_one,
-            kwargs=dict(benchmark=self, force=force),
-            all_runs=to_prepare,
+            run_kwargs_generator=to_prepare,
             config=parallel_config,
         )
 
@@ -767,13 +856,13 @@ class Benchmark:
             cls_type = klass.__base__.__name__.replace("Base", "")
             try:
                 # Check for invalid install_cmd
-                hasattr(klass, "install_cmd")
+                klass.install_cmd_
                 # Check for invalid requirements
-                if not hasattr(klass, "requirements"):
+                if klass.requirements is None:
                     reason = "no requirements"
                 else:
                     reason = "incomplete requirements"
-            except ValueError as e:
+            except AttributeError as e:
                 if "install_cmd" in str(e):
                     reason = "invalid install_cmd"
                 else:
@@ -790,69 +879,6 @@ class Benchmark:
             f"they are not importable:\n{missing_cls}\n\n{MISSING_DEPS_MSG}"
         )
         return 1
-
-    def _get_all_runs(self, solvers=None, forced_solvers=None,
-                      datasets=None, objectives=None, terminal=None):
-        """Generator with all combinations to run for the benchmark.
-
-        Parameters
-        ----------
-        solvers : list | None
-            List of solvers to include in the benchmark. If None
-            all solvers available are run.
-        forced_solvers : list | None
-            List of solvers to include in the benchmark and for
-            which one forces recomputation.
-        datasets : list | None
-            List of datasets to include. If None all available
-            datasets are used.
-        objectives : list | None
-            Filters to select specific objective parameters. If None,
-            all objective parameters are tested
-        terminal : TerminalOutput or None
-            Object to format string to display the terminal.
-
-        Yields
-        ------
-        dataset : BaseDataset instance
-        objective : BaseObjective instance
-        solver : BaseSolver instance
-        force : bool
-        """
-        all_datasets = _list_parametrized_classes(*datasets)
-        all_solvers, solvers_buffer = buffer_iterator(
-            _list_parametrized_classes(*solvers)
-        )
-        for dataset, is_installed in all_datasets:
-            terminal.set(dataset=dataset)
-            if not is_installed:
-                terminal.show_status('not installed', dataset=True)
-                continue
-            terminal.display_dataset()
-            all_objectives = _list_parametrized_classes(
-                *objectives, check_installed=False
-            )
-            for objective, is_installed in all_objectives:
-                terminal.set(objective=objective)
-                if not is_installed:
-                    terminal.show_status('not installed', objective=True)
-                    continue
-                terminal.display_objective()
-                for i_solver, (solver, is_installed) in enumerate(all_solvers):
-                    terminal.set(solver=solver, i_solver=i_solver)
-
-                    if not is_installed:
-                        terminal.show_status('not installed')
-                        continue
-
-                    force = is_matched(
-                        str(solver), forced_solvers, default=False
-                    )
-                    yield dict(
-                        dataset=dataset, objective=objective, solver=solver,
-                        force=force, terminal=terminal.clone()
-                    )
-                all_solvers = solvers_buffer
 
 
 def _list_parametrized_classes(*classes, check_installed=True, prepare=False):
@@ -874,15 +900,3 @@ def _list_parametrized_classes(*classes, check_installed=True, prepare=False):
 
             for params in _get_used_parameters(klass, params, ignore=ignore):
                 yield klass.get_instance(**params), True
-
-
-def buffer_iterator(it):
-    """Buffer the output of an iterator to repeat it without recomputing."""
-    buffer = []
-
-    def buffered_it(buffer):
-        for val in it:
-            buffer.append(val)
-            yield val
-
-    return buffered_it(buffer), buffer

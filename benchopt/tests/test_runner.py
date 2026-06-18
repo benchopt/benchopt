@@ -80,7 +80,7 @@ def test_benchopt_run_script(n_jobs, no_debug_log):
     out.check_output('template_solver:', repetition=0)
 
     # Make sure the results were saved in a result file
-    assert len(out.result_files) == 1, out.output
+    assert len(out.result_files) == 1, out.raw_output
 
 
 def test_prefix_with_same_parameters():
@@ -231,8 +231,7 @@ class TestCache:
 
         class Solver(TempSolver):
             name = "failing-solver"
-            def run(self, n_iter):
-                raise ValueError('Failing solver.')
+            def run(self, _): raise ValueError('Failing solver.')
         """
 
         with temp_benchmark(solvers=[self.solver, solver_fail],
@@ -269,6 +268,25 @@ class TestCache:
         # when using multiple repetitions
         out.check_output("#RUN_SOLVER", repetition=n_reps)
         out.check_output("#RUN_2SOLVER", repetition=n_reps)
+
+    def test_caching_with_max_runs(self, no_debug_log):
+
+        solver = """from benchopt.utils.temp_benchmark import TempSolver
+
+        class Solver(TempSolver):
+            sampling_strategy = 'iteration'
+            def run(self, n_iter): print(f"#RUN:{n_iter}")
+        """
+
+        with temp_benchmark(solvers=solver, datasets=self.dataset) as bench:
+            with CaptureCmdOutput() as out:
+                for it in range(3):
+                    run(f"{bench.benchmark_dir} --no-plot -n {it}".split(),
+                        standalone_mode=False)
+
+        # error message should be displayed twice
+        for it in range(3):
+            out.check_output(f"#RUN:{it}", repetition=1)
 
     @pytest.mark.parametrize('n_reps', [1, 4])
     def test_cache_invalid(self, no_debug_log, n_reps):
@@ -394,10 +412,7 @@ class TestSeed:
                     cmd_str += "--no-plot"
                     run(cmd_str.split(), standalone_mode=False)
 
-            parsed_output = out.output.split("\n")
-            for s in parsed_output:
-                if s.startswith("#SEED-sol="):
-                    seeds.append(s)
+            seeds += out.check_output(r"(?m)^#SEED-sol=.*", repetition=1)
 
         assert len(seeds) == 2
 
@@ -423,13 +438,7 @@ class TestSeed:
                     run(cmd_str.split(),
                         standalone_mode=False)
 
-        parsed_output = out.output.split("\n")
-        seeds = []
-        for s in parsed_output:
-            if s.startswith("#SEED-obj="):
-                seeds.append(s)
-
-        assert len(seeds) == 2, f"Found {len(seeds)} seeds instead of 2"
+        seeds = out.check_output(r"(?m)^#SEED-obj=.*", repetition=2)
         assert seeds[0] == seeds[1], "Seeds should be equal"
 
     def test_dataset_simple(self, no_debug_log):
@@ -445,13 +454,7 @@ class TestSeed:
                     run(cmd_str.split(),
                         standalone_mode=False)
 
-        parsed_output = out.output.split("\n")
-        seeds = []
-        for s in parsed_output:
-            if s.startswith("#SEED-data="):
-                seeds.append(s)
-
-        assert len(seeds) == 2, f"Found {len(seeds)} seeds instead of 2"
+        seeds = out.check_output(r"(?m)^#SEED-data=.*", repetition=2)
         assert seeds[0] == seeds[1], "Seeds are not equal"
 
     def test_seed_different(self, no_debug_log):
@@ -466,13 +469,7 @@ class TestSeed:
                     run((cmd_str+f"--seed {it}").split(),
                         standalone_mode=False)
 
-        parsed_output = out.output.split("\n")
-        seeds = []
-        for s in parsed_output:
-            if s.startswith("#SEED-sol="):
-                seeds.append(s)
-
-        assert len(seeds) == 2, f"Found {len(seeds)} seeds instead of 2"
+        seeds = out.check_output(r"(?m)^#SEED-sol=.*", repetition=2)
         assert seeds[0] != seeds[1]
 
     def test_seed_repetition(self, no_debug_log):
@@ -488,13 +485,7 @@ class TestSeed:
                     run(cmd_str.split(),
                         standalone_mode=False)
 
-        parsed_output = out.output.split("\n")
-        seeds = []
-        for s in parsed_output:
-            if s.startswith("#SEED-sol="):
-                seeds.append(s)
-
-        assert len(seeds) == 4, f"Found {len(seeds)} seeds instead of 4"
+        seeds = out.check_output(r"(?m)^#SEED-sol=.*", repetition=4)
         assert seeds[0] == seeds[2], "Seeds are not equal"
         assert seeds[1] == seeds[3], "Seeds are not equal"
         assert seeds[0] != seeds[1], (
@@ -555,3 +546,156 @@ class TestSeed:
         # Dataset should be computed for each repetition when seed
         # is different for each repetition
         out.check_output("#SEED-data=", repetition=3)
+
+    @pytest.mark.parametrize('n_jobs', [1, 2])
+    def test_no_get_seed_no_extra_reload(self, no_debug_log, n_jobs):
+        # Regression: a dataset whose get_data never calls get_seed must not
+        # be reloaded on every run-context update (_used_seed stays None, so
+        # the None != _compute_used_seed() guard must not fire).
+        dataset = """from benchopt import BaseDataset
+
+            class Dataset(BaseDataset):
+                name = "test-dataset"
+                def get_data(self):
+                    print('#DATA-LOAD')
+                    return dict(X=0, y=1)
+        """
+        with temp_benchmark(
+            objective=self.get_objective(),
+            solvers=self.get_solver(),
+            datasets=dataset,
+        ) as bench:
+            with CaptureCmdOutput() as out:
+                run(
+                    f"{bench.benchmark_dir} --no-plot -r 3 -j {n_jobs}"
+                    .split(), standalone_mode=False,
+                )
+
+        # With n_jobs=1, the dataset is loaded once regardless the numbe
+        # of repetitions.
+        # With n_jobs>1, the dataset is loaded once per repetition, plus once
+        # when creating loading the dataset in the main process, so 1 + n_reps.
+        n_match = 1 if n_jobs == 1 else 4
+        out.check_output("#DATA-LOAD", repetition=n_match)
+
+
+def test_get_run_output_path():
+    from pathlib import Path
+
+    solver = """from benchopt.utils.temp_benchmark import TempSolver
+
+        class Solver(TempSolver):
+            name = "test-solver"
+            sampling_strategy = 'run_once'
+
+            def run(self, _):
+                print(f"OUTPUT_DIR#{self.get_run_output_path()}")
+    """
+
+    with temp_benchmark(solvers=[solver]) as benchmark:
+        with CaptureCmdOutput() as out:
+            run([
+                str(benchmark.benchmark_dir),
+                "-s", "test-solver", "-d", "test-dataset", "-d", "simulated",
+                "-r", "2", "--no-plot",
+            ], standalone_mode=False)
+
+        # One path printed per (dataset × repetition): 2 datasets × 2 reps
+        paths = out.check_output(r"OUTPUT_DIR#(.+)", repetition=4)
+
+        # All paths are unique
+        assert len(set(paths)) == 4
+
+        for p in paths:
+            path = Path(p)
+            # Path must exist and be a real directory
+            assert path.is_dir(), f"{p} is not a directory"
+            # Paths are scoped by solver name and repetition index
+            assert "test-solver" in p
+            # rep folder is the leaf segment
+            assert path.name.startswith("rep_")
+
+
+@pytest.mark.parametrize("unsafe_value,safe_in_path", [
+    # slash in a parameter value must not create extra path segments
+    ("/some/path", "_some_path"),
+    # other special characters are also replaced
+    ("val:1", "val_1"),
+])
+def test_get_run_output_path_sanitized(unsafe_value, safe_in_path):
+    """Parameter values with path-unsafe characters must be sanitized."""
+    from pathlib import Path
+
+    solver = f"""from benchopt.utils.temp_benchmark import TempSolver
+
+        class Solver(TempSolver):
+            name = "test-solver"
+            sampling_strategy = 'run_once'
+            parameters = {{"tag": ["{unsafe_value}"]}}
+
+            def run(self, _):
+                print(f"OUTPUT_DIR#{{self.get_run_output_path()}}")
+    """
+
+    with temp_benchmark(solvers=[solver]) as benchmark:
+        with CaptureCmdOutput() as out:
+            run([str(benchmark.benchmark_dir), "-d", "test-dataset",
+                 "--no-plot", "--no-cache"], standalone_mode=False)
+
+        paths = out.check_output(r"OUTPUT_DIR#(.+)", repetition=1)
+        path = Path(paths[0])
+
+        # The directory must exist (no broken path from a raw '/')
+        assert path.is_dir(), f"{paths[0]} is not a directory"
+        # The sanitized form must appear in the path, not the raw unsafe value
+        assert safe_in_path in paths[0]
+        assert unsafe_value not in paths[0]
+
+
+def test_get_run_output_path_raises_outside_run():
+    from benchopt.utils.temp_benchmark import TempSolver
+
+    solver = TempSolver()
+    with pytest.raises(RuntimeError, match="get_run_output_path"):
+        solver.get_run_output_path()
+
+
+def test_dataset_run_context_in_evaluate_result(no_debug_log, monkeypatch):
+    """Dataset _run_context must be restored in run_one_to_cvg.
+
+    In parallel mode, __getstate__ strips _run_context from the objective's
+    embedded _dataset.  This test simulates that scenario by patching
+    _set_run_context to clear the dataset context after setting it, then
+    verifies that evaluate_result can still call self._dataset.get_seed()
+    because run_one_to_cvg re-attaches the context.
+    """
+    from benchopt.utils.run_context import RunContext
+    original_set_run_context = RunContext.set_run_context
+
+    def strip_dataset_ctx(self, objective, dataset, solver, repetition,
+                          base_seed):
+        ctx = original_set_run_context(
+            self, objective, dataset, solver, repetition, base_seed
+        )
+        # Simulate what __getstate__ does during parallel serialization.
+        dataset._run_context = None
+        return ctx
+
+    monkeypatch.setattr(RunContext, 'set_run_context', strip_dataset_ctx)
+
+    objective = """from benchopt.utils.temp_benchmark import TempObjective
+
+        class Objective(TempObjective):
+            name = "test-objective"
+            sampling_strategy = "run_once"
+            def evaluate_result(self, beta):
+                seed = self._dataset.get_seed()
+                print(f"#DATASET-SEED-IN-EVAL#{seed}")
+                return dict(value=1)
+    """
+    with temp_benchmark(objective=objective) as bench:
+        with CaptureCmdOutput() as out:
+            run([str(bench.benchmark_dir), "-d", "test-dataset",
+                 "--no-plot", "--no-cache"], standalone_mode=False)
+
+    out.check_output("#DATASET-SEED-IN-EVAL#", repetition=1)

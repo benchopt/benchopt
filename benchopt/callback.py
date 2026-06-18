@@ -52,6 +52,7 @@ class _Callback:
         self.solver = solver
         self.meta = meta
         self.stopping_criterion = stopping_criterion
+        self._last_result = None
 
         # Initialize local variables
         self.info = get_sys_info()
@@ -87,6 +88,7 @@ class _Callback:
         """
         self._last_it_log = self.it
         result = self.solver.get_result()
+        self._last_result = result
         objective_list = self.objective(result)
         self.curve.extend(dict(
             **self.meta, stop_val=self.it,
@@ -123,4 +125,4 @@ class _Callback:
                 self.log_value()
             # Update the status to done
             self.status = 'done'
-        return self.curve, self.status
+        return self.curve, self.status, self._last_result

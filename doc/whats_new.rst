@@ -7,8 +7,52 @@ What's new
 
 .. _dev:
 
-In development
---------------
+Version 1.10.0 -- In development
+--------------------------------
+
+API
+~~~
+
+- Custom plot ``options`` values can now be a callable taking the results
+  DataFrame as input and returning the list of possible values for the option.
+  By `Hippolyte Verninas`_ (:gh:`952`)
+
+- Add ``get_run_output_path`` method to all benchmark components (``Dataset``,
+  ``Objective``, ``Solver``). It returns a directory unique to the current
+  (dataset/objective/solver/repetition) run, to save per-run artifacts such as
+  model checkpoints or diagnostic logs. See :ref:`run_artifacts` for usage
+  details. By `Thomas Moreau`_ (:gh:`961`)
+
+TST
+~~~
+
+- Improve test configuration for multi-task benchmarks:
+  ``test_config['dataset']['name']`` now accepts a list of dataset names.
+  Also flag solvers whose every ``test_solver_run`` variant was skipped, and
+  raise a clear error when no test dataset is configured.
+  By `Thomas Moreau`_ (:gh:`942`)
+
+- Add ``test_dataset_install`` test to check install of datasets and
+  make sure to install test_datasets when creating a test env.
+  By `Thomas Moreau`_ (:gh:`944`)
+
+FIX
+~~~
+
+- Fix single dataset benchmark test_dataset_names detection for test env
+  creation. By `Thomas moreau`_ (:gh:`951`)
+
+- Fix ``--profile`` parsing that was resulting in always activated profile.
+  By `Thomas Moreau`_ (:gh:`950`)
+
+- Fix error reporting when ``Solver.set_objective`` fails, which was
+  preventing the run to finish normally.
+  By `Thomas Moreau`_ (:gh:`949`)
+
+.. _changes_1_9_1:
+
+Version 1.9.1 -- 28/05/2026
+---------------------------
 
 CLI
 ~~~
@@ -27,20 +71,43 @@ API
   for a dataset. This method is cached, and some parameters of the class can
   be ignored for caching by specifying them in ``prepare_cache_ignore``.
   By `Thomas Moreau`_ (:gh:`912`)
-  
+
 - Add an API function for merging benchmark result files, similar to
   the ``benchopt merge`` command. By `Damien Lesens`_ (:gh:`916`)
+
+- Add ``'image'`` plot type to display images and per-iteration frame
+  animations (as animated GIFs) in the HTML result page. Return a list of
+  dicts with ``"image"`` (a NumPy array or a list of arrays) and an optional
+  ``"label"`` key from :meth:`BasePlot.plot`.
+  By `Thomas Moreau`_ (:gh:`923`)
+
+- Non-primitive objective values (NumPy arrays, etc.) can now be serialized
+  into the parquet result file using ``safetensors`` and safe pickler.
+  By `Thomas Moreau`_ (:gh:`923`, :gh:`934`)
+
+- New metadata plot options.
+  By `Hippolyte Verninas`_ (:gh:`920`, :gh:`928` & :gh:`932`)
+
+- Repetitions are now parallelised by default when submitting runs with a parallel backend.
+  By `Hippolyte Verninas`_ and `Thomas Moreau`_ (:gh:`860`)
+
+- Make `get_one_result` optional, to make it easier to have a first working
+  benchmark without having to implement it.
+  By `Thomas Moreau`_ (:gh:`933`)
 
 DOC
 ~~~
 
 - Improve documentation on extenging a benchmark and on using benchopt
   with various programming languages. see :ref:`solver_languages`
-  and :ref:`extend_benchmark` for more details.
-  By `Thomas Moreau`_ (:gh:`905`)
+  and :ref:`write_benchmark` for more details.
+  By `Thomas Moreau`_ (:gh:`905`, :gh:`933`)
 
 - Add a gallery of examples for ``benchopt``, with easy to explore
   benchmark definition. By `Thomas Moreau`_ (:gh:`905`)
+
+- Make it possible to download the benchmark examples as a zip file from
+  the example gallery. By `Thomas Moreau`_ (:gh:`927`)
 
 FIX
 ~~~
@@ -49,6 +116,15 @@ FIX
   Also fix median computation for objective curve, to ensure the same
   number of points for all solvers even when one stops earlier.
   By `Thomas Moreau`_ (:gh:`904`)
+
+- Fix boxplot displays when encountering NaN values, and improved the matplotlib
+  backend to display the boxplots. By `Hippolyte Verninas`_ (:gh:`921` & :gh:`913`)
+
+- When passing un-supported extension to ``--output``, benchopt now fallback
+  to parquet and raise a warning instead of an error. By `Thomas Moreau`_ (:gh:`926`)
+
+- Fix ``save_last_result`` behavior when using cache results.
+  By `Thomas Moreau`_ (:gh:`931`)
 
 .. _changes_1_9:
 

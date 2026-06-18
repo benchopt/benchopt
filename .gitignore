@@ -19,7 +19,7 @@ benchopt_front_page_convergence.pdf
 
 # Package directory
 /html/
-/build/
+**/build/
 /dist/
 
 # Benchmarks&results cloned for running tests/examples

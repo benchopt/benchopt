@@ -1,5 +1,9 @@
+import warnings
+
 import pandas as pd
 from pathlib import Path
+
+from .parquet import to_parquet, unpack, PICKLE_PREFIX, ST_PREFIX
 
 from .files_utils import uniquify_fname
 from ..utils.terminal_output import TerminalOutput
@@ -39,6 +43,16 @@ def read_results(path):
             pd.to_datetime(path.stat().st_ctime, unit='s')
             .isoformat()
         )
+    # Auto-unpack objective columns that were packed at write time.
+    _PREFIXES = (PICKLE_PREFIX, ST_PREFIX)
+    for col in df.columns:
+        if df[col].dtype == object:
+            data = df[col].dropna()
+            first = data.iloc[0] if not data.empty else None
+            if isinstance(first, bytes) and first.startswith(_PREFIXES):
+                df[col] = df[col].map(
+                    lambda v: v if v is None else unpack(v)
+                )
     return df
 
 
@@ -65,22 +79,20 @@ def save_results(df, path, uniquify=True):
         df["run_date"] = pd.Timestamp.now().isoformat()
 
     path = Path(path)
-    if path.suffix == "":
+    if path.suffix not in [".parquet", ".csv"]:
+        if path.suffix != "":
+            warnings.warn(
+                f"Unsupported file format: {path.suffix}. "
+                "Only .parquet and .csv files are supported. "
+                "Defaulting to parquet."
+            )
         path = path.with_suffix(".parquet")
     if uniquify:
         path = uniquify_fname(path)
     if path.suffix == '.parquet':
-        try:
-            df.to_parquet(path, index=False)
-            terminal.savefile_status(path)
-            return path
-        except Exception:
-            import warnings
-            warnings.warn(
-                f"Failed to save results in parquet format at {path}. "
-                "Falling back to csv format."
-            )
-            path = path.with_suffix('.csv')
+        to_parquet(df, path)
+        terminal.savefile_status(path)
+        return path
     if path.suffix == '.csv':
         df.to_csv(path, index=False)
         terminal.savefile_status(path)

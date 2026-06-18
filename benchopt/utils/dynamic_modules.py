@@ -3,10 +3,12 @@
 from abc import ABCMeta
 import ast
 import sys
+import inspect
 import hashlib
 import warnings
 import importlib
 from pathlib import Path
+from contextlib import contextmanager
 
 try:
     # compat with older joblib version prior to 1.6
@@ -34,6 +36,17 @@ def _unskip_import():
     SKIP_IMPORT = False
 
 
+@contextmanager
+def skip_import_ctx(skip=True):
+    """Context manager: parse class metadata from AST instead of importing."""
+    if skip:
+        skip_import()
+    try:
+        yield
+    finally:
+        _unskip_import()
+
+
 class FailedImport(ABCMeta):
     """MetaClass for fake classes mimicking components that cannot be imported.
 
@@ -41,7 +54,9 @@ class FailedImport(ABCMeta):
     checked and to have an informative representation.
     """
     def __repr__(cls):
-        return f"<FailedImport: {cls.cls_name}({cls.name})|| Exc: [{cls.exc}]>"
+        return (
+            f"<FailedImport: {cls.cls_name}({cls.name})|| Exc: [{cls._exc}]>"
+        )
 
 
 def _get_module_from_file(module_filename, benchmark_dir=None):
@@ -118,9 +133,9 @@ def _load_class_from_module(benchmark_dir, module_filename, class_name):
                     metaclass=FailedImport):
             "Object for the class list that raises error if used."
 
-            exc = e
+            _exc = e
             _error_displayed = False
-            _set_cls_attr_from_ast(module_filename, class_name, locals())
+            _set_cls_attr_from_ast(module_filename, base_cls, locals())
             cls_name = class_name
 
             @classmethod
@@ -134,7 +149,7 @@ def _load_class_from_module(benchmark_dir, module_filename, class_name):
                     )
                 if not SKIP_IMPORT:
                     if raise_on_not_installed:
-                        raise cls.exc
+                        raise cls._exc
                     if not cls._error_displayed and not quiet:
                         print(
                             f"Failed to import {class_name} from "
@@ -216,18 +231,19 @@ def _reconstruct_class(
     return _load_class_from_module(benchmark_dir, module_filename, class_name)
 
 
-def _set_cls_attr_from_ast(module_file, cls_name, ctx):
+def _set_cls_attr_from_ast(module_file, base_cls, ctx):
     module = ast.parse(module_file.read_text())
     name = f"{module_file.stem}"
+    cls_name = base_cls._base_class_name
 
     cls_list = [node for node in module.body if isinstance(node, ast.ClassDef)
                 and node.name == cls_name]
     if not cls_list:
-        exc = ValueError(
+        _exc = ValueError(
             f"Could not find {cls_name} in module {module_file}."
         )
-        exc.__cause__ = ctx['exc']
-        ctx['exc'] = exc
+        _exc.__cause__ = ctx['_exc']
+        ctx['_exc'] = _exc
         ctx['name'] = name
         return
     cls = cls_list[0]
@@ -242,22 +258,28 @@ def _set_cls_attr_from_ast(module_file, cls_name, ctx):
     ]
 
     ctx['_base_class_name'] = cls_name
-    ctx['name'], ctx['install_cmd'], ctx['requirements'] = None, "conda", []
+    ctx.update({
+        p.name: p.object for p in inspect.classify_class_attrs(base_cls)
+        if p.kind == 'data' and not p.name.startswith('_')
+        and p.name not in ['name', 'install_cmd_']
+    })
+
+    ctx['name'] = None
     for node in cls.body:
         if isinstance(node, ast.Assign):
             for target in node.targets:
-                if target.id in ["name", "requirements", "install_cmd"]:
+                if target.id in ctx:
                     try:
                         ctx[target.id] = ast.literal_eval(node.value)
                     except Exception:
                         if target.id == "name":
-                            exc = ValueError(
+                            _exc = AttributeError(
                                 f"Could not evaluate the name of the class "
                                 f"{cls_name} in module {module_file}.\n"
                                 f"The name should be a string literal."
                             )
-                            exc.__cause__ = ctx['exc']
-                            ctx['exc'] = exc
+                            _exc.__cause__ = ctx['_exc']
+                            ctx['_exc'] = _exc
                             ctx['name'] = name
                         else:
                             msg = (
@@ -267,7 +289,9 @@ def _set_cls_attr_from_ast(module_file, cls_name, ctx):
                                 "If dynamic evaluation is necessary, use "
                                 "`safe_import_context`."
                             )
-                            def raise_err(self, msg=msg): raise ValueError(msg)
+
+                            def raise_err(self, msg=msg):
+                                raise AttributeError(msg)
                             ctx[target.id] = classproperty(raise_err)
         if isinstance(node, ast.FunctionDef):
             if node.name in known_methods:

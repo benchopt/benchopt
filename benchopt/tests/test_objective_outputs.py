@@ -89,39 +89,33 @@ def test_objective_no_value(no_debug_log):
         out.check_output("done")
 
 
-def test_objective_nonnumeric_values(no_debug_log):
-    # Check that non-numerical values in objective do not raise error
-    # in saving and generating the plots.
+@pytest.mark.parametrize("nonnumeric", [
+    "d=dict(test_acc=0, b='dsf', c=[0, 1, 2])",
+    "frame=np.zeros((4, 4))",
+    "l=[dict(a=0), dict(c=1)]"
+], ids=["dict", "np.array", "list[dict]"])
+def test_objective_nonnumeric_values(no_debug_log, nonnumeric):
+    # Non-primitive objective values (dicts, numpy arrays) are serialized
+    # inline into the parquet file via pack()/unpack().
 
-    objective = """from benchopt.utils.temp_benchmark import TempObjective
+    objective = f"""from benchopt.utils.temp_benchmark import TempObjective
+        import numpy as np
 
         class Objective(TempObjective):
             name = "test_obj"
             def evaluate_result(self, beta):
-                return dict(value=1, test_obj={})
+                return dict(
+                    value=1, {nonnumeric}
+                )
     """
-    msg = "Failed to save results in parquet"
 
     with temp_benchmark(objective=objective) as bench:
-        with CaptureCmdOutput() as out, pytest.warns(UserWarning, match=msg):
+        with CaptureCmdOutput(delete_result_files=False) as out:
             run(
                 f"{bench.benchmark_dir} -d test-dataset -n 1 --no-plot"
                 .split(), standalone_mode=False
             )
-
-        assert out.result_files[0].endswith('.csv')
-
-    objective = objective.replace(
-        "test_obj={}", "test_obj={'a':0, 'b': 1.0, 'c': '', 'd': {}}"
-    )
-    with temp_benchmark(objective=objective) as bench:
-        with CaptureCmdOutput() as out, pytest.warns(UserWarning, match=msg):
-            run(
-                f"{bench.benchmark_dir} -d test-dataset -n 1 --no-plot"
-                .split(), standalone_mode=False
-            )
-
-        assert out.result_files[0].endswith('.csv')
+        assert out.result_files[0].endswith('.parquet')
 
 
 @pytest.mark.parametrize("n_rep", [1, 3])
@@ -146,7 +140,7 @@ def test_objective_multiple_points(n_rep, n_it):
             )
         df = read_results(out.result_files[0])
 
-    assert len(df) == n_out * n_rep * (n_it+1), out.output
+    assert len(df) == n_out * n_rep * (n_it+1), out.raw_output
     assert df['objective_value'].unique().tolist() == [0, 1, 2]
     assert df['idx_rep'].unique().tolist() == list(range(n_rep))
     assert df['stop_val'].unique().tolist() == [0, 1, 2, 4][:n_it + 1]

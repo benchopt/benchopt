@@ -84,7 +84,6 @@ doc = [
 ]
 submitit = [
   "submitit",
-  "rich",
 ]
 dask = [
   "coiled",
@@ -124,7 +123,8 @@ ignore = [
   "continuous_integration/*",
   "Makefile",
   "roadmap.md",
-  "benchopt/version.py"
+  "benchopt/version.py",
+  "benchopt/tests/dummy_package/build/**",
 ]
 
 [tool.coverage.run]

@@ -1,8 +1,11 @@
+import warnings
+import traceback
+
 import matplotlib.pyplot as plt
 import numpy as np
 
+from .image_utils import _is_array
 from .helpers import update_plot_data_style
-import warnings
 
 
 def get_figures(benchmark, df, output_dir, kinds):
@@ -33,6 +36,8 @@ def get_plot_figure(plot_datas, output_dir):
                 UserWarning
             )
             continue
+        elif plot_data["type"] == "image":
+            fig = get_plot_image(plot_data)
         else:
             raise NotImplementedError(
                 f"Plot type {plot_data['type']} "
@@ -49,25 +54,46 @@ def get_plot_figure(plot_datas, output_dir):
 def get_plot_scatter(plot_data):
     fig = plt.figure()
     for curve_data in plot_data["data"]:
-        plt.loglog(
-            curve_data["x"], curve_data["y"], color=curve_data["color"],
-            marker=curve_data["marker"], label=curve_data["label"],
+        plt.plot(
+            curve_data["x"], curve_data["y"],
+            color=curve_data["color"],
+            marker=curve_data["marker"],
+            label=curve_data["label"],
             linewidth=3
         )
 
-        if "x_low" in curve_data and "x_high" in curve_data:
+        if "y_low" in curve_data and "y_high" in curve_data:
+            y_low = curve_data["y_low"]
+            y_high = curve_data["y_high"]
+            plt.fill_between(
+                curve_data["x"], y_low, y_high,
+                color=curve_data["color"],
+                alpha=.3
+            )
+        elif "x_low" in curve_data and "x_high" in curve_data:
             x_low = curve_data["x_low"]
             x_high = curve_data["x_high"]
             plt.fill_betweenx(
-                curve_data["y"], x_low, x_high, color=curve_data["color"],
+                curve_data["y"], x_low, x_high,
+                color=curve_data["color"],
                 alpha=.3
             )
+
+    plot_scale = plot_data.get("scale", "loglog")
+    if plot_scale == "semilog-x":
+        plt.xscale("log")
+    elif plot_scale == "semilog-y":
+        plt.yscale("log")
+    elif plot_scale == "loglog":
+        plt.xscale("log")
+        plt.yscale("log")
 
     # Format the plot to be nice
     plt.legend(fontsize=14)
     plt.xlabel(plot_data["xlabel"], fontsize=14)
     plt.ylabel(plot_data["ylabel"], fontsize=14)
     plt.title(plot_data["title"], fontsize=14)
+    plt.grid(plot_data.get("grid", True), axis="both", ls="--", lw=0.5)
     plt.tight_layout()
 
     return fig
@@ -118,6 +144,7 @@ def get_plot_barchart(plot_data):
     ax.set_xlim(0, 1)
     ax.set_ylabel(plot_data["ylabel"])
     ax.set_title(plot_data["title"], fontsize=12)
+    plt.grid(plot_data.get("grid", True), axis="y", ls="--", lw=0.5)
     fig.tight_layout()
 
     return fig
@@ -142,8 +169,9 @@ def get_plot_boxplot(plot_data):
             data["y"],
             positions=positions,
             label=data["label"],
+            widths=plot_data.get("box_width", 0.6),
             patch_artist=True,
-            showfliers=False,
+            showfliers=plot_data.get("showfliers", False)
         )
 
         color = data["color"]
@@ -160,6 +188,7 @@ def get_plot_boxplot(plot_data):
     ax.set_xticks(range(len(all_labels)), all_labels, rotation=45)
     ax.set_title(plot_data["title"])
     ax.set_ylabel(plot_data["ylabel"])
+    plt.grid(plot_data.get("grid", True), axis="y", ls="--", lw=0.5)
 
     # Plot unique labels in the legend
     handles, labels = ax.get_legend_handles_labels()
@@ -172,4 +201,54 @@ def get_plot_boxplot(plot_data):
 
     fig.tight_layout()
 
+    return fig
+
+
+def get_plot_image(plot_data):
+    images = plot_data["data"]
+    n = len(images)
+    ncols = plot_data.get("ncols", min(n, 3))
+    nrows = max(1, (n + ncols - 1) // ncols)
+
+    fig, axes = plt.subplots(nrows, ncols, figsize=(4 * ncols, 4 * nrows),
+                             squeeze=False)
+
+    for idx, item in enumerate(images):
+        ax = axes[idx // ncols][idx % ncols]
+        ax.set_title(item.get("label", ""), fontsize=10)
+        ax.axis("off")
+
+        image = item.get("image")
+        # List of frames (animated sequence) → use last frame
+        if isinstance(image, list) and image and _is_array(image[0]):
+            arr = np.asarray(image[-1])
+        elif _is_array(image):
+            arr = np.asarray(image)
+        else:
+            arr = None
+        try:
+            if arr is not None:
+                arr = np.clip(arr, 0, 1)
+                cmap = "gray" if arr.ndim == 2 else None
+                ax.imshow(arr, cmap=cmap, vmin=0, vmax=1)
+            elif image is None:
+                ax.set_title("")  # Hide everything if no image provided
+            else:
+                raise ValueError(f"Incompatible image data: {type(image)}")
+        except Exception:
+            label = item.get("label", "No label").split("\n")[0]
+            print(f"\n\nError rendering image '{label}':\n")
+            traceback.print_exc()
+            ax.text(
+                0.5, 0.5, "Incompatible image data",
+                ha="center", va="center", fontsize=12
+            )
+            print('-' * 30 + "\n")
+
+    # Hide unused axes
+    for idx in range(n, nrows * ncols):
+        axes[idx // ncols][idx % ncols].axis("off")
+
+    fig.suptitle(plot_data.get("title", ""), fontsize=14)
+    fig.tight_layout()
     return fig

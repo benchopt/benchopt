@@ -99,7 +99,7 @@ def test_backend_collect(backend):
                     f"{cmd} --collect --parallel-config {parallel_config_file}"
                     .split(), standalone_mode=False
                 )
-    out.check_output("test-solver:", repetition=1)
+            out.check_output("test-solver:", repetition=1)
 
 
 def test_dask_backend():
@@ -115,12 +115,11 @@ def test_dask_backend():
 
     class Solver(TempSolver):
         name = "solver1"
-        def get_result(self):
+        def run(self, _):
             from distributed import get_client
             client = get_client()
             assert "Client-worker" in client.id, client.id
             print(client.id)
-            return {"beta": 1}
     """
 
     with temp_benchmark(

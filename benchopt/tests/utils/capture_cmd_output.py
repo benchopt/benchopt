@@ -1,3 +1,4 @@
+import os
 import re
 from pathlib import Path
 
@@ -18,6 +19,20 @@ OUTPUT_FILES_PATTERN = [
 ]
 
 
+def clean_output(output):
+    """Normalize captured output for pattern matching.
+
+    Unify line endings (so no stray '\\r' leaks into matches, e.g. captured
+    paths on Windows) and strip ANSI color codes. The raw output is kept
+    separately for display so colors and terminal rendering are preserved.
+    """
+    output = output.replace('\r\n', '\n').replace('\r', '\n')
+    for c in range(30, 38):
+        output = output.replace(f"\033[1;{c}m", "")
+    output = output.replace("\033[0m", "")
+    return output
+
+
 class CaptureCmdOutput(object):
     "Context to capture run cmd output and files."
 
@@ -36,6 +51,15 @@ class CaptureCmdOutput(object):
         return self.output_checker.output
 
     @property
+    def raw_output(self):
+        if self.output_checker is None:
+            raise RuntimeError(
+                "Output not available yet, it will be available after "
+                "the context manager is exited."
+            )
+        return self.output_checker.raw_output
+
+    @property
     def result_files(self):
         if self.output_checker is None:
             raise RuntimeError(
@@ -48,7 +72,7 @@ class CaptureCmdOutput(object):
         return (
             "CaptureCmdOutput(\n"
             f"    result_files={self.result_files}\n"
-            f"    output=\"\"\"\n{self.output})\n\"\"\"\n"
+            f"    output=\"\"\"\n{self.raw_output})\n\"\"\"\n"
             ")"
         )
 
@@ -59,12 +83,25 @@ class CaptureCmdOutput(object):
         e = get_memmapping_executor(2)
         e.shutdown()
 
+        # Force a wide virtual terminal for pytest to avoid truncation.
+        self._prev_columns = None
+        if "PYTEST_CURRENT_TEST" in os.environ:
+            self._prev_columns = os.environ.get("COLUMNS")
+            os.environ["COLUMNS"] = "1000"
+
         # Redirect the stdout/stderr fd to temp file
         self.out.__enter__()
         return self
 
     def __exit__(self, exc_class, value, traceback):
         self.out.__exit__(None, None, None)
+
+        # Restore the original COLUMNS env var if it was set
+        if "PYTEST_CURRENT_TEST" in os.environ:
+            if self._prev_columns is None:
+                os.environ.pop("COLUMNS", None)
+            else:
+                os.environ["COLUMNS"] = self._prev_columns
 
         self.output_checker = BenchoptCmdOutputProcessor(
             self.out.output, self.delete_result_files
@@ -75,7 +112,7 @@ class CaptureCmdOutput(object):
             if self.exit == value.args[0]:
                 suppressed = True
             else:
-                print(self.output)
+                print(self.raw_output)
                 raise value.with_traceback(traceback)
         elif self.exit is not None:
             raise RuntimeError(
@@ -85,17 +122,22 @@ class CaptureCmdOutput(object):
 
         # If there was an exception, display the output
         if not suppressed and exc_class is not None:
-            print(self.output_checker.output)
+            print(self.output_checker.raw_output)
 
         return suppressed
 
     def check_output(self, pattern, repetition=None):
-        self.output_checker.check_output(pattern, repetition)
+        return self.output_checker.check_output(pattern, repetition)
 
 
 class BenchoptCmdOutputProcessor:
     def __init__(self, output, delete_result_files=True):
-        self.output = output
+        # Keep the raw output for display (colors, terminal '\r' rendering) and
+        # a cleaned version for matching/parsing so every consumer (re.findall
+        # on `.output`, result-file parsing below, check_output) sees clean
+        # text.
+        self.raw_output = output
+        self.output = clean_output(output)
 
         # Make sure to delete all the result that created by the run command.
         self.result_files = []
@@ -119,22 +161,22 @@ class BenchoptCmdOutputProcessor:
             file.unlink()
 
     def check_output(self, pattern, repetition=None):
+        """Match `pattern` against the cleaned output and return the matches.
 
-        output = self.output.replace('\r\n', '\n').replace('\r', '\n')
-
-        # Remove color for matches
-        for c in range(30, 38):
-            output = output.replace(f"\033[1;{c}m", "")
-        output = output.replace("\033[0m", "")
-
-        matches = re.findall(pattern, output)
+        With a capture group, returns the captured values (like `re.findall`).
+        Asserts the pattern is present, or appears exactly `repetition` times
+        when `repetition` is given.
+        """
+        matches = re.findall(pattern, self.output)
 
         if repetition is None:
             assert len(matches) > 0, (
-                f"Could not find '{pattern}' in output:\n{output}"
+                f"Could not find '{pattern}' in output:\n{self.output}"
             )
         else:
             assert len(matches) == repetition, (
                 f"Found {len(matches)} repetitions instead of {repetition} of "
-                f"'{pattern}' in output:\n{output}"
+                f"'{pattern}' in output:\n{self.output}"
             )
+
+        return matches
