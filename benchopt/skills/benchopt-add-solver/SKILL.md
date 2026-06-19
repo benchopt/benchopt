@@ -95,10 +95,19 @@ catching `ImportError`**. Therefore:
 
 - **Import third-party deps at module top level** — never hide them in
   function-local imports.
+- **Never wrap an import in `try`/`except` with a fallback.** A silent fallback
+  lets the module import even when the dep is missing, so benchopt marks the
+  solver *installed* and the failure resurfaces — cryptically — at run time. Let
+  `ImportError` propagate.
 - Set `requirements` to exactly what this solver needs
   (`["pip::pkg"]` for pip, `["chan::pkg"]` for a conda channel).
+- **Keep `requirements` a literal list of strings** — benchopt reads it
+  *statically* (via `ast`, without importing the module), so a computed value
+  like `requirements = OtherSolver.requirements + ["pip::extra"]` is not
+  parsable.
 - Do **not** use `safe_import_context` except for class-body attributes
-  evaluated at definition time that reference an imported name.
+  evaluated at definition time that reference an imported name (e.g. a subclass
+  referencing a parent's imported symbols).
 
 ## test_parameters
 

@@ -70,10 +70,19 @@ benchopt detects installation by **importing the module and catching
 `ImportError`**:
 
 - **Import third-party deps at module top level**, never function-locally.
+- **Never wrap an import in `try`/`except` with a fallback.** A silent fallback
+  lets the module import even when the dep is missing, so benchopt marks the
+  dataset *installed* and the failure resurfaces — cryptically — at run time.
+  Let `ImportError` propagate.
 - Set `requirements` to exactly what this dataset needs (`["pip::pkg"]`,
   `["chan::pkg"]`).
+- **Keep `requirements` a literal list of strings** — benchopt reads it
+  *statically* (via `ast`, without importing the module), so a computed value
+  like `requirements = OtherDataset.requirements + ["pip::extra"]` is not
+  parsable.
 - Avoid `safe_import_context` except for class-body attributes evaluated at
-  definition time that reference an imported name.
+  definition time that reference an imported name (e.g. a subclass referencing a
+  parent's imported symbols).
 - Ship at least one zero-dependency `Simulated` dataset so the benchmark always
   has a no-install smoke test.
 
