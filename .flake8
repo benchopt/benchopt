@@ -1,4 +1,4 @@
 [flake8]
-exclude = benchmarks,__cache__,doc/,communication_materials/,results/,.venv/
+exclude = benchmarks,__cache__,doc/,communication_materials/,results/,.venv/,worktrees/
 per-file-ignores =
     examples/*: E402

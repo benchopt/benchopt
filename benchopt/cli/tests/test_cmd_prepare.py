@@ -184,7 +184,7 @@ class TestPrepareCmd:
         'use_objective=True', 'use_solver=True', 'use_repetition=True',
     ])
     def test_get_seed_non_dataset_raises(self, seed_arg):
-        """get_seed() depending on objective/solver/repetition fails in prepare.
+        """get_seed() depending on objective/solver/rep fails in prepare.
 
         These dimensions are unknown at preparation time, so prepare must fail
         with a clear error instead of the run_context-not-initialized error.
@@ -226,7 +226,7 @@ class TestPrepareCmd:
         assert seeds[0] != seeds[1]
 
     def test_cache_per_seed(self):
-        """Prepare is cached per-seed: same seed hits cache, new seed re-runs."""
+        """Prepare cached per-seed: same seed hits cache, new seed re-runs."""
         dataset = """from benchopt import BaseDataset
             class Dataset(BaseDataset):
                 name = "dataset"
