@@ -72,6 +72,15 @@ Do **not** call it at import time or during class definition — at that stage,
 the benchmark runner has not yet created the correct runtime context, and the
 seed has not been initialized.
 
+.. note::
+
+    When ``get_data`` is called by :ref:`benchopt prepare <prepare_datasets>`,
+    only the dataset is known. A ``Dataset`` may therefore only call
+    ``get_seed(use_dataset=True)`` from ``get_data``; requesting the objective,
+    solver or repetition seed raises an error, since these are not defined at
+    preparation time. Use the same ``--seed`` for ``prepare`` and ``run`` so the
+    prepared data matches the run.
+
 Examples
 ~~~~~~~~
 

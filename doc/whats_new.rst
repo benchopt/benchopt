@@ -39,6 +39,13 @@ TST
 FIX
 ~~~
 
+- Fix ``get_seed`` failing during ``benchopt prepare`` when a dataset's
+  ``get_data`` uses it. ``prepare`` now sets up a seeding context and accepts a
+  ``--seed`` option that is part of the preparation cache. Datasets whose
+  preparation does not depend on the seed can drop it from the cache key with
+  ``prepare_cache_ignore = ('base_seed',)``.
+  By `Thomas Moreau`_ (:gh:`962`)
+
 - Fix single dataset benchmark test_dataset_names detection for test env
   creation. By `Thomas moreau`_ (:gh:`951`)
 
