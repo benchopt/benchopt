@@ -2,6 +2,7 @@ import re
 import hashlib
 from pathlib import Path
 from dataclasses import dataclass, replace as dc_replace
+from .run_context_mixin import RunContextMixin
 
 
 def _sanitize_path_component(name):
@@ -34,24 +35,37 @@ class RunContext:
     # Config fields — set once per benchmark invocation
     run_output_base: Path | None = None
     pdb: bool = False
-    # Per-run fields — cloned/updated for each (dataset, obj, solver, rep)
+    # Per-run fields — cloned/updated for each (dataset, obj, solver, rep).
+    # A field left as None means the corresponding component is not available
+    # in this context (e.g. objective/solver/repetition during prepare) and
+    # requesting its seed raises a clear error in get_seed.
     base_seed: str = ""
-    objective_name: str = ""
-    dataset_name: str = ""
-    solver_name: str = ""
-    repetition: int = 0
+    objective_name: str | None = None
+    dataset_name: str | None = None
+    solver_name: str | None = None
+    repetition: int | None = None
 
     def get_seed(self, class_name, use_objective=False, use_dataset=False,
                  use_solver=False, use_repetition=False):
         """Compute a deterministic integer seed for a given component."""
+        repetition = None if self.repetition is None else str(self.repetition)
         use_flags = {
             "base_seed": (True, self.base_seed),
             "objective": (use_objective, self.objective_name),
             "dataset": (use_dataset, self.dataset_name),
             "solver": (use_solver, self.solver_name),
-            "repetition": (use_repetition, str(self.repetition)),
+            "repetition": (use_repetition, repetition),
             "class": (True, class_name.lower()),
         }
+        for component, (use, value) in use_flags.items():
+            if use and value is None:
+                raise ValueError(
+                    f"get_seed(use_{component}=True) was called but no "
+                    f"{component} is defined in the current run context. This "
+                    "happens for instance during `benchopt prepare`, where "
+                    "only the dataset is available. Make sure the seed only "
+                    "depends on components defined where get_seed() is called."
+                )
         hash_list = [v if use else "*" for use, v in use_flags.values()]
         digest = hashlib.sha256("_".join(hash_list).encode()).hexdigest()
         return int(digest, 16) % (2**32 - 1)
@@ -90,5 +104,5 @@ class RunContext:
     def attach(self, objective, dataset, solver):
         """Assign ctx to each run component."""
         for klass in [objective, dataset, solver]:
-            if klass is not None:
+            if isinstance(klass, RunContextMixin):
                 klass._run_context = self

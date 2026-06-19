@@ -404,8 +404,18 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
         return self._data
 
     @staticmethod
-    def _prepare(dataset):
-        """Preparation function, to map to prepare or get_data."""
+    def _prepare(dataset, base_seed=0):
+        """Preparation function, to map to prepare or get_data.
+
+        ``base_seed`` is part of the joblib cache key. Note that only
+        use_dataset is known at this point; requesting the objective/solver/
+        repetition seed raises an error.
+        """
+        from .utils.run_context import RunContext
+        RunContext(
+            base_seed=str(base_seed),
+            dataset_name=str(dataset),
+        ).attach(objective=None, dataset=dataset, solver=None)
         if type(dataset).prepare is not BaseDataset.prepare:
             dataset.prepare()
         else:
@@ -426,7 +436,7 @@ def _prepare_one(benchmark, dataset, force=False):
     cached_prepare = benchmark.cache(BaseDataset._prepare, force=force)
     print(f"Preparing {dataset} ...", end=' ', flush=True)
     try:
-        cached_prepare(dataset=dataset)
+        cached_prepare(dataset=dataset, base_seed=benchmark.seed)
         print("done")
     except Exception as e:
         print("FAILED")
