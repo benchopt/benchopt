@@ -255,6 +255,29 @@ class TestPrepareCmd:
                 )
             out.check_output("#PREPARED", repetition=1)
 
+    @pytest.mark.parametrize('ignore', ["('base_seed',)", "'all'"])
+    def test_cache_ignore_base_seed(self, ignore):
+        """prepare_cache_ignore can drop the seed from the prepare cache key."""
+        dataset = f"""from benchopt import BaseDataset
+            class Dataset(BaseDataset):
+                name = "dataset"
+                prepare_cache_ignore = {ignore}
+                def prepare(self): print('#PREPARED')
+                def get_data(self): return dict(X=0, y=1)
+        """
+        with temp_benchmark(datasets=dataset) as bench:
+            # A different seed must not invalidate the cache.
+            with CaptureCmdOutput() as out:
+                prepare_cmd(
+                    f"{bench.benchmark_dir} --seed 0".split(),
+                    'benchopt', standalone_mode=False
+                )
+                prepare_cmd(
+                    f"{bench.benchmark_dir} --seed 1".split(),
+                    'benchopt', standalone_mode=False
+                )
+            out.check_output("#PREPARED", repetition=1)
+
     def test_force_flag(self, tmp_path):
         """--force re-runs preparation even when cached."""
         with temp_benchmark(datasets=self.dataset) as bench:

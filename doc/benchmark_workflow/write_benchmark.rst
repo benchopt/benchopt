@@ -185,7 +185,8 @@ Optional features
 ~~~~~~~~~~~~~~~~~
 
 - :func:`~benchopt.BaseDataset.prepare`: expensive one-time setup (downloads,
-  extraction, preprocessing), cached by joblib.
+  extraction, preprocessing), cached by joblib. Default to ``get_data()`` if
+  not implemented.
   See :ref:`prepare_datasets` for details and usage.
 - **Custom data paths**: expose configurable file paths to benchmark users via
   :func:`benchopt.config.get_data_path`. See :ref:`data_paths` for

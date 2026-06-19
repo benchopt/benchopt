@@ -340,7 +340,9 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
         deduplication when running preparation in parallel.
         Use the special value ``"all"`` to ignore every parameter (i.e.
         preparation runs at most once per dataset class regardless of
-        parameterization).
+        parameterization). The reserved name ``"base_seed"`` (also implied by
+        ``"all"``) drops the benchmark ``--seed`` from the prepare cache key,
+        for datasets whose preparation does not depend on the seed.
     """
 
     _base_class_name = 'Dataset'
@@ -368,6 +370,17 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
               class Dataset(BaseDataset):
                   parameters = {'n_samples': [100, 1000], 'seed': [0, 1, 2]}
                   prepare_cache_ignore = ('seed',)  # 2 calls instead of 6
+        - The benchmark ``--seed`` is part of the prepare cache key, so
+          preparing with a different seed re-runs preparation. Pass the same
+          ``--seed`` to ``benchopt prepare`` and ``benchopt run`` so the
+          prepared data matches the run. If preparation does not depend on the
+          seed, drop it from the cache key with
+          ``prepare_cache_ignore = ('base_seed',)`` (also implied by ``"all"``).
+        - At preparation time only the dataset is known, so ``get_seed`` (in
+          ``prepare`` or in the ``get_data`` it triggers) may only be called
+          with ``use_dataset=True``. Requesting the objective, solver or
+          repetition seed raises a ``ValueError``, as they are not yet defined.
+          See :ref:`controlling_randomness`.
         """
         pass
 
@@ -433,7 +446,16 @@ def _prepare_one(benchmark, dataset, force=False):
     success or the caught exception on failure.
     """
     exc = None
-    cached_prepare = benchmark.cache(BaseDataset._prepare, force=force)
+    # Datasets whose preparation does not depend on the seed can drop it from
+    # the cache key by listing 'base_seed' in prepare_cache_ignore,
+    # handle this separately.
+    cache_ignore = getattr(type(dataset), 'prepare_cache_ignore', ())
+    ignore = ['base_seed'] if (
+        cache_ignore == "all" or 'base_seed' in cache_ignore
+    ) else None
+    cached_prepare = benchmark.cache(
+        BaseDataset._prepare, ignore=ignore, force=force
+    )
     print(f"Preparing {dataset} ...", end=' ', flush=True)
     try:
         cached_prepare(dataset=dataset, base_seed=benchmark.seed)
