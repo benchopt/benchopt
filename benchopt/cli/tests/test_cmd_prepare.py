@@ -257,7 +257,7 @@ class TestPrepareCmd:
 
     @pytest.mark.parametrize('ignore', ["('base_seed',)", "'all'"])
     def test_cache_ignore_base_seed(self, ignore):
-        """prepare_cache_ignore can drop the seed from the prepare cache key."""
+        """prepare_cache_ignore drop the seed from the prepare cache key."""
         dataset = f"""from benchopt import BaseDataset
             class Dataset(BaseDataset):
                 name = "dataset"

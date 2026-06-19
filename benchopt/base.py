@@ -374,8 +374,8 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
           preparing with a different seed re-runs preparation. Pass the same
           ``--seed`` to ``benchopt prepare`` and ``benchopt run`` so the
           prepared data matches the run. If preparation does not depend on the
-          seed, drop it from the cache key with
-          ``prepare_cache_ignore = ('base_seed',)`` (also implied by ``"all"``).
+          seed, it can be ignored adding ``base_seed`` in
+          ``prepare_cache_ignore`` (included in ``"all"``).
         - At preparation time only the dataset is known, so ``get_seed`` (in
           ``prepare`` or in the ``get_data`` it triggers) may only be called
           with ``use_dataset=True``. Requesting the objective, solver or
