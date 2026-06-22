@@ -51,7 +51,7 @@ class ObjectiveCurvePlot(BasePlot):
                 **self.get_style(solver)
             }
 
-            if X_axis == "Time":
+            if X_axis == "Time" and df_filtered['idx_rep'].nunique() > 1:
                 # Compute the quantiles for runtime
                 q = (
                     df_filtered.groupby('stop_val')['time'].quantile([.2, .8])
