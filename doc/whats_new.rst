@@ -17,6 +17,16 @@ PLOT
   By `Hippolyte Verninas`_ (:gh:`964`)
 
 
+PLOT
+~~~~
+
+- Quantile toggle is now hidden if no quantiles are available
+  By `Hippolyte Verninas`_ (:gh:`964`)
+
+- Improve the html report table, now rendered with `Grid.js
+  <https://gridjs.io/>`_: sortable by any column, filter by solver name,
+  hide/show any columns. By `Hippolyte Verninas`_ (:gh:`953`)
+
 API
 ~~~
 

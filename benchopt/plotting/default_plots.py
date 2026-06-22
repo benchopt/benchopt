@@ -244,4 +244,6 @@ class TablePlot(BasePlot):
         return {
             "title": f"{objective}\nData: {dataset}",
             "columns": columns,
+            "default_order_ascending": True,
+            "default_order_column": 0,
         }
