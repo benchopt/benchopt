@@ -10,6 +10,13 @@ What's new
 Version 1.10.0 -- in development
 --------------------------------
 
+PLOT
+~~~~
+
+- Improve the html report table, now rendered with `Grid.js
+  <https://gridjs.io/>`_: sortable by any column, filter by solver name,
+  hide/show any columns. By `Hippolyte Verninas`_ (:gh:`953`)
+
 API
 ~~~
 
