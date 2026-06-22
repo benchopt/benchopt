@@ -7,7 +7,7 @@ What's new
 
 .. _dev:
 
-Version 1.10.0 -- In development
+Version 1.10.0 -- in development
 --------------------------------
 
 API
@@ -16,6 +16,11 @@ API
 - Custom plot ``options`` values can now be a callable taking the results
   DataFrame as input and returning the list of possible values for the option.
   By `Hippolyte Verninas`_ (:gh:`952`)
+  
+- Add ``param=all`` shorthand to sweep every valid value of a parameter,
+  e.g. ``-d "Foo[x=all]"``. The valid values are declared per class through
+  the ``get_all_parameter_values`` classmethod, and are also listed
+  by ``benchopt info -v``. By `Eduardo Montesuma`_ (:gh:`941`)
 
 - Add ``get_run_output_path`` method to all benchmark components (``Dataset``,
   ``Objective``, ``Solver``). It returns a directory unique to the current
