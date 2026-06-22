@@ -552,6 +552,45 @@ const exportHTML = () => {
   return downloadBlob(blob, location.pathname.split("/").pop());
 };
 
+const exportPDF = () => {
+  // Same div renderPlot() drew into: legend container for scatter, else the
+  // plain plot container.
+  const plot = document.getElementById(
+    isChart('scatter') ? 'plot_with_legend_container' : 'plot_container');
+  const width = plot.layout.width || plot.clientWidth;
+  const height = plot.layout.height || plot.clientHeight;
+  const filename = state().objective + '_' + state().dataset + '_'
+    + state().objective_column + '_' + state().plot_kind;
+
+  // Print the vector SVG to PDF with the browser's own renderer (svg2pdf
+  // mangles the axes; the browser renders the SVG faithfully). The user picks
+  // "Save as PDF" in the print dialog.
+  Plotly.toImage(plot, {format: 'svg', width: width, height: height})
+    .then(dataUrl => {
+      const svgString = decodeURIComponent(dataUrl.split(',')[1]);
+      const frame = document.createElement('iframe');
+      frame.style.cssText = 'position:fixed;width:0;height:0;border:0;';
+      document.body.appendChild(frame);
+
+      const doc = frame.contentWindow.document;
+      doc.open();
+      doc.write(
+        '<!DOCTYPE html><html><head><title>' + filename + '</title><style>'
+        + '@page { size: ' + width + 'pt ' + height + 'pt; margin: 0 }'
+        + 'html, body { margin: 0 } svg { display: block }'
+        + '</style></head><body>' + svgString + '</body></html>');
+      doc.close();
+
+      const win = frame.contentWindow;
+      win.onafterprint = () => frame.remove();
+      win.focus();
+      win.print();
+    })
+    .catch(err => console.error('PDF export failed:', err));
+
+  return false;
+};
+
 /*
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * LEFT SIDEBAR MANAGEMENT
