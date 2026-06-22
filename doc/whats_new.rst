@@ -13,6 +13,9 @@ Version 1.10.0 -- in development
 PLOT
 ~~~~
 
+- Change the plotly style to make it more like matplotlib.
+  By `Hippolyte Verninas`_ (:gh:`9566`)
+
 - Improve the html report table, now rendered with `Grid.js
   <https://gridjs.io/>`_: sortable by any column, filter by solver name,
   hide/show any columns. By `Hippolyte Verninas`_ (:gh:`953`)
@@ -23,7 +26,7 @@ API
 - Custom plot ``options`` values can now be a callable taking the results
   DataFrame as input and returning the list of possible values for the option.
   By `Hippolyte Verninas`_ (:gh:`952`)
-  
+
 - Add ``param=all`` shorthand to sweep every valid value of a parameter,
   e.g. ``-d "Foo[x=all]"``. The valid values are declared per class through
   the ``get_all_parameter_values`` classmethod, and are also listed
