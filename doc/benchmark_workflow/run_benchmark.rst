@@ -40,7 +40,9 @@ Preparation is triggered by the dedicated command::
 Benchopt calls the :func:`~benchopt.BaseDataset.prepare()` method of every
 dataset and caches the result with `joblib`, so re-running the command is a
 no-op when nothing has changed. Use ``--force`` to bypass the cache and re-run
-preparation unconditionally.
+preparation unconditionally. Note that for datasets that rely on
+:ref:`seeding <controlling_randomness>`, the same ``--seed`` must be passed to
+``prepare`` and ``run`` so the prepared data matches the run.
 
 Preparation can also be parallelised across datasets using the same options as
 :ref:`benchopt run <parallel_run>`.

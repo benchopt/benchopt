@@ -427,8 +427,14 @@ def run(config_file=None, **kwargs):
               shell_complete=complete_conda_envs,
               help="Run preparation in the conda environment "
               "named <env_name>.")
+@click.option('--seed',
+              metavar="<seed>", type=int, default=None,
+              help="Seed to control the stochasticity of the data "
+              "preparation. Use the same seed as `benchopt run` to make sure "
+              "the prepared data matches the one used during the run.")
 def prepare(benchmark, dataset_names, config_file=None,
-            force=False, n_jobs=None, parallel_config=None, env_name='False'):
+            force=False, n_jobs=None, parallel_config=None, env_name='False',
+            seed=None):
 
     if config_file is not None:
         with open(config_file, "r") as f:
@@ -436,7 +442,7 @@ def prepare(benchmark, dataset_names, config_file=None,
         if not dataset_names:
             dataset_names = config.get("dataset", tuple())
 
-    benchmark = Benchmark(benchmark)
+    benchmark = Benchmark(benchmark, seed=seed)
 
     # Resolve env name (same logic as install)
     if env_name == 'False':

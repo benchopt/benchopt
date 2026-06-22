@@ -38,16 +38,17 @@ class TestGenerateResultCmd:
                 '--root', str(self.bench.benchmark_dir.parent), '--no-display'
             ], 'benchopt', standalone_mode=False)
 
-        assert len(out.result_files) == 2 + len(self.result_files), out.output
+        assert len(out.result_files) == 2 + len(self.result_files), \
+            out.raw_output
         html_index = [f for f in out.result_files if 'index' in f]
         html_benchmark = [
             f for f in out.result_files
             if f"{self.bench.benchmark_dir.name}.html" in f
         ]
         html_results = [f for f in out.result_files if 'out' in f]
-        assert len(html_index) == 1, out.output
-        assert len(html_benchmark) == 1, out.output
-        assert len(html_results) == len(self.result_files), out.output
+        assert len(html_index) == 1, out.raw_output
+        assert len(html_benchmark) == 1, out.raw_output
+        assert len(html_results) == len(self.result_files), out.raw_output
         for f in self.result_files:
             basename = Path(f).stem
             assert any(basename in res for res in html_results)

@@ -7,7 +7,7 @@ from benchopt.stopping_criterion import StoppingCriterion
 from benchopt.stopping_criterion import SAMPLING_STRATEGIES
 from benchopt.utils.dynamic_modules import _get_module_from_file
 from benchopt.utils.parametrized_name_mixin import get_configs
-from benchopt._generate_runs import _seed_run
+from benchopt.utils.run_context import RunContext
 
 
 def test_dataset_class(benchmark, dataset_class):
@@ -54,9 +54,10 @@ def test_dataset_get_data(benchmark, dataset_class):
     config = get_configs(dataset_class)[0]
     dataset = dataset_class.get_instance(**config['dataset'])
 
-    # ensure classes calling `get_seed` work properly
-    _seed_run(
-        objective=None, dataset=dataset, solver=None, repetition=0, base_seed=0
+    # ensure classes calling `get_seed` work properly. Use placeholder
+    # objective/solver names to mimic known dimension at runtime.
+    RunContext().set_run_context(
+        "dummy", dataset, "dummy", repetition=0, base_seed=0
     )
 
     data = dataset._get_data()
@@ -80,10 +81,10 @@ def test_benchmark_objective(benchmark, test_dataset_name):
     dataset = dataset_class.get_instance(**config['dataset'])
     objective = objective_class.get_instance(**config['objective'])
 
-    # ensure classes calling `get_seed` work properly
-    _seed_run(
-        objective=objective, dataset=dataset, solver=None,
-        repetition=0, base_seed=0
+    # ensure classes calling `get_seed` work properly. Use a placeholder
+    # solver name so all methods can use any seed dimension.
+    RunContext().set_run_context(
+        objective, dataset, "dummy", repetition=0, base_seed=0
     )
 
     # get one value for the objective, with the test_dataset
@@ -217,11 +218,11 @@ def test_solver_stopping_criterion(benchmark, solver_class, test_dataset_name):
             "'objective_'."
         )
 
-        # ensure classes calling `get_seed` work properly
+        # ensure classes calling `get_seed` work properly.
         dataset = dataset_class.get_instance(**config['dataset'])
-        _seed_run(
-            objective=objective, dataset=dataset, solver=None,
-            repetition=0, base_seed=benchmark.seed
+        RunContext().set_run_context(
+            objective, dataset, solver_class.name, repetition=0,
+            base_seed=benchmark.seed
         )
 
         objective._set_dataset(dataset)
@@ -259,9 +260,8 @@ def test_solver_run(
         dataset = dataset_class.get_instance(**config['dataset'])
         objective = objective_class.get_instance(**config['objective'])
         solver = solver_class.get_instance(**config['solver'])
-        _seed_run(
-            objective=objective, dataset=dataset, solver=solver,
-            repetition=0, base_seed=benchmark.seed
+        RunContext().set_run_context(
+            objective, dataset, solver, repetition=0, base_seed=benchmark.seed
         )
         objective._set_dataset(dataset)
         skip, reason = solver._set_objective(objective)

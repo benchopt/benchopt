@@ -7,7 +7,7 @@ What's new
 
 .. _dev:
 
-Version 1.10.0 -- In development
+Version 1.10.0 -- in development
 --------------------------------
 
 PLOT
@@ -23,6 +23,17 @@ API
 - Custom plot ``options`` values can now be a callable taking the results
   DataFrame as input and returning the list of possible values for the option.
   By `Hippolyte Verninas`_ (:gh:`952`)
+  
+- Add ``param=all`` shorthand to sweep every valid value of a parameter,
+  e.g. ``-d "Foo[x=all]"``. The valid values are declared per class through
+  the ``get_all_parameter_values`` classmethod, and are also listed
+  by ``benchopt info -v``. By `Eduardo Montesuma`_ (:gh:`941`)
+
+- Add ``get_run_output_path`` method to all benchmark components (``Dataset``,
+  ``Objective``, ``Solver``). It returns a directory unique to the current
+  (dataset/objective/solver/repetition) run, to save per-run artifacts such as
+  model checkpoints or diagnostic logs. See :ref:`run_artifacts` for usage
+  details. By `Thomas Moreau`_ (:gh:`961`)
 
 TST
 ~~~
@@ -39,6 +50,13 @@ TST
 
 FIX
 ~~~
+
+- Fix ``get_seed`` failing during ``benchopt prepare`` when a dataset's
+  ``get_data`` uses it. ``prepare`` now sets up a seeding context and accepts a
+  ``--seed`` option that is part of the preparation cache. Datasets whose
+  preparation does not depend on the seed can drop it from the cache key with
+  ``prepare_cache_ignore = ('base_seed',)``.
+  By `Thomas Moreau`_ (:gh:`962`)
 
 - Fix single dataset benchmark test_dataset_names detection for test env
   creation. By `Thomas moreau`_ (:gh:`951`)
