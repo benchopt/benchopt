@@ -13,12 +13,6 @@ Version 1.10.0 -- in development
 PLOT
 ~~~~
 
-- Quantile toggle is now hidden if no quantiles are available
-  By `Hippolyte Verninas`_ (:gh:`964`)
-
-
-PLOT
-~~~~
 
 - Quantile toggle is now hidden if no quantiles are available
   By `Hippolyte Verninas`_ (:gh:`964`)
