@@ -6,7 +6,7 @@
 
 ----
 
-|Test Status| |codecov| |Documentation| |Python 3.6+| |install-per-months| |discord| |SWH|
+|Test Status| |codecov| |Documentation| |Python 3.10+| |install-per-months| |discord| |SWH|
 
 ``Benchopt`` is a benchmarking suite tailored for machine learning workflows.
 It is built for simplicity, transparency, and reproducibility.
@@ -17,13 +17,13 @@ So far, ``benchopt`` has been tested with `Python <https://www.python.org/>`_,
 `R <https://www.r-project.org/>`_, `Julia <https://julialang.org/>`_
 and `C/C++ <https://isocpp.org/>`_ (compiled binaries with a command line interface).
 Programs available via `conda <https://docs.conda.io/en/latest/>`_ should be compatible as well.
-See for instance an `example of usage <https://benchopt.github.io/stable/auto_examples/plot_run_benchmark_python_R.html>`_ with ``R``.
+See, for instance, an `example of usage <https://benchopt.github.io/stable/auto_examples/run_r_solver.html>`_ with ``R``.
 
 
 Install
 -------
 
-It is recommended to use ``benchopt`` within a ``conda`` environment to fully-benefit
+It is recommended to use ``benchopt`` within a ``conda`` environment to fully benefit
 from ``benchopt`` Command Line Interface (CLI).
 
 
@@ -199,12 +199,10 @@ Available benchmarks
      - |Build Status SLOPE|
 
 
-
-
 .. |Test Status| image:: https://github.com/benchopt/benchopt/actions/workflows/test.yml/badge.svg
    :target: https://github.com/benchopt/benchopt/actions/workflows/test.yml
-.. |Python 3.6+| image:: https://img.shields.io/badge/python-3.6%2B-blue
-   :target: https://www.python.org/downloads/release/python-360/
+.. |Python 3.10+| image:: https://img.shields.io/badge/python-3.10%2B-blue
+   :target: https://www.python.org/downloads/release/python-3100/
 .. |Documentation| image:: https://img.shields.io/badge/documentation-latest-blue
    :target: https://benchopt.github.io
 .. |codecov| image:: https://codecov.io/gh/benchopt/benchopt/branch/main/graph/badge.svg

@@ -11,6 +11,8 @@
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300&display=swap" rel="stylesheet">
+        <!-- Used to render the table plots -->
+        <link href="https://cdn.jsdelivr.net/npm/gridjs@6.2.0/dist/theme/mermaid.min.css" rel="stylesheet">
 
         <title>Result on ${benchmark.pretty_name}</title>
 
@@ -425,6 +427,9 @@
         <textarea id="config_export" class="hidden"></textarea>
 
         <script src="https://cdn.plot.ly/plotly-2.12.1.min.js"></script>
+        <!-- Used to render the table plots -->
+        <script src="https://cdn.jsdelivr.net/npm/gridjs@6.2.0/dist/gridjs.umd.js"></script>
+        <!-- Used for PDF export -->
         <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
         <script src="https://unpkg.com/svg2pdf.js@2.2.3/dist/svg2pdf.umd.min.js"></script>
         <!-- Used for the brand animation -->

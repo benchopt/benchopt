@@ -1,57 +1,16 @@
-.. _ml_benchmark:
-
-Setting up an ML benchmark
-==========================
-
-Benchopt can be used to run benchmarks on machine learning problems. This page
-explains the specificities of setting up a benchmark in this context.
-
-To easily get started with a new ML benchmark, we recommend using the dedicated
-``benchopt``'s `ML template <https://github.com/benchopt/template_benchmark_ml>`_ from github.
-This template provides a simple structure, with the different benchopt's options set to accommodate ML workflows.
-
-
-Disabling performance curves
-----------------------------
-
-Unlike optimization benchmarks where you track convergence over iterations,
-ML benchmarks typically evaluate each solver once to completion. To disable
-performance curve sampling, set ``sampling_strategy = "run_once"`` in your
-``Objective`` class:
-
-.. code-block:: python
-
-    class Objective(BaseObjective):
-        sampling_strategy = "run_once"
-
-        # ...rest of your objective definition
-
-With this setting, each solver's ``run`` method is called exactly once, and
-the ``stop_val`` argument can be ignored. This is the recommended setup for
-benchmarks comparing methods where only the final performance matters.
-
-.. note::
-   You can also set ``sampling_strategy = "run_once"`` on individual ``Solver``
-   classes if only some solvers should run once while others need iterative
-   evaluation.
-
-Note that when using ``sampling_strategy = "run_once"``, ``evaluate_result``
-will be called only once per solver run, and the resulting metrics will be
-stored directly in the benchmark results. It is also possible to different
-evaluation as different lines in the benchmark results by returning multiple
-dictionaries from ``evaluate_result`` as a list. See :ref:`multiple_evaluation`
-for more details.
-
-.. _cross-validation:
+.. _cross-val:
 
 Cross-validation
-----------------
+================
 
-In order to evaluate the generalization performance of a method, a common
-practice is to use cross-validation. In this context, the data is split
-several times, and the model is trained on a subset of the data and evaluated
-on another independent subset. This process is repeated several times, and
-the average performance is reported.
+When comparing ML methods, a common evaluation protocol is cross-validation:
+data is split into folds, each method is trained on a subset and evaluated on
+a held-out subset, and results are aggregated across folds.
+
+.. note::
+   For the basic ML benchmark setup (``sampling_strategy = "run_once"``,
+   train/test split) see the :ref:`get_started` examples and
+   :ref:`write_benchmark`.
 
 In benchopt, cross-validation is handled as separate runs of the ``Solver``,
 where the data is split into folds in ``Objective.get_objective``, by calling

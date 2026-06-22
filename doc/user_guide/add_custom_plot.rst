@@ -28,7 +28,9 @@ A custom plot is defined by a class inheriting from :class:`benchopt.BasePlot` a
   dictionary are the names of the options, associated to a list of their possible
   values. If a key :code:`objective/dataset/solver/objective_column` is associated
   with the value :code:`...`, the options are automatically inferred from the
-  results DataFrame, as all unique values associated with this key.
+  results DataFrame, as all unique values associated with this key. A value can
+  also be a callable taking the results DataFrame as input and returning the list
+  of possible values for the option.
 - :code:`plot(self, df, **kwargs)`: give the data to produce one plot, that is
   rendered with the plotly or matplotlib backend. The method takes the results DataFrame
   and the options values as arguments, and returns the plot data. The output
@@ -54,15 +56,17 @@ The visualization is rendered using either the ``plotly`` or ``matplotly`` backe
             "dataset": ...,         # Automatic options from DataFrame columns
             "objective": ...,
             "my_parameter": [1, 2], # custom options
+            # options computed from the results DataFrame
+            "solver": lambda df: df["solver_name"].unique().tolist(),
         }
 
         # The inputs args of this method correspond to `df` and
         # the keys in the `options` dictionary.
-        def plot(self, df, dataset, objective, my_parameter):
+        def plot(self, df, dataset, objective, my_parameter, solver):
             # ... process df ...
             return plot_data
 
-        def get_metadata(self, df, dataset, objective, my_parameter):
+        def get_metadata(self, df, dataset, objective, my_parameter, solver):
             return {
                 "title": f"Plot for {dataset}",
                 "xlabel": "X Label",
@@ -92,8 +96,11 @@ each dictionary represents a trace in the plot. Each dictionary must contain:
 - :code:`label`: The label of the trace
 - :code:`color` (optional): The color of the trace.
 - :code:`marker` (optional): The marker style of the trace.
-- :code:`x_low`, :code:`x_high` (optional): Lists of values to display uncertainty in the plot.
+- :code:`y_low`, :code:`y_high` (optional): Lists of values to display uncertainty in the plot.
   They will be used to display shaded area around the plot.
+- :code:`x_low`, :code:`x_high` (optional): Lists of values to display uncertainty in the plot.
+  They will be used to display shaded area around the plot. You can use either y_low/y_high or
+  x_low/x_high, but not both.
 
 The metadata dictionary returned by :code:`get_metadata` should contain:
 
@@ -102,10 +109,12 @@ The metadata dictionary returned by :code:`get_metadata` should contain:
 - :code:`ylabel`: The label of the y-axis.
 - :code:`grid` (optional, default=True): Whether to show grid lines in the plot.
   This only affects the matplotlib backend, not the html page.
+- :code:`scale` (optional, default="loglog"): The scale of the axes in the matplotlib backend,
+  can be either "linear", "semilog-x", "semilog-y" or "loglog".
 
 .. code-block:: python
 
-    def plot(self, df, dataset, objective, my_parameter):
+    def plot(self, df, dataset, objective, my_parameter, solver):
         # Filter the dataframe
         df = df.query(
             "dataset_name == @dataset and objective_name == @objective"
@@ -126,7 +135,7 @@ The metadata dictionary returned by :code:`get_metadata` should contain:
             })
         return plot_traces
 
-    def get_metadata(self, df, dataset, objective, my_parameter):
+    def get_metadata(self, df, dataset, objective, my_parameter, solver):
         return {
             "title": f"Convergence for {dataset}",
             "xlabel": "Time [sec]",
@@ -245,6 +254,15 @@ The metadata dictionary returned by :code:`get_metadata` should contain:
 
 - :code:`title`: The title of the plot.
 - :code:`columns`: A list of column names.
+- :code:`default_order_column` (optional, default=0): The column to sort the rows on by
+  default in the html report, given as a column name or a 0-based column index.
+- :code:`default_order_ascending` (optional, default=True): Whether the default
+  ordering is in increasing order.
+
+In the html report, each column header can be clicked to sort on that column,
+and the arrow next to it can be toggled to switch between increasing and
+decreasing order. A search bar allows filtering the rows, and each column can
+be shown or hidden with the checkboxes below the table.
 
 .. code-block:: python
 
@@ -263,6 +281,8 @@ The metadata dictionary returned by :code:`get_metadata` should contain:
         return {
             "title": f"Summary for {dataset}",
             "columns": ["Solver", "Mean Time [sec]"],
+            "default_order_column": "Mean Time [sec]",
+            "default_order_ascending": True,
         }
 
 

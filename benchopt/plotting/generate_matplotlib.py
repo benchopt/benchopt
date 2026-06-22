@@ -54,19 +54,39 @@ def get_plot_figure(plot_datas, output_dir):
 def get_plot_scatter(plot_data):
     fig = plt.figure()
     for curve_data in plot_data["data"]:
-        plt.loglog(
-            curve_data["x"], curve_data["y"], color=curve_data["color"],
-            marker=curve_data["marker"], label=curve_data["label"],
+        plt.plot(
+            curve_data["x"], curve_data["y"],
+            color=curve_data["color"],
+            marker=curve_data["marker"],
+            label=curve_data["label"],
             linewidth=3
         )
 
-        if "x_low" in curve_data and "x_high" in curve_data:
+        if "y_low" in curve_data and "y_high" in curve_data:
+            y_low = curve_data["y_low"]
+            y_high = curve_data["y_high"]
+            plt.fill_between(
+                curve_data["x"], y_low, y_high,
+                color=curve_data["color"],
+                alpha=.3
+            )
+        elif "x_low" in curve_data and "x_high" in curve_data:
             x_low = curve_data["x_low"]
             x_high = curve_data["x_high"]
             plt.fill_betweenx(
-                curve_data["y"], x_low, x_high, color=curve_data["color"],
+                curve_data["y"], x_low, x_high,
+                color=curve_data["color"],
                 alpha=.3
             )
+
+    plot_scale = plot_data.get("scale", "loglog")
+    if plot_scale == "semilog-x":
+        plt.xscale("log")
+    elif plot_scale == "semilog-y":
+        plt.yscale("log")
+    elif plot_scale == "loglog":
+        plt.xscale("log")
+        plt.yscale("log")
 
     # Format the plot to be nice
     plt.legend(fontsize=14)

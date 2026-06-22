@@ -86,7 +86,7 @@ class StoppingCriterion():
             self.key_to_monitor_ = None
 
     def get_runner_instance(self, max_runs=1, timeout=None, terminal=None,
-                            solver=None):
+                            solver=None, run_key=None):
         """Copy the stopping criterion and set the parameters that depends on
         how benchopt runner is called.
 
@@ -102,6 +102,8 @@ class StoppingCriterion():
         solver : BaseSolver
             The solver for which this stopping criterion is called. Used to get
             overridden ``sampling_strategy`` and ``get_next``.
+        run_key : tuple
+            The key to identify the run in the benchmark results.
 
         Returns
         -------
@@ -143,8 +145,10 @@ class StoppingCriterion():
         stopping_criterion.max_runs = max_runs
         stopping_criterion.terminal = terminal
         stopping_criterion.solver = solver
-        stopping_criterion.n_eval = 0
+        stopping_criterion.run_key = run_key
 
+        # Initialize the number of evaluation for iterative tracking
+        stopping_criterion.n_eval = 0
         # Override get_next_stop_val if ``get_next`` is implemented for solver.
         if hasattr(solver, 'get_next'):
             if not callable(solver.get_next):
@@ -312,7 +316,7 @@ class StoppingCriterion():
     def progress(self, progress):
         """Helper to print progress messages."""
         if self.terminal is not None:
-            self.terminal.progress(progress)
+            self.terminal.progress(progress, self.run_key)
 
     @classmethod
     def _reconstruct(cls, kwargs, runner_kwargs):
@@ -527,10 +531,9 @@ class SingleRunCriterion(StoppingCriterion):
     def init_stop_val(self):
         return self.stop_val
 
-    def get_runner_instance(self, max_runs=1, timeout=None, terminal=None,
-                            solver=None):
+    def get_runner_instance(self, max_runs=1, **kwargs):
 
-        return super().get_runner_instance(1, timeout, terminal, solver)
+        return super().get_runner_instance(1, **kwargs)
 
     def should_stop(self, stop_val, objective_list):
         return True, 'done', stop_val

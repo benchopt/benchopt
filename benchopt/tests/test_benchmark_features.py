@@ -184,11 +184,12 @@ def test_objective_no_cv(no_debug_log):
 
     msg = "To use `Objective.get_split`, Objective must define a cv"
     with temp_benchmark(objective=no_cv) as benchmark:
-        with pytest.raises(ValueError, match=msg):
+        with CaptureCmdOutput(exit=1) as out:
             run([
                 str(benchmark.benchmark_dir),
                 *'-s test-solver -d test-dataset -n 1 -r 1 --no-plot'.split()
             ], standalone_mode=False)
+        out.check_output(msg, repetition=1)
 
 
 def test_objective_cv_splitter(no_debug_log):
@@ -251,8 +252,8 @@ def test_objective_cv_splitter(no_debug_log):
 
     # test-solver appears one time as it is only run once.
     out.check_output("test-solver", repetition=1)
-    out.check_output("RUN#0", repetition=1)
-    out.check_output("RUN#1", repetition=1)
+    out.check_output("RUN#0", repetition=3)
+    out.check_output("RUN#1", repetition=2)
     out.check_output("RUN#2", repetition=1)
     out.check_output("RUN#3", repetition=0)
     out.check_output("OK", repetition=3)
@@ -268,7 +269,7 @@ def test_objective_cv_splitter(no_debug_log):
 
     # test-solver appears one time as it is only run once.
     out.check_output("test-solver", repetition=1)
-    out.check_output("RUN#0", repetition=1)
+    out.check_output("RUN#0", repetition=2)
     out.check_output("RUN#1", repetition=1)
     out.check_output("RUN#2", repetition=0)
     out.check_output("RUN#3", repetition=0)
@@ -284,9 +285,9 @@ def test_objective_cv_splitter(no_debug_log):
 
     # test-solver appears one time as it is only run once.
     out.check_output("test-solver", repetition=1)
-    out.check_output("RUN#0", repetition=2)
-    out.check_output("RUN#1", repetition=2)
-    out.check_output("RUN#2", repetition=1)
+    out.check_output("RUN#0", repetition=7)
+    out.check_output("RUN#1", repetition=5)
+    out.check_output("RUN#2", repetition=3)
     out.check_output("RUN#3", repetition=0)
     out.check_output("OK", repetition=5)
 
@@ -302,9 +303,9 @@ def test_objective_cv_splitter(no_debug_log):
 
     # test-solver appears one time as it is only run once.
     out.check_output("test-solver", repetition=1)
-    out.check_output("RUN#0", repetition=2)
-    out.check_output("RUN#1", repetition=1)
-    out.check_output("RUN#2", repetition=1)
+    out.check_output("RUN#0", repetition=5)
+    out.check_output("RUN#1", repetition=3)
+    out.check_output("RUN#2", repetition=2)
     out.check_output("RUN#3", repetition=0)
     out.check_output("OK", repetition=4)
 
@@ -516,12 +517,12 @@ def test_paths_config_key(test_case, n_jobs):
         expected_home = Path(
             expected_home.format(bench_dir=bench.benchmark_dir.as_posix())
         ).resolve()
-        out.check_output(re.escape(f"HOME:{expected_home}"), repetition=1)
+        out.check_output(re.escape(f"HOME:{expected_home}"), repetition=n_jobs)
 
         expected_path = Path(
             expected_path.format(bench_dir=bench.benchmark_dir.as_posix())
         ).resolve()
-        out.check_output(re.escape(f"PATH:{expected_path}"), repetition=1)
+        out.check_output(re.escape(f"PATH:{expected_path}"), repetition=n_jobs)
 
 
 @pytest.mark.parametrize("n_runs,n_reps", [(1, 3), (2, 2), (5, 1)])
