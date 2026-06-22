@@ -80,10 +80,14 @@ def temp_benchmark(
         ``DEFAULT_OBJECTIVE``.
     datasets: str | list of str | None (default=None)
         Content of the dataset.py file(s). If None, defaults to
-        ``DEFAULT_DATASETS``.
+        ``DEFAULT_DATASETS``. Note that if a str or a list is passed, only the
+        passed dataset(s) are created. If a dict is passed, the default
+        datasets are created in addition to the passed ones.
     solvers: str | list of str | dict of str | None (default=None)
         Content of the solver.py file(s). If None, defaults to
-        ``DEFAULT_SOLVERS``.
+        ``DEFAULT_SOLVERS``. Note that if a str or a list is passed, only the
+        passed solver(s) are created. If a dict is passed, the default solvers
+        are created in addition to the passed ones.
     plots: str | list of str | dict of str | None (default=None)
         Content of the plot.py file(s). If None, no plot file is created.
     config: str | dict(fname->content) | None (default=None)
@@ -152,15 +156,21 @@ def temp_benchmark(
             f.write(inspect.cleandoc(objective))
         for fname, content in solvers.items():
             fname = temp_path / "solvers" / fname
+            if fname.suffix == "":
+                fname = fname.with_suffix(".py")
             fname.write_text(inspect.cleandoc(content), encoding='utf-8')
 
         for fname, content in datasets.items():
             fname = temp_path / "datasets" / fname
+            if fname.suffix == "":
+                fname = fname.with_suffix(".py")
             fname.write_text(inspect.cleandoc(content), encoding='utf-8')
 
         if plots is not None:
             for fname, content in plots.items():
                 fname = temp_path / "plots" / fname
+                if fname.suffix == "":
+                    fname = fname.with_suffix(".py")
                 fname.write_text(inspect.cleandoc(content), encoding='utf-8')
 
         if config is not None:

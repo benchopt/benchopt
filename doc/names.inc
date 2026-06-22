@@ -53,3 +53,5 @@
 .. _Hippolyte Verninas: https://www.linkedin.com/in/hippolyte-verninas
 
 .. _Damien Lesens: https://damienlesens.github.io/
+
+.. _Eduardo Montesuma: https://eddardd.github.io/

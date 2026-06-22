@@ -1,5 +1,6 @@
 import time
 from datetime import datetime
+from pathlib import Path
 
 from .callback import _Callback
 from .benchmark import Benchmark
@@ -73,7 +74,7 @@ def run_one_resolution(objective, solver, meta, stop_val):
 
 
 def run_one_to_cvg(benchmark, objective, solver, meta, timeout, max_runs,
-                   force=False, terminal=None, pdb=False):
+                   force=False, terminal=None, run_context=None):
     """Run all repetitions of the solver for a value of stopping criterion.
 
     Parameters
@@ -97,8 +98,10 @@ def run_one_to_cvg(benchmark, objective, solver, meta, timeout, max_runs,
         for the solver anyway. Else, use the cache if available.
     terminal : TerminalOutput or None
         Object to format string to display the progress of the solver.
-    pdb : bool
-        It pdb is set to True, open a debugger on error.
+    run_context : RunContext | None
+        Per-run context (seeds, artifact path). Ignored by the cache;
+        set on objective and solver so user methods can call
+        ``get_seed()`` and ``get_run_output_path()``.
 
     Returns
     -------
@@ -109,6 +112,12 @@ def run_one_to_cvg(benchmark, objective, solver, meta, timeout, max_runs,
     status : 'done' | 'diverged' | 'timeout' | 'max_runs'
         The status on which the solver was stopped.
     """
+    # Re-attach the run context after deserialization (it is excluded from
+    # pickle via __getstate__ so workers receive components without it).
+    run_context.attach(objective, getattr(objective, '_dataset', None), solver)
+
+    pdb = run_context.pdb if run_context is not None else False
+
     curve = []
 
     run_key = (
@@ -123,12 +132,14 @@ def run_one_to_cvg(benchmark, objective, solver, meta, timeout, max_runs,
         if skip:
             return [], run_key, 'skip', reason
 
-        stopping_criterion = solver._stopping_criterion.get_runner_instance(
-            solver=solver,
-            max_runs=max_runs,
-            timeout=timeout,
-            terminal=terminal,
-            run_key=run_key,
+        stopping_criterion = (
+            solver._stopping_criterion.get_runner_instance(
+                solver=solver,
+                max_runs=max_runs,
+                timeout=timeout,
+                terminal=terminal,
+                run_key=run_key,
+            )
         )
 
         # The warm-up step called for each repetition bit only run once.
@@ -147,12 +158,12 @@ def run_one_to_cvg(benchmark, objective, solver, meta, timeout, max_runs,
             curve, ctx.status, last_result = callback.get_results()
         else:
 
-            # Create a Memory object to cache the computations in the benchmark
-            # folder and handle cases where we force the run.
-            # TODO: Skip caching if the sampling strategy is 'run_once' since
-            # the call to this function is a single call to run_one_resolution.
-            # this needs to be done once stopping criterion does not depend on
-            # the terminal anymore.
+            # Create a Memory object to cache the computations in the
+            # benchmark folder and handle cases where we force the run.
+            # TODO: Skip caching if the sampling strategy is 'run_once'
+            # since the call to this function is a single call to
+            # run_one_resolution. This needs to be done once stopping
+            # criterion does not depend on the terminal anymore.
             run_one_resolution_cached = benchmark.cache(
                 run_one_resolution, force,
             )
@@ -170,8 +181,8 @@ def run_one_to_cvg(benchmark, objective, solver, meta, timeout, max_runs,
                 curve.extend(objective_list)
 
                 # Check the stopping criterion and update rho if necessary.
-                stop, ctx.status, stop_val = stopping_criterion.should_stop(
-                    stop_val, curve
+                stop, ctx.status, stop_val = (
+                    stopping_criterion.should_stop(stop_val, curve)
                 )
 
         # Save final results if the run did not fail.
@@ -256,8 +267,22 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
     exit_code = 0
     terminal = TerminalOutput(n_repetitions, show_progress)
 
+    # Resolve the output filename stem before runs start so that
+    # run_output_base is stable across all workers.
+    output_dir = benchmark.get_output_folder()
+    if output_file == "None":
+        timestamp = datetime.now().strftime('%Y-%m-%d_%Hh%Mm%S')
+        output_file = f'benchopt_run_{timestamp}.parquet'
+    from .utils.run_context import RunContext
+    base_run_context = RunContext(
+        pdb=pdb,
+        run_output_base=output_dir / Path(output_file).stem,
+    )
+
     run_one_to_cvg_cached = benchmark.cache(
-        run_one_to_cvg, ignore=['force', 'pdb', 'terminal'], collect=collect
+        run_one_to_cvg,
+        ignore=['force', 'terminal', 'run_context'],
+        collect=collect
     )
 
     def run_one_to_cvg_final(**kwargs):
@@ -277,7 +302,7 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
         benchmark, solvers=solvers, forced_solvers=forced_solvers,
         datasets=datasets, objectives=objectives,
         n_repetitions=n_repetitions, max_runs=max_runs, timeout=timeout,
-        pdb=pdb, collect=collect, terminal=terminal,
+        collect=collect, terminal=terminal, run_context=base_run_context,
     )
 
     run_statistics = []
@@ -305,10 +330,6 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
         return 1, None
 
     # Save output in parquet file in the benchmark folder
-    output_dir = benchmark.get_output_folder()
-    if output_file == "None":
-        timestamp = datetime.now().strftime('%Y-%m-%d_%Hh%Mm%S')
-        output_file = f'benchopt_run_{timestamp}.parquet'
     output_file = save_results(df, output_dir / output_file)
 
     if plot_result:

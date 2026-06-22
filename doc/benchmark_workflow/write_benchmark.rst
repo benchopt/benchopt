@@ -83,6 +83,10 @@ All three component classes share the following features:
 - ``get_seed()``: obtain a reproducible seed for stochastic components
   (simulated data, random initialisations, …).
   See :ref:`controlling_randomness`.
+- ``get_run_output_path()``: get a per-run directory to save artifacts
+  (models, plots, logs, …) scoped to the current
+  (dataset x objective x solver x repetition) combination.
+  See :ref:`controlling_randomness`.
 
 
 .. _datasets:
@@ -181,7 +185,8 @@ Optional features
 ~~~~~~~~~~~~~~~~~
 
 - :func:`~benchopt.BaseDataset.prepare`: expensive one-time setup (downloads,
-  extraction, preprocessing), cached by joblib.
+  extraction, preprocessing), cached by joblib. Default to ``get_data()`` if
+  not implemented.
   See :ref:`prepare_datasets` for details and usage.
 - **Custom data paths**: expose configurable file paths to benchmark users via
   :func:`benchopt.config.get_data_path`. See :ref:`data_paths` for
