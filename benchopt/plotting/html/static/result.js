@@ -812,7 +812,7 @@ const getBarChartLayout = () => {
     layout.dragmode = false;
   }
 
-  // TODO what does this do ??
+  // If no data available, plot "Not available"
   if (!isAvailable()) {
     layout.annotations = [{
       xref: 'paper',
