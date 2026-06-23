@@ -802,6 +802,7 @@ const getBarChartLayout = () => {
       ...MPL_AXIS,
       tickangle: -60,
       ticktext: Array(data.data.map(d => d.label)),
+      showgrid: false,  // X axis is text: no vertical gridlines
     },
     showlegend: false,
     title: data["title"],
@@ -847,6 +848,7 @@ const getBoxplotChartLayout = () => {
     xaxis: {
       ...MPL_AXIS,
       tickangle: (typeof plot_info.data[0].x[0] === "string") ? -60 : 0,
+      showgrid: typeof plot_info.data[0].x[0] !== "string",  // hide vertical gridlines for text X axis
     },
     showlegend: false,
     title: plot_info["title"],
