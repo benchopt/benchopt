@@ -134,7 +134,9 @@ const renderPlot = () => {
 
   // Enable drag/typed resizing of this figure (desktop only).
   if (window.matchMedia('(min-width: 768px)').matches) {
-    document.getElementById('figsize_controls').style.display = 'flex';
+    const controls = document.getElementById('figsize_controls');
+    controls.style.display = 'flex';
+    div.appendChild(controls);  // anchor the size overlay to the current figure
     addResizeHandles(div);
     resizeFig(div);
   }
@@ -144,9 +146,9 @@ const renderPlot = () => {
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * FIGURE RESIZING
  *
- * Resize the current Plotly figure by dragging its bottom-right corner
- * (CSS `resize`) or by typing a width/height. A single ResizeObserver keeps
- * Plotly fitted to the box and the inputs in sync with the actual size.
+ * Resize the current Plotly figure by dragging its edges/corner or by typing
+ * a width/height into the overlay tucked in the figure's corner. resizeFig
+ * refits Plotly to the box and keeps the overlay inputs in sync.
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 
@@ -185,6 +187,7 @@ const makeResizeHandle = (div, axis) => {
   handle.addEventListener('pointerdown', (e) => {
     e.preventDefault();
     handle.setPointerCapture(e.pointerId);
+    div.classList.add('resizing');  // keep the size overlay visible while dragging
     const startX = e.clientX, startY = e.clientY;
     const startW = div.offsetWidth, startH = div.offsetHeight;
     const onMove = (ev) => {
@@ -195,6 +198,7 @@ const makeResizeHandle = (div, axis) => {
       resizeFig(div);
     };
     const onUp = () => {
+      div.classList.remove('resizing');
       handle.removeEventListener('pointermove', onMove);
       handle.removeEventListener('pointerup', onUp);
     };

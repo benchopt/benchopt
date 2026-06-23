@@ -345,13 +345,12 @@
                     </div>
                 </div>
 
-                <!-- Figure size controls (desktop; resize the Plotly figure) -->
-                <div id="figsize_controls" class="hidden items-center px-10 pt-4 text-sm text-gray-600" style="gap: 0.5rem;">
-                    <span class="font-medium">Figure size</span>
-                    <input id="figsize_width" type="number" min="200" step="10" onchange="setFigSize()" style="width: 5rem;" class="border border-gray-300 bg-white rounded px-3 py-1" title="Width (px)">
+                <!-- Figure size overlay: tucked into the figure corner, revealed on hover (desktop). JS anchors it to the current figure. -->
+                <div id="figsize_controls" class="hidden items-center" title="Figure size (px)">
+                    <input id="figsize_width" type="number" min="200" step="10" onchange="setFigSize()" title="Width (px)">
                     <span>×</span>
-                    <input id="figsize_height" type="number" min="200" step="10" onchange="setFigSize()" style="width: 5rem;" class="border border-gray-300 bg-white rounded px-3 py-1" title="Height (px)">
-                    <span class="text-gray-500">px</span>
+                    <input id="figsize_height" type="number" min="200" step="10" onchange="setFigSize()" title="Height (px)">
+                    <span class="unit">px</span>
                 </div>
 
                 <!-- Plot -->
