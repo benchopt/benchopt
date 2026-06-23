@@ -345,6 +345,14 @@
                     </div>
                 </div>
 
+                <!-- Figure size overlay: tucked into the figure corner, revealed on hover (desktop). JS anchors it to the current figure. -->
+                <div id="figsize_controls" class="hidden items-center" title="Figure size (px)">
+                    <input id="figsize_width" type="number" min="200" step="10" onchange="setFigSize()" title="Width (px)">
+                    <span>×</span>
+                    <input id="figsize_height" type="number" min="200" step="10" onchange="setFigSize()" title="Height (px)">
+                    <span class="unit">px</span>
+                </div>
+
                 <!-- Plot -->
                 <div id="table_container" class="flex flex-col flex-1 gap-4 p-10">
                 </div>
@@ -352,7 +360,7 @@
                 </div>
                 <div id="plot_container" class="flex flex-col flex-1">
                     <div id="plot_with_legend_container" class="flex-1"></div>
-                    <div id="legend_container" class="pb-10 bg-slate-200">
+                    <div id="legend_container" class="pb-10 bg-slate-200" style="margin-top: auto;">
                         <div class="px-10 mb-4 mt-4 text-base font-medium text-gray-700">
                             Solvers
                             <span class="text-sm font-medium text-gray-400">(Click on a solver to hide it or double click to hide all the others)</span>

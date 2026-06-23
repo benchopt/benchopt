@@ -54,6 +54,9 @@ const setState = (partialState) => {
     hide(container);
   });
 
+  // Hide the size controls; renderPlot re-shows them for plot charts.
+  hide(document.getElementById('figsize_controls'));
+
   if  (isChart('table')) {
     renderTable();
   } else {
@@ -128,6 +131,81 @@ const renderPlot = () => {
   const data = getChartData();
   const layout = getLayout();
   Plotly.react(div, data, layout);
+
+  // Enable drag/typed resizing of this figure (desktop only).
+  if (window.matchMedia('(min-width: 768px)').matches) {
+    const controls = document.getElementById('figsize_controls');
+    controls.style.display = 'flex';
+    div.appendChild(controls);  // anchor the size overlay to the current figure
+    addResizeHandles(div);
+    resizeFig(div);
+  }
+};
+
+/*
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * FIGURE RESIZING
+ *
+ * Resize the current Plotly figure by dragging its edges/corner or by typing
+ * a width/height into the overlay tucked in the figure's corner. resizeFig
+ * refits Plotly to the box and keeps the overlay inputs in sync.
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
+
+// The div Plotly draws into for the current chart (scatter keeps its legend
+// separate, so its plot lives in plot_with_legend_container).
+const getPlotDiv = () => document.getElementById(
+  isChart('scatter') ? 'plot_with_legend_container' : 'plot_container'
+);
+
+// Refit Plotly to the figure box and reflect the actual size in the inputs.
+const resizeFig = (div) => {
+  Plotly.Plots.resize(div);
+  document.getElementById('figsize_width').value = Math.round(div.offsetWidth);
+  document.getElementById('figsize_height').value = Math.round(div.offsetHeight);
+};
+
+const setFigSize = () => {
+  const div = getPlotDiv();
+  const w = parseInt(document.getElementById('figsize_width').value, 10);
+  const h = parseInt(document.getElementById('figsize_height').value, 10);
+  if (w > 0) div.style.width = `${w}px`;
+  if (h > 0) div.style.height = `${h}px`;
+  resizeFig(div);
+};
+
+// (Re)create the drag handles on the right ('x') and bottom ('y') edges.
+// Plotly.purge leaves these children in place, so clear any stale ones first.
+const addResizeHandles = (div) => {
+  div.querySelectorAll('.resize-handle').forEach(h => h.remove());
+  ['x', 'y', 'xy'].forEach(axis => div.appendChild(makeResizeHandle(div, axis)));
+};
+
+const makeResizeHandle = (div, axis) => {
+  const handle = document.createElement('div');
+  handle.className = `resize-handle resize-handle-${axis}`;
+  handle.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    handle.setPointerCapture(e.pointerId);
+    div.classList.add('resizing');  // keep the size overlay visible while dragging
+    const startX = e.clientX, startY = e.clientY;
+    const startW = div.offsetWidth, startH = div.offsetHeight;
+    const onMove = (ev) => {
+      if (axis !== 'y')
+        div.style.width = `${Math.max(200, startW + ev.clientX - startX)}px`;
+      if (axis !== 'x')
+        div.style.height = `${Math.max(200, startH + ev.clientY - startY)}px`;
+      resizeFig(div);
+    };
+    const onUp = () => {
+      div.classList.remove('resizing');
+      handle.removeEventListener('pointermove', onMove);
+      handle.removeEventListener('pointerup', onUp);
+    };
+    handle.addEventListener('pointermove', onMove);
+    handle.addEventListener('pointerup', onUp);
+  });
+  return handle;
 };
 
 /**

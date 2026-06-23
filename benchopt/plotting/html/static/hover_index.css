@@ -561,13 +561,129 @@ g.hovertext:has(path + [data-unformatted*="lower fence"])
 @media (min-width: 768px) {
   #plot_with_legend_container {
     aspect-ratio: auto;
-    min-height: 600px;
+    min-height: 200px;
     max-height: none;
+    height: 600px; /* default height, freely resizable down to min-height */
   }
 
   #plot_container.js-plotly-plot {
     aspect-ratio: auto;
-    min-height: 0;
+    min-height: 200px;
     max-height: none;
+    height: 600px; /* default height for bar/boxplot figures */
   }
+
+  /* flex:none so dragged/typed sizes stick instead of being stretched by the
+     flex layout; position:relative anchors the edge resize handles; max-width
+     keeps the figure (and its right handle) clear of the scrollbar. */
+  #plot_with_legend_container,
+  #plot_container.js-plotly-plot {
+    flex: none;
+    position: relative;
+    max-width: calc(100% - 1rem);
+  }
+}
+
+/* Drag handles on the right, bottom, and bottom-right corner of the figure. */
+.resize-handle {
+  position: absolute;
+  z-index: 5;
+  background: transparent;
+  transition: background 0.15s;
+}
+.resize-handle:hover {
+  background: rgba(59, 130, 246, 0.35);
+}
+/* Hovering the diagonal corner highlights both edge handles too. */
+:has(> .resize-handle-xy:hover) > .resize-handle-x,
+:has(> .resize-handle-xy:hover) > .resize-handle-y {
+  background: rgba(59, 130, 246, 0.35);
+}
+.resize-handle-x {
+  top: 0;
+  right: 0;
+  width: 8px;
+  height: 100%;
+  cursor: ew-resize;
+}
+.resize-handle-y {
+  left: 0;
+  bottom: 0;
+  height: 8px;
+  width: 100%;
+  cursor: ns-resize;
+}
+/* Centered grip lines so the edges read as draggable. */
+.resize-handle-x::after,
+.resize-handle-y::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(59, 130, 246, 0.7);
+  border-radius: 2px;
+}
+.resize-handle-x::after { width: 2px; height: 30px; }
+.resize-handle-y::after { width: 30px; height: 2px; }
+
+/* Diagonal corner handle, resizes both dimensions at once. */
+.resize-handle-xy {
+  right: 0;
+  bottom: 0;
+  width: 16px;
+  height: 16px;
+  z-index: 6; /* above the edge handles it overlaps */
+  background: transparent;
+  cursor: nwse-resize;
+}
+.resize-handle-xy:hover { background: transparent; }
+.resize-handle-xy::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg,
+    transparent 0 46%,
+    rgba(59, 130, 246, 0.7) 46% 54%,
+    transparent 54% 70%,
+    rgba(59, 130, 246, 0.7) 70% 78%,
+    transparent 78%);
+}
+
+/* Compact size readout, tucked into the figure's bottom-right corner (left of
+   the diagonal handle). Stays out of the way until you hover the figure or
+   drag a handle. JS appends it into the current figure div. */
+#figsize_controls {
+  position: absolute;
+  bottom: 0.5rem;
+  right: 1.5rem;
+  z-index: 7;
+  gap: 0.25rem;
+  padding: 0.15rem 0.4rem;
+  font-size: 0.75rem;
+  color: #6b7280;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+#plot_container:hover > #figsize_controls,
+#plot_with_legend_container:hover > #figsize_controls,
+#plot_container.resizing > #figsize_controls,
+#plot_with_legend_container.resizing > #figsize_controls {
+  opacity: 1;
+  pointer-events: auto;
+}
+#figsize_controls input {
+  width: 4rem;
+  padding: 0.05rem 0.3rem;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 0.25rem;
+}
+#figsize_controls .unit {
+  color: #9ca3af;
 }
