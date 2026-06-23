@@ -774,7 +774,7 @@ const MPL_AXIS = {
   ticks: 'outside',
   tickcolor: 'black',
   gridcolor: '#d9d9d9',
-  griddash: 'dash',
+  griddash: 'dot',
   gridwidth: 0.5,
   zeroline: false,
   automargin: true,
