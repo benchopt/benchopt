@@ -796,7 +796,7 @@ const getBarChartLayout = () => {
       ...MPL_AXIS,
       type: getScale().yaxis,
       title: data["ylabel"],
-      tickformat: '.1e',
+      tickformat: '~g',
     },
     xaxis: {
       ...MPL_AXIS,
@@ -842,7 +842,7 @@ const getBoxplotChartLayout = () => {
       ...MPL_AXIS,
       type: getScale().yaxis,
       title: plot_info["ylabel"],
-      tickformat: '.1e',
+      tickformat: '~g',
     },
     xaxis: {
       ...MPL_AXIS,
@@ -884,14 +884,14 @@ const getScatterChartLayout = () => {
       ...MPL_AXIS,
       type: getScale().xaxis,
       title: customData.xlabel,
-      tickformat: '.1e', // TODO adapt if xaxis is not numeric
+      tickformat: '~g',
       tickangle: 0,
     },
     yaxis: {
       ...MPL_AXIS,
       type: getScale().yaxis,
       title: customData.ylabel,
-      tickformat: '.1e',
+      tickformat: '~g',
     },
     title: `${customData.title}`,
     ...MPL_LAYOUT,
