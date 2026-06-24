@@ -234,6 +234,57 @@ def product_param(parameters, ignore=None):
                itertools.product(*parameters.values()))
 
 
+def _expand_ablation(ablation_params):
+    """Expand an ablation spec into a joint-parameter key and its values.
+
+    The first value of each parameter defines the baseline. Each other value
+    generates one variant, deviating from the baseline only on this parameter
+    (one-at-a-time, instead of the full cartesian product).
+
+    Parameters
+    ----------
+    ablation_params : dict
+        Dictionary of type {parameter_names: parameters_value_list}, with the
+        same format as the ``parameters`` class attribute. In particular,
+        joint parameters ('p1, p2') vary together in a single variant.
+
+    Returns
+    -------
+    joint_key : str
+        Comma-separated names of all parameters in the spec.
+    values : list of tuple
+        One tuple of values per variant, aligned with ``joint_key``.
+    """
+    if len(ablation_params) == 0:
+        raise ValueError("Empty `ablation` block.")
+    axes = {
+        k: (v if isinstance(v, (list, tuple)) else [v])
+        for k, v in ablation_params.items()
+    }
+    if any(len(v) == 0 for v in axes.values()):
+        raise ValueError(
+            "Empty value list in `ablation` block for parameter "
+            f"{[k for k, v in axes.items() if len(v) == 0]}."
+        )
+
+    # The baseline takes the first value of each parameter. Use product_param
+    # to expand the joint parameter names ('p1, p2') into individual keys.
+    baseline = next(product_param({k: [v[0]] for k, v in axes.items()}))
+    variants = [baseline]
+    for key, values in axes.items():
+        for value in values[1:]:
+            variant = dict(baseline)
+            variant.update(expand([key], [value]))
+            variants.append(variant)
+
+    names = list(baseline)
+    joint_key = ", ".join(names)
+    if len(names) == 1:
+        # Single parameter: `expand` takes scalar values for non-joint keys.
+        return joint_key, [v[names[0]] for v in variants]
+    return joint_key, [tuple(v[name] for name in names) for v in variants]
+
+
 def get_configs(dataset_class, obj_class=None, solver_class=None):
     """Merge configuration for dataset, objective and solver with priority.
 
@@ -599,6 +650,26 @@ def _check_patterns(all_classes, patterns, name_type='dataset',
     all_valid_patterns = []
     for cls, (args, kwargs) in matched:
         param_names = [p.strip() for k in cls.parameters for p in k.split(',')]
+
+        # Desugar an `ablation` block into a joint-parameter key.
+        # Only done when the class has no parameter named `ablation`, to
+        # avoid collision with actual parameters.
+        ablated_names = set()
+        if ('ablation' not in param_names
+                and isinstance(kwargs.get('ablation'), dict)):
+            joint_key, values = _expand_ablation(kwargs.pop('ablation'))
+            ablated_names = {p.strip() for p in joint_key.split(',')}
+            overlap = sorted(ablated_names & {
+                p.strip() for k in kwargs for p in k.split(',')
+            })
+            if overlap:
+                raise ValueError(
+                    f"Parameters {overlap} for {name_type} {cls.name} "
+                    "are given both in the `ablation` block and as regular "
+                    "parameters."
+                )
+            kwargs[joint_key] = values
+
         if len(args) != 0:
             if len(param_names) > 1:
                 raise ValueError(
@@ -629,7 +700,12 @@ def _check_patterns(all_classes, patterns, name_type='dataset',
                     f"Unknown parameter {bad_params} for {name_type} "
                     f"{cls.name}.\n{msg}"
                 )
-        params = cls.parameters.copy()
+        # Drop default parameters fully covered by the ablation block, so
+        # their default grid is not expanded on top of the ablation variants.
+        params = {
+            k: v for k, v in cls.parameters.items()
+            if not {p.strip() for p in k.split(',')} <= ablated_names
+        }
         params.update(kwargs)
         params = _expand_all(cls, params, name_type)
         all_valid_patterns.append((cls, params))
