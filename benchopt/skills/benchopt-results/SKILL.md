@@ -46,13 +46,19 @@ Columns fall into four groups:
 | Group | Columns | Notes |
 |-------|---------|-------|
 | Identity | `objective_name`, `solver_name`, `dataset_name` | Parametrized strings, e.g. `Muon[adam_lr=0.0036,...]`. `idx_rep` is the 0-based repetition; `base_seed`, `sampling_strategy`. |
-| Curve | `stop_val`, `time`, `objective_value` | One row per `stop_val` (the sampled point). `time` is wall-clock seconds. `objective_value` is the main metric used for plotting. |
+| Curve | `stop_val`, `time`, `objective_value` | One row per `stop_val` (the sampled point). `time` is solver-only seconds (see caveat). `objective_value` is the main metric used for plotting. |
 | Extra metrics | `objective_<name>` | One column per key returned by `Objective.evaluate_result()` (e.g. `objective_train_loss`). |
 | Parameters | `p_solver_<param>`, `p_dataset_<param>`, `p_objective_<param>` | One column per parameter, split out of the parametrized name. |
 | Provenance | `run_date`, `benchmark-git-tag`, `platform*`, `version-*`, `system-*`, `env-*`, `file_*` | Environment/reproducibility metadata. |
 
 The `name` columns are convenient for grouping; the `p_*` columns are better
 for filtering on a single parameter.
+
+> **`time` is training-only.** benchopt pauses the solver timer while
+> `Objective.evaluate_result()` runs, for both sampling strategies (callback and
+> iteration). So `time` measures only the solver/training cost — evaluation and
+> validation are *not* included. Don't read it as end-to-end wall-clock when
+> comparing solvers whose evaluation costs differ.
 
 ## Slicing common questions
 
