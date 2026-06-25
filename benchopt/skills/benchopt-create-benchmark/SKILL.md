@@ -45,7 +45,8 @@ The `Objective` also exposes optional methods worth wiring early:
 **Set benchmark-wide defaults on the `Objective`** so all solvers inherit them:
 `sampling_strategy` (e.g. `"run_once"` for ML), `stopping_criterion`, and
 `python_version` to pin the conda env's Python. **Seed all randomness with
-`self.get_seed()`** so `--n-repetitions` gives reproducible, distinct runs.
+`self.get_seed(use_repetition=True)`** so `--n-repetitions` gives reproducible,
+distinct runs (a bare `self.get_seed()` returns the same seed every repetition).
 
 Two design rules that keep a benchmark extensible:
 

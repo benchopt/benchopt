@@ -25,7 +25,7 @@ class Dataset(BaseDataset):
     requirements = []   # zero-dependency datasets are great smoke tests
 
     def get_data(self):
-        rng = np.random.default_rng(self.get_seed())
+        rng = np.random.default_rng(self.get_seed(use_repetition=True))
         X = rng.standard_normal((self.n_samples, self.n_features))
         y = X @ rng.standard_normal(self.n_features)
         return dict(X=X, y=y)   # -> Objective.set_data(**data)
@@ -41,8 +41,10 @@ class Dataset(BaseDataset):
 
 ## Reproducible randomness
 
-Call `self.get_seed()` to obtain a deterministic seed that changes with the
-repetition index, so `--n-repetitions N` yields N genuinely different draws.
+Call `self.get_seed(use_repetition=True)` to obtain a deterministic seed that
+changes with the repetition index, so `--n-repetitions N` yields N genuinely
+different draws. A bare `self.get_seed()` returns the same seed for every
+repetition.
 
 ## Expensive one-time work: prepare()
 
@@ -60,9 +62,10 @@ def prepare(self):
 
 - `prepare()` must be **idempotent**. List params that don't affect its output
   in `prepare_cache_ignore` (or `"all"` to run at most once per class).
-- Since `benchopt run` only triggers prepare with `--prepare`, share an
-  idempotent `_ensure_prepared()` between `prepare()` and `get_data()` so the
-  dataset also works on a fresh checkout without an explicit prepare step.
+- Since `benchopt run` never calls `prepare()` (it runs only via the dedicated
+  `benchopt prepare`, or `benchopt install --prepare`), share an idempotent
+  `_ensure_prepared()` between `prepare()` and `get_data()` so the dataset also
+  works on a fresh checkout without an explicit prepare step.
 
 ## Requirements and imports (install detection)
 

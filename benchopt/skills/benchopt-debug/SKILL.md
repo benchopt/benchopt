@@ -5,10 +5,12 @@ description: >
   object, without launching the full `benchopt run` CLI: load datasets and the
   objective, inspect what `Dataset.get_data()` returns, replay a solver
   (`set_objective`/`run`/`get_result`) and call `Objective.evaluate_result()` on
-  its output or an arbitrary checkpoint. Also points to `benchopt test` for
-  catching design problems early. Use when debugging a benchmark's own code (a
-  failing `get_data`, a diverging solver, a suspicious metric, an eval path you
-  want to validate) rather than running or authoring one.
+  its output or an arbitrary checkpoint. Covers common pitfalls — NaNs, diverging
+  curves (benchopt's divergence guard), and stale-cache surprises plus how to bust
+  the cache — and points to `benchopt test` for catching design problems early.
+  Use when debugging a benchmark's own code (a failing `get_data`, a diverging
+  solver, NaNs, a suspicious metric, results that don't update after an edit) rather
+  than running or authoring one.
 ---
 
 # Debugging a benchopt benchmark from Python
@@ -149,6 +151,52 @@ print(objective.evaluate_result(model=oracle_model, dist=None))
 
 If this prints sensible metrics, the eval path is sound and any weird curve in a
 full run points at the *solvers*, not the objective.
+
+## Common pitfalls and how to pin them
+
+### Diverging curves and NaNs
+
+benchopt watches the monitored objective (`key_to_monitor`, default
+`objective_value`) and **stops the run with status `diverged`** as soon as that
+value is `NaN` or worsens by more than `1e5` between two steps
+([stopping_criterion.py](../stopping_criterion.py)). A curve that ends early with
+`diverged` in the dashboard is this guard firing, not a benchopt bug.
+
+Both symptoms almost always originate in your code, so reproduce them with the
+replay snippets above instead of staring at the curve:
+
+- **NaN / inf in the metric.** Run `objective.evaluate_result(**result)` on the
+  solver's output (or a hand-built one) and check each returned value with
+  `np.isfinite`. NaNs usually come from the metric itself (`log(0)`, divide-by-
+  zero, an empty slice) — isolate it here, with no solver in the loop.
+- **Solver blow-up.** Drive `solver.run(...)` step by step and print the iterate
+  norm; an exploding norm points at the step size / learning rate or a missing
+  normalization, not the objective.
+- **Watching the wrong key.** If divergence detection seems to trigger on the
+  wrong quantity, make sure `key_to_monitor` names the metric you intend (it must
+  be a key returned by `evaluate_result`).
+
+### Stale-cache surprises
+
+`benchopt run` caches each `(solver, dataset, rep)` with `joblib.Memory`, keyed on
+the **function source + parameters**. Editing a solver's own `.py` invalidates its
+cache automatically — but changes that don't alter that function's source do
+**not**, so you can silently get old numbers after:
+
+- editing an **imported helper module** (the solver source is unchanged),
+- changing a **data file** or external resource `get_data()` reads,
+- upgrading a **dependency** that changes results.
+
+If a result looks wrong or "didn't update after my edit", bust the cache:
+
+```bash
+benchopt run . -f my-solver        # force re-run of one solver (-f repeatable)
+benchopt run . --no-cache          # ignore the cache entirely for this run
+```
+
+The `Benchmark(".")` workflow in this skill bypasses the cache completely, so
+re-deriving a suspicious value here and comparing it to the run is itself the
+quickest way to confirm the cache was stale.
 
 ## Catch design problems early with the test suite
 

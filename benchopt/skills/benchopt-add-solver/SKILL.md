@@ -45,16 +45,20 @@ class Solver(BaseSolver):
 ## Reproducible randomness
 
 For **stochastic** solvers (random initialization, mini-batch shuffling,
-dropout, …), seed from `self.get_seed()` rather than a fixed literal or an
-unseeded global RNG. The seed changes with the repetition index, so
-`--n-repetitions N` gives N genuinely different — but reproducible — runs:
+dropout, …), seed from `self.get_seed(use_repetition=True)` rather than a fixed
+literal or an unseeded global RNG. With `use_repetition=True` the seed changes
+with the repetition index, so `--n-repetitions N` gives N genuinely different —
+but reproducible — runs (a bare `self.get_seed()` returns the same seed for
+every repetition):
 
 ```python
 def run(self, n_iter):
-    rng = np.random.default_rng(self.get_seed())
+    rng = np.random.default_rng(self.get_seed(use_repetition=True))
     w = rng.standard_normal(self.n_features)   # reproducible random init
     ...
 ```
+
+Note that if the seed need to be different for each dataset/solver, you can use `use_dataset=True` and/or `use_solver=True` in `get_seed()`.
 
 ## sampling_strategy — how the curve is sampled
 

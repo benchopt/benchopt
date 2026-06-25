@@ -107,10 +107,59 @@ benchopt publish --hub github      # needs a token (-t / BENCHOPT_GITHUB_TOKEN)
 benchopt publish --hub huggingface -R user/repo
 ```
 
+### Merging results across machines
+
+Each run is self-contained — the parquet carries its own provenance columns
+(`platform*`, `version-*`, `env-*`, `run_date`), so results produced on different
+machines combine cleanly. Collect the parquets into one `outputs/` folder (or
+pass them with repeated `-f`) and `benchopt merge` them:
+
+- `--keep last` (default) keeps one row per unique configuration — re-runs of the
+  same `(objective, dataset, solver)` config collapse to the newest; use
+  `--keep all` to retain every machine's rows (e.g. to compare hardware).
+- Identity is the parametrized config, **not** the machine, so a solver run with
+  identical parameters on two machines is treated as the same config. If you want
+  to keep both, add a distinguishing parameter or filter on the provenance
+  columns after loading with `read_results`.
+- Timings are not comparable across machines (different CPUs/BLAS); merge for
+  *coverage* of configs, and compare `time` only within a machine.
+
+## Plot kinds
+
 Plot kinds for `--kind/-k` (static plots only): `objective_curve`,
 `bar_chart`, `boxplot`, `Table`. The legacy `suboptimality_curve` and
 `relative_suboptimality_curve` map onto `objective_curve`. HTML plots ignore
 `--kind` (they expose all kinds interactively).
+
+## Custom views with `plot_configs`
+
+To pin specific plots (kind + axis scale + filters) instead of clicking through
+the interactive page each time, define named **views** under `plot_configs:` in
+the benchmark's config file (the same `--config config.yml` used by
+`benchopt run`). Each view is a name → options:
+
+```yaml
+plot_configs:
+  Subopt. (log):              # view name shown in the dashboard
+    plot_kind: objective_curve
+    scale: loglog
+  Train score (box):
+    plot_kind: boxplot
+    boxplot_objective_column: objective_score_train   # kind-specific option, prefixed by kind
+  Runtimes:
+    plot_kind: bar_chart
+```
+
+- Common options for any kind: `plot_kind`, `scale`, `with_quantiles`,
+  `suboptimal_curve`, `relative_curve`, `hidden_curves`. Kind-specific options are
+  prefixed with the kind name (e.g. `boxplot_objective_column`); unspecified
+  values keep the interface default.
+- Fastest way to author one: build the plot interactively in the HTML page, hit
+  **Save as view**, and download the config snippet — drop it into the
+  benchmark's config so the view is embedded in every future plot automatically.
+- For plots beyond the built-in kinds, add a `benchopt.BasePlot` subclass under
+  the benchmark's `plots/` directory; its `_get_name()` then becomes a valid
+  `plot_kind` (see the custom-plot doc link).
 
 ## Doc links
 
