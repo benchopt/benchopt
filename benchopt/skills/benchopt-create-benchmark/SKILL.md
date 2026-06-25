@@ -59,6 +59,13 @@ Two design rules that keep a benchmark extensible:
 
 ## Config and dependencies (benchmark-wide)
 
+- **`benchmark_utils/` is shared code that ships with the benchmark — no install
+  needed.** benchopt loads it and makes it importable as
+  `from benchmark_utils import …` from any component, and pickles it *by value*
+  so it travels to remote/distributed workers automatically. Use it to share
+  helpers and to design base classes that solvers/datasets/objective subclass
+  (e.g. a common `Solver` base wrapping shared setup). It must contain an
+  `__init__.py` to be a proper module.
 - **No module-level constants or hard-coded paths** (e.g.
   `_PROJECT_ROOT = Path(__file__).parent.parent`): they assume one machine's
   layout and break distribution. Express configuration as benchopt

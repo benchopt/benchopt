@@ -44,7 +44,7 @@ class Dataset(BaseDataset):
 Call `self.get_seed(use_repetition=True)` to obtain a deterministic seed that
 changes with the repetition index, so `--n-repetitions N` yields N genuinely
 different draws. A bare `self.get_seed()` returns the same seed for every
-repetition.
+repetition/datasets.
 
 ## Expensive one-time work: prepare()
 

@@ -1,6 +1,6 @@
 ---
 name: benchopt-results
-description: "Explore and manage benchopt result files: read run parquets in Python (benchopt.results.read_results), understand the dataframe schema, and use the CLI (plot/merge/publish) plus the outputs/ layout. Use when analysing, slicing, comparing, or sharing benchmark results."
+description: "Explore and manage benchopt result files: read run parquets in Python (benchopt.results.read_results), understand the dataframe schema, use the CLI (plot/merge/publish) and outputs/ layout, save custom views with plot_configs, write custom BasePlot plots, and merge results across machines. Use when analysing, slicing, comparing, plotting, or sharing benchmark results."
 ---
 
 # Exploring benchopt results
@@ -157,9 +157,45 @@ plot_configs:
 - Fastest way to author one: build the plot interactively in the HTML page, hit
   **Save as view**, and download the config snippet — drop it into the
   benchmark's config so the view is embedded in every future plot automatically.
-- For plots beyond the built-in kinds, add a `benchopt.BasePlot` subclass under
-  the benchmark's `plots/` directory; its `_get_name()` then becomes a valid
-  `plot_kind` (see the custom-plot doc link).
+
+## Custom plots (`BasePlot`)
+
+For visualizations the built-in kinds don't cover, add your own plot class under
+the benchmark's `plots/` directory — a Python file with a class inheriting from
+`benchopt.BasePlot`. Its `name` then appears in the HTML plot menu and is usable
+as a `plot_kind` in `plot_configs` (above).
+
+```python
+from benchopt import BasePlot
+
+class Plot(BasePlot):
+    name = "Final score"
+    type = "bar_chart"          # scatter | bar_chart | boxplot | table | image
+    options = {                 # become kwargs of plot()/get_metadata()
+        "dataset": ...,         # `...` auto-fills with unique dataset_name values
+        "objective": ...,
+        "solver": lambda df: df["solver_name"].unique().tolist(),  # or compute
+    }
+
+    def plot(self, df, dataset, objective, solver):
+        df = df.query("dataset_name == @dataset and objective_name == @objective")
+        bars = []
+        for s, df_s in df.groupby("solver_name"):
+            scores = df_s.groupby("idx_rep")["objective_value"].last()
+            bars.append({"y": scores.tolist(), "label": s,
+                         **self.get_style(s)})   # consistent color/marker per solver
+        return bars
+
+    def get_metadata(self, df, dataset, objective, solver):
+        return {"title": f"{objective} on {dataset}", "ylabel": "Objective value"}
+```
+
+- `plot(df, **opts)` returns data shaped by `type` (scatter: traces with
+  `x`/`y`/`label` + optional `y_low`/`y_high` bands; bar/boxplot: per-solver
+  dicts; table: list of rows; image: arrays). `get_metadata` sets title/labels/
+  `scale`. The exact per-type schema is in the custom-plot doc.
+- `self.get_style(label)` returns a `{color, marker}` dict keyed on a hash of the
+  label, so a given solver keeps the same style across every figure.
 
 ## Doc links
 
