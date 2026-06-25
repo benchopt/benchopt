@@ -12,7 +12,7 @@ description: >
 
 A solver lives in `solvers/<name>.py` as `class Solver(BaseSolver)` and must
 work against the benchmark's existing `Objective`. Run a smoke test after each
-change: `benchopt run . -s <name> -d <small-dataset> -n 5`.
+change: `benchopt run . -s <name> -d <small-dataset> -n 5` with a small dataset.
 
 ## The contract
 
@@ -60,14 +60,14 @@ def run(self, n_iter):
 
 Note that if the seed need to be different for each dataset/solver, you can use `use_dataset=True` and/or `use_solver=True` in `get_seed()`.
 
-## sampling_strategy — how the curve is sampled
+## sampling_strategy — how the computation budget is varied
 
 Set `sampling_strategy` on the solver (or default it at the `Objective` level):
 
 - `"run_once"`: `run` is called exactly once, no convergence curve (typical for
   ML). Often set once on the `Objective` so all solvers inherit it.
 - `"iteration"`: `run(stop_val)` is called repeatedly with an increasing
-  integer number of iterations (default logarithmic schedule).
+  integer number of iterations (default logarithmic schedule), starting from scratch each time.
 - `"tolerance"`: `stop_val` is a decreasing float tolerance.
 - `"callback"`: `run(callback)` receives a callable; call it once per
   iteration — it records time/objective and returns `False` when to stop:
@@ -115,14 +115,18 @@ catching `ImportError`**. Therefore:
 
 ## test_parameters
 
-Add a `test_parameters` dict (same shape as `parameters`) pointing at a tiny,
+Add a `test_config` dict (same shape as `parameters`) pointing at a tiny,
 fast configuration so `benchopt test` exercises the solver quickly.
+This config can also have optional `dataset` and `objective` keys,
+pointing to dict to specify test parameters for datasets and objective,
+including the dataset name to select a given class.
 
 ## Validate
 
 - `benchopt run . -s <name> -d <small-dataset> -n 5` as a smoke test.
-- `benchopt test . -k <Solver>` to exercise `test_parameters` (skip the
-  `*_install` test if your env cannot build isolated envs).
+- `benchopt test . -k <Solver>` to exercise `test_config` (skip the
+  `*_install` test with `--skip-install` if your env cannot build isolated envs or
+  to avoid long env creation).
 - `flake8 .` or `ruff check .` on the changed file.
 
 ## Doc links

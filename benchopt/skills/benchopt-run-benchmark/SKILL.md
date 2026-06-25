@@ -33,8 +33,9 @@ benchopt run . \
 ## Budgets and repetitions
 
 - `-n/--max-runs N`: max number of points sampled along each convergence curve.
-- `-r/--n-repetitions N`: independent repetitions (different seeds) for error
-  bars.
+  Only used for benchmark which evaluate iterative methods over time.
+- `-r/--n-repetitions N`: independent repetitions with potentially different seeds for
+  error bars or to have more reliable time estimates.
 - `--timeout SECONDS` / `--no-timeout`: per-solver wall-clock budget.
 
 ## Parallelism and environments
@@ -43,6 +44,8 @@ benchopt run . \
 - `--parallel-config slurm.yml`: dispatch on a cluster (SLURM, Dask, …).
 - `-e/--env [NAME]` / `--env-name NAME`: run inside a dedicated conda env
   (isolated dependencies). `-l/--local` (default) runs in the current env.
+  
+  Refer to benchopt-parallel skill for more info about parallelism.
 
 ## Caching
 
@@ -68,10 +71,15 @@ requirements; `--minimal` installs just benchopt + objective deps.
 
 - Results are `.parquet` files under `./outputs/`. An HTML dashboard is
   generated unless `--no-html`; `--no-plot`/`--no-display` skip plotting.
+- The name of the output can be controlled with the `--output` option.
+  If the name already exist, the new result is postfixed with `-1` or
+  `-X` the X-th time.
 - `benchopt plot <result.parquet>` regenerates figures; custom plots are
   configured via a config file (`plot_configs:` with `plot_kind`, `scale`).
 - `benchopt merge` combines results from different machines/users;
   `benchopt publish` shares on GitHub or Hugging Face.
+  
+See benchopt-results skill for more info about result management.
 
 ## Run configuration file
 

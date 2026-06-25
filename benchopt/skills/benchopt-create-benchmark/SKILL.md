@@ -15,7 +15,8 @@ concerns; for an individual component see **`benchopt-add-solver`** and
 **`benchopt-add-dataset`**, and for running/results **`benchopt-run-benchmark`**.
 
 After each change, lint (`flake8 .` or `ruff check .`) and run a `benchopt run`
-smoke test.
+smoke test with a debug config, or a `benchopt test . --skip-install` to catch early
+design failures.
 
 ## Start from a template
 
@@ -92,7 +93,7 @@ Two design rules that keep a benchmark extensible:
   reusable, solver-independent references in `prepare()` (e.g. a ground-truth
   trajectory) so each evaluation only does the cheap solver-dependent work.
 - Give datasets/solvers a `test_parameters` dict pointing at a tiny, fast
-  configuration, and ship at least one zero-dependency `Simulated` dataset so
+  configuration, and when possible, ship a zero-dependency `Simulated` dataset so
   the benchmark always has a no-install smoke test.
 
 ## Continuous integration
@@ -108,7 +109,7 @@ and calls two reusable workflows from `benchopt/template_benchmark`:
   matrix using a Miniforge/mamba conda env (Python 3.12 by default). It tests
   against both benchopt `@main` and the latest release, and checks the
   `min_benchopt_version` declared in `objective.py`. Heavy data dirs can be
-  cached to avoid re-downloads.
+  cached to avoid re-downloads, by providing the cache_dir input in the test.yml workflow.
 
 ## Validate locally
 

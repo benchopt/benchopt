@@ -38,5 +38,6 @@ written so re-running is idempotent and upstream-deleted skills are cleaned up
 instead of leaving orphans. Only `benchopt-*` entries are ever touched —
 repo-specific skills next to them are left alone.
 
-**Never edit `benchopt-*` skills inside a benchmark repo** — fix them here and
-release. Re-run `benchopt sync-skills` after upgrading benchopt to update.
+**Never edit `benchopt-*` skills inside a benchmark repo** — fix them in the
+benchopt repo and release.
+Re-run `benchopt sync-skills` after upgrading benchopt to update.

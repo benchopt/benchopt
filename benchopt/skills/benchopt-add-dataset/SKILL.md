@@ -86,7 +86,7 @@ benchopt detects installation by **importing the module and catching
 - Avoid `safe_import_context` except for class-body attributes evaluated at
   definition time that reference an imported name (e.g. a subclass referencing a
   parent's imported symbols).
-- Ship at least one zero-dependency `Simulated` dataset so the benchmark always
+- Ship a zero-dependency `Simulated` dataset when possible so the benchmark always
   has a no-install smoke test.
 
 ## test_parameters

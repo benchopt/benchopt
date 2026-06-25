@@ -156,6 +156,7 @@ full run points at the *solvers*, not the objective.
 
 ### Diverging curves and NaNs
 
+For sequential solvers that are evaluated with varying compute budget,
 benchopt watches the monitored objective (`key_to_monitor`, default
 `objective_value`) and **stops the run with status `diverged`** as soon as that
 value is `NaN` or worsens by more than `1e5` between two steps

@@ -20,19 +20,20 @@ benchopt_run_<timestamp>/          ← per-solver run artifacts (see general.md)
 ```
 
 `benchopt merge` writes `merged_results.parquet` and `benchopt plot --all`
-writes `all_runs.html` covering every parquet in the folder.
+writes `all_runs.html`, a table of content that allow navigating to HTML reports
+for every parquet in the folder.
 
 ## Read a result file in Python
 
 The public entry point is `read_results` — it handles `.parquet` and `.csv`,
 renames the legacy `data_name` column to `dataset_name`, and unpacks any
-objective columns that were pickled at write time:
+objective columns that were pickled at write time (array-api objects):
 
 ```python
 from benchopt.results import read_results
 
 df = read_results("outputs/benchopt_run_2026-06-23_11h08m26.parquet")
-df.shape        # (n_points, n_columns); one row = one sampled point on a curve
+df.shape        # (n_points, n_columns); one row = one sampled point on a curve for a given (dataset, objective, solver, repetition).
 ```
 
 `read_results` returns a plain `pandas.DataFrame`, so everything after is
@@ -70,7 +71,7 @@ final = (
       .last()
 )
 
-# Best objective per solver, averaged over repetitions
+# Last objective per solver, averaged over repetitions
 final.groupby("solver_name")["objective_value"].agg(["mean", "std"])
 
 # Filter on a single parameter instead of the full name
@@ -85,9 +86,12 @@ from benchopt.results import save_results
 save_results(final, "outputs/final_points.parquet")
 ```
 
+If `final_points.parquet` already exists, the result will be saved as
+`final_points-1.parquet`, except if using `uniquify=False`.
+
 ## CLI: plot, merge, publish
 
-Run these from the benchmark directory; with no `-f`, they pick the **latest**
+Run these from the benchmark directory; with no `--file/-f`, they pick the **latest**
 result file automatically.
 
 ```bash
