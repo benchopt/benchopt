@@ -10,6 +10,14 @@ What's new
 Version 1.10.0 -- In development
 --------------------------------
 
+CLI
+~~~
+
+- Ship agent skills (``SKILL.md``, `Agent Skills <https://agentskills.io>`_
+  standard) as package data and add ``benchopt sync-skills`` to install them
+  into a project's ``.agents/skills/`` (or globally with ``--global``), with a
+  ``.claude/skills/`` mirror for Claude Code. By `Thomas Moreau`_ (:gh:`959`)
+
 API
 ~~~
 
