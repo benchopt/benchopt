@@ -67,21 +67,21 @@ Two design rules that keep a benchmark extensible:
   helpers and to design base classes that solvers/datasets/objective subclass
   (e.g. a common `Solver` base wrapping shared setup). It must contain an
   `__init__.py` to be a proper module.
-- **No module-level constants or hard-coded paths** (e.g.
-  `_PROJECT_ROOT = Path(__file__).parent.parent`): they assume one machine's
-  layout and break distribution. Express configuration as benchopt
-  **parameters** set from the run config, not a bespoke config file the
-  benchmark reads itself.
-- For data/config locations use **`get_data_path("key")`**
-  (`from benchopt.config import get_data_path`); it resolves under the
-  benchmark's configurable data folder, so it travels with any checkout. Ship
-  small default/test configs in the repo and `.gitignore` only *generated* data.
 - **Requirements are per component**, not per `benchmark_utils` submodule — each
   objective/dataset/solver declares exactly what it imports (install detection
   is covered in the add-solver/add-dataset skills). Organise `benchmark_utils`
   by **topic** (one module per concern), import the specific submodule from each
   class, and keep `benchmark_utils/__init__.py` **empty** so importing one topic
   doesn't load the others.
+- For data/config locations use **`get_data_path("key")`**
+  (`from benchopt.config import get_data_path`); it resolves under the
+  benchmark's configurable data folder, so it travels with any checkout. Ship
+  small default/test configs in the repo and `.gitignore` only *generated* data.
+- **No module-level constants or hard-coded paths** (e.g.
+  `_PROJECT_ROOT = Path(__file__).parent.parent`): they assume one machine's
+  layout and break distribution. Express configuration as benchopt
+  **parameters** set from the run config, not a bespoke config file the
+  benchmark reads itself.
 - To wrap an external code, prefer an **installable package with an in-process
   Python API** declared as a pip requirement (`pip::name @ git+https://…`) over
   `subprocess`/CLI/file round-trips.

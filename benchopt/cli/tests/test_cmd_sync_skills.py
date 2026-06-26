@@ -43,6 +43,18 @@ def test_sync_local(tmp_path, monkeypatch):
     assert manifest["benchopt_version"]
 
 
+def test_sync_into_benchmark_path(tmp_path):
+    # An explicit benchmark path is used instead of the current directory.
+    bench = tmp_path / "my_benchmark"
+    bench.mkdir()
+    _sync([str(bench)])
+
+    agents = bench / ".agents" / "skills"
+    assert sorted(_manifest(agents)["skills"]) == SKILL_NAMES
+    for name in SKILL_NAMES:
+        assert (agents / name / "SKILL.md").is_file()
+
+
 def test_sync_idempotent(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     _sync()

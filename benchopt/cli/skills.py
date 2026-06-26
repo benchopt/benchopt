@@ -84,11 +84,14 @@ def skills():
 
 @skills.command(
     name="sync-skills",
-    help="Sync benchopt's shared agent skills into a project (or globally).",
+    help="Sync benchopt's shared agent skills into a benchmark (or globally).",
+)
+@click.argument(
+    "benchmark", default=".", type=click.Path(exists=True),
 )
 @click.option(
     "--global", "global_", is_flag=True,
-    help="Install into ~/.agents/skills instead of the current directory.",
+    help="Install into ~/.agents/skills instead of the benchmark directory.",
 )
 @click.option(
     "--no-claude", is_flag=True,
@@ -98,8 +101,8 @@ def skills():
     "--dry-run", is_flag=True,
     help="Show what would change without writing anything.",
 )
-def sync_skills(global_, no_claude, dry_run):
-    base = Path.home() if global_ else Path.cwd()
+def sync_skills(benchmark, global_, no_claude, dry_run):
+    base = Path.home() if global_ else Path(benchmark)
     agents_dir = base / AGENTS_SKILLS_DIR
     claude_dir = base / CLAUDE_SKILLS_DIR
 
