@@ -10,6 +10,15 @@ What's new
 Version 1.10.0 -- in development
 --------------------------------
 
+<<<<<<< ENH_agent_skills
+CLI
+~~~
+
+- Ship agent skills (``SKILL.md``, `Agent Skills <https://agentskills.io>`_
+  standard) as package data and add ``benchopt sync-skills`` to install them
+  into a project's ``.agents/skills/`` (or globally with ``--global``), with a
+  ``.claude/skills/`` mirror for Claude Code. By `Thomas Moreau`_ (:gh:`959`)
+=======
 PLOT
 ~~~~
 
@@ -20,6 +29,7 @@ PLOT
 - Improve the html report table, now rendered with `Grid.js
   <https://gridjs.io/>`_: sortable by any column, filter by solver name,
   hide/show any columns. By `Hippolyte Verninas`_ (:gh:`953`)
+>>>>>>> main
 
 API
 ~~~

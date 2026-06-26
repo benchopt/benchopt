@@ -10,6 +10,9 @@ recursive-include benchopt/plotting *.css
 recursive-include benchopt/plotting *.js
 recursive-include benchopt/plotting *.svg
 
+# Include shared agent skills (distributed via `benchopt sync-skills`)
+recursive-include benchopt/skills *
+
 
 # Include doc generation files
 recursive-include doc/_static *

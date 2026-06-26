@@ -104,6 +104,13 @@ find = { namespaces = false }
   "html/templates/result.mako.html",
   "html/templates/benchmark.mako.html",
 ]
+"benchopt.skills" = [
+  "**/SKILL.md",
+  "**/*.md",
+  "**/scripts/*",
+  "**/references/*",
+  "**/assets/*",
+]
 
 [tool.setuptools.dynamic]
 version = {attr = "benchopt.__version__"}
