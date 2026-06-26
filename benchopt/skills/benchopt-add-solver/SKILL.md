@@ -78,8 +78,36 @@ Set `sampling_strategy` on the solver (or default it at the `Objective` level):
   ```
 
 `stopping_criterion` (an instance like `SufficientProgressCriterion` or
-`NoCriterion`) controls when iterative runs stop; defaults are derived from the
-sampling strategy. See the doc links.
+`NoCriterion`) controls when iterative runs stop; the default is
+`SufficientProgressCriterion(patience=3)`, derived from the sampling strategy.
+
+**Fixed-budget gotcha (DL / fixed-epoch training).** The default stops a run as
+soon as the monitored objective fails to improve for `patience=3` successive
+evaluations (`eps=1e-10`). On a convergence benchmark that is the point — but
+for **fixed-budget training** (run N epochs/steps no matter what) a noisy or
+plateauing loss trips it *silently*: the curve ends well before your budget and
+the run looks "done". Pin an explicit criterion that does not truncate on
+progress:
+
+```python
+from benchopt.stopping_criterion import NoCriterion
+
+class Solver(BaseSolver):
+    sampling_strategy = "callback"          # or "iteration"
+    stopping_criterion = NoCriterion()      # run to --max-runs / timeout, no early stop
+```
+
+`NoCriterion` never stops on lack of progress, so the run length is set by
+`--max-runs` / `--timeout` (or by your own `run` loop). If `run` already loops
+over the whole budget in a single call, use `SingleRunCriterion(stop_val=N)`
+instead — it drives exactly `N` callback calls (or one `run(N)`).
+
+When *every* solver in the benchmark is fixed-budget (e.g. a DL benchmark where
+all solvers train for N epochs), set `stopping_criterion` **once on the
+`Objective`** rather than repeating it per solver — like `sampling_strategy`, a
+solver that doesn't define its own inherits the objective's, so this makes the
+no-truncation behavior benchmark-wide. See the doc links; the early-truncation
+*symptom* is covered in the `benchopt-debug` skill.
 
 ## Optional hooks
 

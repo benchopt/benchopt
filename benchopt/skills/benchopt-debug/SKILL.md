@@ -177,6 +177,19 @@ replay snippets above instead of staring at the curve:
   wrong quantity, make sure `key_to_monitor` names the metric you intend (it must
   be a key returned by `evaluate_result`).
 
+### Curve stops early but status is not `diverged`
+
+If a run's curve ends well before the iteration/epoch budget and the status is
+**not** `diverged`, the default `SufficientProgressCriterion(patience=3)` stopped
+it: it exits once the monitored objective fails to improve for 3 successive
+evaluations (`eps=1e-10`). That is intended for convergence benchmarks, but it
+silently truncates **fixed-budget training** (e.g. a DL solver meant to run N
+epochs) as soon as the loss plateaus or is merely noisy — so the run looks
+"done" far short of the budget. This is a *stopping-criterion* choice, not a bug
+in your solver: fix it on the solver (or benchmark-wide on the `Objective`) by
+pinning an explicit `stopping_criterion` such as `NoCriterion` or
+`SingleRunCriterion`. See the `benchopt-add-solver` skill for the fix.
+
 ### Stale-cache surprises
 
 `benchopt run` caches each `(solver, dataset, rep)` with `joblib.Memory`, keyed on
