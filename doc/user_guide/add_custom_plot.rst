@@ -254,6 +254,15 @@ The metadata dictionary returned by :code:`get_metadata` should contain:
 
 - :code:`title`: The title of the plot.
 - :code:`columns`: A list of column names.
+- :code:`default_order_column` (optional, default=0): The column to sort the rows on by
+  default in the html report, given as a column name or a 0-based column index.
+- :code:`default_order_ascending` (optional, default=True): Whether the default
+  ordering is in increasing order.
+
+In the html report, each column header can be clicked to sort on that column,
+and the arrow next to it can be toggled to switch between increasing and
+decreasing order. A search bar allows filtering the rows, and each column can
+be shown or hidden with the checkboxes below the table.
 
 .. code-block:: python
 
@@ -272,6 +281,8 @@ The metadata dictionary returned by :code:`get_metadata` should contain:
         return {
             "title": f"Summary for {dataset}",
             "columns": ["Solver", "Mean Time [sec]"],
+            "default_order_column": "Mean Time [sec]",
+            "default_order_ascending": True,
         }
 
 

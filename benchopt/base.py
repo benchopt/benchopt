@@ -9,10 +9,11 @@ from .utils.misc import NamedTemporaryFile
 from .utils.class_property import classproperty
 from .utils.dependencies_mixin import DependenciesMixin
 from .utils.parametrized_name_mixin import ParametrizedNameMixin
-from .utils.seed_mixin import SeedMixin
+from .utils.run_context_mixin import RunContextMixin
 
 
-class BaseSolver(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
+class BaseSolver(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
+                 ABC):
     """A base class for solver wrappers in Benchopt.
 
     Solvers that derive from this class should implement three methods:
@@ -316,7 +317,8 @@ class CommandLineSolver(BaseSolver, ABC):
         super().__init__(**parameters)
 
 
-class BaseDataset(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
+class BaseDataset(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
+                  ABC):
     """Base class to define a dataset in a benchmark.
 
     Datasets that derive from this class should implement one method:
@@ -338,7 +340,9 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
         deduplication when running preparation in parallel.
         Use the special value ``"all"`` to ignore every parameter (i.e.
         preparation runs at most once per dataset class regardless of
-        parameterization).
+        parameterization). The reserved name ``"base_seed"`` (also implied by
+        ``"all"``) drops the benchmark ``--seed`` from the prepare cache key,
+        for datasets whose preparation does not depend on the seed.
     """
 
     _base_class_name = 'Dataset'
@@ -366,6 +370,17 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
               class Dataset(BaseDataset):
                   parameters = {'n_samples': [100, 1000], 'seed': [0, 1, 2]}
                   prepare_cache_ignore = ('seed',)  # 2 calls instead of 6
+        - The benchmark ``--seed`` is part of the prepare cache key, so
+          preparing with a different seed re-runs preparation. Pass the same
+          ``--seed`` to ``benchopt prepare`` and ``benchopt run`` so the
+          prepared data matches the run. If preparation does not depend on the
+          seed, it can be ignored adding ``base_seed`` in
+          ``prepare_cache_ignore`` (included in ``"all"``).
+        - At preparation time only the dataset is known, so ``get_seed`` (in
+          ``prepare`` or in the ``get_data`` it triggers) may only be called
+          with ``use_dataset=True``. Requesting the objective, solver or
+          repetition seed raises a ``ValueError``, as they are not yet defined.
+          See :ref:`controlling_randomness`.
         """
         pass
 
@@ -389,8 +404,8 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
         # We compare to the last seed (computed with the most restrictive
         # parameters) to check if the data should be recomputed.
         elif (
-            self._used_seed is not None and
-            self._used_seed != self._get_seed(**self._seed_params)
+            self._used_seed is not None
+            and self._used_seed != self._compute_used_seed()
         ):
             self._data = self.get_data()
 
@@ -402,8 +417,18 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
         return self._data
 
     @staticmethod
-    def _prepare(dataset):
-        """Preparation function, to map to prepare or get_data."""
+    def _prepare(dataset, base_seed=0):
+        """Preparation function, to map to prepare or get_data.
+
+        ``base_seed`` is part of the joblib cache key. Note that only
+        use_dataset is known at this point; requesting the objective/solver/
+        repetition seed raises an error.
+        """
+        from .utils.run_context import RunContext
+        RunContext(
+            base_seed=str(base_seed),
+            dataset_name=str(dataset),
+        ).attach(objective=None, dataset=dataset, solver=None)
         if type(dataset).prepare is not BaseDataset.prepare:
             dataset.prepare()
         else:
@@ -421,10 +446,19 @@ def _prepare_one(benchmark, dataset, force=False):
     success or the caught exception on failure.
     """
     exc = None
-    cached_prepare = benchmark.cache(BaseDataset._prepare, force=force)
+    # Datasets whose preparation does not depend on the seed can drop it from
+    # the cache key by listing 'base_seed' in prepare_cache_ignore,
+    # handle this separately.
+    cache_ignore = getattr(type(dataset), 'prepare_cache_ignore', ())
+    ignore = ['base_seed'] if (
+        cache_ignore == "all" or 'base_seed' in cache_ignore
+    ) else None
+    cached_prepare = benchmark.cache(
+        BaseDataset._prepare, ignore=ignore, force=force
+    )
     print(f"Preparing {dataset} ...", end=' ', flush=True)
     try:
-        cached_prepare(dataset=dataset)
+        cached_prepare(dataset=dataset, base_seed=benchmark.seed)
         print("done")
     except Exception as e:
         print("FAILED")
@@ -435,7 +469,8 @@ def _prepare_one(benchmark, dataset, force=False):
         return (str(dataset), exc)
 
 
-class BaseObjective(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
+class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
+                    ABC):
     """Base class to define an objective function
 
     Objectives that derive from this class needs to implement three methods:
@@ -501,6 +536,10 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, SeedMixin, ABC):
     """
     _base_class_name = 'Objective'
 
+    # All class attributes that need to be parsed when we cannot import
+    # the objective must be listed here. name is a special case as it is
+    # defined as a property.
+    url = None
     python_version = None
     min_benchopt_version = None
 

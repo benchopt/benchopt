@@ -1,15 +1,21 @@
-"""Image plot type for benchopt
-==============================
+"""Generating and displaying images in a benchmark
+==================================================
 
-This example demonstrates the ``image`` plot type, which allows
-benchmark authors to display solver outputs as a visual gallery inside
-the benchopt HTML result page.
+This example shows two complementary ways to work with images in a benchmark:
 
-The benchmark solves a toy 2-D signal denoising problem.
-We use the iterative methods to solve the problem and store intermediate
-results for each solvers. We then define a custom plot that reads those
-intermediate results and renders an animated GIF showing the solver iterating,
-as well as the initial noisy image and the reference image for comparison.
+1. **Saving artifacts with** ``get_run_output_path()``: call this method from
+   ``evaluate_result`` (or ``run``) to obtain a per-run directory and write any
+   file — PNG frames, checkpoints, logs — directly to disk.
+
+2. **Displaying images in the HTML report** with the ``image`` plot type:
+   return array data from ``evaluate_result`` and collect it in a custom
+   :class:`~benchopt.BasePlot` subclass to render a visual gallery (including
+   animated GIFs) without any manual file management.
+
+The benchmark solves a toy 2-D image denoising problem.  Iterative solvers
+refine their estimate at each callback step; each intermediate reconstruction
+is both saved as a PNG via ``get_run_output_path()`` *and* returned as an array
+so the custom plot can build an animated GIF automatically.
 
 First, we import example helpers to define the benchmark and run it in this
 example.
@@ -24,11 +30,13 @@ from benchopt.helpers.run_examples import benchopt_cli
 # --------------------
 #
 # We define each component (objective, dataset, solvers, custom plot) of the
-# benchmarkas:
+# benchmark:
 #
 # - The ``Dataset`` simulates a noisy checkerboard image.
-# - The ``Objective`` evaluate results by computing the MSE, and storing the
-#   intermediate reconstructions.
+# - The ``Objective`` computes the MSE and saves each iteration as a PNG using
+#   :meth:`~benchopt.BaseObjective.get_run_output_path`, which returns a
+#   per-run directory unique to the (dataset, objective, solver, repetition)
+#   combination (see :ref:`run_artifacts`).
 # - The ``Solver`` implement two simple iterative denoising methods: a median
 #   filter and a total variation denoising method.
 
@@ -42,11 +50,26 @@ OBJECTIVE = """
         def set_data(self, X_true, X_noisy):
             self.X_true = X_true
             self.X_noisy = X_noisy
+            self.n_eval_ = 0
 
         def get_objective(self):
             return dict(X_noisy=self.X_noisy)
 
         def evaluate_result(self, X_hat):
+            self.n_eval_ += 1
+
+            # Manually save intermediate reconstruction as a PNG file.
+            # get_run_output_path() returns a directory unique to this
+            # (dataset, objective, solver, repetition) combination.
+            import matplotlib.pyplot as plt
+            out_dir = self.get_run_output_path()
+            plt.imsave(
+                out_dir / f"frame_{self.n_eval_:03d}.png",
+                X_hat, cmap="gray", vmin=0, vmax=1,
+            )
+
+            # Return a dict of metrics (MSE) and the current frame
+            # for plotting in the HTML report (less manual than above).
             return dict(
                 mse=float(np.mean((self.X_true - X_hat) ** 2)),
                 frame=X_hat,
@@ -163,6 +186,47 @@ benchmark
 
 
 # %%
+# Run the benchmark
+# -----------------
+#
+# We run the benchmark first.  Because ``evaluate_result`` calls
+# ``get_run_output_path()``, each solver's intermediate frames are saved to
+# disk under ``<benchmark>/outputs/<run_name>/``.
+
+benchopt_cli(
+    f"run {benchmark.benchmark_dir} -n 5 -r 1"
+)
+
+# %%
+# Accessing saved artifacts
+# -------------------------
+#
+# The PNG frames saved by ``get_run_output_path()`` are now on disk and can be
+# read back with any standard tool.  Here we display a few of them directly:
+
+import matplotlib.pyplot as plt
+
+png_files = sorted(
+    (benchmark.benchmark_dir / "outputs").glob("**/*.png")
+)
+print(f"{len(png_files)} PNG frames saved across all runs.")
+
+sample = png_files[:4]
+fig, axes = plt.subplots(1, len(sample), figsize=(3 * len(sample), 3))
+for ax, p in zip(axes, sample):
+    ax.imshow(plt.imread(p), cmap="gray", vmin=0, vmax=1)
+    ax.set_title(f"{p.parent.name}\n{p.name}", fontsize=7)
+    ax.axis("off")
+fig.suptitle("Frames saved via get_run_output_path() — accessed manually")
+plt.tight_layout()
+plt.show()
+
+# %%
+# This works, but requires manually navigating the output directory tree.
+# The ``image`` plot type below is the more convenient alternative for
+# embedding reconstructions directly in the benchopt HTML report.
+
+# %%
 # The ``image`` plot type
 # -----------------------
 #
@@ -252,14 +316,15 @@ benchmark.update(
 )
 
 # %%
-# Run the benchmark
-# -----------------
+# Generate the HTML report
+# ------------------------
 #
-# We run the benchmark using ``benchopt`` CLI with a small ``-n`` and ``-r``
-# to keep the runtime short.
+# The benchmark was already run above; ``benchopt plot`` reads the cached
+# results and generates the HTML report with the ``image`` plot type.
+
 
 benchopt_cli(
-    f"run {benchmark.benchmark_dir} -n 5 -r 1"
+    f"plot {benchmark.benchmark_dir}"
 )
 
 # %%
