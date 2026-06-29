@@ -122,6 +122,9 @@ const renderPlot = () => {
 
   let div = plot_container;
   if (isChart('scatter')) {
+    plot_container.classList.remove('js-plotly-plot');
+    plot_container.style.width = '';
+    plot_container.style.height = '';
     show(plot_with_legend_container);
     div = plot_with_legend_container;
     renderLegend();
@@ -132,14 +135,12 @@ const renderPlot = () => {
   const layout = getLayout();
   Plotly.react(div, data, layout);
 
-  // Enable drag/typed resizing of this figure (desktop only).
-  if (window.matchMedia('(min-width: 768px)').matches) {
-    const controls = document.getElementById('figsize_controls');
-    controls.style.display = 'flex';
-    div.appendChild(controls);  // anchor the size overlay to the current figure
-    addResizeHandles(div);
-    resizeFig(div);
-  }
+  // Enable drag/typed resizing of this figure (works on touch too).
+  const controls = document.getElementById('figsize_controls');
+  controls.style.display = 'flex';
+  div.appendChild(controls);  // anchor the size overlay to the current figure
+  addResizeHandles(div);
+  resizeFig(div);
 };
 
 /*
@@ -177,7 +178,10 @@ const setFigSize = () => {
 // (Re)create the drag handles on the right ('x') and bottom ('y') edges.
 // Plotly.purge leaves these children in place, so clear any stale ones first.
 const addResizeHandles = (div) => {
-  div.querySelectorAll('.resize-handle').forEach(h => h.remove());
+  // Clear from plot_container (the common ancestor) so handles left on the
+  // other chart type's div are removed too, not just those inside `div`.
+  document.getElementById('plot_container')
+    .querySelectorAll('.resize-handle').forEach(h => h.remove());
   ['x', 'y', 'xy'].forEach(axis => div.appendChild(makeResizeHandle(div, axis)));
 };
 
@@ -1660,4 +1664,12 @@ document.getElementById('btn-main-menu').addEventListener('click', () => {
   }
 
   elmt.style.display = 'block';
+});
+
+// Refit the current figure to its container when the window is resized so it
+// keeps the right dimensions. Debounced to avoid refitting on every event.
+let resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => resizeFig(getPlotDiv()), 150);
 });

@@ -330,6 +330,15 @@ input:checked+.slider:before {
 /***** Custom legend *****/
 /*----------------------------------------*/
 
+/* Grow the legend to fill the space below the figure so its background runs to
+   the bottom of the page, and stay sticky so resizing/scrolling keeps it put. */
+#legend_container {
+  flex: 1 1 auto;
+  position: sticky;
+  bottom: 0;
+  z-index: 8;
+}
+
 #plot_legend {
   display: flex;
   flex-direction: row;
@@ -524,64 +533,22 @@ g.hovertext:has(path + [data-unformatted*="lower fence"])
     display: none;
 }
 
-/* Fixed aspect ratio for plot containers on mobile devices for better readability */
-/* plot_with_legend_container is used for scatter plots and is always present */
-
-/* Mobile portrait: Use taller aspect ratio to fill vertical space */
-@media (max-width: 767px) and (orientation: portrait) {
-  #plot_with_legend_container {
-    aspect-ratio: 3 / 4; /* Taller aspect ratio for portrait */
-    min-height: 400px;
-    max-height: 70vh;
-  }
-
-  #plot_container.js-plotly-plot {
-    aspect-ratio: 3 / 4;
-    min-height: 400px;
-    max-height: 70vh;
-  }
-}
-
-/* Mobile landscape: Use wider aspect ratio */
-@media (max-width: 767px) and (orientation: landscape) {
-  #plot_with_legend_container {
-    aspect-ratio: 4 / 3;
-    min-height: 300px;
-    max-height: 80vh; /* Use most of screen height in landscape */
-  }
-
-  #plot_container.js-plotly-plot {
-    aspect-ratio: 4 / 3;
-    min-height: 300px;
-    max-height: 80vh;
-  }
-}
-
-/* Desktop: Remove aspect ratio constraints for flexibility */
-@media (min-width: 768px) {
-  #plot_with_legend_container {
-    aspect-ratio: auto;
-    min-height: 200px;
-    max-height: none;
-    height: 600px; /* default height, freely resizable down to min-height */
-  }
-
-  #plot_container.js-plotly-plot {
-    aspect-ratio: auto;
-    min-height: 200px;
-    max-height: none;
-    height: 600px; /* default height for bar/boxplot figures */
-  }
-
+/* Plot containers: fixed default size, freely resizable by dragging an
+   edge/corner or typing a size. Same behavior on phones and desktop -- a fixed
+   default plays better with drag-resize than the old per-orientation aspect
+   ratios (which fight the explicit width/height a drag sets). */
+#plot_with_legend_container,
+#plot_container.js-plotly-plot {
+  aspect-ratio: auto;
+  min-height: 200px;
+  max-height: none;
+  height: 600px; /* default height, freely resizable down to min-height */
   /* flex:none so dragged/typed sizes stick instead of being stretched by the
      flex layout; position:relative anchors the edge resize handles; max-width
      keeps the figure (and its right handle) clear of the scrollbar. */
-  #plot_with_legend_container,
-  #plot_container.js-plotly-plot {
-    flex: none;
-    position: relative;
-    max-width: calc(100% - 1rem);
-  }
+  flex: none;
+  position: relative;
+  max-width: calc(100% - 1rem);
 }
 
 /* Drag handles on the right, bottom, and bottom-right corner of the figure. */
@@ -590,6 +557,12 @@ g.hovertext:has(path + [data-unformatted*="lower fence"])
   z-index: 5;
   background: transparent;
   transition: background 0.15s;
+  touch-action: none; /* so a touch-drag resizes instead of scrolling the page */
+}
+/* Fatter edge handles on touch devices -- 8px is too thin for a fingertip. */
+@media (pointer: coarse) {
+  .resize-handle-x { width: 16px; }
+  .resize-handle-y { height: 16px; }
 }
 .resize-handle:hover {
   background: rgba(59, 130, 246, 0.35);
