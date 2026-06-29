@@ -162,6 +162,122 @@ class TestPrepareCmd:
         out.check_output("#PREPARED", repetition=1)
         out.check_output("1/2 datasets ready", repetition=1)
 
+    def test_get_seed_dataset_ok(self):
+        """get_data() may call get_seed(use_dataset=True) during prepare."""
+        dataset = """from benchopt import BaseDataset
+            class Dataset(BaseDataset):
+                name = "dataset"
+                def get_data(self):
+                    print('#SEED=', self.get_seed(use_dataset=True))
+                    return dict(X=0, y=1)
+        """
+        with temp_benchmark(datasets=dataset) as bench:
+            with CaptureCmdOutput() as out:
+                prepare_cmd(
+                    [str(bench.benchmark_dir)],
+                    'benchopt', standalone_mode=False
+                )
+            out.check_output(r"#SEED=", repetition=1)
+            out.check_output("Summary: 1/1 datasets ready.")
+
+    @pytest.mark.parametrize('seed_arg', [
+        'use_objective=True', 'use_solver=True', 'use_repetition=True',
+    ])
+    def test_get_seed_non_dataset_raises(self, seed_arg):
+        """get_seed() depending on objective/solver/rep fails in prepare.
+
+        These dimensions are unknown at preparation time, so prepare must fail
+        with a clear error instead of the run_context-not-initialized error.
+        """
+        dataset = f"""from benchopt import BaseDataset
+            class Dataset(BaseDataset):
+                name = "dataset"
+                def get_data(self):
+                    self.get_seed({seed_arg})
+                    return dict(X=0, y=1)
+        """
+        with temp_benchmark(datasets=dataset) as bench:
+            with CaptureCmdOutput(exit=1) as out:
+                prepare_cmd(
+                    [str(bench.benchmark_dir)],
+                    'benchopt', standalone_mode=False
+                )
+        out.check_output("is defined in the current run context")
+        out.check_output("FAILED")
+
+    def test_seed_passed_to_get_seed(self):
+        """The --seed value controls the seed available during prepare."""
+        dataset = """from benchopt import BaseDataset
+            class Dataset(BaseDataset):
+                name = "dataset"
+                def get_data(self):
+                    print('#SEED=', self.get_seed(use_dataset=True))
+                    return dict(X=0, y=1)
+        """
+        seeds = []
+        with temp_benchmark(datasets=dataset) as bench:
+            for seed in [0, 1]:
+                with CaptureCmdOutput() as out:
+                    prepare_cmd(
+                        f"{bench.benchmark_dir} --seed {seed}".split(),
+                        'benchopt', standalone_mode=False
+                    )
+                seeds += out.check_output(r"#SEED= (\d+)", repetition=1)
+        assert seeds[0] != seeds[1]
+
+    def test_cache_per_seed(self):
+        """Prepare cached per-seed: same seed hits cache, new seed re-runs."""
+        dataset = """from benchopt import BaseDataset
+            class Dataset(BaseDataset):
+                name = "dataset"
+                def prepare(self):
+                    print('#PREPARED', self.get_seed(use_dataset=True))
+                def get_data(self): return dict(X=0, y=1)
+        """
+        with temp_benchmark(datasets=dataset) as bench:
+            # Same seed twice: prepare runs once, second call hits the cache.
+            with CaptureCmdOutput() as out:
+                prepare_cmd(
+                    f"{bench.benchmark_dir} --seed 0".split(),
+                    'benchopt', standalone_mode=False
+                )
+                prepare_cmd(
+                    f"{bench.benchmark_dir} --seed 0".split(),
+                    'benchopt', standalone_mode=False
+                )
+            out.check_output("#PREPARED", repetition=1)
+
+            # A different seed invalidates the cache and re-runs prepare.
+            with CaptureCmdOutput() as out:
+                prepare_cmd(
+                    f"{bench.benchmark_dir} --seed 1".split(),
+                    'benchopt', standalone_mode=False
+                )
+            out.check_output("#PREPARED", repetition=1)
+
+    @pytest.mark.parametrize('ignore', ["('base_seed',)", "'all'"])
+    def test_cache_ignore_base_seed(self, ignore):
+        """prepare_cache_ignore drop the seed from the prepare cache key."""
+        dataset = f"""from benchopt import BaseDataset
+            class Dataset(BaseDataset):
+                name = "dataset"
+                prepare_cache_ignore = {ignore}
+                def prepare(self): print('#PREPARED')
+                def get_data(self): return dict(X=0, y=1)
+        """
+        with temp_benchmark(datasets=dataset) as bench:
+            # A different seed must not invalidate the cache.
+            with CaptureCmdOutput() as out:
+                prepare_cmd(
+                    f"{bench.benchmark_dir} --seed 0".split(),
+                    'benchopt', standalone_mode=False
+                )
+                prepare_cmd(
+                    f"{bench.benchmark_dir} --seed 1".split(),
+                    'benchopt', standalone_mode=False
+                )
+            out.check_output("#PREPARED", repetition=1)
+
     def test_force_flag(self, tmp_path):
         """--force re-runs preparation even when cached."""
         with temp_benchmark(datasets=self.dataset) as bench:

@@ -92,10 +92,14 @@ const setState = (partialState) => {
 
   if  (isChart('table')) {
     renderTable();
-  } else if (isChart('image')) {
-    renderImages();
   } else {
-    renderPlot();
+    // Pending table-view settings only apply to tables; drop them otherwise.
+    tablePendingView = null;
+    if (isChart('image')) {
+      renderImages();
+    } else {
+      renderPlot();
+    }
   }
 
 };
@@ -441,7 +445,14 @@ const setConfig = (config_item) => {
     if ("plot_kind" in config) {
       kind = config["plot_kind"];
     }
+    // Table settings are applied by renderTable, not through the state.
+    tablePendingView = ('table_order' in config || 'table_hidden_columns' in config)
+      ? {order: config.table_order ?? null, hidden: config.table_hidden_columns ?? []}
+      : null;
     for(let key in config){
+      if (key === 'table_order' || key === 'table_hidden_columns') {
+        continue;
+      }
       const value = config[key];
       if (key in config_mapping) {
         if (config_mapping[key] !== '') {
@@ -487,6 +498,15 @@ const saveView = () => {
   }
   for (let option of DEFAULT_CONFIG_OPTIONS) {
     config[option] = state()[option];
+  }
+
+  // Persist the table order and hidden columns when viewing a table.
+  if (isChart('table')) {
+    const order = getTableOrder();
+    if (order) {
+      config.table_order = order;
+    }
+    config.table_hidden_columns = [...tableHiddenColumns];
   }
 
   let noViewAvailableElement = document.getElementById('no_view_available');
@@ -550,6 +570,9 @@ const exportConfigs = () => {
       var value = config[key];
       if (key === 'xlim' || key === 'ylim')
         value = "[" + value + "]";
+      else if (value !== null && typeof value === 'object')
+        // Arrays/objects (e.g. table_order, hidden columns): JSON is valid YAML.
+        value = JSON.stringify(value);
       config_yaml += "    " + key + ": " + value + "\n";
     }
   }
@@ -673,12 +696,17 @@ const renderScaleSelector = () => {
  * Render WithQuantile toggle
  */
 const renderWithQuantilesToggle = () => {
-  if (isChart('scatter')) {
+  if (isChart('scatter') && hasQuantiles()) {
     show(document.querySelectorAll("#change-shades-form-group"), 'flex');
   } else {
     hide(document.querySelectorAll("#change-shades-form-group"));
   }
 };
+
+// True if any curve in the current plot carries quantile bounds.
+const hasQuantiles = () => getPlotData().data.some(
+  c => ("y_low" in c && "y_high" in c) || ("x_low" in c && "x_high" in c)
+);
 
 const renderSuboptimalRelativeToggle = () => {
   if (isChart('scatter')) {
@@ -1147,6 +1175,26 @@ const renderImages = () => {
 // Global state for precision
 let tableFloatPrecision = 4;
 
+// Grid.js instance for the table plot, keyed by the table identity so that
+// switching to another table rebuilds the grid (and resets its sorting),
+// while re-rendering the same table (e.g. on precision change) keeps the
+// user's current sorting.
+let tableGrid = null;
+let tableGridKey = null;
+
+// Columns of the current table hidden through the column toggles.
+let tableHiddenColumns = new Set();
+
+// Table settings (order + hidden columns) coming from a saved view, applied
+// once by the next renderTable build then cleared. Kept out of window._state
+// so they don't leak onto other tables shown via the dropdowns.
+let tablePendingView = null;
+
+// Order ({column, ascending}) the current table was built with, used as the
+// fallback when Grid.js reports a neutral sort (e.g. right after loading a
+// view), so re-saving the view keeps that order.
+let tableAppliedOrder = null;
+
 const valueToFixed = (value) => {
   if (typeof value === 'number' && !Number.isInteger(value)) {
     return value.toFixed(tableFloatPrecision);
@@ -1154,65 +1202,189 @@ const valueToFixed = (value) => {
   return value;
 }
 
+/**
+ * Compare two cell values, handling both numbers and strings.
+ *
+ * The result must be -1/0/1, not a difference: Grid.js combines comparator
+ * results with a bitwise OR, which truncates fractional values to 0 and
+ * would make all close numbers compare as equal.
+ */
+const compareCells = (a, b) => {
+  if (typeof a === 'number' && typeof b === 'number') {
+    return a > b ? 1 : a < b ? -1 : 0;
+  }
+  return String(a).localeCompare(String(b));
+}
+
+const sortRows = (plotData, column, ascending) =>
+  [...plotData.data].sort((a, b) => {
+    const cmp = compareCells(a[column], b[column]);
+    return ascending ? cmp : -cmp;
+  });
+
+/**
+ * Sort the rows for the initial display. A saved view `order`
+ * ({column: <name>, ascending: <bool>}) takes precedence; otherwise the
+ * `default_order_column` (a column name or index) and `default_order_ascending`
+ * metadata keys are used, defaulting to the first column ascending. Grid.js
+ * then handles the interactive sorting from this initial order.
+ */
+const orderTableData = (plotData, order) => {
+  let column = 0;
+  const orderColumn = plotData.default_order_column;
+  if (typeof orderColumn === 'string') {
+    const idx = plotData.columns.indexOf(orderColumn);
+    column = idx >= 0 ? idx : 0;
+  } else if (typeof orderColumn === 'number') {
+    column = orderColumn;
+  }
+  let ascending = plotData.default_order_ascending !== false;
+
+  if (order && order.column != null) {
+    const idx = plotData.columns.indexOf(order.column);
+    if (idx >= 0) {
+      column = idx;
+      ascending = order.ascending !== false;
+    }
+  }
+
+  tableAppliedOrder = {column: plotData.columns[column], ascending};
+  return sortRows(plotData, column, ascending);
+}
+
+/**
+ * Read the current sort (column name + direction) from the Grid.js header, or
+ * null when no column is sorted. Grid.js tags the active sort button with
+ * `gridjs-sort-asc` / `gridjs-sort-desc`.
+ */
+const getTableOrder = () => {
+  for (const th of document.querySelectorAll('#table_container .gridjs-th')) {
+    const btn = th.querySelector('.gridjs-sort');
+    if (!btn) continue;
+    const name = th.querySelector('.gridjs-th-content')?.textContent.trim();
+    if (btn.classList.contains('gridjs-sort-asc')) {
+      return {column: name, ascending: true};
+    }
+    if (btn.classList.contains('gridjs-sort-desc')) {
+      return {column: name, ascending: false};
+    }
+  }
+  // Grid.js reports a neutral sort: fall back to the order the table was built
+  // with (default or restored from a view).
+  return tableAppliedOrder;
+}
+
 function renderTable() {
 
-  // Show and purge the container
   let table_container = document.getElementById('table_container');
   show(table_container);
-  table_container.innerHTML = "";
 
   const plotData = getPlotData();
   if (!plotData || !plotData.columns || !plotData.data) {
-    table_container.innerHTML = `<div >No data available</div>`;
+    table_container.innerHTML = "<div>No data available</div>";
+    tableGrid = null;
+    tableGridKey = null;
     return;
   }
 
-  const { columns, data: rows } = plotData;
+  const gridKey = [state().plot_kind, ...plotData.columns].join('|');
+  if (tableGrid && tableGridKey === gridKey && !tablePendingView) {
+    // Same table: refresh in place (e.g. after a precision change), keeping
+    // the current sorting. The formatters read the global precision.
+    document.getElementById('table-precision-label').innerText =
+      `Float Precision: ${tableFloatPrecision}`;
+    tableGrid.forceRender();
+    return;
+  }
 
-  // Card Wrapper
+  table_container.innerHTML = "";
+
+  // Restore the hidden columns / order from a saved view when one is being
+  // loaded, otherwise start fresh with the table's default order.
+  tableHiddenColumns = new Set();
+  if (tablePendingView && Array.isArray(tablePendingView.hidden)) {
+    const valid = tablePendingView.hidden.filter(c => plotData.columns.includes(c));
+    // Never hide every column.
+    if (valid.length < plotData.columns.length) {
+      valid.forEach(c => tableHiddenColumns.add(c));
+    }
+  }
+  const orderedData = orderTableData(plotData, tablePendingView && tablePendingView.order);
+  tablePendingView = null;
+
+  // Grid.js table with sortable columns and a search bar
   const card = document.createElement("div");
-  card.className = "w-full bg-white overflow-hidden border border-gray-200 mx-auto";
+  card.className = "w-full bg-white overflow-hidden mx-auto";
 
-  // Table Element
-  const table = document.createElement("table");
-  table.className = "w-full border-collapse text-left";
+  const buildColumns = () => plotData.columns.map(name => ({
+    name,
+    hidden: tableHiddenColumns.has(name),
+    sort: { compare: compareCells },
+    formatter: (value) => valueToFixed(value),
+  }));
 
-  // Header
-  const thead = document.createElement("thead");
-  thead.className = "bg-gray-50";
-  const trHead = document.createElement("tr");
-
-  columns.forEach(headerText => {
-    const th = document.createElement("th");
-    th.innerText = headerText;
-    th.className = "px-4 py-4 text-xs font-bold uppercase tracking-wider border-b border-gray-200";
-    trHead.appendChild(th);
+  tableGrid = new gridjs.Grid({
+    columns: buildColumns(),
+    data: orderedData,
+    sort: true,
+    search: true,
   });
-  thead.appendChild(trHead);
-  table.appendChild(thead);
+  tableGrid.render(card);
+  tableGridKey = gridKey;
 
-  // Body
-  const tbody = document.createElement("tbody");
+  // Pill-shaped toggles to show/hide each column
+  const columnsContainer = document.createElement("div");
+  columnsContainer.className = "flex items-center flex-wrap px-4 pt-4";
 
-  rows.forEach((rowData, index) => {
-    const tr = document.createElement("tr");
-    tr.className = "bg-white transition-colors duration-150 ease-in-out hover:bg-gray-50";
+  const columnsLabel = document.createElement("span");
+  columnsLabel.innerText = "Columns:";
+  columnsLabel.className = "mr-4 text-sm font-medium text-gray-700";
+  columnsContainer.appendChild(columnsLabel);
 
-    tr.onmouseenter = () => tr.style.backgroundColor = "#f9fafb";
-    tr.onmouseleave = () => tr.style.backgroundColor = "#fff";
+  const setPillStyle = (pill, visible, name) => {
+    const base = "inline-flex items-center px-3 py-1 mr-4 mt-1 rounded-full " +
+      "text-sm font-medium cursor-pointer transition-all border ";
+    if (visible) {
+      pill.className = base +
+        "border-transparent bg-blue-600 text-white hover:bg-blue-700";
+      pill.innerText = `✓ ${name}`;
+    } else {
+      pill.className = base +
+        "border-gray-300 bg-white text-gray-500 hover:bg-gray-100";
+      pill.innerText = name;
+    }
+  };
 
-    rowData.forEach(cellValue => {
-      const td = document.createElement("td");
-      td.innerHTML = valueToFixed(cellValue);
+  plotData.columns.forEach(name => {
+    const label = document.createElement("label");
+    const visible = !tableHiddenColumns.has(name);
 
-      let cellClasses = "px-4 py-4 text-sm text-gray-700";
-      if (index !== rows.length - 1) {
-        cellClasses += " border-b border-gray-100";
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.checked = visible;
+    checkbox.className = "sr-only";
+
+    const pill = document.createElement("span");
+    setPillStyle(pill, visible, name);
+    pill.title = "Show/hide column";
+
+    checkbox.onchange = () => {
+      if (checkbox.checked) {
+        tableHiddenColumns.delete(name);
+      } else if (tableHiddenColumns.size === plotData.columns.length - 1) {
+        // Keep at least one column visible
+        checkbox.checked = true;
+        return;
+      } else {
+        tableHiddenColumns.add(name);
       }
-      td.className = cellClasses;
-      tr.appendChild(td);
-    });
-    tbody.appendChild(tr);
+      setPillStyle(pill, checkbox.checked, name);
+      tableGrid.updateConfig({ columns: buildColumns() }).forceRender();
+    };
+
+    label.appendChild(checkbox);
+    label.appendChild(pill);
+    columnsContainer.appendChild(label);
   });
 
   // Footer with Precision Controls & Export
@@ -1236,6 +1408,7 @@ function renderTable() {
   const btnDec = createPrecBtn("-");
   const btnInc = createPrecBtn("+");
   const labelPrec = document.createElement("span");
+  labelPrec.id = "table-precision-label";
   labelPrec.innerText = `Float Precision: ${tableFloatPrecision}`;
   labelPrec.className = "mx-2 px-4";
 
@@ -1265,12 +1438,11 @@ function renderTable() {
     exportTable();
   });
 
-  table.appendChild(tbody);
-  card.appendChild(table);
   table_container.appendChild(card);
 
   footer.appendChild(precisionContainer);
   footer.appendChild(exportButton);
+  footerWrapper.appendChild(columnsContainer);
   footerWrapper.appendChild(footer);
   table_container.appendChild(footerWrapper);
 }
@@ -1281,23 +1453,32 @@ async function exportTable() {
   const defaultText = button.innerHTML;
   button.innerHTML = "Copying";
 
-  const plotData = getPlotData();
+  // Export the table as displayed in the Grid.js table, so that the LaTeX
+  // output matches the current sorting, search filter, visible columns and
+  // float precision.
+  const displayedColumns = Array.from(
+    document.querySelectorAll('#table_container .gridjs-th-content'),
+    el => el.textContent.trim()
+  );
+  const displayedRows = Array.from(
+    document.querySelectorAll('#table_container .gridjs-table tbody tr')
+  ).map(tr => Array.from(tr.querySelectorAll('td'), td => td.innerText));
 
   let value = "\\begin{tabular}{l";
-  value += "c".repeat(plotData.columns.length);
+  value += "c".repeat(displayedColumns.length);
   value += "}\n";
   value += "\\hline\n";
 
-  value += plotData.columns[0].replace('_', '\\_');
-  plotData.columns.slice(1).forEach(metric => value += ` & ${metric.replace('_', '\\_')}`);
+  value += displayedColumns[0].replace('_', '\\_');
+  displayedColumns.slice(1).forEach(metric => value += ` & ${metric.replace('_', '\\_')}`);
 
   value += " \\\\\n";
   value += "\\hline\n";
 
-  plotData.data.forEach(rowData => {
-    value += valueToFixed(rowData[0]).toString().replace('_', '\\_');
+  displayedRows.forEach(rowData => {
+    value += rowData[0].replace('_', '\\_');
     rowData.slice(1).forEach(cell => {
-      value += ` & ${valueToFixed(cell).toString().replace('_', '\\_')}`;
+      value += ` & ${cell.replace('_', '\\_')}`;
     });
     value += " \\\\\n";
   });

@@ -140,7 +140,7 @@ def test_objective_multiple_points(n_rep, n_it):
             )
         df = read_results(out.result_files[0])
 
-    assert len(df) == n_out * n_rep * (n_it+1), out.output
+    assert len(df) == n_out * n_rep * (n_it+1), out.raw_output
     assert df['objective_value'].unique().tolist() == [0, 1, 2]
     assert df['idx_rep'].unique().tolist() == list(range(n_rep))
     assert df['stop_val'].unique().tolist() == [0, 1, 2, 4][:n_it + 1]
