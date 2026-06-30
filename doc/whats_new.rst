@@ -77,6 +77,9 @@ FIX
 - Fix single dataset benchmark test_dataset_names detection for test env
   creation. By `Thomas moreau`_ (:gh:`951`)
 
+- Fix ``benchopt archive`` not including ``benchmark_utils/`` in the generated
+  archive. By `Thomas Moreau`_ (:gh:`970`)
+
 - Fix ``--profile`` parsing that was resulting in always activated profile.
   By `Thomas Moreau`_ (:gh:`950`)
 
