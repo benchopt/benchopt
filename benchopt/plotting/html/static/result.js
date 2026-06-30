@@ -612,14 +612,33 @@ const renderSidebar = () => {
 /**
  * Build an HTML params table string from a {param: value} object.
  */
+const escapeHTML = (s) => String(s)
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
 const buildParamsTable = (params) => {
   const entries = Object.entries(params);
   if (entries.length === 0) return '';
   const rows = entries
-    .map(([k, v]) => `<tr><td style="padding-right:0.5rem;font-weight:600;white-space:nowrap">${k}</td><td style="word-break:break-all">${v}</td></tr>`)
+    .map(([k, v]) => `<tr><td class="param-key">${escapeHTML(k)}</td><td class="param-val">${escapeHTML(v)}</td></tr>`)
     .join('');
-  return `<table>${rows}</table>`;
+  return `<div class="param-title">Parameters</div><table>${rows}</table>`;
 };
+
+/**
+ * Inline SVG "info" icon (class `param-icon`) carrying the solver name in a
+ * data attribute. Hover is wired through event delegation (see below) so the
+ * icon works both in the legend and in Grid.js tables, which re-render their
+ * cells on every sort/search. Returning an SVG (not a text glyph) keeps the
+ * icon out of `innerText`, so the LaTeX table export is unaffected.
+ */
+const paramIconHTML = (solverName) =>
+  `<svg class="param-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"` +
+  ` stroke-width="2" stroke-linecap="round" stroke-linejoin="round"` +
+  ` data-solver="${escapeHTML(solverName)}">` +
+  `<circle cx="12" cy="12" r="10"></circle>` +
+  `<line x1="12" y1="16" x2="12" y2="12"></line>` +
+  `<line x1="12" y1="8" x2="12.01" y2="8"></line></svg>`;
 
 /** Show the shared params tooltip near the cursor. */
 const showParamsTooltip = (event, params) => {
@@ -639,10 +658,28 @@ const showEntityParamsTooltip = (event, paramType, stateKey) => {
   showParamsTooltip(event, currentValue ? (lookup[currentValue] || {}) : {});
 };
 
+/** Show params tooltip for a solver icon, looked up by full solver name. */
+const showSolverParamsTooltip = (event, solverName) => {
+  const params = ((window._short_labels || {}).solver_params || {})[solverName] || {};
+  showParamsTooltip(event, params);
+};
+
 /** Hide the shared params tooltip. */
 const hideParamsTooltip = () => {
   document.getElementById('params-tooltip').style.display = 'none';
 };
+
+// Delegate hover handling for every `.param-icon` (legend + table). Delegation
+// is needed because Grid.js re-renders table cells on sort/search, which would
+// drop per-node listeners. `.param-icon * { pointer-events: none }` makes the
+// SVG the only event target, so no flicker as the cursor moves over it.
+document.addEventListener('mouseover', (e) => {
+  const icon = e.target.closest?.('.param-icon');
+  if (icon) showSolverParamsTooltip(e, icon.getAttribute('data-solver'));
+});
+document.addEventListener('mouseout', (e) => {
+  if (e.target.closest?.('.param-icon')) hideParamsTooltip();
+});
 
 const _moveParamsTooltip = (event) => {
   const tip = document.getElementById('params-tooltip');
@@ -1316,11 +1353,24 @@ function renderTable() {
   const card = document.createElement("div");
   card.className = "w-full bg-white overflow-hidden mx-auto";
 
-  const buildColumns = () => plotData.columns.map(name => ({
+  // First column holds the solver name: render it with the same params icon
+  // as the legend when the solver carries parameters. Other columns keep the
+  // numeric formatter. The icon is an SVG, so it stays out of the LaTeX export.
+  const solverCellHTML = (value) => {
+    const full = String(value);
+    const params = ((window._short_labels || {}).solver_params || {})[full];
+    if (!params || Object.keys(params).length === 0) return escapeHTML(full);
+    const label = state().short_labels ? getShortLabel(full, 'solvers') : full;
+    return escapeHTML(label) + paramIconHTML(full);
+  };
+
+  const buildColumns = () => plotData.columns.map((name, colIdx) => ({
     name,
     hidden: tableHiddenColumns.has(name),
     sort: { compare: compareCells },
-    formatter: (value) => valueToFixed(value),
+    formatter: colIdx === 0
+      ? (value) => gridjs.html(solverCellHTML(value))
+      : (value) => valueToFixed(value),
   }));
 
   tableGrid = new gridjs.Grid({
@@ -1616,15 +1666,7 @@ const createLegendItem = (curve, color, symbolNumber) => {
   if (useShort && isShortened) {
     const solverParams = ((window._short_labels || {}).solver_params || {})[curve] || {};
     if (Object.keys(solverParams).length > 0) {
-      const icon = document.createElement('span');
-      icon.textContent = ' ⓘ';
-      icon.style.cursor = 'help';
-      icon.style.color = '#9ca3af';
-      icon.style.fontSize = '0.75rem';
-      icon.style.userSelect = 'none';
-      icon.addEventListener('mouseenter', (e) => showParamsTooltip(e, solverParams));
-      icon.addEventListener('mouseleave', hideParamsTooltip);
-      textContainer.appendChild(icon);
+      textContainer.insertAdjacentHTML('beforeend', paramIconHTML(curve));
     }
   }
 
