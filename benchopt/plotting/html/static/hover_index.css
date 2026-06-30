@@ -326,6 +326,11 @@ input:checked+.slider:before {
   transform: translateX(-30px);
 }
 
+.js-plotly-plot .xtick text,
+.js-plotly-plot .ytick text {
+  font-size: 12px !important;
+}
+
 /*----------------------------------------*/
 /***** Custom legend *****/
 /*----------------------------------------*/

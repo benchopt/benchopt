@@ -159,9 +159,23 @@ const getPlotDiv = () => document.getElementById(
   isChart('scatter') ? 'plot_with_legend_container' : 'plot_container'
 );
 
+const applyLogDtick = (div) => {
+  const fl = div._fullLayout;
+  if (!fl) return;
+  const update = {};
+  ['xaxis', 'yaxis'].forEach(name => {
+    const ax = fl[name];
+    if (!ax || ax.type !== 'log' || !ax.range || !ax._length) return;
+    const decades = Math.abs(ax.range[1] - ax.range[0]);
+    const dtick = Math.max(1, Math.ceil(decades / Math.max(2, ax._length / 60)));
+    if (ax.dtick !== dtick) update[name + '.dtick'] = dtick;
+  });
+  if (Object.keys(update).length) Plotly.relayout(div, update);
+};
+
 // Refit Plotly to the figure box and reflect the actual size in the inputs.
 const resizeFig = (div) => {
-  Plotly.Plots.resize(div);
+  Plotly.Plots.resize(div).then(() => applyLogDtick(div));
   document.getElementById('figsize_width').value = Math.round(div.offsetWidth);
   document.getElementById('figsize_height').value = Math.round(div.offsetHeight);
 };
@@ -860,6 +874,9 @@ const MPL_AXIS = {
   gridwidth: 0.5,
   zeroline: false,
   automargin: true,
+  exponentformat: 'power',
+  minexponent: 2,
+  minor: { ticks: 'outside', ticklen: 4, tickcolor: 'black', showgrid: false },
 };
 const MPL_LAYOUT = {
   plot_bgcolor: 'white',
@@ -878,7 +895,6 @@ const getBarChartLayout = () => {
       ...MPL_AXIS,
       type: getScale().yaxis,
       title: data["ylabel"],
-      tickformat: '~g',
     },
     xaxis: {
       ...MPL_AXIS,
@@ -925,7 +941,6 @@ const getBoxplotChartLayout = () => {
       ...MPL_AXIS,
       type: getScale().yaxis,
       title: plot_info["ylabel"],
-      tickformat: '~g',
     },
     xaxis: {
       ...MPL_AXIS,
@@ -968,14 +983,12 @@ const getScatterChartLayout = () => {
       ...MPL_AXIS,
       type: getScale().xaxis,
       title: customData.xlabel,
-      tickformat: '~g',
       tickangle: 0,
     },
     yaxis: {
       ...MPL_AXIS,
       type: getScale().yaxis,
       title: customData.ylabel,
-      tickformat: '~g',
     },
     title: `${customData.title}`,
     ...MPL_LAYOUT,
