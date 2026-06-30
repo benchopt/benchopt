@@ -10,7 +10,6 @@ What's new
 Version 1.10.0 -- in development
 --------------------------------
 
-<<<<<<< ENH_agent_skills
 CLI
 ~~~
 
@@ -18,10 +17,12 @@ CLI
   standard) as package data and add ``benchopt sync-skills`` to install them
   into a project's ``.agents/skills/`` (or globally with ``--global``), with a
   ``.claude/skills/`` mirror for Claude Code. By `Thomas Moreau`_ (:gh:`959`)
-=======
+
 PLOT
 ~~~~
 
+- Change the plotly style to make it more like matplotlib.
+  By `Hippolyte Verninas`_ (:gh:`9566`)
 
 - Quantile toggle is now hidden if no quantiles are available
   By `Hippolyte Verninas`_ (:gh:`964`)
@@ -29,7 +30,6 @@ PLOT
 - Improve the html report table, now rendered with `Grid.js
   <https://gridjs.io/>`_: sortable by any column, filter by solver name,
   hide/show any columns. By `Hippolyte Verninas`_ (:gh:`953`)
->>>>>>> main
 
 API
 ~~~
@@ -65,6 +65,9 @@ TST
 FIX
 ~~~
 
+- Fix ``benchopt sync-skills`` symlink with global install for Claude.
+  By `Thomas Moreau`_ (:gh:`969`)
+
 - Fix ``get_seed`` failing during ``benchopt prepare`` when a dataset's
   ``get_data`` uses it. ``prepare`` now sets up a seeding context and accepts a
   ``--seed`` option that is part of the preparation cache. Datasets whose
@@ -73,7 +76,10 @@ FIX
   By `Thomas Moreau`_ (:gh:`962`)
 
 - Fix single dataset benchmark test_dataset_names detection for test env
-  creation. By `Thomas moreau`_ (:gh:`951`)
+  creation. By `Thomas Moreau`_ (:gh:`951`)
+
+- Fix ``benchopt archive`` not including ``benchmark_utils/`` in the generated
+  archive. By `Thomas Moreau`_ (:gh:`970`)
 
 - Fix ``--profile`` parsing that was resulting in always activated profile.
   By `Thomas Moreau`_ (:gh:`950`)

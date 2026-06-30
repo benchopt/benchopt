@@ -324,7 +324,7 @@ const getScatterData = () => {
         color: curveData.color,
       },
       legendgroup: label,
-      hovertemplate: displayLabel + ' <br> (%{x:.1e},%{y:.1e}) <extra></extra>',
+      hovertemplate: displayLabel + ' <br> (%{x:.3e},%{y:.3e}) <extra></extra>',
       visible: isVisible(label) ? true : 'legendonly',
       x: curveData.x,
       y: y,
@@ -341,7 +341,7 @@ const getScatterData = () => {
           color: curveData.color,
         },
         legendgroup: label,
-        hovertemplate: '(%{x:.1e},%{y:.1e}) <extra></extra>',
+        hovertemplate: '(%{x:.3e},%{y:.3e}) <extra></extra>',
         visible: isVisible(label) ? true : 'legendonly',
         x: curveData.x,
         y: y_low,
@@ -355,7 +355,7 @@ const getScatterData = () => {
           color: curveData.color,
         },
         legendgroup: label,
-        hovertemplate: '(%{x:.1e},%{y:.1e}) <extra></extra>',
+        hovertemplate: '(%{x:.3e},%{y:.3e}) <extra></extra>',
         visible: isVisible(label) ? true : 'legendonly',
         x: curveData.x,
         y: y_high,
@@ -371,7 +371,7 @@ const getScatterData = () => {
           color: curveData.color,
         },
         legendgroup: label,
-        hovertemplate: '(%{x:.1e},%{y:.1e}) <extra></extra>',
+        hovertemplate: '(%{x:.3e},%{y:.3e}) <extra></extra>',
         visible: isVisible(label) ? true : 'legendonly',
         x: x_low,
         y: y,
@@ -385,7 +385,7 @@ const getScatterData = () => {
           color: curveData.color,
         },
         legendgroup: label,
-        hovertemplate: '(%{x:.1e},%{y:.1e}) <extra></extra>',
+        hovertemplate: '(%{x:.3e},%{y:.3e}) <extra></extra>',
         visible: isVisible(label) ? true : 'legendonly',
         x: x_high,
         y: y,
@@ -906,6 +906,25 @@ const _getScale = (scale) => {
   }
 }
 
+const MPL_AXIS = {
+  showline: true,
+  linecolor: 'black',
+  linewidth: 1,
+  mirror: true,
+  ticks: 'outside',
+  tickcolor: 'black',
+  gridcolor: '#d9d9d9',
+  griddash: 'dot',
+  gridwidth: 0.5,
+  zeroline: false,
+  automargin: true,
+};
+const MPL_LAYOUT = {
+  plot_bgcolor: 'white',
+  paper_bgcolor: 'white',
+  font: { family: 'DejaVu Sans, Arial, sans-serif', color: 'black' },
+};
+
 const getBarChartLayout = () => {
   let data = getPlotData();
   const layout = {
@@ -914,26 +933,28 @@ const getBarChartLayout = () => {
       orientation: 'v',
     },
     yaxis: {
+      ...MPL_AXIS,
       type: getScale().yaxis,
       title: data["ylabel"],
-      tickformat: '.1e',
-      gridcolor: '#ffffff',
+      tickformat: '~g',
     },
     xaxis: {
+      ...MPL_AXIS,
       tickangle: -60,
       ticktext: Array(data.data.map(d => d.label)),
       categoryorder: 'trace',
+      showgrid: false,  // X axis is text: no vertical gridlines
     },
     showlegend: false,
     title: data["title"],
-    plot_bgcolor: '#e5ecf6',
+    ...MPL_LAYOUT,
   };
 
   if (isSmallScreen()) {
     layout.dragmode = false;
   }
 
-  // TODO what does this do ??
+  // If no data available, plot "Not available"
   if (!isAvailable()) {
     layout.annotations = [{
       xref: 'paper',
@@ -960,17 +981,19 @@ const getBoxplotChartLayout = () => {
       orientation: 'v',
     },
     yaxis: {
+      ...MPL_AXIS,
       type: getScale().yaxis,
       title: plot_info["ylabel"],
-      tickformat: '.1e',
-      gridcolor: '#ffffff',
+      tickformat: '~g',
     },
     xaxis: {
+      ...MPL_AXIS,
       tickangle: (typeof plot_info.data[0].x[0] === "string") ? -60 : 0,
+      showgrid: typeof plot_info.data[0].x[0] !== "string",  // hide vertical gridlines for text X axis
     },
     showlegend: false,
     title: plot_info["title"],
-    plot_bgcolor: '#e5ecf6',
+    ...MPL_LAYOUT,
   };
 
   if (isSmallScreen()) {
@@ -1001,22 +1024,20 @@ const getScatterChartLayout = () => {
       x: .5
     },
     xaxis: {
+      ...MPL_AXIS,
       type: getScale().xaxis,
       title: customData.xlabel,
-      tickformat: '.1e', // TODO adapt if xaxis is not numeric
-      tickangle: -45,
-      gridcolor: '#ffffff',
-      zeroline : false,
+      tickformat: '~g',
+      tickangle: 0,
     },
     yaxis: {
+      ...MPL_AXIS,
       type: getScale().yaxis,
       title: customData.ylabel,
-      tickformat: '.1e',
-      gridcolor: '#ffffff',
-      zeroline : false,
+      tickformat: '~g',
     },
     title: `${customData.title}`,
-    plot_bgcolor: '#e5ecf6',
+    ...MPL_LAYOUT,
   };
 
   if (isSmallScreen()) {

@@ -1,4 +1,3 @@
-import os
 import json
 import shutil
 import click
@@ -67,9 +66,8 @@ def _link_or_copy(target, source):
             target.unlink()
         else:
             shutil.rmtree(target)
-    rel = os.path.relpath(source, target.parent)
     try:
-        target.symlink_to(rel, target_is_directory=True)
+        target.symlink_to(source.resolve(), target_is_directory=True)
         return "symlink"
     except (OSError, NotImplementedError):
         # e.g. Windows without developer mode: copy instead.
