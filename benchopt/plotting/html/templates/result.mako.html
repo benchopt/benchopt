@@ -20,6 +20,36 @@
             ${static['utilities.css']}
 
             ${static['hover_index.css']}
+
+            /* Info icon revealing a solver's full parameters on hover. */
+            .param-icon {
+                display: inline-block;
+                width: 15px;
+                height: 15px;
+                margin-left: 4px;
+                vertical-align: -3px;
+                color: #2563eb;
+                cursor: pointer;
+                flex: none;
+                transition: color .15s ease, transform .15s ease;
+            }
+            .param-icon:hover { color: #1d4ed8; transform: scale(1.2); }
+            .param-icon * { pointer-events: none; }
+
+            #params-tooltip .param-title {
+                font-weight: 700;
+                margin-bottom: 4px;
+                padding-bottom: 3px;
+                border-bottom: 1px solid #374151;
+            }
+            #params-tooltip table { border-collapse: collapse; }
+            #params-tooltip .param-key {
+                color: #93c5fd;
+                font-weight: 600;
+                padding: 1px 12px 1px 0;
+                white-space: nowrap;
+            }
+            #params-tooltip .param-val { word-break: break-all; }
         </style>
     </head>
     <body>
@@ -84,15 +114,44 @@
                                 <span class="slider round"></span>
                             </label>
                         </div>
+                        <div id="change-relative-suboptimal-form-group" class="flex items-center justify-between mt-8 px-8">
+                            <div class="block text-sm font-medium text-white">Relative Curve</div>
+                            <label class="block switch">
+                                <input id="change_relative" type="checkbox" onchange="setState({relative_curve: this.checked})">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                        <div id="change-short-labels-form-group" class="flex items-center justify-between mt-8 px-8">
+                            <div class="block text-sm font-medium text-white">Short Labels</div>
+                            <label class="block switch">
+                                <input id="change_short_labels" type="checkbox" checked onchange="setState({short_labels: this.checked})">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
                         % for kind, params in result["plot_options"].items():
                             <div id="${kind}-custom-params-container">
                             % for param, options in params.items():
+                                <%
+                                    if param == 'dataset':
+                                        _short_map = result.get('short_labels', {}).get('datasets', {})
+                                    elif param == 'objective':
+                                        _short_map = result.get('short_labels', {}).get('objectives', {})
+                                    else:
+                                        _short_map = {}
+                                %>
                                 <div id="${kind}_${param}_form_group" class="mt-8 px-8">
-                                    <label for="change_${kind}_${param}" class="block text-sm font-medium text-white">${param}</label>
+                                    <label for="change_${kind}_${param}" class="block text-sm font-medium text-white">
+                                        ${param}
+                                        % if param in ('dataset', 'objective'):
+                                        <span class="params-info-icon ml-1 text-gray-400 cursor-help text-xs align-middle"
+                                              onmouseenter="showEntityParamsTooltip(event, '${param}', '${kind}_${param}')"
+                                              onmouseleave="hideParamsTooltip()">(?)</span>
+                                        % endif
+                                    </label>
                                     <div class="mt-1 rounded-md shadow-sm">
-                                        <select id="change_${kind}_${param}" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({${kind}_${param}: this.value})">
+                                        <select id="change_${kind}_${param}" data-param-type="${param}" data-state-key="${kind}_${param}" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({${kind}_${param}: this.value})">
                                             % for option in options:
-                                                <option value="${option}">${option}</option>
+                                                <option value="${option}" title="${option}">${_short_map.get(option, option)}</option>
                                             % endfor
                                         </select>
                                     </div>
@@ -229,17 +288,39 @@
                                     <span class="slider round"></span>
                                 </label>
                             </div>
+                            <div id="change-short-labels-form-group" class="flex items-center justify-between mt-8 px-8">
+                                <div class="block text-sm font-medium text-white">Short Labels</div>
+                                <label class="block switch">
+                                    <input id="change_short_labels" type="checkbox" checked onchange="setState({short_labels: this.checked})">
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
                             <div>
                             <div>
                             % for kind, params in result["plot_options"].items():
                                 <div id="${kind}-custom-params-container">
                                 % for param, options in params.items():
+                                    <%
+                                        if param == 'dataset':
+                                            _short_map = result.get('short_labels', {}).get('datasets', {})
+                                        elif param == 'objective':
+                                            _short_map = result.get('short_labels', {}).get('objectives', {})
+                                        else:
+                                            _short_map = {}
+                                    %>
                                     <div id="${kind}_${param}_form_group" class="mt-8 px-8">
-                                        <label for="change_${kind}_${param}" class="block text-sm font-medium text-white">${param}</label>
+                                        <label for="change_${kind}_${param}" class="block text-sm font-medium text-white">
+                                            ${param}
+                                            % if param in ('dataset', 'objective'):
+                                            <span class="params-info-icon ml-1 text-gray-400 cursor-help text-xs align-middle"
+                                                  onmouseenter="showEntityParamsTooltip(event, '${param}', '${kind}_${param}')"
+                                                  onmouseleave="hideParamsTooltip()">(?)</span>
+                                            % endif
+                                        </label>
                                         <div class="mt-1 rounded-md shadow-sm">
-                                            <select id="change_${kind}_${param}" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({${kind}_${param}: this.value})">
+                                            <select id="change_${kind}_${param}" data-param-type="${param}" data-state-key="${kind}_${param}" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({${kind}_${param}: this.value})">
                                                 % for option in options:
-                                                    <option value="${option}">${option}</option>
+                                                    <option value="${option}" title="${option}">${_short_map.get(option, option)}</option>
                                                 % endfor
                                             </select>
                                         </div>
@@ -464,6 +545,7 @@
         <script>
             window._plots = ${result['json_plots']};
             window.metadata = ${json.dumps(result['metadata'])};
+            window._short_labels = ${json.dumps(result.get('short_labels', {}))};
 
             window.addEventListener("load", () => {
                 // Initialize plot state
@@ -474,6 +556,7 @@
                     'suboptimal_curve': document.getElementById('change_suboptimal').checked,
                     'relative_curve': document.getElementById('change_relative').checked,
                     'hidden_curves': [],
+                    'short_labels': true,
                     % for kind, params in result["plot_options"].items():
                         % for param in params:
                             '${kind}_${param}': document.getElementById('change_${kind}_${param}').value,
@@ -515,5 +598,7 @@
                 }
             )();
         </script>
+        <!-- Shared params tooltip -->
+        <div id="params-tooltip" style="display:none;position:fixed;z-index:9999;pointer-events:none;background:#1f2937;color:#f9fafb;border-radius:0.375rem;padding:0.5rem 0.75rem;font-size:0.75rem;max-width:20rem;box-shadow:0 4px 6px rgba(0,0,0,.4);"></div>
     </body>
 </html>
