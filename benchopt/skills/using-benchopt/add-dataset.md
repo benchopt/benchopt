@@ -1,40 +1,19 @@
 # Adding a dataset
 
+Start from the template: [`assets/dataset.py`](./assets/dataset.py).
+
 A dataset lives in `datasets/<name>.py` as `class Dataset(BaseDataset)` and
 must produce data the benchmark's `Objective` can consume. Smoke-test with
 `benchopt run . -d <name> -s <solver> -n 5`.
 
-## The contract
+## Data flow and design
 
-```python
-from benchopt import BaseDataset
+`get_data()` must return a dict; benchopt calls `Objective.set_data(**data)` with it.
+Keep the payload **generic** — expose optional callables (e.g. `moments_fn`) the
+objective uses when present, rather than baking solver-specific assumptions into the data.
 
-class Dataset(BaseDataset):
-    name = "simulated"
-    parameters = {"n_samples": [100, 1000], "n_features": [20, 50]}
-    requirements = []   # zero-dependency datasets are great smoke tests
-
-    def get_data(self):
-        rng = np.random.default_rng(self.get_seed(use_repetition=True))
-        X = rng.standard_normal((self.n_samples, self.n_features))
-        y = X @ rng.standard_normal(self.n_features)
-        return dict(X=X, y=y)   # -> Objective.set_data(**data)
-```
-
-- `get_data()` **must return a dict**; benchopt calls
-  `Objective.set_data(**data)` with it.
-- Selected parameter values are available as `self.n_samples`, etc., and the
-  cartesian product of `parameters` is instantiated automatically.
-- Keep the payload **generic** so many solvers can consume it; expose optional
-  callables (e.g. `moments_fn`) the objective uses when present, rather than
-  baking solver-specific assumptions into the data.
-
-## Reproducible randomness
-
-Call `self.get_seed(use_repetition=True)` to obtain a deterministic seed that
-changes with the repetition index, so `--n-repetitions N` yields N genuinely
-different draws. A bare `self.get_seed()` returns the same seed for every
-repetition/datasets.
+Use `self.get_seed(use_repetition=True)` so `--n-repetitions N` yields N genuinely
+different draws; a bare `self.get_seed()` returns the same seed every repetition.
 
 ## Expensive one-time work: prepare()
 

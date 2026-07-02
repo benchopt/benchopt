@@ -1,54 +1,23 @@
 # Adding a solver
 
+Start from the template: [`assets/solver.py`](./assets/solver.py).
+
 A solver lives in `solvers/<name>.py` as `class Solver(BaseSolver)` and must
 work against the benchmark's existing `Objective`. Run a smoke test after each
 change: `benchopt run . -s <name> -d <small-dataset> -n 5` with a small dataset.
 
-## The contract
+## Data flow
 
-```python
-from benchopt import BaseSolver
-
-class Solver(BaseSolver):
-    name = "my-solver"
-    parameters = {"step_size": [0.1, 1.0]}   # swept as a cartesian product
-    requirements = ["numpy", "pip::some-pkg"]
-
-    def set_objective(self, **objective_dict):
-        # objective_dict is exactly Objective.get_objective()'s output.
-        # Store what you need on self.
-        ...
-
-    def run(self, stop_val):
-        # Do the work for the given budget. Do NOT return the result here.
-        ...
-
-    def get_result(self):
-        # Return a dict whose keys match Objective.evaluate_result's args.
-        return {"beta": self.beta_}
-```
-
-- `set_objective(**objective_dict)` ← `Objective.get_objective()`.
-- `get_result()` → dict → `Objective.evaluate_result(**res)`.
-- Access selected parameters as `self.step_size`, etc.
+- `set_objective(**objective_dict)` receives `Objective.get_objective()`'s output.
+- `get_result()` returns a dict unpacked into `Objective.evaluate_result(**res)`.
+- Selected `parameters` values are available as `self.<param>`.
 
 ## Reproducible randomness
 
-For **stochastic** solvers (random initialization, mini-batch shuffling,
-dropout, …), seed from `self.get_seed(use_repetition=True)` rather than a fixed
-literal or an unseeded global RNG. With `use_repetition=True` the seed changes
-with the repetition index, so `--n-repetitions N` gives N genuinely different —
-but reproducible — runs (a bare `self.get_seed()` returns the same seed for
-every repetition):
-
-```python
-def run(self, n_iter):
-    rng = np.random.default_rng(self.get_seed(use_repetition=True))
-    w = rng.standard_normal(self.n_features)   # reproducible random init
-    ...
-```
-
-Note that if the seed need to be different for each dataset/solver, you can use `use_dataset=True` and/or `use_solver=True` in `get_seed()`.
+For **stochastic** solvers, seed from `self.get_seed(use_repetition=True)` so
+`--n-repetitions N` gives N genuinely different but reproducible runs. A bare
+`self.get_seed()` returns the same seed every repetition. Use `use_dataset=True`
+or `use_solver=True` to further differentiate seeds.
 
 ## sampling_strategy — how the computation budget is varied
 

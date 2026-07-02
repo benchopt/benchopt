@@ -1,5 +1,8 @@
 # Running a benchopt benchmark
 
+Run config template: [`assets/config_run.yml`](./assets/config_run.yml).
+SLURM parallel config: [`assets/config_parallel_slurm.yml`](./assets/config_parallel_slurm.yml).
+
 Run from a benchmark directory (the folder holding `objective.py`). `.` refers
 to the current benchmark.
 

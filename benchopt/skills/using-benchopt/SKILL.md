@@ -29,6 +29,15 @@ Load the relevant sub-file for the task at hand:
 - [**debug.md**](./debug.md) — drive benchmark code from Python without the CLI
 - [**cli-reference.md**](./cli-reference.md) — all CLI subcommands at a glance
 
+## Assets (copy-paste templates)
+
+- [`assets/solver.py`](./assets/solver.py) — `BaseSolver` template
+- [`assets/dataset.py`](./assets/dataset.py) — `BaseDataset` template with `Simulated`
+- [`assets/objective.py`](./assets/objective.py) — `BaseObjective` template
+- [`assets/config_run.yml`](./assets/config_run.yml) — run config file
+- [`assets/config_parallel_slurm.yml`](./assets/config_parallel_slurm.yml) — SLURM parallel config
+- [`assets/debug_snippet.py`](./assets/debug_snippet.py) — interactive debugging boilerplate
+
 ## Quick smoke test
 
 ```bash

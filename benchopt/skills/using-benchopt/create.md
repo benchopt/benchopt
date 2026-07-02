@@ -1,5 +1,8 @@
 # Creating a benchopt benchmark
 
+Component templates: [`assets/objective.py`](./assets/objective.py), [`assets/solver.py`](./assets/solver.py), [`assets/dataset.py`](./assets/dataset.py).
+Run config template: [`assets/config_run.yml`](./assets/config_run.yml).
+
 Guidance for authoring a *benchmark* (a repo of datasets/solvers/objective),
 not for working on the benchopt library. This file covers **benchmark-wide**
 concerns; for an individual component see [add-solver.md](./add-solver.md) and

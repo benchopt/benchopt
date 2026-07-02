@@ -1,5 +1,7 @@
 # Debugging a benchopt benchmark from Python
 
+Paste [`assets/debug_snippet.py`](./assets/debug_snippet.py) into the benchmark directory as a starting point.
+
 When something in a benchmark misbehaves, you usually do not want a full
 `benchopt run`: caching, conda envs, parallel workers and the convergence loop
 all sit between you and the line that breaks. The `Benchmark` object lets you
