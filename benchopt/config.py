@@ -27,8 +27,11 @@ DEFAULT_GLOBAL_CONFIG = {
     'github_token': None,
     'hf_token': None,
     'data_dir': './data/',
-    'conda_cmd': 'conda' if sys.platform != 'win32' else 'call conda',
-    'shell': os.environ.get('SHELL', DEFAULT_SHELL),
+    'conda_cmd': 'conda',
+    'shell': (
+        os.environ.get('SHELL', DEFAULT_SHELL)
+        if sys.platform != 'win32' else DEFAULT_SHELL
+    ),
     'cache': None,
     'default_timeout': 100,
     'warn_nonunique_files': True,
@@ -49,8 +52,12 @@ particular for logging, warnings and errors. The available options are:
 * ``conda_cmd``, *str*: can be used to give the path to ``conda`` if it is
   not directly installed on ``$PATH``. This can also be used to use ``mamba``
   to install benchmarks instead of conda. See :ref:`config_mamba`.
-* ``shell``, *str*: can be used to specify the shell to use. Default to
-  `SHELL` from env if it exists and ``'bash'`` otherwise.
+* ``shell``, *str*: can be used to specify the shell to use. On POSIX systems
+  it defaults to the ``SHELL`` env var if it exists and
+  ``'bash --norc --noprofile'`` otherwise. On Windows it defaults to
+  ``'cmd /c'`` and the ``SHELL`` env var is ignored (a POSIX ``SHELL`` set by
+  Git Bash or MSYS would otherwise break conda handling); override it
+  explicitly with the ``BENCHOPT_SHELL`` env var or this setting.
 * ``cache``, *str*: can be used to specify where the cache for the benchmarks
   should be stored. By default, the cache files are stored in the benchmark
   directory, under the folder __cache__. Setting this configuration would
