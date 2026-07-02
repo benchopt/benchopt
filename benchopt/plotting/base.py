@@ -188,10 +188,10 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
         parameters that are constant are dropped, so the whole set is needed as
         context. The description is the hover-icon HTML: a parameters table
         parsed from the label, injected into the legend tooltip as-is (so it
-        must be valid HTML), empty when the label has no parameters. This is the
-        default scheme: a plot calls it from :meth:`plot` and sets
-        ``short_label`` / ``description`` on its traces, which leaves it free to
-        decide what each trace displays.
+        must be valid HTML), empty when the label has no parameters. This is
+        the default scheme: a plot calls it from :meth:`plot` and sets
+        ``short_label`` / ``description`` on its traces, which leaves it free
+        to decide what each trace displays.
 
         Parameters
         ----------
@@ -226,4 +226,6 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
             f'<td class="param-val">{escape(v)}</td></tr>'
             for k, v in params.items()
         )
-        return f'<div class="param-title">Parameters</div><table>{rows}</table>'
+        return (
+            f'<div class="param-title">Parameters</div><table>{rows}</table>'
+        )

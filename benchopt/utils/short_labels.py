@@ -9,6 +9,7 @@ the full names can be very verbose.  This module provides helpers to produce
 *short labels* that only include the parameters that actually differ across
 the set of names being compared, together with a tooltip-friendly full label.
 """
+
 from collections import defaultdict
 
 from .parametrized_name_mixin import _extract_options
@@ -17,7 +18,6 @@ from .parametrized_name_mixin import _extract_options
 # ---------------------------------------------------------------------------
 # Name parsing
 # ---------------------------------------------------------------------------
-
 
 
 def parse_parametrized_name(name):
@@ -38,13 +38,14 @@ def _format_name(base, params):
     """Reconstruct a parametrized name from its components."""
     if not params:
         return base
-    param_str = ','.join(f'{k}={v}' for k, v in params.items())
-    return f'{base}[{param_str}]'
+    param_str = ",".join(f"{k}={v}" for k, v in params.items())
+    return f"{base}[{param_str}]"
 
 
 # ---------------------------------------------------------------------------
 # Short label computation
 # ---------------------------------------------------------------------------
+
 
 def compute_short_labels(names):
     """Compute short display labels from a list of parametrized names.
@@ -126,9 +127,7 @@ def compute_short_labels(names):
                 # All params are constant – just show the base name.
                 short_map[name] = base
             else:
-                short_params = {
-                    k: str(params[k]) for k in varying_keys if k in params
-                }
+                short_params = {k: str(params[k]) for k in varying_keys if k in params}
                 short_map[name] = _format_name(base, short_params)
 
     return short_map

@@ -1,5 +1,4 @@
 """Tests for benchopt.utils.short_labels."""
-import pytest
 
 from benchopt.utils.short_labels import (
     parse_parametrized_name,
@@ -12,6 +11,7 @@ from benchopt.utils.short_labels import (
 # ---------------------------------------------------------------------------
 # parse_parametrized_name
 # ---------------------------------------------------------------------------
+
 
 def test_parse_no_params():
     base, params = parse_parametrized_name("LASSO")
@@ -42,6 +42,7 @@ def test_parse_brackets_in_value():
 # compute_short_labels
 # ---------------------------------------------------------------------------
 
+
 def test_single_name_returns_base():
     # Single instance: base name only (params don't aid disambiguation).
     names = ["Solver[alpha=0.1,n_iter=100]"]
@@ -65,8 +66,12 @@ def test_all_params_vary():
         "Solver[alpha=0.5,n_iter=50]",
     ]
     short = compute_short_labels(names)
-    assert short["Solver[alpha=0.1,n_iter=10]"] == "Solver[alpha=0.1,n_iter=10]"
-    assert short["Solver[alpha=0.5,n_iter=50]"] == "Solver[alpha=0.5,n_iter=50]"
+    assert (
+        short["Solver[alpha=0.1,n_iter=10]"] == "Solver[alpha=0.1,n_iter=10]"
+    )
+    assert (
+        short["Solver[alpha=0.5,n_iter=50]"] == "Solver[alpha=0.5,n_iter=50]"
+    )
 
 
 def test_all_params_constant_reduces_to_base():
@@ -108,6 +113,7 @@ def test_mixed_solver_types():
 # is_shortened
 # ---------------------------------------------------------------------------
 
+
 def test_is_shortened_true():
     names = [
         "Solver[alpha=0.1,n_iter=100]",
@@ -127,11 +133,18 @@ def test_is_shortened_false_single():
 # compute_params_info
 # ---------------------------------------------------------------------------
 
+
 def test_compute_params_info_basic():
     names = ["Solver[alpha=0.1,n_iter=100]", "Solver[alpha=0.5,n_iter=100]"]
     info = compute_params_info(names)
-    assert info["Solver[alpha=0.1,n_iter=100]"] == {"alpha": "0.1", "n_iter": "100"}
-    assert info["Solver[alpha=0.5,n_iter=100]"] == {"alpha": "0.5", "n_iter": "100"}
+    assert info["Solver[alpha=0.1,n_iter=100]"] == {
+        "alpha": "0.1",
+        "n_iter": "100",
+    }
+    assert info["Solver[alpha=0.5,n_iter=100]"] == {
+        "alpha": "0.5",
+        "n_iter": "100",
+    }
 
 
 def test_compute_params_info_no_params():
