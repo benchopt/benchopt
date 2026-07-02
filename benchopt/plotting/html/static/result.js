@@ -613,21 +613,9 @@ const renderSidebar = () => {
   renderPlotDropdowns();
 }
 
-/**
- * Build an HTML params table string from a {param: value} object.
- */
 const escapeHTML = (s) => String(s)
   .replace(/&/g, '&amp;').replace(/</g, '&lt;')
   .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-
-const buildParamsTable = (params) => {
-  const entries = Object.entries(params);
-  if (entries.length === 0) return '';
-  const rows = entries
-    .map(([k, v]) => `<tr><td class="param-key">${escapeHTML(k)}</td><td class="param-val">${escapeHTML(v)}</td></tr>`)
-    .join('');
-  return `<div class="param-title">Parameters</div><table>${rows}</table>`;
-};
 
 /**
  * Inline SVG "info" icon (class `param-icon`) carrying a trace `description`
@@ -644,22 +632,13 @@ const descIconHTML = (text) =>
   `<line x1="12" y1="16" x2="12" y2="12"></line>` +
   `<line x1="12" y1="8" x2="12.01" y2="8"></line></svg>`;
 
-/** Show the shared params tooltip near the cursor. */
-const showParamsTooltip = (event, params) => {
-  const html = buildParamsTable(params);
-  if (!html) return;
-  const tip = document.getElementById('params-tooltip');
-  tip.innerHTML = html;
-  tip.style.display = 'block';
-  _moveParamsTooltip(event);
-};
-
 /** Show params tooltip for a dataset/objective selector icon. */
 const showEntityParamsTooltip = (event, paramType, stateKey) => {
   const sl = window._short_labels || {};
-  const lookup = paramType === 'dataset' ? (sl.dataset_params || {}) : (sl.objective_params || {});
+  const lookup = paramType === 'dataset'
+    ? (sl.dataset_descriptions || {}) : (sl.objective_descriptions || {});
   const currentValue = state()[stateKey];
-  showParamsTooltip(event, currentValue ? (lookup[currentValue] || {}) : {});
+  showDescTooltip(event, currentValue ? (lookup[currentValue] || '') : '');
 };
 
 /** Show a trace `description` tooltip. The description is already HTML. */
@@ -696,26 +675,6 @@ const _moveParamsTooltip = (event) => {
 };
 
 document.addEventListener('mousemove', _moveParamsTooltip);
-
-/**
- * Update the params info boxes below dataset/objective selectors.
- */
-const renderParamsInfoBoxes = () => {
-  const sl = window._short_labels || {};
-  const paramsLookup = {
-    dataset: sl.dataset_params || {},
-    objective: sl.objective_params || {},
-  };
-  document.querySelectorAll('.params-info-box').forEach(box => {
-    const paramType = box.dataset.paramType;
-    const stateKey  = box.dataset.stateKey;
-    if (!paramType || !stateKey) return;
-    const currentValue = state()[stateKey];
-    if (!currentValue) { box.innerHTML = ''; return; }
-    const params = (paramsLookup[paramType] || {})[currentValue] || {};
-    box.innerHTML = buildParamsTable(params);
-  });
-};
 
 /**
  * Render Scale selector

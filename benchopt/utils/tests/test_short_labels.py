@@ -1,41 +1,9 @@
 """Tests for benchopt.utils.short_labels."""
 
 from benchopt.utils.short_labels import (
-    parse_parametrized_name,
     compute_short_labels,
     compute_params_info,
-    is_shortened,
 )
-
-
-# ---------------------------------------------------------------------------
-# parse_parametrized_name
-# ---------------------------------------------------------------------------
-
-
-def test_parse_no_params():
-    base, params = parse_parametrized_name("LASSO")
-    assert base == "LASSO"
-    assert params == {}
-
-
-def test_parse_single_param():
-    base, params = parse_parametrized_name("LASSO[alpha=0.1]")
-    assert base == "LASSO"
-    assert params == {"alpha": "0.1"}
-
-
-def test_parse_multiple_params():
-    base, params = parse_parametrized_name("Solver[alpha=0.1,n_iter=100]")
-    assert base == "Solver"
-    assert params == {"alpha": "0.1", "n_iter": "100"}
-
-
-def test_parse_brackets_in_value():
-    # Values that contain '=' should still parse correctly.
-    base, params = parse_parametrized_name("S[key=val]")
-    assert base == "S"
-    assert params["key"] == "val"
 
 
 # ---------------------------------------------------------------------------
@@ -107,26 +75,6 @@ def test_mixed_solver_types():
     assert short["SolverA[alpha=0.5,n_iter=100]"] == "SolverA[alpha=0.5]"
     # SolverB has only one instance – show base name only
     assert short["SolverB[alpha=0.1]"] == "SolverB"
-
-
-# ---------------------------------------------------------------------------
-# is_shortened
-# ---------------------------------------------------------------------------
-
-
-def test_is_shortened_true():
-    names = [
-        "Solver[alpha=0.1,n_iter=100]",
-        "Solver[alpha=0.5,n_iter=100]",
-    ]
-    short = compute_short_labels(names)
-    assert is_shortened(short)
-
-
-def test_is_shortened_false_single():
-    short = compute_short_labels(["OnlySolver[p=1]"])
-    # base name "OnlySolver" != full name "OnlySolver[p=1]" → is_shortened=True
-    assert is_shortened(short)
 
 
 # ---------------------------------------------------------------------------

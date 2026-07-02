@@ -18,7 +18,7 @@ from .utils.dynamic_modules import _load_class_from_module
 from .utils.parametrized_name_mixin import sanitize
 from .utils.parametrized_name_mixin import _get_used_parameters
 from .utils.parametrized_name_mixin import _check_patterns
-from .utils.short_labels import compute_short_labels, compute_params_info
+from .utils.short_labels import compute_short_labels, compute_descriptions
 
 from .utils.terminal_output import colorify
 from .utils.terminal_output import GREEN, YELLOW
@@ -369,8 +369,8 @@ class Benchmark:
             'solvers': solver_short,
             'datasets': dataset_short,
             'objectives': objective_short,
-            'dataset_params': compute_params_info(dataset_names),
-            'objective_params': compute_params_info(objective_names),
+            'dataset_descriptions': compute_descriptions(dataset_names),
+            'objective_descriptions': compute_descriptions(objective_names),
         }
 
         return all_data, all_options

@@ -10,6 +10,7 @@ the full names can be very verbose.  This module provides helpers to produce
 the set of names being compared, together with a tooltip-friendly full label.
 """
 
+from html import escape
 from collections import defaultdict
 
 from .parametrized_name_mixin import _extract_options
@@ -18,20 +19,6 @@ from .parametrized_name_mixin import _extract_options
 # ---------------------------------------------------------------------------
 # Name parsing
 # ---------------------------------------------------------------------------
-
-
-def parse_parametrized_name(name):
-    """Split a parametrized name into its base name and parameter dict.
-
-    Thin wrapper around :func:`_extract_options` kept for backward compat.
-
-    Returns
-    -------
-    base : str
-    params : dict[str, str]  (values converted to str)
-    """
-    base, _args, kwargs = _extract_options(str(name))
-    return base, {k: str(v) for k, v in kwargs.items()}
 
 
 def _format_name(base, params):
@@ -66,9 +53,8 @@ def compute_short_labels(names):
     -------
     short_map : dict[str, str]
         Mapping ``{full_name: short_label}``.  Every element of *names* is
-        guaranteed to have an entry.  If short labels are identical to their
-        full counterparts (no reduction possible), the dict is still returned
-        but ``is_shortened`` will be ``False``.
+        guaranteed to have an entry (identical to the full name when no
+        reduction is possible).
 
     Examples
     --------
@@ -136,11 +122,6 @@ def compute_short_labels(names):
     return short_map
 
 
-def is_shortened(short_map):
-    """Return True if any label in *short_map* was actually shortened."""
-    return any(short != full for full, short in short_map.items())
-
-
 def compute_params_info(names):
     """Return ``{full_name: {param: str_value}}`` parsed from *names*.
 
@@ -161,3 +142,23 @@ def compute_params_info(names):
         base, _args, kwargs = _extract_options(name_str)
         result[name_str] = {k: str(v) for k, v in kwargs.items()}
     return result
+
+
+def format_description(params):
+    """Render a ``{param: value}`` dict as hover-icon HTML (empty if none)."""
+    if not params:
+        return ""
+    rows = "".join(
+        f'<tr><td class="param-key">{escape(k)}</td>'
+        f'<td class="param-val">{escape(v)}</td></tr>'
+        for k, v in params.items()
+    )
+    return f'<div class="param-title">Parameters</div><table>{rows}</table>'
+
+
+def compute_descriptions(names):
+    """Return ``{full_name: description_html}`` parsed from *names*."""
+    return {
+        name: format_description(params)
+        for name, params in compute_params_info(names).items()
+    }

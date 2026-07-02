@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from html import escape
 import inspect
 import matplotlib.pyplot as plt
 
@@ -7,7 +6,9 @@ from ..utils.dependencies_mixin import DependenciesMixin
 from ..utils.parametrized_name_mixin import ParametrizedNameMixin
 from ..utils.parametrized_name_mixin import product_param
 from ..utils.parametrized_name_mixin import sanitize
-from ..utils.short_labels import compute_short_labels, compute_params_info
+from ..utils.short_labels import (
+    compute_short_labels, compute_params_info, format_description
+)
 
 CMAP = plt.get_cmap('tab20')
 COLORS = [CMAP(i) for i in range(CMAP.N)]
@@ -209,23 +210,18 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
         return {
             label: {
                 "short_label": short_labels[label],
-                "description": self._format_description(
+                "description": format_description(
                     params_info.get(str(label), {})
                 ),
             }
             for label in labels
         }
 
-    @staticmethod
-    def _format_description(params):
-        """Render a params dict as hover-icon HTML (empty if no params)."""
-        if not params:
-            return ""
-        rows = "".join(
-            f'<tr><td class="param-key">{escape(k)}</td>'
-            f'<td class="param-val">{escape(v)}</td></tr>'
-            for k, v in params.items()
+    def _annotate_short_labels(self, traces):
+        """Add ``full_label``/``short_label``/``description`` to each trace."""
+        annotations = self.get_default_short_labels(
+            [t["label"] for t in traces]
         )
-        return (
-            f'<div class="param-title">Parameters</div><table>{rows}</table>'
-        )
+        for t in traces:
+            t["full_label"] = t["label"]
+            t.update(annotations[t["label"]])

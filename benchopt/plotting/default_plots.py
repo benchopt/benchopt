@@ -62,12 +62,7 @@ class ObjectiveCurvePlot(BasePlot):
 
             plots.append(curve_data)
 
-        annotations = self.get_default_short_labels(
-            [c["label"] for c in plots]
-        )
-        for c in plots:
-            c["full_label"] = c["label"]
-            c.update(annotations[c["label"]])
+        self._annotate_short_labels(plots)
 
         return plots
 
@@ -131,12 +126,7 @@ class BarChart(BasePlot):
                 "color": color,
             })
 
-        annotations = self.get_default_short_labels(
-            [c["label"] for c in plots]
-        )
-        for c in plots:
-            c["full_label"] = c["label"]
-            c.update(annotations[c["label"]])
+        self._annotate_short_labels(plots)
 
         return plots
 
@@ -203,12 +193,7 @@ class BoxPlot(BasePlot):
                 "color": self.get_style(solver)["color"],
             })
 
-        annotations = self.get_default_short_labels(
-            [c["label"] for c in plot_data]
-        )
-        for c in plot_data:
-            c["full_label"] = c["label"]
-            c.update(annotations[c["label"]])
+        self._annotate_short_labels(plot_data)
 
         return plot_data
 
