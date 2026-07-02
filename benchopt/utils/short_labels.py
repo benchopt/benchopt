@@ -115,7 +115,7 @@ def compute_short_labels(names):
                     seen_keys.add(k)
 
         # A parameter *varies* if it takes more than one distinct value inside
-        # this base-name group (missing values are treated as a distinct value).
+        # this base-name group (missing values are treated as a distinct value)
         _MISSING = object()
         varying_keys = [
             k
