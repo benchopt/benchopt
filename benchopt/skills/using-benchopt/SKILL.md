@@ -20,6 +20,7 @@ folder. Solvers are compared on convergence curves or fixed-budget metrics.
 
 Load the relevant sub-file for the task at hand:
 
+- [**add-objective.md**](./add-objective.md) — implement or fix the `Objective` (evaluate_result, metrics, benchmark-wide defaults)
 - [**add-solver.md**](./add-solver.md) — implement or fix a `Solver` class
 - [**add-dataset.md**](./add-dataset.md) — implement or fix a `Dataset` class
 - [**create.md**](./create.md) — author a new benchmark repo from scratch

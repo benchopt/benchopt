@@ -1,12 +1,11 @@
 # Creating a benchopt benchmark
 
-Component templates: [`assets/objective.py`](./assets/objective.py), [`assets/solver.py`](./assets/solver.py), [`assets/dataset.py`](./assets/dataset.py).
 Run config template: [`assets/config_run.yml`](./assets/config_run.yml).
 
 Guidance for authoring a *benchmark* (a repo of datasets/solvers/objective),
 not for working on the benchopt library. This file covers **benchmark-wide**
-concerns; for an individual component see [add-solver.md](./add-solver.md) and
-[add-dataset.md](./add-dataset.md), and for running/results [run.md](./run.md).
+concerns; for individual components see [add-objective.md](./add-objective.md),
+[add-solver.md](./add-solver.md), and [add-dataset.md](./add-dataset.md).
 
 After each change, lint (`flake8 .` or `ruff check .`) and run a `benchopt run`
 smoke test with a debug config, or a `benchopt test . --skip-install` to catch early
@@ -19,38 +18,14 @@ Clone/copy **`template_benchmark`** (or **`template_benchmark_ml`** for ML) from
 correct `objective.py`, `datasets/`, `solvers/`, `benchmark_utils/`, the test
 config wiring, and the CI workflows (see below).
 
-## The objective/dataset/solver contract
+## Component contract (overview)
 
-Every class needs a `name` attribute. Data flows between components as dicts:
+Every class needs a `name` attribute. Data flows as dicts:
+`Dataset.get_data()` → `Objective.set_data()` → `Objective.get_objective()`
+→ `Solver.set_objective()` → `Solver.get_result()` → `Objective.evaluate_result()`.
 
-- `Dataset.get_data()` → dict → `Objective.set_data(**data)`.
-- `Objective.get_objective()` → dict → `Solver.set_objective(**obj)`.
-- `Solver.get_result()` → dict → `Objective.evaluate_result(**res)`.
-- `evaluate_result` must return a dict with a scalar `value` key (the quantity
-  benchopt minimises); add any extra metric keys you like.
-
-The `Objective` also exposes optional methods worth wiring early:
-
-- `get_one_result()`: a dummy result used by `benchopt test` to validate metric
-  computation (validation skipped if absent).
-- `save_final_results(**res)`: persist artefacts (models, arrays) as a `.pkl`
-  alongside the parquet results.
-- `skip(**data)`: skip incompatible dataset/objective combinations.
-
-**Set benchmark-wide defaults on the `Objective`** so all solvers inherit them:
-`sampling_strategy` (e.g. `"run_once"` for ML), `stopping_criterion`, and
-`python_version` to pin the conda env's Python. **Seed all randomness with
-`self.get_seed(use_repetition=True)`** so `--n-repetitions` gives reproducible,
-distinct runs (a bare `self.get_seed()` returns the same seed every repetition).
-
-Two design rules that keep a benchmark extensible:
-
-- **Keep solvers dataset-agnostic.** Have the dataset expose a generic payload
-  (e.g. `fields: dict[str, ndarray]`) plus *optional callables* (`moments_fn`,
-  …); solvers operate on the payload by name, and the objective calls the
-  callables only when present. One set of solvers then serves many datasets.
-- **Use `Objective.parameters`** to parametrize *evaluation* itself (e.g. a
-  number of restart steps), not just solvers/datasets.
+For objective authoring detail (evaluate_result format, benchmark-wide defaults,
+key_to_monitor, test wiring) see [add-objective.md](./add-objective.md).
 
 ## Config and dependencies (benchmark-wide)
 
