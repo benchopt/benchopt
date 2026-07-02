@@ -6,8 +6,16 @@ description: >
   execution, exploring and managing result files, debugging benchmark code,
   and the full CLI reference. Use whenever working on a benchopt benchmark or
   the benchopt library itself — including benchopt run, benchopt install,
-  add solver, add dataset, create benchmark, plot results, merge results,
-  SLURM, debug, convergence curve, parquet, objective, stopping criterion.
+  add solver, add dataset, add objective, create benchmark, plot results,
+  merge results, publish results, SLURM, submitit, dask, n-jobs, timeout,
+  convergence curve, parquet, outputs/, evaluate_result, key_to_monitor,
+  get_data, set_data, get_objective, set_objective, get_result, get_one_result,
+  objective, stopping_criterion, NoCriterion, SufficientProgressCriterion,
+  sampling_strategy, run_once, callback, iteration, diverged, diverging curve,
+  curve stops early, fixed-budget, stale cache, force-solver, no-cache,
+  prepare, install, test, skip, warm_up, safe_import_context, requirements,
+  pip::, chan::, test_parameters, test_config, Simulated, template_benchmark,
+  benchmark_utils, min_benchopt_version, debug, debug snippet.
 ---
 
 # Benchopt
