@@ -1,13 +1,3 @@
----
-name: benchopt-run-benchmark
-description: >
-  How to run a benchopt benchmark and manage results: selecting
-  objectives/datasets/solvers (with parameter grids), repetitions and budgets,
-  parallelism (local and SLURM), conda environments, installing requirements,
-  preparing data, caching, and plotting/publishing. Use when running an
-  existing benchmark, not when authoring one.
----
-
 # Running a benchopt benchmark
 
 Run from a benchmark directory (the folder holding `objective.py`). `.` refers
@@ -44,8 +34,8 @@ benchopt run . \
 - `--parallel-config slurm.yml`: dispatch on a cluster (SLURM, Dask, …).
 - `-e/--env [NAME]` / `--env-name NAME`: run inside a dedicated conda env
   (isolated dependencies). `-l/--local` (default) runs in the current env.
-  
-  Refer to benchopt-parallel skill for more info about parallelism.
+
+See [parallel.md](./parallel.md) for full parallelism and cluster options.
 
 ## Caching
 
@@ -78,8 +68,8 @@ requirements; `--minimal` installs just benchopt + objective deps.
   configured via a config file (`plot_configs:` with `plot_kind`, `scale`).
 - `benchopt merge` combines results from different machines/users;
   `benchopt publish` shares on GitHub or Hugging Face.
-  
-See benchopt-results skill for more info about result management.
+
+See [results.md](./results.md) for full result management.
 
 ## Run configuration file
 

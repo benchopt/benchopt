@@ -1,18 +1,9 @@
----
-name: benchopt-create-benchmark
-description: >
-  How to author a new benchopt benchmark (datasets, solvers, objective): the
-  component contract, benchmark-wide config and dependencies, data preparation,
-  testing, and CI. Use when creating or restructuring a benchmark repo, not
-  when working on the benchopt library itself.
----
-
 # Creating a benchopt benchmark
 
 Guidance for authoring a *benchmark* (a repo of datasets/solvers/objective),
-not for working on the benchopt library. This skill covers **benchmark-wide**
-concerns; for an individual component see **`benchopt-add-solver`** and
-**`benchopt-add-dataset`**, and for running/results **`benchopt-run-benchmark`**.
+not for working on the benchopt library. This file covers **benchmark-wide**
+concerns; for an individual component see [add-solver.md](./add-solver.md) and
+[add-dataset.md](./add-dataset.md), and for running/results [run.md](./run.md).
 
 After each change, lint (`flake8 .` or `ruff check .`) and run a `benchopt run`
 smoke test with a debug config, or a `benchopt test . --skip-install` to catch early
@@ -69,10 +60,10 @@ Two design rules that keep a benchmark extensible:
   `__init__.py` to be a proper module.
 - **Requirements are per component**, not per `benchmark_utils` submodule — each
   objective/dataset/solver declares exactly what it imports (install detection
-  is covered in the add-solver/add-dataset skills). Organise `benchmark_utils`
-  by **topic** (one module per concern), import the specific submodule from each
-  class, and keep `benchmark_utils/__init__.py` **empty** so importing one topic
-  doesn't load the others.
+  is covered in [add-solver.md](./add-solver.md) and [add-dataset.md](./add-dataset.md)).
+  Organise `benchmark_utils` by **topic** (one module per concern), import the
+  specific submodule from each class, and keep `benchmark_utils/__init__.py`
+  **empty** so importing one topic doesn't load the others.
 - For data/config locations use **`get_data_path("key")`**
   (`from benchopt.config import get_data_path`); it resolves under the
   benchmark's configurable data folder, so it travels with any checkout. Ship
@@ -89,9 +80,9 @@ Two design rules that keep a benchmark extensible:
 ## Data preparation and testing
 
 - Put expensive one-time data generation in `Dataset.prepare()` and load it in
-  `get_data()` (details in `benchopt-add-dataset`). Benchmark-wide, precompute
-  reusable, solver-independent references in `prepare()` (e.g. a ground-truth
-  trajectory) so each evaluation only does the cheap solver-dependent work.
+  `get_data()` (details in [add-dataset.md](./add-dataset.md)). Benchmark-wide,
+  precompute reusable, solver-independent references in `prepare()` (e.g. a
+  ground-truth trajectory) so each evaluation only does the cheap solver-dependent work.
 - Give datasets/solvers a `test_parameters` dict pointing at a tiny, fast
   configuration, and when possible, ship a zero-dependency `Simulated` dataset so
   the benchmark always has a no-install smoke test.

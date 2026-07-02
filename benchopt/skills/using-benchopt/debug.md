@@ -1,18 +1,3 @@
----
-name: benchopt-debug
-description: >
-  How to drive a benchmark's code directly from Python via the Benchmark
-  object, without launching the full `benchopt run` CLI: load datasets and the
-  objective, inspect what `Dataset.get_data()` returns, replay a solver
-  (`set_objective`/`run`/`get_result`) and call `Objective.evaluate_result()` on
-  its output or an arbitrary checkpoint. Covers common pitfalls — NaNs, diverging
-  curves (benchopt's divergence guard), and stale-cache surprises plus how to bust
-  the cache — and points to `benchopt test` for catching design problems early.
-  Use when debugging a benchmark's own code (a failing `get_data`, a diverging
-  solver, NaNs, a suspicious metric, results that don't update after an edit) rather
-  than running or authoring one.
----
-
 # Debugging a benchopt benchmark from Python
 
 When something in a benchmark misbehaves, you usually do not want a full
@@ -159,9 +144,8 @@ full run points at the *solvers*, not the objective.
 For sequential solvers that are evaluated with varying compute budget,
 benchopt watches the monitored objective (`key_to_monitor`, default
 `objective_value`) and **stops the run with status `diverged`** as soon as that
-value is `NaN` or worsens by more than `1e5` between two steps
-([stopping_criterion.py](../stopping_criterion.py)). A curve that ends early with
-`diverged` in the dashboard is this guard firing, not a benchopt bug.
+value is `NaN` or worsens by more than `1e5` between two steps. A curve that
+ends early with `diverged` in the dashboard is this guard firing, not a benchopt bug.
 
 Both symptoms almost always originate in your code, so reproduce them with the
 replay snippets above instead of staring at the curve:
@@ -185,10 +169,9 @@ it: it exits once the monitored objective fails to improve for 3 successive
 evaluations (`eps=1e-10`). That is intended for convergence benchmarks, but it
 silently truncates **fixed-budget training** (e.g. a DL solver meant to run N
 epochs) as soon as the loss plateaus or is merely noisy — so the run looks
-"done" far short of the budget. This is a *stopping-criterion* choice, not a bug
-in your solver: fix it on the solver (or benchmark-wide on the `Objective`) by
-pinning an explicit `stopping_criterion` such as `NoCriterion` or
-`SingleRunCriterion`. See the `benchopt-add-solver` skill for the fix.
+"done" far short of the budget. Fix it on the solver (or benchmark-wide on the
+`Objective`) by pinning an explicit `stopping_criterion` such as `NoCriterion`
+or `SingleRunCriterion`. See [add-solver.md](./add-solver.md) for the fix.
 
 ### Stale-cache surprises
 

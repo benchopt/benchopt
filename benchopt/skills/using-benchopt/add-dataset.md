@@ -1,13 +1,3 @@
----
-name: benchopt-add-dataset
-description: >
-  How to add a dataset to an existing benchopt benchmark: the Dataset class
-  contract (get_data feeding Objective.set_data), parameters, requirements,
-  expensive one-time prepare() with caching, reproducible seeding, a
-  zero-dependency Simulated dataset, and test_parameters. Use when implementing
-  or fixing a dataset, not when authoring a whole benchmark.
----
-
 # Adding a dataset
 
 A dataset lives in `datasets/<name>.py` as `class Dataset(BaseDataset)` and

@@ -1,13 +1,3 @@
----
-name: benchopt-add-solver
-description: >
-  How to add a solver to an existing benchopt benchmark: the Solver class
-  contract (set_objective/run/get_result), sampling strategies and stopping
-  criteria for convergence curves, parameters, requirements, skipping
-  incompatible problems, warm-up/JIT handling, and test_parameters. Use when
-  implementing or fixing a solver, not when authoring a whole benchmark.
----
-
 # Adding a solver
 
 A solver lives in `solvers/<name>.py` as `class Solver(BaseSolver)` and must
@@ -106,8 +96,8 @@ When *every* solver in the benchmark is fixed-budget (e.g. a DL benchmark where
 all solvers train for N epochs), set `stopping_criterion` **once on the
 `Objective`** rather than repeating it per solver — like `sampling_strategy`, a
 solver that doesn't define its own inherits the objective's, so this makes the
-no-truncation behavior benchmark-wide. See the doc links; the early-truncation
-*symptom* is covered in the `benchopt-debug` skill.
+no-truncation behavior benchmark-wide. The early-truncation symptom is covered
+in [debug.md](./debug.md).
 
 ## Optional hooks
 

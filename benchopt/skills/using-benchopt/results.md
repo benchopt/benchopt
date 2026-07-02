@@ -1,8 +1,3 @@
----
-name: benchopt-results
-description: "Explore and manage benchopt result files: read run parquets in Python (benchopt.results.read_results), understand the dataframe schema, use the CLI (plot/merge/publish) and outputs/ layout, save custom views with plot_configs, write custom BasePlot plots, and merge results across machines. Use when analysing, slicing, comparing, plotting, or sharing benchmark results."
----
-
 # Exploring benchopt results
 
 Every `benchopt run` writes a self-contained result table. You can analyse it
@@ -16,7 +11,7 @@ A run produces, under `<benchmark>/outputs/`:
 ```
 benchopt_run_<timestamp>.parquet   ← the results table (one row per curve point)
 benchopt_run_<timestamp>.html      ← interactive dashboard (unless --no-html)
-benchopt_run_<timestamp>/          ← per-solver run artifacts (see general.md)
+benchopt_run_<timestamp>/          ← per-solver run artifacts
 ```
 
 `benchopt merge` writes `merged_results.parquet` and `benchopt plot --all`

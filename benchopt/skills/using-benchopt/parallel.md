@@ -1,14 +1,3 @@
----
-name: benchopt-parallel
-description: >
-  How to scale a benchopt run from local cores to a cluster: choosing a backend
-  (loky/dask/submitit), the --n-jobs vs --parallel-config split, the YAML config
-  for SLURM and Dask, per-solver/per-run SLURM overrides, how --timeout maps to
-  slurm_time, and how caching behaves across nodes and machines. Use when a run
-  is too slow, needs a cluster, or behaves oddly under parallelism — not for the
-  basics of selecting solvers/datasets (see benchopt-run-benchmark).
----
-
 # Running benchopt in parallel
 
 Benchopt parallelises at the granularity of one **(dataset, objective, solver)
@@ -104,7 +93,7 @@ Runs with different SLURM parameters are dispatched as **separate job arrays**.
   `loky` backend regardless of the config.
 - To combine results produced on **machines without a shared filesystem**, run
   each separately and `benchopt merge` the parquet outputs (see
-  benchopt-results).
+  [results.md](./results.md)).
 
 ## Doc links
 
