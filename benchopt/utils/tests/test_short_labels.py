@@ -80,7 +80,7 @@ def test_all_params_constant_reduces_to_base():
     # In that scenario, show just the base name.
     names = [
         "Solver[alpha=0.1,n_iter=100]",
-        "Solver[alpha=0.1,n_iter=200]",  # only n_iter varies... wait: same alpha
+        "Solver[alpha=0.1,n_iter=200]",
     ]
     # alpha is constant (0.1), n_iter varies → keep n_iter only
     short = compute_short_labels(names)

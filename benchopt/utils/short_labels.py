@@ -99,7 +99,7 @@ def compute_short_labels(names):
     short_map = {}
     for base, group in by_base.items():
         if len(group) == 1:
-            # Single instance – only the base name is needed for identification;
+            # Single instance – only the base name is needed for identification
             # showing all params adds noise without aiding disambiguation.
             name, params = group[0]
             short_map[name] = base
@@ -118,7 +118,8 @@ def compute_short_labels(names):
         # this base-name group (missing values are treated as a distinct value).
         _MISSING = object()
         varying_keys = [
-            k for k in all_keys
+            k
+            for k in all_keys
             if len({str(params.get(k, _MISSING)) for _, params in group}) > 1
         ]
 
@@ -127,7 +128,9 @@ def compute_short_labels(names):
                 # All params are constant – just show the base name.
                 short_map[name] = base
             else:
-                short_params = {k: str(params[k]) for k in varying_keys if k in params}
+                short_params = {
+                    k: str(params[k]) for k in varying_keys if k in params
+                }
                 short_map[name] = _format_name(base, short_params)
 
     return short_map
