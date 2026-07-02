@@ -169,11 +169,33 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
 
         combinations = product_param(options)
 
+        # Default short label / description maps for solver, dataset and
+        # objective names, used by the HTML page for its selectors and
+        # their params tooltips. They are stored in each plot's data so
+        # that custom plots can override them from ``get_metadata``.
+        default_annotations = {}
+        for col in ('solver_name', 'dataset_name', 'objective_name'):
+            default_annotations.update(self.get_default_short_labels(
+                list(map(str, df[col].unique()))
+            ))
+        default_short_labels = {
+            name: a["short_label"] for name, a in default_annotations.items()
+        }
+        default_descriptions = {
+            name: a["description"] for name, a in default_annotations.items()
+        }
+
         plots = {}
         for kwargs in combinations:
             data = self.get_metadata(df, **kwargs)
             data["type"] = self.type
             data["data"] = self.plot(df, **kwargs)
+            data["short_labels"] = {
+                **default_short_labels, **data.get("short_labels", {})
+            }
+            data["descriptions"] = {
+                **default_descriptions, **data.get("descriptions", {})
+            }
             key_list = (
                 [self._get_name()] + list(kwargs.values())
             )

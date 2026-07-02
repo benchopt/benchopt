@@ -109,16 +109,12 @@ def get_results(fnames, html_root, benchmark, config=None, copy=False):
             ],
             kinds=kinds,
             metadata=get_metadata(df, config_.get('plot_configs', {})),
-            short_labels={},  # populated below after get_plot_data
         )
 
         data, options = benchmark.get_plot_data(df, result['kinds'])
-        # Extract the short-label maps before serialising the plot data.
-        short_labels = data.pop('_short_labels', {})
         data = update_plot_data_style(data, plotly=True)
         result['json_plots'] = json.dumps(data)
         result['plot_options'] = options
-        result['short_labels'] = short_labels
 
         results.append(result)
     print()

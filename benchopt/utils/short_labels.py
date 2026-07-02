@@ -154,11 +154,3 @@ def format_description(params):
         for k, v in params.items()
     )
     return f'<div class="param-title">Parameters</div><table>{rows}</table>'
-
-
-def compute_descriptions(names):
-    """Return ``{full_name: description_html}`` parsed from *names*."""
-    return {
-        name: format_description(params)
-        for name, params in compute_params_info(names).items()
-    }

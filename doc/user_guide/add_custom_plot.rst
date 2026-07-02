@@ -388,6 +388,14 @@ overridable by custom plots:
 - :code:`description`: the HTML shown on the legend hover icon (scatter plots).
   It is injected into the page as-is, so it must be valid, escaped HTML.
 
+Besides per-trace keys, every plot also carries two map-valued metadata keys,
+:code:`short_labels` and :code:`descriptions`, mapping full names to their
+short label / hover HTML. They are used by the HTML report for the selector
+dropdowns and their params tooltips (and for the first column of table plots).
+Defaults covering all solver, dataset and objective names are computed
+automatically; a custom plot can override entries by returning these keys from
+:code:`get_metadata`.
+
 :class:`benchopt.BasePlot` provides :code:`get_default_short_labels(labels)`,
 meant to be called from :code:`plot` on the traces before returning them. It
 returns a ``{label: {"short_label": ..., "description": ...}}`` mapping computed

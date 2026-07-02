@@ -24,15 +24,15 @@ const getDisplayLabel = (full_name) => {
 };
 
 /**
- * Return the display label for a dataset / objective name.
- * Falls back to the full name when no short-label map is available.
+ * Return the display label for a solver / dataset / objective name,
+ * from the current plot's `short_labels` map. Custom plots can override
+ * this map via `get_metadata`. Falls back to the full name.
  *
  * @param {String} full_name
- * @param {'datasets'|'objectives'|'solvers'} kind
  * @returns {String}
  */
-const getShortLabel = (full_name, kind = 'solvers') => {
-  const map = (window._short_labels || {})[kind] || {};
+const getShortLabel = (full_name) => {
+  const map = (getPlotData() || {}).short_labels || {};
   return map[full_name] || full_name;
 };
 
@@ -256,7 +256,7 @@ const getBoxplotData = () => {
     plotData.x.forEach((label, i) => {
       // When X_axis == "Solver" each x entry is a solver name; use short label.
       const displayX = (typeof label === 'string')
-        ? (state().short_labels ? (getShortLabel(label, 'solvers') || label) : label)
+        ? (state().short_labels ? getShortLabel(label) : label)
         : label;
       boxplotData.push({
         y: plotData.y[i],
@@ -633,10 +633,8 @@ const descIconHTML = (text) =>
   `<line x1="12" y1="8" x2="12.01" y2="8"></line></svg>`;
 
 /** Show params tooltip for a dataset/objective selector icon. */
-const showEntityParamsTooltip = (event, paramType, stateKey) => {
-  const sl = window._short_labels || {};
-  const lookup = paramType === 'dataset'
-    ? (sl.dataset_descriptions || {}) : (sl.objective_descriptions || {});
+const showEntityParamsTooltip = (event, stateKey) => {
+  const lookup = (getPlotData() || {}).descriptions || {};
   const currentValue = state()[stateKey];
   showDescTooltip(event, currentValue ? (lookup[currentValue] || '') : '');
 };
@@ -733,6 +731,13 @@ const renderPlotDropdowns = () => {
     }
   }
 
+  // Display option labels using the current plot's short-label map.
+  const useShort = state().short_labels;
+  document.querySelectorAll(
+    `#${state().plot_kind}-custom-params-container option`
+  ).forEach(option => {
+    option.text = useShort ? getShortLabel(option.value) : option.value;
+  });
 }
 
 const mapSelectorsToState = () => {

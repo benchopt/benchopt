@@ -18,7 +18,6 @@ from .utils.dynamic_modules import _load_class_from_module
 from .utils.parametrized_name_mixin import sanitize
 from .utils.parametrized_name_mixin import _get_used_parameters
 from .utils.parametrized_name_mixin import _check_patterns
-from .utils.short_labels import compute_short_labels, compute_descriptions
 
 from .utils.terminal_output import colorify
 from .utils.terminal_output import GREEN, YELLOW
@@ -354,24 +353,6 @@ class Benchmark:
             data, options = plot._get_all_plots(df)
             all_data[plot_name] = data
             all_options[plot_name] = options
-
-        # Trace short_label/full_label/description are generated per plot.
-        # Here we only build the name maps the HTML needs for selectors and
-        # their params tooltips.
-        solver_names = list(map(str, df['solver_name'].unique()))
-        dataset_names = list(map(str, df['dataset_name'].unique()))
-        objective_names = list(map(str, df['objective_name'].unique()))
-
-        solver_short = compute_short_labels(solver_names)
-        dataset_short = compute_short_labels(dataset_names)
-        objective_short = compute_short_labels(objective_names)
-        all_data['_short_labels'] = {
-            'solvers': solver_short,
-            'datasets': dataset_short,
-            'objectives': objective_short,
-            'dataset_descriptions': compute_descriptions(dataset_names),
-            'objective_descriptions': compute_descriptions(objective_names),
-        }
 
         return all_data, all_options
 
