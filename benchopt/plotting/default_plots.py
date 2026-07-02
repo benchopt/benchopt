@@ -62,6 +62,13 @@ class ObjectiveCurvePlot(BasePlot):
 
             plots.append(curve_data)
 
+        annotations = self.get_default_short_labels(
+            [c["label"] for c in plots]
+        )
+        for c in plots:
+            c["full_label"] = c["label"]
+            c.update(annotations[c["label"]])
+
         return plots
 
     def get_metadata(self, df, dataset, objective, objective_column, X_axis):
@@ -123,6 +130,13 @@ class BarChart(BasePlot):
                 "label": solver,
                 "color": color,
             })
+
+        annotations = self.get_default_short_labels(
+            [c["label"] for c in plots]
+        )
+        for c in plots:
+            c["full_label"] = c["label"]
+            c.update(annotations[c["label"]])
 
         return plots
 
@@ -189,6 +203,13 @@ class BoxPlot(BasePlot):
                 "color": self.get_style(solver)["color"],
             })
 
+        annotations = self.get_default_short_labels(
+            [c["label"] for c in plot_data]
+        )
+        for c in plot_data:
+            c["full_label"] = c["label"]
+            c.update(annotations[c["label"]])
+
         return plot_data
 
     def get_metadata(
@@ -243,9 +264,18 @@ class TablePlot(BasePlot):
             if col.startswith('objective_')
         ]
         columns = ["solver"] + objective_cols + ["time (s)"]
+        annotations = self.get_default_short_labels(
+            df['solver_name'].unique()
+        )
         return {
             "title": f"{objective}\nData: {dataset}",
             "columns": columns,
             "default_order_ascending": True,
             "default_order_column": 0,
+            "short_labels": {
+                s: a["short_label"] for s, a in annotations.items()
+            },
+            "descriptions": {
+                s: a["description"] for s, a in annotations.items()
+            },
         }

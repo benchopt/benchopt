@@ -18,7 +18,7 @@ from .utils.dynamic_modules import _load_class_from_module
 from .utils.parametrized_name_mixin import sanitize
 from .utils.parametrized_name_mixin import _get_used_parameters
 from .utils.parametrized_name_mixin import _check_patterns
-from .utils.short_labels import compute_short_labels, add_short_labels, compute_params_info
+from .utils.short_labels import compute_short_labels, compute_params_info
 
 from .utils.terminal_output import colorify
 from .utils.terminal_output import GREEN, YELLOW
@@ -355,18 +355,20 @@ class Benchmark:
             all_data[plot_name] = data
             all_options[plot_name] = options
 
-        # Always compute short labels and params info from name parsing.
+        # Trace short_label/full_label/description are generated per plot.
+        # Here we only build the name maps the HTML needs for selectors and
+        # their params tooltips.
         solver_names = list(map(str, df['solver_name'].unique()))
         dataset_names = list(map(str, df['dataset_name'].unique()))
         objective_names = list(map(str, df['objective_name'].unique()))
 
         solver_short = compute_short_labels(solver_names)
-        add_short_labels(all_data, solver_short)
+        dataset_short = compute_short_labels(dataset_names)
+        objective_short = compute_short_labels(objective_names)
         all_data['_short_labels'] = {
             'solvers': solver_short,
-            'datasets': compute_short_labels(dataset_names),
-            'objectives': compute_short_labels(objective_names),
-            'solver_params': compute_params_info(solver_names),
+            'datasets': dataset_short,
+            'objectives': objective_short,
             'dataset_params': compute_params_info(dataset_names),
             'objective_params': compute_params_info(objective_names),
         }

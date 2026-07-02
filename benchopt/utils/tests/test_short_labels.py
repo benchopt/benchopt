@@ -6,7 +6,6 @@ from benchopt.utils.short_labels import (
     compute_short_labels,
     compute_params_info,
     is_shortened,
-    add_short_labels,
 )
 
 
@@ -122,49 +121,6 @@ def test_is_shortened_false_single():
     short = compute_short_labels(["OnlySolver[p=1]"])
     # base name "OnlySolver" != full name "OnlySolver[p=1]" → is_shortened=True
     assert is_shortened(short)
-
-
-# ---------------------------------------------------------------------------
-# add_short_labels
-# ---------------------------------------------------------------------------
-
-def _make_plot_data(labels):
-    """Build a minimal plot_data structure."""
-    return {
-        "objective_curve": {
-            "key1": {
-                "type": "scatter",
-                "data": [{"label": lbl, "x": [], "y": []} for lbl in labels],
-            }
-        }
-    }
-
-
-def test_add_short_labels_annotates_traces():
-    labels = [
-        "Solver[alpha=0.1,n_iter=100]",
-        "Solver[alpha=0.5,n_iter=100]",
-    ]
-    short_map = compute_short_labels(labels)
-    plot_data = _make_plot_data(labels)
-    add_short_labels(plot_data, short_map)
-
-    traces = plot_data["objective_curve"]["key1"]["data"]
-    assert traces[0]["full_label"] == "Solver[alpha=0.1,n_iter=100]"
-    assert traces[0]["short_label"] == "Solver[alpha=0.1]"
-    assert traces[1]["full_label"] == "Solver[alpha=0.5,n_iter=100]"
-    assert traces[1]["short_label"] == "Solver[alpha=0.5]"
-
-
-def test_add_short_labels_no_change_when_single():
-    labels = ["OnlySolver[p=1,q=2]"]
-    short_map = compute_short_labels(labels)
-    plot_data = _make_plot_data(labels)
-    add_short_labels(plot_data, short_map)
-
-    traces = plot_data["objective_curve"]["key1"]["data"]
-    assert traces[0]["full_label"] == "OnlySolver[p=1,q=2]"
-    assert traces[0]["short_label"] == "OnlySolver"  # base name only
 
 
 # ---------------------------------------------------------------------------

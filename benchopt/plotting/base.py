@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from html import escape
 import inspect
 import matplotlib.pyplot as plt
 
@@ -6,6 +7,7 @@ from ..utils.dependencies_mixin import DependenciesMixin
 from ..utils.parametrized_name_mixin import ParametrizedNameMixin
 from ..utils.parametrized_name_mixin import product_param
 from ..utils.parametrized_name_mixin import sanitize
+from ..utils.short_labels import compute_short_labels, compute_params_info
 
 CMAP = plt.get_cmap('tab20')
 COLORS = [CMAP(i) for i in range(CMAP.N)]
@@ -34,12 +36,17 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
         The plot data structure, depending on the plot type:
         - scatter: list of dict for each trace, requires: 'x', 'y',
                 'label', optional: 'marker', 'color', 'x_low',
-                'x_high'.
+                'x_high', 'short_label', 'description'. ``description`` text
+                shows on a legend hover icon when short labels are toggled
+                on (a parametrized name renders as its params table).
         - bar_chart: list of dict for each bar, requires: 'y',
-                'label', optional: 'color', 'text'.
+                'label', optional: 'color', 'text', 'short_label'.
         - boxplot: list of dict for each box, requires: 'x', 'y',
-                'label', optional: 'color'.
+                'label', optional: 'color', 'short_label'.
         - table: list of list, each inner list is a row of the table.
+                The first column can be shortened via the optional
+                'short_labels' / 'descriptions' metadata keys (see
+                ``get_metadata``).
         - image: list of dict for each image, requires: 'image',
                 optional: 'label'.
 
@@ -173,3 +180,50 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
             plots[key] = data
 
         return plots, options
+
+    def get_default_short_labels(self, labels):
+        """Return the default short labels and hover descriptions for *labels*.
+
+        Short labels keep only the parameters that vary across *labels*;
+        parameters that are constant are dropped, so the whole set is needed as
+        context. The description is the hover-icon HTML: a parameters table
+        parsed from the label, injected into the legend tooltip as-is (so it
+        must be valid HTML), empty when the label has no parameters. This is the
+        default scheme: a plot calls it from :meth:`plot` and sets
+        ``short_label`` / ``description`` on its traces, which leaves it free to
+        decide what each trace displays.
+
+        Parameters
+        ----------
+        labels : sequence of str
+            All trace labels, e.g. ``[t["label"] for t in traces]``.
+
+        Returns
+        -------
+        dict[str, dict]
+            Mapping ``{label: {"short_label": str, "description": str}}``;
+            every input label has an entry.
+        """
+        short_labels = compute_short_labels(labels)
+        params_info = compute_params_info(labels)
+        return {
+            label: {
+                "short_label": short_labels[label],
+                "description": self._format_description(
+                    params_info.get(str(label), {})
+                ),
+            }
+            for label in labels
+        }
+
+    @staticmethod
+    def _format_description(params):
+        """Render a params dict as hover-icon HTML (empty if no params)."""
+        if not params:
+            return ""
+        rows = "".join(
+            f'<tr><td class="param-key">{escape(k)}</td>'
+            f'<td class="param-val">{escape(v)}</td></tr>'
+            for k, v in params.items()
+        )
+        return f'<div class="param-title">Parameters</div><table>{rows}</table>'

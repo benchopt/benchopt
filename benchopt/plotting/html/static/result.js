@@ -228,7 +228,11 @@ const getBarData = () => {
     if (nbTimes > 1) {
       barData.push({
         type: 'scatter',
-        x: new Array(nbTimes).fill(curveData.short_label || curveData.label),
+        x: new Array(nbTimes).fill(
+          state().short_labels
+            ? (curveData.short_label || curveData.label)
+            : curveData.label
+        ),
         y: curveData.y,
         marker: {
           color: 'black',
@@ -626,16 +630,16 @@ const buildParamsTable = (params) => {
 };
 
 /**
- * Inline SVG "info" icon (class `param-icon`) carrying the solver name in a
- * data attribute. Hover is wired through event delegation (see below) so the
+ * Inline SVG "info" icon (class `param-icon`) carrying a trace `description`
+ * in `data-desc`. Hover is wired through event delegation (see below) so the
  * icon works both in the legend and in Grid.js tables, which re-render their
  * cells on every sort/search. Returning an SVG (not a text glyph) keeps the
  * icon out of `innerText`, so the LaTeX table export is unaffected.
  */
-const paramIconHTML = (solverName) =>
+const descIconHTML = (text) =>
   `<svg class="param-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"` +
   ` stroke-width="2" stroke-linecap="round" stroke-linejoin="round"` +
-  ` data-solver="${escapeHTML(solverName)}">` +
+  ` data-desc="${escapeHTML(text)}">` +
   `<circle cx="12" cy="12" r="10"></circle>` +
   `<line x1="12" y1="16" x2="12" y2="12"></line>` +
   `<line x1="12" y1="8" x2="12.01" y2="8"></line></svg>`;
@@ -658,10 +662,13 @@ const showEntityParamsTooltip = (event, paramType, stateKey) => {
   showParamsTooltip(event, currentValue ? (lookup[currentValue] || {}) : {});
 };
 
-/** Show params tooltip for a solver icon, looked up by full solver name. */
-const showSolverParamsTooltip = (event, solverName) => {
-  const params = ((window._short_labels || {}).solver_params || {})[solverName] || {};
-  showParamsTooltip(event, params);
+/** Show a trace `description` tooltip. The description is already HTML. */
+const showDescTooltip = (event, html) => {
+  if (!html) return;
+  const tip = document.getElementById('params-tooltip');
+  tip.innerHTML = html;
+  tip.style.display = 'block';
+  _moveParamsTooltip(event);
 };
 
 /** Hide the shared params tooltip. */
@@ -675,7 +682,7 @@ const hideParamsTooltip = () => {
 // SVG the only event target, so no flicker as the cursor moves over it.
 document.addEventListener('mouseover', (e) => {
   const icon = e.target.closest?.('.param-icon');
-  if (icon) showSolverParamsTooltip(e, icon.getAttribute('data-solver'));
+  if (icon) showDescTooltip(e, icon.getAttribute('data-desc'));
 });
 document.addEventListener('mouseout', (e) => {
   if (e.target.closest?.('.param-icon')) hideParamsTooltip();
@@ -860,7 +867,11 @@ const barDataToArrays = () => {
   const colors = [], texts = [], x = [], y = [];
 
   getPlotData().data.forEach(plotData => {
-    x.push(plotData.short_label || plotData.label);
+    x.push(
+      state().short_labels
+        ? (plotData.short_label || plotData.label)
+        : plotData.label
+    );
     y.push(getMedian(plotData.y));
     const plotText = plotData.text || '';
     colors.push(plotData.color || UNDEFINED_COLOR);
@@ -1374,15 +1385,15 @@ function renderTable() {
   const card = document.createElement("div");
   card.className = "w-full bg-white overflow-hidden mx-auto";
 
-  // First column holds the solver name: render it with the same params icon
-  // as the legend when the solver carries parameters. Other columns keep the
-  // numeric formatter. The icon is an SVG, so it stays out of the LaTeX export.
+  // First column holds the row label: the plot's `get_metadata` provides the
+  // `short_labels` / `descriptions` maps (keyed by first-column value). The
+  // icon is an SVG, so it stays out of the LaTeX export.
   const solverCellHTML = (value) => {
     const full = String(value);
-    const params = ((window._short_labels || {}).solver_params || {})[full];
-    if (!params || Object.keys(params).length === 0) return escapeHTML(full);
-    const label = state().short_labels ? getShortLabel(full, 'solvers') : full;
-    return escapeHTML(label) + paramIconHTML(full);
+    const label = state().short_labels
+      ? ((plotData.short_labels || {})[full] || full) : full;
+    const desc = (plotData.descriptions || {})[full];
+    return escapeHTML(label) + (desc ? descIconHTML(desc) : '');
   };
 
   const buildColumns = () => plotData.columns.map((name, colIdx) => ({
@@ -1674,7 +1685,6 @@ const createLegendItem = (curve, color, symbolNumber) => {
   const fullLabel  = (curveTraceData && curveTraceData.full_label)  || curve;
   const useShort   = state().short_labels;
   const displayLabel = useShort ? shortLabel : fullLabel;
-  const isShortened  = shortLabel !== fullLabel;
 
   const textContainer = document.createElement('div');
   textContainer.style.marginLeft = '0.5rem';
@@ -1683,12 +1693,12 @@ const createLegendItem = (curve, color, symbolNumber) => {
   textContainer.setAttribute('data-curve', curve);
   textContainer.appendChild(document.createTextNode(displayLabel));
 
-  // When showing short labels, append a hover icon that shows all params.
-  if (useShort && isShortened) {
-    const solverParams = ((window._short_labels || {}).solver_params || {})[curve] || {};
-    if (Object.keys(solverParams).length > 0) {
-      textContainer.insertAdjacentHTML('beforeend', paramIconHTML(curve));
-    }
+  // When short labels are toggled on, append a hover icon carrying the
+  // trace's `description` (already formatted HTML, shown as-is).
+  if (useShort && curveTraceData && curveTraceData.description) {
+    textContainer.insertAdjacentHTML(
+      'beforeend', descIconHTML(curveTraceData.description)
+    );
   }
 
   // Create the horizontal bar in the legend to represent the curve
