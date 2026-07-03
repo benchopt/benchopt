@@ -15,26 +15,57 @@ objective uses when present, rather than baking solver-specific assumptions into
 Use `self.get_seed(use_repetition=True)` so `--n-repetitions N` yields N genuinely
 different draws; a bare `self.get_seed()` returns the same seed every repetition.
 
+## Locating data files: get_data_path()
+
+Use `get_data_path()` (from `benchopt.config`) instead of hardcoding paths
+relative to `__file__`. It returns `<benchmark>/data/` by default and respects
+`data_home` / `data_paths` overrides in `benchopt.cfg`, so users can point at
+an existing data store without touching the code:
+
+```python
+from benchopt.config import get_data_path
+
+def get_data(self):
+    path = get_data_path() / f"{self.dataset_name}.pkl"
+    ...
+```
+
+With a named key (`get_data_path("my_dataset")`), the path can be individually
+overridden in `benchopt.cfg`:
+```ini
+[benchmark]
+data_paths = {"my_dataset": "/scratch/datasets/my_dataset"}
+```
+
 ## Expensive one-time work: prepare()
 
 For downloads/extraction/heavy preprocessing, put the work in `prepare()`
-(cached by joblib, triggered by `benchopt prepare`), and have `get_data()` load
-the prepared artefacts:
+(cached by joblib) and have `get_data()` only load the already-prepared
+artefacts. `prepare()` is triggered by `benchopt prepare .`; `benchopt run` does **not**
+call it.
+
+**Per-dataset download pattern** — each `Dataset` instance should download
+only the one file it needs, not all files at once:
 
 ```python
-prepare_cache_ignore = ("seed",)   # params that don't affect prepare()
+from benchopt.config import get_data_path
 
-def prepare(self):
-    # idempotent; safe to call repeatedly
-    download_and_preprocess(self._cache_path)
+def prepare(self) -> None:
+    dest = get_data_path() / f"{self.dataset_name}.pkl"
+    if dest.exists():
+        return                          # idempotent
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    _download(self.dataset_name, dest)  # fetch only this file
 ```
+
+Then `benchopt prepare . -d "MyDataset[dataset_name=taxi]"` fetches only
+`taxi.pkl`. Running without `-d` prepares every parameter combination.
 
 - `prepare()` must be **idempotent**. List params that don't affect its output
   in `prepare_cache_ignore` (or `"all"` to run at most once per class).
-- Since `benchopt run` never calls `prepare()` (it runs only via the dedicated
-  `benchopt prepare`, or `benchopt install --prepare`), share an idempotent
-  `_ensure_prepared()` between `prepare()` and `get_data()` so the dataset also
-  works on a fresh checkout without an explicit prepare step.
+- Since bare `benchopt run` skips `prepare()`, share an idempotent
+  `_ensure_prepared()` guard between `prepare()` and `get_data()` if you want
+  the dataset to self-heal on first use without an explicit prepare step.
 
 ## Requirements and imports (install detection)
 
@@ -56,7 +87,10 @@ benchopt detects installation by **importing the module and catching
   definition time that reference an imported name (e.g. a subclass referencing a
   parent's imported symbols).
 - Ship a zero-dependency `Simulated` dataset when possible so the benchmark always
-  has a no-install smoke test.
+  has a no-install smoke test. **If the real dataset has heavy deps** (e.g. torch
+  for loading pickles), put `Simulated` in its own file (`datasets/simulated.py`)
+  rather than the same file — otherwise importing the module pulls in the heavy
+  dep even for the smoke test, defeating the purpose.
 
 ## test_parameters
 
