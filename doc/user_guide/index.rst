@@ -10,4 +10,5 @@ User guide
     authoring
     running
     testing
+    agent_skills
     reference
