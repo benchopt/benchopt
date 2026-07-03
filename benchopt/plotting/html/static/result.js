@@ -672,7 +672,7 @@ const exportPDF = () => {
       doc.open();
       doc.write(
         '<!DOCTYPE html><html><head><title>' + filename + '</title><style>'
-        + '@page { size: ' + width + 'pt ' + height + 'pt; margin: 0 }'
+        + '@page { size: ' + width + 'px ' + height + 'px; margin: 0 }'
         + 'html, body { margin: 0 } svg { display: block }'
         + '</style></head><body>' + svgString + '</body></html>');
       doc.close();
@@ -908,9 +908,9 @@ const MPL_AXIS = {
   mirror: true,
   ticks: 'outside',
   tickcolor: 'black',
-  gridcolor: '#d9d9d9',
+  gridcolor: '#b0b0b0',
   griddash: 'dot',
-  gridwidth: 0.5,
+  gridwidth: 1,
   zeroline: false,
   automargin: true,
   exponentformat: 'power',
