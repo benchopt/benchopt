@@ -95,6 +95,18 @@ Runs with different SLURM parameters are dispatched as **separate job arrays**.
   each separately and `benchopt merge` the parquet outputs (see
   [results.md](./results.md)).
 
+## Stopping a run
+
+- **Local (`loky`/`dask`):** pressing **Ctrl+C** on the main process is
+  sufficient — joblib sends the signal to all workers and they exit cleanly.
+- **SLURM (`submitit`):** Ctrl+C stops the orchestrator but the already-submitted
+  SLURM jobs keep running independently. You must cancel them explicitly:
+  ```bash
+  scancel <jobid>          # cancel a single job or array
+  scancel --user=$USER     # cancel all your pending/running jobs
+  ```
+  Job IDs are printed when the run starts and are also visible with `squeue -u $USER`.
+
 ## Doc links
 
 - Distributed / cluster runs: https://benchopt.github.io/user_guide/distributed_run.html
