@@ -9,6 +9,7 @@ submitit = pytest.importorskip("submitit")
 
 from submitit.slurm.test_slurm import mocked_slurm  # noqa: E402
 from benchopt.parallel_backends.slurm_executor import (  # noqa: E402
+    _group_runs,
     _run_batch,
     get_slurm_executor,
     get_solver_slurm_config,
@@ -297,3 +298,53 @@ def test_run_on_slurm_grouped_keeps_separate_slurm_configs(mocked_submitit):
     # into one job, they would share the same SLURM config.
     assert df.loc["solver_default", "s_nodes"] == 1
     assert df.loc["solver_custom", "s_nodes"] == 2
+
+
+def test_group_runs_without_meta_does_not_crash():
+    # The dataset-preparation path submits kwargs without run metadata; a
+    # `group_by` config must not crash there (KeyError: 'meta') -- grouping is
+    # meaningless without a run, so each kwargs gets its own job.
+    prepare_kwargs = [
+        {"benchmark": None, "dataset": "d1", "force": False},
+        {"benchmark": None, "dataset": "d2", "force": False},
+    ]
+    groups = _group_runs(prepare_kwargs, {}, group_by="dataset")
+    assert len(groups) == 2
+    assert all(len(runs) == 1 for _cfg, runs in groups)
+
+
+@pytest.mark.parametrize("batch_n_jobs, expected_waves", [(1, 2), (2, 1)])
+def test_run_on_slurm_grouped_scales_walltime(
+    mocked_submitit, batch_n_jobs, expected_waves
+):
+    # A batched job runs its group in ceil(len(group) / batch_n_jobs) waves,
+    # so its SLURM wall-time (slurm_time) must be sized for the whole batch,
+    # not a single run. Two solvers grouped by dataset into one job:
+    # serially (batch_n_jobs=1) that is 2 * timeout, in parallel it is 1.
+    timeout = 100
+    parallel_config = {
+        "backend": "submitit",
+        "group_by": "dataset",
+        "batch_n_jobs": batch_n_jobs,
+    }
+    solver = """
+        from benchopt.utils.temp_benchmark import TempSolver
+
+        class Solver(TempSolver):
+            name = "{name}"
+    """
+    solvers = [solver.format(name="solver_1"), solver.format(name="solver_2")]
+
+    with temp_benchmark(solvers=solvers) as bench, mocked_slurm():
+        with CaptureCmdOutput(delete_result_files=False):
+            run_benchmark(
+                bench.benchmark_dir, ["solver_1", "solver_2"],
+                dataset_names=["test-dataset"], max_runs=0, timeout=timeout,
+                parallel_config=parallel_config, plot_result=False,
+            )
+
+    # Both solvers collapsed into a single job whose wall-time is scaled by the
+    # number of serial waves, matching get_slurm_executor's `1.5 * timeout`.
+    assert len(mocked_submitit) == 1
+    slurm_time = mocked_submitit[0]["config"]["time"]
+    assert slurm_time == f"00:{int(1.5 * expected_waves * timeout)}"

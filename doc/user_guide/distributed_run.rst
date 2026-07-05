@@ -124,6 +124,10 @@ Runs with different SLURM configurations (e.g., solvers with different
 ``slurm_params``) are never grouped together, even if they share the same
 ``group_by`` key.
 
+When ``slurm_time`` is not set explicitly, benchopt sizes the job wall-time for
+the whole batch (``run timeout`` times the number of runs in the group, divided
+by ``batch_n_jobs``), so grouped jobs are not killed before every run finishes.
+
 To run the grouped configurations in parallel within each SLURM job, use the
 ``batch_n_jobs`` parameter:
 
@@ -137,6 +141,9 @@ To run the grouped configurations in parallel within each SLURM job, use the
     slurm_cpus_per_task: 4
 
 By default, ``batch_n_jobs`` is ``1`` (sequential execution within each job).
+Make sure the SLURM job requests enough CPUs for the parallel workers (e.g.
+``slurm_cpus_per_task``), otherwise the ``batch_n_jobs`` processes oversubscribe
+the allocation and the expected speed-up does not materialize.
 
 .. _slurm_override:
 
