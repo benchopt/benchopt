@@ -27,10 +27,11 @@ def exception_handler(terminal, pdb=False):
     try:
         yield ctx
     except KeyboardInterrupt:
+        print(end='', flush=True)
         ctx.status = 'interrupted'
-        terminal.show_status('interrupted')
-        raise SystemExit(1)
+        raise
     except BaseException:
+        print(end='', flush=True)
         ctx.status = 'error'
 
         if pdb:

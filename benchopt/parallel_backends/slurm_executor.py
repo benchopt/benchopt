@@ -6,12 +6,11 @@ from joblib import Parallel, delayed
 try:
     import submitit
     from submitit.helpers import as_completed
-    from rich import progress
 except ImportError:
     raise ImportError(
         "To run benchopt with the submitit backend, please install "
         "the `submitit` package: `pip install benchopt[submitit]` or "
-        "`pip install submitit rich`."
+        "`pip install submitit`."
     )
 
 
@@ -93,12 +92,12 @@ def _job_slurm_config(kwargs, slurm_config):
     return get_solver_slurm_config(solver, slurm_config)
 
 
-def _run_batch(run_one_solver, common_kwargs, batch_kwargs, n_jobs=1):
+def _run_batch(run_one_solver, batch_kwargs, n_jobs=1):
     """Run multiple solver configurations in a single SLURM job."""
     if n_jobs == 1:
-        return [run_one_solver(**common_kwargs, **kw) for kw in batch_kwargs]
+        return [run_one_solver(**kw) for kw in batch_kwargs]
     return Parallel(n_jobs=n_jobs)(
-        delayed(run_one_solver)(**common_kwargs, **kw)
+        delayed(run_one_solver)(**kw)
         for kw in batch_kwargs
     )
 
@@ -110,15 +109,19 @@ def _group_runs(all_runs, slurm_config, group_by):
     groups = defaultdict(list)
     for kwargs in all_runs:
         cfg = hashable_pytree(_job_slurm_config(kwargs, slurm_config))
-        groups[(str(kwargs[group_by]), cfg)].append(kwargs)
+        # `group_by` is one of 'dataset', 'solver' or 'objective'; the
+        # corresponding name lives in the run metadata.
+        group_key = str(kwargs["meta"][f"{group_by}_name"])
+        groups[(group_key, cfg)].append(kwargs)
     return list(groups.values())
 
 
 def run_on_slurm(
-    benchmark, slurm_config, run_one_solver, common_kwargs, all_runs,
+    benchmark, slurm_config, run_one_solver, run_kwargs_generator,
     group_by=None, batch_n_jobs=1
 ):
 
+    all_runs = list(run_kwargs_generator)
     run_groups = _group_runs(all_runs, slurm_config, group_by)
 
     executors = {}
@@ -130,8 +133,9 @@ def run_on_slurm(
 
             if executor_config not in executors:
                 executor = get_slurm_executor(
-                    benchmark, job_slurm_config,
-                    timeout=common_kwargs.get("timeout"),
+                    benchmark,
+                    job_slurm_config,
+                    timeout=run_group[0].get("timeout"),
                 )
                 stack.enter_context(executor.batch())
                 executors[executor_config] = executor
@@ -139,18 +143,21 @@ def run_on_slurm(
             tasks.append(executors[executor_config].submit(
                 _run_batch,
                 run_one_solver=run_one_solver,
-                common_kwargs=common_kwargs,
                 batch_kwargs=run_group,
                 n_jobs=batch_n_jobs,
             ))
 
-    print(f"First job id: {tasks[0].job_id}")
-
-    for t in progress.track(as_completed(tasks), total=len(tasks)):
+    # Yield results as jobs finish (unordered)
+    for t in as_completed(tasks):
         exc = t.exception()
         if exc is not None:
+            # Cancel remaining tasks and raise error
             for tt in tasks:
                 tt.cancel()
             raise exc
 
-    return [r for t in tasks for r in t.results()[0]]
+        # Each grouped job runs a batch of solvers and returns the list of
+        # their results; yield them individually to preserve the streaming
+        # contract expected by the runner.
+        for res in t.results()[0]:
+            yield res

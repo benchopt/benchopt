@@ -247,11 +247,11 @@ def test_dual_strategy(no_debug_log):
     """
 
     with temp_benchmark(solvers=[solver]) as benchmark:
-        with pytest.raises(AssertionError, match="Only set it once."):
-            with CaptureCmdOutput():
-                run([str(benchmark.benchmark_dir),
-                    *('-s test-solver -d test-dataset --no-plot').split()],
-                    standalone_mode=False)
+        with CaptureCmdOutput(exit=1) as out:
+            run([str(benchmark.benchmark_dir),
+                *('-s test-solver -d test-dataset --no-plot').split()],
+                standalone_mode=False)
+        out.check_output("Only set it once.", repetition=1)
 
 
 def test_objective_equals_zero(no_debug_log):
@@ -321,6 +321,23 @@ def test_global_criterion_override(no_debug_log, criterion_class):
 
         assert isinstance(objective.stopping_criterion, criterion_class)
         assert isinstance(solver._stopping_criterion, criterion_class)
+
+
+def test_global_sampling_strategy(no_debug_log):
+    # non-regression test that soler inherits the sampling strategy from
+    # the objective. If not, this will fail as it will exptect a 'value' key
+
+    objective = """from benchopt.utils.temp_benchmark import TempObjective
+
+    class Objective(TempObjective):
+        name = "test_obj"
+        sampling_strategy = "run_once"
+        def evaluate_result(self, **kwargs): return dict(test=1)
+    """
+
+    with temp_benchmark(objective=objective) as bench:
+        run(f'{bench.benchmark_dir} -s test-solver -d test-dataset -n 1 '
+            "--no-plot".split(), standalone_mode=False)
 
 
 @pytest.mark.parametrize('strategy', SAMPLING_STRATEGIES)

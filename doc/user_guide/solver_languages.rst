@@ -34,11 +34,11 @@ A ``.R`` file that contains the solver and a ``.py`` file that knows how to
 call the R solver using `Rpy2 <https://pypi.org/project/rpy2/>`_. Only the
 extensions should differ between the two files. Here is the Python file:
 
-.. literalinclude:: ../../examples/language_solvers/r_gd.py
+.. literalinclude:: ../../examples/language_solvers/r_pgd.py
 
 It uses the R code in:
 
-.. literalinclude:: ../../examples/language_solvers/r_gd.R
+.. literalinclude:: ../../examples/language_solvers/r_pgd.R
     :language: R
 
 .. _julia_solvers:

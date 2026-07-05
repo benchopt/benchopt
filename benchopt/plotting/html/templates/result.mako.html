@@ -11,6 +11,8 @@
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300&display=swap" rel="stylesheet">
+        <!-- Used to render the table plots -->
+        <link href="https://cdn.jsdelivr.net/npm/gridjs@6.2.0/dist/theme/mermaid.min.css" rel="stylesheet">
 
         <title>Result on ${benchmark.pretty_name}</title>
 
@@ -110,7 +112,7 @@
                 </div>
             </div>
             <!-- Right column on big screen and main column on mobile -->
-            <div class="w-full flex flex-col overflow-scroll">
+            <div class="w-full flex flex-col overflow-scroll min-h-screen">
                 <!-- Main menu -->
                 <nav class="bg-blue-600">
                     <div class="px-4">
@@ -343,6 +345,14 @@
                     </div>
                 </div>
 
+                <!-- Figure size overlay: tucked into the figure corner, revealed on hover (or while dragging, on touch). JS anchors it to the current figure. -->
+                <div id="figsize_controls" class="hidden items-center" title="Figure size (px)">
+                    <input id="figsize_width" type="number" min="200" step="10" onchange="setFigSize()" title="Width (px)">
+                    <span>×</span>
+                    <input id="figsize_height" type="number" min="200" step="10" onchange="setFigSize()" title="Height (px)">
+                    <span class="unit">px</span>
+                </div>
+
                 <!-- Plot -->
                 <div id="table_container" class="flex flex-col flex-1 gap-4 p-10">
                 </div>
@@ -415,6 +425,8 @@
         <textarea id="config_export" class="hidden"></textarea>
 
         <script src="https://cdn.plot.ly/plotly-2.12.1.min.js"></script>
+        <!-- Used to render the table plots -->
+        <script src="https://cdn.jsdelivr.net/npm/gridjs@6.2.0/dist/gridjs.umd.js"></script>
         <!-- Used for the brand animation -->
         <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/2.0.2/anime.min.js"></script>
         <!-- Define the brand animation -->

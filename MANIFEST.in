@@ -2,12 +2,16 @@ include LICENSE
 include conftest.py
 include pyproject.toml
 recursive-include benchopt *.py
+include benchopt/tests/dummy_package/pyproject.toml
 
 # Include html templates and css for plotting
 recursive-include benchopt/plotting *.html
 recursive-include benchopt/plotting *.css
 recursive-include benchopt/plotting *.js
 recursive-include benchopt/plotting *.svg
+
+# Include shared agent skills (distributed via `benchopt sync-skills`)
+recursive-include benchopt/skills *
 
 
 # Include doc generation files

@@ -159,7 +159,7 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               help="Launch a debugger if there is an error. This will launch "
               "ipdb if it is installed and default to pdb otherwise.")
 @click.option('--profile',
-              flag_value='True', default=False,
+              is_flag=True,
               help="Will do line profiling on all functions with @profile "
                    "decorator. Requires the line-profiler package. "
                    "The profile decorator needs to be imported "
@@ -427,8 +427,14 @@ def run(config_file=None, **kwargs):
               shell_complete=complete_conda_envs,
               help="Run preparation in the conda environment "
               "named <env_name>.")
+@click.option('--seed',
+              metavar="<seed>", type=int, default=None,
+              help="Seed to control the stochasticity of the data "
+              "preparation. Use the same seed as `benchopt run` to make sure "
+              "the prepared data matches the one used during the run.")
 def prepare(benchmark, dataset_names, config_file=None,
-            force=False, n_jobs=None, parallel_config=None, env_name='False'):
+            force=False, n_jobs=None, parallel_config=None, env_name='False',
+            seed=None):
 
     if config_file is not None:
         with open(config_file, "r") as f:
@@ -436,7 +442,7 @@ def prepare(benchmark, dataset_names, config_file=None,
         if not dataset_names:
             dataset_names = config.get("dataset", tuple())
 
-    benchmark = Benchmark(benchmark)
+    benchmark = Benchmark(benchmark, seed=seed)
 
     # Resolve env name (same logic as install)
     if env_name == 'False':
@@ -587,31 +593,35 @@ def install(
                     "Impossible to recreate 'base' conda environment."
                 )
 
-        # create environment if necessary
-        create_conda_env(
-            env_name, benchmark=benchmark, recreate=recreate, quiet=quiet
-        )
+    # Don't import modules when parsing dependencies for another env.
+    from ..utils.dynamic_modules import skip_import_ctx
+    with skip_import_ctx(env_name is not None):
+        if env_name is not None:
+            # create environment if necessary
+            create_conda_env(
+                env_name, benchmark=benchmark, recreate=recreate, quiet=quiet
+            )
 
-    # List solver and datasets classes to install
-    if len(dataset_names) == 0 and len(solver_names) > 0:
-        datasets = []
-    else:
-        datasets = benchmark.check_dataset_patterns(dataset_names)
-    if len(solver_names) == 0 and len(dataset_names) > 0:
-        solvers = []
-    else:
-        solvers = benchmark.check_solver_patterns(
-            solver_names, class_only=True
-        )
+        # List solver and datasets classes to install
+        if len(dataset_names) == 0 and len(solver_names) > 0:
+            datasets = []
+        else:
+            datasets = benchmark.check_dataset_patterns(dataset_names)
+        if len(solver_names) == 0 and len(dataset_names) > 0:
+            solvers = []
+        else:
+            solvers = benchmark.check_solver_patterns(
+                solver_names, class_only=True
+            )
 
-    # install requirements
-    print("# Install", flush=True)
-    exit_code = benchmark.install_all_requirements(
-        include_solvers=solvers, include_datasets=datasets,
-        minimal=minimal, env_name=env_name, force=force, quiet=quiet,
-        download=download, prepare=prepare, gpu=gpu,
-        env_need_confirm=env_need_confirm
-    )
+        # install requirements
+        print("# Install", flush=True)
+        exit_code = benchmark.install_all_requirements(
+            include_solvers=solvers, include_datasets=datasets,
+            minimal=minimal, env_name=env_name, force=force, quiet=quiet,
+            download=download, prepare=prepare, gpu=gpu,
+            env_need_confirm=env_need_confirm
+        )
     if exit_code != 0:
         raise SystemExit(exit_code)
 
@@ -649,19 +659,13 @@ def test(benchmark, env_name, recreate, pytest_args):
 
     env_option = ''
     if env_name is not None:
-        create_conda_env(
-            env_name, benchmark=benchmark, pytest=True, recreate=recreate
-        )
-        # Ensure that minimal benchmark dependencies are installed in
-        # the test environment.
-        objective = benchmark.get_benchmark_objective()
-        objective.install(env_name=env_name)
+        benchmark.create_test_env(env_name, recreate=recreate)
         env_option = f'--test-env {env_name}'
 
     _bench_test_file = _bench_test_module / "test_benchmarks.py"
 
     cmd = (
-        f'pytest {pytest_args} {_bench_test_file} '
+        f'python -m pytest {pytest_args} {_bench_test_file} '
         f'--benchmark {benchmark.benchmark_dir} {env_option} '
         # Make sure to not modify sys.path to add test file from current env
         # in sub conda env as there might be different python versions.

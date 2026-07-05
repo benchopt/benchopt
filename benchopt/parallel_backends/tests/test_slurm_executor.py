@@ -41,6 +41,13 @@ def dummy_solver():
 
 
 def _annotate_task_result(result, config):
+    # `run_one_solver` returns a (results, key, status, msg) tuple where
+    # `results` is a list of run-statistics dicts. Only annotate those dicts
+    # with the SLURM config used to run the job.
+    if isinstance(result, tuple):
+        res, *rest = result
+        res = _annotate_task_result(res, config)
+        return (res, *rest)
     if isinstance(result, list):
         return [_annotate_task_result(item, config) for item in result]
     if isinstance(result, dict):
