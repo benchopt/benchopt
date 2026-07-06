@@ -1296,7 +1296,8 @@ function renderTable() {
     return;
   }
 
-  const gridKey = [state().plot_kind, ...plotData.columns].join('|');
+  const dropdownValues = getPlotDropdowns().map(dropdown => state()[dropdown]);
+  const gridKey = [state().plot_kind, ...dropdownValues].join('|');
   if (tableGrid && tableGridKey === gridKey && !tablePendingView) {
     // Same table: refresh in place (e.g. after a precision change), keeping
     // the current sorting. The formatters read the global precision.
