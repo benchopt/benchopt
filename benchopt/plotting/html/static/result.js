@@ -1306,6 +1306,12 @@ function renderTable() {
     return;
   }
 
+  // Grid.js fills the table asynchronously: keep the new card at the previous
+  // grid height during a rebuild so the column pills and footer below don't
+  // jump around while the rows load.
+  const prevGrid = table_container.querySelector('.gridjs-container');
+  const prevGridHeight = prevGrid ? prevGrid.offsetHeight : 0;
+
   table_container.innerHTML = "";
 
   // Restore the hidden columns / order from a saved view when one is being
@@ -1338,6 +1344,10 @@ function renderTable() {
     sort: true,
     search: true,
   });
+  if (prevGridHeight) {
+    card.style.minHeight = `${prevGridHeight}px`;
+    tableGrid.on('ready', () => card.style.minHeight = '');
+  }
   tableGrid.render(card);
   tableGridKey = gridKey;
 
@@ -1387,8 +1397,10 @@ function renderTable() {
       } else {
         tableHiddenColumns.add(name);
       }
-      setPillStyle(pill, checkbox.checked, name);
-      tableGrid.updateConfig({ columns: buildColumns() }).forceRender();
+      // Rebuild the grid from scratch: Grid.js' forceRender keeps the column
+      // widths pinned during the first render
+      tablePendingView = {order: getTableOrder(), hidden: [...tableHiddenColumns]};
+      renderTable();
     };
 
     label.appendChild(checkbox);
