@@ -156,7 +156,6 @@ Sync benchopt's packaged agent skills into a benchmark or globally.
 ```bash
 benchopt sync-skills --global           # install into ~/.agents/skills
 benchopt sync-skills .                  # install into <benchmark>/.agents/skills
-benchopt sync-skills --global --dry-run # preview changes
 benchopt sync-skills --global --no-claude  # skip .claude/skills mirror
 ```
 

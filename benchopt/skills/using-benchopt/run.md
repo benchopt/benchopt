@@ -50,15 +50,54 @@ The cache invalidates automatically when solver/objective/dataset code changes.
 
 ## Install requirements and prepare data
 
+### First-time setup
+
 ```bash
-benchopt install .              # create/populate the benchmark's conda env
-benchopt install . -s my-solver # only what a given solver needs
-benchopt install . --env-name myenv --recreate   # rebuild the env
-benchopt prepare .              # run Dataset.prepare() (downloads/preprocessing)
+git clone https://github.com/<org>/<benchmark> && cd <benchmark>
+benchopt install .                       # install all solver/dataset deps into the current env
+benchopt prepare .                       # download/preprocess datasets (runs Dataset.prepare())
+benchopt run . -d Simulated -s my-solver # smoke test
 ```
 
-`benchopt install` only works from a conda environment. `--gpu` selects GPU
-requirements; `--minimal` installs just benchopt + objective deps.
+By default `benchopt install` installs into the **current Python environment**.
+To use an isolated conda env instead use `-e` (benchmark's default env name,
+derived from `objective.py`) or `--env-name NAME` (custom name):
+
+```bash
+benchopt install . -e                    # install into the benchmark's default conda env
+benchopt run . -e -s my-solver           # run inside that same env
+
+benchopt install . --env-name bench_env  # install into a named conda env
+benchopt run . --env-name bench_env -s my-solver
+```
+
+### Selective install
+
+```bash
+benchopt install . -s my-solver             # only deps for one solver
+benchopt install . -d my-dataset            # only deps for one dataset
+benchopt install . --env-name myenv --recreate   # rebuild the conda env from scratch
+benchopt install . --gpu                    # select GPU-variant requirements
+benchopt install . --minimal                # benchopt + objective only (no solvers)
+```
+
+### Check what is installed
+
+```bash
+benchopt info .             # list solvers/datasets and their install status
+benchopt info . -e          # check availability inside the benchmark conda env
+benchopt info . -s my-solver -v   # verbose: parameters + requirements
+```
+
+### Prepare datasets
+
+```bash
+benchopt prepare .              # run Dataset.prepare() for all datasets
+benchopt prepare . -d my-dataset  # one dataset only
+```
+
+`prepare` is idempotent and safe to re-run. Use it to download large files or
+run expensive preprocessing once before any benchmarking run.
 
 ## Results, plots, sharing
 

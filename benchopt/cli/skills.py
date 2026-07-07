@@ -4,7 +4,7 @@ from pathlib import Path
 from importlib import resources
 
 from benchopt.utils.terminal_output import colorify
-from benchopt.utils.terminal_output import GREEN, BLUE, RED, TICK
+from benchopt.utils.terminal_output import GREEN, BLUE, TICK
 
 
 SKILL_NAME = "using-benchopt"
@@ -59,6 +59,10 @@ def skills():
     help="Do not create the .claude/skills mirror for Claude Code.",
 )
 def sync_skills(benchmark, global_, no_claude):
+    if global_ and benchmark != ".":
+        raise click.UsageError(
+            "Cannot use --global with a benchmark path argument."
+        )
     base = Path.home() if global_ else Path(benchmark)
     agents_dir = base / AGENTS_SKILLS_DIR
     claude_dir = base / CLAUDE_SKILLS_DIR
@@ -68,8 +72,11 @@ def sync_skills(benchmark, global_, no_claude):
 
     agents_dir.mkdir(parents=True, exist_ok=True)
     target = agents_dir / SKILL_NAME
-    if target.exists():
-        shutil.rmtree(target)
+    if target.exists() or target.is_symlink():
+        if target.is_symlink() or target.is_file():
+            target.unlink()
+        else:
+            shutil.rmtree(target)
     shutil.copytree(src, target)
     click.echo(f"Synced {colorify(SKILL_NAME, GREEN)} into {dest}")
 

@@ -1,5 +1,7 @@
 import pathlib
 
+import pytest
+
 from benchopt.cli.skills import sync_skills, SKILL_NAME
 
 
@@ -71,3 +73,11 @@ def test_sync_global(tmp_path, monkeypatch):
 
     agents = tmp_path / ".agents" / "skills"
     assert (agents / SKILL_NAME / "SKILL.md").is_file()
+
+
+def test_sync_global_with_path_raises(tmp_path):
+    from click.exceptions import UsageError
+    bench = tmp_path / "my_benchmark"
+    bench.mkdir()
+    with pytest.raises(UsageError, match="--global"):
+        _sync([str(bench), "--global"])
