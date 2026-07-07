@@ -81,3 +81,15 @@ def test_sync_global_with_path_raises(tmp_path):
     bench.mkdir()
     with pytest.raises(UsageError, match="--global"):
         _sync([str(bench), "--global"])
+
+
+def test_sync_stamps_version(tmp_path, monkeypatch):
+    from benchopt import __version__
+    from benchopt.cli.skills import VERSION_PLACEHOLDER
+    monkeypatch.chdir(tmp_path)
+    _sync()
+
+    skill_md = tmp_path / ".agents" / "skills" / SKILL_NAME / "SKILL.md"
+    text = skill_md.read_text()
+    assert VERSION_PLACEHOLDER not in text
+    assert __version__ in text

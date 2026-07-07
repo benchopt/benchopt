@@ -25,6 +25,14 @@ Benchopt is a benchmark framework for optimization algorithms. Benchmarks are
 git repos containing an `objective.py`, a `datasets/` folder, and a `solvers/`
 folder. Solvers are compared on convergence curves or fixed-budget metrics.
 
+## Version check (do this first)
+
+This skill was synced from benchopt version `__BENCHOPT_VERSION__`. At the start
+of a benchopt task, run `benchopt --version` and compare. **If the installed
+version differs from the one above, warn the user that this skill may be out of
+date and recommend re-running `benchopt sync-skills` (add `--global` for the
+global install) to refresh it.**
+
 ## Sub-files
 
 Load the relevant sub-file for the task at hand:

@@ -3,11 +3,16 @@ import click
 from pathlib import Path
 from importlib import resources
 
+from benchopt import __version__
 from benchopt.utils.terminal_output import colorify
 from benchopt.utils.terminal_output import GREEN, BLUE, TICK
 
 
 SKILL_NAME = "using-benchopt"
+
+# Placeholder in the packaged SKILL.md, replaced with the benchopt version at
+# sync time so the agent can detect a stale skill.
+VERSION_PLACEHOLDER = "__BENCHOPT_VERSION__"
 
 # Canonical, cross-harness skills directory (Agent Skills open standard). Read
 # natively by Codex, Gemini CLI, Copilot/VS Code, Cursor, OpenCode, ...
@@ -23,6 +28,13 @@ def _source_skill():
     return resources.files("benchopt") / "skills" / SKILL_NAME
 
 
+def _stamp_version(skill_dir):
+    """Write the current benchopt version into the copied SKILL.md."""
+    skill_md = skill_dir / "SKILL.md"
+    text = skill_md.read_text()
+    skill_md.write_text(text.replace(VERSION_PLACEHOLDER, __version__))
+
+
 def _link_or_copy(target, source):
     """Symlink ``target`` -> ``source``; fall back to a recursive copy."""
     if target.exists() or target.is_symlink():
@@ -33,8 +45,16 @@ def _link_or_copy(target, source):
     try:
         target.symlink_to(source.resolve(), target_is_directory=True)
         return "symlink"
-    except (OSError, NotImplementedError):
-        shutil.copytree(source, target)
+    except (OSError, NotImplementedError) as symlink_err:
+        # Symlinks may be unsupported (Windows without developer mode,
+        # FAT/exFAT, some network mounts); fall back to a plain copy.
+        try:
+            shutil.copytree(source, target)
+        except OSError as copy_err:
+            raise OSError(
+                f"Could not mirror skill to {target}: symlink failed "
+                f"({symlink_err}) and copy failed ({copy_err})."
+            ) from copy_err
         return "copy"
 
 
@@ -67,7 +87,6 @@ def sync_skills(benchmark, global_, no_claude):
     agents_dir = base / AGENTS_SKILLS_DIR
     claude_dir = base / CLAUDE_SKILLS_DIR
 
-    src = _source_skill()
     dest = colorify(str(agents_dir), BLUE)
 
     agents_dir.mkdir(parents=True, exist_ok=True)
@@ -77,7 +96,11 @@ def sync_skills(benchmark, global_, no_claude):
             target.unlink()
         else:
             shutil.rmtree(target)
-    shutil.copytree(src, target)
+    # ``as_file`` materializes the packaged skill to a real path (extracting
+    # from a zip/wheel if needed) so ``copytree`` works for any install type.
+    with resources.as_file(_source_skill()) as src:
+        shutil.copytree(src, target)
+    _stamp_version(target)
     click.echo(f"Synced {colorify(SKILL_NAME, GREEN)} into {dest}")
 
     if not no_claude:
