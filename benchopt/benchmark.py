@@ -495,47 +495,38 @@ class Benchmark:
 
         return Path(benchopt_cache_dir) / self.name
 
-    def cache(self, func, force=False, ignore=None, collect=False):
+    def cache(self, func, force=False, ignore=None):
         """Create a cached function for the given function.
 
         A special behavior is enforced for the 'force' kwargs. If it is present
-        and True, the function will always be recomputed.
-
-        If the collect flag is set to True, the function will return the result
-        if it exists, or None if it does not. This is useful to gather results
-        that are already in cache.
+        and True, the function will always be recomputed. The returned function
+        exposes `check_call_in_cache` to test for a cache hit without running.
         """
         if self.no_cache:
-            assert not collect, "Cannot collect when using `--no-cache`."
-            return func
+            # Wrap `func` so we can expose a cache lookup that always reports a
+            # miss (callers can query it uniformly without guarding for its
+            # absence) without mutating the shared module-level `func`.
+            def _func_no_cache(**kwargs):
+                return func(**kwargs)
+
+            _func_no_cache.check_call_in_cache = lambda **kwargs: False
+            return _func_no_cache
 
         # Create a cached version of `func` and handle cases where we force
         # the run.
         func_cached = self.mem.cache(func, ignore=ignore)
         if force:
-            assert not collect, "Cannot collect and force computation."
-
             def _func_cached(**kwargs):
                 return func_cached.call(**kwargs)[0]
-        elif collect:
-            def _func_cached(**kwargs):
-                assert not kwargs.get('force', False), (
-                    "Cannot collect and force computation."
-                )
-                if func_cached.check_call_in_cache(**kwargs):
-                    return func_cached(**kwargs)
-                key = (
-                    kwargs['meta']['dataset_name'],
-                    kwargs['meta']['objective_name'],
-                    kwargs['meta']['solver_name']
-                )
-                return ([], key, 'not run yet', "")
         else:
             def _func_cached(**kwargs):
                 if kwargs.get('force', False):
                     return func_cached.call(**kwargs)[0]
                 return func_cached(**kwargs)
 
+        # Expose the cache lookup so callers can detect already-computed runs
+        # on the frontal node and avoid dispatching them as parallel jobs.
+        _func_cached.check_call_in_cache = func_cached.check_call_in_cache
         return _func_cached
 
     #####################################################
@@ -833,7 +824,7 @@ class Benchmark:
             config=parallel_config,
         )
 
-        n_failed = sum(1 for _, err in results if err is not None)
+        n_failed = sum(1 for _, (_, err) in results if err is not None)
         if n_failed:
             print(
                 f"Summary: {n_total - n_failed}/{n_total} datasets ready, "

@@ -10,7 +10,6 @@ What's new
 Version 1.10.0 -- in development
 --------------------------------
 
-<<<<<<< ENH_agent_skills
 CLI
 ~~~
 
@@ -18,10 +17,9 @@ CLI
   standard) as package data and add ``benchopt sync-skills`` to install them
   into a project's ``.agents/skills/`` (or globally with ``--global``), with a
   ``.claude/skills/`` mirror for Claude Code. By `Thomas Moreau`_ (:gh:`959`)
-=======
+
 PLOT
 ~~~~
-
 
 - Quantile toggle is now hidden if no quantiles are available
   By `Hippolyte Verninas`_ (:gh:`964`)
@@ -29,10 +27,14 @@ PLOT
 - Improve the html report table, now rendered with `Grid.js
   <https://gridjs.io/>`_: sortable by any column, filter by solver name,
   hide/show any columns. By `Hippolyte Verninas`_ (:gh:`953`)
->>>>>>> main
 
 API
 ~~~
+
+- Cache hits are now detected on the main process before dispatching, so no
+  parallel job (loky, dask or SLURM/submitit) is launched for a
+  ``(dataset, objective, solver)`` run whose result is already cached. Such
+  runs are reported as ``done (cached)``. By `Thomas Moreau`_ (:gh:`976`)
 
 - Custom plot ``options`` values can now be a callable taking the results
   DataFrame as input and returning the list of possible values for the option.

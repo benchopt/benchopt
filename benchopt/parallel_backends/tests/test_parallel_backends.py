@@ -76,6 +76,37 @@ def test_backend_not_installed(backend):
                 ], standalone_mode=False)
 
 
+def test_parallel_run_dispatches_lazily():
+    # parallel_run must not consume the whole kwargs generator before yielding
+    # the first dispatched result; otherwise every run (with its loaded data)
+    # would be held in memory at once on a single node.
+    from benchopt.parallel_backends import parallel_run
+
+    n_runs = 100
+    pulled = []
+
+    def kwargs_gen():
+        for i in range(n_runs):
+            pulled.append(i)
+            yield dict(i=i)
+
+    def _run(i):
+        return ([], (str(i), "obj", "solver"), "done", "")
+
+    # Nothing is cached, so every run is dispatched.
+    _run.check_call_in_cache = lambda **kwargs: False
+
+    results = parallel_run(
+        benchmark=None, run=_run, run_kwargs_generator=kwargs_gen(),
+        config=dict(backend="loky", n_jobs=2),
+    )
+    next(results)
+    # The first result comes out well before the generator is exhausted.
+    assert len(pulled) < n_runs
+    # Drain the rest so the workers shut down cleanly.
+    assert len(list(results)) == n_runs - 1
+
+
 @pytest.mark.parametrize("backend", ["submitit", "dask"])
 def test_backend_collect(backend):
     config = f"""

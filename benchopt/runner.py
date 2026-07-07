@@ -264,6 +264,10 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
     output_file : Path
         Path to the output file where the results have been saved.
     """
+    assert not (collect and benchmark.no_cache), (
+        "Cannot collect when using `--no-cache`."
+    )
+
     exit_code = 0
     terminal = TerminalOutput(n_repetitions, show_progress)
 
@@ -282,7 +286,6 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
     run_one_to_cvg_cached = benchmark.cache(
         run_one_to_cvg,
         ignore=['force', 'terminal', 'run_context'],
-        collect=collect
     )
 
     def run_one_to_cvg_final(**kwargs):
@@ -298,6 +301,11 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
             )
             return ([], key, e.status, "")
 
+    # Forward the cache lookup so the parallel dispatch can skip cached runs.
+    run_one_to_cvg_final.check_call_in_cache = (
+        run_one_to_cvg_cached.check_call_in_cache
+    )
+
     total_cvg_kwargs_generator = generate_run_kwargs(
         benchmark, solvers=solvers, forced_solvers=forced_solvers,
         datasets=datasets, objectives=objectives,
@@ -312,10 +320,10 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
         config=parallel_config, collect=collect
     )
     try:
-        for result, key, status, reason in results_generator:
+        for cached, (result, key, status, reason) in results_generator:
             run_statistics.extend(result)
             terminal.set(dataset=key[0], objective=key[1], solver=key[2])
-            terminal.show_status(status=status, reason=reason)
+            terminal.show_status(status=status, reason=reason, cached=cached)
             if status == 'interrupted':
                 raise SystemExit(1)
     except KeyboardInterrupt:

@@ -1,4 +1,5 @@
 import yaml
+from collections import deque
 from joblib import parallel_config
 from joblib import Parallel, delayed
 
@@ -16,6 +17,57 @@ def is_distributed_frontal():
     return _DISTRIBUTED_FRONTAL
 
 
+def _tag_cached_runs(run, run_kwargs_generator, collect):
+    """Tag each run, in generation order, as one of:
+
+    - ``'cached'``: already computed, loaded here on the frontal node (cheap,
+      it does not load the data) instead of being dispatched as a job (e.g. a
+      SLURM job just to hit the cache).
+    - ``'result'``: a ready result that is not a cache hit. In ``collect``
+      mode, runs missing from the cache are reported as ``'not run yet'``
+      rather than being computed.
+    - ``'dispatch'``: a cache miss that must be run on the parallel backend.
+    """
+    check_in_cache = getattr(run, "check_call_in_cache", None)
+    for run_kwargs in run_kwargs_generator:
+        if (check_in_cache is not None
+                and not run_kwargs.get('force', False)
+                and check_in_cache(**run_kwargs)):
+            yield 'cached', run(**run_kwargs)
+        elif collect:
+            # Collect mode only gathers cached runs; flag the rest as missing.
+            meta = run_kwargs['meta']
+            key = (
+                meta['dataset_name'],
+                meta['objective_name'],
+                meta['solver_name'],
+            )
+            yield 'result', ([], key, 'not run yet', "")
+        else:
+            yield 'dispatch', run_kwargs
+
+
+def _dispatch(backend, benchmark, run, run_kwargs_iter, config):
+    """Run ``run(**kwargs)`` for each kwargs on the chosen backend, yielding
+    results as they complete.
+
+    This is the only backend-specific piece: a thin adapter turning an iterator
+    of run kwargs into an iterator of results. Backends consume the kwargs
+    lazily (loky/dask, bounded by ``pre_dispatch``) or in one batch (submitit).
+    """
+    if backend == 'submitit':
+        from .slurm_executor import run_on_slurm
+        yield from run_on_slurm(benchmark, config, run, run_kwargs_iter)
+    else:
+        if backend == 'dask':
+            from .dask_backend import check_dask_config
+            config = check_dask_config(config)
+        with parallel_config(backend, **config):
+            yield from Parallel(return_as="generator_unordered")(
+                delayed(run)(**run_kwargs) for run_kwargs in run_kwargs_iter
+            )
+
+
 def parallel_run(benchmark, run, run_kwargs_generator, config, collect=False):
     config = config or {}
     backend = config.pop('backend', 'loky')
@@ -24,22 +76,30 @@ def parallel_run(benchmark, run, run_kwargs_generator, config, collect=False):
     assert backend in DISTRIBUTED_BACKENDS, (
         f"Unknown backend {backend}. Valid backends: {DISTRIBUTED_BACKENDS}."
     )
-    if backend == 'submitit':
-        from .slurm_executor import run_on_slurm
-        results_generator = run_on_slurm(
-            benchmark, config, run, run_kwargs_generator
-        )
-    else:
-        if backend == 'dask':
-            from .dask_backend import check_dask_config
-            config = check_dask_config(config)
-        with parallel_config(backend, **config):
-            results_generator = Parallel(return_as="generator_unordered")(
-                delayed(run)(**run_kwargs)
-                for run_kwargs in run_kwargs_generator
-            )
 
-    return results_generator
+    # Cache hits are loaded on the frontal node and parked in `ready`; only the
+    # misses are dispatched. The dispatch stays backend-agnostic and lazy (we
+    # never hold all the runs, each carrying its loaded data, in memory): the
+    # backend pulls `_to_dispatch` on demand, and cache hits seen meanwhile are
+    # merged back into the result stream.
+    ready = deque()
+
+    def _to_dispatch():
+        for tag, item in _tag_cached_runs(run, run_kwargs_generator, collect):
+            if tag == 'dispatch':
+                yield item
+            else:
+                ready.append(((tag == 'cached'), item))
+
+    def _results():
+        for item in _dispatch(backend, benchmark, run, _to_dispatch(), config):
+            while ready:
+                yield ready.popleft()
+            yield False, item
+        while ready:
+            yield ready.popleft()
+
+    return _results()
 
 
 def check_parallel_config(parallel_config_file, n_jobs):
