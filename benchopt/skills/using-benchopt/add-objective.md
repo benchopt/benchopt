@@ -102,6 +102,6 @@ For imports only used inside methods, import at module top level without
 
 ## Doc links
 
-- Objective API: https://benchopt.github.io/user_guide/API_ref.html
-- Class customisation (parameters, stopping_criterion): https://benchopt.github.io/user_guide/class_customization.html
-- Controlling randomness: https://benchopt.github.io/user_guide/controlling_randomness.html
+- Objective API: https://benchopt.github.io/stable/user_guide/API_ref.html
+- Class customisation (parameters, stopping_criterion): https://benchopt.github.io/stable/user_guide/class_customization.html
+- Controlling randomness: https://benchopt.github.io/stable/user_guide/controlling_randomness.html

@@ -200,9 +200,9 @@ quickest way to confirm the cache was stale.
 ## Catch design problems early with the test suite
 
 Before (or instead of) hand-driving classes, `benchopt test .` runs benchopt's
-built-in benchmark test suite against your code. It exercises the same contracts
-as the snippets above and fails loudly on the design mistakes that are painful
-to discover during a full run:
+built-in suite against your code — it exercises the same `get_data` → `set_data`
+→ `run` → `evaluate_result` contracts as the snippets above and fails loudly on
+the design mistakes that are painful to discover during a full run:
 
 ```bash
 benchopt test .                       # full suite in a temporary env
@@ -210,23 +210,10 @@ benchopt test . -k my-solver          # pytest args pass through (scope the run)
 benchopt test . --env-name myenv      # reuse/inspect a named conda env
 ```
 
-What the suite checks (so you know which failure points where):
-
-- `test_dataset_class` / `test_dataset_get_data` — each Dataset instantiates and
-  `get_data()` returns a well-formed dict.
-- `test_benchmark_objective` — `set_data` + `evaluate_result` run on the
-  designated **test dataset** and the objective returns the expected metrics.
-- `test_benchmark_config_validity` — the benchmark's test config is coherent.
-- `test_solver_class`, `test_solver_stopping_criterion`, `test_solver_run` —
-  each Solver instantiates, respects its `sampling_strategy` / stopping
-  criterion, and actually runs on the test dataset.
-
-Point the objective/solver tests at a small, fast case: set the objective's
-`test_dataset_name` to select the dataset used for testing, and use the
-`test_config` class attribute (on Dataset/Objective/Solver) to pass cheap test
-parameters. This keeps the suite fast to re-run while iterating on early design
-choices. See the test configuration reference:
-https://benchopt.github.io/benchmark_workflow/test_benchmark.html
+Point the tests at a small, fast case: set the objective's `test_dataset_name`
+and give each Dataset/Objective/Solver a `test_config` with cheap parameters. For
+the full list of checks and the test-config reference, see
+https://benchopt.github.io/stable/benchmark_workflow/test_benchmark.html
 
 ## Tips
 
@@ -239,7 +226,7 @@ https://benchopt.github.io/benchmark_workflow/test_benchmark.html
 
 ## Doc links
 
-- Benchmark structure & workflow: https://benchopt.github.io/benchmark_workflow/index.html
-- Objective / Dataset / Solver API: https://benchopt.github.io/user_guide/API_ref.html
-- Class customization & parameters: https://benchopt.github.io/user_guide/class_customization.html
-- Testing a benchmark (test_config): https://benchopt.github.io/benchmark_workflow/test_benchmark.html
+- Benchmark structure & workflow: https://benchopt.github.io/stable/benchmark_workflow/index.html
+- Objective / Dataset / Solver API: https://benchopt.github.io/stable/user_guide/API_ref.html
+- Class customization & parameters: https://benchopt.github.io/stable/user_guide/class_customization.html
+- Testing a benchmark (test_config): https://benchopt.github.io/stable/benchmark_workflow/test_benchmark.html

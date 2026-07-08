@@ -105,6 +105,6 @@ fast configuration so `benchopt test` runs in seconds on a fresh checkout.
 
 ## Doc links
 
-- Class config (parameters, requirements, prepare, hooks): https://benchopt.github.io/user_guide/class_customization.html
-- Controlling randomness: https://benchopt.github.io/user_guide/controlling_randomness.html
-- API reference: https://benchopt.github.io/user_guide/API_ref.html
+- Class config (parameters, requirements, prepare, hooks): https://benchopt.github.io/stable/user_guide/class_customization.html
+- Controlling randomness: https://benchopt.github.io/stable/user_guide/controlling_randomness.html
+- API reference: https://benchopt.github.io/stable/user_guide/API_ref.html

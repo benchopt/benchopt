@@ -159,45 +159,18 @@ plot_configs:
 
 ## Custom plots (`BasePlot`)
 
-For visualizations the built-in kinds don't cover, add your own plot class under
-the benchmark's `plots/` directory — a Python file with a class inheriting from
-`benchopt.BasePlot`. Its `name` then appears in the HTML plot menu and is usable
-as a `plot_kind` in `plot_configs` (above).
-
-```python
-from benchopt import BasePlot
-
-class Plot(BasePlot):
-    name = "Final score"
-    type = "bar_chart"          # scatter | bar_chart | boxplot | table | image
-    options = {                 # become kwargs of plot()/get_metadata()
-        "dataset": ...,         # `...` auto-fills with unique dataset_name values
-        "objective": ...,
-        "solver": lambda df: df["solver_name"].unique().tolist(),  # or compute
-    }
-
-    def plot(self, df, dataset, objective, solver):
-        df = df.query("dataset_name == @dataset and objective_name == @objective")
-        bars = []
-        for s, df_s in df.groupby("solver_name"):
-            scores = df_s.groupby("idx_rep")["objective_value"].last()
-            bars.append({"y": scores.tolist(), "label": s,
-                         **self.get_style(s)})   # consistent color/marker per solver
-        return bars
-
-    def get_metadata(self, df, dataset, objective, solver):
-        return {"title": f"{objective} on {dataset}", "ylabel": "Objective value"}
-```
-
-- `plot(df, **opts)` returns data shaped by `type` (scatter: traces with
-  `x`/`y`/`label` + optional `y_low`/`y_high` bands; bar/boxplot: per-solver
-  dicts; table: list of rows; image: arrays). `get_metadata` sets title/labels/
-  `scale`. The exact per-type schema is in the custom-plot doc.
-- `self.get_style(label)` returns a `{color, marker}` dict keyed on a hash of the
-  label, so a given solver keeps the same style across every figure.
+For visualizations the built-in kinds don't cover, add a Python file under the
+benchmark's `plots/` directory with a class inheriting from `benchopt.BasePlot`:
+set `name` and `type` (`scatter`/`bar_chart`/`boxplot`/`table`/`image`),
+implement `plot(df, **options)` (returns data shaped by `type`) and
+`get_metadata` (title/labels/scale), and use `self.get_style(label)` for a
+consistent color/marker per solver. The `name` then appears in the HTML menu and
+works as a `plot_kind` in `plot_configs` (above). For the per-type return schema
+and a full example, see the custom-plot doc:
+https://benchopt.github.io/stable/user_guide/add_custom_plot.html
 
 ## Doc links
 
-- Managing results (merge / publish / plot): https://benchopt.github.io/benchmark_workflow/manage_benchmark_results.html
-- Custom plots: https://benchopt.github.io/user_guide/add_custom_plot.html
-- CLI reference: https://benchopt.github.io/user_guide/CLI_ref.html
+- Managing results (merge / publish / plot): https://benchopt.github.io/stable/benchmark_workflow/manage_benchmark_results.html
+- Custom plots: https://benchopt.github.io/stable/user_guide/add_custom_plot.html
+- CLI reference: https://benchopt.github.io/stable/user_guide/CLI_ref.html

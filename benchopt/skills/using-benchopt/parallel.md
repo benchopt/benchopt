@@ -109,5 +109,5 @@ Runs with different SLURM parameters are dispatched as **separate job arrays**.
 
 ## Doc links
 
-- Distributed / cluster runs: https://benchopt.github.io/user_guide/distributed_run.html
-- CLI reference: https://benchopt.github.io/user_guide/CLI_ref.html
+- Distributed / cluster runs: https://benchopt.github.io/stable/user_guide/distributed_run.html
+- CLI reference: https://benchopt.github.io/stable/user_guide/CLI_ref.html

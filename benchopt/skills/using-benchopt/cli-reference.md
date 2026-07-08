@@ -130,7 +130,7 @@ benchopt archive . --with-outputs   # include outputs/ as well
 
 ### `benchopt config`
 Get or set benchopt configuration values (data paths, defaults, etc.).
-See the [config reference](https://benchopt.github.io/benchmark_workflow/config_benchopt.html).
+See the [config reference](https://benchopt.github.io/stable/user_guide/config_benchopt.html).
 
 ```bash
 benchopt config get data_path

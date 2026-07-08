@@ -136,7 +136,7 @@ solver:
 
 ## Doc links
 
-- Running & scaling: https://benchopt.github.io/user_guide/running.html
-- Parallel / cluster runs: https://benchopt.github.io/user_guide/distributed_run.html
-- Parametrization & selectors: https://benchopt.github.io/user_guide/class_customization.html#parametrized
-- CLI reference: https://benchopt.github.io/user_guide/CLI_ref.html
+- Running & scaling: https://benchopt.github.io/stable/user_guide/running.html
+- Parallel / cluster runs: https://benchopt.github.io/stable/user_guide/distributed_run.html
+- Parametrization & selectors: https://benchopt.github.io/stable/user_guide/class_customization.html#parametrized
+- CLI reference: https://benchopt.github.io/stable/user_guide/CLI_ref.html

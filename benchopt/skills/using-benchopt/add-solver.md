@@ -118,7 +118,7 @@ including the dataset name to select a given class.
 
 ## Doc links
 
-- Iterative solvers & sampling: https://benchopt.github.io/user_guide/iterative_solvers.html
-- Class config (parameters, requirements, hooks): https://benchopt.github.io/user_guide/class_customization.html
-- Solver languages (R, Julia, CLI, …): https://benchopt.github.io/user_guide/solver_languages.html
-- API reference: https://benchopt.github.io/user_guide/API_ref.html
+- Iterative solvers & sampling: https://benchopt.github.io/stable/user_guide/iterative_solvers.html
+- Class config (parameters, requirements, hooks): https://benchopt.github.io/stable/user_guide/class_customization.html
+- Solver languages (R, Julia, CLI, …): https://benchopt.github.io/stable/user_guide/solver_languages.html
+- API reference: https://benchopt.github.io/stable/user_guide/API_ref.html
