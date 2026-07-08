@@ -1,3 +1,4 @@
+import re
 import shutil
 import click
 from pathlib import Path
@@ -14,6 +15,14 @@ SKILL_NAME = "using-benchopt"
 # sync time so the agent can detect a stale skill.
 VERSION_PLACEHOLDER = "__BENCHOPT_VERSION__"
 
+# Skill doc links ship pointing at the ``stable`` docs; at sync time we retarget
+# them at the docs matching the installed version (see ``_doc_url_version``).
+STABLE_DOC_PREFIX = "benchopt.github.io/stable/"
+
+# Only final releases (``X.Y`` / ``X.Y.Z``) publish version-specific docs; dev
+# builds and pre-releases only exist under ``/dev/``.
+_RELEASE_RE = re.compile(r"^\d+\.\d+(\.\d+)?$")
+
 # Canonical, cross-harness skills directory (Agent Skills open standard). Read
 # natively by Codex, Gemini CLI, Copilot/VS Code, Cursor, OpenCode, ...
 AGENTS_SKILLS_DIR = Path(".agents") / "skills"
@@ -28,11 +37,24 @@ def _source_skill():
     return resources.files("benchopt") / "skills" / SKILL_NAME
 
 
-def _stamp_version(skill_dir):
-    """Write the current benchopt version into the copied SKILL.md."""
-    skill_md = skill_dir / "SKILL.md"
-    text = skill_md.read_text()
-    skill_md.write_text(text.replace(VERSION_PLACEHOLDER, __version__))
+def _doc_url_version():
+    """Docs path segment matching the installed version.
+
+    Final releases publish their own docs (``/1.9.1/``); dev builds and
+    pre-releases only exist under ``/dev/``.
+    """
+    return __version__ if _RELEASE_RE.match(__version__) else "dev"
+
+
+def _finalize_skill(skill_dir):
+    """Stamp the version and point doc links at the matching docs, in place."""
+    doc_prefix = f"benchopt.github.io/{_doc_url_version()}/"
+    for md in skill_dir.rglob("*.md"):
+        text = md.read_text(encoding="utf-8")
+        new = text.replace(VERSION_PLACEHOLDER, __version__)
+        new = new.replace(STABLE_DOC_PREFIX, doc_prefix)
+        if new != text:
+            md.write_text(new, encoding="utf-8")
 
 
 def _link_or_copy(target, source):
@@ -100,7 +122,7 @@ def sync_skills(benchmark, global_, no_claude):
     # from a zip/wheel if needed) so ``copytree`` works for any install type.
     with resources.as_file(_source_skill()) as src:
         shutil.copytree(src, target)
-    _stamp_version(target)
+    _finalize_skill(target)
     click.echo(f"Synced {colorify(SKILL_NAME, GREEN)} into {dest}")
 
     if not no_claude:

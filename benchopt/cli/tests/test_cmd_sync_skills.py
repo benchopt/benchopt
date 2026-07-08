@@ -93,3 +93,15 @@ def test_sync_stamps_version(tmp_path, monkeypatch):
     text = skill_md.read_text()
     assert VERSION_PLACEHOLDER not in text
     assert __version__ in text
+
+
+def test_sync_retargets_doc_version(tmp_path, monkeypatch):
+    from benchopt.cli.skills import _doc_url_version
+    monkeypatch.chdir(tmp_path)
+    _sync()
+
+    skill = tmp_path / ".agents" / "skills" / SKILL_NAME
+    texts = "\n".join(p.read_text() for p in skill.rglob("*.md"))
+    # doc links now point at the matching version, not the shipped /stable/.
+    assert "benchopt.github.io/stable/" not in texts
+    assert f"benchopt.github.io/{_doc_url_version()}/" in texts
