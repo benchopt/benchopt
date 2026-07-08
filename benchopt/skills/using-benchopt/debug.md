@@ -42,6 +42,16 @@ returned by `get_data()` is exactly what the runner forwards to
 `Objective.set_data(**data)`, so inspecting it here tells you what every solver
 will actually receive.
 
+Use the same mechanism in **unit tests** for benchmark components — never load
+component files with `importlib` by path (fragile, and subject to name
+shadowing, e.g. a benchmark's `datasets/` folder vs the HF `datasets` library):
+
+```python
+Dataset, = bench.check_dataset_patterns(["my-dataset"], class_only=True)
+module = inspect.getmodule(Dataset)      # reach module-level helpers
+dataset = Dataset.get_instance(param=1)  # instances via the parameter grid
+```
+
 ## Inspect the objective and replay evaluate_result
 
 ```python

@@ -71,6 +71,16 @@ benchopt install . --env-name bench_env  # install into a named conda env
 benchopt run . --env-name bench_env -s my-solver
 ```
 
+`--env-name` also works with a **pre-existing conda env** (e.g. a carefully
+pinned GPU env on a shared machine): it adds only the selected components'
+requirements there — always prefer it over installing deps manually with pip.
+
+Gotcha: the install check imports each requirement by name from the benchmark
+directory, so a local folder can **shadow** a pip package and fool it — e.g.
+the benchmark's `datasets/` folder shadows the HF `datasets` library, making
+benchopt report it "already available" while it is missing. Verify with an
+import from *outside* the benchmark dir when in doubt.
+
 ### Selective install
 
 ```bash

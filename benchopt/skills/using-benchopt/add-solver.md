@@ -85,7 +85,9 @@ benchopt detects whether a solver is installed by **importing the module and
 catching `ImportError`**. Therefore:
 
 - **Import third-party deps at module top level** — never hide them in
-  function-local imports.
+  function-local imports. This also applies to shared `benchmark_utils`
+  helper modules the solver imports — a lazy import there hides the dep
+  from the install check just the same.
 - **Never wrap an import in `try`/`except` with a fallback.** A silent fallback
   lets the module import even when the dep is missing, so benchopt marks the
   solver *installed* and the failure resurfaces — cryptically — at run time. Let
