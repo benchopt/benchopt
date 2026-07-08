@@ -21,8 +21,8 @@ for every parquet in the folder.
 ## Read a result file in Python
 
 The public entry point is `read_results` — it handles `.parquet` and `.csv`,
-renames the legacy `data_name` column to `dataset_name`, and unpacks any
-objective columns that were pickled at write time (array-api objects):
+and unpacks any objective columns that were pickled at write time (array-api
+objects):
 
 ```python
 from benchopt.results import read_results
