@@ -106,7 +106,8 @@ def test_parallel_run_dispatches_lazily():
 
     results = parallel_run(
         benchmark=None, run=_run, run_kwargs_generator=kwargs_gen(),
-        config=dict(backend="loky", n_jobs=2),
+        # batch_size=1 avoids joblib auto-batching pulling many tasks at once.
+        config=dict(backend="loky", n_jobs=2, batch_size=1),
     )
     try:
         next(results)

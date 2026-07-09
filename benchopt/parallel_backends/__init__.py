@@ -62,8 +62,12 @@ def _dispatch(backend, benchmark, run, run_kwargs_iter, config):
         if backend == 'dask':
             from .dask_backend import check_dask_config
             config = check_dask_config(config)
+        # `batch_size` is a `Parallel` argument, not a `parallel_config` one.
+        batch_size = config.pop('batch_size', 'auto')
         with parallel_config(backend, **config):
-            yield from Parallel(return_as="generator_unordered")(
+            yield from Parallel(
+                return_as="generator_unordered", batch_size=batch_size
+            )(
                 delayed(run)(**run_kwargs) for run_kwargs in run_kwargs_iter
             )
 
