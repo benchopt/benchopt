@@ -1,3 +1,5 @@
+import threading
+
 import pytest
 
 
@@ -83,10 +85,18 @@ def test_parallel_run_dispatches_lazily():
     from benchopt.parallel_backends import parallel_run
 
     n_runs = 100
+    # The generator hard-blocks its tail until `release` is set. If dispatch is
+    # lazy, the first result still comes out from the unblocked prefix; if it
+    # eagerly drained the generator, this would instead block. This makes the
+    # laziness check deterministic even on a slow (e.g. macOS) CI runner.
+    block_after = 20
+    release = threading.Event()
     pulled = []
 
     def kwargs_gen():
         for i in range(n_runs):
+            if i == block_after:
+                release.wait(timeout=30)
             pulled.append(i)
             yield dict(i=i)
 
@@ -100,9 +110,13 @@ def test_parallel_run_dispatches_lazily():
         benchmark=None, run=_run, run_kwargs_generator=kwargs_gen(),
         config=dict(backend="loky", n_jobs=2),
     )
-    next(results)
-    # The first result comes out well before the generator is exhausted.
-    assert len(pulled) < n_runs
+    try:
+        next(results)
+        # A result came out while the generator tail is still blocked, so at
+        # most the unblocked prefix was pulled.
+        assert len(pulled) <= block_after
+    finally:
+        release.set()
     # Drain the rest so the workers shut down cleanly.
     assert len(list(results)) == n_runs - 1
 
