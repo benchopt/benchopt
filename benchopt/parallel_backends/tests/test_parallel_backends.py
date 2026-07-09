@@ -135,10 +135,13 @@ def test_dask_backend():
             ], standalone_mode=False)
 
     client = distributed.get_client()
-    workers = client._scheduler_identity.get('workers', {})
-    effective_workers = len(workers)
     assert client_name in client.id
-    assert effective_workers == n_workers
+    # Wait for the workers to register, then query the scheduler through the
+    # public `scheduler_info` (the private `_scheduler_identity` snapshot is
+    # not refreshed and reports no worker on recent distributed versions).
+    client.wait_for_workers(n_workers, timeout=30)
+    workers = client.scheduler_info().get('workers', {})
+    assert len(workers) == n_workers
     client.close()
 
     out.check_output("Distributed run with backend: dask", repetition=1)
