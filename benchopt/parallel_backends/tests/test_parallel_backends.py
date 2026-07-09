@@ -79,31 +79,29 @@ def test_backend_not_installed(backend):
 
 
 def test_parallel_run_dispatches_lazily():
-    # parallel_run must not consume the whole kwargs generator before yielding
-    # the first dispatched result; otherwise every run (with its loaded data)
-    # would be held in memory at once on a single node.
+    # Make sure we keep the lazy dispatching when possible (loky).
     from benchopt.parallel_backends import parallel_run
 
     n_runs = 100
-    # The generator hard-blocks its tail until `release` is set. If dispatch is
-    # lazy, the first result still comes out from the unblocked prefix; if it
-    # eagerly drained the generator, this would instead block. This makes the
-    # laziness check deterministic even on a slow (e.g. macOS) CI runner.
+    # Hard-block the generator's tail after dispatching a few tasks,
+    # so we can check that the first results are yielded before the generator
+    # is fully consumed.
     block_after = 20
     release = threading.Event()
-    pulled = []
+    pulled = 0
 
     def kwargs_gen():
+        nonlocal pulled
         for i in range(n_runs):
             if i == block_after:
                 release.wait(timeout=30)
-            pulled.append(i)
+            pulled += 1
             yield dict(i=i)
 
+    # parallel_run expect a check_call_in_cache method, and here we make sure
+    # that every run is dispatched.
     def _run(i):
-        return ([], (str(i), "obj", "solver"), "done", "")
-
-    # Nothing is cached, so every run is dispatched.
+        return i
     _run.check_call_in_cache = lambda **kwargs: False
 
     results = parallel_run(
@@ -114,7 +112,7 @@ def test_parallel_run_dispatches_lazily():
         next(results)
         # A result came out while the generator tail is still blocked, so at
         # most the unblocked prefix was pulled.
-        assert len(pulled) <= block_after
+        assert pulled <= block_after
     finally:
         release.set()
     # Drain the rest so the workers shut down cleanly.
