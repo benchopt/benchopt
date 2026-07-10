@@ -32,7 +32,6 @@ def profile(func):
     """
     @wraps(func)
     def profiled_func(*args, **kwargs):
-        global USE_PROFILE
         if not USE_PROFILE:
             call_func = func
         else:
@@ -42,6 +41,5 @@ def profile(func):
 
 
 def print_stats():
-    global PROFILER
     if PROFILER is not None:
         PROFILER.print_stats()

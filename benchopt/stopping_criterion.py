@@ -30,6 +30,8 @@ COMMON_ARGS_DOC = """
         the callback should be called with the current iterate solution.
     key_to_monitor : str (default: 'objective_value')
         The objective to check for tracking progress.
+    minimize : bool (default: True)
+        Whether the objective is minimized or maximized.
 """
 
 
@@ -61,8 +63,9 @@ class StoppingCriterion():
     """
     kwargs = None
 
-    def __init__(self, strategy=None, key_to_monitor='objective_value',
-                 **kwargs):
+    def __init__(
+        self, strategy=None, key_to_monitor=None, minimize=True, **kwargs
+    ):
 
         if strategy is not None:
             assert strategy in SAMPLING_STRATEGIES, (
@@ -72,13 +75,18 @@ class StoppingCriterion():
 
         self.kwargs = kwargs
         self.strategy = strategy
-        self.key_to_monitor = (
-            key_to_monitor if key_to_monitor.startswith('objective_')
-            else f'objective_{key_to_monitor}'
-        )
+        self.key_to_monitor = key_to_monitor
+        self.minimize = minimize
+        if self.key_to_monitor is not None:
+            self.key_to_monitor_ = (
+                key_to_monitor if key_to_monitor.startswith('objective_')
+                else f'objective_{key_to_monitor}'
+            )
+        else:
+            self.key_to_monitor_ = None
 
-    def get_runner_instance(self, max_runs=1, timeout=None, output=None,
-                            solver=None):
+    def get_runner_instance(self, max_runs=1, timeout=None, terminal=None,
+                            solver=None, run_key=None):
         """Copy the stopping criterion and set the parameters that depends on
         how benchopt runner is called.
 
@@ -89,11 +97,13 @@ class StoppingCriterion():
             the convergence curve.
         timeout : float
             The maximum duration in seconds of the solver run.
-        output : TerminalOutput or None
+        terminal : TerminalOutput or None
             Object to format string to display the progress of the solver.
         solver : BaseSolver
             The solver for which this stopping criterion is called. Used to get
             overridden ``sampling_strategy`` and ``get_next``.
+        run_key : tuple
+            The key to identify the run in the benchmark results.
 
         Returns
         -------
@@ -113,7 +123,10 @@ class StoppingCriterion():
             )
 
         if self.strategy is None:
-            self.strategy = solver.sampling_strategy or 'iteration'
+            if solver is None:
+                self.strategy = 'iteration'
+            else:
+                self.strategy = solver.sampling_strategy or 'iteration'
         elif solver is not None and solver.sampling_strategy is not None:
             assert solver.sampling_strategy == self.strategy, (
                 'The strategy is set both in Solver.sampling_strategy and in '
@@ -123,16 +136,19 @@ class StoppingCriterion():
         # Create a new instance of the class
         stopping_criterion = self.__class__(
             strategy=self.strategy, key_to_monitor=self.key_to_monitor,
-            **self.kwargs,
+            minimize=self.minimize, **self.kwargs,
         )
 
         # Set stopping criterion parameters depending on run parameters
         stopping_criterion.rho = RHO
         stopping_criterion.timeout = timeout
         stopping_criterion.max_runs = max_runs
-        stopping_criterion.output = output
+        stopping_criterion.terminal = terminal
         stopping_criterion.solver = solver
+        stopping_criterion.run_key = run_key
 
+        # Initialize the number of evaluation for iterative tracking
+        stopping_criterion.n_eval = 0
         # Override get_next_stop_val if ``get_next`` is implemented for solver.
         if hasattr(solver, 'get_next'):
             if not callable(solver.get_next):
@@ -195,38 +211,48 @@ class StoppingCriterion():
             Next value for the stopping criterion. This value depends on the
             sampling strategy for the solver.
         """
-        # Check that the objective is compatible with the stopping_criterion
-        if self.key_to_monitor not in objective_list[0]:
-            key = self.key_to_monitor.replace("objective_", "")
-            raise ValueError(
-                "Objective.evaluate_result() should contain a key named "
-                f"'{key}' to be used with this stopping_criterion. The name of"
-                " this key can be changed via the 'key_to_monitor' parameter. "
-                f"Available keys are {list(objective_list[0].keys())}"
-            )
+        # Default state
+        is_flat = False
+        is_diverging = False
+        stop = False
+        status = 'running'
 
         # Modify the criterion state:
         # - compute the number of run with the curve. We need to remove 1 as
         #   it contains the initial evaluation.
-        # - compute the delta_objective for debugging and stalled progress.
-        n_eval = len(objective_list) - 1
-        objective = objective_list[-1][self.key_to_monitor]
-        delta_objective = self._prev_objective - objective
-        first_objective = objective_list[0][self.key_to_monitor]
-        if first_objective != 0:
-            delta_objective /= abs(first_objective)
-        self._prev_objective = objective
+        # - compute the delta_objective if the stopping_criterion monitors a
+        #   given key, for debugging and stalled progress.
+        n_eval = self.n_eval
 
-        # default value for is_flat
-        is_flat = False
+        if self.key_to_monitor_ is not None:
+            # Compatibility with the objective
+            if self.key_to_monitor_ not in objective_list[0]:
+                key = self.key_to_monitor_.replace("objective_", "")
+                key_ok = [
+                    k.replace("objective_", "") for k in objective_list[0]
+                    if k.startswith("objective_") and k != 'objective_name'
+                ]
+                raise ValueError(
+                    "Objective.evaluate_result() should contain a key named "
+                    f"'{key}' to be used with this stopping_criterion. "
+                    "The name of this key can be changed via the "
+                    f"'key_to_monitor' parameter. Available keys are {key_ok}"
+                )
+
+            objective = objective_list[-1][self.key_to_monitor_]
+            if not self.minimize:
+                objective = -objective
+            delta_objective = self._prev_objective - objective
+            self._prev_objective = objective
+
+            is_diverging = math.isnan(objective) or delta_objective < -1e5
+            is_flat = delta_objective == 0
 
         # check the different conditions:
         #     diverging / timeout / max_runs / stopping_criterion
-
-        if math.isnan(objective) or delta_objective < -1e5:
+        if is_diverging:
             stop = True
             status = 'diverged'
-
         elif self._deadline is not None and time.time() >= self._deadline:
             stop = True
             status = 'timeout'
@@ -244,15 +270,14 @@ class StoppingCriterion():
 
             # Compute status and notify the runner if the curve is flat.
             status = 'done' if stop else 'running'
-            is_flat = delta_objective == 0
+            self.n_eval += 1
 
         if stop:
-            self.debug(
-                f"Exit with delta_objective = {delta_objective:.2e} and "
-                f"n_eval={n_eval:.1e}."
-            )
-
-        if is_flat:
+            suffix = ""
+            if self.key_to_monitor_ is not None:
+                suffix = f" with delta_objective = {delta_objective:.2e}"
+            self.debug(f"Exit after {n_eval=:.1e}{suffix}.")
+        elif is_flat:
             self.rho *= RHO_INC
             self.debug(f"curve is flat -> increasing rho: {self.rho}")
 
@@ -285,27 +310,33 @@ class StoppingCriterion():
 
     def debug(self, msg):
         """Helper to print debug messages."""
-        if self.output is not None:
-            self.output.debug(msg)
+        if self.terminal is not None:
+            self.terminal.debug(msg)
 
     def progress(self, progress):
         """Helper to print progress messages."""
-        if self.output is not None:
-            self.output.progress(progress)
+        if self.terminal is not None:
+            self.terminal.progress(progress, self.run_key)
 
-    @staticmethod
-    def _reconstruct(klass, kwargs, runner_kwargs):
-        criterion = klass(**kwargs)
-        return criterion.get_runner_instance(**runner_kwargs)
+    @classmethod
+    def _reconstruct(cls, kwargs, runner_kwargs):
+        criterion = cls(**kwargs)
+        if runner_kwargs:
+            return criterion.get_runner_instance(**runner_kwargs)
+        return criterion
 
     def __reduce__(self):
         kwargs = dict(
-            strategy=self.strategy, **self.kwargs
+            strategy=self.strategy, key_to_monitor=self.key_to_monitor,
+            **self.kwargs
         )
-        runner_kwargs = dict(
-            max_runs=self.max_runs, timeout=self.timeout,
-            output=self.output, solver=self.solver
-        )
+        if getattr(self, 'max_runs', None):
+            runner_kwargs = dict(
+                max_runs=self.max_runs, timeout=self.timeout,
+                terminal=self.terminal, solver=self.solver
+            )
+        else:
+            runner_kwargs = None
         return self._reconstruct, (self.__class__, kwargs, runner_kwargs)
 
     def get_next_stop_val(self, stop_val):
@@ -333,7 +364,7 @@ class SufficientDescentCriterion(StoppingCriterion):
     """
 
     def __init__(self, eps=EPS, patience=PATIENCE, strategy=None,
-                 key_to_monitor='objective_value'):
+                 key_to_monitor='value', minimize=True):
         self.eps = eps
         self.patience = patience
 
@@ -342,7 +373,7 @@ class SufficientDescentCriterion(StoppingCriterion):
 
         super().__init__(
             eps=eps, patience=patience, strategy=strategy,
-            key_to_monitor=key_to_monitor
+            key_to_monitor=key_to_monitor, minimize=minimize
         )
 
     def check_convergence(self, objective_list):
@@ -364,9 +395,18 @@ class SufficientDescentCriterion(StoppingCriterion):
             that the solver has converged.
         """
         # Compute the current objective
-        objective = objective_list[-1][self.key_to_monitor]
+        objective = objective_list[-1][self.key_to_monitor_]
+        if not self.minimize:
+            objective = -objective
         delta_objective = self._objective - objective
-        delta_objective /= abs(objective_list[0][self.key_to_monitor])
+        if self._objective < 1e100:
+            if not hasattr(self, '_current_max_delta_objective'):
+                self._current_max_delta_objective = abs(delta_objective)
+            self._current_max_delta_objective = max(
+                self._current_max_delta_objective, abs(delta_objective)
+            )
+            if self._current_max_delta_objective != 0:
+                delta_objective /= self._current_max_delta_objective
         self._objective = objective
 
         # Store only the last ``patience`` values for progress
@@ -375,7 +415,7 @@ class SufficientDescentCriterion(StoppingCriterion):
             self._delta_objectives.pop(0)
 
         delta = max(self._delta_objectives)
-        if (-self.eps <= delta <= self.eps):
+        if (delta <= self.eps):
             self.debug(f"Exit with delta_objective = {delta:.2e}.")
             return True, 1
 
@@ -401,7 +441,7 @@ class SufficientProgressCriterion(StoppingCriterion):
     """
 
     def __init__(self, eps=EPS, patience=PATIENCE, strategy=None,
-                 key_to_monitor='objective_value'):
+                 key_to_monitor='value', minimize=True):
         self.eps = eps
         self.patience = patience
 
@@ -410,7 +450,7 @@ class SufficientProgressCriterion(StoppingCriterion):
 
         super().__init__(
             eps=eps, patience=patience, strategy=strategy,
-            key_to_monitor=key_to_monitor
+            key_to_monitor=key_to_monitor, minimize=minimize
         )
 
     def check_convergence(self, objective_list):
@@ -432,11 +472,20 @@ class SufficientProgressCriterion(StoppingCriterion):
             that the solver has converged.
         """
         # Compute the current objective and update best value
-        objective = objective_list[-1][self.key_to_monitor]
+        objective = objective_list[-1][self.key_to_monitor_]
+        first_objective = objective_list[0][self.key_to_monitor_]
+        if not self.minimize:
+            objective = -objective
+            first_objective = -first_objective
         delta_objective = self._best_objective - objective
-        first_objective = objective_list[0][self.key_to_monitor]
-        if first_objective != 0:
-            delta_objective /= abs(first_objective)
+
+        if self._best_objective < 1e100:
+            if not hasattr(self, '_current_max_delta_objective'):
+                self._current_max_delta_objective = delta_objective
+            self._current_max_delta_objective = max(
+                self._current_max_delta_objective, delta_objective
+            )
+
         self._best_objective = min(
             objective, self._best_objective
         )
@@ -447,7 +496,10 @@ class SufficientProgressCriterion(StoppingCriterion):
             self._progress.pop(0)
 
         delta = max(self._progress)
-        if delta <= self.eps * self._best_objective:
+        max_delta = 0
+        if hasattr(self, '_current_max_delta_objective'):
+            max_delta = self._current_max_delta_objective
+        if delta <= self.eps * max_delta:
             self.debug(f"Exit with delta = {delta:.2e}.")
             return True, 1
 
@@ -479,13 +531,12 @@ class SingleRunCriterion(StoppingCriterion):
     def init_stop_val(self):
         return self.stop_val
 
-    def get_runner_instance(self, max_runs=1, timeout=None, output=None,
-                            solver=None):
+    def get_runner_instance(self, max_runs=1, **kwargs):
 
-        return super().get_runner_instance(1, timeout, output, solver)
+        return super().get_runner_instance(1, **kwargs)
 
-    def check_convergence(self, cost_curve):
-        return True, 1
+    def should_stop(self, stop_val, objective_list):
+        return True, 'done', stop_val
 
 
 class NoCriterion(StoppingCriterion):

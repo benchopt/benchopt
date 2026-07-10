@@ -99,7 +99,7 @@ where :math:`|\cdot|` stands for the matrix determinant and :math:`\textrm{diag}
 for the operator that keeps only the diagonal elements of a matrix. Optionally, the
 matrix :math:`B` can be enforced to be orthogonal.
 
-See `benchmark_* repositories on GitHub <https://github.com/benchopt/>`_ for more.
+See `benchmark_* repositories on GitHub <https://github.com/orgs/benchopt/repositories?q=benchmark_+sort%3Aname-asc>`_ for more.
 
 
 .. |Build Status OLS| image:: https://github.com/benchopt/benchmark_ols/actions/workflows/main.yml/badge.svg

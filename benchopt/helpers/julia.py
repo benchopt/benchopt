@@ -1,20 +1,16 @@
-from contextlib import contextmanager
+from contextlib import nullcontext
 
 from benchopt.config import DEBUG
 from benchopt.base import BaseSolver
-from benchopt.utils.stream_redirection import SuppressStd
+from benchopt.utils.suppress_std import SuppressStd
 from benchopt.utils.shell_cmd import _run_shell_in_conda_env
 
-
-# nullcontext is not available in python <=3.6 so we resort to this
-# for backward compat.
-@contextmanager
-def nullcontext(enter_result=None):
-    yield enter_result
-
-
-def assert_julia_installed():
-    import julia  # noqa: F401
+import julia
+if julia.core.which("julia") is None:
+    raise ImportError(
+        "Julia is not installed in the environment. "
+        "Please install it to use Julia solvers."
+    )
 
 
 # Singleton to get the julia interpreter only once
@@ -28,7 +24,6 @@ def get_jl_interpreter():
         out = nullcontext() if DEBUG else SuppressStd()
         try:
             with out:
-                import julia
                 # configure the julia runtime
                 runtime_config = {
                     'compiled_modules': False,
@@ -68,9 +63,12 @@ class JuliaSolver(BaseSolver):
     ]
 
     @classmethod
-    def is_installed(cls, env_name=None, raise_on_not_installed=None):
+    def is_installed(
+            cls, env_name=None, raise_on_not_installed=None, quiet=False
+    ):
         success = super().is_installed(
-            env_name=env_name, raise_on_not_installed=raise_on_not_installed
+            env_name=env_name, raise_on_not_installed=raise_on_not_installed,
+            quiet=quiet
         )
 
         # If julia is installed, check that the package dependencies are also

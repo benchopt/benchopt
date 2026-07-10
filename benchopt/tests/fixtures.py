@@ -1,20 +1,30 @@
 import os
+import sys
 import uuid
+import pathlib
 import pytest
+from collections import defaultdict
 
 from benchopt.benchmark import Benchmark
+from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.utils.conda_env_cmd import create_conda_env
 from benchopt.utils.conda_env_cmd import delete_conda_env
 from benchopt.utils.shell_cmd import _run_shell_in_conda_env
-from benchopt.utils.dynamic_modules import _get_module_from_file
 
-from benchopt.tests import DUMMY_BENCHMARK_PATH
+_DUMMY_PACKAGE_DIR = pathlib.Path(__file__).parent / "dummy_package"
+DUMMY_PACKAGE_REQ = f"pip::{_DUMMY_PACKAGE_DIR.as_posix()}"
 
 os.environ['BENCHOPT_DEBUG'] = '1'
 os.environ['BENCHOPT_RAISE_INSTALL_ERROR'] = '1'
+os.environ['BENCHOPT_WARN_NONUNIQUE_FILES'] = '0'
 
 _TEST_ENV_NAME = None
 _EMPTY_ENV_NAME = None
+_TEST_BENCHMARK = None
+
+# Track ``test_solver_run`` outcomes per solver to check that at least one
+# config runs for each solver.
+_SOLVER_RUN_OUTCOMES = defaultdict(list)
 
 
 def class_ids(p):
@@ -42,56 +52,195 @@ def pytest_addoption(parser):
 
 def pytest_configure(config):
     """Setup pytest for benchopt testing"""
+    global _TEST_BENCHMARK
+
+    import matplotlib
+    matplotlib.use("Agg")
 
     config.addinivalue_line("markers", "requires_install")
+
+    # Create the benchmark for which the tests are run. If it is not provided,
+    # we use a temporary benchmark with a dummy dataset and solver.
+    benchmark_path = config.getoption("benchmark")
+    if benchmark_path is not None:
+        _TEST_BENCHMARK = Benchmark(benchmark_path)
+    else:
+        ctx = temp_benchmark()
+        _TEST_BENCHMARK = ctx.__enter__()
+        config._ctx = ctx
+
+
+def pytest_unconfigure(config):
+    """Teardown the temporary benchmark if any."""
+    if hasattr(config, "_ctx"):
+        config._ctx.__exit__(None, None, None)
+        del config._ctx
+
+
+@pytest.fixture(scope='session')
+def benchmark():
+    return _TEST_BENCHMARK
+
+
+@pytest.fixture
+def require_solver_installed(solver_class):
+    # Skips a test if the solver class is not installed.
+    if not solver_class.is_installed():
+        pytest.skip("Solver is not installed")
 
 
 def pytest_collection_modifyitems(config, items):
     if not config.getoption("--skip-install"):
         return
-
-    skip_install = pytest.mark.skip(
-            reason="--skip-install option provided")
+    skip_install = pytest.mark.skip(reason="Skipping installs in this run")
     for item in items:
         if "requires_install" in item.keywords:
             item.add_marker(skip_install)
 
 
-def pytest_generate_tests(metafunc):
-    """Generate the test on the fly to take --benchmark into account.
-    """
+def _get_skip_reason(report):
+    if not report.skipped:
+        return ""
+    if isinstance(report.longrepr, tuple) and len(report.longrepr) >= 3:
+        return str(report.longrepr[2])
+    return ""
 
-    # Get all benchmarks
-    benchmark = metafunc.config.getoption("benchmark")
+
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_makereport(item, call):
+    # Collect the outcomes for all test_solver_run for each solver,
+    # to check that at least one configuration runs for each solver.
+    outcome = yield
+    if item.originalname != 'test_solver_run':
+        return
+
+    report = outcome.get_result()
+    # Only record call-phase outcomes — setup-phase skips come from markers
+    # or fixture opt-outs, which are not coverage gaps.
+    if report.when == 'call':
+        reason = _get_skip_reason(report)
+        solver = item.funcargs.get('solver_class')
+        dataset_name = item.funcargs.get('test_dataset_name')
+        _SOLVER_RUN_OUTCOMES[solver.name].append(
+            (report.outcome, dataset_name, reason)
+        )
+
+
+def pytest_sessionfinish(session, exitstatus):
+    # Check which solvers were flag for being skipped for all configuration
+    flagged = sorted(
+        (solver, sorted({tuple(r) for _, *r in entries}))
+        for solver, entries in _SOLVER_RUN_OUTCOMES.items()
+        if entries and all(o == 'skipped' for o, *_ in entries)
+    )
+    if not flagged:
+        return
+
+    reporter = session.config.pluginmanager.get_plugin("terminalreporter")
+    if reporter is None:
+        return
+
+    # Synthesize a failed TestReport for each flagged solver
+    from _pytest.reports import TestReport
+    template = next(
+        (i for i in session.items if i.originalname == 'test_solver_run'),
+        None,
+    )
+    nodeid_base = template.nodeid.split('[', 1)[0]
+    fspath = template.location[0]
+    for solver, reasons in flagged:
+        name = f"test_solver_run[{solver}]"
+        skipped_datasets = "\n- ".join(
+            f"{dataset} (reason: {reason})"
+            for _, dataset, reason in _SOLVER_RUN_OUTCOMES[solver]
+        )
+        longrepr = (
+            f"Skipped every test_solver_run variants for solver '{solver}'."
+            "\nPlease ensure at least one configuration runs for each solver."
+            f"\nTested datasets:\n- {skipped_datasets}\n\n"
+            "To change the datasets tested for this solver, set:\n"
+            "  Solver.test_config = {'dataset': {'name': '<dataset_name>'}}\n"
+            "or, to test multiple datasets:\n"
+            "  Solver.test_config = {'dataset': {'name': ['<a>', '<b>']}}\n"
+            "You can also set this test parameters globally for the benchmark "
+            "by setting them in the Objective instead of the Solver."
+        )
+        report = TestReport(
+            nodeid=f"{nodeid_base}[{solver}]",
+            location=(fspath, 0, name),
+            keywords={},
+            outcome='failed',
+            longrepr=longrepr,
+            when='call',
+        )
+        reporter.stats.setdefault('failed', []).append(report)
+    session.exitstatus = 1
+
+
+def pytest_generate_tests(metafunc):
+    """Generate the test on the fly to take --benchmark into account."""
+    benchmark = _TEST_BENCHMARK
     if benchmark is None:
-        benchmark = DUMMY_BENCHMARK_PATH
-    benchmark = Benchmark(benchmark)
+        raise ValueError(
+            "The benchmark on which to run the tests has not been configured. "
+            "When not provided, a temporary benchmark should be used. Please "
+            "report this issue on GitHub."
+        )
 
     # Make sure the tested benchmark is installed (we can import the Objective)
     benchmark.get_benchmark_objective().is_installed(
         raise_on_not_installed=True
     )
 
-    # Extract the value for the parametrizations
     parametrization = {
-        'dataset_simu': [
-            (benchmark, dataset) for dataset in benchmark.get_datasets()
-            if dataset.name.lower() == 'simulated'
-        ],
-        'dataset_class': [
-            (benchmark, dataset) for dataset in benchmark.get_datasets()
-        ],
-        'solver_class': [
-            (benchmark, solver) for solver in benchmark.get_solvers()
-        ]
+        'dataset_class': benchmark.get_datasets(),
+        'solver_class': benchmark.get_solvers(),
     }
 
-    # Parametrize the tests
+    needs_dataset_name = 'test_dataset_name' in metafunc.fixturenames
+    parametrized = False
+
     for param, values in parametrization.items():
-        if param in metafunc.fixturenames:
+        if param not in metafunc.fixturenames:
+            continue
+        parametrized = True
+        if needs_dataset_name:
+            expanded = []
+            for v in values:
+                solver = v if param == 'solver_class' else None
+                names = benchmark.get_test_dataset_names(solver_class=solver)
+                if not names:
+                    _raise_no_test_dataset(solver)
+                expanded.extend((v, name) for name in names)
             metafunc.parametrize(
-                ('benchmark', param), values, ids=class_ids
+                (param, 'test_dataset_name'), expanded, ids=class_ids
             )
+        else:
+            metafunc.parametrize(param, values, ids=class_ids)
+
+    # Tests that only request ``test_dataset_name`` (e.g. objective-level
+    # checks) get expanded with the objective-level dataset names.
+    if needs_dataset_name and not parametrized:
+        names = benchmark.get_test_dataset_names()
+        if not names:
+            _raise_no_test_dataset(None)
+        metafunc.parametrize(
+            'test_dataset_name', names, ids=class_ids,
+        )
+
+
+def _raise_no_test_dataset(solver):
+    target = (
+        f"solver {solver.name!r}" if solver is not None
+        else "the benchmark objective"
+    )
+    raise ValueError(
+        f"No test_dataset_name configured for {target}. "
+        "Set `Objective.test_dataset_name` (legacy), "
+        "`Objective.test_config['dataset']['name']`, or "
+        "`Solver.test_config['dataset']['name']` to one or more dataset "
+        "names. Default to 'simulated' dataset if it exists."
+    )
 
 
 @pytest.fixture
@@ -103,25 +252,29 @@ def no_debug_log(request):
 
 
 @pytest.fixture
-def check_test(request):
+def no_raise_install(request):
+    """Deactivate the raise install error for a test."""
+    os.environ["BENCHOPT_RAISE_INSTALL_ERROR"] = "0"
+    yield
+    os.environ["BENCHOPT_RAISE_INSTALL_ERROR"] = "1"
 
-    if 'benchmark' not in request.fixturenames:
-        raise ValueError(
-            '`check_test` fixture should only be used in tests parametrized '
-            'with `benchmark` fixture'
-        )
 
-    benchmark = request.getfixturevalue('benchmark')
-    test_config_file = benchmark.get_test_config_file()
-    if test_config_file is None:
-        return None
-    test_config_module = _get_module_from_file(test_config_file)
-    check_func_name = f"check_{request.function.__name__}"
-    return getattr(test_config_module, check_func_name, None)
+@pytest.fixture
+def warn_override(request):
+    """Deactivate the raise install error for a test."""
+    os.environ["BENCHOPT_WARN_NONUNIQUE_FILES"] = "1"
+    yield
+    os.environ["BENCHOPT_WARN_NONUNIQUE_FILES"] = "0"
 
 
 @pytest.fixture(scope='session')
-def test_env_name(request):
+def use_env(request):
+    if request.config.getoption("--skip-env"):
+        pytest.skip("Skip creating a test env")
+
+
+@pytest.fixture(scope='session')
+def test_env_name(request, benchmark, use_env):
     global _TEST_ENV_NAME
 
     if _TEST_ENV_NAME is None:
@@ -135,35 +288,27 @@ def test_env_name(request):
 
         _TEST_ENV_NAME = env_name
 
-        create_conda_env(_TEST_ENV_NAME, recreate=recreate)
+        benchmark.create_test_env(env_name, recreate=recreate)
+
+        # Flush the output to avoid issues with pytest capturing
+        # the output later on and failing tests because of it.
+        # Make sure to flush stdout and stderr
+        print(flush=True)
+        print(flush=True, file=sys.stderr)
 
     return _TEST_ENV_NAME
 
 
-@pytest.fixture(scope='function')
-def uninstall_dummy_package(test_env_name):
-    _run_shell_in_conda_env(
-        "pip uninstall -qqy dummy_package", env_name=test_env_name
-    )
-    yield
-    _run_shell_in_conda_env(
-        "pip uninstall -qqy dummy_package", env_name=test_env_name
-    )
-
-
 @pytest.fixture(scope='session')
-def empty_env_name(request):
+def empty_env_name(request, use_env):
     global _EMPTY_ENV_NAME
 
     if _EMPTY_ENV_NAME is None:
-        if request.config.getoption("--skip-env"):
-            pytest.skip("Skip creating a test env")
         env_name = f"_benchopt_test_env_{uuid.uuid4()}"
-        request.addfinalizer(delete_empty_env)
-
         _EMPTY_ENV_NAME = env_name
 
-        create_conda_env(_EMPTY_ENV_NAME, empty=True)
+        request.addfinalizer(delete_empty_env)
+        create_conda_env(env_name, empty=True)
 
     return _EMPTY_ENV_NAME
 
@@ -182,3 +327,30 @@ def delete_empty_env():
     if _EMPTY_ENV_NAME is not None:
         delete_conda_env(_EMPTY_ENV_NAME)
         _EMPTY_ENV_NAME = None
+
+
+@pytest.fixture(scope='function')
+def uninstall_dummy_package(test_env_name):
+    _run_shell_in_conda_env(
+        "pip uninstall -qqy dummy_package", env_name=test_env_name
+    )
+    yield
+    _run_shell_in_conda_env(
+        "pip uninstall -qqy dummy_package", env_name=test_env_name
+    )
+
+
+@pytest.fixture(scope='function')
+def no_pytest(test_env_name):
+    cmd = "pip uninstall -qqy pytest"
+
+    # Uninstall pytest in the test env to test the behavior when pytest is not
+    # installed.
+    _run_shell_in_conda_env(cmd, env_name=test_env_name)
+    yield
+    # reinstall pytest in the test_env
+    exitcode, output = _run_shell_in_conda_env(
+        "pip install -q pytest", env_name=test_env_name,
+        return_output=True
+    )
+    assert exitcode == 0, output

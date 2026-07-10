@@ -1,4 +1,5 @@
-import os
+import sys
+import yaml
 import inspect
 import tempfile
 import contextlib
@@ -6,78 +7,184 @@ import contextlib
 from pathlib import Path
 
 from benchopt.benchmark import Benchmark
-from benchopt.tests import DUMMY_BENCHMARK_PATH
 
 
-dummy_objective = (DUMMY_BENCHMARK_PATH / 'objective.py').read_text()
+DEFAULT_OBJECTIVE = """from benchopt import BaseObjective
 
-dummy_solvers = [
-    (DUMMY_BENCHMARK_PATH / "solvers" / p).read_text()
-    for p in os.listdir(DUMMY_BENCHMARK_PATH / "solvers")
-    if p.endswith(".py") and not p.startswith("template_")
-]
+class Objective(BaseObjective):
+    name = "test-objective"
+    def set_data(self, X, y): pass
+    def get_one_result(self): return dict(beta=None)
+    def evaluate_result(self, beta): return 1.
+    def get_objective(self): return dict(X=None, y=None, lmbd=None)
+"""
 
-dummy_datasets = [
-    (DUMMY_BENCHMARK_PATH / "datasets" / p).read_text()
-    for p in os.listdir(DUMMY_BENCHMARK_PATH / "datasets")
-    if p.endswith(".py") and not p.startswith("template_")
-]
+
+IDX_BENCHMARK = 0
+
+DEFAULT_DATASETS = {
+    'test_dataset.py': """from benchopt import BaseDataset
+
+        class Dataset(BaseDataset):
+            name = "test-dataset"
+            def get_data(self): return dict(X=None, y=None)
+    """,
+    'simulated.py': """from benchopt import BaseDataset
+
+        class Dataset(BaseDataset):
+            name = "simulated"
+            def get_data(self): return dict(X=None, y=None)
+    """
+}
+DEFAULT_SOLVERS = {
+    'test_solver.py': """from benchopt import BaseSolver
+
+        class Solver(BaseSolver):
+            name = "test-solver"
+            def set_objective(self, X, y, lmbd): pass
+            def run(self, _): pass
+            def get_result(self): return dict(beta=None)
+    """
+}
+
+# Create classes DefaultObjective, DefaultDataset and DefaultSolver
+# in the global scope, so that they can be used to override specific parts
+# easily when creating temporary benchmarks. These classes are not meant to be
+# used directly, but to be subclassed in test.
+exec(
+    inspect.cleandoc(DEFAULT_OBJECTIVE)
+    .replace("Objective(", "TempObjective(")
+)
+exec(
+    inspect.cleandoc(DEFAULT_DATASETS['test_dataset.py'])
+    .replace("Dataset(", "TempDataset(")
+)
+exec(
+    inspect.cleandoc(DEFAULT_SOLVERS['test_solver.py'])
+    .replace("Solver(", "TempSolver(")
+)
 
 
 @contextlib.contextmanager
 def temp_benchmark(
-        objective=None, datasets=None, solvers=None, config=None,
-        benchmark_utils=None
+        objective=None, datasets=None, solvers=None, plots=None,
+        config=None, benchmark_utils=None, extra_files=None,
+        name=None, no_default=False
 ):
     """Create Benchmark in a temporary folder, for test purposes.
 
     Parameters
     ----------
     objective: str | None (default=None)
-        Content of the objective.py file. If None, defaults to objective of
-        ``benchopt.tests.DUMMY_BENCHMARK``.
+        Content of the objective.py file. If None, defaults to
+        ``DEFAULT_OBJECTIVE``.
     datasets: str | list of str | None (default=None)
-        Content of the dataset.py file(s). If None, defaults to datasets of
-        ``benchopt.tests.DUMMY_BENCHMARK``.
-    solvers: str | list of str | None (default=None)
-        Content of the solver.py file(s). If None, defaults to solvers of
-        ``benchopt.tests.DUMMY_BENCHMARK``.
-    config: str | None (default=None)
-        Content of configuration file for running the Benchmark. If None,
-        no config file is created.
+        Content of the dataset.py file(s). If None, defaults to
+        ``DEFAULT_DATASETS``. Note that if a str or a list is passed, only the
+        passed dataset(s) are created. If a dict is passed, the default
+        datasets are created in addition to the passed ones.
+    solvers: str | list of str | dict of str | None (default=None)
+        Content of the solver.py file(s). If None, defaults to
+        ``DEFAULT_SOLVERS``. Note that if a str or a list is passed, only the
+        passed solver(s) are created. If a dict is passed, the default solvers
+        are created in addition to the passed ones.
+    plots: str | list of str | dict of str | None (default=None)
+        Content of the plot.py file(s). If None, no plot file is created.
+    config: str | dict(fname->content) | None (default=None)
+        Configuration files for running the Benchmark. If only one str is
+        passed, this creates only one `config.yml` file. If None, no config
+        file is created. If a dict, the content can either be a str or a dict,
+        which will be written as a YAML file.
     benchmark_utils: dict(fname->str) | None (default=None)
+        Content of the benchmark_utils module.
+    extra_files: dict(fname->str) | None (default=None)
+        Additional files to be added to the benchmark directory. If None,
+        no extra files are created.
+    name: str | None (default=None)
+        Name of the benchmark. If None, a name is generated as ``bench_#``.
+    no_default: bool (default=False)
+        If True, the default dataset/solver files are not created,
+        and only the ones passed as arguments are created. If False, the
+        default files are created and can be overridden by passing files with
+        the same name in the `datasets` and `solvers` arguments.
     """
     if objective is None:
-        objective = dummy_objective
+        objective = DEFAULT_OBJECTIVE
     if solvers is None:
-        solvers = dummy_solvers
+        solvers = DEFAULT_SOLVERS
     if datasets is None:
-        datasets = dummy_datasets
+        datasets = DEFAULT_DATASETS
 
     if isinstance(datasets, str):
         datasets = [datasets]
     if isinstance(solvers, str):
         solvers = [solvers]
+    if isinstance(plots, str):
+        plots = [plots]
 
-    with tempfile.TemporaryDirectory() as tempdir:
-        temp_path = Path(tempdir)
+    default_solver = {} if no_default else DEFAULT_SOLVERS
+    if isinstance(solvers, list):
+        solvers = {f"solver_{idx}.py": s for idx, s in enumerate(solvers)}
+    else:
+        solvers = {**default_solver, **solvers}
+
+    default_dataset = {} if no_default else DEFAULT_DATASETS
+    if isinstance(datasets, list):
+        datasets = {f"dataset_{idx}.py": d for idx, d in enumerate(datasets)}
+    else:
+        datasets = {**default_dataset, **datasets}
+
+    if isinstance(plots, list):
+        plots = {f"plot_{idx}.py": p for idx, p in enumerate(plots)}
+
+    global IDX_BENCHMARK
+    idx = IDX_BENCHMARK
+    IDX_BENCHMARK += 1
+
+    if name is None:
+        name = f"bench_{idx}"
+
+    with tempfile.TemporaryDirectory(
+            prefix="temp_benchmark_", suffix="", dir="."
+    ) as tempdir:
+        temp_path = Path(tempdir) / name
+        temp_path.mkdir()
         (temp_path / "solvers").mkdir()
         (temp_path / "datasets").mkdir()
+        (temp_path / "plots").mkdir()
         with open(temp_path / "objective.py", "w", encoding='utf-8') as f:
             f.write(inspect.cleandoc(objective))
-        for idx, solver in enumerate(solvers):
-            with open(temp_path / "solvers" / f"solver_{idx}.py", "w",
-                      encoding='utf-8') as f:
-                f.write(inspect.cleandoc(solver))
+        for fname, content in solvers.items():
+            fname = temp_path / "solvers" / fname
+            if fname.suffix == "":
+                fname = fname.with_suffix(".py")
+            fname.write_text(inspect.cleandoc(content), encoding='utf-8')
 
-        for idx, dataset in enumerate(datasets):
-            with open(temp_path / "datasets" / f"dataset_{idx}.py", "w",
-                      encoding='utf-8') as f:
-                f.write(inspect.cleandoc(dataset))
+        for fname, content in datasets.items():
+            fname = temp_path / "datasets" / fname
+            if fname.suffix == "":
+                fname = fname.with_suffix(".py")
+            fname.write_text(inspect.cleandoc(content), encoding='utf-8')
+
+        if plots is not None:
+            for fname, content in plots.items():
+                fname = temp_path / "plots" / fname
+                if fname.suffix == "":
+                    fname = fname.with_suffix(".py")
+                fname.write_text(inspect.cleandoc(content), encoding='utf-8')
 
         if config is not None:
-            with open(temp_path / "config.yml", "w", encoding='utf-8') as f:
-                f.write(config)
+            if not isinstance(config, dict):
+                assert isinstance(config, str), "config must be a dict or str"
+                config = {"config.yml": config}
+            for fname, content in config.items():
+                if isinstance(content, dict):
+                    # If content is a dict, write it as YAML
+                    content = yaml.dump(content)
+                else:
+                    content = inspect.cleandoc(content)
+                config_path = (temp_path / fname).with_suffix(".yml")
+                config_path.write_text(content, encoding='utf-8')
 
         if benchmark_utils is not None:
             benchmark_utils_dir = (temp_path / "benchmark_utils")
@@ -85,7 +192,23 @@ def temp_benchmark(
             (benchmark_utils_dir / "__init__.py").touch()
             for fname, content in benchmark_utils.items():
                 fname = (benchmark_utils_dir / fname).with_suffix(".py")
-                with open(fname, "w") as f:
-                    f.write(inspect.cleandoc(content))
+                fname.parent.mkdir(exist_ok=True, parents=True)
+                fname.write_text(inspect.cleandoc(content), encoding='utf-8')
 
-        yield Benchmark(temp_path)
+        if extra_files is not None:
+            assert isinstance(extra_files, dict), "extra_files must be a dict"
+            for fname, content in extra_files.items():
+                (temp_path / fname).write_text(
+                    inspect.cleandoc(content), encoding='utf-8'
+                )
+
+        bench = Benchmark(temp_path)
+        yield bench
+
+        # to avoid border effects, remove the benchmark directory
+        to_del = [
+            m for m in sys.modules
+            if "benchmark_utils" in m or "benchopt_benchmarks" in m
+        ]
+        for m in to_del:
+            sys.modules.pop(m)

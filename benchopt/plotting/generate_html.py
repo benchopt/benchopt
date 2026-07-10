@@ -3,19 +3,17 @@ import shutil
 import webbrowser
 from pathlib import Path
 from datetime import datetime
-import numpy as np
+from urllib.parse import quote
+
 import pandas as pd
 from mako.template import Template
 
-from ..constants import PLOT_KINDS
-from ..utils.parquet import get_metadata as get_parquet_metadata
+from ..results import read_results
+from ..results.parquet import get_metadata as get_parquet_metadata
 
 from benchopt.benchmark import Benchmark
-from .plot_bar_chart import compute_bar_chart_data  # noqa: F401
-from .plot_boxplot import compute_solver_boxplot_data
-from .plot_objective_curve import compute_quantiles   # noqa: F401
-from .plot_objective_curve import get_solver_style
-from .plot_objective_curve import reset_solver_styles_idx
+from .helpers import reset_solver_styles
+from .helpers import update_plot_data_style
 
 ROOT = Path(__file__).parent / "html"
 DEFAULT_HTML_DIR = Path("html")
@@ -79,16 +77,15 @@ def get_results(fnames, html_root, benchmark, config=None, copy=False):
     out_dir = html_root / OUTPUTS
 
     for fname in fnames:
-        print(f"Processing {fname}")
-
-        if fname.suffix == '.parquet':
-            df = pd.read_parquet(fname)
-        else:
-            df = pd.read_csv(fname)
+        print(f"\r   Processing {fname}", end="", flush=True)
+        df = read_results(fname)
 
         config_ = get_parquet_metadata(fname) if config is None else config
+        # Sanitize the config for comparison with the plot names
+        kinds = config_.get('plots', benchmark.get_plot_names())
+        kinds = [f"{k.strip().lower().replace(' ', '_')}" for k in kinds]
 
-        datasets = list(df['data_name'].unique())
+        datasets = list(df['dataset_name'].unique())
         sysinfo = get_sysinfo(df)
         # Copy result file if necessary
         # and give a relative path for HTML page access
@@ -100,28 +97,31 @@ def get_results(fnames, html_root, benchmark, config=None, copy=False):
 
         # Generate figures
         result = dict(
-            fname=fname,
+            fname=str(fname),
             fname_short=fname.name,
             datasets=datasets,
             sysinfo=sysinfo,
-            dataset_names=df['data_name'].unique(),
+            dataset_names=df['dataset_name'].unique(),
             objective_names=df['objective_name'].unique(),
-            obj_cols=[k for k in df.columns if k.startswith('objective_')
-                      and k != 'objective_name'],
-            kinds=config_.get('plots', list(PLOT_KINDS)),
+            obj_cols=[
+                k for k in df.columns
+                if k.startswith('objective_') and k != 'objective_name'
+            ],
+            kinds=kinds,
             metadata=get_metadata(df, config_.get('plot_configs', {})),
         )
 
-        # JSON
-        result['json'] = json.dumps(shape_datasets_for_html(df))
+        data, options = benchmark.get_plot_data(df, result['kinds'])
+        data = update_plot_data_style(data, plotly=True)
+        result['json_plots'] = json.dumps(data)
+        result['plot_options'] = options
 
         results.append(result)
+    print()
 
     for result in results:
-        html_file_name = f"{result['fname_short'].replace('.csv', '.html')}"
-        html_file_name = f"{html_file_name.replace('.parquet', '.html')}"
-
-        result['page'] = f"{benchmark.name}_{html_file_name}"
+        html_file_name = Path(result['fname_short']).with_suffix('.html').name
+        result['page'] = quote(f"{benchmark.name}_{html_file_name}")
 
     return results
 
@@ -161,130 +161,6 @@ def get_metadata(df, plot_configs):
         metadata["obj_description"] = ""
 
     return metadata
-
-
-def shape_datasets_for_html(df):
-    """Return a dictionary with plotting data for each dataset."""
-    datasets_data = {}
-
-    for dataset in df['data_name'].unique():
-        datasets_data[dataset] = shape_objectives_for_html(df, dataset)
-
-    return datasets_data
-
-
-def shape_objectives_for_html(df, dataset):
-    """Return a dictionary with plotting data for each objective."""
-    objectives_data = {}
-
-    for objective in df['objective_name'].unique():
-        objectives_data[objective] = shape_objectives_columns_for_html(
-            df, dataset, objective)
-
-    return objectives_data
-
-
-def shape_objectives_columns_for_html(df, dataset, objective):
-    """Return a dictionary with plotting data for each objective column."""
-    objective_columns_data = {}
-    columns = [
-        c for c in df.columns
-        if c.startswith('objective_') and c != 'objective_name'
-    ]
-
-    for column in columns:
-        df_filtered = df.query(
-            "data_name == @dataset & objective_name == @objective"
-        )
-        columns_data = shape_solvers_for_html(df_filtered, column)
-        if columns_data is None:
-            # Non-numeric column, skipping it
-            continue
-        objective_columns_data[column] = {
-            'solvers': columns_data,
-            # Values used in javascript to do computation
-            'transformers': {
-                'c_star': float(df_filtered[column].min() - 1e-10),
-                'max_f_0': float(
-                    df_filtered[df_filtered['stop_val'] == 1][column].max()
-                )
-            }
-        }
-
-    return objective_columns_data
-
-
-def shape_solvers_for_html(df, objective_column):
-    """Return a dictionary with plotting data for each solver."""
-    solver_data = {}
-    reset_solver_styles_idx()
-    for solver in df['solver_name'].unique():
-        df_filtered = df.query("solver_name == @solver")
-
-        # remove infinite values
-        df_filtered = df_filtered.replace([np.inf, -np.inf], np.nan)
-        df_filtered = df_filtered.dropna(subset=[objective_column])
-        if len(df_filtered) == 0:
-            continue
-
-        # compute median of 'time' and objective_column
-        fields = ["time", objective_column]
-        groupby_stop_val_median = (
-            df_filtered.groupby('stop_val')[fields]
-            .median(numeric_only=True)
-        )
-        if objective_column not in groupby_stop_val_median:
-            # Non-numeric values, skipping this column
-            return None
-
-        q1, q9 = compute_quantiles(df_filtered)
-
-        color, marker = get_solver_style(solver)
-        # to preserve support of previous benchopt version
-        # where 'sampling_strategy' wasn't saved in solver meta
-        if "sampling_strategy" in df_filtered:
-            sampling_strategy = df_filtered['sampling_strategy'].unique()
-        elif "stopping_strategy" in df_filtered:
-            sampling_strategy = df_filtered['stopping_strategy'].unique()
-        else:
-            sampling_strategy = ["Time"]
-
-        if len(sampling_strategy) != 1:
-            found_sampling_strategies = ', '.join(
-                f"`{item}`" for item in sampling_strategy
-            )
-
-            raise Exception(
-                "Solver can be run using only one sampling strategy. "
-                f"Expected one sampling strategy "
-                f"but found {found_sampling_strategies}"
-            )
-
-        sampling_strategy = sampling_strategy[0]
-
-        solver_data[solver] = {
-            'scatter': {
-                'x': groupby_stop_val_median['time'].tolist(),
-                'y': groupby_stop_val_median[objective_column].tolist(),
-                'stop_val': groupby_stop_val_median.index.tolist(),
-                'q1': q1.tolist(),
-                'q9': q9.tolist(),
-                'is_log_scale_available':
-                    1 if np.sum(
-                        groupby_stop_val_median[objective_column]
-                        .to_numpy() >= 0
-                    ) >= 3 else 0
-            },
-            'bar': compute_bar_chart_data(df, objective_column, solver),
-            'boxplot': compute_solver_boxplot_data(
-                df_filtered, objective_column
-            ),
-            'color': color,
-            'marker': marker,
-            'sampling_strategy': sampling_strategy,
-        }
-
-    return solver_data
 
 
 def get_sysinfo(df):
@@ -410,7 +286,8 @@ def render_all_results(results, benchmark, home='index.html'):
     for result in results:
         html = Template(
             filename=str(template),
-            input_encoding="utf-8"
+            input_encoding="utf-8",
+            strict_undefined=True
         ).render(
             result=result,
             benchmark=benchmark,
@@ -478,11 +355,13 @@ def plot_benchmark_html(
         copy = True
 
     # Make the link relative
-    html_home = html_home.relative_to(html_root)
+    html_home = quote(str(html_home.relative_to(html_root)))
 
     # Create the figures and render the page as a html.
+    print("Rendering benchmark results...")
     results = get_results(fnames, html_root, benchmark, config, copy=copy)
-    htmls = render_all_results(results, benchmark.name, home=html_home)
+    htmls = render_all_results(results, benchmark, home=html_home)
+    print("done")
 
     # Save the resulting page in the HTML folder
     for result, html in zip(results, htmls):
@@ -499,15 +378,14 @@ def plot_benchmark_html(
 
     # Fetch run list from the benchmark and update the benchmark front page.
     rendered = render_benchmark(run_list, benchmark, home=html_home)
-    print(f"Writing {benchmark.name} results to {bench_index}")
+    print(f"Writing {benchmark.name} index to {bench_index}")
     with open(bench_index, "w", encoding="utf-8") as f:
         f.write(rendered)
 
-    print("Rendering benchmark results...")
     # Display the file in the default browser
     if display:
         result_filename = (html_root / results[-1]['page']).absolute()
-        webbrowser.open_new_tab('file://' + str(result_filename))
+        webbrowser.open_new_tab('file://' + quote(str(result_filename)))
 
 
 def plot_benchmark_html_all(patterns=(), benchmark_paths=(), root=None,
@@ -574,7 +452,7 @@ def plot_benchmark_html_all(patterns=(), benchmark_paths=(), root=None,
         print(f'Rendering benchmark: {benchmark}')
         result_files = list(filter(
             lambda path: any(path.match(p) for p in patterns),
-            benchmark.get_result_file('all')
+            benchmark.get_result_files('all')
         ))
         # Store the number of rendered results so we can easily generate the
         # index page with the number of available result files.
@@ -584,6 +462,8 @@ def plot_benchmark_html_all(patterns=(), benchmark_paths=(), root=None,
                 result_files, benchmark, config=None, display=False,
                 html_home=index_filename
             )
+
+        reset_solver_styles()
 
     # Create an index that lists all benchmarks.
     rendered = render_index(benchmarks)

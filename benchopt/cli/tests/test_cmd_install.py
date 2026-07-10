@@ -1,0 +1,436 @@
+import re
+import uuid
+import warnings
+import click
+import pytest
+
+from benchopt.cli.main import install
+from benchopt.tests.utils import CaptureCmdOutput
+from benchopt.utils.temp_benchmark import temp_benchmark
+from benchopt.utils.conda_env_cmd import delete_conda_env
+from benchopt.utils.conda_env_cmd import get_env_info
+
+from benchopt.cli.tests.completion_cases import _test_shell_completion
+from benchopt.cli.tests.completion_cases import (  # noqa: F401
+    bench_completion_cases,
+    solver_completion_cases,
+    dataset_completion_cases
+)
+from benchopt.tests.fixtures import DUMMY_PACKAGE_REQ
+
+
+def _objective_with_python_version(python_version):
+    """Return objective source code declaring a given python_version."""
+    return f"""from benchopt.utils.temp_benchmark import TempObjective
+        class Objective(TempObjective):
+            name = "test-objective"
+            python_version = "{python_version}"
+    """
+
+
+@pytest.fixture(scope='session')
+def test_env_python_version(test_env_name):
+    """Full Python version string of the test conda env (e.g. '3.12.1').
+
+    Fetched once per session so tests share a single get_env_info call.
+    """
+    env_info = get_env_info(test_env_name)
+    return env_info['python_version']
+
+
+class TestInstallCmd:
+
+    @pytest.mark.parametrize('invalid_benchmark, match', [
+        ('invalid_benchmark', "Path 'invalid_benchmark' does not exist."),
+        ('.', "The folder '.' does not contain `objective.py`")],
+        ids=['invalid_path', 'no_objective'])
+    def test_invalid_benchmark(self, invalid_benchmark, match):
+        with pytest.raises(click.BadParameter, match=re.escape(match)):
+            install([invalid_benchmark], 'benchopt', standalone_mode=False)
+
+    def test_invalid_dataset(self):
+        with temp_benchmark() as bench:
+            with pytest.raises(click.BadParameter, match="invalid_dataset"):
+                cmd = f"{bench.benchmark_dir} -d invalid_dataset -y".split()
+                install(cmd, 'benchopt', standalone_mode=False)
+
+    def test_invalid_solver(self):
+        with temp_benchmark() as bench:
+            with pytest.raises(click.BadParameter, match="invalid_solver"):
+                cmd = f"{bench.benchmark_dir} -s invalid_solver -y".split()
+                install(cmd, 'benchopt', standalone_mode=False)
+
+    def test_valid_call(self):
+        with temp_benchmark() as bench, CaptureCmdOutput() as out:
+            install(
+               f"{bench.benchmark_dir} -d test-dataset -s test-solver "
+               "-y".split(), 'benchopt', standalone_mode=False
+            )
+
+        out.check_output(f"Installing '{bench.name}' requirements")
+        out.check_output("already available ✓", repetition=3)
+        out.check_output("- simulated", repetition=0)
+
+    def test_invalid_install_cmd(self):
+        # Solver with an invalid install command
+        invalid_solver = """
+        import fake_module
+        from benchopt.utils.temp_benchmark import TempSolver
+
+        class Solver(TempSolver):
+            name = "invalid-solver"
+            install_cmd = "invalid_command"
+        """
+
+        with temp_benchmark(solvers=invalid_solver) as bench:
+            with pytest.raises(AttributeError, match="is not a valid"):
+                install(
+                    f"{bench.benchmark_dir} -y -s invalid-solver".split(),
+                    standalone_mode=False
+                )
+
+    def test_conda_default_install_cmd(self):
+        # Solver class without the install_cmd attribute
+        # Checks if conda is used by default.
+        solver_noinstall = """
+        from benchopt.utils.temp_benchmark import TempSolver
+
+        class Solver(TempSolver):
+            name = "solver-no-install-cmd"
+            requirements = []
+        """
+
+        with temp_benchmark(solvers=[solver_noinstall]) as benchmark:
+            SolverClass, _ = benchmark.check_solver_patterns(
+                ["solver-no-install-cmd"]
+            )[0]
+            solver_instance = SolverClass()
+
+            # Check that the default 'install_cmd' is 'conda'
+            assert getattr(solver_instance, "install_cmd", None) == "conda"
+
+    @pytest.mark.parametrize(
+        "has_prepare", [True, False], ids=["with_prepare", "no_prepare"]
+    )
+    def test_prepare_data(self, has_prepare):
+
+        # solver with missing dependency specified
+        dataset = f"""from benchopt import BaseDataset
+
+            class Dataset(BaseDataset):
+                name = 'test_dataset'
+                {'def prepare(self): print("#PREPARE")' if has_prepare else ''}
+                def get_data(self): print("#GET_DATA")
+        """
+        msg = "#PREPARE" if has_prepare else "#GET_DATA"
+        dataset2 = dataset.replace("dataset", "dataset2")
+        with temp_benchmark(datasets=[dataset, dataset2]) as benchmark:
+            with CaptureCmdOutput() as out:
+                install([
+                    *f'{benchmark.benchmark_dir} -d test_dataset '
+                    '-y --prepare'.split()
+                ], 'benchopt', standalone_mode=False)
+
+            out.check_output(msg, repetition=1)
+            out.check_output("Preparing test_dataset", repetition=1)
+            out.check_output("Preparing test_dataset2", repetition=0)
+
+            # Check multiple datasets - test_dataset is cached from above,
+            # so only test_dataset2 actually runs get_data().
+            with CaptureCmdOutput() as out:
+                install([
+                    *f'{benchmark.benchmark_dir} -y --prepare '
+                    '-d test_dataset -d test_dataset2'.split()
+                ], 'benchopt', standalone_mode=False)
+
+            out.check_output(msg, repetition=1)
+            out.check_output("Preparing", repetition=2)
+
+    def test_existing_empty_env(self, empty_env_name):
+        msg = (
+            f"`benchopt` is not installed in existing env '{empty_env_name}'"
+        )
+        with temp_benchmark() as bench:
+            with pytest.raises(RuntimeError, match=msg):
+                install(
+                    [str(bench.benchmark_dir), '--env-name', empty_env_name],
+                    'benchopt', standalone_mode=False
+                )
+
+    def test_benchopt_install_in_env(self, test_env_name, no_debug_log):
+        with temp_benchmark() as bench, CaptureCmdOutput() as out:
+            install(
+                [str(bench.benchmark_dir), '--env-name', test_env_name],
+                'benchopt', standalone_mode=False
+            )
+
+        out.check_output(
+            f"Installing '{bench.name}' requirements"
+        )
+        out.check_output(
+            f"already available in '{test_env_name}' ✓", repetition=4
+        )
+
+    def test_benchopt_install_in_env_with_requirements(
+        self, test_env_name, uninstall_dummy_package, no_debug_log
+    ):
+
+        objective = f"""
+            from benchopt.utils.temp_benchmark import TempObjective
+
+            import dummy_package
+
+            class Objective(TempObjective):
+                name = "requires_dummy"
+                install_cmd = 'conda'
+                requirements = ['{DUMMY_PACKAGE_REQ}']
+        """
+
+        with temp_benchmark(objective=objective) as bench:
+            objective = bench.get_benchmark_objective()
+            with CaptureCmdOutput() as out:
+                install(
+                    [str(bench.benchmark_dir), '--env-name', test_env_name],
+                    'benchopt', standalone_mode=False
+                )
+            out.check_output(f"Installing '{bench.name}' requirements")
+            out.check_output("Checking installed packages... done")
+            assert objective.is_installed(
+                env_name=test_env_name, raise_on_not_installed=True
+            )
+
+    def test_error_with_missing_requirements(self):
+
+        # solver with missing dependency specified
+        missing_deps_cls = """import invalid_module
+            from benchopt.utils.temp_benchmark import Temp{Cls}
+
+            class {Cls}(Temp{Cls}):
+                name = 'buggy-class'
+                install_cmd = 'conda'
+        """
+
+        dataset = missing_deps_cls.format(Cls='Dataset')
+        with temp_benchmark(datasets=dataset) as bench:
+            match = "not importable:\nDataset\n- buggy-class"
+            with CaptureCmdOutput(exit=1) as out:
+                install(
+                    f'{bench.benchmark_dir} -d buggy-class -y'.split(),
+                    'benchopt', standalone_mode=False
+                )
+            out.check_output(re.escape(match))
+
+        solver = missing_deps_cls.format(Cls='Solver')
+        with temp_benchmark(solvers=solver) as bench:
+            match = "not importable:\nSolver\n- buggy-class"
+            with CaptureCmdOutput(exit=1) as out:
+                install(
+                    f'{bench.benchmark_dir} -s buggy-class -y'.split(),
+                    'benchopt', standalone_mode=False
+                )
+            out.check_output(re.escape(match))
+
+    def test_minimal_installation(
+            self, test_env_name, uninstall_dummy_package, no_debug_log
+    ):
+        objective = f"""
+            import dummy_package
+            from benchopt.utils.temp_benchmark import TempObjective
+
+            class Objective(TempObjective):
+                name = "requires_dummy"
+                requirements = ['{DUMMY_PACKAGE_REQ}']
+        """
+
+        solver = """from benchopt.utils.temp_benchmark import TempSolver
+            import fake_benchopt_package
+
+            class Solver(TempSolver):
+                name = 'solver1'
+                requirements = ["fake_benchopt_package"] # raise if installed
+        """
+
+        dataset = """from benchopt.utils.temp_benchmark import TempDataset
+            import fake_benchopt_package
+
+            class Dataset(TempDataset):
+                name = 'dataset1'
+                requirements = ["fake_benchopt_package"] # raise if installed
+        """
+
+        # Install should succeed because of --minimal option that does
+        # not install the fake package in solver
+        with temp_benchmark(objective=objective,
+                            solvers=[solver],
+                            datasets=[dataset]) as benchmark:
+            with CaptureCmdOutput() as out:
+                install([
+                    *f'{benchmark.benchmark_dir} -y --minimal '
+                    f'--env-name {test_env_name}'.split()
+                ], 'benchopt', standalone_mode=False)
+
+        out.check_output('Checking installed packages... done')
+
+    def test_no_error_minimal_requirements(
+            self, test_env_name, uninstall_dummy_package
+    ):
+
+        objective = f"""import dummy_package
+            from benchopt.utils.temp_benchmark import TempObjective
+
+            class Objective(TempObjective):
+                name = "requires_dummy"
+                install_cmd = 'conda'
+                requirements = ['{DUMMY_PACKAGE_REQ}']
+        """
+
+        # solver with missing dependency specified
+        missing_deps_dataset = """import dummy_package
+            from benchopt.utils.temp_benchmark import TempDataset
+
+            class Dataset(TempDataset):
+                name = 'test-dataset'
+        """
+
+        with temp_benchmark(
+                objective=objective,
+                datasets=[missing_deps_dataset]
+        ) as benchmark:
+            with CaptureCmdOutput() as out:
+                install([
+                    *f'{benchmark.benchmark_dir} -d test-dataset -y '
+                    f'--env-name {test_env_name}'.split()
+                ], 'benchopt', standalone_mode=False)
+        out.check_output(re.escape(DUMMY_PACKAGE_REQ.split("::")[-1]))
+
+    def test_gpu_flag(self, no_debug_log):
+
+        solver1 = """from benchopt.utils.temp_benchmark import TempSolver
+
+        class Solver(TempSolver):
+            name = "solver1"
+            requirements = {"wrong_key": 1, "cpu": []}
+        """
+
+        solver2 = """from benchopt.utils.temp_benchmark import TempSolver
+
+        class Solver(TempSolver):
+            name = "solver2"
+            requirements = {"gpu": [], "cpu": ["unknown_implausible_pkg"]}
+            sampling_strategy = 'iteration'
+        """
+
+        with temp_benchmark(solvers=[solver1, solver2]) as bench:
+            err = ("keys should be `cpu` and `gpu`, got ['wrong_key', 'cpu']")
+            with CaptureCmdOutput():
+                with pytest.raises(ValueError, match=re.escape(err)):
+                    install(
+                        f"{bench.benchmark_dir} -yf -s solver1 --gpu".split(),
+                        standalone_mode=False
+                    )
+
+            success_msg = "No new requirements installed"
+            # installing without gpu flag installs requirements["cpu"],
+            # hence OK
+            with CaptureCmdOutput() as out:
+                install(f"{bench.benchmark_dir} -yf -s solver1".split(),
+                        standalone_mode=False)
+            out.check_output(success_msg)
+
+            # all good with requirements["gpu"] for solver2, hence no error
+            with CaptureCmdOutput() as out:
+                install(f"{bench.benchmark_dir} -yf -s solver2 --gpu".split(),
+                        standalone_mode=False)
+            out.check_output(success_msg)
+
+    def test_python_version_env_creation(self, use_env):
+        """Tests env creation with specific python version from objective."""
+        env_name = f"_benchopt_test_py311_{uuid.uuid4()}"
+        try:
+            with temp_benchmark(
+                objective=_objective_with_python_version("3.11")
+            ) as bench:
+                install(
+                    [str(bench.benchmark_dir), '--env-name', env_name,
+                     "--minimal"],
+                    'benchopt', standalone_mode=False
+                )
+                env_python = get_env_info(env_name)['python_version']
+                assert env_python.startswith('3.11'), (
+                    f"Expected python 3.11, got {env_python}"
+                )
+        finally:
+            delete_conda_env(env_name)
+
+    @pytest.mark.parametrize("version_spec", ["exact", ">=specifier"])
+    def test_python_version_no_warning(
+            self, test_env_name, test_env_python_version, version_spec
+    ):
+        """Tests no python-version warning when the version constraint is met.
+        """
+        v = test_env_python_version
+        if version_spec == "exact":
+            # Test exact version is the current one -> no warning
+            version_spec = f"3.{v.split('.')[1]}"
+        else:
+            # Current version is in range of the spec -> no warning
+            version_spec = f">=3.{int(v.split('.')[1]) - 1}"
+        with temp_benchmark(
+            objective=_objective_with_python_version(version_spec)
+        ) as bench:
+            with warnings.catch_warnings(record=True) as caught:
+                warnings.simplefilter("always")
+                install(
+                    [str(bench.benchmark_dir), '--env-name', test_env_name,
+                     "--minimal"],
+                    'benchopt', standalone_mode=False
+                )
+            python_warns = [
+                w for w in caught if "python version" in str(w.message)
+            ]
+            assert len(python_warns) == 0, (
+                f"Unexpected python version warning: {python_warns}"
+            )
+
+    @pytest.mark.parametrize("version_spec", ["exact", ">=specifier"])
+    def test_python_version_mismatch_warning(
+            self, test_env_name, test_env_python_version, version_spec
+    ):
+        """Tests warning when the python version constraint is not met."""
+        v = test_env_python_version
+        if version_spec == "exact":
+            # Test exact version is bellow the current one -> warning
+            version_spec = f"3.{int(v.split('.')[1]) - 1}"
+        else:
+            # Current version is out of range for the spec -> warning
+            version_spec = f">=3.{int(v.split('.')[1]) + 1}"
+        with temp_benchmark(
+            objective=_objective_with_python_version(version_spec)
+        ) as bench:
+            with pytest.warns(UserWarning, match="python version in conda"):
+                install(
+                    [str(bench.benchmark_dir), '--env-name', test_env_name,
+                     "--minimal"],
+                    'benchopt', standalone_mode=False
+                )
+
+    def test_complete_bench(self, bench_completion_cases):  # noqa: F811
+
+        # Completion for benchmark name
+        _test_shell_completion(install, [], bench_completion_cases)
+
+    def test_complete_solvers(self, solver_completion_cases):  # noqa: F811
+        benchmark_dir, solver_completion_cases = solver_completion_cases
+
+        # Completion for solvers
+        _test_shell_completion(
+            install, [str(benchmark_dir), '-s'], solver_completion_cases
+        )
+
+    def test_complete_datasets(self, dataset_completion_cases):  # noqa: F811
+        benchmark_dir, dataset_completion_cases = dataset_completion_cases
+
+        # Completion for datasets
+        _test_shell_completion(
+            install, [str(benchmark_dir), '-d'], dataset_completion_cases
+        )

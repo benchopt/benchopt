@@ -1,16 +1,17 @@
 from ..utils.sys_info import get_cuda_version
-from ..utils.slurm_executor import get_slurm_launch
+from ..parallel_backends import is_distributed_frontal
 
 
 def requires_gpu():
     """Helper for solvers that require a GPU to run.
 
-    This helper allows to skip the GPU requirement check
-    when launching the computation on a SLURM cluster.
+    This helper allows to skip the GPU requirement check when launching
+    the run from the frontal for a distributed run.
     """
+    if is_distributed_frontal():
+        return
     cuda_version = get_cuda_version()
     if cuda_version is not None:
         return cuda_version.split("cuda_", 1)[1][:4]
     else:
-        if not get_slurm_launch():
-            raise ImportError("cuML solver needs a nvidia GPU.")
+        raise ImportError("Solver needs a nvidia GPU.")

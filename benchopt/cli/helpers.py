@@ -10,8 +10,8 @@ from collections.abc import Iterable
 from benchopt.config import set_setting
 from benchopt.config import get_setting
 from benchopt.benchmark import Benchmark
-from benchopt.utils.files import rm_folder
 from benchopt.utils.sys_info import get_sys_info
+from benchopt.results.files_utils import rm_folder
 from benchopt.cli.completion import complete_benchmarks
 from benchopt.cli.completion import complete_conda_envs
 from benchopt.cli.completion import complete_datasets
@@ -27,7 +27,7 @@ from benchopt.utils.terminal_output import BLUE, RED, GREEN, TICK, CROSS
 
 ARCHIVE_ELEMENTS = [
     'README*', '*.yml', 'objective.py',
-    'solvers/*', 'datasets/*', 'utils/**'
+    'solvers/*', 'datasets/*', 'benchmark_utils/**'
 ]
 
 helpers = click.Group(
@@ -177,6 +177,21 @@ def check_conda_env(env_name, benchmark_name=None):
     return env_name
 
 
+def _format_choices(choices):
+    """Render a list of valid parameter values for `benchopt info -v`.
+
+    Lists every value when there are at most 8, otherwise shows the first
+    few and last few with an ellipsis. A total count is always appended.
+    """
+    choices = [str(c) for c in choices]
+    n = len(choices)
+    if n <= 8:
+        listed = ', '.join(choices)
+    else:
+        listed = ', '.join(choices[:5] + ['...'] + choices[-2:])
+    return f"{listed} ({n} total)"
+
+
 def print_info(cls_name_list, cls_list, env_name=None, verbose=False):
     """Print information for each element of input listed
 
@@ -251,6 +266,15 @@ def print_info(cls_name_list, cls_list, env_name=None, verbose=False):
                 for param, value in cls.parameters.items():
                     values = ', '.join(map(str, value))
                     print(f"    {param}: {values}")
+                    # If the class declares an enumerable universe of valid
+                    # values for this parameter (via get_all_parameter_values),
+                    # list them too. This is the set expanded by `param=all`.
+                    choices = None
+                    if hasattr(cls, 'get_all_parameter_values'):
+                        choices = cls.get_all_parameter_values(param)
+                    if choices is not None:
+                        print(f"        valid values: "
+                              f"{_format_choices(choices)}")
 
             print("-" * 10)
 
@@ -305,8 +329,8 @@ def info(benchmark, solver_names, dataset_names, env_name='False',
     print(f"Info regarding the benchmark '{benchmark.name}'")
 
     # validate solvers and datasets
-    benchmark.validate_dataset_patterns(dataset_names)
-    benchmark.validate_solver_patterns(solver_names)
+    benchmark.check_dataset_patterns(dataset_names)
+    benchmark.check_solver_patterns(solver_names)
 
     # get solvers and datasets in the benchmark
     all_solvers = benchmark.get_solvers()
@@ -368,7 +392,7 @@ def sys_info():
 
 @helpers.group(
     help="Configuration helper for benchopt. The configuration of benchopt "
-    "is detailed in :ref:`config_doc`.",
+    "is detailed in :ref:`config_benchopt`.",
     invoke_without_command=True
 )
 @click.option('--benchmark', '-b', metavar='<benchmark>',
@@ -463,7 +487,7 @@ def check_install(benchmark, module_filename, base_class_name):
 
     # Get class to check
     klass = _load_class_from_module(
-        module_filename, base_class_name, benchmark.benchmark_dir
+         benchmark.benchmark_dir, module_filename, base_class_name
     )
     klass.is_installed(raise_on_not_installed=True)
 

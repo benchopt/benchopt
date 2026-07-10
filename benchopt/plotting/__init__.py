@@ -1,19 +1,70 @@
-import itertools
-import pandas as pd
+import warnings
 import matplotlib.pyplot as plt
 
 # helpers to manage metadata in the parquet files
-from ..utils.parquet import get_metadata
-from ..utils.parquet import update_metadata
+from ..results import read_results
+from ..results.parquet import get_metadata
+from ..results.parquet import update_metadata
 
-from ..constants import PLOT_KINDS
-from .helpers import get_plot_id
-from .plot_boxplot import plot_boxplot  # noqa: F401
-from .plot_bar_chart import plot_bar_chart  # noqa: F401
-from .plot_objective_curve import plot_objective_curve  # noqa: F401
-from .plot_objective_curve import plot_suboptimality_curve  # noqa: F401
-from .plot_objective_curve import plot_relative_suboptimality_curve  # noqa: F401 E501
 from .generate_html import plot_benchmark_html
+from .generate_matplotlib import get_figures
+
+from ..benchmark import Benchmark
+
+
+BACKWARD_COMPAT_PLOTS = {
+    "suboptimality_curve": "objective_curve",
+    "relative_suboptimality_curve": "objective_curve"
+}
+
+ALL_PLOT_OPTIONS = [
+    "plot_kind", "scale", "with_quantiles", "suboptimal_curve",
+    "relative_curve", "hidden_curves", "table_order", "table_hidden_columns",
+]
+
+
+def _sanitize_config(config):
+    """Flatten a pytree into a list."""
+    if isinstance(config, (list, tuple)):
+        # Avoid duplicates while preserving order
+        seen = set()
+        return [
+            _sanitize_config(item) for item in config
+            if item not in seen and not seen.add(item)
+        ]
+    elif isinstance(config, dict):
+        return {
+            k: _sanitize_config(v) for k, v in config.items()
+        }
+    else:
+        return BACKWARD_COMPAT_PLOTS.get(config, config)
+
+
+def _check_view(name, view, plots):
+    all_options = ALL_PLOT_OPTIONS
+    all_kinds = [plot._get_name() for plot in plots]
+
+    kind = view.get("plot_kind")
+    if kind is None:
+        warnings.warn(f"View {name} has no 'plot_kind' specified.")
+    elif kind not in all_kinds:
+        warnings.warn(
+            f"View '{name}' has invalid plot_kind '{kind}'. "
+            "Valid kinds are:\n-" + "\n-".join(all_kinds)
+        )
+        return
+    else:
+        plot = next(plot for plot in plots if plot._get_name() == kind)
+        all_options += [f"{kind}_{p}" for p in plot.options]
+
+    all_options = set(all_options)
+    mismatched_options = set(view) - all_options
+    if mismatched_options:
+        warnings.warn(
+            f"View '{name}' has invalid options {mismatched_options} for "
+            f"plot_kind {kind}. Valid options are:\n-"
+            + "\n-".join(sorted(all_options))
+        )
 
 
 def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
@@ -24,7 +75,7 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
     ----------
     fname : str
         Name of the file in which the results are saved.
-    benchmark : benchopt.Benchmark object
+    benchmark : str or Path-like or benchopt.Benchmark object
         Object to represent the benchmark.
     kinds : list of str or None
         List of the plots that will be generated. If None are provided, use the
@@ -44,72 +95,50 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
         The matplotlib figures for convergence curve and bar chart
         for each dataset.
     """
-    config = get_metadata(fname)
-    params = ["plots", "plot_configs"]
-    for param in params:
-        options = benchmark.get_setting(param, default_config=config)
-        if options is not None:
-            config[param] = options
-
-    update_metadata(fname, config)
+    benchmark = Benchmark(benchmark)
+    plot_config = get_metadata(fname)
+    plot_config = benchmark.get_plot_config(default_config=plot_config)
+    plot_config = _sanitize_config(plot_config)
+    update_metadata(fname, plot_config)
 
     if kinds is not None and len(kinds) > 0:
-        config["plots"] = kinds
+        plot_config["plots"] = kinds
+
+    plots = benchmark.get_plots()
+    valid_kinds = [plot._get_name() for plot in plots]
+
+    if "plots" not in plot_config or plot_config["plots"] is None:
+        plot_config["plots"] = valid_kinds
+
+    for kind in plot_config["plots"]:
+        if kind not in valid_kinds:
+            raise ValueError(
+                f"Invalid plot kind '{kind}' specified in plot config. "
+                "This config is either set in the config.yml file in the "
+                "benchmark directory or in the {benchmark.name} section of "
+                "global benchopt config."
+                "Available kinds are:\n-" + "\n-".join(valid_kinds)
+            )
+
+    for name, view in plot_config.get("plot_configs", {}).items():
+        _check_view(name, view, plots)
 
     if html:
-        plot_benchmark_html(fname, benchmark, config, display)
+        plot_benchmark_html(fname, benchmark, plot_config, display)
 
     else:
         # Load the results.
-        if fname.suffix == '.parquet':
-            df = pd.read_parquet(fname)
-        else:
-            df = pd.read_csv(fname)
+        df = read_results(fname)
 
-        obj_cols = [
-            k for k in df.columns
-            if k.startswith('objective_') and k != 'objective_name'
-        ]
-        datasets = df['data_name'].unique()
         output_dir = benchmark.get_output_folder()
+
         figs = []
-        for data in datasets:
-            df_data = df[df['data_name'] == data]
-            objective_names = df['objective_name'].unique()
-            for objective_name in objective_names:
-                df_obj = df_data[df_data['objective_name'] == objective_name]
 
-                plot_id = get_plot_id(benchmark.name, df_obj)
+        kind_figs = get_figures(
+            benchmark, df, output_dir, plot_config["plots"]
+        )
+        figs.extend(kind_figs)
 
-                for kind, obj_col in itertools.product(
-                        config["plots"], obj_cols
-                ):
-                    if kind not in PLOT_KINDS:
-                        raise ValueError(
-                            f"Requesting invalid plot '{kind}'."
-                            f"Should be in:\n{PLOT_KINDS}"
-                        )
-                    # For now only plot bar chart and suboptimality for
-                    # objective_value for which we monitor convergence
-                    # XXX - find a better solution
-                    if obj_col != "objective_value" and (
-                            kind == "bar_chart" or "subopt" in kind):
-                        continue
-                    plot_func = globals()[PLOT_KINDS[kind]]
-                    try:
-                        fig = plot_func(df_obj, obj_col=obj_col, plotly=plotly)
-                    except TypeError:
-                        fig = plot_func(df_obj, obj_col=obj_col)
-                    save_name = output_dir / f"{plot_id}_{obj_col}_{kind}"
-                    if hasattr(fig, 'write_html'):
-                        save_name = save_name.with_suffix('.html')
-                        fig.write_html(str(save_name), include_mathjax='cdn')
-                    else:
-                        save_name = save_name.with_suffix('.pdf')
-                        plt.savefig(save_name)
-                    print(f'Save {kind} plot of {obj_col} for {data} and '
-                          f'{objective_name} as: {save_name}')
-                    figs.append(fig)
         if display:
             plt.show()
         return figs

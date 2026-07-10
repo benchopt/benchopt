@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 import warnings
 from pathlib import Path
@@ -14,13 +15,13 @@ from ..config import get_setting
 
 SHELL = get_setting('shell')
 CONDA_CMD = get_setting('conda_cmd')
-PIP_CMD = f"{sys.executable} -m pip"
 
 # On windows, calling conda without call exit the cmd script:
 # https://github.com/conda/conda/issues/12418
 if sys.platform == 'win32' and not CONDA_CMD.lower().startswith('call'):
     CONDA_CMD = f"CALL {CONDA_CMD}"
 
+DEFAULT_PYTHON_VERSION = '3.12'
 
 # Yaml config file for benchopt env.
 BENCHOPT_ENV = """
@@ -28,7 +29,7 @@ channels:
   - conda-forge
   - nodefaults
 dependencies:
-  - python=3.10
+  - {python_spec}
   - numpy
   - cython
   - compilers
@@ -41,11 +42,45 @@ EMPTY_ENV = """
 channels:
   - conda-forge
   - nodefaults
+dependencies:
+  - {python_spec}
 """
 
 
+def _python_version_conda_spec(version):
+    """Convert a python_version attribute to a conda dependency string.
+
+    Plain versions (e.g. '3.12') are mapped to conda syntax ``python=3.12``.
+    Version specifiers (e.g. '>=3.12') are prepended with ``python``.
+    """
+    if re.match(r'^[><=!]', str(version)):
+        return f"python{version}"
+    return f"python={version}"
+
+
+def _python_version_satisfies(env_version, required):
+    """Check if `env_version` satisfies `required`.
+
+    `required` may be an exact version string ('3.12') or
+    a specifier ('>=3.12').
+    """
+    if re.match(r'^[><=!]', str(required)):
+        from packaging.specifiers import SpecifierSet
+        return env_version in SpecifierSet(required)
+    return env_version.startswith(str(required))
+
+
+def get_benchmark_python_version(benchmark):
+    if benchmark is None:
+        return DEFAULT_PYTHON_VERSION
+    objective = benchmark.get_benchmark_objective()
+    return objective.python_version or DEFAULT_PYTHON_VERSION
+
+
 def create_conda_env(
-        env_name, recreate=False, pytest=False, empty=False, quiet=False):
+    env_name, benchmark=None, recreate=False, pytest=False,
+    empty=False, quiet=False
+):
     """Create a conda env with name env_name and install basic utilities.
 
 
@@ -53,6 +88,9 @@ def create_conda_env(
     ----------
     env_name : str
         The name of the conda env that will be created.
+    benchmark : benchopt.Benchmark (optional)
+        The benchmark is used to get the python version to use in the env.
+        If None, the default python version is used.
     recreate : bool (default: False)
         It the conda env exists and recreate is set to True, it will be
         overwritten with the new env. If it is False, the env will be untouched
@@ -68,12 +106,16 @@ def create_conda_env(
     # Get a list of all conda envs
     _, existing_conda_envs = list_conda_envs()
 
+    python_version = get_benchmark_python_version(benchmark)
+
     if env_name in existing_conda_envs and not recreate:
         print(
             f"Conda env {env_name} already exists. Checking setup ... ",
             end='', flush=True
         )
-        env_version, editable_install = get_benchopt_version_in_env(env_name)
+        env_info = get_env_info(env_name)
+        env_version = env_info['version']
+        env_is_editable = env_info['is_editable']
         if env_version is None:
             print()
             raise RuntimeError(
@@ -82,7 +124,7 @@ def create_conda_env(
                 "by either using the --recreate option or installing benchopt "
                 f"in conda env {env_name}."
             )
-        if benchopt.__version__ != env_version and not editable_install:
+        if benchopt.__version__ != env_version and not env_is_editable:
             print()
             warnings.warn(
                 f"The local version of benchopt ({benchopt.__version__}) and "
@@ -91,23 +133,58 @@ def create_conda_env(
                 "by either using the --recreate option or fixing the version "
                 f"of benchopt in conda env {env_name}."
             )
+
+        if pytest and env_info["pytest_version"] is None:
+            raise ModuleNotFoundError(
+                f"pytest is not installed in conda env {env_name}.\n"
+                f"Please run `conda install -n {env_name} pytest` to test the "
+                "benchmark in this environment."
+            )
+
+        # Check that the python version is compatible with the one
+        # required by the benchmark.
+        if benchmark is not None:
+            env_python_version = env_info['python_version'].strip().split()[-1]
+
+            if not _python_version_satisfies(env_python_version,
+                                             python_version):
+                print()
+                warnings.warn(
+                    f"The python version in conda env ({env_python_version}) "
+                    "is different from the one required by the benchmark "
+                    f"({python_version}). You can correct this by either "
+                    "using the --recreate option or fixing the python "
+                    f"version in conda env {env_name}."
+                )
         print("done")
         return
 
-    force = "--force" if recreate else ""
-
     benchopt_requirement, benchopt_editable = get_benchopt_requirement(pytest)
 
+    python_spec = _python_version_conda_spec(python_version)
     benchopt_env = BENCHOPT_ENV.format(
-        benchopt_requirement=benchopt_requirement
+        python_spec=python_spec,
+        # Encode the path as a posix path to avoid issues with backslashes
+        benchopt_requirement=benchopt_requirement.replace("\\", "/")
     )
 
+    if recreate and env_name in existing_conda_envs:
+        assert env_name != "base", "Cannot recreate base"
+        print(
+            f"Recreate is used, removing conda env '{env_name}'... ",
+            end='', flush=True
+        )
+        delete_conda_env(env_name)
+        print("done")
+
     if empty:
-        benchopt_env = EMPTY_ENV
+        benchopt_env = EMPTY_ENV.format(
+            python_spec=python_spec
+        )
 
     print(f"Creating conda env '{env_name}':... ", end='', flush=True)
     if DEBUG:
-        print(f"\nconda env config:\n{'-' * 40}{benchopt_env}{'-' * 40}")
+        print(f"\nconda env config:\n{'-' * 60}\n{benchopt_env}\n{'-' * 60}")
     env_yaml = NamedTemporaryFile(
         mode="w+", prefix='conda_env_', suffix='.yml'
     )
@@ -118,7 +195,7 @@ def create_conda_env(
         if not quiet:
             print()
         _run_shell(
-            f"{CONDA_CMD} env create {force} -n {env_name} -f {env_yaml.name}",
+            f"{CONDA_CMD} env create -yn {env_name} -f {env_yaml.name}",
             capture_stdout=quiet, raise_on_error=True
         )
         # the channels priorities cannot be set through the yaml file,
@@ -131,7 +208,9 @@ def create_conda_env(
         if empty:
             return
         # Check that the correct version of benchopt is installed in the env
-        env_version, env_editable = get_benchopt_version_in_env(env_name)
+        env_info = get_env_info(env_name)
+        env_version = env_info['version']
+        env_editable = env_info['is_editable']
         error_msg = (
             f"Installed the wrong version of benchopt ({env_version}) in "
             f"conda env. This should be version: {benchopt.__version__}. There"
@@ -148,42 +227,38 @@ def create_conda_env(
             print("done")
 
 
-def get_benchopt_version_in_env(env_name):
+def get_env_info(env_name):
     """Check that the version of benchopt installed in env_name is the same
     as the one running.
     """
     check_benchopt, output = _run_shell_in_conda_env(
-        "benchopt --version --check-editable",
+        "benchopt --check-env",
         env_name=env_name, capture_stdout=True, return_output=True
     )
 
     if check_benchopt != 0:
         if DEBUG:
             print(output)
-        return None, None
-    output = [
-        line for line in output.splitlines()
-        if line.startswith('BENCHOPT_VERSION:')
-    ][0]
-    _, benchopt_version, is_editable = output.split(":")
-
-    return benchopt_version, is_editable == 'True'
+        return dict(version=None, is_editable=False, python_version=None)
+    import json
+    output = json.loads(output.strip().splitlines()[-1])
+    return output
 
 
 def delete_conda_env(env_name):
     """Delete a conda env with name env_name."""
 
-    _run_shell(f"{CONDA_CMD} env remove -n {env_name}",
+    _run_shell(f"{CONDA_CMD} env remove -yn {env_name}",
                capture_stdout=True)
 
 
-def get_cmd_from_requirements(packages):
+def get_env_file_from_requirements(packages):
     """Process the packages from requirements and create the install cmd.
 
     This detects the packages that need to be installed with pip and also
     the additional channels for conda packages.
     """
-    # TODO: remove with benchopt 1.7
+    # TODO: remove with benchopt 2.0
     # If ":" is present but not "::", warn that this is legacy syntax.
     has_legacy_colon = any(":" in pkg and "::" not in pkg for pkg in packages)
     if has_legacy_colon:
@@ -191,54 +266,59 @@ def get_cmd_from_requirements(packages):
             "The use of ':' to specify the channel of a dependency is "
             "deprecated. Please use '::' instead.", DeprecationWarning
         )
+        packages = [pkg.replace(":", "::", 1) for pkg in packages]
 
-    cmd = []
     conda_packages = [pkg for pkg in packages if not pkg.startswith('pip::')]
     if conda_packages:
-
-        conda_packages = [
-            pkg.replace(":", "::") if ":" in pkg and "::" not in pkg else pkg
-            for pkg in conda_packages
-        ]
-        channels = ' '.join(set(
-            f"-c {pkg.rsplit('::', 1)[0]}"
+        channels = '\n  - '.join(sorted(set(
+            pkg.rsplit('::', 1)[0]
             for pkg in conda_packages if '::' in pkg
-        ))
-        conda_packages = ' '.join(
+        ).union({'conda-forge'})))
+        channels = f"channels:\n  - {channels}\n" if channels else ""
+        conda_packages = '\n  - '.join(sorted(set(
             pkg.rsplit('::', 1)[-1] for pkg in conda_packages
-        )
-        cmd.append(
-            f"{CONDA_CMD} install --update-all -y {channels} {conda_packages}"
-        )
+        )))
+        env = f"{channels}dependencies:\n  - {conda_packages}"
+    else:
+        env = "dependencies:"
 
-    # TODO: simplify in benchopt 1.7
-    pip_packages = [
-        pkg.replace("pip::", "").replace("pip:", "")
-        for pkg in packages if pkg.startswith('pip:')
-    ]
+    pip_packages = '\n    - '.join(sorted(set(
+        pkg.replace("pip::", "") for pkg in packages if pkg.startswith('pip::')
+    )))
     if pip_packages:
-        packages = ' '.join(pip_packages)
-        cmd.append(f"{PIP_CMD} install {packages}")
-    return cmd
+        env += f"\n  - pip\n  - pip:\n    - {pip_packages}"
+
+    return env
 
 
-def install_in_conda_env(*packages, env_name=None, force=False, quiet=False):
+def install_in_conda_env(*packages, env_name=None, quiet=False):
     """Install the packages with conda in the given environment"""
     if len(packages) == 0:
         return
 
-    cmd = get_cmd_from_requirements(packages)
-    if force:
-        cmd = [c + ' --force-reinstall' for c in cmd]
-    cmd = '\n'.join(cmd)
+    env = get_env_file_from_requirements(packages)
+    if DEBUG:
+        print(f"\ninstalling env packages:\n{'-' * 60}\n{env}\n{'-' * 60}")
 
-    error_msg = ("Failed to conda install packages "
-                 f"{packages if len(packages) > 1 else packages[0]}\n"
-                 "Error:{output}")
-    _run_shell_in_conda_env(
-        cmd, env_name=env_name, raise_on_error=error_msg,
-        capture_stdout=quiet
-    )
+    # If installing in the current env, get its name.
+    if env_name is None:
+        env_name, _ = list_conda_envs()
+
+    with NamedTemporaryFile(mode='w+', prefix='env_', suffix='.yml') as f:
+        f.write(env)
+        f.flush()
+        cmd = (
+            f"{CONDA_CMD} env update -n {env_name} -f {f.name}"
+            f"{' -q' if quiet else ''}"
+        )
+
+        error_msg = (
+            f"Failed to conda install packages {packages}\nError:{{output}}"
+        )
+        _run_shell_in_conda_env(
+            cmd, env_name=env_name, raise_on_error=error_msg,
+            capture_stdout=quiet
+        )
 
 
 def shell_install_in_conda_env(script, env_name=None, quiet=False):

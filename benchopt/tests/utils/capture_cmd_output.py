@@ -1,0 +1,182 @@
+import os
+import re
+from pathlib import Path
+
+from joblib.executor import get_memmapping_executor
+
+from benchopt.utils.suppress_std import SuppressStd
+
+
+OUTPUT_FILES_PATTERN = [
+    # Run command
+    r'Saving result in: (.*\.parquet|.*\.csv)',
+    # Plot command - no-html
+    r'Save .* as: (.*\.pdf)',
+    # Plot command - html || generate results
+    r'Writing .* to (.*\.html)',
+    # Archive command
+    r'Results are in (.*\.tar.gz)',
+]
+
+
+def clean_output(output):
+    """Normalize captured output for pattern matching.
+
+    Unify line endings (so no stray '\\r' leaks into matches, e.g. captured
+    paths on Windows) and strip ANSI color codes. The raw output is kept
+    separately for display so colors and terminal rendering are preserved.
+    """
+    output = output.replace('\r\n', '\n').replace('\r', '\n')
+    for c in range(30, 38):
+        output = output.replace(f"\033[1;{c}m", "")
+    output = output.replace("\033[0m", "")
+    return output
+
+
+class CaptureCmdOutput(object):
+    "Context to capture run cmd output and files."
+
+    def __init__(self, delete_result_files=True, exit=None, debug=False):
+        self.delete_result_files = delete_result_files
+        self.out = SuppressStd(debug=debug)
+        self.exit = exit
+
+    @property
+    def output(self):
+        if self.output_checker is None:
+            raise RuntimeError(
+                "Output not available yet, it will be available after "
+                "the context manager is exited."
+            )
+        return self.output_checker.output
+
+    @property
+    def raw_output(self):
+        if self.output_checker is None:
+            raise RuntimeError(
+                "Output not available yet, it will be available after "
+                "the context manager is exited."
+            )
+        return self.output_checker.raw_output
+
+    @property
+    def result_files(self):
+        if self.output_checker is None:
+            raise RuntimeError(
+                "Output not available yet, it will be available after "
+                "the context manager is exited."
+            )
+        return self.output_checker.result_files
+
+    def __repr__(self):
+        return (
+            "CaptureCmdOutput(\n"
+            f"    result_files={self.result_files}\n"
+            f"    output=\"\"\"\n{self.raw_output})\n\"\"\"\n"
+            ")"
+        )
+
+    def __enter__(self):
+        # To make it possible to capture stdout in the child worker, we need
+        # to make sure the execturor is spawned in the context so shutdown any
+        # existing executor.
+        e = get_memmapping_executor(2)
+        e.shutdown()
+
+        # Force a wide virtual terminal for pytest to avoid truncation.
+        self._prev_columns = None
+        if "PYTEST_CURRENT_TEST" in os.environ:
+            self._prev_columns = os.environ.get("COLUMNS")
+            os.environ["COLUMNS"] = "1000"
+
+        # Redirect the stdout/stderr fd to temp file
+        self.out.__enter__()
+        return self
+
+    def __exit__(self, exc_class, value, traceback):
+        self.out.__exit__(None, None, None)
+
+        # Restore the original COLUMNS env var if it was set
+        if "PYTEST_CURRENT_TEST" in os.environ:
+            if self._prev_columns is None:
+                os.environ.pop("COLUMNS", None)
+            else:
+                os.environ["COLUMNS"] = self._prev_columns
+
+        self.output_checker = BenchoptCmdOutputProcessor(
+            self.out.output, self.delete_result_files
+        )
+
+        suppressed = False
+        if exc_class is SystemExit:
+            if self.exit == value.args[0]:
+                suppressed = True
+            else:
+                print(self.raw_output)
+                raise value.with_traceback(traceback)
+        elif self.exit is not None:
+            raise RuntimeError(
+                "The cmd exited without exception but expected exit code "
+                f"{self.exit}."
+            )
+
+        # If there was an exception, display the output
+        if not suppressed and exc_class is not None:
+            print(self.output_checker.raw_output)
+
+        return suppressed
+
+    def check_output(self, pattern, repetition=None):
+        return self.output_checker.check_output(pattern, repetition)
+
+
+class BenchoptCmdOutputProcessor:
+    def __init__(self, output, delete_result_files=True):
+        # Keep the raw output for display (colors, terminal '\r' rendering) and
+        # a cleaned version for matching/parsing so every consumer (re.findall
+        # on `.output`, result-file parsing below, check_output) sees clean
+        # text.
+        self.raw_output = output
+        self.output = clean_output(output)
+
+        # Make sure to delete all the result that created by the run command.
+        self.result_files = []
+        for pat in OUTPUT_FILES_PATTERN:
+            self.result_files.extend(
+                re.findall(pat, self.output)
+            )
+        if len(self.result_files) >= 1 and delete_result_files:
+            for result_file in self.result_files:
+                result_path = Path(result_file)
+                self.safe_unlink(result_path)  # remove result file
+                result_dir = result_path.parents[0]
+                stem = result_path.stem
+                for html_file in result_dir.glob(f'*{stem}*.html'):
+                    # remove html files associated with this results
+                    self.safe_unlink(html_file)
+
+    def safe_unlink(self, file):
+        # Avoid error when the file is no present due to conficting names.
+        if file.exists():
+            file.unlink()
+
+    def check_output(self, pattern, repetition=None):
+        """Match `pattern` against the cleaned output and return the matches.
+
+        With a capture group, returns the captured values (like `re.findall`).
+        Asserts the pattern is present, or appears exactly `repetition` times
+        when `repetition` is given.
+        """
+        matches = re.findall(pattern, self.output)
+
+        if repetition is None:
+            assert len(matches) > 0, (
+                f"Could not find '{pattern}' in output:\n{self.output}"
+            )
+        else:
+            assert len(matches) == repetition, (
+                f"Found {len(matches)} repetitions instead of {repetition} of "
+                f"'{pattern}' in output:\n{self.output}"
+            )
+
+        return matches

@@ -1,29 +1,90 @@
 .. _run_benchmark:
+.. _install_benchmark:
 
-Run a benchmark
-===============
+Install and run a benchmark
+============================
 
-Let's use the Lasso benchmark to illustrate ways of running a benchmark.
+Installing a benchmark
+-----------------------
 
-.. Hint::
+Benchopt provides ``benchopt install`` to set up all dependencies in a
+dedicated conda environment:
 
-    Head to :ref:`get_started` to first install benchopt
-    and setup the Lasso benchmark.
+- ``benchopt install .`` installs requirements for all solvers and datasets
+  using the ``conda-forge`` channel.
+- ``benchopt install . --minimal`` installs only the minimum requirements
+  declared in ``objective.py``.
+- ``benchopt install . -d dataset1 -s solver1`` installs only the requirements
+  for selected components.
+- ``benchopt install . --prepare`` also runs :ref:`dataset preparation
+  <prepare_datasets>` after installing — convenient for CI or remote servers
+  without internet access at run time.
 
+See :ref:`managing_dependencies` for how to declare requirements and control
+the Python version when writing a benchmark.
+
+
+.. _prepare_datasets:
+
+Preparing datasets
+------------------
+
+Benchopt separates **data preparation** (heavy one-time work: downloads,
+extraction, pre-processing) from **data loading** (fast, per-run work done
+by ``get_data()``).
+
+Preparation is triggered by the dedicated command::
+
+    $ benchopt prepare path/to/benchmark
+
+Benchopt calls the :func:`~benchopt.BaseDataset.prepare()` method of every
+dataset and caches the result with `joblib`, so re-running the command is a
+no-op when nothing has changed. Use ``--force`` to bypass the cache and re-run
+preparation unconditionally. Note that for datasets that rely on
+:ref:`seeding <controlling_randomness>`, the same ``--seed`` must be passed to
+``prepare`` and ``run`` so the prepared data matches the run.
+
+Preparation can also be parallelised across datasets using the same options as
+:ref:`benchopt run <parallel_run>`.
+
+
+Running a benchmark
+-------------------
+
+Once installed, run the benchmark with ``benchopt run .``.
 With the :ref:`cli_ref`, there are two ways to run a benchmark: passing options with flags in the CLI, or with a configuration file.
 
-Specifying options with CLI flags
----------------------------------
-
-It is possible to specify the solvers as well as the datasets
-to include in the benchmark run by using flags after ``benchopt run .``.
-
-For instance, the following command runs the benchmark with solvers
-``skglm`` and ``celer``, on datasets ``leukemia`` and ``simulated``.
+Each ``solver/dataset`` define in the benchmark repository is automatically
+detected and included in the run. To list all available solvers and datasets, use ``benchopt info .``.
 
 .. prompt:: bash $
 
-    benchopt run . -s skglm -s celer -d leukemia -d simulated
+    benchopt info .
+
+.. code-block:: console
+
+    Info regarding the benchmark 'my_bench'
+    ----------
+    # DATASETS
+    dataset1, dataset2, dataset3, ...
+    ----------
+    # SOLVERS
+    solver1, solver2, solver3, ...
+    ----------
+
+
+Specifying options with CLI flags
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+It is possible to select which solvers as well as the datasets
+to include in the benchmark run by using flags after ``benchopt run .``.
+
+For instance, the following command runs the benchmark with solvers
+``solver1`` and ``solver2``, on datasets ``dataset1`` and ``dataset3``.
+
+.. prompt:: bash $
+
+    benchopt run . -s solver1 -s solver2 -d dataset1 -d dataset3
 
 The ``-s`` flag is to specify a solver whereas ``-d`` specifies a dataset.
 To include multiple datasets/solvers, use multiple ``-d``/``-s`` flags, as in the above snippet.
@@ -35,7 +96,8 @@ To include multiple datasets/solvers, use multiple ``-d``/``-s`` flags, as in th
 
 In addition, it is possible to specify the parameters of solvers and datasets by wrapping them in square brackets in comma separated format.
 
-The following snippet runs the ``Python-PGD`` solver with its acceleration parameter set to ``True``, on the ``simulated`` dataset.
+The following snippet runs the ``solver1`` solver with its ``p1`` parameter set
+to ``1``, on the ``dataset1`` dataset.
 This dataset has parameters ``n_samples`` and ``n_features`` that we set to ``100`` and ``20`` respectively.
 
 .. tab-set::
@@ -44,13 +106,13 @@ This dataset has parameters ``n_samples`` and ``n_features`` that we set to ``10
 
         .. prompt:: bash $
 
-            benchopt run . -s Python-PGD[use_acceleration=True] -d simulated[n_samples=100,n_features=20]
+            benchopt run . -s solver1[p1=1] -d dataset1[n_samples=100,n_features=20]
 
     .. tab-item:: zsh
 
         .. prompt:: bash $
 
-            benchopt run . -s "Python-PGD[use_acceleration=True]" -d "simulated[n_samples=100,n_features=20]"
+            benchopt run . -s "solver1[p1=1]" -d "dataset1[n_samples=100,n_features=20]"
 
 .. note::
 
@@ -59,7 +121,7 @@ This dataset has parameters ``n_samples`` and ``n_features`` that we set to ``10
 .. _run_with_config_file:
 
 Using a configuration file
---------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 When using a complex configuration, it is more handy to specify it through a configuration file.
 Using a YAML file and the ``--config`` flag, it is possible to describe all details of the benchmark run and execute instead
@@ -73,20 +135,78 @@ Here is the content of configuration file ``example_config.yml`` if we were to r
 .. code-block:: yaml
 
     solver:
-        - skglm
-        - celer
-        - python-pgd[use_acceleration=True]
+        - solver1
+        - solver2
+        - solver3[p1=1]
 
     dataset:
-        - leukemia
-        - simulated[n_samples=100,n_features=10]
-        - simulated:
+        - dataset3
+        - dataset1[n_samples=100,n_features=10]
+        - dataset1:
             n_samples: 100
             n_features: [20, 30]
-        - simulated:
+        - dataset1:
             n_samples, n_features: [[200, 20], [150, 30]]
+
+
+.. _run_benchmark_with_py_script:
+
+Run a benchmark using a Python script
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Another way to run a benchmark is via a Python script.
+Typical use-cases of that are
+
+- Automating the run of several benchmarks
+- Using ``vscode`` debugger where the python script serves as an entry point to benchopt internals
+
+The following script illustrates running the :ref:`benchmark Lasso <run_with_config_file>`.
+It assumes that the python script is located at the same level as the benchmark folder.
+
+.. code-block:: python
+
+    from benchopt import run_benchmark
+
+
+    # run benchmark
+    run_benchmark(
+        benchmark_path='.',
+        solver_names=[
+            "solver1",
+            "solver2",
+            "solver3[p1=1]",
+        ],
+        dataset_names=[
+            "dataset3",
+            "dataset1[n_samples=100,n_features=20]"
+        ],
+    )
 
 .. note::
 
-    A third, less frequent, option to run a benchmark is using a Python script.
-    Check it out on :ref:`advanced usage <run_benchmark_with_py_script>`.
+    Learn more about the different parameters supported by ``run_benchmark``
+    function on :ref:`API references <API_ref>`.
+
+
+.. _run_caching:
+
+Caching solver runs
+~~~~~~~~~~~~~~~~~~~
+
+Each solver/dataset/objective combination is cached on disk (via joblib,
+in the ``__cache__/`` folder of the benchmark) so that re-running
+``benchopt run`` skips any combination whose result is already stored.
+The cache is **invalidated automatically** when the source code of the
+solver, objective, or dataset changes.
+The default cache location (``__cache__/`` inside the benchmark folder) can be
+changed by setting the ``cache`` key in the global benchopt config file —
+see :ref:`benchopt_config_settings`.
+
+Useful flags:
+
+- ``-f SOLVER_NAME`` (``--force-solver``) — re-run a specific solver even if
+  its result is cached, e.g. ``benchopt run . -f skglm``.
+- ``--no-cache`` — disable caching entirely; every combination is always run
+  from scratch.
+- ``--collect`` — skip all computation and only collect results that are
+  already in the cache into a result file.

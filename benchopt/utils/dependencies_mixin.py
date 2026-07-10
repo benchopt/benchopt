@@ -7,7 +7,9 @@ from .shell_cmd import _run_shell_in_conda_env
 from .conda_env_cmd import install_in_conda_env
 from .conda_env_cmd import shell_install_in_conda_env
 
-from .terminal_output import colorify, YELLOW
+from .terminal_output import colorify, RED, BLUE, GREEN, TICK, CROSS
+RED_CROSS = colorify(CROSS, RED)
+GREEN_TICK = colorify(TICK, GREEN)
 
 
 class DependenciesMixin:
@@ -23,9 +25,12 @@ class DependenciesMixin:
     #           will run `install_script` in a shell and provide the conda
     #           env directory as an argument. The command should then be
     #           installed in the `bin` folder of the env and can be imported
-    #           with import_shell_cmd in the safe_import_context.
+    #           with import_shell_cmd.
     install_cmd = "conda"
+    requirements = None
+    install_script = None
 
+    _error_output = None
     _error_displayed = False
 
     @classproperty
@@ -39,7 +44,7 @@ class DependenciesMixin:
     @classproperty
     def install_cmd_(cls):
         if cls.install_cmd not in ["conda", "shell"]:
-            raise ValueError(
+            raise AttributeError(
                 f"{cls.install_cmd} is not a valid install command. "
                 "Please use 'conda' or 'shell' as install command."
             )
@@ -67,25 +72,35 @@ class DependenciesMixin:
             returns True if no import failure has been detected.
         """
         if env_name is None:
-            if cls._import_ctx.failed_import:
+            if hasattr(cls, "_import_ctx") and cls._import_ctx.failed_import:
                 exc_type, value, tb = cls._import_ctx.import_error
                 if raise_on_not_installed:
                     raise exc_type(value).with_traceback(tb)
                 if not cls._error_displayed and not quiet:
                     traceback.print_exception(exc_type, value, tb)
                     cls._error_displayed = True
+                elif quiet:
+                    cls._error_output = traceback.format_exception(
+                        exc_type, value, tb
+                    )
                 return False
+
+            # Import worked in the current environment, no need to check
+            return True
+
+        # Get the current benchmark directory
+        exit_code, output = _run_shell_in_conda_env(
+            f"benchopt check-install {cls._benchmark_dir} "
+            f"{cls._module_filename} {cls._base_class_name}",
+            env_name=env_name, return_output=True,
+            raise_on_error=raise_on_not_installed,
+        )
+        if exit_code != 0:
+            if not quiet:
+                print(output)
             else:
-                return True
-        else:
-            return (
-                _run_shell_in_conda_env(
-                    f"benchopt check-install {cls._benchmark_dir} "
-                    f"{cls._module_filename} {cls._base_class_name}",
-                    env_name=env_name,
-                    raise_on_error=raise_on_not_installed,
-                ) == 0
-            )
+                cls._error_output = output
+        return exit_code == 0
 
     @classmethod
     def install(cls, env_name=None, force=False):
@@ -106,7 +121,7 @@ class DependenciesMixin:
         """
         # Check that install_cmd is valid and if the cls is installed
         install_cmd_ = cls.install_cmd_
-        is_installed = cls.is_installed(env_name=env_name)
+        is_installed = cls.is_installed(env_name=env_name, quiet=True)
 
         env_suffix = f" in '{env_name}'" if env_name else ""
         if force or not is_installed:
@@ -115,10 +130,9 @@ class DependenciesMixin:
             try:
                 cls._pre_install_hook(env_name=env_name)
                 if install_cmd_ == "conda":
-                    if hasattr(cls, "requirements"):
+                    if cls.requirements is not None:
                         install_in_conda_env(*cls.requirements,
-                                             env_name=env_name,
-                                             force=force)
+                                             env_name=env_name)
                     else:
                         # get details of class
                         cls_type = cls.__base__.__name__.replace("Base", "")
@@ -135,6 +149,9 @@ class DependenciesMixin:
                             "in conda channel `chan`\n"
                             "   requirements = ['pip::pkg'] "
                             "# pip package `pkg`"
+                        ) from (
+                            ImportError(cls._error_output)
+                            if cls._error_output else None
                         )
                 elif install_cmd_ == "shell":
                     install_file = (
@@ -159,7 +176,7 @@ class DependenciesMixin:
         return is_installed
 
     @classmethod
-    def collect(cls, env_name=None, force=False):
+    def collect(cls, env_name=None, force=False, gpu=False):
         """Collect info for global installation of all classes in an env.
 
         Parameters
@@ -179,9 +196,21 @@ class DependenciesMixin:
         post_install_hooks: list of callable
             Post install hooks if one need to be run.
         """
+        colored_cls_name = colorify(cls.name, BLUE)
+        print(f"- {colored_cls_name}: ", end="", flush=True)
+
+        def fail_fast(exc):
+            if RAISE_INSTALL_ERROR:
+                raise exc
+            print(f"failed to get requirements {RED_CROSS}\n{exc}")
+            return [], [], [], cls
+
         # Check that install_cmd is valid and if the cls is installed
-        install_cmd_ = cls.install_cmd_
-        is_installed = cls.is_installed(env_name=env_name)
+        try:
+            install_cmd_ = cls.install_cmd_
+        except Exception as exc:
+            return fail_fast(exc)
+        is_installed = cls.is_installed(env_name=env_name, quiet=True)
 
         missing_deps = None
         conda_reqs, shell_install_scripts, post_install_hooks = [], [], []
@@ -193,17 +222,27 @@ class DependenciesMixin:
                     / cls.install_script
                 ]
             else:
-                conda_reqs = getattr(cls, "requirements", [])
+                try:
+                    conda_reqs = cls.requirements or []
+                except Exception as exc:
+                    return fail_fast(exc)
+
+                if isinstance(conda_reqs, dict):
+                    try:
+                        conda_reqs = (conda_reqs["gpu"] if gpu
+                                      else conda_reqs["cpu"])
+                    except KeyError:
+                        raise ValueError(
+                            "If `requirements` is a dict, its keys should be "
+                            f"`cpu` and `gpu`, got {list(conda_reqs.keys())}"
+                        )
                 if not is_installed and len(conda_reqs) == 0:
                     missing_deps = cls
             post_install_hooks = [cls._post_install_hook]
+            print("collected", GREEN_TICK)
         else:
             env_suffix = f" in '{env_name}'" if env_name else ""
-            colored_cls_name = colorify(cls.name, YELLOW)
-            print(
-                f"- {colored_cls_name} already available{env_suffix}\n"
-                f"  No ImportError raised from {cls._module_filename}."
-            )
+            print(f"already available{env_suffix}", GREEN_TICK)
 
         return (
             conda_reqs, shell_install_scripts, post_install_hooks, missing_deps

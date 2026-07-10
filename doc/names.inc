@@ -39,3 +39,19 @@
 .. _Mathieu Dagréou: https://matdag.github.io
 
 .. _Wassim Mazouz: https://wassimmazouz.github.io/
+
+.. _Rémi Flamary: https://remi.flamary.com/
+
+.. _Lionel Kusch: https://www.linkedin.com/in/lionel-kusch-0439b310a/
+
+.. _Johan Larsson: https://jolars.co
+
+.. _Pierre-Louis Barbarant: https://www.linkedin.com/in/plbarbarant/
+
+.. _Geraud Ilinca: https://www.linkedin.com/in/geraud-ilinca
+
+.. _Hippolyte Verninas: https://www.linkedin.com/in/hippolyte-verninas
+
+.. _Damien Lesens: https://damienlesens.github.io/
+
+.. _Eduardo Montesuma: https://eddardd.github.io/

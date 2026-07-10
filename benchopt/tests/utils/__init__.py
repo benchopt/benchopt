@@ -1,6 +1,5 @@
-from .patch_benchmark import patch_import
-from .patch_benchmark import patch_benchmark
-from .capture_run_output import CaptureRunOutput
+from .patch_benchmark import patch_import, patch_var_env
+from .capture_cmd_output import CaptureCmdOutput
 
 
-__all__ = ["CaptureRunOutput", "patch_benchmark", "patch_import"]
+__all__ = ["CaptureCmdOutput", "patch_import", "patch_var_env"]

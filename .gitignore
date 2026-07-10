@@ -8,7 +8,9 @@ __pycache__
 /doc/_build
 /doc/auto_examples
 /doc/**/generated
+/doc/sg_execution_times.rst
 /examples/benchmark_*
+/examples/output_*
 .coverage
 
 # Output files
@@ -17,7 +19,7 @@ benchopt_front_page_convergence.pdf
 
 # Package directory
 /html/
-/build/
+**/build/
 /dist/
 
 # Benchmarks&results cloned for running tests/examples
@@ -25,6 +27,7 @@ benchopt_front_page_convergence.pdf
 /results/
 /ci_template.github/
 /communication_materials/
+/benchopt.github.io/
 
 # IDE specific folders
 .vscode
@@ -35,5 +38,10 @@ benchopt.ini
 benchopt.yml
 benchopt/version.py
 
+# Misc files
 .DS_Store
 coverage.xml
+TODOs.md
+
+# Git worktrees
+worktrees/

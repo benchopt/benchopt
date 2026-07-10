@@ -33,20 +33,22 @@ sys.path.append(os.path.abspath(os.path.join(curdir, 'sphinxext')))
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx-prompt',
-    'sphinx.ext.autodoc',
-    'sphinx.ext.autosummary',
-    'sphinx.ext.doctest',
-    'sphinx.ext.intersphinx',
-    'sphinx.ext.mathjax',
-    'sphinx_click',
-    'sphinx_gallery.gen_gallery',
-    'sphinx.ext.autosectionlabel',
-    'numpydoc',
-    'gh_substitutions',  # custom ext, see ./sphinxext/gh_substitutions.py
+    "sphinx-prompt",
+    "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
+    "sphinx.ext.doctest",
+    "sphinx.ext.intersphinx",
+    "sphinx.ext.mathjax",
+    "sphinx_click",
+    "sphinx_gallery.gen_gallery",
+    "sphinx.ext.autosectionlabel",
+    "numpydoc",
     "sphinx_design",
+    "gh_substitutions",  # custom ext, see ./sphinxext/gh_substitutions.py
     "sphinx_copybutton",
 ]
+
+autosectionlabel_maxdepth = 1
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -79,7 +81,7 @@ release = version
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = 'en'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -122,8 +124,8 @@ html_theme_options = {
     "repository_url": "https://github.com/benchopt/benchopt",
     "home_page_in_toc": True,
     # for a complete list of themes refer to https://pygments.org/styles/
-    "pygment_light_style": "colorful",
-    "pygment_dark_style": "gruvbox-dark",
+    "pygments_light_style": "colorful",
+    "pygments_dark_style": "github-dark",
 }
 
 html_sidebars = {
@@ -142,6 +144,7 @@ html_sidebars = {
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
 html_css_files = ["style.css"]
+html_js_files = ["benchopt.js"]
 
 
 # -- Options for HTMLHelp output ------------------------------------------
@@ -218,7 +221,12 @@ sphinx_gallery_conf = {
     'backreferences_dir': 'generated',
     'examples_dirs': '../examples',
     'gallery_dirs': 'auto_examples',
+    'filename_pattern': r'/run_.*\.py',
+    'ignore_pattern': r'.*_benchmark/',
+    'capture_repr': ('_repr_html_', '__repr__'),
+    'remove_config_comments': True,
 }
+
 
 # -- Options for copybutton ---------------------------------------------
 # complete explanation of the regex expression can be found here
@@ -226,3 +234,23 @@ sphinx_gallery_conf = {
 # use.html#using-regexp-prompt-identifiers
 copybutton_prompt_text = r">>> |\.\.\. |\$ |In \[\d*\]: | {2,5}\.\.\.: | {5,8}: "  # noqa
 copybutton_prompt_is_regexp = True
+
+# -- Monkey patching gen_rst.execute_script to add context env vars -------
+from sphinx_gallery import gen_rst  # noqa: E402
+from benchopt.helpers.run_examples import SPHINX_GALLERY_CTX   # noqa: E402
+
+# Keep a reference to the original function
+_original_exec_code_block = gen_rst.execute_code_block
+
+
+def exec_code_block_with_ctx(*args, **kwargs):
+    """Wrapper that stores the current example file and path iterator."""
+
+    # Set env vars for use inside example execution
+    script_vars = args[3]
+    SPHINX_GALLERY_CTX["paths"] = script_vars['image_path_iterator']
+    return _original_exec_code_block(*args, **kwargs)
+
+
+# Apply the patch
+gen_rst.execute_code_block = exec_code_block_with_ctx
