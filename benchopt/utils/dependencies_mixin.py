@@ -50,7 +50,7 @@ class DependenciesMixin:
 
     @classmethod
     def is_installed(cls, env_name=None, raise_on_not_installed=None,
-                     quiet=False):
+                     quiet=False, ignore_cache=False):
         """Check if the module caught a failed import to assert install.
 
         Parameters
@@ -63,13 +63,21 @@ class DependenciesMixin:
             installed. This is mainly for testing purposes.
         quiet: boolean
             Hide import error information.
+        ignore_cache: boolean
+            If set to True, ignore the import outcome cached at collection
+            time and verify importability freshly. For the current
+            environment (``env_name=None``) this runs the check in a fresh
+            subprocess; the default in-process check reuses the cached
+            outcome and cannot see packages installed later in the same
+            process. Used right after installing in the current environment
+            to detect the freshly installed requirements.
 
         Returns
         -------
         is_installed: bool
             returns True if no import failure has been detected.
         """
-        if env_name is None:
+        if env_name is None and not ignore_cache:
             if hasattr(cls, "_import_ctx") and cls._import_ctx.failed_import:
                 exc_type, value, tb = cls._import_ctx.import_error
                 if raise_on_not_installed:
@@ -163,7 +171,8 @@ class DependenciesMixin:
                 if RAISE_INSTALL_ERROR:
                     raise exception
 
-            is_installed = cls.is_installed(env_name=env_name)
+            is_installed = cls.is_installed(env_name=env_name,
+                                            ignore_cache=True)
             if is_installed:
                 print(" done")
             else:

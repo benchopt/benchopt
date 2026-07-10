@@ -126,7 +126,12 @@ def _load_class_from_module(benchmark_dir, module_filename, class_name):
             @classmethod
             def is_installed(cls, env_name=None, raise_on_not_installed=False,
                              quiet=False, **kwargs):
-                if env_name is not None:
+                # Delegate to the subprocess-based check when targeting another
+                # env, or when ``ignore_cache`` forces a fresh-process import
+                # (e.g. right after installing in the current env). Otherwise
+                # this fake class only knows about the import failure captured
+                # at collection time.
+                if env_name is not None or kwargs.get("ignore_cache"):
                     return super().is_installed(
                         env_name=env_name,
                         raise_on_not_installed=raise_on_not_installed,

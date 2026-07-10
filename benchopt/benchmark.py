@@ -701,7 +701,9 @@ class Benchmark:
         print('- Checking installed packages...', end='', flush=True)
         not_installed = set()
         for klass in set(check_installs + missings):
-            cls_success = klass.is_installed(env_name=env_name)
+            cls_success = klass.is_installed(
+                env_name=env_name, ignore_cache=True
+            )
             if cls_success and klass in missings:
                 # This class only depends on global requirements
                 missings.remove(klass)
