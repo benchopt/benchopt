@@ -163,7 +163,7 @@
                 </div>
             </div>
             <!-- Right column on big screen and main column on mobile -->
-            <div class="w-full flex flex-col overflow-scroll">
+            <div class="w-full flex flex-col overflow-scroll min-h-screen">
                 <!-- Main menu -->
                 <nav class="bg-blue-600">
                     <div class="px-4">
@@ -408,6 +408,14 @@
                             </div>
                         </div>
                     </div>
+                </div>
+
+                <!-- Figure size overlay: tucked into the figure corner, revealed on hover (or while dragging, on touch). JS anchors it to the current figure. -->
+                <div id="figsize_controls" class="hidden items-center" title="Figure size (px)">
+                    <input id="figsize_width" type="number" min="200" step="10" onchange="setFigSize()" title="Width (px)">
+                    <span>×</span>
+                    <input id="figsize_height" type="number" min="200" step="10" onchange="setFigSize()" title="Height (px)">
+                    <span class="unit">px</span>
                 </div>
 
                 <!-- Plot -->

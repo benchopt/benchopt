@@ -22,7 +22,10 @@ PLOT
 ~~~~
 
 - Change the plotly style to make it more like matplotlib.
-  By `Hippolyte Verninas`_ (:gh:`9566`)
+  By `Hippolyte Verninas`_ (:gh:`966`)
+
+- Figures in the html interface are now resizable.
+  By `Hippolyte Verninas`_ (:gh:`965`)
 
 - Quantile toggle is now hidden if no quantiles are available
   By `Hippolyte Verninas`_ (:gh:`964`)
