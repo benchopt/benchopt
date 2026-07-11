@@ -92,8 +92,7 @@
                                         ${param}
                                         % if param in ('solver', 'dataset', 'objective'):
                                         <span class="params-info-icon ml-1 text-gray-400 cursor-help text-xs align-middle"
-                                              onmouseenter="showEntityParamsTooltip(event, '${kind}_${param}')"
-                                              onmouseleave="hideParamsTooltip()">(?)</span>
+                                              data-desc-state="${kind}_${param}">(?)</span>
                                         % endif
                                     </label>
                                     <div class="mt-1 rounded-md shadow-sm">
@@ -246,8 +245,7 @@
                                             ${param}
                                             % if param in ('solver', 'dataset', 'objective'):
                                             <span class="params-info-icon ml-1 text-gray-400 cursor-help text-xs align-middle"
-                                                  onmouseenter="showEntityParamsTooltip(event, '${kind}_${param}')"
-                                                  onmouseleave="hideParamsTooltip()">(?)</span>
+                                                  data-desc-state="${kind}_${param}">(?)</span>
                                             % endif
                                         </label>
                                         <div class="mt-1 rounded-md shadow-sm">

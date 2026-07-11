@@ -684,14 +684,19 @@ const descIconHTML = (text) =>
   `<line x1="12" y1="16" x2="12" y2="12"></line>` +
   `<line x1="12" y1="8" x2="12.01" y2="8"></line></svg>`;
 
-/** Show params tooltip for a dataset/objective selector icon. */
-const showEntityParamsTooltip = (event, stateKey) => {
-  const lookup = window.descriptions || {};
-  const currentValue = state()[stateKey];
-  showDescTooltip(event, currentValue ? (lookup[currentValue] || '') : '');
+/**
+ * Resolve the tooltip HTML for a hover icon. Two sources, one path:
+ *   - `data-desc`: HTML baked at render time (legend + table cell icons);
+ *   - `data-desc-state`: a state key, resolved live against the current
+ *     selection (selector icons, whose value changes with the dropdown).
+ */
+const descForIcon = (icon) => {
+  if (icon.dataset.desc != null) return icon.dataset.desc;
+  const key = icon.dataset.descState;
+  return key ? ((window.descriptions || {})[state()[key]] || '') : '';
 };
 
-/** Show a trace `description` tooltip. The description is already HTML. */
+/** Show the shared params tooltip. The description is already HTML. */
 const showDescTooltip = (event, html) => {
   if (!html) return;
   const tip = document.getElementById('params-tooltip');
@@ -705,16 +710,19 @@ const hideParamsTooltip = () => {
   document.getElementById('params-tooltip').style.display = 'none';
 };
 
-// Delegate hover handling for every `.param-icon` (legend + table). Delegation
-// is needed because Grid.js re-renders table cells on sort/search, which would
-// drop per-node listeners. `.param-icon * { pointer-events: none }` makes the
-// SVG the only event target, so no flicker as the cursor moves over it.
+// Single delegated hover path for every params icon: legend, table cells and
+// selectors. Delegation is required because Grid.js re-renders table cells on
+// sort/search (dropping per-node listeners), and it lets the static selector
+// markup reuse the same handler. Matching on the data attributes (not a class)
+// keeps the SVG icon and the plain selector span on one path;
+// `.param-icon * { pointer-events: none }` keeps the SVG from flickering.
+const PARAMS_ICON_SEL = '[data-desc], [data-desc-state]';
 document.addEventListener('mouseover', (e) => {
-  const icon = e.target.closest?.('.param-icon');
-  if (icon) showDescTooltip(e, icon.getAttribute('data-desc'));
+  const icon = e.target.closest?.(PARAMS_ICON_SEL);
+  if (icon) showDescTooltip(e, descForIcon(icon));
 });
 document.addEventListener('mouseout', (e) => {
-  if (e.target.closest?.('.param-icon')) hideParamsTooltip();
+  if (e.target.closest?.(PARAMS_ICON_SEL)) hideParamsTooltip();
 });
 
 const _moveParamsTooltip = (event) => {
