@@ -90,7 +90,7 @@
                                 <div id="${kind}_${param}_form_group" class="mt-8 px-8">
                                     <label for="change_${kind}_${param}" class="block text-sm font-medium text-white">
                                         ${param}
-                                        % if param in ('dataset', 'objective'):
+                                        % if param in ('solver', 'dataset', 'objective'):
                                         <span class="params-info-icon ml-1 text-gray-400 cursor-help text-xs align-middle"
                                               onmouseenter="showEntityParamsTooltip(event, '${kind}_${param}')"
                                               onmouseleave="hideParamsTooltip()">(?)</span>
@@ -244,7 +244,7 @@
                                     <div id="${kind}_${param}_form_group" class="mt-8 px-8">
                                         <label for="change_${kind}_${param}" class="block text-sm font-medium text-white">
                                             ${param}
-                                            % if param in ('dataset', 'objective'):
+                                            % if param in ('solver', 'dataset', 'objective'):
                                             <span class="params-info-icon ml-1 text-gray-400 cursor-help text-xs align-middle"
                                                   onmouseenter="showEntityParamsTooltip(event, '${kind}_${param}')"
                                                   onmouseleave="hideParamsTooltip()">(?)</span>
