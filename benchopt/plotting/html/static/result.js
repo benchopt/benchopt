@@ -1,40 +1,5 @@
 const UNDEFINED_COLOR = 'rgba(0.8627, 0.8627, 0.8627)'
 
-/*
- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- * SHORT LABEL HELPERS
- *
- * When short_labels are enabled (via the benchmark config),
- * each curve trace carries a `short_label` (display) and a
- * `full_label` (identity / tooltip).  These helpers centralise
- * the lookup so all rendering code can call them consistently.
- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- */
-
-/**
- * Return the display label for a curve (short if available).
- *
- * @param {String} full_name  The curve's identity key (full solver name).
- * @returns {String}
- */
-const getDisplayLabel = (full_name) => {
-  const curveData = data(full_name);
-  if (curveData && curveData.short_label) return curveData.short_label;
-  return full_name;
-};
-
-/**
- * Return the display label for a solver / dataset / objective name,
- * from the current plot's `short_labels` map. Custom plots can override
- * this map via `get_metadata`. Falls back to the full name.
- *
- * @param {String} full_name
- * @returns {String}
- */
-const getShortLabel = (full_name) => {
-  const map = (getPlotData() || {}).short_labels || {};
-  return map[full_name] || full_name;
-};
 
 /*
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -324,11 +289,7 @@ const getBarData = () => {
     if (nbTimes > 1) {
       barData.push({
         type: 'scatter',
-        x: new Array(nbTimes).fill(
-          state().short_labels
-            ? (curveData.short_label || curveData.label)
-            : curveData.label
-        ),
+        x: new Array(nbTimes).fill(curveData.label),
         y: curveData.y,
         marker: {
           color: 'black',
@@ -350,13 +311,9 @@ const getBoxplotData = () => {
 
   getPlotData().data.forEach(plotData => {
     plotData.x.forEach((label, i) => {
-      // When X_axis == "Solver" each x entry is a solver name; use short label.
-      const displayX = (typeof label === 'string')
-        ? (state().short_labels ? getShortLabel(label) : label)
-        : label;
       boxplotData.push({
         y: plotData.y[i],
-        name: displayX,
+        name: label,
         type: 'box',
         line: {color: plotData.color},
         fillcolor: plotData.color,
@@ -395,7 +352,6 @@ const getScatterData = () => {
 
   getPlotData().data.forEach(curveData => {
     label = curveData.label;
-    const displayLabel = state().short_labels ? (curveData.short_label || label) : label;
     y = curveData.y;
     if ("y_low" in curveData && "y_high" in curveData && state().with_quantiles) {
       y_low = curveData.y_low;
@@ -413,7 +369,7 @@ const getScatterData = () => {
     }
     curves.push({
       type: 'scatter',
-      name: displayLabel,
+      name: label,
       mode: 'lines+markers',
       line: {
         color: curveData.color,
@@ -424,7 +380,7 @@ const getScatterData = () => {
         color: curveData.color,
       },
       legendgroup: label,
-      hovertemplate: displayLabel + ' <br> (%{x:.3e},%{y:.3e}) <extra></extra>',
+      hovertemplate: label + ' <br> (%{x:.3e},%{y:.3e}) <extra></extra>',
       visible: isVisible(label) ? true : 'legendonly',
       x: curveData.x,
       y: y,
@@ -827,13 +783,6 @@ const renderPlotDropdowns = () => {
     }
   }
 
-  // Display option labels using the current plot's short-label map.
-  const useShort = state().short_labels;
-  document.querySelectorAll(
-    `#${state().plot_kind}-custom-params-container option`
-  ).forEach(option => {
-    option.text = useShort ? getShortLabel(option.value) : option.value;
-  });
 }
 
 const mapSelectorsToState = () => {
@@ -843,7 +792,6 @@ const mapSelectorsToState = () => {
   document.getElementById('change_shades').checked = currentState.with_quantiles;
   document.getElementById('change_suboptimal').checked = currentState.suboptimal_curve;
   document.getElementById('change_relative').checked = currentState.relative_curve;
-  document.getElementById('change_short_labels').checked = currentState.short_labels;
 };
 
 /*
@@ -927,11 +875,7 @@ const barDataToArrays = () => {
   const colors = [], texts = [], x = [], y = [];
 
   getPlotData().data.forEach(plotData => {
-    x.push(
-      state().short_labels
-        ? (plotData.short_label || plotData.label)
-        : plotData.label
-    );
+    x.push(plotData.label);
     y.push(getMedian(plotData.y));
     const plotText = plotData.text || '';
     colors.push(plotData.color || UNDEFINED_COLOR);
@@ -1173,7 +1117,7 @@ const getCurveFromEvent = event => {
 
   for (let i = 0; i < target.children.length; i++) {
     if (target.children[i].className.includes('curve')) {
-      // Prefer the data-curve attribute (full name) when available.
+      // Prefer the data-curve attribute (curve identifier) when available.
       const attr = target.children[i].getAttribute('data-curve');
       if (attr) return attr;
       return target.children[i].firstChild.nodeValue;
@@ -1444,13 +1388,11 @@ function renderTable() {
   const card = document.createElement("div");
   card.className = "w-full bg-white overflow-hidden mx-auto";
 
-  // First column holds the row label: the plot's `get_metadata` provides the
-  // `short_labels` / `descriptions` maps (keyed by first-column value). The
-  // icon is an SVG, so it stays out of the LaTeX export.
+  // First column: `get_metadata` provides a `labels` map (full → display) and
+  // `descriptions` map (full → hover HTML). The SVG icon stays out of exports.
   const solverCellHTML = (value) => {
     const full = String(value);
-    const label = state().short_labels
-      ? ((plotData.short_labels || {})[full] || full) : full;
+    const label = (plotData.labels || {})[full] || full;
     const desc = (plotData.descriptions || {})[full];
     return escapeHTML(label) + (desc ? descIconHTML(desc) : '');
   };
@@ -1737,24 +1679,17 @@ const createLegendItem = (curve, color, symbolNumber) => {
     }
   });
 
-  // Create the HTML text node for the curve name in the legend.
-  // Use short_label for display; keep the full name in a foldable <details>.
+  // Create the text node for the curve name in the legend.
   const curveTraceData = data(curve);
-  const shortLabel = (curveTraceData && curveTraceData.short_label) || curve;
-  const fullLabel  = (curveTraceData && curveTraceData.full_label)  || curve;
-  const useShort   = state().short_labels;
-  const displayLabel = useShort ? shortLabel : fullLabel;
-
   const textContainer = document.createElement('div');
   textContainer.style.marginLeft = '0.5rem';
   textContainer.style.flex = '1';
   textContainer.className = 'curve';
   textContainer.setAttribute('data-curve', curve);
-  textContainer.appendChild(document.createTextNode(displayLabel));
+  textContainer.appendChild(document.createTextNode(curve));
 
-  // When short labels are toggled on, append a hover icon carrying the
-  // trace's `description` (already formatted HTML, shown as-is).
-  if (useShort && curveTraceData && curveTraceData.description) {
+  // Append a hover icon carrying the trace's description (formatted HTML).
+  if (curveTraceData && curveTraceData.description) {
     textContainer.insertAdjacentHTML(
       'beforeend', descIconHTML(curveTraceData.description)
     );

@@ -346,15 +346,18 @@ class Benchmark:
         self.check_plots()
         all_data = {}
         all_options = {}
+        all_option_labels = {}
         for plot in all_plots:
             plot_name = plot._get_name()
             if plot_name not in kinds:
                 continue
-            data, options = plot._get_all_plots(df)
+            data, options, option_labels = plot._get_all_plots(df)
             all_data[plot_name] = data
             all_options[plot_name] = options
+            for param, labels in option_labels.items():
+                all_option_labels.setdefault(param, {}).update(labels)
 
-        return all_data, all_options
+        return all_data, all_options, all_option_labels
 
     def _list_benchmark_classes(self, base_class):
         """Load all classes with the same name from a benchmark's subpackage.

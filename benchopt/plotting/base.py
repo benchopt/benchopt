@@ -6,8 +6,8 @@ from ..utils.dependencies_mixin import DependenciesMixin
 from ..utils.parametrized_name_mixin import ParametrizedNameMixin
 from ..utils.parametrized_name_mixin import product_param
 from ..utils.parametrized_name_mixin import sanitize
-from ..utils.short_labels import (
-    compute_short_labels, compute_params_info, format_description
+from .short_labels import (
+    compute_short_labels, _compute_params_info, _format_description
 )
 
 CMAP = plt.get_cmap('tab20')
@@ -169,29 +169,36 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
 
         combinations = product_param(options)
 
-        # Default short label / description maps for solver, dataset and
-        # objective names, used by the HTML page for its selectors and
-        # their params tooltips. They are stored in each plot's data so
-        # that custom plots can override them from ``get_metadata``.
+        # Display label / description maps for solver, dataset and objective
+        # names — used by the HTML page for its selectors and their params
+        # tooltips. Stored in each plot's data so custom plots can override
+        # them from ``get_metadata``.
         default_annotations = {}
         for col in ('solver_name', 'dataset_name', 'objective_name'):
             default_annotations.update(self.get_default_short_labels(
                 list(map(str, df[col].unique()))
             ))
-        default_short_labels = {
+        default_labels = {
             name: a["short_label"] for name, a in default_annotations.items()
         }
         default_descriptions = {
             name: a["description"] for name, a in default_annotations.items()
         }
 
+        # Display names for dropdown option values (solver/dataset/objective).
+        option_labels = {}
+        for k in ('dataset', 'solver', 'objective'):
+            if k in options:
+                names = list(map(str, options[k]))
+                option_labels[k] = compute_short_labels(names)
+
         plots = {}
         for kwargs in combinations:
             data = self.get_metadata(df, **kwargs)
             data["type"] = self.type
             data["data"] = self.plot(df, **kwargs)
-            data["short_labels"] = {
-                **default_short_labels, **data.get("short_labels", {})
+            data["labels"] = {
+                **default_labels, **data.get("labels", {})
             }
             data["descriptions"] = {
                 **default_descriptions, **data.get("descriptions", {})
@@ -202,19 +209,15 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
             key = '_'.join(map(str, key_list))
             plots[key] = data
 
-        return plots, options
+        return plots, options, option_labels
 
     def get_default_short_labels(self, labels):
-        """Return the default short labels and hover descriptions for *labels*.
+        """Return display labels and hover descriptions for *labels*.
 
-        Short labels keep only the parameters that vary across *labels*;
-        parameters that are constant are dropped, so the whole set is needed as
-        context. The description is the hover-icon HTML: a parameters table
-        parsed from the label, injected into the legend tooltip as-is (so it
-        must be valid HTML), empty when the label has no parameters. This is
-        the default scheme: a plot calls it from :meth:`plot` and sets
-        ``short_label`` / ``description`` on its traces, which leaves it free
-        to decide what each trace displays.
+        Display labels keep only the parameters that vary across *labels*;
+        constant parameters are dropped, so the whole set is needed as context.
+        The description is hover-icon HTML (a params table), empty when the
+        label has no parameters.
 
         Parameters
         ----------
@@ -228,22 +231,27 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
             every input label has an entry.
         """
         short_labels = compute_short_labels(labels)
-        params_info = compute_params_info(labels)
+        params_info = _compute_params_info(labels)
         return {
             label: {
                 "short_label": short_labels[label],
-                "description": format_description(
+                "description": _format_description(
                     params_info.get(str(label), {})
                 ),
             }
             for label in labels
         }
 
-    def _annotate_short_labels(self, traces):
-        """Add ``full_label``/``short_label``/``description`` to each trace."""
-        annotations = self.get_default_short_labels(
-            [t["label"] for t in traces]
-        )
+    def _shorten_labels(self, traces):
+        """Replace each trace label with its short form; attach description.
+
+        Returns the ``{full_label: short_label}`` mapping so callers can
+        update other fields that contain full names (e.g. boxplot ``x``).
+        """
+        full_labels = [t["label"] for t in traces]
+        annotations = self.get_default_short_labels(full_labels)
         for t in traces:
-            t["full_label"] = t["label"]
-            t.update(annotations[t["label"]])
+            ann = annotations[t["label"]]
+            t["description"] = ann["description"]
+            t["label"] = ann["short_label"]
+        return {full: annotations[full]["short_label"] for full in full_labels}

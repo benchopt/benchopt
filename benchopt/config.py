@@ -68,7 +68,6 @@ DEFAULT_BENCHMARK_CONFIG = {
     "data_home": None,
     "data_paths": {},
     "hf_repo": None,
-    "short_labels": True,
 }
 """
 These are the config options available for each benchmark, that can be set in
@@ -162,13 +161,6 @@ The available options are:
   using ``benchopt publish --hub huggingface``. If not specified, users can
   still publish on HF using the ``--repo`` option but this allows to set a
   default repo for the benchmark.
-
-* ``short_labels``, *bool* (default ``true``): When set to ``true``,
-  parametrized class names (solvers, datasets, objectives) are automatically
-  shortened in plots and selectors so that only the parameters that *vary*
-  across the results are shown.  The full name is still accessible as a
-  tooltip / expandable detail in the HTML interface.  Set to ``false`` to
-  always display the full parametrized name.
 """
 
 

@@ -1,8 +1,8 @@
-"""Tests for benchopt.utils.short_labels."""
+"""Tests for benchopt.plotting.short_labels."""
 
-from benchopt.utils.short_labels import (
+from benchopt.plotting.short_labels import (
     compute_short_labels,
-    compute_params_info,
+    _compute_params_info,
 )
 
 
@@ -78,13 +78,13 @@ def test_mixed_solver_types():
 
 
 # ---------------------------------------------------------------------------
-# compute_params_info
+# _compute_params_info
 # ---------------------------------------------------------------------------
 
 
 def test_compute_params_info_basic():
     names = ["Solver[alpha=0.1,n_iter=100]", "Solver[alpha=0.5,n_iter=100]"]
-    info = compute_params_info(names)
+    info = _compute_params_info(names)
     assert info["Solver[alpha=0.1,n_iter=100]"] == {
         "alpha": "0.1",
         "n_iter": "100",
@@ -96,6 +96,6 @@ def test_compute_params_info_basic():
 
 
 def test_compute_params_info_no_params():
-    info = compute_params_info(["SolverA", "SolverB"])
+    info = _compute_params_info(["SolverA", "SolverB"])
     assert info["SolverA"] == {}
     assert info["SolverB"] == {}

@@ -123,12 +123,8 @@ def test_objective_curve_multiple_solvers_independent():
     assert by_label['B']['y'] == [100.5] * 4
 
 
-def test_plot_annotates_short_labels():
-    """plot() annotates its traces via self.add_short_labels.
-
-    The constant param is dropped, the varying one is kept, and the full label
-    / description default to the full name.
-    """
+def test_plot_shortens_labels():
+    """Traces have short labels (constant params dropped) and a hover description."""
     rows = []
     for solver in ['S[a=1,b=2]', 'S[a=3,b=2]']:
         for stop_val in range(3):
@@ -144,17 +140,11 @@ def test_plot_annotates_short_labels():
         objective_column='objective_value', X_axis='Iteration',
     )
     assert traces
-    for t in traces:
-        assert t['full_label'] == t['label']
-        # description is pre-formatted HTML (a params table), not the label.
-        assert '<table>' in t['description']
-        assert 'param-key' in t['description']
     by_label = {t['label']: t for t in traces}
-    assert by_label['S[a=1,b=2]']['short_label'] == 'S[a=1]'   # b=2 dropped
-    assert by_label['S[a=3,b=2]']['short_label'] == 'S[a=3]'
-    # Both params appear in the hover table.
-    assert '>a<' in by_label['S[a=1,b=2]']['description']
-    assert '>1<' in by_label['S[a=1,b=2]']['description']
+    assert set(by_label) == {'S[a=1]', 'S[a=3]'}   # b=2 dropped (constant)
+    assert '<table>' in by_label['S[a=1]']['description']
+    assert '>a<' in by_label['S[a=1]']['description']
+    assert '>1<' in by_label['S[a=1]']['description']
 
 
 def test_table_plot_metadata_short_labels():
@@ -170,7 +160,7 @@ def test_table_plot_metadata_short_labels():
     df = pd.DataFrame(rows)
 
     meta = TablePlot().get_metadata(df, dataset='d1', objective='obj1')
-    assert meta['short_labels'] == {
+    assert meta['labels'] == {
         'S[a=1,b=2]': 'S[a=1]', 'S[a=3,b=2]': 'S[a=3]',
     }
     for desc in meta['descriptions'].values():

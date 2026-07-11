@@ -13,7 +13,7 @@ the set of names being compared, together with a tooltip-friendly full label.
 from html import escape
 from collections import defaultdict
 
-from .parametrized_name_mixin import _extract_options
+from ..utils.parametrized_name_mixin import _extract_options
 
 
 # ---------------------------------------------------------------------------
@@ -67,7 +67,7 @@ def compute_short_labels(names):
     {
         'Solver[alpha=0.1,n_iter=100]': 'Solver[alpha=0.1]',
         'Solver[alpha=0.5,n_iter=100]': 'Solver[alpha=0.5]',
-        'OtherSolver[alpha=0.1]':       'OtherSolver[alpha=0.1]',
+        'OtherSolver[alpha=0.1]':       'OtherSolver',
     }
     """
     names = list(map(str, names))
@@ -122,7 +122,7 @@ def compute_short_labels(names):
     return short_map
 
 
-def compute_params_info(names):
+def _compute_params_info(names):
     """Return ``{full_name: {param: str_value}}`` parsed from *names*.
 
     Uses :func:`_extract_options` for robust AST-aware parsing so that
@@ -144,7 +144,7 @@ def compute_params_info(names):
     return result
 
 
-def format_description(params):
+def _format_description(params):
     """Render a ``{param: value}`` dict as hover-icon HTML (empty if none)."""
     if not params:
         return ""

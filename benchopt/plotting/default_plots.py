@@ -62,7 +62,7 @@ class ObjectiveCurvePlot(BasePlot):
 
             plots.append(curve_data)
 
-        self._annotate_short_labels(plots)
+        self._shorten_labels(plots)
 
         return plots
 
@@ -126,7 +126,7 @@ class BarChart(BasePlot):
                 "color": color,
             })
 
-        self._annotate_short_labels(plots)
+        self._shorten_labels(plots)
 
         return plots
 
@@ -193,7 +193,10 @@ class BoxPlot(BasePlot):
                 "color": self.get_style(solver)["color"],
             })
 
-        self._annotate_short_labels(plot_data)
+        label_map = self._shorten_labels(plot_data)
+        if X_axis == "Solver":
+            for trace in plot_data:
+                trace["x"] = [label_map.get(xi, xi) for xi in trace["x"]]
 
         return plot_data
 
@@ -257,7 +260,7 @@ class TablePlot(BasePlot):
             "columns": columns,
             "default_order_ascending": True,
             "default_order_column": 0,
-            "short_labels": {
+            "labels": {
                 s: a["short_label"] for s, a in annotations.items()
             },
             "descriptions": {

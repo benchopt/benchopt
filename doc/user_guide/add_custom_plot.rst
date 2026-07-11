@@ -96,7 +96,6 @@ each dictionary represents a trace in the plot. Each dictionary must contain:
 - :code:`label`: The label of the trace
 - :code:`color` (optional): The color of the trace.
 - :code:`marker` (optional): The marker style of the trace.
-- :code:`short_label` (optional): Shortened label shown in the legend when the short-labels toggle is on (see :ref:`short_labels`).
 - :code:`description` (optional): HTML shown on the legend hover icon (see :ref:`short_labels`).
 - :code:`y_low`, :code:`y_high` (optional): Lists of values to display uncertainty in the plot.
   They will be used to display shaded area around the plot.
@@ -161,7 +160,6 @@ scatter points. The dictionary should contain:
 - :code:`label`: The label of the bar.
 - :code:`color` (optional): The color of the bar.
 - :code:`text` (optional): The text to display on the bar.
-- :code:`short_label` (optional): Shortened label shown when the short-labels toggle is on (see :ref:`short_labels`).
 
 The metadata dictionary returned by :code:`get_metadata` should contain:
 
@@ -205,7 +203,6 @@ where each dictionary represents a box. Each dictionary should contain:
 - :code:`y`: The values of the box for the corresponding x coordinate.
 - :code:`label`: The label of the box.
 - :code:`color` (optional): The color of the box.
-- :code:`short_label` (optional): Shortened label shown when the short-labels toggle is on (see :ref:`short_labels`).
 
 The metadata dictionary returned by :code:`get_metadata` should contain:
 
@@ -262,8 +259,8 @@ The metadata dictionary returned by :code:`get_metadata` should contain:
   default in the html report, given as a column name or a 0-based column index.
 - :code:`default_order_ascending` (optional, default=True): Whether the default
   ordering is in increasing order.
-- :code:`short_labels` (optional): Dict mapping first-column values to the
-  label displayed when the short-labels toggle is on (see :ref:`short_labels`).
+- :code:`labels` (optional): Dict mapping first-column values to the display
+  label shown in the table (see :ref:`short_labels`).
 - :code:`descriptions` (optional): Dict mapping first-column values to the
   HTML shown on a hover icon next to the cell (see :ref:`short_labels`).
 
@@ -300,7 +297,7 @@ rather than on the rows, as done in the default table plot.
             "columns": ["Solver", "Mean Time [sec]"],
             "default_order_column": "Mean Time [sec]",
             "default_order_ascending": True,
-            "short_labels": {
+            "labels": {
                 s: a["short_label"] for s, a in annotations.items()
             },
             "descriptions": {
@@ -371,37 +368,19 @@ of the label, ensuring that the same solver always gets the same color.
 
 .. _short_labels:
 
-Short labels and hover descriptions
------------------------------------
+Shortened labels and hover descriptions
+---------------------------------------
 
 Parametrized class names (e.g. ``Solver[alpha=0.1,n_iter=100]``) can be
-verbose. When the short-labels toggle is enabled in the HTML report (on by
-default, controlled by the ``short_labels`` benchmark config), each trace is
-shown with a shortened label that keeps only the parameters that *vary* across
-the compared traces. A hover icon next to the legend entry then reveals the
-full parameters.
+verbose. The HTML report automatically shortens them, keeping only the
+parameters that *vary* across the compared traces. This applies to solver,
+dataset, and objective names in traces, selectors, and table first columns.
+A hover icon next to each entry reveals the full parameter list.
 
-Each trace may carry two optional keys, both set by the default plots and fully
-overridable by custom plots:
-
-- :code:`short_label`: the label displayed when short labels are toggled on.
-- :code:`description`: the HTML shown on the legend hover icon (scatter plots).
-  It is injected into the page as-is, so it must be valid, escaped HTML.
-
-Besides per-trace keys, every plot also carries two map-valued metadata keys,
-:code:`short_labels` and :code:`descriptions`, mapping full names to their
-short label / hover HTML. They are used by the HTML report for the selector
-dropdowns and their params tooltips (and for the first column of table plots).
-Defaults covering all solver, dataset and objective names are computed
-automatically; a custom plot can override entries by returning these keys from
-:code:`get_metadata`.
-
-:class:`benchopt.BasePlot` provides :code:`get_default_short_labels(labels)`,
-meant to be called from :code:`plot` on the traces before returning them. It
-returns a ``{label: {"short_label": ..., "description": ...}}`` mapping computed
-from the full set *labels*: ``short_label`` keeps only the parameters that vary,
-and ``description`` is the hover HTML (by default, a table of the parameters,
-empty when there are none).
+Default plots handle this automatically. For custom plots, the
+:meth:`benchopt.BasePlot._shorten_labels` helper shortens the ``label``
+field of every trace in-place and attaches a ``description`` (hover HTML).
+It is the right call for scatter, bar, and boxplot-style traces:
 
 .. code-block:: python
 
@@ -412,12 +391,34 @@ empty when there are none).
                 "x": ..., "y": ..., "label": solver,
                 **self.get_style(solver),
             })
-
-        # Attach short labels and hover descriptions to the traces.
-        annotations = self.get_default_short_labels(
-            [t["label"] for t in traces]
-        )
-        for t in traces:
-            t.update(annotations[t["label"]])
+        self._shorten_labels(traces)
         return traces
+
+For ``type="image"`` plots the label mapping must be applied manually since
+there are no Plotly trace dicts. Use
+:func:`benchopt.plotting.short_labels.compute_short_labels` to get
+the ``{full_name: display_label}`` mapping:
+
+.. code-block:: python
+
+    from benchopt.plotting.short_labels import compute_short_labels
+
+    def plot(self, df, dataset, objective, **kwargs):
+        solver_names = sorted(df["solver_name"].unique())
+        label_map = compute_short_labels(solver_names)
+        images = []
+        for solver in solver_names:
+            fig = render_figure(df, solver)
+            images.append({"image": fig, "label": label_map[solver]})
+        return images
+
+The ``description`` key on a trace is optional HTML injected as-is into the
+legend hover icon — it must be valid, escaped HTML.
+
+Every plot also carries a ``labels`` metadata key mapping full names to their
+display label, and a ``descriptions`` key for hover HTML. These are used by the
+HTML report for selector dropdowns and the first column of table plots.
+Defaults covering all solver, dataset and objective names are computed
+automatically; a custom plot can override entries by returning these keys from
+:code:`get_metadata`.
 

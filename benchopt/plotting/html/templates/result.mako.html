@@ -20,36 +20,6 @@
             ${static['utilities.css']}
 
             ${static['hover_index.css']}
-
-            /* Info icon revealing a solver's full parameters on hover. */
-            .param-icon {
-                display: inline-block;
-                width: 15px;
-                height: 15px;
-                margin-left: 4px;
-                vertical-align: -3px;
-                color: #2563eb;
-                cursor: pointer;
-                flex: none;
-                transition: color .15s ease, transform .15s ease;
-            }
-            .param-icon:hover { color: #1d4ed8; transform: scale(1.2); }
-            .param-icon * { pointer-events: none; }
-
-            #params-tooltip .param-title {
-                font-weight: 700;
-                margin-bottom: 4px;
-                padding-bottom: 3px;
-                border-bottom: 1px solid #374151;
-            }
-            #params-tooltip table { border-collapse: collapse; }
-            #params-tooltip .param-key {
-                color: #93c5fd;
-                font-weight: 600;
-                padding: 1px 12px 1px 0;
-                white-space: nowrap;
-            }
-            #params-tooltip .param-val { word-break: break-all; }
         </style>
     </head>
     <body>
@@ -114,20 +84,6 @@
                                 <span class="slider round"></span>
                             </label>
                         </div>
-                        <div id="change-relative-suboptimal-form-group" class="flex items-center justify-between mt-8 px-8">
-                            <div class="block text-sm font-medium text-white">Relative Curve</div>
-                            <label class="block switch">
-                                <input id="change_relative" type="checkbox" onchange="setState({relative_curve: this.checked})">
-                                <span class="slider round"></span>
-                            </label>
-                        </div>
-                        <div id="change-short-labels-form-group" class="flex items-center justify-between mt-8 px-8">
-                            <div class="block text-sm font-medium text-white">Short Labels</div>
-                            <label class="block switch">
-                                <input id="change_short_labels" type="checkbox" checked onchange="setState({short_labels: this.checked})">
-                                <span class="slider round"></span>
-                            </label>
-                        </div>
                         % for kind, params in result["plot_options"].items():
                             <div id="${kind}-custom-params-container">
                             % for param, options in params.items():
@@ -143,7 +99,7 @@
                                     <div class="mt-1 rounded-md shadow-sm">
                                         <select id="change_${kind}_${param}" data-param-type="${param}" data-state-key="${kind}_${param}" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({${kind}_${param}: this.value})">
                                             % for option in options:
-                                                <option value="${option}" title="${option}">${option}</option>
+                                                <option value="${option}" title="${option}">${result['option_labels'].get(param, {}).get(str(option), str(option))}</option>
                                             % endfor
                                         </select>
                                     </div>
@@ -277,13 +233,6 @@
                                 <div class="block text-sm font-medium text-white">Relative Curve</div>
                                 <label class="block switch">
                                     <input id="change_relative" type="checkbox" onchange="setState({relative_curve: this.checked})">
-                                    <span class="slider round"></span>
-                                </label>
-                            </div>
-                            <div id="change-short-labels-form-group" class="flex items-center justify-between mt-8 px-8">
-                                <div class="block text-sm font-medium text-white">Short Labels</div>
-                                <label class="block switch">
-                                    <input id="change_short_labels" type="checkbox" checked onchange="setState({short_labels: this.checked})">
                                     <span class="slider round"></span>
                                 </label>
                             </div>
@@ -547,7 +496,6 @@
                     'suboptimal_curve': document.getElementById('change_suboptimal').checked,
                     'relative_curve': document.getElementById('change_relative').checked,
                     'hidden_curves': [],
-                    'short_labels': true,
                     % for kind, params in result["plot_options"].items():
                         % for param in params:
                             '${kind}_${param}': document.getElementById('change_${kind}_${param}').value,
