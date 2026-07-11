@@ -11,7 +11,7 @@ from .helpers import update_plot_data_style
 def get_figures(benchmark, df, output_dir, kinds):
     "Get the matplotlib figures of the avaible custom plots"
     figs = []
-    plot_data, _ = benchmark.get_plot_data(df, kinds)
+    plot_data, _, _ = benchmark.get_plot_data(df, kinds)
     plot_data = update_plot_data_style(plot_data, plotly=False)
     for plot_name in plot_data.keys():
         if plot_name not in kinds:
@@ -54,12 +54,11 @@ def get_plot_figure(plot_datas, output_dir):
 def get_plot_scatter(plot_data):
     fig = plt.figure()
     for curve_data in plot_data["data"]:
-        display_label = curve_data["label"]
         plt.plot(
             curve_data["x"], curve_data["y"],
             color=curve_data["color"],
             marker=curve_data["marker"],
-            label=display_label,
+            label=curve_data["label"],
             linewidth=3
         )
 
@@ -165,12 +164,11 @@ def get_plot_boxplot(plot_data):
     for data in plot_data["data"]:
         # all datasets with the same label stack on the *exact* same x
         positions = [all_labels.index(x) for x in data["x"]]
-        display_label = data["label"]
 
         boxplot = plt.boxplot(
             data["y"],
             positions=positions,
-            label=display_label,
+            label=data["label"],
             widths=plot_data.get("box_width", 0.6),
             patch_artist=True,
             showfliers=plot_data.get("showfliers", False)

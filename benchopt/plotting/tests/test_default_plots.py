@@ -1,7 +1,7 @@
 import pytest
 import pandas as pd
 
-from benchopt.plotting.default_plots import ObjectiveCurvePlot, TablePlot
+from benchopt.plotting.default_plots import ObjectiveCurvePlot
 
 
 def _make_df(idx_rep=0, n_steps=5, objective_column='objective_value',
@@ -121,50 +121,6 @@ def test_objective_curve_multiple_solvers_independent():
     # Median of reps 0 and 1 → 0.5 and 100.5
     assert by_label['A']['y'] == [0.5] * 4
     assert by_label['B']['y'] == [100.5] * 4
-
-
-def test_plot_shortens_labels():
-    """Traces have short labels (constant params dropped) and a hover description."""
-    rows = []
-    for solver in ['S[a=1,b=2]', 'S[a=3,b=2]']:
-        for stop_val in range(3):
-            rows.append({
-                'dataset_name': 'd1', 'objective_name': 'obj1',
-                'solver_name': solver, 'idx_rep': 0, 'stop_val': stop_val,
-                'objective_value': 1.0, 'time': float(stop_val + 1),
-            })
-    df = pd.DataFrame(rows)
-
-    traces = ObjectiveCurvePlot().plot(
-        df, dataset='d1', objective='obj1',
-        objective_column='objective_value', X_axis='Iteration',
-    )
-    assert traces
-    by_label = {t['label']: t for t in traces}
-    assert set(by_label) == {'S[a=1]', 'S[a=3]'}   # b=2 dropped (constant)
-    assert '<table>' in by_label['S[a=1]']['description']
-    assert '>a<' in by_label['S[a=1]']['description']
-    assert '>1<' in by_label['S[a=1]']['description']
-
-
-def test_table_plot_metadata_short_labels():
-    """TablePlot.get_metadata carries the short_labels/descriptions maps."""
-    rows = []
-    for solver in ['S[a=1,b=2]', 'S[a=3,b=2]']:
-        for stop_val in range(3):
-            rows.append({
-                'dataset_name': 'd1', 'objective_name': 'obj1',
-                'solver_name': solver, 'idx_rep': 0, 'stop_val': stop_val,
-                'objective_value': 1.0, 'time': float(stop_val + 1),
-            })
-    df = pd.DataFrame(rows)
-
-    meta = TablePlot().get_metadata(df, dataset='d1', objective='obj1')
-    assert meta['labels'] == {
-        'S[a=1,b=2]': 'S[a=1]', 'S[a=3,b=2]': 'S[a=3]',
-    }
-    for desc in meta['descriptions'].values():
-        assert '<table>' in desc
 
 
 def test_objective_curve_quantiles_ordered():

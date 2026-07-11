@@ -62,8 +62,6 @@ class ObjectiveCurvePlot(BasePlot):
 
             plots.append(curve_data)
 
-        self._shorten_labels(plots)
-
         return plots
 
     def get_metadata(self, df, dataset, objective, objective_column, X_axis):
@@ -125,8 +123,6 @@ class BarChart(BasePlot):
                 "label": solver,
                 "color": color,
             })
-
-        self._shorten_labels(plots)
 
         return plots
 
@@ -193,11 +189,6 @@ class BoxPlot(BasePlot):
                 "color": self.get_style(solver)["color"],
             })
 
-        label_map = self._shorten_labels(plot_data)
-        if X_axis == "Solver":
-            for trace in plot_data:
-                trace["x"] = [label_map.get(xi, xi) for xi in trace["x"]]
-
         return plot_data
 
     def get_metadata(
@@ -252,18 +243,9 @@ class TablePlot(BasePlot):
             if col.startswith('objective_')
         ]
         columns = ["solver"] + objective_cols + ["time (s)"]
-        annotations = self.get_default_short_labels(
-            df['solver_name'].unique()
-        )
         return {
             "title": f"{objective}\nData: {dataset}",
             "columns": columns,
             "default_order_ascending": True,
             "default_order_column": 0,
-            "labels": {
-                s: a["short_label"] for s, a in annotations.items()
-            },
-            "descriptions": {
-                s: a["description"] for s, a in annotations.items()
-            },
         }

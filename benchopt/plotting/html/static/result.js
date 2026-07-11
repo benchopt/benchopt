@@ -686,7 +686,7 @@ const descIconHTML = (text) =>
 
 /** Show params tooltip for a dataset/objective selector icon. */
 const showEntityParamsTooltip = (event, stateKey) => {
-  const lookup = (getPlotData() || {}).descriptions || {};
+  const lookup = window.descriptions || {};
   const currentValue = state()[stateKey];
   showDescTooltip(event, currentValue ? (lookup[currentValue] || '') : '');
 };
@@ -1388,12 +1388,12 @@ function renderTable() {
   const card = document.createElement("div");
   card.className = "w-full bg-white overflow-hidden mx-auto";
 
-  // First column: `get_metadata` provides a `labels` map (full → display) and
-  // `descriptions` map (full → hover HTML). The SVG icon stays out of exports.
+  // First column: values are already short labels. A hover icon carrying the
+  // full parameter list is added from the global `descriptions` map (short ->
+  // HTML). The SVG icon stays out of `innerText`, so exports are unaffected.
   const solverCellHTML = (value) => {
-    const full = String(value);
-    const label = (plotData.labels || {})[full] || full;
-    const desc = (plotData.descriptions || {})[full];
+    const label = String(value);
+    const desc = (window.descriptions || {})[label];
     return escapeHTML(label) + (desc ? descIconHTML(desc) : '');
   };
 
@@ -1680,7 +1680,6 @@ const createLegendItem = (curve, color, symbolNumber) => {
   });
 
   // Create the text node for the curve name in the legend.
-  const curveTraceData = data(curve);
   const textContainer = document.createElement('div');
   textContainer.style.marginLeft = '0.5rem';
   textContainer.style.flex = '1';
@@ -1688,11 +1687,11 @@ const createLegendItem = (curve, color, symbolNumber) => {
   textContainer.setAttribute('data-curve', curve);
   textContainer.appendChild(document.createTextNode(curve));
 
-  // Append a hover icon carrying the trace's description (formatted HTML).
-  if (curveTraceData && curveTraceData.description) {
-    textContainer.insertAdjacentHTML(
-      'beforeend', descIconHTML(curveTraceData.description)
-    );
+  // Append a hover icon carrying the curve's full parameter list, looked up
+  // from the global `descriptions` map (keyed by the short label).
+  const desc = (window.descriptions || {})[curve];
+  if (desc) {
+    textContainer.insertAdjacentHTML('beforeend', descIconHTML(desc));
   }
 
   // Create the horizontal bar in the legend to represent the curve

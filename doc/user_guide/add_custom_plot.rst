@@ -96,7 +96,6 @@ each dictionary represents a trace in the plot. Each dictionary must contain:
 - :code:`label`: The label of the trace
 - :code:`color` (optional): The color of the trace.
 - :code:`marker` (optional): The marker style of the trace.
-- :code:`description` (optional): HTML shown on the legend hover icon (see :ref:`short_labels`).
 - :code:`y_low`, :code:`y_high` (optional): Lists of values to display uncertainty in the plot.
   They will be used to display shaded area around the plot.
 - :code:`x_low`, :code:`x_high` (optional): Lists of values to display uncertainty in the plot.
@@ -259,18 +258,15 @@ The metadata dictionary returned by :code:`get_metadata` should contain:
   default in the html report, given as a column name or a 0-based column index.
 - :code:`default_order_ascending` (optional, default=True): Whether the default
   ordering is in increasing order.
-- :code:`labels` (optional): Dict mapping first-column values to the display
-  label shown in the table (see :ref:`short_labels`).
-- :code:`descriptions` (optional): Dict mapping first-column values to the
-  HTML shown on a hover icon next to the cell (see :ref:`short_labels`).
 
 In the html report, each column header can be clicked to sort on that column,
 and the arrow next to it can be toggled to switch between increasing and
 decreasing order. A search bar allows filtering the rows, and each column can
 be shown or hidden with the checkboxes below the table.
 
-Since table rows are plain lists, short labels are given in the metadata
-rather than on the rows, as done in the default table plot.
+When the first column holds solver names, they are already shortened (see
+:ref:`short_labels`) and get the hover icon automatically, so nothing special
+is needed:
 
 .. code-block:: python
 
@@ -286,23 +282,11 @@ rather than on the rows, as done in the default table plot.
         return rows
 
     def get_metadata(self, df, dataset, objective, **kwargs):
-        df = df.query(
-            "dataset_name == @dataset and objective_name == @objective"
-        )
-        annotations = self.get_default_short_labels(
-            df['solver_name'].unique()
-        )
         return {
             "title": f"Summary for {dataset}",
             "columns": ["Solver", "Mean Time [sec]"],
             "default_order_column": "Mean Time [sec]",
             "default_order_ascending": True,
-            "labels": {
-                s: a["short_label"] for s, a in annotations.items()
-            },
-            "descriptions": {
-                s: a["description"] for s, a in annotations.items()
-            },
         }
 
 
@@ -373,52 +357,53 @@ Shortened labels and hover descriptions
 
 Parametrized class names (e.g. ``Solver[alpha=0.1,n_iter=100]``) can be
 verbose. The HTML report automatically shortens them, keeping only the
-parameters that *vary* across the compared traces. This applies to solver,
-dataset, and objective names in traces, selectors, and table first columns.
-A hover icon next to each entry reveals the full parameter list.
+parameters that *vary* across the results, and a hover icon next to each entry
+reveals the full parameter list. This applies to solver, dataset, and objective
+names in traces, selectors, and table first columns.
 
-Default plots handle this automatically. For custom plots, the
-:meth:`benchopt.BasePlot._shorten_labels` helper shortens the ``label``
-field of every trace in-place and attaches a ``description`` (hover HTML).
-It is the right call for scatter, bar, and boxplot-style traces:
+This happens **before** :code:`plot` and :code:`get_metadata` are called: the
+``solver_name``, ``dataset_name`` and ``objective_name`` columns of the ``df``
+you receive already hold the short labels, so a custom plot that groups on
+those columns gets short labels for free — no extra call is needed. The
+original full name of each row is kept in a companion ``*_full_name`` column
+(``solver_full_name``, ``dataset_full_name``, ``objective_full_name``) if you
+need it, e.g. to set a different label:
 
 .. code-block:: python
 
     def plot(self, df, dataset, objective, **kwargs):
         traces = []
         for solver, df_solver in df.groupby('solver_name'):
+            # `solver` is already the short label here.
             traces.append({
                 "x": ..., "y": ..., "label": solver,
                 **self.get_style(solver),
             })
-        self._shorten_labels(traces)
         return traces
 
-For ``type="image"`` plots the label mapping must be applied manually since
-there are no Plotly trace dicts. Use
-:func:`benchopt.plotting.short_labels.compute_short_labels` to get
-the ``{full_name: display_label}`` mapping:
+The short labels are **display-only** and computed relative to the current
+results: never write them back into persisted results — keep the full name
+(from the ``*_full_name`` columns) as the canonical identity.
+
+If you need to compute short labels or their hover descriptions yourself — for
+instance in a ``type="image"`` plot, which has no ``df``-derived labels — the
+helpers live in :mod:`benchopt.plotting.short_labels`:
+
+- :func:`~benchopt.plotting.short_labels.compute_short_labels` returns the
+  ``{full_name: short_label}`` mapping;
+- :func:`~benchopt.plotting.short_labels.compute_descriptions` returns the
+  ``{name: hover_html}`` mapping.
 
 .. code-block:: python
 
     from benchopt.plotting.short_labels import compute_short_labels
 
     def plot(self, df, dataset, objective, **kwargs):
-        solver_names = sorted(df["solver_name"].unique())
+        solver_names = sorted(df["solver_full_name"].unique())
         label_map = compute_short_labels(solver_names)
         images = []
         for solver in solver_names:
             fig = render_figure(df, solver)
             images.append({"image": fig, "label": label_map[solver]})
         return images
-
-The ``description`` key on a trace is optional HTML injected as-is into the
-legend hover icon — it must be valid, escaped HTML.
-
-Every plot also carries a ``labels`` metadata key mapping full names to their
-display label, and a ``descriptions`` key for hover HTML. These are used by the
-HTML report for selector dropdowns and the first column of table plots.
-Defaults covering all solver, dataset and objective names are computed
-automatically; a custom plot can override entries by returning these keys from
-:code:`get_metadata`.
 

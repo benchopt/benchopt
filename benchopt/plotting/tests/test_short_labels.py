@@ -1,7 +1,11 @@
 """Tests for benchopt.plotting.short_labels."""
 
+import pandas as pd
+
 from benchopt.plotting.short_labels import (
     compute_short_labels,
+    compute_descriptions,
+    shorten_names,
     _compute_params_info,
 )
 
@@ -99,3 +103,55 @@ def test_compute_params_info_no_params():
     info = _compute_params_info(["SolverA", "SolverB"])
     assert info["SolverA"] == {}
     assert info["SolverB"] == {}
+
+
+# ---------------------------------------------------------------------------
+# compute_descriptions
+# ---------------------------------------------------------------------------
+
+
+def test_compute_descriptions_params_table():
+    desc = compute_descriptions(["S[a=1,b=2]", "S[a=3,b=2]"])
+    for html in desc.values():
+        assert "<table>" in html
+        assert ">a<" in html
+    assert ">1<" in desc["S[a=1,b=2]"]
+
+
+def test_compute_descriptions_no_params_is_empty():
+    desc = compute_descriptions(["SolverA", "SolverB"])
+    assert desc == {"SolverA": "", "SolverB": ""}
+
+
+# ---------------------------------------------------------------------------
+# shorten_names
+# ---------------------------------------------------------------------------
+
+
+def test_shorten_names_replaces_and_keeps_full():
+    df = pd.DataFrame({
+        "solver_name": ["S[a=1,b=2]", "S[a=3,b=2]"],
+        "dataset_name": ["d1", "d1"],
+        "objective_name": ["obj1", "obj1"],
+    })
+    short_df, descriptions = shorten_names(df)
+
+    # b=2 is constant → dropped; the full name moves to `*_full_name`.
+    assert set(short_df["solver_name"]) == {"S[a=1]", "S[a=3]"}
+    assert list(short_df["solver_full_name"]) == ["S[a=1,b=2]", "S[a=3,b=2]"]
+    # Single dataset/objective → shortened to the bare base name.
+    assert set(short_df["dataset_name"]) == {"d1"}
+
+    # descriptions keyed by the short label, with the full param table.
+    assert "<table>" in descriptions["S[a=1]"]
+    # full params (including constant b), not only the varying ones
+    assert ">b<" in descriptions["S[a=1]"]
+
+
+def test_shorten_names_is_a_copy():
+    df = pd.DataFrame({"solver_name": ["S[a=1]", "S[a=2]"]})
+    short_df, _ = shorten_names(df)
+    # Original df is untouched (short labels must never mutate the results).
+    assert list(df["solver_name"]) == ["S[a=1]", "S[a=2]"]
+    assert "solver_full_name" not in df.columns
+    assert short_df is not df

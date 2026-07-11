@@ -342,22 +342,28 @@ class Benchmark:
 
     def get_plot_data(self, df, kinds):
         "Get the data to plot for the benchmark."
+        from .plotting.short_labels import shorten_names
+
         all_plots = self.get_plots()
         self.check_plots()
+
+        # Shorten entity names once for the whole report: solver/dataset/
+        # objective names become their short labels everywhere downstream
+        # (selectors, plot keys, trace labels), while the full names are kept
+        # in `*_full_name` columns. `descriptions` maps short label -> tooltip.
+        df, descriptions = shorten_names(df)
+
         all_data = {}
         all_options = {}
-        all_option_labels = {}
         for plot in all_plots:
             plot_name = plot._get_name()
             if plot_name not in kinds:
                 continue
-            data, options, option_labels = plot._get_all_plots(df)
+            data, options = plot._get_all_plots(df)
             all_data[plot_name] = data
             all_options[plot_name] = options
-            for param, labels in option_labels.items():
-                all_option_labels.setdefault(param, {}).update(labels)
 
-        return all_data, all_options, all_option_labels
+        return all_data, all_options, descriptions
 
     def _list_benchmark_classes(self, base_class):
         """Load all classes with the same name from a benchmark's subpackage.

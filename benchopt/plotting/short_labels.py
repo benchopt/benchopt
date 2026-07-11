@@ -8,6 +8,12 @@ When many configurations exist but only a few parameters vary across runs,
 the full names can be very verbose.  This module provides helpers to produce
 *short labels* that only include the parameters that actually differ across
 the set of names being compared, together with a tooltip-friendly full label.
+
+Short labels are **display-only**: they are computed relative to the current
+set of names being compared, so they are not stable identifiers and must never
+be written back into the results (parquet, published reports, ``*_name``
+columns). Use them for plot labels, selectors and tooltips only; keep the full
+parametrized name as the canonical identity everywhere data is persisted.
 """
 
 from html import escape
@@ -43,6 +49,10 @@ def compute_short_labels(names):
 
     When a class appears only once in *names* the full name is kept so that
     relevant context is not lost.
+
+    The returned labels are display-only and relative to *names*; do not use
+    them as stable identifiers or write them back into persisted results (see
+    the module docstring).
 
     Parameters
     ----------
@@ -154,3 +164,72 @@ def _format_description(params):
         for k, v in params.items()
     )
     return f'<div class="param-title">Parameters</div><table>{rows}</table>'
+
+
+def compute_descriptions(names):
+    """Compute hover-icon HTML describing each name's parameters.
+
+    Parameters
+    ----------
+    names : sequence of str
+        Parametrized names, e.g. ``df["solver_name"].unique()``.
+
+    Returns
+    -------
+    descriptions : dict[str, str]
+        Mapping ``{name: html}``; the HTML is a small parameters table (empty
+        string when the name has no parameters). Useful for a custom plot that
+        needs the same hover tooltip as the default plots.
+    """
+    return {
+        name: _format_description(params)
+        for name, params in _compute_params_info(names).items()
+    }
+
+
+def shorten_names(
+    df, columns=("solver_name", "dataset_name", "objective_name")
+):
+    """Return a copy of *df* with entity name columns shortened for display.
+
+    For each column in *columns* present in *df*, the original full names are
+    preserved in a companion ``*_full_name`` column (opt-in for custom plots
+    that need the full parametrized name), and the column itself is replaced by
+    its short label. The ``{short_label: description_html}`` map for the hover
+    tooltips is returned alongside.
+
+    Short labels are display-only (see the module docstring): this operates on
+    a copy and must only be used on the plotting ``df``, never on the results
+    that get persisted.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Results dataframe, with ``*_name`` columns holding full names.
+    columns : sequence of str
+        Name columns to shorten when present.
+
+    Returns
+    -------
+    df : pandas.DataFrame
+        Copy of *df* with shortened ``*_name`` columns and added
+        ``*_full_name`` columns.
+    descriptions : dict[str, str]
+        Mapping ``{short_label: description_html}`` for every shortened name.
+    """
+    df = df.copy()
+    descriptions = {}
+    for col in columns:
+        if col not in df.columns:
+            continue
+        names = df[col].astype(str)
+        unique = names.unique().tolist()
+        short_map = compute_short_labels(unique)
+        desc = compute_descriptions(unique)
+        full_col = col.replace("_name", "_full_name")
+        df[full_col] = names
+        df[col] = names.map(short_map)
+        descriptions.update(
+            {short_map[name]: desc[name] for name in unique}
+        )
+    return df, descriptions

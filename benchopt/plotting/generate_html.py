@@ -111,11 +111,13 @@ def get_results(fnames, html_root, benchmark, config=None, copy=False):
             metadata=get_metadata(df, config_.get('plot_configs', {})),
         )
 
-        data, options, option_labels = benchmark.get_plot_data(df, result['kinds'])
+        data, options, descriptions = benchmark.get_plot_data(
+            df, result['kinds']
+        )
         data = update_plot_data_style(data, plotly=True)
         result['json_plots'] = json.dumps(data)
         result['plot_options'] = options
-        result['option_labels'] = option_labels
+        result['descriptions'] = descriptions
 
         results.append(result)
     print()

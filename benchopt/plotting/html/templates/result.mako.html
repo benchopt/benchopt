@@ -97,9 +97,9 @@
                                         % endif
                                     </label>
                                     <div class="mt-1 rounded-md shadow-sm">
-                                        <select id="change_${kind}_${param}" data-param-type="${param}" data-state-key="${kind}_${param}" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({${kind}_${param}: this.value})">
+                                        <select id="change_${kind}_${param}" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({${kind}_${param}: this.value})">
                                             % for option in options:
-                                                <option value="${option}" title="${option}">${result['option_labels'].get(param, {}).get(str(option), str(option))}</option>
+                                                <option value="${option}" title="${option}">${option}</option>
                                             % endfor
                                         </select>
                                     </div>
@@ -251,7 +251,7 @@
                                             % endif
                                         </label>
                                         <div class="mt-1 rounded-md shadow-sm">
-                                            <select id="change_${kind}_${param}" data-param-type="${param}" data-state-key="${kind}_${param}" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({${kind}_${param}: this.value})">
+                                            <select id="change_${kind}_${param}" class="focus:ring-blue-500 focus:border-blue-500 block w-full h-8 px-4 sm:text-sm border-gray-300 rounded-md" onchange="setState({${kind}_${param}: this.value})">
                                                 % for option in options:
                                                     <option value="${option}" title="${option}">${option}</option>
                                                 % endfor
@@ -486,6 +486,7 @@
         <script>
             window._plots = ${result['json_plots']};
             window.metadata = ${json.dumps(result['metadata'])};
+            window.descriptions = ${json.dumps(result['descriptions'])};
 
             window.addEventListener("load", () => {
                 // Initialize plot state
