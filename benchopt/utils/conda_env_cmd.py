@@ -14,25 +14,14 @@ from ..config import DEBUG
 from ..config import get_setting
 
 SHELL = get_setting('shell')
+CONDA_CMD = get_setting('conda_cmd')
 
-
-def _conda_cmd(conda_cmd, is_cmd):
-    """Prefix the conda command with ``CALL`` when running under cmd.
-
-    Under cmd, calling conda without ``call`` exits the batch script:
-    https://github.com/conda/conda/issues/12418
-
-    This is gated on `is_cmd` (whether benchopt is generating a cmd/.bat
-    script) rather than ``sys.platform``, so the prefix stays consistent with
-    the shell the script actually runs in; a bash shell on Windows gets a plain
-    ``conda`` in a bash script.
-    """
-    if is_cmd and not conda_cmd.lower().startswith('call'):
-        return f"CALL {conda_cmd}"
-    return conda_cmd
-
-
-CONDA_CMD = _conda_cmd(get_setting('conda_cmd'), IS_CMD)
+# In CMD, calling conda without `call` exits the batch script:
+# https://github.com/conda/conda/issues/12418
+# Gate this on the shell benchopt generates scripts for (IS_CMD) rather than
+# `sys.platform`, so a bash shell on Windows gets a plain `conda`.
+if IS_CMD and not CONDA_CMD.lower().startswith('call'):
+    CONDA_CMD = f"CALL {CONDA_CMD}"
 
 DEFAULT_PYTHON_VERSION = '3.12'
 
