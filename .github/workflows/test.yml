@@ -133,7 +133,7 @@ jobs:
     # bash script containing `CALL conda` and break conda env management. See
     # https://github.com/benchopt/benchopt for the fix. Unlike the `cmd`-based
     # `test_benchopt` Windows leg, this exercises the bash-shell code path.
-    name: Test Windows under bash shell
+    name: Test Windows with bash shell
     runs-on: windows-latest
     defaults:
       run:
