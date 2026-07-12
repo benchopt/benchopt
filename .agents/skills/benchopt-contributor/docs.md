@@ -92,6 +92,8 @@ The gallery executes these scripts at build time, so keep them fast (small
 - Dropdown/tab content is readable in both folded and open states.
 - No accidental behavior regressions in existing sections.
 - Text is concise and user-facing language is clear.
+- When a code change renames a public API, update every `.rst` that mentions it
+  — the build won't flag prose that references the old name.
 
 ## Notes For Dropdown Content
 

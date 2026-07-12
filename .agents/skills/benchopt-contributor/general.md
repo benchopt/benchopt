@@ -20,6 +20,12 @@
   - The line-length limit is **79** (E501); config and excludes live in
     `.flake8`. Skill asset templates (`benchopt/skills/**/*.py`) are linted too.
 - Run the relevant test suite after edits to confirm nothing regresses.
+  - `pytest` and the other test deps come from the `test` extra:
+    `uv pip install -e .[test]`. `flake8` is separate (`uv pip install flake8`).
+  - When running benchopt's own suite, `--skip-env` skips tests that build a
+    conda env and `--skip-install` skips solver installs that slow CI — both
+    make local runs much faster
+    (`pytest benchopt/... --skip-env --skip-install`).
 
 ## Deciding where a function belongs
 
@@ -35,11 +41,16 @@
 - Only touch lines directly required by the task. Do not reformat, rename, or add docstrings to surrounding code that was not part of the request.
 - When a refactor touches multiple files, list the files and the nature of each change before starting, and get confirmation if the scope feels large.
 
+## Comments and prose
+
+- Keep comments short — one line by default; reserve longer explanations for
+  genuinely subtle code. Don't narrate the obvious.
+- Describe what the code does now. Don't document antipatterns or past choices
+  that were overturned — especially designs that never reached main.
+- The same restraint applies to reviews, issues, and PR descriptions: long text
+  is hard to read without a clear reason. Lead with the point.
+
 ## Submitting a PR
 
-- **Add a `doc/whats_new.rst` entry** for any user-facing change (the PR
-  template has a checkbox for it). Put it under the in-development version,
-  in the matching section (`CLI` / `API` / `PLOT` / `TST` / `FIX` / `DOC`),
-  ending with ``By `Your Name`_ (:gh:`NNN`)``. If a follow-up PR extends an
-  existing entry, update that bullet and list both PRs (``:gh:`959`, :gh:`980```)
-  rather than adding a near-duplicate.
+See [Scoping Issues & PRs](./issues_and_prs.md) for PR scope, commit messages,
+the what's new entry, and issue/review conventions.
