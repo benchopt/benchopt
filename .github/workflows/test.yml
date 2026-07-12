@@ -127,12 +127,8 @@ jobs:
         run: benchopt run examples/minimal_benchmark -r 1 -n 10 --no-plot
 
   test_windows_bash:
-    # Regression test for shell handling on Windows when the CI step runs under
-    # a bash shell (the common `shell: bash` setup in downstream benchmarks).
-    # In that case $SHELL is a git-bash path, which used to make benchopt emit a
-    # bash script containing `CALL conda` and break conda env management. See
-    # https://github.com/benchopt/benchopt for the fix. Unlike the `cmd`-based
-    # `test_benchopt` Windows leg, this exercises the bash-shell code path.
+    # Regression test for shell handling on Windows when using a bash shell
+    # instead of cmd.
     name: Test Windows with bash shell
     runs-on: windows-latest
     defaults:
