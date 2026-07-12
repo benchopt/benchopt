@@ -10,9 +10,8 @@ description: >
 # benchopt contributor skills
 
 Guidelines for working on the **benchopt library** itself. For authoring a
-*benchmark* (datasets/solvers/objective), use the skills that ship with
-benchopt — run `benchopt sync-skills` to get `benchopt-create-benchmark`,
-`benchopt-add-solver`, `benchopt-add-dataset`, and `benchopt-run-benchmark`.
+*benchmark* (datasets/solvers/objective), use the `using-benchopt` skill that
+ships with benchopt — run `benchopt sync-skills` to install it.
 
 - [General implementation design](./general.md) — where to put code, how to validate changes, minimal-edit discipline, and when to ask the user.
 - [Tests](./tests.md) — writing CLI tests in `benchopt/cli/tests/` with `temp_benchmark`, `CaptureCmdOutput`, mocking, and parametrize patterns.
