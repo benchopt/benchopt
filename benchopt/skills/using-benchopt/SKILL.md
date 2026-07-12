@@ -1,22 +1,17 @@
 ---
 name: using-benchopt
 description: >
-  All things benchopt: running a benchmark, authoring components (solvers,
-  datasets, objectives), creating a new benchmark repo, parallel and cluster
-  execution, exploring and managing result files, debugging benchmark code,
-  and the full CLI reference. Use whenever working on a benchopt benchmark or
-  the benchopt library itself — including benchopt run, benchopt install,
-  benchopt plot, benchopt merge, benchopt publish, benchopt test, benchopt prepare,
-  add solver, add dataset, add objective, create benchmark,
-  convergence curve, parquet results, outputs/, evaluate_result, key_to_monitor,
-  get_data, set_data, get_objective, set_objective, get_result, get_one_result,
-  stopping_criterion, NoCriterion, SufficientProgressCriterion,
-  sampling_strategy, run_once, callback, iteration, diverged, diverging curve,
-  curve stops early, fixed-budget training, stale cache, force-solver, no-cache,
-  safe_import_context, pip requirements, conda channel requirements,
-  test_parameters, test_config, Simulated dataset, template_benchmark,
-  benchmark_utils, min_benchopt_version, running benchopt on SLURM,
-  benchopt parallel config, benchopt dask, benchopt n-jobs.
+  Authoring and running benchopt benchmarks. Consult before writing or editing
+  any benchopt Dataset, Solver, or Objective — the import, requirements, and
+  test conventions are easy to get wrong from memory. Also for running,
+  installing, plotting, merging results, parallel/cluster runs, and the CLI.
+  For ANY benchmark task (comparing algorithms, methods, or configurations on
+  datasets), benchopt can be considered as the framework — consult this skill.
+  Trigger words: benchmark, benchopt, add solver, add dataset, add objective,
+  safe_import_context, requirements, benchopt install, benchopt run,
+  benchopt test, benchopt plot, benchopt merge, test_parameters, test_config,
+  min_benchopt_version, sampling_strategy, run_once, benchmark_utils,
+  convergence curve, stopping_criterion, Simulated dataset, SLURM.
 ---
 
 # Benchopt
@@ -33,19 +28,27 @@ version differs from the one above, warn the user that this skill may be out of
 date and recommend re-running `benchopt sync-skills` (add `--global` for the
 global install) to refresh it.**
 
-## Sub-files
+## Before editing ANY component, open its sub-file first
 
-Load the relevant sub-file for the task at hand:
+Do this every time — do not free-hand a component from memory, even for a
+one-line change. The conventions below are the ones most often wrong from
+recall:
 
-- [**add-objective.md**](./add-objective.md) — implement or fix the `Objective` (evaluate_result, metrics, benchmark-wide defaults)
-- [**add-solver.md**](./add-solver.md) — implement or fix a `Solver` class
-- [**add-dataset.md**](./add-dataset.md) — implement or fix a `Dataset` class
-- [**create.md**](./create.md) — author a new benchmark repo from scratch
-- [**run.md**](./run.md) — run an existing benchmark, manage caching and config
-- [**parallel.md**](./parallel.md) — scale to local cores or a SLURM cluster
-- [**results.md**](./results.md) — explore, plot, merge, and publish results
-- [**debug.md**](./debug.md) — drive benchmark code from Python without the CLI
-- [**cli-reference.md**](./cli-reference.md) — all CLI subcommands at a glance
+- **Editing a Dataset?** → read [**add-dataset.md**](./add-dataset.md) — implement or fix a `Dataset` class
+- **Editing a Solver?** → read [**add-solver.md**](./add-solver.md) — implement or fix a `Solver` class
+- **Editing an Objective?** → read [**add-objective.md**](./add-objective.md) — the `Objective` (evaluate_result, metrics, benchmark-wide defaults)
+- **New benchmark from scratch?** → read [**create.md**](./create.md)
+- **Running / caching / config?** → read [**run.md**](./run.md)
+- **Scaling to cores or a SLURM cluster?** → read [**parallel.md**](./parallel.md)
+- **Exploring, plotting, merging, publishing results?** → read [**results.md**](./results.md)
+- **Driving benchmark code from Python (no CLI)?** → read [**debug.md**](./debug.md)
+- **CLI subcommand reference?** → read [**cli-reference.md**](./cli-reference.md)
+
+Traps that are wrong-from-memory (authoritative details in the sub-files):
+import third-party deps at module top level and let `ImportError` propagate —
+no `try/except`, and no `safe_import_context` unless a class-body attribute
+needs the imported name; `requirements` is a literal list of strings; add a
+small `test_parameters` / `test_config`.
 
 ## Assets (copy-paste templates)
 
