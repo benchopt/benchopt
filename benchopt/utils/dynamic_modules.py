@@ -44,8 +44,8 @@ class FailedImport(ABCMeta):
         return f"<FailedImport: {cls.cls_name}({cls.name})|| Exc: [{cls.exc}]>"
 
 
-def _get_module_from_file(module_filename, benchmark_dir=None):
-    """Load a module from the name of the file"""
+def _get_package_name(module_filename, benchmark_dir=None):
+    """Get the name under which a benchmark module is cached in sys.modules."""
     module_filename = Path(module_filename)
     if benchmark_dir is not None:
         # Use a package name derived from the benchmark root folder.
@@ -57,7 +57,15 @@ def _get_module_from_file(module_filename, benchmark_dir=None):
         package_name = module_filename.with_suffix('').parts[-3:]
     if package_name[-1] == '__init__':
         package_name = package_name[:-1]
-    package_name = '.'.join(['benchopt_benchmarks', *package_name])
+    return '.'.join(['benchopt_benchmarks', *package_name])
+
+
+def _get_module_from_file(module_filename, benchmark_dir=None):
+    """Load a module from the name of the file"""
+    module_filename = Path(module_filename)
+    package_name = _get_package_name(module_filename, benchmark_dir)
+    if benchmark_dir is not None:
+        module_filename = module_filename.resolve()
 
     module = sys.modules.get(package_name, None)
     if module is None:
@@ -126,11 +134,11 @@ def _load_class_from_module(benchmark_dir, module_filename, class_name):
             @classmethod
             def is_installed(cls, env_name=None, raise_on_not_installed=False,
                              quiet=False, **kwargs):
-                # Delegate to the subprocess-based check when targeting another
-                # env, or when ``ignore_cache`` forces a fresh-process import
-                # (e.g. right after installing in the current env). Otherwise
-                # this fake class only knows about the import failure captured
-                # at collection time.
+                # Delegate to DependenciesMixin when targeting another env, or
+                # when ``ignore_cache`` requires a fresh import (e.g. right
+                # after installing in the current env). Otherwise, this fake
+                # class only knows about the import failure captured at
+                # collection time.
                 if env_name is not None or kwargs.get("ignore_cache"):
                     return super().is_installed(
                         env_name=env_name,
@@ -156,6 +164,37 @@ def _load_class_from_module(benchmark_dir, module_filename, class_name):
     klass._file_hash = get_file_hash(klass._module_filename)
 
     return klass
+
+
+def _reload_class(klass):
+    """Reload a class, discarding the module imported at collection time.
+
+    The module defining `klass` is imported once and cached, both in
+    `sys.modules` and through the import outcome stored on the class. This
+    drops these caches and imports the module again, so that requirements
+    installed after the first import are detected.
+
+    Parameters
+    ----------
+    klass : class
+        A class previously loaded with `_load_class_from_module`.
+
+    Returns
+    -------
+    klass : class
+        The class, freshly imported from its module.
+    """
+    benchmark_dir = klass._benchmark_dir
+    module_filename = klass._module_filename
+    package_name = _get_package_name(module_filename, benchmark_dir)
+
+    sys.modules.pop(package_name, None)
+    # Make packages installed since the interpreter started visible.
+    importlib.invalidate_caches()
+
+    return _load_class_from_module(
+        benchmark_dir, module_filename, klass._base_class_name
+    )
 
 
 def _get_import_context(module):
@@ -225,6 +264,10 @@ def _set_cls_attr_from_ast(module_file, cls_name, ctx):
     module = ast.parse(module_file.read_text())
     name = f"{module_file.stem}"
 
+    # Set before any early return, as this is needed to check the install and
+    # to reload the class.
+    ctx['_base_class_name'] = cls_name
+
     cls_list = [node for node in module.body if isinstance(node, ast.ClassDef)
                 and node.name == cls_name]
     if not cls_list:
@@ -245,8 +288,6 @@ def _set_cls_attr_from_ast(module_file, cls_name, ctx):
         # Solver methods
         "set_objective", "run", "get_result"
     ]
-
-    ctx['_base_class_name'] = cls_name
 
     ctx['name'], ctx['install_cmd'], ctx['requirements'] = None, "conda", []
     # Required to retrieve the test dataset name when creating a test env

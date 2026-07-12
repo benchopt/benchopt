@@ -49,6 +49,19 @@ class DependenciesMixin:
         return cls.install_cmd
 
     @classmethod
+    def reload(cls):
+        """Reload the class, discarding the module cached at collection time.
+
+        Returns
+        -------
+        klass: class
+            The class, freshly imported from its module.
+        """
+        # Import here to avoid circular import.
+        from .dynamic_modules import _reload_class
+        return _reload_class(cls)
+
+    @classmethod
     def is_installed(cls, env_name=None, raise_on_not_installed=None,
                      quiet=False, ignore_cache=False):
         """Check if the module caught a failed import to assert install.
@@ -65,19 +78,25 @@ class DependenciesMixin:
             Hide import error information.
         ignore_cache: boolean
             If set to True, ignore the import outcome cached at collection
-            time and verify importability freshly. For the current
-            environment (``env_name=None``) this runs the check in a fresh
-            subprocess; the default in-process check reuses the cached
-            outcome and cannot see packages installed later in the same
-            process. Used right after installing in the current environment
-            to detect the freshly installed requirements.
+            time and reload the class to check its requirements again. This
+            is necessary to detect the requirements installed in the current
+            environment after the class was first imported.
 
         Returns
         -------
         is_installed: bool
             returns True if no import failure has been detected.
         """
-        if env_name is None and not ignore_cache:
+        if env_name is None:
+            if ignore_cache:
+                # The class was imported before its requirements were
+                # installed, so reload it to import them. Delegating to the
+                # reloaded class is necessary as it can be a `FailedImport`
+                # one, whose `is_installed` reports the failure.
+                return cls.reload().is_installed(
+                    raise_on_not_installed=raise_on_not_installed, quiet=quiet
+                )
+
             if hasattr(cls, "_import_ctx") and cls._import_ctx.failed_import:
                 exc_type, value, tb = cls._import_ctx.import_error
                 if raise_on_not_installed:
