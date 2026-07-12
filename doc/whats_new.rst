@@ -69,12 +69,10 @@ FIX
 ~~~
 
 - Fix shell handling on Windows so ``benchopt install``/``test`` work with a
-  bash-like ``SHELL`` (e.g. GitHub ``shell: bash`` runners). The shell is now
-  invoked as an argument list (handling spaces in the shell path), the conda
-  ``CALL`` prefix is kept consistent with the shell benchopt generates scripts
-  for, on Windows the ``SHELL`` env var no longer overrides the ``cmd /c``
-  default (use ``BENCHOPT_SHELL`` to override), and the underlying error is now
-  surfaced instead of swallowed. By `Johan Larsson`_
+  bash-like shell (e.g. GitHub ``shell: bash`` runners).
+  On Windows the ``SHELL`` env var is now ignored, use ``BENCHOPT_SHELL``
+  to override it. Underlying shell errors are also better reported,
+  instead of being swallowed. By `Johan Larsson`_ (:gh:`974`)
 
 - Fix ``benchopt sync-skills`` symlink with global install for Claude.
   By `Thomas Moreau`_ (:gh:`969`)
