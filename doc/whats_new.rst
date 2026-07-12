@@ -10,6 +10,14 @@ What's new
 Version 1.10.0 -- In development
 --------------------------------
 
+FIX
+~~~
+
+- Detect the requirements installed by ``benchopt install`` in the current
+  environment, by reloading the classes instead of relying on the import
+  outcome cached when collecting the benchmark.
+  By `Felix Divo`_ (:gh:`978`)
+
 TST
 ~~~
 
