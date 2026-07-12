@@ -30,7 +30,7 @@ DOC_URLS = _collect_doc_urls()
 
 
 def _url_status(url):
-    """HTTP status for ``url`` (drops any ``#anchor``); GET if HEAD is refused."""
+    """HTTP status for ``url`` (drops ``#anchor``); GET if HEAD refused."""
     target = url.split("#", 1)[0]
     headers = {"User-Agent": "benchopt-tests"}
     for method in ("HEAD", "GET"):

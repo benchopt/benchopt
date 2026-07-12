@@ -1,5 +1,4 @@
 from benchopt import BaseSolver
-from benchopt.stopping_criterion import SufficientProgressCriterion
 
 
 class Solver(BaseSolver):

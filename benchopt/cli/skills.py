@@ -15,8 +15,8 @@ SKILL_NAME = "using-benchopt"
 # sync time so the agent can detect a stale skill.
 VERSION_PLACEHOLDER = "__BENCHOPT_VERSION__"
 
-# Skill doc links ship pointing at the ``stable`` docs; at sync time we retarget
-# them at the docs matching the installed version (see ``_doc_url_version``).
+# Skill doc links ship pointing at the ``stable`` docs; at sync time we
+# retarget them at the installed version's docs (see ``_doc_url_version``).
 STABLE_DOC_PREFIX = "benchopt.github.io/stable/"
 
 # Only final releases (``X.Y`` / ``X.Y.Z``) publish version-specific docs; dev
@@ -128,6 +128,8 @@ def sync_skills(benchmark, global_, no_claude):
     if not no_claude:
         claude_dir.mkdir(parents=True, exist_ok=True)
         kind = _link_or_copy(claude_dir / SKILL_NAME, target)
-        click.echo(f"Claude mirror ({kind}) at {colorify(str(claude_dir), BLUE)}")
+        click.echo(
+            f"Claude mirror ({kind}) at {colorify(str(claude_dir), BLUE)}"
+        )
 
     click.echo(colorify(f"{TICK} Done.", GREEN))

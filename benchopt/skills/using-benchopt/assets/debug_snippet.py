@@ -31,7 +31,7 @@ if skip:
     print(f"Solver skipped: {reason}")
 else:
     solver.set_objective(**obj_dict)
-    solver.run(10)                          # adjust stop_val to match sampling_strategy
+    solver.run(10)              # adjust arg to match sampling_strategy
     result = solver.get_result()
 
     metrics = objective.evaluate_result(**result)

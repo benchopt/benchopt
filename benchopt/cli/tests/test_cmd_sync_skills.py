@@ -23,7 +23,9 @@ def test_sync_local(tmp_path, monkeypatch):
     assert (agents / SKILL_NAME / "SKILL.md").is_file()
     mirror = claude / SKILL_NAME
     assert mirror.exists()
-    assert (mirror / "SKILL.md").resolve() == (agents / SKILL_NAME / "SKILL.md").resolve()
+    assert (mirror / "SKILL.md").resolve() == (
+        agents / SKILL_NAME / "SKILL.md"
+    ).resolve()
 
 
 def test_sync_into_benchmark_path(tmp_path):
@@ -63,7 +65,6 @@ def test_no_claude_flag(tmp_path, monkeypatch):
 
     assert (tmp_path / ".agents" / "skills").is_dir()
     assert not (tmp_path / ".claude").exists()
-
 
 
 def test_sync_global(tmp_path, monkeypatch):

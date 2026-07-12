@@ -14,7 +14,7 @@ class Dataset(BaseDataset):
 
     def get_data(self):
         # Must return a dict; benchopt calls Objective.set_data(**data).
-        # Use get_seed(use_repetition=True) so --n-repetitions gives distinct draws.
+        # get_seed(use_repetition=True) makes --n-repetitions draw distinctly.
         rng = np.random.default_rng(self.get_seed(use_repetition=True))
         X = rng.standard_normal((self.n_samples, self.n_features))
         y = X @ rng.standard_normal(self.n_features)
