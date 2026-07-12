@@ -27,6 +27,8 @@ class DependenciesMixin:
     #           installed in the `bin` folder of the env and can be imported
     #           with import_shell_cmd.
     install_cmd = "conda"
+    requirements = None
+    install_script = None
 
     _error_output = None
     _error_displayed = False
@@ -42,7 +44,7 @@ class DependenciesMixin:
     @classproperty
     def install_cmd_(cls):
         if cls.install_cmd not in ["conda", "shell"]:
-            raise ValueError(
+            raise AttributeError(
                 f"{cls.install_cmd} is not a valid install command. "
                 "Please use 'conda' or 'shell' as install command."
             )
@@ -155,7 +157,7 @@ class DependenciesMixin:
             try:
                 cls._pre_install_hook(env_name=env_name)
                 if install_cmd_ == "conda":
-                    if hasattr(cls, "requirements"):
+                    if cls.requirements is not None:
                         install_in_conda_env(*cls.requirements,
                                              env_name=env_name)
                     else:
@@ -249,7 +251,7 @@ class DependenciesMixin:
                 ]
             else:
                 try:
-                    conda_reqs = getattr(cls, "requirements", [])
+                    conda_reqs = cls.requirements or []
                 except Exception as exc:
                     return fail_fast(exc)
 

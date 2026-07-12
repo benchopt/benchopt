@@ -109,10 +109,12 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
         for key, values in self.options.items():
             if values is Ellipsis:
                 continue
+            if callable(values):
+                continue
             if not isinstance(values, list):
                 raise ValueError(
-                    f"The values of options should be a list or ... . "
-                    f"Got {values} for key {key}."
+                    f"The values of options should be a list, a callable "
+                    f"or ... . Got {values} for key {key}."
                 )
 
             if len(values) == 0:
@@ -138,7 +140,15 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
         # Get all combinations
         options = {**self.options}
         for k, v in options.items():
-            if v is Ellipsis:
+            if callable(v):
+                values = v(df)
+                if not isinstance(values, list):
+                    raise ValueError(
+                        f"The callable for option {k} should return a list. "
+                        f"Got {values}."
+                    )
+                options[k] = values
+            elif v is Ellipsis:
                 if k in ["dataset", "solver", "objective"]:
                     options[k] = df[f'{k}_name'].unique().tolist()
                 elif k == "objective_column":

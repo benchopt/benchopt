@@ -247,11 +247,11 @@ def test_dual_strategy(no_debug_log):
     """
 
     with temp_benchmark(solvers=[solver]) as benchmark:
-        with pytest.raises(AssertionError, match="Only set it once."):
-            with CaptureCmdOutput():
-                run([str(benchmark.benchmark_dir),
-                    *('-s test-solver -d test-dataset --no-plot').split()],
-                    standalone_mode=False)
+        with CaptureCmdOutput(exit=1) as out:
+            run([str(benchmark.benchmark_dir),
+                *('-s test-solver -d test-dataset --no-plot').split()],
+                standalone_mode=False)
+        out.check_output("Only set it once.", repetition=1)
 
 
 def test_objective_equals_zero(no_debug_log):

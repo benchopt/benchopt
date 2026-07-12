@@ -93,14 +93,13 @@ class TestArchiveCmd:
         with CaptureCmdOutput(delete_result_files=False) as out:
             archive(f"{self.bench.benchmark_dir} --with-outputs".split(),
                     'benchopt', standalone_mode=False)
-        saved_files = re.findall(r'Results are in (.*\.tar.gz)', out.output)
         try:
             assert len(out.result_files) == 1
             saved_file = out.result_files[0]
             counts = self.count_files_in_archive(saved_file)
         finally:
             # Make sure to clean up all files even when the test fails
-            for f in saved_files:
+            for f in out.result_files:
                 Path(f).unlink()
 
         assert counts["README"] == 1, counts
@@ -109,6 +108,23 @@ class TestArchiveCmd:
         assert counts["solvers"] >= 1, counts
         assert counts["outputs"] >= 1, counts
         assert counts["__pycache__"] == 0, counts
+
+    def test_benchmark_utils_included(self):
+        # benchmark_utils/ must be included in the archive
+        utils = {"helpers": "def foo(): pass"}
+        with temp_benchmark(benchmark_utils=utils) as bench:
+            with CaptureCmdOutput(delete_result_files=False) as out:
+                archive([str(bench.benchmark_dir)], 'benchopt',
+                        standalone_mode=False)
+            try:
+                assert len(out.result_files) == 1
+                with tarfile.open(out.result_files[0], "r:gz") as tar:
+                    names = [m.name for m in tar.getmembers()]
+            finally:
+                for f in out.result_files:
+                    Path(f).unlink()
+
+        assert any("benchmark_utils" in n for n in names), names
 
     def test_complete_bench(self, bench_completion_cases):  # noqa: F811
         # Completion for benchmark name

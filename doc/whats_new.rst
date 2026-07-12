@@ -7,16 +7,50 @@ What's new
 
 .. _dev:
 
-Version 1.10.0 -- In development
+Version 1.10.0 -- in development
 --------------------------------
 
-FIX
+CLI
 ~~~
 
-- Detect the requirements installed by ``benchopt install`` in the current
-  environment, by reloading the classes instead of relying on the import
-  outcome cached when collecting the benchmark.
-  By `Felix Divo`_ (:gh:`978`)
+- Ship agent skills (``SKILL.md``, `Agent Skills <https://agentskills.io>`_
+  standard) as package data and add ``benchopt sync-skills`` to install them
+  into a project's ``.agents/skills/`` (or globally with ``--global``), with a
+  ``.claude/skills/`` mirror for Claude Code. By `Thomas Moreau`_ (:gh:`959`)
+
+PLOT
+~~~~
+
+- Change the plotly style to make it more like matplotlib.
+  By `Hippolyte Verninas`_ (:gh:`966`)
+
+- Figures in the html interface are now resizable.
+  By `Hippolyte Verninas`_ (:gh:`965`)
+
+- Quantile toggle is now hidden if no quantiles are available
+  By `Hippolyte Verninas`_ (:gh:`964`)
+
+- Improve the html report table, now rendered with `Grid.js
+  <https://gridjs.io/>`_: sortable by any column, filter by solver name,
+  hide/show any columns. By `Hippolyte Verninas`_ (:gh:`953`)
+
+API
+~~~
+
+- Custom plot ``options`` values can now be a callable taking the results
+  DataFrame as input and returning the list of possible values for the option.
+  By `Hippolyte Verninas`_ (:gh:`952`)
+
+- Add ``param=all`` shorthand to sweep every valid value of a parameter,
+  e.g. ``-d "Foo[x=all]"``. The valid values are declared per class through
+  the ``get_all_parameter_values`` classmethod, and are also listed
+  by ``benchopt info -v``. By `Eduardo Montesuma`_ (:gh:`941`)
+
+- Add ``get_run_output_path`` method to all benchmark components (``Dataset``,
+  ``Objective``, ``Solver``). It returns a directory unique to the current
+  (dataset/objective/solver/repetition) run, to save per-run artifacts such as
+  model checkpoints or diagnostic logs. See :ref:`run_artifacts` for usage
+  details. By `Thomas Moreau`_ (:gh:`961`)
 
 TST
 ~~~
@@ -30,6 +64,37 @@ TST
 - Add ``test_dataset_install`` test to check install of datasets and
   make sure to install test_datasets when creating a test env.
   By `Thomas Moreau`_ (:gh:`944`)
+
+FIX
+~~~
+
+- Fix ``benchopt sync-skills`` symlink with global install for Claude.
+  By `Thomas Moreau`_ (:gh:`969`)
+
+- Fix ``get_seed`` failing during ``benchopt prepare`` when a dataset's
+  ``get_data`` uses it. ``prepare`` now sets up a seeding context and accepts a
+  ``--seed`` option that is part of the preparation cache. Datasets whose
+  preparation does not depend on the seed can drop it from the cache key with
+  ``prepare_cache_ignore = ('base_seed',)``.
+  By `Thomas Moreau`_ (:gh:`962`)
+
+- Fix single dataset benchmark test_dataset_names detection for test env
+  creation. By `Thomas Moreau`_ (:gh:`951`)
+
+- Fix ``benchopt archive`` not including ``benchmark_utils/`` in the generated
+  archive. By `Thomas Moreau`_ (:gh:`970`)
+
+- Fix ``--profile`` parsing that was resulting in always activated profile.
+  By `Thomas Moreau`_ (:gh:`950`)
+
+- Fix error reporting when ``Solver.set_objective`` fails, which was
+  preventing the run to finish normally.
+  By `Thomas Moreau`_ (:gh:`949`)
+
+- Detect the requirements installed by ``benchopt install`` in the current
+  environment, by reloading the classes instead of relying on the import
+  outcome cached when collecting the benchmark.
+  By `Felix Divo`_ (:gh:`978`)
 
 .. _changes_1_9_1:
 

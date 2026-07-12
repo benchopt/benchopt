@@ -184,11 +184,12 @@ def test_objective_no_cv(no_debug_log):
 
     msg = "To use `Objective.get_split`, Objective must define a cv"
     with temp_benchmark(objective=no_cv) as benchmark:
-        with pytest.raises(ValueError, match=msg):
+        with CaptureCmdOutput(exit=1) as out:
             run([
                 str(benchmark.benchmark_dir),
                 *'-s test-solver -d test-dataset -n 1 -r 1 --no-plot'.split()
             ], standalone_mode=False)
+        out.check_output(msg, repetition=1)
 
 
 def test_objective_cv_splitter(no_debug_log):

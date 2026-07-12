@@ -54,4 +54,6 @@
 
 .. _Damien Lesens: https://damienlesens.github.io/
 
+.. _Eduardo Montesuma: https://eddardd.github.io/
+
 .. _Felix Divo: https://github.com/felixdivo

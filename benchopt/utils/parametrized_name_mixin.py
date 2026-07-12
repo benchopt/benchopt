@@ -1,5 +1,6 @@
 import re
 import ast
+import warnings
 import itertools
 from abc import abstractmethod
 
@@ -10,6 +11,9 @@ class ParametrizedNameMixin():
     """Mixing for parametric classes representation and naming.
     """
     parameters = {}
+
+    # Parameter config for testing the class
+    test_config = None
 
     def __init__(self, **parameters):
         """Default init set parameters base on the cls.parameters
@@ -23,6 +27,13 @@ class ParametrizedNameMixin():
         for k, v in _parameters.items():
             if not hasattr(self, k):
                 setattr(self, k, v)
+
+    @classmethod
+    def get_all_parameter_values(cls, name):
+        """Return all valid values for parameter `name`, or None when not
+        enumerable. Distinct from `cls.parameters[name]`, which only drives
+        the default sweep grid."""
+        return None  # Default opt-out
 
     @classmethod
     def get_instance(cls, **parameters):
@@ -119,6 +130,16 @@ class ParametrizedNameMixin():
         return {}
 
     def __reduce__(self):
+        """Control pickling for inter-workers communication and hashing.
+
+        Instances are reconstructed via ``_load_instance(*_get_mixin_args())``
+        and then ``__setstate__(_get_state())`` is called.  Only what
+        ``_get_mixin_args`` and ``_get_state`` return survives the round-trip;
+        any instance attribute not included there is silently dropped.
+
+        To persist extra attributes across pickling, override ``_get_state``
+        (and the matching ``__setstate__``) in the subclass. `.
+        """
         return self._load_instance, self._get_mixin_args(), self._get_state()
 
 
@@ -225,16 +246,17 @@ def get_configs(dataset_class, obj_class=None, solver_class=None):
     """
 
     # Get the test_config for each class, and resolve the dataset overrides.
-    objective_config = getattr(obj_class, 'test_config', {}).copy()
+    # Handle the case where objective/solver are None with getattr
+    objective_config = (getattr(obj_class, 'test_config', None) or {}).copy()
     obj_ds = objective_config.pop('dataset', {})
-    solver_config = getattr(solver_class, 'test_config', {}).copy()
+    solver_config = (getattr(solver_class, 'test_config', None) or {}).copy()
     solver_ds = solver_config.pop('dataset', {})
 
     # Pop the name from the dataset overrides
     obj_ds.pop('name', None)
     solver_ds.pop('name', None)
 
-    dataset_overrides = getattr(dataset_class, 'test_config', {}).copy()
+    dataset_overrides = (dataset_class.test_config or {}).copy()
     dataset_overrides.update(**obj_ds)
     dataset_overrides.update(**solver_ds)
     objective_config.update(**solver_config.pop('objective', {}))
@@ -380,6 +402,116 @@ def is_matched(name, include_patterns=None, default=True):
     return False
 
 
+def _contains_all(value):
+    """Return True if the literal ``'all'`` appears anywhere in ``value``.
+
+    Recurses into lists and tuples so that ``'all'`` nested inside the value
+    of a coupled parameter (e.g. ``[(0, 1), (1, 'all')]``) is detected.
+    """
+    if isinstance(value, (list, tuple)):
+        return any(_contains_all(v) for v in value)
+    return value == 'all'
+
+
+def _expand_all(cls, kwargs, name_type):
+    """Expand ``'all'`` parameter values using ``get_all_parameter_values``.
+
+    For each parameter whose selected value(s) contain the literal
+    ``'all'``, replace ``'all'`` with the full set of valid values declared
+    by ``cls.get_all_parameter_values(name)``. Any explicit values passed
+    alongside ``'all'`` (e.g. ``[v1, 'all', v2]``) are preserved and
+    de-duplicated against the declared choices, keeping a stable order
+    (explicit values first, then declared choices not already listed).
+
+    A class can instead declare that ``'all'`` is a legitimate literal value
+    for a parameter (rather than the expansion token) by returning ``'all'``
+    from ``get_all_parameter_values(name)``. In that case ``'all'`` is kept
+    as-is, without expansion or warning.
+
+    Parameters
+    ----------
+    cls : ParametrizedNameMixin
+        The class whose parameters are being expanded. Its
+        ``get_all_parameter_values`` classmethod declares the valid universe.
+    kwargs : dict
+        Mapping of parameter name to selected value(s), as extracted from a
+        CLI pattern. Values may be a single value or a list.
+    name_type : str
+        Type of the class (``'dataset'``, ``'solver'``, ...), used only to
+        build a sensible error message.
+
+    Returns
+    -------
+    expanded : dict
+        Copy of ``kwargs`` with every ``'all'`` replaced by the declared
+        choices. Parameters that do not contain ``'all'`` are passed through
+        unchanged.
+
+    Warns
+    -----
+    UserWarning
+        If a parameter requests ``'all'`` but ``cls.get_all_parameter_values``
+        returns ``None`` for it (i.e. the class did not opt in by declaring an
+        enumerable value set). In that case ``'all'`` is kept as a literal
+        value. Implementing the hook to return the values (or ``'all'``)
+        disables the warning.
+
+    Raises
+    ------
+    click.BadParameter
+        If ``'all'`` appears anywhere in the values of a coupled
+        (comma-joined) parameter, for which expansion is not possible.
+    """
+    expanded = {}
+    for key, val in kwargs.items():
+        # For coupled (comma-joined) parameters, values must stay fixed tuples
+        # that vary together, so 'all' cannot be expanded. Reject it wherever
+        # it appears -- including nested inside the value tuples -- rather than
+        # silently treating it as the literal value 'all'.
+        if ',' in key:
+            if _contains_all(val):
+                raise click.BadParameter(
+                    f"'all' is not supported for coupled parameters "
+                    f"'{key}' of {name_type} '{cls.name}'."
+                )
+            expanded[key] = val
+            continue
+        vals = val if isinstance(val, list) else [val]
+        if 'all' not in vals:
+            expanded[key] = val
+            continue
+        choices = cls.get_all_parameter_values(key)
+        if choices == 'all':
+            # The class declares that 'all' is a legitimate literal value for
+            # this parameter (rather than the expansion token). Keep it as-is,
+            # without expanding or warning.
+            expanded[key] = val
+            continue
+        if choices is None:
+            # The class did not opt in by declaring an enumerable value set,
+            # so 'all' cannot be expanded. Warn instead of failing, and keep
+            # 'all' as a literal value. Implementing get_all_parameter_values
+            # to return the values enables expansion; returning 'all' marks it
+            # as a literal value and silences this warning.
+            warnings.warn(
+                f"Parameter '{key}' of {name_type} '{cls.name}' does not "
+                f"declare an enumerable value set, so '{key}=all' is used as "
+                f"a literal value. Override "
+                f"{cls.__name__}.get_all_parameter_values('{key}') to return "
+                f"the valid values (to enable '{key}=all') or 'all' (to keep "
+                f"'all' as a literal value and silence this warning).",
+                UserWarning,
+            )
+            expanded[key] = val
+            continue
+        # merge explicit values with the full set, de-duplicated, order-stable
+        merged = [v for v in vals if v != 'all'] + [
+            c for c in choices if c not in vals
+        ]
+        expanded[key] = merged
+    return expanded
+
+
 def _check_patterns(all_classes, patterns, name_type='dataset',
                     class_only=False):
     """Check the patterns and return a list of selected classes and params.
@@ -499,6 +631,7 @@ def _check_patterns(all_classes, patterns, name_type='dataset',
                 )
         params = cls.parameters.copy()
         params.update(kwargs)
+        params = _expand_all(cls, params, name_type)
         all_valid_patterns.append((cls, params))
 
     if not class_only:

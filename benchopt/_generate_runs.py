@@ -2,23 +2,7 @@ import copy
 import inspect
 
 from .utils.parametrized_name_mixin import is_matched
-
-
-def _seed_run(objective, dataset, solver, repetition, base_seed):
-    """Set the information necessary to compute seeds for a given run."""
-    seed_dict = {
-        "base_seed": str(base_seed),
-        "objective": str(objective),
-        "dataset": str(dataset),
-        "solver": str(solver),
-        "repetition": str(repetition),
-    }
-    for klass in [objective, dataset, solver]:
-        if klass is not None:
-            klass.seed_dict = {
-                **seed_dict,  # Copy to avoid border effects
-                "class": klass.__class__.__name__.lower()
-            }
+from .utils.run_context import RunContext
 
 
 def buffer_iterator(it):
@@ -103,7 +87,8 @@ def _get_all_runs(benchmark, solvers=None, forced_solvers=None,
 
 def get_solver_kwargs(
     benchmark, dataset, objective, solver, n_repetitions, max_runs,
-    timeout=None, force=False, collect=False, terminal=None, pdb=False
+    timeout=None, force=False, collect=False, terminal=None,
+    run_context=None,
 ):
     """Run a benchmark for a given dataset, objective and solver.
 
@@ -132,14 +117,18 @@ def get_solver_kwargs(
         and ignore the results that are not computed yet, default is False.
     terminal : TerminalOutput or None
         Object to format string to display the progress of the solver.
-    pdb : bool
-        It pdb is set to True, open a debugger on error.
+    run_context : RunContext | None
+        Base context created in ``_run_benchmark`` carrying config fields
+        (``pdb``, ``run_output_base``).  Cloned here for each repetition
+        with the per-run fields filled in.
 
     Returns
     -------
     args_run_one_to_cvg : dict
         The dictionary of arguments to run_one_to_cvg.
     """
+    run_context = run_context or RunContext()
+
     # get sampling strategy
     # for plotting purpose consider 'callback' as 'iteration'
     sampling_strategy = solver._solver_strategy
@@ -151,12 +140,10 @@ def get_solver_kwargs(
     # the name of metrics in Objective.compute
     obj_description = objective.__doc__ or ""
 
-    _seed_run(
-        objective=objective,
-        dataset=dataset,
-        solver=solver,
-        repetition=0,
-        base_seed=benchmark.seed
+    # Set run context with rep=0 so get_seed() works during _set_dataset.
+    run_context = run_context.set_run_context(
+        objective=objective, dataset=dataset, solver=solver,
+        repetition=0, base_seed=benchmark.seed,
     )
 
     # Set objective and skip if necessary.
@@ -198,21 +185,19 @@ def get_solver_kwargs(
             **{f"p_dataset_{k}": v for k, v in dataset._parameters.items()},
         }
 
-        _seed_run(
-            objective=objective_rep,
-            dataset=dataset,
-            solver=solver,
-            repetition=rep,
-            base_seed=benchmark.seed
-        )
-
         # Set dataset in objective for the repetition.
+        # We need to set the context here, used in get_data. No need to clone
+        # each components, they are cloned and reset for each run .
+        run_ctx = run_context.set_run_context(
+            objective=objective_rep, dataset=dataset, solver=solver,
+            repetition=rep, base_seed=benchmark.seed,
+        )
         objective_rep._set_dataset(dataset)
 
         args_run_one_to_cvg = dict(
             benchmark=benchmark, objective=objective_rep, solver=solver,
             meta=meta, timeout=timeout, max_runs=max_runs, force=force,
-            terminal=terminal, pdb=pdb,
+            terminal=terminal, run_context=run_ctx,
         )
 
         yield args_run_one_to_cvg
@@ -221,7 +206,7 @@ def get_solver_kwargs(
 def generate_run_kwargs(
     benchmark, solvers=None, forced_solvers=None, datasets=None,
     objectives=None, n_repetitions=1, max_runs=10, timeout=None,
-    pdb=False, collect=False, terminal=None,
+    collect=False, terminal=None, run_context=None,
 ):
     """Yield kwargs for each ``run_one_to_cvg`` call in the benchmark.
 
@@ -235,7 +220,7 @@ def generate_run_kwargs(
     )
     common_kwargs = dict(
         benchmark=benchmark, n_repetitions=n_repetitions, max_runs=max_runs,
-        timeout=timeout, pdb=pdb, collect=collect,
+        timeout=timeout, collect=collect, run_context=run_context,
     )
     for kwargs in all_runs:
         yield from get_solver_kwargs(**common_kwargs, **kwargs)

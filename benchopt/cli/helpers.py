@@ -27,7 +27,7 @@ from benchopt.utils.terminal_output import BLUE, RED, GREEN, TICK, CROSS
 
 ARCHIVE_ELEMENTS = [
     'README*', '*.yml', 'objective.py',
-    'solvers/*', 'datasets/*', 'utils/**'
+    'solvers/*', 'datasets/*', 'benchmark_utils/**'
 ]
 
 helpers = click.Group(
@@ -177,6 +177,21 @@ def check_conda_env(env_name, benchmark_name=None):
     return env_name
 
 
+def _format_choices(choices):
+    """Render a list of valid parameter values for `benchopt info -v`.
+
+    Lists every value when there are at most 8, otherwise shows the first
+    few and last few with an ellipsis. A total count is always appended.
+    """
+    choices = [str(c) for c in choices]
+    n = len(choices)
+    if n <= 8:
+        listed = ', '.join(choices)
+    else:
+        listed = ', '.join(choices[:5] + ['...'] + choices[-2:])
+    return f"{listed} ({n} total)"
+
+
 def print_info(cls_name_list, cls_list, env_name=None, verbose=False):
     """Print information for each element of input listed
 
@@ -251,6 +266,15 @@ def print_info(cls_name_list, cls_list, env_name=None, verbose=False):
                 for param, value in cls.parameters.items():
                     values = ', '.join(map(str, value))
                     print(f"    {param}: {values}")
+                    # If the class declares an enumerable universe of valid
+                    # values for this parameter (via get_all_parameter_values),
+                    # list them too. This is the set expanded by `param=all`.
+                    choices = None
+                    if hasattr(cls, 'get_all_parameter_values'):
+                        choices = cls.get_all_parameter_values(param)
+                    if choices is not None:
+                        print(f"        valid values: "
+                              f"{_format_choices(choices)}")
 
             print("-" * 10)
 
