@@ -30,6 +30,13 @@ Weigh changes against these:
   (`parallel_backends/`: loky/dask/submitit) and install backends (conda/uv) are
   selected by name behind a stable interface. Extend by adding a backend, not by
   threading `if backend == ...` through the call sites.
+- **Hand authors managed helpers for cross-cutting concerns.** Rather than making
+  benchmarks reimplement plumbing, the base classes expose helpers that do it
+  correctly: `get_data_path` (shared, configurable data location), `get_seed`
+  (reproducible, cache-aware randomness scoped per component/repetition), and
+  `get_run_output_path` (a unique dir for per-run artifacts). When a new concern
+  cuts across benchmarks, prefer adding such a helper over documenting a recipe
+  authors must copy.
 
 ## Finding code in the codebase
 
