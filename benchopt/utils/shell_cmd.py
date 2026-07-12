@@ -18,10 +18,7 @@ def _split_shell(shell):
     """Split a shell setting into its program and arguments.
 
     The `shell` setting carries arguments by design (e.g. ``'cmd /c'`` or
-    ``'bash --norc --noprofile'``), so it cannot be quoted as a whole. Split it
-    into a list suitable for `subprocess.run` without an extra `shell=True`
-    layer, which also handles a shell *path* that contains spaces (e.g. Git
-    Bash on Windows).
+    ``'bash --norc --noprofile'``), so it cannot be quoted as a whole.
     """
     # posix=False keeps Windows backslashes intact but retains surrounding
     # quotes on each token, so strip them there.
