@@ -96,7 +96,7 @@ def _run_shell(script, raise_on_error=None, capture_stdout=True,
     command = [*_split_shell(SHELL), tmp.name]
 
     if capture_stdout:
-        # Merge stderr into stdout (preserving order, as getstatusoutput did)
+        # Merge stderr into stdout, and strip empty line
         # so callers parsing the last output line as JSON keep working.
         res = subprocess.run(
             command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
