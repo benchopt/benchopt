@@ -1,5 +1,36 @@
 # benchopt Implementation Design Guidelines
 
+## Design philosophy
+
+benchopt exists to give benchmark authors **maximum flexibility with minimal
+friction**, and to keep **benchmark definition separate from the plumbing**.
+Weigh changes against these:
+
+- **Definition vs plumbing.** Authors write only `objective.py`, `solvers/`,
+  and `datasets/`, subclassing `BaseObjective` / `BaseSolver` / `BaseDataset`;
+  they never touch execution. Keep the runner, caching, discovery, and CLI
+  (`runner.py`, `benchmark.py`, `cli/`) out of the user-facing contract in
+  `base.py`.
+- **Keep base classes thin.** Cross-cutting plumbing is factored into mixins
+  (`ParametrizedNameMixin`, `DependenciesMixin`, `SeedMixin`). New shared
+  machinery usually belongs in a mixin or `utils/`, not inlined into a base
+  class.
+- **Minimize friction.** A working benchmark should need very little. Prefer
+  sensible defaults and optional hooks over required boilerplate — `skip`
+  defaults to False, `get_one_result` is optional, `_default_split` is used
+  unless the author defines `split`, and `sampling_strategy` /
+  `stopping_criterion` are inherited from the Objective when unset. When adding
+  to the contract, ask whether it can have a default.
+- **One API, many strategies.** Prefer an abstraction that lets a single API
+  serve several use cases over special-casing. `sampling_strategy`
+  (`iteration` / `callback` / `run_once`) lets one `Solver.run` cover iterative,
+  callback-monitored, and fixed-budget training; the stopping criterion is
+  derived from it.
+- **Make alternatives pluggable backends, not conditionals.** Parallel execution
+  (`parallel_backends/`: loky/dask/submitit) and install backends (conda/uv) are
+  selected by name behind a stable interface. Extend by adding a backend, not by
+  threading `if backend == ...` through the call sites.
+
 ## Finding code in the codebase
 
 - When searching for where something is implemented (a function, a pattern, a hook) and a couple of targeted searches turn up nothing, **ask the user directly** rather than spiraling into more searches. They will know immediately.
