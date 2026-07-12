@@ -55,9 +55,7 @@ particular for logging, warnings and errors. The available options are:
 * ``shell``, *str*: can be used to specify the shell to use. On POSIX systems
   it defaults to the ``SHELL`` env var if it exists and
   ``'bash --norc --noprofile'`` otherwise. On Windows it defaults to
-  ``'cmd /c'`` and the ``SHELL`` env var is ignored (a POSIX ``SHELL`` set by
-  Git Bash or MSYS would otherwise break conda handling); override it
-  explicitly with the ``BENCHOPT_SHELL`` env var or this setting.
+  ``'cmd /c'`` and the ``SHELL`` env var is ignored as it is not reliable.
 * ``cache``, *str*: can be used to specify where the cache for the benchmarks
   should be stored. By default, the cache files are stored in the benchmark
   directory, under the folder __cache__. Setting this configuration would
