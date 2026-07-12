@@ -56,4 +56,4 @@
 
 .. _Eduardo Montesuma: https://eddardd.github.io/
 
-.. _Felix Divo: https://github.com/felixdivo
+.. _Felix Divo: https://felix.divo.link
