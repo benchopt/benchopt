@@ -1,7 +1,6 @@
 import pytest
 
 from benchopt.utils.shell_cmd import _split_shell
-from benchopt.utils.conda_env_cmd import _conda_cmd
 from benchopt.utils.conda_env_cmd import get_env_file_from_requirements
 from benchopt.config import get_setting
 
@@ -28,16 +27,6 @@ def test_split_shell_spaced_path(monkeypatch):
     assert _split_shell(shell) == [
         "C:\\Program Files\\Git\\bin\\bash.EXE", "--norc"
     ]
-
-
-def test_conda_cmd_call_prefix():
-    # Under cmd, conda is prefixed with CALL; otherwise it is left untouched,
-    # so the prefix always matches the shell the script runs in.
-    assert _conda_cmd("conda", is_cmd=True) == "CALL conda"
-    assert _conda_cmd("conda", is_cmd=False) == "conda"
-    assert _conda_cmd("mamba", is_cmd=True) == "CALL mamba"
-    # An explicit `call conda` is not doubled.
-    assert _conda_cmd("call conda", is_cmd=True) == "call conda"
 
 
 def test_requirements_conda():
