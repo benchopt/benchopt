@@ -91,8 +91,8 @@ def _run_shell(script, raise_on_error=None, capture_stdout=True,
     if raise_on_error is True:
         raise_on_error = "{output}"
 
-    # Invoke the script directly with the configured shell, without going
-    # through an extra `shell=True` layer that would re-parse the command line.
+    # Pass the shell and script as an argument list so subprocess invokes them
+    # directly, without re-parsing (and mangling) a shell path that has spaces.
     command = [*_split_shell(SHELL), tmp.name]
 
     if capture_stdout:
