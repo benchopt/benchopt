@@ -80,54 +80,32 @@ def compute_short_labels(names):
         'OtherSolver[alpha=0.1]':       'OtherSolver',
     }
     """
-    names = list(map(str, names))
-    # Use _extract_options for robust AST-aware parsing of complex values.
-    parsed = {}
-    for name in names:
-        base, _args, kwargs = _extract_options(name)
-        parsed[name] = (base, kwargs)  # kwargs values are Python objects
-
-    # Group by base name
+    # Parse each name into (base, params); `_extract_options` is AST-aware so
+    # complex values (lists, dicts, tuples) are handled. Names come from a
+    # parameters dict, so they carry only keyword params (no positional args).
     by_base = defaultdict(list)
-    for name, (base, params) in parsed.items():
+    for name in map(str, names):
+        base, _args, params = _extract_options(name)
         by_base[base].append((name, params))
 
     short_map = {}
     for base, group in by_base.items():
         if len(group) == 1:
-            # Single instance – only the base name is needed for identification
-            # showing all params adds noise without aiding disambiguation.
-            name, params = group[0]
-            short_map[name] = base
+            # Single instance: the base name alone identifies it.
+            short_map[group[0][0]] = base
             continue
 
-        # Find which parameter keys exist across this group.
-        all_keys = []
-        seen_keys = set()
+        # All names of a class share the same parameters, so keep exactly the
+        # ones that take more than one distinct value across the group.
+        values = defaultdict(set)
         for _, params in group:
-            for k in params:
-                if k not in seen_keys:
-                    all_keys.append(k)
-                    seen_keys.add(k)
-
-        # A parameter *varies* if it takes more than one distinct value inside
-        # this base-name group (missing values are treated as a distinct value)
-        _MISSING = object()
-        varying_keys = [
-            k
-            for k in all_keys
-            if len({str(params.get(k, _MISSING)) for _, params in group}) > 1
-        ]
+            for k, v in params.items():
+                values[k].add(str(v))
+        varying = {k for k, vals in values.items() if len(vals) > 1}
 
         for name, params in group:
-            if not varying_keys:
-                # All params are constant – just show the base name.
-                short_map[name] = base
-            else:
-                short_params = {
-                    k: str(params[k]) for k in varying_keys if k in params
-                }
-                short_map[name] = _format_name(base, short_params)
+            short = {k: v for k, v in params.items() if k in varying}
+            short_map[name] = _format_name(base, short)
 
     return short_map
 
@@ -154,37 +132,59 @@ def _compute_params_info(names):
     return result
 
 
-def _format_description(params):
-    """Render a ``{param: value}`` dict as hover-icon HTML (empty if none)."""
-    if not params:
-        return ""
-    rows = "".join(
-        f'<tr><td class="param-key">{escape(k)}</td>'
-        f'<td class="param-val">{escape(v)}</td></tr>'
-        for k, v in params.items()
-    )
-    return f'<div class="param-title">Parameters</div><table>{rows}</table>'
+def _format_description(params, description=""):
+    """Render an object's hover-icon HTML (empty when there is nothing to show).
+
+    Combines an optional free-text ``description`` (e.g. a solver docstring)
+    with a table of the object's ``{param: value}`` parameters.
+    """
+    parts = []
+    if description:
+        parts.append(f'<div class="param-desc">{escape(description)}</div>')
+    if params:
+        rows = "".join(
+            f'<tr><td class="param-key">{escape(k)}</td>'
+            f'<td class="param-val">{escape(v)}</td></tr>'
+            for k, v in params.items()
+        )
+        parts.append(
+            f'<div class="param-title">Parameters</div><table>{rows}</table>'
+        )
+    return "".join(parts)
 
 
-def compute_descriptions(names):
-    """Compute hover-icon HTML describing each name's parameters.
+def compute_descriptions(names, prose=None):
+    """Compute hover-icon HTML describing each name.
 
     Parameters
     ----------
     names : sequence of str
         Parametrized names, e.g. ``df["solver_name"].unique()``.
+    prose : dict[str, str] or None
+        Optional ``{name: free_text}`` (e.g. solver docstrings) prepended to
+        the parameters table.
 
     Returns
     -------
     descriptions : dict[str, str]
-        Mapping ``{name: html}``; the HTML is a small parameters table (empty
-        string when the name has no parameters). Useful for a custom plot that
-        needs the same hover tooltip as the default plots.
+        Mapping ``{name: html}``; the HTML combines the free-text description
+        and a small parameters table (empty string when there is neither).
+        Useful for a custom plot that needs the same hover tooltip as the
+        default plots.
     """
+    prose = prose or {}
     return {
-        name: _format_description(params)
+        name: _format_description(params, prose.get(name, ""))
         for name, params in _compute_params_info(names).items()
     }
+
+
+# Free-text description columns associated with each name column, when present.
+_DESCRIPTION_COLUMNS = {
+    "solver_name": "solver_description",
+    "dataset_name": "dataset_description",
+    "objective_name": "obj_description",
+}
 
 
 def shorten_names(
@@ -196,7 +196,8 @@ def shorten_names(
     preserved in a companion ``*_full_name`` column (opt-in for custom plots
     that need the full parametrized name), and the column itself is replaced by
     its short label. The ``{short_label: description_html}`` map for the hover
-    tooltips is returned alongside.
+    tooltips is returned alongside, combining any free-text description column
+    (e.g. ``solver_description``) with the object's parameters table.
 
     Short labels are display-only (see the module docstring): this operates on
     a copy and must only be used on the plotting ``df``, never on the results
@@ -225,7 +226,18 @@ def shorten_names(
         names = df[col].astype(str)
         unique = names.unique().tolist()
         short_map = compute_short_labels(unique)
-        desc = compute_descriptions(unique)
+
+        # Pull the free-text description (docstring) per name, if the benchmark
+        # recorded one, before the name column is overwritten.
+        desc_col = _DESCRIPTION_COLUMNS.get(col)
+        prose = {}
+        if desc_col and desc_col in df.columns:
+            prose = {
+                str(k): (v or "")
+                for k, v in df.groupby(col)[desc_col].first().items()
+            }
+        desc = compute_descriptions(unique, prose)
+
         full_col = col.replace("_name", "_full_name")
         df[full_col] = names
         df[col] = names.map(short_map)

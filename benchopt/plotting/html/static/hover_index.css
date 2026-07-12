@@ -436,61 +436,12 @@ input:checked+.slider:before {
 }
 #params-tooltip .param-val { word-break: break-all; }
 
-/* Description solver when hovered */
-.curve-description-container {
-  position: relative;
-  display: inline-flex;
-}
-
-.curve-description-content {
-  display: flex;
-  flex-direction: column;
-  visibility: hidden;
-  background-color: rgb(55 65 81);
-  color: #fff;
-  border-radius: 6px;
-  padding-top: 0.5em;
-  padding-bottom: 0.6em;
-  padding-left: 0.5em;
-  padding-right: 0.5rem;
-  opacity: 90%;
-
-  width: max-content;
-  max-width: 80ch;
-  max-height: 500px;
+/* Free-text description (e.g. solver docstring) above the params table. */
+#params-tooltip .param-desc {
   white-space: pre-wrap;
-
-  /* position description with respect to container and put it top-center */
-  position: absolute;
-  transform: translate(0, -100%);
-  z-index: 99999;
-}
-
-/* Show description when hovered */
-.curve-description-container:hover .curve-description-content {
-  visibility: visible;
-}
-
-/*Arrow at the bottom of the description*/
-.curve-description-container .curve-description-content::after {
-  content: " ";
-  position: absolute;
-  top: 100%;
-  left: 20px;
-  margin-left: -5px;
-  border-width: 7px;
-  border-style: solid;
-  border-color: rgb(55 65 81) transparent transparent transparent;
-}
-
-.curve-description-title {
-  margin-bottom: 1em;
-  font-weight: bolder;
-}
-
-.curve-description-body {
   max-height: 450px;
   overflow-y: auto;
+  margin-bottom: 6px;
 }
 
 /*Plot config styling as a bag of tags*/

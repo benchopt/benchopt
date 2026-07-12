@@ -1606,29 +1606,14 @@ const renderLegend = () => {
   show(container);
 
   legend.innerHTML = '';
-  const curvesDescription = window.metadata["solvers_description"];
 
   getCurves().forEach(curve => {
     const curve_data = data(curve);
-    const color = curve_data.color;
-    const symbolNumber = curve_data.marker;
-
-    let legendItem = createLegendItem(curve, color, symbolNumber);
-
-    // preserve compatibility with prev version
-    if(curvesDescription === null || curvesDescription === undefined) {
-      legend.appendChild(legendItem);
-      return;
-    }
-
-    let payload = createSolverDescription(
-      legendItem, {
-        description: curvesDescription[curve],
-      }
+    // The curve's params + docstring hover lives on the legend item's icon,
+    // fed by the global `descriptions` map (see createLegendItem).
+    legend.appendChild(
+      createLegendItem(curve, curve_data.color, curve_data.marker)
     );
-    if (payload !== undefined) {
-      legend.appendChild(payload);
-    }
   });
 }
 
@@ -1695,8 +1680,9 @@ const createLegendItem = (curve, color, symbolNumber) => {
   textContainer.setAttribute('data-curve', curve);
   textContainer.appendChild(document.createTextNode(curve));
 
-  // Append a hover icon carrying the curve's full parameter list, looked up
-  // from the global `descriptions` map (keyed by the short label).
+  // Append a hover icon carrying the curve's description (docstring + full
+  // parameter list), looked up from the global `descriptions` map (keyed by
+  // the short label).
   const desc = (window.descriptions || {})[curve];
   if (desc) {
     textContainer.insertAdjacentHTML('beforeend', descIconHTML(desc));
@@ -1719,24 +1705,6 @@ const createLegendItem = (curve, color, symbolNumber) => {
   return item;
 }
 
-
-function createSolverDescription(legendItem, { description }) {
-  if (description === null || description === undefined || description === "")
-    return legendItem;
-
-  let descriptionContainer = document.createElement("div");
-  descriptionContainer.setAttribute("class", "curve-description-container")
-
-  descriptionContainer.innerHTML = `
-  <div class="curve-description-content text-sm">
-    <span class="curve-description-body">${description}</span>
-  </div>
-  `;
-
-  descriptionContainer.prepend(legendItem);
-
-  return descriptionContainer;
-}
 
 /**
  * Create the same svg symbol as plotly.

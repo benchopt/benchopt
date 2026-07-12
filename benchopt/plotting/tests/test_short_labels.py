@@ -46,20 +46,6 @@ def test_all_params_vary():
     )
 
 
-def test_all_params_constant_reduces_to_base():
-    # When multiple *distinct* configurations share the same parameter values,
-    # there is nothing to shorten within the group (no variation).
-    # In that scenario, show just the base name.
-    names = [
-        "Solver[alpha=0.1,n_iter=100]",
-        "Solver[alpha=0.1,n_iter=200]",
-    ]
-    # alpha is constant (0.1), n_iter varies → keep n_iter only
-    short = compute_short_labels(names)
-    assert short["Solver[alpha=0.1,n_iter=100]"] == "Solver[n_iter=100]"
-    assert short["Solver[alpha=0.1,n_iter=200]"] == "Solver[n_iter=200]"
-
-
 def test_no_params():
     names = ["SolverA", "SolverB"]
     short = compute_short_labels(names)
@@ -123,6 +109,18 @@ def test_compute_descriptions_no_params_is_empty():
     assert desc == {"SolverA": "", "SolverB": ""}
 
 
+def test_compute_descriptions_with_prose():
+    # Free-text description is included even when there are no parameters.
+    desc = compute_descriptions(
+        ["SolverA", "S[a=1]"],
+        prose={"SolverA": "A great solver", "S[a=1]": "Another one"},
+    )
+    assert "A great solver" in desc["SolverA"]
+    assert "<table>" not in desc["SolverA"]  # no params
+    assert "Another one" in desc["S[a=1]"]
+    assert "<table>" in desc["S[a=1]"]       # prose + params
+
+
 # ---------------------------------------------------------------------------
 # shorten_names
 # ---------------------------------------------------------------------------
@@ -146,6 +144,27 @@ def test_shorten_names_replaces_and_keeps_full():
     assert "<table>" in descriptions["S[a=1]"]
     # full params (including constant b), not only the varying ones
     assert ">b<" in descriptions["S[a=1]"]
+
+
+def test_shorten_names_merges_solver_description():
+    df = pd.DataFrame({
+        "solver_name": ["S[a=1]", "S[a=2]"],
+        "solver_description": ["docstring one", "docstring two"],
+    })
+    _, descriptions = shorten_names(df)
+    # The docstring is folded into the same hover as the params table.
+    assert "docstring one" in descriptions["S[a=1]"]
+    assert "<table>" in descriptions["S[a=1]"]
+
+
+def test_shorten_names_merges_dataset_description():
+    df = pd.DataFrame({
+        "dataset_name": ["D[n=1]", "D[n=2]"],
+        "dataset_description": ["first dataset", "second dataset"],
+    })
+    _, descriptions = shorten_names(df)
+    assert "first dataset" in descriptions["D[n=1]"]
+    assert "second dataset" in descriptions["D[n=2]"]
 
 
 def test_shorten_names_is_a_copy():
