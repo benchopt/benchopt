@@ -229,19 +229,11 @@ assert len(df) == expected_rows
 assert df["run_date"].nunique() == 2
 ```
 
-## Conventions checklist
+## Before declaring a draft done
 
-Global testing preferences, applied throughout this skill — verify a draft
-against these before declaring it done:
-
-- Extract configuration-independent tests (across hubs, backends, …) into a
-  base class rather than duplicating them; subclasses add the specifics.
-- Prefer single-value `parametrize` with internal `if/else` over wide tuple
-  parametrize.
-- Use `setup_class()` (not `setup()`) for `importorskip` and expensive shared
-  setup that should run once per class.
-- Use string values as parametrize IDs instead of sentinel `None` values.
-- Keep structurally different error cases as separate tests, not one
-  parametrized case.
-- Pass the full constructor signature to exception instances.
-- Put `import sys` (and similar) at the top of the file, not inside a test.
+Verify against the conventions detailed above — the recurring ones:
+base class for config-independent tests, single-value `parametrize` with
+internal `if/else`, `setup_class` for `importorskip`, string parametrize IDs,
+separate tests for structurally different error paths, real exception
+signatures, `import sys` at file top. Sharp edges are collected in
+[gotchas](./gotchas.md).
