@@ -1,5 +1,3 @@
-import traceback
-
 from ..config import RAISE_INSTALL_ERROR
 
 from .class_property import classproperty
@@ -51,21 +49,8 @@ class DependenciesMixin:
         return cls.install_cmd
 
     @classmethod
-    def reload(cls):
-        """Reload the class, discarding the module cached at collection time.
-
-        Returns
-        -------
-        klass: class
-            The class, freshly imported from its module.
-        """
-        # Import here to avoid circular import.
-        from .dynamic_modules import _reload_class
-        return _reload_class(cls)
-
-    @classmethod
     def is_installed(cls, env_name=None, raise_on_not_installed=None,
-                     quiet=False, ignore_cache=False):
+                     quiet=False, reload=False):
         """Check if the module caught a failed import to assert install.
 
         Parameters
@@ -78,11 +63,13 @@ class DependenciesMixin:
             installed. This is mainly for testing purposes.
         quiet: boolean
             Hide import error information.
-        ignore_cache: boolean
-            If set to True, ignore the import outcome cached at collection
-            time and reload the class to check its requirements again. This
-            is necessary to detect the requirements installed in the current
-            environment after the class was first imported.
+        reload: boolean
+            If set to True, import the class again instead of relying on the
+            outcome of the import performed when collecting the benchmark.
+            This is necessary to detect the requirements installed in the
+            current environment after this first import. Only classes that
+            failed to import need to be reloaded, so this is handled by
+            `FailedImport`.
 
         Returns
         -------
@@ -90,29 +77,9 @@ class DependenciesMixin:
             returns True if no import failure has been detected.
         """
         if env_name is None:
-            if ignore_cache:
-                # The class was imported before its requirements were
-                # installed, so reload it to import them. Delegating to the
-                # reloaded class is necessary as it can be a `FailedImport`
-                # one, whose `is_installed` reports the failure.
-                return cls.reload().is_installed(
-                    raise_on_not_installed=raise_on_not_installed, quiet=quiet
-                )
-
-            if hasattr(cls, "_import_ctx") and cls._import_ctx.failed_import:
-                exc_type, value, tb = cls._import_ctx.import_error
-                if raise_on_not_installed:
-                    raise exc_type(value).with_traceback(tb)
-                if not cls._error_displayed and not quiet:
-                    traceback.print_exception(exc_type, value, tb)
-                    cls._error_displayed = True
-                elif quiet:
-                    cls._error_output = traceback.format_exception(
-                        exc_type, value, tb
-                    )
-                return False
-
-            # Import worked in the current environment, no need to check
+            # The class was imported, so its requirements are installed.
+            # Otherwise, it would be a `FailedImport` class, which overrides
+            # this method.
             return True
 
         # Get the current benchmark directory
@@ -192,8 +159,7 @@ class DependenciesMixin:
                 if RAISE_INSTALL_ERROR:
                     raise exception
 
-            is_installed = cls.is_installed(env_name=env_name,
-                                            ignore_cache=True)
+            is_installed = cls.is_installed(env_name=env_name, reload=True)
             if is_installed:
                 print(" done")
             else:

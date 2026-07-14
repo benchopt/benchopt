@@ -59,8 +59,8 @@ class FailedImport(ABCMeta):
         )
 
 
-def _get_package_name(module_filename, benchmark_dir=None):
-    """Get the name under which a benchmark module is cached in sys.modules."""
+def _get_module_from_file(module_filename, benchmark_dir=None):
+    """Load a module from the name of the file"""
     module_filename = Path(module_filename)
     if benchmark_dir is not None:
         # Use a package name derived from the benchmark root folder.
@@ -72,15 +72,7 @@ def _get_package_name(module_filename, benchmark_dir=None):
         package_name = module_filename.with_suffix('').parts[-3:]
     if package_name[-1] == '__init__':
         package_name = package_name[:-1]
-    return '.'.join(['benchopt_benchmarks', *package_name])
-
-
-def _get_module_from_file(module_filename, benchmark_dir=None):
-    """Load a module from the name of the file"""
-    module_filename = Path(module_filename)
-    package_name = _get_package_name(module_filename, benchmark_dir)
-    if benchmark_dir is not None:
-        module_filename = module_filename.resolve()
+    package_name = '.'.join(['benchopt_benchmarks', *package_name])
 
     module = sys.modules.get(package_name, None)
     if module is None:
@@ -124,6 +116,13 @@ def _load_class_from_module(benchmark_dir, module_filename, class_name):
         module = _get_module_from_file(module_filename, benchmark_dir)
         klass = getattr(module, class_name)
         klass._import_ctx = _get_import_context(module)
+        if klass._import_ctx.failed_import:
+            # Some requirements are missing, so the module is not fully
+            # imported. Drop it from the cache, so it is imported again once
+            # they are installed, and fall back on the FailedImport class.
+            sys.modules.pop(module.__name__, None)
+            exc_type, value, tb = klass._import_ctx.import_error
+            raise value.with_traceback(tb)
     except Exception as e:
         import traceback
         tb_to_print = traceback.format_exc(chain=False)
@@ -148,17 +147,19 @@ def _load_class_from_module(benchmark_dir, module_filename, class_name):
 
             @classmethod
             def is_installed(cls, env_name=None, raise_on_not_installed=False,
-                             quiet=False, **kwargs):
-                # Delegate to DependenciesMixin when targeting another env, or
-                # when ``ignore_cache`` requires a fresh import (e.g. right
-                # after installing in the current env). Otherwise, this fake
-                # class only knows about the import failure captured at
-                # collection time.
-                if env_name is not None or kwargs.get("ignore_cache"):
+                             quiet=False, reload=False, **kwargs):
+                if env_name is not None:
                     return super().is_installed(
                         env_name=env_name,
                         raise_on_not_installed=raise_on_not_installed,
                         **kwargs
+                    )
+                if reload:
+                    # The class failed to import before its requirements were
+                    # installed. Import it again to detect them.
+                    return _reload_class(cls).is_installed(
+                        raise_on_not_installed=raise_on_not_installed,
+                        quiet=quiet
                     )
                 if not SKIP_IMPORT:
                     if raise_on_not_installed:
@@ -182,12 +183,10 @@ def _load_class_from_module(benchmark_dir, module_filename, class_name):
 
 
 def _reload_class(klass):
-    """Reload a class, discarding the module imported at collection time.
+    """Import a class again, to detect its newly installed requirements.
 
-    The module defining `klass` is imported once and cached, both in
-    `sys.modules` and through the import outcome stored on the class. This
-    drops these caches and imports the module again, so that requirements
-    installed after the first import are detected.
+    Modules that are not fully imported are not cached, so importing the class
+    again is enough to detect the requirements installed in the meantime.
 
     Parameters
     ----------
@@ -199,16 +198,11 @@ def _reload_class(klass):
     klass : class
         The class, freshly imported from its module.
     """
-    benchmark_dir = klass._benchmark_dir
-    module_filename = klass._module_filename
-    package_name = _get_package_name(module_filename, benchmark_dir)
-
-    sys.modules.pop(package_name, None)
-    # Make packages installed since the interpreter started visible.
+    # Make the packages installed since the interpreter started visible.
     importlib.invalidate_caches()
 
     return _load_class_from_module(
-        benchmark_dir, module_filename, klass._base_class_name
+        klass._benchmark_dir, klass._module_filename, klass._base_class_name
     )
 
 

@@ -6,7 +6,7 @@ from joblib import Parallel, delayed
 
 from benchopt.cli.main import run as run_cmd
 from benchopt.cli.main import install as install_cmd
-from benchopt.utils.dynamic_modules import FailedImport
+from benchopt.utils.dynamic_modules import FailedImport, _reload_class
 from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.utils.temp_benchmark import DEFAULT_SOLVERS
 
@@ -196,10 +196,10 @@ def test_ast_failures_dont_block_run(params, no_raise_install):
 @pytest.mark.parametrize("safe_import", [True, False])
 def test_reload_class_after_install(tmp_path, safe_import):
     # When installing in the current env, the classes have already been
-    # imported, and the import failure is cached, either in the class
-    # `import_ctx` (safe_import=True) or in a `FailedImport` class
-    # (safe_import=False). Check that reloading the class detects the
-    # requirements installed after this first import.
+    # imported, and the failed ones are `FailedImport` classes, whether the
+    # import failure was caught by a `safe_import_context` or not. Check that
+    # reloading them detects the requirements installed after this first
+    # import.
 
     # This package is not installed yet, and is only made importable once the
     # benchmark has been collected.
@@ -224,18 +224,18 @@ def test_reload_class_after_install(tmp_path, safe_import):
 
     with temp_benchmark(solvers=[solver]) as bench:
         Solver, _ = bench.check_solver_patterns(["test-solver"])[0]
-        assert isinstance(Solver, FailedImport) is not safe_import
+        assert isinstance(Solver, FailedImport)
         assert not Solver.is_installed(quiet=True)
 
         # Install the missing package in the current env.
         (tmp_path / f"{pkg}.py").write_text("")
         sys.path.insert(0, str(tmp_path))
         try:
-            # Without a reload, the cached import failure hides the install.
+            # Without a reload, the import failure hides the install.
             assert not Solver.is_installed(quiet=True)
-            assert Solver.is_installed(ignore_cache=True)
+            assert Solver.is_installed(reload=True)
 
-            ReloadedSolver = Solver.reload()
+            ReloadedSolver = _reload_class(Solver)
             assert not isinstance(ReloadedSolver, FailedImport)
             assert ReloadedSolver.is_installed()
         finally:
