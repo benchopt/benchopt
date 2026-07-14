@@ -28,8 +28,8 @@ class Objective(BaseObjective):
 
     def evaluate_result(self, beta):
         # Receives Solver.get_result()'s dict unpacked as kwargs.
-        # Return a dict of metrics. For iterative/convergence eval, include the
-        # scalar tracked for progress ("value" by default); run_once needs none.
+        # Return a dict of metrics. For iterative/convergence eval, include
+        # the scalar tracked for progress ("value"); run_once needs no key.
         residual = self.y - self.X @ beta
         return dict(value=0.5 * float(np.dot(residual, residual)))
 
