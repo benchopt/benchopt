@@ -1,15 +1,14 @@
 # Creating a benchopt benchmark
 
-Run config template: [`assets/config_run.yml`](./assets/config_run.yml).
-
 Guidance for authoring a *benchmark* (a repo of datasets/solvers/objective).
 This file covers **benchmark-wide**
 concerns; for individual components see [add-objective.md](./add-objective.md),
 [add-solver.md](./add-solver.md), and [add-dataset.md](./add-dataset.md).
 
 After each change, lint (`flake8 .` or `ruff check .`) and run a `benchopt run`
-smoke test with a debug config, or a `benchopt test . --skip-install` to catch early
-design failures.
+smoke test with a debug config (template:
+[`assets/config_run.yml`](./assets/config_run.yml)), or a
+`benchopt test . --skip-install` to catch early design failures.
 
 ## Start from a template
 
@@ -20,10 +19,12 @@ config wiring, and the CI workflows (see below).
 
 ## Component contract (overview)
 
-Every class needs a `name` attribute. Data flows as dicts:
+Every class needs a `name` attribute. Data flows as dicts (`→`), except
+`Solver.run()` which is only executed and carries no data (`|`):
 `Dataset.get_data()` → `Objective.set_data()` → `Objective.get_objective()`
-→ `Solver.set_objective()` → `Solver.get_result()` → `Objective.evaluate_result()`.
-`Solver.run()` is the part that is timed and evaluated.
+→ `Solver.set_objective()` | `Solver.run()` | `Solver.get_result()`
+→ `Objective.evaluate_result()`.
+`Solver.run()` (between `set_objective` and `get_result`) is the timed part.
 
 ## Key design choices
 

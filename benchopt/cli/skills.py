@@ -61,8 +61,7 @@ def _link_or_copy(target, source, prefer_symlink=True):
     """Mirror ``source`` -> ``target``, replacing any existing ``target``.
 
     With ``prefer_symlink`` (default) try a symlink and fall back to a
-    recursive copy; with ``prefer_symlink=False`` always copy (used when
-    ``source`` is a transient path, e.g. a skill materialized from the wheel).
+    recursive copy; with ``prefer_symlink=False`` always copy.
     """
     # Remove target whether it is a symlink, a file, or a directory.
     if target.is_symlink() or target.is_file():

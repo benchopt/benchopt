@@ -7,6 +7,17 @@ must produce data the benchmark's `Objective` can consume. After each change,
 run `benchopt test . --skip-install` for the design checks and a quick
 `benchopt run . -d <name> -s <solver> -n 5` smoke test.
 
+## Data flow and design
+
+`get_data()` must return a dict; benchopt calls `Objective.set_data(**data)` with it.
+Keep the payload **generic** — expose optional callables (e.g. `moments_fn`) the
+objective uses when present, rather than baking solver-specific assumptions into the data.
+
+Use `self.get_seed(use_repetition=True)` so `--n-repetitions N` yields N genuinely
+different draws; a bare `self.get_seed()` returns the same seed every repetition.
+Add `use_dataset=True` to also vary the seed across datasets, so different
+datasets don't share the same draw.
+
 ## Parameters
 
 `parameters` is a class variable: a dict mapping names to lists of values.
@@ -18,19 +29,41 @@ class Dataset(BaseDataset):
     parameters = {"n_samples": [100, 1000], "n_features": [20]}
 ```
 
-Override from the CLI with `-d "<name>[n_samples=500]"`. Point `benchopt test`
-at a small, fast combination via `test_parameters` (see below).
+Override from the CLI with `-d "<name>[n_samples=500]"`.
 
-## Data flow and design
+### test_parameters
 
-`get_data()` must return a dict; benchopt calls `Objective.set_data(**data)` with it.
-Keep the payload **generic** — expose optional callables (e.g. `moments_fn`) the
-objective uses when present, rather than baking solver-specific assumptions into the data.
+Add a `test_parameters` dict (same shape as `parameters`) pointing at a tiny,
+fast configuration so `benchopt test` runs in seconds on a fresh checkout — in
+particular the tests that exercise the datasets themselves.
 
-Use `self.get_seed(use_repetition=True)` so `--n-repetitions N` yields N genuinely
-different draws; a bare `self.get_seed()` returns the same seed every repetition.
-Add `use_dataset=True` to also vary the seed across datasets, so different
-datasets don't share the same draw.
+## Requirements and imports (install detection)
+
+benchopt detects installation by **importing the module and catching
+`ImportError`**:
+
+- **Import third-party deps at module top level**, never function-locally.
+  This also applies to shared `benchmark_utils` helper modules the dataset
+  imports — a lazy import there hides the dep from the install check just
+  the same.
+- **Never wrap an import in `try`/`except` with a fallback.** A silent fallback
+  lets the module import even when the dep is missing, so benchopt marks the
+  dataset *installed* and the failure resurfaces — cryptically — at run time.
+  Let `ImportError` propagate.
+- Set `requirements` to exactly what this dataset needs (`["pip::pkg"]`,
+  `["chan::pkg"]`).
+- **Keep `requirements` a literal list of strings** — benchopt reads it
+  *statically* (via `ast`, without importing the module), so a computed value
+  like `requirements = OtherDataset.requirements + ["pip::extra"]` is not
+  parsable.
+- Avoid `safe_import_context` except for class-body attributes evaluated at
+  definition time that reference an imported name (e.g. a subclass referencing a
+  parent's imported symbols).
+- Ship a zero-dependency `Simulated` dataset when possible so the benchmark always
+  has a no-install smoke test. Put `Simulated` in its own file
+  (`datasets/simulated.py`). **This matters especially if the real dataset has
+  heavy deps** (e.g. torch for loading pickles): sharing a file would pull in the
+  heavy dep even for the smoke test, defeating the purpose.
 
 ## Locating data files: get_data_path()
 
@@ -84,39 +117,6 @@ Then `benchopt prepare . -d "MyDataset[dataset_name=taxi]"` fetches only
 - Since bare `benchopt run` skips `prepare()`, share an idempotent
   `_ensure_prepared()` guard between `prepare()` and `get_data()` if you want
   the dataset to self-heal on first use without an explicit prepare step.
-
-## Requirements and imports (install detection)
-
-benchopt detects installation by **importing the module and catching
-`ImportError`**:
-
-- **Import third-party deps at module top level**, never function-locally.
-  This also applies to shared `benchmark_utils` helper modules the dataset
-  imports — a lazy import there hides the dep from the install check just
-  the same.
-- **Never wrap an import in `try`/`except` with a fallback.** A silent fallback
-  lets the module import even when the dep is missing, so benchopt marks the
-  dataset *installed* and the failure resurfaces — cryptically — at run time.
-  Let `ImportError` propagate.
-- Set `requirements` to exactly what this dataset needs (`["pip::pkg"]`,
-  `["chan::pkg"]`).
-- **Keep `requirements` a literal list of strings** — benchopt reads it
-  *statically* (via `ast`, without importing the module), so a computed value
-  like `requirements = OtherDataset.requirements + ["pip::extra"]` is not
-  parsable.
-- Avoid `safe_import_context` except for class-body attributes evaluated at
-  definition time that reference an imported name (e.g. a subclass referencing a
-  parent's imported symbols).
-- Ship a zero-dependency `Simulated` dataset when possible so the benchmark always
-  has a no-install smoke test. Put `Simulated` in its own file
-  (`datasets/simulated.py`). **This matters especially if the real dataset has
-  heavy deps** (e.g. torch for loading pickles): sharing a file would pull in the
-  heavy dep even for the smoke test, defeating the purpose.
-
-## test_parameters
-
-Add a `test_parameters` dict (same shape as `parameters`) pointing at a tiny,
-fast configuration so `benchopt test` runs in seconds on a fresh checkout.
 
 ## Validate
 

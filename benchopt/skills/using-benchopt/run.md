@@ -1,8 +1,5 @@
 # Running a benchopt benchmark
 
-Run config template: [`assets/config_run.yml`](./assets/config_run.yml).
-SLURM parallel config: [`assets/config_parallel_slurm.yml`](./assets/config_parallel_slurm.yml).
-
 Runs on the provided benchmark, defaulting to the current folder (`.`, the
 directory holding `objective.py`).
 
@@ -45,7 +42,8 @@ benchopt run . \
 - `-e/--env [NAME]` / `--env-name NAME`: run inside a dedicated conda env
   (isolated dependencies). `-l/--local` (default) runs in the current env.
 
-See [parallel.md](./parallel.md) for full parallelism and cluster options.
+See [parallel.md](./parallel.md) for full parallelism and cluster options
+(SLURM template: [`assets/config_parallel_slurm.yml`](./assets/config_parallel_slurm.yml)).
 
 ## Caching
 
@@ -154,7 +152,8 @@ See [results.md](./results.md) for full result management.
 
 ## Run configuration file
 
-Instead of long CLI lines, pass `--config config.yml`. CLI option names become
+Instead of long CLI lines, pass `--config config.yml` (template:
+[`assets/config_run.yml`](./assets/config_run.yml)). CLI option names become
 top-level keys, and `objective:`/`dataset:`/`solver:` take the same selectors —
 either the inline `name[param=value]` string, or a **nested dict** of parameters
 (clearer when a component has many params):

@@ -22,10 +22,12 @@ def test_sync_local(tmp_path, monkeypatch):
     claude = tmp_path / ".claude" / "skills"
     assert (agents / SKILL_NAME / "SKILL.md").is_file()
     mirror = claude / SKILL_NAME
-    assert mirror.exists()
-    assert (mirror / "SKILL.md").resolve() == (
+    assert (mirror / "SKILL.md").is_file()
+    # mirror is a symlink when supported, a copy otherwise; either way it holds
+    # the same content as the agents-dir skill.
+    assert (mirror / "SKILL.md").read_text() == (
         agents / SKILL_NAME / "SKILL.md"
-    ).resolve()
+    ).read_text()
 
 
 def test_sync_into_benchmark_path(tmp_path):
@@ -58,7 +60,7 @@ def test_sync_preserves_unrelated_skills(tmp_path, monkeypatch):
     (repo / "SKILL.md").write_text("local")
 
     _sync()
-    assert (repo / "SKILL.md").is_file()
+    assert (repo / "SKILL.md").read_text() == "local"
 
 
 def test_no_claude_flag(tmp_path, monkeypatch):
@@ -76,7 +78,9 @@ def test_sync_global(tmp_path, monkeypatch):
     _sync(["--global"])
 
     agents = tmp_path / ".agents" / "skills"
+    claude = tmp_path / ".claude" / "skills"
     assert (agents / SKILL_NAME / "SKILL.md").is_file()
+    assert (claude / SKILL_NAME / "SKILL.md").is_file()
 
 
 def test_sync_global_with_path_raises(tmp_path):
