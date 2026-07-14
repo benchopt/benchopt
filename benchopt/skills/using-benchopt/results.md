@@ -14,9 +14,10 @@ benchopt_run_<timestamp>.html      ← interactive dashboard (unless --no-html)
 benchopt_run_<timestamp>/          ← per-solver run artifacts
 ```
 
-`benchopt merge` writes `merged_results.parquet` and `benchopt plot --all`
-writes `all_runs.html`, a table of content that allow navigating to HTML reports
-for every parquet in the folder.
+`benchopt plot` with no argument regenerates the HTML report for the most recent
+result file. `benchopt merge` writes `merged_results.parquet` and
+`benchopt plot --all` writes `all_runs.html`, a table of contents for navigating
+to the HTML report of every parquet in the folder.
 
 ## Read a result file in Python
 

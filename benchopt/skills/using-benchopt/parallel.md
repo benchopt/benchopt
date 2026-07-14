@@ -1,8 +1,9 @@
 # Running benchopt in parallel
 
-Benchopt parallelises at the granularity of one **(dataset, objective, solver)
-with unique parameters** — each such configuration is an independent task. There
-are three backends: `loky` (local, default), `dask`, and `submitit` (SLURM).
+Benchopt parallelises at the granularity of one **(dataset, objective, solver,
+repetition) with unique parameters** — each such configuration is an independent
+task. There are three backends: `loky` (local, default), `dask`, and `submitit`
+(SLURM).
 
 ## Local: `--n-jobs`
 

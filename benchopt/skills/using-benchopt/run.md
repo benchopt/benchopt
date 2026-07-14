@@ -3,8 +3,8 @@
 Run config template: [`assets/config_run.yml`](./assets/config_run.yml).
 SLURM parallel config: [`assets/config_parallel_slurm.yml`](./assets/config_parallel_slurm.yml).
 
-Run from a benchmark directory (the folder holding `objective.py`). `.` refers
-to the current benchmark.
+Runs on the provided benchmark, defaulting to the current folder (`.`, the
+directory holding `objective.py`).
 
 ## Select what to run
 
@@ -22,14 +22,21 @@ benchopt run . \
   grouped params `'n_samples, n_features'=[(100,20),(1000,50)]`. Only the
   parameters you name are replaced; the rest keep their class defaults, and the
   cartesian product is taken over the remainder.
+- Repeat a component with different parameters to run a **union** of grids
+  instead of one full cartesian product — each entry expands independently:
+  `-s "my-solver[lr=[0.1,0.01]]" -s "my-solver[lr=1.0,momentum=[0.5,0.9]]"`.
+- Keep long selections in a config file instead of the CLI — see
+  [Run configuration file](#run-configuration-file) below.
 
 ## Budgets and repetitions
 
+- `-r/--n-repetitions N`: independent repetitions with potentially different
+  seeds for error bars or more reliable time estimates.
 - `-n/--max-runs N`: max number of points sampled along each convergence curve.
-  Only used for benchmark which evaluate iterative methods over time.
-- `-r/--n-repetitions N`: independent repetitions with potentially different seeds for
-  error bars or to have more reliable time estimates.
-- `--timeout SECONDS` / `--no-timeout`: per-solver wall-clock budget.
+  Iterative eval only — ignored for `run_once` solvers.
+- `--timeout SECONDS` / `--no-timeout`: per-solver wall-clock budget. Also
+  iterative eval only, and only checked at each evaluation, so it is not a hard
+  cap (see [debug.md](./debug.md)).
 
 ## Parallelism and environments
 
@@ -47,6 +54,28 @@ The cache invalidates automatically when solver/objective/dataset code changes.
 
 - `-f/--force-solver SOLVER`: force re-running specific solvers.
 - `--no-cache`: disable caching for this run.
+
+### Long runs, interruptions, and resuming
+
+benchopt caches every finished `(dataset, objective, solver, params,
+repetition)` cell, so a long run does **not** need manual chunking:
+
+- **Crash / Ctrl-C**: completed cells are already cached. Re-running the exact
+  same command picks up where it left off — cached cells are skipped, only the
+  missing ones run.
+- **Consolidate partial results without computing**: re-issue the *same* command
+  with `--collect` appended. It only reads the cache and writes the parquet for
+  what is done, so it is safe to run repeatedly mid-run (e.g. from another shell)
+  to inspect progress.
+- **Resume**: re-run the same command *without* `--collect` (cached cells
+  skipped, missing ones computed).
+
+Gotchas that break cache matching or surprise you:
+
+- `--output` takes a **name**, not a path (results always land in `outputs/`).
+- `-o` is the **objective** filter, not output.
+- Keep `-s`/`-d`/params **identical** across runs — any change alters the cache
+  keys, so cells won't be recognised as already done.
 
 ## Install requirements and prepare data
 
@@ -126,16 +155,39 @@ See [results.md](./results.md) for full result management.
 ## Run configuration file
 
 Instead of long CLI lines, pass `--config config.yml`. CLI option names become
-top-level keys, and `objective:`/`dataset:`/`solver:` take the same selectors:
+top-level keys, and `objective:`/`dataset:`/`solver:` take the same selectors —
+either the inline `name[param=value]` string, or a **nested dict** of parameters
+(clearer when a component has many params):
 
 ```yaml
 n-repetitions: 3
 max-runs: 30
 dataset:
-  - "simulated[n_samples=[100,1000]]"
+  - "simulated[n_samples=[100,1000]]"    # inline string form
 solver:
-  - my-solver
+  - my-solver:                            # nested-dict form
+      lr: [0.1, 0.01]                     # each key is a parameter
+      momentum: 0.9
 ```
+
+List the same component more than once to run a **union** of grids rather than
+one full cartesian product — each entry expands on its own:
+
+```yaml
+solver:
+  - my-solver:
+      lr: [0.1, 0.01]
+      momentum: 0.9
+  - my-solver:
+      lr: 1.0
+      momentum: [0.5, 0.99]
+```
+
+**Preview a config without running it** — add `--collect`:
+`benchopt run . --config config.yml --collect` enumerates every selected
+configuration and reports its cache status (missing ones show as `not run yet`),
+without launching any solver — the quickest way to confirm the run matrix is
+what you expect.
 
 ## Useful extras
 

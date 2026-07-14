@@ -3,8 +3,9 @@
 Start from the template: [`assets/solver.py`](./assets/solver.py).
 
 A solver lives in `solvers/<name>.py` as `class Solver(BaseSolver)` and must
-work against the benchmark's existing `Objective`. Run a smoke test after each
-change: `benchopt run . -s <name> -d <small-dataset> -n 5` with a small dataset.
+work against the benchmark's existing `Objective`. After each change, run
+`benchopt test . --skip-install` for the design checks and a quick
+`benchopt run . -s <name> -d <small-dataset> -n 5` smoke test.
 
 ## Data flow
 
@@ -102,7 +103,7 @@ catching `ImportError`**. Therefore:
   evaluated at definition time that reference an imported name (e.g. a subclass
   referencing a parent's imported symbols).
 
-## test_parameters
+## test_config
 
 Add a `test_config` dict (same shape as `parameters`) pointing at a tiny,
 fast configuration so `benchopt test` exercises the solver quickly.

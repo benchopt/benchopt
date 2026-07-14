@@ -16,9 +16,11 @@ description: >
 
 # Benchopt
 
-Benchopt is a benchmark framework for optimization algorithms. Benchmarks are
+Benchopt is a benchmark framework. Benchmarks are
 git repos containing an `objective.py`, a `datasets/` folder, and a `solvers/`
-folder. Solvers are compared on convergence curves or fixed-budget metrics.
+folder. Datasets provide the input data (the evidence), solvers are the methods
+being evaluated, and the objective scores their output — either at a fixed
+budget or along a convergence curve.
 
 ## Version check (do this first)
 
@@ -30,9 +32,8 @@ global install) to refresh it.**
 
 ## Before editing ANY component, open its sub-file first
 
-Do this every time — do not free-hand a component from memory, even for a
-one-line change. The conventions below are the ones most often wrong from
-recall:
+The conventions below are easy to get wrong from memory, so it is worth opening
+the matching sub-file before editing a component rather than free-handing it:
 
 - **Editing a Dataset?** → read [**add-dataset.md**](./add-dataset.md) — implement or fix a `Dataset` class
 - **Editing a Solver?** → read [**add-solver.md**](./add-solver.md) — implement or fix a `Solver` class
@@ -62,6 +63,9 @@ small `test_parameters` / `test_config`.
 ## Quick smoke test
 
 ```bash
-benchopt run . -d Simulated -s <solver> -n 5   # fast no-install check
-benchopt test . --skip-install                  # design-level test suite
+benchopt test . --skip-install                      # design-level test suite
+benchopt run . -d <small-dataset> -s <solver> -n 5  # fast smoke check
 ```
+
+Use `-d Simulated` for the smoke check when the benchmark ships one; otherwise
+pick any small, fast dataset.

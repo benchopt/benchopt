@@ -3,8 +3,23 @@
 Start from the template: [`assets/dataset.py`](./assets/dataset.py).
 
 A dataset lives in `datasets/<name>.py` as `class Dataset(BaseDataset)` and
-must produce data the benchmark's `Objective` can consume. Smoke-test with
-`benchopt run . -d <name> -s <solver> -n 5`.
+must produce data the benchmark's `Objective` can consume. After each change,
+run `benchopt test . --skip-install` for the design checks and a quick
+`benchopt run . -d <name> -s <solver> -n 5` smoke test.
+
+## Parameters
+
+`parameters` is a class variable: a dict mapping names to lists of values.
+Benchopt takes the cartesian product, so each combination is a distinct dataset
+instance, with the selected values exposed as `self.<name>`:
+
+```python
+class Dataset(BaseDataset):
+    parameters = {"n_samples": [100, 1000], "n_features": [20]}
+```
+
+Override from the CLI with `-d "<name>[n_samples=500]"`. Point `benchopt test`
+at a small, fast combination via `test_parameters` (see below).
 
 ## Data flow and design
 
@@ -14,6 +29,8 @@ objective uses when present, rather than baking solver-specific assumptions into
 
 Use `self.get_seed(use_repetition=True)` so `--n-repetitions N` yields N genuinely
 different draws; a bare `self.get_seed()` returns the same seed every repetition.
+Add `use_dataset=True` to also vary the seed across datasets, so different
+datasets don't share the same draw.
 
 ## Locating data files: get_data_path()
 
@@ -44,8 +61,8 @@ For downloads/extraction/heavy preprocessing, put the work in `prepare()`
 artefacts. `prepare()` is triggered by `benchopt prepare .`; `benchopt run` does **not**
 call it.
 
-**Per-dataset download pattern** — each `Dataset` instance should download
-only the one file it needs, not all files at once:
+**Per-dataset download pattern** — ideally each `Dataset` instance downloads
+only the files it needs, not all files at once:
 
 ```python
 from benchopt.config import get_data_path
@@ -62,7 +79,8 @@ Then `benchopt prepare . -d "MyDataset[dataset_name=taxi]"` fetches only
 `taxi.pkl`. Running without `-d` prepares every parameter combination.
 
 - `prepare()` must be **idempotent**. List params that don't affect its output
-  in `prepare_cache_ignore` (or `"all"` to run at most once per class).
+  in the `prepare_cache_ignore` class variable (or set it to `"all"` to run at
+  most once per class).
 - Since bare `benchopt run` skips `prepare()`, share an idempotent
   `_ensure_prepared()` guard between `prepare()` and `get_data()` if you want
   the dataset to self-heal on first use without an explicit prepare step.
@@ -90,10 +108,10 @@ benchopt detects installation by **importing the module and catching
   definition time that reference an imported name (e.g. a subclass referencing a
   parent's imported symbols).
 - Ship a zero-dependency `Simulated` dataset when possible so the benchmark always
-  has a no-install smoke test. **If the real dataset has heavy deps** (e.g. torch
-  for loading pickles), put `Simulated` in its own file (`datasets/simulated.py`)
-  rather than the same file — otherwise importing the module pulls in the heavy
-  dep even for the smoke test, defeating the purpose.
+  has a no-install smoke test. Put `Simulated` in its own file
+  (`datasets/simulated.py`). **This matters especially if the real dataset has
+  heavy deps** (e.g. torch for loading pickles): sharing a file would pull in the
+  heavy dep even for the smoke test, defeating the purpose.
 
 ## test_parameters
 
@@ -102,8 +120,10 @@ fast configuration so `benchopt test` runs in seconds on a fresh checkout.
 
 ## Validate
 
-- `benchopt run . -d <name> -s <solver> -n 5` as a smoke test.
-- `benchopt test . -k <Dataset>` to exercise `test_parameters`.
+- `benchopt test . -k <Dataset>` to exercise `test_parameters` (fast design
+  checks; add `--skip-install` if your env can't build isolated envs).
+- `benchopt run . -d <name> -s <solver> -n 5` as a smoke test — pick a fast
+  solver, as a real run can be slow.
 - `flake8 .` or `ruff check .` on the changed file.
 
 ## Doc links

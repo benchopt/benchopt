@@ -2,8 +2,8 @@
 
 Run config template: [`assets/config_run.yml`](./assets/config_run.yml).
 
-Guidance for authoring a *benchmark* (a repo of datasets/solvers/objective),
-not for working on the benchopt library. This file covers **benchmark-wide**
+Guidance for authoring a *benchmark* (a repo of datasets/solvers/objective).
+This file covers **benchmark-wide**
 concerns; for individual components see [add-objective.md](./add-objective.md),
 [add-solver.md](./add-solver.md), and [add-dataset.md](./add-dataset.md).
 
@@ -23,9 +23,21 @@ config wiring, and the CI workflows (see below).
 Every class needs a `name` attribute. Data flows as dicts:
 `Dataset.get_data()` → `Objective.set_data()` → `Objective.get_objective()`
 → `Solver.set_objective()` → `Solver.get_result()` → `Objective.evaluate_result()`.
+`Solver.run()` is the part that is timed and evaluated.
 
-For objective authoring detail (evaluate_result format, benchmark-wide defaults,
-key_to_monitor, test wiring) see [add-objective.md](./add-objective.md).
+## Key design choices
+
+Before writing components, settle:
+
+- **What constitutes a dataset** — just data (typical ML), data + model (more
+  optimization-style), or data + hardware (more infra-style).
+- **What is handed to the method vs. kept for evaluation only** — i.e. the split
+  between what `get_objective()` exposes to solvers and what the objective keeps
+  to score their results.
+- **How to let methods compare fairly** — expose a generic payload so every
+  solver sees the same inputs. See [add-objective.md](./add-objective.md) for the
+  authoring detail (evaluate_result format, benchmark-wide defaults,
+  key_to_monitor, test wiring).
 
 ## Config and dependencies (benchmark-wide)
 
@@ -46,7 +58,7 @@ key_to_monitor, test wiring) see [add-objective.md](./add-objective.md).
   (`from benchopt.config import get_data_path`); it resolves under the
   benchmark's configurable data folder, so it travels with any checkout. Ship
   small default/test configs in the repo and `.gitignore` only *generated* data.
-- **No module-level constants or hard-coded paths** (e.g.
+- **Avoid module-level constants or hard-coded paths** (e.g.
   `_PROJECT_ROOT = Path(__file__).parent.parent`): they assume one machine's
   layout and break distribution. Express configuration as benchopt
   **parameters** set from the run config, not a bespoke config file the

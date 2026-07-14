@@ -5,6 +5,9 @@ class Solver(BaseSolver):
     name = "my-solver"
     requirements = []
     parameters = {}
+    # Fast config for `benchopt test` — solver params as top-level keys, with
+    # optional "dataset" / "objective" overrides:
+    # test_config = {"<param>": <value>, "dataset": {"name": "simulated"}}
 
     # Set sampling_strategy to "run_once" for fixed-budget / ML solvers.
     # Use "callback" for online monitoring of convergence:

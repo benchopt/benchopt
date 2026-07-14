@@ -57,13 +57,21 @@ def _finalize_skill(skill_dir):
             md.write_text(new, encoding="utf-8")
 
 
-def _link_or_copy(target, source):
-    """Symlink ``target`` -> ``source``; fall back to a recursive copy."""
-    if target.exists() or target.is_symlink():
-        if target.is_symlink() or target.is_file():
-            target.unlink()
-        else:
-            shutil.rmtree(target)
+def _link_or_copy(target, source, prefer_symlink=True):
+    """Mirror ``source`` -> ``target``, replacing any existing ``target``.
+
+    With ``prefer_symlink`` (default) try a symlink and fall back to a
+    recursive copy; with ``prefer_symlink=False`` always copy (used when
+    ``source`` is a transient path, e.g. a skill materialized from the wheel).
+    """
+    # Remove target whether it is a symlink, a file, or a directory.
+    if target.is_symlink() or target.is_file():
+        target.unlink()
+    elif target.exists():
+        shutil.rmtree(target)
+    if not prefer_symlink:
+        shutil.copytree(source, target)
+        return "copy"
     try:
         target.symlink_to(source.resolve(), target_is_directory=True)
         return "symlink"
@@ -113,15 +121,10 @@ def sync_skills(benchmark, global_, no_claude):
 
     agents_dir.mkdir(parents=True, exist_ok=True)
     target = agents_dir / SKILL_NAME
-    if target.exists() or target.is_symlink():
-        if target.is_symlink() or target.is_file():
-            target.unlink()
-        else:
-            shutil.rmtree(target)
     # ``as_file`` materializes the packaged skill to a real path (extracting
     # from a zip/wheel if needed) so ``copytree`` works for any install type.
     with resources.as_file(_source_skill()) as src:
-        shutil.copytree(src, target)
+        _link_or_copy(target, src, prefer_symlink=False)
     _finalize_skill(target)
     click.echo(f"Synced {colorify(SKILL_NAME, GREEN)} into {dest}")
 

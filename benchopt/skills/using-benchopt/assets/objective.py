@@ -1,7 +1,6 @@
-from benchopt import BaseObjective, safe_import_context
+import numpy as np
 
-with safe_import_context() as import_ctx:
-    import numpy as np
+from benchopt import BaseObjective
 
 
 class Objective(BaseObjective):
@@ -14,8 +13,10 @@ class Objective(BaseObjective):
     # sampling_strategy = "run_once"     # for fixed-budget / ML benchmarks
     # stopping_criterion = NoCriterion() # disable early-stopping
 
-    # Name of the dataset used by `benchopt test`:
-    # test_dataset_name = "simulated-small"
+    # Dataset used by `benchopt test` (defaults to the simulated / single
+    # dataset); test_config can also name it and set fast test parameters:
+    # test_dataset_name = "simulated"
+    # test_config = {"dataset": {"name": "simulated", "n_samples": 50}}
 
     def set_data(self, X, y):
         # Receives Objective.get_data()'s dict unpacked as kwargs.
@@ -27,8 +28,8 @@ class Objective(BaseObjective):
 
     def evaluate_result(self, beta):
         # Receives Solver.get_result()'s dict unpacked as kwargs.
-        # Must return a dict with at least a scalar "value" key
-        # (the quantity benchopt minimises for convergence curves).
+        # Return a dict of metrics. For iterative/convergence eval, include the
+        # scalar tracked for progress ("value" by default); run_once needs none.
         residual = self.y - self.X @ beta
         return dict(value=0.5 * float(np.dot(residual, residual)))
 

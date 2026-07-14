@@ -140,16 +140,6 @@ benchopt config -b . get data_path   # benchmark-local config
 
 ---
 
-### `benchopt generate-results`
-Build a multi-benchmark result website from several benchmark directories.
-
-```bash
-benchopt generate-results -b bench_a -b bench_b
-benchopt generate-results --root /path/to/benchmarks/
-```
-
----
-
 ### `benchopt sync-skills`
 Sync benchopt's packaged agent skills into a benchmark or globally.
 

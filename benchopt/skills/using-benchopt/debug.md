@@ -11,6 +11,12 @@ so you can step through `get_data`, `set_data` and `evaluate_result` directly.
 Run these snippets from the benchmark directory (the folder holding
 `objective.py`), e.g. `python -i debug.py` or a notebook.
 
+> **Gotcha — `--timeout` is not strictly enforced.** It is only checked at each
+> evaluation, so `run_once` solvers ignore it entirely, and an iterative solver
+> can overrun: the check fires just before the timeout, the solver keeps running
+> more iterations, and the timeout only trips at the *next* evaluation — which
+> can be arbitrarily far. Don't rely on it as a hard wall-clock cap.
+
 ## Load the benchmark
 
 ```python
