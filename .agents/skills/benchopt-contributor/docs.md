@@ -6,6 +6,8 @@
 - Updating snippets/commands shown to users.
 - Adding or adjusting sphinx-design blocks (dropdowns, cards, tabs).
 - Verifying that rendered HTML matches intent before merge.
+- Updating an agent skill after a code/CLI/convention change (see
+  *Keeping the agent skills in sync* below).
 
 ## Documentation structure
 
@@ -27,6 +29,33 @@ at the bottom of that file):
 
 When adding a page, place it in the section matching its depth and update that
 section's `index.rst` `toctree` (and the bottom `toctree` in `doc/index.rst`).
+
+## Keeping the agent skills in sync
+
+benchopt ships two agent-skill bundles, and they are **documentation that is
+neither built nor tested** — nothing catches drift, so a stale skill silently
+feeds an agent a wrong flag, a renamed API, or a dropped convention:
+
+- **`.agents/skills/benchopt-contributor/`** — this skill, for contributing to
+  the library itself.
+- **`benchopt/skills/using-benchopt/`** — the benchmark-*authoring* skill,
+  packaged with benchopt and installed into a benchmark or globally with
+  `benchopt sync-skills`.
+
+Treat them like the `.rst` docs: when a PR changes something a skill describes,
+update the matching skill file **in the same PR**.
+
+- CLI flags/options, run/install/plot behaviour → `using-benchopt`
+  (`cli-reference.md`, `run.md`, `results.md`, …).
+- Public API or base-class contract (`Objective` / `Solver` / `Dataset`) →
+  `using-benchopt` `add-objective.md` / `add-solver.md` / `add-dataset.md`.
+- Contributor workflow, test helpers, gotchas → this skill (`tests.md`,
+  `general.md`, `gotchas.md`, `docs.md`).
+
+The `using-benchopt` `SKILL.md` records the benchopt version it was synced from
+and warns users when their installed version differs, prompting a re-run of
+`benchopt sync-skills`. Shipping the skill update alongside the code keeps that
+signal honest — otherwise users re-sync only to get the same stale guidance.
 
 ## Standard Workflow
 
@@ -94,6 +123,8 @@ The gallery executes these scripts at build time, so keep them fast (small
 - Text is concise and user-facing language is clear.
 - When a code change renames a public API, update every `.rst` that mentions it
   — the build won't flag prose that references the old name.
+- Likewise update the agent skills (see *Keeping the agent skills in sync*) — a
+  stale skill is caught by no build or test.
 
 ## Notes For Dropdown Content
 
