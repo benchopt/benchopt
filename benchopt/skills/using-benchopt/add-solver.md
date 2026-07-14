@@ -11,16 +11,32 @@ work against the benchmark's existing `Objective`. After each change, run
 
 - `set_objective(**objective_dict)` receives `Objective.get_objective()`'s output.
 - `get_result()` returns a dict unpacked into `Objective.evaluate_result(**res)`.
-- Selected `parameters` values are available as `self.<param>`.
 
-## Reproducible randomness
+## Parameters
 
-For **stochastic** solvers, seed from `self.get_seed(use_repetition=True)` so
-`--n-repetitions N` gives N genuinely different but reproducible runs. A bare
-`self.get_seed()` returns the same seed every repetition. Use `use_dataset=True`
-or `use_solver=True` to further differentiate seeds.
+`parameters` is a class variable (dict of name → list of values); benchopt runs
+the cartesian product and exposes each selected value as `self.<name>`. Override
+from the CLI with `-s "<name>[param=value]"`.
 
-## sampling_strategy — how the computation budget is varied
+## Requirements and imports (install detection)
+
+benchopt decides a solver is installed by **importing the module and catching
+`ImportError`**, so:
+
+- **Import third-party deps at module top level** — never function-locally and
+  never in a `try`/`except` fallback; let `ImportError` propagate. A silent
+  fallback makes benchopt mark the solver *installed*, then fail cryptically at
+  run time. This applies to imported `benchmark_utils` helpers too.
+- Set `requirements` to exactly what the solver needs (`["pip::pkg"]` for pip,
+  `["chan::pkg"]` for a conda channel) as a **literal list of strings** —
+  benchopt reads it statically via `ast`, so a computed value
+  (`OtherSolver.requirements + [...]`) is not parsable.
+- Avoid `safe_import_context` except for class-body attributes that reference an
+  imported name at definition time.
+
+## Class customization
+
+### sampling_strategy — how the computation budget is varied
 
 Set `sampling_strategy` on the solver (or default it at the `Objective` level):
 
@@ -69,7 +85,14 @@ solver that doesn't define its own inherits the objective's, so this makes the
 no-truncation behavior benchmark-wide. The early-truncation symptom is covered
 in [debug.md](./debug.md).
 
-## Optional hooks
+### Controlling randomness
+
+For **stochastic** solvers, seed from `self.get_seed(use_repetition=True)` (call
+it in `set_objective`) so `--n-repetitions N` gives N genuinely different but
+reproducible runs; a bare `self.get_seed()` returns the same seed every
+repetition. Add `use_dataset=True` / `use_solver=True` to further differentiate seeds.
+
+### Optional methods
 
 - `skip(**objective_dict) -> (skip: bool, reason: str | None)`: declare
   incompatibility with a given problem (e.g. needs a feature the objective
@@ -80,36 +103,12 @@ in [debug.md](./debug.md).
   a given iteration count).
 - `get_next(stop_val)`: override the default logarithmic `stop_val` schedule.
 
-## Requirements and imports (install detection)
+## Testing
 
-benchopt detects whether a solver is installed by **importing the module and
-catching `ImportError`**. Therefore:
-
-- **Import third-party deps at module top level** — never hide them in
-  function-local imports. This also applies to shared `benchmark_utils`
-  helper modules the solver imports — a lazy import there hides the dep
-  from the install check just the same.
-- **Never wrap an import in `try`/`except` with a fallback.** A silent fallback
-  lets the module import even when the dep is missing, so benchopt marks the
-  solver *installed* and the failure resurfaces — cryptically — at run time. Let
-  `ImportError` propagate.
-- Set `requirements` to exactly what this solver needs
-  (`["pip::pkg"]` for pip, `["chan::pkg"]` for a conda channel).
-- **Keep `requirements` a literal list of strings** — benchopt reads it
-  *statically* (via `ast`, without importing the module), so a computed value
-  like `requirements = OtherSolver.requirements + ["pip::extra"]` is not
-  parsable.
-- Do **not** use `safe_import_context` except for class-body attributes
-  evaluated at definition time that reference an imported name (e.g. a subclass
-  referencing a parent's imported symbols).
-
-## test_config
-
-Add a `test_config` dict (same shape as `parameters`) pointing at a tiny,
-fast configuration so `benchopt test` exercises the solver quickly.
-This config can also have optional `dataset` and `objective` keys,
-pointing to dict to specify test parameters for datasets and objective,
-including the dataset name to select a given class.
+`test_config` (same shape as `parameters`) selects a tiny, fast config so
+`benchopt test` runs quickly; it can also carry `dataset`/`objective` keys to
+pick fast test data (including the dataset name). See [debug.md](./debug.md) for
+what the suite checks.
 
 ## Validate
 
@@ -123,5 +122,6 @@ including the dataset name to select a given class.
 
 - Iterative solvers & sampling: https://benchopt.github.io/stable/user_guide/iterative_solvers.html
 - Class config (parameters, requirements, hooks): https://benchopt.github.io/stable/user_guide/class_customization.html
+- Controlling randomness: https://benchopt.github.io/stable/user_guide/controlling_randomness.html
 - Solver languages (R, Julia, CLI, …): https://benchopt.github.io/stable/user_guide/solver_languages.html
 - API reference: https://benchopt.github.io/stable/user_guide/API_ref.html

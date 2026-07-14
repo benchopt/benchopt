@@ -93,9 +93,15 @@ and calls two reusable workflows from `benchopt/template_benchmark`:
   `min_benchopt_version` declared in `objective.py`. Heavy data dirs can be
   cached to avoid re-downloads, by providing the cache_dir input in the test.yml workflow.
 
-## Validate locally
+## Validate
 
 - `flake8 .` or `ruff check .` on the changed files.
 - `benchopt run . -d Simulated -s <solver>` as a no-dependency smoke test.
 - `benchopt test . -k <Dataset>` to exercise `test_parameters` (skip the
   `*_install` test if your env cannot build isolated envs).
+
+## Doc links
+
+- Benchmark structure & workflow: https://benchopt.github.io/stable/benchmark_workflow/index.html
+- Class config (parameters, requirements, hooks): https://benchopt.github.io/stable/user_guide/class_customization.html
+- Writing a benchmark: https://benchopt.github.io/stable/how.html

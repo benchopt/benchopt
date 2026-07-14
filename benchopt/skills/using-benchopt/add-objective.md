@@ -20,18 +20,28 @@ convergence** eval, include the scalar key benchopt tracks for progress —
 `value` by default, or another key selected via `key_to_monitor` on the stopping
 criterion (see below). For **`run_once`** eval there is no required key.
 
-## Optional methods
+## Parameters
 
-- **`skip(**data)`**: return `(True, "reason")` to skip incompatible
-  dataset/objective combinations before any solver runs.
-- **`get_one_result()`**: return a dummy solver result (same shape as
-  `get_result()` would produce). Used by `benchopt test` to validate
-  `evaluate_result` without running a real solver — omit it and that check is
-  skipped.
-- **`save_final_results(**res)`**: called after the last `evaluate_result`;
-  persist heavy artefacts (models, arrays) as a `.pkl` alongside the parquet.
+`parameters` is a class variable (dict of name → list of values); benchopt runs
+the cartesian product and exposes each selected value as `self.<name>`. Use it to
+parametrize the *evaluation* itself (e.g. regularisation strength, number of
+scoring steps), not just the solvers and datasets — each combination becomes an
+independent entry in the results. Override from the CLI with
+`-o "<name>[param=value]"`.
 
-## Benchmark-wide defaults
+## Requirements and imports (install detection)
+
+Import third-party deps at module top level and let `ImportError` propagate — a
+silent `try`/`except` fallback hides a missing dep and causes cryptic runtime
+failures. Reserve `safe_import_context` for the rare case of a **class-body
+attribute** evaluated at definition time that references an imported name; for
+imports only used inside methods a plain top-level import is enough. (numpy is
+always available — it ships as a benchopt dependency — so it never needs
+guarding.)
+
+## Class customization
+
+### Benchmark-wide defaults
 
 Set these on the `Objective` so **all solvers inherit them** without repeating
 per-solver:
@@ -49,13 +59,7 @@ per-solver:
 - **`min_benchopt_version`** — minimum benchopt release the benchmark requires;
   checked by CI.
 
-## Parametrising evaluation
-
-Use `Objective.parameters` to parametrize the *evaluation* itself (e.g.
-regularisation strength, number of scoring steps), not just the solvers and
-datasets. Each combination becomes an independent entry in the results.
-
-## Design: keeping solvers dataset-agnostic
+### Design: keeping solvers dataset-agnostic
 
 Have the dataset expose a **generic payload** (e.g. `X`, `y`, or
 `fields: dict[str, ndarray]`) plus *optional callables* (`moments_fn`, …).
@@ -63,24 +67,31 @@ The objective calls the callables only when present; solvers operate on the
 payload by name. One set of solvers then works across many datasets without
 modification.
 
-## Requirements and imports
+### Controlling randomness
 
-Import third-party deps at module top level and let `ImportError` propagate — a
-silent `try`/`except` fallback hides a missing dep and causes cryptic runtime
-failures. Reserve `safe_import_context` for the rare case of a **class-body
-attribute** evaluated at definition time that references an imported name; for
-imports only used inside methods a plain top-level import is enough. (numpy is
-always available — it ships as a benchopt dependency — so it never needs
-guarding.)
+For a **stochastic evaluation** (e.g. subsampled scoring), seed from
+`self.get_seed(use_repetition=True)` — call it in `set_data` or `get_objective`;
+a bare `self.get_seed()` returns the same seed every repetition. Most objectives
+are deterministic and need no seeding.
+
+### Optional methods
+
+- **`skip(**data)`**: return `(True, "reason")` to skip incompatible
+  dataset/objective combinations before any solver runs.
+- **`get_one_result()`**: return a dummy solver result (same shape as
+  `get_result()` would produce). Used by `benchopt test` to validate
+  `evaluate_result` without running a real solver — omit it and that check is
+  skipped.
+- **`save_final_results(**res)`**: called after the last `evaluate_result`;
+  persist heavy artefacts (models, arrays) as a `.pkl` alongside the parquet.
 
 ## Testing
 
-- Set `test_dataset_name` to select the dataset used by `benchopt test`
-  (defaults to simulated dataset or default dataset for single dataset benchmarks).
-- Add `test_config` on the `Objective` for fast test parameters (same shape as
-  `parameters`). It can also name the test dataset, e.g.
-  `test_config = {'dataset': {'name': 'simulated', 'n_samples': 50}}`.
-- Implement `get_one_result()` so `benchopt test` validates `evaluate_result`.
+`test_config` (same shape as `parameters`) selects a tiny, fast config and can
+name the test dataset (`{'dataset': {'name': 'simulated', 'n_samples': 50}}`);
+`test_dataset_name` picks it directly, and `get_one_result()` lets the suite
+validate `evaluate_result` without a real solver. See [debug.md](./debug.md) for
+what the suite checks.
 
 ## Validate
 

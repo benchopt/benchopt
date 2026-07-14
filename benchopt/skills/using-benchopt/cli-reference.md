@@ -162,3 +162,9 @@ to attach to bug reports.
 ```bash
 benchopt sys-info
 ```
+
+---
+
+## Doc links
+
+- CLI reference: https://benchopt.github.io/stable/user_guide/CLI_ref.html
