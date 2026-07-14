@@ -102,6 +102,6 @@ and calls two reusable workflows from `benchopt/template_benchmark`:
 
 ## Doc links
 
-- Benchmark structure & workflow: https://benchopt.github.io/stable/benchmark_workflow/index.html
+- Benchmark structure & workflow: https://benchopt.github.io/stable/benchmark_workflow/write_benchmark.html
 - Class config (parameters, requirements, hooks): https://benchopt.github.io/stable/user_guide/class_customization.html
-- Writing a benchmark: https://benchopt.github.io/stable/how.html
+- Global benchmark authoring guidelines (custom plots, randomness, cross validation, iterative evaluation, cross language with R/Julia/binary): https://benchopt.github.io/stable/user_guide/authoring.html
