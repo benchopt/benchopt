@@ -49,8 +49,8 @@ returned by `get_data()` is exactly what the runner forwards to
 will actually receive.
 
 Use the same mechanism in **unit tests** for benchmark components — never load
-component files with `importlib` by path (fragile, and subject to name
-shadowing, e.g. a benchmark's `datasets/` folder vs the HF `datasets` library):
+component files with `importlib` by path; it is fragile and prone to name
+shadowing (see the *Name shadowing* pitfall below):
 
 ```python
 Dataset, = bench.check_dataset_patterns(["my-dataset"], class_only=True)
@@ -117,15 +117,6 @@ This is the minimal reproduction of one point on a convergence curve. If
 `evaluate_result(**result)` raises or returns nonsense, the mismatch is between
 the keys in `get_result()` and the arguments `evaluate_result` expects — print
 both to compare.
-
-## Gotcha: the `datasets/` directory can be shadowed
-
-In a plain script, `import datasets` (or anything that triggers it) may resolve
-to Hugging Face's `datasets` package instead of the benchmark's local
-`datasets/` folder, or vice-versa, depending on `sys.path`. **Do not import the
-benchmark's modules by hand** — always go through `Benchmark(".")`, which loads
-each dataset/objective from its file path and sidesteps the name clash
-entirely.
 
 ## Worked example: an eval oracle
 
@@ -212,6 +203,14 @@ benchopt run . --no-cache          # ignore the cache entirely for this run
 The `Benchmark(".")` workflow in this skill bypasses the cache completely, so
 re-deriving a suspicious value here and comparing it to the run is itself the
 quickest way to confirm the cache was stale.
+
+### Name shadowing: the `datasets/` directory
+
+In a plain script, `import datasets` (or anything that triggers it) may resolve
+to Hugging Face's `datasets` package instead of the benchmark's local
+`datasets/` folder, or vice-versa, depending on `sys.path`. **Do not import the
+benchmark's modules by hand** — always go through `Benchmark(".")`, which loads
+each dataset/objective from its file path and sidesteps the name clash entirely.
 
 ## Catch design problems early with the test suite
 

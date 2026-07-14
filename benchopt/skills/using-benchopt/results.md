@@ -88,7 +88,8 @@ If `final_points.parquet` already exists, the result will be saved as
 ## CLI: plot, merge, publish
 
 Run these from the benchmark directory; with no `--file/-f`, they pick the **latest**
-result file automatically.
+result file automatically. See [cli-reference.md](./cli-reference.md) for the full
+flag list of each command.
 
 ```bash
 # Plot — interactive HTML dashboard by default

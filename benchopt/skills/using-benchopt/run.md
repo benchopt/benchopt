@@ -108,23 +108,9 @@ the benchmark's `datasets/` folder shadows the HF `datasets` library, making
 benchopt report it "already available" while it is missing. Verify with an
 import from *outside* the benchmark dir when in doubt.
 
-### Selective install
-
-```bash
-benchopt install . -s my-solver             # only deps for one solver
-benchopt install . -d my-dataset            # only deps for one dataset
-benchopt install . --env-name myenv --recreate   # rebuild the conda env from scratch
-benchopt install . --gpu                    # select GPU-variant requirements
-benchopt install . --minimal                # benchopt + objective only (no solvers)
-```
-
-### Check what is installed
-
-```bash
-benchopt info .             # list solvers/datasets and their install status
-benchopt info . -e          # check availability inside the benchmark conda env
-benchopt info . -s my-solver -v   # verbose: parameters + requirements
-```
+Scope the install with `-s`/`-d` (a single solver/dataset), or use `--gpu`,
+`--minimal`, `--recreate`; `benchopt info .` lists install status. See
+[cli-reference.md](./cli-reference.md) for the full flag list of each command.
 
 ### Prepare datasets
 
