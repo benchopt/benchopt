@@ -1,8 +1,3 @@
----
-name: benchopt-results
-description: "Explore and manage benchopt result files: read run parquets in Python (benchopt.results.read_results), understand the dataframe schema, use the CLI (plot/merge/publish) and outputs/ layout, save custom views with plot_configs, write custom BasePlot plots, and merge results across machines. Use when analysing, slicing, comparing, plotting, or sharing benchmark results."
----
-
 # Exploring benchopt results
 
 Every `benchopt run` writes a self-contained result table. You can analyse it
@@ -16,18 +11,19 @@ A run produces, under `<benchmark>/outputs/`:
 ```
 benchopt_run_<timestamp>.parquet   ← the results table (one row per curve point)
 benchopt_run_<timestamp>.html      ← interactive dashboard (unless --no-html)
-benchopt_run_<timestamp>/          ← per-solver run artifacts (see general.md)
+benchopt_run_<timestamp>/          ← per-solver run artifacts
 ```
 
-`benchopt merge` writes `merged_results.parquet` and `benchopt plot --all`
-writes `all_runs.html`, a table of content that allow navigating to HTML reports
-for every parquet in the folder.
+`benchopt plot` with no argument regenerates the HTML report for the most recent
+result file. `benchopt merge` writes `merged_results.parquet` and
+`benchopt plot --all` writes `all_runs.html`, a table of contents for navigating
+to the HTML report of every parquet in the folder.
 
 ## Read a result file in Python
 
 The public entry point is `read_results` — it handles `.parquet` and `.csv`,
-renames the legacy `data_name` column to `dataset_name`, and unpacks any
-objective columns that were pickled at write time (array-api objects):
+and unpacks any objective columns that were pickled at write time (array-api
+objects):
 
 ```python
 from benchopt.results import read_results
@@ -92,7 +88,8 @@ If `final_points.parquet` already exists, the result will be saved as
 ## CLI: plot, merge, publish
 
 Run these from the benchmark directory; with no `--file/-f`, they pick the **latest**
-result file automatically.
+result file automatically. See [cli-reference.md](./cli-reference.md) for the full
+flag list of each command.
 
 ```bash
 # Plot — interactive HTML dashboard by default
@@ -164,45 +161,18 @@ plot_configs:
 
 ## Custom plots (`BasePlot`)
 
-For visualizations the built-in kinds don't cover, add your own plot class under
-the benchmark's `plots/` directory — a Python file with a class inheriting from
-`benchopt.BasePlot`. Its `name` then appears in the HTML plot menu and is usable
-as a `plot_kind` in `plot_configs` (above).
-
-```python
-from benchopt import BasePlot
-
-class Plot(BasePlot):
-    name = "Final score"
-    type = "bar_chart"          # scatter | bar_chart | boxplot | table | image
-    options = {                 # become kwargs of plot()/get_metadata()
-        "dataset": ...,         # `...` auto-fills with unique dataset_name values
-        "objective": ...,
-        "solver": lambda df: df["solver_name"].unique().tolist(),  # or compute
-    }
-
-    def plot(self, df, dataset, objective, solver):
-        df = df.query("dataset_name == @dataset and objective_name == @objective")
-        bars = []
-        for s, df_s in df.groupby("solver_name"):
-            scores = df_s.groupby("idx_rep")["objective_value"].last()
-            bars.append({"y": scores.tolist(), "label": s,
-                         **self.get_style(s)})   # consistent color/marker per solver
-        return bars
-
-    def get_metadata(self, df, dataset, objective, solver):
-        return {"title": f"{objective} on {dataset}", "ylabel": "Objective value"}
-```
-
-- `plot(df, **opts)` returns data shaped by `type` (scatter: traces with
-  `x`/`y`/`label` + optional `y_low`/`y_high` bands; bar/boxplot: per-solver
-  dicts; table: list of rows; image: arrays). `get_metadata` sets title/labels/
-  `scale`. The exact per-type schema is in the custom-plot doc.
-- `self.get_style(label)` returns a `{color, marker}` dict keyed on a hash of the
-  label, so a given solver keeps the same style across every figure.
+For visualizations the built-in kinds don't cover, add a Python file under the
+benchmark's `plots/` directory with a class inheriting from `benchopt.BasePlot`:
+set `name` and `type` (`scatter`/`bar_chart`/`boxplot`/`table`/`image`),
+implement `plot(df, **options)` (returns data shaped by `type`) and
+`get_metadata` (title/labels/scale), and use `self.get_style(label)` for a
+consistent color/marker per solver. The `name` then appears in the HTML menu and
+works as a `plot_kind` in `plot_configs` (above). For the per-type return schema
+and a full example, see the custom-plot doc:
+https://benchopt.github.io/stable/user_guide/add_custom_plot.html
 
 ## Doc links
 
-- Managing results (merge / publish / plot): https://benchopt.github.io/benchmark_workflow/manage_benchmark_results.html
-- Custom plots: https://benchopt.github.io/user_guide/add_custom_plot.html
-- CLI reference: https://benchopt.github.io/user_guide/CLI_ref.html
+- Managing results (merge / publish / plot): https://benchopt.github.io/stable/benchmark_workflow/manage_benchmark_results.html
+- Custom plots: https://benchopt.github.io/stable/user_guide/add_custom_plot.html
+- CLI reference: https://benchopt.github.io/stable/user_guide/CLI_ref.html

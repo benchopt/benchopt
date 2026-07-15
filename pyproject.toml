@@ -122,6 +122,9 @@ addopts = "-v -p benchopt.tests.fixtures"
 testpaths = [
     "benchopt",
 ]
+markers = [
+    "network: test needs internet access (e.g. checking documentation URLs)",
+]
 
 [tool.check-manifest]
 ignore = [
