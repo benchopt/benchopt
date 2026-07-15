@@ -25,9 +25,9 @@ def test_sync_local(tmp_path, monkeypatch):
     assert (mirror / "SKILL.md").is_file()
     # mirror is a symlink when supported, a copy otherwise; either way it holds
     # the same content as the agents-dir skill.
-    assert (mirror / "SKILL.md").read_text() == (
+    assert (mirror / "SKILL.md").read_text(encoding="utf-8") == (
         agents / SKILL_NAME / "SKILL.md"
-    ).read_text()
+    ).read_text(encoding="utf-8")
 
 
 def test_sync_into_benchmark_path(tmp_path):
@@ -57,10 +57,10 @@ def test_sync_preserves_unrelated_skills(tmp_path, monkeypatch):
     agents = tmp_path / ".agents" / "skills"
     repo = agents / "myrepo-local"
     repo.mkdir()
-    (repo / "SKILL.md").write_text("local")
+    (repo / "SKILL.md").write_text("local", encoding="utf-8")
 
     _sync()
-    assert (repo / "SKILL.md").read_text() == "local"
+    assert (repo / "SKILL.md").read_text(encoding="utf-8") == "local"
 
 
 def test_no_claude_flag(tmp_path, monkeypatch):
@@ -98,7 +98,7 @@ def test_sync_stamps_version(tmp_path, monkeypatch):
     _sync()
 
     skill_md = tmp_path / ".agents" / "skills" / SKILL_NAME / "SKILL.md"
-    text = skill_md.read_text()
+    text = skill_md.read_text(encoding="utf-8")
     assert VERSION_PLACEHOLDER not in text
     assert __version__ in text
 
@@ -109,7 +109,9 @@ def test_sync_retargets_doc_version(tmp_path, monkeypatch):
     _sync()
 
     skill = tmp_path / ".agents" / "skills" / SKILL_NAME
-    texts = "\n".join(p.read_text() for p in skill.rglob("*.md"))
+    texts = "\n".join(
+        p.read_text(encoding="utf-8") for p in skill.rglob("*.md")
+    )
     # doc links now point at the matching version, not the shipped /stable/.
     assert "benchopt.github.io/stable/" not in texts
     assert f"benchopt.github.io/{_doc_url_version()}/" in texts
