@@ -156,8 +156,16 @@ def _load_class_from_module(benchmark_dir, module_filename, class_name):
                     )
                 if reload:
                     # The class failed to import before its requirements were
-                    # installed. Import it again to detect them.
-                    return _reload_class(cls).is_installed(
+                    # installed. Import it again to detect them; modules that
+                    # are not fully imported are not cached, so re-importing is
+                    # enough. Invalidate the import caches first, to make the
+                    # packages installed since the interpreter started visible.
+                    importlib.invalidate_caches()
+                    reloaded = _load_class_from_module(
+                        cls._benchmark_dir, cls._module_filename,
+                        cls._base_class_name
+                    )
+                    return reloaded.is_installed(
                         raise_on_not_installed=raise_on_not_installed,
                         quiet=quiet
                     )
@@ -180,30 +188,6 @@ def _load_class_from_module(benchmark_dir, module_filename, class_name):
     klass._file_hash = get_file_hash(klass._module_filename)
 
     return klass
-
-
-def _reload_class(klass):
-    """Import a class again, to detect its newly installed requirements.
-
-    Modules that are not fully imported are not cached, so importing the class
-    again is enough to detect the requirements installed in the meantime.
-
-    Parameters
-    ----------
-    klass : class
-        A class previously loaded with `_load_class_from_module`.
-
-    Returns
-    -------
-    klass : class
-        The class, freshly imported from its module.
-    """
-    # Make the packages installed since the interpreter started visible.
-    importlib.invalidate_caches()
-
-    return _load_class_from_module(
-        klass._benchmark_dir, klass._module_filename, klass._base_class_name
-    )
 
 
 def _get_import_context(module):

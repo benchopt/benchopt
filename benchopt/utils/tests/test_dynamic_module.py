@@ -6,7 +6,7 @@ from joblib import Parallel, delayed
 
 from benchopt.cli.main import run as run_cmd
 from benchopt.cli.main import install as install_cmd
-from benchopt.utils.dynamic_modules import FailedImport, _reload_class
+from benchopt.utils.dynamic_modules import FailedImport
 from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.utils.temp_benchmark import DEFAULT_SOLVERS
 
@@ -233,11 +233,8 @@ def test_reload_class_after_install(tmp_path, safe_import):
         try:
             # Without a reload, the import failure hides the install.
             assert not Solver.is_installed(quiet=True)
+            # Reloading re-imports the class and detects the install.
             assert Solver.is_installed(reload=True)
-
-            ReloadedSolver = _reload_class(Solver)
-            assert not isinstance(ReloadedSolver, FailedImport)
-            assert ReloadedSolver.is_installed()
         finally:
             sys.path.remove(str(tmp_path))
             sys.modules.pop(pkg, None)
