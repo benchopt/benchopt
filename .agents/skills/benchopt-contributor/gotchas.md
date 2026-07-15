@@ -7,8 +7,8 @@ headline is stated once here; the fuller context lives in the linked file.
 
 - **`flake8` lints the whole repo, not your file.** CI runs `flake8 .`, so a
   clean diff can still fail on an unrelated violation. Lint the repo, not just
-  what you touched. Also: 79-col limit (E501), and `flake8` is **not** in the
-  base env — `uv pip install flake8` first. → [general](./general.md)
+  what you touched. Also: 79-col limit (E501), and if `flake8` is not
+  installed, `pip install flake8` first. → [general](./general.md)
 - **Rebuild docs with `-E`.** Without it Sphinx serves a stale cache and you
   "verify" the old page. `sphinx-build -E -b html doc doc/_build/html`.
   → [docs](./docs.md)

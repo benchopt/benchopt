@@ -19,7 +19,8 @@
 - **What's new entry** — add a `doc/whats_new.rst` entry for any user-facing
   change. Put it under the in-development version, in the matching section
   (`CLI` / `API` / `PLOT` / `TST` / `FIX` / `DOC`), ending with
-  ``By `Your Name`_ (:gh:`NNN`)``. If a follow-up PR extends an existing entry,
+  ``By `Your Name`_ (:gh:`NNN`)``. If not already in, update `names.inc` with the contributor's name.
+  For follow-up PR on unreleased features extending an existing entry,
   update that bullet and list both PRs (``:gh:`959`, :gh:`980```) rather than
   adding a near-duplicate.
 

@@ -7,9 +7,8 @@
    consistent. CLI-command tests live in `benchopt/cli/tests/` as
    `test_cmd_<command>.py` (e.g. `test_cmd_run.py`, `test_cmd_test.py`,
    `test_cmd_merge.py`, `test_cmd_publish.py`); add a new command's tests there.
-3. Produce a **draft** of the full test file or the new test method(s).
-4. Review and refine the draft against the conventions below; keep this skill
-   updated as patterns evolve.
+3. Write the test file (or new test methods) following the conventions below.
+4. Keep this skill updated as patterns evolve.
 
 ## Core Utilities
 
@@ -229,7 +228,7 @@ assert len(df) == expected_rows
 assert df["run_date"].nunique() == 2
 ```
 
-## Before declaring a draft done
+## Before declaring the tests done
 
 Verify against the conventions detailed above — the recurring ones:
 base class for config-independent tests, single-value `parametrize` with
