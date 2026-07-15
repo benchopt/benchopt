@@ -135,6 +135,8 @@ ignore = [
   "roadmap.md",
   "benchopt/version.py",
   "benchopt/tests/dummy_package/build/**",
+  ".agents/**",
+  ".claude/**",
 ]
 
 [tool.coverage.run]
