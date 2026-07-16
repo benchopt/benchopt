@@ -71,6 +71,12 @@ TST
 FIX
 ~~~
 
+- Fix shell handling on Windows so ``benchopt install``/``test`` work with a
+  bash-like shell (e.g. GitHub ``shell: bash`` runners).
+  On Windows the ``SHELL`` env var is now ignored, use ``BENCHOPT_SHELL``
+  to override it. Underlying shell errors are also better reported,
+  instead of being swallowed. By `Johan Larsson`_ (:gh:`974`)
+
 - Fix ``benchopt sync-skills`` symlink with global install for Claude.
   By `Thomas Moreau`_ (:gh:`969`)
 
