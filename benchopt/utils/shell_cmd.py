@@ -1,3 +1,5 @@
+import sys
+import shlex
 import subprocess
 
 from ..config import DEBUG
@@ -10,6 +12,20 @@ SHELL = get_setting('shell')
 
 IS_FISH = 'fish' in f"{SHELL}"
 IS_CMD = 'cmd' in f"{SHELL}"
+
+
+def _split_shell(shell):
+    """Split a shell setting into its program and arguments.
+
+    The `shell` setting carries arguments by design (e.g. ``'cmd /c'`` or
+    ``'bash --norc --noprofile'``), so it cannot be quoted as a whole.
+    """
+    # posix=False keeps Windows backslashes intact but retains surrounding
+    # quotes on each token, so strip them there.
+    parts = shlex.split(shell, posix=(sys.platform != 'win32'))
+    if sys.platform == 'win32':
+        parts = [p.strip('"') for p in parts]
+    return parts
 
 
 def _run_shell(script, raise_on_error=None, capture_stdout=True,
@@ -72,13 +88,30 @@ def _run_shell(script, raise_on_error=None, capture_stdout=True,
     if raise_on_error is True:
         raise_on_error = "{output}"
 
-    command = f'{SHELL} "{tmp.name}"'
+    # Pass the shell and script as an argument list so subprocess invokes them
+    # directly, without re-parsing (and mangling) a shell path that has spaces.
+    command = [*_split_shell(SHELL), tmp.name]
 
     if capture_stdout:
-        exit_code, output = subprocess.getstatusoutput(command)
+        # Merge stderr into stdout, and strip empty line
+        # so callers parsing the last output line as JSON keep working.
+        res = subprocess.run(
+            command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            text=True, errors='replace',
+        )
+        exit_code = res.returncode
+        output = res.stdout
+        if output.endswith('\n'):
+            output = output[:-1]
     else:
-        exit_code = subprocess.run(command, shell=True, stdin=None).returncode
-        output = ""
+        # Let stdout stream to the console, but capture stderr when we might
+        # raise so the underlying error is surfaced instead of being lost.
+        res = subprocess.run(
+            command, stderr=subprocess.PIPE if raise_on_error else None,
+            text=True, errors='replace',
+        )
+        exit_code = res.returncode
+        output = res.stderr if (raise_on_error and res.stderr) else ""
     if raise_on_error is not None and exit_code != 0:
         if isinstance(raise_on_error, str):
             raise RuntimeError(raise_on_error.format(output=output))

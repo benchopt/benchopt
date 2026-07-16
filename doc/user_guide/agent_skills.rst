@@ -3,68 +3,49 @@
 AI agent skills
 ===============
 
-Benchopt ships a small library of **agent skills** — short, structured
-documents that teach an AI coding agent how to work with benchopt (authoring a
-benchmark, adding a solver or dataset, running benchmarks). They follow the
-`Agent Skills open standard <https://agentskills.io>`_ (``SKILL.md`` files) and
-are read by most coding agents: Codex, Gemini CLI, GitHub Copilot / VS Code,
+Benchopt ships an **agent skill** — a small set of structured documents that
+teach an AI coding agent how to work with benchopt (authoring a benchmark,
+adding a solver or dataset, running benchmarks, exploring results). It follows
+the `Agent Skills open standard <https://agentskills.io>`_ (``SKILL.md`` files)
+and is read by most coding agents: Codex, Gemini CLI, GitHub Copilot / VS Code,
 Cursor, and others.
 
-Because the skills ship inside the benchopt package, they always match your
+Because the skill ships inside the benchopt package, it always matches your
 installed version: ``pip install -U benchopt`` followed by ``benchopt
-sync-skills`` keeps them up to date.
+sync-skills`` keeps it up to date.
 
-Installing the skills
----------------------
+Installing the skill
+--------------------
 
-Run ``sync-skills`` from a benchmark repository to install the shared skills
-into it:
+Run ``sync-skills`` from a benchmark repository to install the skill into it:
 
 .. prompt:: bash $
 
     benchopt sync-skills
 
-This writes the skills into ``.agents/skills/`` (the cross-harness standard
-location) and mirrors them under ``.claude/skills/`` for Claude Code, which
-does not yet read ``.agents/skills/`` natively. The mirror uses symlinks where
+This writes the skill into ``.agents/skills/`` (the cross-harness standard
+location) and mirrors it under ``.claude/skills/`` for Claude Code, which does
+not yet read ``.agents/skills/`` natively. The mirror uses symlinks where
 available and falls back to copies otherwise (e.g. Windows without developer
 mode).
 
-To install the skills once for your whole machine instead, use ``--global``,
+To install the skill once for your whole machine instead, use ``--global``,
 which targets ``~/.agents/skills/``:
 
 .. prompt:: bash $
 
     benchopt sync-skills --global
 
-Useful options:
+Use ``--no-claude`` to skip the ``.claude/skills`` mirror.
 
-- ``--dry-run``: show what would change without writing anything.
-- ``--no-claude``: skip the ``.claude/skills`` mirror.
+Keeping the skill up to date
+----------------------------
 
-Idempotent updates
------------------
-
-``sync-skills`` records what it installed in a manifest
-(``.agents/skills/.benchopt-skills-manifest.json``). Re-running it is safe: it
-refreshes the shared skills and removes any that were deleted upstream, so no
-orphans are left behind. Only benchopt's own skills (named with the
-``benchopt-`` prefix) are ever written or removed.
-
-Shared vs. repo-specific skills
-------------------------------
-
-A benchmark can keep its own skills next to the synced ones. The convention:
-
-- **Shared skills** (``benchopt-*``) come from ``benchopt sync-skills`` and are
-  managed by benchopt. Do **not** edit them inside a benchmark repo — fix them
-  upstream in benchopt and release. They are typically gitignored::
-
-      .agents/skills/benchopt-*
-      .claude/skills/benchopt-*
-
-- **Repo-specific skills** use any other name, live in ``.agents/skills/``, and
-  are committed to the benchmark repo. ``sync-skills`` never touches them.
+``sync-skills`` copies the packaged skill and stamps the current benchopt
+version into it. Re-running it is safe and idempotent: it refreshes
+``using-benchopt`` in place and leaves any other (repo-specific) skills in
+``.agents/skills/`` untouched.
 
 After upgrading benchopt, re-run ``benchopt sync-skills`` to pick up the
-matching skills.
+matching skill. The skill instructs the agent to compare its stamped version
+against ``benchopt --version`` and warn you when a refresh is needed.

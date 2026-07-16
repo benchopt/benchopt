@@ -16,7 +16,10 @@ CLI
 - Ship agent skills (``SKILL.md``, `Agent Skills <https://agentskills.io>`_
   standard) as package data and add ``benchopt sync-skills`` to install them
   into a project's ``.agents/skills/`` (or globally with ``--global``), with a
-  ``.claude/skills/`` mirror for Claude Code. By `Thomas Moreau`_ (:gh:`959`)
+  ``.claude/skills/`` mirror for Claude Code. The skills are consolidated into a
+  single ``using-benchopt`` skill (router ``SKILL.md`` plus task sub-files and
+  asset templates) and ``sync-skills`` stamps the installed version and
+  retargets doc links. By `Thomas Moreau`_ (:gh:`959`, :gh:`980`)
 
 PLOT
 ~~~~
@@ -67,6 +70,12 @@ TST
 
 FIX
 ~~~
+
+- Fix shell handling on Windows so ``benchopt install``/``test`` work with a
+  bash-like shell (e.g. GitHub ``shell: bash`` runners).
+  On Windows the ``SHELL`` env var is now ignored, use ``BENCHOPT_SHELL``
+  to override it. Underlying shell errors are also better reported,
+  instead of being swallowed. By `Johan Larsson`_ (:gh:`974`)
 
 - Fix ``benchopt sync-skills`` symlink with global install for Claude.
   By `Thomas Moreau`_ (:gh:`969`)

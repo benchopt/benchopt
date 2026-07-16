@@ -1,11 +1,11 @@
 import os
 import re
-import sys
 import warnings
 from pathlib import Path
 
 import benchopt
 
+from .shell_cmd import IS_CMD
 from .shell_cmd import _run_shell
 from .shell_cmd import _run_shell_in_conda_env
 from .misc import get_benchopt_requirement, NamedTemporaryFile
@@ -16,9 +16,11 @@ from ..config import get_setting
 SHELL = get_setting('shell')
 CONDA_CMD = get_setting('conda_cmd')
 
-# On windows, calling conda without call exit the cmd script:
+# In CMD, calling conda without `call` exits the batch script:
 # https://github.com/conda/conda/issues/12418
-if sys.platform == 'win32' and not CONDA_CMD.lower().startswith('call'):
+# Gate this on the shell benchopt generates scripts for (IS_CMD) rather than
+# `sys.platform`, so a bash shell on Windows gets a plain `conda`.
+if IS_CMD and not CONDA_CMD.lower().startswith('call'):
     CONDA_CMD = f"CALL {CONDA_CMD}"
 
 DEFAULT_PYTHON_VERSION = '3.12'

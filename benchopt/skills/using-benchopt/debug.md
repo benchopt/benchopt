@@ -1,19 +1,6 @@
----
-name: benchopt-debug
-description: >
-  How to drive a benchmark's code directly from Python via the Benchmark
-  object, without launching the full `benchopt run` CLI: load datasets and the
-  objective, inspect what `Dataset.get_data()` returns, replay a solver
-  (`set_objective`/`run`/`get_result`) and call `Objective.evaluate_result()` on
-  its output or an arbitrary checkpoint. Covers common pitfalls — NaNs, diverging
-  curves (benchopt's divergence guard), and stale-cache surprises plus how to bust
-  the cache — and points to `benchopt test` for catching design problems early.
-  Use when debugging a benchmark's own code (a failing `get_data`, a diverging
-  solver, NaNs, a suspicious metric, results that don't update after an edit) rather
-  than running or authoring one.
----
-
 # Debugging a benchopt benchmark from Python
+
+Paste [`assets/debug_snippet.py`](./assets/debug_snippet.py) into the benchmark directory as a starting point.
 
 When something in a benchmark misbehaves, you usually do not want a full
 `benchopt run`: caching, conda envs, parallel workers and the convergence loop
@@ -23,6 +10,12 @@ so you can step through `get_data`, `set_data` and `evaluate_result` directly.
 
 Run these snippets from the benchmark directory (the folder holding
 `objective.py`), e.g. `python -i debug.py` or a notebook.
+
+> **Gotcha — `--timeout` is not strictly enforced.** It is only checked at each
+> evaluation, so `run_once` solvers ignore it entirely, and an iterative solver
+> can overrun: the check fires just before the timeout, the solver keeps running
+> more iterations, and the timeout only trips at the *next* evaluation — which
+> can be arbitrarily far. Don't rely on it as a hard wall-clock cap.
 
 ## Load the benchmark
 
@@ -54,6 +47,16 @@ print(type(data), data.keys())
 returned by `get_data()` is exactly what the runner forwards to
 `Objective.set_data(**data)`, so inspecting it here tells you what every solver
 will actually receive.
+
+Use the same mechanism in **unit tests** for benchmark components — never load
+component files with `importlib` by path; it is fragile and prone to name
+shadowing (see the *Name shadowing* pitfall below):
+
+```python
+Dataset, = bench.check_dataset_patterns(["my-dataset"], class_only=True)
+module = inspect.getmodule(Dataset)      # reach module-level helpers
+dataset = Dataset.get_instance(param=1)  # instances via the parameter grid
+```
 
 ## Inspect the objective and replay evaluate_result
 
@@ -115,15 +118,6 @@ This is the minimal reproduction of one point on a convergence curve. If
 the keys in `get_result()` and the arguments `evaluate_result` expects — print
 both to compare.
 
-## Gotcha: the `datasets/` directory can be shadowed
-
-In a plain script, `import datasets` (or anything that triggers it) may resolve
-to Hugging Face's `datasets` package instead of the benchmark's local
-`datasets/` folder, or vice-versa, depending on `sys.path`. **Do not import the
-benchmark's modules by hand** — always go through `Benchmark(".")`, which loads
-each dataset/objective from its file path and sidesteps the name clash
-entirely.
-
 ## Worked example: an eval oracle
 
 A common use is validating the *evaluation* path on its own: load a known model
@@ -159,9 +153,8 @@ full run points at the *solvers*, not the objective.
 For sequential solvers that are evaluated with varying compute budget,
 benchopt watches the monitored objective (`key_to_monitor`, default
 `objective_value`) and **stops the run with status `diverged`** as soon as that
-value is `NaN` or worsens by more than `1e5` between two steps
-([stopping_criterion.py](../stopping_criterion.py)). A curve that ends early with
-`diverged` in the dashboard is this guard firing, not a benchopt bug.
+value is `NaN` or worsens by more than `1e5` between two steps. A curve that
+ends early with `diverged` in the dashboard is this guard firing, not a benchopt bug.
 
 Both symptoms almost always originate in your code, so reproduce them with the
 replay snippets above instead of staring at the curve:
@@ -185,10 +178,9 @@ it: it exits once the monitored objective fails to improve for 3 successive
 evaluations (`eps=1e-10`). That is intended for convergence benchmarks, but it
 silently truncates **fixed-budget training** (e.g. a DL solver meant to run N
 epochs) as soon as the loss plateaus or is merely noisy — so the run looks
-"done" far short of the budget. This is a *stopping-criterion* choice, not a bug
-in your solver: fix it on the solver (or benchmark-wide on the `Objective`) by
-pinning an explicit `stopping_criterion` such as `NoCriterion` or
-`SingleRunCriterion`. See the `benchopt-add-solver` skill for the fix.
+"done" far short of the budget. Fix it on the solver (or benchmark-wide on the
+`Objective`) by pinning an explicit `stopping_criterion` such as `NoCriterion`
+or `SingleRunCriterion`. See [add-solver.md](./add-solver.md) for the fix.
 
 ### Stale-cache surprises
 
@@ -212,12 +204,20 @@ The `Benchmark(".")` workflow in this skill bypasses the cache completely, so
 re-deriving a suspicious value here and comparing it to the run is itself the
 quickest way to confirm the cache was stale.
 
+### Name shadowing: the `datasets/` directory
+
+In a plain script, `import datasets` (or anything that triggers it) may resolve
+to Hugging Face's `datasets` package instead of the benchmark's local
+`datasets/` folder, or vice-versa, depending on `sys.path`. **Do not import the
+benchmark's modules by hand** — always go through `Benchmark(".")`, which loads
+each dataset/objective from its file path and sidesteps the name clash entirely.
+
 ## Catch design problems early with the test suite
 
 Before (or instead of) hand-driving classes, `benchopt test .` runs benchopt's
-built-in benchmark test suite against your code. It exercises the same contracts
-as the snippets above and fails loudly on the design mistakes that are painful
-to discover during a full run:
+built-in suite against your code — it exercises the same `get_data` → `set_data`
+→ `run` → `evaluate_result` contracts as the snippets above and fails loudly on
+the design mistakes that are painful to discover during a full run:
 
 ```bash
 benchopt test .                       # full suite in a temporary env
@@ -225,23 +225,10 @@ benchopt test . -k my-solver          # pytest args pass through (scope the run)
 benchopt test . --env-name myenv      # reuse/inspect a named conda env
 ```
 
-What the suite checks (so you know which failure points where):
-
-- `test_dataset_class` / `test_dataset_get_data` — each Dataset instantiates and
-  `get_data()` returns a well-formed dict.
-- `test_benchmark_objective` — `set_data` + `evaluate_result` run on the
-  designated **test dataset** and the objective returns the expected metrics.
-- `test_benchmark_config_validity` — the benchmark's test config is coherent.
-- `test_solver_class`, `test_solver_stopping_criterion`, `test_solver_run` —
-  each Solver instantiates, respects its `sampling_strategy` / stopping
-  criterion, and actually runs on the test dataset.
-
-Point the objective/solver tests at a small, fast case: set the objective's
-`test_dataset_name` to select the dataset used for testing, and use the
-`test_config` class attribute (on Dataset/Objective/Solver) to pass cheap test
-parameters. This keeps the suite fast to re-run while iterating on early design
-choices. See the test configuration reference:
-https://benchopt.github.io/benchmark_workflow/test_benchmark.html
+Point the tests at a small, fast case: set the objective's `test_dataset_name`
+and give each Dataset/Objective/Solver a `test_config` with cheap parameters. For
+the full list of checks and the test-config reference, see
+https://benchopt.github.io/stable/benchmark_workflow/test_benchmark.html
 
 ## Tips
 
@@ -254,7 +241,7 @@ https://benchopt.github.io/benchmark_workflow/test_benchmark.html
 
 ## Doc links
 
-- Benchmark structure & workflow: https://benchopt.github.io/benchmark_workflow/index.html
-- Objective / Dataset / Solver API: https://benchopt.github.io/user_guide/API_ref.html
-- Class customization & parameters: https://benchopt.github.io/user_guide/class_customization.html
-- Testing a benchmark (test_config): https://benchopt.github.io/benchmark_workflow/test_benchmark.html
+- Benchmark structure & workflow: https://benchopt.github.io/stable/benchmark_workflow/index.html
+- Objective / Dataset / Solver API: https://benchopt.github.io/stable/user_guide/API_ref.html
+- Class customization & parameters: https://benchopt.github.io/stable/user_guide/class_customization.html
+- Testing a benchmark (test_config): https://benchopt.github.io/stable/benchmark_workflow/test_benchmark.html

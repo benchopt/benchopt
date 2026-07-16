@@ -1,22 +1,14 @@
----
-name: benchopt-create-benchmark
-description: >
-  How to author a new benchopt benchmark (datasets, solvers, objective): the
-  component contract, benchmark-wide config and dependencies, data preparation,
-  testing, and CI. Use when creating or restructuring a benchmark repo, not
-  when working on the benchopt library itself.
----
-
 # Creating a benchopt benchmark
 
-Guidance for authoring a *benchmark* (a repo of datasets/solvers/objective),
-not for working on the benchopt library. This skill covers **benchmark-wide**
-concerns; for an individual component see **`benchopt-add-solver`** and
-**`benchopt-add-dataset`**, and for running/results **`benchopt-run-benchmark`**.
+Guidance for authoring a *benchmark* (a repo of datasets/solvers/objective).
+This file covers **benchmark-wide**
+concerns; for individual components see [add-objective.md](./add-objective.md),
+[add-solver.md](./add-solver.md), and [add-dataset.md](./add-dataset.md).
 
 After each change, lint (`flake8 .` or `ruff check .`) and run a `benchopt run`
-smoke test with a debug config, or a `benchopt test . --skip-install` to catch early
-design failures.
+smoke test with a debug config (template:
+[`assets/config_run.yml`](./assets/config_run.yml)), or a
+`benchopt test . --skip-install` to catch early design failures.
 
 ## Start from a template
 
@@ -25,38 +17,28 @@ Clone/copy **`template_benchmark`** (or **`template_benchmark_ml`** for ML) from
 correct `objective.py`, `datasets/`, `solvers/`, `benchmark_utils/`, the test
 config wiring, and the CI workflows (see below).
 
-## The objective/dataset/solver contract
+## Component contract (overview)
 
-Every class needs a `name` attribute. Data flows between components as dicts:
+Every class needs a `name` attribute. Data flows as dicts (`→`), except
+`Solver.run()` which is only executed and carries no data (`|`):
+`Dataset.get_data()` → `Objective.set_data()` → `Objective.get_objective()`
+→ `Solver.set_objective()` | `Solver.run()` | `Solver.get_result()`
+→ `Objective.evaluate_result()`.
+`Solver.run()` (between `set_objective` and `get_result`) is the timed part.
 
-- `Dataset.get_data()` → dict → `Objective.set_data(**data)`.
-- `Objective.get_objective()` → dict → `Solver.set_objective(**obj)`.
-- `Solver.get_result()` → dict → `Objective.evaluate_result(**res)`.
-- `evaluate_result` must return a dict with a scalar `value` key (the quantity
-  benchopt minimises); add any extra metric keys you like.
+## Key design choices
 
-The `Objective` also exposes optional methods worth wiring early:
+Before writing components, settle:
 
-- `get_one_result()`: a dummy result used by `benchopt test` to validate metric
-  computation (validation skipped if absent).
-- `save_final_results(**res)`: persist artefacts (models, arrays) as a `.pkl`
-  alongside the parquet results.
-- `skip(**data)`: skip incompatible dataset/objective combinations.
-
-**Set benchmark-wide defaults on the `Objective`** so all solvers inherit them:
-`sampling_strategy` (e.g. `"run_once"` for ML), `stopping_criterion`, and
-`python_version` to pin the conda env's Python. **Seed all randomness with
-`self.get_seed(use_repetition=True)`** so `--n-repetitions` gives reproducible,
-distinct runs (a bare `self.get_seed()` returns the same seed every repetition).
-
-Two design rules that keep a benchmark extensible:
-
-- **Keep solvers dataset-agnostic.** Have the dataset expose a generic payload
-  (e.g. `fields: dict[str, ndarray]`) plus *optional callables* (`moments_fn`,
-  …); solvers operate on the payload by name, and the objective calls the
-  callables only when present. One set of solvers then serves many datasets.
-- **Use `Objective.parameters`** to parametrize *evaluation* itself (e.g. a
-  number of restart steps), not just solvers/datasets.
+- **What constitutes a dataset** — just data (typical ML), data + model (more
+  optimization-style), or data + hardware (more infra-style).
+- **What is handed to the method vs. kept for evaluation only** — i.e. the split
+  between what `get_objective()` exposes to solvers and what the objective keeps
+  to score their results.
+- **How to let methods compare fairly** — expose a generic payload so every
+  solver sees the same inputs. See [add-objective.md](./add-objective.md) for the
+  authoring detail (evaluate_result format, benchmark-wide defaults,
+  key_to_monitor, test wiring).
 
 ## Config and dependencies (benchmark-wide)
 
@@ -69,15 +51,15 @@ Two design rules that keep a benchmark extensible:
   `__init__.py` to be a proper module.
 - **Requirements are per component**, not per `benchmark_utils` submodule — each
   objective/dataset/solver declares exactly what it imports (install detection
-  is covered in the add-solver/add-dataset skills). Organise `benchmark_utils`
-  by **topic** (one module per concern), import the specific submodule from each
-  class, and keep `benchmark_utils/__init__.py` **empty** so importing one topic
-  doesn't load the others.
+  is covered in [add-solver.md](./add-solver.md) and [add-dataset.md](./add-dataset.md)).
+  Organise `benchmark_utils` by **topic** (one module per concern), import the
+  specific submodule from each class, and keep `benchmark_utils/__init__.py`
+  **empty** so importing one topic doesn't load the others.
 - For data/config locations use **`get_data_path("key")`**
   (`from benchopt.config import get_data_path`); it resolves under the
   benchmark's configurable data folder, so it travels with any checkout. Ship
   small default/test configs in the repo and `.gitignore` only *generated* data.
-- **No module-level constants or hard-coded paths** (e.g.
+- **Avoid module-level constants or hard-coded paths** (e.g.
   `_PROJECT_ROOT = Path(__file__).parent.parent`): they assume one machine's
   layout and break distribution. Express configuration as benchopt
   **parameters** set from the run config, not a bespoke config file the
@@ -89,9 +71,9 @@ Two design rules that keep a benchmark extensible:
 ## Data preparation and testing
 
 - Put expensive one-time data generation in `Dataset.prepare()` and load it in
-  `get_data()` (details in `benchopt-add-dataset`). Benchmark-wide, precompute
-  reusable, solver-independent references in `prepare()` (e.g. a ground-truth
-  trajectory) so each evaluation only does the cheap solver-dependent work.
+  `get_data()` (details in [add-dataset.md](./add-dataset.md)). Benchmark-wide,
+  precompute reusable, solver-independent references in `prepare()` (e.g. a
+  ground-truth trajectory) so each evaluation only does the cheap solver-dependent work.
 - Give datasets/solvers a `test_parameters` dict pointing at a tiny, fast
   configuration, and when possible, ship a zero-dependency `Simulated` dataset so
   the benchmark always has a no-install smoke test.
@@ -111,9 +93,15 @@ and calls two reusable workflows from `benchopt/template_benchmark`:
   `min_benchopt_version` declared in `objective.py`. Heavy data dirs can be
   cached to avoid re-downloads, by providing the cache_dir input in the test.yml workflow.
 
-## Validate locally
+## Validate
 
 - `flake8 .` or `ruff check .` on the changed files.
 - `benchopt run . -d Simulated -s <solver>` as a no-dependency smoke test.
 - `benchopt test . -k <Dataset>` to exercise `test_parameters` (skip the
   `*_install` test if your env cannot build isolated envs).
+
+## Doc links
+
+- Benchmark structure & workflow: https://benchopt.github.io/stable/benchmark_workflow/write_benchmark.html
+- Class config (parameters, requirements, hooks): https://benchopt.github.io/stable/user_guide/class_customization.html
+- Global benchmark authoring guidelines (custom plots, randomness, cross validation, iterative evaluation, cross language with R/Julia/binary): https://benchopt.github.io/stable/user_guide/authoring.html
