@@ -84,33 +84,12 @@ def hashable_pytree(pytree):
         return pytree
 
 
-def _job_slurm_config(kwargs, slurm_config):
-    """Resolve the SLURM config for a single run kwargs entry."""
-    solver = kwargs.get("solver")
-    if solver is None:
-        return slurm_config
-    return get_solver_slurm_config(solver, slurm_config)
-
-
 def _run_batch(run_one_solver, batch_kwargs, n_jobs=1):
     """Run multiple solver configurations in a single SLURM job."""
-    if n_jobs == 1:
-        return [run_one_solver(**kw) for kw in batch_kwargs]
     return Parallel(n_jobs=n_jobs)(
         delayed(run_one_solver)(**kw)
         for kw in batch_kwargs
     )
-
-
-def _group_key(kwargs, group_by):
-    """Resolve the `group_by` value of a run, None if it does not apply."""
-    if group_by is None:
-        return None
-    # `benchopt run` names the entities in the run metadata, other entry points
-    # (e.g. dataset preparation) pass them directly.
-    meta = kwargs.get("meta", {})
-    value = meta.get(f"{group_by}_name", kwargs.get(group_by))
-    return None if value is None else str(value)
 
 
 def _group_runs(all_runs, slurm_config, group_by):
@@ -121,13 +100,25 @@ def _group_runs(all_runs, slurm_config, group_by):
     """
     groups, singles = {}, []
     for kwargs in all_runs:
-        job_slurm_config = _job_slurm_config(kwargs, slurm_config)
-        key = _group_key(kwargs, group_by)
+        solver = kwargs.get("solver")
+        if solver is not None:
+            job_slurm_config = get_solver_slurm_config(solver, slurm_config)
+        else:
+            job_slurm_config = slurm_config
+
+        key = None
+        if group_by is not None:
+            # `benchopt run` names the entities in the run metadata, other
+            # entry points (e.g. dataset preparation) pass them directly.
+            meta = kwargs.get("meta", {})
+            key = meta.get(f"{group_by}_name", kwargs.get(group_by))
         if key is None:
             singles.append((job_slurm_config, [kwargs]))
             continue
         cfg = hashable_pytree(job_slurm_config)
-        groups.setdefault((key, cfg), (job_slurm_config, []))[1].append(kwargs)
+        groups.setdefault(
+            (str(key), cfg), (job_slurm_config, [])
+        )[1].append(kwargs)
     return singles + list(groups.values())
 
 

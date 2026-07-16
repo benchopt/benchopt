@@ -1,3 +1,5 @@
+from types import SimpleNamespace
+
 import pytest
 
 from benchopt.runner import run_benchmark
@@ -226,106 +228,33 @@ def test_run_on_slurm(mocked_submitit, dummy_slurm_config):
         )
 
 
-@pytest.mark.parametrize("batch_n_jobs", [1, 2])
-def test_run_on_slurm_grouped(mocked_submitit, batch_n_jobs):
-    # Two solvers sharing the same SLURM config should be grouped into a
-    # single submitted job, and `batch_n_jobs` should propagate to _run_batch.
-    parallel_config = {
-        "backend": "submitit",
-        "group_by": "dataset",
-        "batch_n_jobs": batch_n_jobs,
-    }
-    solver = """
-        from benchopt.utils.temp_benchmark import TempSolver
-
-        class Solver(TempSolver):
-            name = "{name}"
-    """
-    solvers = [solver.format(name="solver_1"), solver.format(name="solver_2")]
-
-    with temp_benchmark(solvers=solvers) as bench, mocked_slurm():
-        with CaptureCmdOutput(delete_result_files=False) as out:
-            run_benchmark(
-                bench.benchmark_dir, ["solver_1", "solver_2"],
-                dataset_names=["test-dataset"], max_runs=0, timeout=None,
-                parallel_config=parallel_config, plot_result=False,
-            )
-        df = read_results(out.result_files[0])
-
-    # Both solvers ran (df has one row per solver) but they were collapsed
-    # into a single SLURM submission.
-    assert len(df) == 2
-    assert len(mocked_submitit) == 1
-    sub = mocked_submitit[0]
-    # Compare by name: other tests evict `parallel_backends` from sys.modules
-    # via `patch_import`, so `slurm_executor` may be a re-imported module whose
-    # `_run_batch` is a different object than the one imported here.
-    assert sub["func"].__name__ == "_run_batch"
-    assert sub["kwargs"]["n_jobs"] == batch_n_jobs
-
-
-def test_run_on_slurm_grouped_keeps_separate_slurm_configs(mocked_submitit):
-    # Solvers in the same `group_by` bucket but with different SLURM configs
-    # must end up in separate SLURM jobs, so each solver keeps its own config.
-    parallel_config = {
-        "backend": "submitit",
-        "group_by": "dataset",
-        "slurm_nodes": 1,
-    }
-    solver = """
-        from benchopt.utils.temp_benchmark import TempSolver
-
-        class Solver(TempSolver):
-            name = "{name}"
-            {slurm_params}
-    """
-    solvers = [
-        solver.format(name='solver_default', slurm_params=""),
-        solver.format(
-            name='solver_custom',
-            slurm_params="slurm_params = {'slurm_nodes': 2}",
-        ),
-    ]
-
-    with temp_benchmark(solvers=solvers) as bench, mocked_slurm():
-        with CaptureCmdOutput(delete_result_files=False) as out:
-            run_benchmark(
-                bench.benchmark_dir, ["solver_default", "solver_custom"],
-                dataset_names=["test-dataset"], max_runs=0, timeout=None,
-                parallel_config=parallel_config, plot_result=False,
-            )
-        df = read_results(out.result_files[0]).set_index("solver_name")
-
-    # Each solver kept its own slurm_nodes value; if they had been grouped
-    # into one job, they would share the same SLURM config.
-    assert df.loc["solver_default", "s_nodes"] == 1
-    assert df.loc["solver_custom", "s_nodes"] == 2
-
-
-def test_group_runs_without_meta():
-    # The dataset-preparation path passes the entities directly instead of in a
-    # `meta` entry: `group_by` still groups on them, and falls back to one job
-    # per run when the key does not apply there.
+def test_group_runs():
+    # `group_by` reads the entity name from the run metadata (`benchopt run`)
+    # or from the kwargs directly (`benchopt prepare`), never merges runs with
+    # different SLURM configs, and leaves ungroupable runs on their own.
+    solver = SimpleNamespace(slurm_params={}, _parameters={})
+    other = SimpleNamespace(slurm_params={"slurm_nodes": 4}, _parameters={})
     runs = [
-        {"benchmark": None, "dataset": "d1", "force": False},
-        {"benchmark": None, "dataset": "d1", "force": True},
-        {"benchmark": None, "dataset": "d2", "force": False},
+        {"meta": {"dataset_name": "d1"}, "solver": solver},
+        {"meta": {"dataset_name": "d1"}, "solver": solver},
+        {"meta": {"dataset_name": "d1"}, "solver": other},
+        {"meta": {"dataset_name": "d2"}, "solver": solver},
     ]
     groups = _group_runs(runs, {}, group_by="dataset")
+    assert sorted(len(kw) for _cfg, kw in groups) == [1, 1, 2]
+    assert len(_group_runs(runs, {}, group_by=None)) == 4
+
+    # `benchopt prepare` passes the dataset directly, and has no solver.
+    prepare = [{"dataset": "d1"}, {"dataset": "d1"}, {"dataset": "d2"}]
+    groups = _group_runs(prepare, {}, group_by="dataset")
     assert sorted(len(kw) for _cfg, kw in groups) == [1, 2]
-
-    groups = _group_runs(runs, {}, group_by="solver")
-    assert [len(kw) for _cfg, kw in groups] == [1, 1, 1]
+    assert len(_group_runs(prepare, {}, group_by="solver")) == 3
 
 
-@pytest.mark.parametrize("batch_n_jobs, expected_waves", [(1, 2), (2, 1)])
-def test_run_on_slurm_grouped_scales_walltime(
-    mocked_submitit, batch_n_jobs, expected_waves
-):
-    # A batched job runs its group in ceil(len(group) / batch_n_jobs) waves,
-    # so its SLURM wall-time (slurm_time) must be sized for the whole batch,
-    # not a single run. Two solvers grouped by dataset into one job:
-    # serially (batch_n_jobs=1) that is 2 * timeout, in parallel it is 1.
+@pytest.mark.parametrize("batch_n_jobs, waves", [(1, 2), (2, 1)])
+def test_run_on_slurm_grouped(mocked_submitit, batch_n_jobs, waves):
+    # Two solvers grouped by dataset are collapsed into a single job that runs
+    # them in `waves` rounds, with a wall-time sized for the whole batch.
     timeout = 100
     parallel_config = {
         "backend": "submitit",
@@ -341,15 +270,18 @@ def test_run_on_slurm_grouped_scales_walltime(
     solvers = [solver.format(name="solver_1"), solver.format(name="solver_2")]
 
     with temp_benchmark(solvers=solvers) as bench, mocked_slurm():
-        with CaptureCmdOutput(delete_result_files=False):
+        with CaptureCmdOutput(delete_result_files=False) as out:
             run_benchmark(
                 bench.benchmark_dir, ["solver_1", "solver_2"],
                 dataset_names=["test-dataset"], max_runs=0, timeout=timeout,
                 parallel_config=parallel_config, plot_result=False,
             )
+        df = read_results(out.result_files[0])
 
-    # Both solvers collapsed into a single job whose wall-time is scaled by the
-    # number of serial waves, matching get_slurm_executor's `1.5 * timeout`.
+    assert len(df) == 2
     assert len(mocked_submitit) == 1
-    slurm_time = mocked_submitit[0]["config"]["time"]
-    assert slurm_time == f"00:{int(1.5 * expected_waves * timeout)}"
+    sub = mocked_submitit[0]
+    # Compare by name: `patch_import` in other tests re-imports the module.
+    assert sub["func"].__name__ == "_run_batch"
+    assert sub["kwargs"]["n_jobs"] == batch_n_jobs
+    assert sub["config"]["time"] == f"00:{int(1.5 * waves * timeout)}"
