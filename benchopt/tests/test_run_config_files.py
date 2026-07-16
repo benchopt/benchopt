@@ -276,6 +276,107 @@ def test_config_solver_double_param_yaml_list(no_debug_log):
         out.check_output("param1=0,param2=1", repetition=2)
 
 
+def test_config_solver_ablation(no_debug_log):
+    # Ablation expands one-at-a-time deviations from the baseline (the first
+    # value of each parameter), instead of the cartesian product.
+    config = {"run_config.yml": CONFIG.replace(" #PARAMS", """:
+            ablation:
+              param1: [0, 1]
+              param2: [10, 20]
+    """)}
+    with temp_benchmark(solvers=SOLVER, config=config) as bench:
+        config_file = bench.benchmark_dir / "run_config.yml"
+        with CaptureCmdOutput() as out:
+            run([
+                str(bench.benchmark_dir),
+                *f'--config {config_file}'.split()
+            ], standalone_mode=False)
+        out.check_output(r"RUN\(0\)", repetition=3)
+        out.check_output("param1=None", repetition=0)
+        out.check_output("param2=None", repetition=0)
+        out.check_output("param1=0,param2=10", repetition=2)
+        out.check_output("param1=1,param2=10", repetition=2)
+        out.check_output("param1=0,param2=20", repetition=2)
+        out.check_output("param1=1,param2=20", repetition=0)
+
+
+def test_config_solver_ablation_partial(no_debug_log):
+    # Parameters not in the ablation block keep their default grid, and the
+    # product is taken between this grid and the ablation variants.
+    config = {"run_config.yml": CONFIG.replace(" #PARAMS", """:
+            ablation:
+              param1: [0, 1]
+    """)}
+    with temp_benchmark(solvers=SOLVER, config=config) as bench:
+        config_file = bench.benchmark_dir / "run_config.yml"
+        with CaptureCmdOutput() as out:
+            run([
+                str(bench.benchmark_dir),
+                *f'--config {config_file}'.split()
+            ], standalone_mode=False)
+        out.check_output(r"RUN\(0\)", repetition=2)
+        out.check_output("param1=0,param2=None", repetition=2)
+        out.check_output("param1=1,param2=None", repetition=2)
+
+
+def test_config_solver_ablation_joint_params(no_debug_log):
+    # Joint parameters ('p1, p2') vary together in a single ablation variant.
+    config = {"run_config.yml": CONFIG.replace(" #PARAMS", """:
+            ablation:
+              param1, param2: [[0, 10], [1, 20]]
+    """)}
+    with temp_benchmark(solvers=SOLVER, config=config) as bench:
+        config_file = bench.benchmark_dir / "run_config.yml"
+        with CaptureCmdOutput() as out:
+            run([
+                str(bench.benchmark_dir),
+                *f'--config {config_file}'.split()
+            ], standalone_mode=False)
+        out.check_output(r"RUN\(0\)", repetition=2)
+        out.check_output("param1=0,param2=10", repetition=2)
+        out.check_output("param1=1,param2=20", repetition=2)
+        out.check_output("param1=1,param2=10", repetition=0)
+
+
+def test_config_solver_ablation_overlap_error(no_debug_log):
+    config = {"run_config.yml": CONFIG.replace(" #PARAMS", """:
+            param1: [2]
+            ablation:
+              param1: [0, 1]
+    """)}
+    with temp_benchmark(solvers=SOLVER, config=config) as bench:
+        config_file = bench.benchmark_dir / "run_config.yml"
+        error = (
+            r"Parameters \['param1'\] for solver solver1 are given both in "
+            r"the `ablation` block and as regular parameters."
+        )
+        with CaptureCmdOutput():
+            with pytest.raises(ValueError, match=error):
+                run([
+                    str(bench.benchmark_dir),
+                    *f'--config {config_file}'.split()
+                ], standalone_mode=False)
+
+
+def test_config_solver_ablation_unknown_param_error(no_debug_log):
+    config = {"run_config.yml": CONFIG.replace(" #PARAMS", """:
+            ablation:
+              param0: [0, 1]
+    """)}
+    with temp_benchmark(solvers=SOLVER, config=config) as bench:
+        config_file = bench.benchmark_dir / "run_config.yml"
+        error = (
+            "Unknown parameter 'param0' for solver solver1.\n"
+            "Possible parameters are:\n- param1\n- param2"
+        )
+        with CaptureCmdOutput():
+            with pytest.raises(ValueError, match=error):
+                run([
+                    str(bench.benchmark_dir),
+                    *f'--config {config_file}'.split()
+                ], standalone_mode=False)
+
+
 def test_config_solver_double_param_solver_yaml(no_debug_log):
     config = {"run_config.yml": CONFIG.replace(" #PARAMS", "[param1=0]")}
 

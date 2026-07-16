@@ -40,6 +40,10 @@ PLOT
 API
 ~~~
 
+- Add an ``ablation`` block in run configuration files to run a baseline and
+  one-at-a-time parameter deviations instead of the full cartesian product.
+  By `Hippolyte Verninas`_ (:gh:`954`)
+  
 - Custom plot ``options`` values can now be a callable taking the results
   DataFrame as input and returning the list of possible values for the option.
   By `Hippolyte Verninas`_ (:gh:`952`)
