@@ -107,43 +107,24 @@ a shared file-system between the nodes used for the computations.
 Grouping multiple runs into a single SLURM job
 -----------------------------------------------
 
-By default, each ``(dataset, objective, solver)`` combination is submitted as
-a separate SLURM job. For benchmarks with many configurations, this can create
-significant scheduling overhead. The ``group_by`` parameter groups runs sharing
-the same value for a given key into a single SLURM job:
+By default, each run is submitted as a separate SLURM job, which creates
+significant scheduling overhead for benchmarks with many configurations.
+``group_by`` collapses the runs sharing a ``dataset``, ``solver`` or
+``objective`` into a single job, and ``batch_n_jobs`` runs each group on
+several workers inside its job:
 
 .. code-block:: yaml
     :caption: ./config_parallel.yml
 
     backend: submitit
     group_by: dataset             # one SLURM job per dataset
-    slurm_time: 04:00:00
+    batch_n_jobs: 4               # 4 parallel workers per job
+    slurm_cpus_per_task: 4        # ... with enough CPUs for them
 
-Valid values for ``group_by`` are ``dataset``, ``solver``, or ``objective``.
-Runs with different SLURM configurations (e.g., solvers with different
-``slurm_params``) are never grouped together, even if they share the same
-``group_by`` key.
-
-When ``slurm_time`` is not set explicitly, benchopt sizes the job wall-time for
-the whole batch (``run timeout`` times the number of runs in the group, divided
-by ``batch_n_jobs``), so grouped jobs are not killed before every run finishes.
-
-To run the grouped configurations in parallel within each SLURM job, use the
-``batch_n_jobs`` parameter:
-
-.. code-block:: yaml
-    :caption: ./config_parallel.yml
-
-    backend: submitit
-    group_by: dataset
-    batch_n_jobs: 4               # 4 parallel workers per SLURM job
-    slurm_time: 04:00:00
-    slurm_cpus_per_task: 4
-
-By default, ``batch_n_jobs`` is ``1`` (sequential execution within each job).
-Make sure the SLURM job requests enough CPUs for the parallel workers (e.g.
-``slurm_cpus_per_task``), otherwise the ``batch_n_jobs`` processes oversubscribe
-the allocation and the expected speed-up does not materialize.
+Runs with different SLURM configurations (e.g. solvers with different
+``slurm_params``) are never grouped together. Unless ``slurm_time`` is set, the
+job wall-time is sized for the whole batch, so grouped jobs are not killed
+before every run finishes.
 
 .. _slurm_override:
 
