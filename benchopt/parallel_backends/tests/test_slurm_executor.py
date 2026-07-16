@@ -10,7 +10,6 @@ submitit = pytest.importorskip("submitit")
 from submitit.slurm.test_slurm import mocked_slurm  # noqa: E402
 from benchopt.parallel_backends.slurm_executor import (  # noqa: E402
     _group_runs,
-    _run_batch,
     get_slurm_executor,
     get_solver_slurm_config,
 )
@@ -258,7 +257,10 @@ def test_run_on_slurm_grouped(mocked_submitit, batch_n_jobs):
     assert len(df) == 2
     assert len(mocked_submitit) == 1
     sub = mocked_submitit[0]
-    assert sub["func"] is _run_batch
+    # Compare by name: other tests evict `parallel_backends` from sys.modules
+    # via `patch_import`, so `slurm_executor` may be a re-imported module whose
+    # `_run_batch` is a different object than the one imported here.
+    assert sub["func"].__name__ == "_run_batch"
     assert sub["kwargs"]["n_jobs"] == batch_n_jobs
 
 
