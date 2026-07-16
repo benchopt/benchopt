@@ -46,6 +46,11 @@ slurm_additional_parameters:
   so any submitit/SLURM parameter is available.
 - By default there is **no cap** on simultaneous jobs; set
   `slurm_array_parallelism: N` to limit concurrency when the scheduler requires it.
+- `group_by: dataset|solver|objective` collapses the runs sharing that key into a
+  single job, to cut scheduling overhead when there are many configurations.
+  `batch_n_jobs: N` then runs each group on N workers inside its job — request
+  the matching CPUs (e.g. `slurm_cpus_per_task`) or they oversubscribe. Runs with
+  different SLURM configs are never grouped together.
 
 ### Dask
 
@@ -63,8 +68,9 @@ dask_address: 127.0.0.1:8786   # attach to a running scheduler
 - `--timeout SECONDS` (or `10m`/`2h`) is the **per-solver** wall-clock budget;
   `--no-timeout` removes it (the two flags are mutually exclusive).
 - Under `submitit`, if you do **not** set `slurm_time`, benchopt derives the job's
-  SLURM time limit as **1.5 × `--timeout`**. If a solver legitimately runs longer
-  than that (slow startup, large data), set `slurm_time` explicitly or the
+  SLURM time limit as **1.5 × `--timeout`**, times the number of runs the job
+  executes serially when `group_by` batches them. If a solver legitimately runs
+  longer than that (slow startup, large data), set `slurm_time` explicitly or the
   scheduler will kill the job before the solver finishes.
 
 ## Per-solver and per-run SLURM overrides
