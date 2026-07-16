@@ -1,5 +1,4 @@
 import math
-from collections import defaultdict
 from contextlib import ExitStack
 
 from joblib import Parallel, delayed
@@ -103,21 +102,33 @@ def _run_batch(run_one_solver, batch_kwargs, n_jobs=1):
     )
 
 
+def _group_key(kwargs, group_by):
+    """Resolve the `group_by` value of a run, None if it does not apply."""
+    if group_by is None:
+        return None
+    # `benchopt run` names the entities in the run metadata, other entry points
+    # (e.g. dataset preparation) pass them directly.
+    meta = kwargs.get("meta", {})
+    value = meta.get(f"{group_by}_name", kwargs.get(group_by))
+    return None if value is None else str(value)
+
+
 def _group_runs(all_runs, slurm_config, group_by):
     """Split runs into batches as ``(job_slurm_config, runs)`` pairs.
 
-    ``group_by`` ('dataset', 'solver' or 'objective') reads the run metadata,
-    which the prepare path lacks; without it, each run gets its own job.
+    Runs sharing a `group_by` value and the same SLURM config go in one job.
+    Runs without a `group_by` value each get their own job.
     """
-    if group_by is None or any("meta" not in kw for kw in all_runs):
-        return [(_job_slurm_config(kw, slurm_config), [kw]) for kw in all_runs]
-    groups = {}
+    groups, singles = {}, []
     for kwargs in all_runs:
         job_slurm_config = _job_slurm_config(kwargs, slurm_config)
+        key = _group_key(kwargs, group_by)
+        if key is None:
+            singles.append((job_slurm_config, [kwargs]))
+            continue
         cfg = hashable_pytree(job_slurm_config)
-        group_key = (str(kwargs["meta"][f"{group_by}_name"]), cfg)
-        groups.setdefault(group_key, (job_slurm_config, []))[1].append(kwargs)
-    return list(groups.values())
+        groups.setdefault((key, cfg), (job_slurm_config, []))[1].append(kwargs)
+    return singles + list(groups.values())
 
 
 def run_on_slurm(
@@ -125,27 +136,23 @@ def run_on_slurm(
     group_by=None, batch_n_jobs=1
 ):
 
-    all_runs = list(run_kwargs_generator)
-    run_groups = _group_runs(all_runs, slurm_config, group_by)
-
-    # Size each (shared) executor's wall-time for the largest group it serves;
-    # a batch runs in ceil(len(group) / batch_n_jobs) waves.
-    max_waves = defaultdict(int)
-    for job_slurm_config, run_group in run_groups:
-        cfg = hashable_pytree(job_slurm_config)
-        waves = math.ceil(len(run_group) / batch_n_jobs)
-        max_waves[cfg] = max(max_waves[cfg], waves)
+    run_groups = _group_runs(
+        list(run_kwargs_generator), slurm_config, group_by
+    )
 
     executors = {}
     tasks = []
     with ExitStack() as stack:
         for job_slurm_config, run_group in run_groups:
-            executor_config = hashable_pytree(job_slurm_config)
+            # A job runs its group in `waves` rounds, so it needs `waves` times
+            # the per-run timeout; different lengths get their own array.
+            waves = math.ceil(len(run_group) / batch_n_jobs)
+            executor_config = (hashable_pytree(job_slurm_config), waves)
 
             if executor_config not in executors:
                 timeout = run_group[0].get("timeout")
                 if timeout is not None:
-                    timeout *= max_waves[executor_config]
+                    timeout *= waves
                 executor = get_slurm_executor(
                     benchmark,
                     job_slurm_config,

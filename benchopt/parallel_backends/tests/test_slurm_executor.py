@@ -302,17 +302,20 @@ def test_run_on_slurm_grouped_keeps_separate_slurm_configs(mocked_submitit):
     assert df.loc["solver_custom", "s_nodes"] == 2
 
 
-def test_group_runs_without_meta_does_not_crash():
-    # The dataset-preparation path submits kwargs without run metadata; a
-    # `group_by` config must not crash there (KeyError: 'meta') -- grouping is
-    # meaningless without a run, so each kwargs gets its own job.
-    prepare_kwargs = [
+def test_group_runs_without_meta():
+    # The dataset-preparation path passes the entities directly instead of in a
+    # `meta` entry: `group_by` still groups on them, and falls back to one job
+    # per run when the key does not apply there.
+    runs = [
         {"benchmark": None, "dataset": "d1", "force": False},
+        {"benchmark": None, "dataset": "d1", "force": True},
         {"benchmark": None, "dataset": "d2", "force": False},
     ]
-    groups = _group_runs(prepare_kwargs, {}, group_by="dataset")
-    assert len(groups) == 2
-    assert all(len(runs) == 1 for _cfg, runs in groups)
+    groups = _group_runs(runs, {}, group_by="dataset")
+    assert sorted(len(kw) for _cfg, kw in groups) == [1, 2]
+
+    groups = _group_runs(runs, {}, group_by="solver")
+    assert [len(kw) for _cfg, kw in groups] == [1, 1, 1]
 
 
 @pytest.mark.parametrize("batch_n_jobs, expected_waves", [(1, 2), (2, 1)])
