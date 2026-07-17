@@ -101,20 +101,15 @@ def check_parallel_config(parallel_config_file, n_jobs):
             "`group_by` and `batch_n_jobs` are only supported with the "
             "submitit backend."
         )
-    if group_by is not None:
         assert group_by in ('dataset', 'solver', 'objective'), (
-            f"`group_by` must be 'dataset', 'solver', or 'objective'. "
-            f"Got '{group_by}'."
+            "`batch_n_jobs` requires `group_by` to be 'dataset', 'solver' or "
+            f"'objective'. Got '{group_by}'."
         )
-    if 'batch_n_jobs' in parallel_config:
-        assert group_by is not None, (
-            "`batch_n_jobs` requires `group_by` with the submitit backend."
-        )
-    # exclude bool: True/False are ints in Python but never a valid value here
-    assert (
-        isinstance(batch_n_jobs, int) and not isinstance(batch_n_jobs, bool)
-        and batch_n_jobs >= 1
-    ), f"`batch_n_jobs` must be a positive integer. Got {batch_n_jobs}."
+        # bools are ints in Python, but never a valid `batch_n_jobs`
+        assert (
+            isinstance(batch_n_jobs, int)
+            and not isinstance(batch_n_jobs, bool) and batch_n_jobs >= 1
+        ), f"`batch_n_jobs` must be a positive integer. Got {batch_n_jobs}."
 
     if backend in ('dask', 'submitit'):
         print(f"Distributed run with backend: {backend}")
