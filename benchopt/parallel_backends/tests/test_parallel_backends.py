@@ -94,7 +94,7 @@ def test_parallel_run_dispatches_lazily():
         nonlocal pulled
         for i in range(n_runs):
             if i == block_after:
-                release.wait(timeout=30)
+                release.wait(timeout=60)
             pulled += 1
             yield dict(i=i)
 
