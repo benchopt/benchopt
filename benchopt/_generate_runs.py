@@ -129,6 +129,11 @@ def get_solver_kwargs(
     """
     run_context = run_context or RunContext()
 
+    # Resolve inheritance now rather than at `_set_objective` run time: meta
+    # below feeds the cache key, so it must not depend on whether some other
+    # (solver, dataset) pair already triggered this resolution earlier on.
+    solver._inherit_stopping_criterion(objective)
+
     # get sampling strategy
     # for plotting purpose consider 'callback' as 'iteration'
     sampling_strategy = solver._solver_strategy

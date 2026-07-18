@@ -77,6 +77,11 @@ FIX
   to override it. Underlying shell errors are also better reported,
   instead of being swallowed. By `Johan Larsson`_ (:gh:`974`)
 
+- Fix ``sampling_strategy`` inherited from the objective being resolved too
+  late, causing the reported strategy -- and the cache key it feeds into --
+  to depend on which solver had already run in the process.
+  By `Thomas Moreau`_ (:gh:`981`)
+
 - Fix ``benchopt sync-skills`` symlink with global install for Claude.
   By `Thomas Moreau`_ (:gh:`969`)
 
