@@ -30,6 +30,12 @@ version differs from the one above, warn the user that this skill may be out of
 date and recommend re-running `benchopt sync-skills` (add `--global` for the
 global install) to refresh it.**
 
+**Never edit this file in place** (whether synced into a benchmark repo's
+`.agents/skills/` or `.claude/skills/`, or found elsewhere on disk) — it is
+package data generated from the `benchopt` repo. Fix it at
+`benchopt/skills/using-benchopt/` upstream and open a PR there; local edits are
+silently overwritten by the next `benchopt sync-skills`.
+
 ## Before editing ANY component, open its sub-file first
 
 The conventions below are easy to get wrong from memory, so it is worth opening
@@ -42,14 +48,20 @@ the matching sub-file before editing a component rather than free-handing it:
 - **Running / caching / config?** → read [**run.md**](./run.md)
 - **Scaling to cores or a SLURM cluster?** → read [**parallel.md**](./parallel.md)
 - **Exploring, plotting, merging, publishing results?** → read [**results.md**](./results.md)
-- **Driving benchmark code from Python (no CLI)?** → read [**debug.md**](./debug.md)
+- **Driving benchmark code from Python (no CLI), or a quick interactive sanity check (e.g. "does this new parameter/split work")?** → read [**debug.md**](./debug.md)
 - **CLI subcommand reference?** → read [**cli-reference.md**](./cli-reference.md)
 
 Traps that are wrong-from-memory (authoritative details in the sub-files):
 import third-party deps at module top level and let `ImportError` propagate —
 no `try/except`, and no `safe_import_context` unless a class-body attribute
 needs the imported name; `requirements` is a literal list of strings; add a
-small `test_parameters` / `test_config`.
+small `test_parameters` / `test_config`; never instantiate `Dataset()` /
+`Objective()` / `Solver()` directly or `import` benchmark modules by hand
+(`from objective import Objective`) — constructor kwargs silently skip the
+parameter grid, and hand-imports risk shadowing `datasets/` with PyPI's
+`datasets`. Always go through `Benchmark(".").get_datasets()` /
+`.get_benchmark_objective()` + `.get_instance(**params)` — see
+[debug.md](./debug.md).
 
 ## Assets (copy-paste templates)
 

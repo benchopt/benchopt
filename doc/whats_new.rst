@@ -19,7 +19,7 @@ CLI
   ``.claude/skills/`` mirror for Claude Code. The skills are consolidated into a
   single ``using-benchopt`` skill (router ``SKILL.md`` plus task sub-files and
   asset templates) and ``sync-skills`` stamps the installed version and
-  retargets doc links. By `Thomas Moreau`_ (:gh:`959`, :gh:`980`)
+  retargets doc links. By `Thomas Moreau`_ (:gh:`959`, :gh:`980`, :gh:`982`)
 
 PLOT
 ~~~~
