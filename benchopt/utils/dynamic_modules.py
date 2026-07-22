@@ -7,6 +7,7 @@ import inspect
 import hashlib
 import warnings
 import importlib
+import traceback
 from pathlib import Path
 from contextlib import contextmanager
 
@@ -59,7 +60,7 @@ class FailedImport(ABCMeta):
         )
 
 
-def _get_module_from_file(module_filename, benchmark_dir=None, reload=False):
+def _get_module_from_file(module_filename, benchmark_dir=None):
     """Load a module from the name of the file"""
     module_filename = Path(module_filename)
     if benchmark_dir is not None:
@@ -73,11 +74,6 @@ def _get_module_from_file(module_filename, benchmark_dir=None, reload=False):
     if package_name[-1] == '__init__':
         package_name = package_name[:-1]
     package_name = '.'.join(['benchopt_benchmarks', *package_name])
-
-    if reload:
-        # Evict a previously failed import so it gets re-executed below,
-        # picking up any package installed since it was first cached.
-        sys.modules.pop(package_name, None)
 
     module = sys.modules.get(package_name, None)
     if module is None:
@@ -93,9 +89,7 @@ def _get_module_from_file(module_filename, benchmark_dir=None, reload=False):
     return module
 
 
-def _load_class_from_module(
-        benchmark_dir, module_filename, class_name, reload=False
-):
+def _load_class_from_module(benchmark_dir, module_filename, class_name):
     """Load a class from a module_filename.
 
     This helper also stores info necessary for DependenciesMixing to check the
@@ -110,9 +104,6 @@ def _load_class_from_module(
         Path to the file defining the module to load the class from.
     class_name : str
         Name of the class to load
-    reload : boolean
-        If set to True, evict any cached module that previously failed to
-        import so it is re-executed, to pick up newly installed packages.
 
     Returns
     -------
@@ -123,18 +114,70 @@ def _load_class_from_module(
     module_filename = Path(module_filename)
     try:
         assert not SKIP_IMPORT  # go directly to except to skip import
-        module = _get_module_from_file(
-            module_filename, benchmark_dir, reload=reload
-        )
+        module = _get_module_from_file(module_filename, benchmark_dir)
         klass = getattr(module, class_name)
         klass._import_ctx = _get_import_context(module)
         if klass._import_ctx.failed_import:
-            # Some requirements are missing, so the module is not fully
-            # imported. Fall back on the FailedImport class.
+            # The module executed fully: the failure was caught by a
+            # safe_import_context, so klass already carries its real
+            # attributes, including ones computed dynamically -- which is
+            # exactly why safe_import_context is used in the first place,
+            # as those cannot be recovered by the AST-based fallback below.
+            # Evict the module so the next load re-executes it and can pick
+            # up packages installed in the meantime, and build the
+            # FailedImport class directly from klass to keep those real
+            # attributes instead of falling back to AST parsing.
+            sys.modules.pop(module.__name__, None)
             exc_type, value, tb = klass._import_ctx.import_error
-            raise value.with_traceback(tb)
+            tb_to_print = ''.join(
+                traceback.format_exception(exc_type, value, tb, chain=False)
+            )
+
+            class klass(klass, metaclass=FailedImport):
+                "Object for the class list that raises error if used."
+
+                _exc = value.with_traceback(tb)
+                _error_displayed = False
+                cls_name = class_name
+
+                @classmethod
+                def is_installed(cls, env_name=None,
+                                 raise_on_not_installed=False, quiet=False,
+                                 reload=False, **kwargs):
+                    if env_name is not None:
+                        return super().is_installed(
+                            env_name=env_name,
+                            raise_on_not_installed=raise_on_not_installed,
+                            **kwargs
+                        )
+                    if reload:
+                        # The module was evicted from the cache when this
+                        # class was built, so loading it again re-attempts
+                        # the import. Invalidate the import caches first, to
+                        # make packages installed since the interpreter
+                        # started visible.
+                        importlib.invalidate_caches()
+                        reloaded = _load_class_from_module(
+                            cls._benchmark_dir, cls._module_filename,
+                            cls._base_class_name
+                        )
+                        return reloaded.is_installed(
+                            raise_on_not_installed=raise_on_not_installed,
+                            quiet=quiet
+                        )
+                    if not SKIP_IMPORT:
+                        if raise_on_not_installed:
+                            raise cls._exc
+                        if not cls._error_displayed and not quiet:
+                            print(
+                                f"Failed to import {class_name} from "
+                                f"{module_filename}. Please fix the "
+                                "following error to use this file with "
+                                f"benchopt:\n{tb_to_print}"
+                            )
+                            cls._error_displayed = True
+                    return False
     except Exception as e:
-        import traceback
         tb_to_print = traceback.format_exc(chain=False)
 
         # avoid circular import
@@ -165,15 +208,15 @@ def _load_class_from_module(
                         **kwargs
                     )
                 if reload:
-                    # The class failed to import before its requirements were
-                    # installed. Evict the cached (failed) module and import
-                    # it again to detect them. Invalidate the import caches
-                    # first, to make the packages installed since the
+                    # The module was never cached in the first place (it
+                    # failed before being fully executed), so loading it
+                    # again re-attempts the import. Invalidate the import
+                    # caches first, to make packages installed since the
                     # interpreter started visible.
                     importlib.invalidate_caches()
                     reloaded = _load_class_from_module(
                         cls._benchmark_dir, cls._module_filename,
-                        cls._base_class_name, reload=True
+                        cls._base_class_name
                     )
                     return reloaded.is_installed(
                         raise_on_not_installed=raise_on_not_installed,

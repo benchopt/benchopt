@@ -7,7 +7,6 @@ import pytest
 from benchopt.cli.main import install
 from benchopt.tests.utils import CaptureCmdOutput
 from benchopt.utils.temp_benchmark import temp_benchmark
-from benchopt.utils.shell_cmd import _run_shell_in_conda_env
 from benchopt.utils.conda_env_cmd import delete_conda_env
 from benchopt.utils.conda_env_cmd import get_env_info
 
@@ -305,16 +304,15 @@ class TestInstallCmd:
         out.check_output(re.escape(DUMMY_PACKAGE_REQ.split("::")[-1]))
 
     def test_install_in_current_env_detects_fresh_package(
-            self, test_env_name, uninstall_dummy_package
+            self, uninstall_dummy_package_current_env
     ):
         # Regression test: installing in the *current* environment must
         # detect a package installed during the very same `benchopt install`
         # call. The post-install check used to reuse the import outcome cached
         # at collection time (before the install), so freshly installed
         # packages looked missing and the command exited with an error.
-        # We reproduce the current-env path (``env_name=None``) in isolation by
-        # driving `benchopt install` from *inside* the throwaway test env,
-        # where ``env_name=None`` resolves to that env.
+        # Run `install` directly (no --env-name), so it targets the current
+        # (this pytest process's) env, reproducing the bug in-process.
         objective = f"""import dummy_package
             from benchopt.utils.temp_benchmark import TempObjective
 
@@ -335,14 +333,13 @@ class TestInstallCmd:
 
         with temp_benchmark(
                 objective=objective, datasets=[dataset]
-        ) as bench:
-            exit_code, output = _run_shell_in_conda_env(
-                f"benchopt install {bench.benchmark_dir} -d test-dataset -y",
-                env_name=test_env_name, return_output=True,
+        ) as bench, CaptureCmdOutput() as out:
+            install(
+                f'{bench.benchmark_dir} -d test-dataset -y'.split(),
+                'benchopt', standalone_mode=False
             )
 
-        assert exit_code == 0, output
-        assert "not importable" not in output, output
+        out.check_output("not importable", repetition=0)
 
     def test_gpu_flag(self, no_debug_log):
 
