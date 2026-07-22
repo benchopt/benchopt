@@ -59,7 +59,7 @@ class FailedImport(ABCMeta):
         )
 
 
-def _get_module_from_file(module_filename, benchmark_dir=None):
+def _get_module_from_file(module_filename, benchmark_dir=None, reload=False):
     """Load a module from the name of the file"""
     module_filename = Path(module_filename)
     if benchmark_dir is not None:
@@ -73,6 +73,11 @@ def _get_module_from_file(module_filename, benchmark_dir=None):
     if package_name[-1] == '__init__':
         package_name = package_name[:-1]
     package_name = '.'.join(['benchopt_benchmarks', *package_name])
+
+    if reload:
+        # Evict a previously failed import so it gets re-executed below,
+        # picking up any package installed since it was first cached.
+        sys.modules.pop(package_name, None)
 
     module = sys.modules.get(package_name, None)
     if module is None:
@@ -88,7 +93,9 @@ def _get_module_from_file(module_filename, benchmark_dir=None):
     return module
 
 
-def _load_class_from_module(benchmark_dir, module_filename, class_name):
+def _load_class_from_module(
+        benchmark_dir, module_filename, class_name, reload=False
+):
     """Load a class from a module_filename.
 
     This helper also stores info necessary for DependenciesMixing to check the
@@ -103,6 +110,9 @@ def _load_class_from_module(benchmark_dir, module_filename, class_name):
         Path to the file defining the module to load the class from.
     class_name : str
         Name of the class to load
+    reload : boolean
+        If set to True, evict any cached module that previously failed to
+        import so it is re-executed, to pick up newly installed packages.
 
     Returns
     -------
@@ -113,14 +123,14 @@ def _load_class_from_module(benchmark_dir, module_filename, class_name):
     module_filename = Path(module_filename)
     try:
         assert not SKIP_IMPORT  # go directly to except to skip import
-        module = _get_module_from_file(module_filename, benchmark_dir)
+        module = _get_module_from_file(
+            module_filename, benchmark_dir, reload=reload
+        )
         klass = getattr(module, class_name)
         klass._import_ctx = _get_import_context(module)
         if klass._import_ctx.failed_import:
             # Some requirements are missing, so the module is not fully
-            # imported. Drop it from the cache, so it is imported again once
-            # they are installed, and fall back on the FailedImport class.
-            sys.modules.pop(module.__name__, None)
+            # imported. Fall back on the FailedImport class.
             exc_type, value, tb = klass._import_ctx.import_error
             raise value.with_traceback(tb)
     except Exception as e:
@@ -156,14 +166,14 @@ def _load_class_from_module(benchmark_dir, module_filename, class_name):
                     )
                 if reload:
                     # The class failed to import before its requirements were
-                    # installed. Import it again to detect them; modules that
-                    # are not fully imported are not cached, so re-importing is
-                    # enough. Invalidate the import caches first, to make the
-                    # packages installed since the interpreter started visible.
+                    # installed. Evict the cached (failed) module and import
+                    # it again to detect them. Invalidate the import caches
+                    # first, to make the packages installed since the
+                    # interpreter started visible.
                     importlib.invalidate_caches()
                     reloaded = _load_class_from_module(
                         cls._benchmark_dir, cls._module_filename,
-                        cls._base_class_name
+                        cls._base_class_name, reload=True
                     )
                     return reloaded.is_installed(
                         raise_on_not_installed=raise_on_not_installed,

@@ -315,14 +315,12 @@ class TestInstallCmd:
         # We reproduce the current-env path (``env_name=None``) in isolation by
         # driving `benchopt install` from *inside* the throwaway test env,
         # where ``env_name=None`` resolves to that env.
-        objective = """import dummy_package
+        objective = f"""import dummy_package
             from benchopt.utils.temp_benchmark import TempObjective
 
             class Objective(TempObjective):
                 name = "requires_dummy"
-                requirements = [
-                    'pip::git+https://github.com/tommoral/dummy_package'
-                ]
+                requirements = ['{DUMMY_PACKAGE_REQ}']
         """
 
         # Dataset depends only on the global (objective) requirement, so it
