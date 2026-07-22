@@ -60,6 +60,54 @@ class FailedImport(ABCMeta):
         )
 
 
+class _FailedImportMixin:
+    """Shared ``is_installed`` for classes representing a failed import.
+
+    Must come first in the MRO of classes using it, so it takes precedence
+    over any ``is_installed`` defined on the wrapped/base class. Relies on
+    ``cls_name``, ``_exc``, ``_error_displayed`` and ``_tb_to_print`` being
+    set by the class using this mixin, and on ``_module_filename``,
+    ``_benchmark_dir`` and ``_base_class_name``, set by
+    ``_load_class_from_module`` once the class is built.
+    """
+
+    @classmethod
+    def is_installed(cls, env_name=None, raise_on_not_installed=False,
+                     quiet=False, reload=False, **kwargs):
+        if env_name is not None:
+            return super().is_installed(
+                env_name=env_name,
+                raise_on_not_installed=raise_on_not_installed,
+                **kwargs
+            )
+        if reload:
+            # The module was evicted from the cache (or never cached) when
+            # this class was built, so loading it again re-attempts the
+            # import. Invalidate the import caches first, to make packages
+            # installed since the interpreter started visible.
+            importlib.invalidate_caches()
+            reloaded = _load_class_from_module(
+                cls._benchmark_dir, cls._module_filename,
+                cls._base_class_name
+            )
+            return reloaded.is_installed(
+                raise_on_not_installed=raise_on_not_installed,
+                quiet=quiet
+            )
+        if not SKIP_IMPORT:
+            if raise_on_not_installed:
+                raise cls._exc
+            if not cls._error_displayed and not quiet:
+                print(
+                    f"Failed to import {cls.cls_name} from "
+                    f"{cls._module_filename}. Please fix the following "
+                    f"error to use this file with benchopt:\n"
+                    f"{cls._tb_to_print}"
+                )
+                cls._error_displayed = True
+        return False
+
+
 def _get_module_from_file(module_filename, benchmark_dir=None):
     """Load a module from the name of the file"""
     module_filename = Path(module_filename)
@@ -133,50 +181,13 @@ def _load_class_from_module(benchmark_dir, module_filename, class_name):
                 traceback.format_exception(exc_type, value, tb, chain=False)
             )
 
-            class klass(klass, metaclass=FailedImport):
+            class klass(_FailedImportMixin, klass, metaclass=FailedImport):
                 "Object for the class list that raises error if used."
 
                 _exc = value.with_traceback(tb)
                 _error_displayed = False
+                _tb_to_print = tb_to_print
                 cls_name = class_name
-
-                @classmethod
-                def is_installed(cls, env_name=None,
-                                 raise_on_not_installed=False, quiet=False,
-                                 reload=False, **kwargs):
-                    if env_name is not None:
-                        return super().is_installed(
-                            env_name=env_name,
-                            raise_on_not_installed=raise_on_not_installed,
-                            **kwargs
-                        )
-                    if reload:
-                        # The module was evicted from the cache when this
-                        # class was built, so loading it again re-attempts
-                        # the import. Invalidate the import caches first, to
-                        # make packages installed since the interpreter
-                        # started visible.
-                        importlib.invalidate_caches()
-                        reloaded = _load_class_from_module(
-                            cls._benchmark_dir, cls._module_filename,
-                            cls._base_class_name
-                        )
-                        return reloaded.is_installed(
-                            raise_on_not_installed=raise_on_not_installed,
-                            quiet=quiet
-                        )
-                    if not SKIP_IMPORT:
-                        if raise_on_not_installed:
-                            raise cls._exc
-                        if not cls._error_displayed and not quiet:
-                            print(
-                                f"Failed to import {class_name} from "
-                                f"{module_filename}. Please fix the "
-                                "following error to use this file with "
-                                f"benchopt:\n{tb_to_print}"
-                            )
-                            cls._error_displayed = True
-                    return False
     except Exception as e:
         tb_to_print = traceback.format_exc(chain=False)
 
@@ -189,51 +200,15 @@ def _load_class_from_module(benchmark_dir, module_filename, class_name):
             Objective=BaseObjective, Plot=BasePlot
         )[class_name]
 
-        class klass(base_cls, ParametrizedNameMixin, DependenciesMixin,
-                    metaclass=FailedImport):
+        class klass(_FailedImportMixin, base_cls, ParametrizedNameMixin,
+                    DependenciesMixin, metaclass=FailedImport):
             "Object for the class list that raises error if used."
 
             _exc = e
             _error_displayed = False
+            _tb_to_print = tb_to_print
             _set_cls_attr_from_ast(module_filename, base_cls, locals())
             cls_name = class_name
-
-            @classmethod
-            def is_installed(cls, env_name=None, raise_on_not_installed=False,
-                             quiet=False, reload=False, **kwargs):
-                if env_name is not None:
-                    return super().is_installed(
-                        env_name=env_name,
-                        raise_on_not_installed=raise_on_not_installed,
-                        **kwargs
-                    )
-                if reload:
-                    # The module was never cached in the first place (it
-                    # failed before being fully executed), so loading it
-                    # again re-attempts the import. Invalidate the import
-                    # caches first, to make packages installed since the
-                    # interpreter started visible.
-                    importlib.invalidate_caches()
-                    reloaded = _load_class_from_module(
-                        cls._benchmark_dir, cls._module_filename,
-                        cls._base_class_name
-                    )
-                    return reloaded.is_installed(
-                        raise_on_not_installed=raise_on_not_installed,
-                        quiet=quiet
-                    )
-                if not SKIP_IMPORT:
-                    if raise_on_not_installed:
-                        raise cls._exc
-                    if not cls._error_displayed and not quiet:
-                        print(
-                            f"Failed to import {class_name} from "
-                            f"{module_filename}. Please fix the following "
-                            "error to use this file with benchopt:\n"
-                            f"{tb_to_print}"
-                        )
-                        cls._error_displayed = True
-                return False
 
     # Store the info to easily reload the class and check it is installed
     klass._module_filename = module_filename.resolve()
