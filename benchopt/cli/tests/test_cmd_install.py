@@ -306,13 +306,8 @@ class TestInstallCmd:
     def test_install_in_current_env_detects_fresh_package(
             self, uninstall_dummy_package_current_env
     ):
-        # Regression test: installing in the *current* environment must
-        # detect a package installed during the very same `benchopt install`
-        # call. The post-install check used to reuse the import outcome cached
-        # at collection time (before the install), so freshly installed
-        # packages looked missing and the command exited with an error.
-        # Run `install` directly (no --env-name), so it targets the current
-        # (this pytest process's) env, reproducing the bug in-process.
+        # Check that, when installing in the *current* environment, the
+        # install detection mechanism correctly detects the post-install status.
         objective = f"""import dummy_package
             from benchopt.utils.temp_benchmark import TempObjective
 
@@ -339,11 +334,10 @@ class TestInstallCmd:
                 'benchopt', standalone_mode=False
             )
 
-        out.check_output("not importable", repetition=0)
-        # Also check there is no warning about a package left uninstalled
-        # (the objective itself goes through the same post-install reload
-        # check, via `check_installs` rather than `missings`).
+        # Check that install reports for both direct install (no "missing deps")
+        # and indirect ones (no "not importable") have correct status.
         out.check_output("missing deps", repetition=0)
+        out.check_output("not importable", repetition=0)
 
     def test_gpu_flag(self, no_debug_log):
 

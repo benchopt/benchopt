@@ -64,11 +64,14 @@ class _FailedImportMixin:
 
     Must come first in the MRO of classes using it, so it takes precedence
     over any ``is_installed`` defined on the wrapped/base class. Relies on
-    ``cls_name``, ``_exc``, ``_error_displayed`` and ``_tb_to_print`` being
+    ``cls_name``, ``_exc``, and ``_tb_to_print`` being
     set by the class using this mixin, and on ``_module_filename``,
     ``_benchmark_dir`` and ``_base_class_name``, set by
     ``_load_class_from_module`` once the class is built.
     """
+
+    _error_displayed = False
+
 
     @classmethod
     def is_installed(cls, env_name=None, raise_on_not_installed=False,
@@ -80,10 +83,8 @@ class _FailedImportMixin:
                 **kwargs
             )
         if reload:
-            # The module was evicted from the cache (or never cached) when
-            # this class was built, so loading it again re-attempts the
-            # import. Invalidate the import caches first, to make packages
-            # installed since the interpreter started visible.
+            # Checking after an install step. Invalidate the import caches first,
+            # to make package installed since the interpreter started visible.
             importlib.invalidate_caches()
             reloaded = _load_class_from_module(
                 cls._benchmark_dir, cls._module_filename,
@@ -165,15 +166,10 @@ def _load_class_from_module(benchmark_dir, module_filename, class_name):
         klass = getattr(module, class_name)
         klass._import_ctx = _get_import_context(module)
         if klass._import_ctx.failed_import:
-            # The module executed fully: the failure was caught by a
-            # safe_import_context, so klass already carries its real
-            # attributes, including ones computed dynamically -- which is
-            # exactly why safe_import_context is used in the first place,
-            # as those cannot be recovered by the AST-based fallback below.
-            # Evict the module so the next load re-executes it and can pick
-            # up packages installed in the meantime, and build the
-            # FailedImport class directly from klass to keep those real
-            # attributes instead of falling back to AST parsing.
+            # The module failed to import, but was protected with safe_import_context.
+            # It can have dynamic attributes not parsable with ast, so build
+            # the FailedImport class directly from klass to keep them.
+            # Also evict the module so the next load re-executes it.
             sys.modules.pop(module.__name__, None)
             exc_type, value, tb = klass._import_ctx.import_error
             tb_to_print = ''.join(
@@ -184,7 +180,6 @@ def _load_class_from_module(benchmark_dir, module_filename, class_name):
                 "Object for the class list that raises error if used."
 
                 _exc = value.with_traceback(tb)
-                _error_displayed = False
                 _tb_to_print = tb_to_print
                 cls_name = class_name
     except Exception as e:
@@ -198,13 +193,10 @@ def _load_class_from_module(benchmark_dir, module_filename, class_name):
             Objective=BaseObjective, Plot=BasePlot
         )[class_name]
 
-        # base_cls already inherits ParametrizedNameMixin and
-        # DependenciesMixin, no need to list them again.
         class klass(_FailedImportMixin, base_cls, metaclass=FailedImport):
             "Object for the class list that raises error if used."
 
             _exc = e
-            _error_displayed = False
             _tb_to_print = tb_to_print
             _set_cls_attr_from_ast(module_filename, base_cls, locals())
             cls_name = class_name
