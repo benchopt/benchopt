@@ -17,7 +17,6 @@ try:
 except ImportError:
     import cloudpickle
 
-from .dependencies_mixin import DependenciesMixin
 from .safe_import import safe_import_context
 from .class_property import classproperty
 
@@ -192,7 +191,6 @@ def _load_class_from_module(benchmark_dir, module_filename, class_name):
         tb_to_print = traceback.format_exc(chain=False)
 
         # avoid circular import
-        from .parametrized_name_mixin import ParametrizedNameMixin
         from ..base import BaseSolver, BaseDataset, BaseObjective
         from ..plotting.base import BasePlot
         base_cls = dict(
@@ -200,8 +198,9 @@ def _load_class_from_module(benchmark_dir, module_filename, class_name):
             Objective=BaseObjective, Plot=BasePlot
         )[class_name]
 
-        class klass(_FailedImportMixin, base_cls, ParametrizedNameMixin,
-                    DependenciesMixin, metaclass=FailedImport):
+        # base_cls already inherits ParametrizedNameMixin and
+        # DependenciesMixin, no need to list them again.
+        class klass(_FailedImportMixin, base_cls, metaclass=FailedImport):
             "Object for the class list that raises error if used."
 
             _exc = e
