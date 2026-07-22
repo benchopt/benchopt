@@ -307,7 +307,8 @@ class TestInstallCmd:
             self, uninstall_dummy_package_current_env
     ):
         # Check that, when installing in the *current* environment, the
-        # install detection mechanism correctly detects the post-install status.
+        # install detection mechanism correctly detects the post-install
+        # status.
         objective = f"""import dummy_package
             from benchopt.utils.temp_benchmark import TempObjective
 
@@ -334,8 +335,9 @@ class TestInstallCmd:
                 'benchopt', standalone_mode=False
             )
 
-        # Check that install reports for both direct install (no "missing deps")
-        # and indirect ones (no "not importable") have correct status.
+        # Check that install reports for both direct install (no "missing
+        # deps") and indirect ones (no "not importable") have correct
+        # status.
         out.check_output("missing deps", repetition=0)
         out.check_output("not importable", repetition=0)
 

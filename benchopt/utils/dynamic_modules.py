@@ -72,7 +72,6 @@ class _FailedImportMixin:
 
     _error_displayed = False
 
-
     @classmethod
     def is_installed(cls, env_name=None, raise_on_not_installed=False,
                      quiet=False, reload=False, **kwargs):
@@ -83,8 +82,9 @@ class _FailedImportMixin:
                 **kwargs
             )
         if reload:
-            # Checking after an install step. Invalidate the import caches first,
-            # to make package installed since the interpreter started visible.
+            # Checking after an install step. Invalidate the import caches
+            # first, to make package installed since the interpreter
+            # started visible.
             importlib.invalidate_caches()
             reloaded = _load_class_from_module(
                 cls._benchmark_dir, cls._module_filename,
@@ -166,10 +166,11 @@ def _load_class_from_module(benchmark_dir, module_filename, class_name):
         klass = getattr(module, class_name)
         klass._import_ctx = _get_import_context(module)
         if klass._import_ctx.failed_import:
-            # The module failed to import, but was protected with safe_import_context.
-            # It can have dynamic attributes not parsable with ast, so build
-            # the FailedImport class directly from klass to keep them.
-            # Also evict the module so the next load re-executes it.
+            # The module failed to import, but was protected with
+            # safe_import_context. It can have dynamic attributes not
+            # parsable with ast, so build the FailedImport class directly
+            # from klass to keep them. Also evict the module so the next
+            # load re-executes it.
             sys.modules.pop(module.__name__, None)
             exc_type, value, tb = klass._import_ctx.import_error
             tb_to_print = ''.join(

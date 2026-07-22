@@ -343,7 +343,7 @@ def uninstall_dummy_package(test_env_name):
 @pytest.fixture(scope='function')
 def uninstall_dummy_package_current_env():
     # Like `uninstall_dummy_package`, but targets the current env.
-    # Also drops the module from sys.modules. 
+    # Also drops the module from sys.modules.
     def _cleanup():
         _run_shell_in_conda_env("pip uninstall -qqy dummy_package")
         sys.modules.pop("dummy_package", None)
