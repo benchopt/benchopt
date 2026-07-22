@@ -340,6 +340,10 @@ class TestInstallCmd:
             )
 
         out.check_output("not importable", repetition=0)
+        # Also check there is no warning about a package left uninstalled
+        # (the objective itself goes through the same post-install reload
+        # check, via `check_installs` rather than `missings`).
+        out.check_output("missing deps", repetition=0)
 
     def test_gpu_flag(self, no_debug_log):
 
