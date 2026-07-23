@@ -283,10 +283,12 @@ class TestCache:
         out.check_output("#RUN_SOLVER", repetition=n_reps * 3)
 
     def test_collect_no_cache_incompatible(self, no_debug_log):
+        import click
+
         with temp_benchmark(
                 solvers=self.solver, datasets=self.dataset
         ) as bench:
-            with pytest.raises(AssertionError, match="Cannot collect"):
+            with pytest.raises(click.BadParameter, match="--collect"):
                 run(f"{bench.benchmark_dir} --no-plot --collect --no-cache"
                     .split(), standalone_mode=False)
 

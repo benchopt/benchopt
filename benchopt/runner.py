@@ -264,10 +264,6 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
     output_file : Path
         Path to the output file where the results have been saved.
     """
-    assert not (collect and benchmark.no_cache), (
-        "Cannot collect when using `--no-cache`."
-    )
-
     exit_code = 0
     terminal = TerminalOutput(n_repetitions, show_progress)
 
@@ -421,6 +417,9 @@ def run_benchmark(benchmark_path, solver_names=None, forced_solvers=(),
     output_file : Path
         Path to the output file where the results have been saved.
     """
+    assert not (collect and no_cache), (
+        "Cannot collect when using `no_cache=True`."
+    )
     benchmark = Benchmark(benchmark_path, no_cache=no_cache)
     if solver_names is None:
         solver_names = []

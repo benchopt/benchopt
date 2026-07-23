@@ -503,9 +503,8 @@ class Benchmark:
         exposes `check_call_in_cache` to test for a cache hit without running.
         """
         if self.no_cache:
-            # Wrap `func` so we can expose a cache lookup that always reports a
-            # miss (callers can query it uniformly without guarding for its
-            # absence) without mutating the shared module-level `func`.
+            # Wrap `func` to expose a cache lookup without mutating the
+            # shared module-level `func`.
             def _func_no_cache(**kwargs):
                 return func(**kwargs)
 
@@ -524,8 +523,7 @@ class Benchmark:
                     return func_cached.call(**kwargs)[0]
                 return func_cached(**kwargs)
 
-        # Expose the cache lookup so callers can detect already-computed runs
-        # on the frontal node and avoid dispatching them as parallel jobs.
+        # Expose the cache lookup to collect and avoid unneeded dispatch.
         _func_cached.check_call_in_cache = func_cached.check_call_in_cache
         return _func_cached
 
