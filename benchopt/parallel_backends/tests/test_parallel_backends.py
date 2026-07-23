@@ -1,4 +1,5 @@
 import threading
+import time
 
 import pytest
 
@@ -86,7 +87,7 @@ def test_parallel_run_dispatches_lazily():
     # Hard-block the generator's tail after dispatching a few tasks,
     # so we can check that the first results are yielded before the generator
     # is fully consumed.
-    block_after = 20
+    block_after = 50
     release = threading.Event()
     pulled = 0
 
@@ -99,8 +100,14 @@ def test_parallel_run_dispatches_lazily():
             yield dict(i=i)
 
     # parallel_run expect a check_call_in_cache method, and here we make sure
-    # that every run is dispatched.
+    # that every run is dispatched. A small sleep keeps completions slower
+    # than the main thread's retrieval polling (joblib polls every 10ms), so
+    # dispatch doesn't race ahead of `next(results)` on slow/jittery workers
+    # (e.g. macOS/Windows CI, where loky's spawn-started workers are slower
+    # to come up, giving the completion-driven redispatch loop more real time
+    # to run before the first result is observed).
     def _run(i):
+        time.sleep(0.005)
         return i
     _run.check_call_in_cache = lambda **kwargs: False
 
