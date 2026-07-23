@@ -1,4 +1,5 @@
-const NON_CONVERGENT_COLOR = 'rgba(0.8627, 0.8627, 0.8627)'
+const UNDEFINED_COLOR = 'rgba(0.8627, 0.8627, 0.8627)'
+
 
 /*
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -266,7 +267,7 @@ const getLayout = () => {
 const getBarData = () => {
   if (!isAvailable()) return [{type:'bar'}];
 
-  const {x, y, colors, texts} = barDataToArrays()
+  const {x, y, color, texts} = barDataToArrays();
 
   // Add bars
   const barData = [{
@@ -274,7 +275,7 @@ const getBarData = () => {
     x: x,
     y: y,
     marker: {
-      color: colors,
+      color: color,
     },
     text: texts,
     textposition: 'inside',
@@ -283,12 +284,9 @@ const getBarData = () => {
   }];
 
   getPlotData().data.forEach(curveData => {
-    // Add times for each convergent bar
-    // Check if text is not 'Did not converge'
-    curveText = curveData.text || ''
-    if (curveText === '') {
-      let nbTimes = curveData.y.length
-
+    // Add times for each convergent bar if mulitple values
+    let nbTimes = curveData.y.length;
+    if (nbTimes > 1) {
       barData.push({
         type: 'scatter',
         x: new Array(nbTimes).fill(curveData.label),
@@ -667,6 +665,75 @@ const renderSidebar = () => {
   renderPlotDropdowns();
 }
 
+const escapeHTML = (s) => String(s)
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+/**
+ * Inline SVG "info" icon (class `param-icon`) carrying a trace `description`
+ * in `data-desc`. Hover is wired through event delegation (see below) so the
+ * icon works both in the legend and in Grid.js tables, which re-render their
+ * cells on every sort/search. Returning an SVG (not a text glyph) keeps the
+ * icon out of `innerText`, so the LaTeX table export is unaffected.
+ */
+const descIconHTML = (text) =>
+  `<svg class="param-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"` +
+  ` stroke-width="2" stroke-linecap="round" stroke-linejoin="round"` +
+  ` data-desc="${escapeHTML(text)}">` +
+  `<circle cx="12" cy="12" r="10"></circle>` +
+  `<line x1="12" y1="16" x2="12" y2="12"></line>` +
+  `<line x1="12" y1="8" x2="12.01" y2="8"></line></svg>`;
+
+/**
+ * Resolve the tooltip HTML for a hover icon. Two sources, one path:
+ *   - `data-desc`: HTML baked at render time (legend + table cell icons);
+ *   - `data-desc-state`: a state key, resolved live against the current
+ *     selection (selector icons, whose value changes with the dropdown).
+ */
+const descForIcon = (icon) => {
+  if (icon.dataset.desc != null) return icon.dataset.desc;
+  const key = icon.dataset.descState;
+  return key ? ((window.descriptions || {})[state()[key]] || '') : '';
+};
+
+/** Show the shared params tooltip. The description is already HTML. */
+const showDescTooltip = (event, html) => {
+  if (!html) return;
+  const tip = document.getElementById('params-tooltip');
+  tip.innerHTML = html;
+  tip.style.display = 'block';
+  _moveParamsTooltip(event);
+};
+
+/** Hide the shared params tooltip. */
+const hideParamsTooltip = () => {
+  document.getElementById('params-tooltip').style.display = 'none';
+};
+
+// Single delegated hover path for every params icon: legend, table cells and
+// selectors. Delegation is required because Grid.js re-renders table cells on
+// sort/search (dropping per-node listeners), and it lets the static selector
+// markup reuse the same handler. Matching on the data attributes (not a class)
+// keeps the SVG icon and the plain selector span on one path;
+// `.param-icon * { pointer-events: none }` keeps the SVG from flickering.
+const PARAMS_ICON_SEL = '[data-desc], [data-desc-state]';
+document.addEventListener('mouseover', (e) => {
+  const icon = e.target.closest?.(PARAMS_ICON_SEL);
+  if (icon) showDescTooltip(e, descForIcon(icon));
+});
+document.addEventListener('mouseout', (e) => {
+  if (e.target.closest?.(PARAMS_ICON_SEL)) hideParamsTooltip();
+});
+
+const _moveParamsTooltip = (event) => {
+  const tip = document.getElementById('params-tooltip');
+  if (!tip || tip.style.display === 'none') return;
+  tip.style.left = (event.clientX + 14) + 'px';
+  tip.style.top  = (event.clientY - tip.offsetHeight - 8) + 'px';
+};
+
+document.addEventListener('mousemove', _moveParamsTooltip);
+
 /**
  * Render Scale selector
  */
@@ -819,11 +886,11 @@ const barDataToArrays = () => {
     x.push(plotData.label);
     y.push(getMedian(plotData.y));
     const plotText = plotData.text || '';
-    colors.push(plotText === '' ? plotData.color : NON_CONVERGENT_COLOR);
+    colors.push(plotData.color || UNDEFINED_COLOR);
     texts.push(plotText);
   });
 
-  return {x, y, colors, texts}
+  return {x, y, color: colors, texts}
 }
 
 const getScale = () => {
@@ -900,6 +967,7 @@ const getBarChartLayout = () => {
       ...MPL_AXIS,
       tickangle: -60,
       ticktext: Array(data.data.map(d => d.label)),
+      categoryorder: 'trace',
       showgrid: false,  // X axis is text: no vertical gridlines
     },
     showlegend: false,
@@ -1056,7 +1124,10 @@ const getCurveFromEvent = event => {
   const target = event.currentTarget;
 
   for (let i = 0; i < target.children.length; i++) {
-    if (target.children[i].className === 'curve') {
+    if (target.children[i].className.includes('curve')) {
+      // Prefer the data-curve attribute (curve identifier) when available.
+      const attr = target.children[i].getAttribute('data-curve');
+      if (attr) return attr;
       return target.children[i].firstChild.nodeValue;
     }
   }
@@ -1325,11 +1396,22 @@ function renderTable() {
   const card = document.createElement("div");
   card.className = "w-full bg-white overflow-hidden mx-auto";
 
-  const buildColumns = () => plotData.columns.map(name => ({
+  // First column: values are already short labels. A hover icon carrying the
+  // full parameter list is added from the global `descriptions` map (short ->
+  // HTML). The SVG icon stays out of `innerText`, so exports are unaffected.
+  const solverCellHTML = (value) => {
+    const label = String(value);
+    const desc = (window.descriptions || {})[label];
+    return escapeHTML(label) + (desc ? descIconHTML(desc) : '');
+  };
+
+  const buildColumns = () => plotData.columns.map((name, colIdx) => ({
     name,
     hidden: tableHiddenColumns.has(name),
     sort: { compare: compareCells },
-    formatter: (value) => valueToFixed(value),
+    formatter: colIdx === 0
+      ? (value) => gridjs.html(solverCellHTML(value))
+      : (value) => valueToFixed(value),
   }));
 
   tableGrid = new gridjs.Grid({
@@ -1524,29 +1606,14 @@ const renderLegend = () => {
   show(container);
 
   legend.innerHTML = '';
-  const curvesDescription = window.metadata["solvers_description"];
 
   getCurves().forEach(curve => {
     const curve_data = data(curve);
-    const color = curve_data.color;
-    const symbolNumber = curve_data.marker;
-
-    let legendItem = createLegendItem(curve, color, symbolNumber);
-
-    // preserve compatibility with prev version
-    if(curvesDescription === null || curvesDescription === undefined) {
-      legend.appendChild(legendItem);
-      return;
-    }
-
-    let payload = createSolverDescription(
-      legendItem, {
-        description: curvesDescription[curve],
-      }
+    // The curve's params + docstring hover lives on the legend item's icon,
+    // fed by the global `descriptions` map (see createLegendItem).
+    legend.appendChild(
+      createLegendItem(curve, curve_data.color, curve_data.marker)
     );
-    if (payload !== undefined) {
-      legend.appendChild(payload);
-    }
   });
 }
 
@@ -1605,11 +1672,21 @@ const createLegendItem = (curve, color, symbolNumber) => {
     }
   });
 
-  // Create the HTML text node for the curve name in the legend
+  // Create the text node for the curve name in the legend.
   const textContainer = document.createElement('div');
   textContainer.style.marginLeft = '0.5rem';
+  textContainer.style.flex = '1';
   textContainer.className = 'curve';
+  textContainer.setAttribute('data-curve', curve);
   textContainer.appendChild(document.createTextNode(curve));
+
+  // Append a hover icon carrying the curve's description (docstring + full
+  // parameter list), looked up from the global `descriptions` map (keyed by
+  // the short label).
+  const desc = (window.descriptions || {})[curve];
+  if (desc) {
+    textContainer.insertAdjacentHTML('beforeend', descIconHTML(desc));
+  }
 
   // Create the horizontal bar in the legend to represent the curve
   const hBar = document.createElement('div');
@@ -1628,24 +1705,6 @@ const createLegendItem = (curve, color, symbolNumber) => {
   return item;
 }
 
-
-function createSolverDescription(legendItem, { description }) {
-  if (description === null || description === undefined || description === "")
-    return legendItem;
-
-  let descriptionContainer = document.createElement("div");
-  descriptionContainer.setAttribute("class", "curve-description-container")
-
-  descriptionContainer.innerHTML = `
-  <div class="curve-description-content text-sm">
-    <span class="curve-description-body">${description}</span>
-  </div>
-  `;
-
-  descriptionContainer.prepend(legendItem);
-
-  return descriptionContainer;
-}
 
 /**
  * Create the same svg symbol as plotly.

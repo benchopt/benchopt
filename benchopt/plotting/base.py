@@ -33,8 +33,7 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
         -------
         The plot data structure, depending on the plot type:
         - scatter: list of dict for each trace, requires: 'x', 'y',
-                'label', optional: 'marker', 'color', 'x_low',
-                'x_high'.
+                'label', optional: 'marker', 'color', 'x_low', 'x_high'.
         - bar_chart: list of dict for each bar, requires: 'y',
                 'label', optional: 'color', 'text'.
         - boxplot: list of dict for each box, requires: 'x', 'y',
@@ -42,6 +41,10 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
         - table: list of list, each inner list is a row of the table.
         - image: list of dict for each image, requires: 'image',
                 optional: 'label'.
+
+        Solver/dataset/objective names are shortened for display upstream, so
+        ``label`` (and boxplot ``x``) already carry short labels; the full name
+        stays available in the ``*_full_name`` columns of ``df``.
 
         Please refer to :ref:`add_custom_plot` for a complete description
         of the plot data.

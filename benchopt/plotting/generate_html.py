@@ -111,10 +111,13 @@ def get_results(fnames, html_root, benchmark, config=None, copy=False):
             metadata=get_metadata(df, config_.get('plot_configs', {})),
         )
 
-        data, options = benchmark.get_plot_data(df, result['kinds'])
+        data, options, descriptions = benchmark.get_plot_data(
+            df, result['kinds']
+        )
         data = update_plot_data_style(data, plotly=True)
         result['json_plots'] = json.dumps(data)
         result['plot_options'] = options
+        result['descriptions'] = descriptions
 
         results.append(result)
     print()
@@ -129,38 +132,16 @@ def get_results(fnames, html_root, benchmark, config=None, copy=False):
 def get_metadata(df, plot_configs):
     """Get the benchmark metadata.
 
-    Metadata are already available among the columns of `df`.
-    It might be Objective and/or Solvers description.
+    Solver/objective descriptions are folded into the per-object hover
+    tooltips by :func:`~benchopt.plotting.short_labels.shorten_names`, so the
+    metadata only carries the plot view configurations here.
 
     Returns
     -------
     metadata: dict
         Dictionary containing the benchmark metadata.
     """
-    metadata = {'plot_configs': plot_configs}
-
-    # get solver descriptions
-    # wrap in try-except block to preserve compatibility
-    # with older versions
-    try:
-        solvers_description = df.groupby(
-            by=["solver_name"]
-        )["solver_description"].first()
-
-        metadata["solvers_description"] = solvers_description.to_dict()
-    except KeyError:
-        metadata["solvers_description"] = {}
-
-    # to avoid conflicts with objective metrics
-    # get objective description and use `obj_` instead of `objective_`
-    # try-except block to preserve compatibility with benchopt <= v1.3.1
-    try:
-        obj_description = df["obj_description"].unique()[0]
-        metadata["obj_description"] = obj_description
-    except KeyError:
-        metadata["obj_description"] = ""
-
-    return metadata
+    return {'plot_configs': plot_configs}
 
 
 def get_sysinfo(df):
