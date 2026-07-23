@@ -40,6 +40,13 @@ PLOT
 API
 ~~~
 
+- Cache hits are now detected on the main process before dispatching, so no
+  parallel job (loky, dask or SLURM/submitit) is launched for a
+  ``(dataset, objective, solver)`` run whose result is already cached. Such
+  runs are reported as ``done (cached)``. The same skip and ``done (cached)``
+  reporting also apply to dataset preparation.
+  By `Thomas Moreau`_ (:gh:`976`)
+
 - Custom plot ``options`` values can now be a callable taking the results
   DataFrame as input and returning the list of possible values for the option.
   By `Hippolyte Verninas`_ (:gh:`952`)

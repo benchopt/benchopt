@@ -230,6 +230,11 @@ def run(config_file=None, **kwargs):
             'You cannot specify both --timeout and --no-timeout options.'
         )
 
+    if collect and no_cache:
+        raise click.BadParameter(
+            'You cannot use --collect with --no-cache.'
+        )
+
     if not no_timeout:
         if timeout is None:
             timeout = get_setting('default_timeout')

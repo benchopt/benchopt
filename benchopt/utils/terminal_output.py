@@ -141,7 +141,8 @@ class TerminalOutput:
                 endline=False,  verbose=self.verbose
             )
 
-    def show_status(self, status, reason=None, dataset=False, objective=False):
+    def show_status(self, status, reason=None, dataset=False, objective=False,
+                    cached=False):
         from ..runner import SUCCESS_STATUS
 
         if dataset or objective:
@@ -172,6 +173,8 @@ class TerminalOutput:
             f"status should be in {list(STATUS)}. Got '{status}'"
         )
         status_print = colorify(*STATUS[status])
+        if cached:
+            status_print += colorify(" (cached)", CYAN)
         print_normalize(f"{tag} {status_print}")
 
         if status == 'skip' and reason is not None:

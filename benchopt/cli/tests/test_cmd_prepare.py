@@ -278,6 +278,94 @@ class TestPrepareCmd:
                 )
             out.check_output("#PREPARED", repetition=1)
 
+    def test_prepared_datasets_not_dispatched(self, monkeypatch):
+        # A cached dataset prep must be detected on the frontal node (the
+        # main process) and not dispatched to a worker, mirroring
+        # test_cached_runs_not_dispatched for the run() path.
+        import os
+        from benchopt import benchmark as benchmark_module
+
+        main_pid = os.getpid()
+        orig_cache = benchmark_module.Benchmark.cache
+
+        def cache_reporting_pid(self, func, *args, **kwargs):
+            cached = orig_cache(self, func, *args, **kwargs)
+            check = cached.check_call_in_cache
+
+            def check_call_in_cache(**kw):
+                print(f"#CHECK_PID:{os.getpid()}")
+                return check(**kw)
+
+            cached.check_call_in_cache = check_call_in_cache
+            return cached
+
+        monkeypatch.setattr(
+            benchmark_module.Benchmark, "cache", cache_reporting_pid
+        )
+
+        orig_prepare_one = benchmark_module._prepare_one
+
+        def prepare_one_reporting_pid(*args, **kwargs):
+            print(f"#PREPARE_PID:{os.getpid()}")
+            return orig_prepare_one(*args, **kwargs)
+
+        # Forward check_call_in_cache, same as _prepare_one itself exposes,
+        # so the dispatch-skip logic in parallel_run still sees it.
+        prepare_one_reporting_pid.check_call_in_cache = (
+            orig_prepare_one.check_call_in_cache
+        )
+        monkeypatch.setattr(
+            benchmark_module, "_prepare_one", prepare_one_reporting_pid
+        )
+
+        with temp_benchmark(datasets=self.dataset) as bench:
+            cmd = f"{bench.benchmark_dir} -j 2"
+            with CaptureCmdOutput() as out_first:
+                prepare_cmd(cmd.split(), 'benchopt', standalone_mode=False)
+            with CaptureCmdOutput() as out_second:
+                prepare_cmd(cmd.split(), 'benchopt', standalone_mode=False)
+            with CaptureCmdOutput() as out_forced:
+                prepare_cmd(
+                    f"{cmd} --force".split(), 'benchopt', standalone_mode=False
+                )
+
+        # First run: nothing cached, so prepare runs in a dispatched worker
+        # process, not in the main one.
+        prepare_pids = {
+            int(p) for p in out_first.check_output(r"#PREPARE_PID:(\d+)")
+        }
+        assert prepare_pids and main_pid not in prepare_pids, prepare_pids
+        out_first.check_output(r"done \(cached\)", repetition=0)
+
+        # The cache check always runs on the frontal (main) process.
+        check_pids = {
+            int(p) for p in out_second.check_output(r"#CHECK_PID:(\d+)")
+        }
+        assert check_pids == {main_pid}, check_pids
+
+        # Second run: everything is cached, so _prepare_one is called
+        # directly on the frontal node instead of being dispatched to a
+        # worker, and the dataset's own prepare() is not re-run.
+        prepare_pids_second = {
+            int(p) for p in out_second.check_output(r"#PREPARE_PID:(\d+)")
+        }
+        assert prepare_pids_second == {main_pid}, prepare_pids_second
+        out_second.check_output("#PREPARED", repetition=0)
+        # ... and the cached load is reported as such in the status line.
+        out_second.check_output(r"done \(cached\)", repetition=1)
+
+        # --force must bypass the skip even when cached: the prep is dispatched
+        # to a worker (not the main process) and the dataset's prepare() runs.
+        prepare_pids_forced = {
+            int(p) for p in out_forced.check_output(r"#PREPARE_PID:(\d+)")
+        }
+        assert prepare_pids_forced and main_pid not in prepare_pids_forced, (
+            prepare_pids_forced
+        )
+        out_forced.check_output("#PREPARED", repetition=1)
+        # A forced prep recomputes, so it is not reported as cached.
+        out_forced.check_output(r"done \(cached\)", repetition=0)
+
     def test_force_flag(self, tmp_path):
         """--force re-runs preparation even when cached."""
         with temp_benchmark(datasets=self.dataset) as bench:

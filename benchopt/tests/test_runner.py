@@ -212,6 +212,74 @@ class TestCache:
         # when using multiple repetitions
         out.check_output("#RUN_SOLVER", repetition=n_reps)
 
+    def test_cached_runs_not_dispatched(self, no_debug_log, monkeypatch):
+        # A cached run must be detected on the frontal node (the main process)
+        # and not dispatched to a worker. To tell the two apart, both the cache
+        # check and the solver report the PID of the process they run in: the
+        # check always runs on the frontal, while a dispatched solver runs in a
+        # separate worker process.
+        import os
+        from benchopt.benchmark import Benchmark
+
+        main_pid = os.getpid()
+        orig_cache = Benchmark.cache
+
+        def cache_reporting_pid(self, func, *args, **kwargs):
+            cached = orig_cache(self, func, *args, **kwargs)
+            check = cached.check_call_in_cache
+
+            def check_call_in_cache(**kw):
+                print(f"#CHECK_PID:{os.getpid()}")
+                return check(**kw)
+
+            cached.check_call_in_cache = check_call_in_cache
+            return cached
+
+        monkeypatch.setattr(Benchmark, "cache", cache_reporting_pid)
+
+        solver = """from benchopt.utils.temp_benchmark import TempSolver
+        import os
+
+        class Solver(TempSolver):
+            name = "test-solver"
+            sampling_strategy = 'run_once'
+            def run(self, _): print(f"#RUN_PID:{os.getpid()}")
+        """
+
+        with temp_benchmark(solvers=solver, datasets=self.dataset) as bench:
+            cmd = f"{bench.benchmark_dir} --no-plot -r 2 -j 2"
+            with CaptureCmdOutput() as out_first:
+                run(cmd.split(), standalone_mode=False)
+            with CaptureCmdOutput() as out_second:
+                run(cmd.split(), standalone_mode=False)
+            with CaptureCmdOutput() as out_forced:
+                run(f"{cmd} -f test-solver".split(), standalone_mode=False)
+
+        # First run: nothing cached, so the solver runs in dispatched worker
+        # processes, not in the main one.
+        run_pids = {int(p) for p in out_first.check_output(r"#RUN_PID:(\d+)")}
+        assert run_pids and main_pid not in run_pids, run_pids
+
+        # The cache check always runs on the frontal (main) process.
+        check_pids = {
+            int(p) for p in out_second.check_output(r"#CHECK_PID:(\d+)")
+        }
+        assert check_pids == {main_pid}, check_pids
+
+        # Second run: everything is cached, so the solver is not run (nothing
+        # is dispatched) and the status is displayed as cached.
+        out_second.check_output(r"#RUN_PID", repetition=0)
+        out_second.check_output(r"done \(cached\)", repetition=1)
+
+        # --force-solver must bypass the skip even when cached: the solver is
+        # dispatched to a worker (not the main process) and re-run, and its
+        # status is no longer reported as cached.
+        forced_pids = {
+            int(p) for p in out_forced.check_output(r"#RUN_PID:(\d+)")
+        }
+        assert forced_pids and main_pid not in forced_pids, forced_pids
+        out_forced.check_output(r"done \(cached\)", repetition=0)
+
     @pytest.mark.parametrize('n_reps', [1, 4])
     def test_no_cache(self, no_debug_log, n_reps):
         with temp_benchmark(
@@ -224,6 +292,16 @@ class TestCache:
 
         # Check that the run is not cached when using --no-cache
         out.check_output("#RUN_SOLVER", repetition=n_reps * 3)
+
+    def test_collect_no_cache_incompatible(self, no_debug_log):
+        import click
+
+        with temp_benchmark(
+                solvers=self.solver, datasets=self.dataset
+        ) as bench:
+            with pytest.raises(click.BadParameter, match="--collect"):
+                run(f"{bench.benchmark_dir} --no-plot --collect --no-cache"
+                    .split(), standalone_mode=False)
 
     def test_no_error_caching(self, no_debug_log):
 
