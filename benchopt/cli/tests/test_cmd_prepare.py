@@ -335,6 +335,7 @@ class TestPrepareCmd:
             int(p) for p in out_first.check_output(r"#PREPARE_PID:(\d+)")
         }
         assert prepare_pids and main_pid not in prepare_pids, prepare_pids
+        out_first.check_output(r"done \(cached\)", repetition=0)
 
         # The cache check always runs on the frontal (main) process.
         check_pids = {
@@ -350,6 +351,8 @@ class TestPrepareCmd:
         }
         assert prepare_pids_second == {main_pid}, prepare_pids_second
         out_second.check_output("#PREPARED", repetition=0)
+        # ... and the cached load is reported as such in the status line.
+        out_second.check_output(r"done \(cached\)", repetition=1)
 
         # --force must bypass the skip even when cached: the prep is dispatched
         # to a worker (not the main process) and the dataset's prepare() runs.
@@ -360,6 +363,8 @@ class TestPrepareCmd:
             prepare_pids_forced
         )
         out_forced.check_output("#PREPARED", repetition=1)
+        # A forced prep recomputes, so it is not reported as cached.
+        out_forced.check_output(r"done \(cached\)", repetition=0)
 
     def test_force_flag(self, tmp_path):
         """--force re-runs preparation even when cached."""

@@ -6,6 +6,7 @@ from .stopping_criterion import SingleRunCriterion
 from .stopping_criterion import SufficientProgressCriterion
 
 from .utils.misc import NamedTemporaryFile
+from .utils.terminal_output import colorify, CYAN
 from .utils.class_property import classproperty
 from .utils.dependencies_mixin import DependenciesMixin
 from .utils.parametrized_name_mixin import ParametrizedNameMixin
@@ -478,10 +479,14 @@ def _prepare_one(benchmark, dataset, force=False):
     """
     exc = None
     cached_prepare = _cached_prepare(benchmark, dataset, force=force)
+    # `force` recomputes even on a cache hit, so only flag genuine cache loads.
+    cached = not force and cached_prepare.check_call_in_cache(
+        dataset=dataset, base_seed=benchmark.seed
+    )
     print(f"Preparing {dataset} ...", end=' ', flush=True)
     try:
         cached_prepare(dataset=dataset, base_seed=benchmark.seed)
-        print("done")
+        print("done" + (colorify(" (cached)", CYAN) if cached else ""))
     except Exception as e:
         print("FAILED")
         print_exc()
