@@ -252,6 +252,8 @@ class TestCache:
                 run(cmd.split(), standalone_mode=False)
             with CaptureCmdOutput() as out_second:
                 run(cmd.split(), standalone_mode=False)
+            with CaptureCmdOutput() as out_forced:
+                run(f"{cmd} -f test-solver".split(), standalone_mode=False)
 
         # First run: nothing cached, so the solver runs in dispatched worker
         # processes, not in the main one.
@@ -268,6 +270,15 @@ class TestCache:
         # is dispatched) and the status is displayed as cached.
         out_second.check_output(r"#RUN_PID", repetition=0)
         out_second.check_output(r"done \(cached\)", repetition=1)
+
+        # --force-solver must bypass the skip even when cached: the solver is
+        # dispatched to a worker (not the main process) and re-run, and its
+        # status is no longer reported as cached.
+        forced_pids = {
+            int(p) for p in out_forced.check_output(r"#RUN_PID:(\d+)")
+        }
+        assert forced_pids and main_pid not in forced_pids, forced_pids
+        out_forced.check_output(r"done \(cached\)", repetition=0)
 
     @pytest.mark.parametrize('n_reps', [1, 4])
     def test_no_cache(self, no_debug_log, n_reps):

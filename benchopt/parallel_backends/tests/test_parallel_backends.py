@@ -108,7 +108,7 @@ def test_parallel_run_dispatches_lazily():
     # to run before the first result is observed).
     def _run(i):
         time.sleep(0.005)
-        return i
+        return (i,)
     _run.check_call_in_cache = lambda **kwargs: False
 
     results = parallel_run(

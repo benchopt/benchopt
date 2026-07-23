@@ -56,7 +56,9 @@ def parallel_run(benchmark, run, run_kwargs_generator, config, collect=False):
     # are dispatched. The dispatch stays backend-agnostic and lazy (we never
     # hold all the runs, each carrying its loaded data, in memory): the
     # backend pulls `_to_dispatch` on demand, and items parked in `ready`
-    # meanwhile are merged back into the result stream.
+    # meanwhile are merged back into the result stream. `cached` is appended
+    # as the last element of each yielded tuple, so the item itself (whose
+    # shape is backend/run-specific) stays untouched.
     ready = deque()
     check_in_cache = getattr(run, "check_call_in_cache", None)
 
@@ -65,7 +67,7 @@ def parallel_run(benchmark, run, run_kwargs_generator, config, collect=False):
             if (check_in_cache is not None
                     and not run_kwargs.get('force', False)
                     and check_in_cache(**run_kwargs)):
-                ready.append((True, run(**run_kwargs)))
+                ready.append((*run(**run_kwargs), True))
             elif collect:
                 # Collect mode only gathers cached runs; flag the rest as
                 # missing instead of computing them (e.g. a SLURM job just
@@ -76,7 +78,7 @@ def parallel_run(benchmark, run, run_kwargs_generator, config, collect=False):
                     meta['objective_name'],
                     meta['solver_name'],
                 )
-                ready.append((False, ([], key, 'not run yet', "")))
+                ready.append(([], key, 'not run yet', "", False))
             else:
                 yield run_kwargs
 
@@ -84,7 +86,7 @@ def parallel_run(benchmark, run, run_kwargs_generator, config, collect=False):
         for item in _dispatch(backend, benchmark, run, _to_dispatch(), config):
             while ready:
                 yield ready.popleft()
-            yield False, item
+            yield (*item, False)
         while ready:
             yield ready.popleft()
 

@@ -316,7 +316,7 @@ def _run_benchmark(benchmark, solvers=None, forced_solvers=None,
         config=parallel_config, collect=collect
     )
     try:
-        for cached, (result, key, status, reason) in results_generator:
+        for result, key, status, reason, cached in results_generator:
             run_statistics.extend(result)
             terminal.set(dataset=key[0], objective=key[1], solver=key[2])
             terminal.show_status(status=status, reason=reason, cached=cached)

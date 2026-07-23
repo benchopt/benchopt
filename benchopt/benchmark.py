@@ -822,7 +822,7 @@ class Benchmark:
             config=parallel_config,
         )
 
-        n_failed = sum(1 for _, (_, err) in results if err is not None)
+        n_failed = sum(1 for _, err, _cached in results if err is not None)
         if n_failed:
             print(
                 f"Summary: {n_total - n_failed}/{n_total} datasets ready, "
