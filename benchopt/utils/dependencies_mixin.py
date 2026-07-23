@@ -129,7 +129,7 @@ class DependenciesMixin:
                                              env_name=env_name)
                     else:
                         # get details of class
-                        cls_type = cls.__base__.__name__.replace("Base", "")
+                        cls_type = cls._base_class_name
 
                         raise AttributeError(
                             f"Could not find dependencies for {cls.name} "

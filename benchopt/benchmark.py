@@ -855,7 +855,7 @@ class Benchmark:
         # Format the list of classes missing requirements.
         cls_types = {'Solver': [], 'Dataset': []}
         for klass in missings:
-            cls_type = klass.__base__.__name__.replace("Base", "")
+            cls_type = klass._base_class_name
             try:
                 # Check for invalid install_cmd
                 klass.install_cmd_
