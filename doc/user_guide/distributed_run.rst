@@ -102,6 +102,30 @@ As we rely on ``joblib.Memory`` for caching the results, the cache should work
 exactly as if you were running the computation sequentially, as long as you have
 a shared file-system between the nodes used for the computations.
 
+.. _slurm_grouping:
+
+Grouping multiple runs into a single SLURM job
+-----------------------------------------------
+
+By default, each run is submitted as a separate SLURM job, which creates
+significant scheduling overhead for benchmarks with many configurations.
+``group_by`` collapses the runs sharing a ``dataset``, ``solver`` or
+``objective`` into a single job, and ``batch_n_jobs`` runs each group on
+several workers inside its job:
+
+.. code-block:: yaml
+    :caption: ./config_parallel.yml
+
+    backend: submitit
+    group_by: dataset             # one SLURM job per dataset
+    batch_n_jobs: 4               # 4 parallel workers per job
+    slurm_cpus_per_task: 4        # ... with enough CPUs for them
+
+Runs with different SLURM configurations (e.g. solvers with different
+``slurm_params``) are never grouped together. Unless ``slurm_time`` is set, the
+job wall-time is sized for the whole batch, so grouped jobs are not killed
+before every run finishes.
+
 .. _slurm_override:
 
 Overriding the SLURM parameters for one solver or one run

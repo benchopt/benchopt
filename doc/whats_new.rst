@@ -118,6 +118,11 @@ Version 1.9.1 -- 28/05/2026
 CLI
 ~~~
 
+- Add ``group_by`` and ``batch_n_jobs`` options to the submitit parallel
+  backend to group multiple runs into single SLURM jobs with optional inner
+  parallelism. See :ref:`slurm_grouping` for details. By `Bruno Aristimunha`_
+  (:gh:`903`)
+
 - Add ``benchopt prepare`` command to prepare the benchmark's dataset
   before launching them. Also deprecate the ``--download`` option in
   ``benchopt install``, replaced by ``--prepare``. By `Thomas Moreau`_ (:gh:`912`)

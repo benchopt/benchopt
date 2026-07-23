@@ -184,3 +184,22 @@ def test_submitit_backend(monkeypatch):
             ], standalone_mode=False)
 
     out.check_output("Distributed run with backend: submitit", repetition=1)
+
+
+@pytest.mark.parametrize("config, match", [
+    ({"backend": "submitit", "group_by": "invalid"}, "group_by"),
+    ({"backend": "submitit", "batch_n_jobs": 2}, "requires `group_by`"),
+    ({"backend": "dask", "group_by": "dataset"}, "only supported"),
+    ({"backend": "loky", "batch_n_jobs": 2}, "only supported"),
+    (
+        {"backend": "submitit", "group_by": "dataset", "batch_n_jobs": 0},
+        "positive integer",
+    ),
+    (
+        {"backend": "submitit", "group_by": "dataset", "batch_n_jobs": True},
+        "positive integer",
+    ),
+])
+def test_invalid_parallel_config(config, match):
+    with pytest.raises(AssertionError, match=match):
+        check_parallel_config(config, None)
