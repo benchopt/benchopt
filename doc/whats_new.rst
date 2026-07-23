@@ -24,6 +24,9 @@ CLI
 PLOT
 ~~~~
 
+- Add ``Download PDF`` button in the HTML interface to download the current plot as a PDF file.
+  By `Jad Yehya`_ & `Hippolyte Verninas`_ (:gh:`777`)
+
 - Change the plotly style to make it more like matplotlib.
   By `Hippolyte Verninas`_ (:gh:`966`)
 
