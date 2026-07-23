@@ -705,7 +705,9 @@ class Benchmark:
         print('- Checking installed packages...', end='', flush=True)
         not_installed = set()
         for klass in set(check_installs + missings):
-            cls_success = klass.is_installed(env_name=env_name)
+            cls_success = klass.is_installed(
+                env_name=env_name, reload=True
+            )
             if cls_success and klass in missings:
                 # This class only depends on global requirements
                 missings.remove(klass)
@@ -853,7 +855,7 @@ class Benchmark:
         # Format the list of classes missing requirements.
         cls_types = {'Solver': [], 'Dataset': []}
         for klass in missings:
-            cls_type = klass.__base__.__name__.replace("Base", "")
+            cls_type = klass._base_class_name
             try:
                 # Check for invalid install_cmd
                 klass.install_cmd_

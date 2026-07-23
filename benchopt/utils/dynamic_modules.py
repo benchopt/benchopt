@@ -7,6 +7,7 @@ import inspect
 import hashlib
 import warnings
 import importlib
+import traceback
 from pathlib import Path
 from contextlib import contextmanager
 
@@ -16,7 +17,6 @@ try:
 except ImportError:
     import cloudpickle
 
-from .dependencies_mixin import DependenciesMixin
 from .safe_import import safe_import_context
 from .class_property import classproperty
 
@@ -54,9 +54,58 @@ class FailedImport(ABCMeta):
     checked and to have an informative representation.
     """
     def __repr__(cls):
+        base_cls_name = cls._base_class_name
         return (
-            f"<FailedImport: {cls.cls_name}({cls.name})|| Exc: [{cls._exc}]>"
+            f"<FailedImport: {base_cls_name}({cls.name})|| Exc: [{cls._exc}]>"
         )
+
+
+class _FailedImportMixin:
+    """Shared ``is_installed`` for classes representing a failed import.
+
+    Must come first in the MRO of classes using it, so it takes precedence
+    over any ``is_installed`` defined on the wrapped/base class. Relies on
+    ``_exc`` and ``_tb_to_print`` being set by the class using this mixin,
+    and on ``_module_filename`` and ``_benchmark_dir``, set by
+    ``_load_class_from_module`` once the class is built.
+    """
+
+    _error_displayed = False
+
+    @classmethod
+    def is_installed(cls, env_name=None, raise_on_not_installed=False,
+                     quiet=False, reload=False, **kwargs):
+        if env_name is not None:
+            return super().is_installed(
+                env_name=env_name,
+                raise_on_not_installed=raise_on_not_installed,
+                **kwargs
+            )
+        if reload:
+            # Checking after an install step. Invalidate the import caches
+            # first, to make package installed since the interpreter
+            # started visible.
+            importlib.invalidate_caches()
+            reloaded = _load_class_from_module(
+                cls._benchmark_dir, cls._module_filename,
+                cls._base_class_name
+            )
+            return reloaded.is_installed(
+                raise_on_not_installed=raise_on_not_installed,
+                quiet=quiet
+            )
+        if not SKIP_IMPORT:
+            if raise_on_not_installed:
+                raise cls._exc
+            if not cls._error_displayed and not quiet:
+                print(
+                    f"Failed to import {cls._base_class_name} from "
+                    f"{cls._module_filename}. Please fix the following "
+                    f"error to use this file with benchopt:\n"
+                    f"{cls._tb_to_print}"
+                )
+                cls._error_displayed = True
+        return False
 
 
 def _get_module_from_file(module_filename, benchmark_dir=None):
@@ -116,12 +165,27 @@ def _load_class_from_module(benchmark_dir, module_filename, class_name):
         module = _get_module_from_file(module_filename, benchmark_dir)
         klass = getattr(module, class_name)
         klass._import_ctx = _get_import_context(module)
+        if klass._import_ctx.failed_import:
+            # The module failed to import, but was protected with
+            # safe_import_context. It can have dynamic attributes not
+            # parsable with ast, so build the FailedImport class directly
+            # from klass to keep them. Also evict the module so the next
+            # load re-executes it.
+            sys.modules.pop(module.__name__, None)
+            exc_type, value, tb = klass._import_ctx.import_error
+            tb_to_print = ''.join(
+                traceback.format_exception(exc_type, value, tb, chain=False)
+            )
+
+            class klass(_FailedImportMixin, klass, metaclass=FailedImport):
+                "Object for the class list that raises error if used."
+
+                _exc = value.with_traceback(tb)
+                _tb_to_print = tb_to_print
     except Exception as e:
-        import traceback
         tb_to_print = traceback.format_exc(chain=False)
 
         # avoid circular import
-        from .parametrized_name_mixin import ParametrizedNameMixin
         from ..base import BaseSolver, BaseDataset, BaseObjective
         from ..plotting.base import BasePlot
         base_cls = dict(
@@ -129,36 +193,12 @@ def _load_class_from_module(benchmark_dir, module_filename, class_name):
             Objective=BaseObjective, Plot=BasePlot
         )[class_name]
 
-        class klass(base_cls, ParametrizedNameMixin, DependenciesMixin,
-                    metaclass=FailedImport):
+        class klass(_FailedImportMixin, base_cls, metaclass=FailedImport):
             "Object for the class list that raises error if used."
 
             _exc = e
-            _error_displayed = False
+            _tb_to_print = tb_to_print
             _set_cls_attr_from_ast(module_filename, base_cls, locals())
-            cls_name = class_name
-
-            @classmethod
-            def is_installed(cls, env_name=None, raise_on_not_installed=False,
-                             quiet=False, **kwargs):
-                if env_name is not None:
-                    return super().is_installed(
-                        env_name=env_name,
-                        raise_on_not_installed=raise_on_not_installed,
-                        **kwargs
-                    )
-                if not SKIP_IMPORT:
-                    if raise_on_not_installed:
-                        raise cls._exc
-                    if not cls._error_displayed and not quiet:
-                        print(
-                            f"Failed to import {class_name} from "
-                            f"{module_filename}. Please fix the following "
-                            "error to use this file with benchopt:\n"
-                            f"{tb_to_print}"
-                        )
-                        cls._error_displayed = True
-                return False
 
     # Store the info to easily reload the class and check it is installed
     klass._module_filename = module_filename.resolve()

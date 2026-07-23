@@ -47,8 +47,7 @@ class ParametrizedNameMixin():
             obj.save_parameters(**parameters)
         except Exception as exception:
             # get type (Dataset, Objective, or Solver) of class and its name
-            cls_type = cls.__base__.__name__
-            cls_type = cls_type.replace("Base", "")
+            cls_type = cls._base_class_name
             cls_name = cls.name
 
             # Extend exception error message

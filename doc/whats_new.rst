@@ -105,6 +105,11 @@ FIX
   preventing the run to finish normally.
   By `Thomas Moreau`_ (:gh:`949`)
 
+- Detect the requirements installed by ``benchopt install`` in the current
+  environment, by reloading the classes instead of relying on the import
+  outcome cached when collecting the benchmark.
+  By `Felix Divo`_ (:gh:`978`)
+
 .. _changes_1_9_1:
 
 Version 1.9.1 -- 28/05/2026

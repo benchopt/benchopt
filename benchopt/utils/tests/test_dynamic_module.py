@@ -1,8 +1,12 @@
+import sys
+import uuid
+
 import pytest
 from joblib import Parallel, delayed
 
 from benchopt.cli.main import run as run_cmd
 from benchopt.cli.main import install as install_cmd
+from benchopt.utils.dynamic_modules import FailedImport
 from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.utils.temp_benchmark import DEFAULT_SOLVERS
 
@@ -187,3 +191,50 @@ def test_ast_failures_dont_block_run(params, no_raise_install):
                 else:
                     out.check_output("my-solver: failed to get requirements ✗")
                     out.check_output(f"invalid {invalid_component}")
+
+
+@pytest.mark.parametrize("safe_import", [True, False])
+def test_reload_class_after_install(tmp_path, safe_import):
+    # When installing in the current env, the classes have already been
+    # imported, and the failed ones are `FailedImport` classes, whether the
+    # import failure was caught by a `safe_import_context` or not. Check that
+    # reloading them detects the requirements installed after this first
+    # import.
+
+    # This package is not installed yet, and is only made importable once the
+    # benchmark has been collected.
+    pkg = f"missing_pkg_{uuid.uuid4().hex[:8]}"
+    if safe_import:
+        import_pkg = (
+            "with safe_import_context() as import_ctx:\n"
+            f"        import {pkg}"
+        )
+    else:
+        import_pkg = f"import {pkg}"
+
+    solver = f"""
+    from benchopt import safe_import_context
+    from benchopt.utils.temp_benchmark import TempSolver
+
+    {import_pkg}
+
+    class Solver(TempSolver):
+        name = "test-solver"
+    """
+
+    with temp_benchmark(solvers=[solver]) as bench:
+        Solver, _ = bench.check_solver_patterns(["test-solver"])[0]
+        assert isinstance(Solver, FailedImport)
+        assert not Solver.is_installed(quiet=True)
+
+        # Install the missing package in the current env.
+        (tmp_path / f"{pkg}.py").write_text("")
+        sys.path.insert(0, str(tmp_path))
+        try:
+            # Without a reload, the import failure hides the install.
+            assert not Solver.is_installed(quiet=True)
+            # Reloading re-imports the class and detects the install.
+            assert Solver.is_installed(reload=True)
+        finally:
+            sys.path.remove(str(tmp_path))
+            sys.modules.pop(pkg, None)
