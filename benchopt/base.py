@@ -438,31 +438,26 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
             dataset.get_data()
 
 
-def _ignore_base_seed(dataset):
-    """Datasets whose preparation does not depend on the seed can drop it
-    from the cache key by listing 'base_seed' in prepare_cache_ignore."""
-    cache_ignore = getattr(type(dataset), 'prepare_cache_ignore', ())
-    if cache_ignore == "all" or 'base_seed' in cache_ignore:
-        return ['base_seed']
-    return None
-
-
 def _cached_prepare(benchmark, dataset, force=False):
-    """Single source of truth for the cached ``_prepare`` of a dataset, so the
-    cache lookup (`_check_prepare_in_cache`) and the actual call (`_prepare_one`)
-    can never drift on the func/ignore that define the cache key."""
+    """Cache wrapper for each dataset as ignore depends on each dataset.
+
+    Datasets whose preparation does not depend on the seed can drop it
+    from the cache key by listing 'base_seed' in prepare_cache_ignore.
+    """
+    cache_ignore = getattr(dataset, 'prepare_cache_ignore', ())
+    ignore = (
+        ['base_seed'] if cache_ignore == "all" or 'base_seed' in cache_ignore
+        else None
+    )
     return benchmark.cache(
-        BaseDataset._prepare, ignore=_ignore_base_seed(dataset), force=force,
+        BaseDataset._prepare, ignore=ignore, force=force,
     )
 
 
 def _check_prepare_in_cache(benchmark, dataset, force=False):
-    """Cheap, frontal-node cache lookup for a dataset preparation.
+    """Frontal-node cache lookup for a dataset preparation.
 
-    Mirrors the cache key built in `_prepare_one`, so `parallel_run` can skip
-    dispatching an already-prepared dataset as a job. `force` is ignored here:
-    it does not change the cache key, and `parallel_run` already gates the
-    skip on `not force` so a forced run is always dispatched.
+    `force` is ignored as `parallel_run` already handles it.
     """
     return _cached_prepare(benchmark, dataset).check_call_in_cache(
         dataset=dataset, base_seed=benchmark.seed

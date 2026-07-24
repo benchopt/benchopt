@@ -99,13 +99,8 @@ def test_parallel_run_dispatches_lazily():
             pulled += 1
             yield dict(i=i)
 
-    # parallel_run expect a check_call_in_cache method, and here we make sure
-    # that every run is dispatched. A small sleep keeps completions slower
-    # than the main thread's retrieval polling (joblib polls every 10ms), so
-    # dispatch doesn't race ahead of `next(results)` on slow/jittery workers
-    # (e.g. macOS/Windows CI, where loky's spawn-started workers are slower
-    # to come up, giving the completion-driven redispatch loop more real time
-    # to run before the first result is observed).
+    # Make sure every run is dispatched, and keep a small sleep so
+    # main thread retrieval kicks in faster than dispatch hanging.
     def _run(i):
         time.sleep(0.005)
         return (i,)

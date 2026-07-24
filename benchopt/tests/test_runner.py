@@ -214,10 +214,7 @@ class TestCache:
 
     def test_cached_runs_not_dispatched(self, no_debug_log, monkeypatch):
         # A cached run must be detected on the frontal node (the main process)
-        # and not dispatched to a worker. To tell the two apart, both the cache
-        # check and the solver report the PID of the process they run in: the
-        # check always runs on the frontal, while a dispatched solver runs in a
-        # separate worker process.
+        # and not dispatched to a worker.
         import os
         from benchopt.benchmark import Benchmark
 

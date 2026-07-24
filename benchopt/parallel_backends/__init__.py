@@ -22,8 +22,7 @@ def _dispatch(backend, benchmark, run, run_kwargs_iter, config):
     results as they complete.
 
     This is the only backend-specific piece: a thin adapter turning an iterator
-    of run kwargs into an iterator of results. Backends consume the kwargs
-    lazily (loky/dask, bounded by ``pre_dispatch``) or in one batch (submitit).
+    of run kwargs into an iterator of results.
     """
     if backend == 'submitit':
         from .slurm_executor import run_on_slurm
@@ -51,14 +50,10 @@ def parallel_run(benchmark, run, run_kwargs_generator, config, collect=False):
         f"Unknown backend {backend}. Valid backends: {DISTRIBUTED_BACKENDS}."
     )
 
-    # Cache hits (and, in `collect` mode, cache misses that are skipped) are
-    # loaded on the frontal node and parked in `ready`; only genuine misses
-    # are dispatched. The dispatch stays backend-agnostic and lazy (we never
-    # hold all the runs, each carrying its loaded data, in memory): the
-    # backend pulls `_to_dispatch` on demand, and items parked in `ready`
-    # meanwhile are merged back into the result stream. `cached` is appended
-    # as the last element of each yielded tuple, so the item itself (whose
-    # shape is backend/run-specific) stays untouched.
+    # Load cache hits directly on the front node, and only dispatch
+    # necessary configs. Use `ready` to park items that are collected
+    # and merged back when consuming the iterator.
+    # Append cache status at the end of the tuple result.
     ready = deque()
     check_in_cache = getattr(run, "check_call_in_cache", None)
 
@@ -69,9 +64,7 @@ def parallel_run(benchmark, run, run_kwargs_generator, config, collect=False):
                     and check_in_cache(**run_kwargs)):
                 ready.append((*run(**run_kwargs), True))
             elif collect:
-                # Collect mode only gathers cached runs; flag the rest as
-                # missing instead of computing them (e.g. a SLURM job just
-                # to hit the cache).
+                # Skip non-cache configs in collect mode.
                 meta = run_kwargs['meta']
                 key = (
                     meta['dataset_name'],
@@ -82,15 +75,12 @@ def parallel_run(benchmark, run, run_kwargs_generator, config, collect=False):
             else:
                 yield run_kwargs
 
-    def _results():
-        for item in _dispatch(backend, benchmark, run, _to_dispatch(), config):
-            while ready:
-                yield ready.popleft()
-            yield (*item, False)
+    for item in _dispatch(backend, benchmark, run, _to_dispatch(), config):
         while ready:
             yield ready.popleft()
-
-    return _results()
+        yield (*item, False)
+    while ready:
+        yield ready.popleft()
 
 
 def check_parallel_config(parallel_config_file, n_jobs):
