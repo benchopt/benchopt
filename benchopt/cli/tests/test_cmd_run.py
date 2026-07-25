@@ -407,6 +407,22 @@ class TestRunCmd:
             out.check_output(r'done \(not enough run\)', repetition=1)
             out.check_output('not run yet', repetition=1)
 
+    def test_collect_no_cache_incompatible(self, no_debug_log):
+        with temp_benchmark() as bench:
+            with pytest.raises(click.BadParameter, match="--collect"):
+                run(f"{bench.benchmark_dir} --no-plot --collect --no-cache"
+                    .split(), standalone_mode=False)
+
+    def test_collect_force_warns(self, no_debug_log):
+        # Forced results can't be collected: no way to tell old from new.
+        with temp_benchmark() as bench:
+            with pytest.warns(UserWarning, match="cannot be collected"):
+                with CaptureCmdOutput(exit=1) as out:
+                    run(f"{bench.benchmark_dir} --no-plot --collect "
+                        "-d test-dataset -f test-solver".split(),
+                        standalone_mode=False)
+        out.check_output("not run yet", repetition=1)
+
     def test_complete_bench(self, bench_completion_cases):  # noqa: F811
 
         # Completion for benchmark name
