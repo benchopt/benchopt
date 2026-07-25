@@ -300,6 +300,17 @@ class TestCache:
                 run(f"{bench.benchmark_dir} --no-plot --collect --no-cache"
                     .split(), standalone_mode=False)
 
+    def test_collect_force_warns(self, no_debug_log):
+        # Forced results can't be collected: no way to tell old from new.
+        with temp_benchmark(
+                solvers=self.solver, datasets=self.dataset
+        ) as bench:
+            with pytest.warns(UserWarning, match="cannot be collected"):
+                with CaptureCmdOutput(exit=1) as out:
+                    run(f"{bench.benchmark_dir} --no-plot --collect "
+                        "-f test-solver".split(), standalone_mode=False)
+        out.check_output("not run yet", repetition=1)
+
     def test_no_error_caching(self, no_debug_log):
 
         solver_fail = """from benchopt.utils.temp_benchmark import TempSolver
