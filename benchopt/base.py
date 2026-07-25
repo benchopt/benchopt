@@ -474,7 +474,6 @@ def _prepare_one(benchmark, dataset, force=False):
     """
     exc = None
     cached_prepare = _cached_prepare(benchmark, dataset, force=force)
-    # `force` recomputes even on a cache hit, so only flag genuine cache loads.
     cached = not force and cached_prepare.check_call_in_cache(
         dataset=dataset, base_seed=benchmark.seed
     )

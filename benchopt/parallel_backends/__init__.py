@@ -20,9 +20,6 @@ def is_distributed_frontal():
 def _dispatch(backend, benchmark, run, run_kwargs_iter, config):
     """Run ``run(**kwargs)`` for each kwargs on the chosen backend, yielding
     results as they complete.
-
-    This is the only backend-specific piece: a thin adapter turning an iterator
-    of run kwargs into an iterator of results.
     """
     if backend == 'submitit':
         from .slurm_executor import run_on_slurm

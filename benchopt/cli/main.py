@@ -239,8 +239,7 @@ def run(config_file=None, **kwargs):
         warnings.warn(
             "Forced solvers cannot be collected with --collect: there is no "
             "way to tell whether a cached result is old or new, so "
-            "`--force-solver` is ignored and they are reported as "
-            "'not run yet'."
+            "they are reported as 'not run yet'."
         )
 
     if not no_timeout:
