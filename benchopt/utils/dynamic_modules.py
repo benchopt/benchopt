@@ -272,7 +272,7 @@ def _reconstruct_class(
 
 
 def _set_cls_attr_from_ast(module_file, base_cls, ctx):
-    module = ast.parse(module_file.read_text())
+    module = ast.parse(module_file.read_text(encoding="utf-8"))
     name = f"{module_file.stem}"
     cls_name = base_cls._base_class_name
 
