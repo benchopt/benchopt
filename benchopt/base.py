@@ -560,6 +560,11 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
     """
     _base_class_name = 'Objective'
 
+    # Set by `_set_dataset`, e.g. once run through `_generate_runs.py` or
+    # (post-unpickle) `run_one_to_cvg`. `_dataset_ready` guards re-running it.
+    _dataset = None
+    _dataset_ready = False
+
     # All class attributes that need to be parsed when we cannot import
     # the objective must be listed here. name is a special case as it is
     # defined as a property.
@@ -703,6 +708,9 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
     # Save the dataset object used to get the objective data so we can avoid
     # hashing the data directly.
     def _set_dataset(self, dataset):
+        if self._dataset_ready and self._dataset is dataset:
+            return False, None
+
         self._dataset = dataset
         assert self.is_installed(raise_on_not_installed=True)
         data = dataset._get_data()
@@ -730,8 +738,6 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
                     "modified by 'set_data'."
                 )
 
-        # Marks that get_data() (and any get_seed() call inside it) has run
-        # for this instance, so run_one_to_cvg does not redo it.
         self._dataset_ready = True
 
         return False,  None
