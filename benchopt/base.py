@@ -730,6 +730,10 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
                     "modified by 'set_data'."
                 )
 
+        # Marks that get_data() (and any get_seed() call inside it) has run
+        # for this instance, so run_one_to_cvg does not redo it.
+        self._dataset_ready = True
+
         return False,  None
 
     def skip(self, **data):
@@ -785,10 +789,9 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
         )
 
     def __setstate__(self, state):
+        # `_set_dataset` is called later, by `run_one_to_cvg`.
         self._repetition = state['repetition']
-        dataset = state['dataset']
-        if dataset is not None:
-            self._set_dataset(dataset)
+        self._dataset = state['dataset']
 
     def _default_split(self, cv_fold, *arrays):
         train_index, test_index = cv_fold

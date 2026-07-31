@@ -522,6 +522,35 @@ class TestSeed:
         seeds = out.check_output(r"(?m)^#SEED-data=.*", repetition=2)
         assert seeds[0] == seeds[1], "Seeds are not equal"
 
+    @pytest.mark.parametrize('n_jobs', [1, 2])
+    def test_dataset_seed_parallel(self, no_debug_log, n_jobs):
+        # Regression test: a Dataset calling get_seed() from get_data() must
+        # not crash under -j>1, where the dataset is reconstructed fresh in
+        # the worker and its run_context must be re-attached before
+        # get_data() runs (not eagerly during unpickling).
+        with temp_benchmark(
+            objective=self.get_objective(),
+            solvers=self.get_solver(),
+            datasets=self.get_dataset()
+        ) as bench:
+            with CaptureCmdOutput() as out:
+                cmd_str = (
+                    f"{bench.benchmark_dir} --no-cache --no-plot -j {n_jobs}"
+                )
+                run(cmd_str.split(), standalone_mode=False)
+
+                # Make sure joblib's executor is shutdown, as otherwise the
+                # output might be incomplete.
+                from joblib.externals.loky import get_reusable_executor
+                get_reusable_executor().shutdown(wait=True)
+
+        # get_data() runs once in the main process and, for n_jobs>1, once
+        # more in the worker (fresh dataset instance) -- see
+        # test_no_get_seed_no_extra_reload for the same pattern.
+        n_match = 1 if n_jobs == 1 else 2
+        seeds = out.check_output(r"(?m)^#SEED-data= (.*)", repetition=n_match)
+        assert len(set(seeds)) == 1, f"Seeds differ across loads: {seeds}"
+
     def test_seed_different(self, no_debug_log):
         with temp_benchmark(
             objective=self.get_objective(),
