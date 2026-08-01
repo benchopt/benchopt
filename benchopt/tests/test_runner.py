@@ -503,8 +503,7 @@ class TestSeed:
                     run(cmd_str.split(),
                         standalone_mode=False)
 
-                # Also check that evaluate_result's get_seed() survives real
-                # parallel dispatch (regression test, see run_one_to_cvg).
+                # Check that get_seed() works with parallel runs.
                 run((cmd_str + " -j 2").split(), standalone_mode=False)
 
         seeds = out.check_output(r"(?m)^#SEED-obj=.*", repetition=3)
@@ -523,8 +522,7 @@ class TestSeed:
                     run(cmd_str.split(),
                         standalone_mode=False)
 
-                # Also check that set_objective's get_seed() survives real
-                # parallel dispatch (regression test, see run_one_to_cvg).
+                # Check that get_seed() works with parallel runs.
                 run((cmd_str + " -j 2").split(), standalone_mode=False)
 
         seeds = out.check_output(r"(?m)^#SEED-sol=.*", repetition=3)
@@ -543,14 +541,11 @@ class TestSeed:
                     run(cmd_str.split(),
                         standalone_mode=False)
 
-                # Also check that the dataset's get_seed() survives real
-                # parallel dispatch, where it is reconstructed in the worker
-                # process (regression test, see run_one_to_cvg).
+                # Check that get_seed() works with parallel runs.
                 run((cmd_str + " -j 2").split(), standalone_mode=False)
 
         # get_data() runs once per -j1 call, and twice for the -j2 call (once
-        # in the main process, once more in the worker) -- see
-        # test_no_get_seed_no_extra_reload for the same pattern.
+        # during dispatch, once more in the worker).
         seeds = out.check_output(r"(?m)^#SEED-data=.*", repetition=4)
         assert len(set(seeds)) == 1, "Seeds are not equal"
 

@@ -79,9 +79,7 @@ FIX
 ~~~
 
 - Fix ``get_seed`` raising in a ``Dataset``'s ``get_data`` when running with
-  ``-j`` greater than 1: the run context was re-attached too late, after the
-  dataset had already been reconstructed and its ``get_data`` called in the
-  worker process. By `Thomas Moreau`_ (:gh:`984`)
+  ``-j`` greater than 1. By `Thomas Moreau`_ (:gh:`984`)
 
 - Fix shell handling on Windows so ``benchopt install``/``test`` work with a
   bash-like shell (e.g. GitHub ``shell: bash`` runners).

@@ -128,8 +128,8 @@ def run_one_to_cvg(benchmark, objective, solver, meta, timeout, max_runs,
 
     with exception_handler(terminal, pdb=pdb) as ctx:
 
-        # A dataset is always attached by `_generate_runs.py` before this is
-        # called; `_set_dataset` is a no-op if it already ran (see its body).
+        # Set dataset and objective. Note that _set_dataset is a no-op
+        # if it has already been called (sequential runs)
         skip, reason = objective._set_dataset(objective._dataset)
         if skip:
             return [], run_key, 'skip', reason
