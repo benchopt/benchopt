@@ -137,7 +137,7 @@ jobs:
         shell: bash -el {0}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup Conda
         uses: conda-incubator/setup-miniconda@v4
         with:
