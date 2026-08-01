@@ -564,6 +564,8 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
     # (post-unpickle) `run_one_to_cvg`. `_dataset_ready` guards re-running it.
     _dataset = None
     _dataset_ready = False
+    # Set directly by `run_one_to_cvg` for each repetition.
+    _repetition = 0
 
     # All class attributes that need to be parsed when we cannot import
     # the objective must be listed here. name is a special case as it is
@@ -787,18 +789,6 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
         self.get_objective()
         return self.get_one_result()
 
-    def _get_state(self):
-        """Return the state of the objective for pickling."""
-        return dict(
-            dataset=getattr(self, '_dataset', None),
-            repetition=getattr(self, '_repetition', 0)
-        )
-
-    def __setstate__(self, state):
-        # `_set_dataset` is called later, by `run_one_to_cvg`.
-        self._repetition = state['repetition']
-        self._dataset = state['dataset']
-
     def _default_split(self, cv_fold, *arrays):
         train_index, test_index = cv_fold
         res = ()
@@ -843,7 +833,7 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
         cv_fold_generator = repeat()
         # Perform the split with default split function if it is not defined by
         # the user.
-        rep = getattr(self, "_repetition", 0)
+        rep = self._repetition
         for _ in range(rep + 1):
             cv_fold = next(cv_fold_generator)
 

@@ -73,18 +73,23 @@ def run_one_resolution(objective, solver, meta, stop_val):
     ], result
 
 
-def run_one_to_cvg(benchmark, objective, solver, meta, timeout, max_runs,
-                   force=False, terminal=None, run_context=None):
+def run_one_to_cvg(benchmark, dataset, objective, solver, repetition, meta,
+                   timeout, max_runs, force=False, terminal=None,
+                   run_context=None):
     """Run all repetitions of the solver for a value of stopping criterion.
 
     Parameters
     ----------
     benchmark : benchopt.Benchmark object
         Object to represent the benchmark.
+    dataset : instance of BaseDataset
+        The dataset to use.
     objective : instance of BaseObjective
         The objective to minimize.
     solver : instance of BaseSolver
         The solver to use.
+    repetition : int
+        Index of the repetition being run.
     meta : dict
         Metadata passed to store in Cost results.
         Contains objective, data, dimension.
@@ -112,9 +117,10 @@ def run_one_to_cvg(benchmark, objective, solver, meta, timeout, max_runs,
     status : 'done' | 'diverged' | 'timeout' | 'max_runs'
         The status on which the solver was stopped.
     """
-    # Re-attach the run context after deserialization (it is excluded from
-    # pickle via __getstate__ so workers receive components without it).
-    run_context.attach(objective, getattr(objective, '_dataset', None), solver)
+    # Re-attach the run context after deserialization (dataset, objective and
+    # solver are pickled independently, so it is not carried across it).
+    run_context.attach(objective, dataset, solver)
+    objective._repetition = repetition
 
     pdb = run_context.pdb if run_context is not None else False
 
@@ -128,9 +134,9 @@ def run_one_to_cvg(benchmark, objective, solver, meta, timeout, max_runs,
 
     with exception_handler(terminal, pdb=pdb) as ctx:
 
-        # Set dataset and objective. Note that _set_dataset is a no-op
-        # if it has already been called (sequential runs)
-        skip, reason = objective._set_dataset(objective._dataset)
+        # `_set_dataset` is a no-op if already called for this dataset
+        # (e.g. for sequential runs).
+        skip, reason = objective._set_dataset(dataset)
         if skip:
             return [], run_key, 'skip', reason
 

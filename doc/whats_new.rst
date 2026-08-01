@@ -10,6 +10,10 @@ What's new
 Version 1.10.0 -- in development
 --------------------------------
 
+.. warning::
+    This release changes the run cache key, so upgrading will recompute
+    every cached run once.
+
 CLI
 ~~~
 
