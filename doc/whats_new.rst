@@ -17,6 +17,14 @@ Version 1.10.0 -- in development
 CLI
 ~~~
 
+- Add ``benchopt info -f <result_file>`` to summarize a result file (number
+  of rows/configs/repetitions, objective/solver/dataset names, objective
+  columns, run date) instead of listing benchmark solvers/datasets; ``-f all``
+  summarizes every result file, and plain ``benchopt info`` now also lists the
+  result files available in the output folder. The summary logic is exposed
+  programmatically as ``benchopt.results.describe_results``.
+  By `Thomas Moreau`_ (:gh:`990`)
+
 - Ship agent skills (``SKILL.md``, `Agent Skills <https://agentskills.io>`_
   standard) as package data and add ``benchopt sync-skills`` to install them
   into a project's ``.agents/skills/`` (or globally with ``--global``), with a

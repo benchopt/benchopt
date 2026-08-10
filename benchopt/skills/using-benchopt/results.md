@@ -19,6 +19,12 @@ result file. `benchopt merge` writes `merged_results.parquet` and
 `benchopt plot --all` writes `all_runs.html`, a table of contents for navigating
 to the HTML report of every parquet in the folder.
 
+For a quick look at what a result file contains without opening Python, use
+`benchopt info -f <result_file>` — prints row/config/repetition counts, the
+objective/solver/dataset names, the `objective_<name>` columns present, and
+the run date. Also lists available result files with plain `benchopt info`
+(add `-f all` to summarize every one of them).
+
 ## Read a result file in Python
 
 The public entry point is `read_results` — it handles `.parquet` and `.csv`,

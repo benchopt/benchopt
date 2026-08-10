@@ -64,13 +64,19 @@ benchopt prepare . -d my-dataset
 ### `benchopt info`
 List solvers and datasets in a benchmark and their install requirements.
 Add `-v` for parameters and availability checks; `-e` to check against the
-benchmark's dedicated conda env.
+benchmark's dedicated conda env. Plain `benchopt info` also lists the result
+files available in the output folder. With `-f <result_file>`, summarize
+that result file instead (rows, configs, repetitions, objective/solver/dataset
+names, objective columns, run date) — same file resolution as `plot -f`;
+`-f all` summarizes every result file.
 
 ```bash
-benchopt info .                     # summary table
+benchopt info .                     # summary table + available result files
 benchopt info . -s my-solver -v     # verbose solver info
 benchopt info . -d "simulated" -v   # verbose dataset info (regexp supported)
 benchopt info . -e                  # check availability in conda env
+benchopt info . -f outputs/run.parquet  # summarize a result file
+benchopt info . -f all              # summarize every result file
 ```
 
 ---
