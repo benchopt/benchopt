@@ -194,7 +194,8 @@ def _format_choices(choices):
     return f"{listed} ({n} total)"
 
 
-def print_info(cls_name_list, cls_list, env_name=None, verbose=False):
+def _print_component_info(
+        cls_name_list, cls_list, env_name=None, verbose=False):
     """Print information for each element of input listed
 
     Parameters
@@ -281,6 +282,53 @@ def print_info(cls_name_list, cls_list, env_name=None, verbose=False):
             print("-" * 10)
 
 
+def _print_available_result_files(benchmark):
+    """Print the result files available in the benchmark's output folder."""
+    try:
+        result_files = benchmark.get_result_files('all')
+    except RuntimeError:
+        return
+    print("# RESULT FILES", flush=True)
+    for result_file in result_files:
+        print(f"- {result_file.name}")
+    print("-" * 10)
+
+
+def _print_result_file_summary(result_file):
+    """Print a summary of a benchopt result file (parquet or csv)."""
+    summary = describe_results(result_file)
+
+    print(f"Info regarding the result file '{result_file}'")
+    print("-" * 10)
+    print(f"Rows: {summary['n_rows']}")
+    print(f"Configs (objective x solver x dataset): {summary['n_configs']}")
+
+    if summary['n_repetitions'] is not None:
+        print(f"Repetitions: {summary['n_repetitions']}")
+
+    for label, key in [
+        ("Objectives", 'objectives'),
+        ("Solvers", 'solvers'),
+        ("Datasets", 'datasets'),
+    ]:
+        names = summary[key]
+        print(f"{label} ({len(names)}): {', '.join(names)}")
+
+    if summary['objective_columns']:
+        print(
+            "Objective columns: "
+            f"{', '.join(summary['objective_columns'])}"
+        )
+
+    if summary['run_dates']:
+        run_dates = summary['run_dates']
+        run_date_range = (
+            run_dates[0] if len(run_dates) == 1
+            else f"{run_dates[0]} -> {run_dates[-1]}"
+        )
+        print(f"Run date: {run_date_range}")
+
+
 @helpers.command(
     help="List information (solvers/datasets) and corresponding requirements "
     "for a given benchmark."
@@ -309,6 +357,17 @@ def print_info(cls_name_list, cls_list, env_name=None, verbose=False):
               "To include all datasets, use `-d 'all'` option."
               "Using a `-d` option will trigger the verbose output.",
               shell_complete=complete_datasets)
+@click.option('--filename', '-f', 'result_filenames',
+              metavar="<result_file>", multiple=True, type=str,
+              shell_complete=complete_output_files,
+              help="Summarize <result_file> (number of configs, objective "
+              "columns, repetitions, ...) instead of listing benchmark "
+              "solvers/datasets. If not an existing path, it is resolved "
+              "relative to the benchmark's output folder, as for "
+              "`benchopt plot -f`. To summarize multiple files, use "
+              "multiple `-f` options. To summarize every result file, use "
+              "`-f 'all'`. By default (no `-f`), a short summary of the "
+              "available result files is printed instead.")
 @click.option('--env', '-e', 'env_name',
               flag_value='True', type=str, default='False',
               help="Additional checks for requirement availability in "
@@ -323,22 +382,17 @@ def print_info(cls_name_list, cls_list, env_name=None, verbose=False):
               is_flag=True,
               help="If used, list solver/dataset "
               "parameters, dependencies and availability.")
-@click.option('--filename', '-f', 'result_filename', type=str, default=None,
-              shell_complete=complete_output_files,
-              help="Instead of listing benchmark solvers/datasets, "
-              "summarize the given result file (number of configs, "
-              "objective columns, repetitions, ...). If not an existing "
-              "path, it is resolved relative to the benchmark's output "
-              "folder, as for `benchopt plot -f`. Use `-f all` to summarize "
-              "every result file in the benchmark's output folder.")
-def info(benchmark, solver_names, dataset_names, env_name='False',
-         verbose=False, result_filename=None):
+def info(benchmark, solver_names, dataset_names, result_filenames=(),
+         env_name='False', verbose=False):
 
     # benchmark
     benchmark = Benchmark(benchmark)
 
-    if result_filename is not None:
-        result_files = benchmark.get_result_files(result_filename)
+    if result_filenames:
+        filenames = (
+            'all' if 'all' in result_filenames else list(result_filenames)
+        )
+        result_files = benchmark.get_result_files(filenames)
         for i, result_file in enumerate(result_files):
             if i > 0:
                 print()
@@ -397,62 +451,11 @@ def info(benchmark, solver_names, dataset_names, env_name='False',
         solver_names = ['all']
     if dataset_names:
         print("# DATASETS", flush=True)
-        print_info(dataset_names, all_datasets, env_name, verbose)
+        _print_component_info(dataset_names, all_datasets, env_name, verbose)
 
     if solver_names:
         print("# SOLVERS", flush=True)
-        print_info(solver_names, all_solvers, env_name, verbose)
-
-
-def _print_available_result_files(benchmark):
-    """Print the result files available in the benchmark's output folder."""
-    output_folder = benchmark.get_output_folder()
-    result_files = sorted(
-        list(output_folder.glob("*.parquet")) +
-        list(output_folder.glob("*.csv")),
-        key=lambda f: f.stat().st_mtime,
-    )
-    if not result_files:
-        return
-    print("# RESULT FILES", flush=True)
-    for result_file in result_files:
-        print(f"- {result_file.name}")
-    print("-" * 10)
-
-
-def _print_result_file_summary(result_file):
-    """Print a summary of a benchopt result file (parquet or csv)."""
-    summary = describe_results(result_file)
-
-    print(f"Info regarding the result file '{result_file}'")
-    print("-" * 10)
-    print(f"Rows: {summary['n_rows']}")
-    print(f"Configs (objective x solver x dataset): {summary['n_configs']}")
-
-    if summary['n_repetitions'] is not None:
-        print(f"Repetitions: {summary['n_repetitions']}")
-
-    for label, key in [
-        ("Objectives", 'objectives'),
-        ("Solvers", 'solvers'),
-        ("Datasets", 'datasets'),
-    ]:
-        names = summary[key]
-        print(f"{label} ({len(names)}): {', '.join(names)}")
-
-    if summary['objective_columns']:
-        print(
-            "Objective columns: "
-            f"{', '.join(summary['objective_columns'])}"
-        )
-
-    if summary['run_dates']:
-        run_dates = summary['run_dates']
-        run_date_range = (
-            run_dates[0] if len(run_dates) == 1
-            else f"{run_dates[0]} -> {run_dates[-1]}"
-        )
-        print(f"Run date: {run_date_range}")
+        _print_component_info(solver_names, all_solvers, env_name, verbose)
 
 
 @helpers.command()

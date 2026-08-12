@@ -17,12 +17,9 @@ Version 1.10.0 -- in development
 CLI
 ~~~
 
-- Add ``benchopt info -f <result_file>`` to summarize a result file (number
-  of rows/configs/repetitions, objective/solver/dataset names, objective
-  columns, run date) instead of listing benchmark solvers/datasets; ``-f all``
-  summarizes every result file, and plain ``benchopt info`` now also lists the
-  result files available in the output folder. The summary logic is exposed
-  programmatically as ``benchopt.results.describe_results``.
+- Add ``benchopt info -f <result_file>`` (repeatable, or ``-f all``) to
+  summarize result file(s) instead of listing benchmark solvers/datasets;
+  plain ``benchopt info`` now also lists available result files.
   By `Thomas Moreau`_ (:gh:`990`)
 
 - Ship agent skills (``SKILL.md``, `Agent Skills <https://agentskills.io>`_

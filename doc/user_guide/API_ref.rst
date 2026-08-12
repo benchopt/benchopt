@@ -40,3 +40,4 @@ Benchopt utils
    datasets.simulated.make_correlated_data
    utils.profile
    results.result_processing.merge
+   results.result_processing.describe_results
