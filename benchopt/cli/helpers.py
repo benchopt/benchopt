@@ -306,13 +306,9 @@ def _print_result_file_summary(result_file):
     if summary['n_repetitions'] is not None:
         print(f"Repetitions: {summary['n_repetitions']}")
 
-    for label, key in [
-        ("Objectives", 'objectives'),
-        ("Solvers", 'solvers'),
-        ("Datasets", 'datasets'),
-    ]:
+    for key in ['objectives', 'solvers', 'datasets']:
         names = summary[key]
-        print(f"{label} ({len(names)}): {', '.join(names)}")
+        print(f"{key.capitalize()} ({len(names)}): {', '.join(names)}")
 
     if summary['objective_columns']:
         print(
@@ -400,7 +396,6 @@ def info(benchmark, solver_names, dataset_names, result_filenames=(),
         return
 
     print(f"Info regarding the benchmark '{benchmark.name}'")
-    _print_available_result_files(benchmark)
 
     # validate solvers and datasets
     benchmark.check_dataset_patterns(dataset_names)
@@ -456,6 +451,8 @@ def info(benchmark, solver_names, dataset_names, result_filenames=(),
     if solver_names:
         print("# SOLVERS", flush=True)
         _print_component_info(solver_names, all_solvers, env_name, verbose)
+
+    _print_available_result_files(benchmark)
 
 
 @helpers.command()
