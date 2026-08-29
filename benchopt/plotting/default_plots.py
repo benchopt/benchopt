@@ -109,17 +109,19 @@ class BarChart(BasePlot):
             if df_tol.empty:
                 text = 'Did not converge'
                 times = [df.time.max()]
+                color = "gray"
             else:
                 stop_val = df_tol['stop_val'].min()
                 this_df = df_filtered[df_filtered['stop_val'] == stop_val]
                 text = ''
                 times = this_df['time'].tolist()
+                color = self.get_style(solver)["color"]
 
             plots.append({
                 "y": times,
                 "text": text,
                 "label": solver,
-                "color": self.get_style(solver)["color"]
+                "color": color,
             })
 
         return plots

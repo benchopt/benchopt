@@ -264,6 +264,10 @@ and the arrow next to it can be toggled to switch between increasing and
 decreasing order. A search bar allows filtering the rows, and each column can
 be shown or hidden with the checkboxes below the table.
 
+When the first column holds solver names, they are already shortened (see
+:ref:`short_labels`) and get the hover icon automatically, so nothing special
+is needed:
+
 .. code-block:: python
 
     def plot(self, df, dataset, objective, **kwargs):
@@ -344,4 +348,62 @@ of the label, ensuring that the same solver always gets the same color.
         # ...
         **self.get_style(solver_name)
     }
+
+
+.. _short_labels:
+
+Shortened labels and hover descriptions
+---------------------------------------
+
+Parametrized class names (e.g. ``Solver[alpha=0.1,n_iter=100]``) can be
+verbose. The HTML report automatically shortens them, keeping only the
+parameters that *vary* across the results, and a hover icon next to each entry
+reveals the full parameter list. This applies to solver, dataset, and objective
+names in traces, selectors, and table first columns.
+
+This happens **before** :code:`plot` and :code:`get_metadata` are called: the
+``solver_name``, ``dataset_name`` and ``objective_name`` columns of the ``df``
+you receive already hold the short labels, so a custom plot that groups on
+those columns gets short labels for free — no extra call is needed. The
+original full name of each row is kept in a companion ``*_full_name`` column
+(``solver_full_name``, ``dataset_full_name``, ``objective_full_name``) if you
+need it, e.g. to set a different label:
+
+.. code-block:: python
+
+    def plot(self, df, dataset, objective, **kwargs):
+        traces = []
+        for solver, df_solver in df.groupby('solver_name'):
+            # `solver` is already the short label here.
+            traces.append({
+                "x": ..., "y": ..., "label": solver,
+                **self.get_style(solver),
+            })
+        return traces
+
+The short labels are **display-only** and computed relative to the current
+results: never write them back into persisted results — keep the full name
+(from the ``*_full_name`` columns) as the canonical identity.
+
+If you need to compute short labels or their hover descriptions yourself — for
+instance in a ``type="image"`` plot, which has no ``df``-derived labels — the
+helpers live in :mod:`benchopt.plotting.short_labels`:
+
+- :func:`~benchopt.plotting.short_labels.compute_short_labels` returns the
+  ``{full_name: short_label}`` mapping;
+- :func:`~benchopt.plotting.short_labels.compute_descriptions` returns the
+  ``{name: hover_html}`` mapping.
+
+.. code-block:: python
+
+    from benchopt.plotting.short_labels import compute_short_labels
+
+    def plot(self, df, dataset, objective, **kwargs):
+        solver_names = sorted(df["solver_full_name"].unique())
+        label_map = compute_short_labels(solver_names)
+        images = []
+        for solver in solver_names:
+            fig = render_figure(df, solver)
+            images.append({"image": fig, "label": label_map[solver]})
+        return images
 
