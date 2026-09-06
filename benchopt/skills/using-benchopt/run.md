@@ -126,6 +126,13 @@ run expensive preprocessing once before any benchmarking run.
 
 - Results are `.parquet` files under `./outputs/`. An HTML dashboard is
   generated unless `--no-html`; `--no-plot`/`--no-display` skip plotting.
+- In a terminal, the run shows a live progress display (global progress bar,
+  runs in flight, done/cached/skip/error counters) on the alternate screen,
+  and the stdout, stderr and tracebacks go to `outputs/<run_name>.log`. Set
+  `BENCHOPT_NO_RICH=1` (or `no_rich: true` in the benchopt config file), or
+  pipe the output, for the plain line-by-line display.
+  Once the runs are over, the screen is restored and the results, then where
+  the result file, the HTML report and the log are, are printed.
 - The name of the output can be controlled with the `--output` option.
   If the name already exist, the new result is postfixed with `-1` or
   `-X` the X-th time.

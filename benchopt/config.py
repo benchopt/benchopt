@@ -35,6 +35,7 @@ DEFAULT_GLOBAL_CONFIG = {
     'cache': None,
     'default_timeout': 100,
     'warn_nonunique_files': True,
+    'no_rich': False,
     '_g_config_check': False,
     '_bench_config_check': False,
 }
@@ -66,6 +67,8 @@ particular for logging, warnings and errors. The available options are:
 * ``warn_nonunique_files``, *bool*: If set to True, raise a warning when a
   results file is about to be overwritten because a file with the same name
   already exists. Mostly useful to deactivate this warning in tests.
+* ``no_rich``, *bool*: If set to True, disable the live display of
+  ``benchopt run`` and fall back on the plain line by line output.
 """
 
 DEFAULT_BENCHMARK_CONFIG = {

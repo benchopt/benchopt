@@ -364,8 +364,10 @@ def plot_benchmark_html(
     print("done")
 
     # Save the resulting page in the HTML folder
+    result_filenames = []
     for result, html in zip(results, htmls):
         result_filename = html_root / result['page']
+        result_filenames.append(result_filename)
         result_filename.parent.mkdir(exist_ok=True)
         print(f"Writing results to {result_filename}")
         with open(result_filename, "w", encoding="utf-8") as f:
@@ -386,6 +388,8 @@ def plot_benchmark_html(
     if display:
         result_filename = (html_root / results[-1]['page']).absolute()
         webbrowser.open_new_tab('file://' + quote(str(result_filename)))
+
+    return result_filenames
 
 
 def plot_benchmark_html_all(patterns=(), benchmark_paths=(), root=None,

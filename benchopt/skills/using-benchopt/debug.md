@@ -235,6 +235,11 @@ https://benchopt.github.io/stable/benchmark_workflow/test_benchmark.html
 - For an error *inside* a real run, `benchopt run . --pdb` drops into the
   debugger at the failing line — reach for the Benchmark object when you want to
   reproduce or probe the code outside the run loop.
+- In a terminal, `benchopt run` shows a live progress display and sends the
+  stdout, stderr and tracebacks of the run — including the ones of the parallel
+  workers — to `outputs/<run_name>.log`. That is where your `print` calls and
+  the traceback of a run marked `error` end up. `BENCHOPT_NO_RICH=1`, the
+  `no_rich` config option, or piping the output falls back to plain output.
 - Everything here uses the installed benchmark code in the current environment;
   no conda env, caching or parallelism is involved, so edits to the benchmark's
   `.py` files take effect on the next `Benchmark(".")` / re-import.

@@ -93,7 +93,7 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
     -------
     figs : list
         The matplotlib figures for convergence curve and bar chart
-        for each dataset.
+        for each dataset, or the paths of the generated pages if `html`.
     """
     benchmark = Benchmark(benchmark)
     plot_config = get_metadata(fname)
@@ -124,7 +124,7 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
         _check_view(name, view, plots)
 
     if html:
-        plot_benchmark_html(fname, benchmark, plot_config, display)
+        return plot_benchmark_html(fname, benchmark, plot_config, display)
 
     else:
         # Load the results.

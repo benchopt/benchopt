@@ -4,6 +4,7 @@ import ctypes
 import platform
 import sys
 from collections import defaultdict
+from contextlib import contextmanager
 
 if sys.platform == 'win32':
     sys.stdout.reconfigure(encoding='utf-8')
@@ -165,12 +166,16 @@ class TerminalOutput:
             self.status[key] = status
 
         status = self.status[key]
+        assert status in STATUS, (
+            f"status should be in {list(STATUS)}. Got '{status}'"
+        )
+        self._emit_status(status, reason, dataset, objective, cached)
+
+    def _emit_status(self, status, reason, dataset, objective, cached):
+        """Display the final status of a run. Overridden by `RichOutput`."""
         tag = (
             self.dataset_tag if dataset else
             self.objective_tag if objective else self.solver_tag
-        )
-        assert status in STATUS, (
-            f"status should be in {list(STATUS)}. Got '{status}'"
         )
         status_print = colorify(*STATUS[status])
         if cached:
@@ -180,6 +185,35 @@ class TerminalOutput:
         if status == 'skip' and reason is not None:
             indent = ' ' * (2 if objective else 4)
             print(f'{indent}Reason: {reason}')
+
+    def show_interrupted(self):
+        """Report the runs stopped by a keyboard interruption."""
+        self.show_status('interrupted')
+
+    def start_run(self, meta):
+        """Called when a run is dispatched. Only used by `RichOutput`."""
+
+    def set_n_configs(self, n_configs):
+        """Number of (dataset, objective, solver) to run, skips included."""
+
+    def all_dispatched(self):
+        """Called once every run has been dispatched."""
+
+    def set_running_probe(self, probe):
+        """Register a probe for the running runs. Only used by `RichOutput`."""
+
+    @contextmanager
+    def live(self, log_file=None):
+        """Context manager wrapping the run. Only used by `RichOutput`."""
+        yield
+
+    @contextmanager
+    def step(self, label):
+        """Wrap a post-run step, e.g. saving. Only used by `RichOutput`."""
+        yield
+
+    def show_outputs(self, **files):
+        """Report where the outputs are. Only used by `RichOutput`."""
 
     def debug(self, msg):
         if DEBUG:

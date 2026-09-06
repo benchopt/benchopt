@@ -86,10 +86,15 @@ def run_on_slurm(
 ):
 
     executors = {}
-    tasks = []
+    tasks, keys, terminal = [], [], None
 
     with ExitStack() as stack:
         for kwargs in run_kwargs_generator:
+            terminal = kwargs.get("terminal", terminal)
+            meta = kwargs.get("meta")
+            if meta is not None:
+                keys.append((meta["dataset_name"], meta["objective_name"],
+                             meta["solver_name"]))
             solver = kwargs.get("solver")
             if solver is not None:
                 job_slurm_config = get_solver_slurm_config(
@@ -112,6 +117,11 @@ def run_on_slurm(
                 run_one_solver, **kwargs
             )
             tasks.append(future)
+
+    if terminal is not None and len(keys) == len(tasks):
+        terminal.set_running_probe(lambda: [
+            key for key, job in zip(keys, tasks) if job.state == "RUNNING"
+        ])
 
     # Yield results as jobs finish (unordered)
     for t in as_completed(tasks):

@@ -17,6 +17,9 @@ Version 1.10.0 -- in development
 CLI
 ~~~
 
+- ``benchopt run`` now displays a live ``rich`` interface
+  By `Hippolyte Verninas`_
+
 - Add ``benchopt info -f <result_file>`` (repeatable, or ``-f all``) to
   summarize result file(s) instead of listing benchmark solvers/datasets;
   plain ``benchopt info`` now also lists available result files.

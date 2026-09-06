@@ -223,6 +223,27 @@ class Benchmark:
             class_only=class_only
         )
 
+    def get_n_configs(self, solvers, datasets, objectives):
+        """Number of (dataset, objective, solver) configs that will be run.
+
+        The parameter grids are counted without instantiating the classes,
+        so that the total is known before the runs start. Classes that are
+        not installed are excluded, as they are skipped by the runner.
+        """
+        def count(classes, check_installed=True):
+            return sum(
+                sum(1 for _ in _get_used_parameters(klass, params))
+                for klass, params in classes
+                if not check_installed or klass.is_installed(
+                    raise_on_not_installed=RAISE_INSTALL_ERROR, quiet=True
+                )
+            )
+
+        return (
+            count(datasets) * count(objectives, check_installed=False)
+            * count(solvers)
+        )
+
     def get_datasets(self):
         "List all available dataset classes for the benchmark."
         return self._list_benchmark_classes(BaseDataset)
