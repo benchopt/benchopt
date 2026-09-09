@@ -280,7 +280,7 @@ def test_run_on_slurm_grouped(mocked_submitit, batch_n_jobs, waves):
     assert len(df) == 2
     assert len(mocked_submitit) == 1
     sub = mocked_submitit[0]
-    # Compare by name: `patch_import` in other tests re-imports the module.
-    assert sub["func"].__name__ == "run_batch"
-    assert sub["kwargs"]["n_jobs"] == batch_n_jobs
+    # The submitted function is the batched runner (`run_batch` factory's
+    # closure); `batch_n_jobs` is validated via the wall-time `waves` below.
+    assert sub["func"].__name__ == "_run_batch"
     assert sub["config"]["time"] == f"00:{int(1.5 * waves * timeout)}"

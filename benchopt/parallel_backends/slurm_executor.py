@@ -107,16 +107,17 @@ def _split_by_slurm_config(batch, slurm_config):
 
 
 def run_on_slurm(
-    benchmark, slurm_config, run, batches, batch_n_jobs=1
+    benchmark, slurm_config, run_batch, batches, batch_n_jobs=1
 ):
     """Submit each pre-grouped batch (see `group_runs`) as SLURM job(s).
 
-    A batch is further split by SLURM config (`_split_by_slurm_config`),
-    since it can span several solvers with different `slurm_params`.
+    ``run_batch`` is the batched run function (see the ``run_batch`` factory in
+    this package), passed in rather than imported to keep the dependency
+    one-directional. ``batch_n_jobs`` only sizes the job wall-time here (each
+    job runs its group in ``ceil(len / batch_n_jobs)`` waves). A batch is
+    further split by SLURM config (`_split_by_slurm_config`), since it can span
+    several solvers with different `slurm_params`.
     """
-    # `run_batch` is shared with the other backends' dispatch; imported lazily
-    # to avoid a circular import with the package ``__init__``.
-    from . import run_batch
     executors = {}
     tasks = []
     with ExitStack() as stack:
@@ -143,7 +144,7 @@ def run_on_slurm(
                     executors[executor_config] = executor
 
                 tasks.append(executors[executor_config].submit(
-                    run_batch, run=run, batch=run_group, n_jobs=batch_n_jobs,
+                    run_batch, run_group,
                 ))
 
     # Yield results as jobs finish (unordered)

@@ -19,16 +19,22 @@ def is_distributed_frontal():
     return _DISTRIBUTED_FRONTAL
 
 
-def run_batch(run, batch, n_jobs=1):
-    """Run ``run(**kwargs)`` for each kwargs in `batch`, in one process if
-    ``n_jobs <= 1`` (max cache/state reuse across the batch) else in
-    `n_jobs` sub-processes.
+def run_batch(run, n_jobs=1):
+    """Return a function that runs a whole batch of run-kwargs at once.
+
+    The returned ``run_batch(batch)`` runs ``run(**kwargs)`` for each kwargs
+    in one process if ``n_jobs <= 1`` (max cache/state reuse across the batch),
+    else across ``n_jobs`` sub-processes. Returning the batched function lets
+    it be passed to every backend -- including ``run_on_slurm`` -- without the
+    backend importing it back from this package.
     """
-    if n_jobs <= 1:
-        return [run(**run_kwargs) for run_kwargs in batch]
-    return Parallel(n_jobs=n_jobs)(
-        delayed(run)(**run_kwargs) for run_kwargs in batch
-    )
+    def _run_batch(batch):
+        if n_jobs <= 1:
+            return [run(**run_kwargs) for run_kwargs in batch]
+        return Parallel(n_jobs=n_jobs)(
+            delayed(run)(**run_kwargs) for run_kwargs in batch
+        )
+    return _run_batch
 
 
 def _dispatch(backend, benchmark, run, run_kwargs_iter, config,
@@ -41,10 +47,12 @@ def _dispatch(backend, benchmark, run, run_kwargs_iter, config,
     state loaded on their front-end instance.
     """
     batches = group_runs(run_kwargs_iter, group_by)
+    run_one_batch = run_batch(run, batch_n_jobs)
     if backend == 'submitit':
         from .slurm_executor import run_on_slurm
         yield from run_on_slurm(
-            benchmark, config, run, batches, batch_n_jobs=batch_n_jobs,
+            benchmark, config, run_one_batch, batches,
+            batch_n_jobs=batch_n_jobs,
         )
     else:
         if backend == 'dask':
@@ -56,8 +64,7 @@ def _dispatch(backend, benchmark, run, run_kwargs_iter, config,
             for batch_results in Parallel(
                 return_as="generator_unordered", batch_size=batch_size
             )(
-                delayed(run_batch)(run, batch, batch_n_jobs)
-                for batch in batches
+                delayed(run_one_batch)(batch) for batch in batches
             ):
                 yield from batch_results
 
