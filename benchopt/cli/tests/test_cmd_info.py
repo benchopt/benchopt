@@ -90,6 +90,64 @@ class TestCmdInfo:
                 info([str(bench.benchmark_dir), '--version'],
                      'benchopt', standalone_mode=False)
 
+    def test_info_tree_display(self):
+        # Components are listed as a `|--<name>` tree, aligned with the
+        # `benchopt run` display, with indented details in verbose mode.
+        solver = """from benchopt.utils.temp_benchmark import TempSolver
+            class Solver(TempSolver):
+                name = "tree-solver"
+                parameters = {'param': ['a']}
+        """
+        with temp_benchmark(solvers=[solver]) as bench:
+            with CaptureCmdOutput() as out:
+                info(
+                    [str(bench.benchmark_dir), '-s', 'tree-solver'],
+                    'benchopt', standalone_mode=False
+                )
+
+        out.check_output(r"Solvers:", repetition=1)
+        out.check_output(r"\|--tree-solver", repetition=1)
+        out.check_output(r"    parameters:", repetition=1)
+
+    def test_info_from_config(self):
+        # `benchopt info --config` lists the solvers/datasets named in the
+        # config file, ignoring their parameter selection.
+        with temp_benchmark() as bench:
+            config = Path(bench.benchmark_dir) / "config.yml"
+            config.write_text(
+                "dataset:\n  - test-dataset\n"
+                "solver:\n  - test-solver[whatever=1]\n"
+            )
+            with CaptureCmdOutput() as out:
+                info(
+                    [str(bench.benchmark_dir), '--config', str(config)],
+                    'benchopt', standalone_mode=False
+                )
+
+        # The config selects a subset: `simulated` is not listed.
+        out.check_output(r"\|--test-dataset", repetition=1)
+        out.check_output(r"\|--test-solver", repetition=1)
+        out.check_output(r"\|--simulated", repetition=0)
+
+    def test_info_cli_overrides_config(self):
+        # An explicit `-d` takes precedence over the config's dataset key,
+        # while the config still fills the solver key.
+        with temp_benchmark() as bench:
+            config = Path(bench.benchmark_dir) / "config.yml"
+            config.write_text(
+                "dataset:\n  - simulated\nsolver:\n  - test-solver\n"
+            )
+            with CaptureCmdOutput() as out:
+                info(
+                    [str(bench.benchmark_dir), '--config', str(config),
+                     '-d', 'test-dataset'],
+                    'benchopt', standalone_mode=False
+                )
+
+        out.check_output(r"\|--test-dataset", repetition=1)
+        out.check_output(r"\|--simulated", repetition=0)
+        out.check_output(r"\|--test-solver", repetition=1)
+
     def test_info_no_result_files_omits_section(self):
         # Without any prior run, the result files section is skipped.
         with temp_benchmark() as bench:
@@ -97,7 +155,7 @@ class TestCmdInfo:
                 info([str(bench.benchmark_dir)], 'benchopt',
                      standalone_mode=False)
 
-        out_info.check_output("# RESULT FILES", repetition=0)
+        out_info.check_output("Result files:", repetition=0)
 
 
 class TestCmdInfoResultFiles:
@@ -144,7 +202,8 @@ class TestCmdInfoResultFiles:
         )
         out_info.check_output(r"Solvers \(1\): test-solver", repetition=1)
         out_info.check_output(r"Datasets \(1\): test-dataset", repetition=1)
-        out_info.check_output("# DATASETS", repetition=0)
+        # The -f summary must not also list the benchmark's components.
+        out_info.check_output("Datasets:", repetition=0)
 
     def test_info_filename_all_summarizes_every_result_file(self):
         # `benchopt info -f all` prints one summary block per result file
@@ -181,8 +240,8 @@ class TestCmdInfoResultFiles:
             info([str(self.bench.benchmark_dir)], 'benchopt',
                  standalone_mode=False)
 
-        out_info.check_output("# RESULT FILES", repetition=1)
+        out_info.check_output("Result files:", repetition=1)
         for result_file in self.result_files.values():
             out_info.check_output(
-                re.escape(f"- {Path(result_file).name}"), repetition=1
+                re.escape(f"|--{Path(result_file).name}"), repetition=1
             )

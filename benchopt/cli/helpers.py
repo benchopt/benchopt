@@ -1,4 +1,5 @@
 import json
+import yaml
 import click
 import pprint
 import tarfile
@@ -13,10 +14,12 @@ from benchopt.benchmark import Benchmark
 from benchopt.utils.sys_info import get_sys_info
 from benchopt.results.files_utils import rm_folder
 from benchopt.cli.completion import complete_benchmarks
+from benchopt.cli.completion import complete_config_files
 from benchopt.cli.completion import complete_conda_envs
 from benchopt.cli.completion import complete_datasets
 from benchopt.cli.completion import complete_output_files
 from benchopt.cli.completion import complete_solvers
+from benchopt.utils.parametrized_name_mixin import _extract_options
 from benchopt.results.result_processing import describe_results
 from benchopt.utils.conda_env_cmd import list_conda_envs
 from benchopt.config import get_global_config_file
@@ -194,79 +197,97 @@ def _format_choices(choices):
     return f"{listed} ({n} total)"
 
 
-def _print_component_info(cls_list, env_name=None, verbose=False):
-    """Print information for each solver/dataset in ``cls_list``.
+def _config_component_names(config, key):
+    """Extract solver/dataset base names from a run config file entry.
+
+    Entries can be plain names or ``name[param=value]`` strings, or dicts
+    mapping a name to its parameters. Only the base names are returned, since
+    ``info`` describes each component rather than a specific parameterization.
+    """
+    entries = config.get(key, ())
+    if isinstance(entries, (str, dict)):
+        entries = [entries]
+    names = []
+    for entry in entries:
+        names.extend(entry.keys() if isinstance(entry, dict) else [entry])
+    return [_extract_options(str(name))[0] for name in names]
+
+
+def _print_component_info(
+        cls_name_list, cls_list, env_name=None, verbose=False):
+    """Print information for each selected solver/dataset as a tree.
+
+    Mirrors the ``benchopt run`` display: a ``|--<name>`` row per component,
+    with an availability tick when an environment is checked, and indented
+    ``requirements``/``doc``/``parameters`` details in verbose mode.
 
     Parameters
     ----------
+    cls_name_list : list
+        List of object names (solvers or datasets) to be printed.
     cls_list : list
-        Objects (solvers or datasets) to print info from.
+        List of all objects (solvers or datasets) to print info from.
     env_name : str | None
         Name of conda environment where to check for object availability.
         If None or 'False', no check is made.
     verbose: bool
-        If True, list object (solver or dataset) full descriptions (including
-        name, parameters, dependencies and availability).
-        If False, only list object (solver or dataset) names.
+        If True, also list each component's dependencies and parameters.
     """
-    if not verbose:
-        # short output
-        name = [cls.name for cls in cls_list]
-        print(f"{', '.join(map(str, name))}")
-        print("-" * 10)
+    # select objects to print info from
+    cls_name_list = [item.lower() for item in cls_name_list]
+    if 'all' in cls_name_list:
+        include_cls = cls_list
     else:
-        # long output
-        print("-" * 10)
-        for cls in cls_list:
-            print(f"## {cls.name}")
-            # availability in env (if relevant)
-            if env_name is not None:
-                # check for dependency availability
-                if env_name == "False":
-                    disp_name = "running env"
-                else:
-                    disp_name = f"env: {env_name}"
-                if cls.is_installed(env_name):
-                    print(colorify(TICK, GREEN), end='', flush=True)
-                    print(colorify(f" available in {disp_name}", GREEN))
-                else:
-                    print(colorify(CROSS, RED), end='', flush=True)
-                    print(colorify(f" not available in '{disp_name}'", RED))
-            # install command
-            if hasattr(cls, 'requirements') and cls.requirements:
-                print("> requirements:")
-                packages = cls.requirements
-                pip_packages = [pkg[5:] for pkg in packages
-                                if pkg.startswith('pip::')]
-                conda_packages = [pkg for pkg in packages
-                                  if not pkg.startswith('pip::')]
-                if len(conda_packages) > 0:
-                    print("    conda install -c conda-forge "
-                          f"{' '.join(conda_packages)}")
-                if len(pip_packages) > 0:
-                    print(f"    pip install {' '.join(pip_packages)}")
-            else:
-                print("> no dependencies")
-            # doc
-            if hasattr(cls, '__doc__') and cls.__doc__:
-                print(f"> doc: {cls.__doc__}")
-            # parameters
-            if hasattr(cls, 'parameters') and cls.parameters:
-                print("> parameters:")
-                for param, value in cls.parameters.items():
-                    values = ', '.join(map(str, value))
-                    print(f"    {param}: {values}")
-                    # If the class declares an enumerable universe of valid
-                    # values for this parameter (via get_all_parameter_values),
-                    # list them too. This is the set expanded by `param=all`.
-                    choices = None
-                    if hasattr(cls, 'get_all_parameter_values'):
-                        choices = cls.get_all_parameter_values(param)
-                    if choices is not None:
-                        print(f"        valid values: "
-                              f"{_format_choices(choices)}")
+        include_cls = [
+            item for item in cls_list if item.name.lower() in cls_name_list
+        ]
 
-            print("-" * 10)
+    # Align the availability tick across rows for readability.
+    width = max((len(str(cls.name)) for cls in include_cls), default=0)
+    show_tick = verbose and env_name is not None
+    for cls in include_cls:
+        name = str(cls.name).ljust(width) if show_tick else str(cls.name)
+        row = f"  |--{name}"
+        if show_tick:
+            tick = TICK if cls.is_installed(env_name) else CROSS
+            row += "  " + colorify(tick, GREEN if tick == TICK else RED)
+        print(row, flush=True)
+        if verbose:
+            _print_component_details(cls)
+
+
+def _print_component_details(cls, indent="      "):
+    """Print the indented requirements/doc/parameters of a component."""
+    # requirements
+    if getattr(cls, 'requirements', None):
+        pip = [pkg[5:] for pkg in cls.requirements if pkg.startswith('pip::')]
+        conda = [pkg for pkg in cls.requirements
+                 if not pkg.startswith('pip::')]
+        reqs = []
+        if conda:
+            reqs.append("conda: " + ", ".join(conda))
+        if pip:
+            reqs.append("pip: " + ", ".join(pip))
+        print(f"{indent}requirements: {'; '.join(reqs)}")
+    else:
+        print(f"{indent}no dependencies")
+    # doc
+    if getattr(cls, '__doc__', None):
+        print(f"{indent}doc: {cls.__doc__}")
+    # parameters
+    if getattr(cls, 'parameters', None):
+        print(f"{indent}parameters:")
+        for param, value in cls.parameters.items():
+            values = ', '.join(map(str, value))
+            print(f"{indent}  {param}: {values}")
+            # If the class declares an enumerable universe of valid values for
+            # this parameter (via get_all_parameter_values), list them too.
+            # This is the set expanded by `param=all`.
+            choices = None
+            if hasattr(cls, 'get_all_parameter_values'):
+                choices = cls.get_all_parameter_values(param)
+            if choices is not None:
+                print(f"{indent}    valid values: {_format_choices(choices)}")
 
 
 def _print_available_result_files(benchmark):
@@ -275,10 +296,9 @@ def _print_available_result_files(benchmark):
         result_files = benchmark.get_result_files('all')
     except RuntimeError:
         return
-    print("# RESULT FILES", flush=True)
+    print("Result files:", flush=True)
     for result_file in result_files:
-        print(f"- {result_file.name}")
-    print("-" * 10)
+        print(f"  |--{result_file.name}")
 
 
 def _print_result_file_summary(result_file):
@@ -351,6 +371,12 @@ def _print_result_file_summary(result_file):
               "multiple `-f` options. To summarize every result file, use "
               "`-f 'all'`. By default (no `-f`), a short summary of the "
               "available result files is printed instead.")
+@click.option('--config', 'config_file', default=None,
+              shell_complete=complete_config_files,
+              help="Read the solvers and datasets to display from a YAML "
+              "config file (the same `solver`/`dataset` keys as `benchopt "
+              "run --config`). Used only for the keys not given explicitly "
+              "with `-s`/`-d`.")
 @click.option('--env', '-e', 'env_name',
               flag_value='True', type=str, default='False',
               help="Additional checks for requirement availability in "
@@ -369,7 +395,8 @@ def _print_result_file_summary(result_file):
               help="Check that the installed benchopt version satisfies the "
               "benchmark's `min_benchopt_version`.")
 def info(benchmark, solver_names, dataset_names, result_filenames=(),
-         env_name='False', verbose=False, check_version=False):
+         config_file=None, env_name='False', verbose=False,
+         check_version=False):
 
     # benchmark
     benchmark = Benchmark(benchmark)
@@ -391,6 +418,15 @@ def info(benchmark, solver_names, dataset_names, result_filenames=(),
             f"min_benchopt_version={min_version} is required. Update with "
             "`pip install -U benchopt`."
         )
+
+    # Fill solvers/datasets from a config file for the keys not set on the CLI.
+    if config_file is not None:
+        with open(config_file, "r") as f:
+            config = yaml.safe_load(f) or {}
+        if not solver_names:
+            solver_names = tuple(_config_component_names(config, "solver"))
+        if not dataset_names:
+            dataset_names = tuple(_config_component_names(config, "dataset"))
 
     if result_filenames:
         filenames = (
@@ -449,18 +485,18 @@ def info(benchmark, solver_names, dataset_names, result_filenames=(),
         verbose = True
 
     # print information
-    print("-" * 10)
-
     if show_datasets:
-        print("# DATASETS", flush=True)
+        print("Datasets:", flush=True)
         _print_component_info(
-            sorted(datasets, key=lambda c: c.name.lower()), env_name, verbose
+            ['all'], sorted(datasets, key=lambda c: c.name.lower()),
+            env_name, verbose
         )
 
     if show_solvers:
-        print("# SOLVERS", flush=True)
+        print("Solvers:", flush=True)
         _print_component_info(
-            sorted(solvers, key=lambda c: c.name.lower()), env_name, verbose
+            ['all'], sorted(solvers, key=lambda c: c.name.lower()),
+            env_name, verbose
         )
 
     _print_available_result_files(benchmark)
