@@ -374,13 +374,13 @@ class TestRunCmd:
     # -s/-d also accept a path to a .py file: the class is loaded directly and
     # keeps its own name (the file is "submission.py", the name is "ext-*").
     EXT_SOLVER = """from benchopt.utils.temp_benchmark import TempSolver
-class Solver(TempSolver):
-    name = 'ext-solver'
-    parameters = {'scale': [1, 10]}
+        class Solver(TempSolver):
+            name = 'ext-solver'
+            parameters = {'scale': [1, 10]}
 """
     EXT_DATASET = """from benchopt.utils.temp_benchmark import TempDataset
-class Dataset(TempDataset):
-    name = 'ext-dataset'
+        class Dataset(TempDataset):
+            name = 'ext-dataset'
 """
 
     def test_solver_from_file(self, tmp_path):
