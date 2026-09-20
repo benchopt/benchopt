@@ -15,8 +15,8 @@ benchopt run . \
 - `-o/--objective`, `-d/--dataset`, `-s/--solver` filter by **name** (repeatable).
   Omit a filter to run all of that kind.
 - `-d`/`-s` also accept a path to a `.py` file: the `Dataset`/`Solver` is loaded
-  directly from that file (even outside `datasets/`/`solvers/`) and added to the
-  run, e.g. `-s /path/to/my_solver.py`. Bracket params still work:
+  directly from that file (even outside `datasets/`/`solvers/`) and keeps its own
+  name, e.g. `-s /path/to/my_solver.py`. Bracket params still work:
   `-s "/path/to/my_solver.py[lr=0.1]"`. The file can still `import benchmark_utils`.
 - Override parameters inline with `name[param=value]`. Values use Python literal
   syntax: `reg=0.1`, `use_acceleration=True`, lists `n_features=[20,50]`, and

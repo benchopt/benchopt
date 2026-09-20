@@ -604,6 +604,22 @@ def _check_patterns(all_classes, patterns, name_type='dataset',
             f"Available {name_type}s are:\n{all_names}"
         )
 
+    return _select_params(matched, name_type=name_type, class_only=class_only)
+
+
+def _select_params(matched, name_type='dataset', class_only=False):
+    """Validate and expand the parameters of already-matched classes.
+
+    Parameters
+    ----------
+    matched : list of (class, (args, kwargs))
+        The selected classes paired with their positional/keyword parameter
+        selectors, e.g. from name matching or from a direct file selection.
+    name_type : str
+        Used to build sensible error messages.
+    class_only : bool
+        If True, return the set of selected classes instead of (class, params).
+    """
     # Check that the parameters are well formated:
     # - not ambiguous nor duplicated
     # - parameters correspond to existing one for a given class.

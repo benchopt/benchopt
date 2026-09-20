@@ -131,11 +131,11 @@ repository, e.g. a submission file, without copying it into the benchmark.
 
     benchopt run . -s /path/to/my_solver.py -d /path/to/my_dataset.py
 
-The file is loaded with the benchmark on ``sys.path``, so it can still
-``import benchmark_utils``. Parameter sub-selection works as usual with the
-bracket syntax, e.g. ``-s "/path/to/my_solver.py[p1=1]"``. Because the file is
-matched exactly, this also avoids name collisions or glob characters that can
-occur with name-based selection.
+The loaded class keeps its own ``name`` (used to identify it in the results),
+and is selected exactly, so it never clashes with a benchmark class of the same
+name. The file is loaded with the benchmark on ``sys.path``, so it can still
+``import benchmark_utils``, and parameter sub-selection works as usual with the
+bracket syntax, e.g. ``-s "/path/to/my_solver.py[p1=1]"``.
 
 .. _run_with_config_file:
 

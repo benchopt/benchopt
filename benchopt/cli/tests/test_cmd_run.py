@@ -371,28 +371,20 @@ class TestRunCmd:
             assert not (Path(bench.benchmark_dir) / "outputs").exists(), out
         assert out.result_files == [str(out_path)], out
 
-    # A path to a .py file loads the Solver/Dataset directly from that file,
-    # even outside the benchmark's solvers/ or datasets/ folder.
-    EXT_SOLVER = """from benchopt import BaseSolver
-
-class Solver(BaseSolver):
+    # -s/-d also accept a path to a .py file: the class is loaded directly and
+    # keeps its own name (the file is "submission.py", the name is "ext-*").
+    EXT_SOLVER = """from benchopt.utils.temp_benchmark import TempSolver
+class Solver(TempSolver):
     name = 'ext-solver'
-    sampling_strategy = 'run_once'
     parameters = {'scale': [1, 10]}
-    def set_objective(self, X, y, lmbd): pass
-    def run(self, n_iter): pass
-    def get_result(self): return dict(beta=None)
 """
-
-    EXT_DATASET = """from benchopt import BaseDataset
-
-class Dataset(BaseDataset):
+    EXT_DATASET = """from benchopt.utils.temp_benchmark import TempDataset
+class Dataset(TempDataset):
     name = 'ext-dataset'
-    def get_data(self): return dict(X=None, y=None)
 """
 
     def test_solver_from_file(self, tmp_path):
-        solver_file = tmp_path / "ext_solver.py"
+        solver_file = tmp_path / "submission.py"
         solver_file.write_text(self.EXT_SOLVER)
         with temp_benchmark() as bench, CaptureCmdOutput() as out:
             run([str(bench.benchmark_dir),
@@ -400,13 +392,12 @@ class Dataset(BaseDataset):
                  "-s", str(solver_file)],
                 'benchopt', standalone_mode=False)
 
-        # The file-selected solver is added to the run set (both params run),
-        # and reported under the selector token.
-        out.check_output(re.escape(str(solver_file)) + r'\[scale=1\]:')
-        out.check_output(re.escape(str(solver_file)) + r'\[scale=10\]:')
+        # Reported under its declared name (not the stem); both params run.
+        out.check_output(r'ext-solver\[scale=1\]:')
+        out.check_output(r'ext-solver\[scale=10\]:')
 
     def test_solver_from_file_with_params(self, tmp_path):
-        solver_file = tmp_path / "ext_solver.py"
+        solver_file = tmp_path / "submission.py"
         solver_file.write_text(self.EXT_SOLVER)
         with temp_benchmark() as bench, CaptureCmdOutput() as out:
             run([str(bench.benchmark_dir),
@@ -414,13 +405,11 @@ class Dataset(BaseDataset):
                  "-s", f"{solver_file}[scale=10]"],
                 'benchopt', standalone_mode=False)
 
-        # Only the selected parameter value is run.
-        out.check_output(re.escape(str(solver_file)) + r'\[scale=10\]:')
-        out.check_output(re.escape(str(solver_file)) + r'\[scale=1\]:',
-                         repetition=0)
+        out.check_output(r'ext-solver\[scale=10\]:')
+        out.check_output(r'ext-solver\[scale=1\]:', repetition=0)
 
     def test_dataset_from_file(self, tmp_path):
-        dataset_file = tmp_path / "ext_dataset.py"
+        dataset_file = tmp_path / "sealed_split.py"
         dataset_file.write_text(self.EXT_DATASET)
         with temp_benchmark() as bench, CaptureCmdOutput() as out:
             run([str(bench.benchmark_dir),
@@ -428,13 +417,26 @@ class Dataset(BaseDataset):
                  "-d", str(dataset_file)],
                 'benchopt', standalone_mode=False)
 
-        out.check_output(re.escape(str(dataset_file)), repetition=1)
+        out.check_output("ext-dataset", repetition=1)
+
+    def test_solver_from_file_in_special_char_dir(self, tmp_path):
+        # The file class is selected by identity, so regex/glob characters in
+        # the path do not affect selection.
+        solver_file = tmp_path / "a+b (x)" / "submission.py"
+        solver_file.parent.mkdir()
+        solver_file.write_text(self.EXT_SOLVER)
+        with temp_benchmark() as bench, CaptureCmdOutput() as out:
+            run([str(bench.benchmark_dir),
+                 *"-d test-dataset -n 1 -r 1 --no-plot".split(),
+                 "-s", str(solver_file)],
+                'benchopt', standalone_mode=False)
+
+        out.check_output(r'ext-solver\[scale=1\]:')
 
     def test_solver_from_missing_file(self):
         with temp_benchmark() as bench:
             missing = str(Path(bench.benchmark_dir) / "no_such_solver.py")
-            match = "Could not find file"
-            with pytest.raises(click.BadParameter, match=match):
+            with pytest.raises(click.BadParameter, match="find file"):
                 run([str(bench.benchmark_dir), "--no-plot", "-s", missing],
                     'benchopt', standalone_mode=False)
 

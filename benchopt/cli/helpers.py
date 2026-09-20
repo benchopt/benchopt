@@ -397,18 +397,15 @@ def info(benchmark, solver_names, dataset_names, result_filenames=(),
 
     print(f"Info regarding the benchmark '{benchmark.name}'")
 
-    # validate solvers and datasets
-    benchmark.check_dataset_patterns(dataset_names)
-    benchmark.check_solver_patterns(solver_names)
+    # Resolve (and validate) the selected solvers/datasets, including any
+    # loaded from a file path, so `info -s /path/to/solver.py` lists it too.
+    datasets = benchmark.check_dataset_patterns(dataset_names, class_only=True)
+    solvers = benchmark.check_solver_patterns(solver_names, class_only=True)
 
-    # get solvers and datasets in the benchmark, including any selected from a
-    # file path so `info -s /path/to/solver.py` lists that component too.
-    all_solvers = benchmark._add_file_classes(
-        benchmark.get_solvers(), solver_names, "Solver"
-    )
-    all_datasets = benchmark._add_file_classes(
-        benchmark.get_datasets(), dataset_names, "Dataset"
-    )
+    # By default list both kinds; restrict to the kind(s) explicitly requested.
+    show_datasets = bool(dataset_names) or not solver_names
+    show_solvers = bool(solver_names) or not dataset_names
+
     # enable verbosity if any environment was provided
     if env_name is not None and env_name != 'False':
         verbose = True
@@ -446,16 +443,19 @@ def info(benchmark, solver_names, dataset_names, result_filenames=(),
     # print information
     print("-" * 10)
 
-    if not dataset_names and not solver_names:
-        dataset_names = ['all']
-        solver_names = ['all']
-    if dataset_names:
+    if show_datasets:
         print("# DATASETS", flush=True)
-        _print_component_info(dataset_names, all_datasets, env_name, verbose)
+        _print_component_info(
+            ['all'], sorted(datasets, key=lambda c: c.name.lower()),
+            env_name, verbose
+        )
 
-    if solver_names:
+    if show_solvers:
         print("# SOLVERS", flush=True)
-        _print_component_info(solver_names, all_solvers, env_name, verbose)
+        _print_component_info(
+            ['all'], sorted(solvers, key=lambda c: c.name.lower()),
+            env_name, verbose
+        )
 
     _print_available_result_files(benchmark)
 

@@ -15,9 +15,10 @@ from .config import get_setting
 from .base import BaseSolver, BaseDataset, _prepare_one
 
 from .utils.dynamic_modules import _load_class_from_module
+from .utils.dynamic_modules import FailedImport
 from .utils.parametrized_name_mixin import sanitize
 from .utils.parametrized_name_mixin import _get_used_parameters
-from .utils.parametrized_name_mixin import _check_patterns
+from .utils.parametrized_name_mixin import _check_patterns, _select_params
 from .utils.parametrized_name_mixin import _extract_options, is_file_selector
 
 from .utils.terminal_output import colorify
@@ -219,11 +220,8 @@ class Benchmark:
 
     def check_solver_patterns(self, solver_patterns, class_only=False):
         "Check that the patterns are valid and return selected configurations."
-        all_solvers = self._add_file_classes(
-            self.get_solvers(), solver_patterns, "Solver"
-        )
-        return _check_patterns(
-            all_solvers, solver_patterns, name_type='solver',
+        return self._select_classes(
+            self.get_solvers(), solver_patterns, "Solver", 'solver',
             class_only=class_only
         )
 
@@ -304,37 +302,54 @@ class Benchmark:
 
     def check_dataset_patterns(self, dataset_patterns, class_only=False):
         "Check that the patterns are valid and return selected configurations."
-        all_datasets = self._add_file_classes(
-            self.get_datasets(), dataset_patterns, "Dataset"
-        )
-        return _check_patterns(
-            all_datasets, dataset_patterns, name_type='dataset',
+        return self._select_classes(
+            self.get_datasets(), dataset_patterns, "Dataset", 'dataset',
             class_only=class_only
         )
 
-    def _add_file_classes(self, all_classes, patterns, class_name):
-        """Load classes for selector tokens that point to a ``.py`` file.
+    def _select_classes(self, all_classes, patterns, class_name, name_type,
+                        class_only=False):
+        """Resolve solver/dataset selectors into concrete classes.
 
-        A token ending in ``.py`` (optionally with a ``file.py[param=value]``
-        bracket) loads the class directly from that file, even outside the
-        benchmark's ``solvers/`` / ``datasets/`` folders. Its ``name`` is set
-        to the selector token so it is matched exactly by ``_check_patterns``
-        — sidestepping name collisions and glob characters in a name.
+        A selector pointing to a ``.py`` file (optionally with a
+        ``file.py[param=value]`` bracket) loads the class directly from that
+        file, even outside the benchmark's ``solvers/`` / ``datasets/``
+        folders, and selects it by identity. Its own ``name`` is kept, so it
+        never collides with a benchmark class of the same name. Other selectors
+        match by name against the benchmark's classes as usual.
         """
         if patterns is not None and not isinstance(patterns, (list, tuple)):
             patterns = [patterns]
-        extra = []
-        for pattern in (patterns or []):
-            if not is_file_selector(pattern):
-                continue
-            filename = _extract_options(pattern)[0]
+        patterns = list(patterns) if patterns else []
+        file_patterns = [p for p in patterns if is_file_selector(p)]
+
+        if not file_patterns:
+            return _check_patterns(
+                all_classes, patterns, name_type=name_type,
+                class_only=class_only
+            )
+
+        matched = []
+        for pattern in file_patterns:
+            filename, args, kwargs = _extract_options(pattern)
             path = Path(filename)
             if not path.is_file():
                 raise click.BadParameter(f"Could not find file: {path}")
             cls = _load_class_from_module(self.benchmark_dir, path, class_name)
-            cls.name = filename
-            extra.append(cls)
-        return all_classes + extra
+            matched.append(
+                (cls, ([], {})) if isinstance(cls, FailedImport)
+                else (cls, (args, kwargs))
+            )
+        selected = _select_params(matched, name_type, class_only)
+
+        name_patterns = [p for p in patterns if not is_file_selector(p)]
+        if name_patterns:
+            named = _check_patterns(
+                all_classes, name_patterns, name_type=name_type,
+                class_only=class_only
+            )
+            selected = (selected | named) if class_only else selected + named
+        return selected
 
     def _get_plots_classes(self):
         "List all available custom plot classes for the benchmark"
