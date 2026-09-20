@@ -23,3 +23,4 @@ ships with benchopt — run `benchopt sync-skills` to install it.
 - [Scoping issues & PRs](./issues_and_prs.md) — keeping a PR to one concern, commit/what's-new conventions, and how to write issues and review PRs.
 - [Tests](./tests.md) — writing CLI tests in `benchopt/cli/tests/` with `temp_benchmark`, `CaptureCmdOutput`, mocking, and parametrize patterns.
 - [Documentation](./docs.md) — Sphinx workflow: editing `doc/*.rst`, rebuilding with `-E`, verifying dropdown/tab content; and keeping the agent skills in sync with the code they describe.
+- [Agent skills](./skills.md) — the three skill tiers and how to add a new usage skill under `benchopt/skills/` (folder-based discovery, packaging, `sync-skills`).
