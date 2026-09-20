@@ -96,6 +96,13 @@ TST
 FIX
 ~~~
 
+- Config warnings cleanup: setting a benchmark option (e.g. ``data_home``)
+  through its ``BENCHOPT_*`` environment variable no longer warns, since these
+  are honored for every benchmark. The unused ``data_dir`` global option is
+  removed, and the internal ``_g_config_check``/``_bench_config_check`` flags
+  no longer leak into the warning's option list or the documented settings.
+  By `Thomas Moreau`_ (:gh:`1005`)
+
 - Fix ``get_seed`` raising in a ``Dataset``'s ``get_data`` when running with
   ``-j`` greater than 1. By `Thomas Moreau`_ (:gh:`984`)
 
