@@ -252,9 +252,8 @@ def _check_settings(config_file=None, benchmark_name=None):
                             + "\n-".join(DEFAULT_GLOBAL_CONFIG)
                         )
 
-        # Check for option set with environment variables. Unlike the config
-        # file, the BENCHOPT_<NAME> env var is honored by get_setting for both
-        # global and benchmark options, so benchmark options are valid here.
+        # Check for option set with environment variables.
+        # Env var can be set for both global and benchmark configs.
         for var in os.environ:
             if var.startswith("BENCHOPT_"):
                 key = var.replace("BENCHOPT_", "").lower()
