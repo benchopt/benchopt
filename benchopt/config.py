@@ -24,9 +24,9 @@ DEFAULT_SHELL = (
 DEFAULT_GLOBAL_CONFIG = {
     'debug': False,
     'raise_install_error': False,
+    'raise_on_error': False,
     'github_token': None,
     'hf_token': None,
-    'data_dir': './data/',
     'conda_cmd': 'conda',
     'shell': (
         os.environ.get('SHELL', DEFAULT_SHELL)
@@ -35,8 +35,6 @@ DEFAULT_GLOBAL_CONFIG = {
     'cache': None,
     'default_timeout': 100,
     'warn_nonunique_files': True,
-    '_g_config_check': False,
-    '_bench_config_check': False,
 }
 """
 These are the config options available globally for benchopt, that can be set
@@ -46,6 +44,12 @@ particular for logging, warnings and errors. The available options are:
 * ``debug``, **bool**: If set to true, enable debug logs.
 * ``raise_install_error``, *boolean*: If set to true, raise error when
   install fails.
+* ``raise_on_error``, *boolean*: If set to true, re-raise the first error
+  raised by a solver/dataset/objective instead of catching it and continuing.
+  The run aborts with the traceback and a non-zero exit code. Unlike
+  ``debug``, this does not enable any extra logging, which is useful to make a
+  run fail fast (e.g. in CI or a competition worker) without polluting the
+  logs.
 * ``github_token``, *str*: token to publish results on ``benchopt/results``
   via github.
 * ``hf_token``, *str*: token to publish results on Hugging Face.
@@ -202,6 +206,12 @@ def get_global_config_file():
     return config_file
 
 
+# Internal state to run each config validation only once. Kept out of
+# DEFAULT_GLOBAL_CONFIG so it does not leak into the option list of warnings or
+# into the documented settings.
+_CONFIG_CHECK_STATE = {"global": False, "bench": False}
+
+
 def _check_bench_config(config, config_file_id):
     """Check the config of a benchmark."""
     for k in config:
@@ -217,7 +227,7 @@ def _check_settings(config_file=None, benchmark_name=None):
     """Check a config, either global or for one benchmark."""
     if config_file is None:
         # only check the global config once
-        if DEFAULT_GLOBAL_CONFIG["_g_config_check"]:
+        if _CONFIG_CHECK_STATE["global"]:
             return
 
         global_config_file = get_global_config_file()
@@ -242,21 +252,27 @@ def _check_settings(config_file=None, benchmark_name=None):
                             + "\n-".join(DEFAULT_GLOBAL_CONFIG)
                         )
 
-        # Check for option set with environment variables
+        # Check for option set with environment variables.
+        # Env var can be set for both global and benchmark configs.
         for var in os.environ:
             if var.startswith("BENCHOPT_"):
                 key = var.replace("BENCHOPT_", "").lower()
-                if key not in DEFAULT_GLOBAL_CONFIG and key != "config":
+                if (key not in DEFAULT_GLOBAL_CONFIG
+                        and key not in DEFAULT_BENCHMARK_CONFIG
+                        and key != "config"):
+                    options = "\n-".join(
+                        [*DEFAULT_GLOBAL_CONFIG, *DEFAULT_BENCHMARK_CONFIG]
+                    )
                     warnings.warn(
-                        f"{key} is set in {global_config_file} but is not a "
-                        "valid config option for benchopt. Options are:\n-"
-                        + "\n-".join(DEFAULT_GLOBAL_CONFIG)
+                        f"{var} is set as an environment variable but is not "
+                        f"a valid config option for benchopt. Options are:\n-"
+                        f"{options}"
                     )
 
-        DEFAULT_GLOBAL_CONFIG["_g_config_check"] = True
+        _CONFIG_CHECK_STATE["global"] = True
         return
 
-    if DEFAULT_GLOBAL_CONFIG["_bench_config_check"]:
+    if _CONFIG_CHECK_STATE["bench"]:
         return
     if config_file.exists():
         with open(config_file, "r") as f:
@@ -462,3 +478,4 @@ class BooleanFlag(object):
 
 DEBUG = BooleanFlag('debug')
 RAISE_INSTALL_ERROR = BooleanFlag('raise_install_error')
+RAISE_ON_ERROR = BooleanFlag('raise_on_error')
