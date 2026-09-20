@@ -22,6 +22,11 @@ CLI
   plain ``benchopt info`` now also lists available result files.
   By `Thomas Moreau`_ (:gh:`990`)
 
+- Add a ``raise_on_error`` config setting (``BENCHOPT_RAISE_ON_ERROR``) that
+  re-raises the first solver/dataset/objective error to make a run fail fast,
+  without turning on the extra logging of ``BENCHOPT_DEBUG``.
+  By `Thomas Moreau`_ (:gh:`1005`)
+
 - Ship agent skills (``SKILL.md``, `Agent Skills <https://agentskills.io>`_
   standard) as package data and add ``benchopt sync-skills`` to install them
   into a project's ``.agents/skills/`` (or globally with ``--global``), with a

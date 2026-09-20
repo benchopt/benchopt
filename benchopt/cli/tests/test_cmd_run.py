@@ -357,6 +357,28 @@ class TestRunCmd:
         exts = [Path(result_file).suffix for result_file in out.result_files]
         assert exts[0] == expected_ext and exts[1] == expected_ext, out
 
+    def test_raise_on_error(self, no_debug_log):
+        # BENCHOPT_RAISE_ON_ERROR re-raises the first solver error (fail-fast),
+        # without enabling the debug logging that BENCHOPT_DEBUG would.
+        solver = """from benchopt.utils.temp_benchmark import TempSolver
+            class Solver(TempSolver):
+                name = "failing-solver"
+                def run(self, n_iter): raise ValueError("Intentional Error")
+        """
+        with temp_benchmark(solvers=[solver]) as bench:
+            cmd = [str(bench.benchmark_dir),
+                   *"-d test-dataset -s failing-solver -n 1 -r 1".split(),
+                   "--no-plot"]
+
+            # Without the flag: the error is caught and the empty run exits 1.
+            with CaptureCmdOutput(exit=1):
+                run(cmd, 'benchopt', standalone_mode=False)
+
+            # With the flag: the error propagates so the run fails fast.
+            with patch_var_env("BENCHOPT_RAISE_ON_ERROR", 1):
+                with pytest.raises(ValueError, match="Intentional Error"):
+                    run(cmd, 'benchopt', standalone_mode=False)
+
     def test_handle_class_init_error(self):
         # dataset with a wrong param name
         dataset = """from benchopt.utils.temp_benchmark import TempDataset

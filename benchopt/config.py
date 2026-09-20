@@ -24,6 +24,7 @@ DEFAULT_SHELL = (
 DEFAULT_GLOBAL_CONFIG = {
     'debug': False,
     'raise_install_error': False,
+    'raise_on_error': False,
     'github_token': None,
     'hf_token': None,
     'data_dir': './data/',
@@ -46,6 +47,12 @@ particular for logging, warnings and errors. The available options are:
 * ``debug``, **bool**: If set to true, enable debug logs.
 * ``raise_install_error``, *boolean*: If set to true, raise error when
   install fails.
+* ``raise_on_error``, *boolean*: If set to true, re-raise the first error
+  raised by a solver/dataset/objective instead of catching it and continuing.
+  The run aborts with the traceback and a non-zero exit code. Unlike
+  ``debug``, this does not enable any extra logging, which is useful to make a
+  run fail fast (e.g. in CI or a competition worker) without polluting the
+  logs.
 * ``github_token``, *str*: token to publish results on ``benchopt/results``
   via github.
 * ``hf_token``, *str*: token to publish results on Hugging Face.
@@ -462,3 +469,4 @@ class BooleanFlag(object):
 
 DEBUG = BooleanFlag('debug')
 RAISE_INSTALL_ERROR = BooleanFlag('raise_install_error')
+RAISE_ON_ERROR = BooleanFlag('raise_on_error')
