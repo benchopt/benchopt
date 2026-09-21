@@ -83,6 +83,56 @@ def test_benchopt_run_script(n_jobs, no_debug_log):
     assert len(out.result_files) == 1, out.raw_output
 
 
+def test_benchopt_run_script_with_tags(no_debug_log):
+    from benchopt import run_benchmark
+
+    solvers = [
+        """from benchopt.utils.temp_benchmark import TempSolver
+        class Solver(TempSolver):
+            name = "easy-solver"
+            tags = ["easy"]
+            def run(self, _): print("RUN#easy-solver")
+        """,
+        """from benchopt.utils.temp_benchmark import TempSolver
+        class Solver(TempSolver):
+            name = "hard-solver"
+            tags = ["hard"]
+            def run(self, _): print("RUN#hard-solver")
+        """,
+    ]
+    datasets = [
+        """from benchopt.utils.temp_benchmark import TempDataset
+        class Dataset(TempDataset):
+            name = "easy-data"
+            tags = ["easy"]
+            def get_data(self):
+                print("DATA#easy-data")
+                return super().get_data()
+        """,
+        """from benchopt.utils.temp_benchmark import TempDataset
+        class Dataset(TempDataset):
+            name = "hard-data"
+            tags = ["hard"]
+            def get_data(self):
+                print("DATA#hard-data")
+                return super().get_data()
+        """,
+    ]
+
+    with temp_benchmark(solvers=solvers, datasets=datasets) as benchmark, \
+            CaptureCmdOutput() as out:
+        run_benchmark(
+            str(benchmark.benchmark_dir), solver_tags=["easy"],
+            dataset_tags=["easy"], max_runs=1,
+            n_repetitions=1, plot_result=False
+        )
+
+    out.check_output("RUN#easy-solver")
+    out.check_output("RUN#hard-solver", repetition=0)
+    out.check_output("DATA#easy-data")
+    out.check_output("DATA#hard-data", repetition=0)
+
+
 def test_prefix_with_same_parameters():
     from benchopt import run_benchmark
 

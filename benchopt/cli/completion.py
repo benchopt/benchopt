@@ -2,6 +2,7 @@ from pathlib import Path
 
 
 from benchopt.benchmark import Benchmark
+from benchopt.benchmark import _get_class_tags
 from benchopt.utils.dynamic_modules import skip_import
 from benchopt.utils.conda_env_cmd import list_conda_envs
 
@@ -72,6 +73,32 @@ def complete_datasets(ctx, param, incomplete):
         return []
     datasets = [d.lower() for d in benchmark.get_dataset_names()]
     return propose_from_list(datasets, incomplete.lower())
+
+
+def _get_tags(classes):
+    return {tag for cls in classes for tag in _get_class_tags(cls)}
+
+
+def _complete_tags(ctx, incomplete, component):
+    "Complete tags declared on benchmark components."
+    skip_import()
+    benchmark = find_benchmark_in_args(ctx.args)
+    if benchmark is None:
+        return []
+    classes = getattr(benchmark, f"get_{component}s")()
+    prefix, separator, incomplete = incomplete.rpartition(',')
+    proposals = propose_from_list(sorted(_get_tags(classes)), incomplete)
+    return [f"{prefix}{separator}{tag}" for tag in proposals]
+
+
+def complete_solver_tags(ctx, param, incomplete):
+    "Auto-completion for solver tags."
+    return _complete_tags(ctx, incomplete, "solver")
+
+
+def complete_dataset_tags(ctx, param, incomplete):
+    "Auto-completion for dataset tags."
+    return _complete_tags(ctx, incomplete, "dataset")
 
 
 def complete_plots(ctx, param, incomplete):

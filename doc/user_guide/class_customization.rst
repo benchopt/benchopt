@@ -132,6 +132,35 @@ Once declared, the choices enable two things:
 - **Discovering the values** through ``benchopt info -v``, which lists them
   (with a total count) alongside the default grid.
 
+.. _component_tags:
+
+Tagging solvers and datasets
+----------------------------
+
+Solvers and datasets can declare optional class-level ``tags`` to group
+related components:
+
+.. code-block:: python
+
+   class Solver(BaseSolver):
+       name = "my-solver"
+       tags = ["easy", "cpu"]
+
+Tags apply to every parameterization of the class. They can be used to select
+solvers and datasets independently:
+
+.. prompt:: bash $
+
+   benchopt run . --solver-tag cpu --dataset-tag small
+
+The ``tags`` attribute defaults to an empty list. Define it as a literal
+list of strings so Benchopt can read it even when a component's
+requirements are not installed. Tags are matched exactly and are
+case-sensitive. Repeating one tag option matches any of its values.
+Name selectors and tag filters are combined, so a component must satisfy
+both filters.
+
+
 .. _managing_dependencies:
 
 Managing dependencies

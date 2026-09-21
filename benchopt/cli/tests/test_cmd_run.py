@@ -23,6 +23,56 @@ from benchopt.cli.tests.completion_cases import (  # noqa: F401
 CURRENT_DIR = Path.cwd()
 
 
+def _tagged_components():
+    solvers = [
+        """from benchopt.utils.temp_benchmark import TempSolver
+        class Solver(TempSolver):
+            name = "cpu-solver"
+            tags = ["easy", "cpu"]
+            def run(self, _): print("RUN#cpu-solver")
+        """,
+        """from benchopt.utils.temp_benchmark import TempSolver
+        class Solver(TempSolver):
+            name = "gpu-solver"
+            tags = ["easy", "gpu"]
+            def run(self, _): print("RUN#gpu-solver")
+        """,
+        """from benchopt.utils.temp_benchmark import TempSolver
+        class Solver(TempSolver):
+            name = "hard-solver"
+            tags = ["hard", "gpu"]
+            def run(self, _): print("RUN#hard-solver")
+        """,
+    ]
+    datasets = [
+        """from benchopt.utils.temp_benchmark import TempDataset
+        class Dataset(TempDataset):
+            name = "small-data"
+            tags = ["easy", "small"]
+            def get_data(self):
+                print("DATA#small-data")
+                return super().get_data()
+        """,
+        """from benchopt.utils.temp_benchmark import TempDataset
+        class Dataset(TempDataset):
+            name = "large-data"
+            tags = ["easy", "large"]
+            def get_data(self):
+                print("DATA#large-data")
+                return super().get_data()
+        """,
+        """from benchopt.utils.temp_benchmark import TempDataset
+        class Dataset(TempDataset):
+            name = "private-data"
+            tags = ["hard", "large"]
+            def get_data(self):
+                print("DATA#private-data")
+                return super().get_data()
+        """,
+    ]
+    return solvers, datasets
+
+
 class TestRunCmd:
 
     @pytest.mark.parametrize('invalid_benchmark, match', [
@@ -116,6 +166,51 @@ class TestRunCmd:
         # Make sure the results were saved in a result file
         assert len(out.result_files) == 1, out
 
+    def test_scoped_tag_filters(self):
+        solvers, datasets = _tagged_components()
+        with temp_benchmark(solvers=solvers, datasets=datasets) as bench, \
+                CaptureCmdOutput() as out:
+            run([
+                str(bench.benchmark_dir), "-s", "cpu-solver",
+                "-s", "gpu-solver", "-st", "gpu",
+                "-d", "small-data", "-d", "large-data",
+                "-dt", "large",
+                "-n", "1", "-r", "1", "--no-plot"
+            ], "benchopt", standalone_mode=False)
+
+        out.check_output("RUN#cpu-solver", repetition=0)
+        out.check_output("RUN#gpu-solver")
+        out.check_output("RUN#hard-solver", repetition=0)
+        out.check_output("DATA#small-data", repetition=0)
+        out.check_output("DATA#large-data")
+        out.check_output("DATA#private-data", repetition=0)
+
+    def test_multiple_tag_filters_use_or(self):
+        solvers, datasets = _tagged_components()
+        with temp_benchmark(solvers=solvers, datasets=datasets) as bench, \
+                CaptureCmdOutput() as out:
+            run([
+                str(bench.benchmark_dir), "--solver-tag", "cpu, gpu",
+                "--dataset-tag", "small", "--dataset-tag", "large",
+                "-n", "1", "-r", "1", "--no-plot"
+            ], "benchopt", standalone_mode=False)
+
+        out.check_output("RUN#cpu-solver")
+        out.check_output("RUN#gpu-solver")
+        out.check_output("RUN#hard-solver")
+        out.check_output("DATA#small-data")
+        out.check_output("DATA#large-data")
+        out.check_output("DATA#private-data")
+
+    def test_invalid_tag(self):
+        with temp_benchmark() as bench:
+            with pytest.raises(
+                    click.BadParameter,
+                    match="Tags .*missing.* did not match any solver"):
+                run([
+                    str(bench.benchmark_dir), "--solver-tag", "missing"
+                ], "benchopt", standalone_mode=False)
+
     @pytest.mark.parametrize('cv', [True, False])
     def test_n_rep_display(self, cv):
         objective = f"""
@@ -158,6 +253,24 @@ class TestRunCmd:
 
         # Make sure the results were saved in a result file
         assert len(out.result_files) == 1, out
+
+    def test_tag_filters_in_env(self, test_env_name):
+        solvers, datasets = _tagged_components()
+        with temp_benchmark(solvers=solvers, datasets=datasets) as bench, \
+                CaptureCmdOutput() as out:
+            run([
+                str(bench.benchmark_dir), "--env-name", test_env_name,
+                "--solver-tag", "gpu", "--dataset-tag", "large",
+                "-n", "1", "-r", "1",
+                "--no-plot"
+            ], "benchopt", standalone_mode=False)
+
+        out.check_output("RUN#cpu-solver", repetition=0)
+        out.check_output("RUN#gpu-solver")
+        out.check_output("RUN#hard-solver")
+        out.check_output("DATA#small-data", repetition=0)
+        out.check_output("DATA#large-data")
+        out.check_output("DATA#private-data")
 
     @pytest.mark.parametrize('timeout', ['10', '1m', '0.03h', '100s'])
     def test_timeout_in_env(self, test_env_name, timeout):
@@ -445,6 +558,19 @@ class TestRunCmd:
                         standalone_mode=False)
         out.check_output("not run yet", repetition=1)
 
+    def test_complete_tags(self):
+        solvers, datasets = _tagged_components()
+        with temp_benchmark(solvers=solvers, datasets=datasets) as bench:
+            benchmark = str(bench.benchmark_dir)
+            _test_shell_completion(
+                run, [benchmark, "-st"], [
+                    ("g", ["gpu"]), ("easy,g", ["easy,gpu"])
+                ]
+            )
+            _test_shell_completion(
+                run, [benchmark, "-dt"], [("l", ["large"])]
+            )
+
     def test_complete_bench(self, bench_completion_cases):  # noqa: F811
 
         # Completion for benchmark name
@@ -533,6 +659,64 @@ class TestRunCmdConfig:
             out.check_output(r'test-solver\[param1=27\]:', repetition=2)
             out.check_output(r'test-solver\[param1=42\]:', repetition=0)
             out.check_output(r'test-solver\[param1=0\]:', repetition=0)
+
+    def test_tag_filters_from_config(self):
+        config = """
+        solver-tag: gpu, hard
+        dataset-tag: large
+        n-repetitions: 1
+        max-runs: 1
+        plot: false
+        """
+        solvers, datasets = _tagged_components()
+        with temp_benchmark(
+                config=config, solvers=solvers, datasets=datasets) as bench:
+            args = [
+                str(bench.benchmark_dir), "--config",
+                str(bench.benchmark_dir / "config.yml")
+            ]
+            with CaptureCmdOutput() as out:
+                run(args, "benchopt", standalone_mode=False)
+
+            out.check_output("RUN#cpu-solver", repetition=0)
+            out.check_output("RUN#gpu-solver")
+            out.check_output("RUN#hard-solver")
+            out.check_output("DATA#small-data", repetition=0)
+            out.check_output("DATA#large-data")
+            out.check_output("DATA#private-data")
+
+            with CaptureCmdOutput() as out:
+                run([
+                    *args, "--solver-tag", "cpu", "--no-cache"
+                ], "benchopt", standalone_mode=False)
+
+            out.check_output("RUN#cpu-solver")
+            out.check_output("RUN#gpu-solver", repetition=0)
+            out.check_output("RUN#hard-solver", repetition=0)
+
+    def test_tag_filter_lists_from_config(self):
+        config = """
+        solver-tag: [cpu, hard]
+        dataset-tag: [small, large]
+        n-repetitions: 1
+        max-runs: 1
+        plot: false
+        """
+        solvers, datasets = _tagged_components()
+        with temp_benchmark(
+                config=config, solvers=solvers, datasets=datasets) as bench, \
+                CaptureCmdOutput() as out:
+            run([
+                str(bench.benchmark_dir), "--config",
+                str(bench.benchmark_dir / "config.yml")
+            ], "benchopt", standalone_mode=False)
+
+        out.check_output("RUN#cpu-solver")
+        out.check_output("RUN#gpu-solver", repetition=0)
+        out.check_output("RUN#hard-solver")
+        out.check_output("DATA#small-data")
+        out.check_output("DATA#large-data")
+        out.check_output("DATA#private-data")
 
     def test_config_file_single_line(self, no_debug_log):
         n_reps = 2

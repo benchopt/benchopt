@@ -71,6 +71,23 @@ def test_ast_replacement_no_name():
             Solver.is_installed(raise_on_not_installed=True)
 
 
+def test_ast_replacement_tags():
+    solver = """
+    from benchopt import BaseSolver
+    import benchopt_test_missing_dependency
+
+    class Solver(BaseSolver):
+        name = "tagged-solver"
+        tags = ["easy", "cpu"]
+    """
+    with temp_benchmark(solvers=solver) as bench:
+        solvers = bench.check_solver_patterns(
+            [], tags=["easy"]
+        )
+        assert [solver.name for solver, _ in solvers] == ["tagged-solver"]
+        assert solvers[0][0].tags == ["easy", "cpu"]
+
+
 def test_ast_replacement_name_undefined():
     # Test that the AST replacement works when a dynamic module is not
     # importable. In particular, this makes sure that the module filename

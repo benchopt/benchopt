@@ -89,6 +89,17 @@ For instance, the following command runs the benchmark with solvers
 The ``-s`` flag is to specify a solver whereas ``-d`` specifies a dataset.
 To include multiple datasets/solvers, use multiple ``-d``/``-s`` flags, as in the above snippet.
 
+Solvers and datasets can also be selected through their :ref:`component tags
+<component_tags>`. Use ``-st``/``--solver-tag`` and
+``-dt``/``--dataset-tag`` to filter each component independently:
+
+.. prompt:: bash $
+
+    benchopt run . --solver-tag gpu --dataset-tag large
+
+Each option is repeatable and matches any of the tags passed to it. A tag
+filter and the corresponding name selector are combined.
+
 .. note::
 
     The ``run`` command accepts other flags such as ``-j`` to run the benchmark in parallel with a given number of processes.
@@ -133,6 +144,9 @@ Using a YAML file and the ``--config`` flag, it is possible to describe all deta
 Here is the content of configuration file ``example_config.yml`` if we were to run the two previous examples into a single one.
 
 .. code-block:: yaml
+
+    solver-tag: [cpu, gpu]
+    dataset-tag: small
 
     solver:
         - solver1
@@ -180,6 +194,8 @@ It assumes that the python script is located at the same level as the benchmark 
             "dataset3",
             "dataset1[n_samples=100,n_features=20]"
         ],
+        solver_tags=["cpu", "gpu"],
+        dataset_tags=["small"],
     )
 
 .. note::

@@ -365,7 +365,8 @@ def run_benchmark(benchmark_path, solver_names=None, forced_solvers=(),
                   n_jobs=None, parallel_config=None,
                   plot_result=True, display=True, html=True,  collect=False,
                   show_progress=True, pdb=False, no_cache=False,
-                  output_file="None"):
+                  output_file="None", solver_tags=None,
+                  dataset_tags=None):
     """Run full benchmark.
 
     Parameters
@@ -420,6 +421,10 @@ def run_benchmark(benchmark_path, solver_names=None, forced_solvers=(),
     output_file : str
         Filename for the parquet output. If given, the results will
         be stored at <BENCHMARK>/outputs/<filename>.parquet.
+    solver_tags : list | None
+        Tags used to select solvers. Repeated tags are combined with OR.
+    dataset_tags : list | None
+        Tags used to select datasets. Repeated tags are combined with OR.
 
     Returns
     -------
@@ -436,9 +441,12 @@ def run_benchmark(benchmark_path, solver_names=None, forced_solvers=(),
     if solver_names is None:
         solver_names = []
     solvers = benchmark.check_solver_patterns(
-        solver_names + list(forced_solvers)
+        solver_names + list(forced_solvers),
+        tags=solver_tags
     )
-    datasets = benchmark.check_dataset_patterns(dataset_names)
+    datasets = benchmark.check_dataset_patterns(
+        dataset_names, tags=dataset_tags
+    )
     objectives = benchmark.check_objective_filters(objective_filters)
 
     parallel_config = check_parallel_config(parallel_config, n_jobs)

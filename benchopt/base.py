@@ -59,8 +59,9 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
       dependent computations, for instance in ``jax`` with different number of
       iterations in a for loop.
 
-    The ``Solver`` class also defines class attributes to specify how the
-    benchmark curve should be sampled:
+    The ``Solver`` class also defines optional class attributes:
+
+    - ``tags``: labels used to select groups of solvers from the command line.
 
     - ``sampling_strategy``: defines how the benchmark curve should be sampled.
       It should be one of the following strings: 'iteration', 'tolerance',
@@ -82,7 +83,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
       used depending on the ``sampling_strategy``.
       See :ref:`stopping_criterion` for available options.
 
-    Note that default values for these attributes can be set at the
+    Note that default values for the sampling attributes can be set at the
     ``Objective`` level so that all solvers in a benchmark share the same
     default behavior. Typically, for ML benchmarks, all solvers can be run only
     once by setting ``sampling_strategy = 'run_once'`` in the benchmark's
@@ -91,6 +92,7 @@ class BaseSolver(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
     """
 
     _base_class_name = 'Solver'
+    tags = []
     sampling_strategy = None
 
     @classproperty
@@ -335,6 +337,8 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
 
     Class attributes
     ----------------
+    tags : list of str
+        Labels used to select groups of datasets from the command line.
     prepare_cache_ignore : tuple of str or "all"
         Parameter names that do not affect the output of ``prepare()``.
         These are excluded from the prepare cache key and from job
@@ -348,6 +352,7 @@ class BaseDataset(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
 
     _base_class_name = 'Dataset'
 
+    tags = []
     prepare_cache_ignore = ()
 
     def prepare(self):

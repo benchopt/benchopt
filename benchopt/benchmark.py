@@ -55,6 +55,51 @@ def get_running_benchmark():
     return _RUNNING_BENCHMARK
 
 
+def _get_class_tags(cls):
+    """Return validated tags declared by a benchmark component."""
+    component = cls._base_class_name
+    try:
+        tags = cls.tags
+    except (AttributeError, TypeError, ValueError) as exc:
+        raise ValueError(
+            f"Could not read tags for {component} {cls.name!r}. The tags "
+            "attribute must be a literal list of strings."
+        ) from exc
+
+    if not isinstance(tags, list) or not all(
+            isinstance(tag, str) and ',' not in tag for tag in tags):
+        raise ValueError(
+            f"Invalid tags for {component} {cls.name!r}: expected a literal "
+            "list of strings without commas."
+        )
+    return tags.copy()
+
+
+def _filter_classes_by_tags(all_classes, tags, name_type):
+    """Return classes matching any requested tag."""
+    if not tags:
+        return set(all_classes)
+    if isinstance(tags, str):
+        tags = [tags]
+
+    class_tags = {cls: _get_class_tags(cls) for cls in all_classes}
+    available_tags = set().union(*class_tags.values())
+    invalid_tags = [tag for tag in tags if tag not in available_tags]
+    if invalid_tags:
+        available = '- ' + '\n- '.join(sorted(available_tags))
+        if not available_tags:
+            available = '(none)'
+        raise click.BadParameter(
+            f"Tags {invalid_tags} did not match any {name_type}.\n"
+            f"Available {name_type} tags are:\n{available}"
+        )
+
+    return {
+        cls for cls in all_classes
+        if any(tag in class_tags[cls] for tag in tags)
+    }
+
+
 class Benchmark:
     """Benchmark exposes all constituents of the benchmark folder.
 
@@ -216,12 +261,28 @@ class Benchmark:
         "List all available solver names for the benchmark."
         return [s.name for s in self.get_solvers()]
 
-    def check_solver_patterns(self, solver_patterns, class_only=False):
+    def check_solver_patterns(self, solver_patterns, class_only=False,
+                              tags=None):
         "Check that the patterns are valid and return selected configurations."
-        return _check_patterns(
-            self.get_solvers(), solver_patterns, name_type='solver',
-            class_only=class_only
+        all_solvers = self.get_solvers()
+        solvers = _check_patterns(
+            all_solvers, solver_patterns, name_type='solver'
         )
+        tagged_solvers = _filter_classes_by_tags(
+            all_solvers, tags, name_type='solver'
+        )
+        solvers = [
+            (solver, parameters) for solver, parameters in solvers
+            if solver in tagged_solvers
+        ]
+        has_tag_filters = bool(tags)
+        if has_tag_filters and not solvers:
+            raise click.BadParameter(
+                "No solver matches both the name and tag filters."
+            )
+        if class_only:
+            return {solver for solver, _ in solvers}
+        return solvers
 
     def get_datasets(self):
         "List all available dataset classes for the benchmark."
@@ -298,12 +359,28 @@ class Benchmark:
             names = datasets if len(datasets) == 1 else ['simulated']
         return names
 
-    def check_dataset_patterns(self, dataset_patterns, class_only=False):
+    def check_dataset_patterns(self, dataset_patterns, class_only=False,
+                               tags=None):
         "Check that the patterns are valid and return selected configurations."
-        return _check_patterns(
-            self.get_datasets(), dataset_patterns, name_type='dataset',
-            class_only=class_only
+        all_datasets = self.get_datasets()
+        datasets = _check_patterns(
+            all_datasets, dataset_patterns, name_type='dataset'
         )
+        tagged_datasets = _filter_classes_by_tags(
+            all_datasets, tags, name_type='dataset'
+        )
+        datasets = [
+            (dataset, parameters) for dataset, parameters in datasets
+            if dataset in tagged_datasets
+        ]
+        has_tag_filters = bool(tags)
+        if has_tag_filters and not datasets:
+            raise click.BadParameter(
+                "No dataset matches both the name and tag filters."
+            )
+        if class_only:
+            return {dataset for dataset, _ in datasets}
+        return datasets
 
     def _get_plots_classes(self):
         "List all available custom plot classes for the benchmark"
