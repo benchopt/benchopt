@@ -383,7 +383,11 @@ class TestRunCmd:
         class Dataset(TempDataset):
             name = 'ext-dataset'
 """
-
+    """
+    EXT_DATASET = """from benchopt.utils.temp_benchmark import TempDataset
+        class Dataset(TempDataset):
+            name = 'ext-dataset'
+    """
     def test_solver_from_file(self, tmp_path):
         solver_file = tmp_path / "submission.py"
         solver_file.write_text(cleandoc(self.EXT_SOLVER))
