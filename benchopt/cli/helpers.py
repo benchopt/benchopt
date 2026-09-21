@@ -378,11 +378,34 @@ def _print_result_file_summary(result_file):
               is_flag=True,
               help="If used, list solver/dataset "
               "parameters, dependencies and availability.")
+@click.option('--version', 'check_version', is_flag=True,
+              help="Check that the installed benchopt version satisfies the "
+              "benchmark's `min_benchopt_version`. Print the versions and "
+              "exit with a non-zero status if it does not, instead of "
+              "listing solvers/datasets.")
 def info(benchmark, solver_names, dataset_names, result_filenames=(),
-         env_name='False', verbose=False):
+         env_name='False', verbose=False, check_version=False):
 
     # benchmark
     benchmark = Benchmark(benchmark)
+
+    if check_version:
+        from packaging.version import parse
+        from benchopt import __version__
+        min_version = benchmark.min_version
+        # Avoid dev versions
+        current = parse(parse(__version__).base_version)
+        if min_version is None or current >= parse(min_version):
+            print(
+                f"benchopt {__version__} satisfies the requirement of "
+                f"'{benchmark.name}' (min_benchopt_version={min_version})."
+            )
+            return
+        raise click.ClickException(
+            f"benchopt {__version__} is too old for '{benchmark.name}': "
+            f"min_benchopt_version={min_version} is required. Update with "
+            "`pip install -U benchopt`."
+        )
 
     if result_filenames:
         filenames = (
