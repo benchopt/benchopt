@@ -194,16 +194,13 @@ def _format_choices(choices):
     return f"{listed} ({n} total)"
 
 
-def _print_component_info(
-        cls_name_list, cls_list, env_name=None, verbose=False):
-    """Print information for each element of input listed
+def _print_component_info(cls_list, env_name=None, verbose=False):
+    """Print information for each solver/dataset in ``cls_list``.
 
     Parameters
     ----------
-    cls_name_list : list
-        List of object names (solvers or datasets) to be printed.
     cls_list : list
-        List of all objects (solvers or datasets) to print info from.
+        Objects (solvers or datasets) to print info from.
     env_name : str | None
         Name of conda environment where to check for object availability.
         If None or 'False', no check is made.
@@ -212,25 +209,15 @@ def _print_component_info(
         name, parameters, dependencies and availability).
         If False, only list object (solver or dataset) names.
     """
-
-    # select objects to print info from
-    include_cls = []
-    cls_name_list = [item.lower() for item in cls_name_list]
-    if 'all' in cls_name_list:
-        include_cls = cls_list
-    else:
-        include_cls = [
-            item for item in cls_list if item.name.lower() in cls_name_list
-        ]
     if not verbose:
         # short output
-        name = [cls.name for cls in include_cls]
+        name = [cls.name for cls in cls_list]
         print(f"{', '.join(map(str, name))}")
         print("-" * 10)
     else:
         # long output
         print("-" * 10)
-        for cls in include_cls:
+        for cls in cls_list:
             print(f"## {cls.name}")
             # availability in env (if relevant)
             if env_name is not None:
@@ -397,13 +384,15 @@ def info(benchmark, solver_names, dataset_names, result_filenames=(),
 
     print(f"Info regarding the benchmark '{benchmark.name}'")
 
-    # validate solvers and datasets
-    benchmark.check_dataset_patterns(dataset_names)
-    benchmark.check_solver_patterns(solver_names)
+    # Resolve (and validate) the selected solvers/datasets, including any
+    # loaded from a file path, so `info -s /path/to/solver.py` lists it too.
+    datasets = benchmark.check_dataset_patterns(dataset_names, class_only=True)
+    solvers = benchmark.check_solver_patterns(solver_names, class_only=True)
 
-    # get solvers and datasets in the benchmark
-    all_solvers = benchmark.get_solvers()
-    all_datasets = benchmark.get_datasets()
+    # By default list both kinds; restrict to the kind(s) explicitly requested.
+    show_datasets = bool(dataset_names) or not solver_names
+    show_solvers = bool(solver_names) or not dataset_names
+
     # enable verbosity if any environment was provided
     if env_name is not None and env_name != 'False':
         verbose = True
@@ -441,16 +430,17 @@ def info(benchmark, solver_names, dataset_names, result_filenames=(),
     # print information
     print("-" * 10)
 
-    if not dataset_names and not solver_names:
-        dataset_names = ['all']
-        solver_names = ['all']
-    if dataset_names:
+    if show_datasets:
         print("# DATASETS", flush=True)
-        _print_component_info(dataset_names, all_datasets, env_name, verbose)
+        _print_component_info(
+            sorted(datasets, key=lambda c: c.name.lower()), env_name, verbose
+        )
 
-    if solver_names:
+    if show_solvers:
         print("# SOLVERS", flush=True)
-        _print_component_info(solver_names, all_solvers, env_name, verbose)
+        _print_component_info(
+            sorted(solvers, key=lambda c: c.name.lower()), env_name, verbose
+        )
 
     _print_available_result_files(benchmark)
 

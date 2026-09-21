@@ -92,7 +92,9 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               help="Include <solver_name> in the benchmark. By default, all "
               "solvers are included. When `-s` is used, only listed solvers"
               " are included. Note that <solver_name> can include parameters,"
-              " with the syntax `solver[parameter=value]`. "
+              " with the syntax `solver[parameter=value]`. A path to a `.py` "
+              "file loads the Solver directly from that file, even outside "
+              "the benchmark's `solvers/` folder. "
               "To include multiple solvers, use multiple `-s` options.",
               shell_complete=complete_solvers)
 @click.option('--force-solver', '-f',
@@ -106,7 +108,9 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               help="Run the benchmark on <dataset_name>. By default, all "
               "datasets are included. When `-d` is used, only listed datasets"
               " are included. Note that <dataset_name> can include parameters,"
-              " with the syntax `dataset[parameter=value]`. "
+              " with the syntax `dataset[parameter=value]`. A path to a `.py` "
+              "file loads the Dataset directly from that file, even outside "
+              "the benchmark's `datasets/` folder. "
               "To include multiple datasets, use multiple `-d` options.",
               shell_complete=complete_datasets)
 @click.option("--max-runs", "-n",
@@ -183,13 +187,17 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               help='If set, disable the cache on disk for the run. Note that '
               'this makes the run less tolerant to errors, use with caution.')
 @click.option("--output", default="None", type=str,
-              help="Filename for the result output. "
-              "If given, the results will "
-              "be stored at <BENCHMARK>/outputs/<filename>.parquet, "
-              "if another result file has the same name, a number is happened "
+              help="Name or path for the result output. "
+              "A bare name is stored at "
+              "<BENCHMARK>/outputs/<name>.parquet; "
+              "if another result file has the same name, a number is appended "
               "to distinguish them "
-              "(ex: <BENCHMARK>/outputs/<filename>_1.parquet)."
-              " If not provided, the output will be saved as "
+              "(ex: <BENCHMARK>/outputs/<name>_1.parquet). "
+              "A value containing a path separator (e.g. "
+              "`out/results.parquet` or an absolute path) is treated as an "
+              "explicit path and written exactly there, leaving the benchmark "
+              "folder untouched. "
+              "If not provided, the output will be saved as "
               "<BENCHMARK>/outputs/benchopt_run_<timestamp>.parquet."
               )
 @click.option('--seed',

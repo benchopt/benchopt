@@ -10,6 +10,7 @@ Run a benchmark. See [run.md](./run.md) for full usage.
 
 ```bash
 benchopt run . -s my-solver -d Simulated -n 5 -r 3 --timeout 60
+benchopt run . -s /path/to/solver.py            # load a solver from a file
 benchopt run . --config config.yml
 ```
 

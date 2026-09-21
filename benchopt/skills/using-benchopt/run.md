@@ -14,6 +14,10 @@ benchopt run . \
 
 - `-o/--objective`, `-d/--dataset`, `-s/--solver` filter by **name** (repeatable).
   Omit a filter to run all of that kind.
+- `-d`/`-s` also accept a path to a `.py` file: the `Dataset`/`Solver` is loaded
+  directly from that file (even outside `datasets/`/`solvers/`) and keeps its own
+  name, e.g. `-s /path/to/my_solver.py`. Bracket params still work:
+  `-s "/path/to/my_solver.py[lr=0.1]"`. The file can still `import benchmark_utils`.
 - Override parameters inline with `name[param=value]`. Values use Python literal
   syntax: `reg=0.1`, `use_acceleration=True`, lists `n_features=[20,50]`, and
   grouped params `'n_samples, n_features'=[(100,20),(1000,50)]`. Only the
@@ -70,7 +74,9 @@ repetition)` cell, so a long run does **not** need manual chunking:
 
 Gotchas that break cache matching or surprise you:
 
-- `--output` takes a **name**, not a path (results always land in `outputs/`).
+- `--output` takes a **name** (lands in `outputs/`) *or* a path with a
+  separator, e.g. `--output /tmp/results.parquet`, written verbatim without
+  touching the benchmark folder.
 - `-o` is the **objective** filter, not output.
 - Keep `-s`/`-d`/params **identical** across runs — any change alters the cache
   keys, so cells won't be recognised as already done.
@@ -126,7 +132,9 @@ run expensive preprocessing once before any benchmarking run.
 
 - Results are `.parquet` files under `./outputs/`. An HTML dashboard is
   generated unless `--no-html`; `--no-plot`/`--no-display` skip plotting.
-- The name of the output can be controlled with the `--output` option.
+- The name (or full path) of the output can be controlled with the `--output`
+  option: a bare name lands in `./outputs/`, a value with a path separator is
+  written verbatim.
   If the name already exist, the new result is postfixed with `-1` or
   `-X` the X-th time.
 - `benchopt plot <result.parquet>` regenerates figures; custom plots are
@@ -179,7 +187,8 @@ what you expect.
 - `--seed N`: fix the base seed for reproducibility.
 - `--profile`: profile solvers (line-level timing).
 - `--pdb`: drop into a debugger on error.
-- `--output NAME`: name the output files.
+- `--output NAME_OR_PATH`: name the output file (in `outputs/`), or give a path
+  with a separator to write it verbatim.
 
 ## Doc links
 

@@ -108,20 +108,33 @@ class _FailedImportMixin:
         return False
 
 
-def _get_module_from_file(module_filename, benchmark_dir=None):
+def _get_module_from_file(module_filename, benchmark_dir, subpkg=None):
     """Load a module from the name of the file"""
-    module_filename = Path(module_filename)
-    if benchmark_dir is not None:
+    module_filename = Path(module_filename).resolve()
+    bench_root = Path(benchmark_dir).resolve()
+    try:
         # Use a package name derived from the benchmark root folder.
-        module_filename = module_filename.resolve()
-        benchmark_dir = Path(benchmark_dir).resolve().parent
-        package_name = module_filename.relative_to(benchmark_dir)
+        package_name = module_filename.relative_to(bench_root.parent)
         package_name = package_name.with_suffix('').parts
-    else:
-        package_name = module_filename.with_suffix('').parts[-3:]
+    except ValueError:
+        # File selected from outside the benchmark tree (e.g. `-s
+        # /path/to/solver.py`): attach it to the benchmark's semantic
+        # module (benchmark.solvers.xxx / benchmark.datasets.xxx) so it
+        # shares the same namespace as in-repo components.
+        parts = (bench_root.name, subpkg, module_filename.stem)
+        package_name = tuple(p for p in parts if p is not None)
     if package_name[-1] == '__init__':
         package_name = package_name[:-1]
     package_name = '.'.join(['benchopt_benchmarks', *package_name])
+
+    # Guard against a stem collision with a different file already loaded under
+    # the same semantic name (e.g. an external solver whose filename matches an
+    # in-repo one): disambiguate with a short hash of the file path.
+    cached = sys.modules.get(package_name, None)
+    cached_file = getattr(cached, "__file__", None)
+    if cached_file and Path(cached_file).resolve() != module_filename:
+        suffix = hashlib.md5(str(module_filename).encode()).hexdigest()[:8]
+        package_name = f"{package_name}_{suffix}"
 
     module = sys.modules.get(package_name, None)
     if module is None:
@@ -162,7 +175,9 @@ def _load_class_from_module(benchmark_dir, module_filename, class_name):
     module_filename = Path(module_filename)
     try:
         assert not SKIP_IMPORT  # go directly to except to skip import
-        module = _get_module_from_file(module_filename, benchmark_dir)
+        module = _get_module_from_file(
+            module_filename, benchmark_dir, subpkg=f"{class_name.lower()}s"
+        )
         klass = getattr(module, class_name)
         klass._import_ctx = _get_import_context(module)
         if klass._import_ctx.failed_import:

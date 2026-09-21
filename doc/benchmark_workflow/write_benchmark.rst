@@ -74,7 +74,8 @@ structure between the different components:
 All three component classes share the following features:
 
 - ``name``: human-readable identifier used to filter them in the CLI and to
-  identify the results in tables and plots.
+  identify the results in tables and plots. It must not contain a ``/``, which
+  would make it ambiguous with a ``-s``/``-d`` file selector.
 - ``requirements``: declare package dependencies for a component.
   See :ref:`specify_requirements`.
 - ``parameters``: run the same class with multiple configurations

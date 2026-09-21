@@ -3,7 +3,7 @@ from benchopt import BaseDataset
 
 
 class Dataset(BaseDataset):
-    name = "simulated"
+    name = "simulated"  # display/CLI identifier; must not contain "/"
     requirements = []
     parameters = {
         "n_samples": [100, 1000],
