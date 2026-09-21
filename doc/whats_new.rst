@@ -10,6 +10,11 @@ What's new
 Version 1.10.1 -- in developement
 ---------------------------------
 
+- ``benchopt info`` now lists solvers/datasets as a ``|--`` tree, consistent
+  with the ``benchopt run`` display, and accepts ``--config <file>`` to
+  describe only the solvers/datasets named in a run config file.
+  By `Thomas Moreau`_ (:gh:`1013`)
+
 
 .. _changes_1_10:
 
