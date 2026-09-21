@@ -5,10 +5,16 @@ What's new
 
 .. currentmodule:: benchopt
 
+.. _dev:
+
+Version 1.10.1 -- in developement
+---------------------------------
+
+
 .. _changes_1_10:
 
 Version 1.10.0 -- 21/09/2026
---------------------------------
+----------------------------
 
 .. warning::
     This release changes the run cache key, so upgrading will recompute
