@@ -380,9 +380,7 @@ def _print_result_file_summary(result_file):
               "parameters, dependencies and availability.")
 @click.option('--version', 'check_version', is_flag=True,
               help="Check that the installed benchopt version satisfies the "
-              "benchmark's `min_benchopt_version`. Print the versions and "
-              "exit with a non-zero status if it does not, instead of "
-              "listing solvers/datasets.")
+              "benchmark's `min_benchopt_version`.")
 def info(benchmark, solver_names, dataset_names, result_filenames=(),
          env_name='False', verbose=False, check_version=False):
 
