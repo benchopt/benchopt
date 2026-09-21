@@ -133,7 +133,7 @@ repository, e.g. a submission file, without copying it into the benchmark.
 
 The loaded class keeps its own ``name`` (used to identify it in the results),
 and is selected exactly, so it never clashes with a benchmark class of the same
-name. The file is loaded with the benchmark on ``sys.path``, so it can still
+name. The file is loaded as a regular solver, so it can still
 ``import benchmark_utils``, and parameter sub-selection works as usual with the
 bracket syntax, e.g. ``-s "/path/to/my_solver.py[p1=1]"``.
 

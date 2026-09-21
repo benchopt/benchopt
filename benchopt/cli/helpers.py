@@ -194,16 +194,13 @@ def _format_choices(choices):
     return f"{listed} ({n} total)"
 
 
-def _print_component_info(
-        cls_name_list, cls_list, env_name=None, verbose=False):
-    """Print information for each element of input listed
+def _print_component_info(cls_list, env_name=None, verbose=False):
+    """Print information for each solver/dataset in ``cls_list``.
 
     Parameters
     ----------
-    cls_name_list : list
-        List of object names (solvers or datasets) to be printed.
     cls_list : list
-        List of all objects (solvers or datasets) to print info from.
+        Objects (solvers or datasets) to print info from.
     env_name : str | None
         Name of conda environment where to check for object availability.
         If None or 'False', no check is made.
@@ -212,25 +209,15 @@ def _print_component_info(
         name, parameters, dependencies and availability).
         If False, only list object (solver or dataset) names.
     """
-
-    # select objects to print info from
-    include_cls = []
-    cls_name_list = [item.lower() for item in cls_name_list]
-    if 'all' in cls_name_list:
-        include_cls = cls_list
-    else:
-        include_cls = [
-            item for item in cls_list if item.name.lower() in cls_name_list
-        ]
     if not verbose:
         # short output
-        name = [cls.name for cls in include_cls]
+        name = [cls.name for cls in cls_list]
         print(f"{', '.join(map(str, name))}")
         print("-" * 10)
     else:
         # long output
         print("-" * 10)
-        for cls in include_cls:
+        for cls in cls_list:
             print(f"## {cls.name}")
             # availability in env (if relevant)
             if env_name is not None:
@@ -446,15 +433,13 @@ def info(benchmark, solver_names, dataset_names, result_filenames=(),
     if show_datasets:
         print("# DATASETS", flush=True)
         _print_component_info(
-            ['all'], sorted(datasets, key=lambda c: c.name.lower()),
-            env_name, verbose
+            sorted(datasets, key=lambda c: c.name.lower()), env_name, verbose
         )
 
     if show_solvers:
         print("# SOLVERS", flush=True)
         _print_component_info(
-            ['all'], sorted(solvers, key=lambda c: c.name.lower()),
-            env_name, verbose
+            sorted(solvers, key=lambda c: c.name.lower()), env_name, verbose
         )
 
     _print_available_result_files(benchmark)
