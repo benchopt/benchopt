@@ -31,6 +31,10 @@ CLI
   plain ``benchopt info`` now also lists available result files.
   By `Thomas Moreau`_ (:gh:`990`)
 
+- Add ``benchopt info <benchmark> --version`` to check that the installed
+  benchopt satisfies the benchmark's ``min_benchopt_version``.
+  By `Thomas Moreau`_ (:gh:`1009`)
+
 - Add a ``raise_on_error`` config setting (``BENCHOPT_RAISE_ON_ERROR``) that
   re-raises the first solver/dataset/objective error to make a run fail fast,
   without turning on the extra logging of ``BENCHOPT_DEBUG``.
