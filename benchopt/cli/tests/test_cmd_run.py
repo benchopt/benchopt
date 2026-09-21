@@ -1,4 +1,5 @@
 import re
+from inspect import cleandoc
 from pathlib import Path
 
 import click
@@ -385,7 +386,7 @@ class TestRunCmd:
 
     def test_solver_from_file(self, tmp_path):
         solver_file = tmp_path / "submission.py"
-        solver_file.write_text(self.EXT_SOLVER)
+        solver_file.write_text(cleandoc(self.EXT_SOLVER))
         with temp_benchmark() as bench, CaptureCmdOutput() as out:
             run([str(bench.benchmark_dir),
                  *"-d test-dataset -n 1 -r 1 --no-plot".split(),
@@ -398,7 +399,7 @@ class TestRunCmd:
 
     def test_solver_from_file_with_params(self, tmp_path):
         solver_file = tmp_path / "submission.py"
-        solver_file.write_text(self.EXT_SOLVER)
+        solver_file.write_text(cleandoc(self.EXT_SOLVER))
         with temp_benchmark() as bench, CaptureCmdOutput() as out:
             run([str(bench.benchmark_dir),
                  *"-d test-dataset -n 1 -r 1 --no-plot".split(),
@@ -410,7 +411,7 @@ class TestRunCmd:
 
     def test_dataset_from_file(self, tmp_path):
         dataset_file = tmp_path / "sealed_split.py"
-        dataset_file.write_text(self.EXT_DATASET)
+        dataset_file.write_text(cleandoc(self.EXT_DATASET))
         with temp_benchmark() as bench, CaptureCmdOutput() as out:
             run([str(bench.benchmark_dir),
                  *"-n 1 -r 1 --no-plot".split(),
@@ -424,7 +425,7 @@ class TestRunCmd:
         # the path do not affect selection.
         solver_file = tmp_path / "a+b (x)" / "submission.py"
         solver_file.parent.mkdir()
-        solver_file.write_text(self.EXT_SOLVER)
+        solver_file.write_text(cleandoc(self.EXT_SOLVER))
         with temp_benchmark() as bench, CaptureCmdOutput() as out:
             run([str(bench.benchmark_dir),
                  *"-d test-dataset -n 1 -r 1 --no-plot".split(),
