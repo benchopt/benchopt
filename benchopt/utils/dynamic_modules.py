@@ -108,25 +108,21 @@ class _FailedImportMixin:
         return False
 
 
-def _get_module_from_file(module_filename, benchmark_dir=None, subpkg=None):
+def _get_module_from_file(module_filename, benchmark_dir, subpkg=None):
     """Load a module from the name of the file"""
-    module_filename = Path(module_filename)
-    if benchmark_dir is not None:
+    module_filename = Path(module_filename).resolve()
+    bench_root = Path(benchmark_dir).resolve()
+    try:
         # Use a package name derived from the benchmark root folder.
-        module_filename = module_filename.resolve()
-        bench_root = Path(benchmark_dir).resolve()
-        try:
-            package_name = module_filename.relative_to(bench_root.parent)
-            package_name = package_name.with_suffix('').parts
-        except ValueError:
-            # File selected from outside the benchmark tree (e.g. `-s
-            # /path/to/solver.py`): attach it to the benchmark's semantic
-            # module (benchmark.solvers.xxx / benchmark.datasets.xxx) so it
-            # shares the same namespace as in-repo components.
-            parts = (bench_root.name, subpkg, module_filename.stem)
-            package_name = tuple(p for p in parts if p is not None)
-    else:
-        package_name = module_filename.with_suffix('').parts[-3:]
+        package_name = module_filename.relative_to(bench_root.parent)
+        package_name = package_name.with_suffix('').parts
+    except ValueError:
+        # File selected from outside the benchmark tree (e.g. `-s
+        # /path/to/solver.py`): attach it to the benchmark's semantic
+        # module (benchmark.solvers.xxx / benchmark.datasets.xxx) so it
+        # shares the same namespace as in-repo components.
+        parts = (bench_root.name, subpkg, module_filename.stem)
+        package_name = tuple(p for p in parts if p is not None)
     if package_name[-1] == '__init__':
         package_name = package_name[:-1]
     package_name = '.'.join(['benchopt_benchmarks', *package_name])

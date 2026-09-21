@@ -334,7 +334,9 @@ def check_test(request):
     test_config_file = benchmark.get_test_config_file()
     if test_config_file is None:
         return None
-    test_config_module = _get_module_from_file(test_config_file)
+    test_config_module = _get_module_from_file(
+        test_config_file, benchmark.benchmark_dir
+    )
     check_func_name = f"check_{request.function.__name__}"
     check_func = getattr(test_config_module, check_func_name, None)
     if check_func is None and request.function.__name__ == "test_solver_run":
