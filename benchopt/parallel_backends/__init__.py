@@ -3,6 +3,8 @@ from collections import deque
 from joblib import parallel_config
 from joblib import Parallel, delayed
 
+from .._generate_runs import group_runs, _normalize_group_by
+
 _DISTRIBUTED_FRONTAL = False
 
 DISTRIBUTED_BACKENDS = ('loky', 'dask', 'submitit')
@@ -17,13 +19,41 @@ def is_distributed_frontal():
     return _DISTRIBUTED_FRONTAL
 
 
-def _dispatch(backend, benchmark, run, run_kwargs_iter, config):
+def run_batch(run, n_jobs=1):
+    """Return a function that runs a whole batch of run-kwargs at once.
+
+    The returned ``run_batch(batch)`` runs ``run(**kwargs)`` for each kwargs
+    in one process if ``n_jobs <= 1`` (max cache/state reuse across the batch),
+    else across ``n_jobs`` sub-processes. Returning the batched function lets
+    it be passed to every backend -- including ``run_on_slurm`` -- without the
+    backend importing it back from this package.
+    """
+    def _run_batch(batch):
+        if n_jobs <= 1:
+            return [run(**run_kwargs) for run_kwargs in batch]
+        return Parallel(n_jobs=n_jobs)(
+            delayed(run)(**run_kwargs) for run_kwargs in batch
+        )
+    return _run_batch
+
+
+def _dispatch(backend, benchmark, run, run_kwargs_iter, config,
+              group_by=None, batch_n_jobs=1):
     """Run ``run(**kwargs)`` for each kwargs on the chosen backend, yielding
     results as they complete.
+
+    Runs are grouped by ``group_by`` (see `group_runs`) so that runs sharing
+    the group key run in the same process/job, reusing dataset/objective
+    state loaded on their front-end instance.
     """
+    batches = group_runs(run_kwargs_iter, group_by)
+    run_one_batch = run_batch(run, batch_n_jobs)
     if backend == 'submitit':
         from .slurm_executor import run_on_slurm
-        yield from run_on_slurm(benchmark, config, run, run_kwargs_iter)
+        yield from run_on_slurm(
+            benchmark, config, run_one_batch, batches,
+            batch_n_jobs=batch_n_jobs,
+        )
     else:
         if backend == 'dask':
             from .dask_backend import check_dask_config
@@ -31,16 +61,19 @@ def _dispatch(backend, benchmark, run, run_kwargs_iter, config):
         # `batch_size` is a `Parallel` argument, not a `parallel_config` one.
         batch_size = config.pop('batch_size', 'auto')
         with parallel_config(backend, **config):
-            yield from Parallel(
+            for batch_results in Parallel(
                 return_as="generator_unordered", batch_size=batch_size
             )(
-                delayed(run)(**run_kwargs) for run_kwargs in run_kwargs_iter
-            )
+                delayed(run_one_batch)(batch) for batch in batches
+            ):
+                yield from batch_results
 
 
 def parallel_run(benchmark, run, run_kwargs_generator, config, collect=False):
     config = config or {}
     backend = config.pop('backend', 'loky')
+    group_by = config.pop('group_by', None)
+    batch_n_jobs = config.pop('batch_n_jobs', 1)
     if collect:  # Collect should not run complicated parallelism
         backend = 'loky'
     assert backend in DISTRIBUTED_BACKENDS, (
@@ -72,7 +105,8 @@ def parallel_run(benchmark, run, run_kwargs_generator, config, collect=False):
             else:
                 yield run_kwargs
 
-    for item in _dispatch(backend, benchmark, run, _to_dispatch(), config):
+    for item in _dispatch(backend, benchmark, run, _to_dispatch(), config,
+                          group_by=group_by, batch_n_jobs=batch_n_jobs):
         while ready:
             yield ready.popleft()
         yield (*item, False)
@@ -80,7 +114,7 @@ def parallel_run(benchmark, run, run_kwargs_generator, config, collect=False):
         yield ready.popleft()
 
 
-def check_parallel_config(parallel_config_file, n_jobs):
+def check_parallel_config(parallel_config_file, n_jobs, group_by=None):
     """Returns the parallelism config information for the run.
 
     If nothing is provided, default to `loky` backend with n_jobs=1.
@@ -92,6 +126,11 @@ def check_parallel_config(parallel_config_file, n_jobs):
         information. If None, defaults to None.
     n_jobs: int or None
         Number of parallel jobs to run. If None, defaults to None.
+    group_by: str or list or None
+        Axes to hold constant per batch of runs, from the CLI ``--group-by``
+        (comma-separated). When set, it overrides ``group_by`` from the
+        parallel config file. ``batch_n_jobs`` has no CLI flag and is only
+        read from the parallel config file.
 
     Returns
     -------
@@ -123,12 +162,34 @@ def check_parallel_config(parallel_config_file, n_jobs):
     else:
         parallel_config = {'backend': 'loky', 'n_jobs': n_jobs}
 
+    # CLI `--group-by` (comma-separated) overrides the parallel-config file.
+    if group_by:
+        if isinstance(group_by, str):
+            group_by = [a.strip() for a in group_by.split(',')]
+        parallel_config['group_by'] = group_by
+
     assert 'backend' in parallel_config, (
         "Could not find `backend` specification in parallel_config file. "
         "Please specify it. See :ref:`parallel_run` for detailed description."
     )
 
     backend = parallel_config['backend']
+    group_by = parallel_config.get('group_by')
+    batch_n_jobs = parallel_config.get('batch_n_jobs', 1)
+    if group_by is not None:
+        # Normalize str|list to a validated list, shared with the generator
+        # so both sides of the run stream agree on the nesting order.
+        parallel_config['group_by'] = _normalize_group_by(group_by)
+    if 'batch_n_jobs' in parallel_config:
+        assert group_by is not None, (
+            "`batch_n_jobs` requires `group_by` to be set."
+        )
+        # bools are ints in Python, but never a valid `batch_n_jobs`
+        assert (
+            isinstance(batch_n_jobs, int)
+            and not isinstance(batch_n_jobs, bool) and batch_n_jobs >= 1
+        ), f"`batch_n_jobs` must be a positive integer. Got {batch_n_jobs}."
+
     if backend in ('dask', 'submitit'):
         print(f"Distributed run with backend: {backend}")
         set_distributed_frontal()

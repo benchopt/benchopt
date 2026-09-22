@@ -30,6 +30,20 @@ STATUS = {
 }
 
 
+def _node_tag(name, level, is_solver=False):
+    """Build a tree node tag at a given nesting `level` (0 = outermost).
+
+    Level 0 has no indent; deeper levels get ``2*level`` spaces + ``|--``.
+    Keeping this level-driven (rather than per-axis hardcoded) lets the tree
+    follow any nesting order and render `repetition` as a level when it is not
+    innermost. A future `rich` migration can consume ``(name, level)``.
+    """
+    body = f"{name}:" if is_solver else f"{name}"
+    prefix = ('  ' * level + '|--') if level > 0 else ''
+    tag = f"{prefix}{body}"
+    return colorify(tag) if is_solver else tag
+
+
 def colorify(message, color=BLUE):
     """Change color of the standard output.
 
@@ -81,24 +95,42 @@ class TerminalOutput:
         self.dataset = None
         self.objective = None
 
+        # Nesting level of each axis in the display tree. Default matches the
+        # canonical dataset -> objective -> solver order; `set_levels`
+        # overrides it for a reordered run (adds `repetition` if it's a level).
+        self.levels = {'dataset': 0, 'objective': 1, 'solver': 2}
+        self.rep_is_level = False
+
         self.status = defaultdict(str)
         self.rep = defaultdict(int)
         self.verbose = True
+
+    def set_levels(self, order):
+        """Set the display level of each axis from the nesting `order`.
+
+        `order` is the nesting order excluding an innermost `repetition` (which
+        stays the ``(rep/total)`` counter). When `repetition` is in `order` it
+        becomes a tree level.
+        """
+        self.levels = {axis: i for i, axis in enumerate(order)}
+        self.rep_is_level = 'repetition' in self.levels
 
     def set(self, solver=None, dataset=None, objective=None, verbose=None,
             i_solver=None):
 
         if dataset is not None:
             self.dataset = dataset
-            self.dataset_tag = f"{dataset}"
+            self.dataset_tag = _node_tag(dataset, self.levels['dataset'])
 
         if objective is not None:
             self.objective = objective
-            self.objective_tag = f"  |--{objective}"
+            self.objective_tag = _node_tag(objective, self.levels['objective'])
 
         if solver is not None:
             self.solver = solver
-            self.solver_tag = colorify(f"    |--{solver}:")
+            self.solver_tag = _node_tag(
+                solver, self.levels['solver'], is_solver=True
+            )
 
         if verbose is not None:
             self.verbose = verbose
@@ -129,12 +161,18 @@ class TerminalOutput:
     def display_objective(self):
         self._display_name(self.objective_tag)
 
+    def display_rep(self, rep):
+        """Display a `repetition` tree node (only when rep is a level)."""
+        self._display_name(_node_tag(f"rep {rep}", self.levels['repetition']))
+
     def progress(self, progress, key):
         """Display progress in the CLI interface."""
         if self.show_progress:
             if isinstance(progress, float):
                 progress = f'{progress:6.1%}'
-            solver_tag = colorify(f"    |--{key[2]}:")
+            solver_tag = _node_tag(
+                key[2], self.levels['solver'], is_solver=True
+            )
             print_normalize(
                 f"{solver_tag} {progress} "
                 f"({self.rep[key] + 1} / {self.n_repetitions} reps)",

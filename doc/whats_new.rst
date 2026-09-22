@@ -55,6 +55,13 @@ CLI
   retargets doc links.
   By `Thomas Moreau`_ (:gh:`959`, :gh:`980`, :gh:`982`, :gh:`1008`)
 
+- Group runs into fewer execution units with ``group_by`` (and optional
+  intra-group parallelism via ``batch_n_jobs``) to reduce per-run overhead when
+  running in parallel, by sharing setup across the runs of a batch. ``group_by``
+  is settable from the CLI (``--group-by dataset,objective``) and accepts
+  ``repetition`` to share a cross-validation fold across solvers. See
+  :ref:`run_grouping`. By `Bruno Aristimunha`_ and `Thomas Moreau`_ (:gh:`903`)
+
 PLOT
 ~~~~
 

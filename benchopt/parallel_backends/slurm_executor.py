@@ -1,3 +1,4 @@
+import math
 from contextlib import ExitStack
 
 try:
@@ -81,37 +82,70 @@ def hashable_pytree(pytree):
         return pytree
 
 
-def run_on_slurm(
-    benchmark, slurm_config, run_one_solver, run_kwargs_generator
-):
+def _split_by_slurm_config(batch, slurm_config):
+    """Sub-partition a `group_runs` batch into ``(job_slurm_config, runs)``
+    pairs, one per distinct SLURM config found in the batch.
 
+    A batch shares its `group_by` key, but can still span several solvers
+    with different `slurm_params` (e.g. ``group_by=['dataset']``), so it is
+    never itself the SLURM job unit -- each same-config run of items is.
+    """
+    groups, order = {}, []
+    for kwargs in batch:
+        solver = kwargs.get("solver")
+        if solver is not None:
+            job_slurm_config = get_solver_slurm_config(solver, slurm_config)
+        else:
+            job_slurm_config = slurm_config
+
+        cfg = hashable_pytree(job_slurm_config)
+        if cfg not in groups:
+            groups[cfg] = (job_slurm_config, [])
+            order.append(cfg)
+        groups[cfg][1].append(kwargs)
+    return [groups[cfg] for cfg in order]
+
+
+def run_on_slurm(
+    benchmark, slurm_config, run_batch, batches, batch_n_jobs=1
+):
+    """Submit each pre-grouped batch (see `group_runs`) as SLURM job(s).
+
+    ``run_batch`` is the batched run function (see the ``run_batch`` factory in
+    this package), passed in rather than imported to keep the dependency
+    one-directional. ``batch_n_jobs`` only sizes the job wall-time here (each
+    job runs its group in ``ceil(len / batch_n_jobs)`` waves). A batch is
+    further split by SLURM config (`_split_by_slurm_config`), since it can span
+    several solvers with different `slurm_params`.
+    """
     executors = {}
     tasks = []
-
     with ExitStack() as stack:
-        for kwargs in run_kwargs_generator:
-            solver = kwargs.get("solver")
-            if solver is not None:
-                job_slurm_config = get_solver_slurm_config(
-                    solver, slurm_config
-                )
-            else:
-                job_slurm_config = slurm_config
-            executor_config = hashable_pytree(job_slurm_config)
+        for batch in batches:
+            for job_slurm_config, run_group in _split_by_slurm_config(
+                batch, slurm_config
+            ):
+                # A job runs its group in `waves` rounds, so it needs `waves`
+                # times the per-run timeout; different lengths get their own
+                # array.
+                waves = math.ceil(len(run_group) / batch_n_jobs)
+                executor_config = (hashable_pytree(job_slurm_config), waves)
 
-            if executor_config not in executors:
-                executor = get_slurm_executor(
-                    benchmark,
-                    job_slurm_config,
-                    timeout=kwargs.get("timeout"),
-                )
-                stack.enter_context(executor.batch())
-                executors[executor_config] = executor
+                if executor_config not in executors:
+                    timeout = run_group[0].get("timeout")
+                    if timeout is not None:
+                        timeout *= waves
+                    executor = get_slurm_executor(
+                        benchmark,
+                        job_slurm_config,
+                        timeout=timeout,
+                    )
+                    stack.enter_context(executor.batch())
+                    executors[executor_config] = executor
 
-            future = executors[executor_config].submit(
-                run_one_solver, **kwargs
-            )
-            tasks.append(future)
+                tasks.append(executors[executor_config].submit(
+                    run_batch, run_group,
+                ))
 
     # Yield results as jobs finish (unordered)
     for t in as_completed(tasks):
@@ -122,4 +156,6 @@ def run_on_slurm(
                 tt.cancel()
             raise exc
 
-        yield t.results()[0]
+        # A job returns the list of its batch's results; yield each in turn.
+        for res in t.results()[0]:
+            yield res

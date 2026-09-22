@@ -17,6 +17,28 @@ benchopt run . -j 4      # 4 local workers via joblib/loky
   compare wall-times measured under different `-j` values against each other —
   use a sequential run for timing-sensitive comparisons.
 
+## Grouping runs to cut overhead: `--group-by`
+
+When each run carries heavy fixed setup (loading a large dataset, GPU init, or
+scheduling a job), running every configuration separately is wasteful.
+`--group-by` collapses the runs sharing one or more axes into a single batch, run
+as one unit, so that setup is paid once and reused — on **any** backend
+(in-process reuse for `loky`/`dask`, fewer jobs for `submitit`). It never changes
+the results, only how runs are scheduled.
+
+```bash
+benchopt run . --group-by dataset,objective    # hold these constant per batch
+```
+
+- Axes: `dataset`, `objective`, `solver`, `repetition`; comma-separated,
+  outermost first. Also settable as `group_by:` in the parallel config (CLI wins).
+- **Order controls memory (sequential runs):** only the outermost axis is
+  streamed, so list the heaviest, data-carrying axis (usually `dataset`) first.
+- `repetition` shares a cross-validation fold across solvers (e.g.
+  `dataset,objective,repetition`; `dataset`/`objective` must precede it). The
+  fold data must be solver-independent — if `set_data` calls
+  `get_seed(use_solver=True)`, benchopt raises a clear error.
+
 ## Cluster: `--parallel-config <file.yml>`
 
 A YAML file selects the backend and configures it. The only required key is
@@ -46,6 +68,11 @@ slurm_additional_parameters:
   so any submitit/SLURM parameter is available.
 - By default there is **no cap** on simultaneous jobs; set
   `slurm_array_parallelism: N` to limit concurrency when the scheduler requires it.
+- `group_by` (see "Grouping runs" above) collapses runs into single jobs to cut
+  scheduling overhead. `batch_n_jobs: N` (parallel config only) then runs each
+  batch on N workers inside its job — request the matching CPUs (e.g.
+  `slurm_cpus_per_task`) or they oversubscribe. Runs with different SLURM configs
+  are never grouped together.
 
 ### Dask
 
@@ -63,8 +90,9 @@ dask_address: 127.0.0.1:8786   # attach to a running scheduler
 - `--timeout SECONDS` (or `10m`/`2h`) is the **per-solver** wall-clock budget;
   `--no-timeout` removes it (the two flags are mutually exclusive).
 - Under `submitit`, if you do **not** set `slurm_time`, benchopt derives the job's
-  SLURM time limit as **1.5 × `--timeout`**. If a solver legitimately runs longer
-  than that (slow startup, large data), set `slurm_time` explicitly or the
+  SLURM time limit as **1.5 × `--timeout`**, times the number of runs the job
+  executes serially when `group_by` batches them. If a solver legitimately runs
+  longer than that (slow startup, large data), set `slurm_time` explicitly or the
   scheduler will kill the job before the solver finishes.
 
 ## Per-solver and per-run SLURM overrides

@@ -15,8 +15,9 @@ benchopt run . --config config.yml
 ```
 
 Key flags: `-s/--solver`, `-d/--dataset`, `-o/--objective`, `-n/--max-runs`,
-`-r/--n-repetitions`, `--timeout`, `-j/--n-jobs`, `-f/--force-solver`,
-`--no-cache`, `-e/--env`, `--config`, `--pdb`, `--profile`, `--seed`.
+`-r/--n-repetitions`, `--timeout`, `-j/--n-jobs`, `--group-by`,
+`-f/--force-solver`, `--no-cache`, `-e/--env`, `--config`, `--pdb`,
+`--profile`, `--seed`.
 
 `--collect` re-reads the cache and writes the parquet for finished cells without
 running anything — use it to preview a config's run matrix or consolidate partial
