@@ -648,6 +648,81 @@ const exportHTML = () => {
   return downloadBlob(blob, location.pathname.split("/").pop());
 };
 
+const exportLatex = (button) => {
+  // Copy the table as displayed by Grid.js to the clipboard as a booktabs
+  // LaTeX table, so the output matches the current sorting, search filter,
+  // visible columns and float precision.
+  const columns = Array.from(
+    document.querySelectorAll('#table_container .gridjs-th-content'),
+    elementToLatex);
+  const rows = Array.from(
+    document.querySelectorAll('#table_container .gridjs-table tbody tr'),
+    tr => Array.from(tr.querySelectorAll('td'), elementToLatex));
+
+  const title = (getPlotData() || {}).title;
+  let latex = '';
+  if (title) {
+    // Caption above the table, kept on a single line.
+    latex += '\\begin{table}[h]\n\\centering\n\\caption{'
+      + escapeLatex(title.replace(/<br\s*\/?>/g, ', ')) + '}\n';
+  }
+  latex += '\\begin{tabular}{l' + 'c'.repeat(Math.max(columns.length - 1, 0))
+    + '}\n\\toprule\n'
+    + columns.join(' & ') + ' \\\\\n\\midrule\n'
+    + rows.map(r => r.join(' & ') + ' \\\\').join('\n')
+    + '\n\\bottomrule\n\\end{tabular}\n';
+  if (title) latex += '\\end{table}\n';
+
+  // Flash feedback on the button label (the trailing span on the desktop
+  // button, the link text itself in the mobile menu).
+  const label = button.querySelector('span:last-child') || button;
+  const original = label.textContent;
+  navigator.clipboard.writeText(latex)
+    .then(() => label.textContent = 'Copied!',
+          () => label.textContent = 'Error!')
+    .then(() => setTimeout(() => label.textContent = original, 2500));
+  return false;
+};
+
+const exportPDF = () => {
+  // Same div renderPlot() drew into: legend container for scatter, else the
+  // plain plot container.
+  const plot = document.getElementById(
+    isChart('scatter') ? 'plot_with_legend_container' : 'plot_container');
+  const width = plot.layout.width || plot.clientWidth;
+  const height = plot.layout.height || plot.clientHeight;
+  const filename = state().objective + '_' + state().dataset + '_'
+    + state().objective_column + '_' + state().plot_kind;
+
+  // Print the vector SVG to PDF with the browser's own renderer (svg2pdf
+  // mangles the axes; the browser renders the SVG faithfully). The user picks
+  // "Save as PDF" in the print dialog.
+  Plotly.toImage(plot, {format: 'svg', width: width, height: height})
+    .then(dataUrl => {
+      const svgString = decodeURIComponent(dataUrl.split(',')[1]);
+      const frame = document.createElement('iframe');
+      frame.style.cssText = 'position:fixed;width:0;height:0;border:0;';
+      document.body.appendChild(frame);
+
+      const doc = frame.contentWindow.document;
+      doc.open();
+      doc.write(
+        '<!DOCTYPE html><html><head><title>' + filename + '</title><style>'
+        + '@page { size: ' + width + 'px ' + height + 'px; margin: 0 }'
+        + 'html, body { margin: 0 } svg { display: block }'
+        + '</style></head><body>' + svgString + '</body></html>');
+      doc.close();
+
+      const win = frame.contentWindow;
+      win.onafterprint = () => frame.remove();
+      win.focus();
+      win.print();
+    })
+    .catch(err => console.error('PDF export failed:', err));
+
+  return false;
+};
+
 /*
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * LEFT SIDEBAR MANAGEMENT
@@ -665,6 +740,17 @@ const renderSidebar = () => {
   renderSuboptimalRelativeToggle();
   mapSelectorsToState();
   renderPlotDropdowns();
+  renderExportButtons();
+}
+
+// Tables export to LaTeX, everything else to PDF.
+const renderExportButtons = () => {
+  const isTable = isChart('table');
+  const [shown, hidden] = isTable
+    ? ['.latex-export-btn', '.pdf-export-btn']
+    : ['.pdf-export-btn', '.latex-export-btn'];
+  show(document.querySelectorAll(shown));
+  hide(document.querySelectorAll(hidden));
 }
 
 /**
@@ -869,9 +955,9 @@ const MPL_AXIS = {
   mirror: true,
   ticks: 'outside',
   tickcolor: 'black',
-  gridcolor: '#d9d9d9',
+  gridcolor: '#b0b0b0',
   griddash: 'dot',
-  gridwidth: 0.5,
+  gridwidth: 1,
   zeroline: false,
   automargin: true,
   exponentformat: 'power',
@@ -1263,7 +1349,15 @@ const formatCell = (value) => {
   return gridjs.html(markupToHtml(text));
 };
 
-const escapeLatex = (value) => value.replace(/([&%$#_{}])/g, '\\$1');
+// One pass, so the backslashes and braces we insert are not re-escaped.
+const escapeLatex = (value) => value.replace(
+  /[\\~^&%$#_{}]/g,
+  c => ({
+    '\\': '\\textbackslash{}',
+    '~': '\\textasciitilde{}',
+    '^': '\\textasciicircum{}',
+  }[c] || `\\${c}`)
+);
 
 // Recurse: Grid.js wraps formatted cells in a <span>, and markup can be
 // nested (`**__text__**`).
@@ -1527,81 +1621,12 @@ function renderTable() {
   precisionContainer.appendChild(labelPrec);
   precisionContainer.appendChild(btnInc);
 
-  // Export Button (Right)
-  const exportButton = document.createElement("button");
-  exportButton.id = "table-export";
-  exportButton.innerText = "Export LaTeX";
-  exportButton.className = "inline-flex items-center px-4 py-2 space-x-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500";
-
-  exportButton.addEventListener('click', () => {
-    exportTable();
-  });
-
   table_container.appendChild(card);
 
   footer.appendChild(precisionContainer);
-  footer.appendChild(exportButton);
   footerWrapper.appendChild(columnsContainer);
   footerWrapper.appendChild(footer);
   table_container.appendChild(footerWrapper);
-}
-
-
-async function exportTable() {
-  const button = document.getElementById("table-export");
-  const defaultText = button.innerHTML;
-  button.innerHTML = "Copying";
-
-  // Export the table as displayed in the Grid.js table, so that the LaTeX
-  // output matches the current sorting, search filter, visible columns and
-  // float precision.
-  const displayedColumns = Array.from(
-    document.querySelectorAll('#table_container .gridjs-th-content'),
-    elementToLatex
-  );
-  const displayedRows = Array.from(
-    document.querySelectorAll('#table_container .gridjs-table tbody tr')
-  ).map(tr => Array.from(tr.querySelectorAll('td'), elementToLatex));
-
-  const title = (getPlotData() || {}).title;
-  let value = "";
-  if (title) {
-    // Caption above the table, kept on a single line.
-    value += "\\begin{table}[h]\n\\centering\n\\caption{";
-    value += escapeLatex(title.replace(/<br\s*\/?>/g, ", "));
-    value += "}\n";
-  }
-  value += "\\begin{tabular}{l";
-  value += "c".repeat(displayedColumns.length);
-  value += "}\n";
-  value += "\\hline\n";
-
-  value += displayedColumns[0];
-  displayedColumns.slice(1).forEach(metric => value += ` & ${metric}`);
-
-  value += " \\\\\n";
-  value += "\\hline\n";
-
-  displayedRows.forEach(rowData => {
-    value += rowData[0];
-    rowData.slice(1).forEach(cell => {
-      value += ` & ${cell}`;
-    });
-    value += " \\\\\n";
-  });
-
-  value += "\\hline\n";
-  value += "\\end{tabular}";
-  if (title) value += "\n\\end{table}";
-
-  try {
-    await navigator.clipboard.writeText(value);
-    button.innerHTML = "Copied in clipboard!";
-    setTimeout(() => button.innerHTML = defaultText, 2500);
-  } catch (err) {
-    button.innerHTML = "Error!";
-    setTimeout(() => button.innerHTML = defaultText, 2500);
-  }
 }
 
 /*

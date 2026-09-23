@@ -58,6 +58,9 @@ CLI
 PLOT
 ~~~~
 
+- Add ``Download PDF`` button in the HTML interface to download the current plot as a PDF file.
+  By `Jad Yehya`_ & `Hippolyte Verninas`_ (:gh:`777`)
+
 - Table cells can be formatted with ``**bold**``, ``*italic*`` and
   ``__underlined__`` markers.
   By `Hippolyte Verninas`_ (:gh:`993`)
