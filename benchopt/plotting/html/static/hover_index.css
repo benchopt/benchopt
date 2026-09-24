@@ -348,6 +348,10 @@ input:checked+.slider:before {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
+  position: relative; /* anchors the width drag handle */
+  /* so the dragged width is the full box: the clamp compares it to the parent */
+  box-sizing: border-box;
+  max-width: 100%;
 }
 
 #legend_title {
@@ -553,7 +557,9 @@ g.hovertext:has(path + [data-unformatted*="lower fence"])
      keeps the figure (and its right handle) clear of the scrollbar. */
   flex: none;
   position: relative;
-  max-width: calc(100% - 1rem);
+  /* Margin, not padding, so it stays outside the box Plotly measures. */
+  margin: 1.5rem;
+  max-width: calc(100% - 4rem); /* 3rem of margin + 1rem clear of the scrollbar */
 }
 
 /* Drag handles on the right, bottom, and bottom-right corner of the figure. */
@@ -628,13 +634,41 @@ g.hovertext:has(path + [data-unformatted*="lower fence"])
     transparent 78%);
 }
 
-/* Compact size readout, tucked into the figure's bottom-right corner (left of
-   the diagonal handle). Stays out of the way until you hover the figure or
+/* Shift the figure's own handles out into its margin, so they sit beside the
+   plot instead of over it. Scoped to the figure divs: the legend carries a
+   .resize-handle-x too, and that one belongs on the legend's edge. */
+#plot_container,
+#plot_with_legend_container {
+  --handle: 10px;      /* thickness of the drag bands */
+  --handle-xy: 20px;   /* corner grip */
+  --handle-gap: 4px;   /* clear space between a band and the plot */
+  --handle-offset: calc(-1 * (var(--handle) + var(--handle-gap)));
+}
+#plot_container > .resize-handle-x,
+#plot_with_legend_container > .resize-handle-x {
+  right: var(--handle-offset);
+  width: var(--handle);
+}
+#plot_container > .resize-handle-y,
+#plot_with_legend_container > .resize-handle-y {
+  bottom: var(--handle-offset);
+  height: var(--handle);
+}
+#plot_container > .resize-handle-xy,
+#plot_with_legend_container > .resize-handle-xy {
+  right: var(--handle-offset);
+  bottom: var(--handle-offset);
+  width: var(--handle-xy);
+  height: var(--handle-xy);
+}
+
+/* Compact size readout, tucked into the figure's bottom-right corner (the
+   handles sit outside it). Stays out of the way until you hover the figure or
    drag a handle. JS appends it into the current figure div. */
 #figsize_controls {
   position: absolute;
   bottom: 0.5rem;
-  right: 1.5rem;
+  right: 0.5rem;
   z-index: 7;
   gap: 0.25rem;
   padding: 0.15rem 0.4rem;
@@ -664,4 +698,35 @@ g.hovertext:has(path + [data-unformatted*="lower fence"])
 }
 #figsize_controls .unit {
   color: #9ca3af;
+}
+
+/* Dropdown next to the PDF button: what to put in the exported file. The page's
+   utility sheet has no left-0/z-20/min-w/shadow-lg, so they live here. */
+/* Split button: PDF and its chevron are fused, only the outer corners round.
+   The utility sheet has no rounded-l-md/rounded-r-md. */
+.pdf-export-btn:not(.no-menu) > a:first-child {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+#pdf-menu-toggle {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  border-left-color: rgba(255, 255, 255, 0.4);
+}
+
+#pdf-menu {
+  top: 100%;
+  /* Right-aligned: the button sits at the right edge of the toolbar, a
+     left-aligned menu runs off the page. */
+  right: 0;
+  z-index: 20;
+  min-width: 100%;
+  white-space: nowrap;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+#pdf-menu a:hover {
+  background-color: #f3f4f6;
 }
