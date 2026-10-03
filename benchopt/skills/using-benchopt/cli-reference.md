@@ -39,8 +39,8 @@ Key flags: `-s/--solver`, `-d/--dataset`, `--env-name`, `--recreate`, `--gpu`,
 ---
 
 ### `benchopt test`
-Run the built-in benchmark test suite (exercises `test_parameters` /
-`test_config`, validates `get_data` → `set_data` → `evaluate_result` chain).
+Run the built-in benchmark test suite (exercises `test_config`, validates
+`get_data` → `set_data` → `evaluate_result` chain).
 
 ```bash
 benchopt test .                         # full suite in a temp env

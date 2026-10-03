@@ -98,13 +98,20 @@ def prepare(self) -> None:
 
 ## Testing
 
-`test_parameters` (same shape as `parameters`) selects a tiny, fast config so
-`benchopt test` runs quickly. See [debug.md](./debug.md) for what the suite
-checks.
+`test_config` is the main hook: a flat dict of **single** parameter values (not
+lists) that `benchopt test` uses to instantiate the dataset in a tiny, fast
+config, e.g. `test_config = {"n_samples": 10, "n_features": 5}`. See
+[debug.md](./debug.md) for what the suite checks.
+
+`test_parameters` is a legacy fallback, Dataset-only: a grid of variants (same
+shape as `parameters`) used only by `test_solver_run`. benchopt tries each
+combination in turn and the test passes as long as one is compatible with the
+solver. Prefer `test_config` for a single fast case; reach for `test_parameters`
+only when solvers need different dataset variants to pass.
 
 ## Validate
 
-- `benchopt test . -k <Dataset>` to exercise `test_parameters` (fast design
+- `benchopt test . -k <Dataset>` to exercise the test config (fast design
   checks; add `--skip-install` if your env can't build isolated envs).
 - `benchopt run . -d <name> -s <solver> -n 5` as a smoke test — pick a fast
   solver, as a real run can be slow.
