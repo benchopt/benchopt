@@ -673,16 +673,34 @@ const renderSidebar = () => {
 const renderScaleSelector = () => {
   if (isChart(['table', 'image'])) {
     hide(document.querySelectorAll("#scale-form-group"));
-  } else {
-    show(document.querySelectorAll("#scale-form-group"), 'block');
+    return;
   }
 
+  show(document.querySelectorAll("#scale-form-group"), 'block');
+  const logScaleAvailability = getLogScaleAvailability();
   if (isChart(['boxplot', 'bar_chart'])) {
     hide(document.querySelectorAll(".other_plot_option"));
-    show(document.querySelectorAll(".boxplot_option"));
+    if (logScaleAvailability.y) {
+      show(document.querySelectorAll(".boxplot_option"));
+    } else {
+      hide(document.querySelectorAll(".boxplot_option"));
+    }
   } else {
     hide(document.querySelectorAll(".boxplot_option"));
-    show(document.querySelectorAll(".other_plot_option"));
+    if (logScaleAvailability.x) {
+      show(document.querySelectorAll(".other_plot_option.log-x-option"));
+    } else {
+      hide(document.querySelectorAll(".other_plot_option.log-x-option"));
+    }
+    if (logScaleAvailability.y) {
+      show(document.querySelectorAll(".other_plot_option.log-y-option"));
+    } else {
+      hide(document.querySelectorAll(".other_plot_option.log-y-option"));
+    }
+  }
+
+  if (!isScaleAvailable(state().scale, logScaleAvailability)) {
+    window._state.scale = 'linear';
   }
 };
 
@@ -1042,6 +1060,44 @@ const show = (HTMLElements, style = '') => {
   }
 
   HTMLElements.forEach(h => h.style.display = style);
+};
+
+const hasNegativeValue = values => values.some(
+  value => Array.isArray(value) ? hasNegativeValue(value) : value < 0
+);
+
+const getLogScaleAvailability = () => {
+  const plotData = getPlotData().data;
+  if (isChart('scatter')) {
+    const xValues = plotData.flatMap(curve => [
+      ...curve.x,
+      ...(curve.x_low || []),
+      ...(curve.x_high || []),
+    ]);
+    const yValues = plotData.flatMap(curve => [
+      ...curve.y,
+      ...(curve.y_low || []),
+      ...(curve.y_high || []),
+    ]);
+    return {x: !hasNegativeValue(xValues), y: !hasNegativeValue(yValues)};
+  }
+
+  const yValues = plotData.flatMap(curve => curve.y);
+  return {x: true, y: !hasNegativeValue(yValues)};
+};
+
+const isScaleAvailable = (scale, availability) => {
+  switch (scale) {
+    case 'semilog-x':
+      return availability.x;
+    case 'semilog-y':
+    case 'log':
+      return availability.y;
+    case 'loglog':
+      return availability.x && availability.y;
+    default:
+      return true;
+  }
 };
 
 /*
