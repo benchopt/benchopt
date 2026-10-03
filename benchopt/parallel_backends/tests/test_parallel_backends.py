@@ -230,3 +230,54 @@ def test_submitit_backend(monkeypatch):
             ], standalone_mode=False)
 
     out.check_output("Distributed run with backend: submitit", repetition=1)
+
+
+@pytest.mark.parametrize("config, match", [
+    ({"backend": "submitit", "group_by": "invalid"}, "Unknown"),
+    # 'repetition' present but not nested inside dataset/objective (ordering).
+    (
+        {"backend": "submitit",
+         "group_by": ["repetition", "dataset", "objective"]},
+        "must nest inside",
+    ),
+    ({"backend": "submitit", "batch_n_jobs": 2}, "requires `group_by`"),
+    ({"backend": "loky", "batch_n_jobs": 2}, "requires `group_by`"),
+    (
+        {"backend": "submitit", "group_by": "dataset", "batch_n_jobs": 0},
+        "positive integer",
+    ),
+    (
+        {"backend": "submitit", "group_by": "dataset", "batch_n_jobs": True},
+        "positive integer",
+    ),
+])
+def test_invalid_parallel_config(config, match):
+    with pytest.raises((AssertionError, ValueError), match=match):
+        check_parallel_config(config, None)
+
+
+def test_group_by_cli_overrides_parallel_config():
+    # CLI `--group-by` (comma-separated) overrides the parallel-config file.
+    cfg = check_parallel_config(
+        {"backend": "loky", "group_by": "solver"}, None,
+        group_by="dataset,objective",
+    )
+    assert cfg["group_by"] == ["dataset", "objective"]
+    # Without a CLI value, the file's `group_by` is kept.
+    cfg = check_parallel_config(
+        {"backend": "loky", "group_by": "solver"}, None,
+    )
+    assert cfg["group_by"] == ["solver"]
+    # CLI `--group-by` works with no parallel-config file at all.
+    cfg = check_parallel_config(None, None, group_by="dataset")
+    assert cfg["group_by"] == ["dataset"]
+
+
+@pytest.mark.parametrize("backend", ["loky", "dask", "submitit"])
+def test_group_by_allowed_on_all_backends(backend):
+    # `group_by`/`batch_n_jobs` reduce per-run overhead (shared in-process
+    # state) on any backend, not just submitit.
+    cfg = check_parallel_config(
+        {"backend": backend, "group_by": "dataset"}, None
+    )
+    assert cfg["group_by"] == ["dataset"]

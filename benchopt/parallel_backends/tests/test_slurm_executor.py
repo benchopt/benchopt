@@ -1,3 +1,5 @@
+from types import SimpleNamespace
+
 import pytest
 
 from benchopt.runner import run_benchmark
@@ -9,6 +11,7 @@ submitit = pytest.importorskip("submitit")
 
 from submitit.slurm.test_slurm import mocked_slurm  # noqa: E402
 from benchopt.parallel_backends.slurm_executor import (  # noqa: E402
+    _split_by_slurm_config,
     get_slurm_executor,
     get_solver_slurm_config,
 )
@@ -37,6 +40,62 @@ def dummy_solver():
         }
 
     return DummySolver()
+
+
+def _annotate_task_result(result, config):
+    # `run` returns a (results, key, status, msg) tuple where
+    # `results` is a list of run-statistics dicts. Only annotate those dicts
+    # with the SLURM config used to run the job.
+    if isinstance(result, tuple):
+        res, *rest = result
+        res = _annotate_task_result(res, config)
+        return (res, *rest)
+    if isinstance(result, list):
+        return [_annotate_task_result(item, config) for item in result]
+    if isinstance(result, dict):
+        return {**result, **{f"s_{k}": v for k, v in config.items()}}
+    return result
+
+
+class MockedTask:
+    """Stand-in for a submitit job future, used by the slurm tests."""
+
+    job_id = "fake"
+
+    def __init__(self, func, args, kwargs, config):
+        self.func = func
+        self.args = args
+        self.kwargs = kwargs
+        self.config = config
+
+    def done(self): return True
+    def exception(self): return None
+    def cancel(self): return None
+
+    def results(self):
+        result = self.func(*self.args, **self.kwargs)
+        return [_annotate_task_result(result, self.config)]
+
+
+@pytest.fixture
+def mocked_submitit(monkeypatch):
+    """Capture submitit submissions and run them locally, returning the list
+    of captured submissions for inspection.
+    """
+    submissions = []
+
+    def submit(self, func, *args, **kwargs):
+        config = self._executor.parameters
+        submissions.append(
+            dict(func=func, args=args, kwargs=kwargs, config=config)
+        )
+        return MockedTask(func, args, kwargs, config)
+
+    monkeypatch.setattr("submitit.AutoExecutor.submit", submit)
+    monkeypatch.setattr(
+        "submitit.helpers.as_completed.__defaults__", (None, 0.1)
+    )
+    return submissions
 
 
 def test_get_slurm_executor(dummy_slurm_config):
@@ -75,41 +134,7 @@ def test_merge_configs(dummy_slurm_config):
     assert parameters["partition"] == dummy_slurm_config["slurm_partition"]
 
 
-def test_run_on_slurm(monkeypatch, dummy_slurm_config):
-
-    class MockedTask:
-
-        def __init__(self, task, config):
-            self.job_id = "fake"
-            self.task = task
-            self.config = config
-
-        def done(self): return True
-        def exception(self): return None
-
-        # Result return as many information about the run as possible
-        # Need to output a list for `results`, and benchopt also expect
-        # a list from `run_one_solver`
-        def results(self):
-            func, args, kwargs = self.task
-            res, key, status, msg = func(*args, **kwargs)
-            res = [
-                {**r, **{f"s_{k}": v for k, v in self.config.items()}}
-                for r in res
-            ]
-            return [(res, key, status, msg)]
-
-    # Fake submit to allow running as on a slurm cluster and
-    # get the configuration back
-    def submit(self, func, *args, **kwargs):
-        # Mock submit to return a mocked task, with the executor's parameters
-        return MockedTask((func, args, kwargs), self._executor.parameters)
-
-    monkeypatch.setattr("submitit.AutoExecutor.submit", submit)
-    monkeypatch.setattr(
-        "submitit.helpers.as_completed.__defaults__", (None, 0.1)
-    )
-
+def test_run_on_slurm(mocked_submitit, dummy_slurm_config):
     parallel_config = {
         "backend": "submitit",
         "slurm_nodes": 1,
@@ -201,3 +226,61 @@ def test_run_on_slurm(monkeypatch, dummy_slurm_config):
             p_all_params[f"s_{p}"].fillna("") ==
             slurm_params.get(f"slurm_{p}", "")
         )
+
+
+def test_split_by_slurm_config():
+    # A `group_runs` batch shares its `group_by` key but can still span
+    # several solvers with different `slurm_params`; `_split_by_slurm_config`
+    # further partitions it so each distinct SLURM config gets its own job.
+    solver = SimpleNamespace(slurm_params={}, _parameters={})
+    other = SimpleNamespace(slurm_params={"slurm_nodes": 4}, _parameters={})
+    batch = [
+        {"meta": {"dataset_name": "d1"}, "solver": solver},
+        {"meta": {"dataset_name": "d1"}, "solver": solver},
+        {"meta": {"dataset_name": "d1"}, "solver": other},
+    ]
+    groups = _split_by_slurm_config(batch, {})
+    assert sorted(len(kw) for _cfg, kw in groups) == [1, 2]
+
+    # `benchopt prepare` passes the dataset directly, and has no solver --
+    # such runs all share the top-level SLURM config.
+    prepare = [{"dataset": "d1"}, {"dataset": "d2"}]
+    groups = _split_by_slurm_config(prepare, {})
+    assert len(groups) == 1
+    assert len(groups[0][1]) == 2
+
+
+@pytest.mark.parametrize("batch_n_jobs, waves", [(1, 2), (2, 1)])
+def test_run_on_slurm_grouped(mocked_submitit, batch_n_jobs, waves):
+    # Two solvers grouped by dataset are collapsed into a single job that runs
+    # them in `waves` rounds, with a wall-time sized for the whole batch.
+    timeout = 100
+    parallel_config = {
+        "backend": "submitit",
+        "group_by": "dataset",
+        "batch_n_jobs": batch_n_jobs,
+    }
+    solver = """
+        from benchopt.utils.temp_benchmark import TempSolver
+
+        class Solver(TempSolver):
+            name = "{name}"
+    """
+    solvers = [solver.format(name="solver_1"), solver.format(name="solver_2")]
+
+    with temp_benchmark(solvers=solvers) as bench, mocked_slurm():
+        with CaptureCmdOutput(delete_result_files=False) as out:
+            run_benchmark(
+                bench.benchmark_dir, ["solver_1", "solver_2"],
+                dataset_names=["test-dataset"], max_runs=0, timeout=timeout,
+                parallel_config=parallel_config, plot_result=False,
+            )
+        df = read_results(out.result_files[0])
+
+    assert len(df) == 2
+    assert len(mocked_submitit) == 1
+    sub = mocked_submitit[0]
+    # The submitted function is the batched runner (`run_batch` factory's
+    # closure); `batch_n_jobs` is validated via the wall-time `waves` below.
+    assert sub["func"].__name__ == "_run_batch"
+    assert sub["config"]["time"] == f"00:{int(1.5 * waves * timeout)}"

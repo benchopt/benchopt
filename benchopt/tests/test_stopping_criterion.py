@@ -2,8 +2,9 @@ import pytest
 import numpy as np
 
 from benchopt.cli.main import run
-from benchopt._generate_runs import get_solver_kwargs
+from benchopt._generate_runs import generate_run_kwargs
 from benchopt.tests.utils import CaptureCmdOutput
+from benchopt.utils.run_context import RunContext
 from benchopt.utils.temp_benchmark import temp_benchmark
 from benchopt.utils.terminal_output import TerminalOutput
 
@@ -384,18 +385,17 @@ def test_sampling_strategy_meta_independent_of_execution_order(no_debug_log):
         datasets = {d.name: d for d in bench.get_datasets()}
 
         def sampling_strategy_for(dataset_name):
-            dataset = datasets[dataset_name].get_instance()
-            terminal = TerminalOutput(1, False)
-            terminal.set(
-                solver=solver_class, dataset=dataset,
-                objective=objective_instance, i_solver=0
+            # Drive the public generator for that dataset and read the
+            # ``sampling_strategy`` it puts in ``meta`` (the cache key).
+            runs = generate_run_kwargs(
+                bench,
+                solvers=bench.check_solver_patterns([]),
+                datasets=bench.check_dataset_patterns([dataset_name]),
+                objectives=bench.check_objective_filters([]),
+                n_repetitions=1, max_runs=1,
+                terminal=TerminalOutput(1, False), run_context=RunContext(),
             )
-            kwargs = next(get_solver_kwargs(
-                benchmark=bench, dataset=dataset, objective=objective_instance,
-                solver=solver_class.get_instance(), n_repetitions=1,
-                max_runs=1, terminal=terminal,
-            ))
-            return kwargs['meta']['sampling_strategy']
+            return next(runs)['meta']['sampling_strategy']
 
         # Computed while `Solver.sampling_strategy` is still pristine (`None`)
         # -- mirrors what a fresh process (e.g. `benchopt run --collect`)

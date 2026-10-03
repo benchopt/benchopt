@@ -64,6 +64,7 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
         "html",
         "n_jobs",
         "parallel_config",
+        "group_by",
         "pdb",
         "profile",
         "env_name",
@@ -158,6 +159,12 @@ def _get_run_args(cli_kwargs, config_file_kwargs):
               "The YAML file provided to this argument is used to setup the"
               "parallel run. See :ref:`parallel_run` for a detailed "
               "description.")
+@click.option("--group-by", metavar="<axes>", default=None, type=str,
+              help="Comma-separated axes to hold constant per batch of runs "
+              "(outermost first), grouping runs into fewer execution units to "
+              "cut per-run overhead, e.g. `--group-by dataset,objective`. "
+              "Valid axes: dataset, objective, solver, repetition. Overrides "
+              "`group_by` from --parallel-config. See :ref:`run_grouping`.")
 @click.option("--pdb",
               is_flag=True,
               help="Launch a debugger if there is an error. This will launch "
@@ -215,7 +222,7 @@ def run(config_file=None, **kwargs):
     (
         benchmark, solver_names, forced_solvers, dataset_names,
         objective_filters, max_runs, n_repetitions, timeout, no_timeout,
-        collect, plot, display, html, n_jobs, parallel_config, pdb,
+        collect, plot, display, html, n_jobs, parallel_config, group_by, pdb,
         do_profile, env_name, no_cache, output, seed
     ) = _get_run_args(kwargs, config)
 
@@ -287,7 +294,9 @@ def run(config_file=None, **kwargs):
             use_profile()  # needs to be called before validate_solver_patterns
 
         # Get the config for parallel runs
-        parallel_config = check_parallel_config(parallel_config, n_jobs)
+        parallel_config = check_parallel_config(
+            parallel_config, n_jobs, group_by=group_by
+        )
 
         print("Loading objective, datasets and solvers...", end='', flush=True)
         # Check that the objective is installed or raise an error
@@ -380,6 +389,9 @@ def run(config_file=None, **kwargs):
         parallel_args += f"--n-jobs {n_jobs} "
     if parallel_config:
         parallel_args += rf"--parallel-config {parallel_config} "
+    if group_by:
+        gb = group_by if isinstance(group_by, str) else ",".join(group_by)
+        parallel_args += f'--group-by "{gb}" '
     cmd = (
         rf"benchopt run --local {benchmark.benchmark_dir} "
         rf"{f'--n-repetitions {n_repetitions}' if n_repetitions else ''} "
