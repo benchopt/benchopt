@@ -55,7 +55,7 @@ Traps that are wrong-from-memory (authoritative details in the sub-files):
 import third-party deps at module top level and let `ImportError` propagate —
 no `try/except`, and no `safe_import_context` unless a class-body attribute
 needs the imported name; `requirements` is a literal list of strings; add a
-small `test_parameters` / `test_config`; never instantiate `Dataset()` /
+small `test_config`; never instantiate `Dataset()` /
 `Objective()` / `Solver()` directly or `import` benchmark modules by hand
 (`from objective import Objective`) — constructor kwargs silently skip the
 parameter grid, and hand-imports risk shadowing `datasets/` with PyPI's

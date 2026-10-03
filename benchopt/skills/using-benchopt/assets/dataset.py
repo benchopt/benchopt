@@ -9,8 +9,10 @@ class Dataset(BaseDataset):
         "n_samples": [100, 1000],
         "n_features": [20],
     }
-    # Small, fast config used by `benchopt test`.
-    test_parameters = {"n_samples": [10], "n_features": [5]}
+    # Small, fast config used by `benchopt test` (single values, not lists).
+    test_config = {"n_samples": 10, "n_features": 5}
+    # Legacy grid fallback for test_solver_run only (same shape as parameters):
+    # test_parameters = {"n_samples": [10], "n_features": [5]}
     # Params that don't affect prepare() output (omit or set to "all"):
     # prepare_cache_ignore = ("seed",)
 
