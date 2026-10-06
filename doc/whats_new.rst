@@ -10,6 +10,13 @@ What's new
 Version 1.10.1 -- in developement
 ---------------------------------
 
+PLOT
+~~~~
+
+- Add ``Download PDF`` button in the HTML interface to download the current
+  plot as a PDF file.
+  By `Jad Yehya`_ & `Hippolyte Verninas`_ (:gh:`989`)
+
 
 .. _changes_1_10:
 

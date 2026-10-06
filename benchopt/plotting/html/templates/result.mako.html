@@ -155,6 +155,8 @@
                             <a href="#" class="text-white block px-3 py-2 rounded-md text-base font-medium" onclick="return exportConfigs()">Download config</a>
                             <a href="#" class="text-white block px-3 py-2 rounded-md text-base font-medium" onclick="return exportHTML()">Download HTML</a>
                             <a href="${result['fname']}" class="text-white block px-3 py-2 rounded-md text-base font-medium">Download data</a>
+                            <a href="#" class="pdf-export-btn text-white block px-3 py-2 rounded-md text-base font-medium" onclick="return exportPDF()">Download PDF</a>
+                            <a href="#" class="latex-export-btn text-white block px-3 py-2 rounded-md text-base font-medium" onclick="return exportLatex(this)">Copy LaTeX</a>
                         </div>
                     </div>
                 </nav>
@@ -314,6 +316,34 @@
                                 <span class="hidden lg:inline">Data</span>
                             </a>
                         </span>
+
+                        <span class="pdf-export-btn relative inline-flex">
+                            <a href="#" class="inline-flex items-center px-4 py-2 space-x-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" onclick="return exportPDF()">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                </svg>
+                                <span class="hidden lg:inline">PDF</span>
+                            </a>
+                            <a href="#" id="pdf-menu-toggle" title="Choose what to download" class="inline-flex items-center px-2 py-2 border border-transparent rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" onclick="return togglePDFMenu(event)">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </a>
+                            <div id="pdf-menu" class="absolute mt-1 py-1 bg-white rounded-md" style="display: none">
+                                <a href="#" class="block px-4 py-2 text-sm text-gray-700" onclick="return exportPDF('both')">Figure with legend</a>
+                                <a href="#" class="block px-4 py-2 text-sm text-gray-700" onclick="return exportPDF('figure')">Figure only</a>
+                                <a href="#" class="block px-4 py-2 text-sm text-gray-700" onclick="return exportPDF('legend')">Legend only</a>
+                            </div>
+                        </span>
+
+                        <span class="latex-export-btn" style="display: none">
+                            <a href="#" class="inline-flex items-center px-4 py-2 space-x-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" onclick="return exportLatex(this)">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                </svg>
+                                <span class="hidden lg:inline">LaTeX</span>
+                            </a>
+                        </span>
                     </div>
                 </div>
 
@@ -427,6 +457,9 @@
         <script src="https://cdn.plot.ly/plotly-2.12.1.min.js"></script>
         <!-- Used to render the table plots -->
         <script src="https://cdn.jsdelivr.net/npm/gridjs@6.2.0/dist/gridjs.umd.js"></script>
+        <!-- Used to write the vector PDF exports -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+        <script src="https://unpkg.com/svg2pdf.js@2.2.3/dist/svg2pdf.umd.min.js"></script>
         <!-- Used for the brand animation -->
         <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/2.0.2/anime.min.js"></script>
         <!-- Define the brand animation -->
