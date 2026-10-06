@@ -2,7 +2,7 @@ from benchopt import BaseSolver
 
 
 class Solver(BaseSolver):
-    name = "my-solver"
+    name = "my-solver"  # display/CLI identifier; must not contain "/"
     requirements = []
     parameters = {}
     # Fast config for `benchopt test` — solver params as top-level keys, with

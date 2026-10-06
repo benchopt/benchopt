@@ -17,6 +17,11 @@ def test_dataset_class(benchmark, dataset_class):
     assert hasattr(dataset_class, 'name'), "All dataset should expose a name"
     assert isinstance(dataset_class.name, str), (
         "The dataset's name should be a string")
+    assert '/' not in dataset_class.name, (
+        f"The dataset's name should not contain '/' (got "
+        f"'{dataset_class.name}'). A '/' makes the name ambiguous with a "
+        "`-d path/to/dataset.py` file selector."
+    )
 
     # Ensure that the dataset exposes a `get_data` function
     # that is callable
@@ -140,6 +145,11 @@ def test_solver_class(benchmark, solver_class):
     assert hasattr(solver_class, 'name'), "All solver should expose a name"
     assert isinstance(solver_class.name, str), (
         "The solver's name should be a string"
+    )
+    assert '/' not in solver_class.name, (
+        f"The solver's name should not contain '/' (got "
+        f"'{solver_class.name}'). A '/' makes the name ambiguous with a "
+        "`-s path/to/solver.py` file selector."
     )
 
     # Check that the solver_class uses a valid sampling_strategy
@@ -324,7 +334,9 @@ def check_test(request):
     test_config_file = benchmark.get_test_config_file()
     if test_config_file is None:
         return None
-    test_config_module = _get_module_from_file(test_config_file)
+    test_config_module = _get_module_from_file(
+        test_config_file, benchmark.benchmark_dir
+    )
     check_func_name = f"check_{request.function.__name__}"
     check_func = getattr(test_config_module, check_func_name, None)
     if check_func is None and request.function.__name__ == "test_solver_run":

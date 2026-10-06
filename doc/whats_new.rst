@@ -7,8 +7,14 @@ What's new
 
 .. _dev:
 
-Version 1.10.0 -- in development
---------------------------------
+Version 1.10.1 -- in developement
+---------------------------------
+
+
+.. _changes_1_10:
+
+Version 1.10.0 -- 21/09/2026
+----------------------------
 
 .. warning::
     This release changes the run cache key, so upgrading will recompute
@@ -17,10 +23,28 @@ Version 1.10.0 -- in development
 CLI
 ~~~
 
+- ``-s`` / ``-d`` now accept a path to a ``.py`` file, loading the
+  ``Solver`` / ``Dataset`` directly from that file (even outside the
+  benchmark's ``solvers/`` / ``datasets/`` folders), with optional
+  ``file.py[param=value]`` sub-selection. By `Thomas Moreau`_ (:gh:`1003`)
+
+- ``--output`` now accepts a path: a value containing a path separator is
+  written verbatim instead of under ``<BENCHMARK>/outputs/``.
+  By `Thomas Moreau`_ (:gh:`1003`)
+
 - Add ``benchopt info -f <result_file>`` (repeatable, or ``-f all``) to
   summarize result file(s) instead of listing benchmark solvers/datasets;
   plain ``benchopt info`` now also lists available result files.
   By `Thomas Moreau`_ (:gh:`990`)
+
+- Add ``benchopt info <benchmark> --version`` to check that the installed
+  benchopt satisfies the benchmark's ``min_benchopt_version``.
+  By `Thomas Moreau`_ (:gh:`1009`)
+
+- Add a ``raise_on_error`` config setting (``BENCHOPT_RAISE_ON_ERROR``) that
+  re-raises the first solver/dataset/objective error to make a run fail fast,
+  without turning on the extra logging of ``BENCHOPT_DEBUG``.
+  By `Thomas Moreau`_ (:gh:`1005`)
 
 - Ship agent skills (``SKILL.md``, `Agent Skills <https://agentskills.io>`_
   standard) as package data and add ``benchopt sync-skills`` to install them
@@ -28,7 +52,8 @@ CLI
   ``.claude/skills/`` mirror for Claude Code. The skills are consolidated into a
   single ``using-benchopt`` skill (router ``SKILL.md`` plus task sub-files and
   asset templates) and ``sync-skills`` stamps the installed version and
-  retargets doc links. By `Thomas Moreau`_ (:gh:`959`, :gh:`980`, :gh:`982`)
+  retargets doc links.
+  By `Thomas Moreau`_ (:gh:`959`, :gh:`980`, :gh:`982`, :gh:`1008`)
 
 PLOT
 ~~~~
@@ -94,6 +119,16 @@ TST
 FIX
 ~~~
 
+- Config warnings cleanup: setting a benchmark option (e.g. ``data_home``)
+  through its ``BENCHOPT_*`` environment variable no longer warns, since these
+  are honored for every benchmark. The unused ``data_dir`` global option is
+  removed, and the internal ``_g_config_check``/``_bench_config_check`` flags
+  no longer leak into the warning's option list or the documented settings.
+  By `Thomas Moreau`_ (:gh:`1005`)
+- Fix warning onvalid a benchmark option (e.g. ``data_home``) passed
+  through its ``BENCHOPT_*`` env var. Also clean up trailing unused or
+  private keys from user facing information.
+  By `Thomas Moreau`_ (:gh:`1005`)
 - Fix ``get_seed`` raising in a ``Dataset``'s ``get_data`` when running with
   ``-j`` greater than 1. By `Thomas Moreau`_ (:gh:`984`)
 

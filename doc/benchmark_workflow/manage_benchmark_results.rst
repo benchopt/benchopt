@@ -15,6 +15,9 @@ directory, with a ``.parquet`` file.
 By default, the name of the file include the date and time of the run,
 as ``benchopt_run_<date>_<time>.parquet`` but a custom name can be given using
 the :option:`--output` option of ``benchopt run``.
+A bare name is stored in ``./outputs``, while a value containing a path
+separator (e.g. ``--output /tmp/results.parquet``) is treated as an explicit
+path and written exactly there, leaving the benchmark directory untouched.
 The DataFrame contains the following columns:
 
 - ``objective_name|solver_name|dataset_name``: the names of the different benchopt

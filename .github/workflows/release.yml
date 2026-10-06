@@ -15,7 +15,7 @@ jobs:
       with:
         fetch-depth: 0
     - name: Set up Python
-      uses: actions/setup-python@v6
+      uses: actions/setup-python@v7
       with:
         python-version: "3.12"
     - name: Install pypa/build
@@ -58,7 +58,7 @@ jobs:
         path: dist
     - name: Publish distribution 📦 to PyPI
       if: ${{ success() && steps.wait-for-tests.outputs.conclusion == 'success' }}
-      uses: pypa/gh-action-pypi-publish@release/v1
+      uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33  # v1.14.2
 
   github-release:
     name: >-
@@ -79,7 +79,7 @@ jobs:
         name: python-package
         path: dist/
     - name: Sign the dists with Sigstore
-      uses: sigstore/gh-action-sigstore-python@v3.4.0
+      uses: sigstore/gh-action-sigstore-python@v3.5.0
       with:
         inputs: >-
           ./dist/*.tar.gz

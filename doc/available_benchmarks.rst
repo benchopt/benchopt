@@ -8,7 +8,7 @@ Available benchmarks
     list of benchmarks, see GitHub repositories of the form `benchopt/benchmark_*
     <https://github.com/orgs/benchopt/repositories?q=benchmark_&type=all&language=&sort=stargazers/>`_.
 
-**Notation:**  In what follows, :math:`n` (or ``n_samples``) stands for the number of samples and :math:`p`` (or ``n_features``) stands for the number of features.
+**Notation:**  In what follows, :math:`n` (or ``n_samples``) stands for the number of samples and :math:`p` (or ``n_features``) stands for the number of features.
 
 .. math::
 
@@ -48,7 +48,7 @@ Available benchmarks
 
 .. math::
 
-  \min_{w, \sigma} {\sum_{i=1}^n \left(\sigma + H_{\epsilon}\left(\frac{X_{i}w - y_{i}}{\sigma}\right)\sigma\right) + \lambda {\|w\|_2}^2}
+  \min_{w, \sigma} {\sum_{i=1}^n \left(\sigma + H_{\epsilon}\left(\frac{X_{i}w - y_{i}}{\sigma}\right)\sigma\right) + \lambda \|w\|_2^2}
 
 where
 
@@ -62,7 +62,7 @@ where
 - `L1-regularized quantile regression <https://github.com/benchopt/benchmark_quantile_regression>`_: |Build Status QuantileRegL1|
 
 .. math::
-    \min_{w} \frac{1}{n} \sum_{i=1}^{n} PB_q(y_i - X_i w) + \lambda ||w||_1.
+    \min_{w} \frac{1}{n} \sum_{i=1}^{n} PB_q(y_i - X_i w) + \lambda ||w||_1
 
 where :math:`PB_q` is the pinball loss:
 

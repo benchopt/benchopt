@@ -74,9 +74,9 @@ Before writing components, settle:
   `get_data()` (details in [add-dataset.md](./add-dataset.md)). Benchmark-wide,
   precompute reusable, solver-independent references in `prepare()` (e.g. a
   ground-truth trajectory) so each evaluation only does the cheap solver-dependent work.
-- Give datasets/solvers a `test_parameters` dict pointing at a tiny, fast
-  configuration, and when possible, ship a zero-dependency `Simulated` dataset so
-  the benchmark always has a no-install smoke test.
+- Give datasets/solvers a `test_config` dict pointing at a tiny, fast
+  configuration (single values), and when possible, ship a zero-dependency
+  `Simulated` dataset so the benchmark always has a no-install smoke test.
 
 ## Continuous integration
 
@@ -97,7 +97,7 @@ and calls two reusable workflows from `benchopt/template_benchmark`:
 
 - `flake8 .` or `ruff check .` on the changed files.
 - `benchopt run . -d Simulated -s <solver>` as a no-dependency smoke test.
-- `benchopt test . -k <Dataset>` to exercise `test_parameters` (skip the
+- `benchopt test . -k <Dataset>` to exercise `test_config` (skip the
   `*_install` test if your env cannot build isolated envs).
 
 ## Doc links

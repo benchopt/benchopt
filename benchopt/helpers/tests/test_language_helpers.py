@@ -95,6 +95,7 @@ def test_julia_solver(test_env_name, no_debug_log):
     # issue #887 is resolved.
     if sys.platform.startswith("darwin"):
         pytest.skip("Julia's PyCall library fail to install on macOS")
+    pytest.xfail("Julia's PyCall lib is failing everywhere")
 
     solver = """
     from benchopt.helpers.julia import JuliaSolver

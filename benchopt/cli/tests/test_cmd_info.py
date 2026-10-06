@@ -1,4 +1,6 @@
 import re
+import click
+import pytest
 from pathlib import Path
 
 from benchopt.utils.temp_benchmark import temp_benchmark
@@ -33,6 +35,17 @@ DATASET_NO_CHOICES = """from benchopt import BaseDataset
         def get_data(self): return dict(X=0)
 """
 
+OBJECTIVE_WITH_MIN_VERSION = """from benchopt import BaseObjective
+
+    class Objective(BaseObjective):
+        name = "with-min-version"
+        min_benchopt_version = "{min_version}"
+        def set_data(self, X, y): pass
+        def get_one_result(self): return dict(beta=None)
+        def evaluate_result(self, beta): return 1.
+        def get_objective(self): return dict(X=None, y=None, lmbd=None)
+"""
+
 
 class TestCmdInfo:
     def test_info_lists_choices(self):
@@ -59,6 +72,23 @@ class TestCmdInfo:
 
         out.check_output("param: a", repetition=1)
         out.check_output("valid values", repetition=0)
+
+    def test_info_version_compatible(self):
+        # `info --version` exits cleanly when benchopt is recent enough.
+        objective = OBJECTIVE_WITH_MIN_VERSION.format(min_version="0.0.0")
+        with temp_benchmark(objective=objective) as bench:
+            with CaptureCmdOutput() as out:
+                info([str(bench.benchmark_dir), '--version'],
+                     'benchopt', standalone_mode=False)
+        out.check_output("satisfies the requirement", repetition=1)
+
+    def test_info_version_incompatible(self):
+        # `info --version` raises (non-zero exit) when benchopt is too old.
+        objective = OBJECTIVE_WITH_MIN_VERSION.format(min_version="99.9")
+        with temp_benchmark(objective=objective) as bench:
+            with pytest.raises(click.ClickException, match="too old"):
+                info([str(bench.benchmark_dir), '--version'],
+                     'benchopt', standalone_mode=False)
 
     def test_info_no_result_files_omits_section(self):
         # Without any prior run, the result files section is skipped.

@@ -541,7 +541,7 @@ class BaseObjective(ParametrizedNameMixin, DependenciesMixin, RunContextMixin,
     **Installation:**
 
     - ``requirements``: the minimal requirements to be able to run the
-       benchmark.
+      benchmark.
     - ``min_benchopt_version``: the minimal version of benchopt required to run
       this benchmark.
     - ``python_version``: a specific version of Python required to run

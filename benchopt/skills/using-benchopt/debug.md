@@ -235,6 +235,11 @@ https://benchopt.github.io/stable/benchmark_workflow/test_benchmark.html
 - For an error *inside* a real run, `benchopt run . --pdb` drops into the
   debugger at the failing line — reach for the Benchmark object when you want to
   reproduce or probe the code outside the run loop.
+- To make a run **fail fast** on the first error (abort with the traceback and
+  a non-zero exit) without a debugger and without the extra logging of
+  `BENCHOPT_DEBUG`, set `BENCHOPT_RAISE_ON_ERROR=true` — handy for CI or a
+  competition worker where errors must surface instead of being scored as a
+  failed cell.
 - Everything here uses the installed benchmark code in the current environment;
   no conda env, caching or parallelism is involved, so edits to the benchmark's
   `.py` files take effect on the next `Benchmark(".")` / re-import.
