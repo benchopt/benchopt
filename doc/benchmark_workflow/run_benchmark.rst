@@ -64,13 +64,18 @@ detected and included in the run. To list all available solvers and datasets, us
 .. code-block:: console
 
     Info regarding the benchmark 'my_bench'
-    ----------
-    # DATASETS
-    dataset1, dataset2, dataset3, ...
-    ----------
-    # SOLVERS
-    solver1, solver2, solver3, ...
-    ----------
+    Datasets:
+      |--dataset1
+      |--dataset2
+      |--dataset3
+    Solvers:
+      |--solver1
+      |--solver2
+      |--solver3
+
+Add ``-v`` to also list each component's requirements and parameters, or
+``--config <file>`` to describe only the solvers/datasets named in a run
+config file.
 
 
 Specifying options with CLI flags

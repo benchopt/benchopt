@@ -76,6 +76,7 @@ every result file.
 benchopt info .                     # summary table + available result files
 benchopt info . -s my-solver -v     # verbose solver info
 benchopt info . -d "simulated" -v   # verbose dataset info (regexp supported)
+benchopt info . --config run.yml    # describe the components named in a config
 benchopt info . -e                  # check availability in conda env
 benchopt info . -f outputs/run.parquet  # summarize a result file
 benchopt info . -f run1.parquet -f run2.parquet  # summarize several files
