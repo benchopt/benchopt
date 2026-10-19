@@ -16,6 +16,7 @@ FIX
 - The front node no longer calls ``Dataset.get_data`` before dispatching runs
   when ``-r`` is set, and the ``submitit`` backend no longer keeps every
   dataset in memory while submitting jobs. By `Hippolyte Verninas`_
+  (:gh:`1020`)
 
 .. _changes_1_10:
 
