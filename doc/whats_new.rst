@@ -15,7 +15,7 @@ API
 
 - Add ``max_submitted_jobs`` to the ``submitit`` parallel config, to cap the
   number of jobs in the SLURM queue across all job arrays.
-  By `Hippolyte Verninas`_
+  By `Hippolyte Verninas`_ (:gh:`1021`)
 
 PLOT
 ~~~~
