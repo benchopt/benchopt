@@ -70,20 +70,6 @@
                                 <span class="slider round"></span>
                             </label>
                         </div>
-                        <div id="change-relative-suboptimal-form-group" class="flex items-center justify-between mt-8 px-8">
-                            <div class="block text-sm font-medium text-white">Suboptimal Curve</div>
-                            <label class="block switch">
-                                <input id="change_suboptimal" type="checkbox" onchange="setState({suboptimal_curve: this.checked})">
-                                <span class="slider round"></span>
-                            </label>
-                        </div>
-                        <div id="change-relative-suboptimal-form-group" class="flex items-center justify-between mt-8 px-8">
-                            <div class="block text-sm font-medium text-white">Relative Curve</div>
-                            <label class="block switch">
-                                <input id="change_relative" type="checkbox" onchange="setState({relative_curve: this.checked})">
-                                <span class="slider round"></span>
-                            </label>
-                        </div>
                         % for kind, params in result["plot_options"].items():
                             <div id="${kind}-custom-params-container">
                             % for param, options in params.items():
@@ -212,20 +198,6 @@
                                 <div class="block text-sm font-medium text-white">Quantiles</div>
                                 <label class="block switch">
                                     <input id="change_shades" type="checkbox" checked onchange="setState({with_quantiles: this.checked})">
-                                    <span class="slider round"></span>
-                                </label>
-                            </div>
-                            <div id="change-relative-suboptimal-form-group" class="flex items-center justify-between mt-8 px-8">
-                                <div class="block text-sm font-medium text-white">Suboptimal Curve</div>
-                                <label class="block switch">
-                                    <input id="change_suboptimal" type="checkbox" onchange="setState({suboptimal_curve: this.checked})">
-                                    <span class="slider round"></span>
-                                </label>
-                            </div>
-                            <div id="change-relative-suboptimal-form-group" class="flex items-center justify-between mt-8 px-8">
-                                <div class="block text-sm font-medium text-white">Relative Curve</div>
-                                <label class="block switch">
-                                    <input id="change_relative" type="checkbox" onchange="setState({relative_curve: this.checked})">
                                     <span class="slider round"></span>
                                 </label>
                             </div>
@@ -479,8 +451,6 @@
                     'plot_kind': document.getElementById('plot_kind').value,
                     'scale': document.getElementById('change_scale').value,
                     'with_quantiles': document.getElementById('change_shades').checked,
-                    'suboptimal_curve': document.getElementById('change_suboptimal').checked,
-                    'relative_curve': document.getElementById('change_relative').checked,
                     'hidden_curves': [],
                     % for kind, params in result["plot_options"].items():
                         % for param in params:

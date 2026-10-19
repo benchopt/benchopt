@@ -54,6 +54,7 @@ benchmark.update(extra_files={
     plot_configs:
       Subopt. (log):
         plot_kind: objective_curve
+        objective_curve_Y_axis: Suboptimality
         scale: loglog
       Runtimes:
         plot_kind: bar_chart
@@ -127,6 +128,7 @@ benchmark.update(extra_files={
         scale: loglog
       Subopt. (log):
         plot_kind: objective_curve
+        objective_curve_Y_axis: Suboptimality
         scale: loglog
       Runtimes:
         plot_kind: bar_chart

@@ -18,8 +18,8 @@ BACKWARD_COMPAT_PLOTS = {
 }
 
 ALL_PLOT_OPTIONS = [
-    "plot_kind", "scale", "with_quantiles", "suboptimal_curve",
-    "relative_curve", "hidden_curves", "table_order", "table_hidden_columns",
+    "plot_kind", "scale", "with_quantiles", "hidden_curves", "table_order",
+    "table_hidden_columns",
 ]
 
 
@@ -38,6 +38,24 @@ def _sanitize_config(config):
         }
     else:
         return BACKWARD_COMPAT_PLOTS.get(config, config)
+
+
+# XXX: remove in future version of benchopt
+def _update_legacy_view(name, view):
+    """Map deprecated suboptimal/relative toggles to objective_curve_Y_axis."""
+    subopt = view.pop("suboptimal_curve", None)
+    relative = view.pop("relative_curve", None)
+    if subopt is None and relative is None:
+        return
+    warnings.warn(
+        f"View '{name}': 'suboptimal_curve' and 'relative_curve' are "
+        "deprecated, use 'objective_curve_Y_axis' instead.", FutureWarning
+    )
+    if view.get("plot_kind") == "objective_curve":
+        view["objective_curve_Y_axis"] = (
+            "Relative Suboptimality" if relative
+            else "Suboptimality" if subopt else "Objective"
+        )
 
 
 def _check_view(name, view, plots):
@@ -99,6 +117,9 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
     plot_config = get_metadata(fname)
     plot_config = benchmark.get_plot_config(default_config=plot_config)
     plot_config = _sanitize_config(plot_config)
+    # XXX: remove in future version of benchopt
+    for name, view in plot_config.get("plot_configs", {}).items():
+        _update_legacy_view(name, view)
     update_metadata(fname, plot_config)
 
     if kinds is not None and len(kinds) > 0:

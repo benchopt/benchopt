@@ -141,3 +141,24 @@ def test_objective_curve_quantiles_ordered():
 
     for low, mid, high in zip(trace['x_low'], trace['x'], trace['x_high']):
         assert low <= mid <= high
+
+
+@pytest.mark.parametrize("Y_axis, expected", [
+    ("Suboptimality", {'A': [3, 1, 0], 'B': [5, 4, 2]}),
+    ("Relative Suboptimality", {'A': [1, 1 / 3, 0], 'B': [1, .8, .4]}),
+])
+def test_objective_curve_suboptimality(Y_axis, expected):
+    """The min used for suboptimality is shared across solvers."""
+    curves = {'A': [4, 2, 1], 'B': [6, 5, 3]}
+    df = pd.concat([
+        _make_df(objective_fn=lambda sv, y=y: float(y[sv]), n_steps=3)
+        .assign(solver_name=solver)
+        for solver, y in curves.items()
+    ], ignore_index=True)
+
+    traces = ObjectiveCurvePlot().plot(
+        df, dataset='d1', objective='obj1',
+        objective_column='objective_value', X_axis='Iteration', Y_axis=Y_axis,
+    )
+    for t in traces:
+        assert t['y'] == pytest.approx(expected[t['label']], abs=1e-8)
