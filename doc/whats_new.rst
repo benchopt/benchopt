@@ -18,6 +18,14 @@ FIX
   dataset in memory while submitting jobs. By `Hippolyte Verninas`_
   (:gh:`1020`)
 
+PLOT
+~~~~
+
+- Improve ``'image'`` plots in the HTML report: borderless grid that keeps
+  each image's aspect ratio, and click-to-enlarge.
+  By `Hippolyte Verninas`_ (:gh:`1017`)
+
+
 .. _changes_1_10:
 
 Version 1.10.0 -- 21/09/2026
