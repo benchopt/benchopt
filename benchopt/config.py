@@ -74,7 +74,7 @@ particular for logging, warnings and errors. The available options are:
 
 DEFAULT_BENCHMARK_CONFIG = {
     "plots": None,
-    "hidden_plots": [],
+    "hidden_plots": None,
     "plot_configs": {},
     "data_home": None,
     "data_paths": {},
