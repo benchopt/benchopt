@@ -16,6 +16,13 @@ API
 - Add a ``hidden_plots`` benchmark config option to hide some plot kinds,
   e.g. some of the default plots. By `Hippolyte Verninas`_ (:gh:`1019`)
 
+PLOT
+~~~~
+
+- Improve ``'image'`` plots in the HTML report: borderless grid that keeps
+  each image's aspect ratio, and click-to-enlarge.
+  By `Hippolyte Verninas`_ (:gh:`1017`)
+
 
 .. _changes_1_10:
 
