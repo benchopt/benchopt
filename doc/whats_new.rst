@@ -10,6 +10,13 @@ What's new
 Version 1.10.1 -- in developement
 ---------------------------------
 
+API
+~~~
+
+- Add ``max_submitted_jobs`` to the ``submitit`` parallel config, to cap the
+  number of jobs in the SLURM queue across all job arrays.
+  By `Hippolyte Verninas`_
+
 PLOT
 ~~~~
 

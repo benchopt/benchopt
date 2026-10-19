@@ -1,4 +1,5 @@
 import pytest
+from contextlib import nullcontext
 
 from benchopt.runner import run_benchmark
 from benchopt.tests.utils import CaptureCmdOutput
@@ -12,6 +13,7 @@ from benchopt.parallel_backends.slurm_executor import (  # noqa: E402
     get_slurm_executor,
     get_solver_slurm_config,
 )
+from benchopt.parallel_backends import slurm_executor  # noqa: E402
 
 
 @pytest.fixture
@@ -201,3 +203,40 @@ def test_run_on_slurm(monkeypatch, dummy_slurm_config):
             p_all_params[f"s_{p}"].fillna("") ==
             slurm_params.get(f"slurm_{p}", "")
         )
+
+
+@pytest.mark.parametrize("max_jobs", [None, 3])
+def test_run_on_slurm_max_submitted_jobs(monkeypatch, max_jobs):
+    # Track jobs submitted but not yet collected.
+    submitted = set()
+    max_submitted = 0
+
+    class MockedTask:
+        def __init__(self, i): self.i = i
+        def done(self): return True
+        def exception(self): return None
+
+        def results(self):
+            submitted.remove(self.i)
+            return [self.i]
+
+    class MockedExecutor:
+        def batch(self): return nullcontext()
+
+        def submit(self, func, i):
+            nonlocal max_submitted
+            submitted.add(i)
+            max_submitted = max(max_submitted, len(submitted))
+            return MockedTask(i)
+
+    monkeypatch.setattr(
+        slurm_executor, "get_slurm_executor",
+        lambda *args, **kwargs: MockedExecutor()
+    )
+
+    config = {} if max_jobs is None else {"max_submitted_jobs": max_jobs}
+    results = slurm_executor.run_on_slurm(
+        None, config, None, ({"i": i} for i in range(10))
+    )
+    assert sorted(results) == list(range(10))
+    assert max_submitted == (10 if max_jobs is None else max_jobs)
