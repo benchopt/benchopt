@@ -310,6 +310,35 @@ def test_objective_cv_splitter(no_debug_log):
     out.check_output("OK", repetition=4)
 
 
+@pytest.mark.parametrize("n_reps", [None, 2])
+def test_dispatch_loads_data_only_if_needed(n_reps, capsys):
+    # The front node only loads the data when needed to count repetitions.
+    from benchopt._generate_runs import generate_run_kwargs
+    from benchopt.utils.terminal_output import TerminalOutput
+
+    dataset = """from benchopt import BaseDataset
+
+    class Dataset(BaseDataset):
+        name = "test-dataset"
+        parameters = {"seed": [0, 1]}
+        def get_data(self):
+            print("GET_DATA")
+            return dict(X=None, y=None)
+    """
+
+    with temp_benchmark(datasets=dataset) as bench:
+        all_kwargs = list(generate_run_kwargs(
+            bench, solvers=bench.check_solver_patterns([]),
+            datasets=bench.check_dataset_patterns(["test-dataset"]),
+            objectives=bench.check_objective_filters(None),
+            n_repetitions=n_reps, terminal=TerminalOutput(n_reps, False),
+        ))
+
+    assert len(all_kwargs) == 2 * (n_reps or 1)
+    n_calls = capsys.readouterr().out.count("GET_DATA")
+    assert n_calls == (2 if n_reps is None else 0)
+
+
 def test_objective_save_final_results(no_debug_log):
     save_final = """
     from benchopt.utils.temp_benchmark import TempObjective
@@ -517,12 +546,12 @@ def test_paths_config_key(test_case, n_jobs):
         expected_home = Path(
             expected_home.format(bench_dir=bench.benchmark_dir.as_posix())
         ).resolve()
-        out.check_output(re.escape(f"HOME:{expected_home}"), repetition=n_jobs)
+        out.check_output(re.escape(f"HOME:{expected_home}"), repetition=1)
 
         expected_path = Path(
             expected_path.format(bench_dir=bench.benchmark_dir.as_posix())
         ).resolve()
-        out.check_output(re.escape(f"PATH:{expected_path}"), repetition=n_jobs)
+        out.check_output(re.escape(f"PATH:{expected_path}"), repetition=1)
 
 
 @pytest.mark.parametrize("n_runs,n_reps", [(1, 3), (2, 2), (5, 1)])
