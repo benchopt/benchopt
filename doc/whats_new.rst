@@ -10,6 +10,12 @@ What's new
 Version 1.10.1 -- in developement
 ---------------------------------
 
+API
+~~~
+
+- Add a ``hidden_plots`` benchmark config option to hide some plot kinds,
+  e.g. some of the default plots. By `Hippolyte Verninas`_
+
 
 .. _changes_1_10:
 
