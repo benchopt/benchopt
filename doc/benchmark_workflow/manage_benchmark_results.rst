@@ -284,10 +284,10 @@ run. These metrics correspond to the quantities returned by
 Hovering over the question mark shows a tooltip with details about the
 objective — the content of the ``Objective`` docstring.
 
-The **Chart type** dropdown allows applying transformations to the plotted
-metric, such as suboptimality ``metric - min(metric)`` or relative
-suboptimality ``(metric - min(metric)) / (metric[0] - min(metric))``. It
-also allows to show bar charts or boxplots.
+The **Chart type** dropdown allows to show bar charts or boxplots. For the
+``objective_curve``, the **Y_axis** option applies transformations to the
+plotted metric, such as suboptimality ``metric - min(metric)`` or relative
+suboptimality ``(metric - min(metric)) / (metric[0] - min(metric))``.
 
 .. list-table::
    :widths: auto

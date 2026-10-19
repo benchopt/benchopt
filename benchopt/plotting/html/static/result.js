@@ -94,8 +94,6 @@ const config_mapping = {
   'plot_kind': 'plot_kind',
   'scale': 'change_scale',
   'with_quantiles': 'change_shades',
-  'suboptimal_curve': 'change_suboptimal',
-  'relative_curve': 'change_relative',
   'hidden_curves': '',
 };
 
@@ -345,13 +343,6 @@ const getScatterData = () => {
   // create a list of object to plot in plotly
   const curves = [];
 
-  // get the minimum y value over all curves
-  let min_y = Infinity;
-  getPlotData().data.forEach(curveData => {
-    min_y = Math.min(min_y, ...curveData.y);
-  });
-  min_y -=  1e-10; // to avoid zeros in log scale
-
   getPlotData().data.forEach(curveData => {
     label = curveData.label;
     y = curveData.y;
@@ -362,12 +353,6 @@ const getScatterData = () => {
     else if ("x_low" in curveData && "x_high" in curveData && state().with_quantiles) {
       x_low = curveData.x_low;
       x_high = curveData.x_high;
-    }
-    if (state().suboptimal_curve) {
-      y = y.map(value => value - min_y);
-    }
-    if (state().relative_curve) {
-      y = y.map(value => value / (y[0] - min_y));
     }
     curves.push({
       type: 'scatter',
@@ -469,8 +454,6 @@ const DEFAULT_CONFIG_OPTIONS = [
   "hidden_curves",
   "scale",
   "with_quantiles",
-  "suboptimal_curve",
-  "relative_curve",
 ];
 
 const setConfig = (config_item) => {
@@ -662,7 +645,6 @@ const exportHTML = () => {
 const renderSidebar = () => {
   renderScaleSelector();
   renderWithQuantilesToggle();
-  renderSuboptimalRelativeToggle();
   mapSelectorsToState();
   renderPlotDropdowns();
 }
@@ -702,14 +684,6 @@ const hasQuantiles = () => getPlotData().data.some(
   c => ("y_low" in c && "y_high" in c) || ("x_low" in c && "x_high" in c)
 );
 
-const renderSuboptimalRelativeToggle = () => {
-  if (isChart('scatter')) {
-    show(document.querySelectorAll("#change-relative-suboptimal-form-group"), 'flex');
-  } else {
-    hide(document.querySelectorAll("#change-relative-suboptimal-form-group"));
-  }
-};
-
 const renderPlotDropdowns = () => {
   hide(document.querySelectorAll(`[id$='-custom-params-container']`));
   show(document.querySelectorAll(`#${state().plot_kind}-custom-params-container`), 'block');
@@ -731,8 +705,6 @@ const mapSelectorsToState = () => {
   document.getElementById('plot_kind').value = currentState.plot_kind;
   document.getElementById('change_scale').value = currentState.scale;
   document.getElementById('change_shades').checked = currentState.with_quantiles;
-  document.getElementById('change_suboptimal').checked = currentState.suboptimal_curve;
-  document.getElementById('change_relative').checked = currentState.relative_curve;
 };
 
 /*

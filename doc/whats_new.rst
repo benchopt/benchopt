@@ -10,6 +10,15 @@ What's new
 Version 1.10.1 -- in developement
 ---------------------------------
 
+PLOT
+~~~~
+
+- The "Suboptimal Curve" and "Relative Curve" toggles are replaced by a
+  ``Y_axis`` option of the ``objective_curve`` plot, so they no longer apply
+  to custom scatter plots. Views using the deprecated ``suboptimal_curve``
+  or ``relative_curve`` keys are converted to ``objective_curve_Y_axis``.
+  By `Hippolyte Verninas`_ (:gh:`1018`)
+
 
 .. _changes_1_10:
 
