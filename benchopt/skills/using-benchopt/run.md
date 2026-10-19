@@ -41,7 +41,8 @@ benchopt run . \
 
 ## Parallelism and environments
 
-- `-j/--n-jobs N`: N local workers (sequential by default).
+- `-j/--n-jobs N`: N local workers (sequential by default), also used for
+  the final plots; `--n-jobs-plots N` sets the plot workers separately.
 - `--parallel-config slurm.yml`: dispatch on a cluster (SLURM, Dask, …).
 - `-e/--env [NAME]` / `--env-name NAME`: run inside a dedicated conda env
   (isolated dependencies). `-l/--local` (default) runs in the current env.

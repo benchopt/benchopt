@@ -221,6 +221,11 @@ can be passed directly::
 
 Custom plot classes (see :ref:`add_custom_plot`) are also applied.
 
+When there are many plots to generate, or when they require heavy processing,
+they can be computed in parallel with ``-j/--n-jobs``::
+
+    $ benchopt plot path/to/benchmark -j 4
+
 
 .. _visualize_benchmark:
 

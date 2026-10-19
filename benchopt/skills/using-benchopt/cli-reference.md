@@ -15,8 +15,9 @@ benchopt run . --config config.yml
 ```
 
 Key flags: `-s/--solver`, `-d/--dataset`, `-o/--objective`, `-n/--max-runs`,
-`-r/--n-repetitions`, `--timeout`, `-j/--n-jobs`, `-f/--force-solver`,
-`--no-cache`, `-e/--env`, `--config`, `--pdb`, `--profile`, `--seed`.
+`-r/--n-repetitions`, `--timeout`, `-j/--n-jobs`, `--n-jobs-plots`,
+`-f/--force-solver`, `--no-cache`, `-e/--env`, `--config`, `--pdb`,
+`--profile`, `--seed`.
 
 `--collect` re-reads the cache and writes the parquet for finished cells without
 running anything — use it to preview a config's run matrix or consolidate partial
@@ -93,6 +94,7 @@ benchopt plot                              # latest result -> HTML
 benchopt plot -f outputs/run.parquet
 benchopt plot --all                        # HTML index for all runs
 benchopt plot --no-html -k objective_curve # static PNGs
+benchopt plot -j 4                         # compute plots in 4 processes
 ```
 
 ---
