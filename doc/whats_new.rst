@@ -10,6 +10,11 @@ What's new
 Version 1.10.1 -- in developement
 ---------------------------------
 
+CLI
+~~~
+
+- Compute the plots in parallel with ``joblib``. By `Hippolyte Verninas`_
+
 
 .. _changes_1_10:
 

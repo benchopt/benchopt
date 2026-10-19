@@ -68,7 +68,7 @@ def _check_view(name, view, plots):
 
 
 def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
-                   html=True):
+                   html=True, n_jobs=1):
     """Plot convergence curve and bar chart for a given benchmark.
 
     Parameters
@@ -88,6 +88,8 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
     html : bool
         If True plot the benchmark in an HTML page. If True, plotly
         is necessarily used.
+    n_jobs : int
+        Number of processes used to compute the plot data, with joblib.
 
     Returns
     -------
@@ -124,7 +126,9 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
         _check_view(name, view, plots)
 
     if html:
-        plot_benchmark_html(fname, benchmark, plot_config, display)
+        plot_benchmark_html(
+            fname, benchmark, plot_config, display, n_jobs=n_jobs
+        )
 
     else:
         # Load the results.
@@ -135,7 +139,7 @@ def plot_benchmark(fname, benchmark, kinds=None, display=True, plotly=False,
         figs = []
 
         kind_figs = get_figures(
-            benchmark, df, output_dir, plot_config["plots"]
+            benchmark, df, output_dir, plot_config["plots"], n_jobs=n_jobs
         )
         figs.extend(kind_figs)
 

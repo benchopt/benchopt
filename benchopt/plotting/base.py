@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 
 from ..utils.dependencies_mixin import DependenciesMixin
 from ..utils.parametrized_name_mixin import ParametrizedNameMixin
-from ..utils.parametrized_name_mixin import product_param
 from ..utils.parametrized_name_mixin import sanitize
 
 CMAP = plt.get_cmap('tab20')
@@ -82,6 +81,11 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
 
         return {'color': color, 'marker': idx}
 
+    def __reduce__(self):
+        if hasattr(type(self), '_module_filename'):
+            return super().__reduce__()
+        return type(self).get_instance, ()
+
     @classmethod
     def _get_name(cls):
         """Get a simple name for plot comparison"""
@@ -136,8 +140,8 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
                 f"`plot` function, {plot_kwargs}."
             )
 
-    def _get_all_plots(self, df):
-        # Get all combinations
+    def _get_options(self, df):
+        # Resolve the values of each option
         options = {**self.options}
         for k, v in options.items():
             if callable(v):
@@ -159,17 +163,20 @@ class BasePlot(ParametrizedNameMixin, DependenciesMixin, ABC):
                 else:
                     options[k] = df[k].unique().tolist()
 
-        combinations = product_param(options)
+        return options
 
-        plots = {}
-        for kwargs in combinations:
-            data = self.get_metadata(df, **kwargs)
-            data["type"] = self.type
-            data["data"] = self.plot(df, **kwargs)
-            key_list = (
-                [self._get_name()] + list(kwargs.values())
-            )
-            key = '_'.join(map(str, key_list))
-            plots[key] = data
+    def _get_key(self, kwargs):
+        return '_'.join(map(str, [self._get_name()] + list(kwargs.values())))
 
-        return plots, options
+    def _get_one_plot(self, df, kwargs):
+        data = self.get_metadata(df, **kwargs)
+        data["type"] = self.type
+        data["data"] = self.plot(df, **kwargs)
+        return data
+
+
+def _compute_plots(df, tasks, label_dict):
+    "Compute the data of a batch of (plot, kwargs) tasks."
+    # Use the main process styles so each label gets the same color.
+    BasePlot._label_dict.update(label_dict)
+    return [plot._get_one_plot(df, kwargs) for plot, kwargs in tasks]

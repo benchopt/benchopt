@@ -49,7 +49,8 @@ for asset in STATIC_DIR.glob("**/*"):
     STATIC[asset.relative_to(STATIC_DIR).name] = asset.read_text()
 
 
-def get_results(fnames, html_root, benchmark, config=None, copy=False):
+def get_results(fnames, html_root, benchmark, config=None, copy=False,
+                n_jobs=1):
     """Generate figures from a list of result files.
 
     Parameters
@@ -66,6 +67,8 @@ def get_results(fnames, html_root, benchmark, config=None, copy=False):
     copy : bool (default: False)
         If set to True, copy each file in the html_root / OUTPUTS
         directory, to make sure it can be downloaded.
+    n_jobs : int (default: 1)
+        Number of processes used to compute the plot data.
 
     Returns
     -------
@@ -111,7 +114,9 @@ def get_results(fnames, html_root, benchmark, config=None, copy=False):
             metadata=get_metadata(df, config_.get('plot_configs', {})),
         )
 
-        data, options = benchmark.get_plot_data(df, result['kinds'])
+        data, options = benchmark.get_plot_data(
+            df, result['kinds'], n_jobs=n_jobs
+        )
         data = update_plot_data_style(data, plotly=True)
         result['json_plots'] = json.dumps(data)
         result['plot_options'] = options
@@ -319,7 +324,8 @@ def _fetch_cached_run_list(new_results, benchmark_html):
 
 
 def plot_benchmark_html(
-        fnames, benchmark, config=None, display=True, html_home=None
+        fnames, benchmark, config=None, display=True, html_home=None,
+        n_jobs=1
 ):
     """Plot a given benchmark as an HTML report. This function can either plot
     a single run or multiple ones.
@@ -339,6 +345,8 @@ def plot_benchmark_html(
         Index of the HTML website. This default to the benchmark index. This
         argument can be used to pass the index file when generating the full
         result website.
+    n_jobs : int
+        Number of processes used to compute the plot data.
     """
     if isinstance(fnames, Path):
         fnames = [fnames]
@@ -359,7 +367,9 @@ def plot_benchmark_html(
 
     # Create the figures and render the page as a html.
     print("Rendering benchmark results...")
-    results = get_results(fnames, html_root, benchmark, config, copy=copy)
+    results = get_results(
+        fnames, html_root, benchmark, config, copy=copy, n_jobs=n_jobs
+    )
     htmls = render_all_results(results, benchmark, home=html_home)
     print("done")
 
