@@ -10,6 +10,13 @@ What's new
 Version 1.10.1 -- in developement
 ---------------------------------
 
+PLOT
+~~~~
+
+- Improve ``'image'`` plots in the HTML report: borderless grid that keeps
+  each image's aspect ratio, and click-to-enlarge.
+  By `Hippolyte Verninas`_ (:gh:`1017`)
+
 
 .. _changes_1_10:
 
