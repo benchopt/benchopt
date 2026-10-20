@@ -16,6 +16,7 @@ def _make_df(idx_rep=0, n_steps=5, objective_column='objective_value',
             'dataset_name': 'd1',
             'objective_name': 'obj1',
             'solver_name': 'solver1',
+            'solver_tooltip': '',
             'idx_rep': idx_rep,
             'stop_val': stop_val,
             objective_column: objective_fn(stop_val),
@@ -100,6 +101,7 @@ def test_objective_curve_multiple_solvers_independent():
                     'dataset_name': 'd1',
                     'objective_name': 'obj1',
                     'solver_name': solver,
+                    'solver_tooltip': f'{solver} tooltip',
                     'idx_rep': idx_rep,
                     'stop_val': stop_val,
                     'objective_value': base + idx_rep,
@@ -117,7 +119,9 @@ def test_objective_curve_multiple_solvers_independent():
     )
 
     assert len(traces) == 2
-    by_label = {t['label']: t for t in traces}
+    # `plot` returns `(label, tooltip)` labels, split in `_get_all_plots`.
+    by_label = {t['label'][0]: t for t in traces}
+    assert by_label['A']['label'][1] == 'A tooltip'
     # Median of reps 0 and 1 → 0.5 and 100.5
     assert by_label['A']['y'] == [0.5] * 4
     assert by_label['B']['y'] == [100.5] * 4

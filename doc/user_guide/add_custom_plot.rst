@@ -93,7 +93,8 @@ each dictionary represents a trace in the plot. Each dictionary must contain:
 
 - :code:`x`: A list of x values.
 - :code:`y`: A list of y values.
-- :code:`label`: The label of the trace
+- :code:`label`: The label of the trace. It can be a :code:`(label, tooltip)`
+  tuple to add a hover icon displaying the :code:`tooltip` HTML in the legend.
 - :code:`color` (optional): The color of the trace.
 - :code:`marker` (optional): The marker style of the trace.
 - :code:`y_low`, :code:`y_high` (optional): Lists of values to display uncertainty in the plot.
@@ -261,12 +262,19 @@ The metadata dictionary returned by :code:`get_metadata` should contain:
 
 String cells can carry simple formatting with :code:`**bold**`,
 :code:`*italic*` and :code:`__underlined__` markers. A literal marker is
-escaped with a backslash, as in :code:`r"a \* b"`.
+escaped with a backslash, as in :code:`r"a \* b"`. A cell given as a
+:code:`(label, tooltip)` tuple shows :code:`label` with a hover icon displaying
+the :code:`tooltip` HTML.
 
 In the html report, each column header can be clicked to sort on that column,
 and the arrow next to it can be toggled to switch between increasing and
 decreasing order. A search bar allows filtering the rows, and each column can
 be shown or hidden with the checkboxes below the table.
+
+Solver, dataset and objective names are already shortened (see
+:ref:`short_labels`), and their hover HTML (description and full parameters) is
+in the :code:`solver_tooltip`, :code:`dataset_tooltip` and
+:code:`objective_tooltip` columns, ready to build such a tuple:
 
 .. code-block:: python
 
@@ -278,7 +286,8 @@ be shown or hidden with the checkboxes below the table.
         for solver, df_solver in df.groupby('solver_name'):
             # Example: table with solver name and mean time
             # when using `sampling_strategy = 'run_once'`
-            rows.append([f"**{solver}**", df_solver['time'].mean()])
+            tooltip = df_solver['solver_tooltip'].iloc[0]
+            rows.append([(f"**{solver}**", tooltip), df_solver['time'].mean()])
         return rows
 
     def get_metadata(self, df, dataset, objective, **kwargs):
@@ -348,4 +357,65 @@ of the label, ensuring that the same solver always gets the same color.
         # ...
         **self.get_style(solver_name)
     }
+
+
+.. _short_labels:
+
+Shortened labels and hover descriptions
+---------------------------------------
+
+Parametrized class names (e.g. ``Solver[alpha=0.1,n_iter=100]``) can be
+verbose. The HTML report automatically shortens them, keeping only the
+parameters that *vary* across the results, and a hover icon next to each entry
+reveals the full parameter list. This applies to solver, dataset, and objective
+names in traces, selectors, and table cells.
+
+This happens **before** :code:`plot` and :code:`get_metadata` are called: the
+``solver_name``, ``dataset_name`` and ``objective_name`` columns of the ``df``
+you receive already hold the short labels, so a custom plot that groups on
+those columns gets short labels for free — no extra call is needed. The
+original full name of each row is kept in a companion ``*_full_name`` column
+(``solver_full_name``, ``dataset_full_name``, ``objective_full_name``) if you
+need it, e.g. to set a different label. The hover HTML (description and full
+parameters) is in the ``*_tooltip`` columns: pass it with the label as a
+``(label, tooltip)`` tuple to get the hover icon in a legend or a table cell:
+
+.. code-block:: python
+
+    def plot(self, df, dataset, objective, **kwargs):
+        traces = []
+        for solver, df_solver in df.groupby('solver_name'):
+            # `solver` is already the short label here.
+            tooltip = df_solver['solver_tooltip'].iloc[0]
+            traces.append({
+                "x": ..., "y": ..., "label": (solver, tooltip),
+                **self.get_style(solver),
+            })
+        return traces
+
+The short labels are **display-only** and computed relative to the current
+results: never write them back into persisted results — keep the full name
+(from the ``*_full_name`` columns) as the canonical identity.
+
+If you need to compute short labels or their hover descriptions yourself — for
+instance in a ``type="image"`` plot, which has no ``df``-derived labels — the
+helpers live in :mod:`benchopt.plotting.short_labels`:
+
+- :func:`~benchopt.plotting.short_labels.compute_short_labels` returns the
+  ``{full_name: short_label}`` mapping;
+- :func:`~benchopt.plotting.short_labels.compute_descriptions` returns the
+  ``{name: hover_html}`` mapping.
+
+.. code-block:: python
+
+    from benchopt.plotting.short_labels import compute_short_labels
+
+    def plot(self, df, dataset, objective, **kwargs):
+        solver_names = sorted(df["solver_full_name"].unique())
+        label_map = compute_short_labels(solver_names)
+        images = []
+        for solver in solver_names:
+            fig = render_figure(df, solver)
+            images.append({"image": fig, "label": label_map[solver]})
+        return images
 

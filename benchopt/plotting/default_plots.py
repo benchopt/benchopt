@@ -47,7 +47,7 @@ class ObjectiveCurvePlot(BasePlot):
             curve_data = {
                 "x": x.tolist(),
                 "y": y.tolist(),
-                "label": solver,
+                "label": (solver, df_filtered['solver_tooltip'].iloc[0]),
                 **self.get_style(solver)
             }
 
@@ -109,17 +109,19 @@ class BarChart(BasePlot):
             if df_tol.empty:
                 text = 'Did not converge'
                 times = [df.time.max()]
+                color = "gray"
             else:
                 stop_val = df_tol['stop_val'].min()
                 this_df = df_filtered[df_filtered['stop_val'] == stop_val]
                 text = ''
                 times = this_df['time'].tolist()
+                color = self.get_style(solver)["color"]
 
             plots.append({
                 "y": times,
                 "text": text,
                 "label": solver,
-                "color": self.get_style(solver)["color"]
+                "color": color,
             })
 
         return plots
@@ -220,7 +222,7 @@ class TablePlot(BasePlot):
         ]
 
         for solver, solver_df in df.groupby('solver_name'):
-            solver_res = [solver]
+            solver_res = [(solver, solver_df['solver_tooltip'].iloc[0])]
             median_vals = (
                solver_df.groupby('stop_val')
                .median(numeric_only=True).iloc[-1]

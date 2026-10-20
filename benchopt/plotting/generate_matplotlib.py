@@ -11,7 +11,7 @@ from .helpers import update_plot_data_style
 def get_figures(benchmark, df, output_dir, kinds):
     "Get the matplotlib figures of the avaible custom plots"
     figs = []
-    plot_data, _ = benchmark.get_plot_data(df, kinds)
+    plot_data, _, _ = benchmark.get_plot_data(df, kinds)
     plot_data = update_plot_data_style(plot_data, plotly=False)
     for plot_name in plot_data.keys():
         if plot_name not in kinds:
@@ -137,7 +137,7 @@ def get_plot_barchart(plot_data):
 
     ax.set_xticks([(i+1.5)*width for i in range(n_bars)])
     ax.set_xticklabels(
-        [data["label"] for data in plot_data["data"]],
+        [d["label"] for d in plot_data["data"]],
         rotation=60
     )
     ax.set_yscale('log')
