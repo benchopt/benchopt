@@ -203,10 +203,6 @@ def shorten_names(
     parameters table. It is keyed by entity type (``solver``, ``dataset``,
     ``objective``) so that equal labels of different types don't clash.
 
-    Short labels are display-only (see the module docstring): this operates on
-    a copy and must only be used on the plotting ``df``, never on the results
-    that get persisted.
-
     Parameters
     ----------
     df : pandas.DataFrame
