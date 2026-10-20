@@ -44,8 +44,7 @@ def compute_short_labels(names):
     """Compute short display labels from a list of parametrized names.
 
     Short labels include only the parameters that *vary* within a group of
-    names sharing the same base class name.  Parameters that are constant
-    across all instances of a class are dropped from the label.
+    names sharing the same base class name.
     Parameters
     ----------
     names : sequence of str
